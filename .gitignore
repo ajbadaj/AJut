@@ -1,0 +1,8 @@
+.vs/
+bin/
+obj/
+TestResults/
+*.suo
+*.user
+*Settings.Designer.cs
+/_ignore
