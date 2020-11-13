@@ -1,0 +1,227 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{D3EA2B14-8C3E-421D-8763-E354F0B56358}</ProjectGuid>
+    <OutputType>library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>AJut.Application</RootNamespace>
+    <AssemblyName>AJut.Application.WPF</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <WarningLevel>4</WarningLevel>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <DocumentationFile>
+    </DocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Xml" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xaml">
+      <RequiredTargetFramework>4.0</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="WindowsBase" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\SharedSource\ApplicationUtilities.cs">
+      <Link>ApplicationUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\AttachedProperties\BorderXTA.cs">
+      <Link>AttachedProperties\BorderXTA.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\AttachedProperties\ScrollXTA.cs">
+      <Link>AttachedProperties\ScrollXTA.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\CoerceUtils.cs">
+      <Link>CoerceUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Controls\BumpStack.cs">
+      <Link>Controls\BumpStack.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Controls\EditableTextBlock.cs">
+      <Link>Controls\EditableTextBlock.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Controls\FlatTreeListControl.cs">
+      <Link>Controls\FlatTreeListControl.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Controls\NumericEditor.cs">
+      <Link>Controls\NumericEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Controls\PathFollowingContentDisplayer.cs">
+      <Link>Controls\PathFollowingContentDisplayer.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Controls\ToggleStrip.cs">
+      <Link>Controls\ToggleStrip.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Converters\ArithmeticConverter.cs">
+      <Link>Converters\ArithmeticConverter.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Converters\BooleanConverters.cs">
+      <Link>Converters\BooleanConverters.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Converters\ColorTextConverter.cs">
+      <Link>Converters\ColorTextConverter.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Converters\ContainsConverter.cs">
+      <Link>Converters\ContainsConverter.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Converters\CornerRadiusSideConverters.cs">
+      <Link>Converters\CornerRadiusSideConverters.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Converters\FriendlyTextEnConverter.cs">
+      <Link>Converters\FriendlyTextEnConverter.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Converters\NullnessConverters.cs">
+      <Link>Converters\NullnessConverters.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Converters\NumericComparisonConverter.cs">
+      <Link>Converters\NumericComparisonConverter.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Converters\PercentageToGridLengthConverter.cs">
+      <Link>Converters\PercentageToGridLengthConverter.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Converters\RelativeNumericValueConverter.cs">
+      <Link>Converters\RelativeNumericValueConverter.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Converters\SimpleValueConverters.cs">
+      <Link>Converters\SimpleValueConverters.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Converters\TextStatusConverters.cs">
+      <Link>Converters\TextStatusConverters.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\DependencyObjectHelperUtils\DependencyPropertyChangedEventArgs.cs">
+      <Link>DependencyObjectHelperUtils\DependencyPropertyChangedEventArgs.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\DependencyObjectHelperUtils\EventUtils\AEUtils.cs">
+      <Link>DependencyObjectHelperUtils\EventUtils\AEUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\DependencyObjectHelperUtils\EventUtils\REUtils.cs">
+      <Link>DependencyObjectHelperUtils\EventUtils\REUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\DependencyObjectHelperUtils\PropertyUtils\APUtils.cs">
+      <Link>DependencyObjectHelperUtils\PropertyUtils\APUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\DependencyObjectHelperUtils\PropertyUtils\DPUtils.cs">
+      <Link>DependencyObjectHelperUtils\PropertyUtils\DPUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\DependencyObjectHelperUtils\PropertyUtils\DPWatcher.cs">
+      <Link>DependencyObjectHelperUtils\PropertyUtils\DPWatcher.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Drawing\DrawingInputSpawner.cs">
+      <Link>Drawing\DrawingInputSpawner.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Exceptions.cs">
+      <Link>Exceptions.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Extensions\BindingXT.cs">
+      <Link>Extensions\BindingXT.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Extensions\ButtonExtensions.cs">
+      <Link>Extensions\ButtonExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Extensions\DependencyObjectXT.cs">
+      <Link>Extensions\DependencyObjectXT.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Extensions\DrawingPathXT.cs">
+      <Link>Extensions\DrawingPathXT.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Extensions\FrameworkElementXT.cs">
+      <Link>Extensions\FrameworkElementXT.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Extensions\GridXT.cs">
+      <Link>Extensions\GridXT.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Extensions\MouseXT.cs">
+      <Link>Extensions\MouseXT.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Extensions\RichTextExtensions.cs">
+      <Link>Extensions\RichTextExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\Extensions\WindowXT.cs">
+      <Link>Extensions\WindowXT.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\IDEHelper.cs">
+      <Link>IDEHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\SwitchTemplateSelector.cs">
+      <Link>SwitchTemplateSelector.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\TemplateBinding.cs">
+      <Link>TemplateBinding.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\TypeTemplateSelector.cs">
+      <Link>TypeTemplateSelector.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\WindowManager.cs">
+      <Link>WindowManager.cs</Link>
+    </Compile>
+    <Compile Include="..\SharedSource\WindowsTaskbar.cs">
+      <Link>WindowsTaskbar.cs</Link>
+    </Compile>
+    <Compile Include="AttachedProperties\ClickableXTA.cs" />
+    <Compile Include="AttachedProperties\Gif.cs" />
+    <Compile Include="AttachedProperties\WindowXTA.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <AppDesigner Include="Properties\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\AJut.Core.csproj">
+      <Project>{c37494bd-e554-4d21-8974-28b220878498}</Project>
+      <Name>AJut.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\AJut.Application\AJut.Application.csproj">
+      <Project>{490831b0-748f-4b23-a184-944c22f99ace}</Project>
+      <Name>AJut.Application</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <Page Include="..\SharedSource\Themes\Generic.xaml">
+      <Link>Themes\Generic.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>if $(ConfigurationName) == Release COPY "$(TargetPath)" "$(SolutionDir)bin\$(TargetFileName)"</PostBuildEvent>
+  </PropertyGroup>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

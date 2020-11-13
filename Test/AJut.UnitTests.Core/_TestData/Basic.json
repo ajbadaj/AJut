@@ -1,0 +1,10 @@
+﻿{
+    "OuterThing":
+    {
+        "InnerArr" :
+        [
+            "Item 1",
+            "Item 2"
+        ]
+    }
+}

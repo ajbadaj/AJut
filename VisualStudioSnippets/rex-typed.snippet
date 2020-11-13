@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeSnippets xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>Add a typed REUtils registration</Title>
+			<Author>AJ Badarni</Author>
+			<Description>Adds a handler typed REUtils event registration.</Description>
+			<Shortcut>rex</Shortcut>
+			<SnippetTypes>
+				<SnippetType>Expansion</SnippetType>
+			</SnippetTypes>
+		</Header>
+		<Snippet>
+			<Declarations>
+				<Literal>
+					<ID>eventName</ID>
+					<ToolTip>Replace with the name of the attached event.</ToolTip>
+					<Default>CoolName</Default>
+				</Literal>
+				<Literal>
+					<ID>eventHandlerType</ID>
+					<ToolTip>Replace with the type of the routed event.</ToolTip>
+					<Default>RoutedEventHandler</Default>
+				</Literal>
+			</Declarations>
+			<Code Language="csharp">
+				<![CDATA[
+          public static RoutedEvent $eventName$Event = REUtils.Register<$eventHandlerType$>(nameof($eventName$Event));
+          ]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>
+

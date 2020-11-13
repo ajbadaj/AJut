@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeSnippets xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>Add Typed Attached Event via AEUtils</Title>
+			<Author>AJ Badarni</Author>
+			<Description>Adds code to register an attached event. This snippet utilizes AEUtils, add a registration helper or switch to StaticAEUtils manually after.</Description>
+			<Shortcut>aex</Shortcut>
+			<SnippetTypes>
+				<SnippetType>Expansion</SnippetType>
+			</SnippetTypes>
+		</Header>
+		<Snippet>
+			<Declarations>
+				<Literal>
+					<ID>eventName</ID>
+					<ToolTip>Replace with the name of the attached event.</ToolTip>
+					<Default>CoolName</Default>
+				</Literal>
+				<Literal>
+					<ID>eventHandlerType</ID>
+					<ToolTip>Replace with the type of the routed event.</ToolTip>
+					<Default>RoutedEventHandler</Default>
+				</Literal>
+			</Declarations>
+			<Code Language="csharp">
+				<![CDATA[
+          public static RoutedEvent $eventName$Event = AEUtils.Register<$eventHandlerType$>(Add$eventName$Handler, Remove$eventName$Handler);
+          public static void Add$eventName$Handler (DependencyObject obj, $eventHandlerType$ handler)
+          {
+              if (obj is UIElement ui)
+              {
+                  ui.AddHandler($eventName$Event, handler);
+              }
+          }
+          public static void Remove$eventName$Handler (DependencyObject obj, $eventHandlerType$ handler)
+          {
+              if (obj is UIElement ui)
+              {
+                  ui.RemoveHandler($eventName$Event, handler);
+              }
+          }
+          ]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>
+
