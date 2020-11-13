@@ -6,7 +6,7 @@ C# Utility libraries, created by AJ Badarni
 I hope you enjoy this library. AJut is short for AJ Utilities, (pronounced like the dipping sauce Au Jus). It represents some dot net utilities that I commonly use. I have an adapted version for Windows Universal that are included but require further evaluation as changes with .net core have been released.
 
 ## Licensing
-This software uses an MIT License, see license.txt - terms and conditions contained therin.
+This software uses an MIT License, see LICENSE - terms and conditions contained therin.
 
 ## Versioning
 At this point, AJut is in the "Alpha" stage. I have some large scale overhauls planned, as this library dates back to my early days as an engineer.
