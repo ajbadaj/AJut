@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeSnippets xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>Add a DPUtils Registration</Title>
+			<Author>AJ Badarni</Author>
+			<Description>Adds code to register a read-write DependencyProperty. This snippet must be added to a class that derives from DependencyObject.</Description>
+			<Shortcut>propdpx</Shortcut>
+			<SnippetTypes>
+				<SnippetType>Expansion</SnippetType>
+			</SnippetTypes>
+		</Header>
+		<Snippet>
+			<Declarations>
+				<Literal>
+					<ID>propertyType</ID>
+					<ToolTip>Replace with the type of the property.</ToolTip>
+					<Default>string</Default>
+				</Literal>
+				<Literal>
+					<ID>propertyName</ID>
+					<ToolTip>Replace with the name of the property.</ToolTip>
+					<Default>Prop1</Default>
+				</Literal>
+			</Declarations>
+			<Code Language="csharp">
+				<![CDATA[
+          public static readonly DependencyProperty $propertyName$Property = DPUtils.Register(_ => _.$propertyName$);
+          public $propertyType$ $propertyName$
+          {
+			get => ($propertyType$)this.GetValue($propertyName$Property);
+			set => this.SetValue($propertyName$Property, value);
+          }
+          ]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>
+

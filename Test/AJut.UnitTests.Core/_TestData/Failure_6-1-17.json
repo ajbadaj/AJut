@@ -1,0 +1,18 @@
+{
+	Title: "Test Item",
+	Type: "Wounderous",
+	Rarity: "Uncommon",
+	Weight: "1/2 pound",
+	Description: "A very odd bag, when turned over empties out light that you can hold.",
+	Table: {
+		IsFirstRowTitleRow: true,
+		Rows: [
+			[ "d4", "Effect" ],
+			[ "1", "Burn Hand" ],
+			[ "2", "Lightup Hand" ],
+			[ "3", "Miss Hand (light up floor)" ],
+			[ "4", "Darken hand (light sucked into bag)" ],
+		]
+	},
+	Source: "Homebrew: pg 123"
+}

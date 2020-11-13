@@ -1,0 +1,11 @@
+{
+        /*
+        prop          : 'Yay',
+        arr           : [ 'yay1', 'yay2' ],
+        "doc":           { "inner": "innerText" },
+
+        #==============================
+        # Common
+        #==============================*/
+        afterComment2 : true
+}

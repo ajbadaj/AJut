@@ -1,0 +1,13 @@
+{
+	"IntThing" : "60",
+	"FloatThing" : "0.25",
+	"SubObj" : 
+	{
+		"Info" : "Some text",
+		"SubSubObj" : 
+		{
+			"X" : "0",
+			"Y" : "0"
+		}
+	}
+}

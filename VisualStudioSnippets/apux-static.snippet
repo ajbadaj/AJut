@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeSnippets xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>Add a APUtils class instance alias</Title>
+			<Author>AJ Badarni</Author>
+			<Description>Adds code to create an APUtils class instance alias.</Description>
+			<Shortcut>apux</Shortcut>
+			<SnippetTypes>
+				<SnippetType>Expansion</SnippetType>
+			</SnippetTypes>
+		</Header>
+		<Snippet>
+			<Declarations>
+        <Literal>
+          <ID>classname</ID>
+          <ToolTip>Class name</ToolTip>
+          <Function>ClassName()</Function>
+          <Default>ClassNamePlaceholder</Default>
+        </Literal>
+			</Declarations>
+			<Code Language="csharp">
+				<![CDATA[
+          private static readonly APUtilsRegistrationHelper APUtils = new APUtilsRegistrationHelper(typeof($classname$));
+          ]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>
+

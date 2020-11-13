@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeSnippets xmlns="http://schemas.microsoft.com/VisualStudio/2005/CodeSnippet">
+	<CodeSnippet Format="1.0.0">
+		<Header>
+			<Title>Add an APUtils Registration</Title>
+			<Author>AJ Badarni</Author>
+			<Description>Adds code to register a read-only AttachedProperty. This snippet must be added to a class that derives from DependencyObject.</Description>
+			<Shortcut>propapxo</Shortcut>
+			<SnippetTypes>
+				<SnippetType>Expansion</SnippetType>
+			</SnippetTypes>
+		</Header>
+		<Snippet>
+			<Declarations>
+				<Literal>
+					<ID>propertyType</ID>
+					<ToolTip>Replace with the type of the property.</ToolTip>
+					<Default>string</Default>
+				</Literal>
+				<Literal>
+					<ID>propertyName</ID>
+					<ToolTip>Replace with the name of the property.</ToolTip>
+					<Default>Prop1</Default>
+				</Literal>
+			</Declarations>
+			<Code Language="csharp">
+				<![CDATA[
+          private static DependencyPropertyKey $propertyName$PropertyKey = APUtils.RegisterReadOnly(Get$propertyName$, Set$propertyName$);
+		  public static DependencyProperty $propertyName$Property = $propertyName$PropertyKey.DependencyProperty;
+          public static $propertyType$ Get$propertyName$ (DependencyObject obj) => ($propertyType$)obj.GetValue($propertyName$Property);
+          internal static void Set$propertyName$ (DependencyObject obj, $propertyType$ value) => obj.SetValue($propertyName$PropertyKey, value);
+          ]]>
+			</Code>
+		</Snippet>
+	</CodeSnippet>
+</CodeSnippets>
+
