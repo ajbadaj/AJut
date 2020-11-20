@@ -36,7 +36,7 @@
             this.Access = null;
         }
 
-        public TAdaptedValue Value => m_instanceStorage.Value;
+        public TAdaptedValue Value => this.Access.IsSet ? m_instanceStorage.Value : default;
         public StrataPropertyValueAccess<TStrataValue> Access { get; private set; }
 
         private void Reset()

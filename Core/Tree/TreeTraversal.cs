@@ -74,7 +74,7 @@ namespace AJut.Tree
         /// <returns>The first item found whose parent is returned as null</returns>
         public static TTreeNode FindRoot (TTreeNode start, GetTreeNodeParent<TTreeNode> getParentOverride = null)
         {
-            TTreeNode lastParent = (getParentOverride ?? GetParentMethod)(start);
+            TTreeNode lastParent = start != null ? (getParentOverride ?? GetParentMethod)(start) : null;
             if (lastParent == null)
             {
                 return start;
@@ -83,7 +83,7 @@ namespace AJut.Tree
             TTreeNode parent = null;
             for (; ; )
             {
-                parent = (getParentOverride ?? GetParentMethod)(lastParent);
+                parent = lastParent != null ? (getParentOverride ?? GetParentMethod)(lastParent) : null;
                 if (parent != null)
                 {
                     lastParent = parent;
