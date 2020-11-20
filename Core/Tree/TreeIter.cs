@@ -405,7 +405,7 @@
 
         private void ProcessNextEvaluationsForParentTraversal ()
         {
-            TTreeNode parent = m_traversalParameters.GetParentMethod(this.Target);
+            TTreeNode parent = this.Target != null ? m_traversalParameters.GetParentMethod(this.Target) : null;
             if (parent == null)
             {
                 return;
@@ -427,6 +427,11 @@
 
         private void ProcessNextEvaluationsForChildTraversal (List<TreeEvalItem<TTreeNode>> nextEvals, int targetChildStartIndex)
         {
+            if (this.Target == null)
+            {
+                return;
+            }
+
             int childIndex = 0;
             foreach (TTreeNode child in m_traversalParameters.GetChildrenMethod(this.Target))
             {
@@ -459,7 +464,7 @@
             TTreeNode target = this.Target;
             while (nextEvals.Count == 0)
             {
-                var parent = m_traversalParameters.GetParentMethod(target);
+                var parent = target != null ? m_traversalParameters.GetParentMethod(target) : null;
                 if (parent == null)
                 {
                     break;
