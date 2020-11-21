@@ -1,0 +1,168 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ajut="clr-namespace:AJut.Application"
+                    xmlns:ap="clr-namespace:AJut.Application.AttachedProperties"
+                    xmlns:local="clr-namespace:AJut.Application.Controls"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="RightChevronSymbol">&#xE974;</sys:String>
+    <sys:String x:Key="LeftChevronSymbol" >&#xE973;</sys:String>
+    <sys:String x:Key="UpChevronSymbol"   >&#xE70E;</sys:String>
+    <sys:String x:Key="DownChevronSymbol" >&#xE70D;</sys:String>
+    
+    <Style TargetType="{x:Type local:BumpStack}">
+        <Setter Property="ButtonBackground" Value="#000"/>
+        <Setter Property="ButtonBorder" Value="#000"/>
+        <Setter Property="ButtonForeground" Value="#888"/>
+        <Setter Property="EdgeClearanceOffset" Value="3"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:BumpStack}">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}" 
+                            BorderThickness="{TemplateBinding BorderThickness}">
+                        <Grid>
+                            <!-- ====================[ ScrollViewer Items Part ]==================== -->
+                            <ScrollViewer x:Name="PART_ScrollItemsContainer"
+                                          HorizontalScrollBarVisibility="{TemplateBinding HorizontalScrollBarVisibility}" 
+                                          VerticalScrollBarVisibility="{TemplateBinding VerticalScrollBarVisibility}"
+                                          ap:ScrollXTA.IsScrollWatchEnabled="True">
+                                <ItemsControl ItemsSource="{ajut:TemplateBinding Children}" Margin="{ajut:TemplateBinding Padding}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:BumpStack}}, Path=Orientation}">
+                                                <StackPanel.Style>
+                                                    <Style TargetType="{x:Type StackPanel}">
+                                                        <Setter Property="Margin" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:BumpStack}}, Path=EdgeAndButtonClearanceOffsetPadding}"/>
+                                                        <Style.Triggers>
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding ElementName=PART_ScrollItemsContainer, Path=(ap:ScrollXTA.CanScrollHorizontally)}" Value="False"/>
+                                                                    <Condition Binding="{Binding ElementName=PART_ScrollItemsContainer, Path=(ap:ScrollXTA.CanScrollVertically)}" Value="False"/>
+                                                                </MultiDataTrigger.Conditions>
+                                                                <MultiDataTrigger.Setters>
+                                                                    <Setter Property="Margin" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:BumpStack}}, Path=EdgeClearanceOffsetPadding}"/>
+                                                                </MultiDataTrigger.Setters>
+                                                            </MultiDataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </StackPanel.Style>
+                                            </StackPanel>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                </ItemsControl>
+                            </ScrollViewer>
+
+                            <!-- ====================[ Bump Buttons ]==================== -->
+                            <Grid Margin="0,0,0,0">
+                                <Grid.Resources>
+                                    <Style x:Key="BTN_HoverRepeat" TargetType="{x:Type RepeatButton}">
+                                        <Setter Property="Delay" Value="1" />
+                                        <Setter Property="Interval" Value="1" />
+                                        <Setter Property="Opacity" Value="0.8" />
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="{x:Type RepeatButton}">
+                                                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}">
+                                                        <TextBlock FontFamily="Segoe MDL2 Assets" Text="{TemplateBinding Content}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter Property="Opacity" Value="1"/>
+                                                        </Trigger>
+                                                        <Trigger Property="IsEnabled" Value="False">
+                                                            <Setter Property="Opacity" Value="0.4"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </Grid.Resources>
+                                <Grid.Style>
+                                    <Style TargetType="{x:Type Grid}">
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:BumpStack}}, Path=Orientation}" Value="Horizontal"/>
+                                                    <Condition Binding="{Binding ElementName=PART_ScrollItemsContainer, Path=ScrollableWidth}" Value="0"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </MultiDataTrigger>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:BumpStack}}, Path=Orientation}" Value="Vertical"/>
+                                                    <Condition Binding="{Binding ElementName=PART_ScrollItemsContainer, Path=ScrollableHeight}" Value="0"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Grid.Style>
+                                <RepeatButton x:Name="PART_AnteriorBumpButton"
+                                              Background="{TemplateBinding ButtonBackground}"
+                                              Foreground="{TemplateBinding ButtonForeground}"
+                                              BorderBrush="{TemplateBinding ButtonBorder}"
+                                              FontSize="{TemplateBinding ButtonFontSize}"
+                                              Padding="{TemplateBinding ButtonPadding}"
+                                              Interval="{TemplateBinding BumpInterval}"
+                                              Delay="{TemplateBinding BumpDelay}"
+                                              CommandTarget="{Binding ElementName=PART_ScrollItemsContainer}">
+                                    <RepeatButton.Style>
+                                        <Style TargetType="{x:Type RepeatButton}" BasedOn="{StaticResource BTN_HoverRepeat}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:BumpStack}}, Path=Orientation}" Value="Horizontal">
+                                                    <Setter Property="HorizontalAlignment" Value="Left"/>
+                                                    <Setter Property="Content" Value="{StaticResource LeftChevronSymbol}"/>
+                                                    <Setter Property="Command" Value="{Binding Source={x:Static ScrollBar.LineLeftCommand}}"/>
+                                                    <Setter Property="IsEnabled" Value="{Binding ElementName=PART_ScrollItemsContainer, Path=(ap:ScrollXTA.CanScrollLeft)}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:BumpStack}}, Path=Orientation}" Value="Vertical">
+                                                    <Setter Property="VerticalAlignment" Value="Top"/>
+                                                    <Setter Property="Content" Value="{StaticResource UpChevronSymbol}"/>
+                                                    <Setter Property="Command" Value="{Binding Source={x:Static ScrollBar.LineUpCommand}}"/>
+                                                    <Setter Property="IsEnabled" Value="{Binding ElementName=PART_ScrollItemsContainer, Path=(ap:ScrollXTA.CanScrollUp)}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </RepeatButton.Style>
+                                </RepeatButton>
+
+                                <RepeatButton Background="{TemplateBinding ButtonBackground}"
+                                              Foreground="{TemplateBinding ButtonForeground}"
+                                              BorderBrush="{TemplateBinding ButtonBorder}"
+                                              FontSize="{TemplateBinding ButtonFontSize}"
+                                              Padding="{TemplateBinding ButtonPadding}"
+                                              Interval="{TemplateBinding BumpInterval}"
+                                              Delay="{TemplateBinding BumpDelay}"
+                                              CommandTarget="{Binding ElementName=PART_ScrollItemsContainer}">
+                                    <RepeatButton.Style>
+                                        <Style TargetType="{x:Type RepeatButton}" BasedOn="{StaticResource BTN_HoverRepeat}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:BumpStack}}, Path=Orientation}" Value="Horizontal">
+                                                    <Setter Property="HorizontalAlignment" Value="Right"/>
+                                                    <Setter Property="VerticalContentAlignment" Value="Center"/>
+                                                    <Setter Property="Content" Value="{StaticResource RightChevronSymbol}"/>
+                                                    <Setter Property="Command" Value="{Binding Source={x:Static ScrollBar.LineRightCommand}}"/>
+                                                    <Setter Property="IsEnabled" Value="{Binding ElementName=PART_ScrollItemsContainer, Path=(ap:ScrollXTA.CanScrollRight)}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:BumpStack}}, Path=Orientation}" Value="Vertical">
+                                                    <Setter Property="VerticalAlignment" Value="Bottom"/>
+                                                    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                                    <Setter Property="Content" Value="{StaticResource DownChevronSymbol}"/>
+                                                    <Setter Property="Command" Value="{Binding Source={x:Static ScrollBar.LineDownCommand}}"/>
+                                                    <Setter Property="IsEnabled" Value="{Binding ElementName=PART_ScrollItemsContainer, Path=(ap:ScrollXTA.CanScrollDown)}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </RepeatButton.Style>
+                                </RepeatButton>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

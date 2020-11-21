@@ -139,7 +139,7 @@
             <TabItem Header="Tracked Windows">
                 <DockPanel>
                     <GroupBox Header="Show\Hide Children When" DockPanel.Dock="Top">
-                        <ajut:ToggleStrip DockPanel.Dock="Top" ItemsSource="{Binding Source={StaticResource eChildWindowAction}}"
+                        <!--<ajut:ToggleStrip DockPanel.Dock="Top" ItemsSource="{Binding Source={StaticResource eChildWindowAction}}"
                                           SelectedItem="{Binding ElementName=Self, Path=ToolWindows.ShowHideChildrenWhen, Mode=TwoWay}"
                                           HorizontalAlignment="Center">
                             <ajut:ToggleStrip.ItemTemplate>
@@ -147,7 +147,7 @@
                                     <TextBlock Text="{Binding Converter={ajc:FriendlyTextEnConverter}}"/>
                                 </DataTemplate>
                             </ajut:ToggleStrip.ItemTemplate>
-                        </ajut:ToggleStrip>
+                        </ajut:ToggleStrip>-->
                     </GroupBox>
                     <StackPanel Orientation="Horizontal"  DockPanel.Dock="Top">
                         <Button Content="Manually Show All" Click="ShowAllToolWindows_OnClick"/>

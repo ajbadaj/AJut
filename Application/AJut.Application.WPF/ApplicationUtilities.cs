@@ -5,11 +5,7 @@
     using System;
     using System.IO;
     using System.Linq;
-#if WINDOWS_UWP
-    using Windows.UI.Xaml;
-#else
     using System.Windows;
-#endif
 
     public delegate bool ExceptionProcessor (Exception e);
     public static class ApplicationUtilities

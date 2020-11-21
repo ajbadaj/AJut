@@ -1,6 +1,5 @@
 ﻿namespace AJut.Application.Controls
 {
-    using System;
     using System.Collections.ObjectModel;
     using System.ComponentModel;
 #if WINDOWS_UWP
@@ -15,7 +14,6 @@
     using System.Windows.Input;
     using System.Windows.Markup;
     using System.Windows.Media;
-    using AJut.Application.AttachedProperties;
 #endif
 
     using DPUtils = AJut.Application.DPUtils<BumpStack>;

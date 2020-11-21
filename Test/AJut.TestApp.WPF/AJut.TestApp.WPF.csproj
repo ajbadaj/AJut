@@ -12,4 +12,8 @@
     <ProjectReference Include="..\..\Core\AJut.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="FreeGif.gif" />
+  </ItemGroup>
+
 </Project>

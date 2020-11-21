@@ -17,4 +17,29 @@
     <ProjectReference Include="..\AJut.Application\AJut.Application.csproj" />
   </ItemGroup>
 
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="if $(ConfigurationName) == Release COPY &quot;$(TargetPath)&quot; &quot;$(SolutionDir)bin\$(TargetFileName)&quot;" />
+  </Target>
+  
+  <ItemGroup>
+    <Compile Update="Controls\BumpStack.cs">
+      <DependentUpon>BumpStack.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\EditableTextBlock.cs">
+      <DependentUpon>EditableTextBlock.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\FlatTreeListControl.cs">
+      <DependentUpon>FlatTreeListControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\NumericEditor.cs">
+      <DependentUpon>NumericEditor.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\PathFollowingContentDisplayer.cs">
+      <DependentUpon>PathFollowingContentDisplayer.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\ToggleStrip.cs">
+      <DependentUpon>ToggleStrip.xaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
+      
 </Project>
