@@ -136,7 +136,7 @@
             }
         }
 
-        public class AdaptedProperty<TStrataValue, TAdaptedValue>
+        public class AdaptedProperty<TStrataValue, TAdaptedValue> : IDisposable
         {
             private Property<TStrataValue> m_accessWraper;
             private StrataPropertyAdapter<TStrataValue, TAdaptedValue> m_adapter;
@@ -150,9 +150,15 @@
             public string Name => this.Access.PropertyName;
             public TAdaptedValue Value => m_adapter.Value;
             public StrataPropertyValueAccess<TStrataValue> Access => m_accessWraper.Access;
+
+            public void Dispose ()
+            {
+                m_accessWraper.Dispose();
+                m_adapter.Dispose();
+            }
         }
 
-        public class AdaptedListProperty<TStrataElementValue, TAdaptedElementValue>
+        public class AdaptedListProperty<TStrataElementValue, TAdaptedElementValue> : IDisposable
         {
             private ListProperty<TStrataElementValue> m_accessWraper;
             private StrataListPropertyAdapter<TStrataElementValue, TAdaptedElementValue> m_adapter;
@@ -166,6 +172,12 @@
             public string Name => this.Access.PropertyName;
             public ReadOnlyObservableCollection<TAdaptedElementValue> Value => m_adapter.Elements;
             public StrataPropertyListAccess<TStrataElementValue> Access => m_accessWraper.Access;
+
+            public void Dispose ()
+            {
+                m_accessWraper.Dispose();
+                m_adapter.Dispose();
+            }
         }
     }
 }
