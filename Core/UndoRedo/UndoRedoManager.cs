@@ -138,7 +138,11 @@
                 }
             }
 
-            bool anyUndosChange = !this.AnyUndos;
+            // AnyUndos will change if we're adding the first one
+            bool anyUndosChange = m_undoStack.Count == 1;
+
+            // AnyRedos will change if there used to be any (adding actions kills the redo stack, 
+            //  because now we've changed the future)
             bool anyRedosChange = this.AnyRedos;
 
             m_undoStack.Insert(0, action);
@@ -148,7 +152,7 @@
             {
                 this.RaisePropertiesChanged(nameof(AnyUndos));
             }
-            else if (anyRedosChange)
+            if (anyRedosChange)
             {
                 this.RaisePropertiesChanged(nameof(AnyRedos));
             }
@@ -175,7 +179,10 @@
                 return false;
             }
 
+            // AnyUndos changes if we had some undos, and we're about to undo the last one
             bool anyUndosChange = m_undoStack.Count == 1;
+
+            // AnyRedos changes if we had NO redos, and we're about to create our first one by undoing
             bool anyRedosChange = m_redoStack.Count == 0;
 
             IUndoableAction action = m_undoStack[0];
@@ -188,7 +195,7 @@
             {
                 this.RaisePropertiesChanged(nameof(AnyUndos));
             }
-            else if (anyRedosChange)
+            if (anyRedosChange)
             {
                 this.RaisePropertiesChanged(nameof(AnyRedos));
             }
