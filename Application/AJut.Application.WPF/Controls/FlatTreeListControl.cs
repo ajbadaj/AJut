@@ -53,7 +53,15 @@ namespace AJut.Application.Controls
         private void OnRootChanged (IObservableTreeNode newSourceRootValue)
         {
             this.Items.IncludeRoot = this.IncludeRoot;
-            this.Items.RootNode = new Item(this, null, newSourceRootValue);
+
+            if (newSourceRootValue == null)
+            {
+                this.Items.RootNode = null;
+            }
+            else
+            {
+                this.Items.RootNode = new Item(this, null, newSourceRootValue);
+            }
         }
 
         public static readonly DependencyProperty RootItemsSourceProperty = DPUtils.Register(_ => _.RootItemsSource, (d, e) => d.OnRootItemsSourceChanged(e.OldValue, e.NewValue));
