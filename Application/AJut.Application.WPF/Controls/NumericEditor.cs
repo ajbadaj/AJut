@@ -17,6 +17,7 @@
     using AJut;
     using System.Windows.Input;
     using System.Drawing;
+    using System.Windows.Data;
 
     // Todo: Make drag repeater, click and hold w/o moving starts spamming Triggered, or mouse move will capture while mouse is down and trigger Triggered on mouse move
     [TemplatePart(Name = nameof(PART_TextArea), Type = typeof(TextBox))]
@@ -76,7 +77,27 @@
         {
             base.OnApplyTemplate();
 
+            if (this.PART_TextArea != null)
+            {
+                this.PART_TextArea.PreviewKeyDown -= _PreviewOnTextAreaKeyDown;
+                this.PART_TextArea = null;
+            }
+
             this.PART_TextArea = (TextBox)this.GetTemplateChild(nameof(PART_TextArea));
+            this.PART_TextArea.PreviewKeyDown += _PreviewOnTextAreaKeyDown;
+
+            void _PreviewOnTextAreaKeyDown (object _s, KeyEventArgs _e)
+            {
+                if (_e.Key == Key.Return)
+                {
+                    var binding = BindingOperations.GetBindingExpression(this.PART_TextArea, TextBox.TextProperty);
+                    if (binding != null)
+                    {
+                        binding.UpdateSource();
+                        _e.Handled = true;
+                    }
+                }
+            }
         }
 
         // ===========================[ Commands ]================================================
