@@ -154,7 +154,7 @@
                                    Visibility="{Binding ElementName=EmptyOne, Path=HasItems, Converter={ajc:BooleanToVisibilityConverter TrueValue=Collapsed, FalseValue=Visible}}"
                                    Margin="3"/>
                         </Grid>
-                        <ajut:ToggleStrip Margin="0,0,0,5" ItemPressedBackgroundColorBase="#880101" ItemHoverBrush="Red">
+                        <ajut:ToggleStrip Margin="0,0,0,5" BackgroundPressedColorBase="#880101" BackgroundHover="Red">
                             <ajut:ToggleStrip.ItemsSource>
                                 <x:Array Type="{x:Type sys:String}">
                                     <sys:String>Custom</sys:String>
@@ -171,8 +171,8 @@
                                           SeparatorBrush="#181818"
                                           BorderThickness="5"
                                           SeparatorThickness="2"
-                                          ItemPressedBackgroundColorBase="#CC880101" ItemHoverBrush="#DF00"
-                                          ForegroundSelected="#CFFF"
+                                          BackgroundPressedColorBase="#CC880101" BackgroundHover="#DF00"
+                                          ForegroundPressed="#CFFF"
                                           ForegroundHover="#FFF"
                                           Foreground="#999"
                                           ItemPadding="20,10"

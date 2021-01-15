@@ -7,8 +7,8 @@
 
     <Style TargetType="{x:Type local:ToggleStrip}">
         <Setter Property="HorizontalContentAlignment" Value="Left"/>
-        <Setter Property="ItemPressedBackgroundColorBase" Value="#2BA2D8"/>
-        <Setter Property="ItemHoverBrush">
+        <Setter Property="BackgroundPressedColorBase" Value="#2BA2D8"/>
+        <Setter Property="BackgroundHover">
             <Setter.Value>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
                     <GradientStop Offset="0.00" Color="#1E8BB5" />
@@ -18,7 +18,7 @@
                 </LinearGradientBrush>
             </Setter.Value>
         </Setter>
-        <Setter Property="ForegroundSelected" Value="{Binding RelativeSource={RelativeSource Self}, Path=Foreground}"/>
+        <Setter Property="ForegroundPressed" Value="{Binding RelativeSource={RelativeSource Self}, Path=Foreground}"/>
         <Setter Property="ForegroundHover" Value="{Binding RelativeSource={RelativeSource Self}, Path=Foreground}"/>
         <Setter Property="Template">
             <Setter.Value>
@@ -65,11 +65,11 @@
                                         </Grid>
                                         <ToggleButton.Template>
                                             <ControlTemplate TargetType="{x:Type ToggleButton}">
-                                                <Border x:Name="RootBorder"
-                                                        CornerRadius="{Binding Converter={local:ToggleStripCornerRadiusConverter Reduction=2.0}}">
-                                                    <Border x:Name="InnerBorder" Background="Transparent"
+                                                <Border x:Name="RootBorder" Background="#01000000"
+                                                        CornerRadius="{Binding Converter={local:ToggleStripCornerRadiusConverter ReductionPercent=0.25}}">
+                                                    <Border x:Name="InnerBorder" Background="#01000000"
                                                             BorderBrush="{Binding Path=Owner.SeparatorBrush}"
-                                                            CornerRadius="{Binding Converter={local:ToggleStripCornerRadiusConverter Reduction=2.0}}"
+                                                            CornerRadius="{Binding Converter={local:ToggleStripCornerRadiusConverter ReductionPercent=0.3}}"
                                                             BorderThickness="{Binding Converter={local:ToggleStripBorderThicknessConverter Inside=True}}">
                                                         <ContentPresenter Content="{ajut:TemplateBinding Content}" Margin="{Binding Path=Owner.ItemPadding}"/>
                                                     </Border>
@@ -80,18 +80,18 @@
                                                         <Setter TargetName="RootBorder" Property="Background">
                                                             <Setter.Value>
                                                                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
-                                                                    <GradientStop Offset="0.00" Color="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ToggleStrip}}, Path=SeparatorBrush.Color}" />
-                                                                    <GradientStop Offset="0.20" Color="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ToggleStrip}}, Path=ItemPressedBackgroundColorBase, Converter={local:ToggleStripItemPressedBackgroundColorAlphatizer}}" />
-                                                                    <GradientStop Offset="1.00" Color="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ToggleStrip}}, Path=ItemPressedBackgroundColorBase, Converter={local:ToggleStripItemPressedBackgroundColorAlphatizer}}" />
+                                                                    <GradientStop Offset="0.00" Color="{Binding Path=Owner.SeparatorBrush, Converter={conv:BrushColorExtractionConverter}}" />
+                                                                    <GradientStop Offset="0.20" Color="{Binding Path=Owner.BackgroundPressedColorBase, Converter={local:ToggleStripItemPressedBackgroundColorAlphatizer}}" />
+                                                                    <GradientStop Offset="1.00" Color="{Binding Path=Owner.BackgroundPressedColorBase, Converter={local:ToggleStripItemPressedBackgroundColorAlphatizer}}" />
                                                                 </LinearGradientBrush>
                                                             </Setter.Value>
                                                         </Setter>
-                                                        <Setter Property="TextElement.Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ToggleStrip}}, Path=ForegroundSelected}"/>
+                                                        <Setter Property="TextElement.Foreground" Value="{Binding Path=Owner.ForegroundPressed}"/>
                                                     </Trigger>
                                                     <!-- ======[ Item Hover ]====== -->
                                                     <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter TargetName="InnerBorder" Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ToggleStrip}}, Path=ItemHoverBrush}"/>
-                                                        <Setter Property="TextElement.Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ToggleStrip}}, Path=ForegroundHover}"/>
+                                                        <Setter TargetName="InnerBorder" Property="Background" Value="{Binding Path=Owner.BackgroundHover}"/>
+                                                        <Setter Property="TextElement.Foreground" Value="{Binding Path=Owner.ForegroundHover}"/>
                                                     </Trigger>
                                                 </ControlTemplate.Triggers>
                                             </ControlTemplate>

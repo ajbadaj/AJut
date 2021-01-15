@@ -46,10 +46,10 @@
         public static readonly DependencyProperty SeparatorBrushProperty = DPUtils.Register(_ => _.SeparatorBrush);
         public static readonly DependencyProperty SeparatorThicknessProperty = DPUtils.Register(_ => _.SeparatorThickness, 1.0);
 
-        public static readonly DependencyProperty ForegroundSelectedProperty = DPUtils.Register(_ => _.ForegroundSelected);
+        public static readonly DependencyProperty BackgroundPressedColorBaseProperty = DPUtils.Register(_ => _.BackgroundPressedColorBase);
+        public static readonly DependencyProperty ForegroundPressedProperty = DPUtils.Register(_ => _.ForegroundPressed);
+        public static readonly DependencyProperty BackgroundHoverProperty = DPUtils.Register(_ => _.BackgroundHover);
         public static readonly DependencyProperty ForegroundHoverProperty = DPUtils.Register(_ => _.ForegroundHover);
-        public static readonly DependencyProperty ItemPressedBackgroundColorBaseProperty = DPUtils.Register(_ => _.ItemPressedBackgroundColorBase);
-        public static readonly DependencyProperty ItemHoverBrushProperty = DPUtils.Register(_ => _.ItemHoverBrush);
 
         public static readonly DependencyProperty ItemPaddingProperty = DPUtils.Register(_ => _.ItemPadding, new Thickness(6));
         public static readonly DependencyProperty AllowNoSelectionProperty = DPUtils.Register(_ => _.AllowNoSelection, false);
@@ -130,10 +130,10 @@
             set => this.SetValue(SeparatorThicknessProperty, value);
         }
 
-        public Brush ForegroundSelected
+        public Brush ForegroundPressed
         {
-            get => (Brush)this.GetValue(ForegroundSelectedProperty);
-            set => this.SetValue(ForegroundSelectedProperty, value);
+            get => (Brush)this.GetValue(ForegroundPressedProperty);
+            set => this.SetValue(ForegroundPressedProperty, value);
         }
 
         public Brush ForegroundHover
@@ -142,16 +142,16 @@
             set => this.SetValue(ForegroundHoverProperty, value);
         }
 
-        public Color ItemPressedBackgroundColorBase
+        public Color BackgroundPressedColorBase
         {
-            get => (Color)this.GetValue(ItemPressedBackgroundColorBaseProperty);
-            set => this.SetValue(ItemPressedBackgroundColorBaseProperty, value);
+            get => (Color)this.GetValue(BackgroundPressedColorBaseProperty);
+            set => this.SetValue(BackgroundPressedColorBaseProperty, value);
         }
 
-        public Brush ItemHoverBrush
+        public Brush BackgroundHover
         {
-            get => (Brush)this.GetValue(ItemHoverBrushProperty);
-            set => this.SetValue(ItemHoverBrushProperty, value);
+            get => (Brush)this.GetValue(BackgroundHoverProperty);
+            set => this.SetValue(BackgroundHoverProperty, value);
         }
 
         public Thickness ItemPadding
@@ -558,7 +558,7 @@
 
     public class ToggleStripCornerRadiusConverter : SimpleValueConverter<ToggleStrip.ToggleItem, CornerRadius>
     {
-        public double Reduction { get; set; }
+        public double ReductionPercent { get; set; }
         protected override CornerRadius Convert (ToggleStrip.ToggleItem value)
         {
             CornerRadius corners = BorderXTA.GetCornerRadius(value.Owner);
@@ -580,7 +580,7 @@
 
             double _Reduce(double _v)
             {
-                return Math.Max(0.0, _v - this.Reduction);
+                return Math.Max(0.0, _v * (1.0 - this.ReductionPercent));
             }
         }
     }
