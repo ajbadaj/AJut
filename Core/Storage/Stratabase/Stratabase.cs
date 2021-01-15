@@ -107,17 +107,17 @@
 
         // ----------------- Clear -----------------
 
-        public void ClearAll ()
+        public void ClearAll (bool notifyOfRemovals = true)
         {
             foreach (var odam in m_objectAccess.Values.ToList())
             {
-                odam.ClearAll();
+                odam.ClearAll(notifyOfRemovals);
             }
         }
 
-        public void ClearAllFor (Guid id)
+        public void ClearAllFor (Guid id, bool notifyOfRemovals = true)
         {
-            this.GetAccessManager(id)?.ClearAll();
+            this.GetAccessManager(id)?.ClearAll(notifyOfRemovals);
         }
 
         /// <summary>
@@ -638,7 +638,7 @@
                         && propertyBag.ContainsKey(property);
             }
 
-            public void ClearAll ()
+            public void ClearAll (bool notifyOfRemovals = true)
             {
                 this.SB.m_baselineStorageLayer.Remove(this.Id);
                 foreach (Stratum stratum in this.SB.m_overrideStorageLayers)
@@ -651,7 +651,10 @@
                 //          up the property access flyweights, and unhooking them would be a futile operation.
                 // ===================================================================================================
 
-                this.LayerDataRemoved?.Invoke(this, new StratabasePropertyChangeEventArgs(this.Id, String.Empty, null, null));
+                if (notifyOfRemovals)
+                {
+                    this.LayerDataRemoved?.Invoke(this, new StratabasePropertyChangeEventArgs(this.Id, String.Empty, null, null));
+                }
             }
 
             /// <summary>

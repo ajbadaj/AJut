@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
+    using System.Linq;
 
     /// <summary>
     /// Use this as a way to adapt lists of elements stored in the stratabase to lists of a converted element. You might store
@@ -46,6 +47,14 @@
         public void Dispose ()
         {
             ((INotifyCollectionChanged)m_referenceElements).CollectionChanged -= this.ListAccessElementsCache_OnCollectionChanged;
+            foreach (var element in this.Elements.OfType<IDisposable>())
+            {
+                element.Dispose();
+            }
+
+            m_elements.Clear();
+
+            this.Access.Dispose();
         }
 
         private void ListAccessElementsCache_OnCollectionChanged (object sender, NotifyCollectionChangedEventArgs e)

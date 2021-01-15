@@ -31,16 +31,26 @@
 
         public void Dispose ()
         {
-            m_instanceStorage = null;
             this.Access.Dispose();
             this.Access = null;
+            this.ClearInstanceStorage();
+            m_instanceStorage = null;
         }
 
         public TAdaptedValue Value => this.Access.IsSet ? m_instanceStorage.Value : default;
         public StrataPropertyValueAccess<TStrataValue> Access { get; private set; }
 
+        private void ClearInstanceStorage ()
+        {
+            if (m_instanceStorage?.IsValueCreated == true && m_instanceStorage.Value is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+        }
+
         private void Reset()
         {
+            this.ClearInstanceStorage();
             m_instanceStorage = new Lazy<TAdaptedValue>(_Constructor);
 
             TAdaptedValue _Constructor()

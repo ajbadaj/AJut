@@ -1,5 +1,6 @@
 ﻿namespace AJut.Storage
 {
+    using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
@@ -37,6 +38,17 @@
                     overrideCollection.CollectionChanged -= this.OnStorageCollectionChanged;
                 }
             }
+
+            this.ClearListCache();
+        }
+
+        private void ClearListCache ()
+        {
+            foreach (var element in m_currentListCache.OfType<IDisposable>())
+            {
+                element.Dispose();
+            }
+            m_currentListCache.Clear();
         }
 
         /// <summary>
@@ -137,7 +149,7 @@
         protected override void OnClearAllTriggered ()
         {
             m_insertionsCache.Clear();
-            m_currentListCache.Clear();
+            this.ClearListCache();
         }
 
         // =========================[ Utility Methods ]===================================
@@ -145,7 +157,7 @@
         private void Reset ()
         {
             m_insertionsCache.Clear();
-            m_currentListCache.Clear();
+            this.ClearListCache();
 
             this.TrackChanges(this.GetBaselineChanges());
             for (int layerIndex = 0; layerIndex < this.ODAM.SB.OverrideLayerCount; ++layerIndex)

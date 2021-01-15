@@ -547,6 +547,72 @@
         }
 
         [TestMethod]
+        public void Stratabase_PropertyDisposal ()
+        {
+            Stratabase sb = new Stratabase(1);
+            TestModel test = new TestModel(Guid.NewGuid(), sb);
+
+            var singleItem = new DisposeTester();
+            DisposeTester[] items = new DisposeTester[2] { new DisposeTester(), new DisposeTester() };
+
+            test.SingleItem = singleItem;
+            test.AddToList(items[0]);
+            test.AddToList(items[1]);
+
+            Assert.IsTrue(test.SingleItem != null);
+            Assert.IsTrue(test.ItemList != null);
+
+            test.Dispose();
+
+            Assert.AreEqual(1, singleItem.DisposeCallCount);
+            Assert.AreEqual(1, items[0].DisposeCallCount);
+            Assert.AreEqual(1, items[1].DisposeCallCount);
+        }
+
+        private class TestModel : StratabaseBackedModel, IDisposable
+        {
+            private Property<DisposeTester> m_singleItem;
+            private ListProperty<DisposeTester> m_itemList;
+
+
+            public TestModel (Guid id, Stratabase sb) : base(id, sb)
+            {
+                m_singleItem = this.GenerateProperty<DisposeTester>(nameof(SingleItem));
+                m_itemList = this.GenerateListProperty<DisposeTester>("");
+            }
+
+            public DisposeTester SingleItem
+            {
+                get => m_singleItem.Value;
+                set => m_singleItem.Access.SetBaselineValue(value);
+            }
+
+            public ReadOnlyObservableCollection<DisposeTester> ItemList => m_itemList.Access.Elements;
+            public void AddToList (DisposeTester item)
+            {
+                m_itemList.Access.CreateAdd(item).StoreInBaseline();
+            }
+
+            public void Dispose ()
+            {
+                m_singleItem.Dispose();
+                m_singleItem = null;
+
+                m_itemList.Dispose();
+                m_itemList = null;
+            }
+        }
+
+        public class DisposeTester : IDisposable
+        {
+            public int DisposeCallCount { get; private set; }
+            public void Dispose ()
+            {
+                ++this.DisposeCallCount;
+            }
+        }
+
+        [TestMethod]
         public void Stratabase_ClearAll ()
         {
             Stratabase sb = new Stratabase(2);

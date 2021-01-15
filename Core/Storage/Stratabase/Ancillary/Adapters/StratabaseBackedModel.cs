@@ -41,6 +41,11 @@
             return new Property<T>(this, propName);
         }
 
+        protected virtual Property<T> GenerateProperty<T> (string propName, T defaultValue)
+        {
+            return new Property<T>(this, propName, defaultValue);
+        }
+
         protected virtual ListProperty<T> GenerateListProperty<T> (string propName)
         {
             return new ListProperty<T>(this, propName);
@@ -66,7 +71,22 @@
             public Property (StratabaseBackedModel owner, string propertyName)
             {
                 m_owner = owner;
-                this.Access = owner.SB.GeneratePropertyAccess<T>(owner.Id, propertyName);
+                this.Setup(propertyName);
+            }
+
+            public Property (StratabaseBackedModel owner, string propertyName, T defaultValue)
+            {
+                m_owner = owner;
+                this.Setup(propertyName);
+                if (!this.Access.IsBaselineSet)
+                {
+                    this.Access.SetBaselineValue(defaultValue);
+                }
+            }
+
+            private void Setup (string propertyName)
+            {
+                this.Access = m_owner.SB.GeneratePropertyAccess<T>(m_owner.Id, propertyName);
                 this.Access.ValueChanged += this.Access_OnValueChanged;
                 this.ResetCache();
             }
@@ -79,6 +99,8 @@
                     this.Access.Dispose();
                     this.Access = null;
                 }
+
+                this.HandleDisposeCachedValue();
             }
 
             public event EventHandler<EventArgs> ValueChanged;
@@ -96,8 +118,16 @@
                 this.OnValueChanged();
             }
 
+            private void HandleDisposeCachedValue ()
+            {
+                if (m_valueCache?.IsValueCreated == true && m_valueCache.Value is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+            }
             private void ResetCache ()
             {
+                this.HandleDisposeCachedValue();
                 m_valueCache = new Lazy<T>(() => this.Access.GetValue());
             }
         }
@@ -147,13 +177,18 @@
                 m_adapter = new StrataPropertyAdapter<TStrataValue, TAdaptedValue>(m_accessWraper.Access, factory);
             }
 
+            public AdaptedProperty (StratabaseBackedModel owner, string propertyName, TStrataValue defaultValue, StrataPropertyAdapter<TStrataValue, TAdaptedValue>.ConvertAccessToOutput factory)
+            {
+                m_accessWraper = new Property<TStrataValue>(owner, propertyName, defaultValue);
+                m_adapter = new StrataPropertyAdapter<TStrataValue, TAdaptedValue>(m_accessWraper.Access, factory);
+            }
+
             public string Name => this.Access.PropertyName;
             public TAdaptedValue Value => m_adapter.Value;
             public StrataPropertyValueAccess<TStrataValue> Access => m_accessWraper.Access;
 
             public void Dispose ()
             {
-                m_accessWraper.Dispose();
                 m_adapter.Dispose();
             }
         }
@@ -175,7 +210,6 @@
 
             public void Dispose ()
             {
-                m_accessWraper.Dispose();
                 m_adapter.Dispose();
             }
         }
