@@ -48,24 +48,146 @@
                 </StackPanel>
             </TabItem>
             <TabItem Header="Toggle Strip">
-                <ajut:ToggleStrip HorizontalAlignment="Left" Margin="5" VerticalAlignment="Top">
-                    <ajut:ToggleStrip.Background>
-                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
-                            <GradientStop Offset="0.00" Color="#FFFFFF" />
-                            <GradientStop Offset="0.10" Color="#D5D5D5" />
-                            <GradientStop Offset="0.90" Color="#898989" />
-                            <GradientStop Offset="1.00" Color="#202020" />
-                        </LinearGradientBrush>
-                    </ajut:ToggleStrip.Background>
-                    <ajut:ToggleStrip.ItemsSource>
-                        <x:Array Type="{x:Type sys:String}">
-                            <sys:String>GET</sys:String>
-                            <sys:String>PUT</sys:String>
-                            <sys:String>POST</sys:String>
-                            <sys:String>UPDATE</sys:String>
-                        </x:Array>
-                    </ajut:ToggleStrip.ItemsSource>
-                </ajut:ToggleStrip>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Hidden">
+                    <StackPanel HorizontalAlignment="Left" Margin="5" VerticalAlignment="Top">
+                        <ajut:ToggleStrip Margin="0,0,0,5" >
+                            <ajut:ToggleStrip.ItemsSource>
+                                <x:Array Type="{x:Type sys:String}">
+                                    <sys:String>Plain</sys:String>
+                                    <sys:String>Toggle</sys:String>
+                                    <sys:String>Strip</sys:String>
+                                    <sys:String>No</sys:String>
+                                    <sys:String>Formatting</sys:String>
+                                </x:Array>
+                            </ajut:ToggleStrip.ItemsSource>
+                        </ajut:ToggleStrip>
+                        <ajut:ToggleStrip Margin="0,0,0,5" >
+                            <ajut:ToggleStrip.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
+                                    <GradientStop Offset="0.00" Color="#FFFFFF" />
+                                    <GradientStop Offset="0.10" Color="#D5D5D5" />
+                                    <GradientStop Offset="0.90" Color="#898989" />
+                                    <GradientStop Offset="1.00" Color="#202020" />
+                                </LinearGradientBrush>
+                            </ajut:ToggleStrip.Background>
+                            <ajut:ToggleStrip.ItemsSource>
+                                <x:Array Type="{x:Type sys:String}">
+                                    <sys:String>One</sys:String>
+                                    <sys:String>With</sys:String>
+                                    <sys:String>Fancy</sys:String>
+                                    <sys:String>Background</sys:String>
+                                </x:Array>
+                            </ajut:ToggleStrip.ItemsSource>
+                        </ajut:ToggleStrip>
+                        <ajut:ToggleStrip Margin="0,0,0,5" ap:BorderXTA.CornerRadius="10" ToolTip="Use the attached property BorderXTA.CornerRadius">
+                            <ajut:ToggleStrip.ItemsSource>
+                                <x:Array Type="{x:Type sys:String}">
+                                    <sys:String>One</sys:String>
+                                    <sys:String>With</sys:String>
+                                    <sys:String>Corner</sys:String>
+                                    <sys:String>Radius</sys:String>
+                                </x:Array>
+                            </ajut:ToggleStrip.ItemsSource>
+                        </ajut:ToggleStrip>
+                        <ajut:ToggleStrip Margin="0,0,0,5" HorizontalContentAlignment="Stretch"
+                                      ToolTip="Simply set HorizontalContentAlignment to Stretch">
+                            <ajut:ToggleStrip.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
+                                    <GradientStop Offset="0.00" Color="#FFFFFF" />
+                                    <GradientStop Offset="0.10" Color="#D5D5D5" />
+                                    <GradientStop Offset="0.90" Color="#898989" />
+                                    <GradientStop Offset="1.00" Color="#202020" />
+                                </LinearGradientBrush>
+                            </ajut:ToggleStrip.Background>
+                            <ajut:ToggleStrip.ItemsSource>
+                                <x:Array Type="{x:Type sys:String}">
+                                    <sys:String>One</sys:String>
+                                    <sys:String>That</sys:String>
+                                    <sys:String>Stretches</sys:String>
+                                </x:Array>
+                            </ajut:ToggleStrip.ItemsSource>
+                        </ajut:ToggleStrip>
+                        <ajut:ToggleStrip Margin="0,0,0,5" AllowMultiSelect="True">
+                            <ajut:ToggleStrip.ItemsSource>
+                                <x:Array Type="{x:Type sys:String}">
+                                    <sys:String>One</sys:String>
+                                    <sys:String>That</sys:String>
+                                    <sys:String>Allows</sys:String>
+                                    <sys:String>Multiselect</sys:String>
+                                </x:Array>
+                            </ajut:ToggleStrip.ItemsSource>
+                        </ajut:ToggleStrip>
+                        <ajut:ToggleStrip Margin="0,0,0,5" AllowNoSelection="True">
+                            <ajut:ToggleStrip.ItemsSource>
+                                <x:Array Type="{x:Type sys:String}">
+                                    <sys:String>One</sys:String>
+                                    <sys:String>That</sys:String>
+                                    <sys:String>Allows</sys:String>
+                                    <sys:String>Nothing</sys:String>
+                                    <sys:String>Selected</sys:String>
+                                </x:Array>
+                            </ajut:ToggleStrip.ItemsSource>
+                        </ajut:ToggleStrip>
+                        <ajut:ToggleStrip Margin="0,0,0,5" AllowMultiSelect="True" AllowNoSelection="True">
+                            <ajut:ToggleStrip.ItemsSource>
+                                <x:Array Type="{x:Type sys:String}">
+                                    <sys:String>One</sys:String>
+                                    <sys:String>That</sys:String>
+                                    <sys:String>Allows</sys:String>
+                                    <sys:String>Multiselect</sys:String>
+                                    <sys:String>-and-</sys:String>
+                                    <sys:String>Nothing</sys:String>
+                                    <sys:String>Selected</sys:String>
+                                </x:Array>
+                            </ajut:ToggleStrip.ItemsSource>
+                        </ajut:ToggleStrip>
+                        <ajut:ToggleStrip Margin="0,0,0,5" AllowNoSelection="True">
+                            <ajut:ToggleStrip.ItemsSource>
+                                <x:Array Type="{x:Type sys:String}">
+                                    <sys:String>Single Item</sys:String>
+                                </x:Array>
+                            </ajut:ToggleStrip.ItemsSource>
+                        </ajut:ToggleStrip>
+                        <Grid>
+                            <ajut:ToggleStrip x:Name="EmptyOne" HorizontalContentAlignment="Stretch"/>
+                            <TextBlock Text="No Items: TextBlock not part of ToggleStrip - Bind to HasItems" Opacity="0.5" HorizontalAlignment="Center" FontStyle="Italic"
+                                   Visibility="{Binding ElementName=EmptyOne, Path=HasItems, Converter={ajc:BooleanToVisibilityConverter TrueValue=Collapsed, FalseValue=Visible}}"
+                                   Margin="3"/>
+                        </Grid>
+                        <ajut:ToggleStrip Margin="0,0,0,5" ItemPressedBackgroundColorBase="#880101" ItemHoverBrush="Red">
+                            <ajut:ToggleStrip.ItemsSource>
+                                <x:Array Type="{x:Type sys:String}">
+                                    <sys:String>Custom</sys:String>
+                                    <sys:String>Item</sys:String>
+                                    <sys:String>Background</sys:String>
+                                    <sys:String>Brushes</sys:String>
+                                </x:Array>
+                            </ajut:ToggleStrip.ItemsSource>
+                        </ajut:ToggleStrip>
+                        <ajut:ToggleStrip Margin="0,0,0,5" Width="700" HorizontalContentAlignment="Stretch"
+                                          AllowMultiSelect="True" AllowNoSelection="True"
+                                          Background="#808080"
+                                          BorderBrush="Black"
+                                          SeparatorBrush="#181818"
+                                          BorderThickness="5"
+                                          SeparatorThickness="2"
+                                          ItemPressedBackgroundColorBase="#CC880101" ItemHoverBrush="#DF00"
+                                          ForegroundSelected="#CFFF"
+                                          ForegroundHover="#FFF"
+                                          Foreground="#999"
+                                          ItemPadding="20,10"
+                                          ap:BorderXTA.CornerRadius="0,15,0,15"
+                                          FontSize="22">
+                            <ajut:ToggleStrip.ItemsSource>
+                                <x:Array Type="{x:Type sys:String}">
+                                    <sys:String>100%</sys:String>
+                                    <sys:String>Fully</sys:String>
+                                    <sys:String>Styled</sys:String>
+                                </x:Array>
+                            </ajut:ToggleStrip.ItemsSource>
+                        </ajut:ToggleStrip>
+                    </StackPanel>
+                </ScrollViewer>
             </TabItem>
             <TabItem Header="Flat Tree">
                 <Grid>

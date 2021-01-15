@@ -22,12 +22,21 @@
     using DPUtils = DPUtils<ToggleStrip>;
     using System.Windows.Data;
     using AJut.Storage;
+    using System.Collections.ObjectModel;
+    using AJut.Application.AttachedProperties;
 
     public class ToggleStrip : Control
     {
+        // ================== [ Fields ]================================
+
+        private bool m_isChangingSelectedItem;
+        private bool m_isChangingSelectedItemsList;
+
+        // ================== [ Dependency Properties ]================================
+
         public static readonly DependencyProperty ItemsSourceProperty = DPUtils.Register(_ => _.ItemsSource, (d, e) => d.OnItemsSourceChanged(e));
 
-        public static readonly DependencyProperty AllowMultiSelectProperty = DPUtils.Register(_ => _.AllowMultiSelect, (d,e)=>d.OnAllowMultiSelectChanged(e.NewValue));
+        public static readonly DependencyProperty AllowMultiSelectProperty = DPUtils.Register(_ => _.AllowMultiSelect);
 
         public static readonly DependencyProperty SelectedItemProperty = DPUtils.Register(_ => _.SelectedItem, (d, e) => d.OnSelectedItemChanged(e));
         public static readonly DependencyProperty SelectedItemsProperty = DPUtils.Register(_ => _.SelectedItems, (d, e) => d.OnSelectedItemsChanged(e));
@@ -35,19 +44,21 @@
         public static readonly DependencyProperty DisplayPropertyPathProperty = DPUtils.Register(_ => _.DisplayPropertyPath, "", (d, e) => d.OnDisplayPropertyPathChanged(e.NewValue));
         public static readonly DependencyProperty ItemTemplateProperty = DPUtils.Register(_ => _.ItemTemplate);
         public static readonly DependencyProperty SeparatorBrushProperty = DPUtils.Register(_ => _.SeparatorBrush);
-        public static readonly DependencyProperty SeparatorThicknessProperty = DPUtils.Register(_ => _.SeparatorThickness, new Thickness(0,0,1,0));
+        public static readonly DependencyProperty SeparatorThicknessProperty = DPUtils.Register(_ => _.SeparatorThickness, 1.0);
+
+        public static readonly DependencyProperty ForegroundSelectedProperty = DPUtils.Register(_ => _.ForegroundSelected);
+        public static readonly DependencyProperty ForegroundHoverProperty = DPUtils.Register(_ => _.ForegroundHover);
+        public static readonly DependencyProperty ItemPressedBackgroundColorBaseProperty = DPUtils.Register(_ => _.ItemPressedBackgroundColorBase);
+        public static readonly DependencyProperty ItemHoverBrushProperty = DPUtils.Register(_ => _.ItemHoverBrush);
+
         public static readonly DependencyProperty ItemPaddingProperty = DPUtils.Register(_ => _.ItemPadding, new Thickness(6));
         public static readonly DependencyProperty AllowNoSelectionProperty = DPUtils.Register(_ => _.AllowNoSelection, false);
-
-
-#if WINDOWS_UWP
-        public static readonly DependencyProperty ItemsProperty = DPUtils.Register(_ => _.Items);
-#else
+        private static readonly DependencyPropertyKey HasItemsPropertyKey = DPUtils.RegisterReadOnly(_ => _.HasItems);
+        public static readonly DependencyProperty HasItemsProperty = HasItemsPropertyKey.DependencyProperty;
         private static readonly DependencyPropertyKey ItemsPropertyKey = DPUtils.RegisterReadOnly(_ => _.Items);
         public static readonly DependencyProperty ItemsProperty = ItemsPropertyKey.DependencyProperty;
-#endif
 
-        public event EventHandler<ToggleStripSelectionChangedEventArgs> SelectionChanged;
+        // ================== [ Construction ]================================
 
         static ToggleStrip ()
         {
@@ -60,8 +71,20 @@
             // By default these are linked, feel free to set it to something else
             this.SetBinding(SeparatorBrushProperty, this.CreateBinding(BorderBrushProperty, BindingMode.OneWay));
             this.Items = new ToggleItemsCollection(this);
+            this.Items.CollectionChanged += _OnItemsCollectionChanged;
+            
+            void _OnItemsCollectionChanged (object _s, EventArgs _e)
+            {
+                this.HasItems = this.Items.Count > 0;
+                this.Items.ForEach(i => i.EvaluateOrder());
+            }
         }
 
+        // ================== [ Events ]================================
+
+        public event EventHandler<ToggleStripSelectionChangedEventArgs> SelectionChanged;
+
+        // ================== [ Properties ]================================
 
         public IEnumerable ItemsSource
         {
@@ -101,10 +124,34 @@
             get => (Brush)this.GetValue(SeparatorBrushProperty);
             set => this.SetValue(SeparatorBrushProperty, value);
         }
-        public Thickness SeparatorThickness
+        public double SeparatorThickness
         {
-            get => (Thickness)this.GetValue(SeparatorThicknessProperty);
+            get => (double)this.GetValue(SeparatorThicknessProperty);
             set => this.SetValue(SeparatorThicknessProperty, value);
+        }
+
+        public Brush ForegroundSelected
+        {
+            get => (Brush)this.GetValue(ForegroundSelectedProperty);
+            set => this.SetValue(ForegroundSelectedProperty, value);
+        }
+
+        public Brush ForegroundHover
+        {
+            get => (Brush)this.GetValue(ForegroundHoverProperty);
+            set => this.SetValue(ForegroundHoverProperty, value);
+        }
+
+        public Color ItemPressedBackgroundColorBase
+        {
+            get => (Color)this.GetValue(ItemPressedBackgroundColorBaseProperty);
+            set => this.SetValue(ItemPressedBackgroundColorBaseProperty, value);
+        }
+
+        public Brush ItemHoverBrush
+        {
+            get => (Brush)this.GetValue(ItemHoverBrushProperty);
+            set => this.SetValue(ItemHoverBrushProperty, value);
         }
 
         public Thickness ItemPadding
@@ -119,6 +166,12 @@
             set => this.SetValue(AllowNoSelectionProperty, value);
         }
 
+        public bool HasItems
+        {
+            get => (bool)this.GetValue(HasItemsProperty);
+            protected set => this.SetValue(HasItemsPropertyKey, value);
+        }
+
         public ToggleItemsCollection Items
         {
             get => (ToggleItemsCollection)this.GetValue(ItemsProperty);
@@ -131,11 +184,7 @@
                 , value);
         }
 
-        private void OnAllowMultiSelectChanged (bool newValue)
-        {
-
-        }
-
+        // ================== [ Private Utility Functions ]================================
         private void OnDisplayPropertyPathChanged (string newPath)
         {
             this.Items.ForEach(_ => _.ResetName(newPath));
@@ -164,13 +213,13 @@
 
             if (e.NewValue == null)
             {
-                this.Items.RemoveAllNotifyOnce();
+                this.Items.Clear();
             }
             else
             {
                 int index = 0;
                 this.Items.ReplaceAllWith(
-                    e.NewValue.OfType<object>().Select(i => new ToggleItem(this.Items, i, index++, this.DisplayPropertyPath))
+                    e.NewValue.OfType<object>().Select(i => new ToggleItem(this, i, index++, this.DisplayPropertyPath))
                 );
 
                 foreach (ToggleItem item in this.Items)
@@ -187,7 +236,7 @@
         {
             if (e.Action == NotifyCollectionChangedAction.Reset && !e.NewItems.IsNullOrEmpty())
             {
-                this.Items.RemoveAllNotifyOnce();
+                this.Items.Clear();
                 return;
             }
 
@@ -195,7 +244,7 @@
             if (e.NewItems != null)
             {
                 addedItems = e.NewItems.OfType<object>()
-                    .Select(i => new ToggleItem(this.Items, i, -1, this.DisplayPropertyPath));
+                    .Select(i => new ToggleItem(this, i, -1, this.DisplayPropertyPath));
             }
             else
             {
@@ -215,8 +264,6 @@
             this.Items.AddAndRemove(addedItems, removedItems);
         }
 
-        private bool m_isChangingSelectedItem;
-        private bool m_isChangingSelectedItemsList;
         private void PerformModificationWithBlocker (ref bool blocker, Action action)
         {
             blocker = true;
@@ -311,6 +358,8 @@
             this.SelectionChanged?.Invoke(this, new ToggleStripSelectionChangedEventArgs(previousSelectedItems, newlySelectedItems));
         }
 
+        // ================== [ Utility Classes ]================================
+
         public class ToggleItem : NotifyPropertyChanged
         {
             private string m_name;
@@ -321,14 +370,12 @@
             private bool m_isFirstItem;
             private bool m_isLastItem;
 
-            private ToggleItemsCollection m_owner;
-
-            internal ToggleItem (ToggleItemsCollection owner, object item, int index, string displayPropertyPath)
+            internal ToggleItem (ToggleStrip owner, object item, int index, string displayPropertyPath)
             {
                 this.Data = item;
                 m_itemIndex = index;
                 this.ResetName(displayPropertyPath);
-                m_owner = owner;
+                this.Owner = owner;
             }
 
             public int ItemIndex
@@ -339,7 +386,7 @@
                     if (this.SetAndRaiseIfChanged(ref m_itemIndex, value))
                     {
                         this.IsFirstItem = m_itemIndex == 0;
-                        this.IsLastItem = m_owner.LastOrDefault() == this;
+                        this.IsLastItem = Owner.Items.LastOrDefault() == this;
                         if (m_hasDefaultName)
                         {
                             this.ResetNameWithDefault();
@@ -359,7 +406,7 @@
                 get => m_isSelected;
                 set // this should be treated as called by the user, a request
                 {
-                    if (!value && !m_owner.CanBeDeselected())
+                    if (!value && !Owner.Items.CanBeDeselected())
                     {
                         return;
                     }
@@ -368,11 +415,11 @@
                     {
                         if (value)
                         {
-                            m_owner.HandleWasSelected(this);
+                            Owner.Items.HandleWasSelected(this);
                         }
                         else
                         {
-                            m_owner.HandleWasDeselected(this);
+                            Owner.Items.HandleWasDeselected(this);
                         }
                     }
                 }
@@ -386,10 +433,18 @@
                 private set => this.SetAndRaiseIfChanged(ref m_isFirstItem, value);
             }
 
+            public ToggleStrip Owner { get; }
+
             public bool IsLastItem
             {
                 get => m_isLastItem;
                 private set => this.SetAndRaiseIfChanged(ref m_isLastItem, value);
+            }
+
+            internal void EvaluateOrder ()
+            {
+                m_itemIndex = -1;
+                this.ItemIndex = Owner.Items.IndexOf(this);
             }
 
             internal void ResetName (string displayPropertyPath = null)
@@ -412,7 +467,7 @@
             {
                 m_isSelected = isSelected;
                 this.RaisePropertyChanged(nameof(IsSelected));
-                m_owner.HandleWasDeselected(this);
+                Owner.Items.HandleWasDeselected(this);
             }
 
             private void ResetNameWithDefault ()
@@ -422,7 +477,7 @@
             }
         }
 
-        public class ToggleItemsCollection : ObservableCollectionX<ToggleItem>
+        public class ToggleItemsCollection : ObservableCollection<ToggleItem>
         {
             ToggleStrip m_owner;
 
@@ -474,6 +529,18 @@
                 int index = 0;
                 this.ForEach(_ => _.ItemIndex = index++);
             }
+
+            internal void ReplaceAllWith (IEnumerable<ToggleItem> enumerable)
+            {
+                this.Clear();
+                this.AddEach(enumerable);
+            }
+
+            internal void AddAndRemove (IEnumerable<ToggleItem> addedItems, IEnumerable<ToggleItem> removedItems)
+            {
+                this.AddEach(addedItems);
+                this.RemoveEach(removedItems);
+            }
         }
 
         public class ToggleStripSelectionChangedEventArgs : EventArgs
@@ -489,45 +556,100 @@
         }
     }
 
-    public enum eToggleStripPlacement { First, Center, Last };
-    public class ToggleStripCornerRadiusConverter : SimpleValueConverter<CornerRadius, CornerRadius>
+    public class ToggleStripCornerRadiusConverter : SimpleValueConverter<ToggleStrip.ToggleItem, CornerRadius>
     {
-        public eToggleStripPlacement Placement { get; set; }
-        public double Reduction { get; set; } = 0.0;
-
-        protected override CornerRadius Convert (CornerRadius value)
+        public double Reduction { get; set; }
+        protected override CornerRadius Convert (ToggleStrip.ToggleItem value)
         {
-            switch (this.Placement)
+            CornerRadius corners = BorderXTA.GetCornerRadius(value.Owner);
+            if (value.IsFirstItem)
             {
-                case eToggleStripPlacement.First:
-                    return new CornerRadius(value.TopLeft - this.Reduction, 0, 0, value.BottomLeft - this.Reduction);
+                if (value.IsLastItem)
+                {
+                    return corners;
+                }
 
-                case eToggleStripPlacement.Last:
-                    return new CornerRadius(0, value.TopRight - this.Reduction, value.BottomRight - this.Reduction, 0);
+                return new CornerRadius(_Reduce(corners.TopLeft), 0, 0, _Reduce(corners.BottomLeft));
+            }
+            else if (value.IsLastItem)
+            {
+                return new CornerRadius(0, _Reduce(corners.TopRight), _Reduce(corners.BottomRight), 0);
+            }
 
-                default:
-                    return new CornerRadius(0);
+            return new CornerRadius(0);
+
+            double _Reduce(double _v)
+            {
+                return Math.Max(0.0, _v - this.Reduction);
             }
         }
     }
 
-    public class ToggleStripBorderThicknessConverter : SimpleValueConverter<Thickness, Thickness>
+    public class ToggleStripBorderThicknessConverter : SimpleValueConverter<ToggleStrip.ToggleItem, Thickness>
     {
-        public eToggleStripPlacement Placement { get; set; }
-
-        protected override Thickness Convert (Thickness value)
+        public bool Inside { get; set; }
+        protected override Thickness Convert (ToggleStrip.ToggleItem value)
         {
-            switch (this.Placement)
+            if (value.IsFirstItem)
             {
-                case eToggleStripPlacement.First:
-                    return new Thickness(0, value.Top, value.Right, value.Bottom);
+                if (value.IsLastItem)
+                {
+                    // First AND last
+                    if (this.Inside)
+                    {
+                        return new Thickness(0);
+                    }
+                    else
+                    {
+                        return value.Owner.BorderThickness;
+                    }
+                }
 
-                case eToggleStripPlacement.Last:
-                    return new Thickness(value.Left, value.Top, 0, value.Bottom);
-
-                default:
-                    return value;
+                // First
+                return new Thickness(
+                    this.Inside ? 0 : value.Owner.BorderThickness.Left,
+                    this.Inside ? 0 : value.Owner.BorderThickness.Top,
+                    this.Inside ? value.Owner.SeparatorThickness : 0,
+                    this.Inside ? 0 : value.Owner.BorderThickness.Bottom
+                );
             }
+            else if (value.IsLastItem)
+            {
+                if (this.Inside)
+                {
+                    return new Thickness(0);
+                }
+                else
+                {
+                    return new Thickness(
+                        0,
+                        value.Owner.BorderThickness.Top,
+                        value.Owner.BorderThickness.Right,
+                        value.Owner.BorderThickness.Bottom
+                    );
+                }
+            }
+
+            // Center
+            return new Thickness(
+                0, 
+                this.Inside ? 0 : value.Owner.BorderThickness.Top,
+                this.Inside ? value.Owner.SeparatorThickness : 0,
+                this.Inside ? 0 : value.Owner.BorderThickness.Bottom
+            );
+        }
+    }
+
+    public class ToggleStripItemPressedBackgroundColorAlphatizer : SimpleValueConverter<Color, Color>
+    {
+        protected override Color Convert (Color value)
+        {
+            if (value.A == 255)
+            {
+                value.A = 55;
+            }
+
+            return value;
         }
     }
 }

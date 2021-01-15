@@ -6,99 +6,92 @@
                     xmlns:conv="clr-namespace:AJut.Application.Converters">
 
     <Style TargetType="{x:Type local:ToggleStrip}">
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="ItemPressedBackgroundColorBase" Value="#2BA2D8"/>
+        <Setter Property="ItemHoverBrush">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
+                    <GradientStop Offset="0.00" Color="#1E8BB5" />
+                    <GradientStop Offset="0.10" Color="#1EA1D0" />
+                    <GradientStop Offset="0.90" Color="#2BA2D8" />
+                    <GradientStop Offset="1.00" Color="#1E8BB5" />
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="ForegroundSelected" Value="{Binding RelativeSource={RelativeSource Self}, Path=Foreground}"/>
+        <Setter Property="ForegroundHover" Value="{Binding RelativeSource={RelativeSource Self}, Path=Foreground}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:ToggleStrip}">
                     <Border Background="{ajut:TemplateBinding Background}"
                             BorderBrush="{ajut:TemplateBinding BorderBrush}"
                             BorderThickness="{ajut:TemplateBinding BorderThickness}"
-                            CornerRadius="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=(ap:BorderXTA.CornerRadius)}">
+                            CornerRadius="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=(ap:BorderXTA.CornerRadius)}"
+                            HorizontalAlignment="{ajut:TemplateBinding HorizontalContentAlignment}"
+                            UseLayoutRounding="True"
+                            SnapsToDevicePixels="True">
                         <ItemsControl ItemsSource="{ajut:TemplateBinding Items}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Horizontal"/>
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.Style>
+                                <Style TargetType="{x:Type ItemsControl}">
+                                    <Setter Property="ItemsPanel">
+                                        <Setter.Value>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Orientation="Horizontal"/>
+                                            </ItemsPanelTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{ajut:TemplateBinding HorizontalContentAlignment}" Value="Stretch">
+                                            <Setter Property="ItemsPanel">
+                                                <Setter.Value>
+                                                    <ItemsPanelTemplate>
+                                                        <UniformGrid Rows="1"/>
+                                                    </ItemsPanelTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ItemsControl.Style>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <ToggleButton IsChecked="{Binding Path=IsSelected, Mode=TwoWay}"
-                                                  Background="Transparent"
-                                                  BorderBrush="{Binding Path=SeparatorBrush, RelativeSource={RelativeSource AncestorType={x:Type local:ToggleStrip}}}">
-                                        <Grid Margin="{Binding Path=ItemPadding, RelativeSource={RelativeSource AncestorType={x:Type local:ToggleStrip}}}">
+                                    <ToggleButton IsChecked="{Binding Path=IsSelected, Mode=TwoWay}">
+                                        <Grid>
                                             <ContentPresenter Content="{Binding Data}"
                                                               ContentTemplate="{Binding Path=ItemTemplate, RelativeSource={RelativeSource AncestorType={x:Type local:ToggleStrip}}}"
                                                               Visibility="{Binding Path=ItemTemplate, RelativeSource={RelativeSource AncestorType={x:Type local:ToggleStrip}}, Converter={conv:NullnessToVisibilityConverter}}"/>
-                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"
+                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" HorizontalAlignment="Center"
                                                        Visibility="{Binding Path=ItemTemplate, RelativeSource={RelativeSource AncestorType={x:Type local:ToggleStrip}}, Converter={conv:NullnessToVisibilityConverter WhenNull=Visible, WhenNotNull=Collapsed}}"/>
                                         </Grid>
                                         <ToggleButton.Template>
                                             <ControlTemplate TargetType="{x:Type ToggleButton}">
-                                                <Border x:Name="RootBorder" Background="{ajut:TemplateBinding Background}"
-                                                        BorderBrush="{ajut:TemplateBinding BorderBrush}">
-                                                    <Border.Style>
-                                                        <Style TargetType="{x:Type Border}">
-                                                            <Setter Property="CornerRadius" Value="0"/>
-                                                            <Setter Property="BorderThickness"
-                                                                    Value="{Binding Path=SeparatorThickness, 
-                                                                                    RelativeSource={RelativeSource AncestorType={x:Type local:ToggleStrip}}, 
-                                                                                    Converter={local:ToggleStripBorderThicknessConverter Placement=Center}}" />
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding Path=IsFirstItem}" Value="True">
-                                                                    <Setter Property="CornerRadius" Value="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=(ap:BorderXTA.CornerRadius), Converter={local:ToggleStripCornerRadiusConverter Placement=First, Reduction=2}}"/>
-                                                                    <Setter Property="BorderThickness" Value="{Binding Path=SeparatorThickness, 
-                                                                            RelativeSource={RelativeSource AncestorType={x:Type local:ToggleStrip}}, 
-                                                                            Converter={local:ToggleStripBorderThicknessConverter Placement=First}}" />
-                                                                </DataTrigger>
-                                                                <DataTrigger Binding="{Binding Path=IsLastItem}" Value="True">
-                                                                    <Setter Property="CornerRadius" Value="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=(ap:BorderXTA.CornerRadius), Converter={local:ToggleStripCornerRadiusConverter Placement=Last, Reduction=2}}"/>
-                                                                    <Setter Property="BorderThickness" Value="{Binding Path=SeparatorThickness, 
-                                                                            RelativeSource={RelativeSource AncestorType={x:Type local:ToggleStrip}}, 
-                                                                            Converter={local:ToggleStripBorderThicknessConverter Placement=Last}}" />
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </Border.Style>
-                                                    <Border x:Name="InnerBorder">
-                                                        <Border.Style>
-                                                            <Style TargetType="{x:Type Border}">
-                                                                <Setter Property="Background" Value="Transparent"/>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding Path=IsFirstItem}" Value="True">
-                                                                        <Setter Property="CornerRadius" Value="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=(ap:BorderXTA.CornerRadius), Converter={local:ToggleStripCornerRadiusConverter Placement=First, Reduction=2}}"/>
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Path=IsLastItem}" Value="True">
-                                                                        <Setter Property="CornerRadius" Value="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=(ap:BorderXTA.CornerRadius), Converter={local:ToggleStripCornerRadiusConverter Placement=Last, Reduction=2}}"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </Border.Style>
-                                                        <ContentPresenter Content="{ajut:TemplateBinding Content}"/>
+                                                <Border x:Name="RootBorder"
+                                                        CornerRadius="{Binding Converter={local:ToggleStripCornerRadiusConverter Reduction=2.0}}">
+                                                    <Border x:Name="InnerBorder" Background="Transparent"
+                                                            BorderBrush="{Binding Path=Owner.SeparatorBrush}"
+                                                            CornerRadius="{Binding Converter={local:ToggleStripCornerRadiusConverter Reduction=2.0}}"
+                                                            BorderThickness="{Binding Converter={local:ToggleStripBorderThicknessConverter Inside=True}}">
+                                                        <ContentPresenter Content="{ajut:TemplateBinding Content}" Margin="{Binding Path=Owner.ItemPadding}"/>
                                                     </Border>
                                                 </Border>
                                                 <ControlTemplate.Triggers>
+                                                    <!-- ======[ Item Pressed ]====== -->
                                                     <Trigger Property="IsChecked" Value="True">
                                                         <Setter TargetName="RootBorder" Property="Background">
                                                             <Setter.Value>
-                                                                <!-- Generic depressed highlight -->
                                                                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
-                                                                    <GradientStop Offset="0.00" Color="#0D0D0D" />
-                                                                    <GradientStop Offset="0.20" Color="#552BA2D8" />
-                                                                    <GradientStop Offset="1.00" Color="#552BA2D8" />
+                                                                    <GradientStop Offset="0.00" Color="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ToggleStrip}}, Path=SeparatorBrush.Color}" />
+                                                                    <GradientStop Offset="0.20" Color="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ToggleStrip}}, Path=ItemPressedBackgroundColorBase, Converter={local:ToggleStripItemPressedBackgroundColorAlphatizer}}" />
+                                                                    <GradientStop Offset="1.00" Color="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ToggleStrip}}, Path=ItemPressedBackgroundColorBase, Converter={local:ToggleStripItemPressedBackgroundColorAlphatizer}}" />
                                                                 </LinearGradientBrush>
                                                             </Setter.Value>
                                                         </Setter>
+                                                        <Setter Property="TextElement.Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ToggleStrip}}, Path=ForegroundSelected}"/>
                                                     </Trigger>
+                                                    <!-- ======[ Item Hover ]====== -->
                                                     <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter TargetName="InnerBorder" Property="Background">
-                                                            <Setter.Value>
-                                                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
-                                                                    <GradientStop Offset="0.00" Color="#1E8BB5" />
-                                                                    <GradientStop Offset="0.10" Color="#1EA1D0" />
-                                                                    <GradientStop Offset="0.90" Color="#2BA2D8" />
-                                                                    <GradientStop Offset="1.00" Color="#1E8BB5" />
-                                                                </LinearGradientBrush>
-                                                            </Setter.Value>
-                                                        </Setter>
+                                                        <Setter TargetName="InnerBorder" Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ToggleStrip}}, Path=ItemHoverBrush}"/>
+                                                        <Setter Property="TextElement.Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ToggleStrip}}, Path=ForegroundHover}"/>
                                                     </Trigger>
                                                 </ControlTemplate.Triggers>
                                             </ControlTemplate>
