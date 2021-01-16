@@ -49,6 +49,7 @@
         public static readonly DependencyProperty BackgroundPressedColorBaseProperty = DPUtils.Register(_ => _.BackgroundPressedColorBase);
         public static readonly DependencyProperty ForegroundPressedProperty = DPUtils.Register(_ => _.ForegroundPressed);
         public static readonly DependencyProperty BackgroundHoverProperty = DPUtils.Register(_ => _.BackgroundHover);
+        public static readonly DependencyProperty BackgroundHoverOverPressedProperty = DPUtils.Register(_ => _.BackgroundHoverOverPressed);
         public static readonly DependencyProperty ForegroundHoverProperty = DPUtils.Register(_ => _.ForegroundHover);
 
         public static readonly DependencyProperty ItemPaddingProperty = DPUtils.Register(_ => _.ItemPadding, new Thickness(6));
@@ -152,6 +153,12 @@
         {
             get => (Brush)this.GetValue(BackgroundHoverProperty);
             set => this.SetValue(BackgroundHoverProperty, value);
+        }
+
+        public Brush BackgroundHoverOverPressed
+        {
+            get => (Brush)this.GetValue(BackgroundHoverOverPressedProperty);
+            set => this.SetValue(BackgroundHoverOverPressedProperty, value);
         }
 
         public Thickness ItemPadding
@@ -641,6 +648,19 @@
     }
 
     public class ToggleStripItemPressedBackgroundColorAlphatizer : SimpleValueConverter<Color, Color>
+    {
+        protected override Color Convert (Color value)
+        {
+            if (value.A == 255)
+            {
+                value.A = 55;
+            }
+
+            return value;
+        }
+    }
+
+    public class ToggleStripItemPressedHoverBackgroundColorAlphatizer : SimpleValueConverter<Color, Color>
     {
         protected override Color Convert (Color value)
         {

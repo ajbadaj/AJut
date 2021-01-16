@@ -91,14 +91,6 @@
                         </ajut:ToggleStrip>
                         <ajut:ToggleStrip Margin="0,0,0,5" HorizontalContentAlignment="Stretch"
                                       ToolTip="Simply set HorizontalContentAlignment to Stretch">
-                            <ajut:ToggleStrip.Background>
-                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
-                                    <GradientStop Offset="0.00" Color="#FFFFFF" />
-                                    <GradientStop Offset="0.10" Color="#D5D5D5" />
-                                    <GradientStop Offset="0.90" Color="#898989" />
-                                    <GradientStop Offset="1.00" Color="#202020" />
-                                </LinearGradientBrush>
-                            </ajut:ToggleStrip.Background>
                             <ajut:ToggleStrip.ItemsSource>
                                 <x:Array Type="{x:Type sys:String}">
                                     <sys:String>One</sys:String>
@@ -167,22 +159,31 @@
                         <ajut:ToggleStrip Margin="0,0,0,5" Width="700" HorizontalContentAlignment="Stretch"
                                           AllowMultiSelect="True" AllowNoSelection="True"
                                           Background="#808080"
-                                          BorderBrush="Black"
-                                          SeparatorBrush="#181818"
+                                          BackgroundHover="#DF00"
+                                          BackgroundPressedColorBase="#CC880101" 
                                           BorderThickness="5"
+                                          BorderBrush="Black"
+                                          SeparatorBrush="#260101"
                                           SeparatorThickness="2"
-                                          BackgroundPressedColorBase="#CC880101" BackgroundHover="#DF00"
-                                          ForegroundPressed="#CFFF"
-                                          ForegroundHover="#FFF"
                                           Foreground="#999"
+                                          ForegroundHover="#FFF"
+                                          ForegroundPressed="#CFFF"
                                           ItemPadding="20,10"
                                           ap:BorderXTA.CornerRadius="0,15,0,15"
                                           FontSize="22">
+                            <ajut:ToggleStrip.BackgroundHoverOverPressed>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Offset="0.0" Color="#260101" />
+                                    <GradientStop Offset="0.3" Color="#DF00" />
+                                    <GradientStop Offset="1" Color="#DF00" />
+                                </LinearGradientBrush>
+                            </ajut:ToggleStrip.BackgroundHoverOverPressed>
                             <ajut:ToggleStrip.ItemsSource>
                                 <x:Array Type="{x:Type sys:String}">
-                                    <sys:String>100%</sys:String>
-                                    <sys:String>Fully</sys:String>
-                                    <sys:String>Styled</sys:String>
+                                    <sys:String>Mix</sys:String>
+                                    <sys:String>Of</sys:String>
+                                    <sys:String>All</sys:String>
+                                    <sys:String>Styles</sys:String>
                                 </x:Array>
                             </ajut:ToggleStrip.ItemsSource>
                         </ajut:ToggleStrip>

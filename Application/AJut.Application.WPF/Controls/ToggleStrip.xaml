@@ -6,6 +6,7 @@
                     xmlns:conv="clr-namespace:AJut.Application.Converters">
 
     <Style TargetType="{x:Type local:ToggleStrip}">
+        <Setter Property="SeparatorBrush" Value="#08080D"/>
         <Setter Property="HorizontalContentAlignment" Value="Left"/>
         <Setter Property="BackgroundPressedColorBase" Value="#2BA2D8"/>
         <Setter Property="BackgroundHover">
@@ -18,6 +19,7 @@
                 </LinearGradientBrush>
             </Setter.Value>
         </Setter>
+        <Setter Property="BackgroundHoverOverPressed" Value="{Binding RelativeSource={RelativeSource Self}, Path=BackgroundHover}"/>
         <Setter Property="ForegroundPressed" Value="{Binding RelativeSource={RelativeSource Self}, Path=Foreground}"/>
         <Setter Property="ForegroundHover" Value="{Binding RelativeSource={RelativeSource Self}, Path=Foreground}"/>
         <Setter Property="Template">
@@ -28,7 +30,6 @@
                             BorderThickness="{ajut:TemplateBinding BorderThickness}"
                             CornerRadius="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=(ap:BorderXTA.CornerRadius)}"
                             HorizontalAlignment="{ajut:TemplateBinding HorizontalContentAlignment}"
-                            UseLayoutRounding="True"
                             SnapsToDevicePixels="True">
                         <ItemsControl ItemsSource="{ajut:TemplateBinding Items}">
                             <ItemsControl.Style>
@@ -71,7 +72,8 @@
                                                             BorderBrush="{Binding Path=Owner.SeparatorBrush}"
                                                             CornerRadius="{Binding Converter={local:ToggleStripCornerRadiusConverter ReductionPercent=0.3}}"
                                                             BorderThickness="{Binding Converter={local:ToggleStripBorderThicknessConverter Inside=True}}">
-                                                        <ContentPresenter Content="{ajut:TemplateBinding Content}" Margin="{Binding Path=Owner.ItemPadding}"/>
+                                                        <ContentPresenter Content="{ajut:TemplateBinding Content}" Margin="{Binding Path=Owner.ItemPadding}" 
+                                                                          HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
                                                     </Border>
                                                 </Border>
                                                 <ControlTemplate.Triggers>
@@ -90,9 +92,26 @@
                                                     </Trigger>
                                                     <!-- ======[ Item Hover ]====== -->
                                                     <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter TargetName="InnerBorder" Property="Background" Value="{Binding Path=Owner.BackgroundHover}"/>
                                                         <Setter Property="TextElement.Foreground" Value="{Binding Path=Owner.ForegroundHover}"/>
                                                     </Trigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsMouseOver}" Value="True"/>
+                                                            <Condition Binding="{Binding Path=IsSelected}" Value="True"/>
+                                                        </MultiDataTrigger.Conditions>
+                                                        <MultiDataTrigger.Setters>
+                                                            <Setter TargetName="InnerBorder" Property="Background" Value="{Binding Path=Owner.BackgroundHoverOverPressed}"/>
+                                                        </MultiDataTrigger.Setters>
+                                                    </MultiDataTrigger>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsMouseOver}" Value="True"/>
+                                                            <Condition Binding="{Binding Path=IsSelected}" Value="False"/>
+                                                        </MultiDataTrigger.Conditions>
+                                                        <MultiDataTrigger.Setters>
+                                                            <Setter TargetName="InnerBorder" Property="Background" Value="{Binding Path=Owner.BackgroundHover}"/>
+                                                        </MultiDataTrigger.Setters>
+                                                    </MultiDataTrigger>
                                                 </ControlTemplate.Triggers>
                                             </ControlTemplate>
                                         </ToggleButton.Template>
