@@ -9,6 +9,7 @@
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Input;
@@ -192,12 +193,23 @@
             {
                 e.Value.IsSelectable = false;
             }
-
         }
-
         private void AddNodeToTopSelected_OnClick (object sender, RoutedEventArgs e)
         {
             this.TopTree.SelectedItem?.InsertChild(0, new TestTreeItem());
+        }
+
+        private void FlatTreeList_OnTestExternalSelectionClick (object sender, RoutedEventArgs e)
+        {
+            this.TopTree.SelectedItems.Clear();
+            this.TopTree.SelectedItems.Add(this.Items.OfType<IObservableTreeNode>().FirstOrDefault());
+            this.TopTree.Focus();
+        }
+
+        private void FlatTreeList_OnTestExternalSelectionClearAllClick (object sender, RoutedEventArgs e)
+        {
+            this.TopTree.SelectedItems.Clear();
+            this.TopTree.Focus();
         }
 
         private void ExtensionGrid_OnClick (object sender, MouseButtonEventArgs args)

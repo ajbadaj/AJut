@@ -201,10 +201,12 @@
                         <WrapPanel Margin="5,5,0,0">
                             <Button Content="Synch Selection" Margin="0,0,5,5" Click="SynchFlatTreeListSelection_OnClick"/>
                             <Button Content="Add Node To Selected (top)" Margin="0,0,5,5" Click="AddNodeToTopSelected_OnClick"/>
+                            <Button Content="Test external selection (select first)" Margin="0,0,5,5" Click="FlatTreeList_OnTestExternalSelectionClick"/>
+                            <Button Content="Test external selection (clear all)" Margin="0,0,5,5" Click="FlatTreeList_OnTestExternalSelectionClearAllClick"/>
                         </WrapPanel>
                     </GroupBox>
                     <ajut:FlatTreeListControl x:Name="TopTree" Grid.Row="1" RootItemsSource="{Binding ElementName=Self, Path=Items}"
-                                              TabbingSize="10" ItemAdded="FlatTree_OnItemAdded">
+                                              TabbingSize="10" StorageItemAdded="FlatTree_OnItemAdded">
                         <ajut:FlatTreeListControl.Resources>
                             <DataTemplate DataType="{x:Type local:TestTreeItem}">
                                 <DockPanel>
