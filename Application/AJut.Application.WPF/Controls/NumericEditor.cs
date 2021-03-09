@@ -29,7 +29,7 @@
         // ===========================[ Construction ]============================================
         public NumericEditor ()
         {
-            this.Value = 0.0f;
+            this.DisplayValue = new TextEditNumberViewModel(this, 0f);
             this.CommandBindings.Add(new CommandBinding(NudgeIncrease, _OnNudgeIncreaseExecuted, _OnCanNudgeLarger));
             this.CommandBindings.Add(new CommandBinding(NudgeDecrease, _OnNudgeDecreaseExecuted, _OnCanNudgeSmaller));
 
@@ -200,7 +200,7 @@
         // ===========================[ Property Change Handlers ]===================================
         private void OnCapChanged ()
         {
-            this.DisplayValue.ReevaluateCap();
+            this.DisplayValue?.ReevaluateCap();
         }
 
         private void OnValueChanged (object newValue)
@@ -231,6 +231,7 @@
             }
             if (newValue != null)
             {
+                newValue.ValueChanged -= _DisplayValue_OnValueChanged;
                 newValue.ValueChanged += _DisplayValue_OnValueChanged;
             }
 
@@ -239,7 +240,7 @@
                 m_blockValueChangeReentrancy = true;
                 try
                 {
-                    this.Value = _e.Value;
+                    this.SetCurrentValue(ValueProperty, _e.Value);
                 }
                 finally 
                 {
