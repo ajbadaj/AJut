@@ -196,23 +196,40 @@ namespace AJut.Application.Controls
                 m_blockingForSelectionChangeReentrancy = true;
                 try
                 {
+                    IObservableTreeNode[] removed = null;
                     if (!_e.OldItems.IsNullOrEmpty())
                     {
-                        foreach (Item item in _e.OldItems.OfType<IObservableTreeNode>().Select(this.StorageItemForNode).Where(i => i != null))
+                        removed = _e.OldItems.OfType<IObservableTreeNode>().Select(this.StorageItemForNode).Where(i => i != null).ToArray();
+                        foreach (Item item in removed)
+                        {
+                            item.IsSelected = false;
+                            this.PART_ListBoxDisplay.SelectedItems.Remove(item);
+                        }
+                    }
+
+                    IObservableTreeNode[] added = null;
+                    if (!_e.NewItems.IsNullOrEmpty())
+                    {
+                        added = _e.NewItems.OfType<IObservableTreeNode>().Select(this.StorageItemForNode).Where(i => i != null).ToArray();
+                        foreach (Item item in added)
+                        {
+                            item.IsSelected = true;
+                            this.PART_ListBoxDisplay.SelectedItems.Add(item);
+                        }
+                    }
+
+                    // It's a clear
+                    if (added == null && removed == null)
+                    {
+                        foreach (Item item in this.Items)
                         {
                             item.IsSelected = false;
                         }
+
+                        this.PART_ListBoxDisplay.SelectedItem = null;
                     }
 
-                    if (!_e.NewItems.IsNullOrEmpty())
-                    {
-                        foreach (Item item in _e.NewItems.OfType<IObservableTreeNode>().Select(this.StorageItemForNode).Where(i => i != null))
-                        {
-                            item.IsSelected = true;
-                        }
-                    }
-
-                    this.SelectedItem = (this.PART_ListBoxDisplay.SelectedItem as Item)?.Source;
+                    this.ApplySelectionChanges(added, removed);
                 }
                 finally
                 {
@@ -222,9 +239,9 @@ namespace AJut.Application.Controls
         }
 
         // ============================[Events]================================
-        public event EventHandler<EventArgs<Item>> ItemAdded;
-        public event EventHandler<EventArgs<Item>> ItemRemoved;
-        public event EventHandler<SelectionChangedEventArgs> SelectionChanged;
+        public event EventHandler<EventArgs<Item>> StorageItemAdded;
+        public event EventHandler<EventArgs<Item>> StorageItemRemoved;
+        public event EventHandler<EventArgs<SelectionChange<IObservableTreeNode>>> SelectionChanged;
 
         // ============================[Methods]================================
         public override void OnApplyTemplate ()
@@ -254,19 +271,21 @@ namespace AJut.Application.Controls
                 m_blockingForSelectionChangeReentrancy = true;
                 try
                 {
+                    IObservableTreeNode[] added = null;
                     if (_e.AddedItems != null)
                     {
-                        this.SelectedItems.AddEach(_e.AddedItems.OfType<Item>().Select(_ => _.Source));
+                        added = _e.AddedItems.OfType<Item>().Select(_ => _.Source).ToArray();
+                        this.SelectedItems.AddEach(added);
                     }
 
+                    IObservableTreeNode[] removed = null;
                     if (_e.RemovedItems != null)
                     {
-                        this.SelectedItems.RemoveEach(_e.RemovedItems.OfType<Item>().Select(_ => _.Source));
+                        removed = _e.RemovedItems.OfType<Item>().Select(_ => _.Source).ToArray();
+                        this.SelectedItems.RemoveEach(removed);
                     }
 
-                    this.SelectedItem = (this.PART_ListBoxDisplay.SelectedItem as Item)?.Source;
-
-                    this.SelectionChanged?.Invoke(this, _e);
+                    this.ApplySelectionChanges(added, removed);
                 }
                 finally
                 {
@@ -286,10 +305,21 @@ namespace AJut.Application.Controls
             return this.AllItems().FirstOrDefault(i => i.Source == sourceNode);
         }
 
+        protected override void OnGotFocus (RoutedEventArgs e)
+        {
+            base.OnGotFocus(e);
+            this.PART_ListBoxDisplay?.Focus();
+        }
+
+        public void FocusInside()
+        {
+            this.PART_ListBoxDisplay?.Focus();
+        }
+
         private void OnItemCreated (Item item)
         {
             item.IsSelectedChanged += this.Item_IsSelectedChanged;
-            this.ItemAdded?.Invoke(this, new EventArgs<Item>(item));
+            this.StorageItemAdded?.Invoke(this, new (item));
         }
 
         private void OnItemRemoved (Item item)
@@ -300,7 +330,7 @@ namespace AJut.Application.Controls
             {
                 this.SelectedItem = null;
             }
-            this.ItemRemoved?.Invoke(this, new EventArgs<Item>(item));
+            this.StorageItemRemoved?.Invoke(this, new (item));
         }
 
         private void Item_IsSelectedChanged (object sender, EventArgs e)
@@ -352,12 +382,32 @@ namespace AJut.Application.Controls
                     }
                 }
 
-                this.SelectedItem = (this.PART_ListBoxDisplay.SelectedItem as Item)?.Source;
-                this.SelectionChanged?.Invoke(this, new SelectionChangedEventArgs(ListBox.SelectedEvent, removed, added));
+                this.ApplySelectionChanges(added, removed);
             }
             finally
             {
                 m_blockingForSelectionChangeReentrancy = false;
+            }
+        }
+
+        private void ApplySelectionChanges (IEnumerable<IObservableTreeNode> added, IEnumerable<IObservableTreeNode> removed)
+        {
+            this.SelectedItem = (this.PART_ListBoxDisplay.SelectedItem as Item)?.Source;
+            if (this.SelectedItems.Count == 0)
+            {
+                this.SelectionChanged?.Invoke(this,
+                    new EventArgs<SelectionChange<IObservableTreeNode>>(
+                        new SelectionChange<IObservableTreeNode>(null, null, true)
+                    )
+                );
+            }
+            else
+            {
+                this.SelectionChanged?.Invoke(this,
+                    new EventArgs<SelectionChange<IObservableTreeNode>>(
+                        new SelectionChange<IObservableTreeNode>(added?.ToArray(), removed?.ToArray())
+                    )
+                );
             }
         }
 
