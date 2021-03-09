@@ -113,7 +113,7 @@
             private void Access_OnValueChanged (object sender, EventArgs e)
             {
                 this.ResetCache();
-                m_owner.RaisePropertyChanged(Access.PropertyName);
+                m_owner.RaisePropertyChanged(this.Name);
                 this.ValueChanged?.Invoke(this, EventArgs.Empty);
                 this.OnValueChanged();
             }
@@ -168,29 +168,45 @@
 
         public class AdaptedProperty<TStrataValue, TAdaptedValue> : IDisposable
         {
-            private Property<TStrataValue> m_accessWraper;
-            private StrataPropertyAdapter<TStrataValue, TAdaptedValue> m_adapter;
+            private readonly Property<TStrataValue> m_accessWraper;
+            private readonly StrataPropertyAdapter<TStrataValue, TAdaptedValue> m_adapter;
+            private readonly StratabaseBackedModel m_owner;
 
             public AdaptedProperty (StratabaseBackedModel owner, string propertyName, StrataPropertyAdapter<TStrataValue, TAdaptedValue>.ConvertAccessToOutput factory)
             {
+                m_owner = owner;
+                
                 m_accessWraper = new Property<TStrataValue>(owner, propertyName);
                 m_adapter = new StrataPropertyAdapter<TStrataValue, TAdaptedValue>(m_accessWraper.Access, factory);
+                m_adapter.ValueChanged += this.OnAdapterValueReset;
             }
 
             public AdaptedProperty (StratabaseBackedModel owner, string propertyName, TStrataValue defaultValue, StrataPropertyAdapter<TStrataValue, TAdaptedValue>.ConvertAccessToOutput factory)
             {
+                m_owner = owner;
+                
                 m_accessWraper = new Property<TStrataValue>(owner, propertyName, defaultValue);
                 m_adapter = new StrataPropertyAdapter<TStrataValue, TAdaptedValue>(m_accessWraper.Access, factory);
+                m_adapter.ValueChanged += this.OnAdapterValueReset;
+            }
+
+            public event EventHandler<EventArgs> ValueChanged;
+
+            public void Dispose ()
+            {
+                m_adapter.ValueChanged -= this.OnAdapterValueReset;
+                m_adapter.Dispose();
+            }
+
+            private void OnAdapterValueReset (object sender, EventArgs e)
+            {
+                m_owner.RaisePropertyChanged(this.Name);
+                this.ValueChanged?.Invoke(this, EventArgs.Empty);
             }
 
             public string Name => this.Access.PropertyName;
             public TAdaptedValue Value => m_adapter.Value;
             public StrataPropertyValueAccess<TStrataValue> Access => m_accessWraper.Access;
-
-            public void Dispose ()
-            {
-                m_adapter.Dispose();
-            }
         }
 
         public class AdaptedListProperty<TStrataElementValue, TAdaptedElementValue> : IDisposable

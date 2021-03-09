@@ -81,7 +81,7 @@
 
         public int OverrideLayerCount { get; }
 
-        public ObjectEqualityTester ValueEqualityTester { get; set; } = (o1, o2) => o1.Equals(o2);
+        public ObjectEqualityTester ValueEqualityTester { get; set; } = (o1, o2) => o1?.Equals(o2) ?? false;
 
         // ====================================================================================
         // ===========================[ Public Methods ]=======================================
@@ -103,6 +103,19 @@
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Looks up all property names registered at the baseline layer for a given target
+        /// </summary>
+        public IEnumerable<string> GetAllBaselinePropertiesFor (Guid targetId)
+        {
+            if (m_baselineStorageLayer.TryGetValue(targetId, out PseudoPropertyBag propbag))
+            {
+                return propbag.m_storage.Keys;
+            }
+
+            return Enumerable.Empty<string>();
         }
 
         // ----------------- Clear -----------------
@@ -300,12 +313,24 @@
 
         public bool TryGetBaselinePropertyValue<T> (Guid id, string property, out T value)
         {
-            return this.GetAccessManager(id).TryGetBaselineValue(property, out value);
+            value = default;
+            return this.GetAccessManager(id)?.TryGetBaselineValue(property, out value) == true;
+        }
+
+        public bool TryGetBaselinePropertyValue (Guid id, string property, out object value)
+        {
+            return TryGetBaselinePropertyValue<object>(id, property, out value);
         }
 
         public bool TryGetOverridePropertyValue<T> (int layer, Guid id, string property, out T value)
         {
-            return this.GetAccessManager(id).TryGetOverrideValue(layer, property, out value);
+            value = default;
+            return this.GetAccessManager(id)?.TryGetOverrideValue(layer, property, out value) == true;
+        }
+
+        public bool TryGetOverridePropertyValue (int layer, Guid id, string property, out object value)
+        {
+            return TryGetOverridePropertyValue<object>(layer, id, property, out value);
         }
 
         // ------- Generate Property Access ----------

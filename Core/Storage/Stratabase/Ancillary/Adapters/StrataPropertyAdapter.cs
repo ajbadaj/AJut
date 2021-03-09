@@ -25,17 +25,26 @@
         public StrataPropertyAdapter (StrataPropertyValueAccess<TStrataValue> access, ConvertAccessToOutput factory)
         {
             this.Access = access;
+            this.Access.ValueChanged += this.OnAccessValueChanged;
             m_factory = factory;
+            this.Reset();
+        }
+
+        private void OnAccessValueChanged (object sender, EventArgs e)
+        {
             this.Reset();
         }
 
         public void Dispose ()
         {
+            this.Access.ValueChanged -= this.OnAccessValueChanged;
             this.Access.Dispose();
             this.Access = null;
             this.ClearInstanceStorage();
             m_instanceStorage = null;
         }
+
+        public event EventHandler<EventArgs> ValueChanged;
 
         public TAdaptedValue Value => this.Access.IsSet ? m_instanceStorage.Value : default;
         public StrataPropertyValueAccess<TStrataValue> Access { get; private set; }
@@ -52,6 +61,7 @@
         {
             this.ClearInstanceStorage();
             m_instanceStorage = new Lazy<TAdaptedValue>(_Constructor);
+            this.ValueChanged?.Invoke(this, EventArgs.Empty);
 
             TAdaptedValue _Constructor()
             {
