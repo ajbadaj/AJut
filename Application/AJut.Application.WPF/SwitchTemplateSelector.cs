@@ -4,7 +4,6 @@ namespace AJut.Application
     using System.ComponentModel;
     using System.Windows;
     using System.Windows.Controls;
-    using System.Windows.Markup;
 
     public class SwitchTemplateDictionary : Dictionary<object, DataTemplate>
     {

@@ -104,7 +104,7 @@
         /// <typeparam name="T">The type of list it is</typeparam>
         /// <param name="This">The list this is called on</param>
         /// <param name="otherList">The list whose contents are added to this list</param>
-        public static void ResetWith<T> (this ICollection<T> This, ICollection<T> otherList)
+        public static void ResetWith<T> (this ICollection<T> This, IEnumerable<T> otherList)
         {
             if (This == null)
             {
@@ -195,7 +195,6 @@
                         continue;
                     }
                 }
-
             }
         }
     }
