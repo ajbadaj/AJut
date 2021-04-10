@@ -10,12 +10,12 @@
     {
         #region ========== Attributes =========
 
-        public static IEnumerable<TAttribute> GetAttributes<TAttribute>(this MemberInfo member, AttributeTester<TAttribute> validator = null, bool allowDerivedAttributeTypes = true, bool checkInherited = true) where TAttribute : Attribute
+        public static IEnumerable<TAttribute> GetAttributes<TAttribute> (this MemberInfo member, AttributeTester<TAttribute> validator = null, bool allowDerivedAttributeTypes = true, bool checkInherited = true) where TAttribute : Attribute
         {
             return AttributeHelper.SearchForAttributes(member.GetCustomAttributes(checkInherited), validator, allowDerivedAttributeTypes);
         }
 
-        public static bool IsTaggedWithAttribute<TAttribute>(this MemberInfo member, AttributeTester<TAttribute> validator = null, bool allowDerivedAttributeTypes = true, bool checkInherited = true) where TAttribute : Attribute
+        public static bool IsTaggedWithAttribute<TAttribute> (this MemberInfo member, AttributeTester<TAttribute> validator = null, bool allowDerivedAttributeTypes = true, bool checkInherited = true) where TAttribute : Attribute
         {
             return member.GetAttributes(validator, allowDerivedAttributeTypes, checkInherited).Any();
         }
@@ -24,24 +24,28 @@
 
         #region ========== Property Fetching ============
 
-        public static string GetPropertyName<TOwnerObject,TProperty>(this TOwnerObject item, Expression<Func<TOwnerObject, TProperty>> propertyLambda)
+        public static string GetPropertyName<TOwnerObject, TProperty> (this TOwnerObject item, Expression<Func<TOwnerObject, TProperty>> propertyLambda)
         {
             var expression = propertyLambda.Body as MemberExpression;
-            if(expression == null || expression.Member == null)
+            if (expression == null || expression.Member == null)
             {
                 return String.Empty;
             }
 
             return expression.Member.Name;
         }
-        public static PropertyInfo GetComplexProperty(this object item, string propertyPath)
+        public static PropertyInfo GetComplexProperty (this object item, string propertyPath, out object childTarget)
         {
             if (item == null || string.IsNullOrEmpty(propertyPath))
+            {
+                childTarget = null;
                 return null;
+            }
 
             int index = propertyPath.IndexOf('.');
             if (index == -1)
             {
+                childTarget = item;
                 return item.GetType().GetProperty(propertyPath);
             }
             else
@@ -49,76 +53,90 @@
                 var propertyPartPath = propertyPath.Substring(0, index);
                 var propertyPart = item.GetType().GetProperty(propertyPartPath);
                 if (propertyPart == null)
+                {
+                    childTarget = null;
                     return null;
+                }
 
                 var valuePart = propertyPart.GetValue(item, null);
-                return GetComplexProperty(valuePart, propertyPath.Substring(index + 1));
+                return GetComplexProperty(valuePart, propertyPath.Substring(index + 1), out childTarget);
             }
         }
 
-        public static T GetComplexPropertyValue<T>(this object item, string propertyPath)
+        public static T GetComplexPropertyValue<T> (this object item, string propertyPath)
         {
-            return (T)GetComplexPropertyValue(item, propertyPath);
+            return (T)GetComplexPropertyValue(item, propertyPath, null);
         }
 
-        public static object GetComplexPropertyValue(this object item, string propertyPath)
+        public static T GetComplexPropertyValue<T> (this object item, string propertyPath, object[] index)
         {
-            if (item == null || propertyPath == null)
-            {
-                return null;
-            }
+            return (T)GetComplexPropertyValue(item, propertyPath, index);
+        }
 
+        public static object GetComplexPropertyValue (this object item, string propertyPath)
+        {
+            return item.GetComplexPropertyValue(propertyPath, null);
+        }
+
+        public static object GetComplexPropertyValue (this object item, string propertyPath, object[] index)
+        {
             if (propertyPath == "." || propertyPath == "")
             {
                 return item;
             }
 
-            int index = propertyPath.IndexOf('.');
-            if (index == -1)
+            return item.GetComplexProperty(propertyPath, out object childTarget)?.GetValue(childTarget, index);
+        }
+
+        public static bool SetPropertyByComplexPath<T> (this object item, string propertyPath, T value)
+        {
+            return item.SetPropertyByComplexPath(propertyPath, value, null);
+        }
+
+        public static bool SetPropertyByComplexPath<T> (this object item, string propertyPath, T value, object[] index)
+        {
+            return item.GetComplexProperty(propertyPath, out object childTarget)
+                        ?.SetValueExtended(item, propertyPath, childTarget, value, index) ?? false;
+        }
+
+        public static bool SetValueExtended<T> (this PropertyInfo prop, object source, string propertyPath, object target, T value)
+        {
+            return prop.SetValueExtended(source, propertyPath, target, value, null);
+        }
+
+        public static bool SetValueExtended<T> (this PropertyInfo prop, object source, string propertyPath, object target, T value, object[] index)
+        {
+            if (index != null)
             {
-                PropertyInfo itemProperty = item.GetType().GetProperty(propertyPath);
-                if (itemProperty != null)
-                {
-                    return itemProperty.GetValue(item, null);
-                }
-                return null;
+                prop.SetValue(target, value, index);
             }
             else
             {
-                string sPropertyPartPath = propertyPath.Substring(0, index);
-                PropertyInfo propertyPart = item.GetType().GetProperty(sPropertyPartPath);
-                if (propertyPart == null)
+                prop.SetValue(target, value);
+            }
+
+            while (target?.GetType().IsValueType ?? false)
+            {
+                propertyPath = ReduceComplexPath(propertyPath);
+                if (propertyPath == null)
                 {
-                    return null;
+                    break;
                 }
 
-                object valuePart = propertyPart.GetValue(item, null);
-                return GetComplexPropertyValue(valuePart, propertyPath.Substring(index + 1));
+                source.SetPropertyByComplexPath(propertyPath, target);
             }
-        }
-
-        public static bool SetPropertyByComplexPath<T>(this object item, string propertyPath, T value)
-        {
-            PropertyInfo prop = item.GetComplexProperty(propertyPath);
-            if(prop == null)
-            {
-                return false;
-            }
-
-            prop.SetValue(item, value);
             return true;
         }
 
-        public static bool SetPropertyByComplexPath<T>(this object item, string propertyPath, T value, object[] index)
+        private static string ReduceComplexPath(string propertyPath)
         {
-            PropertyInfo prop = item.GetComplexProperty(propertyPath);
-            if (prop == null)
+            int index = propertyPath.LastIndexOf('.');
+            if (index == -1)
             {
-                return false;
+                return null;
             }
 
-            prop.SetValue(item, value, index);
-            return true;
+            return propertyPath.Substring(0, index);
         }
 
 
