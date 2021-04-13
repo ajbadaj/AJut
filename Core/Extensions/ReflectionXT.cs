@@ -1,6 +1,7 @@
 ﻿namespace AJut
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
     using System.Linq.Expressions;
@@ -34,6 +35,7 @@
 
             return expression.Member.Name;
         }
+
         public static PropertyInfo GetComplexProperty (this object item, string propertyPath, out object childTarget)
         {
             if (item == null || string.IsNullOrEmpty(propertyPath))
@@ -42,15 +44,18 @@
                 return null;
             }
 
-            int index = propertyPath.IndexOf('.');
-            if (index == -1)
+            int separatorIndex = propertyPath.IndexOf('.');
+
+            // If there is no separator, then this is the end of the line
+            if (separatorIndex == -1)
             {
                 childTarget = item;
-                return item.GetType().GetProperty(propertyPath);
+                return childTarget.GetType().GetProperty(propertyPath);
             }
+            // Otherwise, recurse (if possible)
             else
             {
-                var propertyPartPath = propertyPath.Substring(0, index);
+                var propertyPartPath = propertyPath.Substring(0, separatorIndex);
                 var propertyPart = item.GetType().GetProperty(propertyPartPath);
                 if (propertyPart == null)
                 {
@@ -59,7 +64,7 @@
                 }
 
                 var valuePart = propertyPart.GetValue(item, null);
-                return GetComplexProperty(valuePart, propertyPath.Substring(index + 1), out childTarget);
+                return GetComplexProperty(valuePart, propertyPath.Substring(separatorIndex + 1), out childTarget);
             }
         }
 
@@ -85,7 +90,49 @@
                 return item;
             }
 
+            int openBracketTextIndex = propertyPath.IndexOf('[');
+            while (openBracketTextIndex != -1)
+            {
+                string subPath = propertyPath.Substring(0, openBracketTextIndex);
+                object childItem = item.GetComplexPropertyValue(subPath);
+                if (childItem is IList childList && _DoBracketEvaluation(out int childItemElementIndex, out int bracketTextEndIndex))
+                {
+                    item = childList[childItemElementIndex];
+                    openBracketTextIndex = propertyPath.IndexOf('[', openBracketTextIndex + 1);
+
+                    // The bracket was the last thing, return the item
+                    if (bracketTextEndIndex + 1 >= propertyPath.Length)
+                    {
+                        return item;
+                    }
+
+                    // Reduce the property path to be what comes after the bracket
+                    propertyPath = propertyPath.Substring(bracketTextEndIndex + 1);
+                }
+                else
+                {
+                    return null;
+                }
+            }
+
             return item.GetComplexProperty(propertyPath, out object childTarget)?.GetValue(childTarget, index);
+
+            bool _DoBracketEvaluation (out int index, out int bracketEndIndex)
+            {
+                index = -1;
+                bracketEndIndex = propertyPath.IndexOf(']');
+                if (bracketEndIndex == -1)
+                {
+                    return false;
+                }
+
+                if (int.TryParse(propertyPath.SubstringByInd(openBracketTextIndex + 1, bracketEndIndex - 1), out index))
+                {
+                    return true;
+                }
+
+                return false;
+            }
         }
 
         public static bool SetPropertyByComplexPath<T> (this object item, string propertyPath, T value)

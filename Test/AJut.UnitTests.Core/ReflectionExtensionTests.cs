@@ -30,13 +30,27 @@
             Assert.AreEqual(8, test.BarThing.SingleValue);
         }
 
-
         [TestMethod]
         public void ReflectionXT_SetComplexPropertyPathWorks_WithStructInPath ()
         {
             var test = new ThingWithStruct();
             test.SetPropertyByComplexPath("Test2.Test", 800);
             Assert.AreEqual(800, test.Test2.Test);
+        }
+
+        [TestMethod]
+        public void ReflectionXT_SetComplexPropertyPathWorks_WithIndexing ()
+        {
+            var test = new List<int> { 1, 2, 3 };
+            Assert.AreEqual(2, test.GetComplexPropertyValue<int>("[1]"));
+        }
+
+
+        [TestMethod]
+        public void ReflectionXT_SetComplexPropertyPathWorks_WithSubObjectIndexing ()
+        {
+            var test = new ThingWithList(1, 2, 3);
+            Assert.AreEqual(2, test.GetComplexPropertyValue<int>("Items[1]"));
         }
     }
 
@@ -74,5 +88,15 @@
     public class ThingWithStruct
     { 
         public StructyThing Test2 { get; set; } = new StructyThing { Test = 8 };
+    }
+
+    public class ThingWithList
+    {
+        public ThingWithList(params int[] items)
+        {
+            this.Items = new List<int>(items);
+        }
+
+        public List<int> Items { get; set; }
     }
 }
