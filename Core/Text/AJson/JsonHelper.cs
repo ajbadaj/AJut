@@ -650,7 +650,7 @@
             }
 
             // ----------- Handle Document ------------
-            PropertyInfo[] allProperties = GetPropertiesFrom(source.GetType(), true, false
+            PropertyInfo[] allProperties = GetPropertiesFrom(source.GetType(), true, !target.BuilderSettings.UseReadonlyObjectProperties
 #if WINDOWS_UWP
                 , target.BuilderSettings.UWP_RequireOptInViaDataMemberAttribute
 #endif
