@@ -6,6 +6,7 @@
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Linq;
 
     [TestClass]
     public class StratabaseTests
@@ -530,7 +531,7 @@
             sb.SetBaselineFromPropertiesOf(data);
 
             TestDataWithList found = new TestDataWithList();
-            sb.SetObjectWithProperties(data.Id, found);
+            sb.SetObjectWithProperties(data.Id, ref found);
 
             Assert.AreEqual(data.Name, found.Name);
             Assert.AreEqual(data.Value, found.Value);
@@ -542,7 +543,7 @@
             sb.SetOverridePropertyValue(2, data.Id, "Name", "Test #4");
 
             found = new TestDataWithList();
-            sb.SetObjectWithProperties(data.Id, found);
+            sb.SetObjectWithProperties(data.Id, ref found);
             Assert.AreEqual("Test #4", found.Name);
         }
 
@@ -904,7 +905,7 @@
             sb.SetBaselineFromPropertiesOf(v);
 
             GrandChild gc = new GrandChild { Id = v.Id };
-            sb.SetObjectWithProperties(gc);
+            sb.SetObjectWithProperties(ref gc);
 
             Assert.AreEqual(((GrandChild)v).IntValue, gc.IntValue);
             Assert.AreEqual(((GrandChild)v).StringValue, gc.StringValue);
@@ -912,11 +913,40 @@
         }
 
         [TestMethod]
-        public void STratabase_REGRESSION_CertainTypesFailing()
+        public void Stratabase_REGRESSION_CertainTypesFailing()
         {
             var data = new StrataTestTypeFailures();
             Stratabase sb = new Stratabase(1);
             sb.SetBaselineFromPropertiesOf(data);
+        }
+
+        [TestMethod]
+        public void Stratabase_REGRESSION_SetObjectWithStructValuesDoesNotWork ()
+        {
+            var data = new StrataTestDataWithStructies();
+            Stratabase sb = new Stratabase(1);
+            sb.SetBaselineFromPropertiesOf(data);
+
+            string wholeStructProp = nameof(StrataTestDataWithStructies.NormalStructPoint);
+
+            List<string> allProps = sb.GetAllBaselinePropertiesFor(data.Id).ToList();
+            Assert.IsTrue(allProps.Contains(wholeStructProp), $"Missing property: '{wholeStructProp}'");
+            Assert.IsTrue(allProps.Contains(_DotPt("X")), $"Missing property: '{_DotPt("X")}'");
+            Assert.IsTrue(allProps.Contains(_DotPt("Y")), $"Missing property: '{_DotPt("Y")}'");
+
+            var x = sb.GeneratePropertyAccess<double>(data.Id, _DotPt("X"));
+            x.SetBaselineValue(83.0);
+
+            var structAccess = sb.GeneratePropertyAccess<FakePointStructyThing>(data.Id, wholeStructProp);
+            structAccess.SetOverrideValue(0, new FakePointStructyThing(1.1, 1.1));
+
+            var output = new StrataTestDataWithStructies { Id = data.Id };
+            sb.SetObjectWithProperties(ref output);
+
+            Assert.AreEqual(83.0, output.DotStorePoint.X);
+            Assert.AreEqual(1.1, output.NormalStructPoint.Y);
+
+            string _DotPt (string part) => $"{nameof(StrataTestDataWithStructies.DotStorePoint)}.{part}";
         }
 
         public class Base
@@ -1096,6 +1126,28 @@
             [StratabaseId]
             public Guid Id { get; } = Guid.NewGuid();
             public DateTime DT { get; } = DateTime.Now;
+        }
+
+        public struct FakePointStructyThing
+        {
+            public double X { get; set; }
+            public double Y { get; set; }
+
+            public FakePointStructyThing (double x = 0.0, double y = 0.0)
+            {
+                this.X = x;
+                this.Y = y;
+            }
+        }
+
+        public class StrataTestDataWithStructies
+        {
+            [StratabaseId]
+            public Guid Id { get;  init; } = Guid.NewGuid();
+            public FakePointStructyThing NormalStructPoint { get; set; } = new FakePointStructyThing { X = 3.0, Y = 5.0 };
+            
+            [StrataStoreAsDotElements]
+            public FakePointStructyThing DotStorePoint { get; set; } = new FakePointStructyThing { X = -3.0, Y = -5.0 };
         }
     }
 }

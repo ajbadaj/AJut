@@ -5,7 +5,7 @@
     /// <summary>
     /// The base class of utilities for an object that caches and simplifies access to an object's property
     /// </summary>
-    public abstract class StrataPropertyAccessBase<T> : IDisposable
+    public abstract class StrataPropertyAccessBase<T> : IStrataPropertyAccess
     {
         private bool m_isBaselineSet;
         private bool m_isSet;

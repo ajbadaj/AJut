@@ -1,6 +1,5 @@
 ﻿namespace AJut.Storage
 {
-    using AJut.Text.AJson;
     using System;
     using System.Collections;
     using System.Collections.Generic;
@@ -10,13 +9,13 @@
     public delegate bool ObjectEqualityTester (object o1, object o2);
 
     /// <summary>
-    /// A layered storage container of property values &amp; overrides. Property groups, referenced in comments as objects, are specified with a unified
-    /// <see cref="Guid"/> id. On those objects are properties set by name. A baseline layer contains all properties, and an override layer, from 0-<see cref="OverrideLayerCount"/>
-    /// overrides those values. For instance, you might store an object with id {294FBA5B-BDB6-4CA1-86E7-8C552C5F3608}, and a property "Count" that is an int;
-    /// you could then override Count for that object in an override layer, and the top most value (from highest override layer index to baseline) would be the
-    /// effective value. To simplify this somewhat, access flyweights are available with <see cref="StrataPropertyValueAccess{TProperty}"/> and <see cref="StrataPropertyListAccess{TElement}"/>.
+    /// A layered storage container of property values. Property groups (simply called "objects") are unified under a single <see cref="Guid"/> id. The property
+    /// data for each object is stored in one baseline layer, and a variable number (set at construction time) of override layers (from 0-<see cref="OverrideLayerCount"/>).
+    /// The highest stored value, which is to say the largest index of override layer, down to baseline (effectively index -1) is the effective value for a given property.
+    /// To simplify access, flyweights are available with <see cref="IStrataPropertyAccess"/> instances - in addition property adapters are also available for automatic conversion
+    /// of storage value to used value (for instance maybe you store a string, but you use an enum).
     /// </summary>
-    public sealed class Stratabase
+    public sealed partial class Stratabase
     {
         private readonly Stratum m_baselineStorageLayer;
         private readonly Stratum[] m_overrideStorageLayers;
@@ -41,52 +40,38 @@
             }
         }
 
-        private Stratabase (StratabaseDataModel data)
-        {
-            this.OverrideLayerCount = data.OverrideLayers.Length;
-            m_baselineStorageLayer = StratabaseDataModel.FromStratumData(this, data.BaselineData);
-            m_overrideStorageLayers = data.OverrideLayers.Select(layer => StratabaseDataModel.FromStratumData(this, layer)).ToArray();
-        }
-
-        /// <summary>
-        /// Constructs a <see cref="Json"/> instance that represents this instance
-        /// </summary>
-        public Json SerializeToJson () => this.SerializeToJson(true, -1);
-        public Json SerializeToJson (bool includeBaseline = true, params int[] overrideLayersToInclude)
-        {
-            var output = new StratabaseDataModel(this, includeBaseline, overrideLayersToInclude);
-            return JsonHelper.BuildJsonForObject(output, StratabaseDataModel.kJsonSettings);
-        }
-
-        /// <summary>
-        /// Constructs a <see cref="Stratabase"/> from the json previously serialized by a stratabase
-        /// </summary>
-        public static Stratabase DeserializeFromJson (Json json)
-        {
-            var data = JsonHelper.BuildObjectForJson<StratabaseDataModel>(json);
-            if (data == null)
-            {
-                return null;
-            }
-
-            return new Stratabase(data);
-        }
-
         // =================================[ Events ]=========================================
 
+        /// <summary>
+        /// Indicates that data in the baseline layer has changed
+        /// </summary>
         public event EventHandler<BaselineStratumModificationEventArgs> BaselineDataChanged;
+
+        /// <summary>
+        /// Indicates that data in the override layer has changed
+        /// </summary>
         public event EventHandler<OverrideStratumModificationEventArgs> OverrideDataChanged;
 
         // ==========================[ Public Properties ]=====================================
 
+        /// <summary>
+        /// How many override layers does this <see cref="Stratabase"/> bave
+        /// </summary>
         public int OverrideLayerCount { get; }
 
+        /// <summary>
+        /// The function that the <see cref="Stratabase"/> uses to determine property equality, can be reset at any time,
+        /// though only future changes will use new equality tester.
+        /// </summary>
         public ObjectEqualityTester ValueEqualityTester { get; set; } = (o1, o2) => o1?.Equals(o2) ?? false;
 
         // ====================================================================================
         // ===========================[ Public Methods ]=======================================
         // ====================================================================================
 
+        /// <summary>
+        /// Check to see if the <see cref="Stratabase"/> is currently tracking an object with the given id
+        /// </summary>
         public bool Contains (Guid id)
         {
             if (m_baselineStorageLayer.ContainsKey(id))
@@ -120,6 +105,9 @@
 
         // ----------------- Clear -----------------
 
+        /// <summary>
+        /// Clear the entire <see cref="Stratabase"/>, optionally notify of the removals
+        /// </summary>
         public void ClearAll (bool notifyOfRemovals = true)
         {
             foreach (var odam in m_objectAccess.Values.ToList())
@@ -128,6 +116,9 @@
             }
         }
 
+        /// <summary>
+        /// Clear the <see cref="Stratabase"/> of all properties associated to the given <paramref name="id"/>, optionally notify of the removals
+        /// </summary>
         public void ClearAllFor (Guid id, bool notifyOfRemovals = true)
         {
             this.GetAccessManager(id)?.ClearAll(notifyOfRemovals);
@@ -178,100 +169,89 @@
             return true;
         }
 
-        public void SetObjectWithProperties<T> (Guid objectId, T source)
+        /// <summary>
+        /// Pull properties from the Stratabase from the object with the matching <paramref name="objectId"/> and set the passed in object's properties with the highest order stratabase values
+        /// </summary>
+        public void SetObjectWithProperties<T> (Guid objectId, ref T source)
         {
-            Type sourceType = source.GetType();
-            PropertyInfo[] allSettableProperties = sourceType
-                .GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.SetProperty)
-                .Where(p => !(p.GetAttributes<StrataIgnoreAttribute>().FirstOrDefault()?.WhenOutput ?? false))
-                .ToArray();
-
             ObjectDataAccessManager odam = this.GetAccessManager(objectId);
             if (odam == null)
             {
                 return;
             }
-            
-            foreach (PropertyInfo settableProperty in allSettableProperties)
-            {
-                if (odam.SearchForFirstOverrideLayerIndexSet(this.OverrideLayerCount - 1, settableProperty.Name, out int overrideLayerIndex))
-                {
-                    _SetPropWithStratum(settableProperty, objectId, m_overrideStorageLayers[overrideLayerIndex]);
-                }
-                else if (odam.HasBaselineValueSet(settableProperty.Name))
-                {
-                    _SetPropWithStratum(settableProperty, objectId, m_baselineStorageLayer);
-                }
-            }
 
-            void _SetPropWithStratum(PropertyInfo _propToSet, Guid _objId, Stratum _layer)
+            var baseline = this.GetBaselinePropertyBagFor(objectId);
+            foreach(string propPath in baseline.Keys)
             {
-                if (_layer.TryGetValue(objectId, out PseudoPropertyBag storedPropBag)
-                    && storedPropBag.TryGetValue(_propToSet.Name, out object storedPropValue))
+                if (!odam.SearchForFirstSetValue(m_overrideStorageLayers.Length - 1, propPath, out object storedPropValue))
                 {
-                    // Go through this BONKERS process to determine if it's list access backed data and set it that way
-                    if (typeof(IEnumerable).IsAssignableFrom(_propToSet.PropertyType))
+                    continue;
+                }
+
+                PropertyInfo targetProp = source.GetComplexProperty(propPath, out object target);
+                // Go through this BONKERS process to determine if it's list access backed data and set it that way
+                if (targetProp.PropertyType != typeof(string) && typeof(IEnumerable).IsAssignableFrom(targetProp.PropertyType))
+                {
+                    // Is it ListAccess backed?
+                    Type propValueType = storedPropValue.GetType();
+                    if (propValueType.IsGenericType && propValueType.GetGenericTypeDefinition() == typeof(ObservableCollectionX<>)
+                        && propValueType.GenericTypeArguments[0].IsGenericType
+                        && propValueType.GenericTypeArguments[0].GetGenericTypeDefinition() == typeof(StratabaseListInsertion<>))
                     {
-                        // Is it ListAccess backed?
-                        Type propValueType = storedPropValue.GetType();
-                        if (propValueType.IsGenericType && propValueType.GetGenericTypeDefinition() == typeof(ObservableCollectionX<>)
-                            && propValueType.GenericTypeArguments[0].IsGenericType 
-                            && propValueType.GenericTypeArguments[0].GetGenericTypeDefinition() == typeof(StratabaseListInsertion<>))
+                        // Ok it is, now use reflection to generate a StrataPropertyListAccess
+                        Type itemType = propValueType.GenericTypeArguments[0].GenericTypeArguments[0];
+                        var listAccess = (IDisposable)this.InvokeTemplatedMethod(
+                            nameof(GenerateListPropertyAccess),
+                            itemType, objectId, propPath
+                        );
+
+                        // If we succeeded in making a list access, then grab the cache and try to set the value
+                        if (listAccess != null)
                         {
-                            // Ok it is, now use reflection to generate a StrataPropertyListAccess
-                            Type itemType = propValueType.GenericTypeArguments[0].GenericTypeArguments[0];
-                            var listAccess = (IDisposable)this.InvokeTemplatedMethod(
-                                nameof(GenerateListPropertyAccess), 
-                                itemType, _objId, _propToSet.Name
-                            );
-
-                            // If we succeeded in making a list access, then grab the cache and try to set the value
-                            if (listAccess != null)
+                            IList elements = listAccess.GetComplexPropertyValue<IList>(nameof(StrataPropertyListAccess<int>.Elements));
+                            if (elements != null)
                             {
-                                IList elements = listAccess.GetComplexPropertyValue<IList>(nameof(StrataPropertyListAccess<int>.Elements));
-                                if (elements != null)
+                                // Here's the tricky bit, we either are setting an array - or - we're setting something we assume
+                                //  activator.create instance can make for us, is an IList, which we can then add the items to.
+                                if (targetProp.PropertyType.IsArray)
                                 {
-                                    // Here's the tricky bit, we either are setting an array - or - we're setting something we assume
-                                    //  activator.create instance can make for us, is an IList, which we can then add the items to.
-                                    if (_propToSet.PropertyType.IsArray)
+                                    Array final = Array.CreateInstance(targetProp.PropertyType.GenericTypeArguments[0], elements.Count);
+                                    for (int index = 0; index < elements.Count; ++index)
                                     {
-                                        Array final = Array.CreateInstance(_propToSet.PropertyType.GenericTypeArguments[0], elements.Count);
-                                        for (int index = 0; index < elements.Count; ++index)
-                                        {
-                                            final.SetValue(elements[index], index);
-                                        }
-
-                                        _propToSet.SetValue(source, final);
+                                        final.SetValue(elements[index], index);
                                     }
-                                    else if (typeof(IList).IsAssignableFrom(_propToSet.PropertyType))
-                                    {
-                                        IList final = (IList)Activator.CreateInstance(_propToSet.PropertyType);
-                                        foreach(object obj in elements)
-                                        {
-                                            final.Add(obj);
-                                        }
 
-                                        _propToSet.SetValue(source, final);
-                                    }
+                                    targetProp.SetValueExtended(source, propPath, target, final);
                                 }
+                                else if (typeof(IList).IsAssignableFrom(targetProp.PropertyType))
+                                {
+                                    IList final = (IList)Activator.CreateInstance(targetProp.PropertyType);
+                                    foreach (object obj in elements)
+                                    {
+                                        final.Add(obj);
+                                    }
 
-                                // Don't forget to dispose of hte list access
-                                listAccess.Dispose();
-                                return;
+                                    targetProp.SetValueExtended(source, propPath, target, final);
+                                }
                             }
+
+                            // Don't forget to dispose of hte list access
+                            listAccess.Dispose();
+                            return;
                         }
                     }
-
-                    // Otherwise, try and see if the type is assignable, and assign it if it is
-                    if (_propToSet.PropertyType.IsAssignableFrom(storedPropValue.GetType()))
-                    {
-                        _propToSet.SetValue(source, storedPropValue);
-                    }
+                }
+                else
+                {
+                    targetProp.SetValueExtended(source, propPath, target, storedPropValue);
                 }
             }
         }
 
-        public void SetObjectWithProperties<T> (T source)
+        /// <summary>
+        /// Determine the object id as you would serializtion from the passed in object, then pull properties from the Stratabase with the matching id and set the passed in object's properties with the highest order stratabase values.
+        /// </summary>
+        public void SetObjectWithProperties<T> (ref T source)
         {
             if (source == null)
             {
@@ -283,7 +263,7 @@
                 throw new ArgumentException($"Object of type {source.GetType().Name} passed in to {nameof(SetObjectWithProperties)} was not assigned a StratabaseId in it's class layout, nor passed in with a guid.");
             }
 
-            this.SetObjectWithProperties(id, source);
+            this.SetObjectWithProperties(id, ref source);
         }
 
         // ----------------- Set Property Value -----------------
@@ -311,23 +291,35 @@
 
         // ----------------- Get Property Value -----------------
 
+        /// <summary>
+        /// Try and extract a baseline property value for a given object id (typed)
+        /// </summary>
         public bool TryGetBaselinePropertyValue<T> (Guid id, string property, out T value)
         {
             value = default;
             return this.GetAccessManager(id)?.TryGetBaselineValue(property, out value) == true;
         }
 
+        /// <summary>
+        /// Try and extract a baseline property value for a given object id (untyped)
+        /// </summary>
         public bool TryGetBaselinePropertyValue (Guid id, string property, out object value)
         {
             return TryGetBaselinePropertyValue<object>(id, property, out value);
         }
 
+        /// <summary>
+        /// Try and extract an override property value for a given object id (typed)
+        /// </summary>
         public bool TryGetOverridePropertyValue<T> (int layer, Guid id, string property, out T value)
         {
             value = default;
             return this.GetAccessManager(id)?.TryGetOverrideValue(layer, property, out value) == true;
         }
 
+        /// <summary>
+        /// Try and extract an override property value for a given object id (untyped)
+        /// </summary>
         public bool TryGetOverridePropertyValue (int layer, Guid id, string property, out object value)
         {
             return TryGetOverridePropertyValue<object>(layer, id, property, out value);
@@ -391,44 +383,6 @@
             return propertyBag;
         }
 
-        private void SetBaselineData (ObjectEvaluation objectEvaluation)
-        {
-            ObjectDataAccessManager accessManager = EnsureDataAccess(objectEvaluation.Id);
-            foreach (KeyValuePair<string, object> property in objectEvaluation.ValueStorage)
-            {
-                accessManager.SetBaselineValue(property.Key, property.Value);
-            }
-
-            //#error using it
-            foreach (ObjectEvaluation ancillary in objectEvaluation.AncillaryElements)
-            {
-                this.SetBaselineData(ancillary);
-            }
-
-            foreach (KeyValuePair<string, ObjectEvaluation> childObject in objectEvaluation.ChildObjectStorage)
-            {
-                accessManager.SetBaselineValue(childObject.Key, childObject.Value.Id);
-                this.SetBaselineData(childObject.Value);
-            }
-
-            foreach (KeyValuePair<string,ObjectEvaluation.ListInfo> listProp in objectEvaluation.InsertGenerationLists)
-            {
-                if ((listProp.Value.Elements?.Length ?? 0) == 0)
-                {
-                    continue;
-                }
-
-                Type elementType = listProp.Value.ElementType ?? listProp.Value.Elements[0].GetType();
-                Type listAccessType = typeof(StrataPropertyListAccess<>).MakeGenericType(elementType);
-
-                // In order to keep some kind of strong access of the method (for refactoring & compiling errors), using object
-                //  as a sort of unknown sinceit's just to get nameof.
-                string methodName = nameof(StrataPropertyListAccess<object>.GenerateStorageForBaselineListAccess);
-                object storage = ReflectionXT.RunStaticMethod(listAccessType, methodName, (object)(listProp.Value.Elements));
-                this.SetBaselinePropertyValue(objectEvaluation.Id, listProp.Key, storage);
-            }
-        }
-
         private void OnObjectDataAccessManagerAdded (ObjectDataAccessManager odam)
         {
             m_objectAccess.Add(odam.Id, odam);
@@ -471,7 +425,6 @@
         }
 
         // ===========================[ Utility Classes ]======================================
-
 
         /// <summary>
         /// ALL CHANGES GO THROUGH HERE! This ensures proper routing of events. Stores properties for a given object (indicated by <see cref="Id"/>).
@@ -713,6 +666,8 @@
             }
 
             public bool TryGetValue (string propertyName, out object value) => this.m_storage.TryGetValue(propertyName, out value);
+            
+            public IEnumerable<string> Keys => m_storage.Keys;
 
             internal bool SetValue (string propertyName, object newValue, out object oldValue)
             {
@@ -744,317 +699,5 @@
         }
 
         private class Stratum : Dictionary<Guid, PseudoPropertyBag> { }
-
-        internal class ObjectEvaluation
-        {
-            private ObjectEvaluation (Guid id, Dictionary<string, object> simpleProps, Dictionary<string, ObjectEvaluation> validSubObjects, Dictionary<string, ListInfo> insertGenerationLists, List<ObjectEvaluation> ancillaryElements)
-            {
-                this.Id = id;
-                this.ValueStorage = simpleProps;
-                this.ChildObjectStorage = validSubObjects;
-                this.InsertGenerationLists = insertGenerationLists;
-                this.AncillaryElements = ancillaryElements;
-            }
-
-            public Guid Id { get; }
-            public Dictionary<string, object> ValueStorage { get; }
-            public Dictionary<string, ObjectEvaluation> ChildObjectStorage { get; }
-            public Dictionary<string, ListInfo> InsertGenerationLists { get; }
-            public List<ObjectEvaluation> AncillaryElements { get; }
-
-            public static ObjectEvaluation Generate (Guid? foundId, string idPropertyName, object source, string parentPropertyChain = null)
-            {
-                if (source == null)
-                {
-                    return null;
-                }
-
-                Type sourceType = source.GetType();
-                if (sourceType.IsSimpleType())
-                {
-                    return null;
-                }
-
-                var allProperties = DeterminePropertiesFor(sourceType);
-
-                Dictionary<string, object> simpleProperties = new Dictionary<string, object>();
-                Dictionary<string, ObjectEvaluation> subObjects = new Dictionary<string, ObjectEvaluation>();
-                Dictionary<string, ListInfo> insertGenerationLists = new Dictionary<string, ListInfo>();
-                List<ObjectEvaluation> ancillaryElements = new List<ObjectEvaluation>();
-
-                string propertyNamePrefix = parentPropertyChain == null ? String.Empty : $"{parentPropertyChain}.";
-
-                var classIdAttr = sourceType.GetAttributes<StratabaseIdAttribute>().FirstOrDefault();
-                foreach (PropertyInfo prop in allProperties)
-                {
-                    if (!foundId.HasValue && classIdAttr != null && 
-                            (prop.Name == classIdAttr.PropertyName || prop.Name == idPropertyName))
-                    {
-                        ThrowIfTypeIsNotGuid(sourceType, prop);
-                        foundId = (Guid)prop.GetValue(source);
-                        continue;
-                    }
-
-                    var propIdAttr = prop.GetAttributes<StratabaseIdAttribute>().FirstOrDefault();
-                    if (!foundId.HasValue && propIdAttr != null && propIdAttr.IsClassDefault)
-                    {
-                        ThrowIfTypeIsNotGuid(sourceType, prop);
-                        foundId = (Guid)prop.GetValue(source);
-                        continue;
-                    }
-
-                    Lazy<object> lazyInstanceGenerator = new Lazy<object>(() => prop.GetValue(source));
-                    string subObjectName = propertyNamePrefix + prop.Name;
-
-                    // Got a sub object over here...
-                    if (!prop.PropertyType.IsSimpleType())
-                    {
-                        if (prop.PropertyType.IsArray || (typeof(IList).IsAssignableFrom(prop.PropertyType) && prop.PropertyType.GenericTypeArguments.Length == 1))
-                        {
-                            IList elementValues = lazyInstanceGenerator.Value as IList;
-                            if (elementValues == null)
-                            {
-                                continue;
-                            }
-
-                            StrataListConfigAttribute listConfigAttr = prop.GetAttributes<StrataListConfigAttribute>().FirstOrDefault() ?? StrataListConfigAttribute.Default;
-
-                            // ========= Reference lists =======================
-                            if (listConfigAttr.BuildReferenceList)
-                            {
-                                if (listConfigAttr.Config == eStrataListConfig.StoreListDirectly)
-                                {
-                                    throw new ArgumentException($"List {prop.Name} was marked up with [StrataListConfig] to indicate reference list generation and direct list storage, which is incompatible.");
-                                }
-
-                                List<object> elementIds = new List<object>();
-                                int index = 0;
-                                foreach (object element in elementValues)
-                                {
-                                    var elementEval = ObjectEvaluation.Generate(null, null, element);
-                                    if (listConfigAttr.Config == eStrataListConfig.GenerateInsertOverrides)
-                                    {
-                                        if (elementEval == null)
-                                        {
-                                            throw new ArgumentException($"Error - StratabaseId on class {element.GetType().Name} from list {subObjectName} could not determine id. Please markup list with [StrataListConfig] attribute or element class with [StratabaseId] attribute.");
-                                        }
-
-                                        ancillaryElements.Add(elementEval);
-                                        elementIds.Add(elementEval.Id);
-                                    }
-                                    else if (listConfigAttr.Config == eStrataListConfig.GenerateIndexedSubProperties)
-                                    {
-                                        string name = $"{subObjectName}[{index++}]";
-                                        if (elementEval != null)
-                                        {
-                                            subObjects.Add(name, elementEval);
-                                        }
-                                        else
-                                        {
-                                            simpleProperties.Add(name, element);
-                                        }
-                                    }
-                                }
-
-                                if (elementIds.Count > 0 && listConfigAttr.Config == eStrataListConfig.GenerateInsertOverrides)
-                                {
-                                    insertGenerationLists.Add(subObjectName, new ListInfo(elementIds.ToArray(), typeof(Guid)));
-                                }
-                            }
-                            // ========= Whatever is in 'em lists ==============
-                            else
-                            {
-                                if (listConfigAttr.Config == eStrataListConfig.GenerateInsertOverrides)
-                                {
-                                    insertGenerationLists.Add(subObjectName, new ListInfo(elementValues.OfType<object>().ToArray(), listConfigAttr.ElementType));
-                                }
-                                else if (listConfigAttr.Config == eStrataListConfig.StoreListDirectly)
-                                {
-                                    // Otherwise store as just list
-                                    simpleProperties.Add(subObjectName, elementValues);
-                                }
-                                else if (listConfigAttr.Config == eStrataListConfig.GenerateIndexedSubProperties)
-                                {
-                                    string idPropName = null;
-                                    if (propIdAttr != null && !propIdAttr.IsClassDefault)
-                                    {
-                                        idPropName = propIdAttr.PropertyName;
-                                    }
-
-                                    int index = 0;
-                                    foreach (object item in elementValues)
-                                    {
-                                        string name = $"{subObjectName}[{index++}]";
-                                        var result = ObjectEvaluation.Generate(null, idPropName, item, name);
-                                        if (result != null)
-                                        {
-                                            subObjects.Add(name, result);
-                                        }
-                                        else
-                                        {
-                                            simpleProperties.Add(name, item);
-                                        }
-                                    }
-                                }
-                            }
-
-                            continue;
-                        }
-
-                        if (lazyInstanceGenerator.Value == null)
-                        {
-                            continue;
-                        }
-
-                        // Gerenate subobject or subobject info
-                        bool isReference = prop.GetAttributes<StratabaseReferenceAttribute>().Any();
-                        ObjectEvaluation subObjectEval = ObjectEvaluation.Generate(null, null, lazyInstanceGenerator.Value, isReference ? null : subObjectName);
-
-                        // Nothing was generated, and if we're here we have a value, so instead put hte value in for simple properties
-                        if (subObjectEval == null)
-                        {
-                            simpleProperties.Add(subObjectName, lazyInstanceGenerator.Value);
-                            continue;
-                        }
-
-                        // We generated a full on sub object
-                        if (isReference && subObjectEval.Id != Guid.Empty)
-                        {
-                            simpleProperties.Add(subObjectName, subObjectEval.Id);
-                            subObjects.Add(subObjectName, subObjectEval);
-                            continue;
-                        }
-
-                        // We generate subobject property info, add that info to this things info
-                        simpleProperties.AddEach(subObjectEval.ValueStorage);
-                        subObjects.AddEach(subObjectEval.ChildObjectStorage);
-                    }
-
-                    if (lazyInstanceGenerator.Value != null)
-                    {
-                        simpleProperties.Add(subObjectName, lazyInstanceGenerator.Value);
-                    }
-                }
-
-                if (foundId.HasValue)
-                {
-                    return new ObjectEvaluation(foundId.Value, simpleProperties, subObjects, insertGenerationLists, ancillaryElements);
-                }
-                else if (parentPropertyChain != null)
-                {
-                    return new ObjectEvaluation(Guid.Empty, simpleProperties, subObjects, insertGenerationLists, ancillaryElements);
-                }
-
-                return null;
-
-            }
-
-            private static void ThrowIfTypeIsNotGuid(Type sourceType, PropertyInfo prop)
-            {
-                if (prop.PropertyType != typeof(Guid))
-                {
-                    throw new ArgumentException($"Error - StratabaseId on class {sourceType.Name} identified property {prop.Name} as the object's identifier, but {prop.Name} is not a guid. [StratabaseId] attribute must be used to identify a property of type guid.");
-                }
-            }
-
-            public static PropertyInfo[] DeterminePropertiesFor(Type sourceType)
-            {
-                return sourceType
-                        .GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty)
-                        .Where(p => !(p.GetAttributes<StrataIgnoreAttribute>().FirstOrDefault()?.WhenInput ?? false))
-                        .ToArray();
-            }
-
-            public static bool DetermineObjectId (object source, out Guid id)
-            {
-                Type sourceType = source.GetType();
-                var classIdAttr = sourceType.GetAttributes<StratabaseIdAttribute>().FirstOrDefault();
-                var allProperties = DeterminePropertiesFor(sourceType);
-                foreach (PropertyInfo prop in allProperties)
-                {
-                    if (classIdAttr != null && prop.Name == classIdAttr.PropertyName)
-                    {
-                        ThrowIfTypeIsNotGuid(sourceType, prop);
-                        id = (Guid)prop.GetValue(source);
-                        return true;
-                    }
-
-                    var propIdAttr = prop.GetAttributes<StratabaseIdAttribute>().FirstOrDefault();
-                    if (propIdAttr != null && propIdAttr.IsClassDefault)
-                    {
-                        ThrowIfTypeIsNotGuid(sourceType, prop);
-                        id = (Guid)prop.GetValue(source);
-                        return true;
-                    }
-                }
-
-                id = Guid.Empty;
-                return false;
-            }
-
-            public class ListInfo
-            {
-                public ListInfo (object[] elements, Type type = null)
-                {
-                    this.Elements = elements;
-                    this.ElementType = type;
-                }
-                public Type ElementType { get; }
-                public object[] Elements { get; }
-            }
-        }
-
-        private class StratabaseDataModel
-        {
-            public static JsonBuilder.Settings kJsonSettings = new JsonBuilder.Settings
-            {
-                KeyValuePairValueTypeIdToWrite = eTypeIdInfo.Any
-            };
-
-            public Dictionary<Guid, Dictionary<string, object>> BaselineData { get; set; }
-            public Dictionary<Guid, Dictionary<string, object>>[] OverrideLayers { get; set; }
-
-            public StratabaseDataModel() { }
-            public StratabaseDataModel(Stratabase sb, bool includeBaseline, int[] layersToInclude)
-            {
-                this.BaselineData = includeBaseline ? _StratumToSaveData(sb.m_baselineStorageLayer) : null;
-
-                bool includeAllOverrideLayers = layersToInclude.Length == 1 && layersToInclude[0] == -1;
-                this.OverrideLayers = new Dictionary<Guid, Dictionary<string, object>>[sb.OverrideLayerCount];
-                for (int stratumIndex = 0; stratumIndex < sb.OverrideLayerCount; ++stratumIndex)
-                {
-                    this.OverrideLayers[stratumIndex] = (includeAllOverrideLayers || layersToInclude.Contains(stratumIndex))
-                            ? _StratumToSaveData(sb.m_overrideStorageLayers[stratumIndex])
-                            : null;
-                }
-                sb.m_overrideStorageLayers.Select(_StratumToSaveData).ToArray();
-
-                Dictionary<Guid, Dictionary<string, object>> _StratumToSaveData(Stratum _s)
-                {
-                    var output = new Dictionary<Guid, Dictionary<string, object>>();
-                    foreach (KeyValuePair<Guid,PseudoPropertyBag> data in _s)
-                    {
-                        output.Add(data.Key, data.Value.m_storage);
-                    }
-
-                    return output;
-                }
-            }
-
-            // This doesn't **need** to be here, but I like having it next to it's opposite above
-            public static Stratum FromStratumData (Stratabase sb, Dictionary<Guid, Dictionary<string, object>> stratumData)
-            {
-                var output = new Stratum();
-                if (stratumData != null)
-                {
-                    foreach (KeyValuePair<Guid, Dictionary<string, object>> data in stratumData)
-                    {
-                        output.Add(data.Key, new PseudoPropertyBag(sb, data.Value));
-                    }
-                }
-
-                return output;
-            }
-        }
     }
 }
