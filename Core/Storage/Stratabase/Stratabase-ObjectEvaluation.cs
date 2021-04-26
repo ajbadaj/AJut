@@ -230,7 +230,7 @@
 
                         // ===========================[ Subobject Evaluations ]========================
                         // Gerenate subobject or subobject info
-                        bool isReference = prop.GetAttributes<StratabaseReferenceAttribute>().Any();
+                        bool isReference = EvaluateIfUsesReferenceIndirection(prop);
                         ObjectEvaluation subObjectEval = ObjectEvaluation.Generate(null, null, lazyInstanceGenerator.Value, isReference ? null : subObjectName);
 
                         // Nothing was generated, and if we're here we have a value, so instead put hte value in for simple properties
@@ -292,6 +292,11 @@
                 return false;
             }
 
+            public static bool EvaluateIfUsesReferenceIndirection (PropertyInfo prop)
+            {
+                return prop.GetAttributes<StratabaseReferenceAttribute>().Any();
+            }
+
             public static PropertyInfo[] DeterminePropertiesFor (Type sourceType, string classIdProperty = null)
             {
                 return sourceType
@@ -308,7 +313,7 @@
 
                     if (_prop.SetMethod == null)
                     {
-                        if (_prop.Name == classIdProperty || _prop.IsTaggedWithAttribute<StrataIncludeReadonlyAttribute>())
+                        if (sourceType.IsAnonymous() || _prop.Name == classIdProperty || _prop.IsTaggedWithAttribute<StrataIncludeReadonlyAttribute>())
                         {
                             return true;
                         }

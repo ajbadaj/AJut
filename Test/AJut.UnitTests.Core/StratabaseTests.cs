@@ -570,6 +570,25 @@
             Assert.AreEqual(1, items[1].DisposeCallCount);
         }
 
+        [TestMethod]
+        public void Stratabase_NewUnsetAccess_DoesNotGiveIsSetTrue ()
+        {
+            Stratabase sb = new Stratabase(1);
+
+            // First check with an id that was not already present
+            Guid id = Guid.NewGuid();
+            var access = sb.GeneratePropertyAccess<int>(id, "ThisDoesNotExist");
+            Assert.IsFalse(access.IsBaselineSet);
+            Assert.IsFalse(access.IsSet);
+            access.Dispose();
+
+            // Next check with an id that has data present
+            id = Guid.NewGuid();
+            sb.SetBaselinePropertyValue(id, "Test", 28);
+            access = sb.GeneratePropertyAccess<int>(id, "ThisDoesNotExist");
+            Assert.IsFalse(access.IsBaselineSet);
+            Assert.IsFalse(access.IsSet);
+        }
         private class TestModel : StratabaseBackedModel, IDisposable
         {
             private Property<DisposeTester> m_singleItem;
@@ -948,6 +967,7 @@
 
             string _DotPt (string part) => $"{nameof(StrataTestDataWithStructies.DotStorePoint)}.{part}";
         }
+
 
         public class Base
         {

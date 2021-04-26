@@ -3,7 +3,7 @@
     /// <summary>
     /// Caches and tracks access information to make a simplified utility set for accessing an object's property stored in a <see cref="Stratabase"/>
     /// </summary>
-    public class StrataPropertyValueAccess<TProperty> : StrataPropertyAccessBase<TProperty>
+    public class StrataPropertyValueAccess<TProperty> : StrataPropertyAccessBase<TProperty>, IStrataPropertyValueRetreiver<TProperty>, IStrataPropertyValueManipulator<TProperty>
     {
         // Invalid constructor
         internal protected StrataPropertyValueAccess () : base() { }
