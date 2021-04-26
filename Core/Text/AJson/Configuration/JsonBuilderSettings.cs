@@ -70,7 +70,7 @@
                 this.Newline = "\n";
                 this.PropertyValueQuoting = ePropertyValueQuoting.QuoteAll;
                 this.MakeDateTimesUTC = true;
-                this.TypeIdToWrite = eTypeIdInfo.None;
+                this.TypeIdToWrite = eTypeIdInfo.TypeIdAttributed;
                 this.KeyValuePairKeyTypeIdToWrite = eTypeIdInfo.None;
                 this.KeyValuePairValueTypeIdToWrite = eTypeIdInfo.None;
                 this.UseReadonlyObjectProperties = true;

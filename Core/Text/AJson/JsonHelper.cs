@@ -650,7 +650,7 @@
             }
 
             // ----------- Handle Document ------------
-            PropertyInfo[] allProperties = GetPropertiesFrom(source.GetType(), true, !target.BuilderSettings.UseReadonlyObjectProperties
+            PropertyInfo[] allProperties = GetPropertiesFrom(source.GetType(), true, source.GetType().IsSimpleType() || !target.BuilderSettings.UseReadonlyObjectProperties
 #if WINDOWS_UWP
                 , target.BuilderSettings.UWP_RequireOptInViaDataMemberAttribute
 #endif
@@ -890,7 +890,7 @@
             return targetType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                                                 .Where(prop => (!requiresGet || prop.GetGetMethod() != null)
                                                             && (!requiresSet || prop.GetSetMethod() != null)
-                                                            && !AttributeHelper.HasAny<JsonIgnoreAttribute>(prop.GetCustomAttributes(true)))
+                                                            && !prop.IsTaggedWithAttribute<JsonIgnoreAttribute>())
                                                     .ToArray();
         }
 #endif
