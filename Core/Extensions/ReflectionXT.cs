@@ -9,6 +9,14 @@
 
     public static class ReflectionXT
     {
+        /// <summary>
+        /// Tests to see if the type is an anonymous type
+        /// </summary>
+        public static bool IsAnonymous(this Type type)
+        {
+            return type.Namespace == null && type.Name.Contains("<>") && type.Name.Contains("Anonymous");
+        }
+
         #region ========== Attributes =========
 
         public static IEnumerable<TAttribute> GetAttributes<TAttribute> (this MemberInfo member, AttributeTester<TAttribute> validator = null, bool allowDerivedAttributeTypes = true, bool checkInherited = true) where TAttribute : Attribute
@@ -282,9 +290,11 @@
         private static object RunTemplatedMethod(Type staticMethodOwner, object instanceToRunOn, string methodName, Type[] templateArgs, object[] methodArgs)
         {
             Type methodOwner = staticMethodOwner ?? instanceToRunOn.GetType();
-            MethodInfo method = methodOwner.GetMethod(methodName);
+            MethodInfo method = methodOwner.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).Where(_Filter).FirstOrDefault();
             if (method == null)
+            {
                 return null;
+            }
 
             method = method.MakeGenericMethod(templateArgs);
 
@@ -295,6 +305,26 @@
             else
             {
                 return method.Invoke(instanceToRunOn, methodArgs);
+            }
+
+            bool _Filter(MethodInfo _method)
+            {
+                if (_method.Name != methodName)
+                {
+                    return false;
+                }
+
+                var parameters = _method.GetParameters();
+                for(int index = 0; index < parameters.Length; ++index)
+                {
+                    if (!parameters[index].ParameterType.IsAssignableFrom(methodArgs[index].GetType()))
+                    {
+                        return false;
+                    }
+                }
+
+                // This actually could lead to incorrect results as you might have two methods with the same number of generics - but different constraints
+                return _method.GetGenericArguments().Length == templateArgs.Length;
             }
         }
 
