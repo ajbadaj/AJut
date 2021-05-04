@@ -5,6 +5,7 @@
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/FlatTreeListControl.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/NumericEditor.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/PathFollowingContentDisplayer.xaml"/>
+        <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/PropertyGrid.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/ToggleStrip.xaml"/>
     </ResourceDictionary.MergedDictionaries>
 </ResourceDictionary>

@@ -40,6 +40,9 @@
     <Compile Update="Controls\ToggleStrip.cs">
       <DependentUpon>ToggleStrip.xaml</DependentUpon>
     </Compile>
+	<Compile Update="Controls\PropertyGrid.cs">
+      <DependentUpon>PropertyGrid.xaml</DependentUpon>
+    </Compile>
   </ItemGroup>
       
 </Project>

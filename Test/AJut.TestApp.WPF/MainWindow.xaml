@@ -538,6 +538,58 @@
                     </ajut:BumpStack>
                 </DockPanel>
             </TabItem>
+            <TabItem Header="Property Grid">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <ajut:PropertyGrid ItemsSource="{Binding ElementName=PropGridSelectionOptions, Path=SelectedItems}" BorderThickness="3" BorderBrush="#202020" Margin="20" Background="#1000"
+                                       HorizontalContentAlignment="Stretch">
+                        <ajut:PropertyGrid.ItemTemplateSelector>
+                            <ajut:PropertyGridTemplateSelector>
+                                <ajut:PropertyGridTemplateSelector.RegisteredTemplates>
+                                    <DataTemplate x:Key="Text" DataType="{x:Type ajut:PropertyEditTarget}">
+                                        <ajut:EditableTextBlock Text="{Binding Path=EditValue, Mode=TwoWay}" FontSize="16"/>
+                                    </DataTemplate>
+                                    <DataTemplate x:Key="Number" DataType="{x:Type ajut:PropertyEditTarget}">
+                                        <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}"
+                                                            Minimum="{Binding Path=EditContext.Minimum, FallbackValue=0}"
+                                                            Maximum="{Binding Path=EditContext.Maximum, FallbackValue=100}"
+                                                            SmallWholeNumberNudge="{Binding Path=EditContext.SmallStep, FallbackValue=1}"
+                                                            BigNudge="{Binding Path=EditContext.LargeStep, FallbackValue=1}"
+                                                            NumberTextAlignment="Left"/>
+                                    </DataTemplate>
+                                </ajut:PropertyGridTemplateSelector.RegisteredTemplates>
+                                <ajut:PropertyGridTemplateSelector.Default>
+                                    <DataTemplate DataType="{x:Type ajut:PropertyEditTarget}">
+                                        <TextBlock Text="{Binding Path=EditValue}"/>
+                                    </DataTemplate>
+                                </ajut:PropertyGridTemplateSelector.Default>
+                            </ajut:PropertyGridTemplateSelector>
+
+                        </ajut:PropertyGrid.ItemTemplateSelector>
+                    </ajut:PropertyGrid>
+
+                    <ListBox x:Name="PropGridSelectionOptions" Grid.Column="1"
+                             ItemsSource="{Binding ElementName=Self, Path=PropertyGridItems}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock>
+                                        <TextBlock.Inlines>
+                                            <Run Text="{Binding Path=DogsName}"/>
+                                            <Run Text=": "/>
+                                            <Run Text="{Binding Path=DogsAge}"/>
+                                        </TextBlock.Inlines>
+                                    </TextBlock>
+                                    <Button Content="Set age" Click="SetDogAge_OnClick"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </TabItem>
         </TabControl>
     </Grid>
 </Window>

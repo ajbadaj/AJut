@@ -35,6 +35,12 @@
         public MainWindow()
         {
             this.ToolWindows = new WindowManager(this);
+            this.PropertyGridItems = new SelfAwarePropertyGridSource[]
+            {
+                new SelfAwarePropertyGridSource () { DogsName = "Wart", DogsAge = 18 },
+                new SelfAwarePropertyGridSource () { DogsName = "Bandit", DogsAge = 7 },
+                new SelfAwarePropertyGridSource () { DogsName = "Brosephina", DogsAge = 3 },
+            };
 
 
             _Test<string>();
@@ -97,6 +103,13 @@
         {
             get => (float)this.GetValue(FloatValueProperty);
             set => this.SetValue(FloatValueProperty, value);
+        }
+
+        public static readonly DependencyProperty PropertyGridItemsProperty = DPUtils.Register(_ => _.PropertyGridItems);
+        public SelfAwarePropertyGridSource[] PropertyGridItems
+        {
+            get => (SelfAwarePropertyGridSource[])this.GetValue(PropertyGridItemsProperty);
+            set => this.SetValue(PropertyGridItemsProperty, value);
         }
 
         private void Test_Loaded (object sender, RoutedEventArgs e)
@@ -217,6 +230,12 @@
             MessageBox.Show("Tada");
         }
 
+        public static Random kRNG = new Random(DateTime.Now.Millisecond);
+        private void SetDogAge_OnClick (object sender, RoutedEventArgs e)
+        {
+            ((SelfAwarePropertyGridSource)((FrameworkElement)e.OriginalSource).DataContext).DogsAge = kRNG.Next(1, 18);
+        }
+
         private void SynchFlatTreeListSelection_OnClick (object sender, RoutedEventArgs e)
         {
             var selection = new[] { c, g };
@@ -252,6 +271,35 @@
             newChild.Parent = this;
             this.AddChild(newChild);
             return newChild;
+        }
+    }
+
+    public class SelfAwarePropertyGridSource : NotifyPropertyChanged, IPropertyEditManager
+    {
+        private string m_dogsName;
+        [PGEditor("Text")]
+        public string DogsName
+        {
+            get => m_dogsName;
+            set => this.SetAndRaiseIfChanged(ref m_dogsName, value);
+        }
+
+        private int m_dogsAge;
+        [PGEditor("Number")]
+        public int DogsAge
+        {
+            get => m_dogsAge;
+            set => this.SetAndRaiseIfChanged(ref m_dogsAge, value);
+        }
+
+        public IEnumerable<PropertyEditTarget> GenerateEditTargets ()
+        {
+            foreach (var p in PropertyEditTarget.GenerateForPropertiesOf(this))
+            {
+                yield return p;
+            }
+
+            yield return new PropertyEditTarget("Name Alias", () => this.DogsName, (v) => this.DogsName = (string)v) { Editor = "Text", AdditionalEvalTargets = new[] { nameof(DogsName) } };
         }
     }
 }
