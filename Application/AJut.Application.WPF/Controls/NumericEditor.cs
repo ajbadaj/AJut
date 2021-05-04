@@ -16,8 +16,8 @@
     using DPUtils = DPUtils<NumericEditor>;
     using AJut;
     using System.Windows.Input;
-    using System.Drawing;
     using System.Windows.Data;
+    using System.Windows.Media;
 
     // Todo: Make drag repeater, click and hold w/o moving starts spamming Triggered, or mouse move will capture while mouse is down and trigger Triggered on mouse move
     [TemplatePart(Name = nameof(PART_TextArea), Type = typeof(TextBox))]
@@ -176,7 +176,7 @@
             set => this.SetValue(LabelContentTemplateProperty, value);
         }
 
-        public static readonly DependencyProperty LabelForegroundProperty = DPUtils.Register(_ => _.LabelForeground, Brushes.Black);
+        public static readonly DependencyProperty LabelForegroundProperty = DPUtils.Register(_ => _.LabelForeground);
         public Brush LabelForeground
         {
             get => (Brush)this.GetValue(LabelForegroundProperty);
@@ -195,6 +195,41 @@
         {
             get => (Dock)this.GetValue(LabelButtonDockProperty);
             set => this.SetValue(LabelButtonDockProperty, value);
+        }
+
+        public static readonly DependencyProperty NumberTextAlignmentProperty = DPUtils.Register(_ => _.NumberTextAlignment);
+        public TextAlignment NumberTextAlignment
+        {
+            get => (TextAlignment)this.GetValue(NumberTextAlignmentProperty);
+            set => this.SetValue(NumberTextAlignmentProperty, value);
+        }
+
+        public static readonly DependencyProperty IncreaseHoverHighlightProperty = DPUtils.Register(_ => _.IncreaseHoverHighlight, Brushes.Blue);
+        public Brush IncreaseHoverHighlight
+        {
+            get => (Brush)this.GetValue(IncreaseHoverHighlightProperty);
+            set => this.SetValue(IncreaseHoverHighlightProperty, value);
+        }
+
+        public static readonly DependencyProperty IncreasePressedHighlightProperty = DPUtils.Register(_ => _.IncreasePressedHighlight);
+        public Brush IncreasePressedHighlight
+        {
+            get => (Brush)this.GetValue(IncreasePressedHighlightProperty);
+            set => this.SetValue(IncreasePressedHighlightProperty, value);
+        }
+
+        public static readonly DependencyProperty DecreaseHoverHighlightProperty = DPUtils.Register(_ => _.DecreaseHoverHighlight);
+        public Brush DecreaseHoverHighlight
+        {
+            get => (Brush)this.GetValue(DecreaseHoverHighlightProperty);
+            set => this.SetValue(DecreaseHoverHighlightProperty, value);
+        }
+
+        public static readonly DependencyProperty DecreasePressedHighlightProperty = DPUtils.Register(_ => _.DecreasePressedHighlight);
+        public Brush DecreasePressedHighlight
+        {
+            get => (Brush)this.GetValue(DecreasePressedHighlightProperty);
+            set => this.SetValue(DecreasePressedHighlightProperty, value);
         }
 
         // ===========================[ Property Change Handlers ]===================================

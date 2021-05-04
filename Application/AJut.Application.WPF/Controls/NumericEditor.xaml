@@ -21,13 +21,55 @@
         <Setter Property="BorderBrush" Value="#000" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="ap:BorderXTA.CornerRadius" Value="2"/>
-        <Setter Property="Padding" Value="3"/>
+        <Setter Property="Padding" Value="3,3,0,3"/>
+        <Setter Property="LabelPadding" Value="3,0"/>
+        <Setter Property="LabelForeground" Value="Black"/>
         <Setter Property="Background">
             <Setter.Value>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
                     <GradientStop Offset="0.00" Color="#FFF" />
                     <GradientStop Offset="0.50" Color="#CCC" />
                     <GradientStop Offset="1.00" Color="#CCC" />
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="IncreaseHoverHighlight">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" Opacity="0.6">
+                    <GradientStop Offset="0.00" Color="#EE468DBA" />
+                    <GradientStop Offset="0.35" Color="#CC55C4FF" />
+                    <GradientStop Offset="0.75" Color="#CC4C94C2" />
+                    <GradientStop Offset="1.00" Color="#AA4FA4D7" />
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="IncreasePressedHighlight">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
+                    <GradientStop Offset="0.00" Color="#E111" />
+                    <GradientStop Offset="0.35" Color="#C888" />
+                    <GradientStop Offset="0.75" Color="#C000" />
+                    <GradientStop Offset="1.00" Color="#A111" />
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="DecreaseHoverHighlight">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" Opacity="0.6">
+                    <GradientStop Offset="0.00" Color="#AA4FA4D7" />
+                    <GradientStop Offset="0.35" Color="#CC4C94C2" />
+                    <GradientStop Offset="0.75" Color="#CC55C4FF" />
+                    <GradientStop Offset="1.00" Color="#EE468DBA" />
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="DecreasePressedHighlight">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
+                    <GradientStop Offset="0.00" Color="#A111" />
+                    <GradientStop Offset="0.35" Color="#C000" />
+                    <GradientStop Offset="0.75" Color="#C888" />
+                    <GradientStop Offset="1.00" Color="#E111" />
                 </LinearGradientBrush>
             </Setter.Value>
         </Setter>
@@ -82,19 +124,10 @@
                                                     </Setter>
                                                     <Style.Triggers>
                                                         <Trigger Property="IsMouseOver" Value="True">
-                                                            <Setter Property="Background">
-                                                                <Setter.Value>
-                                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" Opacity="0.6">
-                                                                        <GradientStop Offset="0.00" Color="#EA0C0C0C" />
-                                                                        <GradientStop Offset="0.35" Color="#CC000000" />
-                                                                        <GradientStop Offset="0.75" Color="#CC000000" />
-                                                                        <GradientStop Offset="0.80" Color="#EA0C0C0C" />
-                                                                        <GradientStop Offset="0.95" Color="#66FFFFFF" />
-                                                                        <GradientStop Offset="0.97" Color="#00FFFFFF" />
-                                                                        <GradientStop Offset="1.00" Color="#00FFFFFF" />
-                                                                    </LinearGradientBrush>
-                                                                </Setter.Value>
-                                                            </Setter>
+                                                            <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:NumericEditor}}, Path=IncreaseHoverHighlight}"/>
+                                                        </Trigger>
+                                                        <Trigger Property="IsPressed" Value="True">
+                                                            <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:NumericEditor}}, Path=IncreasePressedHighlight}"/>
                                                         </Trigger>
                                                     </Style.Triggers>
                                                 </Style>
@@ -119,19 +152,10 @@
                                                     </Setter>
                                                     <Style.Triggers>
                                                         <Trigger Property="IsMouseOver" Value="True">
-                                                            <Setter Property="Background">
-                                                                <Setter.Value>
-                                                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" Opacity="0.6">
-                                                                        <GradientStop Offset="0.00" Color="#EA0C0C0C" />
-                                                                        <GradientStop Offset="0.35" Color="#CC000000" />
-                                                                        <GradientStop Offset="0.75" Color="#CC000000" />
-                                                                        <GradientStop Offset="0.80" Color="#EA0C0C0C" />
-                                                                        <GradientStop Offset="0.95" Color="#66FFFFFF" />
-                                                                        <GradientStop Offset="0.97" Color="#00FFFFFF" />
-                                                                        <GradientStop Offset="1.00" Color="#00FFFFFF" />
-                                                                    </LinearGradientBrush>
-                                                                </Setter.Value>
-                                                            </Setter>
+                                                            <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:NumericEditor}}, Path=DecreaseHoverHighlight}"/>
+                                                        </Trigger>
+                                                        <Trigger Property="IsPressed" Value="True">
+                                                            <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:NumericEditor}}, Path=DecreasePressedHighlight}"/>
                                                         </Trigger>
                                                     </Style.Triggers>
                                                 </Style>
@@ -142,7 +166,7 @@
 
                                 <!-- ==========[Textbox Area]==================== -->
                                 <Grid VerticalAlignment="Center" Margin="{TemplateBinding Padding}">
-                                    <TextBox x:Name="PART_TextArea" BorderThickness="0" TextAlignment="Right" Padding="{TemplateBinding Padding}"
+                                    <TextBox x:Name="PART_TextArea" BorderThickness="0" TextAlignment="{TemplateBinding NumberTextAlignment}" Padding="{TemplateBinding Padding}"
                                              Text="{ajut:TemplateBinding Path=DisplayValue.Text, Mode=TwoWay}"/>
                                     <Border BorderBrush="#8000" BorderThickness="1.4,1.4,0,0">
                                         <Border BorderBrush="#5FFF" BorderThickness="0,0,1,1">
