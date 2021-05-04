@@ -88,11 +88,15 @@ namespace AJut.Application.Controls
             {
                 // By the sheer fact of being here, this must be an "uber root"
                 var uberRoot = (Item)this.Items.RootNode;
-                if (!e.NewItems.IsNullOrEmpty())
+                if (e.Action == NotifyCollectionChangedAction.Reset)
+                {
+                    uberRoot.Clear();
+                }
+                else if (!e.NewItems.IsNullOrEmpty())
                 {
                     uberRoot.InsertAndConvert(this, e.NewStartingIndex, e.NewItems.OfType<IObservableTreeNode>());
                 }
-                if (!e.OldItems.IsNullOrEmpty())
+                else if (!e.OldItems.IsNullOrEmpty())
                 {
                     uberRoot.RemoveAllSourceElements(e.OldItems.OfType<IObservableTreeNode>());
                 }
@@ -150,6 +154,21 @@ namespace AJut.Application.Controls
         {
             get => (ObservableFlatTreeStore<Item>)this.GetValue(ItemsProperty);
             protected set => this.SetValue(ItemsPropertyKey, value);
+        }
+
+
+        public static readonly DependencyProperty ItemTemplateProperty = DPUtils.Register(_ => _.ItemTemplate);
+        public DataTemplate ItemTemplate
+        {
+            get => (DataTemplate)this.GetValue(ItemTemplateProperty);
+            set => this.SetValue(ItemTemplateProperty, value);
+        }
+
+        public static readonly DependencyProperty ItemTemplateSelectorProperty = DPUtils.Register(_ => _.ItemTemplateSelector);
+        public DataTemplateSelector ItemTemplateSelector
+        {
+            get => (DataTemplateSelector)this.GetValue(ItemTemplateSelectorProperty);
+            set => this.SetValue(ItemTemplateSelectorProperty, value);
         }
 
         public static readonly DependencyProperty SelectionBrushProperty = DPUtils.Register(_ => _.SelectionBrush);

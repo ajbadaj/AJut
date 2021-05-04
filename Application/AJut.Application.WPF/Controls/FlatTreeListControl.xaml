@@ -108,7 +108,9 @@
                                             </Style>
                                         </ToggleButton.Style>
                                     </ToggleButton>
-                                    <ContentPresenter x:Name="Content" Grid.Column="2" Content="{Binding Source}" HorizontalAlignment="Stretch"/>
+                                    <ContentPresenter x:Name="Content" Grid.Column="2" Content="{Binding Source}" HorizontalAlignment="Stretch"
+                                                      ContentTemplate="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=ItemTemplate}"
+                                                      ContentTemplateSelector="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=ItemTemplateSelector}"/>
                                 </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
