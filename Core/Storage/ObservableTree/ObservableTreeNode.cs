@@ -14,7 +14,7 @@
     {
         private readonly List<TNode> m_children = new List<TNode>();
         private readonly IReadOnlyList<TNode> m_readOnlyChildren;
-        private bool m_canHaveChildren = true;
+        private bool m_canHaveChildren;
         private TNode m_parent;
 
         static ObservableTreeNode ()
