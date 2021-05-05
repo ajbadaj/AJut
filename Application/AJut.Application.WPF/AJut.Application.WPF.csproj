@@ -43,6 +43,9 @@
 	<Compile Update="Controls\PropertyGrid.cs">
       <DependentUpon>PropertyGrid.xaml</DependentUpon>
     </Compile>
+	<Compile Update="Controls\EnumComboBox.cs">
+      <DependentUpon>EnumComboBox.xaml</DependentUpon>
+    </Compile>
   </ItemGroup>
       
 </Project>

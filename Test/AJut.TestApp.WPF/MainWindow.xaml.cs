@@ -292,6 +292,8 @@
             set => this.SetAndRaiseIfChanged(ref m_dogsAge, value);
         }
 
+        public TestTreeItem NullThing { get; set; }
+
         public IEnumerable<PropertyEditTarget> GenerateEditTargets ()
         {
             foreach (var p in PropertyEditTarget.GenerateForPropertiesOf(this))

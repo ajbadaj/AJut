@@ -2,6 +2,7 @@
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/BumpStack.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/EditableTextBlock.xaml"/>
+        <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/EnumComboBox.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/FlatTreeListControl.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/NumericEditor.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/PathFollowingContentDisplayer.xaml"/>

@@ -590,6 +590,25 @@
                     </ListBox>
                 </Grid>
             </TabItem>
+            <TabItem Header="Enum ComboBox">
+                <DockPanel>
+                    <Border DockPanel.Dock="Bottom" x:Name="EditLocationBorder" BorderBrush="Black" BorderThickness="1" Background="Red">
+                        <StackPanel Margin="60" VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <TextBlock Text="Variable Location"/>
+                            <ajut:EnumComboBox SelectedItem="{Binding ElementName=EditLocationBorder, Path=(DockPanel.Dock), Mode=TwoWay}"/>
+                        </StackPanel>
+                    </Border>
+                    <Border DockPanel.Dock="Left"  BorderBrush="Black" BorderThickness="1" Background="Green">
+                        <TextBlock Text="Left" Margin="60" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    </Border>
+                    <Border DockPanel.Dock="Right"  BorderBrush="Black" BorderThickness="1" Background="IndianRed">
+                        <TextBlock Text="Right" Margin="60" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    </Border>
+                    <Border BorderBrush="Black" BorderThickness="1" Background="Blue">
+                        <TextBlock Text="Fill" Margin="60" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    </Border>
+                </DockPanel>
+            </TabItem>
         </TabControl>
     </Grid>
 </Window>

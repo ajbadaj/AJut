@@ -35,7 +35,8 @@
                                                    Style="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PropertyGrid}}, Path=TextLabelStyle}"/>
                                         <ContentPresenter Grid.Column="1" VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PropertyGrid}}, Path=VerticalContentAlignment}" HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PropertyGrid}}, Path=HorizontalContentAlignment}"
                                                           ContentTemplateSelector="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PropertyGrid}}, Path=ItemTemplateSelector}"
-                                                          Content="{Binding}"/>
+                                                          Content="{Binding}"
+                                                          ap:Edit.IsReadOnly="{Binding Path=IsReadOnly}"/>
                                     </Grid>
                                 </DataTemplate>
                             </local:FlatTreeListControl.ItemTemplate>

@@ -6,6 +6,7 @@
                     xmlns:conv="clr-namespace:AJut.Application.Converters">
 
     <Style TargetType="{x:Type local:EditableTextBlock}">
+        <Setter Property="IsReadOnly" Value="{Binding Path=(ap:Edit.IsReadOnly)}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:EditableTextBlock}">

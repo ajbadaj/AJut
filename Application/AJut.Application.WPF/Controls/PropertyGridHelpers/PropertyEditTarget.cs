@@ -105,7 +105,7 @@
                 yield return new PropertyEditTarget(prop.Name, () => prop.GetValue(sourceItem), (v) => prop.SetValue(sourceItem, v))
                 {
                     DisplayName = displayName ?? prop.Name.ConvertToFriendlyEn(),
-                    Editor = editor.Editor ?? prop.PropertyType.Name,
+                    Editor = editor?.Editor ?? prop.PropertyType.Name,
                     AdditionalEvalTargets = aliases,
                 };
             }
@@ -113,10 +113,15 @@
             IEnumerable<PropertyInfo> _GetRelevantProperties (object _item)
             {
                 bool showReadOnly = _item.GetType().IsTaggedWithAttribute<PGShowReadonlyAttribute>();
-                return _item.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty).Where(_ShowReadOnlyFilter);
+                return _item.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty).Where(_Filter);
 
-                bool _ShowReadOnlyFilter (PropertyInfo _prop)
+                bool _Filter (PropertyInfo _prop)
                 {
+                    if (_prop.IsTaggedWithAttribute<PGHiddenAttribute>())
+                    {
+                        return false;
+                    }
+
                     if (showReadOnly)
                     {
                         return true;
