@@ -30,6 +30,11 @@
 
         public void Dispose ()
         {
+            if (this.ODAM == null)
+            {
+                return;
+            }
+
             this.HandleAdditionalDispose();
             this.ODAM.LayerDataSet -= this.OnLayerDataSet;
             this.ODAM.LayerDataRemoved -= this.OnLayerDataRemoved;
