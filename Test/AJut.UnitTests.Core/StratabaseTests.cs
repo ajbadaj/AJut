@@ -548,6 +548,79 @@
         }
 
         [TestMethod]
+        public void Stratabase_TestFail_SetObjectWithReferenceProperties ()
+        {
+            TestDataContainer tdc = new TestDataContainer
+            {
+                StrValue = "TDC",
+                Foo = new TestData
+                {
+                    Name = "TDC: Child",
+                    Value = 4
+                }
+            };
+
+            Stratabase sb = new Stratabase(3);
+            sb.SetBaselineFromPropertiesOf(tdc);
+
+            TestDataContainer found = new TestDataContainer { Id = tdc.Id };
+            sb.SetObjectWithProperties(tdc.Id, ref found);
+
+            Assert.AreEqual(tdc.StrValue, found.StrValue);
+            Assert.AreEqual(tdc.Foo.Name, found.Foo.Name);
+            Assert.AreEqual(tdc.Foo.Value, found.Foo.Value);
+        }
+
+
+        [TestMethod]
+        public void Stratabase_TestFail_SetObjectWithReferenceListProperties ()
+        {
+            var data = new TestDataWithReferenceList
+            {
+                Name = "Bob",
+                Value = 2
+            };
+
+            data.ChildList.Add(new TestData
+            {
+                Name = "Mary",
+                Value = 6
+            });
+
+            data.ChildList.Add(new TestData
+            {
+                Name = "Gillian",
+                Value = 8
+            });
+
+            Stratabase sb = new Stratabase(1);
+            sb.SetBaselineFromPropertiesOf(data.Id, data);
+
+            TestDataWithReferenceList found = new TestDataWithReferenceList { Id = data.Id };
+            sb.SetObjectWithProperties(data.Id, ref found);
+
+            Assert.AreEqual(data.Name, found.Name);
+            Assert.AreEqual(data.Value, found.Value);
+            Assert.AreEqual(data.ChildList.Count, found.ChildList.Count);
+            Assert.AreEqual(data.ChildList[0].Name, found.ChildList[0].Name);
+            Assert.AreEqual(data.ChildList[0].Value, found.ChildList[0].Value);
+            Assert.AreEqual(data.ChildList[1].Name, found.ChildList[1].Name);
+            Assert.AreEqual(data.ChildList[1].Value, found.ChildList[1].Value);
+
+            //var name = sb.GeneratePropertyAccess<string>(data.Id, nameof(TestDataWithList.Name));
+            //var value = sb.GeneratePropertyAccess<int>(data.Id, nameof(TestDataWithList.Value));
+            //var childList = sb.GenerateListPropertyAccess<Guid>(data.Id, nameof(TestDataWithList.ChildList));
+
+            //Assert.AreEqual(data.Name, name.GetValue());
+            //Assert.AreEqual(data.Value, value.GetValue());
+            //Assert.AreEqual(data.ChildList.Count, childList.GetCount());
+
+            //Assert.AreEqual(data.ChildList[0], childList.Elements[0]);
+            //Assert.AreEqual(data.ChildList[1], childList.Elements[1]);
+        }
+
+
+        [TestMethod]
         public void Stratabase_PropertyDisposal ()
         {
             Stratabase sb = new Stratabase(1);
@@ -999,13 +1072,15 @@
             {
                 this.Id = Guid.NewGuid();
             }
+
+            [StratabaseIdConstructor]
             public TestData (Guid id)
             {
                 this.Id = id;
             }
 
             [StratabaseId]
-            public Guid Id { get; }
+            public Guid Id { get; init; }
             public string Name { get; set; }
             public int Value { get; set; }
         }
@@ -1013,9 +1088,22 @@
         public class TestDataWithList : TestData
         {
             public TestDataWithList () : base() { }
+
+            [StratabaseIdConstructor]
             public TestDataWithList (Guid id) : base(id) { }
 
             [StrataListConfig(eStrataListConfig.GenerateInsertOverrides)]
+            public List<TestData> ChildList { get; set; } = new List<TestData>();
+        }
+
+        public class TestDataWithReferenceList : TestData
+        {
+            public TestDataWithReferenceList () : base() { }
+
+            [StratabaseIdConstructor]
+            public TestDataWithReferenceList (Guid id) : base(id) { }
+
+            [StrataListConfig(eStrataListConfig.GenerateInsertOverrides, buildReferenceList: true)]
             public List<TestData> ChildList { get; set; } = new List<TestData>();
         }
 
@@ -1117,8 +1205,18 @@
 
         public class TestDataContainer
         {
+            public TestDataContainer()
+            {
+            }
+            
+            [StratabaseIdConstructor]
+            public TestDataContainer(Guid id)
+            {
+                this.Id = id;
+            }
+
             [StratabaseId]
-            public Guid Id { get; } = Guid.NewGuid();
+            public Guid Id { get; init; } = Guid.NewGuid();
 
             public string StrValue { get; set; }
 

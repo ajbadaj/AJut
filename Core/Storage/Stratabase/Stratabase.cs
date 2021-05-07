@@ -174,6 +174,51 @@
         /// </summary>
         public void SetObjectWithProperties<T> (Guid objectId, ref T source)
         {
+            object objCasted = source;
+            SetObjectWithProperties(objectId, ref objCasted);
+        }
+
+        private object CreateAndSetObjectWith (Type targetPropType, Guid targetId)
+        {
+            object childObj = null;
+            var constructor = targetPropType.GetConstructors().Where(c => c.IsTaggedWithAttribute<StratabaseIdConstructorAttribute>() && c.GetParameters().Length == 1 && c.GetParameters()[0].ParameterType == typeof(Guid)).FirstOrDefault();
+            if (constructor != null)
+            {
+                childObj = constructor.Invoke(new object[] { targetId });
+            }
+            else
+            {
+                childObj = Activator.CreateInstance(targetPropType);
+
+                // Resolve setting the id
+                var classId = targetPropType.GetAttributes<StratabaseIdAttribute>().FirstOrDefault();
+                if (classId != null)
+                {
+                    _SetIdIfPossible(childObj.GetType().GetProperty(classId.PropertyName));
+                }
+                else
+                {
+                    _SetIdIfPossible(targetPropType.GetProperties().FirstOrDefault(p => p.IsTaggedWithAttribute<StratabaseIdAttribute>()));
+                }
+
+                void _SetIdIfPossible (PropertyInfo _idProp)
+                {
+                    if (_idProp?.CanWrite ?? false)
+                    {
+                        _idProp.SetValue(childObj, targetId);
+                    }
+                }
+            }
+
+            this.SetObjectWithProperties(targetId, ref childObj);
+            return childObj;
+        }
+
+        /// <summary>
+        /// Pull properties from the Stratabase from the object with the matching <paramref name="objectId"/> and set the passed in object's properties with the highest order stratabase values
+        /// </summary>
+        public void SetObjectWithProperties (Guid objectId, ref object source)
+        {
             ObjectDataAccessManager odam = this.GetAccessManager(objectId);
             if (odam == null)
             {
@@ -181,7 +226,7 @@
             }
 
             var baseline = this.GetBaselinePropertyBagFor(objectId);
-            foreach(string propPath in baseline.Keys)
+            foreach (string propPath in baseline.Keys)
             {
                 if (!odam.SearchForFirstSetValue(m_overrideStorageLayers.Length - 1, propPath, out object storedPropValue))
                 {
@@ -189,17 +234,27 @@
                 }
 
                 PropertyInfo targetProp = source.GetComplexProperty(propPath, out object target);
-                // Go through this BONKERS process to determine if it's list access backed data and set it that way
-                if (targetProp.PropertyType != typeof(string) && typeof(IEnumerable).IsAssignableFrom(targetProp.PropertyType))
+
+                // Do references differently
+                if (storedPropValue is Guid targetId && targetProp.IsTaggedWithAttribute<StratabaseReferenceAttribute>())
                 {
+                    targetProp.SetValue(target, this.CreateAndSetObjectWith(targetProp.PropertyType, targetId));
+                }
+
+                // Go through this BONKERS process to determine if it's list access backed data and set it that way
+                else if (targetProp.PropertyType != typeof(string) && typeof(IEnumerable).IsAssignableFrom(targetProp.PropertyType))
+                {
+                    var strataListConfig = targetProp.GetAttributes<StrataListConfigAttribute>().FirstOrDefault();
+                    
                     // Is it ListAccess backed?
-                    Type propValueType = storedPropValue.GetType();
-                    if (propValueType.IsGenericType && propValueType.GetGenericTypeDefinition() == typeof(ObservableCollectionX<>)
-                        && propValueType.GenericTypeArguments[0].IsGenericType
-                        && propValueType.GenericTypeArguments[0].GetGenericTypeDefinition() == typeof(StratabaseListInsertion<>))
+                    Type storedType = storedPropValue.GetType();
+                    if (strataListConfig != null
+                        && storedType.IsGenericType && storedType.GetGenericTypeDefinition() == typeof(ObservableCollectionX<>)
+                        && storedType.GenericTypeArguments[0].IsGenericType
+                        && storedType.GenericTypeArguments[0].GetGenericTypeDefinition() == typeof(StratabaseListInsertion<>))
                     {
                         // Ok it is, now use reflection to generate a StrataPropertyListAccess
-                        Type itemType = propValueType.GenericTypeArguments[0].GenericTypeArguments[0];
+                        Type itemType = storedType.GenericTypeArguments[0].GenericTypeArguments[0];
                         var listAccess = (IDisposable)this.InvokeTemplatedMethod(
                             nameof(GenerateListPropertyAccess),
                             itemType, objectId, propPath
@@ -215,23 +270,36 @@
                                 //  activator.create instance can make for us, is an IList, which we can then add the items to.
                                 if (targetProp.PropertyType.IsArray)
                                 {
-                                    Array final = Array.CreateInstance(targetProp.PropertyType.GenericTypeArguments[0], elements.Count);
+                                    Type elementType = targetProp.PropertyType.GenericTypeArguments[0];
+                                    Array final = Array.CreateInstance(elementType, elements.Count);
                                     for (int index = 0; index < elements.Count; ++index)
                                     {
-                                        final.SetValue(elements[index], index);
+                                        final.SetValue(_ConvertElementToOutputElement(elementType, elements[index]), index);
                                     }
 
                                     targetProp.SetValueExtended(source, propPath, target, final);
                                 }
                                 else if (typeof(IList).IsAssignableFrom(targetProp.PropertyType))
                                 {
+                                    Type elementType = targetProp.PropertyType.GenericTypeArguments[0];
                                     IList final = (IList)Activator.CreateInstance(targetProp.PropertyType);
                                     foreach (object obj in elements)
                                     {
-                                        final.Add(obj);
+                                        final.Add(_ConvertElementToOutputElement(elementType, obj));
                                     }
 
                                     targetProp.SetValueExtended(source, propPath, target, final);
+                                }
+
+                                // We ...might... be dealing with list references, in which case we need to convert guid back to final form.
+                                object _ConvertElementToOutputElement (Type _elementType, object _element)
+                                {
+                                    if (_element.GetType() == typeof(Guid) && strataListConfig.BuildReferenceList)
+                                    {
+                                        return this.CreateAndSetObjectWith(_elementType, (Guid)_element);
+                                    }
+                                    
+                                    return _element;
                                 }
                             }
 
