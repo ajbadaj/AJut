@@ -6,6 +6,7 @@
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+    using AJut.TypeManagement;
 
     public static class ReflectionXT
     {
@@ -38,17 +39,7 @@
         /// </summary>
         public static object CreateInstance (this Type type)
         {
-            if (type == typeof(string))
-            {
-                return String.Empty;
-            }
-
-            if (type.IsArray)
-            {
-                return Activator.CreateInstance(type, new object[] { 0 });
-            }
-
-            return Activator.CreateInstance(type);
+            return AJutActivator.CreateInstance(type);
         }
 
         public static object StockWithInstanceIn (this PropertyInfo property, object owner)

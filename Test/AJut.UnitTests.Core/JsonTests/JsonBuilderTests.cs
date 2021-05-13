@@ -1,6 +1,7 @@
 ﻿namespace AJut.UnitTests.Core.AJson
 {
     using AJut.Text.AJson;
+    using AJut.TypeManagement;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
@@ -187,7 +188,7 @@
         [TestInitialize]
         public void Setup()
         {
-            JsonHelper.RegisterAllTypeIds(typeof(JsonBuilderTests).Assembly);
+            TypeIdRegistrar.RegisterAllTypeIds(typeof(JsonBuilderTests).Assembly);
         }
 
         [TestMethod]
@@ -330,13 +331,13 @@
             public OtherSimpleGuy Guy { get; set; }
         }
 
-        [JsonTypeId("other-simple-guy")]
+        [TypeId("other-simple-guy")]
         public class OtherSimpleGuy
         {
             public int Other { get; set; }
         }
 
-        [JsonTypeId("other-derived-guy (this is the type id)")]
+        [TypeId("other-derived-guy (this is the type id)")]
         public class OtherDerivedGuy : OtherSimpleGuy
         {
             public string Special { get; set; } = "special";

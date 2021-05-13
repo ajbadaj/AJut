@@ -14,6 +14,7 @@
     using System.Linq;
     using System.Reflection;
     using System.Diagnostics;
+    using AJut.TypeManagement;
 
     /// <summary>
     /// Utility class that acts as a starting point for parsing and building json, and other related utilities
@@ -25,10 +26,6 @@
 
         private static JsonBuilder.Settings DefaultSettings { get; set; }
 
-        private static Dictionary<string, Type> TypesByTypeId = new Dictionary<string, Type>();
-        private static Dictionary<Type, string> TypeIdsForType = new Dictionary<Type, string>();
-        private static Lazy<List<string>> AlreadySearchedAemblies = new Lazy<List<string>>(() => new List<string>());
-
         static JsonHelper ()
         {
             DefaultSettings = new JsonBuilder.Settings();
@@ -39,54 +36,20 @@
         /// </summary>
         /// <param name="assembly">The assembly to search</param>
         /// <param name="forceSearch">Whether or not to search again if the assembly has already been searched (cached by name)</param>
+        [Obsolete("JsonTypeId is being deprecated in favor of the more generic TypeId, please use TypeIdRegistrar.RegisterAllTypeIds instead")]
         public static void RegisterAllTypeIds (Assembly assembly, bool forceSearch = false)
         {
-            if (!forceSearch && AlreadySearchedAemblies.Value.Contains(assembly.FullName))
-            {
-                return;
-            }
-
-            AlreadySearchedAemblies.Value.Add(assembly.FullName);
-
-            Type[] allTypes;
-            if (assembly.FullName == typeof(JsonHelper)
-#if WINDOWS_UWP
-                .GetTypeInfo()
-#endif
-                .Assembly.FullName
-                )
-            {
-                allTypes = assembly.GetTypes();
-            }
-            else
-            {
-                allTypes = assembly.GetExportedTypes();
-            }
-
-            foreach (Type type in allTypes)
-            {
-                JsonTypeIdAttribute idAttribute = type.GetAttributes<JsonTypeIdAttribute>()?.FirstOrDefault();
-                if (idAttribute?.Id != null)
-                {
-                    RegisterTypeId(idAttribute?.Id, type);
-                }
-            }
+            TypeIdRegistrar.RegisterAllTypeIds(assembly, forceSearch);
         }
 
         public static void RegisterTypeId<T> (string id)
         {
-            RegisterTypeId(id, typeof(T));
+            TypeIdRegistrar.RegisterTypeId<T>(id);
         }
 
         public static void RegisterTypeId (string id, Type type)
         {
-            if (TypesByTypeId.TryGetValue(id, out Type existing) && existing != type)
-            {
-                throw new Exception($"JsonHelper: Tried to register two types with a JsonTypeId of '{id}':\n\t{existing.FullName}\n\t{type.FullName}");
-            }
-
-            TypesByTypeId.Add(id, type);
-            TypeIdsForType.Add(type, id);
+            TypeIdRegistrar.RegisterTypeId(id, type);
         }
 
         // TODO: Should add support to force commas or not, then just use newline as a text separator
@@ -288,7 +251,7 @@
             if (sourceJson is JsonDocument doc
                 && doc.ValueFor(JsonDocument.kTypeIndicator) is JsonValue typeValue
                 && !String.IsNullOrEmpty(typeValue.StringValue)
-                && TypesByTypeId.TryGetValue(typeValue.StringValue, out Type objectType))
+                && TypeIdRegistrar.TryGetType(typeValue.StringValue, out Type objectType))
             {
                 return BuildObjectForJson(objectType, sourceJson, settings);
             }
@@ -757,20 +720,11 @@
             {
                 if (typeWriteSettings.HasFlag(eTypeIdInfo.TypeIdAttributed))
                 {
-                    if (TypeIdsForType.TryGetValue(type, out string _typeId))
+                    string typeId = TypeIdRegistrar.GetTypeIdFor(type);
+                    if (typeId != null)
                     {
-                        foundTypeId = _typeId;
+                        foundTypeId = typeId;
                         return true;
-                    }
-                    else
-                    {
-                        // We've got one NOT registered with the system
-                        var _idAttr = type.GetAttributes<JsonTypeIdAttribute>()?.FirstOrDefault();
-                        if (_idAttr != null)
-                        {
-                            foundTypeId = _idAttr.Id;
-                            return true;
-                        }
                     }
                 }
                 if (typeWriteSettings.HasFlag(eTypeIdInfo.SystemTypeName))
@@ -797,7 +751,7 @@
                 return false;
             }
 
-            if (TypesByTypeId.TryGetValue(typeIndicator, out foundType))
+            if (TypeIdRegistrar.TryGetType(typeIndicator, out foundType))
             {
                 return true;
             }
