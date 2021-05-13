@@ -31,7 +31,32 @@
 
         #endregion
 
-        #region ========== Property Fetching ============
+        #region ========== Property Management ============
+
+        /// <summary>
+        /// Creates an instance of the given type, takes into account special cases
+        /// </summary>
+        public static object CreateInstance (this Type type)
+        {
+            if (type == typeof(string))
+            {
+                return String.Empty;
+            }
+
+            if (type.IsArray)
+            {
+                return Activator.CreateInstance(type, new object[] { 0 });
+            }
+
+            return Activator.CreateInstance(type);
+        }
+
+        public static object StockWithInstanceIn (this PropertyInfo property, object owner)
+        {
+            object value = property.PropertyType.CreateInstance();
+            property.SetValue(owner, value);
+            return value;
+        }
 
         public static string GetPropertyName<TOwnerObject, TProperty> (this TOwnerObject item, Expression<Func<TOwnerObject, TProperty>> propertyLambda)
         {
@@ -45,6 +70,11 @@
         }
 
         public static PropertyInfo GetComplexProperty (this object item, string propertyPath, out object childTarget)
+        {
+            return GetComplexProperty(item, propertyPath, out childTarget, false);
+        }
+
+        public static PropertyInfo GetComplexProperty (this object item, string propertyPath, out object childTarget, bool ensureSubObjectPath)
         {
             if (item == null || string.IsNullOrEmpty(propertyPath))
             {
@@ -72,26 +102,61 @@
                 }
 
                 var valuePart = propertyPart.GetValue(item, null);
+                if (valuePart == null && ensureSubObjectPath)
+                {
+                    valuePart = propertyPart.StockWithInstanceIn(item);
+                }
+
                 return GetComplexProperty(valuePart, propertyPath.Substring(separatorIndex + 1), out childTarget);
             }
         }
 
         public static T GetComplexPropertyValue<T> (this object item, string propertyPath)
         {
-            return (T)GetComplexPropertyValue(item, propertyPath, null);
+            return GetComplexPropertyValue<T>(item, propertyPath, ensureSubObjectPath: false);
+        }
+
+        public static T GetComplexPropertyValue<T> (this object item, string propertyPath, bool ensureSubObjectPath)
+        {
+            object value = GetComplexPropertyValue(item, propertyPath, null, ensureSubObjectPath);
+            if (value == null)
+            {
+                return default;
+            }
+
+            return (T)value;
         }
 
         public static T GetComplexPropertyValue<T> (this object item, string propertyPath, object[] index)
         {
-            return (T)GetComplexPropertyValue(item, propertyPath, index);
+            return GetComplexPropertyValue<T>(item, propertyPath, index, ensureSubObjectPath: false);
+        }
+
+        public static T GetComplexPropertyValue<T> (this object item, string propertyPath, object[] index, bool ensureSubObjectPath)
+        {
+            object value = GetComplexPropertyValue(item, propertyPath, index);
+            if (value == null)
+            {
+                return default;
+            }
+
+            return (T)value;
         }
 
         public static object GetComplexPropertyValue (this object item, string propertyPath)
+        {
+            return item.GetComplexPropertyValue(propertyPath, null, ensureSubObjectPath:false);
+        }
+        public static object GetComplexPropertyValue (this object item, string propertyPath, bool ensureSubObjectPath)
         {
             return item.GetComplexPropertyValue(propertyPath, null);
         }
 
         public static object GetComplexPropertyValue (this object item, string propertyPath, object[] index)
+        {
+            return GetComplexPropertyValue(item, propertyPath, index, ensureSubObjectPath: false);
+        }
+        public static object GetComplexPropertyValue (this object item, string propertyPath, object[] index, bool ensureSubObjectPath)
         {
             if (propertyPath == "." || propertyPath == "")
             {
@@ -123,7 +188,7 @@
                 }
             }
 
-            return item.GetComplexProperty(propertyPath, out object childTarget)?.GetValue(childTarget, index);
+            return item.GetComplexProperty(propertyPath, out object childTarget, ensureSubObjectPath)?.GetValue(childTarget, index);
 
             bool _DoBracketEvaluation (out int index, out int bracketEndIndex)
             {

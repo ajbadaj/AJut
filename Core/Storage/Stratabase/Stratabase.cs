@@ -233,7 +233,17 @@
                     continue;
                 }
 
-                PropertyInfo targetProp = source.GetComplexProperty(propPath, out object target);
+                PropertyInfo targetProp = source.GetComplexProperty(propPath, out object target, ensureSubObjectPath:true);
+                if (targetProp == null)
+                {
+                    continue;
+                }
+
+                var ignoreAttr = targetProp.GetAttributes<StrataIgnoreAttribute>().FirstOrDefault();
+                if (ignoreAttr?.WhenOutput ?? false)
+                {
+                    continue;
+                }
 
                 // Do references differently
                 if (storedPropValue is Guid targetId && targetProp.IsTaggedWithAttribute<StratabaseReferenceAttribute>())

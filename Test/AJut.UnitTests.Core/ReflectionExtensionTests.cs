@@ -52,11 +52,30 @@
             var test = new ThingWithList(1, 2, 3);
             Assert.AreEqual(2, test.GetComplexPropertyValue<int>("Items[1]"));
         }
+
+
+        [TestMethod]
+        public void ReflectionXT_GetPropertyWorks_EnsurePathWithNullChainElements ()
+        {
+            var test = new SimpleContainer();
+            Assert.AreEqual(0, test.GetComplexPropertyValue<int>("Item.Value", null, ensureSubObjectPath: true));
+        }
+
+        [TestMethod]
+        public void ReflectionXT_GetPropertyWorks_InvalidPropertyPathReturnsNull ()
+        {
+            Assert.AreEqual(null, (new object()).GetComplexPropertyValue<SimpleContainer>("Fake.SupaFake", null));
+        }
     }
 
     public class SimpleSetTest
     {
         public int Value { get; set; }
+    }
+
+    public class SimpleContainer
+    {
+        public SimpleSetTest Item { get; set; }
     }
 
     public class Complex

@@ -1015,7 +1015,12 @@
         [TestMethod]
         public void Stratabase_REGRESSION_SetObjectWithStructValuesDoesNotWork ()
         {
-            var data = new StrataTestDataWithStructies();
+            var data = new StrataTestDataWithStructies
+            {
+                NormalStructPoint = new FakePointStructyThing(3, 1),
+                DotStorePoint = new FakePointStructyThing(11, 316),
+            };
+
             Stratabase sb = new Stratabase(1);
             sb.SetBaselineFromPropertiesOf(data);
 
@@ -1041,6 +1046,51 @@
             string _DotPt (string part) => $"{nameof(StrataTestDataWithStructies.DotStorePoint)}.{part}";
         }
 
+        [TestMethod]
+        public void Stratabase_REGRESSION_SetObjectWithDotClassValuesDoesNotWork ()
+        {
+            var data = new DotClassStore
+            {
+                ClassThing = new DotClass {  A = "Foo", B = 2 }
+            };
+
+            Stratabase sb = new Stratabase(1);
+            sb.SetBaselineFromPropertiesOf(data);
+
+            string wholeStructProp = nameof(DotClassStore.ClassThing);
+
+            List<string> allProps = sb.GetAllBaselinePropertiesFor(data.Id).ToList();
+            Assert.IsTrue(!allProps.Contains(wholeStructProp), "Did not do dot storage properly");
+            Assert.IsTrue(allProps.Contains(_DotPt("A")), $"Missing property: '{_DotPt("X")}'");
+            Assert.IsTrue(allProps.Contains(_DotPt("B")), $"Missing property: '{_DotPt("Y")}'");
+
+            var a = sb.GeneratePropertyAccess<string>(data.Id, _DotPt("A"));
+            a.SetBaselineValue("Bar");
+
+            var b = sb.GeneratePropertyAccess<int>(data.Id, _DotPt("B"));
+            b.SetBaselineValue(23);
+
+            var output = new DotClassStore { Id = data.Id };
+            sb.SetObjectWithProperties(ref output);
+
+            Assert.AreEqual("Bar", output.ClassThing.A);
+            Assert.AreEqual(23, output.ClassThing.B);
+
+            string _DotPt (string part) => $"{nameof(DotClassStore.ClassThing)}.{part}";
+        }
+
+        public class DotClassStore
+        {
+            [StratabaseId]
+            public Guid Id { get; init; } = Guid.NewGuid();
+
+            public DotClass ClassThing { get; set; }
+        }
+        public class DotClass
+        {
+            public string A { get; set; }
+            public int B { get; set; }
+        }
 
         public class Base
         {
@@ -1262,10 +1312,10 @@
         {
             [StratabaseId]
             public Guid Id { get;  init; } = Guid.NewGuid();
-            public FakePointStructyThing NormalStructPoint { get; set; } = new FakePointStructyThing { X = 3.0, Y = 5.0 };
+            public FakePointStructyThing NormalStructPoint { get; set; }
             
             [StrataStoreAsDotElements]
-            public FakePointStructyThing DotStorePoint { get; set; } = new FakePointStructyThing { X = -3.0, Y = -5.0 };
+            public FakePointStructyThing DotStorePoint { get; set; }
         }
     }
 }
