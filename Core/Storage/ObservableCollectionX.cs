@@ -7,7 +7,7 @@
     using System.Linq;
 
     // ================================================================================================================
-    // Deprecation note: 
+    // ===[ AJut note: Expect Major Rework ]===
     // ================================================================================================================
     //  This is now used somewhere! In Stratabase for lists. The idea is sound, but it's too close to convincing UI
     //  people they should use it for UI situations. So instead here is what I will do, I will scrap this and build

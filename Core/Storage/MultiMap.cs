@@ -5,6 +5,12 @@
     using System.Collections.Generic;
     using System.Linq;
 
+    // ================================================================================================================
+    // ===[ AJut note: Expect Major Rework ]===
+    //
+    // Just messing with this file to say... oof. This needs optimization. None of the hashing beneifts of Dictionary
+    //  just to make an easier multi element interface? Huge mistake, will have to rework :/
+
     public class MultiMap<TKey, TValue> : IEnumerable<KeyValuePair<TKey, List<TValue>>>
     {
         private readonly Dictionary<TKey, List<TValue>> m_store = new Dictionary<TKey, List<TValue>>();
