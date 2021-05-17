@@ -2,6 +2,7 @@
 {
     using AJut.Storage;
     using AJut.Text.AJson;
+    using AJut.TypeManagement;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
@@ -11,6 +12,11 @@
     [TestClass]
     public class StratabaseTests
     {
+        [TestInitialize]
+        public void Stratabase_Test_Setup()
+        {
+            TypeIdRegistrar.RegisterAllTypeIds(typeof(StratabaseTests).Assembly);
+        }
         [TestMethod]
         public void Stratabase_AccessBeforeSet ()
         {
@@ -1079,6 +1085,42 @@
             string _DotPt (string part) => $"{nameof(DotClassStore.ClassThing)}.{part}";
         }
 
+        [TestMethod]
+        public void Stratabase_Serialization_TypeIdSerializedInAndOut ()
+        {
+            var data_a = new TestDerivedClassDataA(Guid.NewGuid()) { 
+                A = "TestA",
+                Item = new DerivedTypedItem(),
+                Foo = 2,
+            };
+
+            var data_b = new TestDerivedClassDataB(Guid.NewGuid())
+            {
+                B = true,
+                Foo = 3,
+            };
+
+            Stratabase sb = new Stratabase(1);
+            sb.SetBaselineFromPropertiesOf(data_a);
+            sb.SetBaselineFromPropertiesOf(data_b);
+
+            Assert.IsTrue(sb.TryGetBaselinePropertyValue(data_a.Id, "__type", out string typeId_a));
+            Assert.AreEqual(TestDerivedClassDataA.kTypeId, typeId_a);
+
+            Assert.IsTrue(sb.TryGetBaselinePropertyValue(data_b.Id, "__type", out string typeId_b));
+            Assert.AreEqual(TestDerivedClassDataB.kTypeId, typeId_b);
+
+            TestDerivedClassDataA test_a = new TestDerivedClassDataA(data_a.Id);
+            sb.SetObjectWithProperties(data_a.Id, ref test_a);
+            Assert.AreEqual(data_a.A, test_a.A);
+            Assert.AreEqual(data_a.Foo, test_a.Foo);
+
+            TestDerivedClassDataB test_b = new TestDerivedClassDataB(data_b.Id);
+            sb.SetObjectWithProperties(data_b.Id, ref test_b);
+            Assert.AreEqual(data_b.B, test_b.B);
+            Assert.AreEqual(data_b.Foo, test_b.Foo);
+        }
+
         public class DotClassStore
         {
             [StratabaseId]
@@ -1316,6 +1358,55 @@
             
             [StrataStoreAsDotElements]
             public FakePointStructyThing DotStorePoint { get; set; }
+        }
+
+        public class TestBaseClassData
+        {
+            public TestBaseClassData (Guid id)
+            {
+                this.Id = id;
+            }
+
+            [StratabaseId]
+            public Guid Id { get; set; }
+            public int Foo { get; set; }
+        }
+
+        [TypeId(kTypeId)]
+        public class TestDerivedClassDataA : TestBaseClassData
+        {
+            public const string kTypeId = "DataA";
+
+            [StratabaseIdConstructor]
+            public TestDerivedClassDataA (Guid id) : base (id) { }
+
+            public string A { get; set; }
+
+            [StrataStoreAsDotElements]
+            public TypedItemBase Item { get; set; }
+        }
+
+        [TypeId(kTypeId)]
+        public class TestDerivedClassDataB : TestBaseClassData
+        {
+            public const string kTypeId = "DataB";
+
+            [StratabaseIdConstructor]
+            public TestDerivedClassDataB (Guid id) : base(id) { }
+
+            public bool B { get; set; }
+        }
+
+        public abstract class TypedItemBase
+        {
+            public string Bar { get; set; }
+        }
+
+        [TypeId(kTypeId)]
+        public class DerivedTypedItem : TypedItemBase
+        {
+            public const string kTypeId = "DerivedTypedItem";
+            public int Bat { get; set; }
         }
     }
 }

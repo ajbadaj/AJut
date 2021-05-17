@@ -5,6 +5,7 @@
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
+    using AJut.TypeManagement;
 
     public delegate bool ObjectEqualityTester (object o1, object o2);
 
@@ -17,6 +18,8 @@
     /// </summary>
     public sealed partial class Stratabase
     {
+        const string kTypeIdStorage = "__type";
+
         private readonly Stratum m_baselineStorageLayer;
         private readonly Stratum[] m_overrideStorageLayers;
         private readonly Dictionary<Guid, ObjectDataAccessManager> m_objectAccess = new Dictionary<Guid, ObjectDataAccessManager>();
@@ -166,6 +169,12 @@
             }
 
             this.SetBaselineData(objectEvaluation);
+            string typeId = TypeIdRegistrar.GetTypeIdFor(data.GetType());
+            if (typeId != null)
+            {
+                this.SetBaselinePropertyValue(objectEvaluation.Id, kTypeIdStorage, typeId);
+            }
+
             return true;
         }
 
@@ -181,6 +190,12 @@
         private object CreateAndSetObjectWith (Type targetPropType, Guid targetId)
         {
             object childObj = null;
+
+            if (this.TryGetTypeForItem(targetId, out Type properTargetPropType))
+            {
+                targetPropType = properTargetPropType;
+            }
+
             var constructor = targetPropType.GetConstructors().Where(c => c.IsTaggedWithAttribute<StratabaseIdConstructorAttribute>() && c.GetParameters().Length == 1 && c.GetParameters()[0].ParameterType == typeof(Guid)).FirstOrDefault();
             if (constructor != null)
             {
@@ -226,9 +241,22 @@
             }
 
             var baseline = this.GetBaselinePropertyBagFor(objectId);
+
+            // If there is a type id for a sub object, then pre-allocate the sub-object to make set easier
+            string[] typeIdKeys = baseline.Keys.Where(k => k.EndsWith("." + kTypeIdStorage)).ToArray();
+            foreach (string typeIdKey in baseline.Keys.Where(k => k.EndsWith("." + kTypeIdStorage)))
+            {
+                if (baseline.TryGetValue(typeIdKey, out string typeId))
+                {
+                    string remainingPropPath = typeIdKey.Substring(0, typeIdKey.Length - (kTypeIdStorage.Length + 1));
+                    PropertyInfo targetProp = source.GetComplexProperty(remainingPropPath, out object childTarget);
+                    targetProp.SetValue(childTarget, AJutActivator.CreateInstance(typeId));
+                }
+            }
+
             foreach (string propPath in baseline.Keys)
             {
-                if (!odam.SearchForFirstSetValue(m_overrideStorageLayers.Length - 1, propPath, out object storedPropValue))
+                if (kTypeIdStorage == propPath || !odam.SearchForFirstSetValue(m_overrideStorageLayers.Length - 1, propPath, out object storedPropValue))
                 {
                     continue;
                 }
@@ -401,6 +429,20 @@
         public bool TryGetOverridePropertyValue (int layer, Guid id, string property, out object value)
         {
             return TryGetOverridePropertyValue<object>(layer, id, property, out value);
+        }
+
+        // ------- Get Typing Info ----------
+
+        public bool TryGetTypeIdForItem (Guid id, out string typeId)
+        {
+            return this.TryGetBaselinePropertyValue(id, kTypeIdStorage, out typeId);
+        }
+
+        public bool TryGetTypeForItem (Guid id, out Type targetType)
+        {
+            targetType = null;
+            return this.TryGetTypeIdForItem(id, out string typeId)
+                && TypeIdRegistrar.TryGetType(typeId, out targetType);
         }
 
         // ------- Generate Property Access ----------
@@ -744,7 +786,18 @@
             }
 
             public bool TryGetValue (string propertyName, out object value) => this.m_storage.TryGetValue(propertyName, out value);
-            
+            public bool TryGetValue<T> (string propertyName, out T value)
+            {
+                if (this.TryGetValue(propertyName, out object objValue))
+                {
+                    value = (T)objValue;
+                    return true;
+                }
+
+                value = default;
+                return false;
+            }
+
             public IEnumerable<string> Keys => m_storage.Keys;
 
             internal bool SetValue (string propertyName, object newValue, out object oldValue)

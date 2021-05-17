@@ -5,6 +5,7 @@
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
+    using AJut.TypeManagement;
 
     public sealed partial class Stratabase
     {
@@ -17,7 +18,6 @@
                 accessManager.SetBaselineValue(property.Key, property.Value);
             }
 
-            //#error using it
             foreach (ObjectEvaluation ancillary in objectEvaluation.AncillaryElements)
             {
                 this.SetBaselineData(ancillary);
@@ -89,6 +89,12 @@
 
                 string propertyNamePrefix = parentPropertyChain == null ? String.Empty : $"{parentPropertyChain}.";
 
+                var typeIdAttr = sourceType.GetAttributes<TypeIdAttribute>().FirstOrDefault();
+                if (typeIdAttr != null)
+                {
+                    simpleProperties.Add(propertyNamePrefix + kTypeIdStorage, typeIdAttr.Id);
+                }
+
                 foreach (PropertyInfo prop in allProperties)
                 {
                     // If we haven't found the id yet, check to see if this property is the id
@@ -115,11 +121,11 @@
                             // Structs are usually stored directly, but if they are tagged like this then their properties are stored as dot elements (thing.prop1)
                             if (prop.IsTaggedWithAttribute<StrataStoreAsDotElementsAttribute>() || prop.PropertyType.IsTaggedWithAttribute<StrataStoreAsDotElementsAttribute>())
                             {
-                                var structPropertyEval = ObjectEvaluation.Generate(null, null, lazyInstanceGenerator.Value, subObjectName);
-                                if (structPropertyEval != null)
+                                var dotEvalResult = ObjectEvaluation.Generate(null, null, lazyInstanceGenerator.Value, subObjectName);
+                                if (dotEvalResult != null)
                                 {
-                                    simpleProperties.AddEach(structPropertyEval.ValueStorage);
-                                    subObjects.AddEach(structPropertyEval.ChildObjectStorage);
+                                    simpleProperties.AddEach(dotEvalResult.ValueStorage);
+                                    subObjects.AddEach(dotEvalResult.ChildObjectStorage);
                                 }
 
                                 continue;
