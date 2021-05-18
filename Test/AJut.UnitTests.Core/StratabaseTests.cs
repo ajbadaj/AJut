@@ -1104,6 +1104,11 @@
             sb.SetBaselineFromPropertiesOf(data_a);
             sb.SetBaselineFromPropertiesOf(data_b);
 
+            string[] allProps_a = sb.GetAllBaselinePropertiesFor(data_a.Id).ToArray();
+            Assert.IsTrue(allProps_a.Contains(Stratabase.kTypeIdStorage));
+            Assert.IsTrue(allProps_a.Contains($"Item.{Stratabase.kTypeIdStorage}"));
+            Assert.IsFalse(allProps_a.Contains("Item"));
+
             Assert.IsTrue(sb.TryGetBaselinePropertyValue(data_a.Id, "__type", out string typeId_a));
             Assert.AreEqual(TestDerivedClassDataA.kTypeId, typeId_a);
 

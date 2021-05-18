@@ -3,6 +3,7 @@
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
     using AJut.TypeManagement;
@@ -18,7 +19,7 @@
     /// </summary>
     public sealed partial class Stratabase
     {
-        const string kTypeIdStorage = "__type";
+        public const string kTypeIdStorage = "__type";
 
         private readonly Stratum m_baselineStorageLayer;
         private readonly Stratum[] m_overrideStorageLayers;
@@ -261,8 +262,8 @@
                     continue;
                 }
 
-                PropertyInfo targetProp = source.GetComplexProperty(propPath, out object target, ensureSubObjectPath:true);
-                if (targetProp == null)
+                PropertyInfo targetProp = source.GetComplexProperty(propPath, out object target, ensureSubObjectPath: true);
+                if (targetProp == null || targetProp.SetMethod == null)
                 {
                     continue;
                 }
@@ -276,14 +277,21 @@
                 // Do references differently
                 if (storedPropValue is Guid targetId && targetProp.IsTaggedWithAttribute<StratabaseReferenceAttribute>())
                 {
-                    targetProp.SetValue(target, this.CreateAndSetObjectWith(targetProp.PropertyType, targetId));
+                    try
+                    {
+                        targetProp.SetValue(target, this.CreateAndSetObjectWith(targetProp.PropertyType, targetId));
+                    }
+                    catch
+                    {
+                        Debug.Assert(true, $"Setting property {targetProp.Name} with stored value {storedPropValue} failed and threw an exception");
+                    }
                 }
 
                 // Go through this BONKERS process to determine if it's list access backed data and set it that way
                 else if (targetProp.PropertyType != typeof(string) && typeof(IEnumerable).IsAssignableFrom(targetProp.PropertyType))
                 {
                     var strataListConfig = targetProp.GetAttributes<StrataListConfigAttribute>().FirstOrDefault();
-                    
+
                     // Is it ListAccess backed?
                     Type storedType = storedPropValue.GetType();
                     if (strataListConfig != null
@@ -315,7 +323,14 @@
                                         final.SetValue(_ConvertElementToOutputElement(elementType, elements[index]), index);
                                     }
 
-                                    targetProp.SetValueExtended(source, propPath, target, final);
+                                    try
+                                    {
+                                        targetProp.SetValueExtended(source, propPath, target, final);
+                                    }
+                                    catch
+                                    {
+                                        Debug.Assert(true, $"Setting property {targetProp.Name} with stored value {storedPropValue} failed and threw an exception");
+                                    }
                                 }
                                 else if (typeof(IList).IsAssignableFrom(targetProp.PropertyType))
                                 {
@@ -326,7 +341,14 @@
                                         final.Add(_ConvertElementToOutputElement(elementType, obj));
                                     }
 
-                                    targetProp.SetValueExtended(source, propPath, target, final);
+                                    try
+                                    {
+                                        targetProp.SetValueExtended(source, propPath, target, final);
+                                    }
+                                    catch
+                                    {
+                                        Debug.Assert(true, $"Setting property {targetProp.Name} with stored value {storedPropValue} failed and threw an exception");
+                                    }
                                 }
 
                                 // We ...might... be dealing with list references, in which case we need to convert guid back to final form.
@@ -336,7 +358,7 @@
                                     {
                                         return this.CreateAndSetObjectWith(_elementType, (Guid)_element);
                                     }
-                                    
+
                                     return _element;
                                 }
                             }
@@ -349,7 +371,14 @@
                 }
                 else
                 {
-                    targetProp.SetValueExtended(source, propPath, target, storedPropValue);
+                    try
+                    {
+                        targetProp.SetValueExtended(source, propPath, target, storedPropValue);
+                    }
+                    catch
+                    {
+                        Debug.Assert(true, $"Setting property {targetProp.Name} with stored value {storedPropValue} failed and threw an exception");
+                    }
                 }
             }
         }
