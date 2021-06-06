@@ -32,6 +32,18 @@
         }
 
         /// <summary>
+        /// Build a generic json failure. Uers of Json api expect Json to always be non-null, if you have a scenario
+        /// where you may make json or not and are returning json, you might want a way to create a generic failure
+        /// which is what this is for.
+        /// </summary>
+        public static Json Failure (string error = null)
+        {
+            var json = new Json(null);
+            json.AddError(error ?? "Error creating json");
+            return json;
+        }
+
+        /// <summary>
         /// The text tracking source
         /// </summary>
         public TrackedStringManager TextTracking { get; private set; }
