@@ -609,6 +609,11 @@
                     </Border>
                 </DockPanel>
             </TabItem>
+            <TabItem Header="Color Control">
+                <Grid>
+                    <ajut:ColorEditIngressControl EditColor="Green" Width="40" Height="40" Padding="2"/>
+                </Grid>
+            </TabItem>
         </TabControl>
     </Grid>
 </Window>

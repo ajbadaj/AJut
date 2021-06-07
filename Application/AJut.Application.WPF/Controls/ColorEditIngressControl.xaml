@@ -1,0 +1,57 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ajut="clr-namespace:AJut.Application"
+                    xmlns:ap="clr-namespace:AJut.Application.AttachedProperties"
+                    xmlns:conv="clr-namespace:AJut.Application.Converters"
+                    xmlns:local="clr-namespace:AJut.Application.Controls">
+    <Style TargetType="{x:Type local:ColorEditIngressControl}">
+        <Setter Property="IsReadOnly" Value="{Binding Path=(ap:Edit.IsReadOnly)}"/>
+        <Setter Property="ap:BorderXTA.CornerRadius" Value="2"/>
+        <Setter Property="Padding" Value="1" />
+        <Setter Property="Background" Value="White"/>
+        <Setter Property="BorderBrush" Value="Black"/>
+        <Setter Property="BorderThickness" Value="2" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:ColorEditIngressControl}">
+                    <Border BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}"
+                            IsHitTestVisible="True">
+                        <Grid>
+                            <Border x:Name="ColorDisplay" CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}"
+                                    Margin="{TemplateBinding Padding}">
+                                <Border.Background>
+                                    <SolidColorBrush Color="{ajut:TemplateBinding Path=EditColor, Mode=OneWay}"/>
+                                </Border.Background>
+                            </Border>
+                            <Grid x:Name="FancyCover">
+                                <Grid.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
+                                        <GradientStop Offset="0.00" Color="#0C000000" />
+                                        <GradientStop Offset="0.50" Color="#23000000" />
+                                        <GradientStop Offset="0.50" Color="#25FFFFFF" />
+                                        <GradientStop Offset="1.00" Color="#0CFFFFFF" />
+                                    </LinearGradientBrush>
+                                </Grid.Background>
+                            </Grid>
+                            <!--Background="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ColorEditIngressControl}}, Path=EditColor, Mode=OneWay}"-->
+                            <Popup PlacementTarget="{Binding ElementName=ColorDisplay}" HorizontalOffset="140" VerticalOffset="20"
+                                   IsOpen="{ajut:TemplateBinding Path=ShowEditDisplay, Mode=TwoWay}"
+                                   StaysOpen="{Binding RelativeSource={RelativeSource Self}, Path=IsKeyboardFocusWithin}"
+                                   AllowsTransparency="True">
+                                <local:ColorValueEditControl EditColor="{ajut:TemplateBinding Path=EditColor, Mode=TwoWay}"/>
+                            </Popup>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="FancyCover" Property="Visibility" Value="Collapsed"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

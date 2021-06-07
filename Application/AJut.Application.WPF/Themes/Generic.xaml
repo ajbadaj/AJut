@@ -1,6 +1,8 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/BumpStack.xaml"/>
+        <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/ColorEditIngressControl.xaml"/>
+        <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/ColorValueEditControl.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/EditableTextBlock.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/EnumComboBox.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/FlatTreeListControl.xaml"/>

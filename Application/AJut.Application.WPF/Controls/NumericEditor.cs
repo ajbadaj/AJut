@@ -127,38 +127,38 @@
             set => this.SetValue(DecimalPlacesAllowedProperty, value);
         }
 
-        public static readonly DependencyProperty MinimumProperty = DPUtils.Register(_ => _.Minimum, -100.0m, (d, e) => d.OnCapChanged());
-        public decimal Minimum
+        public static readonly DependencyProperty MinimumProperty = DPUtils.Register(_ => _.Minimum, 0.0, (d, e) => d.OnCapChanged());
+        public double Minimum
         {
-            get => (decimal)this.GetValue(MinimumProperty);
+            get => (double)this.GetValue(MinimumProperty);
             set => this.SetValue(MinimumProperty, value);
         }
 
-        public static readonly DependencyProperty MaximumProperty = DPUtils.Register(_ => _.Maximum, 100.0m, (d,e)=>d.OnCapChanged());
-        public decimal Maximum
+        public static readonly DependencyProperty MaximumProperty = DPUtils.Register(_ => _.Maximum, 1000.0, (d,e)=>d.OnCapChanged());
+        public double Maximum
         {
-            get => (decimal)this.GetValue(MaximumProperty);
+            get => (double)this.GetValue(MaximumProperty);
             set => this.SetValue(MaximumProperty, value);
         }
 
-        public static readonly DependencyProperty BigNudgeProperty = DPUtils.Register(_ => _.BigNudge, 5.0m);
-        public decimal BigNudge
+        public static readonly DependencyProperty BigNudgeProperty = DPUtils.Register(_ => _.BigNudge, 5.0);
+        public double BigNudge
         {
-            get => (decimal)this.GetValue(BigNudgeProperty);
+            get => (double)this.GetValue(BigNudgeProperty);
             set => this.SetValue(BigNudgeProperty, value);
         }
 
-        public static readonly DependencyProperty SmallWholeNumberNudgeProperty = DPUtils.Register(_ => _.SmallWholeNumberNudge, 1.0m);
-        public decimal SmallWholeNumberNudge
+        public static readonly DependencyProperty SmallWholeNumberNudgeProperty = DPUtils.Register(_ => _.SmallWholeNumberNudge, 1.0);
+        public double SmallWholeNumberNudge
         {
-            get => (decimal)this.GetValue(SmallWholeNumberNudgeProperty);
+            get => (double)this.GetValue(SmallWholeNumberNudgeProperty);
             set => this.SetValue(SmallWholeNumberNudgeProperty, value);
         }
 
-        public static readonly DependencyProperty SmallDecimalNudgeProperty = DPUtils.Register(_ => _.SmallDecimalNudge, 0.5m);
-        public decimal SmallDecimalNudge
+        public static readonly DependencyProperty SmallDecimalNudgeProperty = DPUtils.Register(_ => _.SmallDecimalNudge, 0.5);
+        public double SmallDecimalNudge
         {
-            get => (decimal)this.GetValue(SmallDecimalNudgeProperty);
+            get => (double)this.GetValue(SmallDecimalNudgeProperty);
             set => this.SetValue(SmallDecimalNudgeProperty, value);
         }
 
@@ -235,6 +235,11 @@
         // ===========================[ Property Change Handlers ]===================================
         private void OnCapChanged ()
         {
+            if (m_blockValueChangeReentrancy)
+            {
+                return;
+            }
+
             this.DisplayValue?.ReevaluateCap();
         }
 
@@ -245,16 +250,70 @@
                 return;
             }
 
-            switch (newValue)
+            try
             {
-                case float v: this.DisplayValue = new TextEditNumberViewModel(this, v); break;
-                case double v: this.DisplayValue = new TextEditNumberViewModel(this, v); break;
-                case decimal v: this.DisplayValue = new TextEditNumberViewModel(this, v); break;
-                case byte v: this.DisplayValue = new TextEditNumberViewModel(this, v); break;
-                case short v: this.DisplayValue = new TextEditNumberViewModel(this, v); break;
-                case int v: this.DisplayValue = new TextEditNumberViewModel(this, v); break;
-                case long v: this.DisplayValue = new TextEditNumberViewModel(this, v); break;
-                case GridLength v: this.DisplayValue = new TextEditNumberViewModel(this, v.Value); break;
+                m_blockValueChangeReentrancy = true;
+                switch (newValue)
+                {
+                    case float v:
+                        _ForceCapMinMax(float.MinValue, float.MaxValue);
+                        this.DisplayValue = new TextEditNumberViewModel(this, v);
+                        break;
+
+                    case double v:
+                        _ForceCapMinMax(double.MinValue, double.MaxValue);
+                        this.DisplayValue = new TextEditNumberViewModel(this, v);
+                        break;
+
+                    case decimal v:
+                        _ForceCapMinMax(decimal.MinValue, decimal.MaxValue);
+                        this.DisplayValue = new TextEditNumberViewModel(this, v);
+                        break;
+
+                    case byte v:
+                        _ForceCapMinMax(byte.MinValue, byte.MaxValue);
+                        this.DisplayValue = new TextEditNumberViewModel(this, v);
+                        break;
+
+                    case short v:
+                        _ForceCapMinMax(short.MinValue, short.MaxValue);
+                        this.DisplayValue = new TextEditNumberViewModel(this, v);
+                        break;
+
+                    case int v:
+                        _ForceCapMinMax(int.MinValue, int.MaxValue);
+                        this.DisplayValue = new TextEditNumberViewModel(this, v);
+                        break;
+
+                    case long v:
+                        _ForceCapMinMax(long.MinValue, long.MaxValue);
+                        this.DisplayValue = new TextEditNumberViewModel(this, v);
+                        break;
+
+                    case GridLength v:
+                        _ForceCapMinMax(double.MinValue, double.MaxValue);
+                        this.DisplayValue = new TextEditNumberViewModel(this, v.Value);
+                        break;
+                }
+            }
+            finally
+            {
+                m_blockValueChangeReentrancy = false;
+            }
+
+            void _ForceCapMinMax<T>(T _typedMin, T _typedMax)
+            {
+                var _doubleMin = (double)Convert.ChangeType(_typedMin, typeof(double));
+                if (this.Minimum < _doubleMin)
+                {
+                    this.Minimum = _doubleMin;
+                }
+
+                var _doubleMax = (double)Convert.ChangeType(_typedMax, typeof(double));
+                if (this.Maximum > _doubleMax)
+                {
+                    this.Maximum = _doubleMax;
+                }
             }
         }
 
@@ -408,6 +467,10 @@
             { typeof(float), DownCastTryParse<float>(float.TryParse) },
             { typeof(double), DownCastTryParse<double>(double.TryParse) },
             { typeof(decimal), DownCastTryParse<decimal>(decimal.TryParse) },
+            { typeof(sbyte), DownCastTryParse<sbyte>(sbyte.TryParse) },
+            { typeof(uint), DownCastTryParse<uint>(uint.TryParse) },
+            { typeof(ushort), DownCastTryParse<ushort>(ushort.TryParse) },
+            { typeof(ulong), DownCastTryParse<ulong>(ulong.TryParse) },
         };
 
         private static readonly Dictionary<Type, Nudger> kNudgers = new Dictionary<Type, Nudger>
@@ -419,6 +482,10 @@
             { typeof(float), RunNudge<float> },
             { typeof(double), RunNudge<double> },
             { typeof(decimal), RunNudge<decimal> },
+            { typeof(sbyte), RunNudge<sbyte> },
+            { typeof(uint), RunNudge<uint> },
+            { typeof(ushort), RunNudge<ushort> },
+            { typeof(ulong), RunNudge<ulong> },
         };
         private static readonly Dictionary<Type, Capper> kCappers = new Dictionary<Type, Capper>
         {
@@ -429,6 +496,10 @@
             { typeof(float),  RunCapper<float> },
             { typeof(double),  RunCapper<double> },
             { typeof(decimal),  RunCapper<decimal> },
+            { typeof(sbyte), RunCapper<sbyte> },
+            { typeof(uint), RunCapper<uint> },
+            { typeof(ushort), RunCapper<ushort> },
+            { typeof(ulong), RunCapper<ulong> },
         };
 
         private static object RunCapper<T> (object value, object min, object max, out bool cappedMin, out bool cappedMax)
@@ -436,6 +507,7 @@
             cappedMin = false;
             cappedMax = false;
             dynamic newValue = Convert.ChangeType(value, typeof(T));
+
             dynamic castedMin = Convert.ChangeType(min, typeof(T));
             dynamic castedMax = Convert.ChangeType(max, typeof(T));
             if (newValue <= castedMin)
@@ -457,7 +529,7 @@
         {
             dynamic castedOriginal = Convert.ChangeType(original, typeof(T));
             dynamic castedNudge = Convert.ChangeType(nudge, typeof(T));
-            return castedOriginal + (positive ? castedNudge : -castedNudge);
+            return Convert.ChangeType(castedOriginal + (positive ? castedNudge : -castedNudge), typeof(T));
         }
 
         private static TryParser DownCastTryParse<T> (TypedTryParser<T> typedParser)
