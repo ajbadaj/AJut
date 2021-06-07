@@ -189,72 +189,6 @@
         }
 
         /// <summary>
-        /// Supports #RGB (Converts to #RRGGBB), #RRGGBB, and #AARRGGBB
-        /// </summary>
-        public static bool TryGetColorFromHex(string hex, out Color color)
-        {
-            if (hex.StartsWith("#"))
-            {
-                switch (hex.Length)
-                {
-                    // #RGB -> #RRGGBB
-                    case 4:
-                        {
-                            byte[] bytes = _ReadHexBytes(3, charsPerByte: 1);
-                            color = new Color { A = 255, R = bytes[0], G = bytes[1], B = bytes[2] };
-                            return true;
-                        }
-
-                    // #ARGB -> #AARRGGBB
-                    case 5:
-                        {
-                            byte[] bytes = _ReadHexBytes(4, charsPerByte: 1);
-                            color = new Color { A = bytes[0], R = bytes[1], G = bytes[2], B = bytes[3] };
-                            return true;
-                        }
-
-                    // #RRGGBB
-                    case 7:
-                        {
-                            byte[] bytes = _ReadHexBytes(3, charsPerByte: 2);
-                            color = new Color { A = 255, R = bytes[0], G = bytes[1], B = bytes[2] };
-                            return true;
-                        }
-
-                    // #AARRGGBB
-                    case 9:
-                        {
-                            byte[] bytes = _ReadHexBytes(4, charsPerByte: 2);
-                            color = new Color { A = bytes[0], R = bytes[1], G = bytes[2], B = bytes[3] };
-                            return true;
-                        }
-                }
-            }
-
-            color = Colors.Black;
-            return false;
-
-            byte[] _ReadHexBytes(int byteCount, int charsPerByte = 2)
-            {
-                byte[] bytes = new byte[byteCount];
-                for (int index = 0; index < byteCount; ++index)
-                {
-                    int start = (index * charsPerByte) + 1;
-
-                    string digit = hex.Substring(start, charsPerByte);
-                    if (digit.Length == 1)
-                    {
-                        digit = $"{digit}{digit}";
-                    }
-
-                    bytes[index] = (byte)(Convert.ToUInt32(digit, 16));
-                }
-
-                return bytes;
-            }
-        }
-
-        /// <summary>
         /// Coercion utility for <see cref="Color"/> generation.
         /// </summary>
         /// <param name="originalValue">The original value.</param>
@@ -278,7 +212,7 @@
                     strValue = "#" + strValue;
                 }
 
-                if (TryGetColorFromHex(strValue, out Color color))
+                if (ColorHelper.TryGetColorFromHex(strValue, out Color color))
                 {
                     return color;
                 }
@@ -315,7 +249,7 @@
                     strValue = "#" + strValue;
                 }
 
-                if (TryGetColorFromHex(strValue, out Color color))
+                if (ColorHelper.TryGetColorFromHex(strValue, out Color color))
                 {
                     return new SolidColorBrush(color);
                 }
