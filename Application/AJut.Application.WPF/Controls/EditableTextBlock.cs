@@ -268,7 +268,10 @@ namespace AJut.Application.Controls
 
             void _EditTextBoxLostFocus (object sender, EventArgs e)
             {
-                m_editTextBox.LostFocus -= _EditTextBoxLostFocus;
+                if (m_editTextBox != null)
+                {
+                    m_editTextBox.LostFocus -= _EditTextBoxLostFocus;
+                }
 
                 if (this.LostFocusEditClose == eEditTextCloseAction.Cancel)
                 {
