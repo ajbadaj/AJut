@@ -52,8 +52,8 @@
                                    StaysOpen="False"
                                    AllowsTransparency="True">
                                 <local:ColorValueEditControl EditColor="{ajut:TemplateBinding Path=EditColor, Mode=TwoWay}"
-                                                             PreferShortStringHex="{TemplateBinding PreferShortStringHex}"
-                                                             BorderThickness="3"
+                                                             PreferShortStringHex="{ajut:TemplateBinding PreferShortStringHex}"
+                                                             BorderThickness="3" Width="{ajut:TemplateBinding PopupWidth}"
                                                              IsReadOnly="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ColorEditIngressControl}}, Path=IsReadOnly}"
                                                              BorderBrush="{ajut:TemplateBinding Path=HighlightBorderBrush}"/>
                             </Popup>

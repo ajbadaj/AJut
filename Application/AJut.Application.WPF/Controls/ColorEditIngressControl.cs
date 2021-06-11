@@ -61,6 +61,13 @@
             set => this.SetValue(CornerBannerIconFontSizeProperty, value);
         }
 
+        public static readonly DependencyProperty PopupWidthProperty = DPUtils.Register(_ => _.PopupWidth, 235.0);
+        public double PopupWidth
+        {
+            get => (double)this.GetValue(PopupWidthProperty);
+            set => this.SetValue(PopupWidthProperty, value);
+        }
+
         public static readonly DependencyProperty ShowEditDisplayProperty = DPUtils.Register(_ => _.ShowEditDisplay, false);
         public bool ShowEditDisplay
         {
