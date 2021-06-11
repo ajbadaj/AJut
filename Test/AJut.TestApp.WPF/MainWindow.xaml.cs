@@ -105,7 +105,7 @@
             set => this.SetValue(FloatValueProperty, value);
         }
 
-        public static readonly DependencyProperty ColorValueProperty = DPUtils.Register(_ => _.ColorValue);
+        public static readonly DependencyProperty ColorValueProperty = DPUtils.Register(_ => _.ColorValue, Colors.AntiqueWhite);
         public Color ColorValue
         {
             get => (Color)this.GetValue(ColorValueProperty);

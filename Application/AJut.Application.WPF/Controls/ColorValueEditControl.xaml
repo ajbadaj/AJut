@@ -7,7 +7,7 @@
     <Style TargetType="{x:Type local:ColorValueEditControl}">
         <Setter Property="IsReadOnly" Value="{Binding Path=(ap:Edit.IsReadOnly)}"/>
         <Setter Property="ap:BorderXTA.CornerRadius" Value="5"/>
-        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Background" Value="#CCC"/>
         <Setter Property="BorderBrush" Value="Black"/>
         <Setter Property="BorderThickness" Value="4" />
         <Setter Property="Padding" Value="10" />

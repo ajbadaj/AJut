@@ -656,7 +656,7 @@
                             <ajut:ColorEditIngressControl EditColor="Purple" Width="140" Height="140" Padding="2" PreferShortStringHex="True" IsReadOnly="True" Margin="0,0,5,5"
                                                   CornerBannerDimensions="60" CornerBannerIconFontSize="20"/>
                         </WrapPanel>
-                        <ajut:ColorValueEditControl Background="#CCC" HorizontalAlignment="Center"
+                        <ajut:ColorValueEditControl Background="#D32" HorizontalAlignment="Center"
                             EditColor="{Binding ElementName=Self, Path=ColorValue, Mode=TwoWay}"/>
                     </StackPanel>
                 </Grid>
