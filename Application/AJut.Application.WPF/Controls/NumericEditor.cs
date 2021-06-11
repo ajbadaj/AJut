@@ -36,6 +36,12 @@
 
             void _OnCanNudgeLarger (object sender, CanExecuteRoutedEventArgs e)
             {
+                if (this.IsReadOnly)
+                {
+                    e.CanExecute = false;
+                    return;
+                }
+
                 if (!this.DisplayValue?.IsAtMaximum ?? false)
                 {
                     e.CanExecute = true;
@@ -44,6 +50,12 @@
 
             void _OnCanNudgeSmaller (object sender, CanExecuteRoutedEventArgs e)
             {
+                if (this.IsReadOnly)
+                {
+                    e.CanExecute = false;
+                    return;
+                }
+
                 if (!this.DisplayValue?.IsAtMinimum ?? false)
                 {
                     e.CanExecute = true;
@@ -110,6 +122,13 @@
         {
             get => (object)this.GetValue(ValueProperty);
             set => this.SetValue(ValueProperty, value);
+        }
+
+        public static readonly DependencyProperty IsReadOnlyProperty = DPUtils.Register(_ => _.IsReadOnly);
+        public bool IsReadOnly
+        {
+            get => (bool)this.GetValue(IsReadOnlyProperty);
+            set => this.SetValue(IsReadOnlyProperty, value);
         }
 
         private static readonly DependencyPropertyKey DisplayValuePropertyKey = DPUtils.RegisterReadOnly(_ => _.DisplayValue, (d,e)=>d.OnDisplayValueSet(e.OldValue, e.NewValue));

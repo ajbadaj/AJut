@@ -18,6 +18,7 @@
 
     
     <Style TargetType="{x:Type local:NumericEditor}">
+        <Setter Property="IsReadOnly" Value="{Binding Path=(ap:Edit.IsReadOnly)}"/>
         <Setter Property="BorderBrush" Value="#000" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="ap:BorderXTA.CornerRadius" Value="2"/>
@@ -167,7 +168,7 @@
                                 <!-- ==========[Textbox Area]==================== -->
                                 <Grid VerticalAlignment="Center" Margin="{TemplateBinding Padding}">
                                     <TextBox x:Name="PART_TextArea" BorderThickness="0" TextAlignment="{TemplateBinding NumberTextAlignment}" Padding="{TemplateBinding Padding}"
-                                             Text="{ajut:TemplateBinding Path=DisplayValue.Text, Mode=TwoWay}"/>
+                                             Text="{ajut:TemplateBinding Path=DisplayValue.Text, Mode=TwoWay}" IsReadOnly="{TemplateBinding IsReadOnly}" IsReadOnlyCaretVisible="True"/>
                                     <Border BorderBrush="#8000" BorderThickness="1.4,1.4,0,0">
                                         <Border BorderBrush="#5FFF" BorderThickness="0,0,1,1">
                                         </Border>
