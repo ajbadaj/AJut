@@ -110,8 +110,8 @@
                     return colorStr;
             }
 
-            char _Color (int _color) => colorStr[_color * 2];
-            bool _IsMatch (int _color) => colorStr[_color * 2] == colorStr[_color * 2 + 1];
+            char _Color (int _color) => colorStr[_color * 2 + 1];
+            bool _IsMatch (int _color) => colorStr[_color * 2 + 1] == colorStr[_color * 2 + 2];
         }
     }
 }

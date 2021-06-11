@@ -3,6 +3,7 @@
     using System;
     using System.Windows;
     using System.Windows.Controls;
+    using System.Windows.Input;
     using System.Windows.Media;
     using DPUtils = DPUtils<ColorValueEditControl>;
 
@@ -19,6 +20,19 @@
             this.Loaded += (e, a) => (this.GetFirstChildOf<TextBox>() as UIElement ?? this).Focus();
         }
 
+        protected override void OnKeyUp (KeyEventArgs e)
+        {
+            if (!e.Handled && e.Key == Key.Escape)
+            {
+                this.UserRequestedFocusAway?.Invoke(this, EventArgs.Empty);
+                return;
+            }
+
+            base.OnKeyUp(e);
+        }
+
+        public event EventHandler UserRequestedFocusAway;
+
         public static readonly DependencyProperty EditColorProperty = DPUtils.RegisterFP(_ => _.EditColor, (d,e)=>d.OnEditColorChanged(), FrameworkPropertyMetadataOptions.BindsTwoWayByDefault);
         public Color EditColor
         {
@@ -26,6 +40,12 @@
             set => this.SetValue(EditColorProperty, value);
         }
 
+        public static readonly DependencyProperty PreferShortStringHexProperty = DPUtils.Register(_ => _.PreferShortStringHex);
+        public bool PreferShortStringHex
+        {
+            get => (bool)this.GetValue(PreferShortStringHexProperty);
+            set => this.SetValue(PreferShortStringHexProperty, value);
+        }
 
         public static readonly DependencyProperty HexProperty = DPUtils.RegisterFP(_ => _.Hex, (d, e) => d.OnHexChanged(), FrameworkPropertyMetadataOptions.BindsTwoWayByDefault);
         public string Hex

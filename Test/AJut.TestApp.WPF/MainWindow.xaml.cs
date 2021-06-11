@@ -105,6 +105,13 @@
             set => this.SetValue(FloatValueProperty, value);
         }
 
+        public static readonly DependencyProperty ColorValueProperty = DPUtils.Register(_ => _.ColorValue);
+        public Color ColorValue
+        {
+            get => (Color)this.GetValue(ColorValueProperty);
+            set => this.SetValue(ColorValueProperty, value);
+        }
+
         public static readonly DependencyProperty PropertyGridItemsProperty = DPUtils.Register(_ => _.PropertyGridItems);
         public SelfAwarePropertyGridSource[] PropertyGridItems
         {

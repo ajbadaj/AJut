@@ -544,32 +544,64 @@
                         <ColumnDefinition />
                         <ColumnDefinition />
                     </Grid.ColumnDefinitions>
-                    <ajut:PropertyGrid ItemsSource="{Binding ElementName=PropGridSelectionOptions, Path=SelectedItems}" BorderThickness="3" BorderBrush="#202020" Margin="20" Background="#1000"
+                    <TabControl>
+                        <TabItem Header="Multi Source">
+                            <ajut:PropertyGrid ItemsSource="{Binding ElementName=PropGridSelectionOptions, Path=SelectedItems}" BorderThickness="3" BorderBrush="#202020" Margin="20" Background="#1000"
                                        HorizontalContentAlignment="Stretch">
-                        <ajut:PropertyGrid.ItemTemplateSelector>
-                            <ajut:PropertyGridTemplateSelector>
-                                <ajut:PropertyGridTemplateSelector.RegisteredTemplates>
-                                    <DataTemplate x:Key="Text" DataType="{x:Type ajut:PropertyEditTarget}">
-                                        <ajut:EditableTextBlock Text="{Binding Path=EditValue, Mode=TwoWay}" FontSize="16"/>
-                                    </DataTemplate>
-                                    <DataTemplate x:Key="Number" DataType="{x:Type ajut:PropertyEditTarget}">
-                                        <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}"
+                                <ajut:PropertyGrid.ItemTemplateSelector>
+                                    <ajut:PropertyGridTemplateSelector>
+                                        <ajut:PropertyGridTemplateSelector.RegisteredTemplates>
+                                            <DataTemplate x:Key="Text" DataType="{x:Type ajut:PropertyEditTarget}">
+                                                <ajut:EditableTextBlock Text="{Binding Path=EditValue, Mode=TwoWay}" FontSize="16"/>
+                                            </DataTemplate>
+                                            <DataTemplate x:Key="Number" DataType="{x:Type ajut:PropertyEditTarget}">
+                                                <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}"
                                                             Minimum="{Binding Path=EditContext.Minimum, FallbackValue=0}"
                                                             Maximum="{Binding Path=EditContext.Maximum, FallbackValue=100}"
                                                             SmallWholeNumberNudge="{Binding Path=EditContext.SmallStep, FallbackValue=1}"
                                                             BigNudge="{Binding Path=EditContext.LargeStep, FallbackValue=1}"
                                                             NumberTextAlignment="Left"/>
-                                    </DataTemplate>
-                                </ajut:PropertyGridTemplateSelector.RegisteredTemplates>
-                                <ajut:PropertyGridTemplateSelector.Default>
-                                    <DataTemplate DataType="{x:Type ajut:PropertyEditTarget}">
-                                        <TextBlock Text="{Binding Path=EditValue}"/>
-                                    </DataTemplate>
-                                </ajut:PropertyGridTemplateSelector.Default>
-                            </ajut:PropertyGridTemplateSelector>
+                                            </DataTemplate>
+                                        </ajut:PropertyGridTemplateSelector.RegisteredTemplates>
+                                        <ajut:PropertyGridTemplateSelector.Default>
+                                            <DataTemplate DataType="{x:Type ajut:PropertyEditTarget}">
+                                                <TextBlock Text="{Binding Path=EditValue}"/>
+                                            </DataTemplate>
+                                        </ajut:PropertyGridTemplateSelector.Default>
+                                    </ajut:PropertyGridTemplateSelector>
 
-                        </ajut:PropertyGrid.ItemTemplateSelector>
-                    </ajut:PropertyGrid>
+                                </ajut:PropertyGrid.ItemTemplateSelector>
+                            </ajut:PropertyGrid>
+                        </TabItem>
+                        <TabItem Header="Single Source">
+                            <ajut:PropertyGrid SingleItemSource="{Binding ElementName=PropGridSelectionOptions, Path=SelectedItem}" BorderThickness="3" BorderBrush="#202020" Margin="20" Background="#1000"
+                                       HorizontalContentAlignment="Stretch">
+                                <ajut:PropertyGrid.ItemTemplateSelector>
+                                    <ajut:PropertyGridTemplateSelector>
+                                        <ajut:PropertyGridTemplateSelector.RegisteredTemplates>
+                                            <DataTemplate x:Key="Text" DataType="{x:Type ajut:PropertyEditTarget}">
+                                                <ajut:EditableTextBlock Text="{Binding Path=EditValue, Mode=TwoWay}" FontSize="16"/>
+                                            </DataTemplate>
+                                            <DataTemplate x:Key="Number" DataType="{x:Type ajut:PropertyEditTarget}">
+                                                <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}"
+                                                            Minimum="{Binding Path=EditContext.Minimum, FallbackValue=0}"
+                                                            Maximum="{Binding Path=EditContext.Maximum, FallbackValue=100}"
+                                                            SmallWholeNumberNudge="{Binding Path=EditContext.SmallStep, FallbackValue=1}"
+                                                            BigNudge="{Binding Path=EditContext.LargeStep, FallbackValue=1}"
+                                                            NumberTextAlignment="Left"/>
+                                            </DataTemplate>
+                                        </ajut:PropertyGridTemplateSelector.RegisteredTemplates>
+                                        <ajut:PropertyGridTemplateSelector.Default>
+                                            <DataTemplate DataType="{x:Type ajut:PropertyEditTarget}">
+                                                <TextBlock Text="{Binding Path=EditValue}"/>
+                                            </DataTemplate>
+                                        </ajut:PropertyGridTemplateSelector.Default>
+                                    </ajut:PropertyGridTemplateSelector>
+
+                                </ajut:PropertyGrid.ItemTemplateSelector>
+                            </ajut:PropertyGrid>
+                        </TabItem>
+                    </TabControl>
 
                     <ListBox x:Name="PropGridSelectionOptions" Grid.Column="1"
                              ItemsSource="{Binding ElementName=Self, Path=PropertyGridItems}">
@@ -611,7 +643,22 @@
             </TabItem>
             <TabItem Header="Color Control">
                 <Grid>
-                    <ajut:ColorEditIngressControl EditColor="Green" Width="40" Height="40" Padding="2"/>
+                    <Grid.Background>
+                        <SolidColorBrush Color="{Binding ElementName=Self, Path=ColorValue}"/>
+                    </Grid.Background>
+                    <StackPanel>
+                        <WrapPanel>
+                            <ajut:ColorEditIngressControl EditColor="Green" Width="40" Height="40" Padding="2" PreferShortStringHex="True" Margin="0,0,5,5"/>
+                            <ajut:ColorEditIngressControl EditColor="Purple" Width="40" Height="40" Padding="2" PreferShortStringHex="True" IsReadOnly="True" Margin="0,0,5,5"/>
+
+                            <ajut:ColorEditIngressControl EditColor="Green" Width="20" Height="20" Padding="2" PreferShortStringHex="True" Margin="0,0,5,5"
+                                                          CornerBannerDimensions="27" CornerBannerIconFontSize="10"/>
+                            <ajut:ColorEditIngressControl EditColor="Purple" Width="140" Height="140" Padding="2" PreferShortStringHex="True" IsReadOnly="True" Margin="0,0,5,5"
+                                                  CornerBannerDimensions="60" CornerBannerIconFontSize="20"/>
+                        </WrapPanel>
+                        <ajut:ColorValueEditControl Background="#CCC" HorizontalAlignment="Center"
+                            EditColor="{Binding ElementName=Self, Path=ColorValue, Mode=TwoWay}"/>
+                    </StackPanel>
                 </Grid>
             </TabItem>
         </TabControl>
