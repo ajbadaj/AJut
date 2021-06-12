@@ -195,8 +195,6 @@ namespace AJut.Application.Controls
         {
             this.Items = new ObservableFlatTreeStore<Item>();
             this.SelectedItems = new ObservableCollection<IObservableTreeNode>();
-            this.SelectionBrush = CoerceUtils.CoerceBrushFrom("#2196f3");
-            this.SelectionInactiveBrush = CoerceUtils.CoerceBrushFrom("#94B7D1");
 
             this.SelectedItems.CollectionChanged += _OnSelectedItemsCollectionChanged;
 

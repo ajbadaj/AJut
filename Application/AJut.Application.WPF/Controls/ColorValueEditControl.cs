@@ -17,7 +17,7 @@
 
         public ColorValueEditControl()
         {
-            this.Loaded += (e, a) => (this.GetFirstChildOf<TextBox>() as UIElement ?? this).Focus();
+            //this.Loaded += (e, a) => (this.GetFirstChildOf<TextBox>() as UIElement ?? this).Focus();
         }
 
         protected override void OnKeyUp (KeyEventArgs e)

@@ -16,7 +16,7 @@
         public ColorEditIngressControl()
         {
             ClickableXTA.SetIsTrackingClick(this, true);
-            ClickableXTA.AddClickHandler(this, (e, a) => this.ShowEditDisplay = true);
+            ClickableXTA.AddClickHandler(this, (e, a) => this.ShowEditDisplay = !this.ShowEditDisplay);
         }
 
         public static readonly DependencyProperty EditColorProperty = DPUtils.Register(_ => _.EditColor);

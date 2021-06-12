@@ -648,13 +648,13 @@
                     </Grid.Background>
                     <StackPanel>
                         <WrapPanel>
-                            <ajut:ColorEditIngressControl EditColor="Green" Width="40" Height="40" Padding="2" PreferShortStringHex="True" Margin="0,0,5,5"/>
-                            <ajut:ColorEditIngressControl EditColor="Purple" Width="40" Height="40" Padding="2" PreferShortStringHex="True" IsReadOnly="True" Margin="0,0,5,5"/>
+                            <ajut:ColorEditIngressControl EditColor="Green" Width="45" Height="45" Padding="4" PreferShortStringHex="True" Margin="0,0,5,5"/>
+                            <ajut:ColorEditIngressControl EditColor="Purple" Width="45" Height="45" Padding="2" PreferShortStringHex="True" IsReadOnly="True" Margin="0,0,5,5"/>
 
                             <ajut:ColorEditIngressControl EditColor="Green" Width="20" Height="20" Padding="2" PreferShortStringHex="True" Margin="0,0,5,5"
                                                           CornerBannerDimensions="27" CornerBannerIconFontSize="10"/>
-                            <ajut:ColorEditIngressControl EditColor="Purple" Width="140" Height="140" Padding="2" PreferShortStringHex="True" IsReadOnly="True" Margin="0,0,5,5"
-                                                  CornerBannerDimensions="60" CornerBannerIconFontSize="20"/>
+                            <ajut:ColorEditIngressControl EditColor="Purple" Width="140" Height="140" Padding="10" PreferShortStringHex="True" IsReadOnly="True" Margin="0,0,5,5"
+                                                          CornerBannerDimensions="60" CornerBannerIconFontSize="20"/>
                         </WrapPanel>
                         <ajut:ColorValueEditControl Background="#D32" HorizontalAlignment="Center"
                             EditColor="{Binding ElementName=Self, Path=ColorValue, Mode=TwoWay}"/>

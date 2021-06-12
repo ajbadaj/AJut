@@ -19,7 +19,8 @@
                             BorderThickness="{TemplateBinding BorderThickness}"
                             Background="{TemplateBinding Background}"
                             CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}"
-                            IsHitTestVisible="True" Focusable="True">
+                            IsHitTestVisible="True" Focusable="True"
+                            ToolTipService.ShowOnDisabled="True">
                         <StackPanel  Margin="{TemplateBinding Padding}">
                             <Border BorderThickness="0,0,0,3" BorderBrush="{TemplateBinding BorderBrush}">
                                 <DockPanel Margin="5">
@@ -56,46 +57,58 @@
                                             <RowDefinition />
                                             <RowDefinition />
                                         </Grid.RowDefinitions>
-                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="a" Opacity="0.7"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="a" Opacity="0.7"
+                                                   ToolTip="Alpha channel [0-255]"/>
                                         <Slider Grid.Row="0" Grid.Column="1" Minimum="0" Maximum="255" Value="{Binding Path=A, RelativeSource={RelativeSource AncestorType={x:Type local:ColorValueEditControl}}, Mode=TwoWay}"
                                                 Visibility="{ajut:TemplateBinding Path=AllowOpacityEdit, Converter={conv:BooleanToVisibilityConverter}}"
-                                                ToolTip="Alpha" IsEnabled="{ajut:TemplateBinding Path=IsReadOnly, Converter={conv:BooleanInverseConverter}}"/>
+                                                ToolTip="Alpha channel [0-255]" IsEnabled="{ajut:TemplateBinding Path=IsReadOnly, Converter={conv:BooleanInverseConverter}}"/>
 
-                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="r" Opacity="0.7"/>
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="r" Opacity="0.7" 
+                                                   ToolTip="Red channel [0-255]"/>
                                         <Slider Grid.Row="1" Grid.Column="1" Minimum="0" Maximum="255" Value="{Binding Path=R, RelativeSource={RelativeSource AncestorType={x:Type local:ColorValueEditControl}}, Mode=TwoWay}"
                                                 Visibility="{ajut:TemplateBinding Path=AllowOpacityEdit, Converter={conv:BooleanToVisibilityConverter}}"
-                                                ToolTip="Red Color Channel" IsEnabled="{ajut:TemplateBinding Path=IsReadOnly, Converter={conv:BooleanInverseConverter}}"/>
+                                                ToolTip="Red channel [0-255]" IsEnabled="{ajut:TemplateBinding Path=IsReadOnly, Converter={conv:BooleanInverseConverter}}"/>
 
-                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="g" Opacity="0.7"/>
+                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="g" Opacity="0.7"
+                                                   ToolTip="Green channel [0-255]" />
                                         <Slider Grid.Row="2" Grid.Column="1" Minimum="0" Maximum="255" Value="{Binding Path=G, RelativeSource={RelativeSource AncestorType={x:Type local:ColorValueEditControl}}, Mode=TwoWay}"
                                                 Visibility="{ajut:TemplateBinding Path=AllowOpacityEdit, Converter={conv:BooleanToVisibilityConverter}}"
-                                                ToolTip="Green Color Channel" IsEnabled="{ajut:TemplateBinding Path=IsReadOnly, Converter={conv:BooleanInverseConverter}}"/>
+                                                ToolTip="Green channel [0-255]" IsEnabled="{ajut:TemplateBinding Path=IsReadOnly, Converter={conv:BooleanInverseConverter}}"/>
 
-                                        <TextBlock Grid.Row="3" Grid.Column="0" Text="b" Opacity="0.7"/>
+                                        <TextBlock Grid.Row="3" Grid.Column="0" Text="b" Opacity="0.7" 
+                                                   ToolTip="Blue channel [0-255]"/>
                                         <Slider Grid.Row="3" Grid.Column="1" Minimum="0" Maximum="255" Value="{Binding Path=B, RelativeSource={RelativeSource AncestorType={x:Type local:ColorValueEditControl}}, Mode=TwoWay}"
                                                 Visibility="{ajut:TemplateBinding Path=AllowOpacityEdit, Converter={conv:BooleanToVisibilityConverter}}"
-                                                ToolTip="Blue Color Channel" IsEnabled="{ajut:TemplateBinding Path=IsReadOnly, Converter={conv:BooleanInverseConverter}}"/>
+                                                ToolTip="Blue channel [0-255]" IsEnabled="{ajut:TemplateBinding Path=IsReadOnly, Converter={conv:BooleanInverseConverter}}"/>
                                     </Grid>
                                     <UniformGrid Grid.Row="1" Rows="1" DockPanel.Dock="Bottom" Margin="0,10,0,0">
                                         <local:NumericEditor LabelContent="a" LabelButtonDock="Left" Minimum="0" Maximum="255" BigNudge="1" Margin="0,0,2,0"
                                                              Padding="2,2,4,2" IsReadOnly="{TemplateBinding IsReadOnly}"
+                                                             ToolTip="Alpha channel [0-255]"
                                                              Value="{Binding Path=A, RelativeSource={RelativeSource AncestorType={x:Type local:ColorValueEditControl}}, Mode=TwoWay}"
                                                              Visibility="{ajut:TemplateBinding Path=AllowOpacityEdit, Converter={conv:BooleanToVisibilityConverter}}"/>
 
                                         <local:NumericEditor LabelContent="r" LabelButtonDock="Left" Minimum="0" Maximum="255" BigNudge="1" Margin="0,0,2,0" 
+                                                             ToolTip="Red channel [0-255]"
                                                              Padding="2,2,4,2" IsReadOnly="{TemplateBinding IsReadOnly}"
                                                              Value="{Binding Path=R, RelativeSource={RelativeSource AncestorType={x:Type local:ColorValueEditControl}}, Mode=TwoWay}"/>
 
                                         <local:NumericEditor LabelContent="g" LabelButtonDock="Left" Minimum="0" Maximum="255" BigNudge="1"  Margin="0,0,2,0"
+                                                             ToolTip="Green channel [0-255]"
                                                              Padding="2,2,4,2" IsReadOnly="{TemplateBinding IsReadOnly}"
                                                              Value="{Binding Path=G, RelativeSource={RelativeSource AncestorType={x:Type local:ColorValueEditControl}}, Mode=TwoWay}"/>
 
                                         <local:NumericEditor LabelContent="b" LabelButtonDock="Left" Minimum="0" Maximum="255" BigNudge="1" 
+                                                             ToolTip="Blue channel [0-255]"
                                                              Padding="2,2,4,2" IsReadOnly="{TemplateBinding IsReadOnly}"
                                                              Value="{Binding Path=B, RelativeSource={RelativeSource AncestorType={x:Type local:ColorValueEditControl}}, Mode=TwoWay}"/>
                                     </UniformGrid>
                                 </Grid>
                             </Border>
+                            <TextBlock Text="Readonly View - not editable" 
+                                       FontStyle="Italic" FontSize="12" Opacity="0.5"
+                                       HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                       Visibility="{ajut:TemplateBinding Path=IsReadOnly, Converter={conv:BooleanToVisibilityConverter}}"/>
                         </StackPanel>
                     </Border>
                 </ControlTemplate>

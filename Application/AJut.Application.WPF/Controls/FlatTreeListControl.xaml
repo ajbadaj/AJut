@@ -44,6 +44,8 @@
     </Style>
 
     <Style TargetType="{x:Type local:FlatTreeListControl}">
+        <Setter Property="SelectionBrush" Value="#2196f3"/>
+        <Setter Property="SelectionInactiveBrush" Value="#94B7D1"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:FlatTreeListControl}">

@@ -58,8 +58,13 @@
                                                              BorderBrush="{ajut:TemplateBinding Path=HighlightBorderBrush}"/>
                             </Popup>
                             <Grid x:Name="EditOverlay" HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                                  Visibility="Collapsed"  Width="{TemplateBinding CornerBannerDimensions}" Height="{TemplateBinding CornerBannerDimensions}">
-                                <Viewbox Stretch="UniformToFill" Width="{TemplateBinding CornerBannerDimensions}" Height="{TemplateBinding CornerBannerDimensions}">
+                                  Visibility="Collapsed"  Width="{TemplateBinding CornerBannerDimensions}" Height="{TemplateBinding CornerBannerDimensions}"
+                                  SnapsToDevicePixels="True">
+                                <Grid.Effect>
+                                    <DropShadowEffect Direction="135" BlurRadius="25" ShadowDepth="3" Opacity="0.8"/>
+                                </Grid.Effect>
+                                <Viewbox Stretch="UniformToFill" Width="{TemplateBinding CornerBannerDimensions}" Height="{TemplateBinding CornerBannerDimensions}"
+                                         Margin="0,0,-1,-1">
                                     <Path StrokeThickness="0.25" StrokeLineJoin="Miter" StrokeStartLineCap="Flat" StrokeEndLineCap="Flat"
                                           Stroke="{Binding ElementName=ColorEditIngressRootBorder, Path=BorderBrush}"
                                           Fill="{Binding ElementName=ColorEditIngressRootBorder, Path=BorderBrush}">
@@ -69,14 +74,13 @@
                                     </Path>
                                 </Viewbox>
                                 <TextBlock FontFamily="Segoe MDL2 Assets" Foreground="White" Opacity="0.7"
-                                           HorizontalAlignment="Right" VerticalAlignment="Bottom" FontSize="{TemplateBinding CornerBannerIconFontSize}"
-                                           Margin="0,0,0,1">
+                                           HorizontalAlignment="Right" VerticalAlignment="Bottom" FontSize="{TemplateBinding CornerBannerIconFontSize}">
                                     <TextBlock.Style>
                                         <Style TargetType="{x:Type TextBlock}">
                                             <Setter Property="Text" Value="&#xE70F;"/>
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ColorEditIngressControl}}, Path=IsReadOnly}" Value="True">
-                                                    <Setter Property="Text" Value="&#xE7B3;"/>
+                                                    <Setter Property="Text" Value="&#xE721;"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
