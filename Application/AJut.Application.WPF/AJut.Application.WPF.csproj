@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net5.0-windows</TargetFramework>
@@ -6,6 +6,7 @@
     <Version>0.0.1</Version>
     <Authors>AJ</Authors>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <RootNamespace>AJut.Application</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -30,6 +31,15 @@
     </Compile>
     <Compile Update="Controls\ColorValueEditControl.cs">
       <DependentUpon>ColorValueEditControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\DockZone.cs">
+      <DependentUpon>DockZone.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\Docking\DockZoneTabHeadersControl.cs">
+      <DependentUpon>DockZoneTabHeadersControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\Docking\SingleDockZoneHeaderControl.cs">
+      <DependentUpon>SingleDockZoneHeaderControl.xaml</DependentUpon>
     </Compile>
     <Compile Update="Controls\EditableTextBlock.cs">
       <DependentUpon>EditableTextBlock.xaml</DependentUpon>

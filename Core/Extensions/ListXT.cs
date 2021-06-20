@@ -98,6 +98,17 @@
             }
         }
 
+        public static void RemoveAll<T> (this ICollection<T> This, Predicate<T> predicate)
+        {
+            foreach (T item in This.ToArray())
+            {
+                if (predicate(item))
+                {
+                    This.Remove(item);
+                }
+            }
+        }
+
         /// <summary>
         /// Clears the list, then adds each of the other
         /// </summary>
@@ -213,6 +224,24 @@
             }
 
             return default;
+        }
+
+        public static int FirstIndexMatching<T> (this IList<T> list, Predicate<T> predicate)
+        {
+            return FirstIndexMatching<T>(list, 0, predicate);
+        }
+
+        public static int FirstIndexMatching<T> (this IList<T> list, int startingIndex, Predicate<T> predicate)
+        {
+            for (int index = startingIndex; index < list.Count; ++index)
+            {
+                if (predicate(list[index]))
+                {
+                    return index;
+                }
+            }
+
+            return -1;
         }
 
         public static T RemoveFirst<T> (this IList<T> list, Predicate<T> predicate, int startingIndex = 0)

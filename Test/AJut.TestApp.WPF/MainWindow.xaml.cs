@@ -3,8 +3,10 @@
     using AJut;
     using AJut.Application;
     using AJut.Application.Controls;
+    using AJut.Application.Docking;
     using AJut.Application.Drawing;
     using AJut.Storage;
+    using AJut.TestApp.WPF.DockTest;
     using AJut.Tree;
     using System;
     using System.Collections.Generic;
@@ -68,6 +70,17 @@
 
             this.InitializeComponent();
 
+            this.DockingManager = new DockingManager("Main");
+            this.DockingManager.RegisterRootDockZones(this.LeftDockZone, this.RightDockZone);
+            this.LeftDockZone.GenerateAndAdd<DockTestOne>();
+            this.LeftDockZone.GenerateAndAdd<DockTestTwo>();
+
+            this.RightDockZone.SetSplitChildZones(eDockOrientation.Vertical, new DockZone(), new DockZone());
+            this.RightDockZone.AnteriorZone.GenerateAndAdd<DockTestOne>();
+            this.RightDockZone.PosteriorZone.GenerateAndAdd<DockTestTwo>();
+            this.RightDockZone.PosteriorZone.GenerateAndAdd<DockTestOne>();
+            this.RightDockZone.PosteriorZone.GenerateAndAdd<DockTestTwo>();
+
             this.AddHandler(DrawingInputSpawner.DrawingCreatedEvent, new RoutedEventHandler<PathGeometry>(DrawingDisplayer_OnDrawingCreated));
 
             TestTreeItem _SetExpanded (TestTreeItem item)
@@ -83,6 +96,15 @@
                 return item;
             }
         }
+
+
+        public static readonly DependencyProperty DockingManagerProperty = DPUtils.Register(_ => _.DockingManager);
+        public DockingManager DockingManager
+        {
+            get => (DockingManager)this.GetValue(DockingManagerProperty);
+            set => this.SetValue(DockingManagerProperty, value);
+        }
+
 
         public static readonly DependencyProperty ToolWindowsProperty = DPUtils.Register(_ => _.ToolWindows);
         public WindowManager ToolWindows

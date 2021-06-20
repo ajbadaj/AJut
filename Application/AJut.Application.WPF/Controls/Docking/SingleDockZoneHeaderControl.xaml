@@ -1,0 +1,10 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ajut="clr-namespace:AJut.Application"
+                    xmlns:ap="clr-namespace:AJut.Application.AttachedProperties"
+                    xmlns:local="clr-namespace:AJut.Application.Controls"
+                    xmlns:ajc="clr-namespace:AJut.Application.Converters"
+                    xmlns:docking="clr-namespace:AJut.Application.Docking"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    
+</ResourceDictionary>

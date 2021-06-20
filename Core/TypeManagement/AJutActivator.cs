@@ -11,7 +11,7 @@
         /// Create an instance of the given type, avoiding common <see cref="Activator.CreateInstance"/> issues, and
         /// including the custom type factories registered.
         /// </summary>
-        public static object CreateInstance (Type type)
+        public static object CreateInstanceOf (Type type)
         {
             if (g_typeFactories.TryGetValue(type, out var factoryFunc))
             {
@@ -32,18 +32,24 @@
         }
 
         /// <summary>
-        /// Create an instance of the type associated to the given type id
+        /// Create an instance of the type associated to the given type identifier
         /// </summary>
-        public static object CreateInstance (string typeId)
+        public static object CreateInstanceOf (string typeIdentifier)
         {
-            if (TypeIdRegistrar.TryGetType(typeId, out Type type))
+            if (TypeIdRegistrar.TryGetType(typeIdentifier, out Type type))
             {
-                return CreateInstance(type);
+                return CreateInstanceOf(type);
+            }
+
+            type = Type.GetType(typeIdentifier);
+            if (type != null)
+            {
+                return CreateInstanceOf(type);
             }
 
             return null;
         }
-        
+
         /// <summary>
         /// Register a type factory for custom instance generation
         /// </summary>

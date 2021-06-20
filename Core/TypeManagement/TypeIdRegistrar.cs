@@ -66,16 +66,32 @@
             }
         }
 
+        /// <summary>
+        /// Returns the type that cooresponds to the typeId provided (typeId could be registered typeId or <see cref="Type"/>)
+        /// </summary>
         public static bool TryGetType (string typeId, out Type type)
         {
-            return g_typeAliases.TryGetValue(typeId, out type);
+            if (g_typeAliases.TryGetValue(typeId, out type))
+            {
+                return true;
+            }
+
+            return false;
         }
 
-        public static string GetTypeidFor<T> ()
+        /// <summary>
+        /// Get the typeId for the given type <see cref="T"/>
+        /// </summary>
+        /// <returns>The typeId for <see cref="T"/> or null if none found</returns>
+        public static string GetTypeIdFor<T> ()
         {
             return GetTypeIdFor(typeof(T));
         }
 
+        /// <summary>
+        /// Get the typeId for the given type
+        /// </summary>
+        /// <returns>The typeId for type or null if none found</returns>
         public static string GetTypeIdFor (Type type)
         {
             var idAttr = type.GetAttributes<TypeIdAttribute>()?.FirstOrDefault();

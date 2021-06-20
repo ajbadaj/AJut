@@ -39,7 +39,7 @@
         /// </summary>
         public static object CreateInstance (this Type type)
         {
-            return AJutActivator.CreateInstance(type);
+            return AJutActivator.CreateInstanceOf(type);
         }
 
         public static object StockWithInstanceIn (this PropertyInfo property, object owner)

@@ -251,7 +251,7 @@
                 {
                     string remainingPropPath = typeIdKey.Substring(0, typeIdKey.Length - (kTypeIdStorage.Length + 1));
                     PropertyInfo targetProp = source.GetComplexProperty(remainingPropPath, out object childTarget);
-                    targetProp.SetValue(childTarget, AJutActivator.CreateInstance(typeId));
+                    targetProp.SetValue(childTarget, AJutActivator.CreateInstanceOf(typeId));
                 }
             }
 
