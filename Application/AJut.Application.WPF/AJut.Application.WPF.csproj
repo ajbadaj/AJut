@@ -35,10 +35,10 @@
     <Compile Update="Controls\DockZone.cs">
       <DependentUpon>DockZone.xaml</DependentUpon>
     </Compile>
-    <Compile Update="Controls\Docking\DockZoneTabHeadersControl.cs">
+    <Compile Update="Controls\DockingHelpers\DockZoneTabHeadersControl.cs">
       <DependentUpon>DockZoneTabHeadersControl.xaml</DependentUpon>
     </Compile>
-    <Compile Update="Controls\Docking\SingleDockZoneHeaderControl.cs">
+    <Compile Update="Controls\DockingHelpers\SingleDockZoneHeaderControl.cs">
       <DependentUpon>SingleDockZoneHeaderControl.xaml</DependentUpon>
     </Compile>
     <Compile Update="Controls\EditableTextBlock.cs">

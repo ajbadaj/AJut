@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ajut="clr-namespace:AJut.Application.Controls;assembly=AJut.Application.WPF"
         xmlns:ajut_dock="clr-namespace:AJut.Application.Docking;assembly=AJut.Application.WPF"
+        xmlns:ajut_props="clr-namespace:AJut.Application.PropertyInteraction;assembly=AJut.Application.WPF"
         xmlns:ajut_ap="clr-namespace:AJut.Application;assembly=AJut.Application.WPF"
         xmlns:ajc="clr-namespace:AJut.Application.Converters;assembly=AJut.Application.WPF"
         xmlns:ap="clr-namespace:AJut.Application.AttachedProperties;assembly=AJut.Application.WPF"
@@ -552,20 +553,20 @@
                                 <ajut:PropertyGrid.ItemTemplateSelector>
                                     <ajut:PropertyGridTemplateSelector>
                                         <ajut:PropertyGridTemplateSelector.RegisteredTemplates>
-                                            <DataTemplate x:Key="Text" DataType="{x:Type ajut:PropertyEditTarget}">
+                                            <DataTemplate x:Key="Text" DataType="{x:Type ajut_props:PropertyEditTarget}">
                                                 <ajut:EditableTextBlock Text="{Binding Path=EditValue, Mode=TwoWay}" FontSize="16"/>
                                             </DataTemplate>
-                                            <DataTemplate x:Key="Number" DataType="{x:Type ajut:PropertyEditTarget}">
+                                            <DataTemplate x:Key="Number" DataType="{x:Type ajut_props:PropertyEditTarget}">
                                                 <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}"
-                                                            Minimum="{Binding Path=EditContext.Minimum, FallbackValue=0}"
-                                                            Maximum="{Binding Path=EditContext.Maximum, FallbackValue=100}"
-                                                            SmallWholeNumberNudge="{Binding Path=EditContext.SmallStep, FallbackValue=1}"
-                                                            BigNudge="{Binding Path=EditContext.LargeStep, FallbackValue=1}"
-                                                            NumberTextAlignment="Left"/>
+                                                                    Minimum="{Binding Path=EditContext.Minimum, FallbackValue=0}"
+                                                                    Maximum="{Binding Path=EditContext.Maximum, FallbackValue=100}"
+                                                                    SmallWholeNumberNudge="{Binding Path=EditContext.SmallStep, FallbackValue=1}"
+                                                                    BigNudge="{Binding Path=EditContext.LargeStep, FallbackValue=1}"
+                                                                    NumberTextAlignment="Left"/>
                                             </DataTemplate>
                                         </ajut:PropertyGridTemplateSelector.RegisteredTemplates>
                                         <ajut:PropertyGridTemplateSelector.Default>
-                                            <DataTemplate DataType="{x:Type ajut:PropertyEditTarget}">
+                                            <DataTemplate DataType="{x:Type ajut_props:PropertyEditTarget}">
                                                 <TextBlock Text="{Binding Path=EditValue}"/>
                                             </DataTemplate>
                                         </ajut:PropertyGridTemplateSelector.Default>
@@ -580,10 +581,10 @@
                                 <ajut:PropertyGrid.ItemTemplateSelector>
                                     <ajut:PropertyGridTemplateSelector>
                                         <ajut:PropertyGridTemplateSelector.RegisteredTemplates>
-                                            <DataTemplate x:Key="Text" DataType="{x:Type ajut:PropertyEditTarget}">
+                                            <DataTemplate x:Key="Text" DataType="{x:Type ajut_props:PropertyEditTarget}">
                                                 <ajut:EditableTextBlock Text="{Binding Path=EditValue, Mode=TwoWay}" FontSize="16"/>
                                             </DataTemplate>
-                                            <DataTemplate x:Key="Number" DataType="{x:Type ajut:PropertyEditTarget}">
+                                            <DataTemplate x:Key="Number" DataType="{x:Type ajut_props:PropertyEditTarget}">
                                                 <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}"
                                                             Minimum="{Binding Path=EditContext.Minimum, FallbackValue=0}"
                                                             Maximum="{Binding Path=EditContext.Maximum, FallbackValue=100}"
@@ -593,7 +594,7 @@
                                             </DataTemplate>
                                         </ajut:PropertyGridTemplateSelector.RegisteredTemplates>
                                         <ajut:PropertyGridTemplateSelector.Default>
-                                            <DataTemplate DataType="{x:Type ajut:PropertyEditTarget}">
+                                            <DataTemplate DataType="{x:Type ajut_props:PropertyEditTarget}">
                                                 <TextBlock Text="{Binding Path=EditValue}"/>
                                             </DataTemplate>
                                         </ajut:PropertyGridTemplateSelector.Default>

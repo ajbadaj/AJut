@@ -5,6 +5,7 @@
     using AJut.Application.Controls;
     using AJut.Application.Docking;
     using AJut.Application.Drawing;
+    using AJut.Application.PropertyInteraction;
     using AJut.Storage;
     using AJut.TestApp.WPF.DockTest;
     using AJut.Tree;

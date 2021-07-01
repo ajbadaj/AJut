@@ -9,6 +9,7 @@
     using System.Windows;
     using System.Windows.Controls;
     using AJut;
+    using AJut.Application.PropertyInteraction;
     using AJut.Storage;
     using DPUtils = DPUtils<PropertyGrid>;
 

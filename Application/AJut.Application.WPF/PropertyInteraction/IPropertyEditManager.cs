@@ -1,4 +1,4 @@
-﻿namespace AJut.Application.Controls
+﻿namespace AJut.Application.PropertyInteraction
 {
     using System.Collections.Generic;
 
