@@ -8,11 +8,14 @@
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Input;
+    using System.Windows.Media;
     using AJut.Application.Docking;
     using DPUtils = AJut.Application.DPUtils<DockZoneTabHeadersControl>;
 
     public class DockZoneTabHeadersControl : Control
     {
+        public static RoutedUICommand SelectItemCommand = new RoutedUICommand("Select Item", nameof(SelectItemCommand), typeof(DockZoneTabHeadersControl));
+
         private readonly ObservableCollection<HeaderItem> m_items = new ObservableCollection<HeaderItem>();
         static DockZoneTabHeadersControl ()
         {
@@ -23,6 +26,8 @@
         {
             this.Items = new ReadOnlyObservableCollection<HeaderItem>(m_items);
             this.CommandBindings.Add(new CommandBinding(SelectItemCommand, OnSelectedItem, OnCanSelectItem));
+            this.CommandBindings.Add(new CommandBinding(DragDropElement.HorizontalDragInitiatedCommand, OnInitiateElementReorder, CanInitiateElementReorder));
+            this.CommandBindings.Add(new CommandBinding(DragDropElement.VerticalDragInitiatedCommand, OnInitiateTearOff));
         }
 
         private void OnCanSelectItem (object sender, CanExecuteRoutedEventArgs e)
@@ -38,7 +43,66 @@
             this.SetSelection((HeaderItem)((FrameworkElement)e.OriginalSource).DataContext);
         }
 
-        public static RoutedUICommand SelectItemCommand = new RoutedUICommand("Select Item", nameof(SelectItemCommand), typeof(DockZoneTabHeadersControl));
+        private void CanInitiateElementReorder (object sender, CanExecuteRoutedEventArgs e)
+        {
+            if (e.OriginalSource is UIElement uisource && uisource.GetFirstParentOf<ItemsControl>(eTraversalTree.Both) is ItemsControl itemsControl && ItemsControl.ContainerFromElement(itemsControl, uisource) as UIElement != null)
+            {
+                e.CanExecute = true;
+            }
+        }
+
+        private async void OnInitiateElementReorder (object sender, ExecutedRoutedEventArgs e)
+        {
+            var uisource = (UIElement)e.OriginalSource;
+            var container = (UIElement)ItemsControl.ContainerFromElement(uisource.GetFirstParentOf<ItemsControl>(eTraversalTree.Both), uisource);
+
+            await DragDropElement.DoDragReorder(container).ConfigureAwait(false);
+        }
+
+        private void OnInitiateTearOff (object sender, ExecutedRoutedEventArgs e)
+        {
+            var initial = (Point)e.Parameter;
+            var castedSource = (UIElement)e.OriginalSource;
+
+            var window = Window.GetWindow(castedSource);
+            Point desktopMouseLocation = (Point)((Vector)window.PointToScreen(castedSource.TranslatePoint(initial, window)) - (Vector)initial);
+
+            DockingContentAdapterModel target = ((HeaderItem)((FrameworkElement)castedSource).DataContext).Adapter;
+            var result = target.DockingOwner.DoTearOff(target.Display, desktopMouseLocation);
+            if (result)
+            {
+                result.Value.DragMove();
+            }
+        }
+
+
+        public static readonly DependencyProperty HeaderBorderProperty = DPUtils.Register(_ => _.HeaderBorder);
+        public Brush HeaderBorder
+        {
+            get => (Brush)this.GetValue(HeaderBorderProperty);
+            set => this.SetValue(HeaderBorderProperty, value);
+        }
+
+        public static readonly DependencyProperty HeaderBackgroundProperty = DPUtils.Register(_ => _.HeaderBackground);
+        public Brush HeaderBackground
+        {
+            get => (Brush)this.GetValue(HeaderBackgroundProperty);
+            set => this.SetValue(HeaderBackgroundProperty, value);
+        }
+
+        public static readonly DependencyProperty HeaderHighlightBackgroundProperty = DPUtils.Register(_ => _.HeaderHighlightBackground);
+        public Brush HeaderHighlightBackground
+        {
+            get => (Brush)this.GetValue(HeaderHighlightBackgroundProperty);
+            set => this.SetValue(HeaderHighlightBackgroundProperty, value);
+        }
+
+        public static readonly DependencyProperty HeaderSelectedBackgroundProperty = DPUtils.Register(_ => _.HeaderSelectedBackground);
+        public Brush HeaderSelectedBackground
+        {
+            get => (Brush)this.GetValue(HeaderSelectedBackgroundProperty);
+            set => this.SetValue(HeaderSelectedBackgroundProperty, value);
+        }
 
         public static readonly DependencyProperty HeaderItemsSourceProperty = DPUtils.Register(_ => _.ItemsSource, (d,e)=>d.OnItemsSourceChanged(e));
         public IEnumerable ItemsSource

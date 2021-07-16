@@ -136,6 +136,7 @@ namespace AJut.Application
                 return;
             }
 
+            window.Owner = this.Root;
             window.Activated += this.Window_Activated;
             window.Closed += this.Window_OnClosed;
             this.Items.Add(window);

@@ -663,15 +663,17 @@
                     </StackPanel>
                 </Grid>
             </TabItem>
-            <TabItem Header="Docking Framework">
-                <DockPanel>
-                    <Border BorderBrush="Black" BorderThickness="1" DockPanel.Dock="Left">
+            <TabItem Header="Docking Framework" IsSelected="True">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition />
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Border BorderBrush="Black" BorderThickness="1" Grid.Column="0" Margin="0,0,1,0">
                         <ajut:DockZone x:Name="LeftDockZone" GroupId="MainWindowTestDocking"/>
                     </Border>
-                    <Border BorderBrush="Black" BorderThickness="1" DockPanel.Dock="Right">
-                        <ajut:DockZone x:Name="RightDockZone" GroupId="MainWindowTestDocking"/>
-                    </Border>
-                    <Grid Background="#202020">
+                    <Grid Background="#202020" Grid.Column="1" Margin="1,0">
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Foreground="White" TextWrapping="WrapWithOverflow" TextAlignment="Center" Margin="5"
                                        Text="Docking zones to the left and right - this is the undockable part."/>
@@ -684,9 +686,19 @@
                             <TextBlock Foreground="White" TextWrapping="WrapWithOverflow" TextAlignment="Center" Margin="5"
                                        Text="• Drop"/>
                             <CheckBox Content="Hide tool windows when none have focus" Foreground="Wheat" HorizontalAlignment="Center"/>
+                            <Button>Save Dock Layout</Button>
+                            <Button>Reset to Default Dock Layout</Button>
                         </StackPanel>
                     </Grid>
-                </DockPanel>
+                    <Border BorderBrush="Black" BorderThickness="1" Grid.Column="2" Margin="1,0,0,0">
+                        <ajut:DockZone x:Name="RightDockZone" GroupId="MainWindowTestDocking"/>
+                    </Border>
+
+                    <GridSplitter Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Stretch"
+                                  Width="2" Margin="0,0,-1,0"/>
+                    <GridSplitter Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Stretch"
+                                  Width="2" Margin="-1,0,0,0"/>
+                </Grid>
             </TabItem>
         </TabControl>
     </Grid>

@@ -1,0 +1,47 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ajut="clr-namespace:AJut.Application"
+                    xmlns:ap="clr-namespace:AJut.Application.AttachedProperties"
+                    xmlns:local="clr-namespace:AJut.Application.Controls"
+                    xmlns:ajc="clr-namespace:AJut.Application.Converters"
+                    xmlns:docking="clr-namespace:AJut.Application.Docking"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <Style TargetType="{x:Type local:DockZoneSelectedHeaderControl}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:DockZoneSelectedHeaderControl}">
+                    <Border x:Name="SingleHeaderRoot" Background="#1222" BorderThickness="0,5,0,1" BorderBrush="#8000"
+                            ap:DragWatch.IsEnabled="True">
+                        <Grid x:Name="DockDisplayTabHeader">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ContentControl Content="{ajut:TemplateBinding Path=Target.TitleContent}" ContentTemplate="{ajut:TemplateBinding Path=Target.TitleTemplate}">
+                                <ContentControl.ToolTip>
+                                    <ContentControl Content="{ajut:TemplateBinding Path=Target.TooltipContent}" ContentTemplate="{ajut:TemplateBinding Path=Target.TooltipTemplate}"/>
+                                </ContentControl.ToolTip>
+                            </ContentControl>
+                            <Grid Grid.Column="1">
+                                <Grid.Style>
+                                    <Style TargetType="{x:Type Grid}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{ajut:TemplateBinding Path=Target.Location.DockOrientation}" Value="Tabbed">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Grid.Style>
+                                <Button Content="&#xE894;" FontFamily="Segoe MDL2 Assets" 
+                                    Command="{x:Static local:DockZone.ClosePanelCommand}"
+                                    CommandParameter="{ajut:TemplateBinding Path=Target}"
+                                    Margin="3,1,1,1" FontSize="8"
+                                    Background="Transparent" BorderThickness="0"/>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

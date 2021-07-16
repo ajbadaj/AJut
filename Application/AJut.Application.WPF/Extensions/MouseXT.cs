@@ -14,6 +14,11 @@ namespace AJut.Application
             return e.ChangedButton == (SystemParameters.SwapButtons ? MouseButton.Right : MouseButton.Left);
         }
 
+        public static bool IsTargetSecondary (this MouseButtonEventArgs e)
+        {
+            return e.ChangedButton == (SystemParameters.SwapButtons ? MouseButton.Left : MouseButton.Right);
+        }
+
         public static MouseButtonState GetPrimaryButtonState ()
         {
             return SystemParameters.SwapButtons

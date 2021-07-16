@@ -35,11 +35,14 @@
     <Compile Update="Controls\DockZone.cs">
       <DependentUpon>DockZone.xaml</DependentUpon>
     </Compile>
+	<Compile Update="Controls\DockingHelpers\DefaultDockTearoffWindow.cs">
+      <DependentUpon>DefaultDockTearoffWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Update="Controls\DockingHelpers\DockZoneTabHeadersControl.cs">
       <DependentUpon>DockZoneTabHeadersControl.xaml</DependentUpon>
     </Compile>
-    <Compile Update="Controls\DockingHelpers\SingleDockZoneHeaderControl.cs">
-      <DependentUpon>SingleDockZoneHeaderControl.xaml</DependentUpon>
+    <Compile Update="Controls\DockingHelpers\DockZoneSelectedHeaderControl.cs">
+      <DependentUpon>DockZoneSelectedHeaderControl.xaml</DependentUpon>
     </Compile>
     <Compile Update="Controls\EditableTextBlock.cs">
       <DependentUpon>EditableTextBlock.xaml</DependentUpon>
@@ -62,6 +65,10 @@
     <Compile Update="Controls\ToggleStrip.cs">
       <DependentUpon>ToggleStrip.xaml</DependentUpon>
     </Compile>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Folder Include="Commands\" />
   </ItemGroup>
       
 </Project>

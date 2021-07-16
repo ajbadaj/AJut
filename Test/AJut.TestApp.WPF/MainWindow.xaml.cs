@@ -71,7 +71,7 @@
 
             this.InitializeComponent();
 
-            this.DockingManager = new DockingManager("Main");
+            this.DockingManager = new DockingManager(this, "Main");
             this.DockingManager.RegisterRootDockZones(this.LeftDockZone, this.RightDockZone);
             this.LeftDockZone.GenerateAndAdd<DockTestOne>();
             this.LeftDockZone.GenerateAndAdd<DockTestTwo>();

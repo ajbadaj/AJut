@@ -47,63 +47,56 @@
                 BorderThickness="{TemplateBinding BorderThickness}"
                 CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}">
             <DockPanel>
+                <Grid DockPanel.Dock="Top">
+                    <Grid.Style>
+                        <Style TargetType="{x:Type Grid}">
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=(docking:DockWindow.IsDockingTearoffWindow)}" Value="True"/>
+                                        <Condition Binding="{Binding Path=Location.DockOrientation}" Value="Single"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <MultiDataTrigger.Setters>
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </MultiDataTrigger.Setters>
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <local:DockZoneSelectedHeaderControl Target="{Binding ElementName=PanelTabHeaders, Path=SelectedItem.Adapter}"/>
+                </Grid>
                 <local:DockZoneTabHeadersControl x:Name="PanelTabHeaders" DockPanel.Dock="{ajut:TemplateBinding TabStripPlacement}"
                                                  ItemsSource="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=LocallyDockedElements}"/>
                 <ContentControl Content="{Binding ElementName=PanelTabHeaders, Path=SelectedItem.Adapter.Display}"/>
             </DockPanel>
-            <!--<TabControl ItemsSource="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=LocallyDockedElements}"
-                        TabStripPlacement="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=TabStripPlacement}"
-                        SelectedIndex="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=SelectedIndex, Mode=TwoWay}"
-                        HorizontalContentAlignment="Stretch">
-                <TabControl.ItemTemplate>
-                    <DataTemplate>
-                        <Grid x:Name="DockDisplayTabHeader">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition />
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <ContentControl Content="{Binding TitleContent}" ContentTemplate="{Binding TitleTemplate}">
-                                <ContentControl.ToolTip>
-                                    <ContentControl Content="{Binding Path=TooltipContent}" ContentTemplate="{Binding Path=TooltipTemplate}"/>
-                                </ContentControl.ToolTip>
-                            </ContentControl>
-                            <Button Content="X" Grid.Column="1"  Command="{x:Static local:DockZone.ClosePanelCommand}"
-                                    Visibility="{Binding ElementName=DockDisplayTabHeader, Path=IsMouseOver, Converter={ajc:BooleanToVisibilityConverter TrueValue=Visible, FalseValue=Hidden}}"/>
-                        </Grid>
-                    </DataTemplate>
-                </TabControl.ItemTemplate>
-                <TabControl.ContentTemplate>
-                    <DataTemplate>
-                        <ContentControl Content="{Binding Path=Display}"/>
-                    </DataTemplate>
-                </TabControl.ContentTemplate>
-            </TabControl>-->
         </Border>
     </ControlTemplate>
     <ControlTemplate x:Key="CONTROLTEMPLATE_SingleDockZone" TargetType="{x:Type local:DockZone}">
         <Border x:Name="SingleBorderRoot"
-                DataContext="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=LocallyDockedElements[0]}"
+                DataContext="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=LocallyDockedElements[0], FallbackValue={x:Null}}"
                 Background="{TemplateBinding Background}"
                 BorderBrush="{TemplateBinding BorderBrush}" 
                 BorderThickness="{TemplateBinding BorderThickness}"
                 CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}">
             <DockPanel>
-                <Border DockPanel.Dock="Top" Background="#1222" BorderThickness="0,5,0,1" BorderBrush="#8000">
-                    <Grid x:Name="DockDisplayTabHeader">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition />
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <ContentControl Content="{Binding Path=TitleContent}" ContentTemplate="{Binding TitleTemplate}">
-                            <ContentControl.ToolTip>
-                                <ContentControl Content="{Binding Path=TooltipContent}" ContentTemplate="{Binding Path=TooltipTemplate}"/>
-                            </ContentControl.ToolTip>
-                        </ContentControl>
-                        <Button Content="&#xE894;" FontFamily="Segoe MDL2 Assets"  Grid.Column="1" Command="{x:Static local:DockZone.ClosePanelCommand}"
-                                CommandParameter="{Binding .}"
-                                Visibility="{Binding ElementName=DockDisplayTabHeader, Path=IsMouseOver, Converter={ajc:BooleanToVisibilityConverter TrueValue=Visible, FalseValue=Hidden}}"/>
-                    </Grid>
-                </Border>
+                <Grid DockPanel.Dock="Top">
+                    <Grid.Style>
+                        <Style TargetType="{x:Type Grid}">
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=(docking:DockWindow.IsDockingTearoffWindow)}" Value="True"/>
+                                        <Condition Binding="{Binding Path=Location.DockOrientation}" Value="Single"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <MultiDataTrigger.Setters>
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </MultiDataTrigger.Setters>
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <local:DockZoneSelectedHeaderControl Target="{Binding .}"/>
+                </Grid>
                 <ContentControl Content="{Binding Path=Display}"/>
             </DockPanel>
         </Border>

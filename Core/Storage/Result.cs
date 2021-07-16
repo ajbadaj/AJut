@@ -31,6 +31,8 @@
             return this;
         }
 
+        public static Result Success () => new Result();
+
         public static Result Error (string error)
         {
             var result = new Result();
@@ -63,6 +65,9 @@
         {
             this.Value = value;
         }
+
+
+        public static Result<T> Success (T value) => new Result<T>(value);
 
         public static new Result<T> Error (string error)
         {

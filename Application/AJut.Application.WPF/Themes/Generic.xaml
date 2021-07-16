@@ -4,8 +4,9 @@
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/ColorEditIngressControl.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/ColorValueEditControl.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/DockZone.xaml"/>
+        <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/DockingHelpers/DefaultDockTearoffWindow.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/DockingHelpers/DockZoneTabHeadersControl.xaml"/>
-        <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/DockingHelpers/SingleDockZoneHeaderControl.xaml"/>
+        <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/DockingHelpers/DockZoneSelectedHeaderControl.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/EditableTextBlock.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/EnumComboBox.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/FlatTreeListControl.xaml"/>

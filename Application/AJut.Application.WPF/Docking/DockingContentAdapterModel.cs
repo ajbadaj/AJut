@@ -46,6 +46,13 @@
             }
         }
 
+        private string m_debugName;
+        public string DebugName
+        {
+            get => m_debugName;
+            set => this.SetAndRaiseIfChanged(ref m_debugName, value);
+        }
+
         private object m_titleContent;
         public object TitleContent
         {
@@ -93,10 +100,13 @@
             }
 
             this.Location = dockZone;
-            this.Docked?.Invoke(this, EventArgs.Empty);
-            if (this.Location?.LocallyDockedElements is INotifyCollectionChanged locationCollection)
+            if (this.Location != null)
             {
-                locationCollection.CollectionChanged += this.OnOrderChangedInDockZone;
+                this.Docked?.Invoke(this, EventArgs.Empty);
+                if (this.Location.LocallyDockedElements is INotifyCollectionChanged locationCollection)
+                {
+                    locationCollection.CollectionChanged += this.OnOrderChangedInDockZone;
+                }
             }
 
             this.ResetTabOrder();
@@ -115,6 +125,10 @@
         internal void FinalizeSetup (object state)
         {
             this.SetupComplete?.Invoke(this, new EventArgs<object>(state));
+            if (this.DebugName == null)
+            {
+                this.DebugName = this.Display?.GetType().Name ?? "-display not set-";
+            }
         }
     }
 }
