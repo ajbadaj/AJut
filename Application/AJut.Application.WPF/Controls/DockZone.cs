@@ -291,6 +291,7 @@
             newZone.AnteriorZone = this.PosteriorZone;
             newZone.PosteriorZone = this.PosteriorZone;
             m_locallyDockedElements.ForEach(newZone.Add);
+            newZone.SelectedIndex = this.SelectedIndex;
 
             m_locallyDockedElements.Clear();
             this.SetSplitChildZones(eDockOrientation.Vertical, empty, newZone);
@@ -319,11 +320,14 @@
             parent.AnteriorZone = null;
             parent.PosteriorZone = null;
             parent.m_locallyDockedElements.Clear();
-            parent.AnteriorSize = saveZone.AnteriorSize;
-            parent.AnteriorZone = saveZone.PosteriorZone;
-            parent.PosteriorZone = saveZone.PosteriorZone;
-            saveZone.m_locallyDockedElements.ForEach(parent.Add);
-            saveZone.Dispose();
+            if (saveZone.DockOrientation != eDockOrientation.Empty)
+            {
+                parent.AnteriorSize = saveZone.AnteriorSize;
+                parent.AnteriorZone = saveZone.PosteriorZone;
+                parent.PosteriorZone = saveZone.PosteriorZone;
+                saveZone.m_locallyDockedElements.ForEach(parent.Add);
+                saveZone.Dispose();
+            }
             return true;
         }
 
@@ -353,6 +357,62 @@
             }
 
             return data;
+        }
+
+        internal DockZone GenerateNewAndEmptyInto ()
+        {
+            DockZone duplicate = new DockZone();
+            duplicate.Manager = this.Manager;
+
+            //parent.AnteriorZone = null;
+            //parent.PosteriorZone = null;
+            //parent.m_locallyDockedElements.Clear();
+            duplicate.AnteriorSize = this.AnteriorSize;
+            duplicate.AnteriorZone = this.PosteriorZone;
+            duplicate.PosteriorZone = this.PosteriorZone;
+
+            if (duplicate.AnteriorZone != null)
+            {
+                duplicate.AnteriorZone.ParentZone = duplicate;
+            }
+
+            if (duplicate.PosteriorZone != null)
+            {
+                duplicate.PosteriorZone.ParentZone = duplicate;
+            }
+
+            m_locallyDockedElements.ForEach(duplicate.Add);
+            duplicate.DockOrientation = this.DockOrientation;
+
+            this.AnteriorZone = null;
+            this.PosteriorZone = null;
+            this.m_locallyDockedElements.Clear();
+            this.DockOrientation = eDockOrientation.Empty;
+
+            return duplicate;
+        }
+
+        internal void DropContentInto (DockZone dropTarget, eDockOrientation dockSelection, bool asAnterior)
+        {
+            var thisDuplicate = this.GenerateNewAndEmptyInto();
+            if (this.HasParentZone)
+            {
+                this.CollapseAndDistributeSibling();
+            }
+
+            if (eDockOrientation.AnyLeafDisplay.HasFlag(dockSelection))
+            {
+                var allLocals = TreeTraversal<DockZone>.All(thisDuplicate).SelectMany(z => z.m_locallyDockedElements);
+                allLocals.ForEach(dropTarget.Add);
+            }
+            else
+            {
+                var targetDuplicate = dropTarget.GenerateNewAndEmptyInto();
+                dropTarget.SetSplitChildZones(dockSelection,
+                    asAnterior ? thisDuplicate : targetDuplicate,
+                    asAnterior ? targetDuplicate : thisDuplicate
+                );
+            }
         }
 
         internal void BuildFromState (DockingSerialization.ZoneData data)

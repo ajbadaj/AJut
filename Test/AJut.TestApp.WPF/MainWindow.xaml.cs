@@ -1,14 +1,5 @@
 ﻿namespace AJut.TestApp.WPF
 {
-    using AJut;
-    using AJut.Application;
-    using AJut.Application.Controls;
-    using AJut.Application.Docking;
-    using AJut.Application.Drawing;
-    using AJut.Application.PropertyInteraction;
-    using AJut.Storage;
-    using AJut.TestApp.WPF.DockTest;
-    using AJut.Tree;
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -18,6 +9,15 @@
     using System.Windows.Input;
     using System.Windows.Media;
     using System.Windows.Shapes;
+    using AJut;
+    using AJut.Application;
+    using AJut.Application.Controls;
+    using AJut.Application.Docking;
+    using AJut.Application.Drawing;
+    using AJut.Application.ImageUtils;
+    using AJut.Application.PropertyInteraction;
+    using AJut.Storage;
+    using AJut.TestApp.WPF.DockTest;
     using DPUtils = AJut.Application.DPUtils<MainWindow>;
 
     /// <summary>
@@ -83,6 +83,10 @@
             this.RightDockZone.PosteriorZone.GenerateAndAdd<DockTestTwo>();
 
             this.AddHandler(DrawingInputSpawner.DrawingCreatedEvent, new RoutedEventHandler<PathGeometry>(DrawingDisplayer_OnDrawingCreated));
+
+            // TEMP  BS:
+            //var list = IconHelper.ReadImagePiecesFromIcon(@"C:\Users\mrbad\AppData\Local\Google\Chrome\User Data\Default\Web Applications\_crx_jgeocpdicgmkeemopbanhokmhcgcflmi\Shortcuts Menu Icons\2.ico").ToList();
+            //Console.WriteLine(list.Count);
 
             TestTreeItem _SetExpanded (TestTreeItem item)
             {

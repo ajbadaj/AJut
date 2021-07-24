@@ -1,6 +1,5 @@
 ﻿namespace AJut.Application.AttachedProperties
 {
-    using AJut.IO;
     using System;
     using System.Collections.Generic;
     using System.Drawing.Imaging;
@@ -8,10 +7,11 @@
     using System.Linq;
     using System.Net;
     using System.Reflection;
-    using System.Threading;
     using System.Windows;
     using System.Windows.Media.Imaging;
     using System.Windows.Threading;
+    using AJut.Application.ImageUtils;
+    using AJut.IO;
     using ImageControl = System.Windows.Controls.Image;
     using ImageStorage = System.Drawing.Image;
 
@@ -287,20 +287,7 @@
 
         public GifFrame (GifInfoCache info, ImageStorage image, int frameIndex)
         {
-            BitmapImage imageSource = new BitmapImage();
-            Stream bitmapStream = new MemoryStream();
-            image.Save(bitmapStream, ImageFormat.Png);
-            bitmapStream.Seek(0, SeekOrigin.Begin);
-
-            imageSource.BeginInit();
-            imageSource.StreamSource = bitmapStream;
-            imageSource.EndInit();
-            if (imageSource.CanFreeze)
-            {
-                imageSource.Freeze();
-            }
-
-            this.ImageSource = imageSource;
+            this.ImageSource = ImageUtils.GetImageSourceFrom(image);
             this.DelayToNextMS = BitConverter.ToInt32(image.GetPropertyItem(kFrameDelayProperty).Value, frameIndex) * 10;
             if (this.DelayToNextMS == 0 && info.Frames.Count > 0)
             {

@@ -57,7 +57,7 @@
                                                     <DataTemplate>
                                                         <TextBox IsReadOnlyCaretVisible="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:EditableTextBlock}},  Path=IsReadOnlyCaretVisible}" 
                                                                  BorderThickness="0"
-                                                                 IsReadOnly="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:EditableTextBlock}},  Path=IsReadOnly}" 
+                                                                 IsReadOnly="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:EditableTextBlock}},  Path=IsReadOnly, FallbackValue=False}" 
                                                                  Text="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:EditableTextBlock}},        Path=Text, UpdateSourceTrigger=PropertyChanged}" 
                                                                  FontFamily="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:EditableTextBlock}},  Path=FontFamily}" 
                                                                  FontSize="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:EditableTextBlock}},    Path=FontSize}"

@@ -228,7 +228,7 @@ namespace AJut.Application
             }
         }
 
-        private void Window_Activated (object sender, System.EventArgs e)
+        private void Window_Activated (object sender, EventArgs e)
         {
             this.OnItemActivated((Window)sender);
         }

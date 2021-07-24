@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ajutbase="clr-namespace:AJut.Application;assembly=AJut.Application.WPF"
         xmlns:ajut="clr-namespace:AJut.Application.Controls;assembly=AJut.Application.WPF"
         xmlns:ajut_dock="clr-namespace:AJut.Application.Docking;assembly=AJut.Application.WPF"
         xmlns:ajut_props="clr-namespace:AJut.Application.PropertyInteraction;assembly=AJut.Application.WPF"
@@ -699,6 +700,23 @@
                     <GridSplitter Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Stretch"
                                   Width="2" Margin="-1,0,0,0"/>
                 </Grid>
+            </TabItem>
+            <TabItem Header="IO - Path Selection Control">
+                <StackPanel>
+                    <ajut:PathSelectionControl  VerticalAlignment="Center" MaxWidth="300" PathType="{Binding ElementName=PathType, Path=SelectedItem}"
+                                                FileFilter="{Binding ElementName=FileFilter, Path=Text, UpdateSourceTrigger=PropertyChanged}"
+                                                TreatNonExistentPathAsInvalid="{Binding ElementName=NonExistant, Path=IsChecked}"
+                                                TreatEmptyPathAsInvalid="{Binding ElementName=EmptyAsError, Path=IsChecked}"/>
+                    <StackPanel>
+                        <CheckBox x:Name="NonExistant" Content="Treat Non-existant as error" Margin="0,0,5,5" VerticalAlignment="Center"/>
+                        <CheckBox x:Name="EmptyAsError" Content="Treat empty as error" Margin="0,0,5,5" VerticalAlignment="Center"/>
+                        <ajut:EnumComboBox x:Name="PathType" SelectedItem="{x:Static ajut:ePathType.File}" Margin="0,0,5,5" VerticalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Filter" VerticalAlignment="Center"/>
+                            <TextBox x:Name="FileFilter" Text="{Binding Source={x:Static ajutbase:ImageTypes.AnyOrAllImageTypeFilter}, Mode=OneTime}" MaxWidth="300" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
             </TabItem>
         </TabControl>
     </Grid>

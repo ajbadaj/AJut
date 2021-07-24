@@ -1,6 +1,7 @@
 ﻿namespace AJut.Application
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
 
@@ -188,6 +189,18 @@
             return default;
         }
 
+        private static Lazy<Dictionary<string, Color>> g_allNamedColors = new Lazy<Dictionary<string, Color>>(() =>
+        {
+            Dictionary<string, Color> colorMap = new Dictionary<string, Color>();
+            var allColorProps = typeof(Colors).GetProperties(BindingFlags.Public | BindingFlags.Static);
+            foreach (PropertyInfo colorProp in allColorProps)
+            {
+                colorMap.Add(colorProp.Name, (Color)colorProp.GetValue(null));
+            }
+
+            return colorMap;
+        });
+
         /// <summary>
         /// Coercion utility for <see cref="Color"/> generation.
         /// </summary>
@@ -207,20 +220,20 @@
             else if (originalValue is string strValue)
             {
                 strValue = strValue.Trim();
-                if (!strValue.StartsWith("#"))
-                {
-                    strValue = "#" + strValue;
-                }
-
-                if (ColorHelper.TryGetColorFromHex(strValue, out Color color))
+                if (ColorHelper.TryGetColorFromHex(!strValue.StartsWith("#") ? "#" + strValue : strValue, out Color color))
                 {
                     return color;
+                }
+
+                if (g_allNamedColors.Value.TryGetValue(strValue, out Color namedColor))
+                {
+                    return namedColor;
                 }
             }
 
             return Colors.Black;
         }
-        
+
         /// <summary>
         /// Coercion utility for <see cref="Brush"/> generation.
         /// </summary>
@@ -243,19 +256,10 @@
             }
             else if (originalValue is string strValue)
             {
-                strValue = strValue.Trim();
-                if (!strValue.StartsWith("#"))
-                {
-                    strValue = "#" + strValue;
-                }
-
-                if (ColorHelper.TryGetColorFromHex(strValue, out Color color))
-                {
-                    return new SolidColorBrush(color);
-                }
+                return new SolidColorBrush(CoerceColorFrom(strValue));
             }
 
-            return null;
+            return Brushes.Black;
         }
 
         /// <summary>

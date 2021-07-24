@@ -56,6 +56,9 @@
     <Compile Update="Controls\NumericEditor.cs">
       <DependentUpon>NumericEditor.xaml</DependentUpon>
     </Compile>
+    <Compile Update="Controls\PathSelectionControl.cs">
+      <DependentUpon>PathSelectionControl.xaml</DependentUpon>
+    </Compile>
     <Compile Update="Controls\PathFollowingContentDisplayer.cs">
       <DependentUpon>PathFollowingContentDisplayer.xaml</DependentUpon>
     </Compile>
@@ -64,6 +67,9 @@
     </Compile>
     <Compile Update="Controls\ToggleStrip.cs">
       <DependentUpon>ToggleStrip.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\WindowChromeButtonStrip.cs">
+      <DependentUpon>WindowChromeButtonStrip.xaml</DependentUpon>
     </Compile>
   </ItemGroup>
   

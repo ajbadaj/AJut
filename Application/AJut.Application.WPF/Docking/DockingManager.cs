@@ -4,16 +4,21 @@
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Threading.Tasks;
     using System.Windows;
+    using System.Windows.Controls;
+    using System.Windows.Input;
+    using System.Windows.Media;
     using AJut.Application.Controls;
     using AJut.Storage;
     using AJut.Tree;
     using AJut.TypeManagement;
 
-    public class DockingManager
+    public class DockingManager : NotifyPropertyChanged
     {
         private readonly Dictionary<Type, DisplayBuilder> m_factory = new Dictionary<Type, DisplayBuilder>();
         private readonly ObservableCollection<DockZone> m_rootDockZones = new ObservableCollection<DockZone>();
+        private readonly MultiMap<Window, DockZone> m_dockZoneMapping = new MultiMap<Window, DockZone>();
 
         public string UniqueId { get; }
         public string DefaultLayoutStorageFilePath { get; set; }
@@ -28,10 +33,18 @@
 
         public DockingManager (Window rootWindow, string uniqueId, string defaultLayoutStorageFilePath = null, bool autoSave = false)
         {
+            this.CreateNewWindowHandler = () => new DefaultDockTearoffWindow(this);
             this.Windows = new WindowManager(rootWindow);
             this.UniqueId = uniqueId;
             this.DefaultLayoutStorageFilePath = defaultLayoutStorageFilePath ?? DockingSerialization.CreateApplicationPath(this.UniqueId);
             this.AutoSaveDockLayout = autoSave;
+        }
+
+        private bool m_isZoneInDragDropMode;
+        public bool IsZoneInDragDropMode
+        {
+            get => m_isZoneInDragDropMode;
+            private set => this.SetAndRaiseIfChanged(ref m_isZoneInDragDropMode, value);
         }
 
         public void RegisterRootDockZones (params DockZone[] dockZones)
@@ -40,6 +53,17 @@
             {
                 m_rootDockZones.Add(zone);
                 zone.Manager = this;
+                m_dockZoneMapping.Add(Window.GetWindow(zone), zone);
+            }
+        }
+
+        public void DeRegisterRootDockZones (params DockZone[] dockZones)
+        {
+            foreach (var zone in dockZones)
+            {
+                m_rootDockZones.Remove(zone);
+                zone.Manager = null;
+                m_dockZoneMapping.RemoveAllValues(zone);
             }
         }
 
@@ -59,7 +83,7 @@
             return (T)BuildNewDisplayElement(typeof(T));
         }
 
-        public Func<Window> CreateNewWindowHandler { get; set; } = () => new DefaultDockTearoffWindow();
+        public Func<Window> CreateNewWindowHandler { get; set; }
 
         public bool CloseAll ()
         {
@@ -131,7 +155,54 @@
             }
         }
 
-        internal Result<Window> DoTearOff (IDockableDisplayElement element, Point newWindowOrigin)
+        public async Task RunDragSearch (Window dragSourceWindow, DockZone sourceDockZone)
+        {
+            DockZone currentDropTarget = null;
+
+            try
+            {
+                this.IsZoneInDragDropMode = true;
+                await dragSourceWindow.AsyncDragMove(onMove: _WindowLocationChanged);
+
+                if (currentDropTarget != null)
+                {
+                    sourceDockZone.DropContentInto(currentDropTarget, eDockOrientation.Horizontal, false);
+                    if (DockWindow.GetIsDockingTearoffWindow(dragSourceWindow))
+                    {
+                        int numZones = dragSourceWindow.GetVisualChildren().OfType<DockZone>().Count();
+                        if (numZones == 0 || numZones == 1)
+                        {
+                            dragSourceWindow.Close();
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                this.IsZoneInDragDropMode = false;
+            }
+
+            void _WindowLocationChanged ()
+            {
+                currentDropTarget = null;
+
+                foreach (var window in this.Windows.Where(w => w != dragSourceWindow))
+                {
+                    var result = VisualTreeHelper.HitTest(window, Mouse.PrimaryDevice.GetPosition(window));
+                    if (result?.VisualHit != null)
+                    {
+                        var hitZone = result.VisualHit.GetFirstParentOf<DockZone>();
+                        if (hitZone != null)
+                        {
+                            currentDropTarget = hitZone;
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
+        public Result<Window> DoTearOff (IDockableDisplayElement element, Point newWindowOrigin)
         {
             Window window = null;
             DockZone newZone = null;
@@ -151,9 +222,6 @@
 
                 // Step 2: Create the new dock zone and track it in the system
                 newZone = new DockZone();
-                newZone.Manager = this;
-                m_rootDockZones.Add(newZone);
-
 
                 // Step 3: Create the new window and track it in the system
                 window = this.CreateNewWindowHandler();
@@ -168,6 +236,7 @@
                 window.Show();
 
                 // Step 4: Now that the new stuff is shown, finalize element & zone setup
+                this.RegisterRootDockZones(newZone);
                 element.DockingAdapter.SetNewLocation(newZone);
                 newZone.Add(element);
 
@@ -183,8 +252,8 @@
 
                 if (newZone != null)
                 {
-                    newZone.Manager = null;
-                    m_rootDockZones.Remove(newZone);
+                    this.DeRegisterRootDockZones(newZone);
+                    this.RegisterRootDockZones(newZone);
                 }
 
                 var result = Result<Window>.Error("DockingManager: Window tearoff failed for unknown reason");
@@ -194,12 +263,12 @@
             }
         }
 
-        internal Result<Window> DoGroupTearOff (DockZone sourceZone, Point newWindowOrigin)
+        public Result<Window> DoGroupTearOff (DockZone sourceZone, Point newWindowOrigin)
         {
             return this.DoGroupTearOff(sourceZone, newWindowOrigin, sourceZone.RenderSize);
         }
 
-        internal Result<Window> DoGroupTearOff (DockZone sourceZone, Point newWindowOrigin, Size previousZoneSize)
+        public Result<Window> DoGroupTearOff (DockZone sourceZone, Point newWindowOrigin, Size previousZoneSize)
         {
             Window window = null;
 
@@ -210,9 +279,7 @@
                 if (sourceZone.HasParentZone)
                 {
                     sourceZone.HandlePreTearOff();
-
-                    // If it was a root zone, just remove it because we're about to re-add it in a sec
-                    m_rootDockZones.Remove(sourceZone);
+                    this.DeRegisterRootDockZones(sourceZone);
                 }
                 else
                 {
@@ -237,7 +304,6 @@
                 this.Windows.Track(window);
 
                 // Step 3: Set up new window with zone
-                m_rootDockZones.Add(sourceZone);
                 window.Content = sourceZone;
                 window.WindowStartupLocation = WindowStartupLocation.Manual;
                 window.Left = newWindowOrigin.X;
@@ -246,6 +312,7 @@
                 window.Height = previousZoneSize.Height;
                 window.Show();
 
+                this.RegisterRootDockZones(sourceZone);
                 return Result<Window>.Success(window);
             }
             catch (Exception exc)

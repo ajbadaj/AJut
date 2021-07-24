@@ -57,5 +57,16 @@
 
         public IEnumerator<KeyValuePair<TKey, List<TValue>>> GetEnumerator () => m_store.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator () => m_store.GetEnumerator();
+
+        /// <summary>
+        /// Removes value from all zones
+        /// </summary>
+        public void RemoveAllValues (TValue value)
+        {
+            foreach (var key in m_store.Keys)
+            {
+                this.Remove(key, value);
+            }
+        }
     }
 }

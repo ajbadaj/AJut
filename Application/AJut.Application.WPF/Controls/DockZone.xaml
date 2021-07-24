@@ -55,6 +55,7 @@
                                     <MultiDataTrigger.Conditions>
                                         <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=(docking:DockWindow.IsDockingTearoffWindow)}" Value="True"/>
                                         <Condition Binding="{Binding Path=Location.DockOrientation}" Value="Single"/>
+                                        <Condition Binding="{Binding Path=Location.ParentZone}" Value="{x:Null}"/>
                                     </MultiDataTrigger.Conditions>
                                     <MultiDataTrigger.Setters>
                                         <Setter Property="Visibility" Value="Collapsed"/>
@@ -66,7 +67,8 @@
                     <local:DockZoneSelectedHeaderControl Target="{Binding ElementName=PanelTabHeaders, Path=SelectedItem.Adapter}"/>
                 </Grid>
                 <local:DockZoneTabHeadersControl x:Name="PanelTabHeaders" DockPanel.Dock="{ajut:TemplateBinding TabStripPlacement}"
-                                                 ItemsSource="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=LocallyDockedElements}"/>
+                                                 ItemsSource="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=LocallyDockedElements}"
+                                                 SelectedIndex="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=SelectedIndex, Mode=TwoWay}"/>
                 <ContentControl Content="{Binding ElementName=PanelTabHeaders, Path=SelectedItem.Adapter.Display}"/>
             </DockPanel>
         </Border>
@@ -80,21 +82,7 @@
                 CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}">
             <DockPanel>
                 <Grid DockPanel.Dock="Top">
-                    <Grid.Style>
-                        <Style TargetType="{x:Type Grid}">
-                            <Style.Triggers>
-                                <MultiDataTrigger>
-                                    <MultiDataTrigger.Conditions>
-                                        <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=(docking:DockWindow.IsDockingTearoffWindow)}" Value="True"/>
-                                        <Condition Binding="{Binding Path=Location.DockOrientation}" Value="Single"/>
-                                    </MultiDataTrigger.Conditions>
-                                    <MultiDataTrigger.Setters>
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                    </MultiDataTrigger.Setters>
-                                </MultiDataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Grid.Style>
+                    
                     <local:DockZoneSelectedHeaderControl Target="{Binding .}"/>
                 </Grid>
                 <ContentControl Content="{Binding Path=Display}"/>
@@ -106,6 +94,16 @@
                             BorderBrush="{TemplateBinding BorderBrush}" 
                             BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}">
+            <Border.Style>
+                <Style TargetType="{x:Type Border}">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{ajut:TemplateBinding Path=Manager.IsZoneInDragDropMode}" Value="True">
+                            <Setter Property="MinWidth" Value="20"/>
+                            <Setter Property="MinHeight" Value="20"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
             <TextBlock Text="Empty Bro"/>
         </Border>
     </ControlTemplate>

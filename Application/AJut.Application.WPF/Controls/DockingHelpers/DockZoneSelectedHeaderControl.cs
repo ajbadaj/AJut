@@ -21,23 +21,24 @@
 
         private void OnTearoffRequested (object sender, ExecutedRoutedEventArgs e)
         {
+            var target = this.Target;
             var initial = (Point)e.Parameter;
             var castedSource = (UIElement)e.OriginalSource;
 
             var window = Window.GetWindow(castedSource);
             Point desktopMouseLocation = (Point)((Vector)window.PointToScreen(castedSource.TranslatePoint(initial, window)) - (Vector)initial);
 
-            var result = this.Target.DockingOwner.DoGroupTearOff(this.Target.Location, desktopMouseLocation);
+            var result = target.DockingOwner.DoGroupTearOff(target.Location, desktopMouseLocation);
             if (result)
             {
                 window = result.Value;
                 this.Dispatcher.InvokeAsync(_DoDragMoveSafe);
 
-                void _DoDragMoveSafe ()
+                async void _DoDragMoveSafe ()
                 {
                     if (MouseXT.GetPrimaryButtonState() == MouseButtonState.Pressed) 
                     {
-                        window.DragMove();
+                        await target.DockingOwner.RunDragSearch(result.Value, target.Location);
                     }
                 }
             }

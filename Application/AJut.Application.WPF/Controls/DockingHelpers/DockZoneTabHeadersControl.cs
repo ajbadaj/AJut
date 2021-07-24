@@ -14,6 +14,8 @@
 
     public class DockZoneTabHeadersControl : Control
     {
+        private bool m_selectionReentrancyBlocker = false;
+
         public static RoutedUICommand SelectItemCommand = new RoutedUICommand("Select Item", nameof(SelectItemCommand), typeof(DockZoneTabHeadersControl));
 
         private readonly ObservableCollection<HeaderItem> m_items = new ObservableCollection<HeaderItem>();
@@ -28,51 +30,6 @@
             this.CommandBindings.Add(new CommandBinding(SelectItemCommand, OnSelectedItem, OnCanSelectItem));
             this.CommandBindings.Add(new CommandBinding(DragDropElement.HorizontalDragInitiatedCommand, OnInitiateElementReorder, CanInitiateElementReorder));
             this.CommandBindings.Add(new CommandBinding(DragDropElement.VerticalDragInitiatedCommand, OnInitiateTearOff));
-        }
-
-        private void OnCanSelectItem (object sender, CanExecuteRoutedEventArgs e)
-        {
-            if ((((e.OriginalSource as FrameworkElement)?.DataContext as HeaderItem)?.IsSelected ?? true) == false)
-            {
-                e.CanExecute = true;
-            }
-        }
-
-        private void OnSelectedItem (object sender, ExecutedRoutedEventArgs e)
-        {
-            this.SetSelection((HeaderItem)((FrameworkElement)e.OriginalSource).DataContext);
-        }
-
-        private void CanInitiateElementReorder (object sender, CanExecuteRoutedEventArgs e)
-        {
-            if (e.OriginalSource is UIElement uisource && uisource.GetFirstParentOf<ItemsControl>(eTraversalTree.Both) is ItemsControl itemsControl && ItemsControl.ContainerFromElement(itemsControl, uisource) as UIElement != null)
-            {
-                e.CanExecute = true;
-            }
-        }
-
-        private async void OnInitiateElementReorder (object sender, ExecutedRoutedEventArgs e)
-        {
-            var uisource = (UIElement)e.OriginalSource;
-            var container = (UIElement)ItemsControl.ContainerFromElement(uisource.GetFirstParentOf<ItemsControl>(eTraversalTree.Both), uisource);
-
-            await DragDropElement.DoDragReorder(container).ConfigureAwait(false);
-        }
-
-        private void OnInitiateTearOff (object sender, ExecutedRoutedEventArgs e)
-        {
-            var initial = (Point)e.Parameter;
-            var castedSource = (UIElement)e.OriginalSource;
-
-            var window = Window.GetWindow(castedSource);
-            Point desktopMouseLocation = (Point)((Vector)window.PointToScreen(castedSource.TranslatePoint(initial, window)) - (Vector)initial);
-
-            DockingContentAdapterModel target = ((HeaderItem)((FrameworkElement)castedSource).DataContext).Adapter;
-            var result = target.DockingOwner.DoTearOff(target.Display, desktopMouseLocation);
-            if (result)
-            {
-                result.Value.DragMove();
-            }
         }
 
 
@@ -111,13 +68,23 @@
             set => this.SetValue(HeaderItemsSourceProperty, value);
         }
 
-        private static readonly DependencyPropertyKey SelectedItemPropertyKey = DPUtils.RegisterReadOnly(_ => _.SelectedItem, (d,e)=>d.SetSelection(e.NewValue));
+        private static readonly DependencyPropertyKey SelectedItemPropertyKey = DPUtils.RegisterReadOnly(_ => _.SelectedItem, (d,e)=>d.OnSelectedItemChanged(e));
+
         public static readonly DependencyProperty SelectedItemProperty = SelectedItemPropertyKey.DependencyProperty;
         public HeaderItem SelectedItem
         {
             get => (HeaderItem)this.GetValue(SelectedItemProperty);
             protected set => this.SetValue(SelectedItemPropertyKey, value);
         }
+
+
+        public static readonly DependencyProperty SelectedIndexProperty = DPUtils.Register(_ => _.SelectedIndex, (d,e)=>d.OnSelectedIndexChanged(e));
+        public int SelectedIndex
+        {
+            get => (int)this.GetValue(SelectedIndexProperty);
+            set => this.SetValue(SelectedIndexProperty, value);
+        }
+
 
         public ReadOnlyObservableCollection<HeaderItem> Items { get; }
 
@@ -126,6 +93,62 @@
         {
             get => (Orientation)this.GetValue(ItemsOrientationProperty);
             set => this.SetValue(ItemsOrientationProperty, value);
+        }
+
+        private void OnSelectedIndexChanged (DependencyPropertyChangedEventArgs<int> e)
+        {
+            if (m_selectionReentrancyBlocker)
+            {
+                return;
+            }
+
+            try
+            {
+                m_selectionReentrancyBlocker = true;
+                if (e.HasNewValue && e.NewValue > 0 && e.NewValue < this.Items.Count)
+                {
+                    this.SelectedItem = this.Items[e.NewValue];
+                }
+                else
+                {
+                    this.SelectedItem = null;
+                }
+            }
+            finally
+            {
+                m_selectionReentrancyBlocker = false;
+            }
+        }
+
+        private void OnSelectedItemChanged (DependencyPropertyChangedEventArgs<HeaderItem> e)
+        {
+            if (m_selectionReentrancyBlocker)
+            {
+                return;
+            }
+
+            try
+            {
+                m_selectionReentrancyBlocker = true;
+                this.SetSelection(e.NewValue);
+            }
+            finally
+            {
+                m_selectionReentrancyBlocker = false;
+            }
+        }
+
+        private void OnCanSelectItem (object sender, CanExecuteRoutedEventArgs e)
+        {
+            if ((((e.OriginalSource as FrameworkElement)?.DataContext as HeaderItem)?.IsSelected ?? true) == false)
+            {
+                e.CanExecute = true;
+            }
+        }
+
+        private void OnSelectedItem (object sender, ExecutedRoutedEventArgs e)
+        {
+            this.SetSelection((HeaderItem)((FrameworkElement)e.OriginalSource).DataContext);
         }
 
         private void SetSelection (HeaderItem newValue)
@@ -137,6 +160,39 @@
 
             newValue.IsSelected = true;
             this.SelectedItem = newValue;
+            this.SelectedIndex = this.Items.IndexOf(this.SelectedItem);
+        }
+
+        private void CanInitiateElementReorder (object sender, CanExecuteRoutedEventArgs e)
+        {
+            if (e.OriginalSource is UIElement uisource && uisource.GetFirstParentOf<ItemsControl>(eTraversalTree.Both) is ItemsControl itemsControl && ItemsControl.ContainerFromElement(itemsControl, uisource) as UIElement != null)
+            {
+                e.CanExecute = true;
+            }
+        }
+
+        private async void OnInitiateElementReorder (object sender, ExecutedRoutedEventArgs e)
+        {
+            var uisource = (UIElement)e.OriginalSource;
+            var container = (UIElement)ItemsControl.ContainerFromElement(uisource.GetFirstParentOf<ItemsControl>(eTraversalTree.Both), uisource);
+
+            await DragDropElement.DoDragReorder(container).ConfigureAwait(false);
+        }
+
+        private async void OnInitiateTearOff (object sender, ExecutedRoutedEventArgs e)
+        {
+            var initial = (Point)e.Parameter;
+            var castedSource = (UIElement)e.OriginalSource;
+
+            var window = Window.GetWindow(castedSource);
+            Point desktopMouseLocation = (Point)((Vector)window.PointToScreen(castedSource.TranslatePoint(initial, window)) - (Vector)initial);
+
+            DockingContentAdapterModel target = ((HeaderItem)((FrameworkElement)castedSource).DataContext).Adapter;
+            var result = target.DockingOwner.DoTearOff(target.Display, desktopMouseLocation);
+            if (result)
+            {
+                await target.DockingOwner.RunDragSearch(result.Value, target.Location).ConfigureAwait(false);
+            }
         }
 
         private void OnItemsSourceChanged (DependencyPropertyChangedEventArgs<IEnumerable> e)
@@ -183,8 +239,11 @@
 
                 if (_didRemove && m_items.Count > 0 && !m_items.Any(i => i.IsSelected))
                 {
-                    int _newIndex = Math.Min(m_items.Count, lastSelectedIndex);
-                    this.SetSelection(m_items[_newIndex]);
+                    int _newIndex = Math.Min(m_items.Count - 1, lastSelectedIndex);
+                    if (_newIndex >= 0)
+                    {
+                        this.SetSelection(m_items[_newIndex]);
+                    }
                 }
             }
         }

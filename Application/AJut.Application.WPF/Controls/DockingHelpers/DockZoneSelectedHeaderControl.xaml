@@ -10,7 +10,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:DockZoneSelectedHeaderControl}">
-                    <Border x:Name="SingleHeaderRoot" Background="#1222" BorderThickness="0,5,0,1" BorderBrush="#8000"
+                    <Border x:Name="SingleHeaderRoot" Background="#1222" BorderThickness="0,2,0,1" BorderBrush="#8000"
                             ap:DragWatch.IsEnabled="True">
                         <Grid x:Name="DockDisplayTabHeader">
                             <Grid.ColumnDefinitions>
@@ -33,10 +33,10 @@
                                     </Style>
                                 </Grid.Style>
                                 <Button Content="&#xE894;" FontFamily="Segoe MDL2 Assets" 
-                                    Command="{x:Static local:DockZone.ClosePanelCommand}"
-                                    CommandParameter="{ajut:TemplateBinding Path=Target}"
-                                    Margin="3,1,1,1" FontSize="8"
-                                    Background="Transparent" BorderThickness="0"/>
+                                        Command="{x:Static local:DockZone.ClosePanelCommand}"
+                                        CommandParameter="{ajut:TemplateBinding Path=Target}"
+                                        Margin="3,1,1,1" FontSize="8"
+                                        Background="Transparent" BorderThickness="0" WindowChrome.IsHitTestVisibleInChrome="True"/>
                             </Grid>
                         </Grid>
                     </Border>
