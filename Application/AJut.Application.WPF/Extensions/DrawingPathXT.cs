@@ -1,6 +1,6 @@
 namespace AJut.Application
 {
-    using AJut.Math;
+    using AJut.MathUtilities;
     using System.IO;
     using System.Linq;
     using System.Windows;

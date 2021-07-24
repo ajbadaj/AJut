@@ -1,16 +1,12 @@
-﻿namespace AJut.Math
+﻿namespace AJut.MathUtilities
 {
     using System;
-    using System.Collections.Generic;
-    using System.Windows;
-    using System.Text;
-    using SysMath = System.Math;
 
     public static class PathMath
     {
         public static double CalculateLinearBezierArcLength(double startX, double startY, double endX, double endY)
         {
-            return SysMath.Sqrt(Pow2(endX - startX) + Pow2(endY - startY));
+            return Math.Sqrt(Pow2(endX - startX) + Pow2(endY - startY));
         }
 
         //public static double CalculateElipsesArcLength (Point start, Point end, Size radius)

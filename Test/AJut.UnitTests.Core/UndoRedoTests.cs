@@ -1,6 +1,6 @@
 ﻿namespace AJut.UnitTests.Core
 {
-    using AJut.Math;
+    using AJut.MathUtilities;
     using AJut.UndoRedo;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System.Linq;

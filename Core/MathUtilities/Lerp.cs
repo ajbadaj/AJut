@@ -1,4 +1,4 @@
-﻿namespace AJut.Math
+﻿namespace AJut.MathUtilities
 {
     /// <summary>
     /// Use the linear interpolation formula to determine one of the following missing components:

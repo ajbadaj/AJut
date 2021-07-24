@@ -706,7 +706,8 @@
                     <ajut:PathSelectionControl  VerticalAlignment="Center" MaxWidth="300" PathType="{Binding ElementName=PathType, Path=SelectedItem}"
                                                 FileFilter="{Binding ElementName=FileFilter, Path=Text, UpdateSourceTrigger=PropertyChanged}"
                                                 TreatNonExistentPathAsInvalid="{Binding ElementName=NonExistant, Path=IsChecked}"
-                                                TreatEmptyPathAsInvalid="{Binding ElementName=EmptyAsError, Path=IsChecked}"/>
+                                                TreatEmptyPathAsInvalid="{Binding ElementName=EmptyAsError, Path=IsChecked}"
+                                                UnsetTextPrompt="Select a path"/>
                     <StackPanel>
                         <CheckBox x:Name="NonExistant" Content="Treat Non-existant as error" Margin="0,0,5,5" VerticalAlignment="Center"/>
                         <CheckBox x:Name="EmptyAsError" Content="Treat empty as error" Margin="0,0,5,5" VerticalAlignment="Center"/>

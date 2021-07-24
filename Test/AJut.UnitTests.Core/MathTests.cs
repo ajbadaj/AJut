@@ -1,6 +1,6 @@
 ﻿namespace AJut.UnitTests.Core
 {
-    using AJut.Math;
+    using AJut.MathUtilities;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 

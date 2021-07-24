@@ -71,7 +71,7 @@
                 this.DisplayValue.Nudge(true, Convert.ChangeType(this.BigNudge, this.DisplayValue.ValueType));
 
                 // Preserve the caret location
-                this.PART_TextArea.CaretIndex = AJut.Math.Cap.Within(0, this.DisplayValue.Text.Length, this.DisplayValue.Text.Length - caretOffset);
+                this.PART_TextArea.CaretIndex = AJut.MathUtilities.Cap.Within(0, this.DisplayValue.Text.Length, this.DisplayValue.Text.Length - caretOffset);
             }
 
             void _OnNudgeDecreaseExecuted (object sender, RoutedEventArgs e)

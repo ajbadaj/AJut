@@ -1,4 +1,4 @@
-﻿namespace AJut.Math
+﻿namespace AJut.MathUtilities
 {
     public static class Cap
     {

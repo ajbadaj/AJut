@@ -1,6 +1,6 @@
 namespace AJut.Application.Converters
 {
-    using AJut.Math;
+    using AJut.MathUtilities;
     using System;
     using System.Windows;
 

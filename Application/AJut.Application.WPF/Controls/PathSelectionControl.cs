@@ -1,5 +1,6 @@
 ﻿namespace AJut.Application.Controls
 {
+    using System;
     using System.Drawing;
     using System.IO;
     using System.Linq;
@@ -37,7 +38,7 @@
             {
                 if (this.PathType == ePathType.File)
                 {
-                    string userSelectedPath = PathHelpersUI.PromptUserToPickAFile<OpenFileDialog>(this.Prompt, this.SelectedPath, this.FileFilter);
+                    string userSelectedPath = PathHelpersUI.PromptUserToPickAFile<OpenFileDialog>(this.BrowsePrompt, this.SelectedPath, this.FileFilter);
                     if (userSelectedPath != null)
                     {
                         this.SelectedPath = userSelectedPath;
@@ -45,7 +46,7 @@
                 }
                 else
                 {
-                    string userSelectedPath = PathHelpersUI.PromptUserToPickADirectory(this.Prompt, this.SelectedPath);
+                    string userSelectedPath = PathHelpersUI.PromptUserToPickADirectory(this.BrowsePrompt, this.SelectedPath);
                     if (userSelectedPath != null)
                     {
                         this.SelectedPath = userSelectedPath;
@@ -70,11 +71,18 @@
             set => this.SetValue(FileFilterProperty, value);
         }
 
-        public static readonly DependencyProperty PromptProperty = DPUtils.Register(_ => _.Prompt, "Select");
-        public string Prompt
+        public static readonly DependencyProperty UnsetTextPromptProperty = DPUtils.Register(_ => _.UnsetTextPrompt);
+        public string UnsetTextPrompt
         {
-            get => (string)this.GetValue(PromptProperty);
-            set => this.SetValue(PromptProperty, value);
+            get => (string)this.GetValue(UnsetTextPromptProperty);
+            set => this.SetValue(UnsetTextPromptProperty, value);
+        }
+
+        public static readonly DependencyProperty BrowsePromptProperty = DPUtils.Register(_ => _.BrowsePrompt, "Select");
+        public string BrowsePrompt
+        {
+            get => (string)this.GetValue(BrowsePromptProperty);
+            set => this.SetValue(BrowsePromptProperty, value);
         }
 
         public static readonly DependencyProperty SelectedPathProperty = DPUtils.Register(_ => _.SelectedPath, (d, e) => d.EvaluatePath(e.NewValue));
@@ -137,6 +145,14 @@
         }
 
 
+        public static readonly DependencyProperty InvalidForegroundSymbolProperty = DPUtils.RegisterFP(_ => _.InvalidForegroundSymbol, null, null, CoerceUtils.CallbackForBrush);
+        public Brush InvalidForegroundSymbol
+        {
+            get => (Brush)this.GetValue(InvalidForegroundSymbolProperty);
+            set => this.SetValue(InvalidForegroundSymbolProperty, value);
+        }
+
+
         public static readonly DependencyProperty ButtonBackgroundProperty = DPUtils.RegisterFP(_ => _.ButtonBackground, null, null, CoerceUtils.CallbackForBrush);
         public Brush ButtonBackground
         {
@@ -196,7 +212,8 @@
             }
             else if (this.PathType == ePathType.File && !PathHelpers.FindMatchingExtensionsFromFilter(path, this.FileFilter).Any())
             {
-                _SetError("Path does not match expected file extensions");
+                int extensionsDisplayLength = (int)(Math.Max(path.Length, 75) * 1.3);
+                _SetError($"{this.SelectedPath}\r\nIndicated file path does not use one of the allowed file extensions:\r\n{string.Join(", ", PathHelpers.ParseExtensionsFrom(this.FileFilter)).Shorten(extensionsDisplayLength, eStringShortening.TakeFromEnd)}");
             }
             else
             {
@@ -205,7 +222,7 @@
                 {
                     // Ignoring _SetError which sets DoesPathExist
                     this.IsPathValid = false;
-                    this.InvalidPathReason = "Path does not exist";
+                    this.InvalidPathReason = $"{this.PathType} does not exist";
                 }
                 else
                 {
