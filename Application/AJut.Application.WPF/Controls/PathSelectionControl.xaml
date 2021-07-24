@@ -79,7 +79,7 @@
                                                 Background="{TemplateBinding Background}"
                                                 TextElement.Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PathSelectionControl}}, Path=ButtonBackground}">
                                             <TextBlock x:Name="Icon" Text="{StaticResource ClosedFolderSymbol}" FontFamily="Segoe MDL2 Assets" 
-                                                       Foreground="{TemplateBinding Foreground}" Margin="{TemplateBinding Padding}"/>
+                                                       Foreground="{TemplateBinding Foreground}" Margin="{TemplateBinding Padding}" VerticalAlignment="Center"/>
                                         </Border>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
