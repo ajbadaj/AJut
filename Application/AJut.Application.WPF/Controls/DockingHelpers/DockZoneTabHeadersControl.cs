@@ -188,7 +188,7 @@
             Point desktopMouseLocation = (Point)((Vector)window.PointToScreen(castedSource.TranslatePoint(initial, window)) - (Vector)initial);
 
             DockingContentAdapterModel target = ((HeaderItem)((FrameworkElement)castedSource).DataContext).Adapter;
-            var result = target.DockingOwner.DoTearOff(target.Display, desktopMouseLocation);
+            var result = target.DockingOwner.DoTearoff(target.Display, desktopMouseLocation);
             if (result)
             {
                 await target.DockingOwner.RunDragSearch(result.Value, target.Location).ConfigureAwait(false);

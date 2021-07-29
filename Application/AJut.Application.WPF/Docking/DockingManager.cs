@@ -33,7 +33,8 @@
 
         public DockingManager (Window rootWindow, string uniqueId, string defaultLayoutStorageFilePath = null, bool autoSave = false)
         {
-            this.CreateNewWindowHandler = () => new DefaultDockTearoffWindow(this);
+            this.CreateNewTearoffWindowHandler = () => new DefaultDockTearoffWindow(this);
+            this.ShowTearoffWindowHandler = w => w.Show();
             this.Windows = new WindowManager(rootWindow);
             this.UniqueId = uniqueId;
             this.DefaultLayoutStorageFilePath = defaultLayoutStorageFilePath ?? DockingSerialization.CreateApplicationPath(this.UniqueId);
@@ -51,9 +52,14 @@
         {
             foreach (var zone in dockZones)
             {
+                if (zone.IsSetup)
+                {
+                    zone.Clear();
+                }
+
                 m_rootDockZones.Add(zone);
                 zone.Manager = this;
-                m_dockZoneMapping.Add(Window.GetWindow(zone), zone);
+                m_dockZoneMapping.Add(this.Windows.Root, zone);
             }
         }
 
@@ -67,12 +73,20 @@
             }
         }
 
-        public void Register<T> (Action<T> customFactory = null, bool singleInstanceOnly = false)
+        public DockZone GenerateDockZone ()
+        {
+            return new DockZone
+            {
+                Manager = this,
+            };
+        }
+
+        public void RegisterDisplayFactory<T> (Func<T> customFactory = null, bool singleInstanceOnly = false)
         {
             var builder = new DisplayBuilder
             {
                 IsSingleInstanceOnly = singleInstanceOnly,
-                Builder = customFactory != null ? () => customFactory as IDockableDisplayElement : () => BuildDefaultDisplayFor(typeof(T))
+                Builder = customFactory != null ? () => customFactory() as IDockableDisplayElement : () => BuildDefaultDisplayFor(typeof(T))
             };
 
             m_factory.Add(typeof(T), builder);
@@ -83,7 +97,8 @@
             return (T)BuildNewDisplayElement(typeof(T));
         }
 
-        public Func<Window> CreateNewWindowHandler { get; set; }
+        public Func<Window> CreateNewTearoffWindowHandler { get; set; }
+        public Action<Window> ShowTearoffWindowHandler { get; set; }
 
         public bool CloseAll ()
         {
@@ -202,17 +217,15 @@
             }
         }
 
-        public Result<Window> DoTearOff (IDockableDisplayElement element, Point newWindowOrigin)
+        public Result<Window> DoTearoff (IDockableDisplayElement element, Point newWindowOrigin)
         {
-            Window window = null;
             DockZone newZone = null;
 
             try
             {
                 Size previousZoneSize = new Size(element.DockingAdapter.Location.ActualWidth, element.DockingAdapter.Location.ActualHeight);
 
-                // Step 1: Cleanup
-                //  Remove element from zone
+                // Cleanup: Remove element from zone
                 if (!element.DockingAdapter.Location.TryHandleRemovePanel(element.DockingAdapter))
                 {
                     var result = Result<Window>.Error("DockingManager: Tear off failed at panel closing");
@@ -220,36 +233,20 @@
                     return result;
                 }
 
-                // Step 2: Create the new dock zone and track it in the system
+                // Create the new dock zone & window, doing all appropriate tracking adds
                 newZone = new DockZone();
+                var windowResult = this.CreateAndStockTearoffWindow(newZone, newWindowOrigin, previousZoneSize);
+                if (windowResult)
+                {
+                    element.DockingAdapter.SetNewLocation(newZone);
+                    newZone.Add(element);
+                }
 
-                // Step 3: Create the new window and track it in the system
-                window = this.CreateNewWindowHandler();
-                DockWindow.SetIsDockingTearoffWindow(window, true);
-                this.Windows.Track(window);
-                window.Content = newZone;
-                window.WindowStartupLocation = WindowStartupLocation.Manual;
-                window.Left = newWindowOrigin.X;
-                window.Top = newWindowOrigin.Y;
-                window.Width = previousZoneSize.Width;
-                window.Height = previousZoneSize.Height;
-                window.Show();
-
-                // Step 4: Now that the new stuff is shown, finalize element & zone setup
-                this.RegisterRootDockZones(newZone);
-                element.DockingAdapter.SetNewLocation(newZone);
-                newZone.Add(element);
-
-                return Result<Window>.Success(window);
+                return windowResult;
             }
             catch (Exception exc)
             {
                 // There is probably more to do - but for now, at least make sure stray windows aren't left open
-                if (window != null && window.IsActive)
-                {
-                    window.Close();
-                }
-
                 if (newZone != null)
                 {
                     this.DeRegisterRootDockZones(newZone);
@@ -263,22 +260,20 @@
             }
         }
 
-        public Result<Window> DoGroupTearOff (DockZone sourceZone, Point newWindowOrigin)
+        public Result<Window> DoGroupTearoff (DockZone sourceZone, Point newWindowOrigin)
         {
-            return this.DoGroupTearOff(sourceZone, newWindowOrigin, sourceZone.RenderSize);
+            return this.DoGroupTearoff(sourceZone, newWindowOrigin, sourceZone.RenderSize);
         }
 
-        public Result<Window> DoGroupTearOff (DockZone sourceZone, Point newWindowOrigin, Size previousZoneSize)
+        public Result<Window> DoGroupTearoff (DockZone sourceZone, Point newWindowOrigin, Size previousZoneSize)
         {
-            Window window = null;
-
             try
             {
                 // Step 1: Cleanup
                 //  Remove zone properly from hierarchy
                 if (sourceZone.HasParentZone)
                 {
-                    sourceZone.HandlePreTearOff();
+                    sourceZone.HandlePreTearoff();
                     this.DeRegisterRootDockZones(sourceZone);
                 }
                 else
@@ -294,25 +289,36 @@
                     }
 
                     sourceZone = zoneResult.Value;
-                    sourceZone.HandlePreTearOff();
+                    sourceZone.HandlePreTearoff();
                 }
 
+                return this.CreateAndStockTearoffWindow(sourceZone, newWindowOrigin, previousZoneSize);
+            }
+            catch (Exception exc)
+            {
+                // There is probably more to do - but for now, at least make sure stray windows aren't left open
+                Logger.LogError("Window tearoff failed!", exc);
+                return Result<Window>.Error("DockingManager: Window tearoff failed for unknown reason");
+            }
+        }
 
-                // Step 2: Create the new window and track it in the system
-                window = this.CreateNewWindowHandler();
+        private Result<Window> CreateAndStockTearoffWindow (DockZone rootZone, Point newWindowOrigin, Size previousZoneSize)
+        {
+            Window window = null;
+            try
+            {
+                window = this.CreateNewTearoffWindowHandler();
                 DockWindow.SetIsDockingTearoffWindow(window, true);
                 this.Windows.Track(window);
 
-                // Step 3: Set up new window with zone
-                window.Content = sourceZone;
+                window.Content = rootZone;
                 window.WindowStartupLocation = WindowStartupLocation.Manual;
                 window.Left = newWindowOrigin.X;
                 window.Top = newWindowOrigin.Y;
                 window.Width = previousZoneSize.Width;
                 window.Height = previousZoneSize.Height;
-                window.Show();
-
-                this.RegisterRootDockZones(sourceZone);
+                this.ShowTearoffWindowHandler(window);
+                this.RegisterRootDockZones(rootZone);
                 return Result<Window>.Success(window);
             }
             catch (Exception exc)

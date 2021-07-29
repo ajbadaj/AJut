@@ -7,6 +7,7 @@
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Input;
+    using System.Windows.Media;
     using AJut.Application.Docking;
     using AJut.Storage;
     using AJut.Tree;
@@ -89,11 +90,7 @@
 
         public void Dispose()
         {
-            this.Manager = null;
-            this.ParentZone = null;
-            this.PosteriorZone = null;
-            this.AnteriorZone = null;
-            m_locallyDockedElements.Clear();
+            this.Clear();
         }
 
         public Guid Id { get; }
@@ -123,8 +120,75 @@
 
                     old?.StopTrackingSizingChanges(this);
                     m_manager?.TrackSizingChanges(this);
+                    this.IsSetup = m_manager != null;
                 }
             }
+        }
+
+
+        public static readonly DependencyProperty PanelBackgroundProperty = DPUtils.RegisterFP(_ => _.PanelBackground, null, null, CoerceUtils.CallbackForBrush);
+        public Brush PanelBackground
+        {
+            get => (Brush)this.GetValue(PanelBackgroundProperty);
+            set => this.SetValue(PanelBackgroundProperty, value);
+        }
+
+        public static readonly DependencyProperty PanelForegroundProperty = DPUtils.RegisterFP(_ => _.PanelForeground, null, null, CoerceUtils.CallbackForBrush);
+        public Brush PanelForeground
+        {
+            get => (Brush)this.GetValue(PanelForegroundProperty);
+            set => this.SetValue(PanelForegroundProperty, value);
+        }
+
+        public static readonly DependencyProperty PanelBorderThicknessProperty = DPUtils.Register(_ => _.PanelBorderThickness);
+        public Thickness PanelBorderThickness
+        {
+            get => (Thickness)this.GetValue(PanelBorderThicknessProperty);
+            set => this.SetValue(PanelBorderThicknessProperty, value);
+        }
+
+        public static readonly DependencyProperty PanelBorderBrushProperty = DPUtils.RegisterFP(_ => _.PanelBorderBrush, null, null, CoerceUtils.CallbackForBrush);
+        public Brush PanelBorderBrush
+        {
+            get => (Brush)this.GetValue(PanelBorderBrushProperty);
+            set => this.SetValue(PanelBorderBrushProperty, value);
+        }
+
+        public static readonly DependencyProperty PanelCornerRadiusProperty = DPUtils.Register(_ => _.PanelCornerRadius);
+        public CornerRadius PanelCornerRadius
+        {
+            get => (CornerRadius)this.GetValue(PanelCornerRadiusProperty);
+            set => this.SetValue(PanelCornerRadiusProperty, value);
+        }
+
+        public static readonly DependencyProperty SeparationSizeProperty = DPUtils.Register(_ => _.SeparationSize, (d,e)=>d.HalfSeparationSize = d.SeparationSize / 2);
+        public double SeparationSize
+        {
+            get => (double)this.GetValue(SeparationSizeProperty);
+            set => this.SetValue(SeparationSizeProperty, value);
+        }
+
+        private static readonly DependencyPropertyKey HalfSeparationSizePropertyKey = DPUtils.RegisterReadOnly(_ => _.HalfSeparationSize);
+        public static readonly DependencyProperty HalfSeparationSizeProperty = HalfSeparationSizePropertyKey.DependencyProperty;
+        public double HalfSeparationSize
+        {
+            get => (double)this.GetValue(HalfSeparationSizeProperty);
+            private set => this.SetValue(HalfSeparationSizePropertyKey, value);
+        }
+
+        public static readonly DependencyProperty SeparatorBrushProperty = DPUtils.RegisterFP(_ => _.SeparatorBrush, null, null, CoerceUtils.CallbackForBrush);
+        public Brush SeparatorBrush
+        {
+            get => (Brush)this.GetValue(SeparatorBrushProperty);
+            set => this.SetValue(SeparatorBrushProperty, value);
+        }
+
+        private static readonly DependencyPropertyKey IsSetupPropertyKey = DPUtils.RegisterReadOnly(_ => _.IsSetup);
+        public static readonly DependencyProperty IsSetupProperty = IsSetupPropertyKey.DependencyProperty;
+        public bool IsSetup
+        {
+            get => (bool)this.GetValue(IsSetupProperty);
+            private set => this.SetValue(IsSetupPropertyKey, value);
         }
 
         public static readonly DependencyProperty ParentZoneProperty = DPUtils.Register(_ => _.ParentZone, (d, e) => d.HasParentZone = e.HasNewValue);
@@ -175,13 +239,6 @@
         {
             get => (int)this.GetValue(SelectedIndexProperty);
             set => this.SetValue(SelectedIndexProperty, value);
-        }
-
-        public static readonly DependencyProperty TabStripPlacementProperty = DPUtils.Register(_ => _.TabStripPlacement, Dock.Bottom);
-        public Dock TabStripPlacement
-        {
-            get => (Dock)this.GetValue(TabStripPlacementProperty);
-            set => this.SetValue(TabStripPlacementProperty, value);
         }
 
         public ReadOnlyObservableCollection<DockingContentAdapterModel> LocallyDockedElements { get; }
@@ -237,6 +294,19 @@
         }
 
         // ============================[ Private Utilities ]====================================
+
+        /// <summary>
+        /// Clears the dockzone, assumes it has already been removed from other zones
+        /// </summary>
+        internal void Clear ()
+        {
+            this.Manager?.DeRegisterRootDockZones(this);
+            this.Manager = null;
+            this.ParentZone = null;
+            this.PosteriorZone = null;
+            this.AnteriorZone = null;
+            m_locallyDockedElements.Clear();
+        }
 
         private void OnCanClosePanel (object sender, CanExecuteRoutedEventArgs e)
         {
@@ -298,7 +368,7 @@
             return Result<DockZone>.Success(newZone);
         }
 
-        internal void HandlePreTearOff()
+        internal void HandlePreTearoff()
         {
             this.CollapseAndDistributeSibling();
         }

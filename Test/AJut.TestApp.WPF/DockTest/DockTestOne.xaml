@@ -4,9 +4,10 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:AJut.TestApp.WPF.DockTest"
+             xmlns:ajut="clr-namespace:AJut.Application.Controls;assembly=AJut.Application.WPF"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
-        <TextBlock Text="One Control" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="48"/>
+        <ajut:EditableTextBlock Text="One Control" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="48"/>
     </Grid>
 </UserControl>

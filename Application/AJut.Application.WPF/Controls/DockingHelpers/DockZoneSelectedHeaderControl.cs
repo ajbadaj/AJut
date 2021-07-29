@@ -4,6 +4,7 @@
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Input;
+    using System.Windows.Media;
     using AJut.Application.Docking;
     using DPUtils = AJut.Application.DPUtils<DockZoneSelectedHeaderControl>;
 
@@ -28,7 +29,7 @@
             var window = Window.GetWindow(castedSource);
             Point desktopMouseLocation = (Point)((Vector)window.PointToScreen(castedSource.TranslatePoint(initial, window)) - (Vector)initial);
 
-            var result = target.DockingOwner.DoGroupTearOff(target.Location, desktopMouseLocation);
+            var result = target.DockingOwner.DoGroupTearoff(target.Location, desktopMouseLocation);
             if (result)
             {
                 window = result.Value;
@@ -42,6 +43,27 @@
                     }
                 }
             }
+        }
+
+        public static readonly DependencyProperty HeaderBackgroundProperty = DPUtils.Register(_ => _.HeaderBackground);
+        public Brush HeaderBackground
+        {
+            get => (Brush)this.GetValue(HeaderBackgroundProperty);
+            set => this.SetValue(HeaderBackgroundProperty, value);
+        }
+
+        public static readonly DependencyProperty HeaderHighlightBackgroundProperty = DPUtils.Register(_ => _.HeaderHighlightBackground);
+        public Brush HeaderHighlightBackground
+        {
+            get => (Brush)this.GetValue(HeaderHighlightBackgroundProperty);
+            set => this.SetValue(HeaderHighlightBackgroundProperty, value);
+        }
+
+        public static readonly DependencyProperty HeaderFocusedBackgroundProperty = DPUtils.Register(_ => _.HeaderFocusedBackground);
+        public Brush HeaderFocusedBackground
+        {
+            get => (Brush)this.GetValue(HeaderFocusedBackgroundProperty);
+            set => this.SetValue(HeaderFocusedBackgroundProperty, value);
         }
 
         public static readonly DependencyProperty TargetProperty = DPUtils.Register(_ => _.Target);

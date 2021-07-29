@@ -671,7 +671,7 @@
                         <ColumnDefinition />
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <Border BorderBrush="Black" BorderThickness="1" Grid.Column="0" Margin="0,0,1,0">
+                    <Border Grid.Column="0" Margin="0,0,1,0">
                         <ajut:DockZone x:Name="LeftDockZone" GroupId="MainWindowTestDocking"/>
                     </Border>
                     <Grid Background="#202020" Grid.Column="1" Margin="1,0">
@@ -691,7 +691,7 @@
                             <Button>Reset to Default Dock Layout</Button>
                         </StackPanel>
                     </Grid>
-                    <Border BorderBrush="Black" BorderThickness="1" Grid.Column="2" Margin="1,0,0,0">
+                    <Border Grid.Column="2" Margin="1,0,0,0">
                         <ajut:DockZone x:Name="RightDockZone" GroupId="MainWindowTestDocking"/>
                     </Border>
 

@@ -7,12 +7,52 @@
                     xmlns:docking="clr-namespace:AJut.Application.Docking"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
     <Style TargetType="{x:Type local:DockZoneSelectedHeaderControl}">
+
+        <Setter Property="HeaderBackground" Value="#1222" />
+        <Setter Property="HeaderHighlightBackground" Value="#3555"/>
+        <Setter Property="HeaderFocusedBackground" Value="#5888"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <!--<Setter Property="BorderThickness">
+            <Setter.Value>
+                <ajut:ThicknessBuilder BindingParts="Left,Top,Right">
+                    <Binding RelativeSource="{RelativeSource AncestorType={x:Type local:DockZone}}" Path="PanelBorderThickness.Left"/>
+                    <Binding RelativeSource="{RelativeSource AncestorType={x:Type local:DockZone}}" Path="PanelBorderThickness.Top"/>
+                    <Binding RelativeSource="{RelativeSource AncestorType={x:Type local:DockZone}}" Path="PanelBorderThickness.Right"/>
+                </ajut:ThicknessBuilder>
+            </Setter.Value>
+        </Setter>-->
+        <Setter Property="ap:BorderXTA.CornerRadius">
+            <Setter.Value>
+                <ajut:CornerRadiusBuilder BindingParts="TopLeft,TopRight">
+                    <Binding RelativeSource="{RelativeSource AncestorType={x:Type local:DockZone}}" Path="PanelCornerRadius.TopLeft"/>
+                    <Binding RelativeSource="{RelativeSource AncestorType={x:Type local:DockZone}}" Path="PanelCornerRadius.TopRight"/>
+                </ajut:CornerRadiusBuilder>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="BorderBrush" Value="#8000"/>
+
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:DockZoneSelectedHeaderControl}">
-                    <Border x:Name="SingleHeaderRoot" Background="#1222" BorderThickness="0,2,0,1" BorderBrush="#8000"
+                    <Border x:Name="SingleHeaderRoot"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}"
                             ap:DragWatch.IsEnabled="True">
-                        <Grid x:Name="DockDisplayTabHeader">
+                        <Border.Style>
+                            <Style TargetType="{x:Type Border}">
+                                <Setter Property="BorderThickness" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=BorderThickness}"/>
+                                <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=Background}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=UIElement, AncestorLevel=3}, Path=IsKeyboardFocusWithin}" Value="True">
+                                        <Setter Property="Background" Value="{ajut:TemplateBinding HeaderFocusedBackground}"/>
+                                    </DataTrigger>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="{ajut:TemplateBinding HeaderHighlightBackground}"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <Grid x:Name="DockDisplayTabHeader" Margin="3,2">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition />
                                 <ColumnDefinition Width="Auto"/>
