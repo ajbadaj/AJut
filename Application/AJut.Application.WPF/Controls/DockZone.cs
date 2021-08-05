@@ -86,6 +86,17 @@
             this.Id = zoneId;
             this.LocallyDockedElements = new ReadOnlyObservableCollection<DockingContentAdapterModel>(m_locallyDockedElements);
             this.CommandBindings.Add(new CommandBinding(ClosePanelCommand, OnClosePanel, OnCanClosePanel));
+            DragDropElement.AddDragDropItemsSwapHandler(this, HandleDragDropItemsSwapForHeaders);
+        }
+
+        static int kDEBUG_Counter = 0;
+        private void HandleDragDropItemsSwapForHeaders (object sender, DragDropItemsSwapEventArgs e)
+        {
+            Logger.LogInfo($"Hit log {kDEBUG_Counter++} times");
+            if (m_locallyDockedElements.Relocate(e.MoveFromIndex, e.MoveToIndex))
+            {
+                e.Handled = true;
+            }
         }
 
         public void Dispose()

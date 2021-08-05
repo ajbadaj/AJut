@@ -1,6 +1,7 @@
 ﻿namespace AJut.Application.AttachedProperties
 {
     using System;
+    using System.Linq;
     using System.Windows;
     using System.Windows.Input;
 
@@ -28,6 +29,10 @@
         public static bool GetIssueForTouch (DependencyObject obj) => (bool)obj.GetValue(IssueForTouchProperty);
         public static void SetIssueForTouch (DependencyObject obj, bool value) => obj.SetValue(IssueForTouchProperty, value);
 
+        public static DependencyProperty IssueForStylusProperty = APUtils.Register(GetIssueForStylus, SetIssueForStylus);
+        public static bool GetIssueForStylus (DependencyObject obj) => (bool)obj.GetValue(IssueForStylusProperty);
+        public static void SetIssueForStylus (DependencyObject obj, bool value) => obj.SetValue(IssueForStylusProperty, value);
+
         private static DependencyPropertyKey InspectorPropertyKey = APUtils.RegisterReadOnly(GetInspector, SetInspector);
         private static DependencyProperty InspectorProperty = InspectorPropertyKey.DependencyProperty;
         private static DragInspector GetInspector (DependencyObject obj) => (DragInspector)obj.GetValue(InspectorProperty);
@@ -35,24 +40,48 @@
 
         private static void OnIsEnabledChanged (DependencyObject target, DependencyPropertyChangedEventArgs<bool> e)
         {
+            bool wasSetToEnabled = e.HasNewValue && e.NewValue;
             if (target is UIElement uitarget)
             {
-                if (e.NewValue)
+                if (uitarget is FrameworkElement ironTarget && !ironTarget.IsLoaded)
                 {
-                    var inspector = new DragInspector(uitarget);
+                    ironTarget.Loaded += _OnIronTargetLoaded;
+                    return;
+                }
+
+                _SetupTarget(uitarget, wasSetToEnabled);
+            }
+
+            void _OnIronTargetLoaded (object _sender, RoutedEventArgs _e)
+            {
+                var ironTarget = (FrameworkElement)_sender;
+                ironTarget.Loaded -= _OnIronTargetLoaded;
+
+                _SetupTarget(ironTarget, wasSetToEnabled);
+            }
+
+            void _SetupTarget (UIElement _target, bool isEnabled)
+            {
+                if (isEnabled)
+                {
+                    var inspector = new DragInspector(_target);
                     if (inspector.IsValid)
                     {
-                        SetInspector(target, inspector);
+                        SetInspector(_target, inspector);
+                    }
+                    else
+                    {
+                        inspector.Dispose();
+                        SetInspector(_target, null);
                     }
                 }
                 else
                 {
-                    GetInspector(target)?.Dispose();
-                    SetInspector(target, null);
+                    GetInspector(_target)?.Dispose();
+                    SetInspector(_target, null);
                 }
             }
         }
-
 
         private class DragInspector : IDisposable
         {
@@ -64,30 +93,47 @@
             {
                 m_target = uitarget;
                 m_targetParent = m_target.GetVisualParent() as UIElement;
-                m_target.MouseDown += this.OnTargetMouseDown;
-                m_target.MouseUp += this.OnTargetMouseUp;
-                m_target.MouseMove += this.OnTargetMouseMove;
 
-                m_target.TouchDown += this.OnTargetTouchDown;
-                m_target.TouchUp += this.OnTargetTouchUp;
-                m_target.TouchMove += this.OnTargetTouchMove;
+                if (this.IsValid)
+                {
+                    m_target.MouseDown += this.OnTargetMouseDown;
+                    m_target.MouseUp += this.OnTargetMouseUp;
+                    m_target.MouseMove += this.OnTargetMouseMove;
+
+                    m_target.TouchDown += this.OnTargetTouchDown;
+                    m_target.TouchUp += this.OnTargetTouchUp;
+                    m_target.TouchMove += this.OnTargetTouchMove;
+
+                    m_target.StylusDown += this.OnTargetStylusDown;
+                    m_target.StylusUp += this.OnTargetStylusUp;
+                    m_target.StylusMove += this.OnTargetStylusMove;
+                }
             }
 
             public void Dispose ()
             {
-                m_target.MouseDown -= this.OnTargetMouseDown;
-                m_target.MouseUp -= this.OnTargetMouseUp;
-                m_target.MouseMove -= this.OnTargetMouseMove;
+                if (m_target != null)
+                {
+                    m_target.MouseDown -= this.OnTargetMouseDown;
+                    m_target.MouseUp -= this.OnTargetMouseUp;
+                    m_target.MouseMove -= this.OnTargetMouseMove;
 
-                m_target.TouchDown -= this.OnTargetTouchDown;
-                m_target.TouchUp -= this.OnTargetTouchUp;
-                m_target.TouchMove -= this.OnTargetTouchMove;
+                    m_target.TouchDown -= this.OnTargetTouchDown;
+                    m_target.TouchUp -= this.OnTargetTouchUp;
+                    m_target.TouchMove -= this.OnTargetTouchMove;
+
+                    m_target.StylusDown -= this.OnTargetStylusDown;
+                    m_target.StylusUp -= this.OnTargetStylusUp;
+                    m_target.StylusMove -= this.OnTargetStylusMove;
+                }
+
                 m_target = null;
                 m_targetParent = null;
             }
 
             public bool IsValid => m_target != null && m_targetParent != null;
 
+            #region =========== Mouse Event Handlers ====================
             private void OnTargetMouseDown (object sender, MouseButtonEventArgs e)
             {
                 if ((e.IsTargetPrimary() && !GetIssueForPrimaryMouseButton(m_target))
@@ -122,39 +168,28 @@
                 var offset = current - initial;
                 if (Math.Abs(offset.X) > SystemParameters.MinimumHorizontalDragDistance)
                 {
-                    var localInitial = _GetLocalInitial();
-                    if (DragDropElement.HorizontalDragInitiatedCommand.CanExecute(localInitial, m_target))
+                    if (ExecuteDragCommand(DragDropElement.HorizontalDragInitiatedCommand, e, (Point)current))
                     {
-                        DragDropElement.HorizontalDragInitiatedCommand.Execute(localInitial, m_target);
+                        return;
                     }
-                    else if (DragDropElement.DragInitiatedCommand.CanExecute(localInitial, m_target))
+                    else if (ExecuteDragCommand(DragDropElement.DragInitiatedCommand, e, (Point)current))
                     {
-                        DragDropElement.DragInitiatedCommand.Execute(localInitial, m_target);
+                        return;
                     }
-
-                    m_initialDownLocation = null;
                 }
-                else if (Math.Abs(offset.Y) > SystemParameters.MinimumVerticalDragDistance)
+                
+                if (Math.Abs(offset.Y) > SystemParameters.MinimumVerticalDragDistance)
                 {
-                    var localInitial = _GetLocalInitial();
-                    if (DragDropElement.VerticalDragInitiatedCommand.CanExecute(localInitial, m_target))
+                    if (!ExecuteDragCommand(DragDropElement.VerticalDragInitiatedCommand, e, (Point)current))
                     {
-                        DragDropElement.VerticalDragInitiatedCommand.Execute(localInitial, m_target);
+                        ExecuteDragCommand(DragDropElement.DragInitiatedCommand, e, (Point)current);
                     }
-                    else if (DragDropElement.DragInitiatedCommand.CanExecute(localInitial, m_target))
-                    {
-                        DragDropElement.DragInitiatedCommand.Execute(localInitial, m_target);
-                    }
-
-                    m_initialDownLocation = null;
-                }
-
-                Point _GetLocalInitial ()
-                {
-                    return m_targetParent.TranslatePoint((Point)initial, m_target);
                 }
             }
 
+            #endregion // =========== Mouse Event Handlers ====================
+
+            #region =========== Touch Event Handlers ====================
             private void OnTargetTouchDown (object sender, TouchEventArgs e)
             {
                 if (!GetIssueForTouch(m_target))
@@ -181,13 +216,88 @@
                 var offset = current - initial;
                 if (offset.X > SystemParameters.MinimumHorizontalDragDistance)
                 {
-                    DragDropElement.HorizontalDragInitiatedCommand.Execute(null, m_target);
+                    if (!ExecuteDragCommand(DragDropElement.HorizontalDragInitiatedCommand, e, (Point)current))
+                    {
+                        ExecuteDragCommand(DragDropElement.DragInitiatedCommand, e, (Point)current);
+                    }
                 }
-                else if (offset.Y > SystemParameters.MinimumVerticalDragDistance)
+                
+                if (offset.Y > SystemParameters.MinimumVerticalDragDistance)
                 {
-                    DragDropElement.VerticalDragInitiatedCommand.Execute(null, m_target);
-                    m_initialDownLocation = null;
+                    if (!ExecuteDragCommand(DragDropElement.VerticalDragInitiatedCommand, e, (Point)current))
+                    {
+                        ExecuteDragCommand(DragDropElement.DragInitiatedCommand, e, (Point)current);
+                    }
                 }
+            }
+            #endregion // =========== Touch Event Handlers ====================
+
+            #region =========== Stylus Event Handlers ====================
+            private void OnTargetStylusDown (object sender, StylusDownEventArgs e)
+            {
+                if (!GetIssueForStylus(m_target))
+                {
+                    return;
+                }
+
+                if (m_initialDownLocation == null)
+                {
+                    m_initialDownLocation = e.StylusDevice.GetPosition(m_targetParent);
+                }
+            }
+
+            private void OnTargetStylusUp (object sender, StylusEventArgs e)
+            {
+                var initial = (Vector)m_initialDownLocation.Value;
+                var current = (Vector)e.StylusDevice.GetPosition(m_targetParent);
+
+                var offset = current - initial;
+                if (offset.X > SystemParameters.MinimumHorizontalDragDistance)
+                {
+                    if (!ExecuteDragCommand(DragDropElement.HorizontalDragInitiatedCommand, e, (Point)current))
+                    {
+                        ExecuteDragCommand(DragDropElement.DragInitiatedCommand, e, (Point)current);
+                    }
+                }
+
+                if (offset.Y > SystemParameters.MinimumVerticalDragDistance)
+                {
+                    if (!ExecuteDragCommand(DragDropElement.VerticalDragInitiatedCommand, e, (Point)current))
+                    {
+                        ExecuteDragCommand(DragDropElement.DragInitiatedCommand, e, (Point)current);
+                    }
+                }
+            }
+
+            private void OnTargetStylusMove (object sender, StylusEventArgs e)
+            {
+                if (m_initialDownLocation == null)
+                {
+                    m_initialDownLocation = e.GetStylusPoints(m_targetParent).Last().ToPoint();
+                }
+            }
+            #endregion // =========== Stylus Event Handlers ====================
+
+            private bool ExecuteDragCommand (RoutedUICommand command, InputEventArgs e, Point localStartPoint)
+            {
+                var activeDragTracking = new ActiveDragTracking(m_target, e.OriginalSource as UIElement, e.Device, localStartPoint);
+                if (activeDragTracking.IsValid)
+                {
+                    if (command.CanExecute(activeDragTracking, m_target))
+                    {
+                        // ===================================================================================================
+                        // NOTE: It is required we do this first, initial down location being null shortcircuits drag tracking
+                        //  and if we don't do that first, the nature of command execution will be to allow more drag commands
+                        //  to spawn.
+                        m_initialDownLocation = null;
+                        // ===================================================================================================
+
+                        command.Execute(activeDragTracking, m_target);
+                        return true;
+                    }
+                }
+
+                return false;
             }
 
         }

@@ -29,9 +29,8 @@
             this.Items = new ReadOnlyObservableCollection<HeaderItem>(m_items);
             this.CommandBindings.Add(new CommandBinding(SelectItemCommand, OnSelectedItem, OnCanSelectItem));
             this.CommandBindings.Add(new CommandBinding(DragDropElement.HorizontalDragInitiatedCommand, OnInitiateElementReorder, CanInitiateElementReorder));
-            this.CommandBindings.Add(new CommandBinding(DragDropElement.VerticalDragInitiatedCommand, OnInitiateTearOff));
+            this.CommandBindings.Add(new CommandBinding(DragDropElement.VerticalDragInitiatedCommand, OnInitiateTearOff, CanInitiateTearoff));
         }
-
 
         public static readonly DependencyProperty HeaderBorderProperty = DPUtils.Register(_ => _.HeaderBorder);
         public Brush HeaderBorder
@@ -153,41 +152,71 @@
 
         private void SetSelection (HeaderItem newValue)
         {
-            foreach (var item in this.Items.Where(i => i != newValue))
+            foreach (var item in this.Items)
             {
                 item.IsSelected = false;
             }
 
-            newValue.IsSelected = true;
-            this.SelectedItem = newValue;
-            this.SelectedIndex = this.Items.IndexOf(this.SelectedItem);
+            if (newValue != null)
+            {
+                newValue.IsSelected = true;
+                this.SelectedItem = newValue;
+                this.SelectedIndex = this.Items.IndexOf(this.SelectedItem);
+            }
+            else
+            {
+                this.SelectedItem = null;
+                this.SelectedIndex = -1;
+            }
+
+            
         }
 
         private void CanInitiateElementReorder (object sender, CanExecuteRoutedEventArgs e)
         {
-            if (e.OriginalSource is UIElement uisource && uisource.GetFirstParentOf<ItemsControl>(eTraversalTree.Both) is ItemsControl itemsControl && ItemsControl.ContainerFromElement(itemsControl, uisource) as UIElement != null)
+            if (DragDropElement.CanDoDragReorder((UIElement)e.OriginalSource, e.Parameter as ActiveDragTracking))
             {
                 e.CanExecute = true;
             }
         }
 
+        DockingContentAdapterModel m_activeReorderTarget;
         private async void OnInitiateElementReorder (object sender, ExecutedRoutedEventArgs e)
         {
-            var uisource = (UIElement)e.OriginalSource;
-            var container = (UIElement)ItemsControl.ContainerFromElement(uisource.GetFirstParentOf<ItemsControl>(eTraversalTree.Both), uisource);
+            var dragTracking = (ActiveDragTracking)e.Parameter;
+            if (dragTracking.SenderContext is HeaderItem header)
+            {
+                m_activeReorderTarget = header.Adapter;
+                header.IsDragging = true;
+                try
+                {
+                    await DragDropElement.DoDragReorder((UIElement)e.OriginalSource, dragTracking).ConfigureAwait(false);
+                }
+                finally
+                {
+                    var newHeader = m_items.First(h => h.Adapter == m_activeReorderTarget);
+                    newHeader.IsDragging = false;
+                    m_activeReorderTarget = null;
+                }
+            }
+        }
 
-            await DragDropElement.DoDragReorder(container).ConfigureAwait(false);
+        private void CanInitiateTearoff (object sender, CanExecuteRoutedEventArgs e)
+        {
+            if (e.Parameter is ActiveDragTracking)
+            {
+                e.CanExecute = true;
+            }
         }
 
         private async void OnInitiateTearOff (object sender, ExecutedRoutedEventArgs e)
         {
-            var initial = (Point)e.Parameter;
-            var castedSource = (UIElement)e.OriginalSource;
+            var tracking = (ActiveDragTracking)e.Parameter;
 
-            var window = Window.GetWindow(castedSource);
-            Point desktopMouseLocation = (Point)((Vector)window.PointToScreen(castedSource.TranslatePoint(initial, window)) - (Vector)initial);
+            var window = Window.GetWindow(tracking.DragOwner);
+            Point desktopMouseLocation = (Point)((Vector)window.PointToScreen(tracking.DragOwner.TranslatePoint(tracking.StartPoint, window)) - (Vector)tracking.StartPoint);
 
-            DockingContentAdapterModel target = ((HeaderItem)((FrameworkElement)castedSource).DataContext).Adapter;
+            DockingContentAdapterModel target = ((HeaderItem)tracking.SenderContext).Adapter;
             var result = target.DockingOwner.DoTearoff(target.Display, desktopMouseLocation);
             if (result)
             {
@@ -237,7 +266,16 @@
                     _didRemove = true;
                 }
 
-                if (_didRemove && m_items.Count > 0 && !m_items.Any(i => i.IsSelected))
+                if (m_activeReorderTarget != null)
+                {
+                    var newHeader = m_items.FirstOrDefault(h => h.Adapter == m_activeReorderTarget);
+                    if (newHeader != null)
+                    {
+                        newHeader.IsDragging = true;
+                        this.SetSelection(newHeader);
+                    }
+                }
+                else if (_didRemove && m_items.Count > 0 && !m_items.Any(i => i.IsSelected))
                 {
                     int _newIndex = Math.Min(m_items.Count - 1, lastSelectedIndex);
                     if (_newIndex >= 0)

@@ -23,11 +23,11 @@
         private void OnTearoffRequested (object sender, ExecutedRoutedEventArgs e)
         {
             var target = this.Target;
-            var initial = (Point)e.Parameter;
+            var dragTracking = (ActiveDragTracking)e.Parameter;
             var castedSource = (UIElement)e.OriginalSource;
 
             var window = Window.GetWindow(castedSource);
-            Point desktopMouseLocation = (Point)((Vector)window.PointToScreen(castedSource.TranslatePoint(initial, window)) - (Vector)initial);
+            Point desktopMouseLocation = (Point)((Vector)window.PointToScreen(castedSource.TranslatePoint(dragTracking.StartPoint, window)) - (Vector)dragTracking.StartPoint);
 
             var result = target.DockingOwner.DoGroupTearoff(target.Location, desktopMouseLocation);
             if (result)

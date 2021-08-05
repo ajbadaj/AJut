@@ -270,6 +270,11 @@
             ((SelfAwarePropertyGridSource)((FrameworkElement)e.OriginalSource).DataContext).DogsAge = kRNG.Next(1, 18);
         }
 
+        private async void DoReorder_OnExecuted (object sender, ExecutedRoutedEventArgs e)
+        {
+            await DragDropElement.DoDragReorder((UIElement)e.OriginalSource, (ActiveDragTracking)e.Parameter);
+        }
+
         private void SynchFlatTreeListSelection_OnClick (object sender, RoutedEventArgs e)
         {
             var selection = new[] { c, g };

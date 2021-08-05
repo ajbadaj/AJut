@@ -701,6 +701,50 @@
                                   Width="2" Margin="-1,0,0,0"/>
                 </Grid>
             </TabItem>
+            <TabItem Header="Reorder">
+                <WrapPanel>
+                    <Grid ap:DragWatch.IsEnabled="True">
+                        <Grid.Resources>
+                            
+                            <Style TargetType="{x:Type Border}">
+                                <Setter Property="IsHitTestVisible" Value="True"/>
+                                <Setter Property="BorderBrush">
+                                    <Setter.Value>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
+                                            <GradientStop Offset="0.00" Color="#FFFFFF" />
+                                            <GradientStop Offset="0.50" Color="#109DD3" />
+                                            <GradientStop Offset="1.00" Color="#FFFFFF" />
+                                        </LinearGradientBrush>
+                                    </Setter.Value>
+                                </Setter>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=(ajut_ap:DragDropElement.IsDragging)}" Value="True">
+                                        <Setter Property="BorderThickness" Value="3"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Resources>
+                        <Grid.CommandBindings>
+                            <CommandBinding Command="{x:Static ajut_ap:DragDropElement.DragInitiatedCommand}" Executed="DoReorder_OnExecuted"/>
+                        </Grid.CommandBindings>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="25"/>
+                            <RowDefinition Height="50"/>
+                            <RowDefinition Height="75"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition Width="200"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" Grid.Row="0"  Background="Red"   />
+                        <Border Grid.Column="0" Grid.Row="1"  Background="Green" />
+                        <Border Grid.Column="0" Grid.Row="2"  Background="Blue"  />
+                        <Border Grid.Column="1" Grid.Row="0"  Background="Yellow"/>
+                        <Border Grid.Column="1" Grid.Row="1"  Background="Pink"  />
+                        <Border Grid.Column="1" Grid.Row="2"  Background="Purple"/>
+                    </Grid>
+                </WrapPanel>
+            </TabItem>
             <TabItem Header="IO - Path Selection Control">
                 <StackPanel>
                     <ajut:PathSelectionControl  VerticalAlignment="Center" MaxWidth="300" PathType="{Binding ElementName=PathType, Path=SelectedItem}"

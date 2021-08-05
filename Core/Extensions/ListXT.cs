@@ -58,7 +58,7 @@
 
         public static void InsertEach<T> (this IList<T> This, int index, IEnumerable<T> others)
         {
-            foreach (T otherItem in (others is IList<T> list ? list.EnumerateReversed() : This.Reverse()))
+            foreach (T otherItem in others is IList<T> list ? list.EnumerateReversed() : others.Reverse())
             {
                 This.Insert(index, otherItem);
             }
@@ -259,20 +259,68 @@
             return default;
         }
 
-        public static void Swap<T> (this IList<T> list, int moveFrom, int moveTo)
+        public static bool Relocate (this IList list, int moveFromIndex, int moveToIndex)
         {
-            if (moveFrom == moveTo)
+            if (list.IsReadOnly)
             {
-                return;
+                return false;
             }
 
-            int smaller = System.Math.Min(moveFrom, moveTo);
-            int larger = smaller == moveFrom ? moveTo : moveFrom;
+            if (moveFromIndex == moveToIndex)
+            {
+                return true;
+            }
 
-            T largerItem = list[larger];
-            T smallerItem = list[smaller];
-            list[larger] = smallerItem;
-            list[smaller] = largerItem;
+            if (moveFromIndex < 0 || moveFromIndex >= list.Count)
+            {
+                return false;
+            }
+
+            if (moveToIndex < 0 || moveToIndex >= list.Count)
+            {
+                return false;
+            }
+
+            var toMove = list[moveFromIndex];
+            list.RemoveAt(moveFromIndex);
+            list.Insert(moveToIndex, toMove);
+            return true;
+        }
+
+        public static bool Swap (this IList list, int item1Index, int item2Index)
+        {
+            if (list.IsReadOnly)
+            {
+                return false;
+            }
+
+            if (item1Index == item2Index)
+            {
+                return true;
+            }
+
+            if (item1Index < 0 || item1Index >= list.Count)
+            {
+                return false;
+            }
+
+            if (item2Index < 0 || item2Index >= list.Count)
+            {
+                return false;
+            }
+
+            int earlierIndex = Math.Min(item1Index, item2Index);
+            int laterIndex = earlierIndex == item1Index ? item2Index : item1Index;
+
+            var earlierItem = list[earlierIndex];
+            var laterItem = list[laterIndex];
+
+            list.RemoveAt(laterIndex);
+            list.RemoveAt(earlierIndex);
+
+            list.Insert(earlierIndex, laterItem);
+            list.Insert(laterIndex, earlierItem);
+            return true;
         }
 
         /// <summary>

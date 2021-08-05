@@ -58,6 +58,13 @@ namespace AJut.Application
             return TreeTraversal<DependencyObject>.GetFirstParentOfType<T>(start, getParentMethodOverride: _ => parentSelector(_), getChildrenMethodOverride: _=>childSelector(_));
         }
 
+        public static IEnumerable<T> SearchParentsOf<T> (this DependencyObject start, eTraversalTree tree = eTraversalTree.Visual, bool includeSelf = false)
+        {
+            var parentSelector = ParentSelectorForTree(tree);
+            var childSelector = ChildSelectorForTree(tree);
+            return TreeTraversal<DependencyObject>.All(start, eTraversalFlowDirection.ThroughParents, includeSelf:includeSelf, getParentMethodOverride: _ => parentSelector(_), getChildrenMethodOverride: _ => childSelector(_)).OfType<T>();
+        }
+
         public static ChildrenSelector ChildSelectorForTree(eTraversalTree targetTree)
         {
             switch (targetTree)

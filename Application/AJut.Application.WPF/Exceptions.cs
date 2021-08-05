@@ -1,60 +1,67 @@
 ﻿namespace AJut.Application
 {
     using System;
-    using System.Text;
-    using AJut.Text;
+    using System.Linq;
 
     public class Parameter
-	{
-		public string Name { get; private set; }
-		public string Value { get; private set; }
-		public string Problem { get; private set; }
+    {
+        public string Name { get; private set; }
+        public string Value { get; private set; }
+        public string Problem { get; private set; }
 
-        public Parameter(string name, string value, string problem = null)
+        public Parameter (string name, string value, string problem = null)
         {
             this.Name = name;
             this.Value = value;
             this.Problem = problem;
         }
 
-		public override string  ToString()
-		{
-			if( Problem != null )
-				return "\t{0} was passed as \"{1}\" causing {1}".ApplyFormatArgs(Name, Value, Problem);
-			return "\t{0} was passed as \"{1}\"".ApplyFormatArgs(Name,Value);
-		}
-	}
-	public class BadParametersException : Exception
-	{
-		public BadParametersException(string location, params Parameter[] parametersAndProblems)
-			: base(string.Format("Bad parameters passed to '{0}'.\n\tParams: {1}", location, ConcatParams(parametersAndProblems) ) )
-		{
-        }
+        public override string ToString ()
+        {
+            if (this.Problem != null)
+            {
+                return $"{this.Name} was passed as \"{this.Value}\" causing {this.Problem}";
+            }
 
-		static string ConcatParams(Parameter[] paramsAndProblems)
-		{
-			StringBuilder sb = new StringBuilder();
-			foreach (Parameter paramProblem in paramsAndProblems)
-			{
-				sb.Append(paramProblem.ToString());
-			}
-			return sb.ToString();
-		}
-	}
-	public class InvalidSetupException : Exception
-	{
-		public InvalidSetupException(string className, params string[] setupIssues)
-			: base(string.Format("Error: Class '{0}' was setup with the following issues:\n{1}", className, String.Join("\n\t", setupIssues)))
-		{ }
-	}
-	public class YouCantDoThatException : Exception
-	{
-		public YouCantDoThatException(string whatYouCantDo)
-			: base(string.Format("You just can't {0}", whatYouCantDo))
-		{ }
-	}
-	public class NonExistantEnumException<TEnum> : Exception
-	{
-		public NonExistantEnumException(int value) : base(string.Format("Enum '{0}' does not have a value that evaluates to {1}.", typeof(TEnum).Name, value)) { }
-	}
+            return $"{this.Name} was passed as \"{this.Value}\"";
+        }
+    }
+
+    public class BadParametersException : Exception
+    {
+        public BadParametersException (string location, params Parameter[] parametersAndProblems)
+            : base($"Issue with parameters passed in '{location}'.\n\tParams:\n\t{string.Join("\n\t", parametersAndProblems.Select(p => p.ToString()))}")
+        {
+        }
+    }
+    public class InvalidSetupException : Exception
+    {
+        public InvalidSetupException (string className, params string[] setupIssues)
+            : base($"Error: Class '{className}' was setup with the following issues:\n{String.Join("\n\t", setupIssues)}")
+        { }
+    }
+
+    /// <summary>
+    /// An exception which is formatted "You just cant {message}"
+    /// </summary>
+    public class YouCantDoThatException : Exception
+    {
+        /// <summary>
+        /// An exception which is formatted "You just cant {message}"
+        /// </summary>
+        public YouCantDoThatException (string whatYouCantDo)
+            : base($"You just can't {whatYouCantDo}")
+        { }
+    }
+
+    public class ThisWillNeverHappenButICantReturnWithoutDoingSomethingException : Exception
+    {
+        public ThisWillNeverHappenButICantReturnWithoutDoingSomethingException() : base("This was never supposed to happen") { }
+    }
+
+    public class NonExistantEnumException<TEnum> : Exception
+    {
+        public NonExistantEnumException (int value) 
+            : base($"Enum '{typeof(TEnum).Name}' does not have a value assigned to {value}.") { }
+    }
 }
