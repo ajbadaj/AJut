@@ -58,20 +58,9 @@
             {
                 int a_index = panel.Children.IndexOf(a);
                 int b_index = panel.Children.IndexOf(b);
-
-                int firstIndex = a_index < b_index ? a_index : b_index;
-                UIElement firstElement = a_index < b_index ? a : b;
-
-                int secondIndex = firstIndex == b_index ? a_index : b_index;
-                UIElement secondElement = firstIndex == b_index ? a : b;
-
-                panel.Children.RemoveAt(secondIndex);
-                panel.Children.RemoveAt(firstIndex);
-                panel.Children.Insert(firstIndex, firstElement);
-                panel.Children.Insert(secondIndex, secondElement);
+                panel.Children.Swap(a_index, b_index);
             }
-
-            if (parent is ItemsControl itemsControl && itemsControl.ItemsSource is IList sourceItems)
+            else if (parent is ItemsControl itemsControl && itemsControl.ItemsSource is IList sourceItems)
             {
                 int a_index = itemsControl.ItemContainerGenerator.IndexFromContainer(a);
                 int b_index = itemsControl.ItemContainerGenerator.IndexFromContainer(b);

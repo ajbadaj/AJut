@@ -20,7 +20,6 @@
 
         public int MoveFromIndex { get; }
         public int MoveToIndex { get; }
-
     }
 
     public delegate void DragDropItemsSwapHandler (object sender, DragDropItemsSwapEventArgs e);
@@ -110,8 +109,7 @@
                         Point childPoint = activeDrag.DragOwner.TranslatePoint(_e.Value, child);
                         if (child.IsLocalPointInBounds(childPoint))
                         {
-                            DoSwap(owner, rootDraggedItem, child);
-                            rootDraggedItem = null;
+                            rootDraggedItem = DoSwap(owner, rootDraggedItem, child) as UIElement;
                             break;
                         }
                     }
@@ -130,8 +128,17 @@
 
         }
 
-        private static void DoSwap (UIElement parent, UIElement a, UIElement b)
+        private static DependencyObject DoSwap (UIElement parent, UIElement a, UIElement b)
         {
+            // ==========================================================================================
+            // Special Case: ItemsControl
+            // ==========================================================================================
+            // Items control is a special case because the items source for this is what we want our
+            //  swap target to be since that determines container order. It could be that ItemsSource
+            //  is readonly, or otherwise a collection which is determined from another collection
+            //  higher up the food chain - and so to make this work, we allow a DragDropElement specific
+            //  override option, where users can override the DragDropItemsSwap event and handle the
+            //  items swap themselves.
             if (parent is ItemsControl itemsControl)
             {
                 int a_index = itemsControl.ItemContainerGenerator.IndexFromContainer(a);
@@ -142,11 +149,22 @@
                 parent.RaiseEvent(mouseEventArgs);
                 if (mouseEventArgs.Handled)
                 {
-                    return;
+                    // No longer dragging a, at this point a is likely been destroyed as the underlying
+                    //  items source is updated, and new controls created
+                    SetIsDragging(a, false);
+
+                    // Find the new container that we're working with for dragging
+                    var newContainer = itemsControl.ItemContainerGenerator.ContainerFromIndex(b_index);
+                    SetIsDragging(newContainer, true);
+
+                    // Return the new container
+                    return newContainer;
                 }
             }
 
+            // If it's not the special case, handle this in a generic way
             ((IAddChild)parent).SwapChildren(a, b);
+            return a;
         }
 
 
