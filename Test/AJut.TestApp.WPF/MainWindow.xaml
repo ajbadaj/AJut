@@ -452,6 +452,7 @@
             <TabItem Header="Extensions">
                 <StackPanel>
                     <Grid Background="Black" ap:ClickableXTA.IsTrackingClick="True" 
+                          ap:ClickableXTA.AcceptsMouseSecondaryButton="True"
                           ap:ClickableXTA.Click="ExtensionGrid_OnClick">
                         <TextBlock Text="Click this" Foreground="White"/>
                     </Grid>

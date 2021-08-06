@@ -1,6 +1,8 @@
 ﻿namespace AJut.Application.AttachedProperties
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Windows;
     using System.Windows.Input;
     using System.Windows.Media;
@@ -63,6 +65,35 @@
             {
                 CleanupTracker(sender);
             }
+        }
+
+        public static DependencyProperty AcceptsMousePrimaryButtonProperty = APUtils.Register(GetAcceptsMousePrimaryButton, SetAcceptsMousePrimaryButton, true);
+        public static bool GetAcceptsMousePrimaryButton (DependencyObject obj) => (bool)obj.GetValue(AcceptsMousePrimaryButtonProperty);
+        public static void SetAcceptsMousePrimaryButton (DependencyObject obj, bool value) => obj.SetValue(AcceptsMousePrimaryButtonProperty, value);
+
+        public static DependencyProperty AcceptsMouseSecondaryButtonProperty = APUtils.Register(GetAcceptsMouseSecondaryButton, SetAcceptsMouseSecondaryButton);
+        public static bool GetAcceptsMouseSecondaryButton (DependencyObject obj) => (bool)obj.GetValue(AcceptsMouseSecondaryButtonProperty);
+        public static void SetAcceptsMouseSecondaryButton (DependencyObject obj, bool value) => obj.SetValue(AcceptsMouseSecondaryButtonProperty, value);
+
+        public static DependencyProperty AcceptsMouseMiddleButtonProperty = APUtils.Register(GetAcceptsMouseMiddleButton, SetAcceptsMouseMiddleButton);
+        public static bool GetAcceptsMouseMiddleButton (DependencyObject obj) => (bool)obj.GetValue(AcceptsMouseMiddleButtonProperty);
+        public static void SetAcceptsMouseMiddleButton (DependencyObject obj, bool value) => obj.SetValue(AcceptsMouseMiddleButtonProperty, value);
+
+        public static DependencyProperty AcceptsMouseXB1Property = APUtils.Register(GetAcceptsMouseXB1, SetAcceptsMouseXB1);
+        public static bool GetAcceptsMouseXB1 (DependencyObject obj) => (bool)obj.GetValue(AcceptsMouseXB1Property);
+        public static void SetAcceptsMouseXB1 (DependencyObject obj, bool value) => obj.SetValue(AcceptsMouseXB1Property, value);
+
+        public static DependencyProperty AcceptsMousXB2Property = APUtils.Register(GetAcceptsMousXB2, SetAcceptsMousXB2);
+        public static bool GetAcceptsMousXB2 (DependencyObject obj) => (bool)obj.GetValue(AcceptsMousXB2Property);
+        public static void SetAcceptsMousXB2 (DependencyObject obj, bool value) => obj.SetValue(AcceptsMousXB2Property, value);
+
+        private static IEnumerable<MouseButton> GetMouseButtonsAccepted (DependencyObject source)
+        {
+            if (GetAcceptsMousePrimaryButton(source)) yield return MouseXT.PrimaryButton;
+            if (GetAcceptsMouseSecondaryButton(source)) yield return MouseXT.SecondaryButton;
+            if (GetAcceptsMouseMiddleButton(source)) yield return MouseButton.Middle;
+            if (GetAcceptsMouseXB1(source)) yield return MouseButton.XButton1;
+            if (GetAcceptsMousXB2(source)) yield return MouseButton.XButton2;
         }
 
         public static DependencyProperty IsTrackingTapProperty = APUtils.Register(GetIsTrackingTap, SetIsTrackingTap, OnIsTrackingTapChanged);
@@ -192,7 +223,7 @@
 
             private void Target_OnMouseDown (object sender, MouseButtonEventArgs e)
             {
-                if (m_target.CaptureMouse())
+                if (GetMouseButtonsAccepted(m_target).Contains(e.ChangedButton) && m_target.CaptureMouse())
                 {
                     SetIsPressed(m_target, true);
                 }

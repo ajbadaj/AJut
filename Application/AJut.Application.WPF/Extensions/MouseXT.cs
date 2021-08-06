@@ -30,10 +30,13 @@ namespace AJut.Application
     /// </summary>
     public static class MouseXT
     {
+        public static MouseButton PrimaryButton => SystemParameters.SwapButtons ? MouseButton.Right : MouseButton.Left;
+        public static MouseButton SecondaryButton => SystemParameters.SwapButtons ? MouseButton.Left : MouseButton.Right;
+
         /// <summary>
         /// Gets the event's button state for the primary mouse button. Typically primary is left, but windows allows a swap for left handed people so it may sometimes be the right.
         /// </summary>
-        public static MouseButtonState PrimaryButton (this MouseButtonEventArgs e)
+        public static MouseButtonState GetPrimaryButtonState (this MouseButtonEventArgs e)
         {
             return SystemParameters.SwapButtons ? e.RightButton : e.LeftButton;
         }
