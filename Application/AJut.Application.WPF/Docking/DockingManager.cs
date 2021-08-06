@@ -278,17 +278,28 @@
                 }
                 else
                 {
-                    // We have a scenario where tearing off a root zone is actually bad and create an unexpected
-                    //  flow - so instead move all current stuff down into a new zone, and essentially tear that
-                    //  off instead
-                    Result<DockZone> zoneResult = sourceZone.InsertAndReparentAllChildrenOnToNewZone();
-                    if (zoneResult.HasErrors)
+                    // First check to see if it's the only zone in the window, if that's the case then we're good to go
+                    var window = Window.GetWindow(sourceZone);
+                    if (DockWindow.GetIsDockingTearoffWindow(window))
                     {
-                        Logger.LogError("DockingManager: DockZone reparent for root failed");
-                        return new Result<Window>(zoneResult);
+                        return Result<Window>.Success(window);
+                    }
+                    else
+                    {
+                        // Otherwise we have a scenario where we're tearing off a root zone from the main window. This
+                        //  is not allowed as the root zones are the anchor points that should be expected to always exist
+                        //  (for serialization and just normal expectation purposes). So instead move all current stuff
+                        //  down into a new zone, and essentially tear that off instead
+                        Result<DockZone> zoneResult = sourceZone.InsertAndReparentAllChildrenOnToNewZone();
+                        if (zoneResult.HasErrors)
+                        {
+                            Logger.LogError("DockingManager: DockZone reparent for root failed");
+                            return new Result<Window>(zoneResult);
+                        }
+
+                        sourceZone = zoneResult.Value;
                     }
 
-                    sourceZone = zoneResult.Value;
                     sourceZone.HandlePreTearoff();
                 }
 

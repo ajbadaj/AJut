@@ -1,5 +1,6 @@
 ﻿namespace AJut.Application
 {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Windows;
@@ -97,6 +98,59 @@
                 Canvas.SetLeft(b, ax);
                 Canvas.SetTop(b, ay);
             }
+        }
+
+
+        public static bool TryRemoveFromLogicalAndVisualParents (this UIElement target)
+        {
+            try
+            {
+                // If it's visual, we should be able to remove it from just the visual tree
+                DependencyObject parent = target.GetVisualParent();
+                if (parent == null)
+                {
+                    // No visual parent, no removal needed, success!
+                    return true;
+                }
+
+                if (parent is Panel panelParent)
+                {
+                    int previousCount = panelParent.Children.Count;
+                    panelParent.Children.Remove(target);
+                    return previousCount != panelParent.Children.Count;
+                }
+
+                if (parent is Decorator decoratorParent)
+                {
+                    decoratorParent.Child = null;
+                    return true;
+                }
+
+                if (parent is ItemsControl ic)
+                {
+                    // This probably means you can't do it, but you can try to remove from the items source if:
+                    //  * It has one
+                    //  * and that's an IList
+                    //  * and that IList is not readonly
+                    //
+                    // Even this could be problematic so... not sure if this methodology will stay
+                    if (ic.ItemsSource is IList itemsSource && !itemsSource.IsReadOnly)
+                    {
+                        int previousCount = itemsSource.Count;
+                        itemsSource.Remove(ic.ItemContainerGenerator.ItemFromContainer(target));
+                        return previousCount != itemsSource.Count;
+                    }
+
+                    // You need to remove items for an items control, and that does not always work out
+                    return false;
+                }
+            }
+            catch (Exception exc)
+            {
+                Logger.LogError("There was an issue trying to remove element from visual tree", exc);
+            }
+
+            return false;
         }
     }
 }

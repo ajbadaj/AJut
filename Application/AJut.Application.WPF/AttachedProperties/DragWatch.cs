@@ -280,7 +280,13 @@
 
             private bool ExecuteDragCommand (RoutedUICommand command, InputEventArgs e, Point localStartPoint)
             {
-                var activeDragTracking = new ActiveDragTracking(m_target, e.OriginalSource as UIElement, e.Device, localStartPoint);
+                UIElement sender = e.OriginalSource as UIElement;
+                if (sender == null || sender == m_target)
+                {
+                    sender = m_target.GetFirstChildAtParentLocalPoint(localStartPoint) ?? sender ?? m_target;
+                }
+
+                var activeDragTracking = new ActiveDragTracking(m_target, sender, e.Device, localStartPoint);
                 if (activeDragTracking.IsValid)
                 {
                     if (command.CanExecute(activeDragTracking, m_target))
