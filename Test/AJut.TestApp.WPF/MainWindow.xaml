@@ -233,7 +233,8 @@
                 </Grid>
             </TabItem>
             <TabItem Header="DrawingArea">
-                <DockPanel x:Name="DrawingOn" Background="#1FFF" drawing:DrawingInputSpawner.IsInDrawingMode="{Binding ElementName=DrawController, Path=IsChecked, Mode=TwoWay}">
+                <DockPanel x:Name="DrawingOn" Background="#1FFF" drawing:DrawingInputSpawner.IsInDrawingMode="{Binding ElementName=DrawController, Path=IsChecked, Mode=TwoWay}"
+                           drawing:DrawingInputSpawner.DrawingCreated="DrawingDisplayer_OnDrawingCreated">
                     <Border DockPanel.Dock="Bottom" BorderThickness="0,2,0,0" BorderBrush="Black">
                         <StackPanel Orientation="Horizontal">
                             <ToggleButton x:Name="DrawController" Content="Draw" VerticalAlignment="Center" Margin="2"/>

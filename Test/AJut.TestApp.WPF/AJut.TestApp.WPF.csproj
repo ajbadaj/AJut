@@ -16,4 +16,8 @@
     <EmbeddedResource Include="FreeGif.gif" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="..\..\.editorconfig" Link=".editorconfig" />
+  </ItemGroup>
+
 </Project>

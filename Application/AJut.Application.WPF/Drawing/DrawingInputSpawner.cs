@@ -33,10 +33,43 @@ namespace AJut.Application.Drawing
     {
         private static readonly APUtilsRegistrationHelper APUtils = new APUtilsRegistrationHelper(typeof(DrawingInputSpawner));
         private static readonly REUtilsRegistrationHelper REUtils = new REUtilsRegistrationHelper(typeof(DrawingInputSpawner));
+        private static readonly AEUtilsRegistrationHelper AEUtils = new AEUtilsRegistrationHelper(typeof(DrawingInputSpawner));
+
 
         // =====================================[ Routed Events ]=====================================
-        public static readonly RoutedEvent DrawingCreatedEvent = REUtils.Register<RoutedEventHandler<PathGeometry>>(nameof(DrawingCreatedEvent));
-        public static readonly RoutedEvent EraseDrawingAlongPathEvent = REUtils.Register<RoutedEventHandler<PathGeometry>>(nameof(EraseDrawingAlongPathEvent));
+
+        public static RoutedEvent DrawingCreatedEvent = AEUtils.Register<RoutedEventHandler<PathGeometry>>(AddDrawingCreatedHandler, RemoveDrawingCreatedHandler);
+        public static void AddDrawingCreatedHandler (DependencyObject obj, RoutedEventHandler<PathGeometry> handler)
+        {
+            if (obj is UIElement ui)
+            {
+                ui.AddHandler(DrawingCreatedEvent, handler);
+            }
+        }
+        public static void RemoveDrawingCreatedHandler (DependencyObject obj, RoutedEventHandler<PathGeometry> handler)
+        {
+            if (obj is UIElement ui)
+            {
+                ui.RemoveHandler(DrawingCreatedEvent, handler);
+            }
+        }
+
+        public static RoutedEvent EraseDrawingAlongPathEvent = AEUtils.Register<RoutedEventHandler<PathGeometry>>(AddEraseDrawingAlongPathHandler, RemoveEraseDrawingAlongPathHandler);
+        public static void AddEraseDrawingAlongPathHandler (DependencyObject obj, RoutedEventHandler<PathGeometry> handler)
+        {
+            if (obj is UIElement ui)
+            {
+                ui.AddHandler(EraseDrawingAlongPathEvent, handler);
+            }
+        }
+        public static void RemoveEraseDrawingAlongPathHandler (DependencyObject obj, RoutedEventHandler<PathGeometry> handler)
+        {
+            if (obj is UIElement ui)
+            {
+                ui.RemoveHandler(EraseDrawingAlongPathEvent, handler);
+            }
+        }
+
 
         // ===========================[ User Editable Attached Properties ]===========================
         public static DependencyProperty IsInDrawingModeProperty = APUtils.Register(GetIsInDrawingMode, SetIsInDrawingMode, OnIsInDrawingModeChanged);
@@ -56,6 +89,10 @@ namespace AJut.Application.Drawing
         public static DependencyProperty SmallMovementThresholdProperty = APUtils.Register(GetSmallMovementThreshold, SetSmallMovementThreshold, 3);
         public static int GetSmallMovementThreshold (DependencyObject obj) => (int)obj.GetValue(SmallMovementThresholdProperty);
         public static void SetSmallMovementThreshold (DependencyObject obj, int value) => obj.SetValue(SmallMovementThresholdProperty, value);
+
+        public static DependencyProperty StrokeWidthBaseProperty = APUtils.Register(GetStrokeWidthBase, SetStrokeWidthBase);
+        public static double GetStrokeWidthBase (DependencyObject obj) => (double)obj.GetValue(StrokeWidthBaseProperty);
+        public static void SetStrokeWidthBase (DependencyObject obj, double value) => obj.SetValue(StrokeWidthBaseProperty, value);
 
         // ===========================[ System (read only) Attached Properties ]========================
         private static DependencyPropertyKey PathInProgressPropertyKey = APUtils.RegisterReadOnly(GetPathInProgress, SetPathInProgress);
