@@ -3,9 +3,7 @@
                     xmlns:ajut="clr-namespace:AJut.Application"
                     xmlns:ap="clr-namespace:AJut.Application.AttachedProperties"
                     xmlns:local="clr-namespace:AJut.Application.Controls"
-                    xmlns:ajc="clr-namespace:AJut.Application.Converters"
-                    xmlns:docking="clr-namespace:AJut.Application.Docking"
-                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+                    xmlns:ajc="clr-namespace:AJut.Application.Converters">
 
    
     <Style TargetType="{x:Type local:DockZoneTabHeadersControl}">

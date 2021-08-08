@@ -1,6 +1,7 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/BumpStack.xaml"/>
+        <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/BusyWait.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/ColorEditIngressControl.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/ColorValueEditControl.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/DockZone.xaml"/>
@@ -14,6 +15,7 @@
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/PathSelectionControl.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/PathFollowingContentDisplayer.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/PropertyGrid.xaml"/>
+        <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/SinglePageDisplayHelpers/PopoverContainer.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/ToggleStrip.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/WindowChromeButtonStrip.xaml"/>
     </ResourceDictionary.MergedDictionaries>

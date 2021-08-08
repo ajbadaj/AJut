@@ -765,6 +765,12 @@
                     </StackPanel>
                 </StackPanel>
             </TabItem>
+            <TabItem Header="BusyWait">
+                <Grid>
+                    <ajut:BusyWait Content="A busy wait" SpinnerDock="Right"
+                                   VerticalAlignment="Center"  HorizontalAlignment="Left"/>
+                </Grid>
+            </TabItem>
         </TabControl>
     </Grid>
 </Window>

@@ -26,6 +26,9 @@
     <Compile Update="Controls\BumpStack.cs">
       <DependentUpon>BumpStack.xaml</DependentUpon>
     </Compile>
+    <Compile Update="Controls\BusyWait.cs">
+      <DependentUpon>BusyWait.xaml</DependentUpon>
+    </Compile>
     <Compile Update="Controls\ColorEditIngressControl.cs">
       <DependentUpon>ColorEditIngressControl.xaml</DependentUpon>
     </Compile>
@@ -35,7 +38,7 @@
     <Compile Update="Controls\DockZone.cs">
       <DependentUpon>DockZone.xaml</DependentUpon>
     </Compile>
-	<Compile Update="Controls\DockingHelpers\DefaultDockTearoffWindow.cs">
+	  <Compile Update="Controls\DockingHelpers\DefaultDockTearoffWindow.cs">
       <DependentUpon>DefaultDockTearoffWindow.xaml</DependentUpon>
     </Compile>
     <Compile Update="Controls\DockingHelpers\DockZoneTabHeadersControl.cs">
@@ -64,6 +67,9 @@
     </Compile>
 	  <Compile Update="Controls\PropertyGrid.cs">
       <DependentUpon>PropertyGrid.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\SinglePageDisplayHelpers\PopoverContainer.cs">
+      <DependentUpon>PopoverContainer.xaml</DependentUpon>
     </Compile>
     <Compile Update="Controls\ToggleStrip.cs">
       <DependentUpon>ToggleStrip.xaml</DependentUpon>

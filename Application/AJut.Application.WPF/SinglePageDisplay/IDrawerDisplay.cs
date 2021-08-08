@@ -1,4 +1,4 @@
-﻿namespace AJut.Application.SinglePageApp
+﻿namespace AJut.Application.SinglePageDisplay
 {
     public interface IDrawerDisplay
     {
