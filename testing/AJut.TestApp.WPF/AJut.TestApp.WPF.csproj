@@ -7,9 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Application\AJut.Application.WPF\AJut.Application.WPF.csproj" />
-    <ProjectReference Include="..\..\Application\AJut.Application\AJut.Application.csproj" />
-    <ProjectReference Include="..\..\Core\AJut.Core.csproj" />
+    <ProjectReference Include="..\..\libs\AJut.Application.WPF\AJut.Application.WPF.csproj" />
+    <ProjectReference Include="..\..\libs\AJut.Core\AJut.Core.csproj" />
   </ItemGroup>
 
   <ItemGroup>

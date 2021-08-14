@@ -13,11 +13,6 @@
     <PackageReference Include="System.Drawing.Common" Version="5.0.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\Core\AJut.Core.csproj" />
-    <ProjectReference Include="..\AJut.Application\AJut.Application.csproj" />
-  </ItemGroup>
-
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="if $(ConfigurationName) == Release COPY &quot;$(TargetPath)&quot; &quot;$(SolutionDir)bin\$(TargetFileName)&quot;" />
   </Target>
@@ -81,6 +76,10 @@
   
   <ItemGroup>
     <Folder Include="Commands\" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\AJut.Core\AJut.Core.csproj" />
   </ItemGroup>
       
 </Project>

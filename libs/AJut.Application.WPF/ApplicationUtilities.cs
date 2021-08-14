@@ -1,11 +1,12 @@
 ﻿namespace AJut.Application
 {
-    using AJut;
-    using AJut.Security;
     using System;
     using System.IO;
     using System.Linq;
     using System.Windows;
+    using AJut;
+    using AJut.OS.Windows;
+    using AJut.Security;
 
     public delegate bool ExceptionProcessor (Exception e);
     public static class ApplicationUtilities

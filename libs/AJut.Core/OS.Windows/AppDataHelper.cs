@@ -1,4 +1,4 @@
-﻿namespace AJut.Application
+﻿namespace AJut.OS.Windows
 {
     using System;
     using System.IO;

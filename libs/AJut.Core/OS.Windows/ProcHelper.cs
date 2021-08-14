@@ -1,11 +1,10 @@
-﻿namespace AJut.Application
+﻿namespace AJut.OS.Windows
 {
     using System;
     using System.Diagnostics;
     using System.Text;
-    using System.Threading.Tasks;
-    using AJut.Text;
     using System.Threading;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// Provides a way to validate exit codes.
