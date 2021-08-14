@@ -104,7 +104,7 @@
             }
 
             Task<bool> closingHandler = this.AsyncClosingHandler?.Invoke();
-            if (closingHandler != null && !(await closingHandler))
+            if (closingHandler != null && !await closingHandler)
             {
                 return false;
             }

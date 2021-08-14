@@ -112,7 +112,7 @@
             m_tree = new TreeTraverser<TestTreePart>(root);
 
             Logger.Enable();
-            Logger.SetFlushAfterEachLog(true);
+            Logger.FlushAfterEach = true;
         }
 
         private static readonly string[] kBFS_Order = { "root", "a", "b", "c", "a.a", "a.b", "a.c", "c.a", "a.b.a", "a.b.b", "a.b.c", "c.a.a", "c.a.b" };

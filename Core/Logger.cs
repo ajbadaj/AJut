@@ -7,7 +7,7 @@
     public class Logger : IDisposable
     {
         private static Logger g_LoggerInstance = new Logger();
-        
+
         private string m_logFilePath;
         private StreamWriter m_logFileWriter;
         private FileStream m_logFileStream;
@@ -15,23 +15,23 @@
         private bool m_isEnabled = true;
         private bool m_flushAfterEach = false;
         private readonly object m_logWritingLock = new object();
-        
+
         private static string kLogFilenameFormat = "log-{0:MM.dd.yyyy-hh.mm.ss}.txt";
         private static string kErrorType = "Error";
         private static string kInfoType = "Info";
-        
+
         private static string kLogFormat = "[{0}] {1:MM.dd.yyyy-hh.mm.ss} |   ";
         private static string kErrorLogFormat = "\r\n[{0}] {1:MM.dd.yyyy-hh.mm.ss} |   ";
 
 
         #region ========== Instance Code ==========
-        private Logger()
+        private Logger ()
         {
             SetDebugDefaults();
         }
 
         [Conditional("DEBUG")]
-        private void SetDebugDefaults()
+        private void SetDebugDefaults ()
         {
             m_shouldLogToConsole = true;
         }
@@ -40,6 +40,12 @@
         {
             get => g_LoggerInstance.m_shouldLogToConsole;
             set => g_LoggerInstance.m_shouldLogToConsole = value;
+        }
+
+        public static bool FlushAfterEach
+        {
+            get => g_LoggerInstance.m_flushAfterEach;
+            set => g_LoggerInstance.m_flushAfterEach = value;
         }
 
         public static void Enable()
@@ -53,11 +59,6 @@
             g_LoggerInstance.m_isEnabled = false;
         }
 
-        public static void SetFlushAfterEachLog(bool flushAfterEach)
-        {
-            g_LoggerInstance.m_flushAfterEach = flushAfterEach;
-        }
-
         private void Startup(string newLogFilePath = null)
         {
             if (newLogFilePath != null)
@@ -65,7 +66,7 @@
                 m_logFilePath = newLogFilePath;
             }
 
-            m_logFileStream = File.OpenWrite(m_logFilePath);
+            m_logFileStream = File.Open(m_logFilePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
             m_logFileWriter = new StreamWriter(m_logFileStream);
         }
 
@@ -147,6 +148,13 @@
         {
             Log(kInfoType, true, message);
         }
+
+        [Conditional("DEBUG")]
+        public static void LogDebugInfo (string message)
+        {
+            LogInfo(message);
+        }
+
         public static void LogError(string message)
         {
             Log(kErrorType, true, message);

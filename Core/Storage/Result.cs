@@ -2,6 +2,7 @@
 {
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Linq;
 
     public class Result
     {
@@ -40,6 +41,13 @@
             return result;
         }
 
+        public static Result ErrorJoin (params Result[] errors)
+        {
+            Result error = new Result();
+            errors.SelectMany(e => e.Errors).ForEach(e => error.AddError(e));
+            return error;
+        }
+
         /// <summary>
         /// Generates a simple user-displayable text report of the errors list
         /// </summary>
@@ -49,7 +57,6 @@
         }
 
         public static implicit operator bool (Result result) => !result.HasErrors;
-
     }
 
     public class Result<T> : Result
@@ -75,5 +82,14 @@
             result.AddError(error);
             return result;
         }
+
+        public static Result<T> ErrorJoin (params Result<T>[] errors)
+        {
+            Result<T> error = new Result<T>();
+            errors.SelectMany(e => e.Errors).ForEach(e => error.AddError(e));
+            return error;
+        }
+
+        public static implicit operator Result<T> (T successValue) => Result<T>.Success(successValue);
     }
 }

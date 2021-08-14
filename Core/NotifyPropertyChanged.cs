@@ -1,6 +1,7 @@
 ﻿namespace AJut
 {
     using System.ComponentModel;
+    using System.Linq;
     using System.Runtime.CompilerServices;
 
     public abstract class NotifyPropertyChanged : INotifyPropertyChanged
@@ -34,6 +35,22 @@
 
             value = newValue;
             this.RaisePropertyChanged(propertyName);
+            return true;
+        }
+
+        protected bool SetAndRaiseIfChanged<T> (ref T value, T newValue, [CallerMemberName] string propertyName = "", params string[] andRaise)
+        {
+            if (this.DoValuesMatch(ref value, newValue))
+            {
+                return false;
+            }
+
+            value = newValue;
+            this.RaisePropertyChanged(propertyName);
+            if (andRaise?.Any() ?? false)
+            {
+                this.RaisePropertiesChanged(andRaise);
+            }
             return true;
         }
     }
