@@ -157,7 +157,7 @@
                 {
                     if (e.Data != null)
                     {
-                        this.OutputReceived.Execute(this, ProcessOutputReceivedEventArgs.Output(e.Data));
+                        this.OutputReceived?.Invoke(this, ProcessOutputReceivedEventArgs.Output(e.Data));
                         outputBuilder.AppendLine(e.Data);
                     }
                 };
@@ -167,7 +167,7 @@
                 {
                     if (e.Data != null)
                     {
-                        this.OutputReceived.Execute(this, ProcessOutputReceivedEventArgs.Error(e.Data));
+                        this.OutputReceived?.Invoke(this, ProcessOutputReceivedEventArgs.Error(e.Data));
 
                         outputBuilder.AppendLine(e.Data);
                         errorBuilder.AppendLine(e.Data);
