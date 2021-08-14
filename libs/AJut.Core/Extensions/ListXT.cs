@@ -127,66 +127,6 @@
         }
 
         /// <summary>
-        /// Updates each <see cref="IAmUpdatable">IAmUpdatable</see> object with one that <see cref="IAmUpdatable.Matches">Matches</see> it from the passed in otherList
-        /// </summary>
-        /// <param name="This">The list this is being called on</param>
-        /// <param name="otherList">The list containing the updates</param>
-        /// <param name="addExtraneous">Bool indicating whether or not the unmatched items should be added back to the end of the list after the update is run</param>
-        public static void UpdateWith (this IList This, ICollection otherList, bool addExtraneous)
-        {
-            if (This == null)
-                return;
-
-            ArrayList toAdd;
-
-            if (This.Count > 0)
-            {
-                toAdd = new ArrayList();
-
-                // Update all the ones that match
-                foreach (object item in otherList)
-                {
-                    bool bFound = false;
-                    for (int nCurrInd = 0; nCurrInd < This.Count; ++nCurrInd)
-                    {
-                        IAmUpdatable currItem = This[nCurrInd] as IAmUpdatable;
-                        if (currItem == null)
-                            continue;
-
-                        if (currItem.Matches(item))
-                        {
-                            currItem.UpdateWith(item);
-                            bFound = true;
-                            break;
-                        }
-                    }
-                    if (!bFound)
-                    {
-                        toAdd.Add(item);
-                    }
-                }
-            }
-            else
-            {
-                toAdd = new ArrayList(otherList);
-            }
-
-            // Add all the ones that were different
-            if (addExtraneous)
-            {
-#if WINDOWS_UWP
-                Type genericType = This.GetType().GenericTypeArguments[0];
-#else
-                Type genericType = This.GetType().GetGenericArguments()[0];
-#endif
-                foreach (var itemToAdd in toAdd)
-                {
-                    This.Add(itemToAdd.BoxCast(genericType));
-                }
-            }
-        }
-
-        /// <summary>
         /// Removes any items from This list that matches an item out of the otherList according to the matcherFunc
         /// </summary>
         /// <typeparam name="T">The type of items we're testing for</typeparam>
