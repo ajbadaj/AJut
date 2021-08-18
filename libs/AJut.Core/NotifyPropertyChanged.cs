@@ -8,6 +8,11 @@
     {
         public event PropertyChangedEventHandler PropertyChanged;
 
+        protected void RaisePropertyChanged (PropertyChangedEventArgs propertyChangedEventArgs)
+        {
+            this.PropertyChanged?.Invoke(this, propertyChangedEventArgs);
+        }
+
         protected void RaisePropertiesChanged(params string[] propertyNames)
         {
             foreach (string propertyName in propertyNames)
