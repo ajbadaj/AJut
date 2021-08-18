@@ -1,4 +1,4 @@
-﻿namespace AJut.PeerPubSubMessenger
+﻿namespace AJut.Messaging.PeerPubSubMessenger
 {
     using System;
     using System.Collections.Generic;
@@ -8,7 +8,7 @@
     using System.Threading;
     using System.Threading.Tasks;
     using AJut;
-    using AJut.PeerPubSubMessenger.StandardMessages;
+    using AJut.Messaging.PeerPubSubMessenger.StandardMessages;
 
     public abstract class Messenger : IDisposable
     {

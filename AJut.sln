@@ -16,11 +16,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AJut.Core", "libs\AJut.Core
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AJut.Application.WPF", "libs\AJut.Application.WPF\AJut.Application.WPF.csproj", "{A9261DAF-80E0-4609-B8A1-105371566B3C}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AJut.PeerPubSubMessenger", "libs\AJut.PeerPubsubMessenger\AJut.PeerPubSubMessenger.csproj", "{4621976C-975B-40D3-BDBF-3C7E50804959}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AJut.UnitTests.Core", "testing\AJut.UnitTests.Core\AJut.UnitTests.Core.csproj", "{93A2E5CB-9E7B-452B-9D15-3CC9F3412A4D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AJut.TestApp.WPF", "testing\AJut.TestApp.WPF\AJut.TestApp.WPF.csproj", "{FEB368B6-9A11-4FD2-A5BF-36D19B4965DF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AJut.Messaging.PeerPubSubMessenger", "libs\AJut.Messaging.PeerPubsubMessenger\AJut.Messaging.PeerPubSubMessenger.csproj", "{DC7F8106-749A-454E-BF19-8F72B8F6E002}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -36,10 +36,6 @@ Global
 		{A9261DAF-80E0-4609-B8A1-105371566B3C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A9261DAF-80E0-4609-B8A1-105371566B3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A9261DAF-80E0-4609-B8A1-105371566B3C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4621976C-975B-40D3-BDBF-3C7E50804959}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4621976C-975B-40D3-BDBF-3C7E50804959}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4621976C-975B-40D3-BDBF-3C7E50804959}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4621976C-975B-40D3-BDBF-3C7E50804959}.Release|Any CPU.Build.0 = Release|Any CPU
 		{93A2E5CB-9E7B-452B-9D15-3CC9F3412A4D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{93A2E5CB-9E7B-452B-9D15-3CC9F3412A4D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{93A2E5CB-9E7B-452B-9D15-3CC9F3412A4D}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -48,6 +44,10 @@ Global
 		{FEB368B6-9A11-4FD2-A5BF-36D19B4965DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FEB368B6-9A11-4FD2-A5BF-36D19B4965DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FEB368B6-9A11-4FD2-A5BF-36D19B4965DF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DC7F8106-749A-454E-BF19-8F72B8F6E002}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DC7F8106-749A-454E-BF19-8F72B8F6E002}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DC7F8106-749A-454E-BF19-8F72B8F6E002}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DC7F8106-749A-454E-BF19-8F72B8F6E002}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -55,9 +55,9 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{8488E399-FD26-42A4-AAF5-24233E611592} = {7C5EB0C7-99CC-4649-9FCB-6BA45E857DE5}
 		{A9261DAF-80E0-4609-B8A1-105371566B3C} = {7C5EB0C7-99CC-4649-9FCB-6BA45E857DE5}
-		{4621976C-975B-40D3-BDBF-3C7E50804959} = {7C5EB0C7-99CC-4649-9FCB-6BA45E857DE5}
 		{93A2E5CB-9E7B-452B-9D15-3CC9F3412A4D} = {7FBB779C-F4F3-4D29-8BE6-2211BAE46978}
 		{FEB368B6-9A11-4FD2-A5BF-36D19B4965DF} = {7FBB779C-F4F3-4D29-8BE6-2211BAE46978}
+		{DC7F8106-749A-454E-BF19-8F72B8F6E002} = {7C5EB0C7-99CC-4649-9FCB-6BA45E857DE5}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {4A5A9F1C-6846-4922-AF3E-B2DE44160171}

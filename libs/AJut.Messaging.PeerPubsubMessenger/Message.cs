@@ -1,7 +1,7 @@
-﻿namespace AJut.PeerPubSubMessenger
+﻿namespace AJut.Messaging.PeerPubSubMessenger
 {
     using AJut;
-    using AJut.PeerPubSubMessenger.StandardMessages;
+    using AJut.Messaging.PeerPubSubMessenger.StandardMessages;
     using AJut.Text.AJson;
     using System;
     using System.Text;

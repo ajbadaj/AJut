@@ -1,9 +1,9 @@
-﻿namespace AJut.PeerPubSubMessenger
+﻿namespace AJut.Messaging.PeerPubSubMessenger
 {
     using System;
     using System.Threading.Tasks;
     using AJut;
-    using AJut.PeerPubSubMessenger.StandardMessages;
+    using AJut.Messaging.PeerPubSubMessenger.StandardMessages;
     using AJut.Storage;
     using AJut.TypeManagement;
 

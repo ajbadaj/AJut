@@ -1,4 +1,4 @@
-﻿namespace AJut.PeerPubSubMessenger
+﻿namespace AJut.Messaging.PeerPubSubMessenger
 {
     using System;
     using System.Collections.Generic;

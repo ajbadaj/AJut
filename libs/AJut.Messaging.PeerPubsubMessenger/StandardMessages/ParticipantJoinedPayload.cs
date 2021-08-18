@@ -1,4 +1,4 @@
-﻿namespace AJut.PeerPubSubMessenger.StandardMessages
+﻿namespace AJut.Messaging.PeerPubSubMessenger.StandardMessages
 {
     using System;
     using AJut.TypeManagement;

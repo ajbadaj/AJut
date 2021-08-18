@@ -1,9 +1,9 @@
-﻿namespace AJut.PeerPubSubMessenger
+﻿namespace AJut.Messaging.PeerPubSubMessenger
 {
     using System;
     using AJut.TypeManagement;
 
-    [TypeId("AJut.PeerPubSubMessenger.MessengerParticipant")]
+    [TypeId("AJut.Messaging.PeerPubSubMessenger.MessengerParticipant")]
     public class MessengerParticipant : NotifyPropertyChanged
     {
         public MessengerParticipant () { }
