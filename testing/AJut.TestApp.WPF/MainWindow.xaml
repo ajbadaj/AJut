@@ -771,6 +771,57 @@
                                    VerticalAlignment="Center"  HorizontalAlignment="Left"/>
                 </Grid>
             </TabItem>
+            <TabItem Header="ObservableList With UI">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top">
+                        <StackPanel Orientation="Horizontal">
+                            <Button Click="AddObservableListElement_OnClick" Width="300">
+                                <TextBlock>
+                                    <TextBlock.Inlines>
+                                        <Run Text="Insert a '"/>
+                                        <Run Text="{Binding ElementName=ObservableListAddNumber, Path=Value}" />
+                                        <Run Text="' at index ["/>
+                                        <Run Text="{Binding ElementName=ObservableListAddIndex, Path=Value}" />
+                                        <Run Text="]"/>
+                                    </TextBlock.Inlines>
+                                </TextBlock>
+                            </Button>
+                            <ajut:NumericEditor x:Name="ObservableListAddNumber" Width="90" LabelContent="Number" BigNudge="1"/>
+                            <ajut:NumericEditor x:Name="ObservableListAddIndex" Width="90" Minimum="0" Maximum="{Binding ElementName=Self, Path=ObservableList.Count}" LabelContent="Index" BigNudge="1"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" IsEnabled="{Binding ElementName=Self, Path=ObservableList.HasElements}">
+                            <Button Width="300" Click="RemoveObservableListElement_OnClick">
+                                <TextBlock>
+                                    <TextBlock.Inlines>
+                                        <Run Text="Remove all: "/>
+                                        <Run Text="{Binding ElementName=ObservableListRemoveAll, Path=Value}"/>
+                                        <Run Text="s"/>
+                                    </TextBlock.Inlines>
+                                </TextBlock>
+                            </Button>
+                            <ajut:NumericEditor x:Name="ObservableListRemoveAll" Width="90" BigNudge="1"/>
+                        </StackPanel>
+                        <Button Content="Clear" Click="ClearObservableList_OnClick" Width="80"/>
+                        <Button Content="Sort" Click="SortObservableList_OnClick" Width="80"/>
+                        <Button Content="Clear Read Only (fails)" Click="ClearReadOnlyObservableList_OnClick" Width="80"/>
+                    </StackPanel>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition />
+                            <ColumnDefinition />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock FontSize="18" Text="Modifyable List"/>
+                        <ListBox Grid.Row="1" Grid.Column="0" ItemsSource="{Binding ElementName=Self, Path=ObservableList}"/>
+
+                        <TextBlock Grid.Column="1" FontSize="18" Text="Read-only List"/>
+                        <ListBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding ElementName=Self, Path=ReadOnlyObservableList}"/>
+                    </Grid>
+                </DockPanel>
+            </TabItem>
         </TabControl>
     </Grid>
 </Window>

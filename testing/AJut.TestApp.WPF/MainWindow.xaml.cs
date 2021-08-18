@@ -45,6 +45,7 @@
                 new SelfAwarePropertyGridSource () { DogsName = "Brosephina", DogsAge = 3 },
             };
 
+            this.ReadOnlyObservableList = this.ObservableList.ToReadOnly();
 
             _Test<string>();
             void _Test<T> ()
@@ -96,6 +97,8 @@
             }
         }
 
+        public ObservableList<int> ObservableList { get; } = new ObservableList<int>(new[] { 0, 2, 1, 8, 6, 3, 3 });
+        public ReadOnlyObservableList<int> ReadOnlyObservableList { get; }
 
         public static readonly DependencyProperty DockingManagerProperty = DPUtils.Register(_ => _.DockingManager);
         public DockingManager DockingManager
@@ -267,6 +270,31 @@
         private async void DoReorder_OnExecuted (object sender, ExecutedRoutedEventArgs e)
         {
             await DragDropElement.DoDragReorder((UIElement)e.OriginalSource, (ActiveDragTracking)e.Parameter);
+        }
+
+        private void RemoveObservableListElement_OnClick (object sender, RoutedEventArgs e)
+        {
+            this.ObservableList.RemoveAll(e => e == this.ObservableListRemoveAll.GetValue<int>());
+        }
+
+        private void AddObservableListElement_OnClick (object sender, RoutedEventArgs e)
+        {
+            this.ObservableList.Insert(this.ObservableListAddIndex.GetValue<int>(), this.ObservableListAddNumber.GetValue<int>());
+        }
+
+        private void SortObservableList_OnClick (object sender, RoutedEventArgs e)
+        {
+            this.ObservableList.Sort();
+        }
+
+        private void ClearObservableList_OnClick (object sender, RoutedEventArgs e)
+        {
+            this.ObservableList.Clear();
+        }
+
+        private void ClearReadOnlyObservableList_OnClick (object sender, RoutedEventArgs e)
+        {
+            this.ReadOnlyObservableList.Clear();
         }
 
         private void SynchFlatTreeListSelection_OnClick (object sender, RoutedEventArgs e)
