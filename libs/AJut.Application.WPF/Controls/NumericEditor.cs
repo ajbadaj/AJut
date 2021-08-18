@@ -112,6 +112,8 @@
             }
         }
 
+        public T GetValue<T> () => (T)Convert.ChangeType(this.Value, typeof(T));
+
         // ===========================[ Commands ]================================================
         public static RoutedCommand NudgeIncrease = new RoutedCommand(nameof(NudgeIncrease), typeof(NumericEditor));
         public static RoutedCommand NudgeDecrease = new RoutedCommand(nameof(NudgeDecrease), typeof(NumericEditor));
