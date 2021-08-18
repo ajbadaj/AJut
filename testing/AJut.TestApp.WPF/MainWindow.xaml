@@ -803,6 +803,7 @@
                         </StackPanel>
                         <Button Content="Clear" Click="ClearObservableList_OnClick" Width="80"/>
                         <Button Content="Sort" Click="SortObservableList_OnClick" Width="80"/>
+                        <Button Content="Reverse" Click="ReverseObservableList_OnClick" Width="80"/>
                         <Button Content="Clear Read Only (fails)" Click="ClearReadOnlyObservableList_OnClick" Width="80"/>
                     </StackPanel>
                     <Grid>

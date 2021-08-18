@@ -52,9 +52,9 @@
             throw GenerateException("clear all elements");
         }
 
-        protected override void DoRangeReorder (Action actionThatWillOperateOnBacking, Comparison<T> specialtyComparer = null)
+        protected override void DoReverse (int startIndex, int count)
         {
-            throw GenerateException("perform a range reorder (sort, reverse, etc)");
+            throw GenerateException("in-place reverse elements");
         }
 
         protected override void DoSwap (int leftIndex, int rightIndex)

@@ -143,57 +143,27 @@
 
             this.RaiseAllStandardEvents(eventArgs);
         }
-        
-        protected override void DoRangeReorder (Action actionThatWillOperateOnBacking, Comparison<T> specialtyComparer = null)
+
+        protected override void DoReverse (int startIndex, int count)
         {
-            Comparison<T> comparer = specialtyComparer ?? ((left, right) => Comparer<T>.Default.Compare(left, right));
-            T[] originalSet = this.BackingList.ToArray();
-            actionThatWillOperateOnBacking();
-            if (originalSet.Length != this.BackingList.Count)
+            this.BackingList.Reverse(startIndex, count);
+
+            // Notify as if it were a series of moves starting from the backmost element and swapping forward
+            List<ListElementMoveOperation<T>> moves = new List<ListElementMoveOperation<T>>(count);
+            for (int formerIndex = count - startIndex - 1; formerIndex >= startIndex; --formerIndex)
             {
-                throw new InvalidOperationException("Error in range reorder for Observable List (base)");
-            }
-
-            List<ListElementMoveOperation<T>> moves = new List<ListElementMoveOperation<T>>();
-            HashSet<int> alreadyUsed = new HashSet<int>();
-            for (int originalSetIndex = 0; originalSetIndex < originalSet.Length; ++originalSetIndex)
-            {
-                if (comparer(originalSet[originalSetIndex], this.BackingList[originalSetIndex]) != 0)
+                int currIndex = count - formerIndex - 1;
+                if (currIndex >= formerIndex)
                 {
-                    int newIndex = this.BackingList.IndexOf(originalSet[originalSetIndex]);
-                    while (newIndex != -1 && !alreadyUsed.Add(newIndex))
-                    {
-                        newIndex = this.BackingList.IndexOf(originalSet[originalSetIndex], newIndex + 1);
-                    }
-
-                    if (newIndex != -1)
-                    {
-                        moves.InsertSorted(new ListElementMoveOperation<T>(this.BackingList[newIndex], originalSetIndex, newIndex), _MoveInsertionSorter);
-                    }
-
-                    //int fromIndex = originalSet.IndexOf(this.BackingList[originalSetIndex]);
-                    //while (fromIndex != -1 && !alreadyUsed.Add(fromIndex))
-                    //{
-                    //    fromIndex = originalSet.IndexOf(this.BackingList[originalSetIndex], fromIndex + 1);
-                    //}
-
-                    //if (fromIndex != -1)
-                    //{
-                    //    moves.InsertSorted(new ListElementMoveOperation<T>(this.BackingList[originalSetIndex], fromIndex, originalSetIndex), _MoveInsertionSorter);
-                    //}
+                    break;
                 }
-                else
-                {
-                    alreadyUsed.Add(originalSetIndex);
-                }
+
+                moves.Add(new ListElementMoveOperation<T>(this.BackingList[currIndex], formerIndex, currIndex));
+                moves.Add(new ListElementMoveOperation<T>(this.BackingList[formerIndex], currIndex + 1, formerIndex));
             }
 
             this.RaiseAllStandardEvents(new NotifyListCompositionChangedEventArgs<T>(moves));
-
-            int _MoveInsertionSorter (ListElementMoveOperation<T> left, ListElementMoveOperation<T> right)
-            {
-                return left.OriginalLocationIndex.CompareTo(right.OriginalLocationIndex);
-            }
+            this.RaisePropertyChanged(kIndexerPropChange);
         }
 
         protected override void DoSwap (int leftIndex, int rightIndex)
@@ -206,7 +176,9 @@
             this.BackingList[leftIndex] = right;
             this.BackingList[rightIndex] = left;
 
-            // Notify, but indicate it as two move operations.
+            // Notify, but indicate it as two move operations. The +1 is because if you were
+            //  to actually perform these moves individually, the index would be offset. The
+            //  way this gets interpretted is as if it was done individually.
             var listChangedArgs = new NotifyListCompositionChangedEventArgs<T>(
                 new ListElementMoveOperation<T>(right, rightIndex, leftIndex),
                 new ListElementMoveOperation<T>(left, leftIndex + 1, rightIndex)

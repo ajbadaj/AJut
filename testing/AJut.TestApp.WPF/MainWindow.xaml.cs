@@ -292,6 +292,11 @@
             this.ObservableList.Clear();
         }
 
+        private void ReverseObservableList_OnClick (object sender, RoutedEventArgs e)
+        {
+            this.ObservableList.Reverse();
+        }
+
         private void ClearReadOnlyObservableList_OnClick (object sender, RoutedEventArgs e)
         {
             this.ReadOnlyObservableList.Clear();
