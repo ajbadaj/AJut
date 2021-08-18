@@ -51,12 +51,12 @@
 
             public void StoreInBaseline ()
             {
-                m_owner.GetBaselineChanges(generateIfNonExistant: true).AddRange(this.GenerateInsertions());
+                m_owner.GetBaselineChanges(generateIfNonExistant: true).AddEach(this.GenerateInsertions());
             }
 
             public void StoreInOverrideLayer (int layerIndex)
             {
-                m_owner.GetOverrideChanges(layerIndex, generateIfNonExistant: true).AddRange(this.GenerateInsertions(layerIndex));
+                m_owner.GetOverrideChanges(layerIndex, generateIfNonExistant: true).AddEach(this.GenerateInsertions(layerIndex));
             }
 
             private List<StratabaseListInsertion<TElement>> GenerateInsertions (int layerIndex = -1)

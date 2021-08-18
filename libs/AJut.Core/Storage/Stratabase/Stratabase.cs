@@ -295,7 +295,7 @@
                     // Is it ListAccess backed?
                     Type storedType = storedPropValue.GetType();
                     if (strataListConfig != null
-                        && storedType.IsGenericType && storedType.GetGenericTypeDefinition() == typeof(ObservableCollectionX<>)
+                        && storedType.IsGenericType && storedType.GetGenericTypeDefinition() == typeof(ObservableList<>)
                         && storedType.GenericTypeArguments[0].IsGenericType
                         && storedType.GenericTypeArguments[0].GetGenericTypeDefinition() == typeof(StratabaseListInsertion<>))
                     {

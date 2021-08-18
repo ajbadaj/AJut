@@ -5,13 +5,14 @@
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
     using System.Linq;
+    using AJut.Storage.ListOperations;
 
     /// <summary>
     /// Represents a property access for a list. You could just store a list manually, but every override layer would essentially be a 100% override of the entire list.
     /// By using this access instead, you can store insertion overrides in any layer, and access the cached list here.
     /// </summary>
     /// <typeparam name="TElement">The type of element stored and inserted through out the <see cref="Stratabase"/></typeparam>
-    public class StrataPropertyListAccess<TElement> : StrataPropertyAccessBase<ObservableCollectionX<StratabaseListInsertion<TElement>>>
+    public class StrataPropertyListAccess<TElement> : StrataPropertyAccessBase<ObservableList<StratabaseListInsertion<TElement>>>
     {
         private readonly List<StratabaseListInsertion<TElement>> m_insertionsCache = new List<StratabaseListInsertion<TElement>>();
         private readonly ObservableCollection<TElement> m_currentListCache = new ObservableCollection<TElement>();
@@ -26,16 +27,16 @@
 
         protected override void HandleAdditionalDispose ()
         {
-            if (this.GetBaselineChanges() is INotifyCollectionChanged baselineCollection)
+            if (this.GetBaselineChanges() is ObservableList<StratabaseListInsertion<TElement>> baselineCollection)
             {
-                baselineCollection.CollectionChanged -= this.OnStorageCollectionChanged;
+                baselineCollection.ListCompositionChanged -= this.OnStorageCollectionChanged;
             }
 
             for (int layerIndex = 0; layerIndex < this.ODAM.SB.OverrideLayerCount; ++layerIndex)
             {
-                if (this.GetOverrideChanges(layerIndex) is INotifyCollectionChanged overrideCollection)
+                if (this.GetOverrideChanges(layerIndex) is ObservableList<StratabaseListInsertion<TElement>> overrideCollection)
                 {
-                    overrideCollection.CollectionChanged -= this.OnStorageCollectionChanged;
+                    overrideCollection.ListCompositionChanged -= this.OnStorageCollectionChanged;
                 }
             }
 
@@ -58,7 +59,7 @@
         /// </summary>
         internal static object GenerateStorageForBaselineListAccess(object[] elements)
         {
-            ObservableCollectionX<StratabaseListInsertion<TElement>> data = new ObservableCollectionX<StratabaseListInsertion<TElement>>();
+            ObservableList<StratabaseListInsertion<TElement>> data = new ObservableList<StratabaseListInsertion<TElement>>();
             for (int index = 0; index < elements.Length; ++index)
             {
                 var target = (TElement)elements[index];
@@ -126,21 +127,21 @@
 
         // =========================[ Base Override Impls ]===================================
 
-        protected override void OnBaselineLayerChanged (ObservableCollectionX<StratabaseListInsertion<TElement>> oldValue, ObservableCollectionX<StratabaseListInsertion<TElement>> newValue)
+        protected override void OnBaselineLayerChanged (ObservableList<StratabaseListInsertion<TElement>> oldValue, ObservableList<StratabaseListInsertion<TElement>> newValue)
         {
             if (oldValue != null)
             {
-                oldValue.CollectionChanged -= this.OnStorageCollectionChanged;
+                oldValue.ListCompositionChanged -= this.OnStorageCollectionChanged;
             }
 
             this.TrackChanges(newValue);
         }
 
-        protected override void OnOverrideLayerChanged (int layerIndex, ObservableCollectionX<StratabaseListInsertion<TElement>> oldValue, ObservableCollectionX<StratabaseListInsertion<TElement>> newValue)
+        protected override void OnOverrideLayerChanged (int layerIndex, ObservableList<StratabaseListInsertion<TElement>> oldValue, ObservableList<StratabaseListInsertion<TElement>> newValue)
         {
             if (oldValue != null)
             {
-                oldValue.CollectionChanged -= this.OnStorageCollectionChanged;
+                oldValue.ListCompositionChanged -= this.OnStorageCollectionChanged;
             }
 
             this.TrackChanges(newValue);
@@ -166,7 +167,7 @@
             }
         }
 
-        private void TrackChanges (ObservableCollectionX<StratabaseListInsertion<TElement>> changes)
+        private void TrackChanges (ObservableList<StratabaseListInsertion<TElement>> changes)
         {
             if (changes == null)
             {
@@ -174,8 +175,8 @@
             }
 
             // Sign up for collection changes
-            changes.CollectionChanged -= this.OnStorageCollectionChanged;
-            changes.CollectionChanged += this.OnStorageCollectionChanged;
+            changes.ListCompositionChanged -= this.OnStorageCollectionChanged;
+            changes.ListCompositionChanged += this.OnStorageCollectionChanged;
             foreach (StratabaseListInsertion<TElement> item in changes)
             {
                 this.Insert(item);
@@ -195,44 +196,37 @@
             m_currentListCache.RemoveAt(index);
         }
 
-        private void OnStorageCollectionChanged (object sender, NotifyCollectionChangedEventArgs e)
+        private void OnStorageCollectionChanged (object sender, NotifyListCompositionChangedEventArgs<StratabaseListInsertion<TElement>> e)
         {
-            if (e.NewItems != null)
+            foreach (IListOperation<StratabaseListInsertion<TElement>> operation in e.Operations.SelectMany(o => o.GetInsertRemoveOnlyVersion()))
             {
-                foreach (var item in e.NewItems.OfType<StratabaseListInsertion<TElement>>())
+                if (operation is ListElementInsertOperation<StratabaseListInsertion<TElement>> adds)
                 {
-                    this.Insert(item);
+                    adds.Elements.ForEach(this.Insert);
                 }
-            }
-            else if (e.OldItems != null)
-            {
-                foreach (var item in e.OldItems.OfType<StratabaseListInsertion<TElement>>())
+                else if (operation is ListElementRemoveOperation<StratabaseListInsertion<TElement>> removes)
                 {
-                    this.Remove(item);
+                    removes.Elements.ForEach(this.Remove);
                 }
-            }
-            else
-            {
-                this.Reset();
             }
         }
 
-        internal ObservableCollectionX<StratabaseListInsertion<TElement>> GetBaselineChanges (bool generateIfNonExistant = false)
+        internal ObservableList<StratabaseListInsertion<TElement>> GetBaselineChanges (bool generateIfNonExistant = false)
         {
-            if (!this.ODAM.TryGetBaselineValue(this.PropertyName, out ObservableCollectionX<StratabaseListInsertion<TElement>> changes) && generateIfNonExistant)
+            if (!this.ODAM.TryGetBaselineValue(this.PropertyName, out ObservableList<StratabaseListInsertion<TElement>> changes) && generateIfNonExistant)
             {
-                changes = new ObservableCollectionX<StratabaseListInsertion<TElement>>();
+                changes = new ObservableList<StratabaseListInsertion<TElement>>();
                 this.ODAM.SetBaselineValue(this.PropertyName, changes);
             }
 
             return changes;
         }
 
-        internal ObservableCollectionX<StratabaseListInsertion<TElement>> GetOverrideChanges (int layerIndex, bool generateIfNonExistant = false)
+        internal ObservableList<StratabaseListInsertion<TElement>> GetOverrideChanges (int layerIndex, bool generateIfNonExistant = false)
         {
-            if (!this.ODAM.TryGetOverrideValue(layerIndex, this.PropertyName, out ObservableCollectionX<StratabaseListInsertion<TElement>> changes) && generateIfNonExistant)
+            if (!this.ODAM.TryGetOverrideValue(layerIndex, this.PropertyName, out ObservableList<StratabaseListInsertion<TElement>> changes) && generateIfNonExistant)
             {
-                changes = new ObservableCollectionX<StratabaseListInsertion<TElement>>();
+                changes = new ObservableList<StratabaseListInsertion<TElement>>();
                 this.ODAM.SetOverrideValue(layerIndex, this.PropertyName, changes);
             }
 
