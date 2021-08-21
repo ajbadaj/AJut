@@ -13,8 +13,6 @@
     using AJut.Application;
     using AJut.Application.Controls;
     using AJut.Application.Docking;
-    using AJut.Application.Drawing;
-    using AJut.Application.ImageUtils;
     using AJut.Application.PropertyInteraction;
     using AJut.Storage;
     using AJut.TestApp.WPF.DockTest;
@@ -44,8 +42,6 @@
                 new SelfAwarePropertyGridSource () { DogsName = "Bandit", DogsAge = 7 },
                 new SelfAwarePropertyGridSource () { DogsName = "Brosephina", DogsAge = 3 },
             };
-
-            this.ReadOnlyObservableList = this.ObservableList.ToReadOnly();
 
             _Test<string>();
             void _Test<T> ()
@@ -96,10 +92,7 @@
                 return item;
             }
         }
-
-        public ObservableList<int> ObservableList { get; } = new ObservableList<int>(new[] { 0, 2, 1, 8, 6, 3, 3 });
-        public ReadOnlyObservableList<int> ReadOnlyObservableList { get; }
-
+        
         public static readonly DependencyProperty DockingManagerProperty = DPUtils.Register(_ => _.DockingManager);
         public DockingManager DockingManager
         {
@@ -272,35 +265,7 @@
             await DragDropElement.DoDragReorder((UIElement)e.OriginalSource, (ActiveDragTracking)e.Parameter);
         }
 
-        private void RemoveObservableListElement_OnClick (object sender, RoutedEventArgs e)
-        {
-            this.ObservableList.RemoveAll(e => e == this.ObservableListRemoveAll.GetValue<int>());
-        }
 
-        private void AddObservableListElement_OnClick (object sender, RoutedEventArgs e)
-        {
-            this.ObservableList.Insert(this.ObservableListAddIndex.GetValue<int>(), this.ObservableListAddNumber.GetValue<int>());
-        }
-
-        private void SortObservableList_OnClick (object sender, RoutedEventArgs e)
-        {
-            this.ObservableList.Sort();
-        }
-
-        private void ClearObservableList_OnClick (object sender, RoutedEventArgs e)
-        {
-            this.ObservableList.Clear();
-        }
-
-        private void ReverseObservableList_OnClick (object sender, RoutedEventArgs e)
-        {
-            this.ObservableList.Reverse();
-        }
-
-        private void ClearReadOnlyObservableList_OnClick (object sender, RoutedEventArgs e)
-        {
-            this.ReadOnlyObservableList.Clear();
-        }
 
         private void SynchFlatTreeListSelection_OnClick (object sender, RoutedEventArgs e)
         {

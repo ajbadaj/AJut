@@ -3,6 +3,7 @@
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
@@ -295,7 +296,7 @@
                     // Is it ListAccess backed?
                     Type storedType = storedPropValue.GetType();
                     if (strataListConfig != null
-                        && storedType.IsGenericType && storedType.GetGenericTypeDefinition() == typeof(ObservableList<>)
+                        && storedType.IsGenericType && storedType.GetGenericTypeDefinition() == typeof(ObservableCollection<>)
                         && storedType.GenericTypeArguments[0].IsGenericType
                         && storedType.GenericTypeArguments[0].GetGenericTypeDefinition() == typeof(StratabaseListInsertion<>))
                     {
