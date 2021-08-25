@@ -82,7 +82,7 @@
 
             private void OnTargetMouseUp (object sender, MouseButtonEventArgs e)
             {
-                if (m_mouseUpWatcher != null && e.IsTargetPrimary() && !m_target.IsLocalPointInBounds(e.GetPosition(m_target)))
+                if (m_mouseUpWatcher != null && e.IsTargetPrimary() && !m_target.Child.IsLocalPointInBounds(e.GetPosition(m_target.Child)))
                 {
                     m_target.SetCurrentValue(Popup.IsOpenProperty, false);
 
