@@ -84,7 +84,12 @@
             {
                 if (m_mouseUpWatcher != null && e.IsTargetPrimary() && !m_target.IsLocalPointInBounds(e.GetPosition(m_target)))
                 {
-                    m_target.IsOpen = false;
+                    m_target.SetCurrentValue(Popup.IsOpenProperty, false);
+
+                    // Since we're handling this, we need to release the mouse capture so anything like a button or something that might
+                    //  have started to capture the mouse interaction already is stopped
+                    Mouse.Captured?.ReleaseMouseCapture();
+                    e.Handled = true;
                 }
             }
 
