@@ -1,7 +1,5 @@
-﻿namespace AJut.Application
+﻿namespace AJut.IO
 {
-    using AJut.IO;
-
     public static class ImageTypes
     {
         public static FileType Bitmap { get; } = new FileType("Bitmap Image", "bmp", "dib", "rle");
