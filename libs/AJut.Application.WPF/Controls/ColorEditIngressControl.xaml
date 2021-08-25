@@ -49,7 +49,7 @@
                             <!--Background="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ColorEditIngressControl}}, Path=EditColor, Mode=OneWay}"-->
                             <Popup PlacementTarget="{Binding ElementName=ColorDisplay}" HorizontalOffset="140" VerticalOffset="20"
                                    IsOpen="{ajut:TemplateBinding Path=ShowEditDisplay, Mode=TwoWay}"
-                                   StaysOpen="False"
+                                   ap:PopupXTA.StaysOpenUnlessClickAway="True"
                                    AllowsTransparency="True">
                                 <local:ColorValueEditControl EditColor="{ajut:TemplateBinding Path=EditColor, Mode=TwoWay}"
                                                              PreferShortStringHex="{ajut:TemplateBinding PreferShortStringHex}"
