@@ -66,6 +66,21 @@
             set => this.SetValue(HeaderFocusedBackgroundProperty, value);
         }
 
+
+        public static readonly DependencyProperty HeaderHighlightedForegroundProperty = DPUtils.Register(_ => _.HeaderHighlightedForeground);
+        public Brush HeaderHighlightedForeground
+        {
+            get => (Brush)this.GetValue(HeaderHighlightedForegroundProperty);
+            set => this.SetValue(HeaderHighlightedForegroundProperty, value);
+        }
+
+        public static readonly DependencyProperty HeaderFocusedForegroundProperty = DPUtils.Register(_ => _.HeaderFocusedForeground);
+        public Brush HeaderFocusedForeground
+        {
+            get => (Brush)this.GetValue(HeaderFocusedForegroundProperty);
+            set => this.SetValue(HeaderFocusedForegroundProperty, value);
+        }
+
         public static readonly DependencyProperty TargetProperty = DPUtils.Register(_ => _.Target);
         public DockingContentAdapterModel Target
         {

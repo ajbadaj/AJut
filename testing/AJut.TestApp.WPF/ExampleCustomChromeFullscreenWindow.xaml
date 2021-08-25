@@ -1,0 +1,39 @@
+﻿<Window x:Class="AJut.TestApp.WPF.ExampleCustomChromeFullscreenWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ajut="clr-namespace:AJut.Application.Controls;assembly=AJut.Application.WPF"
+        xmlns:ajap="clr-namespace:AJut.Application.AttachedProperties;assembly=AJut.Application.WPF"
+        mc:Ignorable="d" AllowsTransparency="True"
+        Title="A custom chrome, WindowStyle=None, Fullscreenable window" Height="450" Width="800"
+        ajap:WindowXTA.FixMaximizeAsFullscreenIssue="True" WindowStyle="None">
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="30" />
+    </WindowChrome.WindowChrome>
+
+    <Border BorderThickness="1" BorderBrush="Black">
+        <Border.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
+                <GradientStop Offset="0.00" Color="White" />
+                <GradientStop Offset="0.5" Color="#FFFFFF" />
+                <GradientStop Offset="0.999" Color="#FFFFFF" />
+                <GradientStop Offset="1.00" Color="#F00" />
+            </LinearGradientBrush>
+        </Border.Background>
+        <DockPanel>
+            <Border DockPanel.Dock="Top" Height="35" BorderThickness="0,0,0,1" BorderBrush="Black">
+                <DockPanel>
+                    <ajut:WindowChromeButtonStrip DockPanel.Dock="Right" AllowFullscreen="True"/>
+                    <TextBlock TextAlignment="Center" FontSize="16" VerticalAlignment="Center"
+                       Text="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=Title}"/>
+                </DockPanel>
+            </Border>
+            <StackPanel VerticalAlignment="Center" Margin="20">
+                <CheckBox Content="Apply Maximize Fix" IsChecked="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=(ajap:WindowXTA.FixMaximizeAsFullscreenIssue), Mode=TwoWay}"/>
+                <TextBlock TextWrapping="WrapWithOverflow" FontSize="24"
+                   Text="A window which does nothing except exemplify the WindowChromeButtonStrip, fullscreen capabilities, and the special WindowXTA.FixMaximizeAsFullscreenIssue property that fixes an issue where maximize of a window with no chrome does fullscreen instead."/>
+            </StackPanel>
+        </DockPanel>
+    </Border>
+</Window>

@@ -265,7 +265,11 @@
             await DragDropElement.DoDragReorder((UIElement)e.OriginalSource, (ActiveDragTracking)e.Parameter);
         }
 
-
+        private void CreateCustomChromeWindow_OnClick (object sender, RoutedEventArgs e)
+        {
+            ExampleCustomChromeFullscreenWindow w = new ExampleCustomChromeFullscreenWindow { Owner = this };
+            w.Show();
+        }
 
         private void SynchFlatTreeListSelection_OnClick (object sender, RoutedEventArgs e)
         {

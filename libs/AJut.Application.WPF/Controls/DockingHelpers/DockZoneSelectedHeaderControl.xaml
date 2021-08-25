@@ -12,6 +12,9 @@
         <Setter Property="HeaderHighlightBackground" Value="#3555"/>
         <Setter Property="HeaderFocusedBackground" Value="#5888"/>
         <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <Setter Property="Foreground" Value="{Binding Path=(TextElement.Foreground)}"/>
+        <Setter Property="HeaderHighlightedForeground" Value="#000"/>
+        <Setter Property="HeaderFocusedForeground" Value="#222"/>
         <!--<Setter Property="BorderThickness">
             <Setter.Value>
                 <ajut:ThicknessBuilder BindingParts="Left,Top,Right">
@@ -61,6 +64,19 @@
                                 <ContentControl.ToolTip>
                                     <ContentControl Content="{ajut:TemplateBinding Path=Target.TooltipContent}" ContentTemplate="{ajut:TemplateBinding Path=Target.TooltipTemplate}"/>
                                 </ContentControl.ToolTip>
+                                <ContentControl.Style>
+                                    <Style TargetType="{x:Type ContentControl}">
+                                        <Setter Property="Foreground" Value="{ajut:TemplateBinding Foreground}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=IsKeyboardFocusWithin}" Value="True">
+                                                <Setter Property="Foreground" Value="{ajut:TemplateBinding HeaderFocusedForeground}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=UIElement, AncestorLevel=4}, Path=IsMouseOver}" Value="True">
+                                                <Setter Property="Foreground" Value="{ajut:TemplateBinding HeaderHighlightedForeground}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ContentControl.Style>
                             </ContentControl>
                             <Grid Grid.Column="1">
                                 <Grid.Style>

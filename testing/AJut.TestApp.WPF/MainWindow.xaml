@@ -8,6 +8,7 @@
         xmlns:ajut_dock="clr-namespace:AJut.Application.Docking;assembly=AJut.Application.WPF"
         xmlns:ajut_props="clr-namespace:AJut.Application.PropertyInteraction;assembly=AJut.Application.WPF"
         xmlns:ajut_ap="clr-namespace:AJut.Application;assembly=AJut.Application.WPF"
+        xmlns:ajut_io="clr-namespace:AJut.IO;assembly=AJut.Core"
         xmlns:ajc="clr-namespace:AJut.Application.Converters;assembly=AJut.Application.WPF"
         xmlns:ap="clr-namespace:AJut.Application.AttachedProperties;assembly=AJut.Application.WPF"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
@@ -34,7 +35,14 @@
                          Select/>
             </TabItem>-->
             <TabItem Header="Full Screen">
-                <ToggleButton Grid.Row="1" IsChecked="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=(ap:WindowXTA.IsFullscreen)}" Content="Toggle Fullscreen"/>
+                <StackPanel>
+                    <ToggleButton Grid.Row="1" IsChecked="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=(ap:WindowXTA.IsFullscreen)}" Content="Toggle Fullscreen"
+                                  Width="200" Height="30" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"/>
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="Create Custom Chrome Window" Click="CreateCustomChromeWindow_OnClick"/>
+                        <TextBlock Margin="5,0,0,0" Text="Show window with custom chrome that uses the WindowChromeButtonStrip, the maximize helper, and allows fullscreen!"/>
+                    </StackPanel>
+                </StackPanel>
             </TabItem>
             <TabItem Header="Gif">
                 <StackPanel>
@@ -760,7 +768,7 @@
                         <ajut:EnumComboBox x:Name="PathType" SelectedItem="{x:Static ajut:ePathType.File}" Margin="0,0,5,5" VerticalAlignment="Center"/>
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="Filter" VerticalAlignment="Center"/>
-                            <TextBox x:Name="FileFilter" Text="{Binding Source={x:Static ajutbase:ImageTypes.AnyOrAllImageTypeFilter}, Mode=OneTime}" MaxWidth="300" VerticalAlignment="Center"/>
+                            <TextBox x:Name="FileFilter" Text="{Binding Source={x:Static ajut_io:ImageTypes.AnyOrAllImageTypeFilter}, Mode=OneTime}" MaxWidth="300" VerticalAlignment="Center"/>
                         </StackPanel>
                     </StackPanel>
                 </StackPanel>

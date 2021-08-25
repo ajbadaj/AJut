@@ -1,10 +1,5 @@
 ﻿namespace AJut.Application.Controls
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Controls.Primitives;
@@ -109,10 +104,30 @@
 
         private ButtonBase PART_ChromeCloseButton { get; set; }
 
-        public static readonly DependencyProperty ButtonGlyphForegroundProperty = DPUtils.Register(_ => _.ButtonGlyphForeground);
+        public static readonly DependencyProperty ButtonPaddingProperty = DPUtils.Register(_ => _.ButtonPadding);
+        public Thickness ButtonPadding
+        {
+            get => (Thickness)this.GetValue(ButtonPaddingProperty);
+            set => this.SetValue(ButtonPaddingProperty, value);
+        }
+
+        public static readonly DependencyProperty ButtonGlyphFontSizeProperty = DPUtils.Register(_ => _.ButtonGlyphFontSize);
+        public double ButtonGlyphFontSize
+        {
+            get => (double)this.GetValue(ButtonGlyphFontSizeProperty);
+            set => this.SetValue(ButtonGlyphFontSizeProperty, value);
+        }
+
+        public static readonly DependencyProperty ButtonCornerRadiusProperty = DPUtils.Register(_ => _.ButtonCornerRadius);
+        public CornerRadius ButtonCornerRadius
+        {
+            get => (CornerRadius)this.GetValue(ButtonCornerRadiusProperty);
+            set => this.SetValue(ButtonCornerRadiusProperty, value);
+        }
 
         // == Glyph Foreground
 
+        public static readonly DependencyProperty ButtonGlyphForegroundProperty = DPUtils.Register(_ => _.ButtonGlyphForeground);
         public Brush ButtonGlyphForeground
         {
             get => (Brush)this.GetValue(ButtonGlyphForegroundProperty);
@@ -131,6 +146,13 @@
         {
             get => (Brush)this.GetValue(ButtonPressedGlyphForegroundProperty);
             set => this.SetValue(ButtonPressedGlyphForegroundProperty, value);
+        }
+
+        public static readonly DependencyProperty CloseButtonHoverGlyphForegroundProperty = DPUtils.Register(_ => _.CloseButtonHoverGlyphForeground);
+        public Brush CloseButtonHoverGlyphForeground
+        {
+            get => (Brush)this.GetValue(CloseButtonHoverGlyphForegroundProperty);
+            set => this.SetValue(CloseButtonHoverGlyphForegroundProperty, value);
         }
 
         // == Background
@@ -156,6 +178,13 @@
             set => this.SetValue(ButtonPressedBackgroundProperty, value);
         }
 
+        public static readonly DependencyProperty CloseButtonHoverBackgroundProperty = DPUtils.Register(_ => _.CloseButtonHoverBackground);
+        public Brush CloseButtonHoverBackground
+        {
+            get => (Brush)this.GetValue(CloseButtonHoverBackgroundProperty);
+            set => this.SetValue(CloseButtonHoverBackgroundProperty, value);
+        }
+
         // == Border
 
         public static readonly DependencyProperty ButtonBorderProperty = DPUtils.Register(_ => _.ButtonBorder);
@@ -177,6 +206,13 @@
         {
             get => (Brush)this.GetValue(ButtonPressedBorderProperty);
             set => this.SetValue(ButtonPressedBorderProperty, value);
+        }
+
+        public static readonly DependencyProperty CloseButtonHoverBorderProperty = DPUtils.Register(_ => _.CloseButtonHoverBorder);
+        public Brush CloseButtonHoverBorder
+        {
+            get => (Brush)this.GetValue(CloseButtonHoverBorderProperty);
+            set => this.SetValue(CloseButtonHoverBorderProperty, value);
         }
 
         // == Interactability
