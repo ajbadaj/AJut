@@ -1,6 +1,7 @@
 ﻿namespace AJut.Application
 {
     using System;
+    using System.Diagnostics;
     using System.Windows;
     using System.Windows.Data;
     using AJut.Application.Converters;
@@ -9,10 +10,10 @@
     public enum eThicknessPart 
     {
         None   = 0,
-        Left   = 0b0001, 
-        Top    = 0b0010, 
+        Left   = 0b0001,
+        Top    = 0b0010,
         Right  = 0b0100,
-        Bottom = 0b1000
+        Bottom = 0b1000,
     }
 
     public class ThicknessBuilder : MultiBinding
@@ -34,22 +35,22 @@
 
                 double[] final = new[] { src.Baseline.Left, src.Baseline.Top, src.Baseline.Right, src.Baseline.Bottom };
                 int valueIndex = 0;
-                if (src.BindingParts.HasFlag(eThicknessPart.Left))
+                if (src.BindingParts.HasFlag(eThicknessPart.Left) && valueIndex < values.Length)
                 {
                     final[0] = values[valueIndex++];
                 }
 
-                if (src.BindingParts.HasFlag(eThicknessPart.Top))
+                if (src.BindingParts.HasFlag(eThicknessPart.Top) && valueIndex < values.Length)
                 {
                     final[1] = values[valueIndex++];
                 }
 
-                if (src.BindingParts.HasFlag(eThicknessPart.Right))
+                if (src.BindingParts.HasFlag(eThicknessPart.Right) && valueIndex < values.Length)
                 {
                     final[2] = values[valueIndex++];
                 }
 
-                if (src.BindingParts.HasFlag(eThicknessPart.Bottom))
+                if (src.BindingParts.HasFlag(eThicknessPart.Bottom) && valueIndex < values.Length)
                 {
                     final[3] = values[valueIndex++];
                 }

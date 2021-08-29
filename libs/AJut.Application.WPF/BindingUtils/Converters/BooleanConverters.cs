@@ -30,7 +30,7 @@
      * ++  and when the item is valid, the submit button is visible, but the textblock is not
      * 
      * */
-    public class BooleanConverter<T> : SimpleValueConverter<bool, T>
+    public abstract class BooleanConverter<T> : SimpleValueConverter<bool, T>
     {
         public BooleanConverter(T trueValue, T falseValue)
         {
@@ -60,6 +60,11 @@
     public sealed class BooleanInverseConverter : BooleanConverter<bool>
     {
         public BooleanInverseConverter() : base(false, true) { }
+    }
+
+    public sealed class BooleanToDoubleConverter : BooleanConverter<double>
+    {
+        public BooleanToDoubleConverter() : base(1.0, 0.0) { }
     }
 
 #if !WINDOWS_UWP
