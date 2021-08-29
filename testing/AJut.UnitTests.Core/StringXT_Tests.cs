@@ -1,6 +1,7 @@
 ﻿namespace AJut.UnitTests.Core
 {
     using System;
+    using System.Linq;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -53,6 +54,33 @@
             Tuple<int, int> range = source.FindIndexRange(0, '(', ')');
             Assert.AreEqual(9, range.Item1);
             Assert.AreEqual(43, range.Item2);
+        }
+
+        [TestMethod]
+        public void Extensions_FindCapitalsEn_BasicTest()
+        {
+            string eval = "This Is A Test";
+            var found = eval.FindCapitalsEn().ToArray();
+            Assert.AreEqual(4, found.Length);
+            Assert.AreEqual('T', found[0]);
+            Assert.AreEqual('I', found[1]);
+            Assert.AreEqual('A', found[2]);
+            Assert.AreEqual('T', found[3]);
+        }
+
+        [TestMethod]
+        public void Extensions_FindCapitalsEn_ContiguousUppers ()
+        {
+            string eval = "And THIS is A Test";
+            var found = eval.FindCapitalsEn().ToArray();
+            Assert.AreEqual(7, found.Length);
+            Assert.AreEqual('A', found[0]);
+            Assert.AreEqual('T', found[1]);
+            Assert.AreEqual('H', found[2]);
+            Assert.AreEqual('I', found[3]);
+            Assert.AreEqual('S', found[4]);
+            Assert.AreEqual('A', found[5]);
+            Assert.AreEqual('T', found[6]);
         }
 
     }
