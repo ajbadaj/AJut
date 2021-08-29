@@ -80,19 +80,34 @@
 
         public bool PushPage<T> (object state = null)
         {
-            var page = Activator.CreateInstance(typeof(T)) as IPageDisplayControl;
-            if (page == null)
+            // Build
+            object pageObj;
+            try
             {
-                return false;
+                pageObj = Activator.CreateInstance(typeof(T));
+            }
+            catch { pageObj = null; }
+
+            // Use it if it's valid
+            if (pageObj is IPageDisplayControl page)
+            {
+                if (this.ShownPage != null)
+                {
+                    m_pageStack.Push(new PageStorage(this.ShownPage));
+                }
+
+                this.ReplaceShownPage(new PageAdapterModel(this, page), state);
+                return true;
             }
 
-            if (this.ShownPage != null)
+            // Toss it if it's not
+            if (pageObj is IDisposable disposableFailure)
             {
-                m_pageStack.Push(new PageStorage(this.ShownPage));
+                disposableFailure.Dispose();
             }
 
-            this.ReplaceShownPage(new PageAdapterModel(this, page), state);
-            return true;
+            return false;
+            
         }
 
         public async Task Pop ()
