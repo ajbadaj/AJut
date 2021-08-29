@@ -22,44 +22,82 @@
 
         public static IEnumerable<string> GetAllPathParts (string path, char pathSeparator)
         {
-            int driveSeparator = path.IndexOf(':');
-
-            // Drive letter (if any)
-            if (driveSeparator == 1)
-            {
-                yield return path.Substring(0, 1);
-            }
-
-            int searchIndex = path.IndexOf(pathSeparator);
-            if (searchIndex == -1)
+            // 1. Is path rooted (ie c:\)
+            // 2. Is network path (ie \\test)
+            // 3. Is relative path (ie .\here\there or here\there or ..\here\there)
+            if (path.Length < 3)
             {
                 yield return path;
                 yield break;
             }
 
-            searchIndex = path.IndexOf(pathSeparator, 2);
-            if (searchIndex == -1)
+            int start;
+            int nextSeparator;
+
+            // A rooted path
+            if (path[1] == ':')
             {
-                yield break;
+                // should maybe establish that path[0] is valid
+                yield return path.Substring(0,2);
+
+                start = 2;
+                nextSeparator = path.IndexOf(pathSeparator, start);
             }
-
-            ++searchIndex;
-            int nextSeparator = path.IndexOf(pathSeparator, searchIndex + 1);
-            while (nextSeparator != -1)
+            // A network path
+            else if (path[0] == pathSeparator && path[1] == pathSeparator)
             {
-                yield return path.SubstringByInd(searchIndex, nextSeparator - 1);
-                searchIndex = nextSeparator + 1;
+                yield return pathSeparator.ToString();
+                start = 2;
+                nextSeparator = path.IndexOf(pathSeparator, start);
+            }
+            // A relative path
+            else if (path[0] == '.')
+            {
+                // ..\path
+                if (path[1] == '.' && path[2] == pathSeparator)
+                {
+                    start = path.IndexOf(pathSeparator, 3);
+                    if (start == -1)
+                    {
+                        yield break;
+                    }
 
-                // This happens when the last char is a separator (ie path is a directory)
-                if (searchIndex == path.Length)
+                    start += 1;
+                    nextSeparator = path.IndexOf(pathSeparator, start);
+                }
+                // .\path
+                else if (path[1] == pathSeparator)
+                {
+                    start = path.IndexOf(pathSeparator, 2);
+                    nextSeparator = path.IndexOf(pathSeparator, start);
+                }
+
+                // Invalid
+                else
                 {
                     yield break;
                 }
-
-                nextSeparator = path.IndexOf(pathSeparator, searchIndex + 1);
+            }
+            else
+            {
+                start = 0;
+                nextSeparator = path.IndexOf(pathSeparator, start);
             }
 
-            yield return path.Substring(searchIndex);
+            while (nextSeparator != -1)
+            {
+                string subdir = path.SubstringByInd(start, nextSeparator - 1);
+                if (subdir.IsNotNullOrEmpty())
+                {
+                    yield return subdir;
+                }
+                start = nextSeparator + 1;
+                nextSeparator = path.IndexOf(pathSeparator, start);
+            }
+            if (start < path.Length)
+            {
+                yield return path.Substring(start);
+            }
         }
 
         public static Result EvaluatePathValidity (string path)
@@ -146,67 +184,26 @@
         /// </summary>
         /// <param name="path">The un-normalized path</param>
         /// <returns>Either a normalized version of the path, or <c>null</c> if the path couldn't be normalized.</returns>
-        public static string Normalize(string path)
+        public static string NormalizePath (string path)
         {
-            if(!IsValidAsPath(path))
+            path = path.ToLower().Replace('/', '\\');
+            List<string> pathParts = GetAllPathParts(path).ToList();
+            for (int index = 0; index < pathParts.Count; ++index)
             {
-                return null;
-            }
-
-            List<string> pathStack = new List<string>();
-
-            path = path.Replace('/', '\\').Trim(' ').ToLower();
-            bool isPathRooted = path[1] == ':';
-            if (isPathRooted)
-            {
-                if(path[0] < 'a' || path[0] > 'z' || path[2] != '\\')
+                if (pathParts[index] == "..")
                 {
-                    throw new Exception(String.Format("You provided an improperly formatted path, with a weird path rooting: '{0}'", path));
-                }
-
-                pathStack.Add(path.Substring(0, 2)); // ie c:
-                path = path.SubstringFromRelativeEnd(3, 0); // Skipping the first path sep
-            }
-
-            int nextStartIndex = 0;
-            int nextPathSepIndex = path.IndexOf('\\');
-            if(nextPathSepIndex == -1)
-            {
-                return path;
-            }
-
-            while (nextPathSepIndex != -1)
-            {
-                if (nextStartIndex != nextPathSepIndex)
-                {
-                    string pathPiece = path.SubstringByInd(nextStartIndex, nextPathSepIndex - 1);
-                    switch (pathPiece)
+                    if (index == 0)
                     {
-                        case "..":
-                            if(pathStack.Count == 0)
-                            {
-                                throw new Exception(String.Format("Relative directory specification made that goes past specified root: '{0}'", path));
-                            }
-                            pathStack.RemoveAt(pathStack.Count - 1);
-                            break;
-
-                        default:
-                            pathStack.Add(pathPiece);
-                            break;
+                        throw new ArgumentOutOfRangeException($"Relative directory specification made that goes past specified root: '{path}'");
                     }
+
+                    pathParts.RemoveAt(index);
+                    pathParts.RemoveAt(index - 1);
+                    index -= 1;
                 }
-
-                nextStartIndex = nextPathSepIndex + 1;
-                nextPathSepIndex = path.IndexOf('\\', nextStartIndex);
             }
 
-            string output = String.Join("\\", pathStack.ToArray());
-            if (nextStartIndex != -1 && nextStartIndex < path.Length - 1)
-            {
-                output += "\\" + path.Substring(nextStartIndex);
-            }
-
-            return output;
+            return String.Join('\\', pathParts);
         }
 
         /// <summary>
@@ -214,9 +211,9 @@
         /// </summary>
         /// <param name="fileName">The file name to sanitize</param>
         /// <returns>The a version of the passed in file name that has no <see cref="Path"/>.GetInvalidFileNameChars() in it</returns>
-        public static string SanitizeFileName(string fileName)
+        public static string SanitizeFileName (string fileName)
         {
-            if(fileName == null)
+            if (fileName == null)
             {
                 return null;
             }
@@ -239,7 +236,7 @@
         /// </summary>
         /// <param name="fileName">The file name to sanitize</param>
         /// <returns>The a version of the passed in file name that has no <see cref="Path"/>.GetInvalidPathChars() in it</returns>
-        public static string SanitizePath(string path)
+        public static string SanitizePath (string path)
         {
             if (path == null)
             {
@@ -250,7 +247,7 @@
             char[] invalidPathChars = Path.GetInvalidFileNameChars();
             foreach (char pathChar in path)
             {
-                if(!invalidPathChars.Contains(pathChar))
+                if (!invalidPathChars.Contains(pathChar))
                 {
                     outputPath.Append(pathChar);
                 }
@@ -326,11 +323,11 @@
             return output.ToString();
         }
 
-        public static string ShortenPath(this string This, int maxLength, eStringShortening shortenWhere)
+        public static string ShortenPath (this string This, int maxLength, eStringShortening shortenWhere)
         {
             return StringXT.StringShortenerWorkhorse(This, maxLength, true, shortenWhere, "...");
         }
-        public static string ShortenPath(this string This, int maxLength, eStringShortening shortenWhere, string removedCharactersIndicator)
+        public static string ShortenPath (this string This, int maxLength, eStringShortening shortenWhere, string removedCharactersIndicator)
         {
             return StringXT.StringShortenerWorkhorse(This, maxLength, true, shortenWhere, removedCharactersIndicator);
         }
@@ -384,6 +381,32 @@
         public static string CreateGroupFilter (string name, params FileType[] fileTypes)
         {
             return $"{name}|*.{String.Join(";*.", fileTypes.SelectMany(ft => ft.Extensions))}";
+        }
+
+        public static bool ArePathsMatching (params string[] paths)
+        {
+            if (paths == null)
+            {
+                return false;
+            }
+
+            if (paths.Length < 2)
+            {
+                return true;
+            }
+
+            string[] temp = paths.Select(p => NormalizePath(p)).ToArray();
+
+            HashSet<string> hash = new HashSet<string>();
+            foreach (string path in paths.Select(p => NormalizePath(p)))
+            {
+                if (hash.Add(path) && hash.Count > 1)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }
