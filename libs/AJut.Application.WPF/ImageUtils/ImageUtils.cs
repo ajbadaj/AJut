@@ -1,9 +1,8 @@
-﻿namespace AJut.Application.ImageUtils
+﻿namespace AJut.Application
 {
     using System.Drawing.Imaging;
     using System.IO;
     using System.Windows.Media.Imaging;
-    using AJut.IO;
 
     public static class ImageUtils
     {
@@ -50,6 +49,14 @@
         public static BitmapImage GetImageSourceFrom (string filePath)
         {
             return (BitmapImage)CoerceUtils.CoerceImageSourceFrom(filePath);
+        }
+
+        public static void WriteTo (this BitmapImage image, Stream stream)
+        {
+            var encoder = new PngBitmapEncoder();
+            var frame = BitmapFrame.Create(image);
+            encoder.Frames.Add(frame);
+            encoder.Save(stream);
         }
     }
 }

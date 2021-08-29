@@ -1,4 +1,4 @@
-﻿namespace AJut.Application.ImageUtils
+﻿namespace AJut.Application
 {
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -10,7 +10,6 @@
 
     public static class IconHelper
     {
-
         public static IcoHeader ReadIcoHeaderFrom (string iconPath)
         {
             using (FileStream stream = File.OpenRead(iconPath))

@@ -10,7 +10,6 @@
     using System.Windows;
     using System.Windows.Media.Imaging;
     using System.Windows.Threading;
-    using AJut.Application.ImageUtils;
     using AJut.IO;
     using ImageControl = System.Windows.Controls.Image;
     using ImageStorage = System.Drawing.Image;
