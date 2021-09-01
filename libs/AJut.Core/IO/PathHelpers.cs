@@ -395,10 +395,8 @@
                 return true;
             }
 
-            string[] temp = paths.Select(p => NormalizePath(p)).ToArray();
-
             HashSet<string> hash = new HashSet<string>();
-            foreach (string path in paths.Select(p => NormalizePath(p)))
+            foreach (string path in paths.Where(p => p != null).Select(p => NormalizePath(p)))
             {
                 if (hash.Add(path) && hash.Count > 1)
                 {
