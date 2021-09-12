@@ -67,6 +67,9 @@
     <Compile Update="Controls\SinglePageDisplayHelpers\PopoverContainer.cs">
       <DependentUpon>PopoverContainer.xaml</DependentUpon>
     </Compile>
+    <Compile Update="Controls\Svg.cs">
+      <DependentUpon>Svg.xaml</DependentUpon>
+    </Compile>
     <Compile Update="Controls\ToggleStrip.cs">
       <DependentUpon>ToggleStrip.xaml</DependentUpon>
     </Compile>

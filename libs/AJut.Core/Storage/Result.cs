@@ -56,12 +56,17 @@
             return this.HasErrors ? string.Join(separator, this.Errors) : null;
         }
 
+        public Result<T> ToErrorOf<T> ()
+        {
+            return new Result<T>(this);
+        }
+
         public static implicit operator bool (Result result) => !result.HasErrors;
     }
 
     public class Result<T> : Result
     {
-        public T Value { get; set; }
+        public T Value { get; init; }
 
         public Result (T value = default)
         {

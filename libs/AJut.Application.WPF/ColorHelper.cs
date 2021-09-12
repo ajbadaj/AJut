@@ -11,6 +11,12 @@
         {
             if (hex.StartsWith("#"))
             {
+                if (hex.ToLower() == "#none")
+                {
+                    color = Colors.Transparent;
+                    return true;
+                }
+
                 switch (hex.Length)
                 {
                     // #RGB -> #RRGGBB

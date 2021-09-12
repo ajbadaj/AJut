@@ -149,5 +149,21 @@
                 return await reader.ReadToEndAsync();
             }
         }
+
+        /// <summary>
+        /// Writes the full contents of a given stream to the file location
+        /// </summary>
+        /// <param name="filePath">The file to write to</param>
+        /// <param name="stream">The stream to read and copy to the given file</param>
+        public static void WriteStreamToFile (string filePath, Stream stream)
+        {
+            using (Stream writeStream = File.OpenWrite(filePath))
+            {
+                using (StreamWriter writer = new StreamWriter(writeStream))
+                {
+                    writer.Write(stream);
+                }
+            }
+        }
     }
 }

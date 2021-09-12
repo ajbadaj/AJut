@@ -217,21 +217,34 @@
             {
                 return (Color)originalValue;
             }
-            else if (originalValue is string strValue)
+            else if (originalValue is string strValue && TryGetColorFromString(strValue, out Color color))
             {
-                strValue = strValue.Trim();
-                if (ColorHelper.TryGetColorFromHex(!strValue.StartsWith("#") ? "#" + strValue : strValue, out Color color))
-                {
-                    return color;
-                }
-
-                if (g_allNamedColors.Value.TryGetValue(strValue, out Color namedColor))
-                {
-                    return namedColor;
-                }
+                return color;
             }
 
             return Colors.Black;
+        }
+
+        /// <summary>
+        /// Try and rationalize a string as a color
+        /// </summary>
+        /// <param name="value">The string to interpret</param>
+        /// <param name="color">The found color</param>
+        /// <returns>a bool indicating if a color was found</returns>
+        public static bool TryGetColorFromString (string value, out Color color)
+        {
+            value = value.Trim();
+            if (ColorHelper.TryGetColorFromHex(!value.StartsWith("#") ? "#" + value : value, out color))
+            {
+                return true;
+            }
+
+            if (g_allNamedColors.Value.TryGetValue(value, out color))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>

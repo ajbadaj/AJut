@@ -430,7 +430,7 @@
                         <ajut:NumericEditor Margin="10,0" Foreground="Black" Value="{Binding ElementName=Self, Path=FloatValue}" Padding="1"
                                             VerticalContentAlignment="Stretch"/>
                     </DockPanel>
-                        
+
                     <ajut:NumericEditor Margin="10" Foreground="Black" Value="{Binding ElementName=Self, Path=FloatValue}" LabelButtonDock="Bottom" LabelPadding="5,10" Width="50"/>
                     <StackPanel Orientation="Horizontal">
                         <ajut:NumericEditor Margin="10" Padding="2,5" Minimum="{Binding ElementName=Self, Path=FloatValue}" Width="80">
@@ -715,7 +715,7 @@
                 <WrapPanel>
                     <Grid ap:DragWatch.IsEnabled="True">
                         <Grid.Resources>
-                            
+
                             <Style TargetType="{x:Type Border}">
                                 <Setter Property="IsHitTestVisible" Value="True"/>
                                 <Setter Property="BorderBrush">
@@ -777,6 +777,175 @@
                 <Grid>
                     <ajut:BusyWait Content="A busy wait" SpinnerDock="Right"
                                    VerticalAlignment="Center"  HorizontalAlignment="Left"/>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Svg">
+                <Grid>
+                    <Grid.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,18" MappingMode="Absolute" SpreadMethod="Reflect" Opacity="0.3">
+                            <GradientStop Offset="0.00" Color="#181818" />
+                            <GradientStop Offset="0.10" Color="#181818" />
+                            <GradientStop Offset="0.10" Color="#00181818" />
+                            <GradientStop Offset="0.90" Color="#00181818" />
+                            <GradientStop Offset="0.90" Color="#181818" />
+                            <GradientStop Offset="1.00" Color="#181818" />
+                        </LinearGradientBrush>
+                    </Grid.Background>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
+
+                        <Border BorderThickness="3" CornerRadius="5" BorderBrush="Black" Background="#E4F7FF" RenderTransformOrigin="0.55,0.55">
+                            <Border.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                            </Border.RenderTransform>
+                            <StackPanel>
+                                <Image Width="300" Source="PenguinExample.png" Margin="5" />
+                                <TextBlock Text="Image Version (png)"/>
+                            </StackPanel>
+                            <Border.Triggers>
+                                <EventTrigger RoutedEvent="MouseEnter">
+                                    <EventTrigger.Actions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="RenderTransform.ScaleX" Duration="0:0:0.5" >
+                                                    <EasingDoubleKeyFrame Value="15.0">
+                                                        <EasingDoubleKeyFrame.EasingFunction>
+                                                            <SineEase />
+                                                        </EasingDoubleKeyFrame.EasingFunction>
+                                                    </EasingDoubleKeyFrame>
+                                                </DoubleAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="RenderTransform.ScaleY" Duration="0:0:0.5" >
+                                                    <EasingDoubleKeyFrame Value="5.0">
+                                                        <EasingDoubleKeyFrame.EasingFunction>
+                                                            <SineEase />
+                                                        </EasingDoubleKeyFrame.EasingFunction>
+                                                    </EasingDoubleKeyFrame>
+                                                </DoubleAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <Int32AnimationUsingKeyFrames Storyboard.TargetProperty="(Panel.ZIndex)" Duration="0:0:0.5" >
+                                                    <EasingInt32KeyFrame Value="5">
+                                                        <EasingInt32KeyFrame.EasingFunction>
+                                                            <SineEase />
+                                                        </EasingInt32KeyFrame.EasingFunction>
+                                                    </EasingInt32KeyFrame>
+                                                </Int32AnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger.Actions>
+                                </EventTrigger>
+                                <EventTrigger RoutedEvent="MouseLeave">
+                                    <EventTrigger.Actions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="RenderTransform.ScaleX" Duration="0:0:0.3" >
+                                                    <EasingDoubleKeyFrame Value="1.0">
+                                                        <EasingDoubleKeyFrame.EasingFunction>
+                                                            <SineEase />
+                                                        </EasingDoubleKeyFrame.EasingFunction>
+                                                    </EasingDoubleKeyFrame>
+                                                </DoubleAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="RenderTransform.ScaleY" Duration="0:0:0.3" >
+                                                    <EasingDoubleKeyFrame Value="1.0">
+                                                        <EasingDoubleKeyFrame.EasingFunction>
+                                                            <SineEase />
+                                                        </EasingDoubleKeyFrame.EasingFunction>
+                                                    </EasingDoubleKeyFrame>
+                                                </DoubleAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <Int32AnimationUsingKeyFrames Storyboard.TargetProperty="(Panel.ZIndex)" Duration="0:0:0.5" >
+                                                    <EasingInt32KeyFrame Value="0">
+                                                        <EasingInt32KeyFrame.EasingFunction>
+                                                            <SineEase />
+                                                        </EasingInt32KeyFrame.EasingFunction>
+                                                    </EasingInt32KeyFrame>
+                                                </Int32AnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger.Actions>
+                                </EventTrigger>
+                            </Border.Triggers>
+                        </Border>
+
+                        <Border BorderThickness="3" CornerRadius="5" BorderBrush="Black" Background="#E4F7FF" RenderTransformOrigin="0.55,0.55">
+                            <Border.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                            </Border.RenderTransform>
+                            <StackPanel>
+                                <Viewbox Width="300" Margin="5">
+                                    <ajut:Svg Source="PenguinExample.svg"/>
+                                </Viewbox>
+                                <TextBlock Text="Vector Version (svg)"/>
+                            </StackPanel>
+                            <Border.Triggers>
+                                <EventTrigger RoutedEvent="MouseEnter">
+                                    <EventTrigger.Actions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="RenderTransform.ScaleX" Duration="0:0:0.5" >
+                                                    <EasingDoubleKeyFrame Value="15.0">
+                                                        <EasingDoubleKeyFrame.EasingFunction>
+                                                            <SineEase />
+                                                        </EasingDoubleKeyFrame.EasingFunction>
+                                                    </EasingDoubleKeyFrame>
+                                                </DoubleAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="RenderTransform.ScaleY" Duration="0:0:0.5" >
+                                                    <EasingDoubleKeyFrame Value="5.0">
+                                                        <EasingDoubleKeyFrame.EasingFunction>
+                                                            <SineEase />
+                                                        </EasingDoubleKeyFrame.EasingFunction>
+                                                    </EasingDoubleKeyFrame>
+                                                </DoubleAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger.Actions>
+                                </EventTrigger>
+                                <EventTrigger RoutedEvent="MouseLeave">
+                                    <EventTrigger.Actions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="RenderTransform.ScaleX" Duration="0:0:0.3" >
+                                                    <EasingDoubleKeyFrame Value="1.0">
+                                                        <EasingDoubleKeyFrame.EasingFunction>
+                                                            <SineEase />
+                                                        </EasingDoubleKeyFrame.EasingFunction>
+                                                    </EasingDoubleKeyFrame>
+                                                </DoubleAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="RenderTransform.ScaleY" Duration="0:0:0.3" >
+                                                    <EasingDoubleKeyFrame Value="1.0">
+                                                        <EasingDoubleKeyFrame.EasingFunction>
+                                                            <SineEase />
+                                                        </EasingDoubleKeyFrame.EasingFunction>
+                                                    </EasingDoubleKeyFrame>
+                                                </DoubleAnimationUsingKeyFrames>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger.Actions>
+                                </EventTrigger>
+                            </Border.Triggers>
+                        </Border>
+
+                    </StackPanel>
                 </Grid>
             </TabItem>
         </TabControl>

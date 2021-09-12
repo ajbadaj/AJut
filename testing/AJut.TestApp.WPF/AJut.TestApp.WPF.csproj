@@ -7,6 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="PenguinExample.png" />
+    <None Remove="PenguinExample.svg" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\libs\AJut.Application.WPF\AJut.Application.WPF.csproj" />
     <ProjectReference Include="..\..\libs\AJut.Core\AJut.Core.csproj" />
   </ItemGroup>
@@ -17,6 +22,15 @@
 
   <ItemGroup>
     <None Include="..\..\.editorconfig" Link=".editorconfig" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="PenguinExample.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="PenguinExample.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>
