@@ -274,6 +274,49 @@
             Assert.AreEqual(pi, (double)result.Obj);
         }
 
+        [TestMethod]
+        public void AJson_JsonBuilding_CanBuildStruct_FromJson ()
+        {
+            int expectedFoo = 3;
+            string expectedBar = "bar-tho";
+            Json json = JsonHelper.MakeRootBuilder()
+                            .StartDocument()
+                                .AddProperty(nameof(TestStruct.Foo), expectedFoo)
+                                .AddProperty(nameof(TestStruct.Bar), expectedBar)
+                            .End().Finalize();
+
+            Assert.IsFalse(json.HasErrors, json.GetErrorReport());
+
+            TestStruct result = JsonHelper.BuildObjectForJson<TestStruct>(json);
+            Assert.AreEqual(expectedFoo, result.Foo);
+            Assert.AreEqual(expectedBar, result.Bar);
+        }
+
+        [TestMethod]
+        public void AJson_JsonBuilding_CanJson_FromStruct ()
+        {
+            int expectedFoo = 3;
+            string expectedBar = "bar-tho";
+
+            TestStruct test = new TestStruct
+            {
+                Foo = expectedFoo,
+                Bar = expectedBar
+            };
+
+            Json json = JsonHelper.BuildJsonForObject(test);
+            Assert.IsFalse(json.HasErrors, json.GetErrorReport());
+
+
+            Assert.IsTrue(json.Data is JsonDocument);
+            var doc = (JsonDocument)json.Data;
+            Assert.IsTrue(doc.TryGetValue(nameof(TestStruct.Foo), out int foo));
+            Assert.AreEqual(expectedFoo, foo);
+
+            Assert.IsTrue(doc.TryGetValue(nameof(TestStruct.Bar), out string bar));
+            Assert.AreEqual(expectedBar, bar);
+        }
+
         public class RuntimeTypeEvaluatorObject
         {
             [JsonRuntimeTypeEval]
@@ -436,6 +479,12 @@
 
                 return true;
             }
+        }
+
+        public struct TestStruct
+        {
+            public int Foo { get; set; }
+            public string Bar { get; set; }
         }
     }
 }
