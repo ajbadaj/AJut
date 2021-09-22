@@ -6,6 +6,7 @@
 
     public class Result
     {
+        protected bool m_isInErrorState;
         private List<string> m_errors = new List<string>();
 
         public Result()
@@ -16,14 +17,16 @@
         public Result (Result takeErrorsFrom) : this()
         {
             m_errors.AddRange(takeErrorsFrom.Errors);
+            m_isInErrorState = true;
         }
 
         public ReadOnlyCollection<string> Errors { get; }
-        public bool HasErrors => this.Errors.Count > 0;
+        public bool HasErrors => m_isInErrorState;
 
         public void AddError (string error)
         {
             m_errors.Add(error);
+            m_isInErrorState = true;
         }
 
         public Result AddErrorsFrom (Result other)
@@ -34,10 +37,18 @@
 
         public static Result Success () => new Result();
 
-        public static Result Error (string error)
+        public static Result Error (string error = null)
         {
-            var result = new Result();
-            result.AddError(error);
+            var result = new Result
+            {
+                m_isInErrorState = true
+            };
+
+            if (error != null)
+            {
+                result.AddError(error);
+            }
+
             return result;
         }
 
@@ -81,10 +92,18 @@
 
         public static Result<T> Success (T value) => new Result<T>(value);
 
-        public static new Result<T> Error (string error)
+        public static new Result<T> Error (string error = null)
         {
-            var result = new Result<T>();
-            result.AddError(error);
+            var result = new Result<T>
+            {
+                m_isInErrorState = true
+            };
+
+            if (error != null)
+            {
+                result.AddError(error);
+            }
+
             return result;
         }
 
@@ -96,5 +115,7 @@
         }
 
         public static implicit operator Result<T> (T successValue) => Result<T>.Success(successValue);
+        public static implicit operator T (Result<T> successValue) => successValue.Value;
+        public static implicit operator bool (Result<T> result) => !result.HasErrors;
     }
 }
