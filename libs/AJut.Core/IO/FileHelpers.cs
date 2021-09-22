@@ -1,10 +1,10 @@
 ﻿namespace AJut.IO
 {
-    using AJut;
     using System;
     using System.IO;
     using System.Reflection;
     using System.Threading.Tasks;
+    using AJut;
 
     /// <summary>
     /// A function that takes in a path and returns a file stream for writing. Allows for <see cref="System.IO.File.OpenWrite"/> or any 
@@ -16,7 +16,7 @@
 
     public static class FileHelpers
     {
-        public static bool TryOpenForWrite(string filePath, bool forceWritable, out FileStream outputStream)
+        public static bool TryOpenForWrite (string filePath, bool forceWritable, out FileStream outputStream)
         {
             if (filePath == null)
             {
@@ -60,7 +60,7 @@
         /// Sets the readonly flag to true, and waits until the value has changed (and therefore is writable)
         /// </summary>
         /// <returns><c>true</c> if the target file's readonly status matches the requested readonly, <c>false</c> otherwise.</returns>
-        public static bool SetReadOnlyAndWait(FileInfo targetFile, bool readOnly, int waitMaxMS = 1000, int sleepIntervalMS = 25)
+        public static bool SetReadOnlyAndWait (FileInfo targetFile, bool readOnly, int waitMaxMS = 1000, int sleepIntervalMS = 25)
         {
             try
             {
@@ -93,7 +93,7 @@
         /// <param name="relativePath">The relative path to the embedded resource</param>
         /// <param name="assembly">The assembly that the resource is in, or null if you want to use the executing assembly.</param>
         /// <returns>The translated embedded resource name</returns>
-        public static string GenerateEmbeddedResourceName(string relativePath, Assembly assembly = null)
+        public static string GenerateEmbeddedResourceName (string relativePath, Assembly assembly = null)
         {
             assembly = assembly ?? Assembly.GetCallingAssembly();
             return assembly.GetName().Name + "." + relativePath.Replace('/', '.').Replace('\\', '.').TrimStart('.'); ;
@@ -105,7 +105,7 @@
         /// <param name="relativePath">The relative path to the embedded resource</param>
         /// <param name="assembly">The assembly that the resource is in, or null if you want to use the calling assembly.</param>
         /// <returns>A stream for reading an embedded resource.</returns>
-        public static Stream GetEmbeddedResourceStream(string relativePath, Assembly assembly = null)
+        public static Stream GetEmbeddedResourceStream (string relativePath, Assembly assembly = null)
         {
             assembly = assembly ?? Assembly.GetCallingAssembly();
             string resourcePath = GenerateEmbeddedResourceName(relativePath, assembly);
@@ -118,7 +118,7 @@
         /// <param name="relativePath">The relative path to the embedded resource</param>
         /// <param name="assembly">The assembly that the resource is in, or null if you want to use the executing assembly.</param>
         /// <returns>All the text read from the indicated resource stream</returns>
-        public static string ReadEmbeddedResourceText(string relativePath, Assembly assembly = null)
+        public static string ReadEmbeddedResourceText (string relativePath, Assembly assembly = null)
         {
             assembly = assembly ?? Assembly.GetCallingAssembly();
             using (Stream stream = GetEmbeddedResourceStream(relativePath, assembly))
@@ -134,7 +134,7 @@
         /// <param name="relativePath">The relative path to the embedded resource</param>
         /// <param name="assembly">The assembly that the resource is in, or null if you want to use the executing assembly.</param>
         /// <returns>All the text read from the indicated resource stream</returns>
-        public static async Task<string> ReadEmbeddedResourceTextAsync(Assembly assembly, string relativePath)
+        public static async Task<string> ReadEmbeddedResourceTextAsync (Assembly assembly, string relativePath)
         {
             assembly = assembly ?? Assembly.GetCallingAssembly();
             string resourcePath = GenerateEmbeddedResourceName(relativePath, assembly);
