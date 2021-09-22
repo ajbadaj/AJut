@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Web;
     using AJut.Text.AJson;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -497,6 +498,36 @@
             Assert.AreEqual(d["Test1"], parsed["Test1"]);
             Assert.AreEqual(d["Test2"], parsed["Test2"]);
             Assert.AreEqual(d["Test3"], parsed["Test3"]);
+        }
+
+        [TestMethod]
+        public void AJson_JsonParsing_ParseKeyWithQuote ()
+        {
+            const string key = "ke\\\"y";
+            const string value = "value with no quotes";
+            string jsonText = $"{{\"{key}\": \"{value}\"}}";
+            Json json = JsonHelper.ParseText(jsonText);
+            Assert.IsTrue(json, json.GetErrorReport());
+            Assert.IsTrue(json.Data.IsDocument);
+
+            var doc = (JsonDocument)json.Data;
+            Assert.IsTrue(doc.ContainsKey(key));
+            Assert.AreEqual(value, doc.ValueFor(key).StringValue);
+        }
+
+        [TestMethod]
+        public void AJson_JsonParsing_ParseValueWithQuote ()
+        {
+            const string key = "key";
+            const string value = "value with a quote → \\\" ← there";
+            string jsonText = $"{{\"{key}\": \"{value}\"}}";
+            Json json = JsonHelper.ParseText(jsonText);
+            Assert.IsTrue(json, json.GetErrorReport());
+            Assert.IsTrue(json.Data.IsDocument);
+
+            var doc = (JsonDocument)json.Data;
+            Assert.IsTrue(doc.ContainsKey(key));
+            Assert.AreEqual(value, doc.ValueFor(key).StringValue);
         }
     }
 }

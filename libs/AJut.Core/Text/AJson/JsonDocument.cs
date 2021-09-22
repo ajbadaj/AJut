@@ -167,7 +167,9 @@
                 }
 
                 if (endIndex != -1)
+                {
                     break;
+                }
 
                 if (lastWasUseful)
                 {

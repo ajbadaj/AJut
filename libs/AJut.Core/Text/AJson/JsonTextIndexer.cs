@@ -56,7 +56,7 @@
                 // If we've started looking for a quote, skip text until end quote is found
                 if (isBetweenQuoteStartAndEnd)
                 {
-                    if (charInQuestion == QuoteChar)
+                    if (charInQuestion == QuoteChar && text[currCharTargetIndex - 1] != '\\')
                     {
                         isBetweenQuoteStartAndEnd = false;
                         _StoreFoundSeparators(currCharTargetIndex, QuoteChar, m_separatorIndexTracker[QuoteChar]);

@@ -108,6 +108,7 @@
                     case '\"':
                         if (quoteStart != -1)
                         {
+                            // Now that we have the end quote, set the json value
                             this.Add(new JsonValue(source, quoteStart, nextEval - 1, true));
                             quoteStart = -1;
 
