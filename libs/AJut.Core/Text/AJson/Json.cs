@@ -3,6 +3,8 @@
     using AJut.Storage;
     using AJut.Tree;
 
+    public delegate string Formatter (string input);
+
     /// <summary>
     /// Stores parsed json data and tracking information
     /// </summary>
@@ -65,6 +67,58 @@
             else
             {
                 return "<Invalid Source Text>";
+            }
+        }
+
+        public void FormatAllKeys (Formatter keyStringFormatter)
+        {
+            if (this.Data == null)
+            {
+                return;
+            }
+
+            foreach (JsonValue value in TreeTraversal<JsonValue>.All(this.Data))
+            {
+                if (value.IsDocument)
+                {
+                    ((JsonDocument)value).FormatAllKeys(keyStringFormatter);
+                }
+            }
+        }
+
+        public void FormatAllValues (Formatter valueStringFormatter)
+        {
+            if (this.Data == null)
+            {
+                return;
+            }
+
+            foreach (JsonValue value in TreeTraversal<JsonValue>.All(this.Data))
+            {
+                if (value.IsValue)
+                {
+                    value.StringValue = valueStringFormatter(value.StringValue);
+                }
+            }
+        }
+
+        public void FormatAll (Formatter stringFormatter)
+        {
+            if (this.Data == null)
+            {
+                return;
+            }
+
+            foreach (JsonValue value in TreeTraversal<JsonValue>.All(this.Data))
+            {
+                if (value.IsDocument)
+                {
+                    ((JsonDocument)value).FormatAllKeys(stringFormatter);
+                }
+                else if (value.IsValue)
+                {
+                    value.StringValue = stringFormatter(value.StringValue);
+                }
             }
         }
     }

@@ -1,12 +1,11 @@
 ﻿namespace AJut.Text.AJson
 {
-    using AJut.Text;
-    using AJut;
     using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Text;
+    using AJut;
+    using AJut.Text;
     using AJut.Tree;
 
     public class JsonDocument : JsonValue, IEnumerable<KeyValuePair<TrackedString, JsonValue>>
@@ -345,5 +344,38 @@
             return m_memberStorage.GetEnumerator();
         }
 
+        public void FormatAllKeys (Formatter keyStringFormatter)
+        {
+            foreach(var kvp in m_memberStorage)
+            {
+                kvp.Key.StringValue = keyStringFormatter(kvp.Key);
+            }
+        }
+
+        public void FormatAllValues (Formatter valueStringFormatter)
+        {
+            foreach (JsonValue value in TreeTraversal<JsonValue>.All(this, includeSelf:false))
+            {
+                if (value.IsValue)
+                {
+                    value.StringValue = valueStringFormatter(value.StringValue);
+                }
+            }
+        }
+
+        public void FormatAll (Formatter stringFormatter)
+        {
+            foreach (JsonValue value in TreeTraversal<JsonValue>.All(this))
+            {
+                if (value.IsDocument)
+                {
+                    ((JsonDocument)value).FormatAllKeys(stringFormatter);
+                }
+                else if (value.IsValue)
+                {
+                    value.StringValue = stringFormatter(value.StringValue);
+                }
+            }
+        }
     }
 }
