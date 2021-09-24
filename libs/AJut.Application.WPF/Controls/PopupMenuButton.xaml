@@ -1,0 +1,41 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib"
+                    xmlns:local="clr-namespace:AJut.Application.Controls"
+                    xmlns:ajut="clr-namespace:AJut.Application"
+                    xmlns:ajconv="clr-namespace:AJut.Application.Converters"
+                    xmlns:ap="clr-namespace:AJut.Application.AttachedProperties"><sys:String x:Key="OpenFolderSymbol">&#xED25;</sys:String>
+    <Style TargetType="{x:Type local:PopupMenuButton}">
+        <Setter Property="BorderBrush" Value="Black"/>
+        <Setter Property="BorderThickness" Value="2"/>
+        <Setter Property="Padding" Value="5"/>
+        <Setter Property="Background" Value="#FFF0F0F0"/>
+        <Setter Property="ap:BorderXTA.CornerRadius" Value="4"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:PopupMenuButton}">
+                    <Grid>
+                        <Button x:Name="PART_Button" Content="{TemplateBinding ButtonContent}" ContentTemplate="{TemplateBinding ButtonContentTemplate}"
+                                Style="{TemplateBinding ButtonStyle}"/>
+                        <Popup x:Name="PART_Popup" Placement="Bottom" PlacementTarget="{Binding ElementName=PART_Button}"
+                               ap:PopupXTA.StaysOpenUnlessClickAway="True" AllowsTransparency="True"
+                               HorizontalOffset="{Binding ElementName=PART_Button, Path=ActualWidth, Converter={ajconv:FixedArithmeticConverter Operation=Multiply, FixedOperand=-0.5}}">
+                            <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}">
+                                <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" Margin="{TemplateBinding Padding}">
+                                    <Menu ItemsSource="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PopupMenuButton}}, Path=MenuItems}">
+                                        <Menu.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel />
+                                            </ItemsPanelTemplate>
+                                        </Menu.ItemsPanel>
+                                    </Menu>
+                                </ScrollViewer>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

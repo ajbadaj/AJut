@@ -271,6 +271,11 @@
             w.Show();
         }
 
+        private void Test1_OnClick (object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show(((FrameworkElement)sender).DataContext.ToString());
+        }
+
         private void SynchFlatTreeListSelection_OnClick (object sender, RoutedEventArgs e)
         {
             var selection = new[] { c, g };

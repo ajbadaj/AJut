@@ -61,6 +61,9 @@
     <Compile Update="Controls\PathFollowingContentDisplayer.cs">
       <DependentUpon>PathFollowingContentDisplayer.xaml</DependentUpon>
     </Compile>
+    <Compile Update="Controls\PopupMenuButton.cs">
+      <DependentUpon>PopupMenuButton.xaml</DependentUpon>
+    </Compile>
 	  <Compile Update="Controls\PropertyGrid.cs">
       <DependentUpon>PropertyGrid.xaml</DependentUpon>
     </Compile>

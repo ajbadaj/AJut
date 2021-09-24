@@ -948,6 +948,12 @@
                     </StackPanel>
                 </Grid>
             </TabItem>
+            <TabItem Header="PopupMenuButton" DataContext="random text">
+                <ajut:PopupMenuButton ButtonContent="Click to open context menu" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="30" Width="500">
+                    <MenuItem Header="Test 1" Click="Test1_OnClick"/>
+                    <MenuItem Header="Test 2"/>
+                </ajut:PopupMenuButton>
+            </TabItem>
         </TabControl>
     </Grid>
 </Window>
