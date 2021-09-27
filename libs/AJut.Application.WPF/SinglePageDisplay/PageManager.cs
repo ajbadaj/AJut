@@ -21,6 +21,7 @@
             this.RootWindow = rootWindow;
         }
 
+        public event EventHandler NavigationIminent;
         public event EventHandler NavigationComplete;
         public event EventHandler DrawerOpenStatusChanged;
 
@@ -127,6 +128,8 @@
 
         private void ReplaceShownPage (PageAdapterModel newPage, object newState)
         {
+            this.NavigationIminent?.Invoke(this, EventArgs.Empty);
+
             this.ShownPage = newPage;
             this.CanGoBack = this.m_pageStack.Count >= 1;
             bool wasDrawerOpen = this.IsDrawerOpen;
