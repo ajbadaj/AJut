@@ -1,13 +1,14 @@
 ﻿namespace AJut.UnitTests.Core
 {
-    using AJut.Storage;
-    using AJut.Text.AJson;
-    using AJut.TypeManagement;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using AJut.OS.Windows;
+    using AJut.Storage;
+    using AJut.Text.AJson;
+    using AJut.TypeManagement;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class StratabaseTests
@@ -886,7 +887,7 @@
         [TestMethod]
         public void Stratabase_ReferenceLists_TreeTest ()
         {
-            Kernal32_Timer timer = new Kernal32_Timer();
+            var timer = new Kernal32.HighAccuracyStopwatch();
 
             /*      Root
              *      /|\
@@ -905,12 +906,12 @@
             R.Children.Add(C);
 
             B.Children.Add(D);
-            double setup = timer.Stop();
+            TimeSpan setup = timer.Stop();
 
             timer.Stop();
             Stratabase sb = new Stratabase(1);
             sb.SetBaselineFromPropertiesOf(R);
-            double sballocs = timer.Stop();
+            TimeSpan sballocs = timer.Stop();
 
             timer.Start();
             StrataTreeItem r = new StrataTreeItem(sb, R.Id);
@@ -918,7 +919,7 @@
             StrataTreeItem b = r.InsertItemIntoBaseline(1, B);
             StrataTreeItem c = r.Children[2];
             StrataTreeItem d = b.Children[0];
-            double reftree = timer.Stop();
+            TimeSpan reftree = timer.Stop();
 
 
             Assert.AreEqual(R.Name, r.Name);
