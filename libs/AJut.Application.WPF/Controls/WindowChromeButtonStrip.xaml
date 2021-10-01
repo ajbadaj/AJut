@@ -62,8 +62,8 @@
 
     <Style TargetType="{x:Type local:WindowChromeButtonStrip}">
         <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="ButtonPadding" Value="6"/>
-        <Setter Property="ButtonGlyphFontSize" Value="9"/>
+        <Setter Property="ButtonPadding" Value="12,6"/>
+        <Setter Property="ButtonGlyphFontSize" Value="10"/>
         <Setter Property="ButtonCornerRadius" Value="2"/>
 
         <Setter Property="ButtonGlyphForeground" Value="#444"/>

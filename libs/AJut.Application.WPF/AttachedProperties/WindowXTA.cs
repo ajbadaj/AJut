@@ -1,15 +1,13 @@
 namespace AJut.Application.AttachedProperties
 {
     using System;
-    using System.Runtime.CompilerServices;
-#if WINDOWS_UWP
-    using Windows.UI.Xaml;
-#else
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Input;
-#endif
 
+    /// <summary>
+    /// Extension attached properties for windows
+    /// </summary>
     public static class WindowXTA
     {
         private static readonly APUtilsRegistrationHelper APUtils = new APUtilsRegistrationHelper(typeof(WindowXTA));
@@ -24,13 +22,6 @@ namespace AJut.Application.AttachedProperties
         {
             SetIsFullscreen(window, !GetIsFullscreen(window));
         }
-        public static DependencyProperty AlterRootElementMarginWhenInFullscreenProperty = APUtils.Register(GetAlterRootElementMarginWhenInFullscreen, SetAlterRootElementMarginWhenInFullscreen, true);
-        public static bool GetAlterRootElementMarginWhenInFullscreen (DependencyObject obj) => (bool)obj.GetValue(AlterRootElementMarginWhenInFullscreenProperty);
-        public static void SetAlterRootElementMarginWhenInFullscreen (DependencyObject obj, bool value) => obj.SetValue(AlterRootElementMarginWhenInFullscreenProperty, value);
-
-        public static DependencyProperty FullscreenWindowPaddingProperty = APUtils.Register(GetFullscreenWindowPadding, SetFullscreenWindowPadding, new Thickness(7.0, 0.0, 7.0, 0.0));
-        public static Thickness GetFullscreenWindowPadding (DependencyObject obj) => (Thickness)obj.GetValue(FullscreenWindowPaddingProperty);
-        public static void SetFullscreenWindowPadding (DependencyObject obj, Thickness value) => obj.SetValue(FullscreenWindowPaddingProperty, value);
 
         private static void HandleIsFullscreenChanged (DependencyObject d, DependencyPropertyChangedEventArgs<bool> e)
         {
@@ -54,13 +45,10 @@ namespace AJut.Application.AttachedProperties
                 window.SetCurrentValue(Window.TopmostProperty, false);
                 window.SetCurrentValue(Window.TopmostProperty, true);
 
-                // Update the window's margin if it's a windowstyle none
-                if (window.WindowStyle == WindowStyle.None && GetAlterRootElementMarginWhenInFullscreen(window))
-                {
-                    tracker.SetRootMargin(GetFullscreenWindowPadding(window));
-                }
+                // Update the window's margin
+                tracker.SetRootMargin(GetFullscreenRootElementMargin(window));
+                tracker.SetRootBorderThickness(GetFullscreenRootElementBorderThickness(window));
 
-                //((FrameworkElement)window.Content).Margin = GetFullscreenRootOffsetMargin(window);
                 tracker.WatchForStateChangeAndExitFullscreen();
             }
             else
@@ -82,14 +70,10 @@ namespace AJut.Application.AttachedProperties
 
         #endregion // IsFullscreen
 
-
+        #region FixMaximizeAsFullscreenIssue
         public static DependencyProperty FixMaximizeAsFullscreenIssueProperty = APUtils.Register(GetFixMaximizeAsFullscreenIssue, SetFixMaximizeAsFullscreenIssue, HandleFixMaximizeAsFullscreenIssueChanged);
         public static bool GetFixMaximizeAsFullscreenIssue (DependencyObject obj) => (bool)obj.GetValue(FixMaximizeAsFullscreenIssueProperty);
         public static void SetFixMaximizeAsFullscreenIssue (DependencyObject obj, bool value) => obj.SetValue(FixMaximizeAsFullscreenIssueProperty, value);
-
-        public static DependencyProperty FixMaximizeRootMarginProperty = APUtils.Register(GetFixMaximizeRootMargin, SetFixMaximizeRootMargin);
-        public static Thickness GetFixMaximizeRootMargin (DependencyObject obj) => (Thickness)obj.GetValue(FixMaximizeRootMarginProperty);
-        public static void SetFixMaximizeRootMargin (DependencyObject obj, Thickness value) => obj.SetValue(FixMaximizeRootMarginProperty, value);
 
         private static DependencyPropertyKey WindowMaxFixerInspectorAttachmentPropertyKey = APUtils.RegisterReadOnly(GetWindowMaxFixerInspectorAttachment, SetWindowMaxFixerInspectorAttachment);
         public static DependencyProperty WindowMaxFixerInspectorAttachmentProperty = WindowMaxFixerInspectorAttachmentPropertyKey.DependencyProperty;
@@ -120,10 +104,30 @@ namespace AJut.Application.AttachedProperties
                 }
             }
         }
+        #endregion // Fix Maximize As Fullscreen
+
+        #region Root Element Helpers
+        public static DependencyProperty FullscreenRootElementMarginProperty = APUtils.Register(GetFullscreenRootElementMargin, SetFullscreenRootElementMargin, new Thickness(7));
+        public static Thickness GetFullscreenRootElementMargin (DependencyObject obj) => (Thickness)obj.GetValue(FullscreenRootElementMarginProperty);
+        public static void SetFullscreenRootElementMargin (DependencyObject obj, Thickness value) => obj.SetValue(FullscreenRootElementMarginProperty, value);
+
+        public static DependencyProperty MaximizedRootElementMarginProperty = APUtils.Register(GetMaximizedRootElementMargin, SetMaximizedRootElementMargin, new Thickness(8));
+        public static Thickness GetMaximizedRootElementMargin (DependencyObject obj) => (Thickness)obj.GetValue(MaximizedRootElementMarginProperty);
+        public static void SetMaximizedRootElementMargin (DependencyObject obj, Thickness value) => obj.SetValue(MaximizedRootElementMarginProperty, value);
+
+        public static DependencyProperty FullscreenRootElementBorderThicknessProperty = APUtils.Register(GetFullscreenRootElementBorderThickness, SetFullscreenRootElementBorderThickness, new Thickness(0.0));
+        public static Thickness GetFullscreenRootElementBorderThickness (DependencyObject obj) => (Thickness)obj.GetValue(FullscreenRootElementBorderThicknessProperty);
+        public static void SetFullscreenRootElementBorderThickness (DependencyObject obj, Thickness value) => obj.SetValue(FullscreenRootElementBorderThicknessProperty, value);
+
+        public static DependencyProperty MaximizedRootElementBorderThicknessProperty = APUtils.Register(GetMaximizedRootElementBorderThickness, SetMaximizedRootElementBorderThickness, new Thickness(0.0));
+        public static Thickness GetMaximizedRootElementBorderThickness (DependencyObject obj) => (Thickness)obj.GetValue(MaximizedRootElementBorderThicknessProperty);
+        public static void SetMaximizedRootElementBorderThickness (DependencyObject obj, Thickness value) => obj.SetValue(MaximizedRootElementBorderThicknessProperty, value);
+        #endregion
 
         private class WindowWatcher : IDisposable
         {
             private Thickness m_formerRootMargin;
+            private Thickness m_formerRootBorderThickness;
 
             public WindowWatcher (Window target)
             {
@@ -147,6 +151,10 @@ namespace AJut.Application.AttachedProperties
                 {
                     this.RootElement = target.GetFirstChildOf<FrameworkElement>();
                     m_formerRootMargin = this.RootElement?.Margin ?? new Thickness();
+                    if (this.RootElement is Border rootBorder)
+                    {
+                        m_formerRootBorderThickness = rootBorder.BorderThickness;
+                    }
                 }
             }
 
@@ -158,13 +166,15 @@ namespace AJut.Application.AttachedProperties
             protected virtual void Teardown()
             {
                 this.RevertRootMargin();
+                this.RevertRootBorderThickness();
                 this.RootElement = null;
                 this.Target = null;
             }
 
             public Window Target { get; private set; }
             public FrameworkElement RootElement { get; private set; }
-            public bool IsRootMarginAltered { get; private set; }
+            public bool IsRootMarginAltered { get; protected set; }
+            public bool IsRootBorderThicknessAltered { get; protected set; }
 
             public void SetRootMargin (Thickness margin)
             {
@@ -183,6 +193,25 @@ namespace AJut.Application.AttachedProperties
                     this.IsRootMarginAltered = false;
                 }
             }
+
+
+            public void SetRootBorderThickness (Thickness borderThickness)
+            {
+                if (this.RootElement is Border)
+                {
+                    this.RootElement.SetCurrentValue(Border.BorderThicknessProperty, borderThickness);
+                    this.IsRootBorderThicknessAltered = true;
+                }
+            }
+
+            public void RevertRootBorderThickness ()
+            {
+                if (this.IsRootBorderThicknessAltered)
+                {
+                    this.RootElement.SetCurrentValue(Border.BorderThicknessProperty, m_formerRootBorderThickness);
+                    this.IsRootBorderThicknessAltered = false;
+                }
+            }
         }
 
         private class FullscreenWatcher : WindowWatcher
@@ -196,18 +225,33 @@ namespace AJut.Application.AttachedProperties
 
             protected override void Teardown ()
             {
-                if (this.FormerWindowState == WindowState.Maximized)
+                this.Target.Closed -= OnTargetClosed;
+                this.Target.StateChanged -= OnTargetStateChanged;
+                if (this.FormerWindowState == WindowState.Maximized && this.Target.WindowState == WindowState.Normal && GetFixMaximizeAsFullscreenIssue(this.Target))
                 {
-                    this.Target.SetCurrentValue(Window.WindowStateProperty, WindowState.Normal);
-                    this.Target.SetCurrentValue(Window.WindowStateProperty, WindowState.Maximized);
+                    GetWindowMaxFixerInspectorAttachment(this.Target)?.RevertFromMaximize();
+                    this.IsRootBorderThicknessAltered = false;
+                    this.IsRootMarginAltered = false;
                 }
                 else
                 {
-                    this.Target.SetCurrentValue(Window.WindowStateProperty, this.FormerWindowState);
-                }
+                    this.Target.SetCurrentValue(Window.WindowStyleProperty, this.FormerWindowStyle);
+                    this.RevertRootMargin();
+                    this.RevertRootBorderThickness();
 
-                this.Target.SetCurrentValue(Window.WindowStyleProperty, this.FormerWindowStyle);
+                    if (this.FormerWindowState == WindowState.Maximized)
+                    {
+                        this.Target.SetCurrentValue(Window.WindowStateProperty, WindowState.Normal);
+                        this.Target.SetCurrentValue(Window.WindowStateProperty, WindowState.Maximized);
+                    }
+                    else
+                    {
+                        this.Target.SetCurrentValue(Window.WindowStateProperty, this.FormerWindowState);
+                    }
+                }
+                
                 this.Target.SetCurrentValue(Window.TopmostProperty, this.WasTopmost);
+
                 base.Teardown();
             }
 
@@ -217,80 +261,77 @@ namespace AJut.Application.AttachedProperties
 
             public void WatchForStateChangeAndExitFullscreen ()
             {
-                this.Target.StateChanged += _StateChanged;
-                this.Target.Closed += _Closed;
-                void _StateChanged (object sender, EventArgs e)
-                {
-                    this.Target.Closed -= _Closed;
-                    this.Target.StateChanged -= _StateChanged;
-                    SetIsFullscreen(this.Target, false);
-                }
-
-                void _Closed (object sender, EventArgs e)
-                {
-                    this.Target.Closed -= _Closed;
-                    this.Target.StateChanged -= _StateChanged;
-                }
+                this.Target.StateChanged += this.OnTargetStateChanged;
+                this.Target.Closed += this.OnTargetClosed;
             }
 
+            private void OnTargetStateChanged (object sender, EventArgs e)
+            {
+                this.Target.Closed -= OnTargetClosed;
+                this.Target.StateChanged -= OnTargetStateChanged;
+                SetIsFullscreen(this.Target, false);
+            }
+
+            private void OnTargetClosed (object sender, EventArgs e)
+            {
+                this.Target.Closed -= OnTargetClosed;
+                this.Target.StateChanged -= OnTargetStateChanged;
+            }
         }
 
         private class WindowMaximizeFixerTracker : WindowWatcher, IDisposable
         {
-            private double m_formerMaxWidth;
-            private double m_formerMaxHeight;
+            private WindowState m_lastWindowState;
+            private WindowStyle m_formerWindowStyle;
 
-            public WindowMaximizeFixerTracker(Window target) : base(target)
+            public WindowMaximizeFixerTracker (Window target) : base(target)
             {
-                m_formerMaxWidth = this.Target.MaxWidth;
-                m_formerMaxHeight = this.Target.MaxHeight;
                 this.Target.StateChanged += this.OnTargetStateChanged;
             }
 
             protected override void Teardown ()
             {
-                this.Target.SetCurrentValue(FrameworkElement.MaxWidthProperty, m_formerMaxWidth);
-                this.Target.SetCurrentValue(FrameworkElement.MaxHeightProperty, m_formerMaxHeight);
-
                 this.Target.StateChanged -= this.OnTargetStateChanged;
                 base.Teardown();
             }
 
             private void OnTargetStateChanged (object sender, EventArgs e)
             {
-                if (this.Target.WindowState == WindowState.Maximized && !GetIsFullscreen(this.Target))
+                var last = m_lastWindowState;
+                m_lastWindowState = this.Target.WindowState;
+                if (last == WindowState.Minimized)
                 {
-                    Window sizingHelper = new Window
-                    {
-                        Owner = this.Target.Owner ?? this.Target,
-                        Left = this.Target.Left,
-                        Top = this.Target.Top,
-                        Width = this.Target.Width,
-                        Height = this.Target.Height,
-                    };
+                    return;
+                }
 
-                    sizingHelper.Show();
+                // If we're dealing with fullscreen, then we don't care
+                if (GetFullscreenInspectorAttachment(this.Target) != null)
+                {
+                    return;
+                }
 
-                    try
-                    {
-                        sizingHelper.WindowState = WindowState.Maximized;
+                if (this.Target.WindowState == WindowState.Maximized)
+                {
+                    m_formerWindowStyle = this.Target.WindowStyle;
+                    this.Target.SetCurrentValue(Window.WindowStyleProperty, WindowStyle.SingleBorderWindow);
 
-                        Thickness newRootMargin = GetFixMaximizeRootMargin(this.Target);
-                        this.RootElement.SetCurrentValue(FrameworkElement.MarginProperty, newRootMargin);
-                        this.Target.SetCurrentValue(FrameworkElement.MaxWidthProperty, sizingHelper.Width - (newRootMargin.Left + newRootMargin.Right));
-                        this.Target.SetCurrentValue(FrameworkElement.MaxHeightProperty, sizingHelper.Height - (newRootMargin.Top + newRootMargin.Bottom));
-                    }
-                    finally
+                    if (this.RootElement != null)
                     {
-                        sizingHelper.Close();
+                        this.SetRootMargin(GetMaximizedRootElementMargin(this.Target));
+                        this.SetRootBorderThickness(GetMaximizedRootElementBorderThickness(this.Target));
                     }
                 }
                 else if (this.Target.WindowState == WindowState.Normal)
                 {
-                    this.RevertRootMargin();
-                    this.Target.SetCurrentValue(FrameworkElement.MaxWidthProperty, m_formerMaxWidth);
-                    this.Target.SetCurrentValue(FrameworkElement.MaxHeightProperty, m_formerMaxHeight);
+                    this.RevertFromMaximize();
                 }
+            }
+
+            public void RevertFromMaximize()
+            {
+                this.Target.SetCurrentValue(Window.WindowStyleProperty, m_formerWindowStyle);
+                this.RevertRootBorderThickness();
+                this.RevertRootMargin();
             }
         }
     }
