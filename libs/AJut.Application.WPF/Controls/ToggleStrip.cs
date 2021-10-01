@@ -3,27 +3,16 @@
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Collections.Specialized;
     using System.Linq;
-
-#if WINDOWS_UWP
-    using Windows.UI;
-    using Windows.UI.Xaml;
-    using Windows.UI.Xaml.Controls;
-    using Windows.UI.Xaml.Media;
-#else
     using System.Windows;
-    using System.Windows.Media;
     using System.Windows.Controls;
-#endif
-
-    using AJut.Application.Converters;
-
-    using DPUtils = DPUtils<ToggleStrip>;
     using System.Windows.Data;
-    using AJut.Storage;
-    using System.Collections.ObjectModel;
+    using System.Windows.Media;
     using AJut.Application.AttachedProperties;
+    using AJut.Application.Converters;
+    using DPUtils = DPUtils<ToggleStrip>;
 
     public class ToggleStrip : Control
     {
@@ -73,7 +62,7 @@
             this.SetBinding(SeparatorBrushProperty, this.CreateBinding(BorderBrushProperty, BindingMode.OneWay));
             this.Items = new ToggleItemsCollection(this);
             this.Items.CollectionChanged += _OnItemsCollectionChanged;
-            
+
             void _OnItemsCollectionChanged (object _s, EventArgs _e)
             {
                 this.HasItems = this.Items.Count > 0;
@@ -182,13 +171,7 @@
         public ToggleItemsCollection Items
         {
             get => (ToggleItemsCollection)this.GetValue(ItemsProperty);
-            private set => this.SetValue(
-#if WINDOWS_UWP
-                ItemsProperty
-#else
-                ItemsPropertyKey
-#endif
-                , value);
+            private set => this.SetValue(ItemsPropertyKey, value);
         }
 
         // ================== [ Private Utility Functions ]================================
@@ -585,7 +568,7 @@
 
             return new CornerRadius(0);
 
-            double _Reduce(double _v)
+            double _Reduce (double _v)
             {
                 return Math.Max(0.0, _v * (1.0 - this.ReductionPercent));
             }
@@ -639,7 +622,7 @@
 
             // Center
             return new Thickness(
-                0, 
+                0,
                 this.Inside ? 0 : value.Owner.BorderThickness.Top,
                 this.Inside ? value.Owner.SeparatorThickness : 0,
                 this.Inside ? 0 : value.Owner.BorderThickness.Bottom

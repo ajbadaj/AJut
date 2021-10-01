@@ -1,19 +1,11 @@
 namespace AJut.Application.Controls
 {
     using System;
-#if WINDOWS_UWP
-    using Windows.UI;
-    using Windows.UI.Xaml;
-    using Windows.UI.Xaml.Controls;
-    using Windows.UI.Xaml.Media;
-#else
     using System.Windows;
     using System.Windows.Controls;
-#endif
-
-    using DPUtils = DPUtils<EditableTextBlock>;
     using System.Windows.Input;
     using System.Windows.Threading;
+    using DPUtils = DPUtils<EditableTextBlock>;
 
     public enum eEditTextInitializationBehavior
     {
@@ -52,7 +44,7 @@ namespace AJut.Application.Controls
         }
 
         // ===================[ Dependency Properties ]==========================
-        public static readonly DependencyProperty IsEditingProperty = DPUtils.Register(_ => _.IsEditing, (d,e)=>d.OnIsEditingChanged());
+        public static readonly DependencyProperty IsEditingProperty = DPUtils.Register(_ => _.IsEditing, (d, e) => d.OnIsEditingChanged());
         public bool IsEditing
         {
             get => (bool)this.GetValue(IsEditingProperty);
@@ -67,11 +59,7 @@ namespace AJut.Application.Controls
             protected set => this.SetValue(IsEmptyPropertyKey, value);
         }
 
-#if WINDOWS_UWP
-        public static readonly DependencyProperty TextProperty = DPUtils.Register(_ => _.Text, (d,e)=>d.IsEmpty = String.IsNullOrEmpty(e.NewValue));
-#else
         public static readonly DependencyProperty TextProperty = DPUtils.RegisterFP(_ => _.Text, (d, e) => d.IsEmpty = String.IsNullOrEmpty(e.NewValue), FrameworkPropertyMetadataOptions.BindsTwoWayByDefault);
-#endif
         public string Text
         {
             get => (string)this.GetValue(TextProperty);

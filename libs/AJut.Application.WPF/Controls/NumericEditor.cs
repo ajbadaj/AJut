@@ -2,22 +2,13 @@
 {
     using System;
     using System.Collections.Generic;
-
-#if WINDOWS_UWP
-    using Windows.UI;
-    using Windows.UI.Xaml;
-    using Windows.UI.Xaml.Controls;
-    using Windows.UI.Xaml.Media;
-#else
     using System.Windows;
     using System.Windows.Controls;
-#endif
-
-    using DPUtils = DPUtils<NumericEditor>;
-    using AJut;
-    using System.Windows.Input;
     using System.Windows.Data;
+    using System.Windows.Input;
     using System.Windows.Media;
+    using AJut;
+    using DPUtils = DPUtils<NumericEditor>;
 
     // Todo: Make drag repeater, click and hold w/o moving starts spamming Triggered, or mouse move will capture while mouse is down and trigger Triggered on mouse move
     [TemplatePart(Name = nameof(PART_TextArea), Type = typeof(TextBox))]
@@ -80,7 +71,7 @@
             }
         }
 
-        static NumericEditor()
+        static NumericEditor ()
         {
             DefaultStyleKeyProperty.OverrideMetadata(typeof(NumericEditor), new FrameworkPropertyMetadata(typeof(NumericEditor)));
         }
@@ -119,7 +110,7 @@
         public static RoutedCommand NudgeDecrease = new RoutedCommand(nameof(NudgeDecrease), typeof(NumericEditor));
 
         // ===========================[ Dependency Properties ]===================================
-        public static readonly DependencyProperty ValueProperty = DPUtils.RegisterFP(_ => _.Value, 0.0f, (d,e)=>d.OnValueChanged(e.NewValue), FrameworkPropertyMetadataOptions.BindsTwoWayByDefault);
+        public static readonly DependencyProperty ValueProperty = DPUtils.RegisterFP(_ => _.Value, 0.0f, (d, e) => d.OnValueChanged(e.NewValue), FrameworkPropertyMetadataOptions.BindsTwoWayByDefault);
         public object Value
         {
             get => (object)this.GetValue(ValueProperty);
@@ -133,7 +124,7 @@
             set => this.SetValue(IsReadOnlyProperty, value);
         }
 
-        private static readonly DependencyPropertyKey DisplayValuePropertyKey = DPUtils.RegisterReadOnly(_ => _.DisplayValue, (d,e)=>d.OnDisplayValueSet(e.OldValue, e.NewValue));
+        private static readonly DependencyPropertyKey DisplayValuePropertyKey = DPUtils.RegisterReadOnly(_ => _.DisplayValue, (d, e) => d.OnDisplayValueSet(e.OldValue, e.NewValue));
         public static readonly DependencyProperty DisplayValueProperty = DisplayValuePropertyKey.DependencyProperty;
         public TextEditNumberViewModel DisplayValue
         {
@@ -155,7 +146,7 @@
             set => this.SetValue(MinimumProperty, value);
         }
 
-        public static readonly DependencyProperty MaximumProperty = DPUtils.Register(_ => _.Maximum, 1000.0, (d,e)=>d.OnCapChanged());
+        public static readonly DependencyProperty MaximumProperty = DPUtils.Register(_ => _.Maximum, 1000.0, (d, e) => d.OnCapChanged());
         public double Maximum
         {
             get => (double)this.GetValue(MaximumProperty);
@@ -322,7 +313,7 @@
                 m_blockValueChangeReentrancy = false;
             }
 
-            void _ForceCapMinMax<T>(T _typedMin, T _typedMax)
+            void _ForceCapMinMax<T> (T _typedMin, T _typedMax)
             {
                 var _doubleMin = (double)Convert.ChangeType(_typedMin, typeof(double));
                 if (this.Minimum < _doubleMin)
@@ -357,9 +348,9 @@
                 {
                     this.SetCurrentValue(ValueProperty, _e.Value);
                 }
-                finally 
+                finally
                 {
-                    m_blockValueChangeReentrancy = false; 
+                    m_blockValueChangeReentrancy = false;
                 }
             }
         }

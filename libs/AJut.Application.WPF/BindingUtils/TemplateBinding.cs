@@ -1,16 +1,11 @@
 ﻿namespace AJut.Application
 {
-#if WINDOWS_UWP
-    using Windows.UI.Xaml;
-    using Windows.UI.Xaml.Data;
-#else
     using System.Windows;
     using System.Windows.Data;
-#endif
 
     public class TemplateBinding : Binding
     {
-        public TemplateBinding()
+        public TemplateBinding ()
         {
             this.RelativeSource = new RelativeSource
             {
@@ -18,7 +13,7 @@
             };
         }
 
-        public TemplateBinding(string path) : this()
+        public TemplateBinding (string path) : this()
         {
             this.Path = new PropertyPath(path);
         }

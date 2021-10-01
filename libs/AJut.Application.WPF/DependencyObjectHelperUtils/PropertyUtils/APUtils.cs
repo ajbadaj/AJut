@@ -3,11 +3,7 @@
     using System;
     using System.Diagnostics;
     using System.Reflection;
-#if WINDOWS_UWP
-    using Windows.UI.Xaml;
-#else
     using System.Windows;
-#endif
 
     public static class APUtils<TOwner>
     {
@@ -69,7 +65,6 @@
             return Register(getter, setter, new PropertyMetadata(defaultValue, DownCast(propChanged)));
         }
 
-#if !WINDOWS_UWP // Note: UWP does NOT support coercion (no FrameworkPropertyMetadata), very honest of it I suppose...
         /// <summary>
         /// Registers an attached property with the dependency property system.
         /// </summary>
@@ -84,7 +79,6 @@
         {
             return Register(getter, setter, new FrameworkPropertyMetadata(defaultValue, DownCast(propChanged), coerceValue));
         }
-#endif
 
         /// <summary>
         /// Registers an attached property with the dependency property system.
@@ -114,8 +108,6 @@
         // ==============================================================================================================
         // ====             Registering *Readonly* Attached Properties                                              =====
         // ==============================================================================================================
-
-#if !WINDOWS_UWP // Note: UWP does not support readonly dependency properties (for some reason?)
 
         /// <summary>
         /// Registers a readonly attached property with the dependency property system.
@@ -188,7 +180,7 @@
 
             return DependencyProperty.RegisterAttachedReadOnly(name, typeof(TProperty), typeof(TOwner), metadata);
         }
-#endif
+
         /// <summary>
         /// Represents the callback that is invoked when the effective property value
         /// of a dependency property changes.
@@ -224,7 +216,7 @@
     public class APUtilsRegistrationHelper
     {
         Type m_targetType;
-        public APUtilsRegistrationHelper(Type t)
+        public APUtilsRegistrationHelper (Type t)
         {
             m_targetType = t;
         }
@@ -241,7 +233,7 @@
         /// <param name="getter">The attached property's getter (verified for required verbiage and type).</param>
         /// <param name="setter">The attached property's setter (verified for required verbiage and type).</param>
         /// <returns>The <see cref="DependencyProperty"/> that was registered for this attached property.</returns>
-        public DependencyProperty Register<TProperty>(StaticAPUtils.GetterFunc<TProperty> getter, StaticAPUtils.SetterFunc<TProperty> setter)
+        public DependencyProperty Register<TProperty> (StaticAPUtils.GetterFunc<TProperty> getter, StaticAPUtils.SetterFunc<TProperty> setter)
         {
             return Register(getter, setter, new PropertyMetadata(default(TProperty)));
         }
@@ -254,7 +246,7 @@
         /// <param name="setter">The attached property's setter (verified for required verbiage and type).</param>
         /// <param name="defaultValue">The default value for the attached property.</param>
         /// <returns>The <see cref="DependencyProperty"/> that was registered for this attached property.</returns>
-        public DependencyProperty Register<TProperty>(StaticAPUtils.GetterFunc<TProperty> getter, StaticAPUtils.SetterFunc<TProperty> setter, TProperty defaultValue)
+        public DependencyProperty Register<TProperty> (StaticAPUtils.GetterFunc<TProperty> getter, StaticAPUtils.SetterFunc<TProperty> setter, TProperty defaultValue)
         {
             return Register(getter, setter, new PropertyMetadata(defaultValue));
         }
@@ -268,7 +260,7 @@
         /// <param name="setter">The attached property's setter (verified for required verbiage and type).</param>
         /// <param name="propChanged">The property changed callback delegate.</param>
         /// <returns>The <see cref="DependencyProperty"/> that was registered for this attached property.</returns>
-        public DependencyProperty Register<TProperty>(StaticAPUtils.GetterFunc<TProperty> getter, StaticAPUtils.SetterFunc<TProperty> setter, CastedPropertyChangedCallback<TProperty> propChanged)
+        public DependencyProperty Register<TProperty> (StaticAPUtils.GetterFunc<TProperty> getter, StaticAPUtils.SetterFunc<TProperty> setter, CastedPropertyChangedCallback<TProperty> propChanged)
         {
             return Register(getter, setter, new PropertyMetadata(default(TProperty), DownCast(propChanged)));
         }
@@ -282,12 +274,11 @@
         /// <param name="defaultValue">The default value for the attached property.</param>
         /// <param name="propChanged">The property changed callback delegate.</param>
         /// <returns>The <see cref="DependencyProperty"/> that was registered for this attached property.</returns>
-        public DependencyProperty Register<TProperty>(StaticAPUtils.GetterFunc<TProperty> getter, StaticAPUtils.SetterFunc<TProperty> setter, TProperty defaultValue, CastedPropertyChangedCallback<TProperty> propChanged)
+        public DependencyProperty Register<TProperty> (StaticAPUtils.GetterFunc<TProperty> getter, StaticAPUtils.SetterFunc<TProperty> setter, TProperty defaultValue, CastedPropertyChangedCallback<TProperty> propChanged)
         {
             return Register(getter, setter, new PropertyMetadata(defaultValue, DownCast(propChanged)));
         }
 
-#if !WINDOWS_UWP // Note: UWP does NOT support coercion (no FrameworkPropertyMetadata), very honest of it I suppose...
         /// <summary>
         /// Registers an attached property with the dependency property system.
         /// </summary>
@@ -298,11 +289,10 @@
         /// <param name="propChanged">The property changed callback delegate.</param>
         /// <param name="coerceValue">The coerce value callback delegate.</param>
         /// <returns>The <see cref="DependencyProperty" /> that was registered for this attached property.</returns>
-        public DependencyProperty Register<TProperty>(StaticAPUtils.GetterFunc<TProperty> getter, StaticAPUtils.SetterFunc<TProperty> setter, TProperty defaultValue, CastedPropertyChangedCallback<TProperty> propChanged, CoerceValueCallback coerceValue)
+        public DependencyProperty Register<TProperty> (StaticAPUtils.GetterFunc<TProperty> getter, StaticAPUtils.SetterFunc<TProperty> setter, TProperty defaultValue, CastedPropertyChangedCallback<TProperty> propChanged, CoerceValueCallback coerceValue)
         {
             return Register(getter, setter, new FrameworkPropertyMetadata(defaultValue, DownCast(propChanged), coerceValue));
         }
-#endif
 
         /// <summary>
         /// Registers an attached property with the dependency property system.
@@ -319,7 +309,7 @@
         /// or
         /// APUtils::Register - Attached properties require a getter and setter formatted Get{name}/Set{name} where the names match.
         /// </exception>
-        public DependencyProperty Register<TProperty>(StaticAPUtils.GetterFunc<TProperty> getter, StaticAPUtils.SetterFunc<TProperty> setter, PropertyMetadata metadata)
+        public DependencyProperty Register<TProperty> (StaticAPUtils.GetterFunc<TProperty> getter, StaticAPUtils.SetterFunc<TProperty> setter, PropertyMetadata metadata)
         {
             StaticAPUtils.ValidateAccessors(getter, setter);
 
@@ -333,8 +323,6 @@
         // ====             Registering *Readonly* Attached Properties                                              =====
         // ==============================================================================================================
 
-#if !WINDOWS_UWP // Note: UWP does not support readonly dependency properties (for some reason?)
-
         /// <summary>
         /// Registers a readonly attached property with the dependency property system.
         /// Note the default value for this attached property will be default(<see cref="TProperty"/>)
@@ -343,7 +331,7 @@
         /// <param name="getter">The attached property's getter (verified for required verbiage and type).</param>
         /// <param name="setter">The attached property's setter (verified for required verbiage and type).</param>
         /// <returns>The <see cref="DependencyProperty"/> that was registered for this attached property.</returns>
-        public DependencyPropertyKey RegisterReadOnly<TProperty>(StaticAPUtils.GetterFunc<TProperty> getter, StaticAPUtils.SetterFunc<TProperty> setter)
+        public DependencyPropertyKey RegisterReadOnly<TProperty> (StaticAPUtils.GetterFunc<TProperty> getter, StaticAPUtils.SetterFunc<TProperty> setter)
         {
             return RegisterReadOnly(getter, setter, new FrameworkPropertyMetadata(default(TProperty)));
         }
@@ -356,7 +344,7 @@
         /// <param name="setter">The attached property's setter (verified for required verbiage and type).</param>
         /// <param name="defaultValue">The default value for the attached property.</param>
         /// <returns>The <see cref="DependencyProperty"/> that was registered for this attached property.</returns>
-        public DependencyPropertyKey RegisterReadOnly<TProperty>(StaticAPUtils.GetterFunc<TProperty> getter, StaticAPUtils.SetterFunc<TProperty> setter, TProperty defaultValue)
+        public DependencyPropertyKey RegisterReadOnly<TProperty> (StaticAPUtils.GetterFunc<TProperty> getter, StaticAPUtils.SetterFunc<TProperty> setter, TProperty defaultValue)
         {
             return RegisterReadOnly(getter, setter, new FrameworkPropertyMetadata(defaultValue));
         }
@@ -370,7 +358,7 @@
         /// <param name="setter">The attached property's setter (verified for required verbiage and type).</param>
         /// <param name="propChanged">The property changed callback delegate.</param>
         /// <returns>The <see cref="DependencyProperty"/> that was registered for this attached property.</returns>
-        public DependencyPropertyKey RegisterReadOnly<TProperty>(StaticAPUtils.GetterFunc<TProperty> getter, StaticAPUtils.SetterFunc<TProperty> setter, CastedPropertyChangedCallback<TProperty> propChanged)
+        public DependencyPropertyKey RegisterReadOnly<TProperty> (StaticAPUtils.GetterFunc<TProperty> getter, StaticAPUtils.SetterFunc<TProperty> setter, CastedPropertyChangedCallback<TProperty> propChanged)
         {
             return RegisterReadOnly(getter, setter, new FrameworkPropertyMetadata(default(TProperty), DownCast(propChanged)));
         }
@@ -384,7 +372,7 @@
         /// <param name="defaultValue">The default value for the attached property.</param>
         /// <param name="propChanged">The property changed callback delegate.</param>
         /// <returns>The <see cref="DependencyProperty"/> that was registered for this attached property.</returns>
-        public DependencyPropertyKey RegisterReadOnly<TProperty>(StaticAPUtils.GetterFunc<TProperty> getter, StaticAPUtils.SetterFunc<TProperty> setter, TProperty defaultValue, CastedPropertyChangedCallback<TProperty> propChanged)
+        public DependencyPropertyKey RegisterReadOnly<TProperty> (StaticAPUtils.GetterFunc<TProperty> getter, StaticAPUtils.SetterFunc<TProperty> setter, TProperty defaultValue, CastedPropertyChangedCallback<TProperty> propChanged)
         {
             return RegisterReadOnly(getter, setter, new FrameworkPropertyMetadata(defaultValue, DownCast(propChanged)));
         }
@@ -397,7 +385,7 @@
         /// <param name="setter">The attached property's setter (verified for required verbiage and type).</param>
         /// <param name="metadata">The property metadata to register for this attached property with the dependency property system.</param>
         /// <returns>The <see cref="DependencyProperty"/> that was registered for this attached property.</returns>
-        public DependencyPropertyKey RegisterReadOnly<TProperty>(StaticAPUtils.GetterFunc<TProperty> getter, StaticAPUtils.SetterFunc<TProperty> setter, PropertyMetadata metadata)
+        public DependencyPropertyKey RegisterReadOnly<TProperty> (StaticAPUtils.GetterFunc<TProperty> getter, StaticAPUtils.SetterFunc<TProperty> setter, PropertyMetadata metadata)
         {
             StaticAPUtils.ValidateAccessors(getter, setter);
 
@@ -406,7 +394,7 @@
 
             return DependencyProperty.RegisterAttachedReadOnly(name, typeof(TProperty), m_targetType, metadata);
         }
-#endif
+
         /// <summary>
         /// Represents the callback that is invoked when the effective property value
         /// of a dependency property changes.
@@ -441,7 +429,7 @@
         /// <typeparam name="TProperty">The type of the attached property (inferred).</typeparam>
         /// <param name="obj">The <see cref="DependencyObject"/> to get the attached property value from.</param>
         /// <returns>The attached property value.</returns>
-        public delegate TProperty GetterFunc<out TProperty>(DependencyObject obj);
+        public delegate TProperty GetterFunc<out TProperty> (DependencyObject obj);
 
         /// <summary>
         /// The delegate used to specify a setter for an attached property.
@@ -449,7 +437,7 @@
         /// <typeparam name="TProperty">The type of the attached property (inferred).</typeparam>
         /// <param name="obj">The <see cref="DependencyObject"/> to set the attached property value on.</param>
         /// <param name="propType">The new attached property value.</param>
-        public delegate void SetterFunc<in TProperty>(DependencyObject obj, TProperty propType);
+        public delegate void SetterFunc<in TProperty> (DependencyObject obj, TProperty propType);
 
         // ==============================================================================================================
         // ====             Registering Regular Attached Properties                                                 =====
@@ -464,7 +452,7 @@
         /// <param name="getter">The attached property's getter (verified for required verbiage and type).</param>
         /// <param name="setter">The attached property's setter (verified for required verbiage and type).</param>
         /// <returns>The <see cref="DependencyProperty"/> that was registered for this attached property.</returns>
-        public static DependencyProperty Register<TProperty>(Type ownerType, GetterFunc<TProperty> getter, SetterFunc<TProperty> setter)
+        public static DependencyProperty Register<TProperty> (Type ownerType, GetterFunc<TProperty> getter, SetterFunc<TProperty> setter)
         {
             return Register(ownerType, getter, setter, new PropertyMetadata(default(TProperty)));
         }
@@ -478,7 +466,7 @@
         /// <param name="setter">The attached property's setter (verified for required verbiage and type).</param>
         /// <param name="defaultValue">The default value for the attached property.</param>
         /// <returns>The <see cref="DependencyProperty"/> that was registered for this attached property.</returns>
-        public static DependencyProperty Register<TProperty>(Type ownerType, GetterFunc<TProperty> getter, SetterFunc<TProperty> setter, TProperty defaultValue)
+        public static DependencyProperty Register<TProperty> (Type ownerType, GetterFunc<TProperty> getter, SetterFunc<TProperty> setter, TProperty defaultValue)
         {
             return Register(ownerType, getter, setter, new PropertyMetadata(defaultValue));
         }
@@ -493,7 +481,7 @@
         /// <param name="setter">The attached property's setter (verified for required verbiage and type).</param>
         /// <param name="propChanged">The property changed callback delegate.</param>
         /// <returns>The <see cref="DependencyProperty"/> that was registered for this attached property.</returns>
-        public static DependencyProperty Register<TProperty>(Type ownerType, GetterFunc<TProperty> getter, SetterFunc<TProperty> setter, PropertyChangedCallback propChanged)
+        public static DependencyProperty Register<TProperty> (Type ownerType, GetterFunc<TProperty> getter, SetterFunc<TProperty> setter, PropertyChangedCallback propChanged)
         {
             return Register(ownerType, getter, setter, new PropertyMetadata(default(TProperty), propChanged));
         }
@@ -508,12 +496,11 @@
         /// <param name="defaultValue">The default value for the attached property.</param>
         /// <param name="propChanged">The property changed callback delegate.</param>
         /// <returns>The <see cref="DependencyProperty"/> that was registered for this attached property.</returns>
-        public static DependencyProperty Register<TProperty>(Type ownerType, GetterFunc<TProperty> getter, SetterFunc<TProperty> setter, TProperty defaultValue, PropertyChangedCallback propChanged)
+        public static DependencyProperty Register<TProperty> (Type ownerType, GetterFunc<TProperty> getter, SetterFunc<TProperty> setter, TProperty defaultValue, PropertyChangedCallback propChanged)
         {
             return Register(ownerType, getter, setter, new PropertyMetadata(defaultValue, propChanged));
         }
 
-#if !WINDOWS_UWP // Note: UWP does NOT support coercion (no FrameworkPropertyMetadata), very honest of it I suppose...
         /// <summary>
         /// Registers an attached property with the dependency property system.
         /// </summary>
@@ -525,11 +512,10 @@
         /// <param name="propChanged">The property changed callback delegate.</param>
         /// <param name="coerceValue">The coerce value callback delegate.</param>
         /// <returns>The <see cref="DependencyProperty" /> that was registered for this attached property.</returns>
-        public static DependencyProperty Register<TProperty>(Type ownerType, GetterFunc<TProperty> getter, SetterFunc<TProperty> setter, TProperty defaultValue, PropertyChangedCallback propChanged, CoerceValueCallback coerceValue)
+        public static DependencyProperty Register<TProperty> (Type ownerType, GetterFunc<TProperty> getter, SetterFunc<TProperty> setter, TProperty defaultValue, PropertyChangedCallback propChanged, CoerceValueCallback coerceValue)
         {
             return Register(ownerType, getter, setter, new FrameworkPropertyMetadata(defaultValue, propChanged, coerceValue));
         }
-#endif
 
         /// <summary>
         /// Registers an attached property with the dependency property system.
@@ -547,7 +533,7 @@
         /// or
         /// APUtils::Register - Attached properties require a getter and setter formatted Get{name}/Set{name} where the names match.
         /// </exception>
-        public static DependencyProperty Register<TProperty>(Type ownerType, GetterFunc<TProperty> getter, SetterFunc<TProperty> setter, PropertyMetadata metadata)
+        public static DependencyProperty Register<TProperty> (Type ownerType, GetterFunc<TProperty> getter, SetterFunc<TProperty> setter, PropertyMetadata metadata)
         {
             ValidateAccessors(getter, setter);
 
@@ -561,8 +547,6 @@
         // ====             Registering *Readonly* Attached Properties                                              =====
         // ==============================================================================================================
 
-#if !WINDOWS_UWP // Note: UWP does not support readonly dependency properties (for some reason?)
-
         /// <summary>
         /// Registers a readonly attached property with the dependency property system.
         /// Note the default value for this attached property will be default(<see cref="TProperty"/>)
@@ -572,7 +556,7 @@
         /// <param name="getter">The attached property's getter (verified for required verbiage and type).</param>
         /// <param name="setter">The attached property's setter (verified for required verbiage and type).</param>
         /// <returns>The <see cref="DependencyProperty"/> that was registered for this attached property.</returns>
-        public static DependencyPropertyKey RegisterReadOnly<TProperty>(Type ownerType, GetterFunc<TProperty> getter, SetterFunc<TProperty> setter)
+        public static DependencyPropertyKey RegisterReadOnly<TProperty> (Type ownerType, GetterFunc<TProperty> getter, SetterFunc<TProperty> setter)
         {
             return RegisterReadOnly(ownerType, getter, setter, new FrameworkPropertyMetadata(default(TProperty)));
         }
@@ -586,7 +570,7 @@
         /// <param name="setter">The attached property's setter (verified for required verbiage and type).</param>
         /// <param name="defaultValue">The default value for the attached property.</param>
         /// <returns>The <see cref="DependencyProperty"/> that was registered for this attached property.</returns>
-        public static DependencyPropertyKey RegisterReadOnly<TProperty>(Type ownerType, GetterFunc<TProperty> getter, SetterFunc<TProperty> setter, TProperty defaultValue)
+        public static DependencyPropertyKey RegisterReadOnly<TProperty> (Type ownerType, GetterFunc<TProperty> getter, SetterFunc<TProperty> setter, TProperty defaultValue)
         {
             return RegisterReadOnly(ownerType, getter, setter, new FrameworkPropertyMetadata(defaultValue));
         }
@@ -601,7 +585,7 @@
         /// <param name="setter">The attached property's setter (verified for required verbiage and type).</param>
         /// <param name="propChanged">The property changed callback delegate.</param>
         /// <returns>The <see cref="DependencyProperty"/> that was registered for this attached property.</returns>
-        public static DependencyPropertyKey RegisterReadOnly<TProperty>(Type ownerType, GetterFunc<TProperty> getter, SetterFunc<TProperty> setter, PropertyChangedCallback propChanged)
+        public static DependencyPropertyKey RegisterReadOnly<TProperty> (Type ownerType, GetterFunc<TProperty> getter, SetterFunc<TProperty> setter, PropertyChangedCallback propChanged)
         {
             return RegisterReadOnly(ownerType, getter, setter, new FrameworkPropertyMetadata(default(TProperty), propChanged));
         }
@@ -616,7 +600,7 @@
         /// <param name="defaultValue">The default value for the attached property.</param>
         /// <param name="propChanged">The property changed callback delegate.</param>
         /// <returns>The <see cref="DependencyProperty"/> that was registered for this attached property.</returns>
-        public static DependencyPropertyKey RegisterReadOnly<TProperty>(Type ownerType, GetterFunc<TProperty> getter, SetterFunc<TProperty> setter, TProperty defaultValue, PropertyChangedCallback propChanged)
+        public static DependencyPropertyKey RegisterReadOnly<TProperty> (Type ownerType, GetterFunc<TProperty> getter, SetterFunc<TProperty> setter, TProperty defaultValue, PropertyChangedCallback propChanged)
         {
             return RegisterReadOnly(ownerType, getter, setter, new FrameworkPropertyMetadata(defaultValue, propChanged));
         }
@@ -630,7 +614,7 @@
         /// <param name="setter">The attached property's setter (verified for required verbiage and type).</param>
         /// <param name="metadata">The property metadata to register for this attached property with the dependency property system.</param>
         /// <returns>The <see cref="DependencyProperty"/> that was registered for this attached property.</returns>
-        public static DependencyPropertyKey RegisterReadOnly<TProperty>(Type ownerType, GetterFunc<TProperty> getter, SetterFunc<TProperty> setter, PropertyMetadata metadata)
+        public static DependencyPropertyKey RegisterReadOnly<TProperty> (Type ownerType, GetterFunc<TProperty> getter, SetterFunc<TProperty> setter, PropertyMetadata metadata)
         {
             ValidateAccessors(getter, setter);
 
@@ -639,8 +623,7 @@
 
             return DependencyProperty.RegisterAttachedReadOnly(name, typeof(TProperty), ownerType, metadata);
         }
-#endif
-        
+
         /// <summary>
         /// Validates the getter and setter functions for a particular attached property (Debug Only).
         /// </summary>
@@ -659,7 +642,7 @@
         /// APUtils::Register -- Attached properties require a getter and setter formatted Get{name}/Set{name} where the names match.
         /// </exception>
         [Conditional("DEBUG")]
-        public static void ValidateAccessors<TProperty>(GetterFunc<TProperty> getter, SetterFunc<TProperty> setter)
+        public static void ValidateAccessors<TProperty> (GetterFunc<TProperty> getter, SetterFunc<TProperty> setter)
         {
             if (getter == null)
             {

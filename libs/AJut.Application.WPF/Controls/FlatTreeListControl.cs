@@ -5,18 +5,9 @@ namespace AJut.Application.Controls
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
     using System.Linq;
-
-#if WINDOWS_UWP
-    using Windows.UI;
-    using Windows.UI.Xaml;
-    using Windows.UI.Xaml.Controls;
-    using Windows.UI.Xaml.Media;
-#else
     using System.Windows;
-    using System.Windows.Media;
     using System.Windows.Controls;
-#endif
-
+    using System.Windows.Media;
     using AJut;
     using AJut.Storage;
     using AJut.Tree;
@@ -37,7 +28,7 @@ namespace AJut.Application.Controls
     /// is that nodes (and therefore the tree) must used in this control must implement <see cref="IObservableTreeNode"/>. To setup, bind to or
     /// set <see cref="Root"/> or <see cref="RootItemsSource"/> with your top level node(s).
     /// </summary>
-    [TemplatePart(Name=nameof(PART_ListBoxDisplay), Type=typeof(ListBox))]
+    [TemplatePart(Name = nameof(PART_ListBoxDisplay), Type = typeof(ListBox))]
     public class FlatTreeListControl : Control
     {
         private ListBox PART_ListBoxDisplay;
@@ -328,7 +319,7 @@ namespace AJut.Application.Controls
             this.PART_ListBoxDisplay?.Focus();
         }
 
-        public void FocusInside()
+        public void FocusInside ()
         {
             this.PART_ListBoxDisplay?.Focus();
         }
@@ -336,7 +327,7 @@ namespace AJut.Application.Controls
         private void OnItemCreated (Item item)
         {
             item.IsSelectedChanged += this.Item_IsSelectedChanged;
-            this.StorageItemAdded?.Invoke(this, new (item));
+            this.StorageItemAdded?.Invoke(this, new(item));
         }
 
         private void OnItemRemoved (Item item)
@@ -347,7 +338,7 @@ namespace AJut.Application.Controls
             {
                 this.SelectedItem = null;
             }
-            this.StorageItemRemoved?.Invoke(this, new (item));
+            this.StorageItemRemoved?.Invoke(this, new(item));
         }
 
         private void Item_IsSelectedChanged (object sender, EventArgs e)

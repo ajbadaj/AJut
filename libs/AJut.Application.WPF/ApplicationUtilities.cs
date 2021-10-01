@@ -23,9 +23,9 @@
         /// <param name="projectName">The name of the project, used for context in logging and potentially elsewhere</param>
         /// <param name="setupLogging">Should logging be setup, will default to a project name specific appdata location</param>
         /// <param name="onExceptionRecieved">Something to handle unhandled exceptions</param>
-        public static void RunOnetimeSetup(string projectName, bool setupLogging = true, ExceptionProcessor onExceptionRecieved = null, int ageMaxInDaysToKeepLogs = 10)
+        public static void RunOnetimeSetup (string projectName, bool setupLogging = true, ExceptionProcessor onExceptionRecieved = null, int ageMaxInDaysToKeepLogs = 10)
         {
-            if(g_isSetup)
+            if (g_isSetup)
             {
                 return;
             }
@@ -44,20 +44,12 @@
 
             if (onExceptionRecieved != null)
             {
-#if WINDOWS_UWP
-                Application.Current.UnhandledException += Current_UnhandledException;
-#else
                 Application.Current.DispatcherUnhandledException += Current_DispatcherUnhandledException;
-#endif
             }
 
             g_isSetup = true;
 
-#if WINDOWS_UWP
-            void Current_UnhandledException (object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
-#else
             void Current_DispatcherUnhandledException (object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
-#endif
             {
                 if (g_blockReentrancy)
                 {

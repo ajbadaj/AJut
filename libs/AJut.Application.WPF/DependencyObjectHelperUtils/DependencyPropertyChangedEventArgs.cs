@@ -1,11 +1,6 @@
 namespace AJut.Application
 {
-#if WINDOWS_UWP
-    using Windows.UI.Xaml;
-#else
     using System.Windows;
-#endif
-
     public class DependencyPropertyChangedEventArgs<T>
     {
         private static readonly T kDefault = default(T);

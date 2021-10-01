@@ -2,19 +2,12 @@
 {
     using System.Collections.ObjectModel;
     using System.ComponentModel;
-#if WINDOWS_UWP
-    using Windows.UI;
-    using Windows.UI.Xaml;
-    using Windows.UI.Xaml.Controls;
-    using Windows.UI.Xaml.Media;
-#else
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Controls.Primitives;
     using System.Windows.Input;
     using System.Windows.Markup;
     using System.Windows.Media;
-#endif
 
     using DPUtils = AJut.Application.DPUtils<BumpStack>;
 
@@ -54,7 +47,7 @@
             set => this.SetValue(BumpDelayProperty, value);
         }
 
-        public static readonly DependencyProperty OrientationProperty = DPUtils.Register(_ => _.Orientation, Orientation.Horizontal, (d,e)=>d.OnOrientationChanged());
+        public static readonly DependencyProperty OrientationProperty = DPUtils.Register(_ => _.Orientation, Orientation.Horizontal, (d, e) => d.OnOrientationChanged());
         public Orientation Orientation
         {
             get => (Orientation)this.GetValue(OrientationProperty);
@@ -77,7 +70,7 @@
             protected set => this.SetValue(VerticalScrollBarVisibilityPropertyKey, value);
         }
 
-        public static readonly DependencyProperty EdgeClearanceOffsetProperty = DPUtils.Register(_ => _.EdgeClearanceOffset, (d,e)=>d.OnRecalculateOffsetPaddings());
+        public static readonly DependencyProperty EdgeClearanceOffsetProperty = DPUtils.Register(_ => _.EdgeClearanceOffset, (d, e) => d.OnRecalculateOffsetPaddings());
         public double EdgeClearanceOffset
         {
             get => (double)this.GetValue(EdgeClearanceOffsetProperty);

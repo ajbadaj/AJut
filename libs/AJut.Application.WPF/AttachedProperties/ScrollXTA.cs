@@ -1,17 +1,13 @@
 ﻿namespace AJut.Application.AttachedProperties
 {
     using System;
-#if WINDOWS_UWP
-    using Windows.UI.Xaml;
-#else
     using System.Windows;
     using System.Windows.Controls;
-#endif
 
     public static class ScrollXTA
     {
         private static readonly APUtilsRegistrationHelper APUtils = new APUtilsRegistrationHelper(typeof(ScrollXTA));
-        
+
         public static DependencyProperty IsScrollWatchEnabledProperty = APUtils.Register(GetIsScrollWatchEnabled, SetIsScrollWatchEnabled, OnIsScrollWatchEnabledChanged);
         public static bool GetIsScrollWatchEnabled (DependencyObject obj) => (bool)obj.GetValue(IsScrollWatchEnabledProperty);
         public static void SetIsScrollWatchEnabled (DependencyObject obj, bool value) => obj.SetValue(IsScrollWatchEnabledProperty, value);

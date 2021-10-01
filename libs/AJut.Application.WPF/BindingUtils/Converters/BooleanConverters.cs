@@ -1,11 +1,7 @@
 ﻿namespace AJut.Application.Converters
 {
     using System.Linq;
-#if WINDOWS_UWP
-    using Windows.UI.Xaml;
-#else
     using System.Windows;
-#endif
 
     /*Example
      * 
@@ -32,7 +28,7 @@
      * */
     public abstract class BooleanConverter<T> : SimpleValueConverter<bool, T>
     {
-        public BooleanConverter(T trueValue, T falseValue)
+        public BooleanConverter (T trueValue, T falseValue)
         {
             TrueValue = trueValue;
             FalseValue = falseValue;
@@ -40,7 +36,7 @@
 
         public T TrueValue { get; set; }
         public T FalseValue { get; set; }
-        protected override T Convert(bool value)
+        protected override T Convert (bool value)
         {
             return value ? TrueValue : FalseValue;
         }
@@ -54,23 +50,22 @@
 
     public sealed class BooleanToVisibilityConverter : BooleanConverter<Visibility>
     {
-        public BooleanToVisibilityConverter() : base(Visibility.Visible, Visibility.Collapsed) { }
+        public BooleanToVisibilityConverter () : base(Visibility.Visible, Visibility.Collapsed) { }
     }
 
     public sealed class BooleanInverseConverter : BooleanConverter<bool>
     {
-        public BooleanInverseConverter() : base(false, true) { }
+        public BooleanInverseConverter () : base(false, true) { }
     }
 
     public sealed class BooleanToDoubleConverter : BooleanConverter<double>
     {
-        public BooleanToDoubleConverter() : base(1.0, 0.0) { }
+        public BooleanToDoubleConverter () : base(1.0, 0.0) { }
     }
 
-#if !WINDOWS_UWP
-    public sealed class BooleanAndConverter : SimpleMultiValueConverter<bool,bool>
+    public sealed class BooleanAndConverter : SimpleMultiValueConverter<bool, bool>
     {
-        protected override bool Convert (bool[] values) => values.All(v=>v);
+        protected override bool Convert (bool[] values) => values.All(v => v);
     }
 
     public sealed class BooleanOrConverter : SimpleMultiValueConverter<bool, bool>
@@ -84,5 +79,4 @@
         public Visibility Else { get; set; } = Visibility.Collapsed;
         protected override Visibility Convert (bool[] values) => values.All(v => v) ? this.WhenAllTrue : this.Else;
     }
-#endif
 }

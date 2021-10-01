@@ -1,11 +1,6 @@
 namespace AJut.Application.Converters
 {
-    using System;
-#if WINDOWS_UWP
-    using Windows.UI.Xaml;
-#else
     using System.Windows;
-#endif
 
     // Nullness
     public class NumericComparisonConverter<TOutput> : SimpleValueConverter
@@ -16,7 +11,7 @@ namespace AJut.Application.Converters
         public TOutput CompTrueValue { get; set; }
         public TOutput CompFalseValue { get; set; }
 
-        public NumericComparisonConverter(TOutput compTrueDefault, TOutput compFalseDefault)
+        public NumericComparisonConverter (TOutput compTrueDefault, TOutput compFalseDefault)
         {
             this.CompTrueValue = compTrueDefault;
             this.CompFalseValue = compFalseDefault;
@@ -28,12 +23,12 @@ namespace AJut.Application.Converters
             dynamic toValue = (dynamic)System.Convert.ChangeType(this.To, objValue.GetType());
             switch (this.Comp)
             {
-                case eComparison.NotEqual:           return sourceValue != toValue;
-                case eComparison.Equal:              return sourceValue == toValue;
-                case eComparison.GreaterThan:        return sourceValue > toValue;
-                case eComparison.LessThan:           return sourceValue < toValue;
+                case eComparison.NotEqual: return sourceValue != toValue;
+                case eComparison.Equal: return sourceValue == toValue;
+                case eComparison.GreaterThan: return sourceValue > toValue;
+                case eComparison.LessThan: return sourceValue < toValue;
                 case eComparison.GreaterThanOrEqual: return sourceValue >= toValue;
-                case eComparison.LessThanOrEqual:    return sourceValue <= toValue;
+                case eComparison.LessThanOrEqual: return sourceValue <= toValue;
             }
 
             return false;

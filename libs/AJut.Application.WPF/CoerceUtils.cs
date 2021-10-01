@@ -2,20 +2,10 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Reflection;
-
-#if WINDOWS_UWP
-    using Windows.UI;
-    using Windows.UI.Xaml;
-    using Windows.UI.Xaml.Media;
-    using Windows.UI.Xaml.Media.Imaging;
-    using System.Diagnostics;
-#else
     using System.Windows;
     using System.Windows.Media;
     using System.Windows.Media.Imaging;
-#endif
 
     /// <summary>
     /// A set of utilities for ease of coercion
@@ -28,7 +18,7 @@
         /// <param name="obj">The dependency object.</param>
         /// <param name="originalValue">The original value.</param>
         /// <returns>A color coerced object.</returns>
-        public static object CallbackForColor(DependencyObject obj, object originalValue)
+        public static object CallbackForColor (DependencyObject obj, object originalValue)
         {
             return CoerceColorFrom(originalValue);
         }
@@ -39,7 +29,7 @@
         /// <param name="obj">The dependency object.</param>
         /// <param name="originalValue">The original value.</param>
         /// <returns>A brush coerced object.</returns>
-        public static object CallbackForBrush(DependencyObject obj, object originalValue)
+        public static object CallbackForBrush (DependencyObject obj, object originalValue)
         {
             return CoerceBrushFrom(originalValue);
         }
@@ -51,7 +41,7 @@
         /// <param name="originalValue">The original value.</param>
         /// <returns>An object of what was coerced.</returns>
         /// <remarks>If you want to reference a uri from a different assembly, make sure to use the full uri scheme in your xaml</remarks>
-        public static object CallbackForUri(DependencyObject obj, object originalValue)
+        public static object CallbackForUri (DependencyObject obj, object originalValue)
         {
             return CoerceUriSourceFrom(originalValue);
         }
@@ -62,7 +52,7 @@
         /// <param name="obj">The dependency object.</param>
         /// <param name="originalValue">The original value.</param>
         /// <returns>An image source coerced object.</returns>
-        public static object CallbackForImageSource(DependencyObject obj, object originalValue)
+        public static object CallbackForImageSource (DependencyObject obj, object originalValue)
         {
             return CoerceImageSourceFrom(originalValue);
         }
@@ -73,7 +63,7 @@
         /// <param name="obj">The dependency object.</param>
         /// <param name="originalValue">The original value.</param>
         /// <returns>A corner radius coerced object.</returns>
-        public static object CallbackForCornerRadius(DependencyObject obj, object originalValue)
+        public static object CallbackForCornerRadius (DependencyObject obj, object originalValue)
         {
             CornerRadius? cr = CoerceCornerRadiusFrom(originalValue);
             return cr ?? new CornerRadius(0);
@@ -85,24 +75,22 @@
         /// <param name="obj">The dependency object.</param>
         /// <param name="originalValue">The original value.</param>
         /// <returns>A thickness coerced object.</returns>
-        public static object CallbackForThickness(DependencyObject obj, object originalValue)
+        public static object CallbackForThickness (DependencyObject obj, object originalValue)
         {
             Thickness? thickness = CoerceThicknessFrom(originalValue);
             return thickness ?? new Thickness(0);
         }
 
-#if !WINDOWS_UWP // Apparently there is no FontFamilyConverter in UWP... yeah, didn't feel like making that myself...
         /// <summary>
         /// Callback for <see cref="FontFamily"/> coercion.
         /// </summary>
         /// <param name="obj">The dependency object.</param>
         /// <param name="originalValue">The original value.</param>
         /// <returns>A font family coerced object.</returns>
-        public static object CallbackForFontFamily(DependencyObject obj, object originalValue)
+        public static object CallbackForFontFamily (DependencyObject obj, object originalValue)
         {
             return CoerceFontFamilyFrom(originalValue);
         }
-#endif
 
         /// <summary>
         /// Coerces the original value to a Uri if possible.
@@ -110,7 +98,7 @@
         /// <param name="originalValue">The original value.</param>
         /// <param name="assemblyShortName">Short name of the assembly (optional).</param>
         /// <returns>The coereced <see cref="Uri"/>.</returns>
-        public static Uri CoerceUriSourceFrom(object originalValue, string assemblyShortName = null)
+        public static Uri CoerceUriSourceFrom (object originalValue, string assemblyShortName = null)
         {
             if (null == originalValue)
             {
@@ -153,19 +141,11 @@
                 // Otherwise just guess
                 else
                 {
-#if WINDOWS_UWP
-                    assemblyShortName = new StackTrace(new Exception(), false).GetFrames().Last().GetMethod().Module.Assembly.GetName().Name;
-#else
                     assemblyShortName = Assembly.GetEntryAssembly().GetName().Name;
-#endif
                 }
             }
 
-#if WINDOWS_UWP
-            string newAbsoluteUriString = string.Format("ms-appx://{0}/{1}", assemblyShortName, strValue.TrimStart('/'));
-#else
             string newAbsoluteUriString = string.Format("pack://application:,,,/{0};component/{1}", assemblyShortName, strValue.TrimStart('/'));
-#endif
             if (Uri.TryCreate(newAbsoluteUriString, UriKind.Absolute, out newUri))
             {
                 return newUri;
@@ -174,7 +154,7 @@
             return null;
         }
 
-        public static TEnum CoerceEnumFrom<TEnum>(object originalValue) where TEnum : Enum
+        public static TEnum CoerceEnumFrom<TEnum> (object originalValue) where TEnum : Enum
         {
             if (originalValue is TEnum)
             {
@@ -206,7 +186,7 @@
         /// </summary>
         /// <param name="originalValue">The original value.</param>
         /// <returns>A color coerced out of the original value.</returns>
-        public static Color CoerceColorFrom(object originalValue)
+        public static Color CoerceColorFrom (object originalValue)
         {
             if (originalValue == null)
             {
@@ -252,7 +232,7 @@
         /// </summary>
         /// <param name="originalValue">The original value.</param>
         /// <returns>A brush coerced out of the original value.</returns>
-        public static Brush CoerceBrushFrom(object originalValue)
+        public static Brush CoerceBrushFrom (object originalValue)
         {
             if (originalValue == null)
             {
@@ -281,7 +261,7 @@
         /// <param name="originalValue">The original value.</param>
         /// <param name="assemblyShortName">The short name of the assembly to look up (default is null which will cause the entry assembly to be used)</param>
         /// <returns>An ImageSource coerced out of the original value.</returns>
-        public static ImageSource CoerceImageSourceFrom(object originalValue, string assemblyShortName = null)
+        public static ImageSource CoerceImageSourceFrom (object originalValue, string assemblyShortName = null)
         {
             if (null == originalValue)
             {
@@ -300,12 +280,11 @@
             }
 
             var imageSource = new BitmapImage(uri);
-#if !WINDOWS_UWP // So, in UWP the image source isn't Animatable, which is where Freezable comes from, presumably that is also why we needed to freeze it - therefore it shouldn't be a problem not to do this in UWP.
             if (imageSource.CanFreeze)
             {
                 imageSource.Freeze();
             }
-#endif
+            
             return imageSource;
         }
 
@@ -316,7 +295,7 @@
         /// <returns>A corner radius coerced out of the original value.</returns>
         /// <exception cref="System.InvalidOperationException">Invalid comma separated values split, must be 1=uniform || 2=top,bottom || 4=topLeft, topRight, bottomRight, bottomLeft</exception>
         /// <exception cref="System.FormatException">Exception from parsing comma separated values.</exception>
-        public static CornerRadius? CoerceCornerRadiusFrom(object originalValue)
+        public static CornerRadius? CoerceCornerRadiusFrom (object originalValue)
         {
             if (originalValue is CornerRadius)
             {
@@ -358,7 +337,7 @@
         /// <returns>A thickness coerced out of the original value.</returns>
         /// <exception cref="System.InvalidOperationException">Invalid CSV specification, must be 1=uniform || 2=left/right,top/bottom || 4=left,top,right,bottom</exception>
         /// <exception cref="System.FormatException">Invalid CSV specification.</exception>
-        public static Thickness? CoerceThicknessFrom(object originalValue)
+        public static Thickness? CoerceThicknessFrom (object originalValue)
         {
             if (originalValue == null)
             {
@@ -398,13 +377,12 @@
             }
         }
 
-#if !WINDOWS_UWP // Apparently there is no FontFamilyConverter in UWP... yeah, didn't feel like making that myself...
         /// <summary>
         /// Coercion utility for <see cref="FontFamily"/> generation.
         /// </summary>
         /// <param name="originalValue">The original value.</param>
         /// <returns>A font family coerced out of the original value.</returns>
-        public static FontFamily CoerceFontFamilyFrom(object originalValue)
+        public static FontFamily CoerceFontFamilyFrom (object originalValue)
         {
             if (originalValue == null)
             {
@@ -425,6 +403,5 @@
             var conv = new FontFamilyConverter();
             return conv.ConvertFromString(fontFamilyNameStr) as FontFamily;
         }
-#endif
     }
 }

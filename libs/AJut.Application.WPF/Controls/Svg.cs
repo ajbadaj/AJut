@@ -1,24 +1,9 @@
 ﻿namespace AJut.Application.Controls
 {
-    using System;
-    using System.Collections.Generic;
-
-#if WINDOWS_UWP
-    using Windows.UI;
-    using Windows.UI.Xaml;
-    using Windows.UI.Xaml.Controls;
-    using Windows.UI.Xaml.Media;
-#else
     using System.Windows;
     using System.Windows.Controls;
-#endif
-
-    using DPUtils = DPUtils<Svg>;
-    using AJut;
-    using System.Windows.Input;
-    using System.Windows.Data;
-    using System.Windows.Media;
     using AJut.Storage;
+    using DPUtils = DPUtils<Svg>;
 
     public class Svg : Control
     {
@@ -33,7 +18,7 @@
             DefaultStyleKeyProperty.OverrideMetadata(typeof(Svg), new FrameworkPropertyMetadata(typeof(Svg)));
         }
 
-        public static readonly DependencyProperty SourceProperty = DPUtils.Register(_ => _.Source, (d,e)=>d.Items = new ObservableFlatTreeStore<SvgTreeElement>(e.NewValue?.Root));
+        public static readonly DependencyProperty SourceProperty = DPUtils.Register(_ => _.Source, (d, e) => d.Items = new ObservableFlatTreeStore<SvgTreeElement>(e.NewValue?.Root));
         public SvgSource Source
         {
             get => (SvgSource)this.GetValue(SourceProperty);
