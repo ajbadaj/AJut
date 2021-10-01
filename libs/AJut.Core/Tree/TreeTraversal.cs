@@ -396,6 +396,22 @@ namespace AJut.Tree
             }
         }
 
+        public static int CountAllDescendants (TTreeNode node, GetTreeNodeChildren<TTreeNode> getChildrenMethodOverride = null)
+        {
+            GetTreeNodeChildren<TTreeNode> getChildren = getChildrenMethodOverride ?? TreeTraversal<TTreeNode>.GetChildrenMethod;
+            return _RecursiveCountDescendants(node);
+
+            int _RecursiveCountDescendants (TTreeNode _eval)
+            {
+                // Get or create list version of children
+                int _sum = 0;
+                foreach (var _c in getChildren(_eval))
+                {
+                    _sum += 1 + _RecursiveCountDescendants(_c);
+                }
+                return _sum;
+            }
+        }
 
         // -------------------------------------------------
         // -----------[ Private Utilities  ]----------------

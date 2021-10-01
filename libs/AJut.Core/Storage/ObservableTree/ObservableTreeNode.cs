@@ -1,9 +1,8 @@
 ﻿namespace AJut.Storage
 {
-    using AJut.Tree;
     using System;
     using System.Collections.Generic;
-    using System.Linq;
+    using AJut.Tree;
 
     /// <summary>
     /// An implementation of <see cref="IObservableTreeNode"/>. This could be used as a base class, a fully realized <see cref="IObservableTreeNode"/>, or just 
@@ -73,6 +72,7 @@
         {
             child.Parent = this;
             m_children.Insert(index, child);
+
             this.RaiseChildInsertedEvent(index, child);
             this.OnChildInserted(index, child);
         }
@@ -89,21 +89,13 @@
             return false;
         }
 
-        public void Clear ()
-        {
-            foreach(var child in m_children.ToList())
-            {
-                this.RemoveChild(child);
-            }
-        }
-
         // ==========[IObservableTreeNode - implicit implementations]================
         IObservableTreeNode IObservableTreeNode.Parent
         {
             get => this.Parent;
             set => this.Parent = (TNode)value;
         }
-        IReadOnlyList<IObservableTreeNode> IObservableTreeNode.Children => (IReadOnlyList<IObservableTreeNode>)m_readOnlyChildren;
+        IReadOnlyList<IObservableTreeNode> IObservableTreeNode.Children => m_readOnlyChildren;
 
         void IObservableTreeNode.InsertChild (int index, IObservableTreeNode child) => this.InsertChild(index, (TNode)child);
         bool IObservableTreeNode.RemoveChild (IObservableTreeNode child) => this.RemoveChild((TNode)child);

@@ -1,12 +1,12 @@
 ﻿namespace AJut.UnitTests.Core
 {
-    using AJut;
-    using AJut.Tree;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.Linq;
+    using AJut;
+    using AJut.Tree;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [DebuggerDisplay("Tree Node - {Value} - {m_children.Count} Children")]
     public class TestTreePart
@@ -69,13 +69,16 @@
     public class TreeTraversalTesting
     {
         public TestTreePart root = null;
+        private TestTreePart root_a = null;
+        private TestTreePart root_c = null;
         private TestTreePart a_b_c = null;
+        private TestTreePart a_a = null;
         private TestTreePart a_c = null;
         private TestTreePart a_b_a = null;
         private TestTreePart a_b_b = null;
         private TestTreePart c_a_a = null;
         private TestTreePart end;
-        private TestTreePart b;
+        private TestTreePart root_b;
         private TreeTraverser<TestTreePart> m_tree;
 
         [TestInitialize]
@@ -93,19 +96,19 @@
               aba abb abc caa cab
              * */
             root = new TestTreePart("root");
-            var a = new TestTreePart(root, "a");
-            b = new TestTreePart(root, "b");
-            var c = new TestTreePart(root, "c");
+            root_a = new TestTreePart(root, "a");
+            root_b = new TestTreePart(root, "b");
+            root_c = new TestTreePart(root, "c");
 
-            var a_a = new DerivedTreePart(a, "a.a");
-            var a_b = new TestTreePart(a, "a.b");
-            a_c = new DerivedTreePart(a, "a.c");
+            a_a = new DerivedTreePart(root_a, "a.a");
+            var a_b = new TestTreePart(root_a, "a.b");
+            a_c = new DerivedTreePart(root_a, "a.c");
 
             a_b_a = new DerivedTreePart(a_b, "a.b.a");
             a_b_b = new TestTreePart(a_b, "a.b.b");
             a_b_c = new TestTreePart(a_b, "a.b.c");
 
-            var c_a = new TestTreePart(c, "c.a");
+            var c_a = new TestTreePart(root_c, "c.a");
             c_a_a = new TestTreePart(c_a, "c.a.a");
             end = new TestTreePart(c_a, "c.a.b");
 
@@ -445,7 +448,28 @@
             Assert.AreEqual(a_c, TreeTraversal<TestTreePart>.FindNextSiblingOrCousin(a_b_c));
 
             // cousin through root
-            Assert.AreEqual(b, TreeTraversal<TestTreePart>.FindNextSiblingOrCousin(a_c));
+            Assert.AreEqual(root_b, TreeTraversal<TestTreePart>.FindNextSiblingOrCousin(a_c));
+        }
+
+        [TestMethod]
+        public void TreeTraversal_DescendantCountWorks()
+        {
+            /*
+                      root
+                     /  | \
+                   a    b  c
+                  /|\      |
+                 / | \     |
+               aa ab  ac  ca
+                  /|\      |\
+                 / | \     | \
+              aba abb abc caa cab
+            */
+
+            Assert.AreEqual(12, TreeTraversal<TestTreePart>.CountAllDescendants(root));
+            Assert.AreEqual(0, TreeTraversal<TestTreePart>.CountAllDescendants(a_a));
+            Assert.AreEqual(6, TreeTraversal<TestTreePart>.CountAllDescendants(root_a));
+            Assert.AreEqual(3, TreeTraversal<TestTreePart>.CountAllDescendants(root_c));
         }
     }
 }

@@ -1,12 +1,12 @@
 ﻿namespace AJut.UnitTests.Core
 {
-    using AJut.Storage;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
-    using System.Runtime.InteropServices;
+    using AJut.OS.Windows;
+    using AJut.Storage;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class ObservableFlatTreeStoreTesting
@@ -39,6 +39,11 @@
             Assert.AreEqual(h, flat[7]);
         }
 
+        private static string GetActualOrder(ObservableFlatTreeStore ofts)
+        {
+            return "Actual Order: " + String.Join(" ", ofts.Select(i => ((TreeNode)i).Value));
+        }
+
         [TestMethod]
         public void WorksWhenTreeConstructedAfterRootIsSet ()
         {
@@ -58,14 +63,14 @@
 
 
             Assert.AreEqual(8, flat.Count);
-            Assert.AreEqual(a.Value, ((TreeNode)flat[0]).Value);
-            Assert.AreEqual(b.Value, ((TreeNode)flat[1]).Value);
-            Assert.AreEqual(c.Value, ((TreeNode)flat[2]).Value);
-            Assert.AreEqual(d.Value, ((TreeNode)flat[3]).Value);
-            Assert.AreEqual(e.Value, ((TreeNode)flat[4]).Value);
-            Assert.AreEqual(f.Value, ((TreeNode)flat[5]).Value);
-            Assert.AreEqual(g.Value, ((TreeNode)flat[6]).Value);
-            Assert.AreEqual(h.Value, ((TreeNode)flat[7]).Value);
+            Assert.AreEqual(a.Value, ((TreeNode)flat[0]).Value, GetActualOrder(flat));
+            Assert.AreEqual(b.Value, ((TreeNode)flat[1]).Value, GetActualOrder(flat));
+            Assert.AreEqual(c.Value, ((TreeNode)flat[2]).Value, GetActualOrder(flat));
+            Assert.AreEqual(d.Value, ((TreeNode)flat[3]).Value, GetActualOrder(flat));
+            Assert.AreEqual(e.Value, ((TreeNode)flat[4]).Value, GetActualOrder(flat));
+            Assert.AreEqual(f.Value, ((TreeNode)flat[5]).Value, GetActualOrder(flat));
+            Assert.AreEqual(g.Value, ((TreeNode)flat[6]).Value, GetActualOrder(flat));
+            Assert.AreEqual(h.Value, ((TreeNode)flat[7]).Value, GetActualOrder(flat));
         }
 
         [TestMethod]
@@ -161,25 +166,25 @@
             // 100% increase from batch 1 → 3
             const double kAcceptablePercentIncrease_1_to_3 = 1.00;
 
-            Kernal32_Timer timer = new Kernal32_Timer();
+            Kernal32.HighAccuracyStopwatch timer = new Kernal32.HighAccuracyStopwatch();
             int itemCount = kFirstBatchCount;
 
             timer.Start();
             var leaves = this.ConstructTree(root, itemCount);
-            double seconds = timer.Stop();
+            TimeSpan elapsed = timer.Stop();
 
-            double averageSeconds1 = seconds / kFirstBatchCount;
-            Console.WriteLine($"Run 1 => Took {seconds} seconds to add {kFirstBatchCount}");
+            double averageSeconds1 = elapsed.TotalSeconds / kFirstBatchCount;
+            Console.WriteLine($"Run 1 => Took {elapsed.TotalSeconds:N5} seconds to add {kFirstBatchCount}");
             Console.WriteLine($"Run 1 => Average of {averageSeconds1} seconds per item");
             Console.WriteLine("-----------------------------------------");
 
             timer.Start();
             ConstructTree(leaves, itemCount, itemCount += kSecondBatchCount);
-            seconds = timer.Stop();
-            double averageSeconds2 = seconds / kSecondBatchCount;
+            elapsed = timer.Stop();
+            double averageSeconds2 = elapsed.TotalSeconds / kSecondBatchCount;
             double increase_1_to_2 = (averageSeconds2 - averageSeconds1) / averageSeconds2;
 
-            Console.WriteLine($"Run 2 => Adding an additional {kSecondBatchCount} took {seconds}");
+            Console.WriteLine($"Run 2 => Adding an additional {kSecondBatchCount} took {elapsed.TotalSeconds:N5}");
             Console.WriteLine($"Run 2 => Average of {averageSeconds2} seconds per item");
             Console.WriteLine($"Run 2 => Change in percent, {increase_1_to_2 * 100.0:N2}%");
             Console.WriteLine("-----------------------------------------");
@@ -187,19 +192,73 @@
 
             timer.Start();
             ConstructTree(leaves, itemCount, itemCount += kThirdBatchCount);
-            seconds = timer.Stop();
-            double averageSeconds3 = seconds / kThirdBatchCount;
+            elapsed = timer.Stop();
+            double averageSeconds3 = elapsed.TotalSeconds / kThirdBatchCount;
             double increase_1_to_3 = (averageSeconds3 - averageSeconds1) / averageSeconds3;
             double increase_2_to_3 = (averageSeconds3 - averageSeconds2) / averageSeconds3;
 
-            Console.WriteLine($"Run 3 => Adding an additional {kThirdBatchCount} took {seconds}");
-            Console.WriteLine($"Run 3 => Average of {averageSeconds3} seconds per item");
+            Console.WriteLine($"Run 3 => Adding an additional {kThirdBatchCount} took {elapsed.TotalSeconds:N5} seconds");
+            Console.WriteLine($"Run 3 => Average of {averageSeconds3:N5} seconds per item");
             Console.WriteLine($"Run 3 => % change in average from the first batch of {kFirstBatchCount}   -> {increase_1_to_3 * 100.0:N2}%");
             Console.WriteLine($"Run 3 => % change in average from the second batch of {kSecondBatchCount} -> {increase_2_to_3 * 100.0:N2}%");
             Console.WriteLine("-----------------------------------------");
 
             Assert.IsTrue(increase_2_to_3 < kAcceptablePercentIncrease_2_to_3, $"Average seconds per add increased from second {kSecondBatchCount} by over {kAcceptablePercentIncrease_1_to_3 * 100.0}%");
             Assert.IsTrue(increase_1_to_3 < kAcceptablePercentIncrease_1_to_3, $"Average seconds per add increased from second {kSecondBatchCount} by over {kAcceptablePercentIncrease_1_to_3 * 100.0}%");
+        }
+
+        [TestMethod]
+        public void AddingToDeepTree_Test ()
+        {
+            TreeNode root = new TreeNode("Root");
+
+            const int kNodesPerLevel = 3;
+            const int kDepth = 5000;
+            const double kAcceptableTimeMaxCost = 50.0; //ms
+
+            Console.WriteLine($"Generating {kNodesPerLevel * kDepth:N0} nodes @ {kNodesPerLevel:N0} nodes going down {kDepth:N0} levels");
+
+            Random rng = new Random();
+            var timer = new Kernal32.HighAccuracyStopwatch();
+            
+            timer.Start();
+            TreeNode currParent = root;
+            for(int depth = 0; depth < kDepth; ++depth)
+            {
+                TreeNode nextParent = null;
+                int nextParentIndex = rng.Next(0, kNodesPerLevel);
+                for (int node = 0; node < kNodesPerLevel; ++node)
+                {
+                    var child = currParent.AddChild(('a' + (char)node).ToString());
+                    if (node == nextParentIndex)
+                    {
+                        nextParent = child;
+                    }    
+                }
+
+                currParent = nextParent;
+            }
+
+            double genisis = timer.Stop().TotalMilliseconds;
+            Console.WriteLine($"Tree genesis took: {genisis:N5} MS");
+
+            timer.Start();
+            var flat = new ObservableFlatTreeStore();
+            flat.SwitchToFixedTimeIndexGeneration();
+            flat.RootNode = root;
+            double buildup = timer.Stop().TotalMilliseconds;
+            Console.WriteLine($"Flat tree store generation took: {buildup:N5} MS");
+            Assert.AreEqual(kDepth * kNodesPerLevel + 1, flat.Count);
+
+            timer.Start();
+            var end = root.AddChild("end");
+            double addEnd = timer.Stop().TotalMilliseconds;
+            Console.WriteLine($"Adding to end took: {addEnd:N5} MS");
+
+            int endIndex = flat.IndexOf(end);
+            Assert.AreNotEqual(-1, endIndex, "New end not found in list");
+            Assert.AreEqual(flat.Count - 1, endIndex, "New end not found at the end");
+            Assert.IsTrue(addEnd < kAcceptableTimeMaxCost, $"Adding end took too long: {addEnd:N5}ms");
         }
 
         private Stack<TreeNode> ConstructTree (TreeNode root, int count)
@@ -365,33 +424,6 @@
             Assert.AreEqual(root, storage[0]);
             Assert.AreEqual(a, storage[1]);
             Assert.AreEqual(b, storage[2]);
-        }
-    }
-
-    public class Kernal32_Timer
-    {
-        private long m_frequency;
-        private long m_startTime;
-
-        [DllImport("Kernel32.dll")]
-        private static extern bool QueryPerformanceCounter (out long lpPerformanceCount);
-
-        [DllImport("Kernel32.dll")]
-        private static extern bool QueryPerformanceFrequency (out long lpFrequency);
-
-        public Kernal32_Timer ()
-        {
-            QueryPerformanceFrequency(out m_frequency);
-        }
-        public void Start ()
-        {
-            QueryPerformanceCounter(out m_startTime);
-        }
-
-        public double Stop ()
-        {
-            QueryPerformanceCounter(out long endTime);
-            return (double)(endTime - m_startTime) / (double)m_frequency;
         }
     }
 

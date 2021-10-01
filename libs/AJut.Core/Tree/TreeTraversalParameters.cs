@@ -7,9 +7,6 @@
     /// </summary>
     public class TreeTraversalParameters<TTreeNode> where TTreeNode : class
     {
-        private GetTreeNodeChildren<TTreeNode> m_getChildrenMethodOverride;
-        private GetTreeNodeParent<TTreeNode> m_getParentMethodOverride;
-
         /// <summary>
         /// The acting root node for the tree, tree node path will be indicated based off of.
         /// </summary>
@@ -83,39 +80,17 @@
         /// <summary>
         /// An override to the <see cref="TreeTraversal{TTreeNode}"/> registered GetTreeNodeChildren method
         /// </summary>
-        public GetTreeNodeChildren<TTreeNode> GetChildrenMethod
-        {
-            get
-            {
-                if (m_getChildrenMethodOverride != null)
-                {
-                    return m_getChildrenMethodOverride;
-                }
-
-                return TreeTraversal<TTreeNode>.GetChildrenMethod;
-            }
-        }
+        public GetTreeNodeChildren<TTreeNode> GetChildrenMethod { get; private set; }
 
         /// <summary>
         /// An override to the <see cref="TreeTraversal{TTreeNode}"/> registered GetTreeNodeParent method
         /// </summary>
-        public GetTreeNodeParent<TTreeNode> GetParentMethod
-        {
-            get
-            {
-                if (m_getParentMethodOverride != null)
-                {
-                    return m_getParentMethodOverride;
-                }
-
-                return TreeTraversal<TTreeNode>.GetParentMethod;
-            }
-        }
+        public GetTreeNodeParent<TTreeNode> GetParentMethod { get; private set; }
 
         internal void SetGetChildrenGetParentOverrideMethods (GetTreeNodeChildren<TTreeNode> getChildren, GetTreeNodeParent<TTreeNode> getParent)
         {
-            m_getChildrenMethodOverride = getChildren;
-            m_getParentMethodOverride = getParent;
+            this.GetChildrenMethod = getChildren ?? TreeTraversal<TTreeNode>.GetChildrenMethod;
+            this.GetParentMethod = getParent ?? TreeTraversal<TTreeNode>.GetParentMethod;
         }
 
         /// <summary>
@@ -137,9 +112,7 @@
             this.MaxNumberOfEvaluations = -1; // All
             this.TrackReentrancy = false;
             this.DepthLimits = null;
-
-            m_getChildrenMethodOverride = getChildrenMethodOverride;
-            m_getParentMethodOverride = getParentMethodOverride;
+            this.SetGetChildrenGetParentOverrideMethods(getChildrenMethodOverride, getParentMethodOverride);
         }
     }
 }
