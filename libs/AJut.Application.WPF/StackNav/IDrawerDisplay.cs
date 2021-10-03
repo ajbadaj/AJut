@@ -7,6 +7,6 @@
 
     public interface IManagerReactiveDrawerDisplay : IDrawerDisplay
     {
-        void Setup (StackNavOperationsManager pageManager);
+        void Setup (StackNavFlowController pageManager);
     }
 }

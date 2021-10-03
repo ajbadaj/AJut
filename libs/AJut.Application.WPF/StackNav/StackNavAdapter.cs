@@ -17,7 +17,7 @@
         private bool m_isBusyWaitActive;
         private IPopoverDisplayBase m_popoverDisplay;
 
-        public StackNavAdapter (StackNavOperationsManager pageManager, IStackNavDisplayControl page)
+        public StackNavAdapter (StackNavFlowController pageManager, IStackNavDisplayControl page)
         {
             m_emptyDrawerFallback = new Lazy<EmptyDrawer>(() => new EmptyDrawer(page));
             this.Manager = pageManager;
@@ -36,7 +36,7 @@
         public event EventHandler<EventArgs> DrawerClosed;
 
         // =============================[ Properties ]========================================
-        public StackNavOperationsManager Manager { get; }
+        public StackNavFlowController Manager { get; }
         public IStackNavDisplayControl PageDisplay { get; }
         public IDrawerDisplay Drawer
         {
@@ -148,7 +148,6 @@
         /// <summary>
         /// Get state when another page is pushed on top
         /// </summary>
-        /// <returns></returns>
         internal object OnCovered ()
         {
             this.Covered?.Invoke(this, EventArgs.Empty);

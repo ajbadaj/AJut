@@ -10,17 +10,17 @@
     /// <summary>
     /// The entry point into the stack nav system. This stores the stack and currently displayed item info.
     /// </summary>
-    public class StackNavOperationsManager : NotifyPropertyChanged
+    public class StackNavFlowController : NotifyPropertyChanged
     {
-        private Stack<PageStorage> m_pageStack = new Stack<PageStorage>();
-        private StackNavAdapter m_shownPage;
+        private Stack<StackElementStorage> m_hiddenElementStack = new Stack<StackElementStorage>();
+        private StackNavAdapter m_stackTopDisplayAdapter;
         private bool m_isDrawerOpen;
         private bool m_canGoBack;
         private bool m_canCloseDrawer = true;
         private bool m_showDrawerAsControl;
         private bool m_supportsDrawerDisplay;
 
-        public StackNavOperationsManager (Window rootWindow)
+        public StackNavFlowController (Window rootWindow)
         {
             this.RootWindow = rootWindow;
         }
@@ -49,11 +49,11 @@
                 {
                     if (m_isDrawerOpen)
                     {
-                        m_shownPage.OnDrawerOpened();
+                        m_stackTopDisplayAdapter.OnDrawerOpened();
                     }
                     else
                     {
-                        m_shownPage.OnDrawerClosed();
+                        m_stackTopDisplayAdapter.OnDrawerClosed();
                     }
 
                     this.DrawerOpenStatusChanged?.Invoke(this, EventArgs.Empty);
@@ -61,10 +61,10 @@
             }
         }
 
-        public StackNavAdapter ShownPage
+        public StackNavAdapter StackTopDisplayAdapter
         {
-            get => m_shownPage;
-            set => this.SetAndRaiseIfChanged(ref m_shownPage, value);
+            get => m_stackTopDisplayAdapter;
+            set => this.SetAndRaiseIfChanged(ref m_stackTopDisplayAdapter, value);
         }
 
         public bool CanGoBack
@@ -89,30 +89,30 @@
         // = Methods                                        =
         // ==================================================
 
-        public bool PushPage<T> (object state = null)
+        public bool GenerateAndPushDisplay<T> (object state = null)
         {
             // Build
-            object pageObj;
+            object newDisplayObj;
             try
             {
-                pageObj = Activator.CreateInstance(typeof(T));
+                newDisplayObj = Activator.CreateInstance(typeof(T));
             }
-            catch { pageObj = null; }
+            catch { newDisplayObj = null; }
 
             // Use it if it's valid
-            if (pageObj is IStackNavDisplayControl page)
+            if (newDisplayObj is IStackNavDisplayControl displayControl)
             {
-                if (this.ShownPage != null)
+                if (this.StackTopDisplayAdapter != null)
                 {
-                    m_pageStack.Push(new PageStorage(this.ShownPage));
+                    m_hiddenElementStack.Push(new StackElementStorage(this.StackTopDisplayAdapter));
                 }
 
-                this.ReplaceShownPage(new StackNavAdapter(this, page), state);
+                this.ReplaceShownDisplay(new StackNavAdapter(this, displayControl), state);
                 return true;
             }
 
             // Toss it if it's not
-            if (pageObj is IDisposable disposableFailure)
+            if (newDisplayObj is IDisposable disposableFailure)
             {
                 disposableFailure.Dispose();
             }
@@ -121,36 +121,36 @@
             
         }
 
-        public async Task Pop ()
+        public async Task PopDisplay ()
         {
-            StackNavAdapter oldShownPage = this.ShownPage;
-            PageStorage newPage = m_pageStack.Pop();
+            StackNavAdapter oldShownControl = this.StackTopDisplayAdapter;
+            StackElementStorage newElementToShow = m_hiddenElementStack.Pop();
 
-            if (await oldShownPage.Close())
+            if (await oldShownControl.Close())
             {
-                this.ReplaceShownPage(newPage.Page, newPage.PreviousState);
+                this.ReplaceShownDisplay(newElementToShow.Adapter, newElementToShow.PreviousState);
             }
             else
             {
-                m_pageStack.Push(newPage);
+                m_hiddenElementStack.Push(newElementToShow);
             }
         }
 
-        private void ReplaceShownPage (StackNavAdapter newPage, object newState)
+        private void ReplaceShownDisplay (StackNavAdapter newStackTop, object newState)
         {
             this.NavigationIminent?.Invoke(this, EventArgs.Empty);
 
-            this.ShownPage = newPage;
-            this.CanGoBack = this.m_pageStack.Count >= 1;
+            this.StackTopDisplayAdapter = newStackTop;
+            this.CanGoBack = this.m_hiddenElementStack.Count >= 1;
             bool wasDrawerOpen = this.IsDrawerOpen;
             this.CloseDrawer(true);
 
             // ---------------------------------------------------------------------------------
             // NOTE - MUST STAY LAST
             // ---------------------------------------------------------------------------------
-            // This must stay last, if we allow pages when shown to say no, this can't be
+            // This must stay last, if we allow displays when shown to say no, this can't be
             //  then they need to be able to pop, replace, or otherwise push something new on.
-            newPage.OnShown(newState);
+            newStackTop.OnShown(newState);
 
             this.NavigationComplete?.Invoke(this, EventArgs.Empty);
         }
@@ -166,8 +166,8 @@
                 return;
             }
 
-            this.ShownPage.OnDrawerOpening();
-            var drawer = this.ShownPage.Drawer;
+            this.StackTopDisplayAdapter.OnDrawerOpening();
+            var drawer = this.StackTopDisplayAdapter.Drawer;
             this.ShowDrawerAsControl = drawer is Visual;
 
             this.IsDrawerOpen = true;
@@ -182,7 +182,7 @@
                 this.CanCloseDrawer = false;
             }
 
-            this.ShownPage.OnDrawerOpened();
+            this.StackTopDisplayAdapter.OnDrawerOpened();
         }
 
         public bool CloseDrawer (bool releaseForceOpen = false)
@@ -195,22 +195,22 @@
             if (this.CanCloseDrawer)
             {
                 this.IsDrawerOpen = false;
-                this.ShownPage.OnDrawerClosed();
+                this.StackTopDisplayAdapter.OnDrawerClosed();
                 return true;
             }
 
             return false;
         }
 
-        private class PageStorage
+        private class StackElementStorage
         {
-            public PageStorage (StackNavAdapter page)
+            public StackElementStorage (StackNavAdapter adapter)
             {
-                this.Page = page;
-                this.PreviousState = page.OnCovered();
+                this.Adapter = adapter;
+                this.PreviousState = adapter.OnCovered();
             }
 
-            public StackNavAdapter Page { get; }
+            public StackNavAdapter Adapter { get; }
             public object PreviousState { get; }
         }
     }
