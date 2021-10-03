@@ -17,12 +17,12 @@
         private bool m_isBusyWaitActive;
         private IPopoverDisplayBase m_popoverDisplay;
 
-        public StackNavAdapter (StackNavFlowController pageManager, IStackNavDisplayControl page)
+        public StackNavAdapter (StackNavFlowController navigator, IStackNavDisplayControl display)
         {
-            m_emptyDrawerFallback = new Lazy<EmptyDrawer>(() => new EmptyDrawer(page));
-            this.Manager = pageManager;
-            this.PageDisplay = page;
-            this.PageDisplay.Setup(this);
+            m_emptyDrawerFallback = new Lazy<EmptyDrawer>(() => new EmptyDrawer(display));
+            this.Navigator = navigator;
+            this.Display = display;
+            this.Display.Setup(this);
         }
 
         public event EventHandler<AttemptingCloseEventArgs> Closing;
@@ -36,8 +36,8 @@
         public event EventHandler<EventArgs> DrawerClosed;
 
         // =============================[ Properties ]========================================
-        public StackNavFlowController Manager { get; }
-        public IStackNavDisplayControl PageDisplay { get; }
+        public StackNavFlowController Navigator { get; }
+        public IStackNavDisplayControl Display { get; }
         public IDrawerDisplay Drawer
         {
             get => m_drawer ?? m_emptyDrawerFallback.Value;
@@ -90,7 +90,7 @@
 
         public void OnShown (object state)
         {
-            this.PageDisplay.SetState(state);
+            this.Display.SetState(state);
             this.Shown?.Invoke(this, EventArgs.Empty);
         }
 
@@ -146,12 +146,12 @@
         public BusyWaitTracker GenerateBusyWait () => new BusyWaitTracker(this);
 
         /// <summary>
-        /// Get state when another page is pushed on top
+        /// Get state when another control is pushed to the top over this one
         /// </summary>
         internal object OnCovered ()
         {
             this.Covered?.Invoke(this, EventArgs.Empty);
-            return this.PageDisplay.GenerateState();
+            return this.Display.GenerateState();
         }
 
         internal void OnDrawerOpening ()
@@ -187,9 +187,9 @@
 
         private class EmptyDrawer : IDrawerDisplay
         {
-            public EmptyDrawer (IStackNavDisplayControl shownPage)
+            public EmptyDrawer (IStackNavDisplayControl shownDisplay)
             {
-                this.Title = shownPage.GetType().Name.Replace("Page", String.Empty).ConvertToFriendlyEn();
+                this.Title = shownDisplay.GetType().Name.Replace("Page", String.Empty).ConvertToFriendlyEn();
             }
 
             public string Title { get; }
