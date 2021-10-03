@@ -1,4 +1,4 @@
-﻿namespace AJut.Application.SinglePageDisplay
+﻿namespace AJut.Application.StackNav.Model
 {
     public interface IDrawerDisplay
     {
@@ -7,6 +7,6 @@
 
     public interface IManagerReactiveDrawerDisplay : IDrawerDisplay
     {
-        void Setup (PageManager pageManager);
+        void Setup (StackNavOperationsManager pageManager);
     }
 }

@@ -16,7 +16,7 @@
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/PathFollowingContentDisplayer.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/PopupMenuButton.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/PropertyGrid.xaml"/>
-        <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/SinglePageDisplayHelpers/PopoverContainer.xaml"/>
+        <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/StackNav_Display/PopoverContainer.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/Svg.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/ToggleStrip.xaml"/>
         <ResourceDictionary Source="/AJut.Application.WPF;component/Controls/WindowChromeButtonStrip.xaml"/>

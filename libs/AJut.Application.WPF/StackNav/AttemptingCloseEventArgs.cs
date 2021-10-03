@@ -1,4 +1,4 @@
-﻿namespace AJut.Application.SinglePageDisplay
+﻿namespace AJut.Application.StackNav.Model
 {
     using System;
 

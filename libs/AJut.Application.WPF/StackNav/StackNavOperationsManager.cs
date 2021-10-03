@@ -1,4 +1,4 @@
-﻿namespace AJut.Application.SinglePageDisplay
+﻿namespace AJut.Application.StackNav.Model
 {
     using System;
     using System.Collections.Generic;
@@ -7,16 +7,20 @@
     using System.Windows.Media;
     using AJut;
 
-    public class PageManager : NotifyPropertyChanged
+    /// <summary>
+    /// The entry point into the stack nav system. This stores the stack and currently displayed item info.
+    /// </summary>
+    public class StackNavOperationsManager : NotifyPropertyChanged
     {
         private Stack<PageStorage> m_pageStack = new Stack<PageStorage>();
-        private PageAdapterModel m_shownPage;
+        private StackNavAdapter m_shownPage;
         private bool m_isDrawerOpen;
         private bool m_canGoBack;
         private bool m_canCloseDrawer = true;
         private bool m_showDrawerAsControl;
+        private bool m_supportsDrawerDisplay;
 
-        public PageManager (Window rootWindow)
+        public StackNavOperationsManager (Window rootWindow)
         {
             this.RootWindow = rootWindow;
         }
@@ -29,6 +33,12 @@
         // = Properties                                     =
         // ==================================================
         public Window RootWindow { get; }
+
+        public bool SupportsDrawerDisplay
+        {
+            get => m_supportsDrawerDisplay;
+            set => this.SetAndRaiseIfChanged(ref m_supportsDrawerDisplay, value);
+        }
 
         public bool IsDrawerOpen
         {
@@ -51,7 +61,7 @@
             }
         }
 
-        public PageAdapterModel ShownPage
+        public StackNavAdapter ShownPage
         {
             get => m_shownPage;
             set => this.SetAndRaiseIfChanged(ref m_shownPage, value);
@@ -90,14 +100,14 @@
             catch { pageObj = null; }
 
             // Use it if it's valid
-            if (pageObj is IPageDisplayControl page)
+            if (pageObj is IStackNavDisplayControl page)
             {
                 if (this.ShownPage != null)
                 {
                     m_pageStack.Push(new PageStorage(this.ShownPage));
                 }
 
-                this.ReplaceShownPage(new PageAdapterModel(this, page), state);
+                this.ReplaceShownPage(new StackNavAdapter(this, page), state);
                 return true;
             }
 
@@ -113,7 +123,7 @@
 
         public async Task Pop ()
         {
-            PageAdapterModel oldShownPage = this.ShownPage;
+            StackNavAdapter oldShownPage = this.ShownPage;
             PageStorage newPage = m_pageStack.Pop();
 
             if (await oldShownPage.Close())
@@ -126,7 +136,7 @@
             }
         }
 
-        private void ReplaceShownPage (PageAdapterModel newPage, object newState)
+        private void ReplaceShownPage (StackNavAdapter newPage, object newState)
         {
             this.NavigationIminent?.Invoke(this, EventArgs.Empty);
 
@@ -194,13 +204,13 @@
 
         private class PageStorage
         {
-            public PageStorage (PageAdapterModel page)
+            public PageStorage (StackNavAdapter page)
             {
                 this.Page = page;
                 this.PreviousState = page.OnCovered();
             }
 
-            public PageAdapterModel Page { get; }
+            public StackNavAdapter Page { get; }
             public object PreviousState { get; }
         }
     }

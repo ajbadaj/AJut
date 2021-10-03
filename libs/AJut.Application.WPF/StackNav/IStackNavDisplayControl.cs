@@ -1,11 +1,11 @@
-﻿namespace AJut.Application.SinglePageDisplay
+﻿namespace AJut.Application.StackNav.Model
 {
     /// <summary>
     /// The interface a control needs to implement in order to be treated as a page in a SinglePageDisplay
     /// </summary>
-    public interface IPageDisplayControl
+    public interface IStackNavDisplayControl
     {
-        void Setup (PageAdapterModel adapter);
+        void Setup (StackNavAdapter adapter);
         void SetState (object state) { }
         object GenerateState () => null;
     }

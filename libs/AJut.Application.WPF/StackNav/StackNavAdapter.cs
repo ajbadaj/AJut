@@ -1,4 +1,4 @@
-﻿namespace AJut.Application.SinglePageDisplay
+﻿namespace AJut.Application.StackNav.Model
 {
     using System;
     using System.Threading.Tasks;
@@ -8,7 +8,7 @@
     public delegate Task<bool> ClosingHandlerFunction ();
     public delegate object StateGenerator ();
     
-    public class PageAdapterModel : NotifyPropertyChanged
+    public class StackNavAdapter : NotifyPropertyChanged
     {
         private Lazy<EmptyDrawer> m_emptyDrawerFallback;
         private IDrawerDisplay m_drawer;
@@ -17,7 +17,7 @@
         private bool m_isBusyWaitActive;
         private IPopoverDisplayBase m_popoverDisplay;
 
-        public PageAdapterModel (PageManager pageManager, IPageDisplayControl page)
+        public StackNavAdapter (StackNavOperationsManager pageManager, IStackNavDisplayControl page)
         {
             m_emptyDrawerFallback = new Lazy<EmptyDrawer>(() => new EmptyDrawer(page));
             this.Manager = pageManager;
@@ -36,8 +36,8 @@
         public event EventHandler<EventArgs> DrawerClosed;
 
         // =============================[ Properties ]========================================
-        public PageManager Manager { get; }
-        public IPageDisplayControl PageDisplay { get; }
+        public StackNavOperationsManager Manager { get; }
+        public IStackNavDisplayControl PageDisplay { get; }
         public IDrawerDisplay Drawer
         {
             get => m_drawer ?? m_emptyDrawerFallback.Value;
@@ -172,8 +172,8 @@
 
         public class BusyWaitTracker : IDisposable
         {
-            PageAdapterModel m_owner;
-            public BusyWaitTracker (PageAdapterModel owner)
+            StackNavAdapter m_owner;
+            public BusyWaitTracker (StackNavAdapter owner)
             {
                 m_owner = owner;
                 m_owner.IsBusyWaitActive = true;
@@ -188,7 +188,7 @@
 
         private class EmptyDrawer : IDrawerDisplay
         {
-            public EmptyDrawer (IPageDisplayControl shownPage)
+            public EmptyDrawer (IStackNavDisplayControl shownPage)
             {
                 this.Title = shownPage.GetType().Name.Replace("Page", String.Empty).ConvertToFriendlyEn();
             }
