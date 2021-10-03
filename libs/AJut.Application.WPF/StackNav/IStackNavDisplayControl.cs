@@ -1,4 +1,4 @@
-﻿namespace AJut.Application.StackNav.Model
+﻿namespace AJut.Application.StackNav
 {
     /// <summary>
     /// The interface a control needs to implement in order to be treated as a page in a SinglePageDisplay

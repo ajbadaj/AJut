@@ -1,4 +1,4 @@
-﻿namespace AJut.Application.StackNav.Model
+﻿namespace AJut.Application.StackNav
 {
     using System;
     using AJut;

@@ -5,7 +5,7 @@
     using System.Windows.Input;
     using System.Windows.Media;
     using AJut.Application.AttachedProperties;
-    using AJut.Application.StackNav.Model;
+    using AJut.Application.StackNav;
     using DPUtils = AJut.Application.DPUtils<PopoverContainer>;
 
     [TemplatePart(Name = nameof(PART_PopoverDisplayArea), Type = typeof(Border))]
