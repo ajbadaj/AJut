@@ -5,19 +5,19 @@
     using System.Windows.Input;
     using System.Windows.Media;
     using AJut.Application.AttachedProperties;
-    using AJut.Application.StackNav;
-    using DPUtils = AJut.Application.DPUtils<PopoverContainer>;
+    using AJut.Application;
+    using DPUtils = AJut.Application.DPUtils<StackNavPopoverOverlay>;
 
     [TemplatePart(Name = nameof(PART_PopoverDisplayArea), Type = typeof(Border))]
-    public class PopoverContainer : Control
+    public class StackNavPopoverOverlay : Control
     {
         private Border PART_PopoverDisplayArea;
-        static PopoverContainer ()
+        static StackNavPopoverOverlay ()
         {
-            DefaultStyleKeyProperty.OverrideMetadata(typeof(PopoverContainer), new FrameworkPropertyMetadata(typeof(PopoverContainer)));
+            DefaultStyleKeyProperty.OverrideMetadata(typeof(StackNavPopoverOverlay), new FrameworkPropertyMetadata(typeof(StackNavPopoverOverlay)));
         }
 
-        public PopoverContainer()
+        public StackNavPopoverOverlay ()
         {
             ClickableXTA.AddClickHandler(this, OuterContents_OnClick);
         }
@@ -44,9 +44,9 @@
         }
 
         public static readonly DependencyProperty DisplayContentProperty = DPUtils.Register(_ => _.DisplayContent);
-        public IPopoverDisplayBase DisplayContent
+        public IStackNavPopoverDisplayBase DisplayContent
         {
-            get => (IPopoverDisplayBase)this.GetValue(DisplayContentProperty);
+            get => (IStackNavPopoverDisplayBase)this.GetValue(DisplayContentProperty);
             set => this.SetValue(DisplayContentProperty, value);
         }
 

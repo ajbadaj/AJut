@@ -4,8 +4,7 @@
                     xmlns:ap="clr-namespace:AJut.Application.AttachedProperties"
                     xmlns:local="clr-namespace:AJut.Application.Controls">
 
-    <Style TargetType="{x:Type local:PopoverContainer}">
-        <Setter Property="BackgroundCoverBrush" Value="#C000"/>
+    <Style TargetType="{x:Type local:StackNavPopoverOverlay}">
         <Setter Property="ap:BorderXTA.CornerRadius" Value="5"/>
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Padding" Value="15"/>
@@ -17,9 +16,8 @@
         <Setter Property="HighlightBorderPadding" Value="-10"/>
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="{x:Type local:PopoverContainer}">
-                    <Grid Background="{TemplateBinding BackgroundCoverBrush}"
-                          ap:ClickableXTA.IsTrackingClick="True">
+                <ControlTemplate TargetType="{x:Type local:StackNavPopoverOverlay}">
+                    <Grid ap:ClickableXTA.IsTrackingClick="True">
                         <Grid HorizontalAlignment="Center"
                               VerticalAlignment="Center">
                             <Border CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}"
@@ -35,8 +33,7 @@
                                     CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}"
                                     BorderThickness="{TemplateBinding BorderThickness}" 
                                     BorderBrush="{TemplateBinding BorderBrush}"
-                                    Background="{TemplateBinding Background}"
-                                    MinWidth="200" MinHeight="200">
+                                    Background="{TemplateBinding Background}">
                                 <ContentControl Content="{TemplateBinding DisplayContent}"
                                                 Margin="{TemplateBinding Padding}"
                                                 HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"

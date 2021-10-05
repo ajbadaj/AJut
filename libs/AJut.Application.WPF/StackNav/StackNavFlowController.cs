@@ -1,4 +1,4 @@
-﻿namespace AJut.Application.StackNav
+﻿namespace AJut.Application
 {
     using System;
     using System.Collections.Generic;
@@ -172,7 +172,7 @@
 
             this.IsDrawerOpen = true;
 
-            if (drawer is IManagerReactiveDrawerDisplay drawerNeedsSetup)
+            if (drawer is IStackNavFlowControllerReactiveDrawerDisplay drawerNeedsSetup)
             {
                 drawerNeedsSetup.Setup(this);
             }

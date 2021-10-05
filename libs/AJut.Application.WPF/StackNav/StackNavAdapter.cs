@@ -1,4 +1,4 @@
-﻿namespace AJut.Application.StackNav
+﻿namespace AJut.Application
 {
     using System;
     using System.Threading.Tasks;
@@ -11,11 +11,11 @@
     public class StackNavAdapter : NotifyPropertyChanged
     {
         private Lazy<EmptyDrawer> m_emptyDrawerFallback;
-        private IDrawerDisplay m_drawer;
+        private IStackNavDrawerDisplay m_drawer;
         private string m_title;
         private bool m_displayTitlePrefix = true;
         private bool m_isBusyWaitActive;
-        private IPopoverDisplayBase m_popoverDisplay;
+        private IStackNavPopoverDisplayBase m_popoverDisplay;
 
         public StackNavAdapter (StackNavFlowController navigator, IStackNavDisplayControl display)
         {
@@ -25,7 +25,7 @@
             this.Display.Setup(this);
         }
 
-        public event EventHandler<AttemptingCloseEventArgs> Closing;
+        public event EventHandler<StackNavAttemptingDisplayCloseEventArgs> Closing;
         public event EventHandler<EventArgs> Closed;
 
         public event EventHandler<EventArgs> Covered;
@@ -38,7 +38,7 @@
         // =============================[ Properties ]========================================
         public StackNavFlowController Navigator { get; }
         public IStackNavDisplayControl Display { get; }
-        public IDrawerDisplay Drawer
+        public IStackNavDrawerDisplay Drawer
         {
             get => m_drawer ?? m_emptyDrawerFallback.Value;
             set => this.SetAndRaiseIfChanged(ref m_drawer, value);
@@ -72,7 +72,7 @@
 
         public bool IsShowingPopover => m_popoverDisplay != null;
 
-        public IPopoverDisplayBase PopoverDisplay
+        public IStackNavPopoverDisplayBase PopoverDisplay
         {
             get => m_popoverDisplay;
             private set
@@ -96,7 +96,7 @@
 
         public async Task<bool> Close ()
         {
-            AttemptingCloseEventArgs attemptingClose = new AttemptingCloseEventArgs();
+            StackNavAttemptingDisplayCloseEventArgs attemptingClose = new StackNavAttemptingDisplayCloseEventArgs();
             this.Closing?.Invoke(this, attemptingClose);
             if (!attemptingClose.CanClose)
             {
@@ -113,7 +113,7 @@
             return true;
         }
 
-        public async Task<Result> ShowPopover (IPopoverDisplay popover)
+        public async Task<Result> ShowPopover (IStackNavPopoverDisplay popover)
         {
             this.PopoverDisplay = popover;
             var resultWaiter = new TaskCompletionSource<Result>();
@@ -128,7 +128,7 @@
             }
         }
 
-        public async Task<Result<T>> ShowPopover<T> (IPopoverDisplay<T> popover)
+        public async Task<Result<T>> ShowPopover<T> (IStackNavPopoverDisplay<T> popover)
         {
             this.PopoverDisplay = popover;
             var resultWaiter = new TaskCompletionSource<Result<T>>();
@@ -185,7 +185,7 @@
             }
         }
 
-        private class EmptyDrawer : IDrawerDisplay
+        private class EmptyDrawer : IStackNavDrawerDisplay
         {
             public EmptyDrawer (IStackNavDisplayControl shownDisplay)
             {
