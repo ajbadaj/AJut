@@ -13,7 +13,6 @@
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/FlatTreeListControl.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/NumericEditor.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/PathSelectionControl.xaml"/>
-        <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/PathFollowingContentDisplayer.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/PopupMenuButton.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/PropertyGrid.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/StackNav_Display/StackNavActiveContentPresenter.xaml"/>

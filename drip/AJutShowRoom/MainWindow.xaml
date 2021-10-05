@@ -25,10 +25,6 @@
     </Window.Resources>
     <Grid>
         <TabControl>
-            <!--<TabItem Header="Testing">
-                <ListBox ItemsSource="{Binding ElementName=Self, Path=Items}"
-                         Select/>
-            </TabItem>-->
             <TabItem Header="Full Screen">
                 <StackPanel>
                     <ToggleButton Grid.Row="1" IsChecked="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=(ajap:WindowXTA.IsFullscreen)}" Content="Toggle Fullscreen"
@@ -44,10 +40,9 @@
                     <ToggleButton Grid.Row="1" Padding="5">
                         <Border BorderThickness="3" BorderBrush="Black">
                             <Image x:Name="GifDisplay" Height="250"
-                               ajap:Gif.Path="pack://application:,,,/AJut.TestApp.WPF;component/FreeGif.gif"
+                               ajap:Gif.Path="pack://application:,,,/AJutShowRoom;component/FreeGif.gif"
                                ajap:Gif.IsPlaying="{Binding Path=IsChecked, RelativeSource={RelativeSource AncestorType=ToggleButton}, Mode=TwoWay}"
                                ajap:Gif.OverrideIsLooping="False"/>
-                            <!--ap:Gif.Path="https://media1.giphy.com/media/1d7F9xyq6j7C1ojbC5/giphy.gif"-->
                         </Border>
                     </ToggleButton>
                     <TextBlock Grid.Row="1" Text="{Binding ElementName=GifDisplay, Path=(ajap:Gif.CurrentFrameIndex), StringFormat='Frame #{0}'}"/>
@@ -243,7 +238,7 @@
                             <ToggleButton x:Name="DrawController" Content="Draw" VerticalAlignment="Center" Margin="2"/>
                             <Border Margin="5,0" BorderThickness="1,0,0,0" BorderBrush="Black"/>
                             <TextBlock Text="Color" VerticalAlignment="Center" Margin="2"/>
-                            <TextBox x:Name="Color" Text="#F00" MinWidth="50" VerticalAlignment="Center"/>
+                            <ajctrls:ColorEditIngressControl x:Name="PathDisplayColor" EditColor="#F00" Width="30" Height="30"/>
                             <Border Margin="5,0" BorderThickness="1,0,0,0" BorderBrush="Black"/>
                             <TextBlock Text="Segment Size" VerticalAlignment="Center" Margin="2"/>
                             <TextBox Text="{Binding ElementName=DrawingOn, Path=(ajdraw:DrawingInputSpawner.SegmentSize), Mode=TwoWay}" MinWidth="50" VerticalAlignment="Center"/>
@@ -257,12 +252,11 @@
                     </Border>
                     <Canvas x:Name="DrawingDisplayer" ClipToBounds="True">
                         <Viewbox Stretch="None">
-                            <Path Stroke="{Binding ElementName=Color, Path=Text, Converter={ajconv:ColorTextConverter}}"
-                                  StrokeThickness="2"
+                            <Path StrokeThickness="2"
                                   Data="{Binding ElementName=DrawingOn, Path=(ajdraw:DrawingInputSpawner.PathInProgress).Geometry}">
-                                <!--<Path.Data>
-                                    <PathGeometry Figures="m 1.9572636 1.6982037 c 1.0968071 0.3816158 2.9912883 0.6937946 4.2099563 0.6937946 1.2186747 0 3.1131525 -0.3122099 4.2099561 -0.6937946 1.520237 -0.52888 1.994191 -0.3604182 1.994191 0.7088214 0 1.7263056 -5.2220938 11.1251409 -6.1812262 11.1251409 C 4.1445438 11.057221 -2.0098302 0.43191585 1.9572636 1.6982037 Z" FillRule="NonZero"/>
-                                </Path.Data>-->
+                                <Path.Stroke>
+                                    <SolidColorBrush Color="{Binding ElementName=PathDisplayColor, Path=EditColor}"/>
+                                </Path.Stroke>
                             </Path>
                         </Viewbox>
                     </Canvas>
@@ -302,99 +296,6 @@
                     <TextBlock Text="{Binding ElementName=Self, Path=WatchedValueCounter}"/>
                     <Button Content="Start Watching" Click="StartWatchingWithDPWatcher_OnClick"/>
                 </StackPanel>
-            </TabItem>
-            <TabItem Header="Path Items: Buttons">
-                <Grid Background="Green">
-                    <Grid.Resources>
-                        <Style TargetType="{x:Type Button}">
-                            <Setter Property="MinWidth" Value="80"/>
-                            <Setter Property="MinHeight" Value="20"/>
-                        </Style>
-                    </Grid.Resources>
-                    <ajctrls:PathFollowingContentDisplayer Path="{StaticResource PathInfo}">
-                        <Button Content="1" Width="10"/>
-                        <Button Content="2" Width="10"/>
-                        <Button Content="3" Width="10"/>
-                        <Button Content="4" Width="10"/>
-                        <Button Content="5" Width="10"/>
-                    </ajctrls:PathFollowingContentDisplayer>
-                </Grid>
-            </TabItem>
-            <TabItem Header="Path Items: Text">
-                <DockPanel>
-                    <StackPanel DockPanel.Dock="Top">
-                        <TextBlock Text="{Binding ElementName=PathDisplayer, Path=FlattenedPathLength, StringFormat='Flattened Path Length: {0}'}"/>
-                        <DockPanel>
-                            <TextBlock Width="120" Text="Min Width" />
-                            <TextBox Text="{Binding ElementName=PathDisplayer, Path=VariableItemWidthProportionalMinimum}"/>
-                        </DockPanel>
-                        <DockPanel>
-                            <TextBlock Width="120" Text="Additional kerning" />
-                            <TextBox Text="{Binding ElementName=PathDisplayer, Path=AdditionalKerning}"/>
-                        </DockPanel>
-                        <DockPanel>
-                            <TextBlock Text="Is Relative To Bounds" Width="120"/>
-                            <CheckBox IsChecked="{Binding ElementName=PathDisplayer, Path=IsPathReltiveToBounds}"/>
-                        </DockPanel>
-                        <DockPanel>
-                            <TextBlock Text="Text" Width="120"/>
-                            <TextBox Text="{Binding ElementName=TextToShow, Path=Text, Mode=TwoWay}"/>
-                        </DockPanel>
-                        <DockPanel>
-                            <TextBlock Text="Font Size" Width="120"/>
-                            <TextBox Text="{Binding ElementName=TextToShow, Path=FontSize, Mode=TwoWay}"/>
-                        </DockPanel>
-                        <DockPanel>
-                            <TextBlock Text="Path Bounds.Width" Width="120"/>
-                            <TextBlock Text="{Binding ElementName=PathDisplayer, Path=Path.Bounds.Width}"/>
-                        </DockPanel>
-                        <DockPanel>
-                            <TextBlock Text="Path Bounds.Height" Width="120"/>
-                            <TextBlock Text="{Binding ElementName=PathDisplayer, Path=Path.Bounds.Height}"/>
-                        </DockPanel>
-                        <DockPanel>
-                            <TextBlock Text="Draw Path" Width="120"/>
-                            <CheckBox IsChecked="{Binding ElementName=PathDisplayer, Path=ShouldRenderPath}"/>
-                        </DockPanel>
-                        <DockPanel IsEnabled="{Binding ElementName=PathDisplayer, Path=ShouldRenderPath}">
-                            <TextBlock Text="Path Thickness" Width="120"/>
-                            <TextBox Text="{Binding ElementName=PathDisplayer, Path=PathRenderThickness, Mode=TwoWay}"/>
-                        </DockPanel>
-                    </StackPanel>
-                    <Border Background="#ccc" BorderBrush="Black" BorderThickness="3" CornerRadius="8" Margin="10"
-                            >
-                        <ajctrls:PathFollowingContentDisplayer x:Name="PathDisplayer" Path="{StaticResource PathInfo}"
-                                                            Foreground="Purple">
-                            <!--<Button Content="left" Width="100" Height="100" Background="Green"/>-->
-                            <TextBlock x:Name="TextToShow" Text="----------Text------------" FontSize="40"/>
-                            <!--<Button Content="right" Width="100" Height="100"/>-->
-                        </ajctrls:PathFollowingContentDisplayer>
-                    </Border>
-                </DockPanel>
-            </TabItem>
-            <TabItem Header="Test">
-                <DockPanel>
-                    <StackPanel>
-                        <TextBox x:Name="TestTB" Text="{Binding RelativeSource={RelativeSource Self}, Path=ActualWidth, Mode=OneWay}" IsReadOnly="True" IsReadOnlyCaretVisible="True"/>
-                        <TextBlock>
-                            <TextBlock.Text>
-                                <ajconv:ArithmeticMultiBinding Operation="Add">
-                                    <Binding RelativeSource="{RelativeSource Self}" Path="ActualWidth" Mode="OneWay"/>
-                                    <Binding Source="10" />
-                                </ajconv:ArithmeticMultiBinding>
-                            </TextBlock.Text>
-                        </TextBlock>
-                    </StackPanel>
-                    <Border BorderBrush="#333" BorderThickness="3" CornerRadius="4">
-                        <Viewbox Stretch="Uniform" ClipToBounds="True">
-                            <Canvas Width="{Binding Source={StaticResource PathInfo}, Path=Bounds.Width}"
-                                    Height="{Binding Source={StaticResource PathInfo}, Path=Bounds.Height}"
-                                    Margin="20">
-                                <Path Data="{StaticResource PathInfo}" Stroke="Purple" StrokeThickness="3" Stretch="UniformToFill"/>
-                            </Canvas>
-                        </Viewbox>
-                    </Border>
-                </DockPanel>
             </TabItem>
             <TabItem Header="EditableTextBlock">
                 <DockPanel>

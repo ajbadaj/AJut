@@ -19,6 +19,7 @@
     using AJut.TestApp.WPF.StackNavTest;
     using DPUtils = AJut.UX.DPUtils<MainWindow>;
 
+
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
