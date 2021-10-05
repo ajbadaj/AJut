@@ -11,5 +11,7 @@
         }
 
         public T Value { get; }
+
+        public static implicit operator EventArgs<T> (T eventValue) => new EventArgs<T>(eventValue);
     }
 }
