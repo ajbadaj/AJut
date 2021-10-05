@@ -954,6 +954,28 @@
                     <MenuItem Header="Test 2"/>
                 </ajut:PopupMenuButton>
             </TabItem>
+            <TabItem Header="Stack Nav">
+                <Grid  HorizontalAlignment="Center">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" FontSize="22" TextWrapping="WrapWithOverflow">
+                        <TextBlock.Inlines>
+                            <Run Text="The below is a stack nav. All stack navs will use the "/>
+                            <Run Text="StackNavFlowController" FontWeight="Bold" Foreground="Blue"/>
+                            <Run Text=" as an entry point, and optionally you may use the header/drawer/content ui helpers to build your views faster - or you can have your own displays render the "/>
+                            <Run Text="StackNavFlowController" FontWeight="Bold" Foreground="Blue"/>
+                            <Run Text=" and "/>
+                            <Run Text="StackNavAdapter" FontWeight="Bold" Foreground="Blue"/>
+                            <Run Text=" more directly!"/>
+                        </TextBlock.Inlines>
+                    </TextBlock>
+                    <DockPanel Grid.Row="1">
+                        <ajut:StackNavActiveContentPresenter Navigator="{Binding ElementName=Self, Path=Navigator}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"/>
+                    </DockPanel>
+                </Grid>
+            </TabItem>
         </TabControl>
     </Grid>
 </Window>

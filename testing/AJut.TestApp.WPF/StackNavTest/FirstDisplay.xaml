@@ -1,0 +1,11 @@
+﻿<UserControl x:Class="AJut.TestApp.WPF.StackNavTest.FirstDisplay"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ajut="clr-namespace:AJut.Application.Controls;assembly=AJut.Application.WPF"
+             x:Name="Self">
+    <StackPanel>
+        <ajut:NumericEditor Value="{Binding ElementName=Self, Path=Number, Mode=TwoWay}"/>
+        <Button Content="{Binding ElementName=Self, Path=UserSelectedName, StringFormat='Name: {0} - click to change'}" Click="ChangeName_OnClick"/>
+        <Button Content="Go to second display!" Click="GoToSecond_OnClick"/>
+    </StackPanel>
+</UserControl>

@@ -16,6 +16,7 @@
     using AJut.Application.PropertyInteraction;
     using AJut.Storage;
     using AJut.TestApp.WPF.DockTest;
+    using AJut.TestApp.WPF.StackNavTest;
     using DPUtils = AJut.Application.DPUtils<MainWindow>;
 
     /// <summary>
@@ -79,6 +80,9 @@
             this.RightDockZone.PosteriorZone.GenerateAndAdd<DockTestOne>();
             this.RightDockZone.PosteriorZone.GenerateAndAdd<DockTestTwo>();
 
+            this.Navigator = new StackNavFlowController(this);
+            this.Navigator.GenerateAndPushDisplay<FirstDisplay>();
+
             TestTreeItem _SetExpanded (TestTreeItem item)
             {
                 item.CanHaveChildren = true;
@@ -100,6 +104,12 @@
             set => this.SetValue(DockingManagerProperty, value);
         }
 
+        public static readonly DependencyProperty NavigatorProperty = DPUtils.Register(_ => _.Navigator);
+        public StackNavFlowController Navigator
+        {
+            get => (StackNavFlowController)this.GetValue(NavigatorProperty);
+            set => this.SetValue(NavigatorProperty, value);
+        }
 
         public static readonly DependencyProperty ToolWindowsProperty = DPUtils.Register(_ => _.ToolWindows);
         public WindowManager ToolWindows
