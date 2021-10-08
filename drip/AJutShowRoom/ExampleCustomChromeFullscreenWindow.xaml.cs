@@ -1,4 +1,4 @@
-﻿namespace AJut.TestApp.WPF
+﻿namespace AJutShowRoom
 {
     using System;
     using System.Collections.Generic;

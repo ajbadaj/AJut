@@ -1,4 +1,4 @@
-﻿namespace AJut.TestApp.WPF.StackNavTest
+﻿namespace AJutShowRoom.StackNavTest
 {
     using System;
     using System.Timers;
@@ -19,6 +19,23 @@
         {
             m_adapter = adapter;
             m_adapter.Title = "Second Page";
+            m_adapter.Closing += this.OnClosing;
+        }
+
+        private void OnClosing (object sender, StackNavAttemptingDisplayCloseEventArgs e)
+        {
+            if (!this.AllowClose)
+            {
+                e.CanClose = false;
+                return;
+            }
+        }
+
+        public static readonly DependencyProperty AllowCloseProperty = DPUtils.Register(_ => _.AllowClose);
+        public bool AllowClose
+        {
+            get => (bool)this.GetValue(AllowCloseProperty);
+            set => this.SetValue(AllowCloseProperty, value);
         }
 
         public static readonly DependencyProperty NumberFromFirstProperty = DPUtils.Register(_ => _.NumberFromFirst);

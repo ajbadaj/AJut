@@ -1,4 +1,4 @@
-﻿namespace AJut.TestApp.WPF.StackNavTest
+﻿namespace AJutShowRoom.StackNavTest
 {
     using System;
     using System.Windows;

@@ -1,5 +1,6 @@
-﻿namespace AJut.TestApp.WPF
+﻿namespace AJutShowRoom
 {
+    using AJut;
     using AJut.UX;
     using System;
     using System.Windows;

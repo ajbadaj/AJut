@@ -1,7 +1,7 @@
-﻿<Window x:Class="AJut.TestApp.WPF.MainWindow"
+﻿<Window x:Class="AJutShowRoom.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:local="clr-namespace:AJut.TestApp.WPF"
+        xmlns:local="clr-namespace:AJutShowRoom"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         xmlns:ajut_core_io="clr-namespace:AJut.IO;assembly=AJut.Core"
         xmlns:ajut="clr-namespace:AJut.UX;assembly=AJut.UX.WPF"
@@ -867,8 +867,9 @@
                             <Run Text=" more directly!"/>
                         </TextBlock.Inlines>
                     </TextBlock>
-                    <DockPanel Grid.Row="1">
-                        <ajctrls:StackNavActiveContentPresenter Navigator="{Binding ElementName=Self, Path=Navigator}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"/>
+                    <DockPanel Grid.Row="1" Margin="20">
+                        <TextBlock DockPanel.Dock="Top" Text="Stack Nav Area ↓" FontSize="19"/>
+                        <ajctrls:StackNavDisplay Navigator="{Binding ElementName=Self, Path=Navigator}" FixedDrawerWidth="300"/>
                     </DockPanel>
                 </Grid>
             </TabItem>

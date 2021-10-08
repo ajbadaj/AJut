@@ -1,4 +1,4 @@
-﻿namespace AJut.TestApp.WPF
+﻿namespace AJutShowRoom
 {
     using System.Windows;
     using DPUtils = AJut.UX.DPUtils<TestWindow>;

@@ -1,4 +1,4 @@
-﻿namespace AJut.TestApp.WPF.DockTest
+﻿namespace AJutShowRoom.DockTest
 {
     using System;
     using System.Windows;

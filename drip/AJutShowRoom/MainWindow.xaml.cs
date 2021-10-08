@@ -1,4 +1,4 @@
-﻿namespace AJut.TestApp.WPF
+﻿namespace AJutShowRoom
 {
     using System;
     using System.Collections.Generic;
@@ -15,8 +15,8 @@
     using AJut.UX.Docking;
     using AJut.UX.PropertyInteraction;
     using AJut.Storage;
-    using AJut.TestApp.WPF.DockTest;
-    using AJut.TestApp.WPF.StackNavTest;
+    using AJutShowRoom.DockTest;
+    using AJutShowRoom.StackNavTest;
     using DPUtils = AJut.UX.DPUtils<MainWindow>;
 
 

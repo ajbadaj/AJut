@@ -1,4 +1,4 @@
-﻿namespace AJut.TestApp.WPF.StackNavTest
+﻿namespace AJutShowRoom.StackNavTest
 {
     using System.Windows;
     using System.Windows.Controls;
@@ -53,6 +53,7 @@
         {
             m_adapter = adapter;
             m_adapter.Title = "First Page";
+            m_adapter.Drawer = new FirstDisplayDrawer();
         }
 
         private void GoToSecond_OnClick (object sender, RoutedEventArgs e)
