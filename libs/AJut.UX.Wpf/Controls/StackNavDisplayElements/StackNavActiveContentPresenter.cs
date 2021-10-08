@@ -2,14 +2,11 @@
 {
     using System.Windows;
     using System.Windows.Controls;
-    using System.Windows.Input;
     using System.Windows.Media;
-    using AJut.UX.AttachedProperties;
     using AJut.UX;
     using DPUtils = AJut.UX.DPUtils<StackNavActiveContentPresenter>;
-    using System;
 
-    public class StackNavActiveContentPresenter : Control
+    public class StackNavActiveContentPresenter : Control, IStackNavPresenter
     {
         static StackNavActiveContentPresenter ()
         {
@@ -18,20 +15,7 @@
 
         public StackNavActiveContentPresenter ()
         {
-            this.InputBindings.Add(new InputBinding(NavigationCommands.BrowseBack, new KeyGesture(Key.Back)));
-            this.CommandBindings.Add(new CommandBinding(NavigationCommands.BrowseBack, _OnBrowseBack, _CanBrowseBack));
-
-            void _CanBrowseBack (object sender, CanExecuteRoutedEventArgs e)
-            {
-                if (this.Navigator?.CanGoBack == true)
-                {
-                    e.CanExecute = true;
-                }
-            }
-            async void _OnBrowseBack (object sender, ExecutedRoutedEventArgs e)
-            {
-                await this.Navigator.PopDisplay();
-            }
+            this.SetupBasicNavigatorCommandBindings();
         }
 
         public static readonly DependencyProperty NavigatorProperty = DPUtils.Register(_ => _.Navigator);

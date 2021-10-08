@@ -2,6 +2,7 @@
 {
     using System;
     using System.Threading.Tasks;
+    using System.Windows;
     using AJut;
     using AJut.Storage;
 
@@ -12,8 +13,7 @@
     {
         private Lazy<EmptyDrawer> m_emptyDrawerFallback;
         private IStackNavDrawerDisplay m_drawer;
-        private string m_title;
-        private bool m_displayTitlePrefix = true;
+        private object m_title;
         private bool m_isBusyWaitActive;
         private IStackNavPopoverDisplayBase m_popoverDisplay;
 
@@ -46,16 +46,10 @@
 
         public ClosingHandlerFunction AsyncClosingHandler { get; set; }
 
-        public string Title
+        public object Title
         {
             get => this.m_title;
             set => this.SetAndRaiseIfChanged(ref m_title, value);
-        }
-
-        public bool DisplayTitlePrefix
-        {
-            get => m_displayTitlePrefix;
-            set => this.SetAndRaiseIfChanged(ref m_displayTitlePrefix, value);
         }
 
         public bool IsBusyWaitActive
@@ -189,7 +183,7 @@
         {
             public EmptyDrawer (IStackNavDisplayControl shownDisplay)
             {
-                this.Title = shownDisplay.GetType().Name.Replace("Page", String.Empty).ConvertToFriendlyEn();
+                this.Title = shownDisplay.GetType().Name.ConvertToFriendlyEn();
             }
 
             public string Title { get; }

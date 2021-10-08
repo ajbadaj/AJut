@@ -17,7 +17,7 @@
         private bool m_isDrawerOpen;
         private bool m_canGoBack;
         private bool m_canCloseDrawer = true;
-        private bool m_showDrawerAsControl;
+        private bool m_showDrawerContents;
         private bool m_supportsDrawerDisplay;
 
         public StackNavFlowController (Window rootWindow)
@@ -79,10 +79,10 @@
             set => this.SetAndRaiseIfChanged(ref m_canCloseDrawer, value);
         }
 
-        public bool ShowDrawerAsControl
+        public bool ShowDrawerContents
         {
-            get => m_showDrawerAsControl;
-            set => this.SetAndRaiseIfChanged(ref m_showDrawerAsControl, value);
+            get => m_showDrawerContents;
+            private set => this.SetAndRaiseIfChanged(ref m_showDrawerContents, value);
         }
 
         // ==================================================
@@ -124,15 +124,10 @@
         public async Task PopDisplay ()
         {
             StackNavAdapter oldShownControl = this.StackTopDisplayAdapter;
-            StackElementStorage newElementToShow = m_hiddenElementStack.Pop();
-
             if (await oldShownControl.Close())
             {
+                StackElementStorage newElementToShow = m_hiddenElementStack.Pop();
                 this.ReplaceShownDisplay(newElementToShow.Adapter, newElementToShow.PreviousState);
-            }
-            else
-            {
-                m_hiddenElementStack.Push(newElementToShow);
             }
         }
 
@@ -168,7 +163,7 @@
 
             this.StackTopDisplayAdapter.OnDrawerOpening();
             var drawer = this.StackTopDisplayAdapter.Drawer;
-            this.ShowDrawerAsControl = drawer is Visual;
+            this.ShowDrawerContents = drawer is DependencyObject;
 
             this.IsDrawerOpen = true;
 

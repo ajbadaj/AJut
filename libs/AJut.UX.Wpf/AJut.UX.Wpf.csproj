@@ -68,14 +68,23 @@
 	  <Compile Update="Controls\PropertyGrid.cs">
       <DependentUpon>PropertyGrid.xaml</DependentUpon>
     </Compile>
-    <Compile Update="Controls\StackNav_Display\StackNavPopoverOverlay.cs">
+    <Compile Update="Controls\StackNavDisplayElements\StackNavPopoverOverlay.cs">
       <DependentUpon>StackNavPopoverOverlay.xaml</DependentUpon>
     </Compile>
-    <Compile Update="Controls\StackNav_Display\StackNavActiveContentPresenter.cs">
+    <Compile Update="Controls\StackNavDisplayElements\StackNavActiveContentPresenter.cs">
       <DependentUpon>StackNavActiveContentPresenter.xaml</DependentUpon>
     </Compile>
-    <Compile Update="Controls\StackNav_Display\StackNavBusyWaitOverlay.cs">
+    <Compile Update="Controls\StackNavDisplayElements\StackNavActiveDrawerPresenter.cs">
+      <DependentUpon>StackNavActiveDrawerPresenter.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\StackNavDisplayElements\StackNavActiveHeaderPresenter.cs">
+      <DependentUpon>StackNavActiveHeaderPresenter.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\StackNavDisplayElements\StackNavBusyWaitOverlay.cs">
       <DependentUpon>StackNavBusyWaitOverlay.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\StackNavDisplay.cs">
+      <DependentUpon>StackNavDisplay.xaml</DependentUpon>
     </Compile>
     <Compile Update="Controls\Svg.cs">
       <DependentUpon>Svg.xaml</DependentUpon>

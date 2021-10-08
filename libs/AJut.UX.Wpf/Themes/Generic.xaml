@@ -15,9 +15,12 @@
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/PathSelectionControl.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/PopupMenuButton.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/PropertyGrid.xaml"/>
-        <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/StackNav_Display/StackNavActiveContentPresenter.xaml"/>
-        <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/StackNav_Display/StackNavBusyWaitOverlay.xaml"/>
-        <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/StackNav_Display/StackNavPopoverOverlay.xaml"/>
+        <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/StackNavDisplayElements/StackNavActiveContentPresenter.xaml"/>
+        <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/StackNavDisplayElements/StackNavActiveDrawerPresenter.xaml"/>
+        <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/StackNavDisplayElements/StackNavActiveHeaderPresenter.xaml"/>
+        <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/StackNavDisplayElements/StackNavBusyWaitOverlay.xaml"/>
+        <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/StackNavDisplayElements/StackNavPopoverOverlay.xaml"/>
+        <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/StackNavDisplay.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/Svg.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/ToggleStrip.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/WindowChromeButtonStrip.xaml"/>
