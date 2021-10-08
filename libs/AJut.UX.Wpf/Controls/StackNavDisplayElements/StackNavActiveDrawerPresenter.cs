@@ -2,8 +2,6 @@
 {
     using System.Windows;
     using System.Windows.Controls;
-    using System.Windows.Input;
-    using System.Windows.Media;
     using AJut.UX;
     using DPUtils = AJut.UX.DPUtils<StackNavActiveDrawerPresenter>;
 
@@ -19,11 +17,11 @@
             this.SetupBasicNavigatorCommandBindings();
         }
 
-        public static readonly DependencyProperty FixedDrawerDisplayAreaProperty = DPUtils.Register(_ => _.FixedDrawerDisplayArea);
-        public DependencyObject FixedDrawerDisplayArea
+        public static readonly DependencyProperty FixedDrawerDisplayProperty = DPUtils.Register(_ => _.FixedDrawerDisplay);
+        public DependencyObject FixedDrawerDisplay
         {
-            get => (DependencyObject)this.GetValue(FixedDrawerDisplayAreaProperty);
-            set => this.SetValue(FixedDrawerDisplayAreaProperty, value);
+            get => (DependencyObject)this.GetValue(FixedDrawerDisplayProperty);
+            set => this.SetValue(FixedDrawerDisplayProperty, value);
         }
 
         public static readonly DependencyProperty NavigatorProperty = DPUtils.Register(_ => _.Navigator);

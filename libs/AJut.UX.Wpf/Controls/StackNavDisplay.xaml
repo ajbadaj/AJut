@@ -7,6 +7,7 @@
                     xmlns:local="clr-namespace:AJut.UX.Controls">
 
     <Style TargetType="{x:Type local:StackNavDisplay}">
+        <Setter Property="Focusable" Value="True"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:StackNavDisplay}">
@@ -16,13 +17,8 @@
                             Background="{TemplateBinding Background}">
                         <DockPanel>
                             <ctrls:StackNavActiveHeaderPresenter DockPanel.Dock="Top" Navigator="{Binding ElementName=Self, Path=Navigator}"/>
-                            <ctrls:StackNavActiveDrawerPresenter DockPanel.Dock="Left" Navigator="{Binding ElementName=Self, Path=Navigator}" Width="{TemplateBinding FixedDrawerWidth}">
-                                <ctrls:StackNavActiveDrawerPresenter.FixedDrawerDisplayArea>
-                                    <TextBlock Text="Fixed bottom display, version maybe?"/>
-                                </ctrls:StackNavActiveDrawerPresenter.FixedDrawerDisplayArea>
-                            </ctrls:StackNavActiveDrawerPresenter>
+                            <ctrls:StackNavActiveDrawerPresenter DockPanel.Dock="Left" Navigator="{Binding ElementName=Self, Path=Navigator}" Width="{TemplateBinding FixedDrawerWidth}"/>
                             <ctrls:StackNavActiveContentPresenter Navigator="{Binding ElementName=Self, Path=Navigator}"
-                                                                  VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
                                                                   BorderBrush="Black" BorderThickness="1"/>
                         </DockPanel>
                     </Border>

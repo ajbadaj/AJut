@@ -45,7 +45,7 @@ namespace AJut.UX
 #endif
         }
 
-        public static T GetFirstChildOf<T> (this DependencyObject start, eTraversalTree tree = eTraversalTree.Visual) where T : DependencyObject
+        public static T GetFirstChildOf<T> (this DependencyObject start, eTraversalTree tree = eTraversalTree.Visual)
         {
             var childSelector = ChildSelectorForTree(tree);
             return TreeTraversal<DependencyObject>.GetFirstChildOfType<T>(start, getChildrenMethodOverride: _=>childSelector(_));

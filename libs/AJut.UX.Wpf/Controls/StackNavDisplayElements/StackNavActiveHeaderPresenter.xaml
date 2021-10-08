@@ -43,13 +43,13 @@
                                         <Setter Property="FontSize" Value="15"/>
                                         <Setter Property="Padding" Value="7,0"/>
                                         <Setter Property="Margin" Value="3,3,0,3"/>
-                                        <Setter Property="BorderThickness" Value="1"/>
+                                        <Setter Property="BorderThickness" Value="1,1,0,0"/>
                                         <Setter Property="BorderBrush" Value="Transparent"/>
                                         <Setter Property="Background" Value="Transparent"/>
                                         <Setter Property="Template">
                                             <Setter.Value>
                                                 <ControlTemplate TargetType="{x:Type ButtonBase}">
-                                                    <Border Background="Transparent"
+                                                    <Border Background="{TemplateBinding Background}"
                                                             BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}">
                                                         <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}"
                                                                           TextElement.FontFamily="Segoe MDL2 Assets"
@@ -75,6 +75,7 @@
                                             </DataTrigger>
                                             <Trigger Property="IsMouseOver" Value="True">
                                                 <Setter Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:StackNavActiveHeaderPresenter}}, Path=BorderBrush}"/>
+                                                <Setter Property="Background" Value="#2000"/>
                                             </Trigger>
                                             <Trigger Property="IsEnabled" Value="False">
                                                 <Setter Property="Opacity" Value="0.5"/>
@@ -94,12 +95,13 @@
                                 <Button.Style>
                                     <Style TargetType="{x:Type Button}">
                                         <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
-                                        <Setter Property="BorderThickness" Value="1"/>
+                                        <Setter Property="BorderThickness" Value="1,1,0,0"/>
                                         <Setter Property="BorderBrush" Value="Transparent"/>
+                                        <Setter Property="Background" Value="Transparent"/>
                                         <Setter Property="Template">
                                             <Setter.Value>
                                                 <ControlTemplate TargetType="{x:Type ButtonBase}">
-                                                    <Border Background="Transparent"
+                                                    <Border Background="{TemplateBinding Background}"
                                                             BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}">
                                                         <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}"
                                                                           TextElement.FontFamily="Segoe MDL2 Assets"
@@ -119,6 +121,7 @@
                                         <Style.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
                                                 <Setter Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:StackNavActiveHeaderPresenter}}, Path=BorderBrush}"/>
+                                                <Setter Property="Background" Value="#2000"/>
                                             </Trigger>
                                             <Trigger Property="IsEnabled" Value="False">
                                                 <Setter Property="Opacity" Value="0.5"/>
@@ -127,6 +130,8 @@
                                     </Style>
                                 </Button.Style>
                             </Button>
+                            <ContentControl Content="{TemplateBinding AdditionalLeftSideDisplay}" DockPanel.Dock="Left"/>
+                            <ContentControl Content="{TemplateBinding AdditionalRightSideDisplay}" DockPanel.Dock="Right"/>
                             <ContentControl Content="{ajut:TemplateBinding Path=Navigator.StackTopDisplayAdapter.Title}"
                                             ContentTemplate="{TemplateBinding TitleTemplate}"
                                             ContentTemplateSelector="{TemplateBinding TitleTemplateSelector}"

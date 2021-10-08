@@ -31,6 +31,20 @@
             set => this.SetValue(ShowDrawerButtonProperty, value);
         }
 
+        public static readonly DependencyProperty AdditionalLeftSideDisplayProperty = DPUtils.Register(_ => _.AdditionalLeftSideDisplay);
+        public object AdditionalLeftSideDisplay
+        {
+            get => this.GetValue(AdditionalLeftSideDisplayProperty);
+            set => this.SetValue(AdditionalLeftSideDisplayProperty, value);
+        }
+
+        public static readonly DependencyProperty AdditionalRightSideDisplayProperty = DPUtils.Register(_ => _.AdditionalRightSideDisplay);
+        public object AdditionalRightSideDisplay
+        {
+            get => this.GetValue(AdditionalRightSideDisplayProperty);
+            set => this.SetValue(AdditionalRightSideDisplayProperty, value);
+        }
+
         public static readonly DependencyProperty DrawerNavButtonBaseStyleProperty = DPUtils.Register(_ => _.DrawerNavButtonBaseStyle);
         public Style DrawerNavButtonBaseStyle
         {

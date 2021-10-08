@@ -18,7 +18,6 @@
         private bool m_canGoBack;
         private bool m_canCloseDrawer = true;
         private bool m_showDrawerContents;
-        private bool m_supportsDrawerDisplay;
 
         public StackNavFlowController (Window rootWindow)
         {
@@ -33,12 +32,6 @@
         // = Properties                                     =
         // ==================================================
         public Window RootWindow { get; }
-
-        public bool SupportsDrawerDisplay
-        {
-            get => m_supportsDrawerDisplay;
-            set => this.SetAndRaiseIfChanged(ref m_supportsDrawerDisplay, value);
-        }
 
         public bool IsDrawerOpen
         {

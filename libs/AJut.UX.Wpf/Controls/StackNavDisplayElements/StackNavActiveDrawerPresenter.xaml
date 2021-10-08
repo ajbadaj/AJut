@@ -22,14 +22,14 @@
                                 <RowDefinition Height="*"/>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
-                            <Border Grid.Row="0" BorderThickness="0,0,0,1" BorderBrush="{TemplateBinding BorderBrush}" Margin="2">
+                            <Border Grid.Row="0" BorderThickness="0,0,0,1" BorderBrush="{TemplateBinding BorderBrush}" Margin="2,2,2,0">
                                 <TextBlock Text="{ajut:TemplateBinding Path=Navigator.StackTopDisplayAdapter.Drawer.Title}" FontSize="18" TextWrapping="WrapWithOverflow"/>
                             </Border>
                             <ContentPresenter Grid.Row="1" Content="{ajut:TemplateBinding Path=Navigator.StackTopDisplayAdapter.Drawer}"
                                               Visibility="{ajut:TemplateBinding Path=Navigator.ShowDrawerContents, Converter={ajconv:BooleanToVisibilityConverter}}"/>
-                            <Border BorderThickness="0,1,0,0" Grid.Row="2" Visibility="{ajut:TemplateBinding Path=FixedDrawerDisplayArea, Converter={ajconv:NullnessToVisibilityConverter}}">
-                                <ContentPresenter Content="{TemplateBinding FixedDrawerDisplayArea}"/>
-                            </Border>
+                            <Grid Grid.Row="2" Visibility="{ajut:TemplateBinding Path=FixedDrawerDisplay, Converter={ajconv:NullnessToVisibilityConverter}}">
+                                <ContentPresenter Content="{ajut:TemplateBinding Path=FixedDrawerDisplay}"/>
+                            </Grid>
                         </Grid>
                     </Border>
                 </ControlTemplate>

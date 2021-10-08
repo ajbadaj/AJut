@@ -18,14 +18,21 @@
 
             void _CanBrowseBack (object sender, CanExecuteRoutedEventArgs e)
             {
-                if (control.Navigator?.CanGoBack == true && !control.Navigator.StackTopDisplayAdapter.AnyCoversShown)
+                if ((control.Navigator?.CanGoBack == true || control.Navigator?.StackTopDisplayAdapter.IsShowingPopover == true) && !control.Navigator.StackTopDisplayAdapter.IsBusyWaitActive)
                 {
                     e.CanExecute = true;
                 }
             }
             async void _OnBrowseBack (object sender, ExecutedRoutedEventArgs e)
             {
-                await control.Navigator.PopDisplay();
+                if (control.Navigator.StackTopDisplayAdapter.IsShowingPopover)
+                {
+                    control.Navigator.StackTopDisplayAdapter.PopoverDisplay.Cancel();
+                }
+                else
+                {
+                    await control.Navigator.PopDisplay();
+                }
             }
 
             void _CanToggleDrawerOpen (object sender, CanExecuteRoutedEventArgs e)

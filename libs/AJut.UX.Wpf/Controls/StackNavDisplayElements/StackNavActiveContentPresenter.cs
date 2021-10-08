@@ -6,8 +6,10 @@
     using AJut.UX;
     using DPUtils = AJut.UX.DPUtils<StackNavActiveContentPresenter>;
 
+    [TemplatePart(Name = nameof(PART_ContentDisplay), Type = typeof(ContentPresenter))]
     public class StackNavActiveContentPresenter : Control, IStackNavPresenter
     {
+        private ContentPresenter PART_ContentDisplay { get; set; }
         static StackNavActiveContentPresenter ()
         {
             DefaultStyleKeyProperty.OverrideMetadata(typeof(StackNavActiveContentPresenter), new FrameworkPropertyMetadata(typeof(StackNavActiveContentPresenter)));
@@ -34,6 +36,8 @@
         public override void OnApplyTemplate ()
         {
             base.OnApplyTemplate();
+            this.PART_ContentDisplay = (ContentPresenter)this.GetTemplateChild(nameof(PART_ContentDisplay));
+            this.PART_ContentDisplay.Focus();
         }
     }
 }
