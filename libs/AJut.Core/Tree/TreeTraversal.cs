@@ -214,9 +214,8 @@ namespace AJut.Tree
         /// <param name="getParentMethodOverride">The override to the default GetTreeNodeParents method specified in <see cref="TreeTraversal{TTreeNode}"/>.SetupDefaults, or null to use the default</param>
         /// <returns></returns>
         public static TreeIter<TTreeNode> IterateOverNodesOfType<T> (TTreeNode start, Predicate<T> predicate = null, eTraversalFlowDirection flowDirection = DefaultTraversalFlowDirection, eTraversalStrategy strategy = DefaultTraversalStrategy, bool includeSelf = true, bool canTypeBeAncestor = true, LevelRestriction depthLimits = null, GetTreeNodeChildren<TTreeNode> getChildrenMethodOverride = null, GetTreeNodeParent<TTreeNode> getParentMethodOverride = null)
-            where T : class
         {
-            return IterateOverNodesOfType<T>(start, start, predicate, flowDirection, strategy, includeSelf, canTypeBeAncestor, depthLimits, getChildrenMethodOverride, getParentMethodOverride);
+            return IterateOverNodesOfType(start, start, predicate, flowDirection, strategy, includeSelf, canTypeBeAncestor, depthLimits, getChildrenMethodOverride, getParentMethodOverride);
         }
 
         /// <summary>
@@ -235,7 +234,6 @@ namespace AJut.Tree
         /// <param name="getParentMethodOverride">The override to the default GetTreeNodeParents method specified in <see cref="TreeTraversal{TTreeNode}"/>.SetupDefaults, or null to use the default</param>
         /// <returns></returns>
         public static TreeIter<TTreeNode> IterateOverNodesOfType<T> (TTreeNode root, TTreeNode start, Predicate<T> predicate = null, eTraversalFlowDirection flowDirection = DefaultTraversalFlowDirection, eTraversalStrategy strategy = DefaultTraversalStrategy, bool includeSelf = true, bool canTypeBeAncestor = true, LevelRestriction depthLimits = null, GetTreeNodeChildren<TTreeNode> getChildrenMethodOverride = null, GetTreeNodeParent<TTreeNode> getParentMethodOverride = null)
-            where T : class
         {
             var traversalParams = new TreeTraversalParameters<TTreeNode>(root ?? FindRoot(start, getParentMethodOverride), flowDirection, strategy, getChildrenMethodOverride, getParentMethodOverride)
             {
@@ -246,7 +244,7 @@ namespace AJut.Tree
 
             if (predicate != null)
             {
-                traversalParams.Predicate = (_obj) => predicate(_obj as T);
+                traversalParams.Predicate = (_obj) => predicate(_obj is T tval ? tval : default);
             }
 
             var iter = CreateIterator(start, traversalParams);
@@ -281,21 +279,19 @@ namespace AJut.Tree
         }
 
         public static T GetFirstChildOfType<T> (TTreeNode start, Predicate<T> predicate = null, eTraversalFlowDirection flowDirection = DefaultTraversalFlowDirection, eTraversalStrategy strategy = DefaultTraversalStrategy, bool includeSelf = true, bool canTypeBeAncestor = true, LevelRestriction depthLimits = null, GetTreeNodeChildren<TTreeNode> getChildrenMethodOverride = null, GetTreeNodeParent<TTreeNode> getParentMethodOverride = null)
-            where T : class
         {
-            return GetFirstChildOfType<T>(null, start, predicate, flowDirection, strategy, includeSelf, canTypeBeAncestor, depthLimits, getChildrenMethodOverride, getParentMethodOverride);
+            return GetFirstChildOfType(null, start, predicate, flowDirection, strategy, includeSelf, canTypeBeAncestor, depthLimits, getChildrenMethodOverride, getParentMethodOverride);
         }
 
         public static T GetFirstChildOfType<T> (TTreeNode root, TTreeNode start, Predicate<T> predicate = null, eTraversalFlowDirection flowDirection = DefaultTraversalFlowDirection, eTraversalStrategy strategy = DefaultTraversalStrategy, bool includeSelf = true, bool canTypeBeAncestor = true, LevelRestriction depthLimits = null, GetTreeNodeChildren<TTreeNode> getChildrenMethodOverride = null, GetTreeNodeParent<TTreeNode> getParentMethodOverride = null)
-            where T : class
         {
             var iter = IterateOverNodesOfType(root, start, predicate, flowDirection, strategy, includeSelf, canTypeBeAncestor, depthLimits, getChildrenMethodOverride, getParentMethodOverride);
             if (iter != TreeIter<TTreeNode>.End)
             {
-                return iter.Node as T;
+                return iter.Node is T tval ? tval : default;
             }
 
-            return null;
+            return default;
         }
 
 
@@ -315,21 +311,21 @@ namespace AJut.Tree
         }
 
         public static T GetFirstParentOfType<T> (TTreeNode start, Predicate<T> predicate = null, bool includeSelf = true, bool canTypeBeAncestor = true, LevelRestriction depthLimits = null, GetTreeNodeChildren<TTreeNode> getChildrenMethodOverride = null, GetTreeNodeParent<TTreeNode> getParentMethodOverride = null)
-            where T : class, TTreeNode
+            where T : TTreeNode
         {
-            return GetFirstParentOfType<T>(null, start, predicate, includeSelf, canTypeBeAncestor, depthLimits, getChildrenMethodOverride, getParentMethodOverride);
+            return GetFirstParentOfType(null, start, predicate, includeSelf, canTypeBeAncestor, depthLimits, getChildrenMethodOverride, getParentMethodOverride);
         }
 
         public static T GetFirstParentOfType<T> (TTreeNode root, TTreeNode start, Predicate<T> predicate = null, bool includeSelf = true, bool canTypeBeAncestor = true, LevelRestriction depthLimits = null, GetTreeNodeChildren<TTreeNode> getChildrenMethodOverride = null, GetTreeNodeParent<TTreeNode> getParentMethodOverride = null)
-            where T : class, TTreeNode
+            where T : TTreeNode
         {
-            var iter = IterateOverNodesOfType<T>(root, start, predicate, eTraversalFlowDirection.ThroughParents, eTraversalStrategy.Default, includeSelf, canTypeBeAncestor, depthLimits, getChildrenMethodOverride, getParentMethodOverride);
+            var iter = IterateOverNodesOfType(root, start, predicate, eTraversalFlowDirection.ThroughParents, eTraversalStrategy.Default, includeSelf, canTypeBeAncestor, depthLimits, getChildrenMethodOverride, getParentMethodOverride);
             if (iter != TreeIter<TTreeNode>.End)
             {
                 return (T)iter.Node;
             }
 
-            return null;
+            return default;
         }
 
         public static TTreeNode NodeAt (TTreeNode start, TreeNodePath nodePath, GetTreeNodeChildren<TTreeNode> getChildrenMethodOverride = null, GetTreeNodeParent<TTreeNode> getParentMethodOverride = null)
@@ -417,7 +413,7 @@ namespace AJut.Tree
         // -----------[ Private Utilities  ]----------------
         // -------------------------------------------------
 
-        private static TreeIter<TTreeNode> FinalizeAndReturnIter(TreeIter<TTreeNode> iter, bool includeSelf, Predicate<TTreeNode> predicate, bool start = true)
+        private static TreeIter<TTreeNode> FinalizeAndReturnIter (TreeIter<TTreeNode> iter, bool includeSelf, Predicate<TTreeNode> predicate, bool start = true)
         {
             if (iter == TreeIter<TTreeNode>.End)
             {
@@ -470,7 +466,7 @@ namespace AJut.Tree
         /// <param name="root">The tree root node</param>
         /// <param name="getChildrenOverride">A local override to the default TreeTraverser registered GetChildren</param>
         /// <param name="getParentOverride">A local override to the default TreeTraverser registered GetParent</param>
-        public TreeTraverser(TTreeNode root, GetTreeNodeChildren<TTreeNode> getChildrenOverride = null, GetTreeNodeParent<TTreeNode> getParentOverride = null)
+        public TreeTraverser (TTreeNode root, GetTreeNodeChildren<TTreeNode> getChildrenOverride = null, GetTreeNodeParent<TTreeNode> getParentOverride = null)
         {
             this.Root = root;
             this.GetChildrenOverride = getChildrenOverride;
@@ -489,7 +485,7 @@ namespace AJut.Tree
         /// <param name="flowDirection">The direction to flow through the tree</param>
         /// <param name="strategy">The traversal strategy to use</param>
         /// <returns>The iterator that was created</returns>
-        public TreeIter<TTreeNode> CreateIterator(TTreeNode startNode = null, eTraversalFlowDirection flowDirection = TreeTraversal<TTreeNode>.DefaultTraversalFlowDirection, eTraversalStrategy strategy = TreeTraversal<TTreeNode>.DefaultTraversalStrategy)
+        public TreeIter<TTreeNode> CreateIterator (TTreeNode startNode = null, eTraversalFlowDirection flowDirection = TreeTraversal<TTreeNode>.DefaultTraversalFlowDirection, eTraversalStrategy strategy = TreeTraversal<TTreeNode>.DefaultTraversalStrategy)
         {
             return TreeTraversal<TTreeNode>.CreateIterator(this.Root, startNode, flowDirection, strategy, this.GetChildrenOverride, this.GetParentOverride);
         }
@@ -499,7 +495,7 @@ namespace AJut.Tree
         /// </summary>
         /// <param name="traversalParameters">The custom parameters used to control the traversal</param>
         /// <returns>The iterator that was created</returns>
-        public TreeIter<TTreeNode> CreateIterator(TreeTraversalParameters<TTreeNode> traversalParameters)
+        public TreeIter<TTreeNode> CreateIterator (TreeTraversalParameters<TTreeNode> traversalParameters)
         {
             return this.CreateIterator(this.Root, traversalParameters);
         }
@@ -510,7 +506,7 @@ namespace AJut.Tree
         /// <param name="startNode">The node of the tree to start at, or null to start at the root</param>
         /// <param name="traversalParameters">The custom parameters used to control the traversal</param>
         /// <returns>The iterator that was created</returns>
-        public TreeIter<TTreeNode> CreateIterator(TTreeNode startNode, TreeTraversalParameters<TTreeNode> traversalParameters)
+        public TreeIter<TTreeNode> CreateIterator (TTreeNode startNode, TreeTraversalParameters<TTreeNode> traversalParameters)
         {
             traversalParameters.Root = this.Root;
             traversalParameters.SetGetChildrenGetParentOverrideMethods(this.GetChildrenOverride, this.GetParentOverride);
@@ -524,7 +520,7 @@ namespace AJut.Tree
         /// <param name="strategy">The traversal strategy (BFS or DFS)</param>
         /// <param name="includeRoot">Should the root node be included</param>
         /// <returns></returns>
-        public IEnumerable<TTreeNode> All(eTraversalFlowDirection flowDirection = TreeTraversal<TTreeNode>.DefaultTraversalFlowDirection, eTraversalStrategy strategy = TreeTraversal<TTreeNode>.DefaultTraversalStrategy, bool includeRoot = true)
+        public IEnumerable<TTreeNode> All (eTraversalFlowDirection flowDirection = TreeTraversal<TTreeNode>.DefaultTraversalFlowDirection, eTraversalStrategy strategy = TreeTraversal<TTreeNode>.DefaultTraversalStrategy, bool includeRoot = true)
         {
             return this.All(this.Root, flowDirection, strategy, includeRoot);
         }
@@ -537,7 +533,7 @@ namespace AJut.Tree
         /// <param name="strategy">The traversal strategy (BFS or DFS)</param>
         /// <param name="includeRoot">Should the root node be included</param>
         /// <returns></returns>
-        public IEnumerable<TTreeNode> All(TTreeNode startNode, eTraversalFlowDirection flowDirection = TreeTraversal<TTreeNode>.DefaultTraversalFlowDirection, eTraversalStrategy strategy = TreeTraversal<TTreeNode>.DefaultTraversalStrategy, bool includeRoot = true)
+        public IEnumerable<TTreeNode> All (TTreeNode startNode, eTraversalFlowDirection flowDirection = TreeTraversal<TTreeNode>.DefaultTraversalFlowDirection, eTraversalStrategy strategy = TreeTraversal<TTreeNode>.DefaultTraversalStrategy, bool includeRoot = true)
         {
             return TreeTraversal<TTreeNode>.All(startNode ?? this.Root, flowDirection, strategy, includeRoot, this.GetChildrenOverride, this.GetParentOverride);
         }
@@ -558,7 +554,7 @@ namespace AJut.Tree
         /// <param name="includeRoot">Should the root node be included</param>
         /// <param name="depthLimits">Depth limits</param>
         /// <returns>The iterator created</returns>
-        public TreeIter<TTreeNode> IterateOverAllNodesWhichPass(Predicate<TTreeNode> predicate, eTraversalFlowDirection flowDirection = TreeTraversal<TTreeNode>.DefaultTraversalFlowDirection, eTraversalStrategy strategy = TreeTraversal<TTreeNode>.DefaultTraversalStrategy, bool includeRoot = true, LevelRestriction depthLimits = null)
+        public TreeIter<TTreeNode> IterateOverAllNodesWhichPass (Predicate<TTreeNode> predicate, eTraversalFlowDirection flowDirection = TreeTraversal<TTreeNode>.DefaultTraversalFlowDirection, eTraversalStrategy strategy = TreeTraversal<TTreeNode>.DefaultTraversalStrategy, bool includeRoot = true, LevelRestriction depthLimits = null)
         {
             return TreeTraversal<TTreeNode>.IterateOverAllNodesWhichPass(this.Root, this.Root, predicate, flowDirection, strategy, includeRoot, depthLimits, this.GetChildrenOverride, this.GetParentOverride);
         }
@@ -573,7 +569,7 @@ namespace AJut.Tree
         /// <param name="includeRoot">Should the root node be included</param>
         /// <param name="depthLimits">Depth limits</param>
         /// <returns>The iterator created</returns>
-        public TreeIter<TTreeNode> IterateOverAllNodesWhichPass(TTreeNode start, Predicate<TTreeNode> predicate, eTraversalFlowDirection flowDirection = TreeTraversal<TTreeNode>.DefaultTraversalFlowDirection, eTraversalStrategy strategy = TreeTraversal<TTreeNode>.DefaultTraversalStrategy, bool includeRoot = true, LevelRestriction depthLimits = null)
+        public TreeIter<TTreeNode> IterateOverAllNodesWhichPass (TTreeNode start, Predicate<TTreeNode> predicate, eTraversalFlowDirection flowDirection = TreeTraversal<TTreeNode>.DefaultTraversalFlowDirection, eTraversalStrategy strategy = TreeTraversal<TTreeNode>.DefaultTraversalStrategy, bool includeRoot = true, LevelRestriction depthLimits = null)
         {
             return TreeTraversal<TTreeNode>.IterateOverAllNodesWhichPass(this.Root, start, predicate, flowDirection, strategy, includeRoot, depthLimits, this.GetChildrenOverride, this.GetParentOverride);
         }
@@ -589,7 +585,7 @@ namespace AJut.Tree
         /// <param name="canTypeBeAncestor">Can the search include derivitive types, or must it be an exact search</param>
         /// <param name="depthLimits">Depth limits</param>
         /// <returns></returns>
-        public TreeIter<TTreeNode> IterateOverNodesOfType<T>(Predicate<T> predicate = null, eTraversalFlowDirection flowDirection = TreeTraversal<TTreeNode>.DefaultTraversalFlowDirection, eTraversalStrategy strategy = TreeTraversal<TTreeNode>.DefaultTraversalStrategy, bool includeRoot = true, bool canTypeBeAncestor = true, LevelRestriction depthLimits = null)
+        public TreeIter<TTreeNode> IterateOverNodesOfType<T> (Predicate<T> predicate = null, eTraversalFlowDirection flowDirection = TreeTraversal<TTreeNode>.DefaultTraversalFlowDirection, eTraversalStrategy strategy = TreeTraversal<TTreeNode>.DefaultTraversalStrategy, bool includeRoot = true, bool canTypeBeAncestor = true, LevelRestriction depthLimits = null)
             where T : class, TTreeNode
         {
             return TreeTraversal<TTreeNode>.IterateOverNodesOfType(this.Root, this.Root, predicate, flowDirection, strategy, includeRoot, canTypeBeAncestor, depthLimits, this.GetChildrenOverride, this.GetParentOverride);
@@ -607,51 +603,51 @@ namespace AJut.Tree
         /// <param name="canTypeBeAncestor">Can the search include derivitive types, or must it be an exact search</param>
         /// <param name="depthLimits">Depth limits</param>
         /// <returns></returns>
-        public TreeIter<TTreeNode> IterateOverNodesOfType<T>(TTreeNode start, Predicate<T> predicate = null, eTraversalFlowDirection flowDirection = TreeTraversal<TTreeNode>.DefaultTraversalFlowDirection, eTraversalStrategy strategy = TreeTraversal<TTreeNode>.DefaultTraversalStrategy, bool includeRoot = true, bool canTypeBeAncestor = true, LevelRestriction depthLimits = null)
+        public TreeIter<TTreeNode> IterateOverNodesOfType<T> (TTreeNode start, Predicate<T> predicate = null, eTraversalFlowDirection flowDirection = TreeTraversal<TTreeNode>.DefaultTraversalFlowDirection, eTraversalStrategy strategy = TreeTraversal<TTreeNode>.DefaultTraversalStrategy, bool includeRoot = true, bool canTypeBeAncestor = true, LevelRestriction depthLimits = null)
             where T : class, TTreeNode
         {
             return TreeTraversal<TTreeNode>.IterateOverNodesOfType(this.Root, start, predicate, flowDirection, strategy, includeRoot, canTypeBeAncestor, depthLimits, this.GetChildrenOverride, this.GetParentOverride);
         }
 
-        public TreeIter<TTreeNode> IteratorAt(TreeNodePath nodePath, Predicate<TTreeNode> predicate = null, eTraversalFlowDirection flowDirection = TreeTraversal<TTreeNode>.DefaultTraversalFlowDirection, eTraversalStrategy strategy = TreeTraversal<TTreeNode>.DefaultTraversalStrategy, bool includeRoot = true, LevelRestriction depthLimits = null)
+        public TreeIter<TTreeNode> IteratorAt (TreeNodePath nodePath, Predicate<TTreeNode> predicate = null, eTraversalFlowDirection flowDirection = TreeTraversal<TTreeNode>.DefaultTraversalFlowDirection, eTraversalStrategy strategy = TreeTraversal<TTreeNode>.DefaultTraversalStrategy, bool includeRoot = true, LevelRestriction depthLimits = null)
         {
             return TreeTraversal<TTreeNode>.IteratorAt(this.Root, nodePath, predicate, flowDirection, strategy, includeRoot, depthLimits, this.GetChildrenOverride, this.GetParentOverride);
         }
 
-        public TTreeNode GetFirstChildWhichPasses(Predicate<TTreeNode> predicate, eTraversalFlowDirection flowDirection = TreeTraversal<TTreeNode>.DefaultTraversalFlowDirection, eTraversalStrategy strategy = TreeTraversal<TTreeNode>.DefaultTraversalStrategy, bool includeRoot = true, LevelRestriction depthLimits = null)
+        public TTreeNode GetFirstChildWhichPasses (Predicate<TTreeNode> predicate, eTraversalFlowDirection flowDirection = TreeTraversal<TTreeNode>.DefaultTraversalFlowDirection, eTraversalStrategy strategy = TreeTraversal<TTreeNode>.DefaultTraversalStrategy, bool includeRoot = true, LevelRestriction depthLimits = null)
         {
             return TreeTraversal<TTreeNode>.GetFirstChildWhichPasses(this.Root, this.Root, predicate, flowDirection, strategy, includeRoot, depthLimits, this.GetChildrenOverride, this.GetParentOverride);
         }
 
-        public TTreeNode GetFirstChildWhichPasses(TTreeNode start, Predicate<TTreeNode> predicate, eTraversalFlowDirection flowDirection = TreeTraversal<TTreeNode>.DefaultTraversalFlowDirection, eTraversalStrategy strategy = TreeTraversal<TTreeNode>.DefaultTraversalStrategy, bool includeRoot = true, LevelRestriction depthLimits = null)
+        public TTreeNode GetFirstChildWhichPasses (TTreeNode start, Predicate<TTreeNode> predicate, eTraversalFlowDirection flowDirection = TreeTraversal<TTreeNode>.DefaultTraversalFlowDirection, eTraversalStrategy strategy = TreeTraversal<TTreeNode>.DefaultTraversalStrategy, bool includeRoot = true, LevelRestriction depthLimits = null)
         {
             return TreeTraversal<TTreeNode>.GetFirstChildWhichPasses(this.Root, start, predicate, flowDirection, strategy, includeRoot, depthLimits, this.GetChildrenOverride, this.GetParentOverride);
         }
 
-        public T GetFirstChildOfType<T>(Predicate<T> predicate = null, bool includeRoot = true, eTraversalFlowDirection flowDirection = TreeTraversal<TTreeNode>.DefaultTraversalFlowDirection, eTraversalStrategy strategy = TreeTraversal<TTreeNode>.DefaultTraversalStrategy, bool canTypeBeAncestor = true, LevelRestriction depthLimits = null)
+        public T GetFirstChildOfType<T> (Predicate<T> predicate = null, bool includeRoot = true, eTraversalFlowDirection flowDirection = TreeTraversal<TTreeNode>.DefaultTraversalFlowDirection, eTraversalStrategy strategy = TreeTraversal<TTreeNode>.DefaultTraversalStrategy, bool canTypeBeAncestor = true, LevelRestriction depthLimits = null)
             where T : class, TTreeNode
         {
             return TreeTraversal<TTreeNode>.GetFirstChildOfType(this.Root, this.Root, predicate, flowDirection, strategy, includeRoot, canTypeBeAncestor, depthLimits, this.GetChildrenOverride, this.GetParentOverride);
         }
 
-        public T GetFirstChildOfType<T>(TTreeNode start, Predicate<T> predicate = null, bool includeRoot = true, eTraversalFlowDirection flowDirection = TreeTraversal<TTreeNode>.DefaultTraversalFlowDirection, eTraversalStrategy strategy = TreeTraversal<TTreeNode>.DefaultTraversalStrategy, bool canTypeBeAncestor = true, LevelRestriction depthLimits = null)
+        public T GetFirstChildOfType<T> (TTreeNode start, Predicate<T> predicate = null, bool includeRoot = true, eTraversalFlowDirection flowDirection = TreeTraversal<TTreeNode>.DefaultTraversalFlowDirection, eTraversalStrategy strategy = TreeTraversal<TTreeNode>.DefaultTraversalStrategy, bool canTypeBeAncestor = true, LevelRestriction depthLimits = null)
             where T : class, TTreeNode
         {
             return TreeTraversal<TTreeNode>.GetFirstChildOfType(this.Root, start, predicate, flowDirection, strategy, includeRoot, canTypeBeAncestor, depthLimits, this.GetChildrenOverride, this.GetParentOverride);
         }
 
-        public TTreeNode GetFirstParentWhichPasses(TTreeNode start, Predicate<TTreeNode> predicate, bool includeRoot = true, LevelRestriction depthLimits = null)
+        public TTreeNode GetFirstParentWhichPasses (TTreeNode start, Predicate<TTreeNode> predicate, bool includeRoot = true, LevelRestriction depthLimits = null)
         {
             return TreeTraversal<TTreeNode>.GetFirstParentWhichPasses(this.Root, start, predicate, includeRoot, depthLimits, this.GetChildrenOverride, this.GetParentOverride);
         }
 
-        public T GetFirstParentOfType<T>(TTreeNode start, Predicate<T> predicate = null, bool includeRoot = true, bool canTypeBeAncestor = true, LevelRestriction depthLimits = null)
+        public T GetFirstParentOfType<T> (TTreeNode start, Predicate<T> predicate = null, bool includeRoot = true, bool canTypeBeAncestor = true, LevelRestriction depthLimits = null)
             where T : class, TTreeNode
         {
             return TreeTraversal<TTreeNode>.GetFirstParentOfType(this.Root, start, predicate, includeRoot, canTypeBeAncestor, depthLimits, this.GetChildrenOverride, this.GetParentOverride);
         }
 
-        public TTreeNode NodeAt(TreeNodePath nodePath)
+        public TTreeNode NodeAt (TreeNodePath nodePath)
         {
             return TreeTraversal<TTreeNode>.NodeAt(this.Root, nodePath, this.GetChildrenOverride, this.GetParentOverride);
         }
