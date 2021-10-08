@@ -22,11 +22,12 @@
             m_adapter.Closing += this.OnClosing;
         }
 
-        private void OnClosing (object sender, StackNavAttemptingDisplayCloseEventArgs e)
+        private async void OnClosing (object sender, StackNavAttemptingDisplayCloseEventArgs e)
         {
             if (!this.AllowClose)
             {
                 e.CanClose = false;
+                await m_adapter.ShowPopover(new ErrorPopover("Example: Stopping close - you need to check 'Allow Close' before closing will work!"));
                 return;
             }
         }

@@ -856,20 +856,51 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0" FontSize="22" TextWrapping="WrapWithOverflow">
-                        <TextBlock.Inlines>
-                            <Run Text="The below is a stack nav. All stack navs will use the "/>
-                            <Run Text="StackNavFlowController" FontWeight="Bold" Foreground="Blue"/>
-                            <Run Text=" as an entry point, and optionally you may use the header/drawer/content ui helpers to build your views faster - or you can have your own displays render the "/>
-                            <Run Text="StackNavFlowController" FontWeight="Bold" Foreground="Blue"/>
-                            <Run Text=" and "/>
-                            <Run Text="StackNavAdapter" FontWeight="Bold" Foreground="Blue"/>
-                            <Run Text=" more directly!"/>
-                        </TextBlock.Inlines>
-                    </TextBlock>
+                    <StackPanel Grid.Row="0">
+                        <TextBlock FontSize="22" TextWrapping="WrapWithOverflow">
+                            <TextBlock.Inlines>
+                                <Run Text="The below is a stack nav. All stack navs will use the "/>
+                                <Run Text="StackNavFlowController" FontWeight="Bold" Foreground="Blue"/>
+                                <Run Text=" as an entry point, and optionally you may use the header/drawer/content ui helpers to build your views faster - or you can have your own displays render the "/>
+                                <Run Text="StackNavFlowController" FontWeight="Bold" Foreground="Blue"/>
+                                <Run Text=" and "/>
+                                <Run Text="StackNavAdapter" FontWeight="Bold" Foreground="Blue"/>
+                                <Run Text=" more directly!"/>
+                            </TextBlock.Inlines>
+                        </TextBlock>
+                        <CheckBox x:Name="ShowMockLeft" Content="Show fixed leftside prefix"/>
+                        <CheckBox x:Name="ShowMockRight" Content="Show WindowChromeButtonStrip"/>
+                        <CheckBox x:Name="ShowDrawerButtton" Content="Show Drawer Display"/>
+                        <CheckBox x:Name="ShowVersionDisplayAtBottom" Content="Show Version in Drawer display" IsChecked="True"/>
+                    </StackPanel>
                     <DockPanel Grid.Row="1" Margin="20">
                         <TextBlock DockPanel.Dock="Top" Text="Stack Nav Area ↓" FontSize="19"/>
-                        <ajctrls:StackNavDisplay Navigator="{Binding ElementName=Self, Path=Navigator}" FixedDrawerWidth="300"/>
+                        <ajctrls:StackNavDisplay Navigator="{Binding ElementName=Self, Path=Navigator}" FixedDrawerWidth="300">
+                            <ajctrls:StackNavDisplay.Resources>
+                                <Style TargetType="{x:Type ajctrls:StackNavActiveDrawerPresenter}">
+                                    <Setter Property="FixedDrawerDisplay">
+                                        <Setter.Value>
+                                            <TextBlock Text="Fake Version 1.0.2" FontStyle="Italic" Opacity="0.6" 
+                                                       Visibility="{Binding ElementName=ShowVersionDisplayAtBottom, Path=IsChecked, Mode=OneWay, Converter={ajconv:BooleanToVisibilityConverter}}" />
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                                <Style TargetType="{x:Type ajctrls:StackNavActiveHeaderPresenter}">
+                                    <Setter Property="ShowDrawerButton" Value="{Binding ElementName=ShowDrawerButtton, Path=IsChecked}" />
+                                    <Setter Property="AdditionalLeftSideDisplay">
+                                        <Setter.Value>
+                                            <TextBlock Text="Show Room:" VerticalAlignment="Center" FontWeight="Bold" FontSize="22" Margin="0,0,10,0"
+                                                       Visibility="{Binding ElementName=ShowMockLeft, Path=IsChecked, Converter={ajconv:BooleanToVisibilityConverter}}"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Setter Property="AdditionalRightSideDisplay">
+                                        <Setter.Value>
+                                            <ajctrls:WindowChromeButtonStrip Visibility="{Binding ElementName=ShowMockRight, Path=IsChecked, Converter={ajconv:BooleanToVisibilityConverter}}"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ajctrls:StackNavDisplay.Resources>
+                        </ajctrls:StackNavDisplay>
                     </DockPanel>
                 </Grid>
             </TabItem>

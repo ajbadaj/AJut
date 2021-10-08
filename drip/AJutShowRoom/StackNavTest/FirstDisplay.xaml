@@ -3,7 +3,17 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.WPF"
              x:Name="Self">
-    <StackPanel>
+    <UserControl.Background>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="18,18" MappingMode="Absolute" SpreadMethod="Reflect">
+            <GradientStop Offset="0.00" Color="#181818" />
+            <GradientStop Offset="0.10" Color="#181818" />
+            <GradientStop Offset="0.10" Color="#00181818" />
+            <GradientStop Offset="0.90" Color="#00181818" />
+            <GradientStop Offset="0.90" Color="#181818" />
+            <GradientStop Offset="1.00" Color="#181818" />
+        </LinearGradientBrush>
+    </UserControl.Background>
+    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
         <ajut:NumericEditor Value="{Binding ElementName=Self, Path=Number, Mode=TwoWay}"/>
         <Button Content="{Binding ElementName=Self, Path=UserSelectedName, StringFormat='Name: {0} - click to change'}" Click="ChangeName_OnClick"/>
         <Button Content="Go to second display!" Click="GoToSecond_OnClick"/>

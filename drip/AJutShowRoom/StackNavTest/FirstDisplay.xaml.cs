@@ -41,7 +41,7 @@
         }
 
 
-        public static readonly DependencyProperty UserSelectedNameProperty = DPUtils.Register(_ => _.UserSelectedName, "Default Name");
+        public static readonly DependencyProperty UserSelectedNameProperty = DPUtils.Register(_ => _.UserSelectedName, "Popover Set Text");
         public string UserSelectedName
         {
             get => (string)this.GetValue(UserSelectedNameProperty);
