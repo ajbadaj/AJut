@@ -7,6 +7,9 @@
     using AJut.UX;
     using DPUtils = AJut.UX.DPUtils<StackNavDisplay>;
 
+    /// <summary>
+    /// A default implementation of the stack nav display, puts together header, drawer, and content display
+    /// </summary>
     public class StackNavDisplay : Control, IStackNavPresenter
     {
         static StackNavDisplay ()
@@ -24,12 +27,13 @@
             this.FindBestDescendantToFocusOn();
         }
 
-        public static readonly DependencyProperty NavigatorProperty = DPUtils.Register(_ => _.Navigator, (d,e)=>d.OnNavigatorChanged(e));
+        public static readonly DependencyProperty NavigatorProperty = DPUtils.Register(_ => _.Navigator, (d, e) => d.OnNavigatorChanged(e));
         public StackNavFlowController Navigator
         {
             get => (StackNavFlowController)this.GetValue(NavigatorProperty);
             set => this.SetValue(NavigatorProperty, value);
         }
+
         private void OnNavigatorChanged (DependencyPropertyChangedEventArgs<StackNavFlowController> e)
         {
             if (e.HasOldValue)
@@ -49,13 +53,16 @@
         }
 
         public static readonly DependencyProperty FixedDrawerWidthProperty = DPUtils.Register(_ => _.FixedDrawerWidth, double.NaN);
+        /// <summary>
+        /// The fixed drawer display width (shows as variable depending on content size otherwise)
+        /// </summary>
         public double FixedDrawerWidth
         {
             get => (double)this.GetValue(FixedDrawerWidthProperty);
             set => this.SetValue(FixedDrawerWidthProperty, value);
         }
 
-        private void FindBestDescendantToFocusOn()
+        private void FindBestDescendantToFocusOn ()
         {
             var presenter = this.GetFirstChildOf<StackNavActiveContentPresenter>();
             var focusTarget = presenter?.GetFirstChildOf<IInputElement>();

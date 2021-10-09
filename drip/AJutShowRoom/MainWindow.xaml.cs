@@ -81,7 +81,7 @@
             this.RightDockZone.PosteriorZone.GenerateAndAdd<DockTestOne>();
             this.RightDockZone.PosteriorZone.GenerateAndAdd<DockTestTwo>();
 
-            this.Navigator = new StackNavFlowController(this);
+            this.Navigator = new StackNavFlowController();
             this.Navigator.GenerateAndPushDisplay<FirstDisplay>();
 
             TestTreeItem _SetExpanded (TestTreeItem item)

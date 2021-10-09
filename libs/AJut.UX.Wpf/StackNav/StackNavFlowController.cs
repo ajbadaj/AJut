@@ -4,11 +4,10 @@
     using System.Collections.Generic;
     using System.Threading.Tasks;
     using System.Windows;
-    using System.Windows.Media;
     using AJut;
 
     /// <summary>
-    /// The entry point into the stack nav system. This stores the stack and currently displayed item info.
+    /// The entry point into the stack nav system. This stores the navigational stack and currently displayed item info.
     /// </summary>
     public class StackNavFlowController : NotifyPropertyChanged
     {
@@ -19,20 +18,46 @@
         private bool m_canCloseDrawer = true;
         private bool m_showDrawerContents;
 
-        public StackNavFlowController (Window rootWindow)
-        {
-            this.RootWindow = rootWindow;
-        }
+        // ========================================[ Events ]========================================
 
+        /// <summary>
+        /// An event that triggers when navigation is about to happen
+        /// </summary>
         public event EventHandler NavigationIminent;
+
+        /// <summary>
+        /// An event that triggers when navigation to something new has finished
+        /// </summary>
         public event EventHandler NavigationComplete;
+
+        /// <summary>
+        /// An event that triggers when the active drawer is opened or closed
+        /// </summary>
         public event EventHandler DrawerOpenStatusChanged;
 
-        // ==================================================
-        // = Properties                                     =
-        // ==================================================
-        public Window RootWindow { get; }
+        // ========================================[ Properties ]========================================
 
+        /// <summary>
+        /// The adapter of the <see cref="IStackNavDisplayControl"/> that is currently being shown
+        /// </summary>
+        public StackNavAdapter StackTopDisplayAdapter
+        {
+            get => m_stackTopDisplayAdapter;
+            set => this.SetAndRaiseIfChanged(ref m_stackTopDisplayAdapter, value);
+        }
+
+        /// <summary>
+        /// Indicates if the stack nav can go back
+        /// </summary>
+        public bool CanGoBack
+        {
+            get => this.m_canGoBack;
+            set => this.SetAndRaiseIfChanged(ref m_canGoBack, value);
+        }
+
+        /// <summary>
+        /// Indicates if the drawer should be opened showing the <see cref="StackTopDisplayAdapter"/>'s <see cref="IStackNavDrawerDisplay"/>
+        /// </summary>
         public bool IsDrawerOpen
         {
             get => m_isDrawerOpen;
@@ -54,42 +79,35 @@
             }
         }
 
-        public StackNavAdapter StackTopDisplayAdapter
-        {
-            get => m_stackTopDisplayAdapter;
-            set => this.SetAndRaiseIfChanged(ref m_stackTopDisplayAdapter, value);
-        }
-
-        public bool CanGoBack
-        {
-            get => this.m_canGoBack;
-            set => this.SetAndRaiseIfChanged(ref m_canGoBack, value);
-        }
-
+        /// <summary>
+        /// Indicates if hte drawer can be closed (some displays have need to force the drawer to remain open for a time)
+        /// </summary>
         public bool CanCloseDrawer
         {
             get => this.m_canCloseDrawer;
             set => this.SetAndRaiseIfChanged(ref m_canCloseDrawer, value);
         }
 
+        /// <summary>
+        /// Indicates if the drawer is displayable, for use in helping ignore drawers with no display
+        /// </summary>
         public bool ShowDrawerContents
         {
             get => m_showDrawerContents;
             private set => this.SetAndRaiseIfChanged(ref m_showDrawerContents, value);
         }
 
-        // ==================================================
-        // = Methods                                        =
-        // ==================================================
+        // ========================================[ Methods ]========================================
 
-        public bool GenerateAndPushDisplay<T> (object state = null)
+        /// <summary>
+        /// Generate a display for the given type, and using the given state, and push it to the top of the stack (showing it).
+        /// </summary>
+        /// <typeparam name="T">The type of display to create</typeparam>
+        /// <param name="state">The state to setup the display with</param>
+        /// <returns>A bool indicating if the generation and push to top was successful (true) or failed (false)</returns>
+        public bool GenerateAndPushDisplay<T> (object state = null) where T : IStackNavDisplayControl
         {
-            return GenerateAndPushDisplay(typeof(T), state);
-        }
-
-        public bool GenerateAndPushDisplay (Type stackNavDisplayControlType, object state = null)
-        {
-            StackNavAdapter adapter = this.BuildControlAndAdapter(stackNavDisplayControlType);
+            StackNavAdapter adapter = this.BuildControlAndAdapter(typeof(T));
             if (adapter != null)
             {
                 if (this.StackTopDisplayAdapter != null)
@@ -102,64 +120,12 @@
             }
 
             return false;
-#if false
-
-
-            // Build
-            object newDisplayObj;
-            try
-            {
-                newDisplayObj = Activator.CreateInstance(stackNavDisplayControlType);
-            }
-            catch { newDisplayObj = null; }
-
-            // Use it if it's valid
-            if (newDisplayObj is IStackNavDisplayControl displayControl)
-            {
-                if (this.StackTopDisplayAdapter != null)
-                {
-                    m_hiddenElementStack.Push(new StackElementStorage(this.StackTopDisplayAdapter));
-                }
-
-                this.ReplaceShownDisplay(new StackNavAdapter(this, displayControl), state);
-                return true;
-            }
-
-            // Toss it if it's not
-            if (newDisplayObj is IDisposable disposableFailure)
-            {
-                disposableFailure.Dispose();
-            }
-
-            return false;
-#endif
         }
 
-        private StackNavAdapter BuildControlAndAdapter (Type stackNavDisplayControlType)
-        {
-            // Build
-            object newDisplayObj;
-            try
-            {
-                newDisplayObj = Activator.CreateInstance(stackNavDisplayControlType);
-            }
-            catch { newDisplayObj = null; }
-
-            // Use it if it's valid
-            if (newDisplayObj is IStackNavDisplayControl displayControl)
-            {
-                return new StackNavAdapter(this, displayControl);
-            }
-
-            // Toss it if it's not
-            if (newDisplayObj is IDisposable disposableFailure)
-            {
-                disposableFailure.Dispose();
-            }
-
-            return null;
-        }
-
+        /// <summary>
+        /// Closes the current display, pops thes tack, and generates (if needed) the display down one in the stack 
+        /// and shows that. This operation fails if the display is the last in the stack.
+        /// </summary>
         public async Task PopDisplay ()
         {
             StackNavAdapter oldShownControl = this.StackTopDisplayAdapter;
@@ -170,25 +136,11 @@
             }
         }
 
-        private void ReplaceShownDisplay (StackNavAdapter newStackTop, object newState)
-        {
-            this.NavigationIminent?.Invoke(this, EventArgs.Empty);
-
-            this.StackTopDisplayAdapter = newStackTop;
-            this.CanGoBack = this.m_hiddenElementStack.Count >= 1;
-            bool wasDrawerOpen = this.IsDrawerOpen;
-            this.CloseDrawer(true);
-
-            // ---------------------------------------------------------------------------------
-            // NOTE - MUST STAY LAST
-            // ---------------------------------------------------------------------------------
-            // This must stay last, if we allow displays when shown to say no, this can't be
-            //  then they need to be able to pop, replace, or otherwise push something new on.
-            newStackTop.OnShown(newState);
-
-            this.NavigationComplete?.Invoke(this, EventArgs.Empty);
-        }
-
+        /// <summary>
+        /// Open the drawer for the current <see cref="StackTopDisplayAdapter"/>
+        /// </summary>
+        /// <param name="forceStayOpen">Do you wnat to force it to stay open? Default is <c>false</c>, normal 
+        /// close operations will fail later until programatically <see cref="CloseDrawer(true)"/> is called.</param>
         public void OpenDrawer (bool forceStayOpen = false)
         {
             if (this.IsDrawerOpen)
@@ -219,6 +171,11 @@
             this.StackTopDisplayAdapter.OnDrawerOpened();
         }
 
+        /// <summary>
+        /// Close the drawer
+        /// </summary>
+        /// <param name="releaseForceOpen">Release "force open" state (if it is on), default <c>false</c></param>
+        /// <returns></returns>
         public bool CloseDrawer (bool releaseForceOpen = false)
         {
             if (releaseForceOpen)
@@ -235,6 +192,53 @@
 
             return false;
         }
+
+        private StackNavAdapter BuildControlAndAdapter (Type stackNavDisplayControlType)
+        {
+            // Build
+            object newDisplayObj;
+            try
+            {
+                newDisplayObj = Activator.CreateInstance(stackNavDisplayControlType);
+            }
+            catch { newDisplayObj = null; }
+
+            // Use it if it's valid
+            if (newDisplayObj is IStackNavDisplayControl displayControl)
+            {
+                return new StackNavAdapter(this, displayControl);
+            }
+
+            // Toss it if it's not
+            if (newDisplayObj is IDisposable disposableFailure)
+            {
+                disposableFailure.Dispose();
+            }
+
+            return null;
+        }
+
+        private void ReplaceShownDisplay (StackNavAdapter newStackTop, object newState)
+        {
+            this.NavigationIminent?.Invoke(this, EventArgs.Empty);
+
+            this.StackTopDisplayAdapter = newStackTop;
+            this.CanGoBack = this.m_hiddenElementStack.Count >= 1;
+            bool wasDrawerOpen = this.IsDrawerOpen;
+            this.CloseDrawer(true);
+
+            // ---------------------------------------------------------------------------------
+            // NOTE - MUST STAY LAST
+            // ---------------------------------------------------------------------------------
+            // This must stay last, if we allow displays when shown to say no, this can't be
+            //  then they need to be able to pop, replace, or otherwise push something new on.
+            newStackTop.OnShown(newState);
+
+            this.NavigationComplete?.Invoke(this, EventArgs.Empty);
+        }
+
+
+        // ========================================[ Subclasses ]========================================
 
         private class StackElementStorage
         {

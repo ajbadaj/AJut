@@ -3,6 +3,9 @@
     using System.Windows;
     using System.Windows.Input;
 
+    /// <summary>
+    /// One of the StackNav presenter controls
+    /// </summary>
     public interface IStackNavPresenter
     {
         StackNavFlowController Navigator { get; }
@@ -10,6 +13,9 @@
 
     public static class StackNavPresenterXT
     {
+        /// <summary>
+        /// Setups up the common navigator commands for this display
+        /// </summary>
         public static void SetupBasicNavigatorCommandBindings<T> (this T control)
             where T : UIElement, IStackNavPresenter
         {

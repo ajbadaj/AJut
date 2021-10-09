@@ -6,6 +6,9 @@
     using AJut.UX;
     using DPUtils = AJut.UX.DPUtils<StackNavActiveContentPresenter>;
 
+    /// <summary>
+    /// The stack nav presenter that displays the active <see cref="IStackNavDisplayControl"/> control. This handles covers as well for busy wait and popovers.
+    /// </summary>
     [TemplatePart(Name = nameof(PART_ContentDisplay), Type = typeof(ContentPresenter))]
     public class StackNavActiveContentPresenter : Control, IStackNavPresenter
     {

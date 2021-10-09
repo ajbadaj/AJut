@@ -4,10 +4,13 @@
     using System.Windows.Controls;
     using System.Windows.Input;
     using System.Windows.Media;
-    using AJut.UX.AttachedProperties;
     using AJut.UX;
+    using AJut.UX.AttachedProperties;
     using DPUtils = AJut.UX.DPUtils<StackNavPopoverOverlay>;
 
+    /// <summary>
+    /// The standard stack nav popover overlay
+    /// </summary>
     [TemplatePart(Name = nameof(PART_PopoverDisplayArea), Type = typeof(Border))]
     public class StackNavPopoverOverlay : Control
     {

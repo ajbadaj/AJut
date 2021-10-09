@@ -5,6 +5,9 @@
     using AJut.UX;
     using DPUtils = AJut.UX.DPUtils<StackNavActiveDrawerPresenter>;
 
+    /// <summary>
+    /// The stack nav presenter that displays the drawer of the active <see cref="IStackNavDisplayControl"/>
+    /// </summary>
     public class StackNavActiveDrawerPresenter : Control, IStackNavPresenter
     {
         static StackNavActiveDrawerPresenter ()

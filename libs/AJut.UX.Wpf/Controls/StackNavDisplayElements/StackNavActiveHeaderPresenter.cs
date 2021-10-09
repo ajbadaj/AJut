@@ -5,6 +5,9 @@
     using AJut.UX;
     using DPUtils = AJut.UX.DPUtils<StackNavActiveHeaderPresenter>;
 
+    /// <summary>
+    /// The stack nav presenter that displays the header of the active <see cref="IStackNavDisplayControl"/>, and the default navigational commands
+    /// </summary>
     public class StackNavActiveHeaderPresenter : Control, IStackNavPresenter
     {
         static StackNavActiveHeaderPresenter ()
