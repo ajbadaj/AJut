@@ -48,7 +48,7 @@
 
         void IStackNavDisplayControl.SetState (object state) 
         {
-            this.NumberFromFirst = (double)state;
+            this.NumberFromFirst = Convert.ToDouble(state);
         }
 
         private void RunSpinWait_OnClick (object sender, RoutedEventArgs e)
@@ -68,6 +68,11 @@
                 spinWaitStackNavTimer.Dispose();
                 spinWaitStackNavTimer = null;
             }
+        }
+
+        private void OpenThirdDisplay_OnClick (object sender, RoutedEventArgs e)
+        {
+            m_adapter.Navigator.GenerateAndPushDisplay<ThirdDisplay>();
         }
     }
 }
