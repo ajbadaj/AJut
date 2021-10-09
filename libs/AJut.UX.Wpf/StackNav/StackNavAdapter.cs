@@ -16,6 +16,7 @@
         private object m_title;
         private bool m_isBusyWaitActive;
         private IStackNavPopoverDisplayBase m_popoverDisplay;
+        private bool m_preserveFullAdapterAndControlOnCover = false;
 
         public StackNavAdapter (StackNavFlowController navigator, IStackNavDisplayControl display)
         {
@@ -79,6 +80,12 @@
         }
 
         public bool AnyCoversShown => this.IsBusyWaitActive || this.IsShowingPopover;
+
+        public bool PreserveFullAdapterAndControlOnCover
+        {
+            get => m_preserveFullAdapterAndControlOnCover;
+            set => this.SetAndRaiseIfChanged(ref m_preserveFullAdapterAndControlOnCover, value);
+        }
 
         // =============================[ Methods ]========================================
 

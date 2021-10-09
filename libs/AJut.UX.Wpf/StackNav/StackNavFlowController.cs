@@ -84,11 +84,32 @@
 
         public bool GenerateAndPushDisplay<T> (object state = null)
         {
+            return GenerateAndPushDisplay(typeof(T), state);
+        }
+
+        public bool GenerateAndPushDisplay (Type stackNavDisplayControlType, object state = null)
+        {
+            StackNavAdapter adapter = this.BuildControlAndAdapter(stackNavDisplayControlType);
+            if (adapter != null)
+            {
+                if (this.StackTopDisplayAdapter != null)
+                {
+                    m_hiddenElementStack.Push(new StackElementStorage(this.StackTopDisplayAdapter));
+                }
+
+                this.ReplaceShownDisplay(adapter, state);
+                return true;
+            }
+
+            return false;
+#if false
+
+
             // Build
             object newDisplayObj;
             try
             {
-                newDisplayObj = Activator.CreateInstance(typeof(T));
+                newDisplayObj = Activator.CreateInstance(stackNavDisplayControlType);
             }
             catch { newDisplayObj = null; }
 
@@ -111,7 +132,32 @@
             }
 
             return false;
-            
+#endif
+        }
+
+        private StackNavAdapter BuildControlAndAdapter (Type stackNavDisplayControlType)
+        {
+            // Build
+            object newDisplayObj;
+            try
+            {
+                newDisplayObj = Activator.CreateInstance(stackNavDisplayControlType);
+            }
+            catch { newDisplayObj = null; }
+
+            // Use it if it's valid
+            if (newDisplayObj is IStackNavDisplayControl displayControl)
+            {
+                return new StackNavAdapter(this, displayControl);
+            }
+
+            // Toss it if it's not
+            if (newDisplayObj is IDisposable disposableFailure)
+            {
+                disposableFailure.Dispose();
+            }
+
+            return null;
         }
 
         public async Task PopDisplay ()
@@ -120,7 +166,7 @@
             if (await oldShownControl.Close())
             {
                 StackElementStorage newElementToShow = m_hiddenElementStack.Pop();
-                this.ReplaceShownDisplay(newElementToShow.Adapter, newElementToShow.PreviousState);
+                this.ReplaceShownDisplay(newElementToShow.GenerateAdapterWith(this), newElementToShow.PreviousState);
             }
         }
 
@@ -192,14 +238,33 @@
 
         private class StackElementStorage
         {
+            private readonly Type m_displayElementType;
+            private readonly StackNavAdapter m_adapter;
+
             public StackElementStorage (StackNavAdapter adapter)
             {
-                this.Adapter = adapter;
                 this.PreviousState = adapter.OnCovered();
+                if (adapter.PreserveFullAdapterAndControlOnCover)
+                {
+                    m_adapter = adapter;
+                }
+                else
+                {
+                    m_displayElementType = adapter.Display.GetType();
+                }
             }
 
-            public StackNavAdapter Adapter { get; }
             public object PreviousState { get; }
+
+            public StackNavAdapter GenerateAdapterWith (StackNavFlowController controller)
+            {
+                if (m_adapter != null)
+                {
+                    return m_adapter;
+                }
+
+                return controller.BuildControlAndAdapter(m_displayElementType);
+            }
         }
     }
 }
