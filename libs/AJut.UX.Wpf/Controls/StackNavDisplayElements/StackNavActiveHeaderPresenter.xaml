@@ -34,7 +34,8 @@
                         <DockPanel IsEnabled="{ajut:TemplateBinding Path=Navigator.StackTopDisplayAdapter.AnyCoversShown, Converter={ajconv:BooleanInverseConverter}}">
                             <!-- ====[ Open/Close Drawer Button ]===== -->
                             <Button DockPanel.Dock="Left" Visibility="{ajut:TemplateBinding Path=ShowDrawerButton, Converter={ajconv:BooleanToVisibilityConverter}}"
-                                    Command="{x:Static ajut:StackNavCommands.ToggleDrawerOpenStateCommand}">
+                                    Command="{x:Static ajut:StackNavCommands.ToggleDrawerOpenStateCommand}"
+                                    WindowChrome.IsHitTestVisibleInChrome="True">
                                 <Button.Style>
                                     <Style TargetType="{x:Type Button}">
                                         <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>

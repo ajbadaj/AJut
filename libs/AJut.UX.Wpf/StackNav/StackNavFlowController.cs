@@ -126,14 +126,17 @@
         /// Closes the current display, pops thes tack, and generates (if needed) the display down one in the stack 
         /// and shows that. This operation fails if the display is the last in the stack.
         /// </summary>
-        public async Task PopDisplay ()
+        public async Task<bool> PopDisplay ()
         {
             StackNavAdapter oldShownControl = this.StackTopDisplayAdapter;
             if (await oldShownControl.Close())
             {
                 StackElementStorage newElementToShow = m_hiddenElementStack.Pop();
                 this.ReplaceShownDisplay(newElementToShow.GenerateAdapterWith(this), newElementToShow.PreviousState);
+                return true;
             }
+
+            return false;
         }
 
         /// <summary>
