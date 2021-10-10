@@ -222,7 +222,6 @@ namespace AJut.UX.Controls
             protected set => this.SetValue(ItemsPropertyKey, value);
         }
 
-
         public static readonly DependencyProperty ItemTemplateProperty = DPUtils.Register(_ => _.ItemTemplate);
         public DataTemplate ItemTemplate
         {
@@ -249,6 +248,27 @@ namespace AJut.UX.Controls
         {
             get => (Brush)this.GetValue(SelectionInactiveBrushProperty);
             set => this.SetValue(SelectionInactiveBrushProperty, value);
+        }
+
+        public static readonly DependencyProperty CollapsedElementGlyphProperty = DPUtils.Register(_ => _.CollapsedElementGlyph);
+        public object CollapsedElementGlyph
+        {
+            get => this.GetValue(CollapsedElementGlyphProperty);
+            set => this.SetValue(CollapsedElementGlyphProperty, value);
+        }
+
+        public static readonly DependencyProperty ExpandedElementGlyphProperty = DPUtils.Register(_ => _.ExpandedElementGlyph);
+        public object ExpandedElementGlyph
+        {
+            get => this.GetValue(ExpandedElementGlyphProperty);
+            set => this.SetValue(ExpandedElementGlyphProperty, value);
+        }
+
+        public static readonly DependencyProperty ExpandCollapseGlyphSizeProperty = DPUtils.Register(_ => _.ExpandCollapseGlyphSize);
+        public double ExpandCollapseGlyphSize
+        {
+            get => (double)this.GetValue(ExpandCollapseGlyphSizeProperty);
+            set => this.SetValue(ExpandCollapseGlyphSizeProperty, value);
         }
 
         // ============================[Methods]================================
