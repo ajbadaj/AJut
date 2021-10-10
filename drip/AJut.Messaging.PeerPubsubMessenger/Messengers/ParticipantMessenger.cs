@@ -67,8 +67,8 @@
                 this.TrackOutputTarget(coordinatorId, outputClient);
                 m_p2pServerMessagePump.IsActiveChanged += this.OnMessagePumpIsActiveChanged;
                 m_p2pServerMessagePump.ExecutionState.Add(new CoordinatorProcessorState(outputClient, this.SourceId));
-                Logger.LogInfo("Setting up outbox worker");
-                m_p2pServerMessagePump.Start(BackgroundMessageLoop, "Messenger Outbox Processor: Participant");
+                Logger.LogInfo("::OUTBOX THREAD:: ThreadWorker Started");
+                m_p2pServerMessagePump.StartThreadLoop(BackgroundMessageFrameActor, "Messenger Outbox Processor: Participant");
                 m_p2pServerMessagePump.OutputResults.DataReceived += this.OutputResults_DataReceived;
 
                 this.SetupOutboxTimerIfNotAlreadySetup();
@@ -103,6 +103,12 @@
         {
             await this.SendMessage(new ParticipantGracefulShutdownPayload());
             await m_p2pServerMessagePump.ShutdownGracefullyAndWaitForCompletion();
+            if (!m_p2pServerMessagePump.LastRunResult)
+            {
+                Logger.LogError(m_p2pServerMessagePump.LastRunResult.GetErrorReport());
+            }
+
+            Logger.LogInfo("::OUTBOX THREAD:: ThreadWorker Exited");
         }
 
         protected override void ExecuteOnMainThread (Action action)
@@ -156,84 +162,69 @@
         }
 
         // =====================[ BKG Worker Stuff ]=============================
-        private static void BackgroundMessageLoop (ThreadWorkerDataTracker<Message, CoordinatorProcessorState, Message> data)
+        private static byte[] g_byteBuffer = new byte[256];
+        private static void BackgroundMessageFrameActor (ThreadWorkerDataTracker<Message, CoordinatorProcessorState, Message> data)
         {
-            Logger.LogInfo("::OUTBOX THREAD:: ProcessOutbox started");
-            try
+            CoordinatorProcessorState target = data.ExecutionState.ToArray().FirstOrDefault();
+            if (target == null)
             {
-                byte[] byteBuffer = new byte[256];
-                while (data.ShouldContinue)
+                return;
+            }
+
+            Message next = data.InputToProcess.TakeNext();
+            bool anyMessagesReceived = false;
+            NetworkStream stream = target.Connection.GetStream();
+
+            // ====================[ SEND ]============================
+            // If we have a message, send it
+            if (next != null)
+            {
+                try
                 {
-                    CoordinatorProcessorState target = data.ExecutionState.ToArray().FirstOrDefault();
-                    if (target == null)
-                    {
-                        continue;
-                    }
-
-                    Message next = data.InputToProcess.TakeNext();
-                    bool anyMessagesReceived = false;
-                    NetworkStream stream = target.Connection.GetStream();
-
-                    // ====================[ SEND ]============================
-                    // If we have a message, send it
-                    if (next != null)
-                    {
-                        try
-                        {
-                            Logger.LogInfo($"::OUTBOX THREAD:: Message away: {next.Id}");
-                            byte[] messageBytes = next.ToJsonBytes();
-                            stream.Write(messageBytes, 0, messageBytes.Length);
-                            next = null;
-                        }
-                        catch (Exception exc)
-                        {
-                            Logger.LogError("::OUTBOX THREAD:: Error sending message!", exc);
-                        }
-                    }
-
-                    if (next != null)
-                    {
-                        data.InputToProcess.Add(next);
-                        Logger.LogInfo($"::OUTBOX THREAD:: Message {next.Id} was not sent, queueing for retry until we actually have a place to send it");
-                    }
-
-                    // ====================[ RECEIVE ]============================
-                    // While we're looking, check for messages
-                    Message[] receivedMessages = ProcessStreamInput(stream, byteBuffer).Select(Message.FromJsonText).ToArray();
-                    data.OutputResults.AddRange(receivedMessages);
-                    anyMessagesReceived = receivedMessages.Length > 0;
-                    if (anyMessagesReceived)
-                    {
-                        Logger.LogInfo($"::OUTBOX THREAD:: processed {receivedMessages.Length} new messages, passed to output results!");
-                    }
-
-                    foreach (Message message in receivedMessages)
-                    {
-                        // Send a standard ack so the target knows we received the message, unless it's an ack, don't ack acks.
-                        if (!(message.Payload is StandardAcknowledgementPayload))
-                        {
-                            var ack = message.CreateAck(target.Source);
-                            var ackBytes = ack.ToJsonBytes();
-                            stream.Write(ackBytes, 0, ackBytes.Length);
-                            Logger.LogInfo($"Ack sent for message {message.Id} to user {message.Source}");
-                        }
-
-                    }
-
-                    if (anyMessagesReceived)
-                    {
-                        data.OutputResults.NotifyDataReceived();
-                    }
-
-                    Thread.Sleep(0);
+                    Logger.LogInfo($"::OUTBOX THREAD:: Message away: {next.Id}");
+                    byte[] messageBytes = next.ToJsonBytes();
+                    stream.Write(messageBytes, 0, messageBytes.Length);
+                    next = null;
+                }
+                catch (Exception exc)
+                {
+                    Logger.LogError("::OUTBOX THREAD:: Error sending message!", exc);
                 }
             }
-            catch (Exception exc)
+
+            if (next != null)
             {
-                Logger.LogError("::OUTBOX THREAD:: Exception encountered in ProcessOutbox", exc);
+                data.InputToProcess.Add(next);
+                Logger.LogInfo($"::OUTBOX THREAD:: Message {next.Id} was not sent, queueing for retry until we actually have a place to send it");
             }
 
-            Logger.LogInfo("::OUTBOX THREAD:: ProcessOutbox exiting");
+            // ====================[ RECEIVE ]============================
+            // While we're looking, check for messages
+            Message[] receivedMessages = ProcessStreamInput(stream, g_byteBuffer).Select(Message.FromJsonText).ToArray();
+            data.OutputResults.AddRange(receivedMessages);
+            anyMessagesReceived = receivedMessages.Length > 0;
+            if (anyMessagesReceived)
+            {
+                Logger.LogInfo($"::OUTBOX THREAD:: processed {receivedMessages.Length} new messages, passed to output results!");
+            }
+
+            foreach (Message message in receivedMessages)
+            {
+                // Send a standard ack so the target knows we received the message, unless it's an ack, don't ack acks.
+                if (!(message.Payload is StandardAcknowledgementPayload))
+                {
+                    var ack = message.CreateAck(target.Source);
+                    var ackBytes = ack.ToJsonBytes();
+                    stream.Write(ackBytes, 0, ackBytes.Length);
+                    Logger.LogInfo($"Ack sent for message {message.Id} to user {message.Source}");
+                }
+
+            }
+
+            if (anyMessagesReceived)
+            {
+                data.OutputResults.NotifyDataReceived();
+            }
         }
 
         private class CoordinatorProcessorState : IDisposable

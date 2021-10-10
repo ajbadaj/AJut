@@ -3,6 +3,7 @@
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using AJut.Storage;
 
     /// <summary>
     /// A utility class that spins up a thread, and manages an input queue, and output queue and state.
@@ -13,17 +14,17 @@
     public class ThreadWorker<TInput, TExecutionState, TOutput> : IDisposable
     {
         private static int kDefaultThreadNameCounter = 0;
-        public delegate void ThreadActor (ThreadWorkerDataTracker<TInput, TExecutionState, TOutput> data);
+        public delegate void FrameActor (ThreadWorkerDataTracker<TInput, TExecutionState, TOutput> data);
 
         private Thread m_thread;
         private ThreadWorkerDataTracker<TInput, TExecutionState, TOutput> m_activeThreadData;
-        private bool m_finishedGracefully = false;
         private TaskCompletionSource<bool> m_gracefulShutdownIndicator;
         private TaskCompletionSource<bool> m_allInputProcessingCompleted;
 
         // ==================[ Properties ]============================
         public event EventHandler<EventArgs> IsActiveChanged;
         public bool IsActive => m_thread != null;
+        public Result LastRunResult { get; private set; } = Result.Success();
 
         /// <summary>
         /// Work items to process - these items are added externally and removed as they are processed
@@ -41,24 +42,38 @@
         public ThreadWorkerState<TExecutionState> ExecutionState { get; } = new ThreadWorkerState<TExecutionState>();
 
         // ==================[ Methods ]============================
-        public void Start (ThreadActor actor, string name = null)
+
+        /// <summary>
+        /// Starts up the thread loop with the <see cref="FrameActor"/> that will run per frame of the loop.
+        /// </summary>
+        /// <param name="frameActor">The <see cref="FrameActor"/> that will run per frame of the loop.</param>
+        /// <param name="name">An optional name for the thread</param>
+        /// <param name="sleepYieldMs">How long to sleep to yield to other threads (recommend atleast 1)</param>
+        public void StartThreadLoop (FrameActor frameActor, string name = null, int sleepYieldMs = 10)
         {
-            this.Start(actor, CancellationToken.None, name);
+            this.StartThreadLoop(frameActor, CancellationToken.None, name, sleepYieldMs);
         }
 
-        public void Start (ThreadActor actor, CancellationToken cancellationToken, string name = null)
+        /// <summary>
+        /// Starts up the thread loop with the <see cref="FrameActor"/> that will run per frame of the loop.
+        /// </summary>
+        /// <param name="frameActor">The <see cref="FrameActor"/> that will run per frame of the loop.</param>
+        /// <param name="cancellationToken">A cancellation token for cancelling this execution early</param>
+        /// <param name="name">An optional name for the thread</param>
+        /// <param name="sleepYieldMs">How long to sleep to yield to other threads (recommend atleast 1)</param>
+        public void StartThreadLoop (FrameActor frameActor, CancellationToken cancellationToken, string name = null, int sleepYieldMs = 10)
         {
-            cancellationToken.Register(this.Kill);
+            cancellationToken.Register(this.InitiateGracefulShutdown);
             name = name ?? $"Thread worker thread #{kDefaultThreadNameCounter++}";
             // Reset
-            this.Kill();
+            this.DeactivateAndCleanup();
 
             // Reset graceful shutdown indicators
-            m_finishedGracefully = false;
             m_gracefulShutdownIndicator = new TaskCompletionSource<bool>();
 
             // Create new data
             m_activeThreadData = new ThreadWorkerDataTracker<TInput, TExecutionState, TOutput>(this.InputToProcess, this.ExecutionState, this.OutputResults);
+
             m_thread = new Thread(new ParameterizedThreadStart(_Runner));
             m_thread.Name = name;
             m_thread.IsBackground = true;
@@ -67,11 +82,23 @@
 
             void _Runner (object state)
             {
-                actor((ThreadWorkerDataTracker<TInput, TExecutionState, TOutput>)state);
-                m_finishedGracefully = true;
+                var castedState = (ThreadWorkerDataTracker<TInput, TExecutionState, TOutput>)state;
+                try
+                {
+                    while (castedState.ShouldContinue)
+                    {
+                        frameActor(castedState);
+                        Thread.Sleep(sleepYieldMs);
+                    }
+                }
+                catch (Exception exc)
+                {
+                    this.LastRunResult = Result.Error(exc.Message);
+                }
+                
                 var gracefulShutdownNotifier = m_gracefulShutdownIndicator;
                 this.DeactivateAndCleanup();
-                gracefulShutdownNotifier.TrySetResult(true);
+                gracefulShutdownNotifier?.TrySetResult(true);
             }
         }
 
@@ -113,12 +140,11 @@
             m_activeThreadData.InitiateGracefulShutdown();
         }
 
-        public async Task ShutdownGracefullyAndWaitForCompletion ()
+        public async Task<bool> ShutdownGracefullyAndWaitForCompletion ()
         {
-            await ShutdownGracefullyAndWaitForCompletion(TimeSpan.FromMilliseconds(Int32.MaxValue)).ConfigureAwait(false);
+            return await this.ShutdownGracefullyAndWaitForCompletion(TimeSpan.MaxValue).ConfigureAwait(false);
         }
-
-        public async Task<bool> ShutdownGracefullyAndWaitForCompletion (TimeSpan timeout, bool killOnTimeout = true)
+        public async Task<bool> ShutdownGracefullyAndWaitForCompletion (TimeSpan timeout)
         {
             if (!this.IsActive)
             {
@@ -131,7 +157,7 @@
             // Create a cancellation token
             var gracefulShutdown = m_gracefulShutdownIndicator;
             CancellationTokenSource gracefulShutdownTimeout = new CancellationTokenSource();
-            gracefulShutdownTimeout.Token.Register(() => m_gracefulShutdownIndicator?.TrySetCanceled());
+            gracefulShutdownTimeout.Token.Register(() => gracefulShutdown?.TrySetCanceled());
             gracefulShutdownTimeout.CancelAfter(timeout);
 
             // Await the task completion source to confirm that graceful shutdown has completed
@@ -140,29 +166,7 @@
                 return true;
             }
 
-            if (killOnTimeout)
-            {
-                this.Kill();
-                return true;
-            }
-
             return false;
-        }
-
-        public void Kill ()
-        {
-            if (m_thread == null)
-            {
-                m_activeThreadData = null;
-                return;
-            }
-
-            if (!m_finishedGracefully)
-            {
-                m_thread.Abort();
-            }
-
-            this.DeactivateAndCleanup();
         }
 
         private void DeactivateAndCleanup ()
@@ -178,7 +182,8 @@
 
         public void Dispose ()
         {
-            this.Kill();
+            m_activeThreadData.InitiateGracefulShutdown();
+            this.DeactivateAndCleanup();
         }
     }
 

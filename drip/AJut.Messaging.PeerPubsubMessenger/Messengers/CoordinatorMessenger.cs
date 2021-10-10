@@ -75,7 +75,9 @@
             state.ConnectedClientsChanged += this.State_ConnectedClientsChanged;
             m_coordinatorMessageLoop.IsActiveChanged += this.OnMessageLoopIsActiveChanged;
             m_coordinatorMessageLoop.ExecutionState.Add(state);
-            m_coordinatorMessageLoop.Start(BackgroundMessageLoop, $"AJut-MSG-Coordinator-Port_#{this.InputPort}_InputListener");
+
+            Logger.LogInfo("::INBOX THREAD:: ThreadWorker Started");
+            m_coordinatorMessageLoop.StartThreadLoop(BackgroundProcessMessage, $"AJut-MSG-Coordinator-Port_#{this.InputPort}_InputListener");
             m_coordinatorMessageLoop.OutputResults.DataReceived += this.Inbox_GotNewMessages;
 
             return true;
@@ -224,6 +226,12 @@
         {
             await this.SendMessage(new ParticipantLeftPayload { UserId = m_manager.CurrentUser.Id, UserName = m_manager.CurrentUser.UserName });
             await m_coordinatorMessageLoop.ShutdownGracefullyAndWaitForCompletion();
+            if (!m_coordinatorMessageLoop.LastRunResult)
+            {
+                Logger.LogError(m_coordinatorMessageLoop.LastRunResult.GetErrorReport());
+            }
+
+            Logger.LogInfo("::INBOX THREAD:: ThreadWorker Exited");
         }
 
         protected override void ProcessOutgoingMessage (Message message)
@@ -243,36 +251,86 @@
             this.HandleGotInputMessages(messages);
         }
 
-        private static void BackgroundMessageLoop (ThreadWorkerDataTracker<Message, CoordinatorProcessorState, Message> data)
+        private static readonly byte[] g_byteBuffer = new byte[256];
+        private static void BackgroundProcessMessage (ThreadWorkerDataTracker<Message, CoordinatorProcessorState, Message> data)
         {
-            byte[] byteBuffer = new byte[256];
-            while (data.ShouldContinue)
+            CoordinatorProcessorState inboxProcessorState = data.ExecutionState.ToArray().First();
+
+            // ====================[ Find ]============================
+            if (inboxProcessorState.Listener.Pending())
             {
-                CoordinatorProcessorState inboxProcessorState = data.ExecutionState.ToArray().First();
-
-                // ====================[ Find ]============================
-                if (inboxProcessorState.Listener.Pending())
+                TcpClient found;
+                try
                 {
-                    TcpClient found;
-                    try
-                    {
-                        found = inboxProcessorState.Listener.AcceptTcpClient();
-                    }
-                    catch (Exception exc)
-                    {
-                        Logger.LogError("Error accepting new client!", exc);
-                        found = null;
-                    }
-
-                    if (found != null && found.Connected)
-                    {
-                        inboxProcessorState.AddConnectedClient(found);
-                    }
+                    found = inboxProcessorState.Listener.AcceptTcpClient();
+                }
+                catch (Exception exc)
+                {
+                    Logger.LogError("Error accepting new client!", exc);
+                    found = null;
                 }
 
-                // ====================[ RECEIVE ]============================
-                var incomingMessages = new List<Message>();
-                foreach (OutputTargetInfo target in inboxProcessorState.Clients())
+                if (found != null && found.Connected)
+                {
+                    inboxProcessorState.AddConnectedClient(found);
+                }
+            }
+
+            // ====================[ RECEIVE ]============================
+            var incomingMessages = new List<Message>();
+            foreach (OutputTargetInfo target in inboxProcessorState.Clients())
+            {
+                try
+                {
+                    if (!target.Client.Connected)
+                    {
+                        inboxProcessorState.RemoveConnectedClient(target);
+                        continue;
+                    }
+
+                    NetworkStream stream = target.Client.GetStream();
+                    string[] messageJsons = ProcessStreamInput(stream, g_byteBuffer);
+                    foreach (string messageJson in messageJsons)
+                    {
+                        var message = Message.FromJsonText(messageJson);
+                        if (message != null)
+                        {
+                            if (!target.IsTargetKnown)
+                            {
+                                target.Id = message.Source;
+                            }
+
+                            // Send a standard ack so the target knows we received the message, unless it's an ack, don't ack acks.
+                            if (!(message.Payload is StandardAcknowledgementPayload))
+                            {
+                                var ack = message.CreateAck(inboxProcessorState.Source);
+                                var ackBytes = ack.ToJsonBytes();
+                                stream.Write(ackBytes, 0, ackBytes.Length);
+                                Logger.LogInfo($"Ack sent for message {message.Id} to user {message.Source}");
+                            }
+
+                            // Enqueue the message
+                            incomingMessages.Add(message);
+                        }
+                    }
+                }
+                catch (Exception exc)
+                {
+                    Logger.LogError("Error processing input", exc);
+                }
+            }
+
+            if (incomingMessages.Any())
+            {
+                data.OutputResults.AddRange(incomingMessages);
+                data.OutputResults.NotifyDataReceived();
+            }
+
+            // ====================[ SEND ]============================
+            Message outgoingMessage = data.InputToProcess.TakeNext();
+            if (outgoingMessage != null)
+            {
+                foreach (var target in inboxProcessorState.Clients())
                 {
                     try
                     {
@@ -282,75 +340,21 @@
                             continue;
                         }
 
-                        NetworkStream stream = target.Client.GetStream();
-                        string[] messageJsons = ProcessStreamInput(stream, byteBuffer);
-                        foreach (string messageJson in messageJsons)
+                        if (outgoingMessage.FocusedTargets == null || outgoingMessage.FocusedTargets.Contains(target.Id))
                         {
-                            var message = Message.FromJsonText(messageJson);
-                            if (message != null)
-                            {
-                                if (!target.IsTargetKnown)
-                                {
-                                    target.Id = message.Source;
-                                }
-
-                                // Send a standard ack so the target knows we received the message, unless it's an ack, don't ack acks.
-                                if (!(message.Payload is StandardAcknowledgementPayload))
-                                {
-                                    var ack = message.CreateAck(inboxProcessorState.Source);
-                                    var ackBytes = ack.ToJsonBytes();
-                                    stream.Write(ackBytes, 0, ackBytes.Length);
-                                    Logger.LogInfo($"Ack sent for message {message.Id} to user {message.Source}");
-                                }
-
-                                // Enqueue the message
-                                incomingMessages.Add(message);
-                            }
+                            var outputStream = target.Client.GetStream();
+                            byte[] messageBytes = outgoingMessage.ToJsonBytes();
+                            outputStream.Write(messageBytes, 0, messageBytes.Length);
                         }
                     }
                     catch (Exception exc)
                     {
-                        Logger.LogError("Error processing input", exc);
+                        Logger.LogError("Error processing output", exc);
                     }
                 }
-
-                if (incomingMessages.Any())
-                {
-                    data.OutputResults.AddRange(incomingMessages);
-                    data.OutputResults.NotifyDataReceived();
-                }
-
-                // ====================[ SEND ]============================
-                Message outgoingMessage = data.InputToProcess.TakeNext();
-                if (outgoingMessage != null)
-                {
-                    foreach (var target in inboxProcessorState.Clients())
-                    {
-                        try
-                        {
-                            if (!target.Client.Connected)
-                            {
-                                inboxProcessorState.RemoveConnectedClient(target);
-                                continue;
-                            }
-
-                            if (outgoingMessage.FocusedTargets == null || outgoingMessage.FocusedTargets.Contains(target.Id))
-                            {
-                                var outputStream = target.Client.GetStream();
-                                byte[] messageBytes = outgoingMessage.ToJsonBytes();
-                                outputStream.Write(messageBytes, 0, messageBytes.Length);
-                            }
-                        }
-                        catch (Exception exc)
-                        {
-                            Logger.LogError("Error processing output", exc);
-                        }
-                    }
-                }
-
-                inboxProcessorState.AnnounceCurrentClientListIfUpdated();
-                Thread.Sleep(0);
             }
+
+            inboxProcessorState.AnnounceCurrentClientListIfUpdated();
         }
 
         // ==================================[ Utility Classes ]===============================================
