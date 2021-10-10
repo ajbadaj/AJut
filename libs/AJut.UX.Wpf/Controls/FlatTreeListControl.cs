@@ -13,13 +13,13 @@ namespace AJut.UX.Controls
     using AJut.Tree;
     using DPUtils = DPUtils<FlatTreeListControl>;
 
-    // ============================================================================================================================
-    // TODO: Still working on selection, did a major refactor to IObservableTreeNode. Initially I was going to try and make an
-    //        interactable tree node version, but having expansion and selection in the tree node made it so that you couldn't show
-    //        two FlatTreeListControls with the same nodes and different selection/expansion state, which is when I realized it had
-    //        to be stored as local state to the list control. That's when I developed this current FlatTreeListControl.Item strategy
-    //        which works, but may still be incomplete with selection synchronization, though attempts have been started in the
-    //        constructor and Item selection changed handler.
+    // ==========================================[ TODO ]==========================================================================
+    //  Still working on selection, did a major refactor to IObservableTreeNode. Initially I was going to try and make an
+    //   interactable tree node version, but having expansion and selection in the tree node made it so that you couldn't show
+    //   two FlatTreeListControls with the same nodes and different selection/expansion state, which is when I realized it had
+    //   to be stored as local state to the list control. That's when I developed this current FlatTreeListControl.Item strategy
+    //   which works, but may still be incomplete with selection synchronization, though attempts have been started in the
+    //   constructor and Item selection changed handler.
     // ============================================================================================================================
 
     /// <summary>
@@ -33,6 +33,81 @@ namespace AJut.UX.Controls
     {
         private ListBox PART_ListBoxDisplay;
         private bool m_blockingForSelectionChangeReentrancy = false;
+
+        // ========================[Construction]==============================
+        static FlatTreeListControl ()
+        {
+            DefaultStyleKeyProperty.OverrideMetadata(typeof(FlatTreeListControl), new FrameworkPropertyMetadata(typeof(FlatTreeListControl)));
+        }
+
+        public FlatTreeListControl ()
+        {
+            this.Items = new ObservableFlatTreeStore<Item>();
+            this.SelectedItems = new ObservableCollection<IObservableTreeNode>();
+
+            this.SelectedItems.CollectionChanged += _OnSelectedItemsCollectionChanged;
+
+            void _OnSelectedItemsCollectionChanged (object _sender, NotifyCollectionChangedEventArgs _e)
+            {
+                // ===================================================================
+                // = What happens when selection changes via external insert\removal = 
+                // = of the SelectedItems collection                                 =
+                // ===================================================================
+
+                if (m_blockingForSelectionChangeReentrancy || this.PART_ListBoxDisplay == null)
+                {
+                    return;
+                }
+
+                m_blockingForSelectionChangeReentrancy = true;
+                try
+                {
+                    IObservableTreeNode[] removed = null;
+                    if (!_e.OldItems.IsNullOrEmpty())
+                    {
+                        removed = _e.OldItems.OfType<IObservableTreeNode>().Select(this.StorageItemForNode).Where(i => i != null).ToArray();
+                        foreach (Item item in removed)
+                        {
+                            item.IsSelected = false;
+                            this.PART_ListBoxDisplay.SelectedItems.Remove(item);
+                        }
+                    }
+
+                    IObservableTreeNode[] added = null;
+                    if (!_e.NewItems.IsNullOrEmpty())
+                    {
+                        added = _e.NewItems.OfType<IObservableTreeNode>().Select(this.StorageItemForNode).Where(i => i != null).ToArray();
+                        foreach (Item item in added)
+                        {
+                            item.IsSelected = true;
+                            this.PART_ListBoxDisplay.SelectedItems.Add(item);
+                        }
+                    }
+
+                    // It's a clear
+                    if (added == null && removed == null)
+                    {
+                        foreach (Item item in this.Items)
+                        {
+                            item.IsSelected = false;
+                        }
+
+                        this.PART_ListBoxDisplay.SelectedItem = null;
+                    }
+
+                    this.ApplySelectionChanges(added, removed);
+                }
+                finally
+                {
+                    m_blockingForSelectionChangeReentrancy = false;
+                }
+            }
+        }
+
+        // ============================[Events]================================
+        public event EventHandler<EventArgs<Item>> StorageItemAdded;
+        public event EventHandler<EventArgs<Item>> StorageItemRemoved;
+        public event EventHandler<EventArgs<SelectionChange<IObservableTreeNode>>> SelectionChanged;
 
         // =================[Core Dependency Properties]===================
         public static readonly DependencyProperty RootProperty = DPUtils.Register(_ => _.Root, (d, e) => d.OnRootChanged(e.NewValue));
@@ -175,81 +250,6 @@ namespace AJut.UX.Controls
             get => (Brush)this.GetValue(SelectionInactiveBrushProperty);
             set => this.SetValue(SelectionInactiveBrushProperty, value);
         }
-
-        // ========================[Construction]==============================
-        static FlatTreeListControl ()
-        {
-            DefaultStyleKeyProperty.OverrideMetadata(typeof(FlatTreeListControl), new FrameworkPropertyMetadata(typeof(FlatTreeListControl)));
-        }
-
-        public FlatTreeListControl ()
-        {
-            this.Items = new ObservableFlatTreeStore<Item>();
-            this.SelectedItems = new ObservableCollection<IObservableTreeNode>();
-
-            this.SelectedItems.CollectionChanged += _OnSelectedItemsCollectionChanged;
-
-            void _OnSelectedItemsCollectionChanged (object _sender, NotifyCollectionChangedEventArgs _e)
-            {
-                // ===================================================================
-                // = What happens when selection changes via external insert\removal = 
-                // = of the SelectedItems collection                                 =
-                // ===================================================================
-
-                if (m_blockingForSelectionChangeReentrancy || this.PART_ListBoxDisplay == null)
-                {
-                    return;
-                }
-
-                m_blockingForSelectionChangeReentrancy = true;
-                try
-                {
-                    IObservableTreeNode[] removed = null;
-                    if (!_e.OldItems.IsNullOrEmpty())
-                    {
-                        removed = _e.OldItems.OfType<IObservableTreeNode>().Select(this.StorageItemForNode).Where(i => i != null).ToArray();
-                        foreach (Item item in removed)
-                        {
-                            item.IsSelected = false;
-                            this.PART_ListBoxDisplay.SelectedItems.Remove(item);
-                        }
-                    }
-
-                    IObservableTreeNode[] added = null;
-                    if (!_e.NewItems.IsNullOrEmpty())
-                    {
-                        added = _e.NewItems.OfType<IObservableTreeNode>().Select(this.StorageItemForNode).Where(i => i != null).ToArray();
-                        foreach (Item item in added)
-                        {
-                            item.IsSelected = true;
-                            this.PART_ListBoxDisplay.SelectedItems.Add(item);
-                        }
-                    }
-
-                    // It's a clear
-                    if (added == null && removed == null)
-                    {
-                        foreach (Item item in this.Items)
-                        {
-                            item.IsSelected = false;
-                        }
-
-                        this.PART_ListBoxDisplay.SelectedItem = null;
-                    }
-
-                    this.ApplySelectionChanges(added, removed);
-                }
-                finally
-                {
-                    m_blockingForSelectionChangeReentrancy = false;
-                }
-            }
-        }
-
-        // ============================[Events]================================
-        public event EventHandler<EventArgs<Item>> StorageItemAdded;
-        public event EventHandler<EventArgs<Item>> StorageItemRemoved;
-        public event EventHandler<EventArgs<SelectionChange<IObservableTreeNode>>> SelectionChanged;
 
         // ============================[Methods]================================
         public override void OnApplyTemplate ()
@@ -419,9 +419,7 @@ namespace AJut.UX.Controls
             }
         }
 
-        // =====================================================================
         // ============================[Classes]================================
-        // =====================================================================
 
         /// <summary>
         /// The storage container of the provided <see cref="IObservableTreeNode"/> instances managed by the list. This
