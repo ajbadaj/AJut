@@ -84,12 +84,27 @@
         public DockingManager DockingOwner { get; }
         public IDockableDisplayElement Display { get; internal set; }
 
-
         public bool CheckCanClose ()
         {
             var readyToClose = new IsReadyToCloseEventArgs();
             this.CanClose?.Invoke(this, readyToClose);
             return readyToClose.IsReadyToClose;
+        }
+
+        public bool Close ()
+        {
+            if (this.CheckCanClose())
+            {
+                this.InternalClose();
+                return true;
+            }
+
+            return false;
+        }
+
+        internal void InternalClose ()
+        {
+            this.Closed?.Invoke(this, EventArgs.Empty);
         }
 
         internal void SetNewLocation (DockZone dockZone)
