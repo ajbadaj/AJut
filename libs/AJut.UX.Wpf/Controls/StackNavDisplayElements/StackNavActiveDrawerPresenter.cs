@@ -20,6 +20,20 @@
             this.SetupBasicNavigatorCommandBindings();
         }
 
+        public static readonly DependencyProperty DrawerDisplayTemplateProperty = DPUtils.Register(_ => _.DrawerDisplayTemplate);
+        public DataTemplate DrawerDisplayTemplate
+        {
+            get => (DataTemplate)this.GetValue(DrawerDisplayTemplateProperty);
+            set => this.SetValue(DrawerDisplayTemplateProperty, value);
+        }
+
+        public static readonly DependencyProperty DrawerDisplayTemplateSelectorProperty = DPUtils.Register(_ => _.DrawerDisplayTemplateSelector);
+        public DataTemplateSelector DrawerDisplayTemplateSelector
+        {
+            get => (DataTemplateSelector)this.GetValue(DrawerDisplayTemplateSelectorProperty);
+            set => this.SetValue(DrawerDisplayTemplateSelectorProperty, value);
+        }
+
         public static readonly DependencyProperty FixedDrawerDisplayProperty = DPUtils.Register(_ => _.FixedDrawerDisplay);
         public DependencyObject FixedDrawerDisplay
         {

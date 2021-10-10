@@ -88,15 +88,6 @@
             set => this.SetAndRaiseIfChanged(ref m_canCloseDrawer, value);
         }
 
-        /// <summary>
-        /// Indicates if the drawer is displayable, for use in helping ignore drawers with no display
-        /// </summary>
-        public bool ShowDrawerContents
-        {
-            get => m_showDrawerContents;
-            private set => this.SetAndRaiseIfChanged(ref m_showDrawerContents, value);
-        }
-
         // ========================================[ Methods ]========================================
 
         /// <summary>
@@ -156,15 +147,7 @@
             }
 
             this.StackTopDisplayAdapter.OnDrawerOpening();
-            var drawer = this.StackTopDisplayAdapter.Drawer;
-            this.ShowDrawerContents = drawer is DependencyObject;
-
             this.IsDrawerOpen = true;
-
-            if (drawer is IStackNavFlowControllerReactiveDrawerDisplay drawerNeedsSetup)
-            {
-                drawerNeedsSetup.Setup(this);
-            }
 
             if (forceStayOpen)
             {

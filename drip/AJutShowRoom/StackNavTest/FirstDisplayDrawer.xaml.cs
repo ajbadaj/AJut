@@ -3,13 +3,11 @@
     using System.Windows.Controls;
     using AJut.UX;
 
-    public partial class FirstDisplayDrawer : UserControl, IStackNavDrawerDisplay
+    public partial class FirstDisplayDrawer : UserControl
     {
         public FirstDisplayDrawer ()
         {
             this.InitializeComponent();
         }
-
-        public string Title => "First Display (Custom)";
     }
 }

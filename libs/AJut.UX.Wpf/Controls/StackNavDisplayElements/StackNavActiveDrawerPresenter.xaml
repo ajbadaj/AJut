@@ -3,7 +3,8 @@
                     xmlns:ajut="clr-namespace:AJut.UX"
                     xmlns:ap="clr-namespace:AJut.UX.AttachedProperties"
                     xmlns:local="clr-namespace:AJut.UX.Controls"
-                    xmlns:ajconv="clr-namespace:AJut.UX.Converters">
+                    xmlns:ajconv="clr-namespace:AJut.UX.Converters"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <Style TargetType="{x:Type local:StackNavActiveDrawerPresenter}">
         <Setter Property="BorderThickness" Value="1,1,0,1"/>
@@ -22,11 +23,24 @@
                                 <RowDefinition Height="*"/>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
+                            
+                            <!-- ============[ Heading ]================ -->
                             <Border Grid.Row="0" BorderThickness="0,0,0,1" BorderBrush="{TemplateBinding BorderBrush}" Margin="2,2,2,0">
-                                <TextBlock Text="{ajut:TemplateBinding Path=Navigator.StackTopDisplayAdapter.Drawer.Title}" FontSize="18" TextWrapping="WrapWithOverflow"/>
+                                <ContentControl Content="{ajut:TemplateBinding Path=Navigator.StackTopDisplayAdapter.DrawerHeading}"
+                                                ContentTemplate="{TemplateBinding DrawerDisplayTemplate}"
+                                                ContentTemplateSelector="{TemplateBinding DrawerDisplayTemplateSelector}">
+                                    <ContentControl.Resources>
+                                        <DataTemplate DataType="{x:Type sys:String}">
+                                            <TextBlock Text="{Binding .}" FontSize="18" TextWrapping="WrapWithOverflow"/>
+                                        </DataTemplate>
+                                    </ContentControl.Resources>
+                                </ContentControl>
                             </Border>
-                            <ContentPresenter Grid.Row="1" Content="{ajut:TemplateBinding Path=Navigator.StackTopDisplayAdapter.Drawer}"
-                                              Visibility="{ajut:TemplateBinding Path=Navigator.ShowDrawerContents, Converter={ajconv:BooleanToVisibilityConverter}}"/>
+
+                            <!-- ============[ Display ]================ -->
+                            <ContentPresenter Grid.Row="1" Content="{ajut:TemplateBinding Path=Navigator.StackTopDisplayAdapter.DrawerDisplay}"/>
+
+                            <!-- ============[ Bottom ]================ -->
                             <Grid Grid.Row="2" Visibility="{ajut:TemplateBinding Path=FixedDrawerDisplay, Converter={ajconv:NullnessToVisibilityConverter}}">
                                 <ContentPresenter Content="{ajut:TemplateBinding Path=FixedDrawerDisplay}"/>
                             </Grid>

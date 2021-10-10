@@ -21,9 +21,9 @@
     /// </summary>
     public class StackNavAdapter : NotifyPropertyChanged
     {
-        private Lazy<EmptyDrawer> m_emptyDrawerFallback;
-        private IStackNavDrawerDisplay m_drawer;
+        private object m_drawerDisplay;
         private object m_title;
+        private object m_drawerHeading;
         private bool m_isBusyWaitActive;
         private IStackNavPopoverDisplayBase m_popoverDisplay;
         private bool m_preserveFullAdapterAndControlOnCover = false;
@@ -31,7 +31,6 @@
 
         internal StackNavAdapter (StackNavFlowController navigator, IStackNavDisplayControl display)
         {
-            m_emptyDrawerFallback = new Lazy<EmptyDrawer>(() => new EmptyDrawer(display));
             this.Navigator = navigator;
             this.Display = display;
             this.Display.Setup(this);
@@ -87,20 +86,6 @@
         public IStackNavDisplayControl Display { get; }
 
         /// <summary>
-        /// The drawer to be displayed for this <see cref="IStackNavDisplayControl"/>
-        /// </summary>
-        public IStackNavDrawerDisplay Drawer
-        {
-            get => m_drawer ?? m_emptyDrawerFallback.Value;
-            set => this.SetAndRaiseIfChanged(ref m_drawer, value);
-        }
-
-        /// <summary>
-        /// An asynchronous closing handler should you need to handle closing in an asynchronous way
-        /// </summary>
-        public ClosingHandlerFunction AsyncClosingHandler { get; set; }
-
-        /// <summary>
         /// The title object displayed (default controls like the <see cref="Controls.StackNavActiveHeaderPresenter"/> will render this, if you don't have a special rendering routine it is rendered as text by default)
         /// </summary>
         public object Title
@@ -108,6 +93,29 @@
             get => this.m_title;
             set => this.SetAndRaiseIfChanged(ref m_title, value);
         }
+
+        /// <summary>
+        /// The drawer object to display in the drawer should it open (or null for none)
+        /// </summary>
+        public object DrawerDisplay
+        {
+            get => m_drawerDisplay;
+            set => this.SetAndRaiseIfChanged(ref m_drawerDisplay, value);
+        }
+
+        /// <summary>
+        /// The heading to display for the drawer
+        /// </summary>
+        public object DrawerHeading
+        {
+            get => m_drawerHeading ?? "Settings";
+            set => this.SetAndRaiseIfChanged(ref m_drawerHeading, value);
+        }
+
+        /// <summary>
+        /// An asynchronous closing handler should you need to handle closing in an asynchronous way
+        /// </summary>
+        public ClosingHandlerFunction AsyncClosingHandler { get; set; }
 
         /// <summary>
         /// Indicates if the busy wait cover (set by the method <see cref="GenerateBusyWait"/>) is currently requested to be displayed
@@ -206,7 +214,13 @@
         /// ready for the busywait to go away.
         /// </summary>
         /// <returns>A <see cref="BusyWaitTracker"/> that should be disposed when you're ready for the busy wait to go away</returns>
-        public BusyWaitTracker GenerateBusyWait () => new BusyWaitTracker(this);
+        public BusyWaitTracker GenerateBusyWait ()
+        {
+            var busyWaitTracker = new BusyWaitTracker(this);
+            ++m_busyWaitRefCount;
+            this.IsBusyWaitActive = true;
+            return busyWaitTracker;
+        }
 
         internal void OnShown (object state)
         {
@@ -216,7 +230,7 @@
 
         internal async Task<bool> Close ()
         {
-            StackNavAttemptingDisplayCloseEventArgs attemptingClose = new StackNavAttemptingDisplayCloseEventArgs();
+            var attemptingClose = new StackNavAttemptingDisplayCloseEventArgs();
             this.Closing?.Invoke(this, attemptingClose);
             if (!attemptingClose.CanClose)
             {
@@ -264,7 +278,7 @@
                 m_busyWaitRefCount = 0;
             }
 
-            this.IsBusyWaitActive = m_busyWaitRefCount == 0;
+            this.IsBusyWaitActive = m_busyWaitRefCount != 0;
         }
 
         // ========================================[ Sub Classes ]========================================
@@ -278,7 +292,6 @@
             public BusyWaitTracker (StackNavAdapter owner)
             {
                 m_owner = owner;
-                m_owner.IsBusyWaitActive = true;
             }
 
             public void Dispose ()
@@ -286,16 +299,6 @@
                 m_owner.ReturnBusyWait();
                 m_owner = null;
             }
-        }
-
-        private class EmptyDrawer : IStackNavDrawerDisplay
-        {
-            public EmptyDrawer (IStackNavDisplayControl shownDisplay)
-            {
-                this.Title = shownDisplay.GetType().Name.ConvertToFriendlyEn();
-            }
-
-            public string Title { get; }
         }
     }
 }

@@ -53,7 +53,8 @@
         {
             m_adapter = adapter;
             m_adapter.Title = "First Page";
-            m_adapter.Drawer = new FirstDisplayDrawer();
+            m_adapter.DrawerHeading = "First Display (Custom)";
+            m_adapter.DrawerDisplay = new FirstDisplayDrawer();
         }
 
         private void GoToSecond_OnClick (object sender, RoutedEventArgs e)
