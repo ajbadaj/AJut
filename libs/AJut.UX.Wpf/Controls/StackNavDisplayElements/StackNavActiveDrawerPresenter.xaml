@@ -41,8 +41,8 @@
                             <ContentPresenter Grid.Row="1" Content="{ajut:TemplateBinding Path=Navigator.StackTopDisplayAdapter.DrawerDisplay}"/>
 
                             <!-- ============[ Bottom ]================ -->
-                            <Grid Grid.Row="2" Visibility="{ajut:TemplateBinding Path=FixedDrawerDisplay, Converter={ajconv:NullnessToVisibilityConverter}}">
-                                <ContentPresenter Content="{ajut:TemplateBinding Path=FixedDrawerDisplay}"/>
+                            <Grid Grid.Row="2" Visibility="{ajut:TemplateBinding Path=AdditionalBottomDisplay, Converter={ajconv:NullnessToVisibilityConverter}}">
+                                <ContentPresenter Content="{ajut:TemplateBinding Path=AdditionalBottomDisplay}"/>
                             </Grid>
                         </Grid>
                     </Border>

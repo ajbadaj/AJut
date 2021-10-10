@@ -34,11 +34,11 @@
             set => this.SetValue(DrawerDisplayTemplateSelectorProperty, value);
         }
 
-        public static readonly DependencyProperty FixedDrawerDisplayProperty = DPUtils.Register(_ => _.FixedDrawerDisplay);
-        public DependencyObject FixedDrawerDisplay
+        public static readonly DependencyProperty AdditionalBottomDisplayProperty = DPUtils.Register(_ => _.AdditionalBottomDisplay);
+        public DependencyObject AdditionalBottomDisplay
         {
-            get => (DependencyObject)this.GetValue(FixedDrawerDisplayProperty);
-            set => this.SetValue(FixedDrawerDisplayProperty, value);
+            get => (DependencyObject)this.GetValue(AdditionalBottomDisplayProperty);
+            set => this.SetValue(AdditionalBottomDisplayProperty, value);
         }
 
         public static readonly DependencyProperty NavigatorProperty = DPUtils.Register(_ => _.Navigator);

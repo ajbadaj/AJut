@@ -878,7 +878,7 @@
                         <ajctrls:StackNavDisplay Navigator="{Binding ElementName=Self, Path=Navigator}" FixedDrawerWidth="300">
                             <ajctrls:StackNavDisplay.Resources>
                                 <Style TargetType="{x:Type ajctrls:StackNavActiveDrawerPresenter}">
-                                    <Setter Property="FixedDrawerDisplay">
+                                    <Setter Property="AdditionalBottomDisplay">
                                         <Setter.Value>
                                             <TextBlock Text="Fake Version 1.0.2" FontStyle="Italic" Opacity="0.6" 
                                                        Visibility="{Binding ElementName=ShowVersionDisplayAtBottom, Path=IsChecked, Mode=OneWay, Converter={ajconv:BooleanToVisibilityConverter}}" />
