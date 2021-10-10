@@ -181,11 +181,7 @@
 
             if (g_LoggerInstance.m_shouldLogToConsole)
             {
-#if WINDOWS_UWP
-                Debug.WriteLine(output);
-#else
                 Console.WriteLine(output);
-#endif
             }
 
             WriteTextUnformattedToLog(output);

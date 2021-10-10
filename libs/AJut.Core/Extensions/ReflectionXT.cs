@@ -249,19 +249,6 @@
 
             return propertyPath.Substring(0, index);
         }
-
-
-#if WINDOWS_UWP
-        public static bool HasPublicGetProperty(this PropertyInfo prop)
-        {
-            return prop.SetMethod != null && prop.GetMethod.IsPublic;
-        }
-
-        public static bool HasPublicSetProperty(this PropertyInfo prop)
-        {
-            return prop.SetMethod != null && prop.SetMethod.IsPublic;
-        }
-#endif
         #endregion
 
         #region ======= Regular Method Invocation ===========

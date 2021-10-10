@@ -5,12 +5,7 @@ namespace AJut.UX
     using System.Collections.ObjectModel;
     using System.ComponentModel;
     using System.Linq;
-
-#if WINDOWS_UWP
-    using Windows.UI.Xaml;
-#else
     using System.Windows;
-#endif
     using System.Windows.Input;
 
     public enum eChildWindowAction

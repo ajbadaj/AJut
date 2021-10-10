@@ -1,19 +1,15 @@
 ﻿namespace AJut.Text.AJson
 {
-    using AJut;
-#if WINDOWS_UWP
-    using System.Runtime.Serialization;
-#else
-    using AJut.IO;
-    using System.IO;
-#endif
-    using AJut.Text;
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using System.Reflection;
-    using System.Diagnostics;
+    using AJut;
+    using AJut.IO;
+    using AJut.Text;
     using AJut.TypeManagement;
 
     /// <summary>
@@ -54,7 +50,6 @@
 
         // TODO: Should add support to force commas or not, then just use newline as a text separator
 
-#if !WINDOWS_UWP
         /// <summary>
         /// Parses the passed in file at the given file path, and returns a non-<c>null</c> <see cref="Json"/> instance.
         /// </summary>
@@ -85,7 +80,6 @@
         {
             return RunParse(file, rules);
         }
-#endif
 
         /// <summary>
         /// Parses the passed in text, and returns a non-<c>null</c> <see cref="Json"/> instance.
@@ -419,13 +413,7 @@
             if (sourceJsonValue.IsDocument)
             {
                 JsonDocument sourceCasted = (JsonDocument)sourceJsonValue;
-                PropertyInfo[] allProperties = GetPropertiesFrom(targetType, false, true
-#if WINDOWS_UWP
-                    // Unfortunately, there aren't these kinds of settings in this direciton
-                    //  going to say that opt in IS NOT required for this way anyway for now
-                    , false
-#endif
-                    );
+                PropertyInfo[] allProperties = GetPropertiesFrom(targetType, false, true);
 
                 foreach (var kvp in sourceCasted)
                 {
@@ -613,10 +601,10 @@
             }
 
             // ----------- Handle Document ------------
-            PropertyInfo[] allProperties = GetPropertiesFrom(source.GetType(), true, source.GetType().IsSimpleType() || !target.BuilderSettings.UseReadonlyObjectProperties
-#if WINDOWS_UWP
-                , target.BuilderSettings.UWP_RequireOptInViaDataMemberAttribute
-#endif
+            PropertyInfo[] allProperties = GetPropertiesFrom(
+                source.GetType(),
+                true, 
+                source.GetType().IsSimpleType() || !target.BuilderSettings.UseReadonlyObjectProperties
             );
 
             if (allProperties.Length == 0 && target.Parent != null)
@@ -677,12 +665,9 @@
                 if (valueBuilder != null)
                 {
                     simplifiedStringValue = valueBuilder(_instance);
-                    if (_type == typeof(string) || _type == typeof(char)
-#if WINDOWS_UWP
-                        || _type.IsEnum())
-#else
+                    if (_type == typeof(string) 
+                        || _type == typeof(char)
                         || _type.IsEnum)
-#endif
                     {
                         _isUsuallyQuoted = true;
                     }
@@ -828,17 +813,6 @@
             return trimmed.TrimEnd(kWhitespace);
         }
 
-#if WINDOWS_UWP
-        private static PropertyInfo[] GetPropertiesFrom(Type targetType, bool requiresGet, bool requiresSet, bool requireOptInViaDataMemberAttribute)
-        {
-            return targetType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                                                .Where(prop => (!requiresGet || prop.HasPublicGetProperty())
-                                                            && (!requiresSet || prop.HasPublicSetProperty())
-                                                            && !AttributeHelper.HasAny<JsonIgnoreAttribute>(prop.GetCustomAttributes(true))
-                                                            && (!requireOptInViaDataMemberAttribute || AttributeHelper.HasAny<DataMemberAttribute>(prop.GetCustomAttributes(true))))
-                                                        .ToArray();
-        }
-#else
         private static PropertyInfo[] GetPropertiesFrom(Type targetType, bool requiresGet, bool requiresSet)
         {
             return targetType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
@@ -847,8 +821,6 @@
                                                             && !prop.IsTaggedWithAttribute<JsonIgnoreAttribute>())
                                                     .ToArray();
         }
-#endif
-
 
         internal class IndexTrackingHelper
         {

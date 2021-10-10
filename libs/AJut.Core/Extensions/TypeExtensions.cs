@@ -3,9 +3,6 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
-#if WINDOWS_UWP
-    using System.Reflection;
-#endif
 
     [Flags]
     public enum eNumericTypeFlag
@@ -74,20 +71,9 @@
         /// </summary>
         public static bool IsSimpleType (this Type source)
         {
-#if WINDOWS_UWP
-            return source.GetTypeInfo().IsValueType || source == typeof(string);
-#else
             return source.IsPrimitive || source.IsNumericType() || source == typeof(string)
                     || source == typeof(DateTime) || source == typeof(TimeSpan);
-#endif
         }
-
-#if WINDOWS_UWP
-        public static bool IsEnum(this Type source)
-        {
-            return source.GetTypeInfo().IsEnum;
-        }
-#endif
 
         /// <summary>
         /// Search for an interface up through the tree, ie v.GetType().FindInterfaceRecursive(typeof(IDictionary&lt;string, string&gt;)). This is preferable because
@@ -161,13 +147,8 @@
                 return true;
             }
 
-#if WINDOWS_UWP
-            if (flag.HasFlag(eNumericTypeFlag.SpecialInteger) && typeof(Enum).GetTypeInfo().IsSubclassOf(This))
-            {
-#else
             if (flag.HasFlag(eNumericTypeFlag.SpecialInteger) && typeof(Enum).IsAssignableFrom(This))
             {
-#endif
                 return true;
             }
 
@@ -223,11 +204,7 @@
         /// <returns>An enumerable collection of the attribute types requested</returns>
         public static IEnumerable<TAttribute> GetAttributes<TAttribute> (this Type type, AttributeTester<TAttribute> validator = null, bool allowDerivedAttributeTypes = true, bool checkInherited = true) where TAttribute : Attribute
         {
-#if WINDOWS_UWP
-            return AttributeHelper.SearchForAttributes(type.GetTypeInfo().GetCustomAttributes(checkInherited), validator, allowDerivedAttributeTypes);
-#else
             return AttributeHelper.SearchForAttributes(type.GetCustomAttributes(checkInherited), validator, allowDerivedAttributeTypes);
-#endif
         }
 
         public static bool IsTaggedWithAttribute<TAttribute> (this Type type, AttributeTester<TAttribute> validator = null, bool allowDerivedAttributeTypes = true, bool checkInherited = true) where TAttribute : Attribute

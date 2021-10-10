@@ -1,30 +1,18 @@
-﻿// TODO: Replace guts with tested TreeTraversal utilties from Core (which was based on this)
-// TODO: When doing above-mentioned refactor, consier how to change things in a way considerate to UWP which does not have a logical tree.
-namespace AJut.UX
+﻿namespace AJut.UX
 {
     using AJut.Tree;
     using System;
     using System.Collections.Generic;
     using System.Linq;
-
-#if WINDOWS_UWP
-    using Windows.UI.Xaml;
-    using Windows.UI.Xaml.Controls;
-    using Windows.UI.Xaml.Media;
-    using Windows.UI.Xaml.Media.Media3D;
-    using Visual = Windows.UI.Xaml.UIElement;
-
-#else
     using System.Windows;
     using System.Windows.Media;
     using System.Windows.Media.Media3D;
-#endif
+
     /*
     Examples:
     Grid g;
     g.GetFirstParentOfType<Expander>();
     */
-
 
     public static class DependencyObjectXT
     {
@@ -38,11 +26,7 @@ namespace AJut.UX
 
         public static bool IsVisual (this DependencyObject This)
         {
-#if WINDOWS_UWP
-            return This is Visual;
-#else
             return This is Visual || This is Visual3D;
-#endif
         }
 
         public static T GetFirstChildOf<T> (this DependencyObject start, eTraversalTree tree = eTraversalTree.Visual)

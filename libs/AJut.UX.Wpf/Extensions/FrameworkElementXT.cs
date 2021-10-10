@@ -3,16 +3,9 @@
     using System;
     using System.IO;
     using System.Windows;
-#if WINDOWS_UWP
-    using Windows.UI.Xaml;
-    using Windows.UI.Xaml.Controls;
-    using Windows.UI.Xaml.Media;
-    using Windows.UI.Xaml.Media.Imaging;
-#else
     using System.Windows.Controls;
     using System.Windows.Media;
     using System.Windows.Media.Imaging;
-#endif
 
     public static class FrameworkElementXT
     {

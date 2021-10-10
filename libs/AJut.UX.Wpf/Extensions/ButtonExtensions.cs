@@ -1,10 +1,6 @@
 ﻿namespace AJut.UX
 {
-#if WINDOWS_UWP
-    using Windows.UI.Xaml.Controls.Primitives;
-#else
     using System.Windows.Controls.Primitives;
-#endif
 
     public static class ButtonXT
     {

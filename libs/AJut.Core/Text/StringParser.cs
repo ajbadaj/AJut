@@ -3,9 +3,6 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
-#if WINDOWS_UWP
-    using System.Reflection;
-#endif
 
     /// <summary>
     /// A class that registers parsers from string to objects of a certain type.
@@ -59,17 +56,11 @@
         /// <returns><c>true</c> if it can convert the type from a string.</returns>
         public bool CanConvert(Type t)
         {
-#if WINDOWS_UWP
-            if(t.GetTypeInfo().IsEnum)
-            {
-                return true;
-            }
-#else
             if (t.IsEnum)
             {
                 return true;
             }
-#endif
+
             return m_parsers.Keys.Contains(t);
         }
 
@@ -81,17 +72,11 @@
         /// <returns>The instance built from the registered parsers</returns>
         public object Convert(string source, Type outputType)
         {
-#if WINDOWS_UWP
-            if (outputType.GetTypeInfo().IsEnum)
-            {
-                return Enum.Parse(outputType, source);
-            }
-#else
             if (outputType.IsEnum)
             {
                 return Enum.Parse(outputType, source);
             }
-#endif
+
             return m_parsers[outputType](source);
         }
 

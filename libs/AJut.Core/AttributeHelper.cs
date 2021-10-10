@@ -6,13 +6,6 @@
     using System.Linq;
 
     public delegate bool AttributeTester<TAttribute>(TAttribute attribute) where TAttribute : Attribute;
-
-#if WINDOWS_UWP
-    public class NonSerializedAttribute : Attribute
-    {
-    }
-#endif
-
     public static class AttributeHelper
     {
         /// <summary>

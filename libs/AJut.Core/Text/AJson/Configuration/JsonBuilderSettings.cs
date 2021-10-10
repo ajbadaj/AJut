@@ -129,10 +129,6 @@
 
             public bool HasAnyKVPTypeIdWriteInstructions => this.KeyValuePairKeyTypeIdToWrite != eTypeIdInfo.None || this.KeyValuePairValueTypeIdToWrite != eTypeIdInfo.None;
 
-#if WINDOWS_UWP
-            public bool UWP_RequireOptInViaDataMemberAttribute { get; set; } = false;
-#endif
-
             /// <summary>
             /// When reading an object to decide what properties to use to build json, should read only properties be applied (default = true)
             /// </summary>
