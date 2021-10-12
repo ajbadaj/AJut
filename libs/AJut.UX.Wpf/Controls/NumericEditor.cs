@@ -10,7 +10,6 @@
     using AJut;
     using DPUtils = DPUtils<NumericEditor>;
 
-    // Todo: Make drag repeater, click and hold w/o moving starts spamming Triggered, or mouse move will capture while mouse is down and trigger Triggered on mouse move
     [TemplatePart(Name = nameof(PART_TextArea), Type = typeof(TextBox))]
     public class NumericEditor : Control
     {
@@ -23,7 +22,6 @@
             this.DisplayValue = new TextEditNumberViewModel(this, 0f);
             this.CommandBindings.Add(new CommandBinding(NudgeIncreaseCommand, _OnNudgeIncreaseExecuted, _OnCanNudgeLarger));
             this.CommandBindings.Add(new CommandBinding(NudgeDecreaseCommand, _OnNudgeDecreaseExecuted, _OnCanNudgeSmaller));
-
 
             void _OnCanNudgeLarger (object sender, CanExecuteRoutedEventArgs e)
             {
@@ -100,39 +98,13 @@
                 }
                 if (_e.Key == Key.Up)
                 {
-                    if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
-                    {
-                        this.NudgeBy(this.BigNudge);
-                        _e.Handled = true;
-                    }
-                    else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
-                    {
-                        this.NudgeBy(this.SmallNudge);
-                        _e.Handled = true;
-                    }
-                    else
-                    {
-                        this.NudgeBy(this.Nudge);
-                        _e.Handled = true;
-                    }
+                    this.NudgeIncrease();
+                    _e.Handled = true;
                 }
                 if (_e.Key == Key.Down)
                 {
-                    if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
-                    {
-                        this.NudgeBy(-this.BigNudge);
-                        _e.Handled = true;
-                    }
-                    else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
-                    {
-                        this.NudgeBy(-this.SmallNudge);
-                        _e.Handled = true;
-                    }
-                    else
-                    {
-                        this.NudgeBy(-this.Nudge);
-                        _e.Handled = true;
-                    }
+                    this.NudgeDecrease();
+                    _e.Handled = true;
                 }
             }
         }
@@ -171,14 +143,14 @@
             set => this.SetValue(DecimalPlacesAllowedProperty, value);
         }
 
-        public static readonly DependencyProperty MinimumProperty = DPUtils.Register(_ => _.Minimum, 0.0, (d, e) => d.OnCapChanged());
+        public static readonly DependencyProperty MinimumProperty = DPUtils.Register(_ => _.Minimum, Double.MinValue, (d, e) => d.OnCapChanged());
         public double Minimum
         {
             get => (double)this.GetValue(MinimumProperty);
             set => this.SetValue(MinimumProperty, value);
         }
 
-        public static readonly DependencyProperty MaximumProperty = DPUtils.Register(_ => _.Maximum, 1000.0, (d, e) => d.OnCapChanged());
+        public static readonly DependencyProperty MaximumProperty = DPUtils.Register(_ => _.Maximum, Double.MaxValue, (d, e) => d.OnCapChanged());
         public double Maximum
         {
             get => (double)this.GetValue(MaximumProperty);
@@ -276,6 +248,13 @@
             set => this.SetValue(DecreasePressedHighlightProperty, value);
         }
 
+        public static readonly DependencyProperty ErrorBrushProperty = DPUtils.Register(_ => _.ErrorBrush);
+        public Brush ErrorBrush
+        {
+            get => (Brush)this.GetValue(ErrorBrushProperty);
+            set => this.SetValue(ErrorBrushProperty, value);
+        }
+
         // ===========================[ Interface Methods ]===================================
         /// <summary>
         /// Get the value in casted storage
@@ -283,19 +262,43 @@
         public T GetValue<T> () => (T)Convert.ChangeType(this.Value, typeof(T));
 
         /// <summary>
-        /// Increase the value by the <see cref="Nudge"/> value
+        /// Increase the value the nudge ammount
         /// </summary>
-        public void NudgeIncrease ()
+        /// <param name="includeKeyboardMods">Include the nudge modifiations for big nudge &amp; small nudge</param>
+        public void NudgeIncrease (bool includeKeyboardMods = true)
         {
-            this.NudgeBy(this.Nudge);
+            if (includeKeyboardMods && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+            {
+                this.NudgeBy(this.BigNudge);
+            }
+            else if (includeKeyboardMods && Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+            {
+                this.NudgeBy(this.SmallNudge);
+            }
+            else
+            {
+                this.NudgeBy(this.Nudge);
+            }
         }
 
         /// <summary>
-        /// Decrease the value by the <see cref="Nudge"/> value
+        /// Decrease the value the nudge ammount
         /// </summary>
-        public void NudgeDecrease ()
+        /// <param name="includeKeyboardMods">Include the nudge modifiations for big nudge &amp; small nudge</param>
+        public void NudgeDecrease (bool includeKeyboardMods = true)
         {
-            this.NudgeBy(-this.Nudge);
+            if (includeKeyboardMods && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+            {
+                this.NudgeBy(-this.BigNudge);
+            }
+            else if (includeKeyboardMods && Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+            {
+                this.NudgeBy(-this.SmallNudge);
+            }
+            else
+            {
+                this.NudgeBy(-this.Nudge);
+            }
         }
 
         /// <summary>
@@ -304,6 +307,20 @@
         /// <param name="value">The value to nudge by, will be converted to the target type before application</param>
         public void NudgeBy (dynamic value)
         {
+            if (this.DisplayValue.IsTextInErrorState)
+            {
+                if (this.DisplayValue.IsAtMaximum)
+                {
+                    this.DisplayValue.Text = Convert.ChangeType(this.Maximum, this.DisplayValue.ValueType).ToString();
+                }
+                else
+                {
+                    this.DisplayValue.Text = Convert.ChangeType(this.Minimum, this.DisplayValue.ValueType).ToString();
+                }
+
+                return;
+            }
+
             // Preserve the caret location
             int caretOffset = this.DisplayValue.Text.Length - this.PART_TextArea.CaretIndex;
             int selectionLength = this.PART_TextArea.SelectionLength;
@@ -478,9 +495,9 @@
             get => m_text;
             set
             {
-                if (this.SetAndRaiseIfChanged(ref m_text, value) && kParsers[this.ValueType](m_text, out object sourceValue))
+                if (this.SetAndRaiseIfChanged(ref m_text, value))
                 {
-                    this.SetSourceValueOneWay(sourceValue);
+                    this.ApplyTextChange(updateSourceValue: true);
                 }
             }
         }
@@ -512,6 +529,18 @@
             set => this.SetAndRaiseIfChanged(ref m_isAtMaximum, value);
         }
 
+        private string m_textErrorMessage;
+        public string TextErrorMessage
+        {
+            get => m_textErrorMessage;
+            set => this.SetAndRaiseIfChanged(ref m_textErrorMessage, value, nameof(TextErrorMessage), nameof(IsTextInErrorState));
+        }
+
+        public bool IsTextInErrorState
+        {
+            get => m_textErrorMessage != null;
+        }
+
         public Type ValueType { get; private set; }
 
         // =====================[ Methods ]=============================
@@ -526,7 +555,7 @@
             this.SourceValue = this.SourceValue;
         }
 
-        private object CapNewValue (object value, out bool wasBelowMin, out bool wasAboveMax)
+        private object RunValueCapping (object value, out bool wasBelowMin, out bool wasAboveMax)
         {
             return kCappers[this.ValueType](value, m_owner.Minimum, m_owner.Maximum, out wasBelowMin, out wasAboveMax);
         }
@@ -537,6 +566,41 @@
         private void SetTextOneWay ()
         {
             this.SetAndRaiseIfChanged(ref m_text, this.SourceValue.ToString(), nameof(Text));
+            this.ApplyTextChange(updateSourceValue: false);
+        }
+
+        private void ApplyTextChange (bool updateSourceValue)
+        {
+            if (kParsers[this.ValueType](m_text, out dynamic sourceValue))
+            {
+                if (updateSourceValue)
+                {
+                    this.SetSourceValueOneWay(sourceValue);
+                }
+
+                // It's potentially a little bit of repeated work to do this cast (due to the SetSourceValueOneWay call above,
+                // but it's the easiest to read & understand way to do this, so taking the small hit due to IsAtMinimum not
+                // differentiating if it's too small, and same with maximum - and adding that seems wasteful since that can only
+                // be done here.
+                dynamic min = Convert.ChangeType(m_owner.Minimum, this.ValueType);
+                dynamic max = Convert.ChangeType(m_owner.Maximum, this.ValueType);
+                if (sourceValue > max)
+                {
+                    this.TextErrorMessage = $"Value is invalid: beyond max ({m_owner.Maximum})";
+                }
+                else if (sourceValue < min)
+                {
+                    this.TextErrorMessage = $"Value is invalid: beyond min ({m_owner.Minimum})";
+                }
+                else
+                {
+                    this.TextErrorMessage = null;
+                }
+            }
+            else
+            {
+                this.TextErrorMessage = "Value is invalid: number not detected";
+            }
         }
 
         /// <summary>
@@ -544,7 +608,7 @@
         /// </summary>
         private bool SetSourceValueOneWay (object value)
         {
-            var cappedValue = this.CapNewValue(value, out bool wasBelowMin, out bool wasAboveMax);
+            var cappedValue = this.RunValueCapping(value, out bool wasBelowMin, out bool wasAboveMax);
             this.IsAtMinimum = wasBelowMin;
             this.IsAtMaximum = wasAboveMax;
 
@@ -608,23 +672,23 @@
             { typeof(ulong), RunCapper<ulong> },
         };
 
-        private static object RunCapper<T> (object value, object min, object max, out bool cappedMin, out bool cappedMax)
+        private static object RunCapper<T> (object value, object min, object max, out bool hadToCapAtMin, out bool hadToCapAtMax)
         {
-            cappedMin = false;
-            cappedMax = false;
+            hadToCapAtMin = false;
+            hadToCapAtMax = false;
             dynamic newValue = Convert.ChangeType(value, typeof(T));
 
             dynamic castedMin = Convert.ChangeType(min, typeof(T));
             dynamic castedMax = Convert.ChangeType(max, typeof(T));
             if (newValue <= castedMin)
             {
-                cappedMin = true;
+                hadToCapAtMin = true;
                 return castedMin;
             }
 
             if (newValue >= castedMax)
             {
-                cappedMax = true;
+                hadToCapAtMax = true;
                 return castedMax;
             }
 

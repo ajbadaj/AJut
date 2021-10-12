@@ -26,6 +26,7 @@
         <Setter Property="LabelPadding" Value="3,0"/>
         <Setter Property="LabelForeground" Value="Black"/>
         <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="ErrorBrush" Value="#920"/>
         <Setter Property="Background">
             <Setter.Value>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
@@ -78,7 +79,18 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:NumericEditor}">
-                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}">
+                    <Border Background="{TemplateBinding Background}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}">
+                        <Border.Style>
+                            <Style TargetType="{x:Type Border}">
+                                <Setter Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:NumericEditor}}, Path=BorderBrush}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:NumericEditor}}, Path=DisplayValue.IsTextInErrorState}" Value="True">
+                                        <Setter Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:NumericEditor}}, Path=ErrorBrush}"/>
+                                        <Setter Property="ToolTip" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:NumericEditor}}, Path=DisplayValue.TextErrorMessage}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
                         <Grid>
                             <DockPanel>
                                 <!-- ==========[Button Area]===================== -->
@@ -169,7 +181,10 @@
                                 <!-- ==========[Textbox Area]==================== -->
                                 <Grid VerticalAlignment="Center" Margin="{TemplateBinding Padding}">
                                     <TextBox x:Name="PART_TextArea" BorderThickness="0" TextAlignment="{TemplateBinding NumberTextAlignment}" Padding="{TemplateBinding Padding}"
-                                             Text="{ajut:TemplateBinding Path=DisplayValue.Text, Mode=TwoWay}" IsReadOnly="{TemplateBinding IsReadOnly}" IsReadOnlyCaretVisible="True"/>
+                                             Text="{ajut:TemplateBinding Path=DisplayValue.Text, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" IsReadOnly="{TemplateBinding IsReadOnly}" IsReadOnlyCaretVisible="True"/>
+                                    <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,4,2,2" FontSize="12"
+                                               Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:NumericEditor}}, Path=ErrorBrush}"
+                                               Visibility="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:NumericEditor}}, Path=DisplayValue.IsTextInErrorState, Converter={conv:BooleanToVisibilityConverter}}"/>
                                     <Border BorderBrush="#8000" BorderThickness="1.4,1.4,0,0">
                                         <Border BorderBrush="#5FFF" BorderThickness="0,0,1,1"/>
                                     </Border>
