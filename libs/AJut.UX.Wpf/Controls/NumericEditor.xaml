@@ -106,7 +106,7 @@
                                             <RowDefinition />
                                             <RowDefinition />
                                         </Grid.RowDefinitions>
-                                        <RepeatButton Grid.Row="0" Command="{x:Static local:NumericEditor.NudgeIncrease}" ToolTip="Increase">
+                                        <RepeatButton Grid.Row="0" Command="{x:Static local:NumericEditor.NudgeIncreaseCommand}" ToolTip="Increase">
                                             <RepeatButton.Style>
                                                 <Style TargetType="{x:Type RepeatButton}">
                                                     <Setter Property="Background" Value="#01000000" />
@@ -134,7 +134,7 @@
                                                 </Style>
                                             </RepeatButton.Style>
                                         </RepeatButton>
-                                        <RepeatButton Grid.Row="1" Command="{x:Static local:NumericEditor.NudgeDecrease}" ToolTip="Decrease">
+                                        <RepeatButton Grid.Row="1" Command="{x:Static local:NumericEditor.NudgeDecreaseCommand}" ToolTip="Decrease">
                                             <RepeatButton.Style>
                                                 <Style TargetType="{x:Type RepeatButton}">
                                                     <Setter Property="Background" Value="#01000000" />

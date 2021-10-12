@@ -21,8 +21,8 @@
         public NumericEditor ()
         {
             this.DisplayValue = new TextEditNumberViewModel(this, 0f);
-            this.CommandBindings.Add(new CommandBinding(NudgeIncrease, _OnNudgeIncreaseExecuted, _OnCanNudgeLarger));
-            this.CommandBindings.Add(new CommandBinding(NudgeDecrease, _OnNudgeDecreaseExecuted, _OnCanNudgeSmaller));
+            this.CommandBindings.Add(new CommandBinding(NudgeIncreaseCommand, _OnNudgeIncreaseExecuted, _OnCanNudgeLarger));
+            this.CommandBindings.Add(new CommandBinding(NudgeDecreaseCommand, _OnNudgeDecreaseExecuted, _OnCanNudgeSmaller));
 
 
             void _OnCanNudgeLarger (object sender, CanExecuteRoutedEventArgs e)
@@ -55,19 +55,12 @@
 
             void _OnNudgeIncreaseExecuted (object sender, RoutedEventArgs e)
             {
-                // Preserve the caret location
-                int caretOffset = this.DisplayValue.Text.Length - this.PART_TextArea.CaretIndex;
-
-                // Perform the nudge
-                this.DisplayValue.Nudge(true, Convert.ChangeType(this.BigNudge, this.DisplayValue.ValueType));
-
-                // Preserve the caret location
-                this.PART_TextArea.CaretIndex = AJut.MathUtilities.Cap.Within(0, this.DisplayValue.Text.Length, this.DisplayValue.Text.Length - caretOffset);
+                this.NudgeIncrease();
             }
 
             void _OnNudgeDecreaseExecuted (object sender, RoutedEventArgs e)
             {
-                this.DisplayValue.Nudge(false, Convert.ChangeType(this.BigNudge, this.DisplayValue.ValueType));
+                this.NudgeDecrease();
             }
         }
 
@@ -91,6 +84,11 @@
 
             void _PreviewOnTextAreaKeyDown (object _s, KeyEventArgs _e)
             {
+                if (this.IsReadOnly)
+                {
+                    return;
+                }
+
                 if (_e.Key == Key.Return)
                 {
                     var binding = BindingOperations.GetBindingExpression(this.PART_TextArea, TextBox.TextProperty);
@@ -100,14 +98,48 @@
                         _e.Handled = true;
                     }
                 }
+                if (_e.Key == Key.Up)
+                {
+                    if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+                    {
+                        this.NudgeBy(this.BigNudge);
+                        _e.Handled = true;
+                    }
+                    else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+                    {
+                        this.NudgeBy(this.SmallNudge);
+                        _e.Handled = true;
+                    }
+                    else
+                    {
+                        this.NudgeBy(this.Nudge);
+                        _e.Handled = true;
+                    }
+                }
+                if (_e.Key == Key.Down)
+                {
+                    if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
+                    {
+                        this.NudgeBy(-this.BigNudge);
+                        _e.Handled = true;
+                    }
+                    else if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+                    {
+                        this.NudgeBy(-this.SmallNudge);
+                        _e.Handled = true;
+                    }
+                    else
+                    {
+                        this.NudgeBy(-this.Nudge);
+                        _e.Handled = true;
+                    }
+                }
             }
         }
 
-        public T GetValue<T> () => (T)Convert.ChangeType(this.Value, typeof(T));
-
         // ===========================[ Commands ]================================================
-        public static RoutedCommand NudgeIncrease = new RoutedCommand(nameof(NudgeIncrease), typeof(NumericEditor));
-        public static RoutedCommand NudgeDecrease = new RoutedCommand(nameof(NudgeDecrease), typeof(NumericEditor));
+        public static RoutedCommand NudgeIncreaseCommand = new RoutedCommand(nameof(NudgeIncrease), typeof(NumericEditor));
+        public static RoutedCommand NudgeDecreaseCommand = new RoutedCommand(nameof(NudgeDecrease), typeof(NumericEditor));
 
         // ===========================[ Dependency Properties ]===================================
         public static readonly DependencyProperty ValueProperty = DPUtils.RegisterFP(_ => _.Value, 0.0f, (d, e) => d.OnValueChanged(e.NewValue), FrameworkPropertyMetadataOptions.BindsTwoWayByDefault);
@@ -160,18 +192,18 @@
             set => this.SetValue(BigNudgeProperty, value);
         }
 
-        public static readonly DependencyProperty SmallWholeNumberNudgeProperty = DPUtils.Register(_ => _.SmallWholeNumberNudge, 1.0);
-        public double SmallWholeNumberNudge
+        public static readonly DependencyProperty NudgeProperty = DPUtils.Register(_ => _.Nudge, 1.0);
+        public double Nudge
         {
-            get => (double)this.GetValue(SmallWholeNumberNudgeProperty);
-            set => this.SetValue(SmallWholeNumberNudgeProperty, value);
+            get => (double)this.GetValue(NudgeProperty);
+            set => this.SetValue(NudgeProperty, value);
         }
 
-        public static readonly DependencyProperty SmallDecimalNudgeProperty = DPUtils.Register(_ => _.SmallDecimalNudge, 0.5);
-        public double SmallDecimalNudge
+        public static readonly DependencyProperty SmallNudgeProperty = DPUtils.Register(_ => _.SmallNudge, 0.5);
+        public double SmallNudge
         {
-            get => (double)this.GetValue(SmallDecimalNudgeProperty);
-            set => this.SetValue(SmallDecimalNudgeProperty, value);
+            get => (double)this.GetValue(SmallNudgeProperty);
+            set => this.SetValue(SmallNudgeProperty, value);
         }
 
         public static readonly DependencyProperty LabelContentProperty = DPUtils.Register(_ => _.LabelContent);
@@ -244,7 +276,63 @@
             set => this.SetValue(DecreasePressedHighlightProperty, value);
         }
 
-        // ===========================[ Property Change Handlers ]===================================
+        // ===========================[ Interface Methods ]===================================
+        /// <summary>
+        /// Get the value in casted storage
+        /// </summary>
+        public T GetValue<T> () => (T)Convert.ChangeType(this.Value, typeof(T));
+
+        /// <summary>
+        /// Increase the value by the <see cref="Nudge"/> value
+        /// </summary>
+        public void NudgeIncrease ()
+        {
+            this.NudgeBy(this.Nudge);
+        }
+
+        /// <summary>
+        /// Decrease the value by the <see cref="Nudge"/> value
+        /// </summary>
+        public void NudgeDecrease ()
+        {
+            this.NudgeBy(-this.Nudge);
+        }
+
+        /// <summary>
+        /// Nudge by a passed in value (which will be converted to the target type before application)
+        /// </summary>
+        /// <param name="value">The value to nudge by, will be converted to the target type before application</param>
+        public void NudgeBy (dynamic value)
+        {
+            // Preserve the caret location
+            int caretOffset = this.DisplayValue.Text.Length - this.PART_TextArea.CaretIndex;
+            int selectionLength = this.PART_TextArea.SelectionLength;
+            bool isAllSelected = selectionLength == this.DisplayValue.Text.Length;
+
+            // Perform the nudge
+            this.DisplayValue.Nudge(true, Convert.ChangeType(value, this.DisplayValue.ValueType));
+
+            // Preserve the caret location
+            caretOffset = AJut.MathUtilities.Cap.Within(0, this.DisplayValue.Text.Length, this.DisplayValue.Text.Length - caretOffset);
+            selectionLength = Math.Min(selectionLength, this.DisplayValue.Text.Length - caretOffset);
+            if (selectionLength > 0)
+            {
+                if (isAllSelected)
+                {
+                    this.PART_TextArea.SelectAll();
+                }
+                else
+                {
+                    this.PART_TextArea.Select(caretOffset, selectionLength);
+                }
+            }
+            else
+            {
+                this.PART_TextArea.CaretIndex = caretOffset;
+            }
+        }
+
+        // ===========================[ Event Handlers ]===================================
         private void OnCapChanged ()
         {
             if (m_blockValueChangeReentrancy)
@@ -353,6 +441,12 @@
                     m_blockValueChangeReentrancy = false;
                 }
             }
+        }
+
+        protected override void OnGotFocus (RoutedEventArgs e)
+        {
+            this.PART_TextArea?.SelectAll();
+            this.PART_TextArea?.Focus();
         }
     }
 

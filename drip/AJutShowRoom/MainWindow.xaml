@@ -465,11 +465,9 @@
                                             </DataTemplate>
                                             <DataTemplate x:Key="Number" DataType="{x:Type ajprop:PropertyEditTarget}">
                                                 <ajctrls:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}"
-                                                                    Minimum="{Binding Path=EditContext.Minimum, FallbackValue=0}"
-                                                                    Maximum="{Binding Path=EditContext.Maximum, FallbackValue=100}"
-                                                                    SmallWholeNumberNudge="{Binding Path=EditContext.SmallStep, FallbackValue=1}"
-                                                                    BigNudge="{Binding Path=EditContext.LargeStep, FallbackValue=1}"
-                                                                    NumberTextAlignment="Left"/>
+                                                                       Minimum="{Binding Path=EditContext.Minimum, FallbackValue=0}"
+                                                                       Maximum="{Binding Path=EditContext.Maximum, FallbackValue=100}"
+                                                                       NumberTextAlignment="Left"/>
                                             </DataTemplate>
                                         </ajctrls:PropertyGridTemplateSelector.RegisteredTemplates>
                                         <ajctrls:PropertyGridTemplateSelector.Default>
@@ -495,8 +493,6 @@
                                                 <ajctrls:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}"
                                                             Minimum="{Binding Path=EditContext.Minimum, FallbackValue=0}"
                                                             Maximum="{Binding Path=EditContext.Maximum, FallbackValue=100}"
-                                                            SmallWholeNumberNudge="{Binding Path=EditContext.SmallStep, FallbackValue=1}"
-                                                            BigNudge="{Binding Path=EditContext.LargeStep, FallbackValue=1}"
                                                             NumberTextAlignment="Left"/>
                                             </DataTemplate>
                                         </ajctrls:PropertyGridTemplateSelector.RegisteredTemplates>
