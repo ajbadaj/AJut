@@ -320,37 +320,61 @@
                 </DockPanel>
             </TabItem>
             <TabItem Header="Numeric Up Down">
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="350">
-                    <DockPanel >
-                        <TextBox Text="Example" VerticalAlignment="Center"/>
-                        <ajctrls:NumericEditor Margin="10,0" Foreground="Black" Value="{Binding ElementName=Self, Path=FloatValue}" Padding="1"
-                                            VerticalContentAlignment="Stretch"/>
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="400">
+                    <DockPanel Margin="0,0,0,15">
+                        <TextBlock Text="Normal" VerticalAlignment="Center" HorizontalAlignment="Center" Width="120"/>
+                        <ajctrls:NumericEditor Value="{Binding ElementName=Self, Path=FloatValue}" VerticalContentAlignment="Stretch"/>
                     </DockPanel>
-
-                    <ajctrls:NumericEditor Margin="10" Foreground="Black" Value="{Binding ElementName=Self, Path=FloatValue}" LabelButtonDock="Bottom" LabelPadding="5,10" Width="50"/>
-                    <StackPanel Orientation="Horizontal">
-                        <ajctrls:NumericEditor Margin="10" Padding="2,5" Minimum="{Binding ElementName=Self, Path=FloatValue}" Width="80">
-                            <ajctrls:NumericEditor.LabelContentTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="X" Foreground="Red" FontWeight="Thin" Margin="5,0" VerticalAlignment="Center" FontSize="22" FontFamily="Segoe UI"/>
-                                </DataTemplate>
-                            </ajctrls:NumericEditor.LabelContentTemplate>
-                        </ajctrls:NumericEditor>
-                        <ajctrls:NumericEditor Margin="10" Padding="2,5" Minimum="{Binding ElementName=Self, Path=FloatValue}" Width="80">
-                            <ajctrls:NumericEditor.LabelContentTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="Y" Foreground="Green" FontWeight="Thin" Margin="5,0" VerticalAlignment="Center" FontSize="22" FontFamily="Segoe UI"/>
-                                </DataTemplate>
-                            </ajctrls:NumericEditor.LabelContentTemplate>
-                        </ajctrls:NumericEditor>
-                        <ajctrls:NumericEditor Margin="10" Padding="2,5" Minimum="{Binding ElementName=Self, Path=FloatValue}" Width="80">
-                            <ajctrls:NumericEditor.LabelContentTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="Z" Foreground="DarkBlue" FontWeight="Thin" Margin="5,0" VerticalAlignment="Center" FontSize="22" FontFamily="Segoe UI"/>
-                                </DataTemplate>
-                            </ajctrls:NumericEditor.LabelContentTemplate>
-                        </ajctrls:NumericEditor>
-                    </StackPanel>
+                    <DockPanel Margin="0,0,0,15">
+                        <TextBlock Text="Alt Padding (size 1)" HorizontalAlignment="Center" Width="120"/>
+                        <ajctrls:NumericEditor Foreground="Black" Value="{Binding ElementName=Self, Path=FloatValue}" Padding="1"
+                                                VerticalContentAlignment="Stretch"/>
+                    </DockPanel>
+                    <DockPanel>
+                        <TextBlock Text="Alt Label Dock" VerticalAlignment="Center" HorizontalAlignment="Center" Width="120"/>
+                        <ajctrls:NumericEditor x:Name="AltLabelDock" Foreground="Black" Padding="5,5,5,3"
+                                               Value="{Binding ElementName=Self, Path=FloatValue}" 
+                                               LabelButtonDock="Bottom" LabelPadding="5,10" Width="50"
+                                               HorizontalAlignment="Left"/>
+                    </DockPanel>
+                    <DockPanel>
+                        <TextBlock Text="Alt Label Control" VerticalAlignment="Center" HorizontalAlignment="Center" Width="120"/>
+                        <StackPanel Orientation="Horizontal">
+                            <ajctrls:NumericEditor Margin="0,10,10,10" Padding="2,5" Minimum="{Binding ElementName=Self, Path=FloatValue}" Width="80">
+                                <ajctrls:NumericEditor.LabelContentTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="X" Foreground="Red" FontWeight="Bold" Margin="5,0" VerticalAlignment="Center" FontSize="20" FontFamily="Segoe UI">
+                                            <TextBlock.Effect>
+                                                <DropShadowEffect BlurRadius="2" ShadowDepth="1" Opacity="0.8" Direction="140"/>
+                                            </TextBlock.Effect>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </ajctrls:NumericEditor.LabelContentTemplate>
+                            </ajctrls:NumericEditor>
+                            <ajctrls:NumericEditor Margin="10" Padding="2,5" Minimum="{Binding ElementName=Self, Path=FloatValue}" Width="80">
+                                <ajctrls:NumericEditor.LabelContentTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="Y" Foreground="#5C3" FontWeight="Bold" Margin="5,0" VerticalAlignment="Center" FontSize="20" FontFamily="Segoe UI">
+                                            <TextBlock.Effect>
+                                                <DropShadowEffect BlurRadius="2" ShadowDepth="1" Opacity="1" Direction="140"/>
+                                            </TextBlock.Effect>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </ajctrls:NumericEditor.LabelContentTemplate>
+                            </ajctrls:NumericEditor>
+                            <ajctrls:NumericEditor Margin="10" Padding="2,5" Minimum="{Binding ElementName=Self, Path=FloatValue}" Width="80">
+                                <ajctrls:NumericEditor.LabelContentTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="Z" Foreground="#38F" FontWeight="Bold" Margin="5,0" VerticalAlignment="Center" FontSize="20" FontFamily="Segoe UI">
+                                            <TextBlock.Effect>
+                                                <DropShadowEffect BlurRadius="2" ShadowDepth="1" Opacity="1" Direction="140"/>
+                                            </TextBlock.Effect>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </ajctrls:NumericEditor.LabelContentTemplate>
+                            </ajctrls:NumericEditor>
+                        </StackPanel>
+                    </DockPanel>
                 </StackPanel>
             </TabItem>
             <TabItem Header="Extensions">

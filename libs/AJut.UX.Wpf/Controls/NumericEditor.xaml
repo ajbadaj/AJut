@@ -25,6 +25,7 @@
         <Setter Property="Padding" Value="3,3,0,3"/>
         <Setter Property="LabelPadding" Value="3,0"/>
         <Setter Property="LabelForeground" Value="Black"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
         <Setter Property="Background">
             <Setter.Value>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
@@ -170,8 +171,7 @@
                                     <TextBox x:Name="PART_TextArea" BorderThickness="0" TextAlignment="{TemplateBinding NumberTextAlignment}" Padding="{TemplateBinding Padding}"
                                              Text="{ajut:TemplateBinding Path=DisplayValue.Text, Mode=TwoWay}" IsReadOnly="{TemplateBinding IsReadOnly}" IsReadOnlyCaretVisible="True"/>
                                     <Border BorderBrush="#8000" BorderThickness="1.4,1.4,0,0">
-                                        <Border BorderBrush="#5FFF" BorderThickness="0,0,1,1">
-                                        </Border>
+                                        <Border BorderBrush="#5FFF" BorderThickness="0,0,1,1"/>
                                     </Border>
                                 </Grid>
                             </DockPanel>
