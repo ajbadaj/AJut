@@ -287,12 +287,10 @@ namespace AJut.UX.Controls
             if (this.PART_ListBoxDisplay != null)
             {
                 this.PART_ListBoxDisplay.SelectionChanged -= _OnSelectionChanged;
-                this.PART_ListBoxDisplay.PreviewKeyUp -= this.OnPreviewListBoxKeyUp;
             }
 
             this.PART_ListBoxDisplay = (ListBox)this.GetTemplateChild(nameof(PART_ListBoxDisplay));
             this.PART_ListBoxDisplay.SelectionChanged += _OnSelectionChanged;
-            this.PART_ListBoxDisplay.PreviewKeyUp += this.OnPreviewListBoxKeyUp;
 
             void _OnSelectionChanged (object sender, SelectionChangedEventArgs _e)
             {
@@ -343,31 +341,6 @@ namespace AJut.UX.Controls
                 }
             }
 
-        }
-
-        private void OnPreviewListBoxKeyUp (object sender, KeyEventArgs e)
-        {
-            //if (e.Key == Key.Left)
-            //{
-            //    foreach (var selected in this.Items.Where(i => i.IsSelected))
-            //    {
-            //        selected.IsExpanded = false;
-            //    }
-
-            //    e.Handled = true;
-            //    return;
-            //}
-            //else if (e.Key == Key.Right)
-            //{
-            //    foreach (var selected in this.Items.Where(i => i.IsSelected))
-            //    {
-            //        selected.IsExpanded = true;
-            //    }
-
-            //    e.Handled = true;
-            //    return;
-
-            //}
         }
 
         public IEnumerable<Item> AllItems ()
