@@ -604,7 +604,6 @@ namespace AJut.UX.Controls
                             foreach (Item child in m_hiddenChildren)
                             {
                                 base.InsertChild(base.Children.Count, child);
-                                child.ForwardAddedNotification();
                             }
 
                             m_hiddenChildren.Clear();
@@ -735,14 +734,6 @@ namespace AJut.UX.Controls
                     {
                         this.RaiseChildRemovedEvent(found);
                     }
-                }
-            }
-
-            private void ForwardAddedNotification ()
-            {
-                for (int index = 0; index < this.Children.Count; ++index)
-                {
-                    this.RaiseChildInsertedEvent(index, this.Children[index]);
                 }
             }
         }
