@@ -43,9 +43,31 @@
     <Style TargetType="{x:Type local:FlatTreeListControl}">
         <Setter Property="SelectionBrush" Value="#2196f3"/>
         <Setter Property="SelectionInactiveBrush" Value="#94B7D1"/>
+        <Setter Property="GlyphHighlightBrush" Value="#0C78C1"/>
+
+        <!-- ===[ Glyph: Open Arrow Style ]=== -->
+        <Setter Property="CollapsedElementGlyph" Value="&#xE970;"/>
+        <Setter Property="ExpandedElementGlyph" Value="&#xE96E;"/>
+        <Setter Property="ExpandCollapseGlyphSize" Value="9"/>
+
+        <!-- ===[ Glyph: Closed Arrow ]===
         <Setter Property="CollapsedElementGlyph" Value="&#xEDDA;"/>
         <Setter Property="ExpandedElementGlyph" Value="&#xEDDC;"/>
         <Setter Property="ExpandCollapseGlyphSize" Value="9"/>
+        -->
+
+        <!-- ===[ Glyph: Custom Path ]===
+        <Setter Property="CollapsedElementGlyph">
+            <Setter.Value>
+                <PathGeometry Figures="M 0.36197479 0.27788922 0.34268766 2.1360363 M 0.11897783 0.13790461 C 1.3732863 0.20865622 1.3683758 0.54297319 1.8461437 1.2083564 1.4074492 1.7293915 1.3699354 2.0223824 0.12220847 2.0874901 0.11652465 1.112993 0.12047992 0.63833866 0.11897783 0.13790461 Z" FillRule="NonZero"/>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="ExpandedElementGlyph">
+            <Setter.Value>
+                <PathGeometry Figures="M 9.6827238 0.20422656 C 11.979282 1.1994017 13.688666 4.2592353 13.802266 6.3697357 c 0.154372 2.8679498 0.04197 7.3225213 0.04197 7.3225213 0 0 -7.6270824 -0.925328 -10.4822827 -2.677927 C 1.1609717 9.66331 0.65652451 8.403879 0.7425294 6.6840599 2.7701341 3.338776 6.5118439 0.78525807 9.6827238 0.20422656 Z" FillRule="NonZero"/>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="ExpandCollapseGlyphSize" Value="10"/>-->
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:FlatTreeListControl}">
@@ -75,7 +97,7 @@
                                     <ToggleButton x:Name="Expander" Grid.Column="1" IsChecked="{Binding Path=IsExpanded, Mode=TwoWay}" HorizontalAlignment="Center" VerticalAlignment="Center">
                                         <ToggleButton.Style>
                                             <Style TargetType="{x:Type ToggleButton}">
-                                                <Setter Property="Background" Value="Transparent"/>
+                                                <Setter Property="BorderBrush" Value="Transparent"/>
                                                 <Setter Property="BorderThickness" Value="0" />
                                                 <Setter Property="Content" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=CollapsedElementGlyph}" />
                                                 <Style.Triggers>
@@ -86,7 +108,8 @@
                                                         <Setter Property="Content" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=ExpandedElementGlyph}" />
                                                     </DataTrigger>
                                                     <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter Property="Background" Value="Transparent" />
+                                                        <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=GlyphHighlightBrush}"/>
+                                                        <Setter Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=GlyphHighlightBrush}" />
                                                     </Trigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -99,12 +122,13 @@
                                                                 <DataTemplate DataType="{x:Type PathGeometry}">
                                                                     <Path Width="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=ExpandCollapseGlyphSize}"
                                                                           Height="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=ExpandCollapseGlyphSize}"
-                                                                          Stroke="{Binding RelativeSource={RelativeSource AncestorType=ToggleButton}, Path=BorderBrush}" 
-                                                                          Fill="{Binding RelativeSource={RelativeSource AncestorType=ToggleButton}, Path=Foreground}" 
+                                                                          Stroke="{Binding RelativeSource={RelativeSource AncestorType=ToggleButton}, Path=Foreground}" 
                                                                           StrokeThickness="{Binding RelativeSource={RelativeSource AncestorType=ToggleButton}, Path=BorderThickness}"
+                                                                          Fill="{Binding RelativeSource={RelativeSource AncestorType=ToggleButton}, Path=BorderBrush}"
                                                                           Data="{Binding .}"
                                                                           VerticalAlignment="Center"
-                                                                          HorizontalAlignment="Center"/>
+                                                                          HorizontalAlignment="Center"
+                                                                          Stretch="Uniform"/>
                                                                 </DataTemplate>
                                                                 <DataTemplate DataType="{x:Type sys:String}">
                                                                     <TextBlock Text="{Binding .}"

@@ -7,6 +7,7 @@ namespace AJut.UX.Controls
     using System.Linq;
     using System.Windows;
     using System.Windows.Controls;
+    using System.Windows.Input;
     using System.Windows.Media;
     using AJut;
     using AJut.Storage;
@@ -271,6 +272,13 @@ namespace AJut.UX.Controls
             set => this.SetValue(ExpandCollapseGlyphSizeProperty, value);
         }
 
+        public static readonly DependencyProperty GlyphHighlightBrushProperty = DPUtils.Register(_ => _.GlyphHighlightBrush);
+        public Brush GlyphHighlightBrush
+        {
+            get => (Brush)this.GetValue(GlyphHighlightBrushProperty);
+            set => this.SetValue(GlyphHighlightBrushProperty, value);
+        }
+
         // ============================[Methods]================================
         public override void OnApplyTemplate ()
         {
@@ -279,10 +287,12 @@ namespace AJut.UX.Controls
             if (this.PART_ListBoxDisplay != null)
             {
                 this.PART_ListBoxDisplay.SelectionChanged -= _OnSelectionChanged;
+                this.PART_ListBoxDisplay.PreviewKeyUp -= this.OnPreviewListBoxKeyUp;
             }
 
             this.PART_ListBoxDisplay = (ListBox)this.GetTemplateChild(nameof(PART_ListBoxDisplay));
             this.PART_ListBoxDisplay.SelectionChanged += _OnSelectionChanged;
+            this.PART_ListBoxDisplay.PreviewKeyUp += this.OnPreviewListBoxKeyUp;
 
             void _OnSelectionChanged (object sender, SelectionChangedEventArgs _e)
             {
@@ -302,15 +312,27 @@ namespace AJut.UX.Controls
                     IObservableTreeNode[] added = null;
                     if (_e.AddedItems != null)
                     {
-                        added = _e.AddedItems.OfType<Item>().Select(_ => _.Source).ToArray();
+                        var allStoreItems = _e.AddedItems.OfType<Item>().ToList();
+                        added = allStoreItems.Select(_ => _.Source).ToArray();
                         this.SelectedItems.AddEach(added);
+
+                        foreach (Item item in allStoreItems)
+                        {
+                            item.IsSelected = true;
+                        }
                     }
 
                     IObservableTreeNode[] removed = null;
-                    if (_e.RemovedItems != null)
+                    if (!_e.RemovedItems.IsNullOrEmpty())
                     {
-                        removed = _e.RemovedItems.OfType<Item>().Select(_ => _.Source).ToArray();
+                        var allStoreItems = _e.RemovedItems.OfType<Item>().ToList();
+                        removed = allStoreItems.Select(_ => _.Source).ToArray();
                         this.SelectedItems.RemoveEach(removed);
+
+                        foreach (Item item in allStoreItems)
+                        {
+                            item.IsSelected = false;
+                        }
                     }
 
                     this.ApplySelectionChanges(added, removed);
@@ -321,6 +343,31 @@ namespace AJut.UX.Controls
                 }
             }
 
+        }
+
+        private void OnPreviewListBoxKeyUp (object sender, KeyEventArgs e)
+        {
+            //if (e.Key == Key.Left)
+            //{
+            //    foreach (var selected in this.Items.Where(i => i.IsSelected))
+            //    {
+            //        selected.IsExpanded = false;
+            //    }
+
+            //    e.Handled = true;
+            //    return;
+            //}
+            //else if (e.Key == Key.Right)
+            //{
+            //    foreach (var selected in this.Items.Where(i => i.IsSelected))
+            //    {
+            //        selected.IsExpanded = true;
+            //    }
+
+            //    e.Handled = true;
+            //    return;
+
+            //}
         }
 
         public IEnumerable<Item> AllItems ()
@@ -390,10 +437,12 @@ namespace AJut.UX.Controls
                     this.PART_ListBoxDisplay.SelectedItem = item;
                     if (this.SelectionMode == SelectionMode.Single)
                     {
+                        _DeselctAllBut(item.Source);
                         this.SelectedItems.ResetTo(new[] { item.Source });
                     }
                     else
                     {
+                        item.IsSelected = true;
                         this.SelectedItems.Add(item.Source);
                     }
                 }
@@ -402,10 +451,12 @@ namespace AJut.UX.Controls
                     removed.Add(item.Source);
                     if (this.SelectionMode == SelectionMode.Single && this.PART_ListBoxDisplay.SelectedItem == item)
                     {
+                        _DeselctAllBut(null);
                         this.PART_ListBoxDisplay.SelectedItem = null;
                     }
                     else
                     {
+                        item.IsSelected = false;
                         this.PART_ListBoxDisplay.SelectedItems.Remove(item);
                     }
                 }
@@ -415,6 +466,14 @@ namespace AJut.UX.Controls
             finally
             {
                 m_blockingForSelectionChangeReentrancy = false;
+            }
+
+            void _DeselctAllBut (IObservableTreeNode _item)
+            {
+                foreach (var formerItemSelection in this.SelectedItems.Select(this.StorageItemForNode).Where(i => i != _item))
+                {
+                    formerItemSelection.IsSelected = false;
+                }
             }
         }
 
@@ -437,6 +496,33 @@ namespace AJut.UX.Controls
                     )
                 );
             }
+        }
+
+        protected override void OnKeyUp (KeyEventArgs e)
+        {
+            if (e.Key == Key.Left)
+            {
+                foreach (var selected in this.SelectedItems.Select(this.StorageItemForNode))
+                {
+                    selected.IsExpanded = false;
+                }
+
+                e.Handled = true;
+                return;
+            }
+            else if (e.Key == Key.Right)
+            {
+                foreach (var selected in this.SelectedItems.Select(this.StorageItemForNode))
+                {
+                    selected.IsExpanded = true;
+                }
+
+                e.Handled = true;
+                return;
+
+            }
+
+            base.OnKeyUp(e);
         }
 
         // ============================[Classes]================================
