@@ -14,15 +14,6 @@ namespace AJut.UX.Controls
     using AJut.Tree;
     using DPUtils = DPUtils<FlatTreeListControl>;
 
-    // ==========================================[ TODO ]==========================================================================
-    //  Still working on selection, did a major refactor to IObservableTreeNode. Initially I was going to try and make an
-    //   interactable tree node version, but having expansion and selection in the tree node made it so that you couldn't show
-    //   two FlatTreeListControls with the same nodes and different selection/expansion state, which is when I realized it had
-    //   to be stored as local state to the list control. That's when I developed this current FlatTreeListControl.Item strategy
-    //   which works, but may still be incomplete with selection synchronization, though attempts have been started in the
-    //   constructor and Item selection changed handler.
-    // ============================================================================================================================
-
     /// <summary>
     /// A tree control that is actually visualized by a tree thanks to the underlying magic of <see cref="ObservableFlatTreeStore"/>. This
     /// makes the <see cref="FlatTreeListControl"/> inherintly easy to virtualize, thus making it a very fast tree control. The only restriction
@@ -43,7 +34,7 @@ namespace AJut.UX.Controls
 
         public FlatTreeListControl ()
         {
-            this.Items = new ObservableFlatTreeStore<Item>();
+            this.Items = new ItemsStorageContainer(this);
             this.SelectedItems = new ObservableCollection<IObservableTreeNode>();
 
             this.SelectedItems.CollectionChanged += _OnSelectedItemsCollectionChanged;
@@ -361,7 +352,6 @@ namespace AJut.UX.Controls
                     m_blockingForSelectionChangeReentrancy = false;
                 }
             }
-
         }
 
         public IEnumerable<Item> AllItems ()
@@ -387,7 +377,9 @@ namespace AJut.UX.Controls
 
         private void OnItemCreated (Item item)
         {
+            item.IsSelectedChanged -= this.Item_IsSelectedChanged;
             item.IsSelectedChanged += this.Item_IsSelectedChanged;
+            this.ApplySelectionOfReaddedItem(item);
             this.StorageItemAdded?.Invoke(this, new(item));
         }
 
@@ -519,6 +511,32 @@ namespace AJut.UX.Controls
             base.OnKeyUp(e);
         }
 
+        private IDisposable TemporarilyBlockSelectionChanges ()
+        {
+            m_blockingForSelectionChangeReentrancy = true;
+            return new DisposeActionTrigger(() => m_blockingForSelectionChangeReentrancy = false);
+        }
+
+        private void ApplySelectionOfReaddedItem (Item item)
+        {
+            if (item.IsSelected)
+            {
+                if (this.SelectedItems.Contains(item.Source))
+                {
+                    // This was selected and collapsed
+                    if (!this.PART_ListBoxDisplay.SelectedItems.Contains(item))
+                    {
+                        this.PART_ListBoxDisplay.SelectedItems.Add(item);
+                    }
+                }
+                else
+                {
+                    // This was selected and not already tracked
+                    this.SelectedItems.Add(item.Source);
+                }
+            }
+        }
+
         // ============================[Classes]================================
 
         /// <summary>
@@ -633,9 +651,12 @@ namespace AJut.UX.Controls
                         else
                         {
                             m_hiddenChildren.AddRange(base.Children);
-                            foreach (var child in m_hiddenChildren.ToList())
+                            using (m_owner.TemporarilyBlockSelectionChanges())
                             {
-                                base.RemoveChild(child);
+                                foreach (var child in m_hiddenChildren.ToList())
+                                {
+                                    base.RemoveChild(child);
+                                }
                             }
                         }
                     }
@@ -756,6 +777,21 @@ namespace AJut.UX.Controls
                         this.RaiseChildRemovedEvent(found);
                     }
                 }
+            }
+        }
+
+        private class ItemsStorageContainer : ObservableFlatTreeStore<Item>
+        {
+            private FlatTreeListControl m_owner;
+            public ItemsStorageContainer (FlatTreeListControl owner)
+            {
+                m_owner = owner;
+            }
+
+            protected override void OnObserve (Item item)
+            {
+                base.OnObserve(item);
+                m_owner.ApplySelectionOfReaddedItem(item);
             }
         }
     }
