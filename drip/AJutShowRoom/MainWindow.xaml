@@ -192,13 +192,14 @@
                 </ScrollViewer>
             </TabItem>
             <TabItem Header="Flat Tree">
-                <Grid>
+                <Grid Margin="10">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition />
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition />
                     </Grid.RowDefinitions>
-                    <GroupBox Header="Tests" Margin="5">
+                    <GroupBox Header="Tests" Margin="0,0,0,5">
                         <WrapPanel Margin="5,5,0,0">
                             <Button Content="Synch Selection" Margin="0,0,5,5" Click="SynchFlatTreeListSelection_OnClick"/>
                             <Button Content="Add Node To Selected (top)" Margin="0,0,5,5" Click="AddNodeToTopSelected_OnClick"/>
@@ -207,7 +208,9 @@
                         </WrapPanel>
                     </GroupBox>
                     <ajctrls:FlatTreeListControl x:Name="TopTree" Grid.Row="1" RootItemsSource="{Binding ElementName=Self, Path=Items}"
-                                              TabbingSize="10" StorageItemAdded="FlatTree_OnItemAdded">
+                                                 TabbingSize="10" StorageItemAdded="FlatTree_OnItemAdded"
+                                                 BorderThickness="1" BorderBrush="#CCC"
+                                                 Margin="0,0,0,5">
                         <ajctrls:FlatTreeListControl.Resources>
                             <DataTemplate DataType="{x:Type local:TestTreeItem}">
                                 <DockPanel>
@@ -217,8 +220,13 @@
                             </DataTemplate>
                         </ajctrls:FlatTreeListControl.Resources>
                     </ajctrls:FlatTreeListControl>
-                    <ajctrls:FlatTreeListControl x:Name="BottomTree" Grid.Row="2" Root="{Binding ElementName=Self, Path=Items[2]}"
-                                                 TabbingSize="20" ExpandCollapseGlyphSize="10">
+
+                    <TextBlock Grid.Row="2" Margin="0,10,0,0" Text="Synchronized sub list (shows that the same tree source can feed multiple) and custom glyph" TextWrapping="WrapWithOverflow"/>
+                    <ajctrls:FlatTreeListControl x:Name="BottomTree" Grid.Row="3" Root="{Binding ElementName=Self, Path=Items[2]}"
+                                                 TabbingSize="20" ExpandCollapseGlyphSize="10"
+                                                 GlyphBackgroundHighlightBrush="Transparent"
+                                                 GlyphHighlightBrush="#0C78C1"
+                                                 BorderThickness="1" BorderBrush="#CCC">
                         <ajctrls:FlatTreeListControl.CollapsedElementGlyph>
                             <PathGeometry Figures="M 0.36197479 0.27788922 0.34268766 2.1360363 M 0.11897783 0.13790461 C 1.3732863 0.20865622 1.3683758 0.54297319 1.8461437 1.2083564 1.4074492 1.7293915 1.3699354 2.0223824 0.12220847 2.0874901 0.11652465 1.112993 0.12047992 0.63833866 0.11897783 0.13790461 Z" FillRule="NonZero"/>
                         </ajctrls:FlatTreeListControl.CollapsedElementGlyph>
