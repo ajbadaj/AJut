@@ -272,11 +272,32 @@ namespace AJut.UX.Controls
             set => this.SetValue(ExpandCollapseGlyphSizeProperty, value);
         }
 
+        public static readonly DependencyProperty GlyphBrushProperty = DPUtils.Register(_ => _.GlyphBrush);
+        public Brush GlyphBrush
+        {
+            get => (Brush)this.GetValue(GlyphBrushProperty);
+            set => this.SetValue(GlyphBrushProperty, value);
+        }
+
         public static readonly DependencyProperty GlyphHighlightBrushProperty = DPUtils.Register(_ => _.GlyphHighlightBrush);
         public Brush GlyphHighlightBrush
         {
             get => (Brush)this.GetValue(GlyphHighlightBrushProperty);
             set => this.SetValue(GlyphHighlightBrushProperty, value);
+        }
+
+        public static readonly DependencyProperty GlyphBackgroundHighlightBrushProperty = DPUtils.Register(_ => _.GlyphBackgroundHighlightBrush);
+        public Brush GlyphBackgroundHighlightBrush
+        {
+            get => (Brush)this.GetValue(GlyphBackgroundHighlightBrushProperty);
+            set => this.SetValue(GlyphBackgroundHighlightBrushProperty, value);
+        }
+
+        public static readonly DependencyProperty GlyphPaddingProperty = DPUtils.Register(_ => _.GlyphPadding);
+        public Thickness GlyphPadding
+        {
+            get => (Thickness)this.GetValue(GlyphPaddingProperty);
+            set => this.SetValue(GlyphPaddingProperty, value);
         }
 
         // ============================[Methods]================================
