@@ -39,19 +39,19 @@
         <Setter Property="IncreaseHoverHighlight">
             <Setter.Value>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" Opacity="0.6">
-                    <GradientStop Offset="0.00" Color="#EE468DBA" />
-                    <GradientStop Offset="0.35" Color="#CC55C4FF" />
-                    <GradientStop Offset="0.75" Color="#CC4C94C2" />
-                    <GradientStop Offset="1.00" Color="#AA4FA4D7" />
+                    <GradientStop Offset="0" Color="#EE87D7FF" />
+                    <GradientStop Offset="1" Color="#DD55C4FF" />
                 </LinearGradientBrush>
             </Setter.Value>
         </Setter>
         <Setter Property="IncreasePressedHighlight">
             <Setter.Value>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
-                    <GradientStop Offset="0.00" Color="#E111" />
-                    <GradientStop Offset="0.35" Color="#C888" />
-                    <GradientStop Offset="0.75" Color="#C000" />
+                    <GradientStop Offset="0.00" Color="#B888" />
+                    <GradientStop Offset="0.05" Color="#C333" />
+                    <GradientStop Offset="0.30" Color="#E222" />
+                    <GradientStop Offset="0.65" Color="#B666" />
+                    <GradientStop Offset="0.70" Color="#B555" />
                     <GradientStop Offset="1.00" Color="#A111" />
                 </LinearGradientBrush>
             </Setter.Value>
@@ -59,10 +59,8 @@
         <Setter Property="DecreaseHoverHighlight">
             <Setter.Value>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" Opacity="0.6">
-                    <GradientStop Offset="0.00" Color="#AA4FA4D7" />
-                    <GradientStop Offset="0.35" Color="#CC4C94C2" />
-                    <GradientStop Offset="0.75" Color="#CC55C4FF" />
-                    <GradientStop Offset="1.00" Color="#EE468DBA" />
+                    <GradientStop Offset="0" Color="#DD55C4FF" />
+                    <GradientStop Offset="1" Color="#EE87D7FF" />
                 </LinearGradientBrush>
             </Setter.Value>
         </Setter>
