@@ -32,9 +32,6 @@
     <Compile Update="Controls\ColorValueEditControl.cs">
       <DependentUpon>ColorValueEditControl.xaml</DependentUpon>
     </Compile>
-    <Compile Update="Controls\DockZone.cs">
-      <DependentUpon>DockZone.xaml</DependentUpon>
-    </Compile>
 	  <Compile Update="Controls\DockingElements\DefaultDockTearoffWindow.cs">
       <DependentUpon>DefaultDockTearoffWindow.xaml</DependentUpon>
     </Compile>
@@ -43,6 +40,9 @@
     </Compile>
     <Compile Update="Controls\DockingElements\DockZoneSelectedHeaderControl.cs">
       <DependentUpon>DockZoneSelectedHeaderControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\DockingElements\DockZone.cs">
+      <DependentUpon>DockZone.xaml</DependentUpon>
     </Compile>
     <Compile Update="Controls\EditableTextBlock.cs">
       <DependentUpon>EditableTextBlock.xaml</DependentUpon>
