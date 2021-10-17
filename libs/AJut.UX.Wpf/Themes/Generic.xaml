@@ -5,9 +5,9 @@
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/ColorEditIngressControl.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/ColorValueEditControl.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/DockZone.xaml"/>
-        <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/DockingHelpers/DefaultDockTearoffWindow.xaml"/>
-        <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/DockingHelpers/DockZoneTabHeadersControl.xaml"/>
-        <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/DockingHelpers/DockZoneSelectedHeaderControl.xaml"/>
+        <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/DockingElements/DefaultDockTearoffWindow.xaml"/>
+        <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/DockingElements/DockZoneTabHeadersControl.xaml"/>
+        <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/DockingElements/DockZoneSelectedHeaderControl.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/EditableTextBlock.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/EnumComboBox.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/FlatTreeListControl.xaml"/>

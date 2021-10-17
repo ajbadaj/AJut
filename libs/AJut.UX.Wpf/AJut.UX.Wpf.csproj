@@ -35,13 +35,13 @@
     <Compile Update="Controls\DockZone.cs">
       <DependentUpon>DockZone.xaml</DependentUpon>
     </Compile>
-	  <Compile Update="Controls\DockingHelpers\DefaultDockTearoffWindow.cs">
+	  <Compile Update="Controls\DockingElements\DefaultDockTearoffWindow.cs">
       <DependentUpon>DefaultDockTearoffWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Update="Controls\DockingHelpers\DockZoneTabHeadersControl.cs">
+    <Compile Update="Controls\DockingElements\DockZoneTabHeadersControl.cs">
       <DependentUpon>DockZoneTabHeadersControl.xaml</DependentUpon>
     </Compile>
-    <Compile Update="Controls\DockingHelpers\DockZoneSelectedHeaderControl.cs">
+    <Compile Update="Controls\DockingElements\DockZoneSelectedHeaderControl.cs">
       <DependentUpon>DockZoneSelectedHeaderControl.xaml</DependentUpon>
     </Compile>
     <Compile Update="Controls\EditableTextBlock.cs">
