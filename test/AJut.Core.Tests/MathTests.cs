@@ -34,5 +34,18 @@
             Assert.AreEqual(5, Lerp.End(1, 3, 0.5));
             Assert.AreEqual(9, Lerp.End(1, 5, 0.5));
         }
+
+        [TestMethod]
+        public void Math_Calculate_LCM()
+        {
+            Assert.AreEqual(600, Calculate.LeastCommonMultiple(100, 100, 300, 600));
+            Assert.AreEqual(-600, Calculate.LeastCommonMultiple(100, -100, 300, 600));
+        }
+
+        [TestMethod]
+        public void Math_Calculate_GCD ()
+        {
+            Assert.AreEqual(100, Calculate.GreatestCommonDenominator(100, 300, 300, 500));
+        }
     }
 }
