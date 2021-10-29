@@ -68,7 +68,6 @@
         }
 
         private static readonly DependencyPropertyKey SelectedItemPropertyKey = DPUtils.RegisterReadOnly(_ => _.SelectedItem, (d,e)=>d.OnSelectedItemChanged(e));
-
         public static readonly DependencyProperty SelectedItemProperty = SelectedItemPropertyKey.DependencyProperty;
         public HeaderItem SelectedItem
         {
@@ -106,10 +105,17 @@
                 m_selectionReentrancyBlocker = true;
                 if (e.HasNewValue && e.NewValue > 0 && e.NewValue < this.Items.Count)
                 {
+                    if (this.SelectedItem != null)
+                    {
+                        this.SelectedItem.IsSelected = false;
+                    }
+                    
                     this.SelectedItem = this.Items[e.NewValue];
+                    this.SelectedItem.IsSelected = true;
                 }
-                else
+                else if (this.SelectedItem != null)
                 {
+                    this.SelectedItem.IsSelected = false;
                     this.SelectedItem = null;
                 }
             }

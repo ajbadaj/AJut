@@ -13,6 +13,7 @@
     using DPUtils = AJut.UX.DPUtils<AutoGrid>;
     using APUtils = AJut.UX.APUtils<AutoGrid>;
     using AJut.MathUtilities;
+    using System.Windows.Data;
 
     public enum eAutoPopulationOrder
     {
@@ -173,7 +174,7 @@
             for (int index = 0; index < this.Children.Count; ++index)
             {
                 UIElement child = this.Children[index];
-                if (child is GridSplitter)
+                if (child == null || child is GridSplitter)
                 {
                     continue;
                 }
@@ -225,6 +226,7 @@
                             ResizeDirection = GridResizeDirection.Columns,
                         };
 
+                        MultiBinding binding = new MultiBinding();
                         gs.SetBinding(GridSplitter.WidthProperty, this.CreateBinding(SizerLengthProperty, System.Windows.Data.BindingMode.OneWay));
 
                         m_generatedColumnSizers.Add(gs);

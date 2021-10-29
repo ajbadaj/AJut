@@ -57,6 +57,22 @@
             return default;
         }
 
+        public static void AddEach (this IList list, IEnumerable items)
+        {
+            foreach (object item in items)
+            {
+                list.Add(item);
+            }
+        }
+
+        public static void RemoveEach (this IList list, IEnumerable items)
+        {
+            foreach (object item in items)
+            {
+                list.Remove(item);
+            }
+        }
+
         public static bool Relocate (this IList list, int moveFromIndex, int moveToIndex)
         {
             if (list.IsReadOnly)

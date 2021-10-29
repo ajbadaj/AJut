@@ -35,14 +35,17 @@
 	  <Compile Update="Controls\DockingElements\DefaultDockTearoffWindow.cs">
       <DependentUpon>DefaultDockTearoffWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Update="Controls\DockingElements\DockZoneTabHeadersControl.cs">
-      <DependentUpon>DockZoneTabHeadersControl.xaml</DependentUpon>
+    <Compile Update="Controls\DockingElements\DockDropInsertionDriverWidget.cs">
+      <DependentUpon>DockDropInsertionDriverWidget.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\DockingElements\DockZone.cs">
+      <DependentUpon>DockZone.xaml</DependentUpon>
     </Compile>
     <Compile Update="Controls\DockingElements\DockZoneSelectedHeaderControl.cs">
       <DependentUpon>DockZoneSelectedHeaderControl.xaml</DependentUpon>
     </Compile>
-    <Compile Update="Controls\DockingElements\DockZone.cs">
-      <DependentUpon>DockZone.xaml</DependentUpon>
+    <Compile Update="Controls\DockingElements\DockZoneTabHeadersControl.cs">
+      <DependentUpon>DockZoneTabHeadersControl.xaml</DependentUpon>
     </Compile>
     <Compile Update="Controls\EditableTextBlock.cs">
       <DependentUpon>EditableTextBlock.xaml</DependentUpon>
@@ -91,6 +94,9 @@
     </Compile>
     <Compile Update="Controls\ToggleStrip.cs">
       <DependentUpon>ToggleStrip.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\UIElementRepeater.cs">
+      <DependentUpon>UIElementRepeater.xaml</DependentUpon>
     </Compile>
     <Compile Update="Controls\WindowChromeButtonStrip.cs">
       <DependentUpon>WindowChromeButtonStrip.xaml</DependentUpon>

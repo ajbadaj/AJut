@@ -81,10 +81,9 @@
 
         public class ZoneData
         {
-            public Guid Id { get; set; }
-            public ZoneData AnteriorZone { get; set; }
-            public ZoneData PosteriorZone { get; set; }
-            public double AnteriorSize { get; set; }
+            public string GroupId { get; set; }
+            public List<ZoneData> ChildZones { get; set; }
+            public double SizeOnParent { get; set; }
             public eDockOrientation DockOrientation { get; set; }
             public DisplayData[] DisplayState { get; set; }
         }

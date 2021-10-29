@@ -52,12 +52,20 @@
         /// <summary>
         /// The leaf orientations contain elements to display, alone if only a single one, or in tabs if more than 1
         /// </summary>
-        AnyLeafDisplay  = Single | Tabbed,
+        AnyLeafDisplay  = Single | Tabbed | Empty,
+    }
+
+    public enum eDockDirection
+    {
+        Any,
+        Anterior, 
+        Posterior
     }
 
     public sealed class DockZone : Control, IDisposable
     {
         private readonly ObservableCollection<DockingContentAdapterModel> m_locallyDockedElements = new ObservableCollection<DockingContentAdapterModel>();
+        private readonly ObservableCollection<DockZone> m_childZones = new ObservableCollection<DockZone>();
 
         static DockZone ()
         {
@@ -68,26 +76,57 @@
             {
                 if (z.DockOrientation == eDockOrientation.Tabbed)
                 {
-                    yield break;
+                    return Enumerable.Empty<DockZone>();
                 }
                 else
                 {
-                    yield return z.AnteriorZone;
-                    yield return z.PosteriorZone;
+                    return z.ChildZones;
                 }
             }
         }
-        public DockZone () : this(Guid.NewGuid())
-        {
-        }
 
-        public DockZone (Guid zoneId)
+        public DockZone ()
         {
-            this.Id = zoneId;
             this.LocallyDockedElements = new ReadOnlyObservableCollection<DockingContentAdapterModel>(m_locallyDockedElements);
+            this.ChildZones = new ReadOnlyObservableCollection<DockZone>(m_childZones);
             this.CommandBindings.Add(new CommandBinding(ClosePanelCommand, OnClosePanel, OnCanClosePanel));
             DragDropElement.AddDragDropItemsSwapHandler(this, HandleDragDropItemsSwapForHeaders);
         }
+
+        internal DockZone (DockingSerialization.ZoneData zoneData) : this()
+        {
+            this.BuildFromState(zoneData);
+        }
+
+        public DockZone DuplicateAndClear ()
+        {
+            var dupe = new DockZone();
+            this.CopyIntoAndClear(dupe);
+            return dupe;
+        }
+
+        public void CopyIntoAndClear (DockZone dockZone)
+        {
+            // Copy
+            dockZone.Manager = this.Manager;
+            dockZone.DockOrientation = this.DockOrientation;
+            dockZone.SelectedIndex = this.SelectedIndex;
+            m_locallyDockedElements.ForEach(dockZone.AddPanel);
+            m_childZones.ForEach(dockZone.AddChildZone);
+
+            // Clear
+            this.Clear();
+        }
+
+
+        public void Clear ()
+        {
+            m_childZones.Clear();
+            m_locallyDockedElements.Clear();
+            this.DockOrientation = eDockOrientation.Empty;
+            this.SelectedIndex = -1;
+        }
+
 
         static int kDEBUG_Counter = 0;
         private void HandleDragDropItemsSwapForHeaders (object sender, DragDropItemsSwapEventArgs e)
@@ -99,12 +138,10 @@
             }
         }
 
-        public void Dispose()
+        public void Dispose ()
         {
-            this.Clear();
+            this.DeRegisterAndClear();
         }
-
-        public Guid Id { get; }
 
         // ============================[ Events / Commands ]====================================
 
@@ -172,7 +209,7 @@
             set => this.SetValue(PanelCornerRadiusProperty, value);
         }
 
-        public static readonly DependencyProperty SeparationSizeProperty = DPUtils.Register(_ => _.SeparationSize, (d,e)=>d.HalfSeparationSize = d.SeparationSize / 2);
+        public static readonly DependencyProperty SeparationSizeProperty = DPUtils.Register(_ => _.SeparationSize, (d, e) => d.HalfSeparationSize = d.SeparationSize / 2);
         public double SeparationSize
         {
             get => (double)this.GetValue(SeparationSizeProperty);
@@ -217,32 +254,19 @@
             private set => this.SetValue(HasParentZonePropertyKey, value);
         }
 
-        public static readonly DependencyProperty AnteriorZoneProperty = DPUtils.Register(_ => _.AnteriorZone, (d, e) => d.OnDirectChildZoneChanged(e));
-        public DockZone AnteriorZone
-        {
-            get => (DockZone)this.GetValue(AnteriorZoneProperty);
-            set => this.SetValue(AnteriorZoneProperty, value);
-        }
-
-        public static readonly DependencyProperty PosteriorZoneProperty = DPUtils.Register(_ => _.PosteriorZone, (d, e) => d.OnDirectChildZoneChanged(e));
-        public DockZone PosteriorZone
-        {
-            get => (DockZone)this.GetValue(PosteriorZoneProperty);
-            set => this.SetValue(PosteriorZoneProperty, value);
-        }
-
-        public static readonly DependencyProperty AnteriorSizeProperty = DPUtils.Register(_ => _.AnteriorSize);
-        public double AnteriorSize
-        {
-            get => (double)this.GetValue(AnteriorSizeProperty);
-            set => this.SetValue(AnteriorSizeProperty, value);
-        }
-
-        public static readonly DependencyProperty DockOrientationProperty = DPUtils.Register(_ => _.DockOrientation, eDockOrientation.Empty);
+        public static readonly DependencyProperty DockOrientationProperty = DPUtils.Register(_ => _.DockOrientation, eDockOrientation.Empty, (d, e) => d.OnDockOrientationChanged(e));
         public eDockOrientation DockOrientation
         {
             get => (eDockOrientation)this.GetValue(DockOrientationProperty);
             set => this.SetValue(DockOrientationProperty, value);
+        }
+
+        private static readonly DependencyPropertyKey HasSplitZoneOrientationPropertyKey = DPUtils.RegisterReadOnly(_ => _.HasSplitZoneOrientation);
+        public static readonly DependencyProperty HasSplitZoneOrientationProperty = HasSplitZoneOrientationPropertyKey.DependencyProperty;
+        public bool HasSplitZoneOrientation
+        {
+            get => (bool)this.GetValue(HasSplitZoneOrientationProperty);
+            private set => this.SetValue(HasSplitZoneOrientationPropertyKey, value);
         }
 
         public static readonly DependencyProperty SelectedIndexProperty = DPUtils.Register(_ => _.SelectedIndex, 0);
@@ -252,22 +276,288 @@
             set => this.SetValue(SelectedIndexProperty, value);
         }
 
+        private static readonly DependencyPropertyKey IsDirectDropTargetPropertyKey = DPUtils.RegisterReadOnly(_ => _.IsDirectDropTarget);
+        public static readonly DependencyProperty IsDirectDropTargetProperty = IsDirectDropTargetPropertyKey.DependencyProperty;
+        public bool IsDirectDropTarget
+        {
+            get => (bool)this.GetValue(IsDirectDropTargetProperty);
+            internal set => this.SetValue(IsDirectDropTargetPropertyKey, value);
+        }
+
         public ReadOnlyObservableCollection<DockingContentAdapterModel> LocallyDockedElements { get; }
+        public ReadOnlyObservableCollection<DockZone> ChildZones { get; }
+
+        public static readonly DependencyProperty IsDropScootHoverLeftProperty = DPUtils.Register(_ => _.IsDropScootHoverLeft);
+        public bool IsDropScootHoverLeft
+        {
+            get => (bool)this.GetValue(IsDropScootHoverLeftProperty);
+            set => this.SetValue(IsDropScootHoverLeftProperty, value);
+        }
+
+        public static readonly DependencyProperty IsDropScootHoverTopProperty = DPUtils.Register(_ => _.IsDropScootHoverTop);
+        public bool IsDropScootHoverTop
+        {
+            get => (bool)this.GetValue(IsDropScootHoverTopProperty);
+            set => this.SetValue(IsDropScootHoverTopProperty, value);
+        }
+
+        public static readonly DependencyProperty IsDropScootHoverRightProperty = DPUtils.Register(_ => _.IsDropScootHoverRight);
+        public bool IsDropScootHoverRight
+        {
+            get => (bool)this.GetValue(IsDropScootHoverRightProperty);
+            set => this.SetValue(IsDropScootHoverRightProperty, value);
+        }
+
+        public static readonly DependencyProperty IsDropScootHoverBottomProperty = DPUtils.Register(_ => _.IsDropScootHoverBottom);
+        public bool IsDropScootHoverBottom
+        {
+            get => (bool)this.GetValue(IsDropScootHoverBottomProperty);
+            set => this.SetValue(IsDropScootHoverBottomProperty, value);
+        }
 
         // ============================[ Public Interface ]====================================
 
-        public void Add (IDockableDisplayElement panel)
+        public void AddPanel (IDockableDisplayElement panel)
         {
-            this.Add(panel.DockingAdapter);
+            this.AddPanel(panel.DockingAdapter);
         }
 
-        public void Add (DockingContentAdapterModel panelAdapter)
+        public void AddPanel (DockingContentAdapterModel panelAdapter)
         {
             m_locallyDockedElements.Add(panelAdapter);
             panelAdapter.SetNewLocation(this);
             this.DockOrientation = m_locallyDockedElements.Count == 1 ? eDockOrientation.Single : eDockOrientation.Tabbed;
         }
 
+        public bool DropAddSiblingIntoDock (DockZone newSibling, eDockInsertionDirection insertionDirection)
+        {
+            eDockOrientation orientation;
+            int indexOffset = 0;
+            switch (insertionDirection)
+            {
+                case eDockInsertionDirection.Left:
+                    orientation = eDockOrientation.Horizontal;
+                    break;
+
+                case eDockInsertionDirection.Right:
+                    indexOffset = 1;
+                    orientation = eDockOrientation.Horizontal;
+                    break;
+
+                case eDockInsertionDirection.Top:
+                    orientation = eDockOrientation.Vertical;
+                    break;
+
+                case eDockInsertionDirection.Bottom:
+                    indexOffset = 1;
+                    orientation = eDockOrientation.Vertical;
+                    break;
+
+                case eDockInsertionDirection.AddToTabbedDisplay:
+                    orientation = eDockOrientation.Tabbed;
+                    break;
+
+                default:
+                    return false;
+            }
+
+            // ==== Scenario 2: Insert as tab =====
+            if (orientation == eDockOrientation.Tabbed)
+            {
+                if (this.DockOrientation.HasPartialFlag(eDockOrientation.AnyLeafDisplay))
+                {
+                    // Find all dock display elements and add them as children to this
+                    bool addedAnything = false;
+                    foreach (DockZone descendant in TreeTraversal<DockZone>.All(newSibling))
+                    {
+                        var elements = descendant.m_locallyDockedElements.ToList();
+                        addedAnything = addedAnything || elements.Count > 0;
+                        descendant.Clear();
+                        elements.ForEach(this.AddPanel);
+                    }
+
+                    if (addedAnything)
+                    {
+                        this.SelectedIndex = m_locallyDockedElements.Count - 1;
+                    }
+                }
+                else
+                {
+                    Logger.LogError("Docking issue: Attempted to drop a dock zone on a non-leaf display (tabbed, single, none), zones must be split first for that to work (otherwise the system would be guessing as to which way to split it)");
+                    return false;
+                }
+            }
+
+            // ==== Scenario 2: Insert into parent's child zones =====
+            else if (orientation == this.DockOrientation)
+            {
+                int insertIndex = this.ParentZone.ChildZones.IndexOf(this);
+                if (insertIndex == -1)
+                {
+                    Logger.LogError("Docking issue: child zone could not be found on parent");
+                    return false;
+                }
+
+                insertIndex += indexOffset;
+                this.ParentZone.InsertChildZone(insertIndex, newSibling);
+            }
+            // ==== Scenario 3: Clone and insert =====
+            else
+            {
+                var dupe = this.DuplicateAndClear();
+                this.DockOrientation = orientation;
+                this.InsertChildZone(0, dupe);
+                this.InsertChildZone(indexOffset, newSibling);
+            }
+
+            return true;
+        }
+
+        public void RemoveChildZone (DockZone child)
+        {
+            if (child != null && child.ParentZone == this)
+            {
+                m_childZones.Remove(child);
+                child.Manager = null;
+                child.ParentZone = null;
+            }
+
+            if (m_childZones.Count == 0)
+            {
+                this.DockOrientation = eDockOrientation.Empty;
+            }
+        }
+
+#if false
+
+        internal Result<DockZone> InsertAndReparentAllChildrenOnToNewZone ()
+        {
+            DockZone duplicate = this.DuplicateAndClear(clearAfter: true);
+            this.
+
+            //DockZone empty = new DockZone();
+            //empty.Manager = this.Manager;
+
+            //DockZone newZone = new DockZone();
+            //newZone.Manager = this.Manager;
+
+            //newZone.AnteriorSize = this.AnteriorSize;
+            //newZone.AnteriorZone = this.PosteriorZone;
+            //newZone.PosteriorZone = this.PosteriorZone;
+            //m_locallyDockedElements.ForEach(newZone.Add);
+            //newZone.SelectedIndex = this.SelectedIndex;
+
+            //m_locallyDockedElements.Clear();
+            //this.SetSplitChildZones(eDockOrientation.Vertical, empty, newZone);
+            //return Result<DockZone>.Success(newZone);
+        }
+
+
+        public void InsertSplitChild (eDockOrientation orientation, DockZone newChild, int index = -1)
+        {
+            // Can't add a split without it being one of the split orientation elements
+            if (!orientation.HasFlag(eDockOrientation.AnySplitOrientation))
+            {
+                return;
+            }
+
+            // ==== Scenario 1: Drop leaf =====
+            // If it's a leaf and now we're splitting it
+            if (this.DockOrientation.HasFlag(eDockOrientation.AnyLeafDisplay))
+            {
+                
+            }
+            // ==== Scenario 2: Reorient =====
+            else if (this.DockOrientation != orientation)
+            {
+
+            }
+            // ==== Scenario 3: Insert into child zones =====
+            else
+            {
+            }
+        }
+
+        
+        /*
+        public void SetSplitChildZones (eDockOrientation orientation, DockZone anterior, DockZone posterior)
+        {
+            this.AnteriorSize = double.NaN;
+            this.DockOrientation = orientation;
+            this.AnteriorZone = anterior;
+            this.PosteriorZone = posterior;
+
+            this.DockOrientation = orientation;
+
+            // TODO: What does clearing this mean? Should close happen first? Should we rely on the user
+            //  having already done the right thing before this? Should there be an option to cleanup defaulted to false or something?
+            m_locallyDockedElements.Clear();
+        }
+        */
+
+
+
+        // ↓ Like this name... needs some kind of parent deliniation or version.
+        internal void DropContentInto (eDockOrientation requestedOrientation, DockZone dropTarget, eDockDirection side = eDockDirection.Any)
+        {
+            switch (dropTarget.DockOrientation)
+            {
+                case eDockOrientation.Empty:
+                case eDockOrientation.Single:
+                case eDockOrientation.Tabbed:
+                    if (this.HasParentZone)
+                    {
+                        this.CollapseAndDistributeSibling();
+                    }
+                    var allLocals = TreeTraversal<DockZone>.All(this.GenerateNewAndEmptyInto()).SelectMany(z => z.m_locallyDockedElements);
+                    allLocals.ForEach(dropTarget.Add);
+                    break;
+
+                case eDockOrientation.Horizontal:
+                case eDockOrientation.Vertical:
+                    var targetDuplicate = dropTarget.GenerateNewAndEmptyInto();
+                    dropTarget.SetSplitChildZones(newOrientation,
+                        side == eDockDirection.Anterior ? this.GenerateNewAndEmptyInto() : targetDuplicate,
+                        side == eDockDirection.Anterior ? targetDuplicate : this.GenerateNewAndEmptyInto()
+                    );
+                    break;
+            }
+        }
+        
+        internal DockZone GenerateNewAndEmptyInto ()
+        {
+            DockZone duplicate = new DockZone();
+            duplicate.Manager = this.Manager;
+
+            //parent.AnteriorZone = null;
+            //parent.PosteriorZone = null;
+            //parent.m_locallyDockedElements.Clear();
+            duplicate.AnteriorSize = this.AnteriorSize;
+            duplicate.AnteriorZone = this.PosteriorZone;
+            duplicate.PosteriorZone = this.PosteriorZone;
+
+            if (duplicate.AnteriorZone != null)
+            {
+                duplicate.AnteriorZone.ParentZone = duplicate;
+            }
+
+            if (duplicate.PosteriorZone != null)
+            {
+                duplicate.PosteriorZone.ParentZone = duplicate;
+            }
+
+            m_locallyDockedElements.ForEach(duplicate.AddPanel);
+            duplicate.DockOrientation = this.DockOrientation;
+
+            this.AnteriorZone = null;
+            this.PosteriorZone = null;
+            this.m_locallyDockedElements.Clear();
+            this.DockOrientation = eDockOrientation.Empty;
+
+            return duplicate;
+        }
+
+#endif
         public Result TryHandleRemovePanel (IDockableDisplayElement panel)
         {
             return this.TryHandleRemovePanel(panel.DockingAdapter);
@@ -290,33 +580,36 @@
             return new Result();
         }
 
-        public void SetSplitChildZones (eDockOrientation orientation, DockZone anterior, DockZone posterior)
+        public void AddChildZone (DockZone child)
         {
-            this.AnteriorSize = double.NaN;
-            this.DockOrientation = orientation;
-            this.AnteriorZone = anterior;
-            this.PosteriorZone = posterior;
+            child.Manager = this.Manager;
+            child.ParentZone = this;
+            m_childZones.Add(child);
+        }
 
-            this.DockOrientation = orientation;
-
-            // TODO: What does clearing this mean? Should close happen first? Should we rely on the user
-            //  having already done the right thing before this? Should there be an option to cleanup defaulted to false or something?
-            m_locallyDockedElements.Clear();
+        public void AddChildZones (params DockZone[] children)
+        {
+            children.ForEach(this.AddChildZone);
         }
 
         // ============================[ Private Utilities ]====================================
 
         /// <summary>
+        /// Inserts child zone and also sets it up with manager and parenting
+        /// </summary>
+        private void InsertChildZone (int index, DockZone child)
+        {
+            child.Manager = this.Manager;
+            child.ParentZone = this;
+            m_childZones.Insert(index, child);
+        }
+
+        /// <summary>
         /// Clears the dockzone, assumes it has already been removed from other zones
         /// </summary>
-        internal void Clear ()
+        internal void DeRegisterAndClear ()
         {
             this.Manager?.DeRegisterRootDockZones(this);
-            this.Manager = null;
-            this.ParentZone = null;
-            this.PosteriorZone = null;
-            this.AnteriorZone = null;
-            m_locallyDockedElements.Clear();
         }
 
         private void OnCanClosePanel (object sender, CanExecuteRoutedEventArgs e)
@@ -333,6 +626,11 @@
         private void OnClosePanel (object sender, ExecutedRoutedEventArgs e)
         {
             this.TryHandleRemovePanel((DockingContentAdapterModel)e.Parameter);
+        }
+
+        private void OnDockOrientationChanged (DependencyPropertyChangedEventArgs<eDockOrientation> e)
+        {
+            this.HasSplitZoneOrientation = eDockOrientation.AnySplitOrientation.HasFlag(e.NewValue);
         }
 
         private void OnDirectChildZoneChanged (DependencyPropertyChangedEventArgs<DockZone> e)
@@ -356,35 +654,20 @@
         public void GenerateAndAdd<T> (object state = null) where T : IDockableDisplayElement
         {
             var panel = this.Manager.BuildNewDisplayElement<T>();
-            this.Add(panel);
+            this.AddPanel(panel);
             panel.DockingAdapter.FinalizeSetup(state);
         }
 
-        internal Result<DockZone> InsertAndReparentAllChildrenOnToNewZone ()
-        {
-            DockZone empty = new DockZone();
-            empty.Manager = this.Manager;
-
-            DockZone newZone = new DockZone();
-            newZone.Manager = this.Manager;
-
-            newZone.AnteriorSize = this.AnteriorSize;
-            newZone.AnteriorZone = this.PosteriorZone;
-            newZone.PosteriorZone = this.PosteriorZone;
-            m_locallyDockedElements.ForEach(newZone.Add);
-            newZone.SelectedIndex = this.SelectedIndex;
-
-            m_locallyDockedElements.Clear();
-            this.SetSplitChildZones(eDockOrientation.Vertical, empty, newZone);
-            return Result<DockZone>.Success(newZone);
-        }
-
-        internal void HandlePreTearoff()
+        internal void HandlePreTearoff ()
         {
             this.CollapseAndDistributeSibling();
         }
 
-        private bool CollapseAndDistributeSibling()
+        /// <summary>
+        /// Called when a zone that has now become empty needs to be removed as a child zone on the parent, and recursively 
+        /// upward if that was the only child zone the parent is collapsed and so on
+        /// </summary>
+        internal bool CollapseAndDistributeSibling ()
         {
             var parent = this.ParentZone;
 
@@ -394,21 +677,30 @@
                 return false;
             }
 
-            // Otherwise the plan is to make the parent zone essentially the child zone
-            //  This is accomplished by clearing the parent and setting all the save child
-            //  values onto it.
-            DockZone saveZone = parent.AnteriorZone == this ? parent.PosteriorZone : parent.AnteriorZone;
-            parent.AnteriorZone = null;
-            parent.PosteriorZone = null;
-            parent.m_locallyDockedElements.Clear();
-            if (saveZone.DockOrientation != eDockOrientation.Empty)
+            parent.RemoveChildZone(this);
+            if (parent.m_childZones.Count == 1)
             {
-                parent.AnteriorSize = saveZone.AnteriorSize;
-                parent.AnteriorZone = saveZone.PosteriorZone;
-                parent.PosteriorZone = saveZone.PosteriorZone;
-                saveZone.m_locallyDockedElements.ForEach(parent.Add);
-                saveZone.Dispose();
+                DockZone sibling = parent.m_childZones[0];
+                parent.m_childZones.Remove(sibling);
+                sibling.ParentZone = parent.ParentZone;
+                sibling.CopyIntoAndClear(parent);
             }
+
+            //// Otherwise the plan is to make the parent zone essentially the child zone
+            ////  This is accomplished by clearing the parent and setting all the save child
+            ////  values onto it.
+            //DockZone saveZone = parent.AnteriorZone == this ? parent.PosteriorZone : parent.AnteriorZone;
+            //parent.AnteriorZone = null;
+            //parent.PosteriorZone = null;
+            //parent.m_locallyDockedElements.Clear();
+            //if (saveZone.DockOrientation != eDockOrientation.Empty)
+            //{
+            //    parent.AnteriorSize = saveZone.AnteriorSize;
+            //    parent.AnteriorZone = saveZone.PosteriorZone;
+            //    parent.PosteriorZone = saveZone.PosteriorZone;
+            //    saveZone.m_locallyDockedElements.ForEach(parent.AddPanel);
+            //    saveZone.Dispose();
+            //}
             return true;
         }
 
@@ -416,10 +708,10 @@
         {
             var data = new DockingSerialization.ZoneData
             {
-                Id = this.Id,
+                GroupId = DockZone.GetGroupId(this),
                 DockOrientation = this.DockOrientation,
             };
-            
+
             if (this.DockOrientation == eDockOrientation.Tabbed)
             {
                 data.DisplayState = this.LocallyDockedElements
@@ -432,76 +724,17 @@
             }
             else
             {
-                data.AnteriorSize = this.AnteriorSize;
-                data.AnteriorZone = this.AnteriorZone.GenerateSerializationState();
-                data.PosteriorZone = this.PosteriorZone.GenerateSerializationState();
+                m_childZones.Select(z => z.GenerateSerializationState()).ForEach(data.ChildZones.Add);
             }
 
             return data;
         }
 
-        internal DockZone GenerateNewAndEmptyInto ()
-        {
-            DockZone duplicate = new DockZone();
-            duplicate.Manager = this.Manager;
-
-            //parent.AnteriorZone = null;
-            //parent.PosteriorZone = null;
-            //parent.m_locallyDockedElements.Clear();
-            duplicate.AnteriorSize = this.AnteriorSize;
-            duplicate.AnteriorZone = this.PosteriorZone;
-            duplicate.PosteriorZone = this.PosteriorZone;
-
-            if (duplicate.AnteriorZone != null)
-            {
-                duplicate.AnteriorZone.ParentZone = duplicate;
-            }
-
-            if (duplicate.PosteriorZone != null)
-            {
-                duplicate.PosteriorZone.ParentZone = duplicate;
-            }
-
-            m_locallyDockedElements.ForEach(duplicate.Add);
-            duplicate.DockOrientation = this.DockOrientation;
-
-            this.AnteriorZone = null;
-            this.PosteriorZone = null;
-            this.m_locallyDockedElements.Clear();
-            this.DockOrientation = eDockOrientation.Empty;
-
-            return duplicate;
-        }
-
-        internal void DropContentInto (DockZone dropTarget, eDockOrientation dockSelection, bool asAnterior)
-        {
-            var thisDuplicate = this.GenerateNewAndEmptyInto();
-            if (this.HasParentZone)
-            {
-                this.CollapseAndDistributeSibling();
-            }
-
-            if (eDockOrientation.AnyLeafDisplay.HasFlag(dockSelection))
-            {
-                var allLocals = TreeTraversal<DockZone>.All(thisDuplicate).SelectMany(z => z.m_locallyDockedElements);
-                allLocals.ForEach(dropTarget.Add);
-            }
-            else
-            {
-                var targetDuplicate = dropTarget.GenerateNewAndEmptyInto();
-                dropTarget.SetSplitChildZones(dockSelection,
-                    asAnterior ? thisDuplicate : targetDuplicate,
-                    asAnterior ? targetDuplicate : thisDuplicate
-                );
-            }
-        }
 
         internal void BuildFromState (DockingSerialization.ZoneData data)
         {
             //  Reset
-            this.AnteriorZone = null;
-            this.PosteriorZone = null;
-            m_locallyDockedElements.Clear();
+            this.Clear();
 
             if (data.DockOrientation == eDockOrientation.Tabbed)
             {
@@ -509,20 +742,7 @@
             }
             else
             {
-                this.AnteriorSize = data.AnteriorSize;
-                this.AnteriorZone = new DockZone
-                {
-                    ParentZone = this,
-                    Manager = this.Manager,
-                };
-                this.AnteriorZone.BuildFromState(data.AnteriorZone);
-
-                this.PosteriorZone = new DockZone
-                {
-                    ParentZone = this,
-                    Manager = this.Manager,
-                };
-                this.PosteriorZone.BuildFromState(data.PosteriorZone);
+                data.ChildZones.Select(zd => new DockZone(zd)).ForEach(this.AddChildZone);
             }
 
             this.DockOrientation = data.DockOrientation;

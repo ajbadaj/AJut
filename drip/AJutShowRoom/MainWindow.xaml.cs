@@ -75,11 +75,16 @@
             this.LeftDockZone.GenerateAndAdd<DockTestOne>();
             this.LeftDockZone.GenerateAndAdd<DockTestTwo>();
 
-            this.RightDockZone.SetSplitChildZones(eDockOrientation.Vertical, new DockZone(), new DockZone());
-            this.RightDockZone.AnteriorZone.GenerateAndAdd<DockTestOne>();
-            this.RightDockZone.PosteriorZone.GenerateAndAdd<DockTestTwo>();
-            this.RightDockZone.PosteriorZone.GenerateAndAdd<DockTestOne>();
-            this.RightDockZone.PosteriorZone.GenerateAndAdd<DockTestTwo>();
+            var TEMP_top = new DockZone();
+            var TEMP_bottom = new DockZone();
+            this.RightDockZone.DockOrientation = eDockOrientation.Vertical;
+            this.RightDockZone.AddChildZone(TEMP_top);
+            this.RightDockZone.AddChildZone(TEMP_bottom);
+            
+            TEMP_top.GenerateAndAdd<DockTestOne>();
+            TEMP_bottom.GenerateAndAdd<DockTestTwo>();
+            TEMP_bottom.GenerateAndAdd<DockTestOne>();
+            TEMP_bottom.GenerateAndAdd<DockTestTwo>();
 
             this.Navigator = new StackNavFlowController();
             this.Navigator.GenerateAndPushDisplay<FirstDisplay>();

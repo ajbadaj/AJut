@@ -4,8 +4,9 @@
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/BusyWait.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/ColorEditIngressControl.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/ColorValueEditControl.xaml"/>
-        <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/DockZone.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/DockingElements/DefaultDockTearoffWindow.xaml"/>
+        <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/DockingElements/DockDropInsertionDriverWidget.xaml"/>
+        <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/DockingElements/DockZone.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/DockingElements/DockZoneTabHeadersControl.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/DockingElements/DockZoneSelectedHeaderControl.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/EditableTextBlock.xaml"/>
@@ -23,6 +24,7 @@
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/StackNavDisplay.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/Svg.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/ToggleStrip.xaml"/>
+        <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/UIElementRepeater.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/WindowChromeButtonStrip.xaml"/>
     </ResourceDictionary.MergedDictionaries>
 </ResourceDictionary>

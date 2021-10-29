@@ -961,6 +961,87 @@
                     </DockPanel>
                 </Grid>
             </TabItem>
+            <TabItem Header="Auto Grid">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <DockPanel Margin="10">
+                        <TextBlock Text="Auto Grid" DockPanel.Dock="Top" FontSize="16" Margin="0,0,0,3"/>
+                        <TextBlock DockPanel.Dock="Top" FontSize="14" TextWrapping="WrapWithOverflow"  Margin="0,0,0,5"
+                                   Text="A grid that auto generates row/column defs and updates children Grid.Row and Grid.Column to fill out space as described"/>
+                        <WrapPanel DockPanel.Dock="Top">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,20,5">
+                                <TextBlock Text="Auto Population Order" VerticalAlignment="Center" Margin="0,0,2,0"/>
+                                <ajctrls:EnumComboBox SelectedItem="{Binding ElementName=DefaultAutoGrid, Path=AutoPopulationOrder, Mode=TwoWay}"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,20,5" >
+                                <DockPanel Margin="0,0,10,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Fixed Row Count" VerticalAlignment="Center" Margin="0,0,2,0"/>
+                                    <ajctrls:NumericEditor Value="{Binding ElementName=DefaultAutoGrid, Path=FixedRowCount, Mode=TwoWay}"
+                                                           Minimum="-1" Width="75"/>
+                                </DockPanel>
+                                <DockPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Fixed Column Count" VerticalAlignment="Center" Margin="0,0,2,0"/>
+                                    <ajctrls:NumericEditor Value="{Binding ElementName=DefaultAutoGrid, Path=FixedColumnCount, Mode=TwoWay}"
+                                                           Minimum="-1" Width="75"/>
+                                </DockPanel>
+                            </StackPanel>
+                            <CheckBox Content="Shrink Row/Columns To Utilized Element Count" Margin="0,0,20,5" VerticalAlignment="Center" 
+                                      IsChecked="{Binding ElementName=DefaultAutoGrid, Path=ShrinkRowColumnsToUtilizedElementCount, Mode=TwoWay}"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,20,5">
+                                <DockPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Sizer Length" VerticalAlignment="Center" Margin="0,0,2,0"/>
+                                    <ajctrls:NumericEditor Value="{Binding ElementName=DefaultAutoGrid, Path=SizerLength, Mode=TwoWay}"
+                                                           Minimum="1" Width="75"/>
+                                </DockPanel>
+                                <CheckBox Content="Add Row Sizers" Margin="0,0,10,0" VerticalAlignment="Center" 
+                                          IsChecked="{Binding ElementName=DefaultAutoGrid, Path=AddRowResizers, Mode=TwoWay}"/>
+                                <CheckBox Content="Add Column Sizers" Margin="0,0,10,0" VerticalAlignment="Center" 
+                                          IsChecked="{Binding ElementName=DefaultAutoGrid, Path=AddColumnResizers, Mode=TwoWay}"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,20,5">
+                                <DockPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Min Element Width" VerticalAlignment="Center" Margin="0,0,2,0"/>
+                                    <ajctrls:NumericEditor Value="{Binding ElementName=DefaultAutoGrid, Path=MinElementWidth, Mode=TwoWay}"
+                                                           Minimum="0" Width="75"/>
+                                </DockPanel>
+                                <DockPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Min Element Height" VerticalAlignment="Center" Margin="0,0,2,0"/>
+                                    <ajctrls:NumericEditor Value="{Binding ElementName=DefaultAutoGrid, Path=MinElementHeight, Mode=TwoWay}"
+                                                           Minimum="0" Width="75"/>
+                                </DockPanel>
+                            </StackPanel>
+                        </WrapPanel>
+                        <ajctrls:AutoGrid x:Name="DefaultAutoGrid" FixedColumnCount="3">
+                            <Grid Background="Blue" Visibility="{Binding RelativeSource={RelativeSource Self}, Path=(ajctrls:AutoGrid.IsInRange), Converter={ajconv:BooleanToVisibilityConverter}}">
+                                <TextBlock Text="Text 1" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            </Grid>
+                            <Grid Background="Yellow" Visibility="{Binding RelativeSource={RelativeSource Self}, Path=(ajctrls:AutoGrid.IsInRange), Converter={ajconv:BooleanToVisibilityConverter}}">
+                                <TextBlock Text="Text 2" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            </Grid>
+                            <Grid Background="Red" Visibility="{Binding RelativeSource={RelativeSource Self}, Path=(ajctrls:AutoGrid.IsInRange), Converter={ajconv:BooleanToVisibilityConverter}}">
+                                <TextBlock Text="Text 3" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            </Grid>
+                            <Grid Background="Green" Visibility="{Binding RelativeSource={RelativeSource Self}, Path=(ajctrls:AutoGrid.IsInRange), Converter={ajconv:BooleanToVisibilityConverter}}">
+                                <TextBlock Text="Text 4" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            </Grid>
+                            <Grid Background="Pink" Visibility="{Binding RelativeSource={RelativeSource Self}, Path=(ajctrls:AutoGrid.IsInRange), Converter={ajconv:BooleanToVisibilityConverter}}">
+                                <TextBlock Text="Text 5" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            </Grid>
+                            <Grid Background="Purple" Visibility="{Binding RelativeSource={RelativeSource Self}, Path=(ajctrls:AutoGrid.IsInRange), Converter={ajconv:BooleanToVisibilityConverter}}">
+                                <TextBlock Text="Text 6" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            </Grid>
+                            <Grid Background="Gray" Visibility="{Binding RelativeSource={RelativeSource Self}, Path=(ajctrls:AutoGrid.IsInRange), Converter={ajconv:BooleanToVisibilityConverter}}">
+                                <TextBlock Text="Text 7" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            </Grid>
+                            <Grid Background="Brown" Visibility="{Binding RelativeSource={RelativeSource Self}, Path=(ajctrls:AutoGrid.IsInRange), Converter={ajconv:BooleanToVisibilityConverter}}">
+                                <TextBlock Text="Text 8" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            </Grid>
+                        </ajctrls:AutoGrid>
+                    </DockPanel>
+                </Grid>
+            </TabItem>
         </TabControl>
     </Grid>
 </Window>

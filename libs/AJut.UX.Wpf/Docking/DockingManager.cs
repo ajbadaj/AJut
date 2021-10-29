@@ -6,8 +6,10 @@
     using System.Linq;
     using System.Threading.Tasks;
     using System.Windows;
+    using System.Windows.Controls;
     using System.Windows.Input;
     using System.Windows.Media;
+    using System.Windows.Media.Imaging;
     using AJut.Storage;
     using AJut.Tree;
     using AJut.TypeManagement;
@@ -53,7 +55,7 @@
             {
                 if (zone.IsSetup)
                 {
-                    zone.Clear();
+                    zone.DeRegisterAndClear();
                 }
 
                 m_rootDockZones.Add(zone);
@@ -70,14 +72,6 @@
                 zone.Manager = null;
                 m_dockZoneMapping.RemoveAllValues(zone);
             }
-        }
-
-        public DockZone GenerateDockZone ()
-        {
-            return new DockZone
-            {
-                Manager = this,
-            };
         }
 
         public void RegisterDisplayFactory<T> (Func<T> customFactory = null, bool singleInstanceOnly = false)
@@ -171,16 +165,62 @@
 
         public async Task RunDragSearch (Window dragSourceWindow, DockZone sourceDockZone)
         {
+            const double kMouseOffset = 20.0;
             DockZone currentDropTarget = null;
-
+            DockZone lastDropTarget = null;
+            DockDropInsertionDriverWidget lastInsertionDriver = null;
             try
             {
                 this.IsZoneInDragDropMode = true;
-                await dragSourceWindow.AsyncDragMove(onMove: _WindowLocationChanged);
 
-                if (currentDropTarget != null)
+                Window draggerWindow = new Window();
+                draggerWindow.WindowStyle = WindowStyle.None;
+                draggerWindow.AllowsTransparency = true;
+                draggerWindow.Opacity = 0.5;
+
+                Point mouseLoc = Mouse.GetPosition(dragSourceWindow);
+                mouseLoc.X += dragSourceWindow.Left;
+                mouseLoc.Y += dragSourceWindow.Top;
+                draggerWindow.Left = mouseLoc.X + kMouseOffset;
+                draggerWindow.Top = mouseLoc.Y + kMouseOffset;
+                draggerWindow.Width = dragSourceWindow.ActualWidth;
+                draggerWindow.Height = dragSourceWindow.ActualHeight;
+
+                var img = new Image();
+                using (var stream = dragSourceWindow.RenderToPngAsIs())
                 {
-                    sourceDockZone.DropContentInto(currentDropTarget, eDockOrientation.Horizontal, false);
+                    var imgSource = new BitmapImage();
+                    imgSource.BeginInit();
+                    imgSource.StreamSource = stream;
+                    imgSource.CacheOption = BitmapCacheOption.OnLoad;
+                    imgSource.EndInit();
+                    img.Source = imgSource;
+                }
+
+                draggerWindow.Content = img;
+                draggerWindow.Show();
+                try
+                {
+                    dragSourceWindow.Visibility = Visibility.Collapsed;
+                    await draggerWindow.AsyncDragMove(onMove: _WindowLocationChanged);
+                }
+                finally
+                {
+                    draggerWindow.Close();
+                    dragSourceWindow.Left = draggerWindow.Left - kMouseOffset;
+                    dragSourceWindow.Top = draggerWindow.Top - kMouseOffset;
+                    dragSourceWindow.Visibility = Visibility.Visible;
+                }
+
+                if (currentDropTarget != null && lastInsertionDriver != null)
+                {
+                    // Do the drop
+                    DockZone dropper = new DockZone();
+                    sourceDockZone.CopyIntoAndClear(dropper);
+                    sourceDockZone.CollapseAndDistributeSibling();
+                    lastInsertionDriver.InsertionZone.DropAddSiblingIntoDock(dropper, lastInsertionDriver.Direction);
+
+                    // If it's a docking tearoff window and this was the last thing, close it
                     if (DockWindow.GetIsDockingTearoffWindow(dragSourceWindow))
                     {
                         int numZones = dragSourceWindow.GetVisualChildren().OfType<DockZone>().Count();
@@ -194,6 +234,17 @@
             finally
             {
                 this.IsZoneInDragDropMode = false;
+                if (lastInsertionDriver != null)
+                {
+                    lastInsertionDriver.IsEngaged = false;
+                    lastInsertionDriver = null;
+                }
+
+                if (lastDropTarget != null)
+                {
+                    lastDropTarget.IsDirectDropTarget = false;
+                    lastDropTarget = null;
+                }
             }
 
             void _WindowLocationChanged ()
@@ -205,10 +256,34 @@
                     var result = VisualTreeHelper.HitTest(window, Mouse.PrimaryDevice.GetPosition(window));
                     if (result?.VisualHit != null)
                     {
-                        var hitZone = result.VisualHit.GetFirstParentOf<DockZone>();
+                        var hitWidget = result.VisualHit as DockDropInsertionDriverWidget ?? result.VisualHit.GetFirstParentOf<DockDropInsertionDriverWidget>();
+                        if (hitWidget != null)
+                        {
+                            hitWidget.IsEngaged = true;
+                            if (lastInsertionDriver != hitWidget && lastInsertionDriver != null)
+                            {
+                                lastInsertionDriver.IsEngaged = false;
+                            }
+
+                            lastInsertionDriver = hitWidget;
+                        }
+                        else if (lastInsertionDriver != null)
+                        {
+                            lastInsertionDriver.IsEngaged = false;
+                            lastInsertionDriver = null;
+                        }
+
+                        var hitZone = result.VisualHit as DockZone ?? result.VisualHit.GetFirstParentOf<DockZone>();
                         if (hitZone != null)
                         {
                             currentDropTarget = hitZone;
+                            currentDropTarget.IsDirectDropTarget = true;
+                            if (currentDropTarget != lastDropTarget && lastDropTarget != null)
+                            {
+                                lastDropTarget.IsDirectDropTarget = false;
+                            }
+
+                            lastDropTarget = currentDropTarget;
                             return;
                         }
                     }
@@ -238,7 +313,7 @@
                 if (windowResult)
                 {
                     element.DockingAdapter.SetNewLocation(newZone);
-                    newZone.Add(element);
+                    newZone.AddPanel(element);
                 }
 
                 return windowResult;
@@ -289,14 +364,8 @@
                         //  is not allowed as the root zones are the anchor points that should be expected to always exist
                         //  (for serialization and just normal expectation purposes). So instead move all current stuff
                         //  down into a new zone, and essentially tear that off instead
-                        Result<DockZone> zoneResult = sourceZone.InsertAndReparentAllChildrenOnToNewZone();
-                        if (zoneResult.HasErrors)
-                        {
-                            Logger.LogError("DockingManager: DockZone reparent for root failed");
-                            return new Result<Window>(zoneResult);
-                        }
-
-                        sourceZone = zoneResult.Value;
+                        DockZone rootZoneDuplicate = sourceZone.DuplicateAndClear();
+                        sourceZone = rootZoneDuplicate;
                     }
 
                     sourceZone.HandlePreTearoff();
