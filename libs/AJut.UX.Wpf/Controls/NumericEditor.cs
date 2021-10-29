@@ -326,8 +326,18 @@
             int selectionLength = this.PART_TextArea.SelectionLength;
             bool isAllSelected = selectionLength == this.DisplayValue.Text.Length;
 
+            // If the value is negative, make it positive so we can support unsigned values
+            //  and instead set the positive nudge flag to false
+            bool positive = true;
+            if (value < 0)
+            {
+                dynamic negatizer = Convert.ChangeType(-1, value.GetType());
+                value *= negatizer;
+                positive = false;
+            }
+
             // Perform the nudge
-            this.DisplayValue.Nudge(true, Convert.ChangeType(value, this.DisplayValue.ValueType));
+            this.DisplayValue.Nudge(positive, Convert.ChangeType(value, this.DisplayValue.ValueType));
 
             // Preserve the caret location
             caretOffset = AJut.MathUtilities.Cap.Within(0, this.DisplayValue.Text.Length, this.DisplayValue.Text.Length - caretOffset);
