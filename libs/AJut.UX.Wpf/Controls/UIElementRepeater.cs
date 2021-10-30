@@ -1,5 +1,6 @@
 ﻿namespace AJut.UX.Controls
 {
+    using System.Collections;
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Linq;
@@ -39,7 +40,7 @@
         {
             if (e.OldValue != null)
             {
-                this.Container.Children.RemoveEach(e.OldValue);
+                this.RemoveEach(e.OldValue);
                 if (e.OldValue is INotifyCollectionChanged collectionChanged)
                 {
                     collectionChanged.CollectionChanged -= _OnItemsChanged;
@@ -48,7 +49,7 @@
 
             if (e.NewValue != null)
             {
-                this.Container.Children.AddEach(e.NewValue.OfType<UIElement>().Where(ui => !this.Container.Children.Contains(ui)));
+                this.AddEach(e.NewValue);
                 if (e.NewValue is INotifyCollectionChanged collectionChanged)
                 {
                     collectionChanged.CollectionChanged -= _OnItemsChanged;
@@ -58,22 +59,36 @@
 
             void _OnItemsChanged (object sender, NotifyCollectionChangedEventArgs e)
             {
-                if (e.OldItems != null)
-                {
-                    foreach (UIElement removed in e.OldItems)
-                    {
-                        this.Container.Children.Remove(removed);
-                    }
-                }
-
-                if (e.NewItems != null)
-                {
-                    foreach (UIElement added in e.NewItems)
-                    {
-                        this.Container.Children.Add(added);
-                    }
-                }
+                this.RemoveEach(e.OldItems);
+                this.AddEach(e.NewItems);
             }
         }
+
+        private void AddEach (IEnumerable children)
+        {
+            if (children == null)
+            {
+                return;
+            }
+
+            foreach (UIElement child in children.OfType<UIElement>().Where(c => c != null && !this.Container.Children.Contains(c)))
+            {
+                this.Container.Children.Add(child);
+            }
+        }
+
+        private void RemoveEach (IEnumerable children)
+        {
+            if (children == null)
+            {
+                return;
+            }
+
+            foreach (UIElement child in children.OfType<UIElement>().Where(c => c != null))
+            {
+                this.Container.Children.Remove(child);
+            }
+        }
+
     }
 }

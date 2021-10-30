@@ -105,17 +105,29 @@
             return dupe;
         }
 
+        
+
         public void CopyIntoAndClear (DockZone dockZone)
         {
-            // Copy
-            dockZone.Manager = this.Manager;
-            dockZone.DockOrientation = this.DockOrientation;
-            dockZone.SelectedIndex = this.SelectedIndex;
-            m_locallyDockedElements.ForEach(dockZone.AddPanel);
-            m_childZones.ForEach(dockZone.AddChildZone);
+            var parent = dockZone; // ← copy into
+            var sibling = this;    // ← copy from & clear
 
-            // Clear
+            // Step 1) Copy all the things we're about to steal so there are no parenting issues.
+            var locallyDockedElementsCopy = m_locallyDockedElements.ToList();
+            var childZonesCopy = m_childZones.ToList();
+            var orientation = this.DockOrientation;
+            var selectedIndex = this.SelectedIndex;
+
+            // Step 2) Clear in preparation, otherwise there may be some issues with visual/logical parents
+            //          still being set, throwing exceptions
             this.Clear();
+            dockZone.Clear();
+
+            // Step 3) Set all the things in dockZone with the things we set aside earlier
+            locallyDockedElementsCopy.ForEach(dockZone.AddPanel);
+            childZonesCopy.ForEach(dockZone.AddChildZone);
+            dockZone.DockOrientation = orientation;
+            dockZone.SelectedIndex = selectedIndex;
         }
 
 
@@ -677,30 +689,20 @@
                 return false;
             }
 
+            int formerIndexOnParent = parent.ChildZones.IndexOf(this);
             parent.RemoveChildZone(this);
+
+            // If there were two zones, and removing the one we did just put it to one zone
+            //  then for efficiancy, we're going to collapse this. We should never have a child
+            //  with a single zone
             if (parent.m_childZones.Count == 1)
             {
-                DockZone sibling = parent.m_childZones[0];
-                parent.m_childZones.Remove(sibling);
-                sibling.ParentZone = parent.ParentZone;
-                sibling.CopyIntoAndClear(parent);
+                // Take sibling and copy over parent
+                DockZone siblingToKeep = parent.m_childZones[0];
+                parent.m_childZones.Remove(siblingToKeep);
+                siblingToKeep.CopyIntoAndClear(parent);
             }
 
-            //// Otherwise the plan is to make the parent zone essentially the child zone
-            ////  This is accomplished by clearing the parent and setting all the save child
-            ////  values onto it.
-            //DockZone saveZone = parent.AnteriorZone == this ? parent.PosteriorZone : parent.AnteriorZone;
-            //parent.AnteriorZone = null;
-            //parent.PosteriorZone = null;
-            //parent.m_locallyDockedElements.Clear();
-            //if (saveZone.DockOrientation != eDockOrientation.Empty)
-            //{
-            //    parent.AnteriorSize = saveZone.AnteriorSize;
-            //    parent.AnteriorZone = saveZone.PosteriorZone;
-            //    parent.PosteriorZone = saveZone.PosteriorZone;
-            //    saveZone.m_locallyDockedElements.ForEach(parent.AddPanel);
-            //    saveZone.Dispose();
-            //}
             return true;
         }
 
