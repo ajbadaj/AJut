@@ -8,10 +8,10 @@
     using System.Windows.Controls;
     using System.Windows.Input;
     using System.Windows.Media;
-    using AJut.UX.Docking;
     using AJut.Storage;
     using AJut.Tree;
     using AJut.TypeManagement;
+    using AJut.UX.Docking;
     using APUtils = AJut.UX.APUtils<DockZone>;
     using DPUtils = AJut.UX.DPUtils<DockZone>;
     using REUtils = AJut.UX.REUtils<DockZone>;
@@ -105,13 +105,8 @@
             return dupe;
         }
 
-        
-
         public void CopyIntoAndClear (DockZone dockZone)
         {
-            var parent = dockZone; // ← copy into
-            var sibling = this;    // ← copy from & clear
-
             // Step 1) Copy all the things we're about to steal so there are no parenting issues.
             var locallyDockedElementsCopy = m_locallyDockedElements.ToList();
             var childZonesCopy = m_childZones.ToList();
@@ -133,8 +128,28 @@
 
         public void Clear ()
         {
+            foreach (DockZone child in m_childZones)
+            {
+                child.ParentZone = null;
+
+                // It's dangerous ground holding onto UI elements, like we are with
+                //  DockZone - it's mostly fine but it means some weirdness where child
+                //  elements will have UI they are part of which will be remade, and then
+                //  break the "only be a logical/visual child of one" rule, throwing an
+                //  exception. By doing this, we ensure we avoid that problem.
+                foreach (var desc in TreeTraversal<DockZone>.All(child))
+                {
+                    desc.TryRemoveFromLogicalAndVisualParents();
+                }
+            }
             m_childZones.Clear();
+
+            foreach (DockingContentAdapterModel panelAdapter in m_locallyDockedElements)
+            {
+                panelAdapter.SetNewLocation(null);
+            }
             m_locallyDockedElements.Clear();
+
             this.DockOrientation = eDockOrientation.Empty;
             this.SelectedIndex = -1;
         }
@@ -438,6 +453,15 @@
             {
                 this.DockOrientation = eDockOrientation.Empty;
             }
+            else if (m_childZones.Count == 1)
+            {
+                // If there were two zones, and removing the one we did just put it to one zone
+                //  then for efficiancy, we're going to collapse this. We should never have a child
+                //  with a single zone
+                DockZone siblingToKeep = m_childZones[0].DuplicateAndClear();
+                this.Clear();
+                siblingToKeep.CopyIntoAndClear(this);
+            }
         }
 
 #if false
@@ -622,6 +646,7 @@
         internal void DeRegisterAndClear ()
         {
             this.Manager?.DeRegisterRootDockZones(this);
+            this.Clear();
         }
 
         private void OnCanClosePanel (object sender, CanExecuteRoutedEventArgs e)
@@ -643,24 +668,6 @@
         private void OnDockOrientationChanged (DependencyPropertyChangedEventArgs<eDockOrientation> e)
         {
             this.HasSplitZoneOrientation = eDockOrientation.AnySplitOrientation.HasFlag(e.NewValue);
-        }
-
-        private void OnDirectChildZoneChanged (DependencyPropertyChangedEventArgs<DockZone> e)
-        {
-            if (e.OldValue != null)
-            {
-                e.OldValue.Manager = null;
-                if (e.OldValue.ParentZone == this)
-                {
-                    e.OldValue.ParentZone = null;
-                }
-            }
-
-            if (e.NewValue != null)
-            {
-                e.NewValue.Manager = this.Manager;
-                e.NewValue.ParentZone = this;
-            }
         }
 
         public void GenerateAndAdd<T> (object state = null) where T : IDockableDisplayElement
@@ -689,20 +696,7 @@
                 return false;
             }
 
-            int formerIndexOnParent = parent.ChildZones.IndexOf(this);
             parent.RemoveChildZone(this);
-
-            // If there were two zones, and removing the one we did just put it to one zone
-            //  then for efficiancy, we're going to collapse this. We should never have a child
-            //  with a single zone
-            if (parent.m_childZones.Count == 1)
-            {
-                // Take sibling and copy over parent
-                DockZone siblingToKeep = parent.m_childZones[0];
-                parent.m_childZones.Remove(siblingToKeep);
-                siblingToKeep.CopyIntoAndClear(parent);
-            }
-
             return true;
         }
 

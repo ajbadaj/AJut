@@ -1,6 +1,5 @@
 ﻿namespace AJut.UX.Controls
 {
-    using System;
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Input;
@@ -39,7 +38,7 @@
                 {
                     if (MouseXT.GetPrimaryButtonState() == MouseButtonState.Pressed) 
                     {
-                        await target.DockingOwner.RunDragSearch(result.Value, target.Location);
+                        await target.DockingOwner.RunDragSearch(result.Value, target.Location).ConfigureAwait(false);
                     }
                 }
             }
