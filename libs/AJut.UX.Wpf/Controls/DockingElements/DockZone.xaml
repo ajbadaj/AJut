@@ -25,8 +25,8 @@
         <DockPanel>
             <!-- Tabs -->
             <local:DockZoneTabHeadersControl x:Name="PanelTabHeaders" DockPanel.Dock="Bottom"
-                                             ItemsSource="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=LocallyDockedElements}"
-                                             SelectedIndex="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=SelectedIndex, Mode=TwoWay}"
+                                             ItemsSource="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ViewModel.DockedContent}"
+                                             SelectedIndex="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ViewModel.SelectedIndex, Mode=TwoWay}"
                                              Margin="5,-1,5,0" Panel.ZIndex="1"/>
             <Border x:Name="TabbedBorderRoot"
                     Background="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelBackground}"
@@ -40,7 +40,7 @@
                             <MultiDataTrigger>
                                 <MultiDataTrigger.Conditions>
                                     <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=(docking:DockWindow.IsDockingTearoffWindow)}" Value="True"/>
-                                    <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=HasParentZone}" Value="False"/>
+                                    <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ViewModel.HasParent}" Value="False"/>
                                 </MultiDataTrigger.Conditions>
                                 <MultiDataTrigger.Setters>
                                     <Setter Property="CornerRadius">
@@ -72,7 +72,7 @@
                                     <MultiDataTrigger>
                                         <MultiDataTrigger.Conditions>
                                             <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=(docking:DockWindow.IsDockingTearoffWindow)}" Value="True"/>
-                                            <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=HasParentZone}" Value="False"/>
+                                            <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ViewModel.HasParent}" Value="False"/>
                                         </MultiDataTrigger.Conditions>
                                         <MultiDataTrigger.Setters>
                                             <Setter Property="Visibility" Value="Collapsed"/>
@@ -91,7 +91,7 @@
     </DataTemplate>
     <DataTemplate x:Key="CONTROLTEMPLATE_SingleDockZone" >
         <Border x:Name="SingleBorderRoot"
-                DataContext="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=LocallyDockedElements[0], FallbackValue={x:Null}}"
+                DataContext="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ViewModel.DockedContent[0], FallbackValue={x:Null}}"
                 Background="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelBackground}"
                 BorderBrush="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelBorderBrush}" 
                 TextElement.Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelForeground}">
@@ -103,7 +103,7 @@
                         <MultiDataTrigger>
                             <MultiDataTrigger.Conditions>
                                 <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=(docking:DockWindow.IsDockingTearoffWindow)}" Value="True"/>
-                                <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=HasParentZone}" Value="False"/>
+                                <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ViewModel.HasParent}" Value="False"/>
                             </MultiDataTrigger.Conditions>
                             <MultiDataTrigger.Setters>
                                 <Setter Property="CornerRadius" Value="0"/>
@@ -176,18 +176,18 @@
                                 <Style TargetType="{x:Type ContentPresenter}">
                                     <Setter Property="ContentTemplate" Value="{StaticResource CONTROLTEMPLATE_Empty}"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=DockOrientation}" Value="Vertical">
+                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ViewModel.Orientation}" Value="Vertical">
                                             <Setter Property="ContentTemplate" Value="{StaticResource CONTROLTEMPLATE_VerticalDockZone}"/>
                                         </DataTrigger>
-                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=DockOrientation}" Value="Horizontal">
+                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ViewModel.Orientation}" Value="Horizontal">
                                             <Setter Property="ContentTemplate" Value="{StaticResource CONTROLTEMPLATE_HorizontalDockZone}"/>
                                         </DataTrigger>
-                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=DockOrientation}" Value="Tabbed">
+                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ViewModel.Orientation}" Value="Tabbed">
                                             <Setter Property="ContentTemplate" Value="{StaticResource CONTROLTEMPLATE_TabbedDockZone}"/>
                                             <Setter Property="MinHeight" Value="60"/>
                                             <Setter Property="MinWidth" Value="60"/>
                                         </DataTrigger>
-                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=DockOrientation}" Value="Single">
+                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ViewModel.Orientation}" Value="Single">
                                             <Setter Property="ContentTemplate" Value="{StaticResource CONTROLTEMPLATE_SingleDockZone}"/>
                                         </DataTrigger>
                                         

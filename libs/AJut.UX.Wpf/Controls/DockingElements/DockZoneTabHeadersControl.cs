@@ -226,7 +226,7 @@
             var result = target.DockingOwner.DoTearoff(target.Display, desktopMouseLocation);
             if (result)
             {
-                await target.DockingOwner.RunDragSearch(result.Value, target.Location).ConfigureAwait(false);
+                await target.DockingOwner.RunDragSearch(result.Value, target.Location.UI).ConfigureAwait(false);
             }
         }
 

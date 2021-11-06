@@ -53,13 +53,18 @@
         {
             foreach (var zone in dockZones)
             {
-                if (zone.IsSetup)
+                if (zone.IsSetup && zone.Manager != this)
                 {
                     zone.DeRegisterAndClear();
                 }
 
                 m_rootDockZones.Add(zone);
                 zone.Manager = this;
+                if (zone.ViewModel == null)
+                {
+                    zone.ViewModel = new DockZoneViewModel(this);
+                }
+
                 m_dockZoneMapping.Add(this.Windows.Root, zone);
             }
         }
@@ -96,13 +101,13 @@
         public bool CloseAll ()
         {
             bool anyDissenters = false;
-            var all = m_rootDockZones.SelectMany(z => TreeTraversal<DockZone>.All(z)).SelectMany(z => z.LocallyDockedElements).ToList();
+            var all = m_rootDockZones.SelectMany(z => TreeTraversal<DockZone>.All(z)).SelectMany(z => z.ViewModel.DockedContent).ToList();
             foreach (var adapter in all)
             {
                 if (!adapter.CheckCanClose())
                 {
                     var closeSupression = new RoutedEventArgs(DockZone.NotifyCloseSupressionEvent);
-                    adapter.Location.RaiseEvent(closeSupression);
+                    adapter.Location.UI.RaiseEvent(closeSupression);
                     anyDissenters = true;
                 }
             }
@@ -176,7 +181,7 @@
                 Window draggerWindow = new Window();
                 draggerWindow.WindowStyle = WindowStyle.None;
                 draggerWindow.AllowsTransparency = true;
-                draggerWindow.Opacity = 0.5;
+                draggerWindow.Opacity = 0.45;
 
                 Point mouseLoc = Mouse.GetPosition(dragSourceWindow);
                 mouseLoc.X += dragSourceWindow.Left;
@@ -187,15 +192,21 @@
                 draggerWindow.Height = dragSourceWindow.ActualHeight;
 
                 var img = new Image();
-                using (var stream = dragSourceWindow.RenderToPngAsIs())
+                // We'll need to wait for render to happen because we may be tearing these things off,
+                //  and shoving them into windows, and then running this before that window has time
+                //  to even render for the first time.
+                await dragSourceWindow.Dispatcher.InvokeAsync(() =>
                 {
-                    var imgSource = new BitmapImage();
-                    imgSource.BeginInit();
-                    imgSource.StreamSource = stream;
-                    imgSource.CacheOption = BitmapCacheOption.OnLoad;
-                    imgSource.EndInit();
-                    img.Source = imgSource;
-                }
+                    using (var stream = dragSourceWindow.RenderToPngAsIs())
+                    {
+                        var imgSource = new BitmapImage();
+                        imgSource.BeginInit();
+                        imgSource.StreamSource = stream;
+                        imgSource.CacheOption = BitmapCacheOption.OnLoad;
+                        imgSource.EndInit();
+                        img.Source = imgSource;
+                    }
+                }, System.Windows.Threading.DispatcherPriority.Input);
 
                 draggerWindow.Content = img;
                 draggerWindow.Show();
@@ -215,10 +226,7 @@
                 if (currentDropTarget != null && lastInsertionDriver != null)
                 {
                     // Do the drop
-                    DockZone dropper = new DockZone();
-                    sourceDockZone.CopyIntoAndClear(dropper);
-                    sourceDockZone.CollapseAndDistributeSibling();
-                    lastInsertionDriver.InsertionZone.DropAddSiblingIntoDock(dropper, lastInsertionDriver.Direction);
+                    lastInsertionDriver.InsertionZone.ViewModel.DropAddSiblingIntoDock(sourceDockZone.ViewModel, lastInsertionDriver.Direction);
 
                     // If it's a docking tearoff window and this was the last thing, close it
                     if (DockWindow.GetIsDockingTearoffWindow(dragSourceWindow))
@@ -293,14 +301,12 @@
 
         public Result<Window> DoTearoff (IDockableDisplayElement element, Point newWindowOrigin)
         {
-            DockZone newZone = null;
-
             try
             {
-                Size previousZoneSize = new Size(element.DockingAdapter.Location.ActualWidth, element.DockingAdapter.Location.ActualHeight);
+                Size previousZoneSize = new Size(element.DockingAdapter.Location.UI.ActualWidth, element.DockingAdapter.Location.UI.ActualHeight);
 
                 // Cleanup: Remove element from zone
-                if (!element.DockingAdapter.Location.TryHandleRemovePanel(element.DockingAdapter))
+                if (!element.DockingAdapter.Location.RemoveDockedContent(element.DockingAdapter))
                 {
                     var result = Result<Window>.Error("DockingManager: Tear off failed at panel closing");
                     Logger.LogError(result.GetErrorReport());
@@ -308,25 +314,17 @@
                 }
 
                 // Create the new dock zone & window, doing all appropriate tracking adds
-                newZone = new DockZone();
+                var newZone = new DockZoneViewModel(this);
                 var windowResult = this.CreateAndStockTearoffWindow(newZone, newWindowOrigin, previousZoneSize);
                 if (windowResult)
                 {
-                    element.DockingAdapter.SetNewLocation(newZone);
-                    newZone.AddPanel(element);
+                    newZone.AddDockedContent(element);
                 }
 
                 return windowResult;
             }
             catch (Exception exc)
             {
-                // There is probably more to do - but for now, at least make sure stray windows aren't left open
-                if (newZone != null)
-                {
-                    this.DeRegisterRootDockZones(newZone);
-                    this.RegisterRootDockZones(newZone);
-                }
-
                 var result = Result<Window>.Error("DockingManager: Window tearoff failed for unknown reason");
                 result.AddError(exc.ToString());
                 Logger.LogError(result.GetErrorReport(), exc);
@@ -334,26 +332,25 @@
             }
         }
 
-        public Result<Window> DoGroupTearoff (DockZone sourceZone, Point newWindowOrigin)
+        public Result<Window> DoGroupTearoff (DockZoneViewModel sourceZone, Point newWindowOrigin)
         {
-            return this.DoGroupTearoff(sourceZone, newWindowOrigin, sourceZone.RenderSize);
+            return this.DoGroupTearoff(sourceZone, newWindowOrigin, sourceZone.UI.RenderSize);
         }
 
-        public Result<Window> DoGroupTearoff (DockZone sourceZone, Point newWindowOrigin, Size previousZoneSize)
+        public Result<Window> DoGroupTearoff (DockZoneViewModel sourceZone, Point newWindowOrigin, Size previousZoneSize)
         {
             try
             {
-                // Step 1: Cleanup
-                //  Remove zone properly from hierarchy
-                if (sourceZone.HasParentZone)
+                // Has a parent, standard tear off
+                if (sourceZone.Parent != null)
                 {
-                    sourceZone.HandlePreTearoff();
-                    this.DeRegisterRootDockZones(sourceZone);
+                    sourceZone.UnparentAndDistributeSibling();
                 }
+                // Is a root zone
                 else
                 {
                     // First check to see if it's the only zone in the window, if that's the case then we're good to go
-                    var window = Window.GetWindow(sourceZone);
+                    var window = Window.GetWindow(sourceZone.UI);
                     if (DockWindow.GetIsDockingTearoffWindow(window))
                     {
                         return Result<Window>.Success(window);
@@ -364,11 +361,8 @@
                         //  is not allowed as the root zones are the anchor points that should be expected to always exist
                         //  (for serialization and just normal expectation purposes). So instead move all current stuff
                         //  down into a new zone, and essentially tear that off instead
-                        DockZone rootZoneDuplicate = sourceZone.DuplicateAndClear();
-                        sourceZone = rootZoneDuplicate;
+                        sourceZone = sourceZone.DuplicateAndClear();
                     }
-
-                    sourceZone.HandlePreTearoff();
                 }
 
                 return this.CreateAndStockTearoffWindow(sourceZone, newWindowOrigin, previousZoneSize);
@@ -381,7 +375,7 @@
             }
         }
 
-        private Result<Window> CreateAndStockTearoffWindow (DockZone rootZone, Point newWindowOrigin, Size previousZoneSize)
+        private Result<Window> CreateAndStockTearoffWindow (DockZoneViewModel rootZone, Point newWindowOrigin, Size previousZoneSize)
         {
             Window window = null;
             try
@@ -390,14 +384,15 @@
                 DockWindow.SetIsDockingTearoffWindow(window, true);
                 this.Windows.Track(window);
 
-                window.Content = rootZone;
+                DockZone newRoot = new DockZone() { ViewModel = rootZone };
+                window.Content = newRoot;
                 window.WindowStartupLocation = WindowStartupLocation.Manual;
                 window.Left = newWindowOrigin.X;
                 window.Top = newWindowOrigin.Y;
                 window.Width = previousZoneSize.Width;
                 window.Height = previousZoneSize.Height;
                 this.ShowTearoffWindowHandler(window);
-                this.RegisterRootDockZones(rootZone);
+                this.RegisterRootDockZones(newRoot);
                 return Result<Window>.Success(window);
             }
             catch (Exception exc)
@@ -410,6 +405,38 @@
 
                 Logger.LogError("Window tearoff failed!", exc);
                 return Result<Window>.Error("DockingManager: Window tearoff failed for unknown reason");
+            }
+        }
+
+        public void CleanZoneLayoutHierarchies ()
+        {
+            var toVisit = new Queue<DockZoneViewModel>();
+            m_rootDockZones.Select(z=>z.ViewModel).ForEach(toVisit.Enqueue);
+            while (toVisit.Count != 0)
+            {
+                var parentEval = toVisit.Dequeue();
+                if (parentEval.Children.Count == 0)
+                {
+                    continue;
+                }
+
+                for (int index = 0; index < parentEval.Children.Count; ++index)
+                {
+                    var child = parentEval.Children[index];
+                    if (child.Orientation == parentEval.Orientation)
+                    {
+                        parentEval.RunRemoveChildMechanics(child);
+                        foreach (var grandchild in child.Children.ToList())
+                        {
+                            parentEval.InsertChild(index++, grandchild);
+                            toVisit.Enqueue(grandchild);
+                        }
+                    }
+                    else
+                    {
+                        toVisit.Enqueue(child);
+                    }
+                }
             }
         }
 

@@ -49,7 +49,7 @@
 
             if (e.NewValue != null)
             {
-                this.AddEach(e.NewValue);
+                this.InsertEach(0, e.NewValue);
                 if (e.NewValue is INotifyCollectionChanged collectionChanged)
                 {
                     collectionChanged.CollectionChanged -= _OnItemsChanged;
@@ -60,11 +60,11 @@
             void _OnItemsChanged (object sender, NotifyCollectionChangedEventArgs e)
             {
                 this.RemoveEach(e.OldItems);
-                this.AddEach(e.NewItems);
+                this.InsertEach(e.NewStartingIndex, e.NewItems);
             }
         }
 
-        private void AddEach (IEnumerable children)
+        private void InsertEach (int index, IEnumerable children)
         {
             if (children == null)
             {
@@ -73,7 +73,7 @@
 
             foreach (UIElement child in children.OfType<UIElement>().Where(c => c != null && !this.Container.Children.Contains(c)))
             {
-                this.Container.Children.Add(child);
+                this.Container.Children.Insert(index++, child);
             }
         }
 

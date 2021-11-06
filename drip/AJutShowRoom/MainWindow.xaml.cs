@@ -72,19 +72,65 @@
 
             this.DockingManager = new DockingManager(this, "Main");
             this.DockingManager.RegisterRootDockZones(this.LeftDockZone, this.RightDockZone);
-            this.LeftDockZone.GenerateAndAdd<DockTestOne>();
-            this.LeftDockZone.GenerateAndAdd<DockTestTwo>();
+            this.LeftDockZone.ViewModel.GenerateAndAdd<DockTestOne>();
+            this.LeftDockZone.ViewModel.GenerateAndAdd<DockTestTwo>();
 
-            var TEMP_top = new DockZone();
-            var TEMP_bottom = new DockZone();
-            this.RightDockZone.DockOrientation = eDockOrientation.Vertical;
-            this.RightDockZone.AddChildZone(TEMP_top);
-            this.RightDockZone.AddChildZone(TEMP_bottom);
+            var left = _Build("Left");
+            var right = _Build("Right");
+
+
+            this.RightDockZone.ViewModel.DEBUG_Name = "-right side root-";
+            this.RightDockZone.ViewModel.Configure(eDockOrientation.Horizontal);
+            this.RightDockZone.ViewModel.AddChild(left);
+            this.RightDockZone.ViewModel.AddChild(right);
             
-            TEMP_top.GenerateAndAdd<DockTestOne>();
-            TEMP_bottom.GenerateAndAdd<DockTestTwo>();
-            TEMP_bottom.GenerateAndAdd<DockTestOne>();
-            TEMP_bottom.GenerateAndAdd<DockTestTwo>();
+            left.GenerateAndAdd<DockTestOne>();
+
+
+            var rightTop = _Build("rightTop");
+            var rightMiddleBottomGroup = _Build("rightMiddleBottomGroup");
+            right.Configure(eDockOrientation.Vertical);
+            right.AddChild(rightTop);
+            right.AddChild(rightMiddleBottomGroup);
+
+
+            rightMiddleBottomGroup.Configure(eDockOrientation.Vertical);
+            var rightMiddle = _Build("rightMiddle");
+            var rightBottom = _Build("rightBottom");
+            rightMiddleBottomGroup.AddChild(rightMiddle);
+            rightMiddleBottomGroup.AddChild(rightBottom);
+
+            rightBottom.Configure(eDockOrientation.Horizontal);
+            var rightBottomAnterior = _Build("rightBottomAnterior");
+            var rightBottomPosterior = _Build("rightBottomPosterior");
+            rightBottom.AddChild(rightBottomAnterior);
+            rightBottom.AddChild(rightBottomPosterior);
+
+            rightTop.GenerateAndAdd<DockTestTwo>();
+            rightMiddle.GenerateAndAdd<DockTestOne>();
+            rightMiddle.GenerateAndAdd<DockTestTwo>();
+            rightBottomAnterior.GenerateAndAdd<DockTestOne>();
+            rightBottomPosterior.GenerateAndAdd<DockTestTwo>();
+
+            this.DockingManager.CleanZoneLayoutHierarchies();
+
+            //TEMP_right.GenerateAndAdd<DockTestTwo>();
+            //TEMP_right.GenerateAndAdd<DockTestOne>();
+            //TEMP_right.GenerateAndAdd<DockTestTwo>();
+
+            DockZoneViewModel _Build (string name)
+            {
+                var vm = new DockZoneViewModel(this.DockingManager);
+                vm.DEBUG_Name = name;
+                return vm;
+            }
+
+
+
+
+
+
+
 
             this.Navigator = new StackNavFlowController();
             this.Navigator.GenerateAndPushDisplay<FirstDisplay>();

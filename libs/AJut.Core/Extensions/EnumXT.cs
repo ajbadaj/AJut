@@ -5,10 +5,9 @@ namespace AJut
 
     public static class EnumXT
     {
-
-        public static bool HasPartialFlag(this Enum ThisBitField, Enum test)
+        public static bool IsFlagInGroup (this Enum This, Enum group)
         {
-            return ( ThisBitField.BoxCast<int>() & test.BoxCast<int>()) != 0;
+            return group.HasFlag(This);
         }
 
         public static TEnum SetFlag<TEnum>(this Enum ThisBitField, TEnum test)

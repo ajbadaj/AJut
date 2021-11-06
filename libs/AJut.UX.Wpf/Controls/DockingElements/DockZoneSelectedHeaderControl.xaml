@@ -82,7 +82,7 @@
                                 <Grid.Style>
                                     <Style TargetType="{x:Type Grid}">
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{ajut:TemplateBinding Path=Target.Location.DockOrientation}" Value="Tabbed">
+                                            <DataTrigger Binding="{ajut:TemplateBinding Path=Target.Location.Orientation}" Value="Tabbed">
                                                 <Setter Property="Visibility" Value="Collapsed"/>
                                             </DataTrigger>
                                         </Style.Triggers>

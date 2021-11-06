@@ -38,7 +38,7 @@
                 {
                     if (MouseXT.GetPrimaryButtonState() == MouseButtonState.Pressed) 
                     {
-                        await target.DockingOwner.RunDragSearch(result.Value, target.Location).ConfigureAwait(false);
+                        await target.DockingOwner.RunDragSearch(result.Value, target.Location.UI).ConfigureAwait(false);
                     }
                 }
             }

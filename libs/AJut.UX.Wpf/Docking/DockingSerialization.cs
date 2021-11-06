@@ -44,8 +44,8 @@
 
         public static bool SerializeStateTo(string filePath, IList<DockZone> zones)
         {
-//#error TODO: Consider maybe do some name matching for the root level's sake
-            ZoneData[] state = zones.Select(z => z.GenerateSerializationState()).ToArray();
+            //#error TODO: Consider maybe do some name matching for the root level's sake
+            ZoneData[] state = zones.Select(z => z.ViewModel.GenerateSerializationState()).ToArray();
             var json = JsonHelper.BuildJsonForObject(state);
             if (json.HasErrors)
             {
@@ -84,7 +84,7 @@
             public string GroupId { get; set; }
             public List<ZoneData> ChildZones { get; set; }
             public double SizeOnParent { get; set; }
-            public eDockOrientation DockOrientation { get; set; }
+            public eDockOrientation Orientation { get; set; }
             public DisplayData[] DisplayState { get; set; }
         }
 

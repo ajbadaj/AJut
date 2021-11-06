@@ -14,7 +14,7 @@
 
         public void Dispose ()
         {
-            if (this.Location?.LocallyDockedElements is INotifyCollectionChanged locationCollection)
+            if (this.Location?.DockedContent is INotifyCollectionChanged locationCollection)
             {
                 locationCollection.CollectionChanged -= this.OnOrderChangedInDockZone;
             }
@@ -26,8 +26,8 @@
         public event EventHandler<IsReadyToCloseEventArgs> CanClose;
         public event EventHandler<EventArgs> Closed;
 
-        private DockZone m_location;
-        public DockZone Location
+        private DockZoneViewModel m_location;
+        public DockZoneViewModel Location
         {
             get => m_location;
             private set => this.SetAndRaiseIfChanged(ref m_location, value);
@@ -107,18 +107,18 @@
             this.Closed?.Invoke(this, EventArgs.Empty);
         }
 
-        internal void SetNewLocation (DockZone dockZone)
+        internal void SetNewLocation (DockZoneViewModel dockZone)
         {
             if (this.Location != null)
             {
-                ((INotifyCollectionChanged)this.Location.LocallyDockedElements).CollectionChanged -= this.OnOrderChangedInDockZone;
+                ((INotifyCollectionChanged)this.Location.DockedContent).CollectionChanged -= this.OnOrderChangedInDockZone;
             }
 
             this.Location = dockZone;
             if (this.Location != null)
             {
                 this.Docked?.Invoke(this, EventArgs.Empty);
-                if (this.Location.LocallyDockedElements is INotifyCollectionChanged locationCollection)
+                if (this.Location.DockedContent is INotifyCollectionChanged locationCollection)
                 {
                     locationCollection.CollectionChanged += this.OnOrderChangedInDockZone;
                 }
@@ -134,7 +134,7 @@
 
         private void ResetTabOrder ()
         {
-            this.TabOrder = this.Location?.LocallyDockedElements.IndexOf(this) ?? -1;
+            this.TabOrder = this.Location?.DockedContent.IndexOf(this) ?? -1;
         }
 
         internal void FinalizeSetup (object state)
