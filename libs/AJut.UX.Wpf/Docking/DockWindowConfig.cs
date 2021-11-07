@@ -2,10 +2,9 @@
 {
     using System.Windows;
 
-    // TODO: DockWindow is a reasonable name for something, should not be the name of the aputils :D
-    public static class DockWindow
+    public static class DockWindowConfig
     {
-        private static readonly APUtilsRegistrationHelper APUtils = new APUtilsRegistrationHelper(typeof(DockWindow));
+        private static readonly APUtilsRegistrationHelper APUtils = new APUtilsRegistrationHelper(typeof(DockWindowConfig));
 
         public static DependencyProperty IsDockingTearoffWindowProperty = APUtils.Register(GetIsDockingTearoffWindow, SetIsDockingTearoffWindow);
         public static bool GetIsDockingTearoffWindow (DependencyObject obj) => (bool)obj.GetValue(IsDockingTearoffWindowProperty);

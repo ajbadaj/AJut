@@ -55,7 +55,7 @@
             {
                 if (zone.IsSetup && zone.Manager != this)
                 {
-                    zone.DeRegisterAndClear();
+                    zone.Manager?.DeRegisterRootDockZones(zone);
                 }
 
                 m_rootDockZones.Add(zone);
@@ -229,7 +229,7 @@
                     lastInsertionDriver.InsertionZone.ViewModel.DropAddSiblingIntoDock(sourceDockZone.ViewModel, lastInsertionDriver.Direction);
 
                     // If it's a docking tearoff window and this was the last thing, close it
-                    if (DockWindow.GetIsDockingTearoffWindow(dragSourceWindow))
+                    if (DockWindowConfig.GetIsDockingTearoffWindow(dragSourceWindow))
                     {
                         int numZones = dragSourceWindow.GetVisualChildren().OfType<DockZone>().Count();
                         if (numZones == 0 || numZones == 1)
@@ -351,7 +351,7 @@
                 {
                     // First check to see if it's the only zone in the window, if that's the case then we're good to go
                     var window = Window.GetWindow(sourceZone.UI);
-                    if (DockWindow.GetIsDockingTearoffWindow(window))
+                    if (DockWindowConfig.GetIsDockingTearoffWindow(window))
                     {
                         return Result<Window>.Success(window);
                     }
@@ -381,7 +381,7 @@
             try
             {
                 window = this.CreateNewTearoffWindowHandler();
-                DockWindow.SetIsDockingTearoffWindow(window, true);
+                DockWindowConfig.SetIsDockingTearoffWindow(window, true);
                 this.Windows.Track(window);
 
                 DockZone newRoot = new DockZone() { ViewModel = rootZone };

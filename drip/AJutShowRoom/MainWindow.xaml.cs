@@ -75,11 +75,11 @@
             this.LeftDockZone.ViewModel.GenerateAndAdd<DockTestOne>();
             this.LeftDockZone.ViewModel.GenerateAndAdd<DockTestTwo>();
 
-            var left = _Build("Left");
-            var right = _Build("Right");
+            var left = _BuildDockZoneVM("Left");
+            var right = _BuildDockZoneVM("Right");
 
 
-            this.RightDockZone.ViewModel.DEBUG_Name = "-right side root-";
+            this.RightDockZone.ViewModel.TrackingMoniker = "-right side root-";
             this.RightDockZone.ViewModel.Configure(eDockOrientation.Horizontal);
             this.RightDockZone.ViewModel.AddChild(left);
             this.RightDockZone.ViewModel.AddChild(right);
@@ -87,22 +87,22 @@
             left.GenerateAndAdd<DockTestOne>();
 
 
-            var rightTop = _Build("rightTop");
-            var rightMiddleBottomGroup = _Build("rightMiddleBottomGroup");
+            var rightTop = _BuildDockZoneVM("rightTop");
+            var rightMiddleBottomGroup = _BuildDockZoneVM("rightMiddleBottomGroup");
             right.Configure(eDockOrientation.Vertical);
             right.AddChild(rightTop);
             right.AddChild(rightMiddleBottomGroup);
 
 
             rightMiddleBottomGroup.Configure(eDockOrientation.Vertical);
-            var rightMiddle = _Build("rightMiddle");
-            var rightBottom = _Build("rightBottom");
+            var rightMiddle = _BuildDockZoneVM("rightMiddle");
+            var rightBottom = _BuildDockZoneVM("rightBottom");
             rightMiddleBottomGroup.AddChild(rightMiddle);
             rightMiddleBottomGroup.AddChild(rightBottom);
 
             rightBottom.Configure(eDockOrientation.Horizontal);
-            var rightBottomAnterior = _Build("rightBottomAnterior");
-            var rightBottomPosterior = _Build("rightBottomPosterior");
+            var rightBottomAnterior = _BuildDockZoneVM("rightBottomAnterior");
+            var rightBottomPosterior = _BuildDockZoneVM("rightBottomPosterior");
             rightBottom.AddChild(rightBottomAnterior);
             rightBottom.AddChild(rightBottomPosterior);
 
@@ -112,25 +112,12 @@
             rightBottomAnterior.GenerateAndAdd<DockTestOne>();
             rightBottomPosterior.GenerateAndAdd<DockTestTwo>();
 
+            // It is possible to manually, or from layout files, bypass the normal user interface and break expectations
+            //  (ie if a parent orientation is vertical, a vertical child orientation request will just add it as a sibling,
+            //  and that storage expectation is required). This will help to clear that, but because this will also potentially
+            //  clear and eliminiate dock zones and dock zone view models, it's important to give agency of usage of this fix
+            //  out as part of the API.
             this.DockingManager.CleanZoneLayoutHierarchies();
-
-            //TEMP_right.GenerateAndAdd<DockTestTwo>();
-            //TEMP_right.GenerateAndAdd<DockTestOne>();
-            //TEMP_right.GenerateAndAdd<DockTestTwo>();
-
-            DockZoneViewModel _Build (string name)
-            {
-                var vm = new DockZoneViewModel(this.DockingManager);
-                vm.DEBUG_Name = name;
-                return vm;
-            }
-
-
-
-
-
-
-
 
             this.Navigator = new StackNavFlowController();
             this.Navigator.GenerateAndPushDisplay<FirstDisplay>();
@@ -147,8 +134,15 @@
                 item.Title = $"Group {item.Title}";
                 return item;
             }
+
+            DockZoneViewModel _BuildDockZoneVM (string name)
+            {
+                var vm = new DockZoneViewModel(this.DockingManager);
+                vm.TrackingMoniker = name;
+                return vm;
+            }
         }
-        
+
         public static readonly DependencyProperty DockingManagerProperty = DPUtils.Register(_ => _.DockingManager);
         public DockingManager DockingManager
         {

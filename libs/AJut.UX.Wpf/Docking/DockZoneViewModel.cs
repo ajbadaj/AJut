@@ -1,11 +1,8 @@
 ﻿namespace AJut.UX.Docking
 {
     using System;
-    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
     using System.Windows;
     using AJut.Tree;
     using AJut.TypeManagement;
@@ -50,12 +47,15 @@
         AnyLeafDisplay = Single | Tabbed | Empty,
     }
 
-
+    /// <summary>
+    /// The view model used to populate a <see cref="DockZone"/>
+    /// </summary>
     public sealed class DockZoneViewModel : NotifyPropertyChanged
     {
         private readonly ObservableCollection<DockingContentAdapterModel> m_dockedContent = new ObservableCollection<DockingContentAdapterModel>();
         private readonly ObservableCollection<DockZoneViewModel> m_children = new ObservableCollection<DockZoneViewModel>();
 
+        // =======================[ Construction/Configuration ]=====================================
         static DockZoneViewModel ()
         {
             TreeTraversal<DockZoneViewModel>.SetupDefaults(dzvm => dzvm.Children, dzvm => dzvm.Parent);
@@ -75,91 +75,22 @@
             this.BuildFromState(zoneData);
         }
 
-
-        public void CopyIntoAndClear (DockZoneViewModel dockZone)
+        private static int g_trackingMoniker = 0;
+        private string m_trackingMoniker = $"Dock Zone VM: #{g_trackingMoniker++}";
+        
+        /// <summary>
+        /// The tracking moniker is an optional name given used to better identify and debug issues. It is not guranteed unique, and can
+        /// be set to any string the user of this api would like. If present, it will override the ToString implementation as well.
+        /// </summary>
+        public string TrackingMoniker
         {
-            // Step 1) Copy all the things we're about to steal so there are no parenting issues.
-            var locallyDockedElementsCopy = m_dockedContent.ToList();
-            var childZonesCopy = m_children.ToList();
-            var orientation = this.Orientation;
-            var selectedIndex = this.SelectedIndex;
-
-            // Step 2) Clear in preparation, otherwise there may be some issues with visual/logical parents
-            //          still being set, throwing exceptions
-            this.Clear();
-            dockZone.Clear();
-
-            // Step 3) Set all the things in dockZone with the things we set aside earlier
-            locallyDockedElementsCopy.ForEach(c => dockZone.AddDockedContent(c));
-            childZonesCopy.ForEach(c => dockZone.AddChild(c));
-            dockZone.Orientation = orientation;
-            dockZone.SelectedIndex = selectedIndex;
+            get => m_trackingMoniker;
+            set => this.SetAndRaiseIfChanged(ref m_trackingMoniker, value);
         }
 
-        public DockZoneViewModel DuplicateAndClear ()
-        {
-            var dupe = new DockZoneViewModel();
-            dupe.m_dockedContent.AddEach(m_dockedContent);
-            dupe.m_children.AddEach(m_children);
-            dupe.Orientation = this.Orientation;
-            dupe.SizeOnParent = this.SizeOnParent;
-            this.Clear();
-            return dupe;
-        }
+        public override string ToString () => this.TrackingMoniker != null ? this.TrackingMoniker : base.ToString();
 
-        public void Clear ()
-        {
-            m_dockedContent.Clear();
-            m_children.Clear();
-            this.Orientation = eDockOrientation.Empty;
-        }
-
-        internal DockingSerialization.ZoneData GenerateSerializationState ()
-        {
-            var data = new DockingSerialization.ZoneData
-            {
-                GroupId = DockZone.GetGroupId(this.UI),
-                Orientation = this.Orientation,
-            };
-
-            if (this.Orientation == eDockOrientation.Tabbed)
-            {
-                data.DisplayState = this.DockedContent
-                    .Select(
-                        adapter => new DockingSerialization.DisplayData
-                        {
-                            TypeId = TypeIdRegistrar.GetTypeIdFor(adapter.GetType()),
-                            State = adapter.Display.GenerateState()
-                        }
-                    ).ToArray();
-            }
-            else
-            {
-                m_children.Select(z => z.GenerateSerializationState()).ForEach(data.ChildZones.Add);
-            }
-
-            return data;
-        }
-
-        internal void BuildFromState (DockingSerialization.ZoneData data)
-        {
-            //  Reset
-            this.Clear();
-
-            if (data.Orientation == eDockOrientation.Tabbed)
-            {
-                this.DockedContent.AddEach(data.DisplayState.Select(s => DockingSerialization.BuildDisplayElement(this.Manager, s)).Select(d => d.DockingAdapter));
-            }
-            else
-            {
-                data.ChildZones.Select(zd => new DockZoneViewModel(zd)).ForEach(c => this.AddChild(c));
-            }
-
-            this.Orientation = data.Orientation;
-        }
-
-        public string DEBUG_Name {get; set;}
-        public override string ToString () => this.DEBUG_Name;
+        // =======================[ Properties ]=====================================
 
         private DockingManager m_manager;
         public DockingManager Manager
@@ -214,6 +145,56 @@
 
                 this.SetAndRaiseIfChanged(ref m_ui, value);
             }
+        }
+
+        // =======================[ Public API Methods ]=====================================
+
+        public void CopyIntoAndClear (DockZoneViewModel dockZone)
+        {
+            // Step 1) Copy all the things we're about to steal so there are no parenting issues.
+            var locallyDockedElementsCopy = m_dockedContent.ToList();
+            var childZonesCopy = m_children.ToList();
+            var orientation = this.Orientation;
+            var selectedIndex = this.SelectedIndex;
+
+            // Step 2) Clear in preparation, otherwise there may be some issues with visual/logical parents
+            //          still being set, throwing exceptions
+            this.Clear();
+            dockZone.Clear();
+
+            // Step 3) Set all the things in dockZone with the things we set aside earlier
+            locallyDockedElementsCopy.ForEach(c => dockZone.AddDockedContent(c));
+            childZonesCopy.ForEach(c => dockZone.AddChild(c));
+            dockZone.Orientation = orientation;
+            dockZone.SelectedIndex = selectedIndex;
+        }
+
+        public DockZoneViewModel DuplicateAndClear ()
+        {
+            var dupe = new DockZoneViewModel();
+            dupe.m_dockedContent.AddEach(m_dockedContent);
+            dupe.m_children.AddEach(m_children);
+            dupe.Orientation = this.Orientation;
+            dupe.SizeOnParent = this.SizeOnParent;
+            foreach (var dockedContent in dupe.DockedContent)
+            {
+                dockedContent.SetNewLocation(dupe);
+            }
+
+            this.Clear();
+            return dupe;
+        }
+
+        public void Clear ()
+        {
+            foreach (var dockedContent in m_dockedContent.Where(c => c.Location == this))
+            {
+                dockedContent.SetNewLocation(null);
+            }
+
+            m_dockedContent.Clear();
+            m_children.Clear();
+            this.Orientation = eDockOrientation.Empty;
         }
 
         public void Configure (eDockOrientation orientation)
@@ -274,17 +255,6 @@
             return result;
         }
 
-        internal bool RunRemoveChildMechanics (DockZoneViewModel child)
-        {
-            if (m_children.Remove(child))
-            {
-                child.DestroyUIReference();
-                return true;
-            }
-
-            return false;
-        }
-
         public void DestroyUIReference ()
         {
             TreeTraversal<DockZoneViewModel>.All(this).ForEach(_DoDestroyReference);
@@ -303,7 +273,7 @@
         {
             if (m_dockedContent.Contains(panelAdapter))
             {
-                return this.DoRemove(panelAdapter);
+                return this.DoRemoveContent(panelAdapter);
             }
 
             return false;
@@ -313,32 +283,10 @@
         {
             if (m_dockedContent.Contains(panelAdapter) && panelAdapter.Close())
             {
-                return this.DoRemove(panelAdapter);
+                return this.DoRemoveContent(panelAdapter);
             }
 
             return false;
-        }
-
-        private bool DoRemove (DockingContentAdapterModel panelAdapter)
-        {
-            if (panelAdapter.Location == this)
-            {
-                panelAdapter.SetNewLocation(null);
-            }
-
-            bool result = m_dockedContent.Remove(panelAdapter);
-            switch (m_dockedContent.Count)
-            {
-                case 0:
-                    this.Orientation = eDockOrientation.Empty;
-                    break;
-
-                case 1:
-                    this.Orientation = eDockOrientation.Single;
-                    break;
-            }
-
-            return result;
         }
 
         public bool AddDockedContent (IDockableDisplayElement panel)
@@ -404,7 +352,7 @@
                         var elements = descendant.m_dockedContent.ToList();
                         addedAnything = addedAnything || elements.Count > 0;
                         descendant.Clear();
-                        elements.ForEach(p=>this.AddDockedContent(p));
+                        elements.ForEach(p => this.AddDockedContent(p));
                     }
 
                     if (addedAnything)
@@ -454,6 +402,85 @@
             var panel = this.Manager.BuildNewDisplayElement<T>();
             this.AddDockedContent(panel);
             panel.DockingAdapter.FinalizeSetup(state);
+        }
+
+        // =======================[ Hidden API Utilities ]=====================================
+
+        internal DockingSerialization.ZoneData GenerateSerializationState ()
+        {
+            var data = new DockingSerialization.ZoneData
+            {
+                GroupId = DockZone.GetGroupId(this.UI),
+                Orientation = this.Orientation,
+            };
+
+            if (this.Orientation == eDockOrientation.Tabbed)
+            {
+                data.DisplayState = this.DockedContent
+                    .Select(
+                        adapter => new DockingSerialization.DisplayData
+                        {
+                            TypeId = TypeIdRegistrar.GetTypeIdFor(adapter.GetType()),
+                            State = adapter.Display.GenerateState()
+                        }
+                    ).ToArray();
+            }
+            else
+            {
+                m_children.Select(z => z.GenerateSerializationState()).ForEach(data.ChildZones.Add);
+            }
+
+            return data;
+        }
+
+        internal void BuildFromState (DockingSerialization.ZoneData data)
+        {
+            //  Reset
+            this.Clear();
+
+            if (data.Orientation == eDockOrientation.Tabbed)
+            {
+                this.DockedContent.AddEach(data.DisplayState.Select(s => DockingSerialization.BuildDisplayElement(this.Manager, s)).Select(d => d.DockingAdapter));
+            }
+            else
+            {
+                data.ChildZones.Select(zd => new DockZoneViewModel(zd)).ForEach(c => this.AddChild(c));
+            }
+
+            this.Orientation = data.Orientation;
+        }
+
+        private bool DoRemoveContent (DockingContentAdapterModel panelAdapter)
+        {
+            if (panelAdapter.Location == this)
+            {
+                panelAdapter.SetNewLocation(null);
+            }
+
+            bool result = m_dockedContent.Remove(panelAdapter);
+            switch (m_dockedContent.Count)
+            {
+                case 0:
+                    this.Orientation = eDockOrientation.Empty;
+                    break;
+
+                case 1:
+                    this.Orientation = eDockOrientation.Single;
+                    break;
+            }
+
+            return result;
+        }
+
+        internal bool RunRemoveChildMechanics (DockZoneViewModel child)
+        {
+            if (m_children.Remove(child))
+            {
+                child.DestroyUIReference();
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>

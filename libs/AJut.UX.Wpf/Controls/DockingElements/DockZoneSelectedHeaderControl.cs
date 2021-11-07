@@ -4,6 +4,7 @@
     using System.Windows.Controls;
     using System.Windows.Input;
     using System.Windows.Media;
+    using System.Windows.Threading;
     using AJut.UX.Docking;
     using DPUtils = AJut.UX.DPUtils<DockZoneSelectedHeaderControl>;
 
@@ -32,8 +33,9 @@
             if (result)
             {
                 window = result.Value;
-                this.Dispatcher.InvokeAsync(_DoDragMoveSafe);
 
+                // Wait a tick to ensure that we have had enough time for all new UI to populate
+                this.Dispatcher.InvokeAsync(_DoDragMoveSafe, DispatcherPriority.Loaded);
                 async void _DoDragMoveSafe ()
                 {
                     if (MouseXT.GetPrimaryButtonState() == MouseButtonState.Pressed) 

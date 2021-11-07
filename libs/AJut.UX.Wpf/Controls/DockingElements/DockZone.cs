@@ -1,6 +1,5 @@
 ﻿namespace AJut.UX.Controls
 {
-    using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
@@ -9,21 +8,11 @@
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Input;
-    using System.Windows.Media;
-    using AJut.Storage;
     using AJut.Tree;
-    using AJut.TypeManagement;
     using AJut.UX.Docking;
     using APUtils = AJut.UX.APUtils<DockZone>;
     using DPUtils = AJut.UX.DPUtils<DockZone>;
     using REUtils = AJut.UX.REUtils<DockZone>;
-
-    public enum eDockDirection
-    {
-        Any,
-        Anterior,
-        Posterior
-    }
 
     public sealed partial class DockZone : Control
     {
