@@ -101,7 +101,7 @@
         public bool CloseAll ()
         {
             bool anyDissenters = false;
-            var all = m_rootDockZones.SelectMany(z => TreeTraversal<DockZone>.All(z)).SelectMany(z => z.ViewModel.DockedContent).ToList();
+            var all = m_rootDockZones.SelectMany(z => TreeTraversal<DockZone>.All(z)).SelectMany(z => _DockedContentOrEmptyFor(z?.ViewModel)).ToList();
             foreach (var adapter in all)
             {
                 if (!adapter.CheckCanClose())
@@ -120,6 +120,16 @@
 
             this.Windows.CloseAllWindows();
             return true;
+
+            IEnumerable<DockingContentAdapterModel> _DockedContentOrEmptyFor(DockZoneViewModel vm)
+            {
+                if ((vm?.DockedContent?.Count ?? 0) == 0)
+                {
+                    return Enumerable.Empty<DockingContentAdapterModel>();
+                }
+
+                return vm.DockedContent;
+            }
         }
 
 

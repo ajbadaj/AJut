@@ -25,7 +25,7 @@
 
             IEnumerable<DockZone> _GetChildren (DockZone z)
             {
-                if (z.ViewModel.Orientation == eDockOrientation.Tabbed)
+                if (z?.ViewModel == null || z.ViewModel.Orientation == eDockOrientation.Tabbed)
                 {
                     return Enumerable.Empty<DockZone>();
                 }
