@@ -22,7 +22,7 @@
         </Border>
     </DataTemplate>
     <DataTemplate x:Key="CONTROLTEMPLATE_TabbedDockZone">
-        <DockPanel>
+        <DockPanel SnapsToDevicePixels="True">
             <!-- Tabs -->
             <local:DockZoneTabHeadersControl x:Name="PanelTabHeaders" DockPanel.Dock="Bottom"
                                              ItemsSource="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ViewModel.DockedContent}"
