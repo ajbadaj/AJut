@@ -195,17 +195,27 @@
             {
                 if (e.OldItems != null)
                 {
-                    var toRemove = m_childZones.Where(c => e.OldItems.Contains(c.ViewModel)).ToList();
-                    m_childZones.RemoveEach(toRemove);
-                    foreach (var rm in toRemove)
-                    {
-                        rm.ViewModel?.DestroyUIReference();
-                    }
+                    _RemoveAll(m_childZones.Where(c => e.OldItems.Contains(c.ViewModel)));
+                }
+
+                if (e.Action == NotifyCollectionChangedAction.Reset)
+                {
+                    _RemoveAll(m_childZones);
                 }
 
                 if (e.NewItems != null)
                 {
                     _InsertEach(e.NewStartingIndex, e.NewItems);
+                }
+            }
+
+            void _RemoveAll(IEnumerable<DockZone> toRemove)
+            {
+                var copy = toRemove.ToList();
+                m_childZones.RemoveEach(copy);
+                foreach (var rm in copy)
+                {
+                    rm.ViewModel?.DestroyUIReference();
                 }
             }
 

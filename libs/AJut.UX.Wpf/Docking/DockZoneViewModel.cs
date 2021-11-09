@@ -192,6 +192,11 @@
                 dockedContent.SetNewLocation(null);
             }
 
+            foreach (var child in m_children)
+            {
+                child.Parent = null;
+            }
+
             m_dockedContent.Clear();
             m_children.Clear();
             this.Orientation = eDockOrientation.Empty;

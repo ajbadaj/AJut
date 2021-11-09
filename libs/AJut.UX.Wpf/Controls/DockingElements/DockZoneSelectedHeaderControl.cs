@@ -35,7 +35,7 @@
                 window = result.Value;
 
                 // Wait a tick to ensure that we have had enough time for all new UI to populate
-                this.Dispatcher.InvokeAsync(_DoDragMoveSafe, DispatcherPriority.Loaded);
+                this.Dispatcher.InvokeAsync(_DoDragMoveSafe);
                 async void _DoDragMoveSafe ()
                 {
                     if (MouseXT.GetPrimaryButtonState() == MouseButtonState.Pressed) 

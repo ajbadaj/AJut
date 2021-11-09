@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Diagnostics;
     using System.Linq;
     using System.Threading.Tasks;
     using System.Windows;
@@ -216,7 +217,7 @@
                         imgSource.EndInit();
                         img.Source = imgSource;
                     }
-                }, System.Windows.Threading.DispatcherPriority.Input);
+                }, System.Windows.Threading.DispatcherPriority.Loaded);
 
                 draggerWindow.Content = img;
                 draggerWindow.Show();
@@ -224,6 +225,10 @@
                 {
                     dragSourceWindow.Visibility = Visibility.Collapsed;
                     await draggerWindow.AsyncDragMove(onMove: _WindowLocationChanged);
+                    if (Mouse.PrimaryDevice.GetPrimaryButtonState() == MouseButtonState.Pressed)
+                    {
+                        Debugger.Break();
+                    }
                 }
                 finally
                 {
@@ -235,16 +240,24 @@
 
                 if (currentDropTarget != null && lastInsertionDriver != null)
                 {
-                    // Do the drop
-                    lastInsertionDriver.InsertionZone.ViewModel.DropAddSiblingIntoDock(sourceDockZone.ViewModel, lastInsertionDriver.Direction);
-
-                    // If it's a docking tearoff window and this was the last thing, close it
-                    if (DockWindowConfig.GetIsDockingTearoffWindow(dragSourceWindow))
+                    // Ensure no bugs will inadvertently cause a break
+                    if (lastInsertionDriver.InsertionZone.ViewModel == null)
                     {
-                        int numZones = dragSourceWindow.GetVisualChildren().OfType<DockZone>().Count();
-                        if (numZones == 0 || numZones == 1)
+                        lastInsertionDriver = null;
+                    }
+                    else
+                    {
+                        // Do the drop
+                        lastInsertionDriver.InsertionZone.ViewModel.DropAddSiblingIntoDock(sourceDockZone.ViewModel, lastInsertionDriver.Direction);
+
+                        // If it's a docking tearoff window and this was the last thing, close it
+                        if (DockWindowConfig.GetIsDockingTearoffWindow(dragSourceWindow))
                         {
-                            dragSourceWindow.Close();
+                            int numZones = dragSourceWindow.GetVisualChildren().OfType<DockZone>().Count();
+                            if (numZones == 0 || numZones == 1)
+                            {
+                                dragSourceWindow.Close();
+                            }
                         }
                     }
                 }
