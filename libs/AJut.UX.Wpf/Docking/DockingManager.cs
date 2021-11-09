@@ -275,7 +275,7 @@
                     if (result?.VisualHit != null)
                     {
                         var hitWidget = result.VisualHit as DockDropInsertionDriverWidget ?? result.VisualHit.GetFirstParentOf<DockDropInsertionDriverWidget>();
-                        if (hitWidget != null)
+                        if (hitWidget?.IsEnabled == true)
                         {
                             hitWidget.IsEngaged = true;
                             if (lastInsertionDriver != hitWidget && lastInsertionDriver != null)

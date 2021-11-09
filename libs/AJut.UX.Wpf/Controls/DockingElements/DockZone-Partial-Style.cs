@@ -46,6 +46,13 @@
             set => this.SetValue(PanelCornerRadiusProperty, value);
         }
 
+        public static readonly DependencyProperty EmptyPanelCornerRadiusProperty = DPUtils.Register(_ => _.EmptyPanelCornerRadius);
+        public CornerRadius EmptyPanelCornerRadius
+        {
+            get => (CornerRadius)this.GetValue(EmptyPanelCornerRadiusProperty);
+            set => this.SetValue(EmptyPanelCornerRadiusProperty, value);
+        }
+
         public static readonly DependencyProperty SeparationSizeProperty = DPUtils.Register(_ => _.SeparationSize, (d, e) => d.HalfSeparationSize = d.SeparationSize / 2);
         public double SeparationSize
         {

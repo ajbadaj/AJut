@@ -122,6 +122,14 @@
             private set => this.SetValue(HasSplitZoneOrientationPropertyKey, value);
         }
 
+        private static readonly DependencyPropertyKey IsEmptyPropertyKey = DPUtils.RegisterReadOnly(_ => _.IsEmpty);
+        public static readonly DependencyProperty IsEmptyProperty = IsEmptyPropertyKey.DependencyProperty;
+        public bool IsEmpty
+        {
+            get => (bool)this.GetValue(IsEmptyProperty);
+            private set => this.SetValue(IsEmptyPropertyKey, value);
+        }
+
         public static readonly DependencyProperty SelectedIndexProperty = DPUtils.Register(_ => _.SelectedIndex, 0);
         public int SelectedIndex
         {
@@ -214,6 +222,10 @@
                 this.HasSplitZoneOrientation = this.ViewModel == null 
                                                 ? false
                                                 : this.ViewModel.Orientation.IsFlagInGroup(eDockOrientation.AnySplitOrientation);
+
+                this.IsEmpty = this.ViewModel == null
+                                ? true
+                                : this.ViewModel.Orientation == eDockOrientation.Empty;
             }
         }
 
