@@ -3,6 +3,7 @@
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Markup;
@@ -31,11 +32,11 @@
             return null;
         }
 
-        public static IEnumerable<UIElement> GetChildren (this IAddChild parent)
+        public static IEnumerable<T> GetChildren<T> (this IAddChild parent) where T : UIElement
         {
             if (parent is Panel panel)
             {
-                foreach (UIElement child in panel.Children)
+                foreach (T child in panel.Children.OfType<T>())
                 {
                     yield return child;
                 }
@@ -45,12 +46,17 @@
             {
                 for (int index = 0; index < itemsControl.Items.Count; ++index)
                 {
-                    if (itemsControl.ItemContainerGenerator.ContainerFromIndex(index) is UIElement castedChild)
+                    if (itemsControl.ItemContainerGenerator.ContainerFromIndex(index) is T castedChild)
                     {
                         yield return castedChild;
                     }
                 }
             }
+        }
+
+        public static IEnumerable<UIElement> GetChildren (this IAddChild parent)
+        {
+            return parent.GetChildren<UIElement>();
         }
 
         public static void SwapChildren (this IAddChild parent, UIElement a, UIElement b)

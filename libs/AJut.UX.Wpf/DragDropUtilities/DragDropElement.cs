@@ -59,6 +59,10 @@
         public static bool GetIsDragging (DependencyObject obj) => (bool)obj.GetValue(IsDraggingProperty);
         private static void SetIsDragging (DependencyObject obj, bool value) => obj.SetValue(IsDraggingPropertyKey, value);
 
+        public static DependencyProperty HoldSwapUntilDragBySwapTargetDimensionsProperty = APUtils.Register(GetHoldSwapUntilDragBySwapTargetDimensions, SetHoldSwapUntilDragBySwapTargetDimensions);
+        public static bool GetHoldSwapUntilDragBySwapTargetDimensions (DependencyObject obj) => (bool)obj.GetValue(HoldSwapUntilDragBySwapTargetDimensionsProperty);
+        public static void SetHoldSwapUntilDragBySwapTargetDimensions (DependencyObject obj, bool value) => obj.SetValue(HoldSwapUntilDragBySwapTargetDimensionsProperty, value);
+
         private static DependencyPropertyKey IsDraggingDirectlyPropertyKey = APUtils.RegisterReadOnly(GetIsDraggingDirectly, SetIsDraggingDirectly);
         public static DependencyProperty IsDraggingDirectlyProperty = IsDraggingDirectlyPropertyKey.DependencyProperty;
         public static bool GetIsDraggingDirectly (DependencyObject obj) => (bool)obj.GetValue(IsDraggingDirectlyProperty);
@@ -130,11 +134,39 @@
                     Vector currDragOffset = currDragPoint - dragStart;
                     bool hasSetDragOffset = false;
 
-                    foreach (UIElement child in childAddrTarget.GetChildren().Where(c => c != rootDraggedItem))
+                    foreach (FrameworkElement child in childAddrTarget.GetChildren<FrameworkElement>().Where(c => c != rootDraggedItem))
                     {
                         Point childPoint = activeDrag.DragOwner.TranslatePoint(_e.Value, child);
                         if (child.IsLocalPointInBounds(childPoint))
                         {
+                            if (GetHoldSwapUntilDragBySwapTargetDimensions(activeDrag.DragOwner))
+                            {
+                                Point origin_a = rootDraggedItem.TranslatePoint(new Point(0, 0), activeDrag.DragOwner);
+                                Point origin_b = child.TranslatePoint(new Point(0, 0), activeDrag.DragOwner);
+
+                                if (origin_a.Y == origin_b.Y)
+                                {
+                                    if (Math.Abs(currDragOffset.X) <= child.ActualWidth)
+                                    {
+                                        break;
+                                    }
+                                }
+                                else if (origin_a.X == origin_b.X)
+                                {
+                                    if (Math.Abs(currDragOffset.Y) <= child.ActualHeight)
+                                    {
+                                        break;
+                                    }
+                                }
+                                else
+                                {
+                                    if (Math.Abs(currDragOffset.X) <= child.ActualWidth || Math.Abs(currDragOffset.Y) <= child.ActualHeight)
+                                    {
+                                        break;
+                                    }
+                                }
+                            }
+
                             rootDraggedItem = DoSwap(owner, rootDraggedItem, child) as UIElement;
                             if (rootDraggedItem != null)
                             {
