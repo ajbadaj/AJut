@@ -397,9 +397,9 @@
             return true;
         }
 
-        public bool SwapChildOrder (int moveFromIndex, int moveToIndex)
+        public bool SwapDockedContentOrder (int moveFromIndex, int moveToIndex)
         {
-            return m_children.Relocate(moveFromIndex, moveToIndex);
+            return m_dockedContent.Relocate(moveFromIndex, moveToIndex);
         }
 
         public void GenerateAndAdd<T> (object state = null) where T : IDockableDisplayElement

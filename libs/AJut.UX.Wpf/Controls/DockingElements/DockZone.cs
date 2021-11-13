@@ -59,7 +59,7 @@
         private void HandleDragDropItemsSwapForHeaders (object sender, DragDropItemsSwapEventArgs e)
         {
             Logger.LogInfo($"Hit log {kDEBUG_Counter++} times");
-            if (this.ViewModel.SwapChildOrder(e.MoveFromIndex, e.MoveToIndex))
+            if (this.ViewModel.SwapDockedContentOrder(e.MoveFromIndex, e.MoveToIndex))
             {
                 e.Handled = true;
             }
