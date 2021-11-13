@@ -665,10 +665,18 @@
                 </Grid>
             </TabItem>
             <TabItem Header="Reorder">
-                <WrapPanel>
+                <StackPanel>
+                    <TextBlock Text="Click, tap, or use stylus to drag-reorder elements in this grid."/>
+                    <CheckBox x:Name="PreviewDrag" Content="Preview drag"/>
                     <Grid ajap:DragWatch.IsEnabled="True">
                         <Grid.Resources>
-
+                            <Style TargetType="{x:Type Grid}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=(ajut:DragDropElement.IsDragging)}" Value="True">
+                                        <Setter Property="Panel.ZIndex" Value="1"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
                             <Style TargetType="{x:Type Border}">
                                 <Setter Property="IsHitTestVisible" Value="True"/>
                                 <Setter Property="BorderBrush">
@@ -684,6 +692,21 @@
                                     <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=(ajut:DragDropElement.IsDragging)}" Value="True">
                                         <Setter Property="BorderThickness" Value="3"/>
                                     </DataTrigger>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding ElementName=PreviewDrag, Path=IsChecked}" Value="True"/>
+                                            <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=(ajut:DragDropElement.IsDragging)}" Value="True"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <MultiDataTrigger.Setters>
+                                            <Setter Property="RenderTransform">
+                                                <Setter.Value>
+                                                    <TranslateTransform 
+                                                        X="{Binding RelativeSource={RelativeSource AncestorType={x:Type FrameworkElement}, AncestorLevel=1}, Path=(ajut:DragDropElement.DragOffset).X}"
+                                                        Y="{Binding RelativeSource={RelativeSource AncestorType={x:Type FrameworkElement}, AncestorLevel=1}, Path=(ajut:DragDropElement.DragOffset).Y}"/>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </MultiDataTrigger.Setters>
+                                    </MultiDataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </Grid.Resources>
@@ -699,14 +722,26 @@
                             <ColumnDefinition Width="100"/>
                             <ColumnDefinition Width="200"/>
                         </Grid.ColumnDefinitions>
-                        <Border Grid.Column="0" Grid.Row="0"  Background="Red"   />
-                        <Border Grid.Column="0" Grid.Row="1"  Background="Green" />
-                        <Border Grid.Column="0" Grid.Row="2"  Background="Blue"  />
-                        <Border Grid.Column="1" Grid.Row="0"  Background="Yellow"/>
-                        <Border Grid.Column="1" Grid.Row="1"  Background="Pink"  />
-                        <Border Grid.Column="1" Grid.Row="2"  Background="Purple"/>
+                        <Grid Grid.Column="0" Grid.Row="0">
+                            <Border Background="Red"/>
+                        </Grid>
+                        <Grid Grid.Column="0" Grid.Row="1">
+                            <Border Background="Green"/>
+                        </Grid>
+                        <Grid Grid.Column="0" Grid.Row="2">
+                            <Border Background="Blue"/>
+                        </Grid>
+                        <Grid Grid.Column="1" Grid.Row="0">
+                            <Border Background="Yellow"/>
+                        </Grid>
+                        <Grid Grid.Column="1" Grid.Row="1">
+                            <Border Background="Pink"/>
+                        </Grid>
+                        <Grid Grid.Column="1" Grid.Row="2">
+                            <Border Background="Purple"/>
+                        </Grid>
                     </Grid>
-                </WrapPanel>
+                </StackPanel>
             </TabItem>
             <TabItem Header="IO - Path Selection Control">
                 <StackPanel>

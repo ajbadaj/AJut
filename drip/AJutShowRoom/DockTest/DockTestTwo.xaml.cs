@@ -16,7 +16,7 @@
         void IDockableDisplayElement.Setup (DockingContentAdapterModel adapter)
         {
             this.DockingAdapter = adapter;
-            adapter.TitleContent = "Two";
+            adapter.TitleContent = "Two Has A Long Name";
             adapter.TooltipContent = "A two control";
             adapter.CanClose += this.OnCanClose;
         }

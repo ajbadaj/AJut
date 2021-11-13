@@ -28,6 +28,15 @@
                                         <StackPanel Orientation="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZoneTabHeadersControl}}, Path=ItemsOrientation}" />
                                     </ItemsPanelTemplate>
                                 </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemContainerStyle>
+                                    <Style TargetType="{x:Type FrameworkElement}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=(ajut:DragDropElement.IsDragging)}" Value="True">
+                                                <Setter Property="Panel.ZIndex" Value="1"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ItemsControl.ItemContainerStyle>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="{x:Type local:DockZoneTabHeadersControl+HeaderItem}">
                                         <Border x:Name="HeaderRoot" BorderBrush="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZoneTabHeadersControl}}, Path=HeaderBorder}"
@@ -71,6 +80,13 @@
                                                                     </ajut:ThicknessBuilder>
                                                                 </Setter.Value>
                                                             </Setter>-->
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Path=IsDragging}" Value="True">
+                                                            <Setter Property="RenderTransform">
+                                                                <Setter.Value>
+                                                                    <TranslateTransform X="{Binding RelativeSource={RelativeSource AncestorType={x:Type FrameworkElement}, AncestorLevel=1}, Path=(ajut:DragDropElement.DragOffset).X}"/>
+                                                                </Setter.Value>
+                                                            </Setter>
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>

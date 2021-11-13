@@ -100,7 +100,7 @@
 
         public void TriggerMoved ()
         {
-            this.SignalDragMoved?.Invoke(this, new EventArgs<Point>(this.GetCurrentPoint()));
+            this.SignalDragMoved?.Invoke(this, new EventArgs<Point>(this.GetCurrentPointOnDragOwner()));
         }
 
         public void TriggerEnd ()
@@ -134,21 +134,26 @@
             }
         }
 
-        public Point GetCurrentPoint ()
+        public Point GetCurrentPointOnDragOwner ()
+        {
+            return this.GetPointFor(this.DragOwner);
+        }
+
+        public Point GetPointFor (IInputElement element)
         {
             if (this.Device is MouseDevice mouse)
             {
-                return mouse.GetPosition(this.DragOwner);
+                return mouse.GetPosition(element);
             }
 
             if (this.Device is TouchDevice touch)
             {
-                return touch.GetTouchPoint(this.DragOwner).Position;
+                return touch.GetTouchPoint(element).Position;
             }
 
             if (this.Device is StylusDevice stylus)
             {
-                return stylus.GetPosition(this.DragOwner);
+                return stylus.GetPosition(element);
             }
 
             throw new ThisWillNeverHappenButICantReturnWithoutDoingSomethingException();

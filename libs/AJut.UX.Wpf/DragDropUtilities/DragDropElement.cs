@@ -54,9 +54,25 @@
             }
         }
 
-        public static DependencyProperty IsDraggingProperty = APUtils.Register(GetIsDragging, SetIsDragging);
+        private static DependencyPropertyKey IsDraggingPropertyKey = APUtils.RegisterReadOnly(GetIsDragging, SetIsDragging, new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.Inherits | FrameworkPropertyMetadataOptions.AffectsRender));
+        public static DependencyProperty IsDraggingProperty = IsDraggingPropertyKey.DependencyProperty;
         public static bool GetIsDragging (DependencyObject obj) => (bool)obj.GetValue(IsDraggingProperty);
-        public static void SetIsDragging (DependencyObject obj, bool value) => obj.SetValue(IsDraggingProperty, value);
+        private static void SetIsDragging (DependencyObject obj, bool value) => obj.SetValue(IsDraggingPropertyKey, value);
+
+        private static DependencyPropertyKey IsDraggingDirectlyPropertyKey = APUtils.RegisterReadOnly(GetIsDraggingDirectly, SetIsDraggingDirectly);
+        public static DependencyProperty IsDraggingDirectlyProperty = IsDraggingDirectlyPropertyKey.DependencyProperty;
+        public static bool GetIsDraggingDirectly (DependencyObject obj) => (bool)obj.GetValue(IsDraggingDirectlyProperty);
+        internal static void SetIsDraggingDirectly (DependencyObject obj, bool value) => obj.SetValue(IsDraggingDirectlyPropertyKey, value);
+
+        private static DependencyPropertyKey DragStartPointPropertyKey = APUtils.RegisterReadOnly(GetDragStartPoint, SetDragStartPoint, new FrameworkPropertyMetadata(default(Point), FrameworkPropertyMetadataOptions.Inherits | FrameworkPropertyMetadataOptions.AffectsRender));
+        public static DependencyProperty DragStartPointProperty = DragStartPointPropertyKey.DependencyProperty;
+        public static Point GetDragStartPoint (DependencyObject obj) => (Point)obj.GetValue(DragStartPointProperty);
+        private static void SetDragStartPoint (DependencyObject obj, Point value) => obj.SetValue(DragStartPointPropertyKey, value);
+
+        private static DependencyPropertyKey DragOffsetPropertyKey = APUtils.RegisterReadOnly(GetDragOffset, SetDragOffset, new FrameworkPropertyMetadata(default(Vector), FrameworkPropertyMetadataOptions.Inherits | FrameworkPropertyMetadataOptions.AffectsRender));
+        public static DependencyProperty DragOffsetProperty = DragOffsetPropertyKey.DependencyProperty;
+        public static Vector GetDragOffset (DependencyObject obj) => (Vector)obj.GetValue(DragOffsetProperty);
+        private static void SetDragOffset (DependencyObject obj, Vector value) => obj.SetValue(DragOffsetPropertyKey, value);
 
         public static async Task DoDragReorder (UIElement owner, ActiveDragTracking activeDrag)
         {
@@ -71,15 +87,20 @@
                 return;
             }
 
-            UIElement rootDraggedItem = activeDrag.DragOwner.GetFirstChildAtParentLocalPoint(activeDrag.GetCurrentPoint());
+            Point ownerStartOffset = activeDrag.GetCurrentPointOnDragOwner();
+            UIElement rootDraggedItem = activeDrag.DragOwner.GetFirstChildAtParentLocalPoint(activeDrag.GetCurrentPointOnDragOwner());
             if (rootDraggedItem == null || !activeDrag.Engage())
             {
                 activeDrag.Dispose();
                 return;
             }
 
-
             SetIsDragging(rootDraggedItem, true);
+            SetIsDraggingDirectly(rootDraggedItem, true);
+
+            Point dragStart = activeDrag.DragOwner.TranslatePoint(ownerStartOffset, rootDraggedItem);
+            SetDragStartPoint(rootDraggedItem, dragStart);
+            SetDragOffset(rootDraggedItem, new Vector());
             try
             {
                 TaskCompletionSource reorderer = new TaskCompletionSource();
@@ -93,9 +114,11 @@
 
                 void _OnActiveDragMoved (object _sender, EventArgs<Point> _e)
                 {
+                    Point currOwnerDragPoint = activeDrag.GetCurrentPointOnDragOwner();
+
                     if (rootDraggedItem == null)
                     {
-                        rootDraggedItem = activeDrag.DragOwner.GetFirstChildAtParentLocalPoint(activeDrag.GetCurrentPoint());
+                        rootDraggedItem = activeDrag.DragOwner.GetFirstChildAtParentLocalPoint(currOwnerDragPoint);
                     }
 
                     if (rootDraggedItem == null)
@@ -103,15 +126,30 @@
                         return;
                     }
 
-                    //.GetFirstChildAtParentLocalPoint(localStartPoint)
+                    Point currDragPoint = activeDrag.DragOwner.TranslatePoint(currOwnerDragPoint, rootDraggedItem);
+                    Vector currDragOffset = currDragPoint - dragStart;
+                    bool hasSetDragOffset = false;
+
                     foreach (UIElement child in childAddrTarget.GetChildren().Where(c => c != rootDraggedItem))
                     {
                         Point childPoint = activeDrag.DragOwner.TranslatePoint(_e.Value, child);
                         if (child.IsLocalPointInBounds(childPoint))
                         {
                             rootDraggedItem = DoSwap(owner, rootDraggedItem, child) as UIElement;
+                            if (rootDraggedItem != null)
+                            {
+                                currDragOffset = (Vector)dragStart;
+                                currDragOffset.Y *= -1.0;
+                                SetDragOffset(rootDraggedItem, currDragOffset);
+                                hasSetDragOffset = true;
+                            }
                             break;
                         }
+                    }
+
+                    if (!hasSetDragOffset)
+                    {
+                        SetDragOffset(rootDraggedItem, currDragOffset);
                     }
                 }
 
@@ -123,6 +161,9 @@
             finally
             {
                 SetIsDragging(rootDraggedItem, false);
+                SetIsDraggingDirectly(rootDraggedItem, false);
+                SetDragStartPoint(rootDraggedItem, new Point(0, 0));
+                SetDragOffset(rootDraggedItem, new Vector(0, 0));
                 activeDrag.Dispose();
             }
 
