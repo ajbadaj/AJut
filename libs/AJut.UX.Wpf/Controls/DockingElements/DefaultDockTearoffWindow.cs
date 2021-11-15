@@ -16,6 +16,7 @@
             this.Manager = manager;
         }
 
+        public DockZone Root => (DockZone)this.Content;
         public DockingManager Manager { get; }
 
         public static readonly DependencyProperty TitleBarFontSizeProperty = DPUtils.Register(_ => _.TitleBarFontSize);

@@ -38,6 +38,9 @@
     <Compile Update="Controls\DockingElements\DockDropInsertionDriverWidget.cs">
       <DependentUpon>DockDropInsertionDriverWidget.xaml</DependentUpon>
     </Compile>
+    <Compile Update="Controls\DockingElements\DockWholeWindowDragStartControl.cs">
+      <DependentUpon>DockWholeWindowDragStartControl.xaml</DependentUpon>
+    </Compile>
     <Compile Update="Controls\DockingElements\DockZone.cs">
       <DependentUpon>DockZone.xaml</DependentUpon>
     </Compile>

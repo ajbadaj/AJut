@@ -31,6 +31,7 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition />
                                     <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <ContentControl>
                                     <ContentControl.Style>
@@ -54,8 +55,11 @@
                                     </ContentControl.Resources>
                                 </ContentControl>
                                 <TextBlock Grid.Column="1" Text="{TemplateBinding Title}" FontSize="12" VerticalAlignment="Center" Margin="3,0"/>
-                                <local:WindowChromeButtonStrip Grid.Column="2" Padding="3,1,0,3" ajap:BorderXTA.CornerRadius="0,0,0,4"
+                                <local:WindowChromeButtonStrip Grid.Column="3" Padding="3,1,0,3" ajap:BorderXTA.CornerRadius="0,0,0,4"
                                                                Background="#CCC" BorderBrush="#4000" BorderThickness="1,0,0,0"/>
+                                <local:DockWholeWindowDragStartControl WindowChrome.IsHitTestVisibleInChrome="True" Grid.Column="2" 
+                                                                       VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0"
+                                                                       DragRootZone="{TemplateBinding Content}"/>
                             </Grid>
                             <ContentPresenter Content="{TemplateBinding Content}" WindowChrome.IsHitTestVisibleInChrome="True"/>
                         </DockPanel>
