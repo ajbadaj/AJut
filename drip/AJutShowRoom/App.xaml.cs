@@ -14,7 +14,6 @@
         {
             ApplicationUtilities.RunOnetimeSetup("AJut.TestApp", onExceptionRecieved: UnhandledExceptionProcessor);
             Logger.FlushAfterEach = true;
-            Logger.ShouldLogToConsole = true;
         }
 
         private static bool UnhandledExceptionProcessor (Exception e)
