@@ -144,7 +144,7 @@
                     return;
                 }
 
-                if (m_initialDownLocation == null)
+                if (m_initialDownLocation == null && e.MouseDevice.Capture(m_target))
                 {
                     m_initialDownLocation = e.GetPosition(m_targetParent);
                 }
@@ -153,6 +153,7 @@
             private void OnTargetMouseUp (object sender, MouseButtonEventArgs e)
             {
                 m_initialDownLocation = null;
+                m_target.ReleaseMouseCapture();
             }
 
             private void OnTargetMouseMove (object sender, MouseEventArgs e)
@@ -166,24 +167,30 @@
                 var current = (Vector)e.GetPosition(m_targetParent);
 
                 var offset = current - initial;
-                if (Math.Abs(offset.X) > SystemParameters.MinimumHorizontalDragDistance)
+                if (Math.Abs(offset.X) >= SystemParameters.MinimumHorizontalDragDistance)
                 {
-                    if (ExecuteDragCommand(DragDropElement.HorizontalDragInitiatedCommand, e, (Point)current))
+                    if (!ExecuteDragCommand(DragDropElement.HorizontalDragInitiatedCommand, e, (Point)initial))
                     {
-                        return;
+                        if(ExecuteDragCommand(DragDropElement.DragInitiatedCommand, e, (Point)initial))
+                        {
+                            m_target.ReleaseMouseCapture();
+                            return;
+                        }
                     }
-                    else if (ExecuteDragCommand(DragDropElement.DragInitiatedCommand, e, (Point)current))
+                    else
                     {
-                        return;
+                        m_target.ReleaseMouseCapture();
                     }
                 }
                 
-                if (Math.Abs(offset.Y) > SystemParameters.MinimumVerticalDragDistance)
+                if (Math.Abs(offset.Y) >= SystemParameters.MinimumVerticalDragDistance)
                 {
-                    if (!ExecuteDragCommand(DragDropElement.VerticalDragInitiatedCommand, e, (Point)current))
+                    if (!ExecuteDragCommand(DragDropElement.VerticalDragInitiatedCommand, e, (Point)initial))
                     {
-                        ExecuteDragCommand(DragDropElement.DragInitiatedCommand, e, (Point)current);
+                        ExecuteDragCommand(DragDropElement.DragInitiatedCommand, e, (Point)initial);
                     }
+
+                    m_target.ReleaseMouseCapture();
                 }
             }
 
@@ -214,15 +221,18 @@
                 var current = (Vector)e.GetTouchPoint(m_targetParent).Position;
 
                 var offset = current - initial;
-                if (offset.X > SystemParameters.MinimumHorizontalDragDistance)
+                if (Math.Abs(offset.X) >= SystemParameters.MinimumHorizontalDragDistance)
                 {
-                    if (!ExecuteDragCommand(DragDropElement.HorizontalDragInitiatedCommand, e, (Point)current))
+                    if (!ExecuteDragCommand(DragDropElement.HorizontalDragInitiatedCommand, e, (Point)initial))
                     {
-                        ExecuteDragCommand(DragDropElement.DragInitiatedCommand, e, (Point)current);
+                        if (ExecuteDragCommand(DragDropElement.DragInitiatedCommand, e, (Point)initial))
+                        {
+                            return;
+                        }
                     }
                 }
                 
-                if (offset.Y > SystemParameters.MinimumVerticalDragDistance)
+                if (Math.Abs(offset.Y) >= SystemParameters.MinimumVerticalDragDistance)
                 {
                     if (!ExecuteDragCommand(DragDropElement.VerticalDragInitiatedCommand, e, (Point)current))
                     {
@@ -252,15 +262,18 @@
                 var current = (Vector)e.StylusDevice.GetPosition(m_targetParent);
 
                 var offset = current - initial;
-                if (offset.X > SystemParameters.MinimumHorizontalDragDistance)
+                if (Math.Abs(offset.X) >= SystemParameters.MinimumHorizontalDragDistance)
                 {
                     if (!ExecuteDragCommand(DragDropElement.HorizontalDragInitiatedCommand, e, (Point)current))
                     {
-                        ExecuteDragCommand(DragDropElement.DragInitiatedCommand, e, (Point)current);
+                        if (ExecuteDragCommand(DragDropElement.DragInitiatedCommand, e, (Point)current))
+                        {
+                            return;
+                        }
                     }
                 }
 
-                if (offset.Y > SystemParameters.MinimumVerticalDragDistance)
+                if (Math.Abs(offset.Y) >= SystemParameters.MinimumVerticalDragDistance)
                 {
                     if (!ExecuteDragCommand(DragDropElement.VerticalDragInitiatedCommand, e, (Point)current))
                     {
