@@ -16,15 +16,10 @@
         <CommandBinding Command="{x:Static local:MainWindow.DoStuffCommand}" Executed="DoStuff_OnExecuted"/>
     </Window.CommandBindings>
     <Window.Resources>
-        <ObjectDataProvider x:Key="eChildWindowAction" MethodName="GetNames" ObjectType="{x:Type sys:Enum}">
-            <ObjectDataProvider.MethodParameters>
-                <x:Type Type="{x:Type ajut:eChildWindowAction}"/>
-            </ObjectDataProvider.MethodParameters>
-        </ObjectDataProvider>
         <PathGeometry x:Key="PathInfo" Figures="m 307.73449 15.812635 c 0 0 -26.00956 177.584115 -259.291669 177.648805 C -182.23165 193.52544 -212.36075 15.812635 -212.36075 15.812635" />
     </Window.Resources>
     <Grid>
-        <TabControl>
+        <TabControl x:Name="Tabs" SelectionChanged="OnTabSelected">
             <TabItem Header="Full Screen">
                 <StackPanel>
                     <ToggleButton Grid.Row="1" IsChecked="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=(ajap:WindowXTA.IsFullscreen)}" Content="Toggle Fullscreen"
@@ -276,19 +271,10 @@
                     </Canvas>
                 </DockPanel>
             </TabItem>
-            <TabItem Header="Tracked Windows">
+            <TabItem x:Name="TrackedWindowsTab" Header="Tracked Windows">
                 <DockPanel>
-                    <GroupBox Header="Show\Hide Children When" DockPanel.Dock="Top">
-                        <!--<ajut:ToggleStrip DockPanel.Dock="Top" ItemsSource="{Binding Source={StaticResource eChildWindowAction}}"
-                                          SelectedItem="{Binding ElementName=Self, Path=ToolWindows.ShowHideChildrenWhen, Mode=TwoWay}"
-                                          HorizontalAlignment="Center">
-                            <ajut:ToggleStrip.ItemTemplate>
-                                <DataTemplate>
-                                    <TextBlock Text="{Binding Converter={ajc:FriendlyTextEnConverter}}"/>
-                                </DataTemplate>
-                            </ajut:ToggleStrip.ItemTemplate>
-                        </ajut:ToggleStrip>-->
-                    </GroupBox>
+                    <ajctrls:EnumComboBox DockPanel.Dock="Top" SelectedItem="{Binding ElementName=Self, Path=ToolWindows.ShowHideChildrenWhen, Mode=TwoWay}"/>
+                    <CheckBox DockPanel.Dock="Top" Content="Set Root as Owner?" IsChecked="{Binding ElementName=Self, Path=ToolWindows.SetOwnerAsRootForEachChildWindow, Mode=TwoWay}"/>
                     <StackPanel Orientation="Horizontal"  DockPanel.Dock="Top">
                         <Button Content="Manually Show All" Click="ShowAllToolWindows_OnClick"/>
                         <Button Content="Manually Hide All" Click="HideAllToolWindows_OnClick"/>
@@ -627,7 +613,7 @@
                     </StackPanel>
                 </Grid>
             </TabItem>
-            <TabItem Header="Docking Framework" IsSelected="True">
+            <TabItem x:Name="DockingFrameworkTab" Header="Docking Framework" IsSelected="True">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>

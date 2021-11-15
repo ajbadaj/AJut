@@ -119,7 +119,7 @@
             }
 
 
-            this.Windows.CloseAllWindows();
+            this.Windows.CloseAllChildWindows();
             return true;
 
             IEnumerable<DockingContentAdapterModel> _DockedContentOrEmptyFor(DockZoneViewModel vm)

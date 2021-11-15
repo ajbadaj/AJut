@@ -332,6 +332,25 @@
             MessageBox.Show(((FrameworkElement)sender).DataContext.ToString());
         }
 
+        private void OnTabSelected (object sender, SelectionChangedEventArgs e)
+        {
+            if (this.Tabs.SelectedItem == this.TrackedWindowsTab)
+            {
+                this.ToolWindows?.ShowAllWindows();
+                this.DockingManager?.Windows.HideAllWindows();
+            }
+            else if (this.Tabs.SelectedItem == this.DockingFrameworkTab)
+            {
+                this.DockingManager?.Windows.ShowAllWindows();
+                this.ToolWindows?.HideAllWindows();
+            }
+            else
+            {
+                this.ToolWindows?.HideAllWindows();
+                this.DockingManager?.Windows.HideAllWindows();
+            }
+        }
+
         private void SynchFlatTreeListSelection_OnClick (object sender, RoutedEventArgs e)
         {
             var selection = new[] { c, g };
