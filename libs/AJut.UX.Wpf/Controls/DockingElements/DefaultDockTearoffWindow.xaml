@@ -10,10 +10,13 @@
 
     <Style TargetType="{x:Type local:DefaultDockTearoffWindow}">
         <Setter Property="Background" Value="White"/>
+        <Setter Property="BorderThickness" Value="4" />
         <Setter Property="TitleBarFontSize" Value="12"/>
         <Setter Property="WindowStyle" Value="None"/>
         <Setter Property="Title" Value="{Binding RelativeSource={RelativeSource Self}, Path=Manager.Windows.Root.Title, StringFormat='{}{0}: Child Window'}"/>
         <Setter Property="Icon" Value="{Binding RelativeSource={RelativeSource Self}, Path=Manager.Windows.Root.Icon}"/>
+        <Setter Property="MinWidth" Value="450"/>
+        <Setter Property="MinWidth" Value="200"/>
         <Setter Property="shell:WindowChrome.WindowChrome">
             <Setter.Value>
                 <WindowChrome CaptionHeight="26" GlassFrameThickness="-1"
@@ -29,21 +32,12 @@
                             <Grid DockPanel.Dock="Top">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition />
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto" MinWidth="100"/>
                                 </Grid.ColumnDefinitions>
-                                <ContentControl>
-                                    <ContentControl.Style>
-                                        <Style TargetType="{x:Type ContentControl}">
-                                            <Setter Property="Content" Value="{ajut:TemplateBinding Icon}"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{ajut:TemplateBinding Icon}" Value="{x:Null}">
-                                                    <Setter Property="Content" Value="&#xECAA;"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </ContentControl.Style>
+                                <local:DockWholeWindowDragStartControl Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0"/>
+                                <ContentControl Grid.Column="1" Content="{TemplateBinding Icon}">
                                     <ContentControl.Resources>
                                         <DataTemplate DataType="{x:Type ImageSource}">
                                             <Image Source="{Binding}"/>
@@ -54,10 +48,9 @@
                                         </DataTemplate>
                                     </ContentControl.Resources>
                                 </ContentControl>
-                                <TextBlock Grid.Column="1" Text="{TemplateBinding Title}" FontSize="12" VerticalAlignment="Center" Margin="3,0"/>
-                                <local:WindowChromeButtonStrip Grid.Column="3" Padding="3,1,0,3" ajap:BorderXTA.CornerRadius="0,0,0,4"
-                                                               Background="#CCC" BorderBrush="#4000" BorderThickness="1,0,0,0"/>
-                                <local:DockWholeWindowDragStartControl Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0"/>
+                                <TextBlock Grid.Column="2" Text="{TemplateBinding Title}" 
+                                           TextAlignment="Center" FontSize="14" VerticalAlignment="Center" Margin="3,0"/>
+                                <local:WindowChromeButtonStrip Grid.Column="3" Padding="3,1,0,3" ajap:BorderXTA.CornerRadius="0,0,0,4"/>
                             </Grid>
                             <ContentPresenter Content="{TemplateBinding Content}" WindowChrome.IsHitTestVisibleInChrome="True"/>
                         </DockPanel>
