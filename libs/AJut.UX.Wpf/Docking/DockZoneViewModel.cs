@@ -466,7 +466,14 @@
             switch (m_dockedContent.Count)
             {
                 case 0:
-                    this.Orientation = eDockOrientation.Empty;
+                    if (this.Parent == null)
+                    {
+                        this.Orientation = eDockOrientation.Empty;
+                    }
+                    else
+                    {
+                        this.Parent.RemoveChild(this);
+                    }
                     break;
 
                 case 1:
