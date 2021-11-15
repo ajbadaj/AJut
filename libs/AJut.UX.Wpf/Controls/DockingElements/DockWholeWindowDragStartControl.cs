@@ -66,7 +66,18 @@
             try
             {
                 var window = Window.GetWindow(this);
-                await this.DragRootZone.Manager.RunDragSearch(window, this.DragRootZone).ConfigureAwait(false);
+                DockZone rootZone = this.DragRootZone;
+                if (rootZone == null && window.Content is DockZone useThis)
+                {
+                    rootZone = useThis;
+                }
+
+                if (rootZone == null)
+                {
+                    throw new NullReferenceException($"No {nameof(DragRootZone)} set for this {nameof(DockWholeWindowDragStartControl)} - and it does not reside on a Window whose Content is a {nameof(DockZone)}");
+                }
+
+                await rootZone.Manager.RunDragSearch(window, rootZone).ConfigureAwait(false);
             }
             catch (Exception exc)
             {

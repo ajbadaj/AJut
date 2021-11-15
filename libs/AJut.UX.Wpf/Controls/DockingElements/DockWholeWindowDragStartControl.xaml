@@ -13,6 +13,7 @@
         <Setter Property="GlyphBrush" Value="#000"/>
         <Setter Property="GlyphBrushHighlighted" Value="#133954"/>
         <Setter Property="ap:BorderXTA.CornerRadius" Value="3"/>
+        <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:DockWholeWindowDragStartControl}">
