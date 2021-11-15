@@ -145,7 +145,7 @@
             <Border.Style>
                 <Style TargetType="{x:Type Border}">
                     <Style.Triggers>
-                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=Manager.IsZoneInDragDropMode}" Value="True">
+                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=Manager.IsZoneDragDropUnderway}" Value="True">
                             <Setter Property="MinWidth" Value="20"/>
                             <Setter Property="MinHeight" Value="20"/>
                         </DataTrigger>

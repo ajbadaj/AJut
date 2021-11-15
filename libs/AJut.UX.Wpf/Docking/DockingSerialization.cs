@@ -42,10 +42,11 @@
             return display;
         }
 
-        public static bool SerializeStateTo(string filePath, IList<DockZone> zones)
+        public static bool SerializeStateTo(string filePath, DockingManager manager)
         {
-            //#error TODO: Consider maybe do some name matching for the root level's sake
-            ZoneData[] state = zones.Select(z => z.ViewModel.GenerateSerializationState()).ToArray();
+            throw new NotImplementedException();
+            //ZoneData[] state = manager.Select(z => z.ViewModel.GenerateSerializationState()).ToArray();
+            var state = new ZoneData[0];
             var json = JsonHelper.BuildJsonForObject(state);
             if (json.HasErrors)
             {
@@ -61,7 +62,7 @@
             catch { return false; }
         }
 
-        public static bool ResetFromState (string filePath, IList<DockZone> zones)
+        public static bool ResetFromState (string filePath, DockingManager manager)
         {
             throw new NotImplementedException();
         }
