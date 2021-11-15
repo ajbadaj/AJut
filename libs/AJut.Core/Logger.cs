@@ -12,6 +12,7 @@
         private StreamWriter m_logFileWriter;
         private FileStream m_logFileStream;
         private bool m_shouldLogToConsole;
+        private bool m_shouldWriteToDebugOutputTrace;
         private bool m_isEnabled = true;
         private bool m_flushAfterEach = false;
         private readonly object m_logWritingLock = new object();
@@ -34,12 +35,19 @@
         private void SetDebugDefaults ()
         {
             m_shouldLogToConsole = true;
+            m_shouldWriteToDebugOutputTrace = true;
         }
 
         public static bool ShouldLogToConsole
         {
             get => g_LoggerInstance.m_shouldLogToConsole;
             set => g_LoggerInstance.m_shouldLogToConsole = value;
+        }
+
+        public static bool ShouldLogToDebugConsole
+        {
+            get => g_LoggerInstance.m_shouldWriteToDebugOutputTrace;
+            set => g_LoggerInstance.m_shouldWriteToDebugOutputTrace = value;
         }
 
         public static bool FlushAfterEach
@@ -106,10 +114,7 @@
 
         #endregion
 
-        public static string LogFilePath
-        {
-            get { return g_LoggerInstance.m_logFilePath; }
-        }
+        public static string LogFilePath => g_LoggerInstance.m_logFilePath;
 
         public static void SetupLogFile(string dir, bool logToConsoleToo = true)
         {
@@ -146,7 +151,7 @@
 
         public static void LogInfo(string message)
         {
-            Log(kInfoType, true, message);
+            DoLog(kInfoType, true, message);
         }
 
         [Conditional("DEBUG")]
@@ -157,20 +162,20 @@
 
         public static void LogError(string message)
         {
-            Log(kErrorType, true, message);
+            DoLog(kErrorType, true, message);
         }
 
         public static void LogError(Exception exc)
         {
-            Log(kErrorType, true, $"Exception Encountered: {exc}");
+            DoLog(kErrorType, true, $"Exception Encountered: {exc}");
         }
 
         public static void LogError(string message, Exception exc)
         {
-            Log(kErrorType, true, $"{message}\nException Encountered: {exc}");
+            DoLog(kErrorType, true, $"{message}\nException Encountered: {exc}");
         }
 
-        private static void Log(string type, bool isError, string message)
+        private static void DoLog(string type, bool isError, string message)
         {
             if (g_LoggerInstance == null || g_LoggerInstance.m_isEnabled == false)
             {
@@ -182,6 +187,11 @@
             if (g_LoggerInstance.m_shouldLogToConsole)
             {
                 Console.WriteLine(output);
+            }
+
+            if (g_LoggerInstance.m_shouldWriteToDebugOutputTrace)
+            {
+                Trace.WriteLine(output);
             }
 
             WriteTextUnformattedToLog(output);
