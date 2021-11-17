@@ -1,9 +1,11 @@
 ﻿namespace AJut.UX.Docking
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Windows;
+    using AJut.Storage;
     using AJut.Tree;
     using AJut.TypeManagement;
     using AJut.UX.Controls;
@@ -54,6 +56,13 @@
     {
         private readonly ObservableCollection<DockingContentAdapterModel> m_dockedContent = new ObservableCollection<DockingContentAdapterModel>();
         private readonly ObservableCollection<DockZoneViewModel> m_children = new ObservableCollection<DockZoneViewModel>();
+        private DockingManager m_manager;
+        private DockZoneViewModel m_parent;
+        private eDockOrientation m_orientation = eDockOrientation.Empty;
+        private int m_selectedIndex;
+        private GridLength m_sizeOnParent = new GridLength(1.0, GridUnitType.Star);
+        private DockZone m_ui;
+        private bool m_isActivelyAttemptingClose;
 
         // =======================[ Construction/Configuration ]=====================================
         static DockZoneViewModel ()
@@ -75,63 +84,58 @@
             this.BuildFromState(zoneData);
         }
 
-        private static int g_trackingMoniker = 0;
-        private string m_trackingMoniker = $"Dock Zone VM: #{g_trackingMoniker++}";
-        
+        private static int g_debugTrackingCounter = 0;
+        private string m_debugTrackingMoniker = $"Dock Zone VM: #{++g_debugTrackingCounter}";
+
         /// <summary>
         /// The tracking moniker is an optional name given used to better identify and debug issues. It is not guranteed unique, and can
         /// be set to any string the user of this api would like. If present, it will override the ToString implementation as well.
         /// </summary>
-        public string TrackingMoniker
+        public string DebugTrackingMoniker
         {
-            get => m_trackingMoniker;
-            set => this.SetAndRaiseIfChanged(ref m_trackingMoniker, value);
+            get => m_debugTrackingMoniker;
+            set => this.SetAndRaiseIfChanged(ref m_debugTrackingMoniker, value);
         }
 
-        public override string ToString () => this.TrackingMoniker != null ? this.TrackingMoniker : base.ToString();
+        public override string ToString () => this.DebugTrackingMoniker != null ? this.DebugTrackingMoniker : base.ToString();
 
         // =======================[ Properties ]=====================================
 
-        private DockingManager m_manager;
         public DockingManager Manager
         {
             get => m_manager;
             set => this.SetAndRaiseIfChanged(ref m_manager, value);
         }
 
-        private DockZoneViewModel m_parent;
         public DockZoneViewModel Parent
         {
             get => m_parent;
             set => this.SetAndRaiseIfChanged(ref m_parent, value, nameof(Parent), nameof(HasParent));
         }
+
         public bool HasParent => m_parent != null;
 
         public ReadOnlyObservableCollection<DockingContentAdapterModel> DockedContent { get; }
         public ReadOnlyObservableCollection<DockZoneViewModel> Children { get; }
 
-        private eDockOrientation m_orientation = eDockOrientation.Empty;
         public eDockOrientation Orientation
         {
             get => m_orientation;
             private set => this.SetAndRaiseIfChanged(ref m_orientation, value);
         }
 
-        private int m_selectedIndex;
         public int SelectedIndex
         {
             get => m_selectedIndex;
             set => this.SetAndRaiseIfChanged(ref m_selectedIndex, value);
         }
 
-        private GridLength m_sizeOnParent = new GridLength(1.0, GridUnitType.Star);
         public GridLength SizeOnParent
         {
             get => m_sizeOnParent;
             set => this.SetAndRaiseIfChanged(ref m_sizeOnParent, value);
         }
 
-        private DockZone m_ui;
         public DockZone UI
         {
             get => m_ui;
@@ -147,6 +151,12 @@
             }
         }
 
+        public bool IsActivelyAttemptingClose
+        {
+            get => m_isActivelyAttemptingClose;
+            private set => this.SetAndRaiseIfChanged(ref m_isActivelyAttemptingClose, value);
+        }
+
         // =======================[ Public API Methods ]=====================================
 
         public void CopyIntoAndClear (DockZoneViewModel dockZone)
@@ -159,8 +169,8 @@
 
             // Step 2) Clear in preparation, otherwise there may be some issues with visual/logical parents
             //          still being set, throwing exceptions
-            this.Clear();
-            dockZone.Clear();
+            this.InternalClearAllSilently();
+            dockZone.InternalClearAllSilently();
 
             // Step 3) Set all the things in dockZone with the things we set aside earlier
             locallyDockedElementsCopy.ForEach(c => dockZone.AddDockedContent(c));
@@ -171,43 +181,111 @@
 
         public DockZoneViewModel DuplicateAndClear ()
         {
-            var dupe = new DockZoneViewModel();
+            var dupe = new DockZoneViewModel
+            {
+                Orientation = this.Orientation,
+                SizeOnParent = this.SizeOnParent
+            };
+
+            // Copy over Docked Content and clear
             dupe.m_dockedContent.AddEach(m_dockedContent);
-            dupe.m_children.AddEach(m_children);
-            dupe.Orientation = this.Orientation;
-            dupe.SizeOnParent = this.SizeOnParent;
-            foreach (var dockedContent in dupe.DockedContent)
+            foreach (var dockedContent in m_dockedContent)
             {
                 dockedContent.SetNewLocation(dupe);
             }
 
-            this.Clear();
+
+            // Clear children (child zones have direct impact in creating UI so cleanup is vital)
+            List<DockZoneViewModel> childrenCopy = m_children.ToList();
+            m_children.Clear();
+            foreach (DockZoneViewModel child in childrenCopy)
+            {
+                child.InternallyReparentAndCleanup(dupe);
+            }
+
+            // With everything moved over, we can now clear directly without having to carefully
+            //  check and move, and update all the content
+            this.InternalClearAllSilently();
             return dupe;
         }
 
-        public void Clear ()
+
+        /// <summary>
+        /// Requests close of all docked content, and clears entire dockzone. If any dockzones can't close however, none are.
+        /// </summary>
+        /// <param name="bailAtFirstFailure">The result contains all failures, but if you feel you're pestering your user you can choose to bail at the first failure</param>
+        /// <param name="closeWindowIfDockTearoff"></param>
+        public Result<List<DockingContentAdapterModel>> RequestCloseAllAndClear (bool bailAtFirstFailure = true)
         {
-            foreach (var dockedContent in m_dockedContent.Where(c => c.Location == this))
+            this.IsActivelyAttemptingClose = true;
+            try
             {
+
+                var cantClose = new List<DockingContentAdapterModel>();
+                var allDockedContent = TreeTraversal<DockZoneViewModel>.All(this).SelectMany(z => z.DockedContent).ToList();
+                foreach (DockingContentAdapterModel dockedContent in allDockedContent)
+                {
+                    if (!dockedContent.CheckCanClose())
+                    {
+                        cantClose.Add(dockedContent);
+                        if (bailAtFirstFailure)
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                if (cantClose.Count > 0)
+                {
+                    var result = new Result<List<DockingContentAdapterModel>>(cantClose);
+                    result.AddError("Several docked elements could not close");
+                    foreach (var content in cantClose)
+                    {
+                        result.AddError($"  > Can't close: {content.TitleContent ?? content.GetType().Name}");
+                    }
+
+                    return result;
+                }
+
+                this.ForceCloseAllAndClear();
+                return Result<List<DockingContentAdapterModel>>.Success(null);
+            }
+            finally
+            {
+                this.IsActivelyAttemptingClose = false;
+            }
+        }
+
+        /// <summary>
+        /// Recursively (leaf up) clozes all docked content (sends close event), then clears and cleans up all ui and parent references.
+        /// To request using the <see cref="DockingContentAdapterModel.CheckCanClose"/>, use <see cref="RequestCloseAllAndClear"/> instead/
+        /// </summary>
+        public void ForceCloseAllAndClear ()
+        {
+            // Recurse first so we start at the leaves
+            foreach (var child in m_children)
+            {
+                child.ForceCloseAllAndClear();
+            }
+
+            // Remove all docked content
+            foreach (var dockedContent in m_dockedContent)
+            {
+                dockedContent.InternalClose();
                 dockedContent.SetNewLocation(null);
             }
 
-            foreach (var child in m_children)
-            {
-                child.Parent = null;
-            }
-
-            m_dockedContent.Clear();
-            m_children.Clear();
-            this.Orientation = eDockOrientation.Empty;
+            this.InternallyReparentAndCleanup(null);
+            this.InternalClearAllSilently();
         }
 
         public void Configure (eDockOrientation orientation)
         {
             if (orientation == eDockOrientation.Empty)
             {
-                this.Clear();
+                this.ForceClearAllRecursively();
             }
+
             else if (orientation.IsFlagInGroup(eDockOrientation.AnyLeafDisplay))
             {
                 m_children.Clear();
@@ -233,7 +311,7 @@
                 return false;
             }
 
-            child.Parent?.RunRemoveChildMechanics(child);
+            child.Parent?.RunChildZoneRemoval(child);
             child.Parent = this;
             child.Manager = this.Manager;
             m_children.Insert(index, child);
@@ -242,7 +320,7 @@
 
         public bool RemoveChild (DockZoneViewModel child)
         {
-            bool result = this.RunRemoveChildMechanics(child);
+            bool result = this.RunChildZoneRemoval(child);
             if (result && m_children.Count == 1)
             {
                 var lastRemainingChild = m_children[0];
@@ -274,17 +352,17 @@
             }
         }
 
-        public bool RemoveDockedContent (DockingContentAdapterModel panelAdapter)
+        public bool RemoveDockedContent (DockingContentAdapterModel contentAdapter)
         {
-            if (m_dockedContent.Contains(panelAdapter))
+            if (m_dockedContent.Contains(contentAdapter))
             {
-                return this.DoRemoveContent(panelAdapter);
+                return this.DoRemoveContent(contentAdapter);
             }
 
             return false;
         }
 
-        public bool CloseAndRemoveDockedContent (DockingContentAdapterModel panelAdapter)
+        public bool RequestCloseAndRemoveDockedContent (DockingContentAdapterModel panelAdapter)
         {
             if (m_dockedContent.Contains(panelAdapter) && panelAdapter.Close())
             {
@@ -299,7 +377,7 @@
             return this.AddDockedContent(panel.DockingAdapter);
         }
 
-        public bool AddDockedContent (DockingContentAdapterModel panelAdapter)
+        public bool AddDockedContent (DockingContentAdapterModel adapter)
         {
             if (!this.Orientation.IsFlagInGroup(eDockOrientation.AnyLeafDisplay))
             {
@@ -307,8 +385,8 @@
                 return false;
             }
 
-            m_dockedContent.Add(panelAdapter);
-            panelAdapter.SetNewLocation(this);
+            m_dockedContent.Add(adapter);
+            adapter.SetNewLocation(this);
             this.Orientation = m_dockedContent.Count == 1 ? eDockOrientation.Single : eDockOrientation.Tabbed;
             return true;
         }
@@ -356,8 +434,12 @@
                     {
                         var elements = descendant.m_dockedContent.ToList();
                         addedAnything = addedAnything || elements.Count > 0;
-                        descendant.Clear();
-                        elements.ForEach(p => this.AddDockedContent(p));
+
+                        foreach (DockingContentAdapterModel content in elements)
+                        {
+                            descendant.RemoveDockedContent(content);
+                            this.AddDockedContent(content);
+                        }
                     }
 
                     if (addedAnything)
@@ -411,6 +493,50 @@
 
         // =======================[ Hidden API Utilities ]=====================================
 
+        /// <summary>
+        /// Recursively (leaf up) clears all contents and cleans up all ui and parent references
+        /// </summary>
+        internal void ForceClearAllRecursively ()
+        {
+            // Recurse first so we start at the leaves
+            foreach (var child in m_children)
+            {
+                child.ForceClearAllRecursively();
+            }
+
+            // Remove all docked content
+            foreach (DockingContentAdapterModel dockedContent in m_dockedContent)
+            {
+                dockedContent.SetNewLocation(null);
+            }
+
+            this.InternallyReparentAndCleanup(null);
+            this.InternalClearAllSilently();
+        }
+
+        /// <summary>
+        /// The non-interface way to remove a child, to be performed only in mass cleanup efforts
+        /// </summary>
+        private void InternallyReparentAndCleanup (DockZoneViewModel newParent)
+        {
+            // Out with the old
+            this.DestroyUIReference();
+
+            // Directly add it to dupe and set it up
+            newParent?.m_children.Add(this);
+            this.Parent = newParent;
+        }
+
+        /// <summary>
+        /// Clears all docked content &amp; children, but does NOT do any notifications
+        /// </summary>
+        private void InternalClearAllSilently ()
+        {
+            m_dockedContent.Clear();
+            m_children.Clear();
+            this.Orientation = eDockOrientation.Empty;
+        }
+
         internal DockingSerialization.ZoneData GenerateSerializationState ()
         {
             var data = new DockingSerialization.ZoneData
@@ -441,7 +567,7 @@
         internal void BuildFromState (DockingSerialization.ZoneData data)
         {
             //  Reset
-            this.Clear();
+            this.ForceCloseAllAndClear();
 
             if (data.Orientation == eDockOrientation.Tabbed)
             {
@@ -455,14 +581,14 @@
             this.Orientation = data.Orientation;
         }
 
-        private bool DoRemoveContent (DockingContentAdapterModel panelAdapter)
+        private bool DoRemoveContent (DockingContentAdapterModel dockedContent)
         {
-            if (panelAdapter.Location == this)
+            if (dockedContent.Location == this)
             {
-                panelAdapter.SetNewLocation(null);
+                dockedContent.SetNewLocation(null);
             }
 
-            bool result = m_dockedContent.Remove(panelAdapter);
+            bool result = m_dockedContent.Remove(dockedContent);
             switch (m_dockedContent.Count)
             {
                 case 0:
@@ -484,7 +610,10 @@
             return result;
         }
 
-        internal bool RunRemoveChildMechanics (DockZoneViewModel child)
+        /// <summary>
+        /// Removes the specified child, and destorys the UI reference
+        /// </summary>
+        internal bool RunChildZoneRemoval (DockZoneViewModel child)
         {
             if (m_children.Remove(child))
             {

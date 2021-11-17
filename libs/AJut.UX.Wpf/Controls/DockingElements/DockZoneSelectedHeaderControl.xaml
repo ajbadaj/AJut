@@ -89,7 +89,7 @@
                                     </Style>
                                 </Grid.Style>
                                 <Button Content="&#xE894;" FontFamily="Segoe MDL2 Assets" 
-                                        Command="{x:Static local:DockZone.ClosePanelCommand}"
+                                        Command="{x:Static local:DockZone.CloseDockedContentCommand}"
                                         CommandParameter="{ajut:TemplateBinding Path=Target}"
                                         Margin="3,1,1,1" FontSize="8"
                                         Background="Transparent" BorderThickness="0" WindowChrome.IsHitTestVisibleInChrome="True"/>

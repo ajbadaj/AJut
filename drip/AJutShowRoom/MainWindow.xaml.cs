@@ -79,7 +79,7 @@
             var right = _BuildDockZoneVM("Right");
 
 
-            this.RightDockZone.ViewModel.TrackingMoniker = "-right side root-";
+            this.RightDockZone.ViewModel.DebugTrackingMoniker = "-right side root-";
             this.RightDockZone.ViewModel.Configure(eDockOrientation.Horizontal);
             this.RightDockZone.ViewModel.AddChild(left);
             this.RightDockZone.ViewModel.AddChild(right);
@@ -138,7 +138,7 @@
             DockZoneViewModel _BuildDockZoneVM (string name)
             {
                 var vm = new DockZoneViewModel(this.DockingManager);
-                vm.TrackingMoniker = name;
+                vm.DebugTrackingMoniker = name;
                 return vm;
             }
         }

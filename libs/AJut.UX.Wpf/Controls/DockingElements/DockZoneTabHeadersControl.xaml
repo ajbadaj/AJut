@@ -144,7 +144,7 @@
 
                                                     <!-- =========[ X Button ]============ -->
                                                     <Button Grid.Column="1" Content="&#xE894;" FontFamily="Segoe MDL2 Assets" FontSize="8"
-                                                            Command="{x:Static local:DockZone.ClosePanelCommand}"
+                                                            Command="{x:Static local:DockZone.CloseDockedContentCommand}"
                                                             CommandParameter="{Binding Path=Adapter}"
                                                             Visibility="{Binding Path=IsDragging, Converter={ajc:BooleanToVisibilityConverter TrueValue=Hidden, FalseValue=Visible}}"
                                                             Margin="3,1,1,1"

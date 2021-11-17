@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.ComponentModel;
     using System.Diagnostics;
     using System.Linq;
     using System.Threading.Tasks;
@@ -52,6 +53,9 @@
         private readonly ObservableCollection<DockZone> m_rootDockZones = new ObservableCollection<DockZone>();
         private readonly MultiMap<Window, DockZone> m_dockZoneMapping = new MultiMap<Window, DockZone>();
         private bool m_isZoneDragDropUnderway;
+
+        private readonly List<Window> m_currentlyClosingWindows = new List<Window>();
+        private readonly List<Window> m_windowsToCloseSilently = new List<Window>();
 
         /// <summary>
         /// Construct a new <see cref="DockingManager"/> instance.
@@ -104,7 +108,7 @@
         /// <summary>
         /// An (optional) method for specifying creation of a tearoff window (default is null which will create a <see cref="DefaultDockTearoffWindow"/>)
         /// </summary>
-        public Func<Window> CreateNewTearoffWindowHandler { get; set; }
+        public Func<Window> CreateNewTearoffWindowHandler { private get; set; }
 
         /// <summary>
         /// An (optional) method for specifying how a tearoff window is shown (default is null which will result in <see cref="Window.Show"/>)
@@ -355,7 +359,16 @@
                             int numZones = dragSourceWindow.GetVisualChildren().OfType<DockZone>().Count();
                             if (numZones == 0 || numZones == 1)
                             {
-                                dragSourceWindow.Close();
+                                m_windowsToCloseSilently.Add(dragSourceWindow);
+                                try
+                                {
+                                    dragSourceWindow.Close();
+                                }
+                                finally
+                                {
+                                    m_windowsToCloseSilently.Remove(dragSourceWindow);
+                                }
+
                             }
                         }
                     }
@@ -551,7 +564,7 @@
                     var child = parentEval.Children[index];
                     if (child.Orientation == parentEval.Orientation)
                     {
-                        parentEval.RunRemoveChildMechanics(child);
+                        parentEval.RunChildZoneRemoval(child);
                         foreach (var grandchild in child.Children.ToList())
                         {
                             parentEval.InsertChild(index++, grandchild);
@@ -574,7 +587,7 @@
             try
             {
                 window = this.CreateNewTearoffWindowHandler();
-                DockWindowConfig.SetIsDockingTearoffWindow(window, true);
+                DockWindowConfig.SetDockingTearoffWindowRootZone(window, rootZone);
                 this.Windows.Track(window);
 
                 DockZone newRoot = new DockZone() { ViewModel = rootZone };
@@ -584,6 +597,7 @@
                 window.Top = newWindowOrigin.Y;
                 window.Width = previousZoneSize.Width;
                 window.Height = previousZoneSize.Height;
+                window.Closing += OnDockTearoffWindowClosing;
                 this.ShowTearoffWindowHandler(window);
                 this.RegisterRootDockZones(newRoot);
                 return Result<Window>.Success(window);
@@ -601,6 +615,37 @@
             }
         }
 
+        private void OnDockTearoffWindowClosing (object sender, CancelEventArgs e)
+        {
+            var window = (Window)sender;
+            if (m_windowsToCloseSilently.Contains(window))
+            {
+                return;
+            }
+
+            m_currentlyClosingWindows.Add(window);
+            try
+            {
+                DockZoneViewModel root = DockWindowConfig.GetDockingTearoffWindowRootZone(window);
+                if (root.IsActivelyAttemptingClose)
+                {
+                    return;
+                }
+
+                if (!root.RequestCloseAllAndClear())
+                {
+                    e.Cancel = true;
+                    return;
+                }
+
+                this.Windows.Root.Focus();
+            }
+            finally
+            {
+                m_currentlyClosingWindows.Remove(window);
+            }
+        }
+
         internal void TrackSizingChanges (DockZone dockZone)
         {
             dockZone.SizeChanged -= this.DockZone_OnSizeChanged;
@@ -610,6 +655,28 @@
         internal void StopTrackingSizingChanges (DockZone dockZone)
         {
             dockZone.SizeChanged -= this.DockZone_OnSizeChanged;
+        }
+
+        internal void FindAndCloseTearoffWindowByDockRoot (DockZoneViewModel dockZoneViewModel, bool closeSilently)
+        {
+            var window = this.Windows.FirstOrDefault(w => DockWindowConfig.GetDockingTearoffWindowRootZone(w) == dockZoneViewModel);
+            if (window != null && !m_currentlyClosingWindows.Contains(window))
+            {
+                if (closeSilently)
+                {
+                    m_windowsToCloseSilently.Add(window);
+                }
+
+                try
+                {
+                    window.Close();
+                }
+                finally
+                {
+                    m_currentlyClosingWindows.Remove(window);
+                }
+                this.Windows.Root.Focus();
+            }
         }
 
         private void TriggerLayoutAutoSave ()

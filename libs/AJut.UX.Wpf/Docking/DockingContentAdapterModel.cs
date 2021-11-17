@@ -46,13 +46,6 @@
             }
         }
 
-        private string m_debugName;
-        public string DebugName
-        {
-            get => m_debugName;
-            set => this.SetAndRaiseIfChanged(ref m_debugName, value);
-        }
-
         private object m_titleContent;
         public object TitleContent
         {
@@ -140,10 +133,6 @@
         internal void FinalizeSetup (object state)
         {
             this.SetupComplete?.Invoke(this, new EventArgs<object>(state));
-            if (this.DebugName == null)
-            {
-                this.DebugName = this.Display?.GetType().Name ?? "-display not set-";
-            }
         }
     }
 }

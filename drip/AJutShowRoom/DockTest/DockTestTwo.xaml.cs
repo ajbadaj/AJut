@@ -19,6 +19,7 @@
             adapter.TitleContent = "Two Has A Long Name";
             adapter.TooltipContent = "A two control";
             adapter.CanClose += this.OnCanClose;
+            adapter.Closed += this.OnClosed;
         }
 
         private void OnCanClose (object sender, IsReadyToCloseEventArgs e)
@@ -30,9 +31,9 @@
             }
         }
 
-        private void OnClosing (object sender, EventArgs e)
+        private void OnClosed (object sender, EventArgs e)
         {
-            MessageBox.Show("Closing a DockTestTwo panel");
+            MessageBox.Show("Closed a DockTestTwo panel");
         }
     }
 }

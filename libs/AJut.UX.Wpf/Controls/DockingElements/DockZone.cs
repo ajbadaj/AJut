@@ -34,31 +34,21 @@
                     return z.ChildZones;
                 }
             }
-            
+
             DockZone _GetParent (DockZone z) => z.ViewModel?.Parent?.UI;
         }
 
         public DockZone ()
         {
             this.ChildZones = new ReadOnlyObservableCollection<DockZone>(m_childZones);
-            this.CommandBindings.Add(new CommandBinding(ClosePanelCommand, OnClosePanel, OnCanClosePanel));
-            this.ViewModel = new DockZoneViewModel(manager:null);
+            this.CommandBindings.Add(new CommandBinding(CloseDockedContentCommand, OnCloseDockedContent, OnCanCloseDockedContent));
+            this.ViewModel = new DockZoneViewModel(manager: null);
             DragDropElement.AddDragDropItemsSwapHandler(this, HandleDragDropItemsSwapForHeaders);
         }
 
-        /// <summary>
-        /// Clears the dockzone, assumes it has already been removed from other zones
-        /// </summary>
-        internal void DeRegisterAndClear ()
-        {
-            this.Manager?.DeRegisterRootDockZones(this);
-            this.ViewModel?.Clear();
-        }
 
-        static int kDEBUG_Counter = 0;
         private void HandleDragDropItemsSwapForHeaders (object sender, DragDropItemsSwapEventArgs e)
         {
-            Logger.LogInfo($"Hit log {kDEBUG_Counter++} times");
             if (this.ViewModel.SwapDockedContentOrder(e.MoveFromIndex, e.MoveToIndex))
             {
                 e.Handled = true;
@@ -73,7 +63,7 @@
         public static void SetGroupId (DependencyObject obj, string value) => obj.SetValue(GroupIdProperty, value);
 
         public static RoutedEvent NotifyCloseSupressionEvent = REUtils.Register<RoutedEventHandler>(nameof(NotifyCloseSupressionEvent));
-        public static RoutedUICommand ClosePanelCommand = new RoutedUICommand("Close Panel", nameof(ClosePanelCommand), typeof(DockZone), new InputGestureCollection(new[] { new KeyGesture(Key.F4, ModifierKeys.Control) }));
+        public static RoutedUICommand CloseDockedContentCommand = new RoutedUICommand("Close", nameof(CloseDockedContentCommand), typeof(DockZone), new InputGestureCollection(new[] { new KeyGesture(Key.F4, ModifierKeys.Control) }));
 
         // ============================[ Properties ]====================================
 
@@ -107,7 +97,7 @@
             private set => this.SetValue(IsSetupPropertyKey, value);
         }
 
-        public static readonly DependencyProperty ViewModelProperty = DPUtils.Register(_ => _.ViewModel, (d,e)=>d.OnViewModelChanged(e));
+        public static readonly DependencyProperty ViewModelProperty = DPUtils.Register(_ => _.ViewModel, (d, e) => d.OnViewModelChanged(e));
         public DockZoneViewModel ViewModel
         {
             get => (DockZoneViewModel)this.GetValue(ViewModelProperty);
@@ -140,7 +130,7 @@
         public ReadOnlyObservableCollection<DockZone> ChildZones { get; }
 
         // ============================[ Private Utilities ]====================================
-        private void OnCanClosePanel (object sender, CanExecuteRoutedEventArgs e)
+        private void OnCanCloseDockedContent (object sender, CanExecuteRoutedEventArgs e)
         {
             if (e.Parameter is DockingContentAdapterModel panelAdapter)
             {
@@ -151,9 +141,9 @@
             }
         }
 
-        private void OnClosePanel (object sender, ExecutedRoutedEventArgs e)
+        private void OnCloseDockedContent (object sender, ExecutedRoutedEventArgs e)
         {
-            this.ViewModel.CloseAndRemoveDockedContent((DockingContentAdapterModel)e.Parameter);
+            this.ViewModel.RequestCloseAndRemoveDockedContent((DockingContentAdapterModel)e.Parameter);
         }
 
         private void OnViewModelChanged (DependencyPropertyChangedEventArgs<DockZoneViewModel> e)
@@ -175,10 +165,10 @@
             {
                 this.Manager = e.NewValue.Manager;
                 e.NewValue.UI = this;
-                
+
                 ((INotifyCollectionChanged)e.NewValue.Children).CollectionChanged -= _OnDockZoneViewModelChildrenChanged;
                 ((INotifyCollectionChanged)e.NewValue.Children).CollectionChanged += _OnDockZoneViewModelChildrenChanged;
-                
+
                 e.NewValue.PropertyChanged -= _OnViewModelPropertyChanged;
                 e.NewValue.PropertyChanged += _OnViewModelPropertyChanged;
 
@@ -209,7 +199,7 @@
                 }
             }
 
-            void _RemoveAll(IEnumerable<DockZone> toRemove)
+            void _RemoveAll (IEnumerable<DockZone> toRemove)
             {
                 var copy = toRemove.ToList();
                 m_childZones.RemoveEach(copy);
@@ -229,7 +219,7 @@
 
             void _OnViewModelPropertyChanged (object sender, System.ComponentModel.PropertyChangedEventArgs e)
             {
-                this.HasSplitZoneOrientation = this.ViewModel == null 
+                this.HasSplitZoneOrientation = this.ViewModel == null
                                                 ? false
                                                 : this.ViewModel.Orientation.IsFlagInGroup(eDockOrientation.AnySplitOrientation);
 
