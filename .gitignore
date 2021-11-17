@@ -17,6 +17,7 @@
 !*.svg
 !*.md
 !**/_TestData
+!*.snippet
 
 # ============[ And finally nix these ]=========================
 *Settings.Designer.cs
