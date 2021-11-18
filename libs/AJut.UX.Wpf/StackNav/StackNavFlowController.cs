@@ -11,12 +11,11 @@
     /// </summary>
     public class StackNavFlowController : NotifyPropertyChanged
     {
-        private Stack<StackElementStorage> m_hiddenElementStack = new Stack<StackElementStorage>();
+        private readonly Stack<StackElementStorage> m_hiddenElementStack = new();
         private StackNavAdapter m_stackTopDisplayAdapter;
         private bool m_isDrawerOpen;
         private bool m_canGoBack;
         private bool m_canCloseDrawer = true;
-        private bool m_showDrawerContents;
 
         // ========================================[ Events ]========================================
 

@@ -44,7 +44,7 @@ namespace AJut.Tree
 
         public static void SetupDefaults (GetTreeNodeChildren<TTreeNode> getChildren, GetTreeNodeParent<TTreeNode> getParent = null)
         {
-            GetChildrenMethod = getChildren ?? throw new ArgumentNullException("getChildren", "The default getChildren method cannot be null");
+            GetChildrenMethod = getChildren ?? throw new ArgumentNullException(nameof(getChildren), "The default getChildren method cannot be null");
             if (getParent != null)
             {
                 GetParentMethod = getParent;
@@ -328,7 +328,7 @@ namespace AJut.Tree
             return default;
         }
 
-        public static TTreeNode NodeAt (TTreeNode start, TreeNodePath nodePath, GetTreeNodeChildren<TTreeNode> getChildrenMethodOverride = null, GetTreeNodeParent<TTreeNode> getParentMethodOverride = null)
+        public static TTreeNode NodeAt (TTreeNode start, TreeNodePath nodePath, GetTreeNodeChildren<TTreeNode> getChildrenMethodOverride = null)
         {
             GetTreeNodeChildren<TTreeNode> getChildren = getChildrenMethodOverride ?? GetChildrenMethod;
             TTreeNode eval = start;
@@ -345,7 +345,7 @@ namespace AJut.Tree
         }
 
 
-        public static TTreeNode ParentNodeFromPath (TTreeNode root, TreeNodePath nodePath, GetTreeNodeChildren<TTreeNode> getChildrenMethodOverride = null, GetTreeNodeParent<TTreeNode> getParentMethodOverride = null)
+        public static TTreeNode ParentNodeFromPath (TTreeNode root, TreeNodePath nodePath, GetTreeNodeChildren<TTreeNode> getChildrenMethodOverride = null)
         {
             GetTreeNodeChildren<TTreeNode> getChildren = getChildrenMethodOverride ?? GetChildrenMethod;
             TTreeNode eval = root;
@@ -367,7 +367,7 @@ namespace AJut.Tree
         }
         public static TTreeNode FindNextSiblingOrCousin (TTreeNode root, TTreeNode start, GetTreeNodeChildren<TTreeNode> getChildrenMethodOverride = null, GetTreeNodeParent<TTreeNode> getParentMethodOverride = null)
         {
-            root = root ?? FindRoot(start, getParentMethodOverride);
+            root ??= FindRoot(start, getParentMethodOverride);
             var getChildren = getChildrenMethodOverride ?? GetChildrenMethod;
             var getParent = getParentMethodOverride ?? GetParentMethod;
             return _DoFindNextSiblingOrCousin(start);
@@ -649,7 +649,7 @@ namespace AJut.Tree
 
         public TTreeNode NodeAt (TreeNodePath nodePath)
         {
-            return TreeTraversal<TTreeNode>.NodeAt(this.Root, nodePath, this.GetChildrenOverride, this.GetParentOverride);
+            return TreeTraversal<TTreeNode>.NodeAt(this.Root, nodePath, this.GetChildrenOverride);
         }
     }
 }

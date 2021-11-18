@@ -54,13 +54,13 @@
     /// </summary>
     public sealed class DockZoneViewModel : NotifyPropertyChanged
     {
-        private readonly ObservableCollection<DockingContentAdapterModel> m_dockedContent = new ObservableCollection<DockingContentAdapterModel>();
-        private readonly ObservableCollection<DockZoneViewModel> m_children = new ObservableCollection<DockZoneViewModel>();
+        private readonly ObservableCollection<DockingContentAdapterModel> m_dockedContent = new();
+        private readonly ObservableCollection<DockZoneViewModel> m_children = new();
         private DockingManager m_manager;
         private DockZoneViewModel m_parent;
         private eDockOrientation m_orientation = eDockOrientation.Empty;
         private int m_selectedIndex;
-        private GridLength m_sizeOnParent = new GridLength(1.0, GridUnitType.Star);
+        private GridLength m_sizeOnParent = new(1.0, GridUnitType.Star);
         private DockZone m_ui;
         private bool m_isActivelyAttemptingClose;
 
@@ -97,7 +97,7 @@
             set => this.SetAndRaiseIfChanged(ref m_debugTrackingMoniker, value);
         }
 
-        public override string ToString () => this.DebugTrackingMoniker != null ? this.DebugTrackingMoniker : base.ToString();
+        public override string ToString () => this.DebugTrackingMoniker ?? base.ToString();
 
         // =======================[ Properties ]=====================================
 
@@ -342,7 +342,7 @@
         {
             TreeTraversal<DockZoneViewModel>.All(this).ForEach(_DoDestroyReference);
 
-            void _DoDestroyReference (DockZoneViewModel zone)
+            static void _DoDestroyReference (DockZoneViewModel zone)
             {
                 if (zone.UI != null)
                 {
