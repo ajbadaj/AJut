@@ -426,20 +426,22 @@
             // ==== Scenario 1: Insert as tab =====
             if (orientation == eDockOrientation.Tabbed)
             {
-                if (this.Orientation.IsFlagInGroup(eDockOrientation.AnyLeafDisplay))
+                // If it's empty (which, by all efforts should be only a root level item - but that shouldn't be relevent), than
+                //  there is a special insert to do, which is to copy it all in. That is because you can't do directional drops
+                //  on empty, as it is assumed empty panels are only at the root level, and therefore there is nothing to split with
+                //  as well as visually there is an expectation that what I'm dropping in just fills the space.
+                if (this.Orientation == eDockOrientation.Empty)
+                {
+                    newSibling.CopyIntoAndClear(this);
+                }
+                else if (this.Orientation.IsFlagInGroup(eDockOrientation.AnyLeafDisplay))
                 {
                     // Find all dock display elements and add them as children to this
                     bool addedAnything = false;
-                    foreach (DockZoneViewModel descendant in TreeTraversal<DockZoneViewModel>.All(newSibling))
+                    foreach (DockingContentAdapterModel content in TreeTraversal<DockZoneViewModel>.All(newSibling).SelectMany(z => z.DockedContent).ToList())
                     {
-                        var elements = descendant.m_dockedContent.ToList();
-                        addedAnything = addedAnything || elements.Count > 0;
-
-                        foreach (DockingContentAdapterModel content in elements)
-                        {
-                            descendant.RemoveDockedContent(content);
-                            this.AddDockedContent(content);
-                        }
+                        addedAnything = true;
+                        this.AddDockedContent(content);
                     }
 
                     if (addedAnything)
