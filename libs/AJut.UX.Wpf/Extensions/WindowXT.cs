@@ -1,6 +1,7 @@
 namespace AJut.UX
 {
     using System;
+    using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
     using System.Windows;
@@ -50,17 +51,38 @@ namespace AJut.UX
             Vector startOffset = (Vector)Mouse.PrimaryDevice.GetPosition(window);
             window.MouseMove += _OnMouseMove;
             window.MouseUp += _OnMouseUp;
+            window.Deactivated += _OnDeactivated;
 
-            cancellor.Register(() => taskCompletion.TrySetCanceled());
-            await taskCompletion.Task;
+            try
+            {
+                cancellor.Register(() => taskCompletion.TrySetCanceled());
+                await taskCompletion.Task;
+            }
+            finally
+            {
+                window.Deactivated -= _OnDeactivated;
+                window.MouseMove -= _OnMouseMove;
+                window.MouseUp -= _OnMouseUp;
+                window.ReleaseMouseCapture();
+            }
 
-            window.MouseMove -= _OnMouseMove;
-            window.MouseUp -= _OnMouseUp;
-            window.ReleaseMouseCapture();
             return true;
+
+            void _OnDeactivated (object sender, EventArgs e)
+            {
+                taskCompletion.TrySetResult();
+            }
 
             void _OnMouseMove (object _sender, MouseEventArgs _e)
             {
+                // Unfortunately, if a new window pops up while dragging and takes focus, or the user iniates
+                //  window's interactive screenshotting (windowskey + shift + s)
+                if (Mouse.PrimaryDevice.Captured == null)
+                {
+                    taskCompletion.TrySetResult();
+                    return;
+                }
+
                 var offset = (Vector)Mouse.PrimaryDevice.GetPosition(window) - startOffset;
                 window.Left += offset.X;
                 window.Top += offset.Y;
@@ -72,6 +94,7 @@ namespace AJut.UX
                 taskCompletion.TrySetResult();
             }
         }
+
         public static async Task<bool> AsyncDragMoveWindow (this DependencyObject src, eCoreMouseButton dragMouseButton = eCoreMouseButton.Primary, Action onMove = null)
         {
             return await src.AsyncDragMoveWindow(CancellationToken.None, dragMouseButton, onMove).ConfigureAwait(false);

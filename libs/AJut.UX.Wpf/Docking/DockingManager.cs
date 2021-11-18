@@ -328,10 +328,6 @@
                 {
                     dragSourceWindow.Visibility = Visibility.Collapsed;
                     await draggerWindow.AsyncDragMove(onMove: _WindowLocationChanged);
-                    if (Mouse.PrimaryDevice.GetPrimaryButtonState() == MouseButtonState.Pressed)
-                    {
-                        Debugger.Break();
-                    }
                 }
                 finally
                 {
