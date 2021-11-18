@@ -103,7 +103,7 @@
             try
             {
                 m_selectionReentrancyBlocker = true;
-                if (e.HasNewValue && e.NewValue > 0 && e.NewValue < this.Items.Count)
+                if (e.HasNewValue && e.NewValue >= 0 && e.NewValue < this.Items.Count)
                 {
                     if (this.SelectedItem != null)
                     {

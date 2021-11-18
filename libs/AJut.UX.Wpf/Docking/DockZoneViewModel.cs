@@ -590,6 +590,7 @@
                 dockedContent.SetNewLocation(null);
             }
 
+            int currentIndex = m_dockedContent.IndexOf(dockedContent);
             bool result = m_dockedContent.Remove(dockedContent);
             switch (m_dockedContent.Count)
             {
@@ -607,6 +608,11 @@
                 case 1:
                     this.Orientation = eDockOrientation.Single;
                     break;
+            }
+
+            if (currentIndex == this.SelectedIndex)
+            {
+                this.SelectedIndex = Math.Max(0, currentIndex - 1);
             }
 
             return result;
