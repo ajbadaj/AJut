@@ -59,7 +59,7 @@
         public static bool GetIsDragging (DependencyObject obj) => (bool)obj.GetValue(IsDraggingProperty);
         private static void SetIsDragging (DependencyObject obj, bool value) => obj.SetValue(IsDraggingPropertyKey, value);
 
-        public static DependencyProperty HoldSwapUntilDragBySwapTargetDimensionsProperty = APUtils.Register(GetHoldSwapUntilDragBySwapTargetDimensions, SetHoldSwapUntilDragBySwapTargetDimensions);
+        public static DependencyProperty HoldSwapUntilDragBySwapTargetDimensionsProperty = APUtils.Register(GetHoldSwapUntilDragBySwapTargetDimensions, SetHoldSwapUntilDragBySwapTargetDimensions, true);
         public static bool GetHoldSwapUntilDragBySwapTargetDimensions (DependencyObject obj) => (bool)obj.GetValue(HoldSwapUntilDragBySwapTargetDimensionsProperty);
         public static void SetHoldSwapUntilDragBySwapTargetDimensions (DependencyObject obj, bool value) => obj.SetValue(HoldSwapUntilDragBySwapTargetDimensionsProperty, value);
 
@@ -141,26 +141,29 @@
                         {
                             if (GetHoldSwapUntilDragBySwapTargetDimensions(activeDrag.DragOwner))
                             {
+                                // TODO: this whole thing seems a little brittle actually... 
                                 Point origin_a = rootDraggedItem.TranslatePoint(new Point(0, 0), activeDrag.DragOwner);
                                 Point origin_b = child.TranslatePoint(new Point(0, 0), activeDrag.DragOwner);
+                                Func<double, double, bool> compX = origin_a.X < origin_b.X ? _LT : _GT;
+                                Func<double, double, bool> compY = origin_a.Y < origin_b.Y ? _LT : _GT;
 
                                 if (origin_a.Y == origin_b.Y)
                                 {
-                                    if (Math.Abs(currDragOffset.X) <= child.ActualWidth)
+                                    if (compX(currDragOffset.X, child.ActualWidth))
                                     {
                                         break;
                                     }
                                 }
                                 else if (origin_a.X == origin_b.X)
                                 {
-                                    if (Math.Abs(currDragOffset.Y) <= child.ActualHeight)
+                                    if (compY(currDragOffset.Y, child.ActualHeight))
                                     {
                                         break;
                                     }
                                 }
                                 else
                                 {
-                                    if (Math.Abs(currDragOffset.X) <= child.ActualWidth || Math.Abs(currDragOffset.Y) <= child.ActualHeight)
+                                    if (compX(currDragOffset.X, child.ActualWidth) || compY(currDragOffset.Y, child.ActualHeight))
                                     {
                                         break;
                                     }
@@ -177,6 +180,9 @@
                             }
                             break;
                         }
+
+                        static bool _LT (double a, double b) => a <= b;
+                        static bool _GT (double a, double b) => a >= b;
                     }
 
                     if (!hasSetDragOffset)

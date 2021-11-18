@@ -169,28 +169,25 @@
                 var offset = current - initial;
                 if (Math.Abs(offset.X) >= SystemParameters.MinimumHorizontalDragDistance)
                 {
+                    m_initialDownLocation = null;
+                    m_target.ReleaseMouseCapture();
                     if (!ExecuteDragCommand(DragDropElement.HorizontalDragInitiatedCommand, e, (Point)initial))
                     {
                         if(ExecuteDragCommand(DragDropElement.DragInitiatedCommand, e, (Point)initial))
                         {
-                            m_target.ReleaseMouseCapture();
                             return;
                         }
-                    }
-                    else
-                    {
-                        m_target.ReleaseMouseCapture();
                     }
                 }
                 
                 if (Math.Abs(offset.Y) >= SystemParameters.MinimumVerticalDragDistance)
                 {
+                    m_initialDownLocation = null;
+                    m_target.ReleaseMouseCapture();
                     if (!ExecuteDragCommand(DragDropElement.VerticalDragInitiatedCommand, e, (Point)initial))
                     {
                         ExecuteDragCommand(DragDropElement.DragInitiatedCommand, e, (Point)initial);
                     }
-
-                    m_target.ReleaseMouseCapture();
                 }
             }
 
