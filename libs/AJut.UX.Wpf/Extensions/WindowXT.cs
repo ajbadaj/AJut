@@ -7,6 +7,7 @@ namespace AJut.UX
     using System.Windows;
     using System.Windows.Input;
     using System.Windows.Interop;
+    using AJut.Storage;
 
     public static class WindowXT
     {
@@ -43,15 +44,16 @@ namespace AJut.UX
                 return false;
             }
 
-            if (!window.CaptureMouse())
+            Result<InputDeviceCaptureTracker> result = Mouse.PrimaryDevice.EngageSelfReleasingCaptureFor(window);
+            if (!result)
             {
+                Logger.LogError(result.GetErrorReport());
                 return false;
             }
+            result.Value.RegisterActionWhenCaptureIsComplete(() => taskCompletion.TrySetResult());
 
             Vector startOffset = (Vector)Mouse.PrimaryDevice.GetPosition(window);
             window.MouseMove += _OnMouseMove;
-            window.MouseUp += _OnMouseUp;
-            window.Deactivated += _OnDeactivated;
 
             try
             {
@@ -60,18 +62,11 @@ namespace AJut.UX
             }
             finally
             {
-                window.Deactivated -= _OnDeactivated;
                 window.MouseMove -= _OnMouseMove;
-                window.MouseUp -= _OnMouseUp;
-                window.ReleaseMouseCapture();
+                result.Value.Dispose();
             }
 
             return true;
-
-            void _OnDeactivated (object sender, EventArgs e)
-            {
-                taskCompletion.TrySetResult();
-            }
 
             void _OnMouseMove (object _sender, MouseEventArgs _e)
             {
@@ -87,11 +82,6 @@ namespace AJut.UX
                 window.Left += offset.X;
                 window.Top += offset.Y;
                 onMove();
-            }
-
-            void _OnMouseUp (object sender, MouseButtonEventArgs e)
-            {
-                taskCompletion.TrySetResult();
             }
         }
 

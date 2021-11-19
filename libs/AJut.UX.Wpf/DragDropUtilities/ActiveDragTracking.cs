@@ -3,9 +3,11 @@
     using System;
     using System.Windows;
     using System.Windows.Input;
+    using AJut.Storage;
 
     public class ActiveDragTracking : IDisposable
     {
+        private InputDeviceCaptureTracker m_captureTracker;
         public ActiveDragTracking (UIElement dragOwner, UIElement childFoundIn, InputDevice device, Point startPoint)
         {
             this.DragOwner = dragOwner;
@@ -23,40 +25,43 @@
         public event EventHandler<EventArgs> SignalDragEnd;
 
         public bool IsValid => this.DragOwner != null && this.Device != null;
-        public UIElement DragOwner { get; }
-        public UIElement ChildFoundIn { get; }
+        public UIElement DragOwner { get; private set; }
+        public UIElement ChildFoundIn { get; private set; }
         public object SenderContext => (this.ChildFoundIn as FrameworkElement)?.DataContext;
-        public InputDevice Device { get; }
+        public InputDevice Device { get; private set; }
         public Point StartPoint { get; }
+        public bool IsEngaged => m_captureTracker != null;
 
         /// <summary>
         /// Capture the input device in question and sign up for device update events
         /// </summary>
         public bool Engage ()
         {
+            if (this.IsEngaged)
+            {
+                return true;
+            }
+
+            Result<InputDeviceCaptureTracker> result = this.Device.EngageSelfReleasingCaptureFor(this.DragOwner);
+            if (!result)
+            {
+                Logger.LogError(result.GetErrorReport());
+                return false;
+            }
+
+            m_captureTracker = result.Value;
+            m_captureTracker.RegisterActionWhenCaptureIsComplete(this.TriggerEnd);
+
             if (this.Device is MouseDevice mouse)
             {
                 this.DragOwner.MouseMove -= this.OnDeviceUpdated;
-                this.DragOwner.MouseUp -= this.OnDeviceSignalingDragCompleted;
-
-                if (!mouse.Capture(this.DragOwner))
-                {
-                    return false;
-                }
-
                 this.DragOwner.MouseMove += this.OnDeviceUpdated;
-                this.DragOwner.MouseUp += this.OnDeviceSignalingDragCompleted;
                 return true;
             }
 
             if (this.Device is TouchDevice touch)
             {
                 touch.Updated -= this.OnDeviceUpdated;
-                if (!touch.Capture(this.DragOwner))
-                {
-                    return false;
-                }
-
                 touch.Updated += this.OnDeviceUpdated;
                 return true;
             }
@@ -64,23 +69,13 @@
             if (this.Device is StylusDevice stylus)
             {
                 this.DragOwner.StylusMove -= this.OnDeviceUpdated;
-                this.DragOwner.StylusUp -= this.OnDeviceSignalingDragCompleted;
-
-                if (!stylus.Capture(this.DragOwner))
-                {
-                    return false;
-                }
-
                 this.DragOwner.StylusMove += this.OnDeviceUpdated;
-                this.DragOwner.StylusUp += this.OnDeviceSignalingDragCompleted;
-
                 return true;
             }
 
-            throw new ThisWillNeverHappenButICantReturnWithoutDoingSomethingException();
+            return false;
         }
 
-        
         private void OnDeviceUpdated (object sender, EventArgs e)
         {
             if (this.Device is TouchDevice touch && touch.GetTouchPoint(this.DragOwner) is TouchPoint tp && tp.Action == TouchAction.Up)
@@ -93,7 +88,7 @@
             }
         }
         
-        private void OnDeviceSignalingDragCompleted (object sender, EventArgs e)
+        private void OnDragOwnerWindowDeactivated (object sender, EventArgs e)
         {
             this.TriggerEnd();
         }
@@ -105,33 +100,27 @@
 
         public void TriggerEnd ()
         {
+            m_captureTracker?.Dispose();
+            m_captureTracker = null;
             this.TriggerMoved();
             this.SignalDragEnd?.Invoke(this, EventArgs.Empty);
         }
 
-
         public void Dispose ()
         {
+            m_captureTracker?.Dispose();
             this.DragOwner.MouseMove -= this.OnDeviceUpdated;
-            this.DragOwner.MouseUp -= this.OnDeviceSignalingDragCompleted;
             this.DragOwner.StylusMove -= this.OnDeviceUpdated;
-            this.DragOwner.StylusUp -= this.OnDeviceSignalingDragCompleted;
-
-            if (this.Device is MouseDevice)
-            {
-                this.DragOwner.ReleaseMouseCapture();
-            }
 
             if (this.Device is TouchDevice touch)
             {
                 touch.Updated -= this.OnDeviceUpdated;
-                this.DragOwner.ReleaseTouchCapture(touch);
             }
 
-            if (this.Device is StylusDevice)
-            {
-                this.DragOwner.ReleaseStylusCapture();
-            }
+            this.Device = null;
+            this.DragOwner = null;
+            this.ChildFoundIn = null;
+
         }
 
         public Point GetCurrentPointOnDragOwner ()
