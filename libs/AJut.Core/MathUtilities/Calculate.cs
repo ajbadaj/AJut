@@ -39,6 +39,28 @@
             return numbers.Aggregate(GreatestCommonDenominatorFixed);
         }
 
+        public static void MinAndMaxValuesIn<T> (IEnumerable<T> numbers, out T min, out T max)
+        {
+            MinAndMaxValuesIn(numbers.ToArray(), out min, out max);
+        }
+
+        public static void MinAndMaxValuesIn (dynamic[] numbers, out dynamic min, out dynamic max)
+        {
+            min = numbers[0];
+            max = numbers[0];
+            foreach (dynamic value in numbers.Skip(1))
+            {
+                if (value < min)
+                {
+                    min = value;
+                }
+                else if (value > max)
+                {
+                    max = value;
+                }
+            }
+        }
+
         private static dynamic GreatestCommonDenominatorFixed (dynamic a, dynamic b)
         {
             return b == 0 ? a : GreatestCommonDenominator(b, a % b);
