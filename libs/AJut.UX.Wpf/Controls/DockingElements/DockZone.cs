@@ -1,14 +1,18 @@
 ﻿namespace AJut.UX.Controls
 {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
+    using System.Diagnostics;
     using System.Linq;
     using System.Windows;
     using System.Windows.Controls;
+    using System.Windows.Data;
     using System.Windows.Input;
     using AJut.Tree;
+    using AJut.UX;
     using AJut.UX.Docking;
     using APUtils = AJut.UX.APUtils<DockZone>;
     using DPUtils = AJut.UX.DPUtils<DockZone>;
@@ -44,8 +48,52 @@
             this.CommandBindings.Add(new CommandBinding(CloseDockedContentCommand, OnCloseDockedContent, OnCanCloseDockedContent));
             this.ViewModel = new DockZoneViewModel(manager: null);
             DragDropElement.AddDragDropItemsSwapHandler(this, HandleDragDropItemsSwapForHeaders);
+
+            m_childZones.CollectionChanged += this.OnChildZoneUIAdded;
+            this.Loaded += _OnLoaded;
+            void _OnLoaded (object sender, RoutedEventArgs e)
+            {
+                this.HandleNewChildZonesAdded(m_childZones);
+            }
         }
 
+        private void OnChildZoneUIAdded (object sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (!this.IsLoaded)
+            {
+                return;
+            }
+
+            this.Dispatcher.InvokeAsync(() =>
+            {
+                if (e.NewItems != null)
+                {
+                    this.HandleNewChildZonesAdded(e.NewItems.OfType<DockZone>());
+                }
+            });
+        }
+
+        private void HandleNewChildZonesAdded (IEnumerable<DockZone> added)
+        {
+            if (added.IsNullOrEmpty())
+            {
+                return;
+            }
+
+            var grid = this.GetFirstChildOf<AutoGrid>();
+            if (grid == null)
+            {
+                return;
+            }
+
+            foreach (var zone in added)
+            {
+                if (zone.ViewModel.TakePassAlongUISize(out Size formerSize))
+                {
+                    grid.SetTargetFixedSizeFor(Grid.GetRow(zone), Grid.GetColumn(zone), formerSize);
+                }
+            }
+        }
 
         private void HandleDragDropItemsSwapForHeaders (object sender, DragDropItemsSwapEventArgs e)
         {

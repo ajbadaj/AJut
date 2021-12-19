@@ -200,8 +200,7 @@
                 }
                 finally
                 {
-                    var newHeader = m_items.First(h => h.Adapter == m_activeReorderTarget);
-                    newHeader.IsDragging = false;
+                    m_items.ForEach(h => h.IsDragging = false);
                     m_activeReorderTarget = null;
                 }
             }

@@ -64,7 +64,7 @@
             set => this.SetValue(BorderThicknessProperty, value);
         }
 
-        public static readonly DependencyProperty FixedColumnCountProperty = DPUtils.Register(_ => _.FixedColumnCount, AutoGrid.kUnlimited, (d,e)=>d.EvaluateAndSetSetRowColumnInfo());
+        public static readonly DependencyProperty FixedColumnCountProperty = DPUtils.Register(_ => _.FixedColumnCount, AutoGrid.kUnlimited, (d, e) => d.EvaluateAndSetSetRowColumnInfo());
         public int FixedColumnCount
         {
             get => (int)this.GetValue(FixedColumnCountProperty);
@@ -92,7 +92,7 @@
             set => this.SetValue(AddColumnResizersProperty, value);
         }
 
-        public static readonly DependencyProperty AddRowResizersProperty = DPUtils.Register(_ => _.AddRowResizers, (d,e)=> d.EvaluateAndSetSetRowColumnInfo());
+        public static readonly DependencyProperty AddRowResizersProperty = DPUtils.Register(_ => _.AddRowResizers, (d, e) => d.EvaluateAndSetSetRowColumnInfo());
         public bool AddRowResizers
         {
             get => (bool)this.GetValue(AddRowResizersProperty);
@@ -148,24 +148,13 @@
         }
 
         protected virtual void EvaluateAndSetSetRowColumnInfo ()
-        { 
+        {
             if (m_isRemovingSizers)
             {
                 return;
             }
 
-            // Reduce definitions to their unit versions (300*, 300*, 100* → 3*, 3*, 1*)
-            if (this.RowDefinitions.Count > 1 && this.RowDefinitions.All(r => r.Height.IsStar))
-            {
-                double unitBase = Calculate.Mean(this.RowDefinitions.Select(r => r.Height.Value));
-                this.RowDefinitions.ForEach(r => r.Height = new GridLength(r.Height.Value / unitBase, GridUnitType.Star));
-            }
-
-            if (this.ColumnDefinitions.Count > 1 && this.ColumnDefinitions.All(c => c.Width.IsStar))
-            {
-                double unitBase = Calculate.Mean(this.ColumnDefinitions.Select(r => r.Width.Value));
-                this.ColumnDefinitions.ForEach(c => c.Width = new GridLength(c.Width.Value / unitBase, GridUnitType.Star));
-            }
+            this.EnsureRowAndColumnDefinitionsAreUnitSized();
 
             // Grow row/column definitions to match current set, and set current items to have proper Grid.Row/Grid.Column
             int maxRowIndex = 0;
@@ -338,20 +327,179 @@
             }
         }
 
+        /// <remarks>
+        /// Requires <see cref="EnsureRowAndColumnDefinitionsAreUnitSized"/> is called first
+        /// </remarks>
         protected virtual void EnsureRowColumnAvailable (int row, int column)
         {
+            if (row < 0 || column < 0)
+            {
+                return;
+            }
+
+            double newRowSize = 1.0 / Math.Max(1, this.RowDefinitions.Count);
+            double newColumnSize = 1.0 / Math.Max(1, this.ColumnDefinitions.Count);
+
+            //var initRowHeight = new Lazy<GridLength>(_BuildInitialRowHeight);
+            //var initColumnWidth = new Lazy<GridLength>(_BuildInitialColumnWidth);
+            bool addedAny = false;
             while (this.RowDefinitions.Count <= row)
             {
-                var def = new RowDefinition { Height = this.InitialRowHeight };
+                var def = new RowDefinition { Height = new GridLength(newRowSize, GridUnitType.Star) };
                 def.SetBinding(RowDefinition.MinHeightProperty, this.CreateBinding(AutoGrid.MinElementHeightProperty));
                 this.RowDefinitions.Add(def);
+                addedAny = true;
             }
             while (this.ColumnDefinitions.Count <= column)
             {
-                var def = new ColumnDefinition { Width = this.InitialColumnWidth };
+                var def = new ColumnDefinition { Width = new GridLength(newColumnSize, GridUnitType.Star) };
                 def.SetBinding(ColumnDefinition.MinWidthProperty, this.CreateBinding(AutoGrid.MinElementWidthProperty));
                 this.ColumnDefinitions.Add(def);
+                addedAny = true;
             }
+
+            if (addedAny)
+            {
+                this.EnsureRowAndColumnDefinitionsAreUnitSized();
+            }
+
+            //GridLength _BuildInitialRowHeight ()
+            //{
+            //    return new GridLength(newRowCount == 0 ? 1 : 1 / newRowCount, GridUnitType.Star);
+            //}
+            //GridLength _BuildInitialColumnWidth ()
+            //{
+            //    return new GridLength(newColumnCount == 0 ? 1 : 1 / newColumnCount, GridUnitType.Star);
+            //}
+        }
+
+        protected void EnsureRowAndColumnDefinitionsAreUnitSized ()
+        {
+            /* Need to write improved unit size so everything is expressed as a percent out of the whole
+             * Then it's also easy to see if everything is in unit size via adding everything up and seeing
+             * if it's approximately 1.0
+             */
+            
+            if (this.RowDefinitions.Count > 0 && !_AreRowsUnitSized())
+            {
+                double unitBase = this.RowDefinitions.Select(r => r.Height.Value).Sum();
+                this.RowDefinitions.ForEach(r => r.SetCurrentValue(RowDefinition.HeightProperty, new GridLength(r.Height.Value / unitBase, GridUnitType.Star)));
+            }
+
+            if (this.ColumnDefinitions.Count > 0 && !_AreColumnsUnitSized())
+            {
+                double unitBase = this.ColumnDefinitions.Select(r => r.Width.Value).Sum();
+                this.ColumnDefinitions.ForEach(c => c.SetCurrentValue(ColumnDefinition.WidthProperty, new GridLength(c.Width.Value / unitBase, GridUnitType.Star)));
+            }
+
+            bool _AreRowsUnitSized ()
+            {
+                return this.RowDefinitions.Select(r => r.Height.Value).Sum().IsApproximatelyEqualTo(1.0, 0.001);
+                //return Calculate.QuickEvaluateIfSumIsLessThanOrEqualTo(this.RowDefinitions.Select(r => r.Height.Value), 1.1);
+            }
+
+            bool _AreColumnsUnitSized ()
+            {
+                return this.ColumnDefinitions.Select(c => c.Width.Value).Sum().IsApproximatelyEqualTo(1.0, 0.001);
+                //return Calculate.QuickEvaluateIfSumIsLessThanOrEqualTo(this.ColumnDefinitions.Select(r => r.Width.Value), 1.1);
+            }
+        }
+
+//#error this is still slightly flawed, if this is drag/drop where you're dropping to might be smaller and all of these won't work properly. Better to to store targetSize as percents (though this is auto-grid so maybe support both?)
+        public void SetTargetFixedSizeFor (int targetRow, int targetColumn, Size targetSize)
+        {
+            // No matter what you set your target, it will be capped to be at max this percent
+            const double kMaxRequestPercent = 0.5;
+
+            if (targetSize.HasZeroArea())
+            {
+                return;
+            }
+
+            double newRowUnitSize = Math.Min(targetSize.Height, kMaxRequestPercent * this.ActualHeight) / this.ActualHeight;
+            double newColumnUnitSize = Math.Min(targetSize.Width, kMaxRequestPercent * this.ActualWidth) / this.ActualWidth;
+            this.SetTargetSizePercentageFor(targetRow, targetColumn, newRowUnitSize, newColumnUnitSize);
+        }
+
+        public void SetTargetSizePercentageFor (int targetRow, int targetColumn, double newRowSizePercent, double newColumnWidthPercent)
+        {
+            // If neither are asking to be set... (supply -1 for that)
+            if (newRowSizePercent < 0.0 && newColumnWidthPercent < 0.0)
+            {
+                return;
+            }
+
+            // If either have an error of 0.0 (not supported)
+            if (newRowSizePercent == 0.0 || newColumnWidthPercent == 0.0)
+            {
+                return;
+            }
+
+            this.EnsureRowAndColumnDefinitionsAreUnitSized();
+
+            if (this.RowDefinitions.Count > 1)
+            {
+                double currUnitSize = this.RowDefinitions[targetRow].Height.Value;
+                double toDistirbute = (newRowSizePercent - currUnitSize) / (this.RowDefinitions.Count - 1);
+                for (int index = 0; index < this.RowDefinitions.Count; ++index)
+                {
+                    if (index == targetRow)
+                    {
+                        this.RowDefinitions[index].SetCurrentValue(RowDefinition.HeightProperty, new GridLength(newRowSizePercent, GridUnitType.Star));
+                    }
+                    else
+                    {
+                        this.RowDefinitions[index].SetCurrentValue(RowDefinition.HeightProperty, new GridLength(this.RowDefinitions[index].Height.Value + toDistirbute, GridUnitType.Star));
+                    }
+                }
+            }
+            if (this.ColumnDefinitions.Count > 1)
+            {
+                double currUnitSize = this.ColumnDefinitions[targetColumn].Width.Value;
+                double toDistirbute = (newColumnWidthPercent - currUnitSize) / (this.ColumnDefinitions.Count - 1);
+                for (int index = 0; index < this.ColumnDefinitions.Count; ++index)
+                {
+                    if (index == targetColumn)
+                    {
+                        this.ColumnDefinitions[index].SetCurrentValue(ColumnDefinition.WidthProperty, new GridLength(newColumnWidthPercent, GridUnitType.Star));
+                    }
+                    else
+                    {
+                        this.ColumnDefinitions[index].SetCurrentValue(ColumnDefinition.WidthProperty, new GridLength(this.ColumnDefinitions[index].Width.Value + toDistirbute, GridUnitType.Star));
+                    }
+                }
+            }
+
+            /*
+             * How it should be...         
+             * 3 Rows: 200*|800*|400*
+             * Total size: 1400
+             * 
+             * New row added, and automatically before we can see...
+             * 4 rows (still size 1400)...
+             *      First Unit sized:
+             *          > 14%  |57%  |29%
+             *          > 0.14*|0.57*|0.29*
+             *      Second add new element with init size:
+             *          auto init size would resolve to 1/count, in this case 0.25*
+             *          > 0.14*|0.57*|0.29*|0.25*
+             *          Effectively this resolves to:
+             *          > 0.11*|0.46*|0.23*|0.20
+             *          > 154* |644* |322* |280*
+             *      Third, outside of AutoGrid now acts - it says "hey I wanted the new guy to be 140 in size...
+             *          Unit size again first...
+             *          > 0.11*|0.46*|0.23*|0.20
+             *          Then determine target new unit size
+             *          > 0.10
+             *          Find difference (0.2 - 0.1)
+             *          > 0.10
+             *          Determine distribution ammount, diff/(count-1)
+             *          > 0.033
+             *          Set everying
+             *          > 0.14*|0.49*|0.26*|0.1*
+             *          > 196* |686* |364* |140*
+             * 
+             */
         }
 
         protected virtual bool CalculateRowColumnForIndex(int index, out int row, out int column)

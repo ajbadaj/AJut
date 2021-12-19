@@ -60,9 +60,9 @@
         private DockZoneViewModel m_parent;
         private eDockOrientation m_orientation = eDockOrientation.Empty;
         private int m_selectedIndex;
-        private GridLength m_sizeOnParent = new(1.0, GridUnitType.Star);
         private DockZone m_ui;
         private bool m_isActivelyAttemptingClose;
+        private Size? m_internalStorageOfPassAlongUISize;
 
         // =======================[ Construction/Configuration ]=====================================
         static DockZoneViewModel ()
@@ -99,6 +99,32 @@
 
         public override string ToString () => this.DebugTrackingMoniker ?? base.ToString();
 
+        /// <summary>
+        /// [INTERNAL] Store the UI Size for passalong. Note, this is an uncommon mechanism and should only be used as construction passthrough
+        /// either at serialization time, or as part of the tear-off or similar mechanisms where a new UI is created.
+        /// </summary>
+        internal void StorePassAlongUISize (Size size)
+        {
+            m_internalStorageOfPassAlongUISize = size;
+        }
+
+        /// <summary>
+        /// [INTERNAL] Take the UI Size for passing along. This action is destructive. Note, this is an uncommon mechanism and should only be used 
+        /// as construction passthrough either at serialization time, or as part of the tear-off or similar mechanisms where a new UI is created.
+        /// </summary>
+        internal bool TakePassAlongUISize (out Size size)
+        {
+            if (m_internalStorageOfPassAlongUISize != null)
+            {
+                size = m_internalStorageOfPassAlongUISize.Value;
+                m_internalStorageOfPassAlongUISize = null;
+                return true;
+            }
+
+            size = Size.Empty;
+            return false;
+        }
+
         // =======================[ Properties ]=====================================
 
         public DockingManager Manager
@@ -130,12 +156,6 @@
             set => this.SetAndRaiseIfChanged(ref m_selectedIndex, value);
         }
 
-        public GridLength SizeOnParent
-        {
-            get => m_sizeOnParent;
-            set => this.SetAndRaiseIfChanged(ref m_sizeOnParent, value);
-        }
-
         public DockZone UI
         {
             get => m_ui;
@@ -159,24 +179,30 @@
 
         // =======================[ Public API Methods ]=====================================
 
-        public void CopyIntoAndClear (DockZoneViewModel dockZone)
+        /// <summary>
+        /// Copy this into the passed in zone vm, then clear this
+        /// </summary>
+        /// <param name="zoneVm"></param>
+        public void CopyIntoAndClear (DockZoneViewModel zoneVm)
         {
             // Step 1) Copy all the things we're about to steal so there are no parenting issues.
             var locallyDockedElementsCopy = m_dockedContent.ToList();
             var childZonesCopy = m_children.ToList();
             var orientation = this.Orientation;
             var selectedIndex = this.SelectedIndex;
+            var sizeOnParent = this.UI.RenderSize;
 
             // Step 2) Clear in preparation, otherwise there may be some issues with visual/logical parents
             //          still being set, throwing exceptions
             this.InternalClearAllSilently();
-            dockZone.InternalClearAllSilently();
+            zoneVm.InternalClearAllSilently();
 
             // Step 3) Set all the things in dockZone with the things we set aside earlier
-            locallyDockedElementsCopy.ForEach(c => dockZone.AddDockedContent(c));
-            childZonesCopy.ForEach(c => dockZone.AddChild(c));
-            dockZone.Orientation = orientation;
-            dockZone.SelectedIndex = selectedIndex;
+            locallyDockedElementsCopy.ForEach(c => zoneVm.AddDockedContent(c));
+            childZonesCopy.ForEach(c => zoneVm.AddChild(c));
+            zoneVm.Orientation = orientation;
+            zoneVm.SelectedIndex = selectedIndex;
+            zoneVm.StorePassAlongUISize(sizeOnParent);
         }
 
         public DockZoneViewModel DuplicateAndClear ()
@@ -184,8 +210,10 @@
             var dupe = new DockZoneViewModel
             {
                 Orientation = this.Orientation,
-                SizeOnParent = this.SizeOnParent
             };
+
+            // Store sizing info to pass along to grid in next UI location
+            dupe.StorePassAlongUISize(this.UI.RenderSize);
 
             // Copy over Docked Content and clear
             dupe.m_dockedContent.AddEach(m_dockedContent);
@@ -346,6 +374,10 @@
             {
                 if (zone.UI != null)
                 {
+                    // Save it for the next UI (if any)
+                    zone.StorePassAlongUISize(zone.UI.RenderSize);
+
+                    // Break both references
                     zone.UI.ViewModel = null;
                     zone.UI = null;
                 }
@@ -494,6 +526,11 @@
         }
 
         // =======================[ Hidden API Utilities ]=====================================
+
+        private void PrepForExport ()
+        {
+            this.StorePassAlongUISize(this.UI.RenderSize);
+        }
 
         /// <summary>
         /// Recursively (leaf up) clears all contents and cleans up all ui and parent references
