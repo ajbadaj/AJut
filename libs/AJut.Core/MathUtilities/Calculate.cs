@@ -12,15 +12,23 @@
         /// <summary>
         /// Calculate the mean average of the number set
         /// </summary>
-        public static dynamic Mean (IEnumerable<dynamic> numbers)
+        public static T Mean<T> (IEnumerable<T> numbers)
         {
-            return Sum(numbers) / numbers.Count();
+            return SumAndCount(numbers, out int count) / count;
+        }
+
+        /// <summary>
+        /// Calculate the mean average of the number set
+        /// </summary>
+        public static dynamic Mean (params dynamic[] numbers)
+        {
+            return SumAndCount(numbers, out int count) / count;
         }
 
         /// <summary>
         /// Calculate the least common multiple of the number set
         /// </summary>
-        public static dynamic LeastCommonMultiple<dynamic> (IEnumerable<dynamic> numbers)
+        public static dynamic LeastCommonMultiple (IEnumerable<dynamic> numbers)
         {
             return numbers.Aggregate((dynamic a, dynamic b) => LeastCommonMultipleFixed(a, b));
         }
@@ -36,7 +44,7 @@
         /// <summary>
         /// Calculate the greatest common denominator of the number set
         /// </summary>
-        public static dynamic GreatestCommonDenominator<dynamic> (IEnumerable<dynamic> numbers)
+        public static dynamic GreatestCommonDenominator (IEnumerable<dynamic> numbers)
         {
             return numbers.Aggregate((dynamic a, dynamic b) => GreatestCommonDenominatorFixed(a, b));
         }
@@ -55,7 +63,7 @@
         /// <param name="numbers">The numbers to evaluate</param>
         /// <param name="min">The found min value</param>
         /// <param name="max">The found max value</param>
-        public static void MinAndMaxValuesIn (IEnumerable<dynamic> numbers, out dynamic min, out dynamic max)
+        public static void MinAndMaxValuesIn<T> (IEnumerable<T> numbers, out T min, out T max)
         {
             min = max = numbers.First();
             foreach (dynamic value in numbers.Skip(1))
@@ -74,15 +82,55 @@
         /// <summary>
         /// Similar to the <see cref="Enumerable.Sum"/> extension functions, except accepting of dynamic
         /// </summary>
-        public static dynamic Sum (IEnumerable<dynamic> numbers)
+        public static dynamic SumAndCount<T> (IEnumerable<T> numbers, out int count)
+        {
+            count = 0;
+            dynamic sum = 0;
+            foreach (dynamic value in numbers)
+            {
+                sum += value;
+                ++count;
+            }
+
+            return sum;
+        }
+
+        /// <summary>
+        /// Evaluates if a sum is less than the target. Checks each iteration and fails as soon as the sum is larger than or equal to the target, 
+        /// rather than evaluating the whole sequence for the sum and checking that final result.
+        /// </summary>
+        public static bool QuickEvaluateIfSumIsLessThan<T> (IEnumerable<T> numbers, dynamic lessThan)
         {
             dynamic sum = 0;
             foreach (dynamic value in numbers)
             {
                 sum += value;
+                if (sum >= lessThan)
+                {
+                    return false;
+                }
             }
 
-            return sum;
+            return true;
+        }
+
+        /// <summary>
+        /// Evaluates if a sum is less than or eqaul to the target. Checks each iteration and fails as soon as the sum is larger than the target, 
+        /// rather than evaluating the whole sequence for the sum and checking that final result.
+        /// </summary>
+        public static bool QuickEvaluateIfSumIsLessThanOrEqualTo<T> (IEnumerable<T> numbers, dynamic lessThanOrEqualTo)
+        {
+            dynamic sum = 0;
+            foreach (dynamic value in numbers)
+            {
+                sum += value;
+                if (sum > lessThanOrEqualTo)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         // ==========================[ Private Utility Functions ]===========================================
