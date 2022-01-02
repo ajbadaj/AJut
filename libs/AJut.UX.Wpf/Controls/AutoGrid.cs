@@ -409,7 +409,7 @@
         public void SetTargetFixedSizeFor (int targetRow, int targetColumn, Size targetSize)
         {
             // No matter what you set your target, it will be capped to be at max this percent
-            const double kMaxRequestPercent = 0.5;
+            const double kMaxRequestPercent = 0.975;
 
             if (targetSize.HasZeroArea())
             {
@@ -440,7 +440,7 @@
             if (this.RowDefinitions.Count > 1)
             {
                 double currUnitSize = this.RowDefinitions[targetRow].Height.Value;
-                double toDistirbute = (newRowSizePercent - currUnitSize) / (this.RowDefinitions.Count - 1);
+                double toDistirbute = (currUnitSize - newRowSizePercent) / (this.RowDefinitions.Count - 1);
                 for (int index = 0; index < this.RowDefinitions.Count; ++index)
                 {
                     if (index == targetRow)
@@ -449,14 +449,16 @@
                     }
                     else
                     {
-                        this.RowDefinitions[index].SetCurrentValue(RowDefinition.HeightProperty, new GridLength(this.RowDefinitions[index].Height.Value + toDistirbute, GridUnitType.Star));
+                        double final = this.RowDefinitions[index].Height.Value + toDistirbute;
+                        final = Math.Max(0.025, final);
+                        this.RowDefinitions[index].SetCurrentValue(RowDefinition.HeightProperty, new GridLength(final, GridUnitType.Star));
                     }
                 }
             }
             if (this.ColumnDefinitions.Count > 1)
             {
                 double currUnitSize = this.ColumnDefinitions[targetColumn].Width.Value;
-                double toDistirbute = (newColumnWidthPercent - currUnitSize) / (this.ColumnDefinitions.Count - 1);
+                double toDistirbute = (currUnitSize - newColumnWidthPercent) / (this.ColumnDefinitions.Count - 1);
                 for (int index = 0; index < this.ColumnDefinitions.Count; ++index)
                 {
                     if (index == targetColumn)
