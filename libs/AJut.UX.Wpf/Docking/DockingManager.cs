@@ -596,6 +596,8 @@
                 window.Closing += OnDockTearoffWindowClosing;
                 this.ShowTearoffWindowHandler(window);
                 this.RegisterRootDockZones(newRoot);
+
+                rootZone.ClearPassAlongUISize();
                 return Result<Window>.Success(window);
             }
             catch (Exception exc)

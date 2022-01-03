@@ -125,6 +125,15 @@
             return false;
         }
 
+        /// <summary>
+        /// [INTERNAL] Clear the UI Size for passing along. This action is destructive. Note, this is an uncommon mechanism
+        /// and should only be used as part of the tear-off or similar mechanisms where a new UI is created.
+        /// </summary>
+        internal void ClearPassAlongUISize ()
+        {
+            m_internalStorageOfPassAlongUISize = null;
+        }
+
         // =======================[ Properties ]=====================================
 
         public DockingManager Manager

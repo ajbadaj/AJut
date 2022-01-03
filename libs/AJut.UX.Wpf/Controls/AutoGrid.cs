@@ -29,6 +29,9 @@
     {
         public static int kUnlimited = -1;
 
+        private const double kMaxPercentage = 0.975;
+        private const double kMinPercentage = 0.015;
+
         private List<GridSplitter> m_generatedColumnSizers = new List<GridSplitter>();
         private List<GridSplitter> m_generatedRowSizers = new List<GridSplitter>();
         private bool m_isRemovingSizers = false;
@@ -408,16 +411,14 @@
 //#error this is still slightly flawed, if this is drag/drop where you're dropping to might be smaller and all of these won't work properly. Better to to store targetSize as percents (though this is auto-grid so maybe support both?)
         public void SetTargetFixedSizeFor (int targetRow, int targetColumn, Size targetSize)
         {
-            // No matter what you set your target, it will be capped to be at max this percent
-            const double kMaxRequestPercent = 0.975;
-
             if (targetSize.HasZeroArea())
             {
                 return;
             }
 
-            double newRowUnitSize = Math.Min(targetSize.Height, kMaxRequestPercent * this.ActualHeight) / this.ActualHeight;
-            double newColumnUnitSize = Math.Min(targetSize.Width, kMaxRequestPercent * this.ActualWidth) / this.ActualWidth;
+            // No matter what you set your target, it will be capped to the max percent
+            double newRowUnitSize = Math.Min(targetSize.Height, kMaxPercentage * this.ActualHeight) / this.ActualHeight;
+            double newColumnUnitSize = Math.Min(targetSize.Width, kMaxPercentage * this.ActualWidth) / this.ActualWidth;
             this.SetTargetSizePercentageFor(targetRow, targetColumn, newRowUnitSize, newColumnUnitSize);
         }
 
@@ -449,9 +450,8 @@
                     }
                     else
                     {
-                        double final = this.RowDefinitions[index].Height.Value + toDistirbute;
-                        final = Math.Max(0.025, final);
-                        this.RowDefinitions[index].SetCurrentValue(RowDefinition.HeightProperty, new GridLength(final, GridUnitType.Star));
+                        double cappedPercent = Cap.Within(kMinPercentage, kMaxPercentage, this.RowDefinitions[index].Height.Value + toDistirbute);
+                        this.RowDefinitions[index].SetCurrentValue(RowDefinition.HeightProperty, new GridLength(cappedPercent, GridUnitType.Star));
                     }
                 }
             }
@@ -467,7 +467,8 @@
                     }
                     else
                     {
-                        this.ColumnDefinitions[index].SetCurrentValue(ColumnDefinition.WidthProperty, new GridLength(this.ColumnDefinitions[index].Width.Value + toDistirbute, GridUnitType.Star));
+                        double cappedPercent = Cap.Within(kMinPercentage, kMaxPercentage, this.ColumnDefinitions[index].Width.Value + toDistirbute);
+                        this.ColumnDefinitions[index].SetCurrentValue(ColumnDefinition.WidthProperty, new GridLength(cappedPercent, GridUnitType.Star));
                     }
                 }
             }
