@@ -294,7 +294,7 @@
         }
 
         /// <summary>
-        /// Recursively (leaf up) clozes all docked content (sends close event), then clears and cleans up all ui and parent references.
+        /// Recursively (leaf up) closes all docked content (sends close event), then clears and cleans up all ui and parent references.
         /// To request using the <see cref="DockingContentAdapterModel.CheckCanClose"/>, use <see cref="RequestCloseAllAndClear"/> instead/
         /// </summary>
         public void ForceCloseAllAndClear ()
@@ -312,7 +312,13 @@
                 dockedContent.SetNewLocation(null);
             }
 
-            this.InternallyReparentAndCleanup(null);
+            // If you did this to a root element, you'd mess things up for them and make them inoperable
+            //  primarily due to destroying their ViewModel piece on cooresponding fixed root DockZone ctrls
+            if (this.Parent != null)
+            {
+                this.InternallyReparentAndCleanup(null);
+            }
+
             this.InternalClearAllSilently();
         }
 
@@ -320,7 +326,7 @@
         {
             if (orientation == eDockOrientation.Empty)
             {
-                this.ForceClearAllRecursively();
+                this.ForceCloseAllAndClear();
             }
 
             else if (orientation.IsFlagInGroup(eDockOrientation.AnyLeafDisplay))
@@ -536,32 +542,6 @@
 
         // =======================[ Hidden API Utilities ]=====================================
 
-        private void PrepForExport ()
-        {
-            this.StorePassAlongUISize(this.UI.RenderSize);
-        }
-
-        /// <summary>
-        /// Recursively (leaf up) clears all contents and cleans up all ui and parent references
-        /// </summary>
-        internal void ForceClearAllRecursively ()
-        {
-            // Recurse first so we start at the leaves
-            foreach (var child in m_children)
-            {
-                child.ForceClearAllRecursively();
-            }
-
-            // Remove all docked content
-            foreach (DockingContentAdapterModel dockedContent in m_dockedContent)
-            {
-                dockedContent.SetNewLocation(null);
-            }
-
-            this.InternallyReparentAndCleanup(null);
-            this.InternalClearAllSilently();
-        }
-
         /// <summary>
         /// The non-interface way to remove a child, to be performed only in mass cleanup efforts
         /// </summary>
@@ -598,6 +578,8 @@
                             State = adapter.Display.GenerateState()
                         }
                     ).ToArray();
+                data.SizeOnParent = this.UI.RenderSize;
+                data.SelectedIndex = this.SelectedIndex;
             }
             else
             {

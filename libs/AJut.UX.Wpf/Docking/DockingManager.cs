@@ -216,7 +216,7 @@
         /// <typeparam name="T">The type of display (an implenetation of <see cref="IDockableDisplayElement"/>)</typeparam>
         public T BuildNewDisplayElement<T> () where T : IDockableDisplayElement
         {
-            return (T)BuildNewDisplayElement(typeof(T));
+            return (T)this.BuildNewDisplayElement(typeof(T));
         }
 
         /// <summary>
@@ -228,15 +228,7 @@
             var displayElement = m_factory.TryGetValue(elementType, out var b)
                                     ? b.Builder()
                                     : BuildDefaultDisplayFor(elementType);
-
-            if (displayElement == null)
-            {
-                return displayElement;
-            }
-
-            displayElement.Setup(new DockingContentAdapterModel(this));
-            displayElement.DockingAdapter.Display = displayElement;
-            return displayElement;
+            return this.SetupAndReturnNew(displayElement);
         }
 
         /// <summary>
@@ -577,6 +569,55 @@
         }
 
         // ==============================[ Utility Methods ]======================================
+
+        internal IDockableDisplayElement BuildNewDisplayElement (string typeId)
+        {
+            return TypeIdRegistrar.TryGetType(typeId, out Type type)
+                    ? this.BuildNewDisplayElement(type)
+                    : this.SetupAndReturnNew(AJutActivator.CreateInstanceOf(typeId) as IDockableDisplayElement);
+        }
+
+        private IDockableDisplayElement SetupAndReturnNew (IDockableDisplayElement displayElement)
+        {
+            if (displayElement == null)
+            {
+                return null;
+            }
+
+            displayElement.Setup(new DockingContentAdapterModel(this));
+            displayElement.DockingAdapter.Display = displayElement;
+            return displayElement;
+        }
+
+        internal DockZoneViewModel GetFallbackRootZone () => m_rootDockZones.FirstOrDefault()?.ViewModel;
+
+        internal DockZoneViewModel GetRootZone (string groupId)
+        {
+            return m_rootDockZones.FirstOrDefault(z => DockZone.GetGroupId(z) == groupId)?.ViewModel;
+        }
+
+        internal void ClearForLoadingFromState ()
+        {
+            var allTearoffs = this.Windows.Where(w => w != this.Windows.Root).ToList();
+            var allTearoffRoots = m_dockZoneMapping.Where(kv => kv.Key != this.Windows.Root).SelectMany(kv => kv.Value);
+
+            m_windowsToCloseSilently.AddRange(allTearoffs);
+            foreach (var tearoff in allTearoffs)
+            {
+                m_windowsToCloseSilently.Add(tearoff);
+                tearoff.Close();
+                m_dockZoneMapping.RemoveAllFor(tearoff);
+                m_rootDockZones.RemoveAll(allTearoffRoots.Contains);
+            }
+
+            m_windowsToCloseSilently.Clear();
+
+            // Now all that's left are the root window root zones
+            foreach (var root in m_rootDockZones)
+            {
+                root.ViewModel.ForceCloseAllAndClear();
+            }
+        }
 
         internal DockingSerialization.CoreStorageData BuildSerializationInfoForRoot ()
         {
