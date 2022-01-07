@@ -1,5 +1,6 @@
 ﻿namespace AJut.Storage
 {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
@@ -22,6 +23,14 @@
         public virtual void Add (TKey key, TValue value)
         {
             this.GetValuesFor(key, true).Add(value);
+        }
+
+        /// <summary>
+        /// Removes and drops a key and all associated values
+        /// </summary>
+        public virtual bool RemoveAllFor (TKey key)
+        {
+            return m_store.Remove(key);
         }
 
         /// <summary>
