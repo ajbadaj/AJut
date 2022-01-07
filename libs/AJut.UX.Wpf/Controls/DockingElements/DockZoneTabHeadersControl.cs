@@ -245,7 +245,7 @@
                     newOC.CollectionChanged += _OnItemsSourceCollectionChanged;
                 }
 
-                if (this.SelectedItem == null)
+                if (this.SelectedItem == null && m_items.Count > 0)
                 {
                     this.SetSelection(m_items.First());
                 }
