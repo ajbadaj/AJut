@@ -587,19 +587,14 @@
 
         internal DockingSerialization.ZoneData GenerateSerializationState ()
         {
-            var data = new DockingSerialization.ZoneData
-            {
-                GroupId = DockZone.GetGroupId(this.UI),
-                Orientation = this.Orientation,
-            };
-
-            if (this.Orientation == eDockOrientation.Tabbed)
+            var data = new DockingSerialization.ZoneData(this.Orientation);
+            if (this.Orientation.IsFlagInGroup(eDockOrientation.AnyLeafDisplay))
             {
                 data.DisplayState = this.DockedContent
                     .Select(
                         adapter => new DockingSerialization.DisplayData
                         {
-                            TypeId = TypeIdRegistrar.GetTypeIdFor(adapter.GetType()),
+                            TypeId = TypeIdRegistrar.GetTypeIdFor(adapter.Display.GetType()) ?? adapter.Display.GetType().FullName,
                             State = adapter.Display.GenerateState()
                         }
                     ).ToArray();

@@ -4,7 +4,6 @@
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.ComponentModel;
-    using System.Diagnostics;
     using System.Linq;
     using System.Threading.Tasks;
     using System.Windows;
@@ -15,6 +14,7 @@
     using AJut.Storage;
     using AJut.Tree;
     using AJut.TypeManagement;
+    using AJut.UX.AttachedProperties;
     using AJut.UX.Controls;
 
     public enum eDockingAutoSaveMethod
@@ -120,7 +120,7 @@
         /// <summary>
         /// Register root <see cref="DockZone"/>(s) that are fixed dock locations. Each DockingManager requires at least one root level zone.
         /// </summary>
-        public void RegisterRootDockZones (params DockZone[] dockZones)
+        public void RegisterRootDockZones (Window window, params DockZone[] dockZones)
         {
             foreach (var zone in dockZones)
             {
@@ -136,7 +136,7 @@
                     zone.ViewModel = new DockZoneViewModel(this);
                 }
 
-                m_dockZoneMapping.Add(this.Windows.Root, zone);
+                m_dockZoneMapping.Add(window, zone);
             }
         }
 
@@ -359,6 +359,7 @@
                                 try
                                 {
                                     dragSourceWindow.Close();
+                                    m_dockZoneMapping.RemoveAllFor(dragSourceWindow);
                                 }
                                 finally
                                 {
@@ -577,6 +578,42 @@
 
         // ==============================[ Utility Methods ]======================================
 
+        internal DockingSerialization.CoreStorageData BuildSerializationInfoForRoot ()
+        {
+            // Core window info:
+            //  - Split by root zones w/ zone ids
+            //  - normal serialization window
+            var storage = new DockingSerialization.CoreStorageData();
+            foreach (var rootZone in m_dockZoneMapping[this.Windows.Root])
+            {
+                storage.ZoneInfoByRoot.Add(DockZone.GetGroupId(rootZone), rootZone.ViewModel.GenerateSerializationState());
+            }
+
+            return storage;
+        }
+
+        internal IEnumerable<DockingSerialization.WindowStorageData> BuildSerializationInfoForAncillaryWindows ()
+        {
+            // For each docking tearoff window...
+            //  - window location and display info (state, size, etc)
+            //  - single root zone tree info
+            foreach (var kv in m_dockZoneMapping)
+            {
+                if (kv.Key == this.Windows.Root)
+                {
+                    continue;
+                }
+
+                yield return new DockingSerialization.WindowStorageData
+                {
+                    WindowSize = kv.Key.RenderSize,
+                    WindowState = kv.Key.WindowState,
+                    WindowLocation = new Point(kv.Key.Left, kv.Key.Top),
+                    WindowIsFullscreened = WindowXTA.GetIsFullscreen(kv.Key),
+                    State = kv.Value.First().ViewModel.GenerateSerializationState()
+                };
+            }
+        }
         internal Result<Window> CreateAndStockTearoffWindow (DockZoneViewModel rootZone, Point newWindowOrigin, Size previousZoneSize)
         {
             Window window = null;
@@ -595,7 +632,7 @@
                 window.Height = previousZoneSize.Height;
                 window.Closing += OnDockTearoffWindowClosing;
                 this.ShowTearoffWindowHandler(window);
-                this.RegisterRootDockZones(newRoot);
+                this.RegisterRootDockZones(window, newRoot);
 
                 rootZone.ClearPassAlongUISize();
                 return Result<Window>.Success(window);
