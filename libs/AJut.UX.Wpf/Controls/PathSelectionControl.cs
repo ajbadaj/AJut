@@ -217,7 +217,31 @@
             }
             else
             {
-                this.DoesPathExist = this.PathType == ePathType.File ? File.Exists(path) : Directory.Exists(path);
+                bool existsAsFile = false;
+                bool existsAsDirectory = false;
+                try
+                {
+                    existsAsFile = File.Exists(path);
+                } catch { }
+                try
+                {
+                    existsAsDirectory = Directory.Exists(path);
+                }
+                catch { }
+
+                // If it exists as a file but you're looking for a directory, or vice-versa - then we have a problem
+                if (this.PathType == ePathType.File && existsAsDirectory)
+                {
+                    _SetError("Looking for a file, path is an existing directory");
+                    return;
+                }
+                if (this.PathType == ePathType.Folder && existsAsFile)
+                {
+                    _SetError("Looking for a directory, path is an existing file");
+                    return;
+                }
+
+                this.DoesPathExist = this.PathType == ePathType.File ? existsAsFile : existsAsDirectory;
                 if (!this.DoesPathExist && this.TreatNonExistentPathAsInvalid)
                 {
                     // Ignoring _SetError which sets DoesPathExist
