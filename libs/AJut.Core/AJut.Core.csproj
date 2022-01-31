@@ -6,6 +6,8 @@
     <Authors>AJ Badarni</Authors>
     <Company />
     <Version>0.0.1</Version>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <DocumentationFile>..\..\bin\drip\ajut-core.xml</DocumentationFile>
   </PropertyGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
