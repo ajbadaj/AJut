@@ -72,47 +72,18 @@
             Stream imageStream = null;
             try
             {
-                ImageStorage image = null;
-                if (!e.NewValue.IsAbsoluteUri || e.NewValue.IsFile)
-                {
-                    image = ImageStorage.FromFile(e.NewValue.OriginalString);
-                }
-                else if (e.NewValue.Scheme.Equals("pack", StringComparison.InvariantCultureIgnoreCase))
-                {
+                SetCurrentFrameIndex(d, -1);
 
-                    int stopInd = e.NewValue.AbsolutePath.IndexOf(';');
-                    string assemblyName = e.NewValue.AbsolutePath.Substring(0, stopInd).Trim('/');
-                    Assembly assembly = AppDomain.CurrentDomain.GetAssemblies().First(a => a.GetName().Name == assemblyName);
-                    string embeddedResourcePath = e.NewValue.AbsolutePath.Replace($"{assemblyName};component/", "").Trim('/');
-                    embeddedResourcePath = FileHelpers.GenerateEmbeddedResourceName(embeddedResourcePath, assembly);
-
-                    imageStream = assembly.GetManifestResourceStream(embeddedResourcePath);
-                    if (imageStream != null)
-                    {
-                        image = ImageStorage.FromStream(imageStream);
-                    }
+                Stream stream = FileHelpers.GetStreamForFileUri(e.NewValue);
+                if (stream != null)
+                {
+                    SetInfo(d, new GifInfoCache(ImageStorage.FromStream(stream)));
                 }
                 else
                 {
-                    using (HttpWebResponse response = (HttpWebResponse)WebRequest.Create(e.NewValue).GetResponse())
-                    {
-                        using (BinaryReader reader = new BinaryReader(response.GetResponseStream()))
-                        {
-                            imageStream = new MemoryStream();
-                            byte[] transferBuffer = reader.ReadBytes(1024);
-                            while (transferBuffer.Length > 0)
-                            {
-                                imageStream.Write(transferBuffer, 0, transferBuffer.Length);
-                                transferBuffer = reader.ReadBytes(1024);
-                            }
-
-                            image = ImageStorage.FromStream(imageStream);
-                        }
-                    }
+                    SetInfo(d, null);
                 }
 
-                SetCurrentFrameIndex(d, -1);
-                SetInfo(d, new GifInfoCache(image));
                 SetCurrentFrameIndex(d, 0);
                 ResetTimer(d);
             }

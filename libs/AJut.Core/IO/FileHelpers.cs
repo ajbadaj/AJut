@@ -2,6 +2,8 @@
 {
     using System;
     using System.IO;
+    using System.Linq;
+    using System.Net;
     using System.Reflection;
     using System.Threading.Tasks;
     using AJut;
@@ -162,6 +164,51 @@
                 using (StreamWriter writer = new StreamWriter(writeStream))
                 {
                     writer.Write(stream);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Get a readable and complete stream for a file at an absolute path, an embedded manifest resource (packed file), or a file from the interwebs
+        /// </summary>
+        /// <param name="fileUri">The uri of the file</param>
+        /// <returns>The stream, up to the caller to dispose.</returns>
+        public static Stream GetStreamForFileUri (Uri fileUri)
+        {
+            if (!fileUri.IsAbsoluteUri || fileUri.IsFile)
+            {
+                if (File.Exists(fileUri.OriginalString))
+                {
+                    return File.OpenRead(fileUri.OriginalString);
+                }
+
+                return null;
+            }
+            else if (fileUri.Scheme.Equals("pack", StringComparison.InvariantCultureIgnoreCase))
+            {
+                int stopInd = fileUri.AbsolutePath.IndexOf(';');
+                string assemblyName = fileUri.AbsolutePath.Substring(0, stopInd).Trim('/');
+                Assembly assembly = AppDomain.CurrentDomain.GetAssemblies().First(a => a.GetName().Name == assemblyName);
+                string embeddedResourcePath = fileUri.AbsolutePath.Replace($"{assemblyName};component/", "").Trim('/');
+                embeddedResourcePath = FileHelpers.GenerateEmbeddedResourceName(embeddedResourcePath, assembly);
+                return assembly.GetManifestResourceStream(embeddedResourcePath);
+            }
+            else
+            {
+                var finalStream = new MemoryStream();
+                using (HttpWebResponse response = (HttpWebResponse)WebRequest.Create(fileUri).GetResponse())
+                {
+                    using (BinaryReader reader = new BinaryReader(response.GetResponseStream()))
+                    {
+                        byte[] transferBuffer = reader.ReadBytes(1024);
+                        while (transferBuffer.Length > 0)
+                        {
+                            finalStream.Write(transferBuffer, 0, transferBuffer.Length);
+                            transferBuffer = reader.ReadBytes(1024);
+                        }
+
+                        return finalStream;
+                    }
                 }
             }
         }
