@@ -234,7 +234,7 @@
         /// <summary>
         /// Utility that removes all <see cref="Path"/>.GetInvalidPathChars() from the passed in file name.
         /// </summary>
-        /// <param name="fileName">The file name to sanitize</param>
+        /// <param name="path">The path to sanitize</param>
         /// <returns>The a version of the passed in file name that has no <see cref="Path"/>.GetInvalidPathChars() in it</returns>
         public static string SanitizePath (string path)
         {
@@ -262,6 +262,7 @@
         /// <param name="sourceDirectory">The source directory</param>
         /// <param name="targetPath">The target path</param>
         /// <param name="separatorChar">The character to use when building the final path</param>
+        /// <param name="prefix">An optional prefix to prepend</param>
         /// <returns>A relative path from the target directory to the source directory</returns>
         public static string GenerateRelativePath (string sourceDirectory, string targetPath, char separatorChar = '\\', string prefix = null)
         {

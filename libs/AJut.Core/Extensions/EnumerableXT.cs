@@ -5,10 +5,13 @@
     using System.Collections.Generic;
     using System.Linq;
 
-    public delegate bool Matcher<T> (T first, T second);
-
-    public static class EnumerableExtensions
+    /// <summary>
+    /// Extensions for <see cref="IEnumerable"/> and <see cref="IEnumerable{T}"/>
+    /// </summary>
+    public static class EnumerableXT
     {
+        public static IEnumerable<TSource> AllNonNullElements<TSource> (this IEnumerable<TSource> source) => source.Where(x => x != null);
+
         public static bool IsEmpty<T> (this IEnumerable<T> This)
         {
             return !This.Any();

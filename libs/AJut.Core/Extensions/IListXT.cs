@@ -138,7 +138,7 @@
         }
 
         /// <summary>
-        /// Equivallent to Clear() && AddEach(otherList) - except that it only removes items not contained in otherList and then inserts items
+        /// Equivallent to Clear() and AddEach(otherList) - except that it only removes items not contained in otherList and then inserts items
         /// from otherList to match. This allows to limit the ammount of changes we are making to only be the useful set (helpful in UI circumstances
         /// might respond to each change by tearing down and creating new UI).
         /// </summary>

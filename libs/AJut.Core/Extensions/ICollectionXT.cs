@@ -5,6 +5,16 @@
     using System.Collections.Generic;
     using System.Linq;
 
+
+    /// <summary>
+    /// A typed object matching evaluator
+    /// </summary>
+    /// <returns>true if the passed in objects match</returns>
+    public delegate bool Matcher<T> (T first, T second);
+
+    /// <summary>
+    /// Extensions for <see cref="ICollection"/> and <see cref="ICollection{T}"/> types
+    /// </summary>
     public static class ICollectionXT
     {
         public static bool IsNullOrEmpty<T> (this T[] arr)

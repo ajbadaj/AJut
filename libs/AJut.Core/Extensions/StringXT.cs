@@ -457,7 +457,7 @@
         /// <summary>
         /// Retrieves the missing part of the test string needed to complete this string.
         /// </summary>
-        /// <param name="in_StringToComplete">The string to complete</param>
+        /// <param name="this_StringToComplete">The string to complete</param>
         /// <param name="in_TestString">The string that might complete it</param>
         /// <param name="completionEnd">For partial matches. The end of the string to check for a missing portion of the string to complete.</param>
         /// <remarks>
