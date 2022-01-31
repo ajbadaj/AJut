@@ -188,7 +188,12 @@
             {
                 int stopInd = fileUri.AbsolutePath.IndexOf(';');
                 string assemblyName = fileUri.AbsolutePath.Substring(0, stopInd).Trim('/');
-                Assembly assembly = AppDomain.CurrentDomain.GetAssemblies().First(a => a.GetName().Name == assemblyName);
+                Assembly assembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == assemblyName);
+                if (assembly == null)
+                {
+                    return null;
+                }
+
                 string embeddedResourcePath = fileUri.AbsolutePath.Replace($"{assemblyName};component/", "").Trim('/');
                 embeddedResourcePath = FileHelpers.GenerateEmbeddedResourceName(embeddedResourcePath, assembly);
                 return assembly.GetManifestResourceStream(embeddedResourcePath);
