@@ -55,7 +55,7 @@
         /// </summary>
         /// <param name="filePath">Path of the file to parse</param>
         /// <param name="rules">Parser rules</param>
-        /// <returns>A non-<c>null</c> <see cref="Json"/> instance</returns>
+        /// <returns>A <see cref="Json"/> which is guranteed to be non-<c>null</c></returns>
         public static Json ParseFile (string filePath, ParserRules rules = null)
         {
             if (PathHelpers.IsValidAsPath(filePath) && File.Exists(filePath))
@@ -68,6 +68,18 @@
                 jsonOutput.AddError($"File path '{filePath ?? "<null>"}' does not exist on disk, or is an invalid path!");
                 return jsonOutput;
             }
+        }
+
+        /// <summary>
+        /// Parse a stream for a file - note: performs read to end and parses text result
+        /// </summary>
+        /// <param name="jsonFileStream">The stream to read (performs read to end)</param>
+        /// <param name="rules">The rules (optional) to apply. Default is <c>null</c> which will result in the default rule set.</param>
+        /// <returns>A <see cref="Json"/> which is guranteed to be non-<c>null</c></returns>
+        public static Json ParseFile (Stream jsonFileStream, ParserRules rules = null)
+        {
+            StreamReader reader = new StreamReader(jsonFileStream);
+            return ParseText(reader.ReadToEnd(), rules);
         }
 
         /// <summary>
