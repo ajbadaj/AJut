@@ -1,10 +1,11 @@
 ﻿namespace AJutShowRoom.DockTest
 {
-    using System;
     using System.Windows;
     using System.Windows.Controls;
+    using AJut.TypeManagement;
     using AJut.UX.Docking;
 
+    [TypeId("AJutShowRoom.DockTest.DockTestOne")]
     public partial class DockTestOne : UserControl, IDockableDisplayElement
     {
         public DockTestOne ()
@@ -21,9 +22,12 @@
             adapter.Closed += this.OnClosed;
         }
 
-        private void OnClosed (object sender, EventArgs e)
+        private void OnClosed (object sender, ClosedEventArgs e)
         {
-            MessageBox.Show("Closed a DockTestOne panel");
+            if (!e.IsForForcedClose)
+            {
+                MessageBox.Show("Closed a DockTestOne panel");
+            }
         }
     }
 }

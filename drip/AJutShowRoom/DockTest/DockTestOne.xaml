@@ -8,6 +8,6 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
-        <ajut:EditableTextBlock Text="One Control" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="48"/>
+        <ajut:EditableTextBlock Text="Simple" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="48"/>
     </Grid>
 </UserControl>

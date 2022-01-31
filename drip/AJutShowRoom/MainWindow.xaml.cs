@@ -70,57 +70,18 @@
 
             this.InitializeComponent();
 
-            this.DockingManager = new DockingManager(this, "Main");
-            this.DockingManager.RegisterRootDockZones(this.LeftDockZone, this.RightDockZone);
-            this.LeftDockZone.ViewModel.GenerateAndAdd<DockTestOne>();
-            this.LeftDockZone.ViewModel.GenerateAndAdd<DockTestTwo>();
-
-            var left = _BuildDockZoneVM("Left");
-            var right = _BuildDockZoneVM("Right");
-
-
-            this.RightDockZone.ViewModel.DebugTrackingMoniker = "-right side root-";
-            this.RightDockZone.ViewModel.Configure(eDockOrientation.Horizontal);
-            this.RightDockZone.ViewModel.AddChild(left);
-            this.RightDockZone.ViewModel.AddChild(right);
-            
-            left.GenerateAndAdd<DockTestOne>();
-
-
-            var rightTop = _BuildDockZoneVM("rightTop");
-            var rightMiddleBottomGroup = _BuildDockZoneVM("rightMiddleBottomGroup");
-            right.Configure(eDockOrientation.Vertical);
-            right.AddChild(rightTop);
-            right.AddChild(rightMiddleBottomGroup);
-
-
-            rightMiddleBottomGroup.Configure(eDockOrientation.Vertical);
-            var rightMiddle = _BuildDockZoneVM("rightMiddle");
-            var rightBottom = _BuildDockZoneVM("rightBottom");
-            rightMiddleBottomGroup.AddChild(rightMiddle);
-            rightMiddleBottomGroup.AddChild(rightBottom);
-
-            rightBottom.Configure(eDockOrientation.Horizontal);
-            var rightBottomAnterior = _BuildDockZoneVM("rightBottomAnterior");
-            var rightBottomPosterior = _BuildDockZoneVM("rightBottomPosterior");
-            rightBottom.AddChild(rightBottomAnterior);
-            rightBottom.AddChild(rightBottomPosterior);
-
-            rightTop.GenerateAndAdd<DockTestTwo>();
-            rightMiddle.GenerateAndAdd<DockTestOne>();
-            rightMiddle.GenerateAndAdd<DockTestTwo>();
-            rightBottomAnterior.GenerateAndAdd<DockTestOne>();
-            rightBottomPosterior.GenerateAndAdd<DockTestTwo>();
-
-            // It is possible to manually, or from layout files, bypass the normal user interface and break expectations
-            //  (ie if a parent orientation is vertical, a vertical child orientation request will just add it as a sibling,
-            //  and that storage expectation is required). This will help to clear that, but because this will also potentially
-            //  clear and eliminiate dock zones and dock zone view models, it's important to give agency of usage of this fix
-            //  out as part of the API.
-            this.DockingManager.CleanZoneLayoutHierarchies();
+            this.DockingManager = new DockingManager(this, "Main", App.AppDataPath("example.docklayout"), eDockingAutoSaveMethod.AutoSaveOnAllChanges);
+            this.DockingManager.RegisterRootDockZones(this, this.LeftDockZone, this.RightDockZone);
+            this.Loaded += _OnFirstLoad;
+            void _OnFirstLoad(object sender, EventArgs e)
+            {
+                this.Loaded -= _OnFirstLoad;
+                this.DockingManager.SetupDefaultAndFallbackTo("pack://application:,,,/AJutShowRoom;component/example-default.docklayout");
+            }
 
             this.Navigator = new StackNavFlowController();
             this.Navigator.GenerateAndPushDisplay<FirstDisplay>();
+            
 
             TestTreeItem _SetExpanded (TestTreeItem item)
             {
@@ -133,13 +94,6 @@
                 item.IsGroup = true;
                 item.Title = $"Group {item.Title}";
                 return item;
-            }
-
-            DockZoneViewModel _BuildDockZoneVM (string name)
-            {
-                var vm = new DockZoneViewModel(this.DockingManager);
-                vm.DebugTrackingMoniker = name;
-                return vm;
             }
         }
 
@@ -349,6 +303,31 @@
                 this.ToolWindows?.HideAllWindows();
                 this.DockingManager?.Windows.HideAllWindows();
             }
+        }
+
+        private void SaveDockLayout_OnClick (object sender, RoutedEventArgs e)
+        {
+            this.DockingManager.SaveDockLayoutToFile(this.DockPathPicker.SelectedPath);
+        }
+
+        private void LoadDockLayout_OnClick (object sender, RoutedEventArgs e)
+        {
+            this.DockingManager.LoadDockLayoutFromFile(this.DockPathPicker.SelectedPath);
+        }
+
+        private void ResetDockLayoutToPreLoaded_OnClick (object sender, RoutedEventArgs e)
+        {
+            this.DockingManager.LoadDockLayoutFromFile("pack://application:,,,/AJutShowRoom;component/example-default.docklayout");
+        }
+
+        private void ReloadDockLayoutFromPersistentStorage_OnClick (object sender, RoutedEventArgs e)
+        {
+            this.DockingManager.ReloadDockLayoutFromPersistentStorage();
+        }
+
+        private void SaveDockLayoutToPersistentStorage_OnClick (object sender, RoutedEventArgs e)
+        {
+            this.DockingManager.SaveDockLayoutToPersistentStorage();
         }
 
         private void SynchFlatTreeListSelection_OnClick (object sender, RoutedEventArgs e)

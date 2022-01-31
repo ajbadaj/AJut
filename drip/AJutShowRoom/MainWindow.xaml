@@ -10,7 +10,7 @@
         xmlns:ajconv="clr-namespace:AJut.UX.Converters;assembly=AJut.UX.WPF"
         xmlns:ajdraw="clr-namespace:AJut.UX.Drawing;assembly=AJut.UX.WPF"
         xmlns:ajprop="clr-namespace:AJut.UX.PropertyInteraction;assembly=AJut.UX.WPF"
-        Title="AJut: Show Room" Height="450" Width="800"
+        Title="AJut: Show Room" Height="550" Width="1280"
         x:Name="Self">
     <Window.CommandBindings>
         <CommandBinding Command="{x:Static local:MainWindow.DoStuffCommand}" Executed="DoStuff_OnExecuted"/>
@@ -37,10 +37,11 @@
                             <Image x:Name="GifDisplay" Height="250"
                                ajap:Gif.Path="pack://application:,,,/AJutShowRoom;component/FreeGif.gif"
                                ajap:Gif.IsPlaying="{Binding Path=IsChecked, RelativeSource={RelativeSource AncestorType=ToggleButton}, Mode=TwoWay}"
-                               ajap:Gif.OverrideIsLooping="False"/>
+                               ajap:Gif.OverrideIsLooping="{Binding ElementName=LoopTheGif, Path=IsChecked}"/>
                         </Border>
                     </ToggleButton>
                     <TextBlock Grid.Row="1" Text="{Binding ElementName=GifDisplay, Path=(ajap:Gif.CurrentFrameIndex), StringFormat='Frame #{0}'}"/>
+                    <CheckBox Content="Should Loop" x:Name="LoopTheGif" HorizontalAlignment="Left" IsChecked="True"/>
                 </StackPanel>
             </TabItem>
             <TabItem Header="Toggle Strip">
@@ -616,32 +617,59 @@
             <TabItem x:Name="DockingFrameworkTab" Header="Docking Framework" IsSelected="True">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition />
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="1*"/>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="2*"/>
                     </Grid.ColumnDefinitions>
-                    <Border Grid.Column="0" Margin="0,0,1,0">
-                        <ajctrls:DockZone x:Name="LeftDockZone" GroupId="MainWindowTestDocking"/>
-                    </Border>
+
+                    <!-- Center controls -->
                     <Grid Background="#202020" Grid.Column="1" Margin="1,0">
-                        <StackPanel VerticalAlignment="Center">
-                            <TextBlock Foreground="White" TextWrapping="WrapWithOverflow" TextAlignment="Center" Margin="5"
-                                       Text="Docking zones to the left and right - this is the undockable part."/>
-                            <TextBlock Foreground="White" TextWrapping="WrapWithOverflow" TextAlignment="Center" Margin="5,20,5,5" FontWeight="Bold"
+                        <StackPanel >
+                            <StackPanel TextElement.FontSize="10">
+                                <TextBlock Foreground="White" TextWrapping="WrapWithOverflow" TextAlignment="Justify" Margin="5"
+                                       Text="Docking zones are to the left and right of this  section - this is the undockable part."/>
+                                <TextBlock Foreground="White" TextWrapping="WrapWithOverflow" TextAlignment="Justify" Margin="5,10,2,0" FontWeight="Bold"
                                        Text="Things to do here:"/>
-                            <TextBlock Foreground="White" TextWrapping="WrapWithOverflow" TextAlignment="Center" Margin="5"
+                                <TextBlock Foreground="White" TextWrapping="WrapWithOverflow" TextAlignment="Justify" Margin="5,0,2,0"
                                        Text="• Undock by dragging from the header (tabbed or single) to tear off"/>
-                            <TextBlock Foreground="White" TextWrapping="WrapWithOverflow" TextAlignment="Center" Margin="5"
+                                <TextBlock Foreground="White" TextWrapping="WrapWithOverflow" TextAlignment="Justify" Margin="5,0,2,0"
                                        Text="• Close individual controls via the X in the header (tabbed or single)"/>
-                            <TextBlock Foreground="White" TextWrapping="WrapWithOverflow" TextAlignment="Center" Margin="5"
+                                <TextBlock Foreground="White" TextWrapping="WrapWithOverflow" TextAlignment="Justify" Margin="5,0,2,0"
                                        Text="• Drop"/>
-                            <CheckBox Content="Hide tool windows when none have focus" Foreground="Wheat" HorizontalAlignment="Center"/>
-                            <Button>Save Dock Layout</Button>
-                            <Button>Reset to Default Dock Layout</Button>
+                            </StackPanel>
+                            <CheckBox Content="Hide tool windows when none have focus" Foreground="Wheat" HorizontalAlignment="Center" Margin="5,5,5,0"/>
+                            <Expander Header="Manage Load/Save" Foreground="White" Margin="10,10,10,0" BorderThickness="1" BorderBrush="Wheat" Padding="5" IsExpanded="True">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <TextBlock Text="Auto Save Method: " VerticalAlignment="Center"/>
+                                        <ajctrls:EnumComboBox SelectedItem="{Binding ElementName=Self, Path=DockingManager.AutoSaveMethod}"/>
+                                    </DockPanel>
+                                    <Button Click="ReloadDockLayoutFromPersistentStorage_OnClick">Reload from persistent storage</Button>
+                                    <Button Click="SaveDockLayoutToPersistentStorage_OnClick">Save to persistent storage</Button>
+                                    <Button Click="ResetDockLayoutToPreLoaded_OnClick">Reset to ORIGINAL dock layout</Button>
+
+                                </StackPanel>
+                            </Expander>
+                            <Expander Header="Import/Export Layout" Foreground="White" Margin="10,10,10,0" BorderThickness="1" BorderBrush="Wheat" >
+                                <StackPanel>
+                                    <ajctrls:PathSelectionControl x:Name="DockPathPicker" PathType="File"/>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,3">
+                                        <Button Width="120" Click="LoadDockLayout_OnClick">Import</Button>
+                                        <Button Width="120" Click="SaveDockLayout_OnClick">Export</Button>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Expander>
                         </StackPanel>
                     </Grid>
+
+                    <!-- Left Zone -->
+                    <Border Grid.Column="0" Margin="0,0,1,0">
+                        <ajctrls:DockZone x:Name="LeftDockZone"/>
+                    </Border>
+                    
+                    <!-- Right Zone -->
                     <Border Grid.Column="2" Margin="1,0,0,0">
-                        <ajctrls:DockZone x:Name="RightDockZone" GroupId="MainWindowTestDocking"/>
+                        <ajctrls:DockZone x:Name="RightDockZone"/>
                     </Border>
 
                     <GridSplitter Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Stretch"
