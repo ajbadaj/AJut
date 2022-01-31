@@ -74,14 +74,16 @@
             {
                 SetCurrentFrameIndex(d, -1);
 
-                Stream stream = FileHelpers.GetStreamForFileUri(e.NewValue);
-                if (stream != null)
+                using (Stream stream = FileHelpers.GetStreamForFileUri(e.NewValue))
                 {
-                    SetInfo(d, new GifInfoCache(ImageStorage.FromStream(stream)));
-                }
-                else
-                {
-                    SetInfo(d, null);
+                    if (stream != null)
+                    {
+                        SetInfo(d, new GifInfoCache(ImageStorage.FromStream(stream)));
+                    }
+                    else
+                    {
+                        SetInfo(d, null);
+                    }
                 }
 
                 SetCurrentFrameIndex(d, 0);
