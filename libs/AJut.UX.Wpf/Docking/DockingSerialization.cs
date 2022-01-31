@@ -44,6 +44,8 @@
 
         public static bool SerializeStateTo(string filePath, DockingManager manager)
         {
+            Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+
             var state = new SerializationInfo
             {
                 Core = manager.BuildSerializationInfoForRoot(),
@@ -71,68 +73,116 @@
 
         public static bool ResetFromState (string filePath, DockingManager manager)
         {
-            DockZoneViewModel defaultLoadZone = manager.GetFallbackRootZone();
-            if (defaultLoadZone == null)
+            try
             {
-                Logger.LogError($"Dock Loading Error: Load from state failed as NO ROOT ZONES EXIST for provided manager, target file '{filePath}'");
-                return false;
-            }
-
-            var json = JsonHelper.ParseFile(filePath);
-            if (json.HasErrors)
-            {
-                Logger.LogError($"Dock Loading Error: Failed to read docking manager state from: '{filePath}'");
-                Logger.LogError(json.GetErrorReport());
-                return false;
-            }
-
-            var state = JsonHelper.BuildObjectForJson<SerializationInfo>(json.Data);
-            if (state == null)
-            {
-                Logger.LogError($"Dock Loading Error: Failed to read docking manager state from: '{filePath}'");
-                return false;
-            }
-
-            manager.ClearForLoadingFromState();
-            if (state.Core != null)
-            {
-                foreach (string groupId in state.Core.ZoneInfoByRoot.Keys)
+                Logger.LogInfo($"Docking: Loading state for file '{filePath ?? "<null>"}'");
+                bool result = false;
+                if (Uri.TryCreate(filePath, UriKind.RelativeOrAbsolute, out var uri))
                 {
-                    DockZoneViewModel zone = manager.GetRootZone(groupId);
-                    if (zone == null)
+                    using (Stream stream = FileHelpers.GetStreamForFileUri(uri))
                     {
-                        Logger.LogError($"Dock Loading Error: No zone for group id '{groupId}' found, possibly one of that name used to be registered but now is not - falling back to default to avoid data loss.");
-                        zone = defaultLoadZone;
-                    }
-
-                    _SetZoneDataToZone(zone, state.Core.ZoneInfoByRoot[groupId]);
-                }
-
-                foreach (var ancillaryWindowData in state.Ancillary)
-                {
-                    var zone = new DockZoneViewModel(manager);
-                    _SetZoneDataToZone(zone, ancillaryWindowData.State);
-                    var windowResult = manager.CreateAndStockTearoffWindow(zone, ancillaryWindowData.WindowLocation, ancillaryWindowData.WindowSize);
-                    if (windowResult.HasErrors)
-                    {
-                        Logger.LogError($"Dock Loading Error: Failed to intepret ancillary window state for docking from: '{filePath}'");
-                        Logger.LogError(windowResult.GetErrorReport());
-                        continue;
-                    }
-
-                    if (ancillaryWindowData.WindowIsFullscreened)
-                    {
-                        WindowXTA.SetIsFullscreen(windowResult.Value, true);
-                    }
-                    else
-                    {
-                        windowResult.Value.WindowState = ancillaryWindowData.WindowState;
+                        result = ResetFromState(stream, manager);
                     }
                 }
-            }
+                else
+                {
+                    Logger.LogError($"Invalid path provided - unable to interpret, path was '{filePath ?? "<null>"}'");
+                    result = false;
+                }
 
-            manager.CleanZoneLayoutHierarchies();
-            return true;
+                Logger.LogInfo($"Docking: Loading state for file '{filePath ?? "<null>"}' complete.");
+                return result;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public static bool ResetFromState (Stream stream, DockingManager manager)
+        {
+            try
+            {
+                manager.IsLoadingFromLayout = true;
+            
+                if (stream == null)
+                {
+                    Logger.LogError("Dock Loading Error: File stream indicated was null");
+                    return false;
+                }
+
+                DockZoneViewModel defaultLoadZone = manager.GetFallbackRootZone();
+                if (defaultLoadZone == null)
+                {
+                    Logger.LogError("Dock Loading Error: Load from state failed as NO ROOT ZONES EXIST for provided manager");
+                    return false;
+                }
+
+                var json = JsonHelper.ParseFile(stream);
+                if (json.HasErrors)
+                {
+                    Logger.LogError("Dock Loading Error: Failed to read docking manager state");
+                    Logger.LogError(json.GetErrorReport());
+                    return false;
+                }
+
+                var state = JsonHelper.BuildObjectForJson<SerializationInfo>(json.Data);
+                if (state == null)
+                {
+                    Logger.LogError("Dock Loading Error: Failed to read docking manager state");
+                    return false;
+                }
+
+                manager.ClearForLoadingFromState();
+                if (state.Core != null)
+                {
+                    foreach (string groupId in state.Core.ZoneInfoByRoot.Keys)
+                    {
+                        DockZoneViewModel zone = manager.GetRootZone(groupId);
+                        if (zone == null)
+                        {
+                            Logger.LogError($"Dock Loading Error: No zone for group id '{groupId}' found, possibly one of that name used to be registered but now is not - falling back to default to avoid data loss.");
+                            zone = defaultLoadZone;
+                        }
+
+                        _SetZoneDataToZone(zone, state.Core.ZoneInfoByRoot[groupId]);
+                    }
+
+                    foreach (var ancillaryWindowData in state.Ancillary)
+                    {
+                        var zone = new DockZoneViewModel(manager);
+                        _SetZoneDataToZone(zone, ancillaryWindowData.State);
+                        var windowResult = manager.CreateAndStockTearoffWindow(zone, ancillaryWindowData.WindowLocation, ancillaryWindowData.WindowSize);
+                        if (windowResult.HasErrors)
+                        {
+                            Logger.LogError("Dock Loading Error: Failed to intepret ancillary window state for docking");
+                            Logger.LogError(windowResult.GetErrorReport());
+                            continue;
+                        }
+
+                        if (ancillaryWindowData.WindowIsFullscreened)
+                        {
+                            WindowXTA.SetIsFullscreen(windowResult.Value, true);
+                        }
+                        else
+                        {
+                            windowResult.Value.WindowState = ancillaryWindowData.WindowState;
+                        }
+                    }
+                }
+
+                manager.CleanZoneLayoutHierarchies();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("Error in docking serialization", ex);
+                return false;
+            }
+            finally
+            {
+                manager.IsLoadingFromLayout = false;
+            }
 
             void _SetZoneDataToZone (DockZoneViewModel _zone, ZoneData _data)
             {
@@ -170,14 +220,6 @@
 
                     _zone.SelectedIndex = _data.SelectedIndex;
                 }
-
-                /*
-                 
-            public List<ZoneData> ChildZones { get; set; }
-            public double SizeOnParent { get; set; }
-            public eDockOrientation Orientation { get; set; }
-            public DisplayData[] DisplayState { get; set; }
-                 * */
             }
         }
 

@@ -24,7 +24,7 @@
         public event EventHandler<EventArgs> Docked;
         public event EventHandler<EventArgs> TabOrderChanged;
         public event EventHandler<IsReadyToCloseEventArgs> CanClose;
-        public event EventHandler<EventArgs> Closed;
+        public event EventHandler<ClosedEventArgs> Closed;
 
         private DockZoneViewModel m_location;
         public DockZoneViewModel Location
@@ -88,16 +88,16 @@
         {
             if (this.CheckCanClose())
             {
-                this.InternalClose();
+                this.InternalClose(false);
                 return true;
             }
 
             return false;
         }
 
-        internal void InternalClose ()
+        internal void InternalClose (bool isForForcedClose)
         {
-            this.Closed?.Invoke(this, EventArgs.Empty);
+            this.Closed?.Invoke(this, new ClosedEventArgs { IsForForcedClose = isForForcedClose});
         }
 
         internal void SetNewLocation (DockZoneViewModel dockZone)

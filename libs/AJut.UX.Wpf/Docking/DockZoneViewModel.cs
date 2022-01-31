@@ -308,7 +308,7 @@
             // Remove all docked content
             foreach (var dockedContent in m_dockedContent)
             {
-                dockedContent.InternalClose();
+                dockedContent.InternalClose(true);
                 dockedContent.SetNewLocation(null);
             }
 

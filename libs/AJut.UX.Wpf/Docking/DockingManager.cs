@@ -25,15 +25,15 @@
         None,
 
         /// <summary>
-        /// Auto save to the <see cref="DockingManager.DefaultStateStoragePath"/> whenever anything happens
+        /// Auto save to the <see cref="DockingManager.DockLayoutPersistentStorageFile"/> whenever anything happens
         /// </summary>
-        OnAllChanges,
+        AutoSaveOnAllChanges,
 
         /// <summary>
-        /// Auto save to a temp file next to the <see cref="DockingManager.DefaultStateStoragePath"/> file whenever anything happens, but wait
-        /// for explicit calls to save to the <see cref="DockingManager.DefaultStateStoragePath"/> directly.
+        /// Auto save to a temp file next to the <see cref="DockingManager.DockLayoutPersistentStorageFile"/> file whenever anything happens, but wait
+        /// for explicit calls to save to the <see cref="DockingManager.DockLayoutPersistentStorageFile"/> directly.
         /// </summary>
-        AutoSaveAndToTemp,
+        AutoSaveToTemp,
     }
 
 
@@ -53,6 +53,7 @@
         private readonly ObservableCollection<DockZone> m_rootDockZones = new ObservableCollection<DockZone>();
         private readonly MultiMap<Window, DockZone> m_dockZoneMapping = new MultiMap<Window, DockZone>();
         private bool m_isZoneDragDropUnderway;
+        private bool m_isReadyToTrackAutoSave = false;
 
         private readonly List<Window> m_currentlyClosingWindows = new List<Window>();
         private readonly List<Window> m_windowsToCloseSilently = new List<Window>();
@@ -62,15 +63,15 @@
         /// </summary>
         /// <param name="rootWindow">The main window that the manager will track</param>
         /// <param name="uniqueId">The unique id (human readability is optional, it will form the default layout storage file path if none is specified, so it should also be file safe)</param>
-        /// <param name="defaultStateStoragePath">The (optionally specified) path to the default state save for the docking experience in which this manager represents</param>
+        /// <param name="persistentStorageFilePath">The (optionally specified) path to the default state save for the docking experience in which this manager represents</param>
         /// <param name="autoSaveMethod">How should the manager auto save to the default state storage path as layout changes occur (default = <see cref="eDockingAutoSaveMethod.None"/>)</param>
-        public DockingManager (Window rootWindow, string uniqueId, string defaultStateStoragePath = null, eDockingAutoSaveMethod autoSaveMethod = eDockingAutoSaveMethod.None)
+        public DockingManager (Window rootWindow, string uniqueId, string persistentStorageFilePath = null, eDockingAutoSaveMethod autoSaveMethod = eDockingAutoSaveMethod.None)
         {
             this.CreateNewTearoffWindowHandler = () => new DefaultDockTearoffWindow(this);
             this.ShowTearoffWindowHandler = w => w.Show();
             this.Windows = new WindowManager(rootWindow);
             this.UniqueId = uniqueId;
-            this.DefaultStateStoragePath = defaultStateStoragePath ?? DockingSerialization.CreateApplicationPath(this.UniqueId);
+            this.DockLayoutPersistentStorageFile = persistentStorageFilePath ?? DockingSerialization.CreateApplicationPath(this.UniqueId);
             this.AutoSaveMethod = autoSaveMethod;
         }
 
@@ -84,7 +85,7 @@
         /// <summary>
         /// The (optionally specified) path to the default state save for the docking experience in which this manager represents
         /// </summary>
-        public string DefaultStateStoragePath { get; set; }
+        public string DockLayoutPersistentStorageFile { get; set; }
 
         /// <summary>
         /// The method by which this manager auto saves (if any)
@@ -115,6 +116,11 @@
         /// </summary>
         public Action<Window> ShowTearoffWindowHandler { get; set; }
 
+        /// <summary>
+        /// Indicates if the manager is loading from a layout file (so as to stop other layout based actions from happening, like triggering auto-save)
+        /// </summary>
+        public bool IsLoadingFromLayout { get; internal set; } = false;
+
         // ======================[ Interface Methods ]=======================
 
         /// <summary>
@@ -124,6 +130,11 @@
         {
             foreach (var zone in dockZones)
             {
+                if (DockZone.GetGroupId(zone).IsNullOrEmpty() && zone.Name.IsNotNullOrEmpty())
+                {
+                    DockZone.SetGroupId(zone, zone.Name);
+                }
+
                 if (zone.IsSetup && zone.Manager != this)
                 {
                     zone.Manager?.DeRegisterRootDockZones(zone);
@@ -154,19 +165,49 @@
         }
 
         /// <summary>
-        /// Load the default state (at path: <see cref="DefaultStateStoragePath"/>), closes all (without prompting) and
+        /// Sets up the manager, providing a fallback layout should the default file be non-existant or invalid
+        /// </summary>
+        /// <param name="fallbackLayoutFilePath">The file path (local file, embedded asset, or path of file from the interwebs)</param>
+        /// <returns><c>true</c> if something is loaded (including fallback) or <c>false</c> otherwise</returns>
+        public bool SetupDefaultAndFallbackTo (string fallbackLayoutFilePath)
+        {
+            if (this.ReloadDockLayoutFromPersistentStorage())
+            {
+                m_isReadyToTrackAutoSave = true;
+                return true;
+            }
+            else if (fallbackLayoutFilePath != null && this.LoadDockLayoutFromFile(fallbackLayoutFilePath))
+            {
+                this.SaveDockLayoutToPersistentStorage();
+                m_isReadyToTrackAutoSave = true;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Load the default state (at path: <see cref="DockLayoutPersistentStorageFile"/>), closes all (without prompting) and
         /// builds displays with the given state and the given layouts of the file.
         /// </summary>
-        public bool LoadAndResetFromDefaultState ()
+        public bool ReloadDockLayoutFromPersistentStorage ()
         {
-            return DockingSerialization.ResetFromState(this.DefaultStateStoragePath, this);
+            try
+            {
+                return DockingSerialization.ResetFromState(this.DockLayoutPersistentStorageFile, this);
+            }
+            catch (Exception e)
+            {
+                Logger.LogError($"Docking: Error loading from default dock layout at '{DockLayoutPersistentStorageFile ?? "<null>"}'", e);
+                return false;
+            }
         }
 
         /// <summary>
         /// Loads the state from the given path, closes all (without prompting) and
         /// builds displays with the given state and the given layouts of the file.
         /// </summary>
-        public bool LoadAndResetFromState (string filePath)
+        public bool LoadDockLayoutFromFile (string filePath)
         {
             return DockingSerialization.ResetFromState(filePath, this);
         }
@@ -174,23 +215,23 @@
         /// <summary>
         /// Saves to a file the current docking layout + display state for each display
         /// </summary>
-        public bool SaveStateToDefaultStateFile ()
+        public bool SaveDockLayoutToPersistentStorage ()
         {
-            return DockingSerialization.SerializeStateTo(this.DefaultStateStoragePath, this);
+            return this.SaveDockLayoutToFile(this.DockLayoutPersistentStorageFile);
         }
 
         /// <summary>
         /// Saves to a file the current docking layout + display state for each display
         /// </summary>
-        public bool SaveStateTo (string filePath = null)
+        public bool SaveDockLayoutToFile (string filePath = null)
         {
             return DockingSerialization.SerializeStateTo(filePath, this);
         }
 
         /// <summary>
-        /// Generates the auto save temp path (should only used if <see cref="AutoSaveMethod"/> == <see cref="eDockingAutoSaveMethod.AutoSaveAndToTemp"/>)
+        /// Generates the auto save temp path (should only used if <see cref="AutoSaveMethod"/> == <see cref="eDockingAutoSaveMethod.AutoSaveToTemp"/>)
         /// </summary>
-        public string GenerateDefaultStateStorageAutoSaveTempPath () => this.DefaultStateStoragePath + "~";
+        public string GenerateDefaultStateStorageAutoSaveTempPath () => this.DockLayoutPersistentStorageFile + "~";
 
         /// <summary>
         /// Register a factory method called to build displays (implenetations of <see cref="IDockableDisplayElement"/>)
@@ -543,7 +584,7 @@
             while (toVisit.Count != 0)
             {
                 var parentEval = toVisit.Dequeue();
-                if (parentEval.Children.Count == 0)
+                if (EnumerableXT.IsNullOrEmpty(parentEval?.Children))
                 {
                     continue;
                 }
@@ -554,7 +595,7 @@
                     if (child.Orientation == parentEval.Orientation)
                     {
                         parentEval.RunChildZoneRemoval(child);
-                        foreach (var grandchild in child.Children.ToList())
+                        foreach (var grandchild in child.Children.AllNonNullElements().ToList())
                         {
                             parentEval.InsertChild(index++, grandchild);
                             toVisit.Enqueue(grandchild);
@@ -615,7 +656,7 @@
             // Now all that's left are the root window root zones
             foreach (var root in m_rootDockZones)
             {
-                root.ViewModel.ForceCloseAllAndClear();
+                root.ViewModel?.ForceCloseAllAndClear();
             }
         }
 
@@ -627,7 +668,11 @@
             var storage = new DockingSerialization.CoreStorageData();
             foreach (var rootZone in m_dockZoneMapping[this.Windows.Root])
             {
-                storage.ZoneInfoByRoot.Add(DockZone.GetGroupId(rootZone), rootZone.ViewModel.GenerateSerializationState());
+                string groupId = DockZone.GetGroupId(rootZone) ?? String.Empty;
+                if (!storage.ZoneInfoByRoot.TryAdd(groupId, rootZone.ViewModel.GenerateSerializationState()))
+                {
+                    Logger.LogError($"Docking Serialization: Failed to build serialization data properly, as two ore more root zone groups share id of '{groupId}' - zone serialization info was SKIPPED");
+                }
             }
 
             return storage;
@@ -757,13 +802,18 @@
 
         private void TriggerLayoutAutoSave ()
         {
-            if (this.AutoSaveMethod == eDockingAutoSaveMethod.OnAllChanges)
+            if (this.IsLoadingFromLayout || !m_isReadyToTrackAutoSave)
             {
-                this.SaveStateToDefaultStateFile();
+                return;
             }
-            else if (this.AutoSaveMethod == eDockingAutoSaveMethod.AutoSaveAndToTemp)
+
+            if (this.AutoSaveMethod == eDockingAutoSaveMethod.AutoSaveOnAllChanges)
             {
-                this.SaveStateTo(this.GenerateDefaultStateStorageAutoSaveTempPath());
+                this.SaveDockLayoutToPersistentStorage();
+            }
+            else if (this.AutoSaveMethod == eDockingAutoSaveMethod.AutoSaveToTemp)
+            {
+                this.SaveDockLayoutToFile(this.GenerateDefaultStateStorageAutoSaveTempPath());
             }
         }
 
