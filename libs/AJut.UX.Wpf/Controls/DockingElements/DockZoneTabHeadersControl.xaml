@@ -19,8 +19,7 @@
                     <Border BorderBrush="{TemplateBinding BorderBrush}" 
                             BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}"
-                            Background="{TemplateBinding Background}"
-                            SnapsToDevicePixels="True">
+                            Background="{TemplateBinding Background}">
                         <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Margin="0,-1,0,0" Background="Transparent">
                             <ItemsControl ItemsSource="{ajut:TemplateBinding Items}" Margin="2,0" ap:DragWatch.IsEnabled="True" ajut:DragDropElement.HoldSwapUntilDragBySwapTargetDimensions="True">
                                 <ItemsControl.ItemsPanel>
@@ -32,6 +31,9 @@
                                     <Style TargetType="{x:Type FrameworkElement}">
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=(ajut:DragDropElement.IsDragging)}" Value="True">
+                                                <Setter Property="Panel.ZIndex" Value="1"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Path=IsSelected}" Value="True">
                                                 <Setter Property="Panel.ZIndex" Value="1"/>
                                             </DataTrigger>
                                         </Style.Triggers>

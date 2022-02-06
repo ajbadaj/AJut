@@ -60,6 +60,13 @@
             set => this.SetValue(HeaderSelectedBackgroundProperty, value);
         }
 
+
+        public static readonly DependencyProperty TabPanelHeaderMarginProperty = DPUtils.Register(_ => _.TabPanelHeaderMargin, new Thickness(5, -1, 5, 0));
+        public Thickness TabPanelHeaderMargin
+        {
+            get => (Thickness)this.GetValue(TabPanelHeaderMarginProperty);
+            set => this.SetValue(TabPanelHeaderMarginProperty, value);
+        }
         public static readonly DependencyProperty HeaderItemsSourceProperty = DPUtils.Register(_ => _.ItemsSource, (d,e)=>d.OnItemsSourceChanged(e));
         public IEnumerable ItemsSource
         {

@@ -74,6 +74,5 @@
             get => (Brush)this.GetValue(SeparatorBrushProperty);
             set => this.SetValue(SeparatorBrushProperty, value);
         }
-
     }
 }
