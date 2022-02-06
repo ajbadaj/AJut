@@ -61,7 +61,7 @@
         }
 
 
-        public static readonly DependencyProperty TabPanelHeaderMarginProperty = DPUtils.Register(_ => _.TabPanelHeaderMargin, new Thickness(5, -1, 5, 0));
+        public static readonly DependencyProperty TabPanelHeaderMarginProperty = DPUtils.Register(_ => _.TabPanelHeaderMargin, new Thickness(5, -1, 5, 1));
         public Thickness TabPanelHeaderMargin
         {
             get => (Thickness)this.GetValue(TabPanelHeaderMarginProperty);
