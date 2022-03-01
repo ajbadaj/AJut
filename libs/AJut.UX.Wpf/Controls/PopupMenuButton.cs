@@ -9,12 +9,16 @@
     using System.Windows.Markup;
     using DPUtils = AJut.UX.DPUtils<PopupMenuButton>;
 
+    /// <summary>
+    /// A button which shows a menu, the <see cref="MenuItem"/>s of which are expressed as the content of this control
+    /// </summary>
     [ContentProperty("MenuItems")]
     [TemplatePart(Name = nameof(PART_Popup), Type = typeof(Popup))]
     public class PopupMenuButton : Control, IDisposable
     {
-        private Popup PART_Popup { get; set; }
         private Window m_currWindow;
+
+        // ========================[Construction & Destruction]==============================
         static PopupMenuButton ()
         {
             DefaultStyleKeyProperty.OverrideMetadata(typeof(PopupMenuButton), new FrameworkPropertyMetadata(typeof(PopupMenuButton)));
@@ -23,20 +27,76 @@
         public PopupMenuButton()
         {
             this.AddHandler(Button.ClickEvent, new RoutedEventHandler(_HandleClick));
-            void _HandleClick(object _sender, RoutedEventArgs _e)
+            this.MenuItems.CollectionChanged += this.OnMenuItemsChanged;
+            this.Loaded += this.PopupMenuButton_OnLoaded;
+
+            void _HandleClick (object _sender, RoutedEventArgs _e)
             {
                 if (this.PART_Popup != null)
                 {
                     this.PART_Popup.IsOpen = true;
                 }
             }
-
-            this.MenuItems.CollectionChanged += this.OnMenuItemsChanged;
-
-            this.Loaded += this.PopupMenuButton_OnLoaded;
         }
 
+        public override void OnApplyTemplate ()
+        {
+            if (this.PART_Popup != null)
+            {
+                this.PART_Popup.IsOpen = false;
+            }
 
+            base.OnApplyTemplate();
+            this.PART_Popup = (Popup)this.GetTemplateChild(nameof(PART_Popup));
+        }
+
+        public void Dispose ()
+        {
+            if (this.PART_Popup != null)
+            {
+                this.PART_Popup.IsOpen = false;
+            }
+
+            this.ClearWindowRef();
+        }
+
+        private void ClearWindowRef ()
+        {
+            if (m_currWindow != null)
+            {
+                m_currWindow.LocationChanged -= this.OnCurrWindowMoved;
+                m_currWindow = null;
+            }
+        }
+
+        // =================[Simple Properties]===================
+        private Popup PART_Popup { get; set; }
+
+        public ObservableCollection<MenuItem> MenuItems { get; } = new ObservableCollection<MenuItem>();
+
+        // =================[Core Dependency Properties]===================
+        public static readonly DependencyProperty ButtonStyleProperty = DPUtils.Register(_ => _.ButtonStyle);
+        public Style ButtonStyle
+        {
+            get => (Style)this.GetValue(ButtonStyleProperty);
+            set => this.SetValue(ButtonStyleProperty, value);
+        }
+
+        public static readonly DependencyProperty ButtonContentProperty = DPUtils.Register(_ => _.ButtonContent);
+        public object ButtonContent
+        {
+            get => this.GetValue(ButtonContentProperty);
+            set => this.SetValue(ButtonContentProperty, value);
+        }
+
+        public static readonly DependencyProperty ButtonContentTemplateProperty = DPUtils.Register(_ => _.ButtonContentTemplate);
+        public DataTemplate ButtonContentTemplate
+        {
+            get => (DataTemplate)this.GetValue(ButtonContentTemplateProperty);
+            set => this.SetValue(ButtonContentTemplateProperty, value);
+        }
+
+        // ===================[Display Dependency Properties]===================
         public static readonly DependencyProperty MenuPopupAlignmentProperty = DPUtils.Register(_ => _.MenuPopupAlignment, HorizontalAlignment.Left);
         public HorizontalAlignment MenuPopupAlignment
         {
@@ -51,6 +111,8 @@
             set => this.SetValue(MenuPopupAnimationProperty, value);
         }
 
+        // ============================[Methods]================================
+        
         private void PopupMenuButton_OnLoaded (object sender, RoutedEventArgs e)
         {
             this.ClearWindowRef();
@@ -89,54 +151,6 @@
             {
                 this.PART_Popup.IsOpen = false;
             }
-        }
-
-        public override void OnApplyTemplate ()
-        {
-            if (this.PART_Popup != null)
-            {
-                this.PART_Popup.IsOpen = false;
-            }
-
-            base.OnApplyTemplate();
-            this.PART_Popup = (Popup)this.GetTemplateChild(nameof(PART_Popup));
-        }
-
-        public void Dispose ()
-        {
-            this.ClearWindowRef();
-        }
-
-        private void ClearWindowRef ()
-        {
-            if (m_currWindow != null)
-            {
-                m_currWindow.LocationChanged -= this.OnCurrWindowMoved;
-                m_currWindow = null;
-            }
-        }
-
-        public ObservableCollection<MenuItem> MenuItems { get; } = new ObservableCollection<MenuItem>();
-
-        public static readonly DependencyProperty ButtonStyleProperty = DPUtils.Register(_ => _.ButtonStyle);
-        public Style ButtonStyle
-        {
-            get => (Style)this.GetValue(ButtonStyleProperty);
-            set => this.SetValue(ButtonStyleProperty, value);
-        }
-
-        public static readonly DependencyProperty ButtonContentProperty = DPUtils.Register(_ => _.ButtonContent);
-        public object ButtonContent
-        {
-            get => this.GetValue(ButtonContentProperty);
-            set => this.SetValue(ButtonContentProperty, value);
-        }
-
-        public static readonly DependencyProperty ButtonContentTemplateProperty = DPUtils.Register(_ => _.ButtonContentTemplate);
-        public DataTemplate ButtonContentTemplate
-        {
-            get => (DataTemplate)this.GetValue(ButtonContentTemplateProperty);
-            set => this.SetValue(ButtonContentTemplateProperty, value);
         }
     }
 }
