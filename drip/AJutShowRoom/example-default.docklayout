@@ -1,0 +1,214 @@
+{
+	"Core" : 
+	{
+		"ZoneInfoByRoot" : 
+		[
+			{
+				"Key" : "LeftDockZone",
+				"Value" : 
+				{
+					"ChildZones" : 
+					[
+						{
+							"ChildZones" : 
+							[
+							],
+							"SizeOnParent" : 
+							{
+								"IsEmpty" : "False",
+								"Width" : "250.60000000000002",
+								"Height" : "129.51999999999992"
+							},
+							"Orientation" : "Single",
+							"DisplayState" : 
+							[
+								{
+									"TypeId" : "AJutShowRoom.DockTest.DockTestTwo",
+									"State" : 
+									{
+										"__type" : "System.Double, System.Private.CoreLib, Version=5.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e",
+										"__value" : "5"
+									}
+								}
+							],
+							"SelectedIndex" : "0"
+						},
+						{
+							"ChildZones" : 
+							[
+							],
+							"SizeOnParent" : 
+							{
+								"IsEmpty" : "False",
+								"Width" : "250.60000000000002",
+								"Height" : "333.56000000000006"
+							},
+							"Orientation" : "Tabbed",
+							"DisplayState" : 
+							[
+								{
+									"TypeId" : "AJutShowRoom.DockTest.DockTestOne"
+								},
+								{
+									"TypeId" : "AJutShowRoom.DockTest.DockTestTwo",
+									"State" : 
+									{
+										"__type" : "System.Double, System.Private.CoreLib, Version=5.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e",
+										"__value" : "3"
+									}
+								}
+							],
+							"SelectedIndex" : "0"
+						}
+					],
+					"SizeOnParent" : 
+					{
+						"IsEmpty" : "False",
+						"Width" : "0",
+						"Height" : "0"
+					},
+					"Orientation" : "Vertical",
+					"SelectedIndex" : "0"
+				}
+			},
+			{
+				"Key" : "RightDockZone",
+				"Value" : 
+				{
+					"ChildZones" : 
+					[
+						{
+							"ChildZones" : 
+							[
+								{
+									"ChildZones" : 
+									[
+									],
+									"SizeOnParent" : 
+									{
+										"IsEmpty" : "False",
+										"Width" : "382.1",
+										"Height" : "357.52"
+									},
+									"Orientation" : "Single",
+									"DisplayState" : 
+									[
+										{
+											"TypeId" : "AJutShowRoom.DockTest.DockTestOne"
+										}
+									],
+									"SelectedIndex" : "0"
+								},
+								{
+									"ChildZones" : 
+									[
+									],
+									"SizeOnParent" : 
+									{
+										"IsEmpty" : "False",
+										"Width" : "120.10000000000002",
+										"Height" : "357.52"
+									},
+									"Orientation" : "Single",
+									"DisplayState" : 
+									[
+										{
+											"TypeId" : "AJutShowRoom.DockTest.DockTestOne"
+										}
+									],
+									"SelectedIndex" : "0"
+								}
+							],
+							"SizeOnParent" : 
+							{
+								"IsEmpty" : "False",
+								"Width" : "0",
+								"Height" : "0"
+							},
+							"Orientation" : "Horizontal",
+							"SelectedIndex" : "0"
+						},
+						{
+							"ChildZones" : 
+							[
+							],
+							"SizeOnParent" : 
+							{
+								"IsEmpty" : "False",
+								"Width" : "502.20000000000005",
+								"Height" : "105.56"
+							},
+							"Orientation" : "Single",
+							"DisplayState" : 
+							[
+								{
+									"TypeId" : "AJutShowRoom.DockTest.DockTestTwo",
+									"State" : 
+									{
+										"__type" : "System.Double, System.Private.CoreLib, Version=5.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e",
+										"__value" : "-3"
+									}
+								}
+							],
+							"SelectedIndex" : "0"
+						}
+					],
+					"SizeOnParent" : 
+					{
+						"IsEmpty" : "False",
+						"Width" : "0",
+						"Height" : "0"
+					},
+					"Orientation" : "Vertical",
+					"SelectedIndex" : "0"
+				}
+			}
+		]
+	},
+	"Ancillary" : 
+	[
+		{
+			"WindowSize" : 
+			{
+				"IsEmpty" : "False",
+				"Width" : "549",
+				"Height" : "343"
+			},
+			"WindowState" : "Normal",
+			"State" : 
+			{
+				"ChildZones" : 
+				[
+				],
+				"SizeOnParent" : 
+				{
+					"IsEmpty" : "False",
+					"Width" : "541",
+					"Height" : "308"
+				},
+				"Orientation" : "Tabbed",
+				"DisplayState" : 
+				[
+					{
+						"TypeId" : "AJutShowRoom.DockTest.DockTestTwo",
+						"State" : 
+						{
+							"__type" : "System.Double, System.Private.CoreLib, Version=5.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e",
+							"__value" : "-3060"
+						}
+					},
+					{
+						"TypeId" : "AJutShowRoom.DockTest.DockTestOne"
+					}
+				],
+				"SelectedIndex" : "0"
+			},
+			"WindowLocation" : 
+			{
+				"X" : "499",
+				"Y" : "609"
+			},
+			"WindowIsFullscreened" : "False"
+		}
+	]
+}
