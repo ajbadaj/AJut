@@ -1,0 +1,342 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ajut="clr-namespace:AJut.UX"
+                    xmlns:local="clr-namespace:AJut.UX.Controls"
+                    xmlns:ajc="clr-namespace:AJut.UX.Converters"
+                    xmlns:docking="clr-namespace:AJut.UX.Docking">
+
+    <DataTemplate x:Key="CONTROLTEMPLATE_VerticalDockZone">
+        <Border TextElement.Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelForeground}"
+                CornerRadius="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelCornerRadius}">
+            <local:UIElementRepeater DisplayChildren="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ChildZones}">
+                <local:AutoGrid FixedColumnCount="1" AddRowResizers="True" SizerLength="4"/>
+            </local:UIElementRepeater>
+        </Border>
+    </DataTemplate>
+    <DataTemplate x:Key="CONTROLTEMPLATE_HorizontalDockZone">
+        <Border TextElement.Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelForeground}"
+                CornerRadius="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelCornerRadius}">
+            <local:UIElementRepeater DisplayChildren="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ChildZones}">
+                <local:AutoGrid FixedRowCount="1" AddColumnResizers="True" SizerLength="4"/>
+            </local:UIElementRepeater>
+        </Border>
+    </DataTemplate>
+    <DataTemplate x:Key="CONTROLTEMPLATE_TabbedDockZone">
+        <DockPanel UseLayoutRounding="True" SnapsToDevicePixels="True">
+            <!-- Tabs -->
+            <local:DockZoneTabHeadersControl x:Name="PanelTabHeaders" DockPanel.Dock="Bottom" UseLayoutRounding="False" SnapsToDevicePixels="False"
+                                             ItemsSource="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ViewModel.DockedContent}"
+                                             SelectedIndex="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ViewModel.SelectedIndex, Mode=TwoWay}"
+                                             Margin="{Binding RelativeSource={RelativeSource Self}, Path=TabPanelHeaderMargin}" Panel.ZIndex="1"/>
+            <Border x:Name="TabbedBorderRoot" UseLayoutRounding="False" SnapsToDevicePixels="False"
+                    Background="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelBackground}"
+                    BorderBrush="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelBorderBrush}" 
+                    TextElement.Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelForeground}">
+                <Border.Style>
+                    <Style TargetType="{x:Type Border}">
+                        <Setter Property="BorderThickness" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelBorderThickness}"/>
+                        <Setter Property="CornerRadius" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelCornerRadius}"/>
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=(docking:DockWindowConfig.IsDockingTearoffWindow)}" Value="True"/>
+                                    <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ViewModel.HasParent}" Value="False"/>
+                                </MultiDataTrigger.Conditions>
+                                <MultiDataTrigger.Setters>
+                                    <Setter Property="CornerRadius">
+                                        <Setter.Value>
+                                            <ajut:CornerRadiusBuilder BindingParts="BottomRight,BottomLeft">
+                                                <Binding RelativeSource="{RelativeSource AncestorType={x:Type local:DockZone}}" Path="PanelCornerRadius.BottomRight"/>
+                                                <Binding RelativeSource="{RelativeSource AncestorType={x:Type local:DockZone}}" Path="PanelCornerRadius.BottomLeft"/>
+                                            </ajut:CornerRadiusBuilder>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Setter Property="BorderThickness">
+                                        <Setter.Value>
+                                            <ajut:ThicknessBuilder BindingParts="Bottom">
+                                                <Binding RelativeSource="{RelativeSource AncestorType={x:Type local:DockZone}}" Path="PanelBorderThickness.Bottom"/>
+                                            </ajut:ThicknessBuilder>
+                                        </Setter.Value>
+                                    </Setter>
+                                </MultiDataTrigger.Setters>
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <DockPanel>
+                    <!-- Panel Header -->
+                    <Grid DockPanel.Dock="Top">
+                        <Grid.Style>
+                            <Style TargetType="{x:Type Grid}">
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=(docking:DockWindowConfig.IsDockingTearoffWindow)}" Value="True"/>
+                                            <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ViewModel.HasParent}" Value="False"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <MultiDataTrigger.Setters>
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </MultiDataTrigger.Setters>
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Style>
+                        <local:DockZoneSelectedHeaderControl Target="{Binding ElementName=PanelTabHeaders, Path=SelectedItem.Adapter}"/>
+                    </Grid>
+                    <!-- Content -->
+                    <ContentControl Content="{Binding ElementName=PanelTabHeaders, Path=SelectedItem.Adapter.Display}"/>
+                </DockPanel>
+            </Border>
+        </DockPanel>
+    </DataTemplate>
+    <DataTemplate x:Key="CONTROLTEMPLATE_SingleDockZone" >
+        <Border x:Name="SingleBorderRoot"
+                DataContext="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ViewModel.DockedContent[0], FallbackValue={x:Null}}"
+                Background="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelBackground}"
+                BorderBrush="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelBorderBrush}" 
+                TextElement.Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelForeground}">
+            <Border.Style>
+                <Style TargetType="{x:Type Border}">
+                    <Setter Property="BorderThickness" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelBorderThickness}"/>
+                    <Setter Property="CornerRadius" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelCornerRadius}"/>
+                    <Style.Triggers>
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=(docking:DockWindowConfig.IsDockingTearoffWindow)}" Value="True"/>
+                                <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ViewModel.HasParent}" Value="False"/>
+                            </MultiDataTrigger.Conditions>
+                            <MultiDataTrigger.Setters>
+                                <Setter Property="CornerRadius" Value="0"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                            </MultiDataTrigger.Setters>
+                        </MultiDataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <DockPanel>
+                <Grid DockPanel.Dock="Top">
+                    <Grid.Style>
+                        <Style TargetType="{x:Type Grid}">
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ViewModel.HasParent}" Value="False"/>
+                                        <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=(docking:DockWindowConfig.IsDockingTearoffWindow)}" Value="True"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <MultiDataTrigger.Setters>
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </MultiDataTrigger.Setters>
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <local:DockZoneSelectedHeaderControl Target="{Binding .}"/>
+                </Grid>
+                <ContentControl Content="{Binding Path=Display}"/>
+            </DockPanel>
+        </Border>
+    </DataTemplate>
+    <DataTemplate x:Key="CONTROLTEMPLATE_Empty">
+        <Border Background="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelBackground}"
+                BorderBrush="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelBorderBrush}" 
+                BorderThickness="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelBorderThickness}"
+                TextElement.Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelForeground}"
+                CornerRadius="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=EmptyPanelCornerRadius}">
+            <Border.Style>
+                <Style TargetType="{x:Type Border}">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=Manager.IsZoneDragDropUnderway}" Value="True">
+                            <Setter Property="MinWidth" Value="20"/>
+                            <Setter Property="MinHeight" Value="20"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=IsDirectDropTarget}" Value="True">
+                            
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <Grid Margin="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=Padding}">
+                <Grid.Style>
+                    <Style TargetType="{x:Type Grid}">
+                        <Setter Property="Visibility" Value="Hidden"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=IsDirectDropTarget}" Value="True">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=IsMouseOver}" Value="True">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+                <TextBlock Text="Empty" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="20" FontSize="18" FontStyle="Italic" Opacity="0.25">
+                    <!--<TextBlock.LayoutTransform>
+                        <RotateTransform Angle="-90" CenterX="0.5" CenterY="0.5"/>
+                    </TextBlock.LayoutTransform>-->
+                </TextBlock>
+            </Grid>
+        </Border>
+    </DataTemplate>
+    
+    <!-- ===========[ DockZone: Default Style Definition ]======================= -->
+    <Style TargetType="{x:Type local:DockZone}">
+        <Setter Property="MinHeight" Value="30"/>
+        <Setter Property="MinWidth" Value="30"/>
+        <Setter Property="SeparatorBrush" Value="#01000000"/>
+        <Setter Property="SeparationSize" Value="4"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="PanelBackground" Value="#CCC"/>
+        <Setter Property="PanelBorderBrush" Value="Black"/>
+        <Setter Property="PanelBorderThickness" Value="1"/>
+        <Setter Property="PanelCornerRadius" Value="5"/>
+        <Setter Property="EmptyPanelCornerRadius" Value="0"/>
+        <Setter Property="PanelForeground" Value="{Binding RelativeSource={RelativeSource Self}, Path=(TextElement.Foreground)}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:DockZone}">
+                    <Grid>
+                        <Grid.Resources>
+                            <Style TargetType="{x:Type GridSplitter}">
+                                <Setter Property="Background" Value="#01000000"/>
+                                <Style.Triggers>
+                                    <Trigger Property="ResizeDirection" Value="Columns">
+                                        <Setter Property="Margin" Value="0,0,-2,0"/>
+                                    </Trigger>
+                                    <Trigger Property="ResizeDirection" Value="Rows">
+                                        <Setter Property="Margin" Value="0,0,0,-2"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Resources>
+                        <!-- ========[Content Display Area]========== -->
+                        <ContentPresenter>
+                            <ContentPresenter.Style>
+                                <Style TargetType="{x:Type ContentPresenter}">
+                                    <Setter Property="ContentTemplate" Value="{StaticResource CONTROLTEMPLATE_Empty}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ViewModel.Orientation}" Value="Vertical">
+                                            <Setter Property="ContentTemplate" Value="{StaticResource CONTROLTEMPLATE_VerticalDockZone}"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ViewModel.Orientation}" Value="Horizontal">
+                                            <Setter Property="ContentTemplate" Value="{StaticResource CONTROLTEMPLATE_HorizontalDockZone}"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ViewModel.Orientation}" Value="Tabbed">
+                                            <Setter Property="ContentTemplate" Value="{StaticResource CONTROLTEMPLATE_TabbedDockZone}"/>
+                                            <Setter Property="MinHeight" Value="60"/>
+                                            <Setter Property="MinWidth" Value="60"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ViewModel.Orientation}" Value="Single">
+                                            <Setter Property="ContentTemplate" Value="{StaticResource CONTROLTEMPLATE_SingleDockZone}"/>
+                                        </DataTrigger>
+                                        
+                                        <!-- =============[Scoots]=====================-->
+                                        <DataTrigger Binding="{Binding Path=IsDropScootHoverLeft, RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}}" Value="True">
+                                            <Setter Property="Margin" Value="12,0,0,0"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Path=IsDropScootHoverTop, RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}}" Value="True">
+                                            <Setter Property="Margin" Value="0,12,0,0"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Path=IsDropScootHoverRight, RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}}" Value="True">
+                                            <Setter Property="Margin" Value="0,0,12,0"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Path=IsDropScootHoverBottom, RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}}" Value="True">
+                                            <Setter Property="Margin" Value="0,0,0,12"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ContentPresenter.Style>
+                        </ContentPresenter>
+                        
+                        <!-- ========[Center Dock Area]========== -->
+                        <Grid VerticalAlignment="Center" HorizontalAlignment="Center" SnapsToDevicePixels="True" UseLayoutRounding="True">
+                            <Grid.Style>
+                                <Style TargetType="{x:Type Grid}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding Path=IsDirectDropTarget, RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}}" Value="True"/>
+                                                <Condition Binding="{Binding Path=HasSplitZoneOrientation, RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}}" Value="False"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </MultiDataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding Path=IsDirectDropTarget, RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}}" Value="True"/>
+                                                <Condition Binding="{Binding Path=IsEmpty, RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}}" Value="True"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="20"/>
+                                <ColumnDefinition Width="44"/>
+                                <ColumnDefinition Width="20"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="19"/>
+                                <RowDefinition Height="22"/>
+                                <RowDefinition Height="19"/>
+                            </Grid.RowDefinitions>
+                            <local:DockDropInsertionDriverWidget Grid.Row="1" Grid.Column="0" Direction="Left" Margin="0,1"
+                                                                 IsEngaged="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=IsDropScootHoverLeft, Mode=TwoWay}"
+                                                                 InsertionZone="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}}"
+                                                                 IsEnabled="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=IsEmpty, Converter={ajc:BooleanInverseConverter}}"/>
+                            <local:DockDropInsertionDriverWidget Grid.Row="0" Grid.Column="1" Direction="Top" Margin="1,0"
+                                                                 IsEngaged="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=IsDropScootHoverTop, Mode=TwoWay}"
+                                                                 InsertionZone="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}}"
+                                                                 IsEnabled="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=IsEmpty, Converter={ajc:BooleanInverseConverter}}"/>
+                            <local:DockDropInsertionDriverWidget Grid.Row="1" Grid.Column="2" Direction="Right" Margin="0,1"
+                                                                 IsEngaged="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=IsDropScootHoverRight, Mode=TwoWay}"
+                                                                 InsertionZone="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}}"
+                                                                 IsEnabled="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=IsEmpty, Converter={ajc:BooleanInverseConverter}}"/>
+                            <local:DockDropInsertionDriverWidget Grid.Row="2" Grid.Column="1" Direction="Bottom" Margin="1,0"
+                                                                 IsEngaged="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=IsDropScootHoverBottom, Mode=TwoWay}"
+                                                                 InsertionZone="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}}"
+                                                                 IsEnabled="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=IsEmpty, Converter={ajc:BooleanInverseConverter}}"/>
+                            <local:DockDropInsertionDriverWidget Grid.Row="1" Grid.Column="1" Direction="AddToTabbedDisplay" Margin="1"
+                                                                 InsertionZone="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}}"/>
+                        </Grid>
+
+                        <!-- ========[Outer Area Dock Area]========== -->
+                        <!--<Grid>
+                            <Grid.Style>
+                                <Style TargetType="{x:Type Grid}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Value="False" Binding="{Binding Path=AnteriorZone.IsDirectDropTarget, RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}}"/>
+                                                <Condition Value="False" Binding="{Binding Path=PosteriorZone.IsDirectDropTarget, RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}}"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <MultiDataTrigger.Setters>
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </MultiDataTrigger.Setters>
+                                        </MultiDataTrigger>
+                                        <DataTrigger Value="False" Binding="{Binding Path=HasSplitZoneOrientation, RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}}">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
+                            <local:DockDropInsertionDriverWidget Direction="Left" Margin="0,1" HorizontalAlignment="Left" VerticalAlignment="Center" Width="20" Height="20"
+                                                                 IsEngaged="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=IsDropScootHoverLeft, Mode=TwoWay}" 
+                                                                 InsertionZone="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}}"/>
+                            <local:DockDropInsertionDriverWidget Direction="Top" Margin="1,0"  HorizontalAlignment="Center" VerticalAlignment="Top" Width="20" Height="20"
+                                                                 IsEngaged="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=IsDropScootHoverTop, Mode=TwoWay}" 
+                                                                 InsertionZone="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}}"/>
+                            <local:DockDropInsertionDriverWidget Direction="Right" Margin="0,1" HorizontalAlignment="Right" VerticalAlignment="Center" Width="20" Height="20"
+                                                                 IsEngaged="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=IsDropScootHoverRight, Mode=TwoWay}" 
+                                                                 InsertionZone="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}}"/>
+                            <local:DockDropInsertionDriverWidget Direction="Bottom" Margin="1,0" HorizontalAlignment="Center" VerticalAlignment="Bottom" Width="20" Height="20"
+                                                                 IsEngaged="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=IsDropScootHoverBottom, Mode=TwoWay}" 
+                                                                 InsertionZone="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}}"/>
+                        </Grid>-->
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

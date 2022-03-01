@@ -1,0 +1,26 @@
+﻿<UserControl x:Class="AJutShowRoom.StackNavTest.ThirdDisplay"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ajctrl="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
+             x:Name="Self">
+    <Grid>
+        <Grid.Background>
+            <SolidColorBrush Color="{Binding ElementName=Self, Path=BkgColor}"/>
+        </Grid.Background>
+        <StackPanel Margin="20">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Third Control, id#: " VerticalAlignment="Center" Margin="0,0,5,0"/>
+                <TextBlock Text="{Binding ElementName=Self, Path=UniqueId, Mode=OneWay}" FontSize="18" VerticalAlignment="Center"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Background" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                <ajctrl:ColorValueEditControl EditColor="{Binding ElementName=Self, Path=BkgColor, Mode=TwoWay}"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Preserve control &amp; adapter" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                <CheckBox VerticalAlignment="Center" IsChecked="{Binding ElementName=Self, Path=NavAdapter.PreserveFullAdapterAndControlOnCover, Mode=TwoWay}"/>
+            </StackPanel>
+            <Button Content="Nav to new Second Control" Click="NavToNewSecond_OnClick" Margin="0,10,0,0"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

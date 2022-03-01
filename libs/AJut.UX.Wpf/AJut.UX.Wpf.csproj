@@ -1,0 +1,124 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Version>0.0.1</Version>
+    <Authors>AJ Badarni</Authors>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <RootNamespace>AJut.UX</RootNamespace>
+    <PackageLicenseFile>license.txt</PackageLicenseFile>
+    <AssemblyName>AJut.UX.Wpf</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Drawing.Common" Version="5.0.0" />
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="if $(ConfigurationName) == Release COPY &quot;$(TargetPath)&quot; &quot;$(SolutionDir)bin\$(TargetFileName)&quot;" />
+  </Target>
+  
+  <ItemGroup>
+    <Compile Update="Controls\BumpStack.cs">
+      <DependentUpon>BumpStack.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\BusyWait.cs">
+      <DependentUpon>BusyWait.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\ColorEditIngressControl.cs">
+      <DependentUpon>ColorEditIngressControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\ColorValueEditControl.cs">
+      <DependentUpon>ColorValueEditControl.xaml</DependentUpon>
+    </Compile>
+	  <Compile Update="Controls\DockingElements\DefaultDockTearoffWindow.cs">
+      <DependentUpon>DefaultDockTearoffWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\DockingElements\DockDropInsertionDriverWidget.cs">
+      <DependentUpon>DockDropInsertionDriverWidget.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\DockingElements\DockWholeWindowDragStartControl.cs">
+      <DependentUpon>DockWholeWindowDragStartControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\DockingElements\DockZone.cs">
+      <DependentUpon>DockZone.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\DockingElements\DockZoneSelectedHeaderControl.cs">
+      <DependentUpon>DockZoneSelectedHeaderControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\DockingElements\DockZoneTabHeadersControl.cs">
+      <DependentUpon>DockZoneTabHeadersControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\EditableTextBlock.cs">
+      <DependentUpon>EditableTextBlock.xaml</DependentUpon>
+    </Compile>
+	  <Compile Update="Controls\EnumComboBox.cs">
+      <DependentUpon>EnumComboBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\FlatTreeListControl.cs">
+      <DependentUpon>FlatTreeListControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\NumericEditor.cs">
+      <DependentUpon>NumericEditor.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\PathSelectionControl.cs">
+      <DependentUpon>PathSelectionControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\PathFollowingContentDisplayer.cs">
+      <DependentUpon>PathFollowingContentDisplayer.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\PopupMenuButton.cs">
+      <DependentUpon>PopupMenuButton.xaml</DependentUpon>
+    </Compile>
+	  <Compile Update="Controls\PropertyGrid.cs">
+      <DependentUpon>PropertyGrid.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\StackNavDisplayElements\StackNavPopoverOverlay.cs">
+      <DependentUpon>StackNavPopoverOverlay.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\StackNavDisplayElements\StackNavActiveContentPresenter.cs">
+      <DependentUpon>StackNavActiveContentPresenter.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\StackNavDisplayElements\StackNavActiveDrawerPresenter.cs">
+      <DependentUpon>StackNavActiveDrawerPresenter.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\StackNavDisplayElements\StackNavActiveHeaderPresenter.cs">
+      <DependentUpon>StackNavActiveHeaderPresenter.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\StackNavDisplayElements\StackNavBusyWaitOverlay.cs">
+      <DependentUpon>StackNavBusyWaitOverlay.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\StackNavDisplay.cs">
+      <DependentUpon>StackNavDisplay.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\Svg.cs">
+      <DependentUpon>Svg.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\ToggleStrip.cs">
+      <DependentUpon>ToggleStrip.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\UIElementRepeater.cs">
+      <DependentUpon>UIElementRepeater.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\WindowChromeButtonStrip.cs">
+      <DependentUpon>WindowChromeButtonStrip.xaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Folder Include="Commands\" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\AJut.Core\AJut.Core.csproj" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <None Include="..\..\license.txt">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+  </ItemGroup>
+      
+</Project>

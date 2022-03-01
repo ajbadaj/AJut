@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <Version>0.0.0.1</Version>
+  </PropertyGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="if $(ConfigurationName) == Release COPY &quot;$(TargetPath)&quot; &quot;$(SolutionDir)bin\drip\$(TargetFileName)&quot;" />
+  </Target>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\libs\AJut.Core\AJut.Core.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,173 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ajut="clr-namespace:AJut.UX"
+                    xmlns:ap="clr-namespace:AJut.UX.AttachedProperties"
+                    xmlns:local="clr-namespace:AJut.UX.Controls"
+                    xmlns:ajc="clr-namespace:AJut.UX.Converters">
+
+   
+    <Style TargetType="{x:Type local:DockZoneTabHeadersControl}">
+        <Setter Property="BorderBrush" Value="Black"/>
+        <Setter Property="HeaderBorder" Value="Black"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="HeaderBackground" Value="White"/>
+        <Setter Property="HeaderSelectedBackground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelBackground}"/>
+        <Setter Property="HeaderHighlightBackground" Value="#C16F"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:DockZoneTabHeadersControl}">
+                    <Border BorderBrush="{TemplateBinding BorderBrush}" 
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}"
+                            Background="{TemplateBinding Background}">
+                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Margin="0,-1,0,0" Background="Transparent">
+                            <ItemsControl ItemsSource="{ajut:TemplateBinding Items}" Margin="2,0" ap:DragWatch.IsEnabled="True" ajut:DragDropElement.HoldSwapUntilDragBySwapTargetDimensions="True">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZoneTabHeadersControl}}, Path=ItemsOrientation}" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemContainerStyle>
+                                    <Style TargetType="{x:Type FrameworkElement}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=(ajut:DragDropElement.IsDragging)}" Value="True">
+                                                <Setter Property="Panel.ZIndex" Value="1"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Path=IsSelected}" Value="True">
+                                                <Setter Property="Panel.ZIndex" Value="1"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ItemsControl.ItemContainerStyle>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type local:DockZoneTabHeadersControl+HeaderItem}">
+                                        <Border x:Name="HeaderRoot" BorderBrush="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZoneTabHeadersControl}}, Path=HeaderBorder}"
+                                                ClipToBounds="False" IsHitTestVisible="True">
+                                            <Border.Style>
+                                                <Style TargetType="{x:Type Border}">
+                                                    <Setter Property="BorderThickness">
+                                                        <Setter.Value>
+                                                            <ajut:ThicknessBuilder BindingParts="Left,Top,Right,Bottom">
+                                                                <Binding RelativeSource="{RelativeSource AncestorType={x:Type local:DockZone}}" Path="PanelBorderThickness.Left"/>
+                                                                <Binding RelativeSource="{RelativeSource AncestorType={x:Type local:DockZone}}" Path="PanelBorderThickness.Top"/>
+                                                                <Binding RelativeSource="{RelativeSource AncestorType={x:Type local:DockZone}}" Path="PanelBorderThickness.Right"/>
+                                                                <Binding RelativeSource="{RelativeSource AncestorType={x:Type local:DockZone}}" Path="PanelBorderThickness.Bottom"/>
+                                                            </ajut:ThicknessBuilder>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                    <Setter Property="Margin" Value="-1,1,0,3"/>
+                                                    <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZoneTabHeadersControl}}, Path=HeaderBackground}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding Path=IsSelected}" Value="True">
+                                                            <Setter Property="Margin" Value="-1,1,0,1"/>
+                                                            <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZoneTabHeadersControl}}, Path=HeaderSelectedBackground}"/>
+                                                            <Setter Property="BorderThickness">
+                                                                <Setter.Value>
+                                                                    <ajut:ThicknessBuilder BindingParts="Left,Right,Bottom">
+                                                                        <Binding RelativeSource="{RelativeSource AncestorType={x:Type local:DockZone}}" Path="PanelBorderThickness.Left"/>
+                                                                        <Binding RelativeSource="{RelativeSource AncestorType={x:Type local:DockZone}}" Path="PanelBorderThickness.Right"/>
+                                                                        <Binding RelativeSource="{RelativeSource AncestorType={x:Type local:DockZone}}" Path="PanelBorderThickness.Bottom"/>
+                                                                    </ajut:ThicknessBuilder>
+                                                                </Setter.Value>
+                                                            </Setter>
+                                                            <!--<Setter Property="BorderThickness">
+                                                                <Setter.Value>
+                                                                    <ajut:ThicknessBuilder BindingParts="Left,Right" Baseline="0,0,0,2">
+                                                                        <Binding RelativeSource="{RelativeSource AncestorType={x:Type local:DockZone}}" Path="PanelBorderThickness.Left"/>
+                                                                        <Binding RelativeSource="{RelativeSource AncestorType={x:Type local:DockZone}}" Path="PanelBorderThickness.Right"/>
+                                                                        <MultiBinding Converter="{ajc:ArithmeticConverter Operation=Add}">
+                                                                            <Binding RelativeSource="{RelativeSource AncestorType={x:Type local:DockZone}}" Path="PanelBorderThickness.Bottom"/>
+                                                                            <Binding Source="1" />
+                                                                        </MultiBinding>
+                                                                    </ajut:ThicknessBuilder>
+                                                                </Setter.Value>
+                                                            </Setter>-->
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding Path=IsDragging}" Value="True">
+                                                            <Setter Property="RenderTransform">
+                                                                <Setter.Value>
+                                                                    <TranslateTransform X="{Binding RelativeSource={RelativeSource AncestorType={x:Type FrameworkElement}, AncestorLevel=1}, Path=(ajut:DragDropElement.DragOffset).X}"/>
+                                                                </Setter.Value>
+                                                            </Setter>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <Grid>
+                                                <Grid Margin="1,2,1,1">
+                                                    <Grid.Style>
+                                                        <Style TargetType="{x:Type Grid}">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding ElementName=HeaderRoot, Path=IsMouseOver}" Value="True">
+                                                                    <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZoneTabHeadersControl}}, Path=HeaderHighlightBackground}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Grid.Style>
+                                                </Grid>
+                                                <Button x:Name="HeaderSelectorButton" Command="{x:Static local:DockZoneTabHeadersControl.SelectItemCommand}" 
+                                                        BorderThickness="0" Background="Transparent">
+                                                    <Button.Template>
+                                                        <ControlTemplate>
+                                                            <Grid IsHitTestVisible="True" Background="Transparent"/>
+                                                        </ControlTemplate>
+                                                    </Button.Template>
+                                                </Button>
+                                                <Grid>
+                                                    <Grid.Style>
+                                                        <Style TargetType="{x:Type Grid}">
+                                                            <Setter Property="Margin" Value="3,1"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Path=IsSelected}" Value="False">
+                                                                    <Setter Property="Opacity" Value="0.4"/>
+                                                                    <Setter Property="Margin" Value="3,2,3,1"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Grid.Style>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition />
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    
+                                                    <!-- =========[ Title Display ]============ -->
+                                                    <Grid Grid.Column="0" IsHitTestVisible="False">
+                                                        <Grid.Style>
+                                                            <Style TargetType="{x:Type Grid}">
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Path=IsDragging}" Value="True">
+                                                                        <Setter Property="Opacity" Value="0.6"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Grid.Style>
+                                                        <ContentControl Content="{Binding Path=Adapter.TitleContent}" ContentTemplate="{Binding Path=Adapter.TitleTemplate}"/>
+                                                    </Grid>
+
+                                                    <!-- =========[ X Button ]============ -->
+                                                    <Button Grid.Column="1" Content="&#xE894;" FontFamily="Segoe MDL2 Assets" FontSize="8"
+                                                            Command="{x:Static local:DockZone.CloseDockedContentCommand}"
+                                                            CommandParameter="{Binding Path=Adapter}"
+                                                            Visibility="{Binding Path=IsDragging, Converter={ajc:BooleanToVisibilityConverter TrueValue=Hidden, FalseValue=Visible}}"
+                                                            Margin="3,1,1,1"
+                                                            Background="Transparent" BorderThickness="0"
+                                                            VerticalAlignment="Center" HorizontalAlignment="Center" Padding="2"/>
+
+                                                    <!-- =========[ Drag Overlay ]============ -->
+                                                    <Border Visibility="{Binding Path=IsDragging, Converter={ajc:BooleanToVisibilityConverter}}"
+                                                            BorderThickness="0,0,0,3" Margin="-2,0,-2,-1" Grid.ColumnSpan="2" VerticalAlignment="Bottom"
+                                                            BorderBrush="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZoneTabHeadersControl}}, Path=HeaderHighlightBackground}"/>
+
+                                                </Grid>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

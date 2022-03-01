@@ -1,8 +1,27 @@
-.vs/
-bin/
-obj/
-TestResults/
-*.suo
-*.user
+# ============[ Begin Blacklist ]=========================
+*
+
+# ============[ Whitelist ]=========================
+!**/
+!LICENSE
+!*.license.txt
+!*.gitignore
+!*.csproj
+!*.sln
+!*.cs
+!*.xaml
+!*.jpg
+!*.png
+!*.gif
+!*.editorconfig
+!*.svg
+!*.md
+!**/_TestData
+!*.snippet
+
+# ============[ And finally nix these ]=========================
 *Settings.Designer.cs
-/_ignore
+**/_ignore
+**/obj
+**/Debug
+**/Release

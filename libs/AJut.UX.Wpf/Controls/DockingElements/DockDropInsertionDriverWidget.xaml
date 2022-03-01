@@ -1,0 +1,196 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ajut="clr-namespace:AJut.UX"
+                    xmlns:ap="clr-namespace:AJut.UX.AttachedProperties"
+                    xmlns:local="clr-namespace:AJut.UX.Controls"
+                    xmlns:ajc="clr-namespace:AJut.UX.Converters"
+                    xmlns:docking="clr-namespace:AJut.UX.Docking"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="CaretLeft"  >&#xEDD9;</sys:String>
+    <sys:String x:Key="CaretTop"   >&#xEDDB;</sys:String>
+    <sys:String x:Key="CaretRight" >&#xEDDA;</sys:String>
+    <sys:String x:Key="CaretBottom">&#xEDDC;</sys:String>
+    <sys:String x:Key="AddIcon"    >&#xF8AA;</sys:String>
+    
+    <Style TargetType="{x:Type local:DockDropInsertionDriverWidget}">
+        <Setter Property="Opacity" Value="0.85"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Background" Value="#DDD"/>
+        <Setter Property="BackgroundHighlighted" Value="#3399E4"/>
+        <Setter Property="BorderBrush" Value="#333"/>
+        <Setter Property="BorderHighlighted" Value="#133954"/>
+        <Setter Property="GlyphBrush" Value="#000"/>
+        <Setter Property="GlyphBorderBrush" Value="#FFF"/>
+        <Setter Property="GlyphHighlightedBorderBrush" Value="#3399E4"/>
+        <Setter Property="GlyphHighlightedBrush" Value="#133954"/>
+        <Setter Property="ap:BorderXTA.CornerRadius" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:DockDropInsertionDriverWidget}">
+                    <DockPanel Background="#01000000" UseLayoutRounding="True" SnapsToDevicePixels="True">
+                        <!-- ====[Caret]==== -->
+                        <Grid Background="Transparent">
+                            <Grid.Style>
+                                <Style TargetType="{x:Type Grid}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Setter Property="Margin" Value="0"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Value="Left" Binding="{Binding Path=Direction, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Setter Property="DockPanel.Dock" Value="Left"/>
+                                            <Setter Property="Margin" Value="0,0,2,0"/>
+                                            <Setter Property="HorizontalAlignment" Value="Right"/>
+                                            <Setter Property="VerticalAlignment" Value="Center"/>
+                                            <Setter Property="Width" Value="6"/>
+                                            <Setter Property="Height" Value="11"/>
+                                        </DataTrigger>
+                                        <DataTrigger Value="Top" Binding="{Binding Path=Direction, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Setter Property="DockPanel.Dock" Value="Top"/>
+                                            <Setter Property="Margin" Value="0,0,0,2"/>
+                                            <Setter Property="HorizontalAlignment" Value="Center"/>
+                                            <Setter Property="VerticalAlignment" Value="Bottom"/>
+                                            <Setter Property="Width" Value="11"/>
+                                            <Setter Property="Height" Value="6"/>
+                                        </DataTrigger>
+                                        <DataTrigger Value="Right" Binding="{Binding Path=Direction, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Setter Property="DockPanel.Dock" Value="Right"/>
+                                            <Setter Property="Margin" Value="2,0,0,0"/>
+                                            <Setter Property="HorizontalAlignment" Value="Left"/>
+                                            <Setter Property="VerticalAlignment" Value="Center"/>
+                                            <Setter Property="Width" Value="6"/>
+                                            <Setter Property="Height" Value="11"/>
+                                        </DataTrigger>
+                                        <DataTrigger Value="Bottom" Binding="{Binding Path=Direction, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Setter Property="DockPanel.Dock" Value="Bottom"/>
+                                            <Setter Property="Margin" Value="0,2,0,0"/>
+                                            <Setter Property="HorizontalAlignment" Value="Center"/>
+                                            <Setter Property="VerticalAlignment" Value="Top"/>
+                                            <Setter Property="Width" Value="11"/>
+                                            <Setter Property="Height" Value="6"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
+                            <Viewbox Stretch="UniformToFill">
+                                <Path StrokeThickness="0.2">
+                                    <Path.Style>
+                                        <Style TargetType="{x:Type Path}">
+                                            <Setter Property="Stroke" Value="{Binding Path=GlyphBorderBrush, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}"/>
+                                            <Setter Property="Fill" Value="{Binding Path=GlyphBrush, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Value="Left" Binding="{Binding Path=Direction, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}">
+                                                    <Setter Property="Data">
+                                                        <Setter.Value>
+                                                            <PathGeometry Figures="M 0.79330864,0.73734621 -4.5649151e-4,1.4751168 c 0,0 0.48862910151,0.4493497 0.73834413151,0.6769365 0.31336496,0.2855965 0.003,0.00286 0.84869986,0.75794 9.98e-4,-0.6530758 4.6e-5,-0.7883525 4.6e-5,-1.4525929 V -4.2385535e-4 Z"/>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </DataTrigger>
+                                                <DataTrigger Value="Top" Binding="{Binding Path=Direction, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}">
+                                                    <Setter Property="Data">
+                                                        <Setter.Value>
+                                                            <PathGeometry Figures="M 0.73776967,0.79376144 1.4755402,-3.6256597e-6 c 0,0 0.4493497,0.4886290956597 0.6769365,0.7383440656597 0.2855965,0.31336496 0.00286,0.003 0.75794,0.84869986 -0.6530758,9.98e-4 -0.7883525,4.6e-5 -1.4525929,4.6e-5 H -4.2666666e-7 Z"/>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </DataTrigger>
+                                                <DataTrigger Value="Right" Binding="{Binding Path=Direction, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}">
+                                                    <Setter Property="Data">
+                                                        <Setter.Value>
+                                                            <PathGeometry Figures="M 0.79327817,0.73734621 1.5870433,1.4751168 c 0,0 -0.4886291,0.4493497 -0.73834413,0.6769365 -0.31336496,0.2855965 -0.003,0.00286 -0.84869985767333,0.75794 C -9.9868768e-4,2.2569175 -4.6687673e-5,2.1216408 -4.6687673e-5,1.4574004 V -4.2385535e-4 Z"/>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </DataTrigger>
+                                                <DataTrigger Value="Bottom" Binding="{Binding Path=Direction, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}">
+                                                    <Setter Property="Data">
+                                                        <Setter.Value>
+                                                            <PathGeometry Figures="M 0.73776967,0.79373106 1.4755402,1.5874961 c 0,0 0.4493497,-0.4886291 0.6769365,-0.73834404 0.2855965,-0.31336496 0.00286,-0.003 0.75794,-0.84869986195 -0.6530758,-9.98e-4 -0.7883525,-4.6e-5 -1.4525929,-4.6e-5 H -4.2666666e-7 Z"/>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Path=IsEngaged, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}" Value="True">
+                                                    <Setter Property="Stroke" Value="{Binding Path=GlyphHighlightedBorderBrush, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}"/>
+                                                    <Setter Property="Fill" Value="{Binding Path=GlyphHighlightedBrush, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Path.Style>
+                                </Path>
+                            </Viewbox>
+                            <!--<TextBlock Text="{Binding .}" FontFamily="Segoe MDL2 Assets" FontSize="12" Padding="0" FontStretch="UltraCondensed">
+                                <TextBlock.Style>
+                                    <Style TargetType="{x:Type TextBlock}">
+                                        <Setter Property="Foreground" Value="{Binding Path=GlyphBrush, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Value="Left" Binding="{Binding Path=Direction, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}">
+                                                <Setter Property="Margin" Value="-3,0,-3,-1"/>
+                                            </DataTrigger>
+                                            <DataTrigger Value="Top" Binding="{Binding Path=Direction, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}">
+                                                <Setter Property="Margin" Value="0,-3,-1,0"/>
+                                            </DataTrigger>
+                                            <DataTrigger Value="Right" Binding="{Binding Path=Direction, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}">
+                                                <Setter Property="Margin" Value="-3,0,0,-1"/>
+                                            </DataTrigger>
+                                            <DataTrigger Value="Bottom" Binding="{Binding Path=Direction, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}">
+                                                <Setter Property="Margin" Value="0,-3,-1,0"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Path=IsMouseOver, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}" Value="True">
+                                                <Setter Property="Foreground" Value="{Binding Path=BackgroundHighlighted, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>-->
+                        </Grid>
+                        <Border CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch">
+                            <Border.Style>
+                                <Style TargetType="{x:Type Border}">
+                                    <Setter Property="BorderBrush" Value="{Binding Path=BorderBrush, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}"/>
+                                    <Setter Property="Background" Value="{Binding Path=Background, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Path=IsEngaged, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}" Value="True">
+                                            <Setter Property="BorderBrush" Value="{Binding Path=BorderHighlighted, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}"/>
+                                            <Setter Property="Background" Value="{Binding Path=BackgroundHighlighted, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <TextBlock Text="{StaticResource AddIcon}"
+                                       FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" HorizontalAlignment="Center"
+                                       FontSize="16" FontWeight="ExtraBold">
+                                <TextBlock.Style>
+                                    <Style TargetType="{x:Type TextBlock}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Setter Property="Foreground" Value="{Binding Path=GlyphBrush, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Value="AddToTabbedDisplay" Binding="{Binding Path=Direction, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Path=IsEngaged, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}" Value="True">
+                                                <Setter Property="Foreground" Value="{Binding Path=GlyphHighlightedBrush, RelativeSource={RelativeSource AncestorType={x:Type local:DockDropInsertionDriverWidget}}}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Border>
+                    </DockPanel>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsEngaged" Value="True">
+                <Setter Property="Opacity" Value="1"/>
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Opacity" Value="0.3"/>
+                <Setter Property="IsHitTestVisible" Value="False"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+</ResourceDictionary>
