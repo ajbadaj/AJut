@@ -18,6 +18,7 @@
 !*.md
 !**/_TestData
 !*.snippet
+!*.docklayout
 
 # ============[ And finally nix these ]=========================
 *Settings.Designer.cs
