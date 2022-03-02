@@ -78,6 +78,9 @@
             }
         }
 
+        /// <summary>
+        /// Manually purge all logs that are outside of the given time span
+        /// </summary>
         public static void PurgeAllLogsOlderThan (TimeSpan age)
         {
             DateTime olderThan = DateTime.Now - age;
@@ -89,6 +92,14 @@
                     file.Delete();
                 }
             }
+        }
+
+        /// <summary>
+        /// Builds a string path for something relative to this application's app data root folder (assumes it was setup via the <see cref="RunOnetimeSetup"/> function).
+        /// </summary>
+        public static string BuildAppDataProjectPath (params string[] pathParts)
+        {
+            return Path.Combine(ApplicationUtilities.AppDataRoot, Path.Combine(pathParts));
         }
     }
 }

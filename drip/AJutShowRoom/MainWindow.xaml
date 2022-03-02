@@ -951,10 +951,25 @@
                 </Grid>
             </TabItem>
             <TabItem Header="PopupMenuButton" DataContext="random text">
-                <ajctrls:PopupMenuButton ButtonContent="Click to open context menu" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="30" Width="500">
-                    <MenuItem Header="Test 1" Click="Test1_OnClick"/>
-                    <MenuItem Header="Test 2"/>
-                </ajctrls:PopupMenuButton>
+                <StackPanel Margin="30">
+                    <DockPanel>
+                        <TextBlock Text="Popup Alignment:" Margin="0,0,5,0"/>
+                        <ajctrls:EnumComboBox x:Name="PopupButtonController_Alignment" SelectedItem="{Binding Source={x:Static HorizontalAlignment.Left}}" HorizontalAlignment="Left" Width="100"/>
+                    </DockPanel>
+
+                    <DockPanel>
+                        <TextBlock Text="Popup Animation:" Margin="0,0,5,0"/>
+                        <ajctrls:EnumComboBox x:Name="PopupButtonController_Animation" SelectedItem="{Binding Source={x:Static PopupAnimation.Slide}}" HorizontalAlignment="Left" Width="100"/>
+                    </DockPanel>
+
+                    <TextBlock Text="Popup Button:" Margin="0,15,0,0"/>
+                    <ajctrls:PopupMenuButton ButtonContent="Click to open context menu" VerticalAlignment="Top" HorizontalAlignment="Left" Width="200"
+                                             MenuPopupAlignment="{Binding ElementName=PopupButtonController_Alignment, Path=SelectedItem, Mode=TwoWay}"
+                                             MenuPopupAnimation="{Binding ElementName=PopupButtonController_Animation, Path=SelectedItem, Mode=TwoWay}">
+                        <MenuItem Header="Test 1" Click="Test1_OnClick"/>
+                        <MenuItem Header="Test 2 (does nothing)"/>
+                    </ajctrls:PopupMenuButton>
+                </StackPanel>
             </TabItem>
             <TabItem Header="Stack Nav">
                 <Grid  HorizontalAlignment="Center">
