@@ -59,6 +59,9 @@
     <Compile Update="Controls\FlatTreeListControl.cs">
       <DependentUpon>FlatTreeListControl.xaml</DependentUpon>
     </Compile>
+	  <Compile Update="Controls\MessageBoxPopover.cs">
+		  <DependentUpon>MessageBoxPopover.xaml</DependentUpon>
+	  </Compile>
     <Compile Update="Controls\NumericEditor.cs">
       <DependentUpon>NumericEditor.xaml</DependentUpon>
     </Compile>
