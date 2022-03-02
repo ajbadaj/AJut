@@ -13,6 +13,7 @@
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/EditableTextBlock.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/EnumComboBox.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/FlatTreeListControl.xaml"/>
+        <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/MessageBoxPopover.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/NumericEditor.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/PathSelectionControl.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/PopupMenuButton.xaml"/>

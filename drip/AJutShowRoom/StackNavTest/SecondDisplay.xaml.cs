@@ -4,7 +4,9 @@
     using System.Timers;
     using System.Windows;
     using System.Windows.Controls;
+    using AJut.Storage;
     using AJut.UX;
+    using AJut.UX.Controls;
     using DPUtils = AJut.UX.DPUtils<SecondDisplay>;
 
     public partial class SecondDisplay : UserControl, IStackNavDisplayControl
@@ -73,6 +75,20 @@
         private void OpenThirdDisplay_OnClick (object sender, RoutedEventArgs e)
         {
             m_adapter.Navigator.GenerateAndPushDisplay<ThirdDisplay>();
+        }
+
+        private async void ShowMessagePopoverExample_OnClick (object sender, RoutedEventArgs e)
+        {
+            Result<string> basicMessageBox = await m_adapter.ShowPopover(
+                MessageBoxPopover.Generate(
+                    "Here's an example messagebox-like-popover. Perhaps it will give you many choices, perhaps it will just give you a few.\n\nIn the end it will probably ask a question?", 
+                    "Yes", "No"
+                )
+            );
+            if (basicMessageBox && basicMessageBox.Value == "Yes")
+            {
+                MessageBox.Show("You picked yes!");
+            }
         }
     }
 }
