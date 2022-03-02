@@ -116,8 +116,15 @@
         private void PopupMenuButton_OnLoaded (object sender, RoutedEventArgs e)
         {
             this.ClearWindowRef();
-            m_currWindow = Window.GetWindow(this);
-            m_currWindow.LocationChanged += this.OnCurrWindowMoved;
+            try
+            {
+                m_currWindow = Window.GetWindow(this);
+                m_currWindow.LocationChanged += this.OnCurrWindowMoved;
+            }
+            catch (Exception exc)
+            {
+                Logger.LogError($"Failed to handle loaded properly for {nameof(PopupMenuButton)} - likely error in determining current window, this will lead to window move NOT closing the popup.", exc);
+            }
         }
 
         private void OnCurrWindowMoved (object sender, EventArgs e)
