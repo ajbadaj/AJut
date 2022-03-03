@@ -28,6 +28,7 @@
         private IStackNavPopoverDisplayBase m_popoverDisplay;
         private bool m_preserveFullAdapterAndControlOnCover = false;
         private int m_busyWaitRefCount = 0;
+        private bool m_allowBrowseBackDuringBusyWait = false;
 
         internal StackNavAdapter (StackNavFlowController navigator, IStackNavDisplayControl display)
         {
@@ -131,6 +132,16 @@
                 }
             }
         }
+
+        /// <summary>
+        /// Indicates if the user is allowed to browse backwards during a busywait event
+        /// </summary>
+        public bool AllowBrowseBackDuringBusyWait
+        {
+            get => m_allowBrowseBackDuringBusyWait;
+            set => this.SetAndRaiseIfChanged(ref m_allowBrowseBackDuringBusyWait, value);
+        }
+
 
         /// <summary>
         /// Indicates if a popover cover (set by the method <see cref="ShowPopover"/>) is currently requested to be displayed

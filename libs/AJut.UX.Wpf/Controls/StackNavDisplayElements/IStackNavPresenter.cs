@@ -24,7 +24,8 @@
 
             void _CanBrowseBack (object sender, CanExecuteRoutedEventArgs e)
             {
-                if ((control.Navigator?.CanGoBack == true || control.Navigator?.StackTopDisplayAdapter.IsShowingPopover == true) && !control.Navigator.StackTopDisplayAdapter.IsBusyWaitActive)
+                if ((control.Navigator?.CanGoBack == true || control.Navigator?.StackTopDisplayAdapter.IsShowingPopover == true) 
+                    && (!control.Navigator.StackTopDisplayAdapter.IsBusyWaitActive || control.Navigator.StackTopDisplayAdapter.AllowBrowseBackDuringBusyWait))
                 {
                     e.CanExecute = true;
                 }
