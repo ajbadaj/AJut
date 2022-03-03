@@ -11,7 +11,6 @@
 
     public partial class SecondDisplay : UserControl, IStackNavDisplayControl
     {
-        private StackNavAdapter m_adapter;
         public SecondDisplay ()
         {
             this.InitializeComponent();
@@ -19,17 +18,26 @@
 
         public void Setup (StackNavAdapter adapter)
         {
-            m_adapter = adapter;
-            m_adapter.Title = "Second Page";
-            m_adapter.Closing += this.OnClosing;
+            this.NavAdapter = adapter;
+            this.NavAdapter.Title = "Second Page";
+            this.NavAdapter.Closing += this.OnClosing;
         }
+
+
+        public static readonly DependencyProperty NavAdapterProperty = DPUtils.Register(_ => _.NavAdapter);
+        public StackNavAdapter NavAdapter
+        {
+            get => (StackNavAdapter)this.GetValue(NavAdapterProperty);
+            set => this.SetValue(NavAdapterProperty, value);
+        }
+
 
         private async void OnClosing (object sender, StackNavAttemptingDisplayCloseEventArgs e)
         {
             if (!this.AllowClose)
             {
                 e.CanClose = false;
-                await m_adapter.ShowPopover(new ErrorPopover("Example: Stopping close - you need to check 'Allow Close' before closing will work!"));
+                await NavAdapter.ShowPopover(new ErrorPopover("Example: Stopping close - you need to check 'Allow Close' before closing will work!"));
                 return;
             }
         }
@@ -55,7 +63,7 @@
 
         private void RunSpinWait_OnClick (object sender, RoutedEventArgs e)
         {
-            var busyWaitTracker = m_adapter.GenerateBusyWait();
+            var busyWaitTracker = NavAdapter.GenerateBusyWait();
 
             Timer spinWaitStackNavTimer = new Timer();
             spinWaitStackNavTimer.Interval = 2000;
@@ -74,12 +82,12 @@
 
         private void OpenThirdDisplay_OnClick (object sender, RoutedEventArgs e)
         {
-            m_adapter.Navigator.GenerateAndPushDisplay<ThirdDisplay>();
+            NavAdapter.Navigator.GenerateAndPushDisplay<ThirdDisplay>();
         }
 
         private async void ShowMessagePopoverExample_OnClick (object sender, RoutedEventArgs e)
         {
-            Result<string> basicMessageBox = await m_adapter.ShowPopover(
+            Result<string> basicMessageBox = await NavAdapter.ShowPopover(
                 MessageBoxPopover.Generate(
                     "Here's an example messagebox-like-popover. Perhaps it will give you many choices, perhaps it will just give you a few.\n\nIn the end it will probably ask a question?", 
                     "Yes", "No"
