@@ -28,7 +28,8 @@
         private IStackNavPopoverDisplayBase m_popoverDisplay;
         private bool m_preserveFullAdapterAndControlOnCover = false;
         private int m_busyWaitRefCount = 0;
-        private bool m_allowBrowseBackDuringBusyWait = false;
+        private bool m_allowInteractionDuringBusyWait = false;
+        private bool m_allowInteractionDuringPopover = false;
 
         internal StackNavAdapter (StackNavFlowController navigator, IStackNavDisplayControl display)
         {
@@ -128,20 +129,40 @@
             {
                 if (this.SetAndRaiseIfChanged(ref m_isBusyWaitActive, value))
                 {
-                    this.RaisePropertiesChanged(nameof(AnyCoversShown));
+                    this.RaisePropertiesChanged(nameof(AnyCoversShown), nameof(AnyBlockingCoversShown));
                 }
             }
         }
 
         /// <summary>
-        /// Indicates if the user is allowed to browse backwards during a busywait event
+        /// Indicates if the user is allowed to perform any header interactions (ie browse back) during an active busywait
         /// </summary>
-        public bool AllowBrowseBackDuringBusyWait
+        public bool AllowInteractionDuringBusyWait
         {
-            get => m_allowBrowseBackDuringBusyWait;
-            set => this.SetAndRaiseIfChanged(ref m_allowBrowseBackDuringBusyWait, value);
+            get => m_allowInteractionDuringBusyWait;
+            set
+            {
+                if (this.SetAndRaiseIfChanged(ref m_allowInteractionDuringBusyWait, value))
+                {
+                    this.RaisePropertiesChanged(nameof(AnyCoversShown), nameof(AnyBlockingCoversShown));
+                }
+            }
         }
 
+        /// <summary>
+        /// Indicates if the user is allowed to perform any header interactions (ie browse back) while there is an active popover
+        /// </summary>
+        public bool AllowInteractionDuringPopover
+        {
+            get => m_allowInteractionDuringPopover;
+            set
+            {
+                if (this.SetAndRaiseIfChanged(ref m_allowInteractionDuringPopover, value))
+                {
+                    this.RaisePropertiesChanged(nameof(AnyCoversShown), nameof(AnyBlockingCoversShown));
+                }
+            }
+        }
 
         /// <summary>
         /// Indicates if a popover cover (set by the method <see cref="ShowPopover"/>) is currently requested to be displayed
@@ -158,7 +179,7 @@
             {
                 if (this.SetAndRaiseIfChanged(ref m_popoverDisplay, value))
                 {
-                    this.RaisePropertiesChanged(nameof(IsShowingPopover), nameof(AnyCoversShown));
+                    this.RaisePropertiesChanged(nameof(IsShowingPopover), nameof(AnyCoversShown), nameof(AnyBlockingCoversShown));
                 }
             }
         }
@@ -167,6 +188,11 @@
         /// Indicates if any of the cover displays (busy wait, or a popover) are being shown
         /// </summary>
         public bool AnyCoversShown => this.IsBusyWaitActive || this.IsShowingPopover;
+
+        /// <summary>
+        /// Are there any blocking covers being shown (busy wait or popover when matching interaction allower flag is false)
+        /// </summary>
+        public bool AnyBlockingCoversShown => (this.IsBusyWaitActive && !this.AllowInteractionDuringBusyWait) || (this.IsShowingPopover && !this.AllowInteractionDuringPopover);
 
         /// <summary>
         /// Indicates if this adapter and it's <see cref="IStackNavDisplayControl"/> control should be preserved on cover (default is false for 

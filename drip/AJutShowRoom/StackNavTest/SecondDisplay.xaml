@@ -10,7 +10,10 @@
     <StackPanel>
         <TextBlock Text="{Binding ElementName=Self, Path=NumberFromFirst}"/>
         <Button Content="Run BusyWait for 2s" Click="RunSpinWait_OnClick"/>
-        <Button Content="Show standard messagebox-like-popover" Click="ShowMessagePopoverExample_OnClick"/>
+        <CheckBox Content="Allow Interaction Back During Busywait" IsChecked="{Binding ElementName=Self, Path=NavAdapter.AllowInteractionDuringBusyWait, Mode=TwoWay}"/>
+        
+        <Button Content="Show standard messagebox-like-popover" Click="ShowMessagePopoverExample_OnClick" Margin="0,10,0,0"/>
+        <CheckBox Content="Allow Interaction Back During Popover" IsChecked="{Binding ElementName=Self, Path=NavAdapter.AllowInteractionDuringPopover, Mode=TwoWay}"/>
         <CheckBox Content="Allow Close" IsChecked="{Binding ElementName=Self, Path=AllowClose, Mode=TwoWay}"/>
         <Button Margin="0,10,0,0" Content="Open Third Display" Click="OpenThirdDisplay_OnClick"/>
     </StackPanel>

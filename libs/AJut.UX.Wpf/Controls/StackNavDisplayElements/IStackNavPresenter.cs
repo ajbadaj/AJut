@@ -1,5 +1,6 @@
 ﻿namespace AJut.UX.Controls
 {
+    using System;
     using System.Windows;
     using System.Windows.Input;
 
@@ -25,9 +26,13 @@
             void _CanBrowseBack (object sender, CanExecuteRoutedEventArgs e)
             {
                 if ((control.Navigator?.CanGoBack == true || control.Navigator?.StackTopDisplayAdapter.IsShowingPopover == true) 
-                    && (!control.Navigator.StackTopDisplayAdapter.IsBusyWaitActive || control.Navigator.StackTopDisplayAdapter.AllowBrowseBackDuringBusyWait))
+                    && (!control.Navigator.StackTopDisplayAdapter.IsBusyWaitActive || control.Navigator.StackTopDisplayAdapter.AllowInteractionDuringBusyWait))
                 {
                     e.CanExecute = true;
+                }
+                else
+                {
+                    Console.WriteLine(5);
                 }
             }
             async void _OnBrowseBack (object sender, ExecutedRoutedEventArgs e)
