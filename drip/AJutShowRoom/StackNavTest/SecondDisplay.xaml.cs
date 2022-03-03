@@ -63,7 +63,7 @@
 
         private void RunSpinWait_OnClick (object sender, RoutedEventArgs e)
         {
-            var busyWaitTracker = NavAdapter.GenerateBusyWait();
+            var busyWaitTracker = NavAdapter.GenerateBusyWait("Wait or something? IDK - you can put whatever you want here.");
 
             Timer spinWaitStackNavTimer = new Timer();
             spinWaitStackNavTimer.Interval = 2000;

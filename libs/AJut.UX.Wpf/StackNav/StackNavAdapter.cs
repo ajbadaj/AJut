@@ -21,6 +21,8 @@
     /// </summary>
     public class StackNavAdapter : NotifyPropertyChanged
     {
+        private const string kDefaultBusyWaitText = "Please wait...";
+
         private object m_drawerDisplay;
         private object m_title;
         private object m_drawerHeading;
@@ -30,6 +32,7 @@
         private int m_busyWaitRefCount = 0;
         private bool m_allowInteractionDuringBusyWait = false;
         private bool m_allowInteractionDuringPopover = false;
+        private string m_busyWaitText = kDefaultBusyWaitText;
 
         internal StackNavAdapter (StackNavFlowController navigator, IStackNavDisplayControl display)
         {
@@ -205,6 +208,15 @@
             set => this.SetAndRaiseIfChanged(ref m_preserveFullAdapterAndControlOnCover, value);
         }
 
+        /// <summary>
+        /// The text displayed when the busy wait is active, set by the <see cref="GenerateBusyWait(string)"/>
+        /// </summary>
+        public string BusyWaitText
+        {
+            get => m_busyWaitText;
+            private set => this.SetAndRaiseIfChanged(ref m_busyWaitText, value);
+        }
+
         // ========================================[ Methods ]========================================
 
         /// <summary>
@@ -251,11 +263,12 @@
         /// ready for the busywait to go away.
         /// </summary>
         /// <returns>A <see cref="BusyWaitTracker"/> that should be disposed when you're ready for the busy wait to go away</returns>
-        public BusyWaitTracker GenerateBusyWait ()
+        public BusyWaitTracker GenerateBusyWait (string displayText = kDefaultBusyWaitText)
         {
             var busyWaitTracker = new BusyWaitTracker(this);
             ++m_busyWaitRefCount;
             this.IsBusyWaitActive = true;
+            this.BusyWaitText = displayText;
             return busyWaitTracker;
         }
 
