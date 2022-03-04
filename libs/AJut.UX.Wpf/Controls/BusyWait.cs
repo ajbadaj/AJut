@@ -16,6 +16,13 @@
             DefaultStyleKeyProperty.OverrideMetadata(typeof(BusyWait), new FrameworkPropertyMetadata(typeof(BusyWait)));
         }
 
+        public static readonly DependencyProperty IsSpinningProperty = DPUtils.Register(_ => _.IsSpinning, true);
+        public bool IsSpinning
+        {
+            get => (bool)this.GetValue(IsSpinningProperty);
+            set => this.SetValue(IsSpinningProperty, value);
+        }
+
         public static readonly DependencyProperty SpinnerDockProperty = DPUtils.Register(_ => _.SpinnerDock);
         public Dock SpinnerDock
         {

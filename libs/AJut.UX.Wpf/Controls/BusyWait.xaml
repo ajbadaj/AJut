@@ -3,6 +3,7 @@
                     xmlns:ajut="clr-namespace:AJut.UX"
                     xmlns:ap="clr-namespace:AJut.UX.AttachedProperties"
                     xmlns:local="clr-namespace:AJut.UX.Controls">
+    
     <Style TargetType="{x:Type local:BusyWait}">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
@@ -28,18 +29,26 @@
                                 <TextBlock.RenderTransform>
                                     <RotateTransform Angle="0"/>
                                 </TextBlock.RenderTransform>
-                                <TextBlock.Triggers>
-                                    <EventTrigger RoutedEvent="Loaded">
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetProperty="RenderTransform.Angle"
-                                                                 From="0.0" To="360.0" Duration="0:0:3"
-                                                                 RepeatBehavior="Forever"/>
-
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </EventTrigger>
-                                </TextBlock.Triggers>
+                                <TextBlock.Style>
+                                    <Style TargetType="{x:Type TextBlock}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:BusyWait}}, Path=IsSpinning}" Value="True">
+                                                <DataTrigger.EnterActions>
+                                                    <BeginStoryboard x:Name="BusyWaitSpinAnimation">
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetProperty="RenderTransform.Angle"
+                                                                             From="0.0" To="360.0" Duration="0:0:3"
+                                                                             RepeatBehavior="Forever"/>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </DataTrigger.EnterActions>
+                                                <DataTrigger.ExitActions>
+                                                    <StopStoryboard BeginStoryboardName="BusyWaitSpinAnimation"/>
+                                                </DataTrigger.ExitActions>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
                             </TextBlock>
                             <Grid Margin="{TemplateBinding ContentPadding}">
                                 <ContentPresenter Content="{TemplateBinding Content}"

@@ -776,10 +776,12 @@
                 </StackPanel>
             </TabItem>
             <TabItem Header="BusyWait">
-                <Grid>
+                <StackPanel>
                     <ajctrls:BusyWait Content="A busy wait" SpinnerDock="Right"
-                                   VerticalAlignment="Center"  HorizontalAlignment="Left"/>
-                </Grid>
+                                      VerticalAlignment="Center"  HorizontalAlignment="Left"
+                                      IsSpinning="{Binding ElementName=ShouldSpin, Path=IsChecked, Mode=TwoWay}"/>
+                    <CheckBox x:Name="ShouldSpin" Content="Should Spin" IsChecked="True"/>
+                </StackPanel>
             </TabItem>
             <TabItem Header="Svg">
                 <Grid>
