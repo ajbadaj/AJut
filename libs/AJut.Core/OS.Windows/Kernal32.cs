@@ -7,7 +7,7 @@
     /// </summary>
     public static partial class Kernal32
     {
-        private static class DllImport
+        private static class Kernal32DllImports
         {
             [DllImport("Kernel32.dll")]
             public static extern bool QueryPerformanceCounter (out long lpPerformanceCount);

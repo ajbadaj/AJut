@@ -17,16 +17,16 @@
 
             public HighAccuracyStopwatch ()
             {
-                DllImport.QueryPerformanceFrequency(out m_frequency);
+                Kernal32DllImports.QueryPerformanceFrequency(out m_frequency);
             }
             public void Start ()
             {
-                DllImport.QueryPerformanceCounter(out m_startTime);
+                Kernal32DllImports.QueryPerformanceCounter(out m_startTime);
             }
 
             public TimeSpan Stop ()
             {
-                DllImport.QueryPerformanceCounter(out long endTime);
+                Kernal32DllImports.QueryPerformanceCounter(out long endTime);
                 return TimeSpan.FromSeconds((double)(endTime - m_startTime) / (double)m_frequency);
             }
         }
