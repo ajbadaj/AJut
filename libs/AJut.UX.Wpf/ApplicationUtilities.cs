@@ -38,7 +38,7 @@
 
             if (setupLogging)
             {
-                Logger.SetupLogFile(AppDataHelper.EstablishAppDataLocation(ProjectName, "Logs"));
+                Logger.CreateAndStartWritingToLogFileIn(AppDataHelper.EstablishAppDataLocation(ProjectName, "Logs"));
                 PurgeAllLogsOlderThan(TimeSpan.FromDays(ageMaxInDaysToKeepLogs));
             }
 
