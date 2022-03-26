@@ -46,13 +46,8 @@
 
         private class TestNotifyPropChangedThing : NotifyPropertyChanged
         {
-
             private int m_foo;
-            public int Foo
-            {
-                get => m_foo;
-                set => this.SetAndRaiseIfChanged(ref m_foo, value);
-            }
+            private double m_fooComplex;
 
             public double Min { get; set; } = -1000.0;
             public double Max { get; set; } = 1000.0;
@@ -60,21 +55,31 @@
             public bool ComplexWasSet { get; set; }
 
 
-            private double m_fooComplex;
+
+            public int Foo
+            {
+                get => m_foo;
+                set => this.SetAndRaiseIfChanged(ref m_foo, value);
+            }
+
+            private static dynamic Add5 (dynamic v) => v + 5;
+
+
             public double FooComplex
             {
                 get => m_fooComplex;
+                /* NOTE: This will not work due to a "design decision" (totally not a bug) with dynamic where if ANY parameter to the function utilizes the return of a function that employs dynamic, it will not process the [CallerMemberName] attribute and thus you will raise the default which is empty string.
+                set => this.SetAndRaiseIfChanged(ref m_fooComplex, Cap.Within(this.Min, this.Max, value));
+                */
                 set
                 {
-                    this.ComplexWasSet = false;
-                    if (this.SetAndRaiseIfChanged(ref m_fooComplex, Cap.Within(this.Min, this.Max, value)))
+                    double valuePlus5 = Add5(value);
+                    if (this.SetAndRaiseIfChanged(ref m_fooComplex, valuePlus5))
                     {
                         this.ComplexWasSet = true;
                     }
                 }
             }
-
-
         }
     }
 }
