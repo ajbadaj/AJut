@@ -15,7 +15,10 @@
         {
             TypeIdRegistrar.RegisterAllTypeIds(typeof(App).Assembly);
             ApplicationUtilities.RunOnetimeSetup("AJut.TestApp", onExceptionRecieved: UnhandledExceptionProcessor);
-            Logger.FlushAfterEach = true;
+            Logger.FlushToFileAfterEach = true;
+            Logger.ShouldLogToConsole = true;
+            Logger.ShouldLogToTrace = true;
+            Logger.LogInfo("Starting up AJut Show Room");
         }
 
         private static bool UnhandledExceptionProcessor (Exception e)

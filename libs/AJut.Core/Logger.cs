@@ -4,25 +4,28 @@
     using System.Diagnostics;
     using System.IO;
 
+    /// <summary>
+    /// Transmits logged infomration from any thread to any combination of a log file, the <see cref="Console"/>, the debug <see cref="Trace"/>.
+    /// </summary>
     public class Logger : IDisposable
     {
         private static Logger g_LoggerInstance = new Logger();
+        private static readonly LogType kInfoType = new InfoLogType();
+        private static readonly LogType kErrorType = new ErrorLogType();
 
         private string m_logFilePath;
         private StreamWriter m_logFileWriter;
         private FileStream m_logFileStream;
-        private bool m_shouldLogToConsole;
-        private bool m_shouldWriteToDebugOutputTrace;
-        private bool m_isEnabled = true;
-        private bool m_flushAfterEach = false;
+
+        private volatile bool m_shouldLogToConsole;
+        private volatile bool m_shouldLogToTrace;
+        private volatile bool m_isEnabled = true;
+        private volatile bool m_flushToFileAfterEach;
+        private volatile string m_dateTimeFormat = "MM.dd.yyy-hh.mm.ss";
+
         private readonly object m_logWritingLock = new object();
 
         private static string kLogFilenameFormat = "log-{0:MM.dd.yyyy-hh.mm.ss}.txt";
-        private static string kErrorType = "Error";
-        private static string kInfoType = "Info";
-
-        private static string kLogFormat = "[{0}] {1:MM.dd.yyyy-hh.mm.ss} |   ";
-        private static string kErrorLogFormat = "\r\n[{0}] {1:MM.dd.yyyy-hh.mm.ss} |   ";
 
 
         #region ========== Instance Code ==========
@@ -31,43 +34,71 @@
             SetDebugDefaults();
         }
 
+        /// <summary>
+        /// Set the debug defaults (only called in Debug)
+        /// </summary>
         [Conditional("DEBUG")]
         private void SetDebugDefaults ()
         {
             m_shouldLogToConsole = true;
-            m_shouldWriteToDebugOutputTrace = true;
+            m_shouldLogToTrace = true;
+            m_flushToFileAfterEach = true;
         }
 
+        /// <summary>
+        /// Indicates if calls to <see cref="Logger"/> should additionally direct to <see cref="Console"/>
+        /// </summary>
         public static bool ShouldLogToConsole
         {
             get => g_LoggerInstance.m_shouldLogToConsole;
             set => g_LoggerInstance.m_shouldLogToConsole = value;
         }
 
-        public static bool ShouldLogToDebugConsole
+        /// <summary>
+        /// Indicates if calls to <see cref="Logger"/> should additionally direct to <see cref="Trace"/>
+        /// </summary>
+        public static bool ShouldLogToTrace
         {
-            get => g_LoggerInstance.m_shouldWriteToDebugOutputTrace;
-            set => g_LoggerInstance.m_shouldWriteToDebugOutputTrace = value;
+            get => g_LoggerInstance.m_shouldLogToTrace;
+            set => g_LoggerInstance.m_shouldLogToTrace = value;
         }
 
-        public static bool FlushAfterEach
+        /// <summary>
+        /// Indicates if the logger should force flush to file after each call (true) or leave it up manual calls to <see cref="ForceFlushToFile"/> (false).
+        /// </summary>
+        public static bool FlushToFileAfterEach
         {
-            get => g_LoggerInstance.m_flushAfterEach;
-            set => g_LoggerInstance.m_flushAfterEach = value;
+            get => g_LoggerInstance.m_flushToFileAfterEach;
+            set => g_LoggerInstance.m_flushToFileAfterEach = value;
         }
 
-        public static void Enable()
+        /// <summary>
+        /// The format used when adding in date time to log statements
+        /// </summary>
+        public static string DateTimeFormat
+        {
+            get => g_LoggerInstance.m_dateTimeFormat;
+            set => g_LoggerInstance.m_dateTimeFormat = value;
+        }
+
+        /// <summary>
+        /// Enables logging
+        /// </summary>
+        public static void Enable ()
         {
             g_LoggerInstance.m_isEnabled = true;
         }
 
-        public static void Disable()
+        /// <summary>
+        /// Disables logging
+        /// </summary>
+        public static void Disable ()
         {
-            ForceFlush();
+            ForceFlushToFile();
             g_LoggerInstance.m_isEnabled = false;
         }
 
-        private void Startup(string newLogFilePath = null)
+        private void BuildAndSetupLogFileStream (string newLogFilePath = null)
         {
             if (newLogFilePath != null)
             {
@@ -78,7 +109,7 @@
             m_logFileWriter = new StreamWriter(m_logFileStream);
         }
 
-        private void Shutdown()
+        private void TearDownLogFileStream ()
         {
             if (m_logFileWriter != null)
             {
@@ -96,47 +127,57 @@
             }
         }
 
-        public static string GrabFileTextAndReset ()
+        /// <summary>
+        /// Tears down the file locks and reads log file stream, sets the log file stream back up, and returns the text
+        /// </summary>
+        public static string ReadCurrentLogFromDisk ()
         {
-            ForceFlush();
-            g_LoggerInstance.Shutdown();
+            ForceFlushToFile();
+            g_LoggerInstance.TearDownLogFileStream();
             string logFileText = File.ReadAllText(g_LoggerInstance.m_logFilePath);
-            g_LoggerInstance.Startup();
-            WriteTextUnformattedToLog(logFileText);
+            g_LoggerInstance.BuildAndSetupLogFileStream();
 
             return logFileText;
         }
 
-        public void Dispose()
+        /// <summary>
+        /// Disposes of the logger instance
+        /// </summary>
+        public void Dispose ()
         {
-            this.Shutdown();
+            this.TearDownLogFileStream();
         }
 
         #endregion
 
+        /// <summary>
+        /// The file path that the logger is currently writing to
+        /// </summary>
         public static string LogFilePath => g_LoggerInstance.m_logFilePath;
 
-        public static void SetupLogFile(string dir, bool logToConsoleToo = true)
+        /// <summary>
+        /// Sets up the log file for writing
+        /// </summary>
+        /// <param name="directoryPath">Path to the directory under which we should create a new log file</param>
+        public static void CreateAndStartWritingToLogFileIn (string directoryPath)
         {
-            if (g_LoggerInstance != null)
-            {
-                g_LoggerInstance.Dispose();
-                g_LoggerInstance = null;
-            }
-
-
-            if (dir != null)
+            g_LoggerInstance.TearDownLogFileStream();
+            if (directoryPath != null)
             {
                 g_LoggerInstance = new Logger();
 
-                Directory.CreateDirectory(dir);
-                g_LoggerInstance.Startup(Path.Combine(dir, String.Format(kLogFilenameFormat, DateTime.Now)));
+                Directory.CreateDirectory(directoryPath);
+                g_LoggerInstance.BuildAndSetupLogFileStream(Path.Combine(directoryPath, String.Format(kLogFilenameFormat, DateTime.Now)));
             }
-
-            g_LoggerInstance.m_shouldLogToConsole = logToConsoleToo;
         }
 
-        public static void ForceFlush()
+        /// <summary>
+        /// Forces flushing all pending log statements to the log file
+        /// </summary>
+        /// <remarks>
+        /// NOTE: This will happen automatically if you have set <see cref="FlushToFileAfterEach"/>
+        /// </remarks>
+        public static void ForceFlushToFile ()
         {
             lock (g_LoggerInstance.m_logWritingLock)
             {
@@ -149,49 +190,99 @@
             }
         }
 
-        public static void LogInfo(string message)
+        /// <summary>
+        /// Log information
+        /// </summary>
+        /// <param name="message">The message to log</param>
+        /// <remarks>
+        /// The <see cref="Logger"/> only differentiates between error, and not error - this is to log something that is not an error.
+        /// </remarks>
+        public static void LogInfo (string message)
         {
-            DoLog(kInfoType, true, message);
+            DoLog(kInfoType, message);
         }
 
+        /// <summary>
+        /// Log information - but only if the target compilation is Debug.
+        /// </summary>
+        /// <param name="message">The message to log</param>
+        /// <remarks>
+        /// The <see cref="Logger"/> only differentiates between error, and not error - this is to log something that is not an error.
+        /// </remarks>
         [Conditional("DEBUG")]
         public static void LogDebugInfo (string message)
         {
-            LogInfo(message);
+            DoLog(kInfoType, message);
         }
 
-        public static void LogError(string message)
+        /// <summary>
+        /// Log error
+        /// </summary>
+        /// <param name="message">The message to log</param>
+        /// <remarks>
+        /// The <see cref="Logger"/> only differentiates between error, and not error - this is to log something that *is* an error.
+        /// </remarks>
+        public static void LogError (string message)
         {
-            DoLog(kErrorType, true, message);
+            DoLog(kErrorType, message);
         }
 
-        public static void LogError(Exception exc)
+        /// <summary>
+        /// Log an <see cref="Exception"/> as, using it's message as the log error text
+        /// </summary>
+        /// <param name="exc">The exception to log</param>
+        /// <remarks>
+        /// The <see cref="Logger"/> only differentiates between error, and not error - this is to log something that *is* an error.
+        /// </remarks>
+        public static void LogError (Exception exc)
         {
-            DoLog(kErrorType, true, $"Exception Encountered: {exc}");
+            DoLog(kErrorType, $"Exception Encountered: {exc}");
         }
 
-        public static void LogError(string message, Exception exc)
+        /// <summary>
+        /// Log an error using a message, and text from an <see cref="Exception"/>
+        /// </summary>
+        /// <param name="message">The error message to log</param>
+        /// <param name="exc">The exception to log</param>
+        /// <remarks>
+        /// The <see cref="Logger"/> only differentiates between error, and not error - this is to log something that *is* an error.
+        /// </remarks>
+        public static void LogError (string message, Exception exc)
         {
-            DoLog(kErrorType, true, $"{message}\nException Encountered: {exc}");
+            DoLog(kErrorType, $"{message}\nException Encountered: {exc}");
         }
 
-        private static void DoLog(string type, bool isError, string message)
+        private static void DoLog (LogType logType, string message)
         {
             if (g_LoggerInstance == null || g_LoggerInstance.m_isEnabled == false)
             {
                 return;
             }
 
-            string output = String.Format(isError ? kErrorLogFormat : kLogFormat, type, DateTime.Now) + message;
+            string output = logType.GenerateOutputText(message);
 
-            if (g_LoggerInstance.m_shouldLogToConsole)
+            if (ShouldLogToConsole)
             {
-                Console.WriteLine(output);
+                if (logType.IsError)
+                {
+                    Console.Error.WriteLine(output);
+                }
+                else
+                {
+                    Console.Out.WriteLine(output);
+                }
             }
 
-            if (g_LoggerInstance.m_shouldWriteToDebugOutputTrace)
+            if (ShouldLogToTrace)
             {
-                Trace.WriteLine(output);
+                if (logType.IsError)
+                {
+                    Trace.TraceError(output);
+                }
+                else
+                {
+                    Trace.WriteLine(output);
+                }
             }
 
             WriteTextUnformattedToLog(output);
@@ -206,12 +297,29 @@
                     g_LoggerInstance.m_logFileWriter.Write(text);
                 }
 
-                if (g_LoggerInstance.m_flushAfterEach)
+                if (g_LoggerInstance.m_flushToFileAfterEach)
                 {
-                    ForceFlush();
+                    ForceFlushToFile();
                 }
             }
         }
 
+
+        private abstract class LogType 
+        {
+            public virtual bool IsError { get; } = false;
+            public abstract string GenerateOutputText (string message);
+        };
+
+        private class InfoLogType : LogType
+        {
+            public override string GenerateOutputText (string message) => $"[Info] {DateTime.Now.ToString(Logger.DateTimeFormat)} |   {message}";
+        }
+
+        private class ErrorLogType : LogType
+        {
+            public override bool IsError { get; } = true;
+            public override string GenerateOutputText (string message) => $"\r\n[Error] {DateTime.Now.ToString(Logger.DateTimeFormat)} |   {message}";
+        }
     }
 }
