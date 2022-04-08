@@ -223,7 +223,7 @@
             }
 
             // Make sure we're allowed to run our action
-            if (!this.State.HasPendingEvalItems || (this.TraversalParameters.EnforcesLevelRestriction && !this.TraversalParameters.DepthLimits.Passes(next.DepthFromOrigin, true)))
+            if (!this.State.HasPendingEvalItems || (this.TraversalParameters.EnforcesLevelRestriction && !this.TraversalParameters.DepthLimits.Passes(next.DepthFromOrigin)))
             {
                 return eNextTraversalMove.PruneAndContinueSearching;
             }
