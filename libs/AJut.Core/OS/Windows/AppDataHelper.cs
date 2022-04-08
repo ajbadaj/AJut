@@ -3,6 +3,9 @@
     using System;
     using System.IO;
 
+    /// <summary>
+    /// Utilities for establishing locations in the appdata folder
+    /// </summary>
     public static class AppDataHelper
     {
         public static readonly string kAppDataRootPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
