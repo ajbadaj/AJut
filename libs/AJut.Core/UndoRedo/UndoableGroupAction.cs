@@ -3,6 +3,9 @@
     using System.Collections.Generic;
     using System.Diagnostics;
 
+    /// <summary>
+    /// An undoable action which is comprised of a group of undoable actions (do all, undo all)
+    /// </summary>
     [DebuggerDisplay("Group: {DisplayName}")]
     public class UndoableGroupAction : IUndoableAction
     {
@@ -17,7 +20,7 @@
         }
 
         /// <summary>
-        /// Create a group action for a substack
+        /// Create a group action for a substack (a substack is essentially a group of undoable actions)
         /// </summary>
         public UndoableGroupAction (string name, object typing, UndoRedoManager substack) : this(name, typing)
         {

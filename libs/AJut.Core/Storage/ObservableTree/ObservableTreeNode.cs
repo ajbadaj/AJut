@@ -26,10 +26,10 @@
         }
 
         // ===============[Events]================
-        public event EventHandler<ChildInsertedEventArgs> ChildInserted;
+        public event EventHandler<TreeNodeInsertedEventArgs> ChildInserted;
         public event EventHandler<EventArgs<IObservableTreeNode>> ChildRemoved;
         public event EventHandler<EventArgs<bool>> CanHaveChildrenChanged;
-        public event EventHandler<ParentChangedEventArgs> ParentChanged;
+        public event EventHandler<TreeNodeParentChangedEventArgs> ParentChanged;
 
         // =============[Properties]==============
         public virtual TNode Parent
@@ -105,10 +105,10 @@
         protected virtual void OnChildRemoved (TNode child) { }
         protected virtual void OnParentChanged (TNode oldParent, TNode newParent) { }
 
-        protected void RaiseChildInsertedEvent (int index, TNode child) => this.ChildInserted?.Invoke(this, new ChildInsertedEventArgs(index, child));
+        protected void RaiseChildInsertedEvent (int index, TNode child) => this.ChildInserted?.Invoke(this, new TreeNodeInsertedEventArgs(index, child));
         protected void RaiseChildRemovedEvent (TNode node) => this.ChildRemoved?.Invoke(this, new EventArgs<IObservableTreeNode>(node));
         protected void RaiseCanHaveChildrenChangedEvent () => this.CanHaveChildrenChanged?.Invoke(this, new EventArgs<bool>(this.CanHaveChildren));
-        protected void RaiseParentChangedEvent (TNode oldParent, TNode newParent) => this.ParentChanged?.Invoke(this, new ParentChangedEventArgs(oldParent, newParent));
+        protected void RaiseParentChangedEvent (TNode oldParent, TNode newParent) => this.ParentChanged?.Invoke(this, new TreeNodeParentChangedEventArgs(oldParent, newParent));
     }
 
     /// <summary>

@@ -11,8 +11,9 @@
         /// <summary>
         /// Returns all attributes of the indicated type and matching the indicated parameters
         /// </summary>
+        /// <param name="attributes">The attributes to search through</param>
         /// <param name="validator">A validator (default == null, everything)</param>
-        /// <param name="allowDerivedAttributeTypes">Should types derived from <see cref="TAttribute"/> be allowed?</param>
+        /// <param name="allowDerivedAttributeTypes">Should types derived from <typeparamref name="TAttribute"/> be allowed?</param>
         /// <returns>An enumerable collection of the attribute types requested</returns>
         public static IEnumerable<TAttribute> SearchForAttributes<TAttribute>(IEnumerable attributes, AttributeTester<TAttribute> validator = null, bool allowDerivedAttributeTypes = true) where TAttribute : Attribute
         {

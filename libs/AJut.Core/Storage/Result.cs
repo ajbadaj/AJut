@@ -4,12 +4,15 @@
     using System.Collections.ObjectModel;
     using System.Linq;
 
+    /// <summary>
+    /// A state-based work result structure that allows you to track success and failure, as well as failure messaging
+    /// </summary>
     public class Result
     {
         protected bool m_isInErrorState;
         private List<string> m_errors = new List<string>();
 
-        public Result()
+        public Result ()
         {
             this.Errors = m_errors.AsReadOnly();
         }
@@ -75,6 +78,9 @@
         public static implicit operator bool (Result result) => !result.HasErrors;
     }
 
+    /// <summary>
+    /// A state-based work result structure that allows you to track success and data for that success - or failure, as well as failure messaging
+    /// </summary>
     public class Result<T> : Result
     {
         public T Value { get; init; }

@@ -80,9 +80,9 @@
         }
 
         /// <summary>
-        /// Get the typeId for the given type <see cref="T"/>
+        /// Get the typeId for the given type <typeparamref name="T"/>
         /// </summary>
-        /// <returns>The typeId for <see cref="T"/> or null if none found</returns>
+        /// <returns>The typeId for <typeparamref name="T"/> or null if none found</returns>
         public static string GetTypeIdFor<T> ()
         {
             return GetTypeIdFor(typeof(T));

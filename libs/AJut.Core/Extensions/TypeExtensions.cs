@@ -199,7 +199,7 @@
         /// Returns all attributes of the indicated type and matching the indicated parameters
         /// </summary>
         /// <param name="validator">A validator (default == null, everything)</param>
-        /// <param name="allowDerivedAttributeTypes">Should types derived from <see cref="TAttribute"/> be allowed?</param>
+        /// <param name="allowDerivedAttributeTypes">Should types derived from <typeparamref name="TAttribute"/> be allowed?</param>
         /// <param name="checkInherited">Should attributes from ancestor classes of the passed in type be considered?</param>
         /// <returns>An enumerable collection of the attribute types requested</returns>
         public static IEnumerable<TAttribute> GetAttributes<TAttribute> (this Type type, AttributeTester<TAttribute> validator = null, bool allowDerivedAttributeTypes = true, bool checkInherited = true) where TAttribute : Attribute

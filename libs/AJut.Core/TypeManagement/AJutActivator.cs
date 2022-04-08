@@ -3,6 +3,9 @@
     using System;
     using System.Collections.Generic;
 
+    /// <summary>
+    /// Similar to the normal <see cref="Activator"/>, but with some specialty handlers to include the <see cref="TypeIdRegistrar"/> - as well as to avoid common pitfalls
+    /// </summary>
     public static class AJutActivator
     {
         private static readonly Dictionary<Type, Func<object>> g_typeFactories = new Dictionary<Type, Func<object>>();

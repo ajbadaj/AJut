@@ -2,6 +2,10 @@
 {
     using System;
 
+    /// <summary>
+    /// Data management system used to add and track work items for the ThreadWorker/>
+    /// </summary>
+    /// <typeparam name="T">The type of data it will be managing</typeparam>
     public class ThreadWorkerDataQueue<T> : ThreadWorkerState<T>
     {
         /* Note: I was using ConcurrentQueue and opted to update to ThreadWorkerState base class
@@ -16,7 +20,7 @@
         public event EventHandler<EventArgs> DataProcessed;
 
         // ==================[ Methods ]============================
-        public T TakeNext () => this.Take(0);
+        public T TakeNext () => this.TakeDataByIndex(0);
 
         public void NotifyDataReceived () => this.DataReceived?.Invoke(this, EventArgs.Empty);
 

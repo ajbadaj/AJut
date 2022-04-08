@@ -538,7 +538,7 @@
             m_objectAccess.Add(odam.Id, odam);
             odam.LayerDataRemoved -= this.Odam_LayerDataRemoved;
             odam.LayerDataRemoved += this.Odam_LayerDataRemoved;
-            
+
             odam.LayerDataSet -= this.Odam_LayerDataSet;
             odam.LayerDataSet += this.Odam_LayerDataSet;
         }
@@ -591,14 +591,13 @@
 
             internal event EventHandler<StratabasePropertyChangeEventArgs> LayerDataSet;
             internal event EventHandler<StratabasePropertyChangeEventArgs> LayerDataRemoved;
-            
+
             public Guid Id { get; }
             public Stratabase SB { get; }
 
             /// <summary>
             /// Determines the active layer set, if any
             /// </summary>
-            /// <param name="startingTestLayerIndex">What override layer to start looking at, or -1 for baseline</param>
             /// <param name="propertyName">The property to look for</param>
             /// <param name="activeLayer">The active layer found or -1 for Baseline (or not set of return is false)</param>
             /// <returns>True if the active layer is found, false if the property is not set</returns>
@@ -681,7 +680,7 @@
             {
                 if (this.SB.GetOverridePropertyBagFor(overrideLayerIndex, this.Id).SetValue(property, newValue, out object oldValue))
                 {
-                    this.LayerDataSet?.Invoke(this, new StratabasePropertyChangeEventArgs(this.Id, overrideLayerIndex, property,oldValue, newValue));
+                    this.LayerDataSet?.Invoke(this, new StratabasePropertyChangeEventArgs(this.Id, overrideLayerIndex, property, oldValue, newValue));
                     return true;
                 }
 
@@ -713,7 +712,7 @@
                         return true;
                     }
                 }
-                
+
                 if (this.TryGetBaselineValue(property, out value))
                 {
                     return true;
@@ -791,7 +790,7 @@
             /// </summary>
             public void HandleAccessWithdrawn ()
             {
-                if(this.LayerDataSet == null && this.LayerDataRemoved == null)
+                if (this.LayerDataSet == null && this.LayerDataRemoved == null)
                 {
                     this.SB.OnObjectDataAccessManagerRemoved(this);
                 }

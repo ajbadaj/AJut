@@ -58,8 +58,6 @@
         /// </summary>
         /// <param name="start">The root node</param>
         /// <param name="traversalParameters">The parameters to the tree traversal</param>
-        /// <param name="getChildrenMethodOverride">An override to the default GetChildren method</param>
-        /// <param name="getParentMethodOverride">An override to the default GetParent method</param>
         internal TreeIter (TTreeNode start, TreeTraversalParameters<TTreeNode> traversalParameters)
         {
             this.TraversalParameters = traversalParameters;

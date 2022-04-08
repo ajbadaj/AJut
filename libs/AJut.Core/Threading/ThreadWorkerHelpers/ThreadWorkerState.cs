@@ -103,7 +103,7 @@
             this.OnItemsRemoved();
         }
 
-        public T Take (int index)
+        public T TakeDataByIndex (int index)
         {
             T item;
             lock (m_lock)

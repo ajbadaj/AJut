@@ -14,4 +14,8 @@
     <Exec Command="if $(ConfigurationName) == Release COPY &quot;$(TargetPath)&quot; &quot;$(SolutionDir)bin\$(TargetFileName)&quot;" />
   </Target>
 
+  <ItemGroup>
+    <None Include="..\..\.editorconfig" Link=".editorconfig" />
+  </ItemGroup>
+
 </Project>
