@@ -7,9 +7,9 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <StackPanel TextElement.FontSize="16" Margin="5">
-        <Button Content="Content Flows"/>
-        <Button Content="Controls" Margin="0,3,0,0" Click="NavToControls_OnClick"/>
-        <Button Content="Utilities" Margin="0,3,0,0"/>
-        <Button Content="Strategies" Margin="0,3,0,0"/>
+        <Button Content="Controls" Click="NavToControls_OnClick"/>
+        <Button Content="Content Flows" Margin="0,3,0,0" Click="NavContentFlows_OnClick"/>
+        <Button Content="Utilities" Margin="0,3,0,0" Click="NavUxUtils_OnClick"/>
+        <Button Content="Strategies" Margin="0,3,0,0" Click="NavUxStrats_OnClick"/>
     </StackPanel>
 </UserControl>

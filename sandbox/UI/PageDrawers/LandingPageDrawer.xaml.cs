@@ -1,5 +1,6 @@
 ﻿namespace TheAJutShowRoom.UI.PageDrawers
 {
+    using System.Windows;
     using System.Windows.Controls;
     using AJut.UX;
     using TheAJutShowRoom.UI.Pages;
@@ -13,9 +14,24 @@
             this.InitializeComponent();
         }
 
-        private void NavToControls_OnClick (object sender, System.Windows.RoutedEventArgs e)
+        private void NavToControls_OnClick (object sender, RoutedEventArgs e)
         {
             m_adapter.Navigator.GenerateAndPushDisplay<ControlsOverviewPage>();
+        }
+
+        private void NavContentFlows_OnClick (object sender, RoutedEventArgs e)
+        {
+            m_adapter?.Navigator.GenerateAndPushDisplay<ContentFlowsOverviewPage>();
+        }
+
+        private void NavUxUtils_OnClick (object sender, RoutedEventArgs e)
+        {
+            m_adapter?.Navigator.GenerateAndPushDisplay<UxUtilsOverviewPage>();
+        }
+
+        private void NavUxStrats_OnClick (object sender, RoutedEventArgs e)
+        {
+            m_adapter?.Navigator.GenerateAndPushDisplay<UxStrategiesOverviewPage>();
         }
     }
 }

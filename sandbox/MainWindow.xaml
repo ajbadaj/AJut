@@ -9,20 +9,41 @@
         mc:Ignorable="d"
         Title="The AJut Showroom" Height="450" Width="800"
         x:Name="Self"
-        WindowStyle="None"
+        WindowStyle="None" 
         ajutap:WindowXTA.FixMaximizeAsFullscreenIssue="True"
-        ajutap:WindowXTA.MaximizedRootElementMargin="5"
-        ajutap:WindowXTA.FullscreenRootElementMargin="4">
+        ajutap:WindowXTA.MaximizedRootElementMargin="4,4"
+        ajutap:WindowXTA.FullscreenRootElementMargin="4,3"
+        Background="#F9F9F9"
+        MinWidth="300" MinHeight="300">
     <WindowChrome.WindowChrome>
-        <WindowChrome CaptionHeight="40"/>
+        <WindowChrome CaptionHeight="40" ResizeBorderThickness="5"/>
     </WindowChrome.WindowChrome>
-    <ajut:StackNavDisplay Navigator="{Binding ElementName=Self, Path=Navigator, Mode=OneTime}" ajutap:BorderXTA.CornerRadius="8"
+    <ajut:StackNavDisplay Navigator="{Binding ElementName=Self, Path=Navigator, Mode=OneTime}"
                           FixedDrawerWidth="260">
         <ajut:StackNavDisplay.Resources>
             <Style TargetType="{x:Type ajut:StackNavActiveHeaderPresenter}">
+                <Setter Property="Background" Value="#8CF"/>
                 <Setter Property="AdditionalRightSideDisplay">
                     <Setter.Value>
-                        <ajut:WindowChromeButtonStrip />
+                        <ajut:WindowChromeButtonStrip Margin="2"/>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style TargetType="{x:Type ajut:StackNavActiveDrawerPresenter}">
+                <Setter Property="AdditionalBottomDisplay">
+                    <Setter.Value>
+                        <StackPanel HorizontalAlignment="Right" Margin="3" Opacity="0.7">
+                            <TextBlock Text="ajut.core - Version #1.0.0.1" HorizontalAlignment="Right"/>
+                            <TextBlock Text="ajut.ux.wpf - Version #1.0.0.0" HorizontalAlignment="Right"/>
+                        </StackPanel>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="Background">
+                    <Setter.Value>
+                        <LinearGradientBrush>
+                            <GradientStop Offset="0" Color="#F9F9F9"/>
+                            <GradientStop Offset="1" Color="#CCC"/>
+                        </LinearGradientBrush>
                     </Setter.Value>
                 </Setter>
             </Style>
