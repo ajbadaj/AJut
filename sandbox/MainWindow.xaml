@@ -1,0 +1,31 @@
+﻿<Window x:Class="TheAJutShowRoom.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:TheAJutShowRoom"
+        xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
+        xmlns:ajutap="clr-namespace:AJut.UX.AttachedProperties;assembly=AJut.UX.Wpf"
+        mc:Ignorable="d"
+        Title="The AJut Showroom" Height="450" Width="800"
+        x:Name="Self"
+        WindowStyle="None"
+        ajutap:WindowXTA.FixMaximizeAsFullscreenIssue="True"
+        ajutap:WindowXTA.MaximizedRootElementMargin="5"
+        ajutap:WindowXTA.FullscreenRootElementMargin="4">
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="40"/>
+    </WindowChrome.WindowChrome>
+    <ajut:StackNavDisplay Navigator="{Binding ElementName=Self, Path=Navigator, Mode=OneTime}" ajutap:BorderXTA.CornerRadius="8"
+                          FixedDrawerWidth="260">
+        <ajut:StackNavDisplay.Resources>
+            <Style TargetType="{x:Type ajut:StackNavActiveHeaderPresenter}">
+                <Setter Property="AdditionalRightSideDisplay">
+                    <Setter.Value>
+                        <ajut:WindowChromeButtonStrip />
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ajut:StackNavDisplay.Resources>
+    </ajut:StackNavDisplay>
+</Window>
