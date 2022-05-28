@@ -18,7 +18,12 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_global", "_global", "{BC1B7CD1-83F9-411B-8D37-A9329F674DBB}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		.gitattributes = .gitattributes
+		.gitignore = .gitignore
 		ajut-logo-128.png = ajut-logo-128.png
+		LICENSE = LICENSE
+		license.txt = license.txt
+		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TheAJutShowRoom", "sandbox\TheAJutShowRoom.csproj", "{F315258B-16BF-4C36-B91E-451DFE774257}"
