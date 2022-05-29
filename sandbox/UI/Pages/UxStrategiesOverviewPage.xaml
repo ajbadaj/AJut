@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:TheAJutShowRoom.UI.Pages"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
-    <Grid>
-            
-    </Grid>
+    <StackPanel Margin="20">
+        <TextBlock FontSize="18" TextWrapping="WrapWithOverflow" Text="⚠ Under construction: This will one day list strategies included in ajut.ux.wpf, code examples, links to articles."/>
+    </StackPanel>
 </UserControl>

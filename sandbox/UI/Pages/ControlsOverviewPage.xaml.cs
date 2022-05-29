@@ -1,5 +1,6 @@
 ﻿namespace TheAJutShowRoom.UI.Pages
 {
+    using System.Windows;
     using System.Windows.Controls;
     using AJut.UX;
 
@@ -17,5 +18,9 @@
             m_adapter.Title = "ajut.ux.controls";
         }
 
+        private void Test1_OnClick (object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Got it!");
+        }
     }
 }

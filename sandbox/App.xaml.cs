@@ -8,7 +8,9 @@
 
     public partial class App : Application
     {
-        public App()
+        public static Random kRNG = new Random(DateTime.Now.Millisecond);
+
+        public App ()
         {
             // Go through all types and find type id registrations, this will allow automatic discovery and propogation of type matching
             TypeIdRegistrar.RegisterAllTypeIds(typeof(App).Assembly);

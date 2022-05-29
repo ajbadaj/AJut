@@ -1,0 +1,57 @@
+﻿<UserControl x:Class="TheAJutShowRoom.UI.Controls.PropertyGridControlExample"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:TheAJutShowRoom.UI.Controls"
+             xmlns:ctrls="clr-namespace:TheAJutShowRoom.UI.Controls"
+             xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
+             xmlns:ajut_core_io="clr-namespace:AJut.IO;assembly=AJut.Core"
+             xmlns:ajprop="clr-namespace:AJut.UX.PropertyInteraction;assembly=AJut.UX.Wpf"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800"
+             x:Name="Self">
+    <ajut:AutoGrid FixedRowCount="1">
+        <ajut:PropertyGrid Grid.Column="1" BorderThickness="3" BorderBrush="#202020" Margin="20" Background="#1000" HorizontalContentAlignment="Stretch"
+                           SingleItemSource="{Binding ElementName=PropGridSelectionOptions, Path=SelectedItem}">
+            <ajut:PropertyGrid.ItemTemplateSelector>
+                <ajut:PropertyGridTemplateSelector>
+                    <ajut:PropertyGridTemplateSelector.RegisteredTemplates>
+                        <DataTemplate x:Key="Text" DataType="{x:Type ajprop:PropertyEditTarget}">
+                            <ajut:EditableTextBlock Text="{Binding Path=EditValue, Mode=TwoWay}" FontSize="16"/>
+                        </DataTemplate>
+                        <DataTemplate x:Key="Number" DataType="{x:Type ajprop:PropertyEditTarget}">
+                            <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}"
+                                                            Minimum="{Binding Path=EditContext.Minimum, FallbackValue=0}"
+                                                            Maximum="{Binding Path=EditContext.Maximum, FallbackValue=100}"
+                                                            NumberTextAlignment="Left"/>
+                        </DataTemplate>
+                    </ajut:PropertyGridTemplateSelector.RegisteredTemplates>
+                    <ajut:PropertyGridTemplateSelector.Default>
+                        <DataTemplate DataType="{x:Type ajprop:PropertyEditTarget}">
+                            <TextBlock Text="{Binding Path=EditValue}"/>
+                        </DataTemplate>
+                    </ajut:PropertyGridTemplateSelector.Default>
+                </ajut:PropertyGridTemplateSelector>
+
+            </ajut:PropertyGrid.ItemTemplateSelector>
+        </ajut:PropertyGrid>
+        <ListBox x:Name="PropGridSelectionOptions" Grid.Column="1"
+                             ItemsSource="{Binding ElementName=Self, Path=PropertyGridItems}">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock>
+                            <TextBlock.Inlines>
+                                <Run Text="{Binding Path=DogsName}"/>
+                                <Run Text=": "/>
+                                <Run Text="{Binding Path=DogsAge}"/>
+                            </TextBlock.Inlines>
+                        </TextBlock>
+                        <Button Content="Set age" Click="SetDogAge_OnClick"/>
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </ajut:AutoGrid>
+</UserControl>

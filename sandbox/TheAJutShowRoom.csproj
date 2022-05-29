@@ -9,7 +9,19 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Images\PenguinExample.png" />
+    <None Remove="Images\PenguinExample.svg" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="Images\app.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Images\PenguinExample.png" />
+    <Content Include="Images\PenguinExample.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
