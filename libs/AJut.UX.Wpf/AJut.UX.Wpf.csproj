@@ -115,10 +115,6 @@
   </ItemGroup>
   
   <ItemGroup>
-    <Folder Include="Commands\" />
-  </ItemGroup>
-  
-  <ItemGroup>
     <ProjectReference Include="..\AJut.Core\AJut.Core.csproj" />
   </ItemGroup>
   
