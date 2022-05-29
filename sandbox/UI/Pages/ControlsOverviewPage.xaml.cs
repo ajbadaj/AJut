@@ -16,5 +16,6 @@
             m_adapter = adapter;
             m_adapter.Title = "ajut.ux.controls";
         }
+
     }
 }

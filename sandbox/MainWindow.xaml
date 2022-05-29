@@ -7,7 +7,7 @@
         xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
         xmlns:ajutap="clr-namespace:AJut.UX.AttachedProperties;assembly=AJut.UX.Wpf"
         mc:Ignorable="d"
-        Title="The AJut Showroom" Height="450" Width="800"
+        Title="The AJut Showroom" Height="650" Width="1000"
         x:Name="Self"
         WindowStyle="None" 
         ajutap:WindowXTA.FixMaximizeAsFullscreenIssue="True"

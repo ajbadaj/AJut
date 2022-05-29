@@ -4,9 +4,50 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:TheAJutShowRoom.UI.Pages"
+             xmlns:ctrls="clr-namespace:TheAJutShowRoom.UI.Controls"
+             xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
-    <Grid>
+             d:DesignHeight="450" d:DesignWidth="800"
+             x:Name="Self">
+    <TabControl TabStripPlacement="Left">
+        <TabItem Header="AutoGrid">
             
-    </Grid>
+        </TabItem>
+        <TabItem Header="BumpStack">
+
+        </TabItem>
+        <TabItem Header="BusyWait">
+
+        </TabItem>
+        <TabItem Header="Color controls">
+
+        </TabItem>
+        <TabItem Header="EditableTextBlock">
+
+        </TabItem>
+        <TabItem Header="EnumComboBox">
+
+        </TabItem>
+        <TabItem Header="FlatTreeListControl">
+
+        </TabItem>
+        <TabItem Header="NumericEditor">
+
+        </TabItem>
+        <TabItem Header="PropertyGrid">
+
+        </TabItem>
+        <TabItem Header="PathSelector">
+
+        </TabItem>
+        <TabItem Header="PopupMenuButton">
+
+        </TabItem>
+        <TabItem Header="Svg">
+
+        </TabItem>
+        <TabItem Header="ToggleStrip">
+            <ctrls:ToggleStripExampleDisplay Margin="10"/>
+        </TabItem>
+    </TabControl>
 </UserControl>

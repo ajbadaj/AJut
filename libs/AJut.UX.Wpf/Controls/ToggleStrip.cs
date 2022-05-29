@@ -224,7 +224,7 @@
 
         private void ItemsSource_CollectionChanged (object sender, NotifyCollectionChangedEventArgs e)
         {
-            if (e.Action == NotifyCollectionChangedAction.Reset && !e.NewItems.IsNullOrEmpty())
+            if (e.Action == NotifyCollectionChangedAction.Reset)
             {
                 this.Items.Clear();
                 return;
