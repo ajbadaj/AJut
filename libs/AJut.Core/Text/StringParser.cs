@@ -40,7 +40,7 @@
         }
 
         /// <summary>
-        /// Registers a function for converting from string, to a type <see cref="{T}"/>.
+        /// Registers a function for converting from string, to a type <typeparamref name="T"/>.
         /// </summary>
         /// <typeparam name="T">The type to parse from</typeparam>
         /// <param name="parser">The parser function to register</param>

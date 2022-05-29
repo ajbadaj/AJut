@@ -3,21 +3,26 @@
   <PropertyGroup>
     <TargetFramework>net5.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
-    <Version>0.1.0</Version>
+    <Version>1.0.0.0</Version>
     <Authors>AJ Badarni</Authors>
-    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <RootNamespace>AJut.UX</RootNamespace>
-    <PackageLicenseFile>license.txt</PackageLicenseFile>
     <AssemblyName>AJut.UX.Wpf</AssemblyName>
+	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Description>C# / dotnet 5 / wpf controls &amp; utility library, created by AJ Badarni</Description>
+    <Copyright>AJ Badarni</Copyright>
+	<PackageProjectUrl>https://www.ajut.dev/</PackageProjectUrl>
+	<PackageIcon>ajut-logo-128.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/ajbadaj/AJut</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>c#;dotnet;wpf</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="System.Drawing.Common" Version="5.0.0" />
   </ItemGroup>
-
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="if $(ConfigurationName) == Release COPY &quot;$(TargetPath)&quot; &quot;$(SolutionDir)bin\$(TargetFileName)&quot;" />
-  </Target>
   
   <ItemGroup>
     <Compile Update="Controls\BumpStack.cs">
@@ -118,9 +123,20 @@
   </ItemGroup>
   
   <ItemGroup>
+    <None Include="..\..\ajut-logo-128.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
     <None Include="..\..\license.txt">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
+    </None>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <None Update="README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
     </None>
   </ItemGroup>
       

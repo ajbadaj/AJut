@@ -3,6 +3,9 @@
     using System;
     using System.Diagnostics;
 
+    /// <summary>
+    /// An undoable action which is populated by providing an <see cref="Action"/> (function)
+    /// </summary>
     [DebuggerDisplay("Lambda: {DisplayName}")]
     public class LambdaUndoableAction : IUndoableAction
     {

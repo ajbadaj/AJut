@@ -1,6 +1,5 @@
 ﻿namespace AJut.Storage
 {
-    using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
@@ -15,7 +14,7 @@
         /// <summary>
         /// Get value list (or create it if it doesn't exist) for the given key
         /// </summary>
-        public List<TValue> this [TKey key] => this.GetValuesFor(key, true);
+        public List<TValue> this[TKey key] => this.GetValuesFor(key, true);
 
         /// <summary>
         /// Add the key (and the list of values for that list if the key doesn't exist) and value to the key's list.
@@ -67,7 +66,7 @@
         /// <summary>
         /// Determine the total element count
         /// </summary>
-        public int GetTotalElementCount() => m_store.Values.Sum(v => v.Count);
+        public int GetTotalElementCount () => m_store.Values.Sum(v => v.Count);
 
         /// <summary>
         /// Get the count for a given key's list (zero if key has not been stored)

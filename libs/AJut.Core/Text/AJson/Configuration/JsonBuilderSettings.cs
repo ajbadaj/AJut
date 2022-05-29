@@ -6,7 +6,7 @@
     public enum ePropertyValueQuoting
     {
         /// <summary>
-        /// Quote only usually quoted items (ie strings & chars)
+        /// Quote only usually quoted items (ie strings &amp; chars)
         /// </summary>
         QuoteAnyUsuallyQuotedItem,
 

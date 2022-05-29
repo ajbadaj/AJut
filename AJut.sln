@@ -11,13 +11,22 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AJut.Core", "libs\AJut.Core
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AJut.UX.Wpf", "libs\AJut.UX.Wpf\AJut.UX.Wpf.csproj", "{1186C8E7-52E8-47FF-8535-650F2C7F471A}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "drip", "drip", "{E3757F0F-E0D0-4C25-A1CE-12814A545AA3}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AJut.Messaging.PeerPubSubMessenger", "drip\AJut.Messaging.PeerPubsubMessenger\AJut.Messaging.PeerPubSubMessenger.csproj", "{41E5AF91-6C46-4065-B300-8AFEBD954643}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AJutShowRoom", "drip\AJutShowRoom\AJutShowRoom.csproj", "{4C1E5635-2E6B-40C6-BEEC-769E3F326283}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sandbox", "sandbox", "{E3757F0F-E0D0-4C25-A1CE-12814A545AA3}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AJut.Core.Tests", "test\AJut.Core.Tests\AJut.Core.Tests.csproj", "{7F992FB6-2115-4095-A5D4-4DD8E604ADFE}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_global", "_global", "{BC1B7CD1-83F9-411B-8D37-A9329F674DBB}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		.gitattributes = .gitattributes
+		.gitignore = .gitignore
+		ajut-logo-128.png = ajut-logo-128.png
+		LICENSE = LICENSE
+		license.txt = license.txt
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TheAJutShowRoom", "sandbox\TheAJutShowRoom.csproj", "{F315258B-16BF-4C36-B91E-451DFE774257}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,18 +42,14 @@ Global
 		{1186C8E7-52E8-47FF-8535-650F2C7F471A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1186C8E7-52E8-47FF-8535-650F2C7F471A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1186C8E7-52E8-47FF-8535-650F2C7F471A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{41E5AF91-6C46-4065-B300-8AFEBD954643}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{41E5AF91-6C46-4065-B300-8AFEBD954643}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{41E5AF91-6C46-4065-B300-8AFEBD954643}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{41E5AF91-6C46-4065-B300-8AFEBD954643}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4C1E5635-2E6B-40C6-BEEC-769E3F326283}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4C1E5635-2E6B-40C6-BEEC-769E3F326283}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4C1E5635-2E6B-40C6-BEEC-769E3F326283}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4C1E5635-2E6B-40C6-BEEC-769E3F326283}.Release|Any CPU.Build.0 = Release|Any CPU
 		{7F992FB6-2115-4095-A5D4-4DD8E604ADFE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7F992FB6-2115-4095-A5D4-4DD8E604ADFE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7F992FB6-2115-4095-A5D4-4DD8E604ADFE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7F992FB6-2115-4095-A5D4-4DD8E604ADFE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F315258B-16BF-4C36-B91E-451DFE774257}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F315258B-16BF-4C36-B91E-451DFE774257}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F315258B-16BF-4C36-B91E-451DFE774257}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F315258B-16BF-4C36-B91E-451DFE774257}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -52,9 +57,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{8488E399-FD26-42A4-AAF5-24233E611592} = {7C5EB0C7-99CC-4649-9FCB-6BA45E857DE5}
 		{1186C8E7-52E8-47FF-8535-650F2C7F471A} = {7C5EB0C7-99CC-4649-9FCB-6BA45E857DE5}
-		{41E5AF91-6C46-4065-B300-8AFEBD954643} = {E3757F0F-E0D0-4C25-A1CE-12814A545AA3}
-		{4C1E5635-2E6B-40C6-BEEC-769E3F326283} = {E3757F0F-E0D0-4C25-A1CE-12814A545AA3}
 		{7F992FB6-2115-4095-A5D4-4DD8E604ADFE} = {7FBB779C-F4F3-4D29-8BE6-2211BAE46978}
+		{F315258B-16BF-4C36-B91E-451DFE774257} = {E3757F0F-E0D0-4C25-A1CE-12814A545AA3}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {4A5A9F1C-6846-4922-AF3E-B2DE44160171}

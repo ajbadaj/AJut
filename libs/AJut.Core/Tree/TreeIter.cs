@@ -58,8 +58,6 @@
         /// </summary>
         /// <param name="start">The root node</param>
         /// <param name="traversalParameters">The parameters to the tree traversal</param>
-        /// <param name="getChildrenMethodOverride">An override to the default GetChildren method</param>
-        /// <param name="getParentMethodOverride">An override to the default GetParent method</param>
         internal TreeIter (TTreeNode start, TreeTraversalParameters<TTreeNode> traversalParameters)
         {
             this.TraversalParameters = traversalParameters;
@@ -223,7 +221,7 @@
             }
 
             // Make sure we're allowed to run our action
-            if (!this.State.HasPendingEvalItems || (this.TraversalParameters.EnforcesLevelRestriction && !this.TraversalParameters.DepthLimits.Passes(next.DepthFromOrigin, true)))
+            if (!this.State.HasPendingEvalItems || (this.TraversalParameters.EnforcesLevelRestriction && !this.TraversalParameters.DepthLimits.Passes(next.DepthFromOrigin)))
             {
                 return eNextTraversalMove.PruneAndContinueSearching;
             }

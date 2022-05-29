@@ -1,10 +1,7 @@
 ﻿namespace AJut.Storage
 {
     using System;
-    using System.Collections;
-    using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Reflection;
 
     /// <summary>
     /// A base class for a <see cref="Stratabase"/> backed model, makes easier access to forward value change events via the <see cref="System.ComponentModel.INotifyPropertyChanged.PropertyChanged"/> event.
@@ -14,16 +11,16 @@
     ///     <code>
     ///     class MyModel : StratabaseBackedModel
     ///     {
-    ///         Property<string> m_name;
+    ///         Property&lt;string&gt; m_name;
     ///         public MyModel(Guid id, Stratabase sb) : base(id, sb)
     ///         {
-    ///             m_name = this.GenerateProperty<string>(nameof(Name));
+    ///             m_name = this.GenerateProperty&lt;string&gt;(nameof(Name));
     ///         }
     ///         
     ///         public string Name
     ///         {
-    ///             get => m_name.Value;
-    ///             set => m_name.Access.SetBaselineValue(value);
+    ///             get =&gt; m_name.Value;
+    ///             set =&gt; m_name.Access.SetBaselineValue(value);
     ///         }
     ///     }
     ///     </code>
@@ -128,7 +125,7 @@
         }
 
         /// <summary>
-        /// A list property value backed by a stratabase <see cref="StrataPropertyListAccess"/> value access
+        /// A list property value backed by a stratabase <see cref="StrataPropertyListAccess{TElement}"/> value access
         /// </summary>
         public class ListProperty<TElement> : IStrataBackedModelProperty
         {

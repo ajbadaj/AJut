@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Diagnostics;
     using System.Linq;
 
     /// <summary>
@@ -13,16 +14,29 @@
         private List<int> m_actualIndexList;
 
         // Publicly creatable construction paths
+
+        /// <summary>
+        /// Construct a <see cref="TreeNodePath"/>
+        /// </summary>
+        /// <param name="indicies">The path indicies that lead to the node in question</param>
         public TreeNodePath (params int[] indicies)
             : this(new List<int>(indicies))
         {
         }
 
+        /// <summary>
+        /// Construct a <see cref="TreeNodePath"/>
+        /// </summary>
+        /// <param name="indexEnumerable">The path indicies that lead to the node in question</param>
         public TreeNodePath (IEnumerable<int> indexEnumerable)
             : this(new List<int>(indexEnumerable))
         {
         }
 
+        /// <summary>
+        /// Construct a <see cref="TreeNodePath"/>
+        /// </summary>
+        /// <param name="indexList">The path indicies that lead to the node in question</param>
         public TreeNodePath (List<int> indexList) : base(indexList)
         {
             m_actualIndexList = indexList;
@@ -64,28 +78,34 @@
             return false;
         }
 
-        public override int GetHashCode ()
-        {
-            return base.GetHashCode();
-        }
+        public override int GetHashCode () => m_actualIndexList.Sum().GetHashCode();
 
         public override string ToString ()
         {
             return "TreeNodePath => " + String.Join(" ", m_actualIndexList.Select(_ => $"[{_}]"));
         }
 
-        public void AddToPath (int value)
+        /// <summary>
+        /// Extend the path by adding a new child node index to the end
+        /// </summary>
+        public void AddToPath (int childNodeIndex)
         {
-            m_actualIndexList.Add(value);
+            m_actualIndexList.Add(childNodeIndex);
         }
 
-        public TreeNodePath CopyAndAddToPath (int value)
+        /// <summary>
+        /// Duplicates this path and extends the duplicate with a new child node index
+        /// </summary>
+        public TreeNodePath CopyAndAddToPath (int childNodeIndex)
         {
             TreeNodePath result = new TreeNodePath(this);
-            result.AddToPath(value);
+            result.AddToPath(childNodeIndex);
             return result;
         }
 
+        /// <summary>
+        /// Duplicates this path and takes off the last element
+        /// </summary>
         public TreeNodePath CopyAndRemoveEnd ()
         {
             TreeNodePath result = new TreeNodePath(this);
@@ -96,64 +116,14 @@
             return result;
         }
 
+        /// <summary>
+        /// Duplciates this path, and replaces the end index with another child index (sibling path creation)
+        /// </summary>
         public TreeNodePath CopyAndSwapEndForSibling (int siblingIndex)
         {
             TreeNodePath path = this.CopyAndRemoveEnd();
             path.AddToPath(siblingIndex);
             return path;
-        }
-
-        public TreeNodePath CopyAndIncrementRecursively (int index, Func<int, int> maxForIndex, out int finalIndex)
-        {
-            // Copy
-            TreeNodePath copy = new TreeNodePath(this);
-
-            // Increment
-            finalIndex = copy.IncrementRecursively(index, maxForIndex);
-
-            if (finalIndex == -1)
-            {
-                return copy;
-            }
-
-            /* Zero out the other node path indicies, ie:
-             * -----------------------------------------------
-             * Path: [3][4][2] where max is 6/4/2 respectively and incremented at the last node path index results in:
-             *       [4][0][0]
-             *       
-             *       [3][4][2] with max 6/10/20 incremented at the first node would still result in:
-             *       [4][0][0] because why would you keep the [4][2]? presumably always start at the beginning.
-             */
-            int zeroOutIndex = finalIndex + 1;
-            while (zeroOutIndex < m_actualIndexList.Count)
-            {
-                copy.m_actualIndexList[zeroOutIndex++] = 0;
-            }
-
-            return copy;
-        }
-
-        /// <summary>
-        /// Increments the path at the index, if the item at the index can't be incrememnted, then it moves up the path recursively.
-        /// </summary>
-        /// <param name="index">The path index to increment</param>
-        /// <param name="maxForIndex">A function that gets the max value for the path index</param>
-        /// <returns>The index that was incremented, or -1 if none</returns>
-        private int IncrementRecursively (int index, Func<int, int> maxForIndex)
-        {
-            if (index < 0)
-            {
-                return -1;
-            }
-
-            int max = maxForIndex(index);
-            if (m_actualIndexList[index] + 1 >= max)
-            {
-                return this.IncrementRecursively(index - 1, maxForIndex);
-            }
-
-            ++m_actualIndexList[index];
-            return index;
         }
     }
 }

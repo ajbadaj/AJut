@@ -592,7 +592,7 @@ namespace AJut.UX.Controls
                 this.InsertAndConvert(owner, 0, source.Children);
 
                 void _SourceCanHaveChildrenChanged (object _sender, EventArgs<bool> _e) => this.IsExpandable = _e.Value;
-                void _SourceChildInserted (object _sender, ChildInsertedEventArgs _e)
+                void _SourceChildInserted (object _sender, TreeNodeInsertedEventArgs _e)
                 {
                     var child = new Item(owner, this, _e.Node);
                     if (this.IsExpanded)
@@ -612,7 +612,7 @@ namespace AJut.UX.Controls
                         this.RaiseChildRemovedEvent(toRemove);
                     }
                 }
-                void _SourceParentChanged (object _sender, ParentChangedEventArgs _e)
+                void _SourceParentChanged (object _sender, TreeNodeParentChangedEventArgs _e)
                 {
                     base.Parent = m_owner.Items.FirstOrDefault(i => i.Source == _e);
                 }

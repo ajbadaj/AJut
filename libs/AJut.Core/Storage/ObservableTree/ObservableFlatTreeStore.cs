@@ -266,7 +266,7 @@
             this.NodesRemoved?.Invoke(this, new EventArgs<List<TNode>>(removedNodes));
         }
 
-        private void Node_ChildInserted (object sender, ChildInsertedEventArgs e)
+        private void Node_ChildInserted (object sender, TreeNodeInsertedEventArgs e)
         {
             this.OnNodeAdded((TNode)sender, e.InsertIndex, (TNode)e.Node);
         }

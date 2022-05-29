@@ -1,0 +1,15 @@
+﻿<UserControl x:Class="TheAJutShowRoom.UI.PageDrawers.LandingPageDrawer"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:TheAJutShowRoom.UI.PageDrawers"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <StackPanel TextElement.FontSize="16" Margin="5">
+        <Button Content="Controls" Click="NavToControls_OnClick"/>
+        <Button Content="Content Flows" Margin="0,3,0,0" Click="NavContentFlows_OnClick"/>
+        <Button Content="Utilities" Margin="0,3,0,0" Click="NavUxUtils_OnClick"/>
+        <Button Content="Strategies" Margin="0,3,0,0" Click="NavUxStrats_OnClick"/>
+    </StackPanel>
+</UserControl>

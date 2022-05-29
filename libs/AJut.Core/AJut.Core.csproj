@@ -5,13 +5,35 @@
     <RootNamespace>AJut</RootNamespace>
     <Authors>AJ Badarni</Authors>
     <Company />
-    <Version>0.1.0</Version>
+    <Version>1.0.0.1</Version>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <DocumentationFile>..\..\bin\drip\ajut-core.xml</DocumentationFile>
+	<Copyright>AJ Badarni</Copyright>
+	<PackageProjectUrl>https://www.ajut.dev/</PackageProjectUrl>
+	<PackageIcon>ajut-logo-128.png</PackageIcon>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
+	<RepositoryUrl>https://github.com/ajbadaj/AJut</RepositoryUrl>
+	<RepositoryType>git</RepositoryType>
+	<PackageTags>c#;dotnet;logger;json;tree;extensions;math;</PackageTags>
+	<Description>C# / dotnet 5 utility library, created by AJ Badarni. Logger, Json parsing and building, math, tree logic, and more.</Description>
+	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+	<PackageLicenseExpression>MIT</PackageLicenseExpression>
+	<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="if $(ConfigurationName) == Release COPY &quot;$(TargetPath)&quot; &quot;$(SolutionDir)bin\$(TargetFileName)&quot;" />
-  </Target>
+  <ItemGroup>
+    <None Include="..\..\.editorconfig" Link=".editorconfig" />
+    <None Include="..\..\ajut-logo-128.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
 </Project>

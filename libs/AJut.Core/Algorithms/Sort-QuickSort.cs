@@ -4,9 +4,14 @@
     using System.Collections.Generic;
 
     public delegate void ListElementSwapByIndex (int left, int right);
+
+    /// <summary>
+    /// Algorithms for sorting <see cref="IList{T}"/>
+    /// </summary>
     public static partial class Sort
     {
         private static readonly Random g_rng = new Random(DateTime.Now.Millisecond);
+
         public static GenerateBinaryPivot QuickSortPivot { get; set; } = DefaultPivotGenerator;
 
         public static void QuickSortInplace<T> (IList<T> source, ListElementSwapByIndex swap = null, int start = 0, int end = -1)

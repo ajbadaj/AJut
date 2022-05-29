@@ -1,0 +1,123 @@
+﻿<UserControl x:Class="TheAJutShowRoom.UI.Pages.LandingPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:TheAJutShowRoom.UI.Pages"
+             xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
+             xmlns:ajutap="clr-namespace:AJut.UX.AttachedProperties;assembly=AJut.UX.Wpf"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800"
+             x:Name="Self">
+    <DockPanel Margin="15">
+        <StackPanel DockPanel.Dock="Top">
+            <TextBlock Text="What do we have here?" FontSize="18"/>
+            <TextBlock Text="The purpose of this app is to showcase the majority of functionality available in ajut.ux.wpf, to give code examples that exercise the various libraries, and to serve as a testing ground for you!"
+                       TextWrapping="WrapWithOverflow"/>
+            <TextBlock Text="To get started, select what area you're interested in dunking more deeply into..." TextWrapping="WrapWithOverflow" Margin="0,15,0,0"/>
+        </StackPanel>
+        <TabControl TabStripPlacement="Left" SelectedIndex="{Binding ElementName=Self, Path=SelectedTabIndex}">
+            <TabItem Header="Controls">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition Height="auto"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Margin="5">
+                        <TextBlock Text="Standalone UI Elements in ajut.ux.controls" FontSize="18"/>
+                        <TextBlock TextWrapping="WrapWithOverflow">
+                            <TextBlock.Inlines>
+                                <Run Text="The"/>
+                                <Run Text="ajut.ux.controls" FontWeight="Bold"/>
+                                <Run Text="namespace contains a bunch of great helpers - both standalone controls like the NumericEditor, and much more! This area we'll focus on the standalone controls - the basic list, how they work, and what they can do for your project!"/>
+                            </TextBlock.Inlines>
+                        </TextBlock>
+                    </StackPanel>
+                    <Button Grid.Row="1" Content="Explore standalone controls →" HorizontalAlignment="Right" Padding="15,10" FontSize="14" Click="NavControls_OnClick"/>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Content Flows">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition Height="auto"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Margin="5">
+                        <TextBlock Text="Content Flows" FontSize="18"/>
+                        <TextBlock TextWrapping="WrapWithOverflow">
+                            <TextBlock.Inlines>
+                                <Run Text="There are several mechanisms (including supporting controls) that make for great content flow experiences. That includes the"/>
+                                <Run Text="Stack Navigation" FontWeight="Bold"/>
+                                <Run Text="being used by the show room right now!"/>
+                            </TextBlock.Inlines>
+                        </TextBlock>
+                    </StackPanel>
+                    <Button Grid.Row="1" Content="Explore content flows →" HorizontalAlignment="Right" Padding="15,10" FontSize="14" Click="NavContentFlows_OnClick"/>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Utilities">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition Height="auto"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Margin="5">
+                        <TextBlock Text="UX Utils" FontSize="18"/>
+                        <TextBlock TextWrapping="WrapWithOverflow">
+                            <TextBlock.Inlines>
+                                <Run Text="While controls server many utilities - some utilities are harder to show though support display and management of UI. In this section we'll explore"/>
+                                <Run Text="Attached Properties, Converters," FontWeight="Bold"/>
+                                <Run Text="and other"/>
+                                <Run Text="supporting utilities" FontWeight="Bold"/>
+                                <Run Text="and"/>
+                                <Run Text="extensions to ui." FontWeight="Bold"/>
+                            </TextBlock.Inlines>
+                        </TextBlock>
+                    </StackPanel>
+                    <Button Grid.Row="1" Content="Explore UX Utils →" HorizontalAlignment="Right" Padding="15,10" FontSize="14" Click="NavUxUtils_OnClick"/>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Strategies">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition Height="auto"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Margin="5">
+                        <TextBlock Text="Strategies" FontSize="18"/>
+                        <TextBlock TextWrapping="WrapWithOverflow">
+                            <TextBlock.Inlines>
+                                <Run Text="The final notable section of the ajut.ux library are the strategies employed. There are several ideas, and supporting examples inside that might interest you! In addition some supporting technologies that help make these easy to build and develop!"/>
+                            </TextBlock.Inlines>
+                        </TextBlock>
+                    </StackPanel>
+                    <Button Grid.Row="1" Content="Explore UX Strategies →" HorizontalAlignment="Right" Padding="15,10" FontSize="14" Click="NavUxStrats_OnClick"/>
+                </Grid>
+            </TabItem>
+        </TabControl>
+        <!--<DockPanel>
+            <ajut:BumpStack Orientation="Horizontal" VerticalAlignment="Top">
+                <ajut:ToggleStrip ajutap:BorderXTA.CornerRadius="5">
+                    <ajut:ToggleStrip.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
+                            <GradientStop Offset="0.00" Color="#FFFFFF" />
+                            <GradientStop Offset="0.10" Color="#D5D5D5" />
+                            <GradientStop Offset="0.90" Color="#898989" />
+                            <GradientStop Offset="1.00" Color="#202020" />
+                        </LinearGradientBrush>
+                    </ajut:ToggleStrip.Background>
+                    <ajut:ToggleStrip.ItemsSource>
+                        <x:Array Type="{x:Type sys:String}">
+                            <sys:String>Content Flows</sys:String>
+                            <sys:String>Controls</sys:String>
+                            <sys:String>Utilities</sys:String>
+                            <sys:String>Strategies</sys:String>
+                        </x:Array>
+                    </ajut:ToggleStrip.ItemsSource>
+                </ajut:ToggleStrip>
+            </ajut:BumpStack>
+            
+        </DockPanel>-->
+    </DockPanel>
+</UserControl>

@@ -107,7 +107,6 @@
         /// <summary>
         /// Parses the text from the passed in <see cref="TrackedStringManager"/>, and returns a non-<c>null</c> <see cref="Json"/> instance.
         /// </summary>
-        /// <param name="jsonText">Some json text.</param>
         /// <param name="rules">Parser rules</param>
         /// <returns>A non-<c>null</c> <see cref="Json"/> instance</returns>
         public static Json ParseText (TrackedStringManager source, ParserRules rules = null)
