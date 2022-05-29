@@ -66,9 +66,9 @@
                 </Border>
             </DockPanel>
         </TabItem>
-        <!--<TabItem Header="FlatTreeListControl">
-
-        </TabItem>-->
+        <TabItem Header="FlatTreeListControl">
+            <ctrls:FlatTreeListControlExample Navigator="{Binding ElementName=Self, Path=Navigator}"/>
+        </TabItem>
         <TabItem Header="NumericEditor">
             <ctrls:NumericEditorControlExample/>
         </TabItem>

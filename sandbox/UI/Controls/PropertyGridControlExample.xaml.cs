@@ -36,33 +36,9 @@
         }
     }
 
-    [DebuggerDisplay("{Title}")]
-    public class TestTreeItem : ObservableTreeNode<TestTreeItem>
+    public class Person
     {
-        public TestTreeItem ()
-        {
-            this.CanHaveChildren = false;
-        }
-
-        private static char counter = 'A';
-        public string Title { get; set; } = $"Node {counter++}";
-
-        private bool m_otherThing;
-        public bool OtherThing
-        {
-            get => m_otherThing;
-            set => this.SetAndRaiseIfChanged(ref m_otherThing, value);
-        }
-        public bool IsGroup { get; internal set; }
-
-        public TestTreeItem Add ()
-        {
-            this.CanHaveChildren = true;
-            var newChild = new TestTreeItem();
-            newChild.Parent = this;
-            this.AddChild(newChild);
-            return newChild;
-        }
+        public string Name { get; set; }
     }
 
     public class SelfAwarePropertyGridSource : NotifyPropertyChanged, IPropertyEditManager
@@ -83,7 +59,7 @@
             set => this.SetAndRaiseIfChanged(ref m_dogsAge, value);
         }
 
-        public TestTreeItem? NullThing { get; set; }
+        public Person? NullThing { get; set; }
 
         public IEnumerable<PropertyEditTarget> GenerateEditTargets ()
         {

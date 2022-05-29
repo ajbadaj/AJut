@@ -36,8 +36,8 @@
 
             </ajut:PropertyGrid.ItemTemplateSelector>
         </ajut:PropertyGrid>
-        <ListBox x:Name="PropGridSelectionOptions" Grid.Column="1"
-                             ItemsSource="{Binding ElementName=Self, Path=PropertyGridItems}">
+        <ListBox x:Name="PropGridSelectionOptions" Grid.Column="1" SelectedIndex="0"
+                 ItemsSource="{Binding ElementName=Self, Path=PropertyGridItems}">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <StackPanel Orientation="Horizontal">

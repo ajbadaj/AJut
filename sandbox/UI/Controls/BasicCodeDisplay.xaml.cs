@@ -4,7 +4,6 @@
     using System.Windows;
     using System.Windows.Controls;
     using AJut;
-
     using DPUtils = AJut.UX.DPUtils<BasicCodeDisplay>;
 
     public partial class BasicCodeDisplay : UserControl
