@@ -13,6 +13,7 @@
 !*.jpg
 !*.png
 !*.gif
+!*.ico
 !*.editorconfig
 !*.svg
 !*.md
