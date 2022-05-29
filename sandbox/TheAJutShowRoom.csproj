@@ -5,7 +5,24 @@
     <TargetFramework>net5.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
+    <ApplicationIcon>Images\app.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Images\PenguinExample.png" />
+    <None Remove="Images\PenguinExample.svg" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Images\app.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Images\PenguinExample.png" />
+    <Content Include="Images\PenguinExample.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\libs\AJut.Core\AJut.Core.csproj" />

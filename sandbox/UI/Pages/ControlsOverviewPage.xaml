@@ -4,9 +4,121 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:TheAJutShowRoom.UI.Pages"
+             xmlns:ctrls="clr-namespace:TheAJutShowRoom.UI.Controls"
+             xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
+             xmlns:ajut_core_io="clr-namespace:AJut.IO;assembly=AJut.Core"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
-    <Grid>
-            
-    </Grid>
+             d:DesignHeight="450" d:DesignWidth="800"
+             x:Name="Self">
+    <TabControl TabStripPlacement="Left">
+        <TabItem Header="AutoGrid">
+            <ctrls:AutoGridControlExample/>
+        </TabItem>
+        <TabItem Header="BumpStack">
+            <ctrls:BumpStackControlExample />
+        </TabItem>
+        <TabItem Header="BusyWait">
+            <StackPanel>
+                <ajut:BusyWait Content="A busy wait" SpinnerDock="Right"
+                               VerticalAlignment="Center"  HorizontalAlignment="Left"
+                               IsSpinning="{Binding ElementName=ShouldSpin, Path=IsChecked, Mode=TwoWay}"/>
+                <CheckBox x:Name="ShouldSpin" Content="Should Spin" IsChecked="True"/>
+            </StackPanel>
+        </TabItem>
+        <TabItem Header="Color controls">
+            <Grid>
+                <Grid.Background>
+                    <SolidColorBrush Color="{Binding ElementName=BkgMaker, Path=EditColor, Mode=TwoWay}"/>
+                </Grid.Background>
+                <StackPanel>
+                    <WrapPanel>
+                        <ajut:ColorEditIngressControl EditColor="Green" Width="45" Height="45" Padding="4" PreferShortStringHex="True" Margin="0,0,5,5"/>
+                        <ajut:ColorEditIngressControl EditColor="Purple" Width="45" Height="45" Padding="2" PreferShortStringHex="True" IsReadOnly="True" Margin="0,0,5,5"/>
+
+                        <ajut:ColorEditIngressControl EditColor="Green" Width="20" Height="20" Padding="2" PreferShortStringHex="True" Margin="0,0,5,5"
+                                                      CornerBannerDimensions="27" CornerBannerIconFontSize="10"/>
+                        <ajut:ColorEditIngressControl EditColor="Purple" Width="140" Height="140" Padding="10" PreferShortStringHex="True" IsReadOnly="True" Margin="0,0,5,5"
+                                                      CornerBannerDimensions="60" CornerBannerIconFontSize="20"/>
+                    </WrapPanel>
+                    <ajut:ColorValueEditControl x:Name="BkgMaker" Background="#D32" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </TabItem>
+        <TabItem Header="EditableTextBlock">
+            <ctrls:EditableTextBlockControlExample />
+        </TabItem>
+        <TabItem Header="EnumComboBox">
+            <DockPanel>
+                <Border DockPanel.Dock="Bottom" x:Name="EditLocationBorder" BorderBrush="Black" BorderThickness="1" Background="Red">
+                    <StackPanel Margin="60" VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <TextBlock Text="Variable Location"/>
+                        <ajut:EnumComboBox SelectedItem="{Binding ElementName=EditLocationBorder, Path=(DockPanel.Dock), Mode=TwoWay}"/>
+                    </StackPanel>
+                </Border>
+                <Border DockPanel.Dock="Left"  BorderBrush="Black" BorderThickness="1" Background="Green">
+                    <TextBlock Text="Left" Margin="60" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </Border>
+                <Border DockPanel.Dock="Right"  BorderBrush="Black" BorderThickness="1" Background="IndianRed">
+                    <TextBlock Text="Right" Margin="60" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </Border>
+                <Border BorderBrush="Black" BorderThickness="1" Background="Blue">
+                    <TextBlock Text="Fill" Margin="60" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </Border>
+            </DockPanel>
+        </TabItem>
+        <TabItem Header="FlatTreeListControl">
+            <ctrls:FlatTreeListControlExample Navigator="{Binding ElementName=Self, Path=Navigator}"/>
+        </TabItem>
+        <TabItem Header="NumericEditor">
+            <ctrls:NumericEditorControlExample/>
+        </TabItem>
+        <TabItem Header="PropertyGrid">
+            <ctrls:PropertyGridControlExample/>
+        </TabItem>
+        <TabItem Header="PathSelector">
+            <StackPanel Margin="20">
+                <ajut:PathSelectionControl  VerticalAlignment="Center" MaxWidth="300" PathType="{Binding ElementName=PathType, Path=SelectedItem}"
+                                                FileFilter="{Binding ElementName=FileFilter, Path=Text, UpdateSourceTrigger=PropertyChanged}"
+                                                TreatNonExistentPathAsInvalid="{Binding ElementName=NonExistant, Path=IsChecked}"
+                                                TreatEmptyPathAsInvalid="{Binding ElementName=EmptyAsError, Path=IsChecked}"
+                                                UnsetTextPrompt="Select a path"/>
+                <StackPanel>
+                    <CheckBox x:Name="NonExistant" Content="Treat Non-existant as error" Margin="0,0,5,5" VerticalAlignment="Center"/>
+                    <CheckBox x:Name="EmptyAsError" Content="Treat empty as error" Margin="0,0,5,5" VerticalAlignment="Center"/>
+                    <ajut:EnumComboBox x:Name="PathType" SelectedItem="{x:Static ajut:ePathType.File}" Margin="0,0,5,5" VerticalAlignment="Center"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Filter" VerticalAlignment="Center"/>
+                        <TextBox x:Name="FileFilter" Text="{Binding Source={x:Static ajut_core_io:ImageTypes.AnyOrAllImageTypeFilter}, Mode=OneTime}" MaxWidth="300" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </StackPanel>
+            </StackPanel>
+        </TabItem>
+        <TabItem Header="PopupMenuButton">
+            <StackPanel Margin="30">
+                <DockPanel>
+                    <TextBlock Text="Popup Alignment:" Margin="0,0,5,0"/>
+                    <ajut:EnumComboBox x:Name="PopupButtonController_Alignment" SelectedItem="{Binding Source={x:Static HorizontalAlignment.Left}}" HorizontalAlignment="Left" Width="100"/>
+                </DockPanel>
+
+                <DockPanel>
+                    <TextBlock Text="Popup Animation:" Margin="0,0,5,0"/>
+                    <ajut:EnumComboBox x:Name="PopupButtonController_Animation" SelectedItem="{Binding Source={x:Static PopupAnimation.Slide}}" HorizontalAlignment="Left" Width="100"/>
+                </DockPanel>
+
+                <TextBlock Text="Popup Button:" Margin="0,15,0,0"/>
+                <ajut:PopupMenuButton ButtonContent="Click to open context menu" VerticalAlignment="Top" HorizontalAlignment="Left" Width="200"
+                                      MenuPopupAlignment="{Binding ElementName=PopupButtonController_Alignment, Path=SelectedItem, Mode=TwoWay}"
+                                      MenuPopupAnimation="{Binding ElementName=PopupButtonController_Animation, Path=SelectedItem, Mode=TwoWay}">
+                    <MenuItem Header="Test 1" Click="Test1_OnClick"/>
+                    <MenuItem Header="Test 2 (does nothing)"/>
+                </ajut:PopupMenuButton>
+            </StackPanel>
+        </TabItem>
+        <TabItem Header="Svg">
+            <ctrls:SvgControlExample />
+        </TabItem>
+        <TabItem Header="ToggleStrip">
+            <ctrls:ToggleStripExampleDisplay Margin="10"/>
+        </TabItem>
+    </TabControl>
 </UserControl>

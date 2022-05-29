@@ -1,0 +1,49 @@
+﻿<UserControl x:Class="TheAJutShowRoom.UI.Controls.FlatTreeListControlExample"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:TheAJutShowRoom.UI.Controls"
+             xmlns:ctrls="clr-namespace:TheAJutShowRoom.UI.Controls"
+             xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
+             xmlns:ajutconv="clr-namespace:AJut.UX.Converters;assembly=AJut.UX.Wpf"
+             xmlns:ajut_core_io="clr-namespace:AJut.IO;assembly=AJut.Core"
+             xmlns:ajprop="clr-namespace:AJut.UX.PropertyInteraction;assembly=AJut.UX.Wpf"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800"
+             x:Name="Self" Background="White">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <StackPanel>
+            <TextBlock TextWrapping="WrapWithOverflow">
+                <TextBlock.Inlines>
+                    <Run Text="The"/>
+                    <Run Text="flat tree list" FontWeight="Bold"/>
+                    <Run Text="is essentially a tree that works like a list. This not only allows proper virtualization, but also allows you to define DataTemplates without having to use hierarchical data templates. Navigate with the arrow keys, expanding with → and collapsing with ←"/>
+                </TextBlock.Inlines>
+            </TextBlock>
+            <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0">
+                <TextBlock.Inlines>
+                    <Run Text="In terms of"/>
+                    <Run Text="style" FontWeight="Bold"/>
+                    <Run Text="the flat tree list defaults to giving you the most choice! As you can see below, controls are not forced to be left justified - take up the whole horizontal space if you want!"/>
+                </TextBlock.Inlines>
+            </TextBlock>
+        </StackPanel>
+        <ajut:FlatTreeListControl Grid.Row="1" Root="{Binding ElementName=Self, Path=Root}" TabbingSize="10" Margin="10" BorderThickness="1">
+            <ajut:FlatTreeListControl.Resources>
+                <DataTemplate DataType="{x:Type local:TestTreeItem}">
+                    <DockPanel>
+                        <CheckBox DockPanel.Dock="Right" IsChecked="{Binding OtherThing}" />
+                        <TextBlock Text="{Binding Title}"/>
+                    </DockPanel>
+                </DataTemplate>
+            </ajut:FlatTreeListControl.Resources>
+        </ajut:FlatTreeListControl>
+        <Button Grid.Row="2" Content="Code Example ↑" HorizontalAlignment="Center" Click="PopupCodeExample_OnClick" Margin="0,0,0,10"/>
+    </Grid>
+</UserControl>
