@@ -344,7 +344,7 @@
                 //  to even render for the first time.
                 await dragSourceWindow.Dispatcher.InvokeAsync(() =>
                 {
-                    using (var stream = dragSourceWindow.RenderToPngAsIs())
+                    using (var stream = dragSourceWindow.RenderToPng())
                     {
                         var imgSource = new BitmapImage();
                         imgSource.BeginInit();

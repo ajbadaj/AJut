@@ -15,10 +15,17 @@
         public event PropertyChangedEventHandler PropertyChanged;
 
         /// <summary>
+        /// An optional handler which you can override to key into property change without having to sign up for the event (and before the event fires).
+        /// </summary>
+        /// <param name="propertyName">The name of the property that changed</param>
+        protected virtual void OnPropertyChanged (string propertyName) { }
+
+        /// <summary>
         /// Raise the <see cref="PropertyChanged"/> event, passing in the entire <see cref="PropertyChangedEventArgs"/> rather than just a property name.
         /// </summary>
         protected void RaisePropertyChanged (PropertyChangedEventArgs propertyChangedEventArgs)
         {
+            this.OnPropertyChanged(propertyChangedEventArgs.PropertyName);
             this.PropertyChanged?.Invoke(this, propertyChangedEventArgs);
         }
 
@@ -29,7 +36,7 @@
         {
             foreach (string propertyName in propertyNames)
             {
-                this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+                this.RaisePropertyChanged(new PropertyChangedEventArgs(propertyName));
             }
         }
 
@@ -39,11 +46,11 @@
         /// <param name="propertyName">The property name - this will default to determination from the <see cref="CallerMemberNameAttribute"/>. NOTE: This breaks if ANYTHING passed to this function utilizes dynamic</param>
         /// <remarks>
         /// BEWARE: Unfortunately, the automatic population of <paramref name="propertyName"/> will fail and utilize the default (empty string) if ANY parameter passed in is the result of a dynamic function.
-        /// Per microsoft, this is not a bug but an explicit design decision: https://developercommunity.visualstudio.com/t/callermembername-attribute-is-broken-in-net-5/
+        /// Per microsoft, this is not a bug but an explicit design decision: https://developercommunity.visualstudio.com/t/CallerMemberName-attribute-is-broken-in/1696193
         /// </remarks>
         protected void RaisePropertyChanged ([CallerMemberName] string propertyName = "")
         {
-            this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            this.RaisePropertyChanged(new PropertyChangedEventArgs(propertyName));
         }
 
         /// <summary>
@@ -63,7 +70,7 @@
         /// <returns>True if the value changed, false otherwise</returns>
         /// <remarks>
         /// BEWARE: Unfortunately, the automatic population of <paramref name="propertyName"/> will fail and utilize the default (empty string) if ANY parameter passed in is the result of a dynamic function.
-        /// Per microsoft, this is not a bug but an explicit design decision: https://developercommunity.visualstudio.com/t/callermembername-attribute-is-broken-in-net-5/
+        /// Per microsoft, this is not a bug but an explicit design decision: https://developercommunity.visualstudio.com/t/CallerMemberName-attribute-is-broken-in/1696193
         /// </remarks>
         protected bool SetAndRaiseIfChanged<T> (ref T value, T newValue, [CallerMemberName] string propertyName = "")
         {

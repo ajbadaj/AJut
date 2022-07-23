@@ -51,7 +51,7 @@
             return (BitmapImage)CoerceUtils.CoerceImageSourceFrom(filePath);
         }
 
-        public static void WriteTo (this BitmapImage image, Stream stream)
+        public static void WriteTo (this BitmapSource image, Stream stream)
         {
             var encoder = new PngBitmapEncoder();
             var frame = BitmapFrame.Create(image);
