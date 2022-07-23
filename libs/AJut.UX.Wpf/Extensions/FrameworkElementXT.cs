@@ -9,116 +9,85 @@
 
     public static class FrameworkElementXT
     {
-        /// <summary>
-        /// Render a <see cref="FrameworkElement"/> to a png memory stream.
-        /// </summary>
-        /// <param name="This">The target <see cref="FrameworkElement"/></param>
-        /// <param name="ppiX">The pixels-per-inch to render with horizontally</param>
-        /// <param name="ppiY">The pixels-per-inch to render with vertically</param>
-        /// <returns>The <see cref="MemoryStream"/> containing the png data (Could create an <see cref="Image"/> or file with it)</returns>
-        public static MemoryStream RenderToPngAsIs(this FrameworkElement This, int ppiX = 96, int ppiY = 96, bool updateLayout = false)
-        {
-            int width = (int)This.ActualWidth;
-            int height = (int)This.ActualHeight;
-
-            if (width == 0 && This.Width != 0)
-            {
-                width = (int)This.Width;
-            }
-
-            if (height == 0 && This.Height != 0)
-            {
-                height = (int)This.Width;
-            }
-            return RenderToPng(This, width, height, PixelFormats.Pbgra32, ppiX, ppiY, updateLayout);
-        }
 
         /// <summary>
-        /// Render a <see cref="FrameworkElement"/> to a png memory stream.
+        /// Render the <see cref="FrameworkElement"/> to a png memory stream targeting output size in inches.
         /// </summary>
+        /// <remarks>
+        /// If width is specified and height isn't, then the height will be specified proportionally. Similarly if the height is specified and the width isn't, then the width will be set proportionally.
+        /// </remarks>
         /// <param name="This">The target <see cref="FrameworkElement"/></param>
-        /// <param name="targetWidthPx">The target width to render at (in pixels)</param>
-        /// <param name="targetHeightPx">The target height to render at (in pixels)</param>
-        /// <param name="ppiX">The pixels-per-inch to render with horizontally</param>
-        /// <param name="ppiY">The pixels-per-inch to render with vertically</param>
-        /// <param name="updateLayoutFirst">Bool indicating whether or notto meadure, arrange, and update layout before rendering (default == true)</param>
+        /// <param name="targetWidthInches">The width of the resulting png in specified in inches (default = <see cref="double.NaN"/>, which will use image width to determine output)</param>
+        /// <param name="targetHeightInches">The height of the resulting png in specified in inches (default = <see cref="double.NaN"/>, which will use image height to determine output)</param>
+        /// <param name="format">The pixel format to render in, (default = null which results in <see cref="PixelFormats.Default"/>)</param>
         /// <returns>The <see cref="MemoryStream"/> containing the png data (Could create an <see cref="Image"/> or file with it)</returns>
-        public static MemoryStream RenderToPngWithFixedDimensionsPixels(this FrameworkElement This, int targetWidthPx, int targetHeightPx, int ppiX = 96, int ppiY = 96, bool updateLayoutFirst = true)
+        public static MemoryStream RenderToPngInInches (this FrameworkElement This, double targetWidthInches = double.NaN, double targetHeightInches = double.NaN, PixelFormat? format = null)
         {
-            return RenderToPng(This, targetWidthPx, targetHeightPx, PixelFormats.Pbgra32, ppiX, ppiY, updateLayoutFirst);
-        }
-
-        /// <summary>
-        /// Render a <see cref="FrameworkElement"/> to a png memory stream.
-        /// </summary>
-        /// <param name="This">The target <see cref="FrameworkElement"/></param>
-        /// <param name="targetWidthIn">The target width to render at (in inches)</param>
-        /// <param name="targetHeightIn">The target height to render at (in inches)</param>
-        /// <param name="ppiX">The pixels-per-inch to render with horizontally</param>
-        /// <param name="ppiY">The pixels-per-inch to render with vertically</param>
-        /// <param name="updateLayoutFirst">Bool indicating whether or notto meadure, arrange, and update layout before rendering (default == true)</param>
-        /// <returns>The <see cref="MemoryStream"/> containing the png data (Could create an <see cref="Image"/> or file with it)</returns>
-        public static MemoryStream RenderToPngWithFixedDimensionsInches(this FrameworkElement This, float targetWidthIn, float targetHeightIn, int ppiX = 96, int ppiY = 96, bool updateLayoutFirst = true)
-        {
-            int targetWidthPx = (int)(targetWidthIn * ppiX);
-            int targetHeightPx = (int)(targetHeightIn * ppiY);
-            return RenderToPng(This, targetWidthPx, targetHeightPx, PixelFormats.Pbgra32, ppiX, ppiY, updateLayoutFirst);
+            Size targetPx = GetSizeInInches(This, targetWidthInches, targetHeightInches);
+            return RenderToPng(This, (int)targetPx.Width, (int)targetPx.Height, format ?? PixelFormats.Default);
         }
 
         /// <summary>
         /// Render the <see cref="FrameworkElement"/> to a png memory stream.
         /// </summary>
         /// <param name="This">The target <see cref="FrameworkElement"/></param>
-        /// <param name="targetHeightPx">The height to set the control for rendering</param>
-        /// <param name="targetWidthPx">The width to set the control for rendering</param>
-        /// <param name="ppiX">The pixels-per-inch to render with horizontally</param>
-        /// <param name="ppiY">The pixels-per-inch to render with vertically</param>
-        /// <param name="updateLayoutFirst">Bool indicating whether or notto meadure, arrange, and update layout before rendering (default == true)</param>
+        /// <param name="targetWidthPx">The width of the resulting png in pixels (default = -1, which is simply the image width)</param>
+        /// <param name="targetHeightPx">The height of the resulting png in pixels (default = -1, which is simply the image height)</param>
+        /// <param name="format">The pixel format to render in, (default = null which results in <see cref="PixelFormats.Default"/>)</param>
         /// <returns>The <see cref="MemoryStream"/> containing the png data (Could create an <see cref="Image"/> or file with it)</returns>
-        public static MemoryStream RenderToPng (this FrameworkElement This, int targetWidthPx, int targetHeightPx, int ppiX = 96, int ppiY = 96, bool updateLayoutFirst = true)
+        public static MemoryStream RenderToPng (this FrameworkElement This, int targetWidthPx = -1, int targetHeightPx = -1, PixelFormat? format = null)
         {
-            return RenderToPng(This, targetWidthPx, targetHeightPx, PixelFormats.Default, ppiX, ppiY, updateLayoutFirst);
+            MemoryStream ms = new MemoryStream ();
+            if (DoRenderToPng(This, ms, targetWidthPx, targetHeightPx, format ?? PixelFormats.Default))
+            {
+                ms.Position = 0;
+                return ms;
+            }
+
+            return null;
         }
 
-        public static bool RenderToPng (this FrameworkElement This, Stream stream, int targetWidthPx, int targetHeightPx, int ppiX = 96, int ppiY = 96, bool updateLayoutFirst = true)
+        public static bool RenderToPng (this FrameworkElement This, Stream stream, int targetWidthPx = -1, int targetHeightPx = -1, PixelFormat? format = null)
         {
-            return RenderToPng(This, stream, targetWidthPx, targetHeightPx, PixelFormats.Default, ppiX, ppiY, updateLayoutFirst);
+            return DoRenderToPng(This, stream, targetWidthPx, targetHeightPx, format ?? PixelFormats.Default);
         }
 
         /// <summary>
-        /// Render the <see cref="FrameworkElement"/> to a png memory stream.
+        /// Render the <see cref="FrameworkElement"/> to a png memory stream targeting output size in inches.
         /// </summary>
-        /// <param name="This">The target <see cref="FrameworkElement"/></param>
-        /// <param name="targetHeightPx">The height to set the control for rendering</param>
-        /// <param name="targetWidthPx">The width to set the control for rendering</param>
-        /// <param name="pixelFormat">The <see cref="PixelFormat'"/> to apply</param>
-        /// <param name="ppiX">The pixels-per-inch to render with horizontally</param>
-        /// <param name="ppiY">The pixels-per-inch to render with vertically</param>
-        /// <param name="updateLayoutFirst">Bool indicating whether or notto meadure, arrange, and update layout before rendering (default == true)</param>
-        /// <returns>The <see cref="MemoryStream"/> containing the png data (Could create an <see cref="Image"/> or file with it)</returns>
-        public static MemoryStream RenderToPng(this FrameworkElement This, int targetWidthPx, int targetHeightPx, PixelFormat pixelFormat, int ppiX = 96, int ppiY = 96, bool updateLayoutFirst = true)
+        /// <remarks>
+        /// If width is specified and height isn't, then the height will be specified proportionally. Similarly if the height is specified and the width isn't, then the width will be set proportionally.
+        /// </remarks>
+        public static bool RenderToPngInInches (this FrameworkElement This, Stream stream, double targetWidthInches = double.NaN, double targetHeightInches = double.NaN, PixelFormat? format = null)
         {
-            var stream = new MemoryStream();
-            This.RenderToPng(stream, targetWidthPx, targetHeightPx, pixelFormat, ppiX, ppiY, updateLayoutFirst);
-            return stream;
+            Size targetPx = GetSizeInInches(This, targetWidthInches, targetHeightInches);
+            return DoRenderToPng(This, stream, (int)targetPx.Width, (int)targetPx.Height, format ?? PixelFormats.Default);
         }
-
-        public static bool RenderToPng(this FrameworkElement This, Stream target, int targetWidthPx, int targetHeightPx, PixelFormat pixelFormat, int ppiX = 96, int ppiY = 96, bool updateLayoutFirst = true)
+        private static bool DoRenderToPng (this FrameworkElement This, Stream target, int targetWidthPx, int targetHeightPx, PixelFormat pixelFormat)
         {
             try
             {
-                if (updateLayoutFirst)
+                DpiScale dpi = VisualTreeHelper.GetDpi(This);
+                var renderer = new RenderTargetBitmap((int)(This.ActualWidth * dpi.DpiScaleX), (int)(This.ActualHeight * dpi.DpiScaleY), dpi.PixelsPerInchX, dpi.PixelsPerInchY, pixelFormat);
+                renderer.Render(This);
+
+                if (targetWidthPx == -1)
                 {
-                    This.Measure(new Size(targetWidthPx, targetHeightPx));
-                    This.Arrange(new Rect(0, 0, targetWidthPx, targetHeightPx));
-                    This.UpdateLayout();
+                    targetWidthPx = (int)This.ActualWidth;
+                }
+                if (targetHeightPx == -1)
+                {
+                    targetHeightPx = (int)This.ActualHeight;
                 }
 
-                var renderer = new RenderTargetBitmap(targetWidthPx, targetHeightPx, ppiX, ppiY, pixelFormat);
-                renderer.Render(This);
-                var png = new PngBitmapEncoder();
-                png.Frames.Add(BitmapFrame.Create(renderer));
-                png.Save(target);
+                var bitmap = new TransformedBitmap(BitmapFrame.Create(renderer),
+                    new ScaleTransform(
+                        targetWidthPx / This.ActualWidth,
+                        targetHeightPx / This.ActualHeight
+                    )
+                );
+
+                bitmap.WriteTo(target);
             }
             catch (Exception ex)
             {
@@ -128,5 +97,42 @@
 
             return true;
         }
+
+        private static Size GetSizeInInches (FrameworkElement element, double targetWidthInches, double targetHeightInches)
+        {
+            if (double.IsNaN(targetWidthInches))
+            {
+                if (!double.IsNaN(targetHeightInches))
+                {
+                    // Just the width is NaN, not the height - scale width by height
+                    DpiScale dpi = VisualTreeHelper.GetDpi(element);
+                    double heightPx = targetHeightInches * dpi.PixelsPerInchY;
+                    return new Size
+                    {
+                        Width = element.ActualWidth * (heightPx / element.ActualHeight),
+                        Height = heightPx,
+                    };
+                }
+            }
+            else if (double.IsNaN(targetHeightInches))
+            {
+                // Just the height is NaN, not the width - scale height by width
+                DpiScale dpi = VisualTreeHelper.GetDpi(element);
+                double widthPx = targetWidthInches * dpi.PixelsPerInchX;
+                return new Size
+                {
+                    Width = widthPx,
+                    Height = element.ActualHeight * (widthPx / element.ActualWidth),
+                };
+            }
+
+            // Both...
+            return new Size
+            {
+                Width = element.ActualWidth,
+                Height = element.ActualHeight,
+            };
+        }
+
     }
 }
