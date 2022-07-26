@@ -185,7 +185,8 @@
             this.SelectedItem = null;
             if (this.SelectedItems is INotifyCollectionChanged)
             {
-                this.SelectedItems.Clear(); ;
+                this.SelectedItems.Clear();
+                ;
             }
             else
             {
@@ -376,7 +377,7 @@
                     if (this.SetAndRaiseIfChanged(ref m_itemIndex, value))
                     {
                         this.IsFirstItem = m_itemIndex == 0;
-                        this.IsLastItem = Owner.Items.LastOrDefault() == this;
+                        this.IsLastItem = this.Owner.Items.LastOrDefault() == this;
                         if (m_hasDefaultName)
                         {
                             this.ResetNameWithDefault();
@@ -396,7 +397,7 @@
                 get => m_isSelected;
                 set // this should be treated as called by the user, a request
                 {
-                    if (!value && !Owner.Items.CanBeDeselected())
+                    if (!value && !this.Owner.Items.CanBeDeselected())
                     {
                         return;
                     }
@@ -405,11 +406,11 @@
                     {
                         if (value)
                         {
-                            Owner.Items.HandleWasSelected(this);
+                            this.Owner.Items.HandleWasSelected(this);
                         }
                         else
                         {
-                            Owner.Items.HandleWasDeselected(this);
+                            this.Owner.Items.HandleWasDeselected(this);
                         }
                     }
                 }
@@ -434,7 +435,7 @@
             internal void EvaluateOrder ()
             {
                 m_itemIndex = -1;
-                this.ItemIndex = Owner.Items.IndexOf(this);
+                this.ItemIndex = this.Owner.Items.IndexOf(this);
             }
 
             internal void ResetName (string displayPropertyPath = null)
@@ -457,7 +458,7 @@
             {
                 m_isSelected = isSelected;
                 this.RaisePropertyChanged(nameof(IsSelected));
-                Owner.Items.HandleWasDeselected(this);
+                this.Owner.Items.HandleWasDeselected(this);
             }
 
             private void ResetNameWithDefault ()
