@@ -5,7 +5,7 @@
                     xmlns:conv="clr-namespace:AJut.UX.Converters"
                     xmlns:local="clr-namespace:AJut.UX.Controls">
     <Style TargetType="{x:Type local:ColorEditIngressControl}">
-        <Setter Property="IsReadOnly" Value="{Binding Path=(ap:Edit.IsReadOnly)}"/>
+        <Setter Property="IsReadOnly" Value="{Binding RelativeSource={RelativeSource Self}, Path=(ap:Edit.IsReadOnly), Mode=OneWay}"/>
         <Setter Property="ap:BorderXTA.CornerRadius" Value="2"/>
         <Setter Property="Padding" Value="1" />
         <Setter Property="Background" Value="White"/>

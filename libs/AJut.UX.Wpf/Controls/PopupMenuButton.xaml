@@ -22,7 +22,7 @@
                             <Grid MinWidth="{Binding ElementName=PART_Button, Path=ActualWidth}">
                                 <Border HorizontalAlignment="{TemplateBinding MenuPopupAlignment}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}">
                                     <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" Margin="{TemplateBinding Padding}">
-                                        <Menu ItemsSource="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PopupMenuButton}}, Path=MenuItems}">
+                                        <Menu ItemsSource="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PopupMenuButton}}, Path=MenuItems, Mode=OneWay}">
                                             <Menu.ItemsPanel>
                                                 <ItemsPanelTemplate>
                                                     <StackPanel />

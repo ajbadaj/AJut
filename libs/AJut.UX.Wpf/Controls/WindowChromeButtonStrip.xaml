@@ -176,7 +176,7 @@
                                         <ControlTemplate TargetType="{x:Type ButtonBase}">
                                             <Border x:Name="ChromeButtonBorder" Background="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonBackground}" 
                                                     BorderBrush="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonBorder}"
-                                                    BorderThickness="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonGlyphForeground}"
+                                                    BorderThickness="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=BorderThickness}"
                                                     CornerRadius="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonCornerRadius}"
                                                     IsHitTestVisible="True">
                                                 <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}"
