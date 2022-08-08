@@ -2,9 +2,7 @@
 {
     using System.Windows;
     using System.Windows.Controls;
-    using System.Windows.Media;
     using AJut.UX;
-    using AJut.UX.Event;
     using DPUtils = AJut.UX.DPUtils<ControlsOverviewPage>;
 
     public partial class ControlsOverviewPage : UserControl, IStackNavDisplayControl
