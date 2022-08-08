@@ -6,10 +6,9 @@
     using System.Windows.Input;
     using System.Windows.Media;
     using AJut.UX.AttachedProperties;
-    using AJut.UX.Event;
     using DPUtils = DPUtils<ColorEditIngressControl>;
 
-    public class ColorEditIngressControl : Control
+    public class ColorEditIngressControl : Control, IUserEditNotifier
     {
         private Color? m_editCache;
         static ColorEditIngressControl()
@@ -37,10 +36,11 @@
         }
 
         /// <summary>
-        /// An event that signifies a user edit has completed - this is slightly different than changes to the <see cref="EditColor"/> in that
-        /// it also signifies an edit initiation, change, and completion have both occurred - not just a change.
+        /// An event that signifies a user edit has completed - this is slightly different than bound or otherwise modified <see cref="EditColor"/> changes in that this
+        /// event signifies: an edit initiation, a single or even several changes, and a completion have all occurred - not just a change. Changes made outside user edit
+        /// similarly do not notify via this event.
         /// </summary>
-        public event EventHandler<UserEditEventArgs<Color>> UserEditComplete;
+        public event EventHandler<UserEditAppliedEventArgs> UserEditComplete;
 
         public static readonly DependencyProperty EditColorProperty = DPUtils.Register(_ => _.EditColor);
         public Color EditColor
@@ -108,7 +108,7 @@
             {
                 if (!(m_editCache?.Equals(this.EditColor) ?? false))
                 {
-                    this.UserEditComplete?.Invoke(this, new UserEditEventArgs<Color>(m_editCache.Value, this.EditColor));
+                    this.UserEditComplete?.Invoke(this, new UserEditAppliedEventArgs(m_editCache.Value, this.EditColor));
 
                 }
 

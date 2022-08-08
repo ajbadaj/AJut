@@ -19,5 +19,10 @@
             get => (float)this.GetValue(FloatValueProperty);
             set => this.SetValue(FloatValueProperty, value);
         }
+
+        private void Normal_OnUserEditComplete (object sender, AJut.UX.UserEditAppliedEventArgs e)
+        {
+            MessageBox.Show($"Value changed from: {e.OldValue} → {e.NewValue}");
+        }
     }
 }

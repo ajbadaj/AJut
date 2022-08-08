@@ -32,7 +32,8 @@
                 </Grid.Background>
                 <StackPanel>
                     <WrapPanel>
-                        <ajut:ColorEditIngressControl EditColor="Green" Width="45" Height="45" Padding="4" PreferShortStringHex="True" Margin="0,0,5,5"/>
+                        <ajut:ColorEditIngressControl EditColor="Green" Width="45" Height="45" Padding="4" PreferShortStringHex="True" Margin="0,0,5,5"
+                                                      UserEditComplete="ColorEdit_OnUserEditComplete"/>
                         <ajut:ColorEditIngressControl EditColor="Purple" Width="45" Height="45" Padding="2" PreferShortStringHex="True" IsReadOnly="True" Margin="0,0,5,5"/>
 
                         <ajut:ColorEditIngressControl EditColor="Green" Width="20" Height="20" Padding="2" PreferShortStringHex="True" Margin="0,0,5,5"

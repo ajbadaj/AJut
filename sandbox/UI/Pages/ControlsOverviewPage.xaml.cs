@@ -2,7 +2,9 @@
 {
     using System.Windows;
     using System.Windows.Controls;
+    using System.Windows.Media;
     using AJut.UX;
+    using AJut.UX.Event;
     using DPUtils = AJut.UX.DPUtils<ControlsOverviewPage>;
 
     public partial class ControlsOverviewPage : UserControl, IStackNavDisplayControl
@@ -28,6 +30,12 @@
         private void Test1_OnClick (object sender, RoutedEventArgs e)
         {
             MessageBox.Show("Got it!");
+        }
+
+        private void ColorEdit_OnUserEditComplete (object sender, UserEditAppliedEventArgs e)
+        {
+            MessageBox.Show($"Color changed from: {e.OldValue} → {e.NewValue}");
+
         }
     }
 }
