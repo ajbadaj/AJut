@@ -33,8 +33,18 @@
                 <Setter Property="AdditionalBottomDisplay">
                     <Setter.Value>
                         <StackPanel HorizontalAlignment="Right" Margin="3" Opacity="0.7">
-                            <TextBlock Text="ajut.core - Version #1.0.0.2" HorizontalAlignment="Right"/>
-                            <TextBlock Text="ajut.ux.wpf - Version #1.0.0.3" HorizontalAlignment="Right"/>
+                            <TextBlock HorizontalAlignment="Right">
+                                <TextBlock.Inlines>
+                                    <Run Text="ajut.core → " FontSize="14"/>
+                                    <Run Text="{Binding Source={x:Static local:App.AJut_Core_Version}, Mode=OneWay}" FontFamily="Consolas"/>
+                                </TextBlock.Inlines>
+                            </TextBlock>
+                            <TextBlock HorizontalAlignment="Right">
+                                <TextBlock.Inlines>
+                                    <Run Text="ajut.ux.wpf → " FontSize="14"/>
+                                    <Run Text="{Binding Source={x:Static local:App.AJut_Ux_Wpf_Version}, Mode=OneWay}" FontFamily="Consolas"/>
+                                </TextBlock.Inlines>
+                            </TextBlock>
                         </StackPanel>
                     </Setter.Value>
                 </Setter>

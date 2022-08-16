@@ -1,6 +1,7 @@
 ﻿namespace TheAJutShowRoom
 {
     using System;
+    using System.Diagnostics;
     using System.Windows;
     using AJut;
     using AJut.TypeManagement;
@@ -10,6 +11,18 @@
     {
         public static Random kRNG = new Random(DateTime.Now.Millisecond);
 
+        static App ()
+        {
+            var assembly = typeof(Logger).Assembly;
+            var versionInfo = FileVersionInfo.GetVersionInfo(assembly.Location);
+            AJut_Core_Version = versionInfo.ProductVersion?.ToString() ?? "unknown version";
+            Logger.LogInfo($"Using AJut.Core version #{AJut_Core_Version}");
+
+            assembly = typeof(ApplicationUtilities).Assembly;
+            versionInfo = FileVersionInfo.GetVersionInfo(assembly.Location);
+            AJut_Ux_Wpf_Version = versionInfo.ProductVersion?.ToString() ?? "unknown version";
+            Logger.LogInfo($"Using AJut.UX.Wpf version #{AJut_Ux_Wpf_Version}");
+        }
         public App ()
         {
             // Go through all types and find type id registrations, this will allow automatic discovery and propogation of type matching
@@ -33,5 +46,8 @@
         {
             return System.IO.Path.Combine(ApplicationUtilities.AppDataRoot, pathEnd);
         }
+
+        public static string AJut_Core_Version { get; }
+        public static string AJut_Ux_Wpf_Version { get; }
     }
 }
