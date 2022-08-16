@@ -1,0 +1,69 @@
+﻿<UserControl x:Class="TheAJutShowRoom.UI.Controls.WindowChromeButtonStripExample"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:TheAJutShowRoom.UI.Controls"
+             xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800"
+             x:Name="Self">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition Width="100"/>
+        </Grid.ColumnDefinitions>
+        <StackPanel Margin="20">
+            <TextBlock TextWrapping="WrapWithOverflow"
+                       Text="The WindowChromeButtonStrip can be used in custom chrome windows to mimic the normal window button strip (minimize, maximize/restore, close) with the addition of fullscreen. Each button is customizable, and can be controlled to be shown or hidden."/>
+            <Border Margin="10" BorderThickness="1" Padding="10" BorderBrush="Black" CornerRadius="10">
+                <DockPanel>
+                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Top">
+                        <TextBlock Text="Example →" Opacity="0.6"/>
+                        <ajut:WindowChromeButtonStrip AllowMaximizeRestore="False" AllowFullscreen="False"
+                                                      MinimizeToolTip="This will **actually** minimize this application"
+                                                      CloseToolTip="This will **actually** close this application"
+                                                      HorizontalAlignment="Left" Margin="20,0,0,0"/>
+                    </StackPanel>
+                    <TextBlock Text="Code to produce that might look like this ↓" DockPanel.Dock="Top" Margin="0,5,0,0"/>
+                    <local:BasicCodeDisplay CodeText="{Binding ElementName=Self, Path=CodeText, Mode=OneWay}"/>
+                </DockPanel>
+            </Border>
+        </StackPanel>
+        <Grid Grid.Column="1">
+            <Grid.Style>
+                <Style TargetType="{x:Type Grid}">
+                    <Style.Triggers>
+                        <EventTrigger RoutedEvent="Loaded">
+                            <EventTrigger.Actions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="Opacity" Duration="0:0:1.5" RepeatBehavior="Forever" AutoReverse="True">
+                                            <EasingDoubleKeyFrame Value="1">
+                                                <EasingDoubleKeyFrame.EasingFunction>
+                                                    <SineEase />
+                                                </EasingDoubleKeyFrame.EasingFunction>
+                                            </EasingDoubleKeyFrame>
+                                            <EasingDoubleKeyFrame Value="0.3" />
+                                        </DoubleAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger.Actions>
+                        </EventTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Grid.Style>
+            <StackPanel>
+                <TextBlock Text="↑" FontSize="123" Margin="20,-40,0,0">
+                    <TextBlock.Foreground>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
+                            <GradientStop Offset="0.00" Color="#806300" />
+                            <GradientStop Offset="1.00" Color="#008077" />
+                        </LinearGradientBrush>
+                    </TextBlock.Foreground>
+                </TextBlock>
+                <TextBlock Text="Another example"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>
