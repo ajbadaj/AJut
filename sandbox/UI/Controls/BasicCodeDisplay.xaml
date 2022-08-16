@@ -8,9 +8,23 @@
              d:DesignHeight="450" d:DesignWidth="800"
              x:Name="Self">
     <Grid>
-        <TextBox Text="{Binding ElementName=Self, Path=CodeText}"
+        <TextBox Text="{Binding ElementName=Self, Path=FinalTransformedText, Mode=OneWay}"
                  IsReadOnly="True" IsReadOnlyCaretVisible="True"
-                 FontFamily="Consolas"/>
-        <Button Content="&#xE8C8;" FontFamily="Segoe MDL2 Assets" HorizontalAlignment="Right" VerticalAlignment="Bottom" Padding="10,5" Click="CopyCode_OnClick"/>
+                 FontFamily="Consolas"
+                 TextWrapping="WrapWithOverflow"/>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom">
+            <ToggleButton Padding="7,5" ToolTip="Show/hide line numbers" IsChecked="{Binding ElementName=Self, Path=ShowLineNumbers, Mode=TwoWay}">
+                <Grid>
+                    <TextBlock>
+                        <TextBlock.Inlines>
+                            <Run Text="&#xE7B3;" FontFamily="Segoe MDL2 Assets"/>
+                            <Run Text="#"/>
+                        </TextBlock.Inlines>
+                    </TextBlock>
+                </Grid>
+            </ToggleButton>
+            <Button Content="&#xE8C8;" FontFamily="Segoe MDL2 Assets" Padding="10,5" ToolTip="Copy code text" Click="CopyCode_OnClick"/>
+        </StackPanel>
+        
     </Grid>
 </UserControl>
