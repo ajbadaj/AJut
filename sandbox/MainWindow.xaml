@@ -7,7 +7,7 @@
         xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
         xmlns:ajutap="clr-namespace:AJut.UX.AttachedProperties;assembly=AJut.UX.Wpf"
         mc:Ignorable="d"
-        Title="The AJut Showroom" Height="650" Width="1000"
+        Title="The AJut Showroom" Height="850" Width="1200"
         x:Name="Self"
         WindowStyle="None" 
         ajutap:WindowXTA.FixMaximizeAsFullscreenIssue="True"
@@ -33,8 +33,8 @@
                 <Setter Property="AdditionalBottomDisplay">
                     <Setter.Value>
                         <StackPanel HorizontalAlignment="Right" Margin="3" Opacity="0.7">
-                            <TextBlock Text="ajut.core - Version #1.0.0.1" HorizontalAlignment="Right"/>
-                            <TextBlock Text="ajut.ux.wpf - Version #1.0.0.0" HorizontalAlignment="Right"/>
+                            <TextBlock Text="ajut.core - Version #1.0.0.2" HorizontalAlignment="Right"/>
+                            <TextBlock Text="ajut.ux.wpf - Version #1.0.0.3" HorizontalAlignment="Right"/>
                         </StackPanel>
                     </Setter.Value>
                 </Setter>
