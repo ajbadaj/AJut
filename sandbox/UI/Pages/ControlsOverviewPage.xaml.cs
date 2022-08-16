@@ -29,5 +29,11 @@
         {
             MessageBox.Show("Got it!");
         }
+
+        private void ColorEdit_OnUserEditComplete (object sender, UserEditAppliedEventArgs e)
+        {
+            MessageBox.Show($"Color changed from: {e.OldValue} → {e.NewValue}");
+
+        }
     }
 }

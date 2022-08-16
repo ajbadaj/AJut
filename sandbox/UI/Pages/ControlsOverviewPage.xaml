@@ -32,7 +32,8 @@
                 </Grid.Background>
                 <StackPanel>
                     <WrapPanel>
-                        <ajut:ColorEditIngressControl EditColor="Green" Width="45" Height="45" Padding="4" PreferShortStringHex="True" Margin="0,0,5,5"/>
+                        <ajut:ColorEditIngressControl EditColor="Green" Width="45" Height="45" Padding="4" PreferShortStringHex="True" Margin="0,0,5,5"
+                                                      UserEditComplete="ColorEdit_OnUserEditComplete"/>
                         <ajut:ColorEditIngressControl EditColor="Purple" Width="45" Height="45" Padding="2" PreferShortStringHex="True" IsReadOnly="True" Margin="0,0,5,5"/>
 
                         <ajut:ColorEditIngressControl EditColor="Green" Width="20" Height="20" Padding="2" PreferShortStringHex="True" Margin="0,0,5,5"
@@ -107,8 +108,8 @@
 
                 <TextBlock Text="Popup Button:" Margin="0,15,0,0"/>
                 <ajut:PopupMenuButton ButtonContent="Click to open context menu" VerticalAlignment="Top" HorizontalAlignment="Left" Width="200"
-                                      MenuPopupAlignment="{Binding ElementName=PopupButtonController_Alignment, Path=SelectedItem, Mode=TwoWay}"
-                                      MenuPopupAnimation="{Binding ElementName=PopupButtonController_Animation, Path=SelectedItem, Mode=TwoWay}">
+                                      MenuPopupAlignment="{Binding ElementName=PopupButtonController_Alignment, Path=SelectedItem, Mode=OneWay}"
+                                      MenuPopupAnimation="{Binding ElementName=PopupButtonController_Animation, Path=SelectedItem, Mode=OneWay}">
                     <MenuItem Header="Test 1" Click="Test1_OnClick"/>
                     <MenuItem Header="Test 2 (does nothing)"/>
                 </ajut:PopupMenuButton>

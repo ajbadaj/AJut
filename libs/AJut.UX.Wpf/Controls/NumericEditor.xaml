@@ -18,7 +18,7 @@
 
     
     <Style TargetType="{x:Type local:NumericEditor}">
-        <Setter Property="IsReadOnly" Value="{Binding Path=(ap:Edit.IsReadOnly)}"/>
+        <Setter Property="IsReadOnly" Value="{Binding RelativeSource={RelativeSource Self}, Path=(ap:Edit.IsReadOnly), Mode=OneWay}"/>
         <Setter Property="BorderBrush" Value="#000" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="ap:BorderXTA.CornerRadius" Value="2"/>

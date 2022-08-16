@@ -11,10 +11,11 @@
     using DPUtils = DPUtils<NumericEditor>;
 
     [TemplatePart(Name = nameof(PART_TextArea), Type = typeof(TextBox))]
-    public class NumericEditor : Control
+    public class NumericEditor : Control, IUserEditNotifier
     {
         private TextBox PART_TextArea;
         private bool m_blockValueChangeReentrancy;
+        private object m_textEditPreviousData = null;
 
         // ===========================[ Construction ]============================================
         public NumericEditor ()
@@ -53,12 +54,12 @@
 
             void _OnNudgeIncreaseExecuted (object sender, RoutedEventArgs e)
             {
-                this.NudgeIncrease();
+                this.NudgeIncrease(notifyOfUserEdit: true);
             }
 
             void _OnNudgeDecreaseExecuted (object sender, RoutedEventArgs e)
             {
-                this.NudgeDecrease();
+                this.NudgeDecrease(notifyOfUserEdit: true);
             }
         }
 
@@ -73,12 +74,16 @@
 
             if (this.PART_TextArea != null)
             {
+                this.PART_TextArea.GotFocus -= _TextAreaGotFocus;
+                this.PART_TextArea.LostFocus -= _TextAreaLostFocus;
                 this.PART_TextArea.PreviewKeyDown -= _PreviewOnTextAreaKeyDown;
                 this.PART_TextArea = null;
             }
 
             this.PART_TextArea = (TextBox)this.GetTemplateChild(nameof(PART_TextArea));
             this.PART_TextArea.PreviewKeyDown += _PreviewOnTextAreaKeyDown;
+            this.PART_TextArea.GotFocus += _TextAreaGotFocus;
+            this.PART_TextArea.LostFocus += _TextAreaLostFocus;
 
             void _PreviewOnTextAreaKeyDown (object _s, KeyEventArgs _e)
             {
@@ -89,25 +94,44 @@
 
                 if (_e.Key == Key.Return)
                 {
-                    var binding = BindingOperations.GetBindingExpression(this.PART_TextArea, TextBox.TextProperty);
-                    if (binding != null)
+                    if (this.PerformTextUpdate())
                     {
-                        binding.UpdateSource();
                         _e.Handled = true;
                     }
                 }
                 if (_e.Key == Key.Up)
                 {
-                    this.NudgeIncrease();
+                    this.NudgeIncrease(notifyOfUserEdit: m_textEditPreviousData == null);
                     _e.Handled = true;
                 }
                 if (_e.Key == Key.Down)
                 {
-                    this.NudgeDecrease();
+                    this.NudgeDecrease(notifyOfUserEdit: m_textEditPreviousData == null);
+                    _e.Handled = true;
+                }
+            }
+
+            void _TextAreaGotFocus (object sender, RoutedEventArgs e)
+            {
+                m_textEditPreviousData = this.Value;
+            }
+
+            void _TextAreaLostFocus (object _, RoutedEventArgs _e)
+            {
+                if (this.PerformTextUpdate())
+                {
                     _e.Handled = true;
                 }
             }
         }
+
+        // ===========================[ Events ]============================================
+        /// <summary>
+        /// An event that signifies a user edit has completed - this is slightly different than bound or otherwise modified <see cref="Value"/> changes in that this
+        /// event signifies: an edit initiation, a single or even several changes, and a completion have all occurred - not just a change. Changes made outside user edit
+        /// similarly do not notify via this event.
+        /// </summary>
+        public event EventHandler<UserEditAppliedEventArgs> UserEditComplete;
 
         // ===========================[ Commands ]================================================
         public static RoutedCommand NudgeIncreaseCommand = new RoutedCommand(nameof(NudgeIncrease), typeof(NumericEditor));
@@ -265,19 +289,20 @@
         /// Increase the value the nudge ammount
         /// </summary>
         /// <param name="includeKeyboardMods">Include the nudge modifiations for big nudge &amp; small nudge</param>
-        public void NudgeIncrease (bool includeKeyboardMods = true)
+        /// <param name="notifyOfUserEdit">Notify that this nudge was a user edit (default = false)</param>
+        public void NudgeIncrease (bool includeKeyboardMods = true, bool notifyOfUserEdit = false)
         {
             if (includeKeyboardMods && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
             {
-                this.NudgeBy(this.BigNudge);
+                this.NudgeBy(this.BigNudge, notifyOfUserEdit);
             }
             else if (includeKeyboardMods && Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
             {
-                this.NudgeBy(this.SmallNudge);
+                this.NudgeBy(this.SmallNudge, notifyOfUserEdit);
             }
             else
             {
-                this.NudgeBy(this.Nudge);
+                this.NudgeBy(this.Nudge, notifyOfUserEdit);
             }
         }
 
@@ -285,19 +310,20 @@
         /// Decrease the value the nudge ammount
         /// </summary>
         /// <param name="includeKeyboardMods">Include the nudge modifiations for big nudge &amp; small nudge</param>
-        public void NudgeDecrease (bool includeKeyboardMods = true)
+        /// <param name="notifyOfUserEdit">Notify that this nudge was a user edit (default = false)</param>
+        public void NudgeDecrease (bool includeKeyboardMods = true, bool notifyOfUserEdit = false)
         {
             if (includeKeyboardMods && Keyboard.Modifiers.HasFlag(ModifierKeys.Control))
             {
-                this.NudgeBy(-this.BigNudge);
+                this.NudgeBy(-this.BigNudge, notifyOfUserEdit);
             }
             else if (includeKeyboardMods && Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
             {
-                this.NudgeBy(-this.SmallNudge);
+                this.NudgeBy(-this.SmallNudge, notifyOfUserEdit);
             }
             else
             {
-                this.NudgeBy(-this.Nudge);
+                this.NudgeBy(-this.Nudge, notifyOfUserEdit);
             }
         }
 
@@ -305,7 +331,7 @@
         /// Nudge by a passed in value (which will be converted to the target type before application)
         /// </summary>
         /// <param name="value">The value to nudge by, will be converted to the target type before application</param>
-        public void NudgeBy (dynamic value)
+        private void NudgeBy (dynamic value, bool notifyOfUserEdit)
         {
             if (this.DisplayValue.IsTextInErrorState)
             {
@@ -320,6 +346,8 @@
 
                 return;
             }
+
+            object oldValue = this.Value;
 
             // Preserve the caret location
             int caretOffset = this.DisplayValue.Text.Length - this.PART_TextArea.CaretIndex;
@@ -340,7 +368,7 @@
             this.DisplayValue.Nudge(positive, Convert.ChangeType(value, this.DisplayValue.ValueType));
 
             // Preserve the caret location
-            caretOffset = AJut.MathUtilities.Cap.Within(0, this.DisplayValue.Text.Length, this.DisplayValue.Text.Length - caretOffset);
+            caretOffset = MathUtilities.Cap.Within(0, this.DisplayValue.Text.Length, this.DisplayValue.Text.Length - caretOffset);
             selectionLength = Math.Min(selectionLength, this.DisplayValue.Text.Length - caretOffset);
             if (selectionLength > 0)
             {
@@ -357,6 +385,30 @@
             {
                 this.PART_TextArea.CaretIndex = caretOffset;
             }
+
+            if (notifyOfUserEdit)
+            {
+                this.UserEditComplete?.Invoke(this, new UserEditAppliedEventArgs(oldValue, this.Value));
+            }
+        }
+
+        public bool PerformTextUpdate ()
+        {
+            var binding = BindingOperations.GetBindingExpression(this.PART_TextArea, TextBox.TextProperty);
+            if (binding != null)
+            {
+                binding.UpdateSource();
+            }
+
+            object oldValue = m_textEditPreviousData;
+            m_textEditPreviousData = this.Value;
+            if (!this.Value.Equals(oldValue))
+            {
+                this.UserEditComplete?.Invoke(this, new UserEditAppliedEventArgs(oldValue, this.Value));
+                return true;
+            }
+
+            return false;
         }
 
         // ===========================[ Event Handlers ]===================================

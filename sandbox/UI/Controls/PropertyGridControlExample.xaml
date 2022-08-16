@@ -22,9 +22,9 @@
                         </DataTemplate>
                         <DataTemplate x:Key="Number" DataType="{x:Type ajprop:PropertyEditTarget}">
                             <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}"
-                                                            Minimum="{Binding Path=EditContext.Minimum, FallbackValue=0}"
-                                                            Maximum="{Binding Path=EditContext.Maximum, FallbackValue=100}"
-                                                            NumberTextAlignment="Left"/>
+                                                Minimum="{Binding Path=EditContext.Minimum, FallbackValue=0}"
+                                                Maximum="{Binding Path=EditContext.Maximum, FallbackValue=100}"
+                                                NumberTextAlignment="Left"/>
                         </DataTemplate>
                     </ajut:PropertyGridTemplateSelector.RegisteredTemplates>
                     <ajut:PropertyGridTemplateSelector.Default>
