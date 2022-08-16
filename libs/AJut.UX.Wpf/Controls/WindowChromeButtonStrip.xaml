@@ -87,7 +87,7 @@
         <Setter Property="MinimizeToolTip" Value="Minimize"/>
         <Setter Property="MaximizeWindowedToolTip" Value="Maximize"/>
         <Setter Property="RestoreMaximizedWindowToolTip" Value="Restore Down"/>
-        <Setter Property="EnterFullscreenToolTip" Value="Fullscreen"/>
+        <Setter Property="EnterFullscreenToolTip" Value="Enter Fullscreen (cover all, including the task bar)"/>
         <Setter Property="LeaveFullscreenToolTip" Value="Exit Fullscreen"/>
         <Setter Property="CloseToolTip" Value="Close"/>
         <Setter Property="Template">
@@ -105,7 +105,7 @@
                                 <Button Style="{StaticResource WindowChromeButton}"
                                         Content="{StaticResource ChromeMinimizeSymbol}"
                                         Visibility="{ajut:TemplateBinding Path=AllowMinimize, Converter={ajc:BooleanToVisibilityConverter}}"
-                                        WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Minimize"
+                                        WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=MinimizeToolTip, Mode=OneWay}"
                                         Command="{x:Static SystemCommands.MinimizeWindowCommand}"/>
                             </Grid>
                             <!-- ==========[ Restore/Maximize ]=============== -->
@@ -144,12 +144,12 @@
                                 <Button.Style>
                                     <Style TargetType="{x:Type Button}" BasedOn="{StaticResource WindowChromeButton}">
                                         <Setter Property="Content" Value="{StaticResource FullScreenSymbol}" />
-                                        <Setter Property="ToolTip" Value="Go to fullscreen (this will cover everything else including the task bar)"/>
+                                        <Setter Property="ToolTip" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=EnterFullscreenToolTip, Mode=OneWay}"/>
                                         <Setter Property="Margin" Value="0,0,7,0"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=(ajap:WindowXTA.IsFullscreen)}" Value="True">
                                                 <Setter Property="Content" Value="{StaticResource ExitFullScreenSymbol}" />
-                                                <Setter Property="ToolTip" Value="Exit fullscreen"/>
+                                                <Setter Property="ToolTip" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=LeaveFullscreenToolTip, Mode=OneWay}"/>
                                                 <Setter Property="Margin" Value="0,0,-3,0"/>
                                             </DataTrigger>
                                         </Style.Triggers>
@@ -170,7 +170,7 @@
                                 </Grid.Style>
                                 <Button x:Name="PART_ChromeCloseButton" Style="{StaticResource WindowChromeButton}" 
                                         Content="{StaticResource ChromeCloseSymbol}"
-                                        WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Close"
+                                        WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=CloseToolTip, Mode=OneWay}"
                                         Command="{x:Static SystemCommands.CloseWindowCommand}">
                                     <Button.Template>
                                         <ControlTemplate TargetType="{x:Type ButtonBase}">
