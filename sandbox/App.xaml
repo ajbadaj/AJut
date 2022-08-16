@@ -4,6 +4,14 @@
              xmlns:local="clr-namespace:TheAJutShowRoom"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+        <Style TargetType="{x:Type TabItem}">
+            <Setter Property="Margin" Value="5,0,-0.1,0"/>
+            <Setter Property="Padding" Value="10,7"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Margin" Value="0,0,-0.2,0"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </Application.Resources>
 </Application>
