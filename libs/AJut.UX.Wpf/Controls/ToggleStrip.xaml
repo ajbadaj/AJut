@@ -81,7 +81,7 @@
                                                     <Trigger Property="IsChecked" Value="True">
                                                         <Setter TargetName="RootBorder" Property="Background">
                                                             <Setter.Value>
-                                                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
+                                                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                                                                     <GradientStop Offset="0.00" Color="{Binding Path=Owner.SeparatorBrush, Converter={conv:BrushColorExtractionConverter}, Mode=OneWay, FallbackValue='#2BA2D8', TargetNullValue='#2BA2D8'}" />
                                                                     <GradientStop Offset="0.20" Color="{Binding Path=Owner.BackgroundPressedColorBase, Converter={local:ToggleStripItemPressedBackgroundColorAlphatizer}, Mode=OneWay, FallbackValue='#2BA2D8', TargetNullValue='#2BA2D8'}" />
                                                                     <GradientStop Offset="1.00" Color="{Binding Path=Owner.BackgroundPressedColorBase, Converter={local:ToggleStripItemPressedBackgroundColorAlphatizer}, Mode=OneWay, FallbackValue='#2BA2D8', TargetNullValue='#2BA2D8'}" />

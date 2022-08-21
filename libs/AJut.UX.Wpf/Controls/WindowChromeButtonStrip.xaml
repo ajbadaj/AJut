@@ -43,7 +43,7 @@
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="ChromeButtonBorder" Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonHoverBackground}"/>
                             <Setter TargetName="ChromeButtonBorder" Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonHoverBorder}" />
-                            <Setter TargetName="ChromeButtonBorder" Property="TextElement.Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonGlyphHoverForeground}" />
+                            <Setter TargetName="ChromeButtonBorder" Property="TextElement.Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonHoverGlyphForeground}" />
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="ChromeButtonBorder" Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonPressedBackground}"/>
