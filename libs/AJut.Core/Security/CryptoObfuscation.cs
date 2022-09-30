@@ -90,5 +90,10 @@
                 }
             }
         }
+
+        public static string Decrypt (ObfuscatedString toDecrypt, string key = null)
+        {
+            return CryptoObfuscation.Decrypt(toDecrypt.Active, key);
+        }
     }
 }
