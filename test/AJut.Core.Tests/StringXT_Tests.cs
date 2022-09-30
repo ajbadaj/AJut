@@ -7,6 +7,19 @@
     [TestClass]
     public class StringXT_Tests
     {
+        private static int g_hashcodeForTest = 696679732; // generated from string "This works well"
+
+        [TestMethod]
+        public void Extensions_GenerateStableHashCode_ProducesExpectedResults ()
+        {
+            Assert.AreEqual(g_hashcodeForTest, "This works well".GenerateStableHashCode());
+
+            // Silly but still, should be fast and easy to verify
+            Assert.AreNotEqual(g_hashcodeForTest, "this works well".GenerateStableHashCode());
+            Assert.AreNotEqual(g_hashcodeForTest, "Txis works well".GenerateStableHashCode());
+            Assert.AreNotEqual(g_hashcodeForTest, "Thisworkswell".GenerateStableHashCode());
+        }
+
         [TestMethod]
         public void Extensions_Replace_ProducesExpectedResults()
         {

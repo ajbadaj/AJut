@@ -98,6 +98,43 @@
         }
 
         /// <summary>
+        /// Generate a stable integer hashcode (will persist between runs, though will differ between 32bit and 64bit process runs) for a string - this does not make any security considerations!
+        /// </summary>
+        /// <param name="source">The source string</param>
+        /// <returns>A stable hashcode integer of the string</returns>
+        /// <remarks>
+        /// Adapted from dotnet source, found here: https://referencesource.microsoft.com/#mscorlib/system/string.cs,0a17bbac4851d0d4
+        /// </remarks>
+        public static int GenerateStableHashCode (this string source)
+        {
+            int hash1;
+            if (Environment.Is64BitProcess)
+            {
+                hash1 = (5381 << 16) + 5381;
+            }
+            else
+            {
+                hash1 = 5381;
+            }
+            int hash2 = hash1;
+
+            for (int index = 0; index < source.Length && source[index] != '\0'; index += 2)
+            {
+                hash1 = ((hash1 << 5) + hash1) ^ source[index];
+                if (index == source.Length - 1 || source[index + 1] == '\0')
+                {
+                    break;
+                }
+
+
+                hash2 = ((hash2 << 5) + hash2) ^ source[index + 1];
+            }
+
+            return hash1 + (hash2 * 1566083941);
+        }
+
+
+        /// <summary>
         /// Best extension ever!   "{0} Sweet".ApplyFormatArgs("source is");
         /// Also takes proper safety precautions
         /// </summary>
