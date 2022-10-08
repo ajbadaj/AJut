@@ -18,8 +18,7 @@
                         <DockPanel>
                             <ctrls:StackNavActiveHeaderPresenter DockPanel.Dock="Top" Navigator="{Binding ElementName=Self, Path=Navigator}"/>
                             <ctrls:StackNavActiveDrawerPresenter DockPanel.Dock="Left" Navigator="{Binding ElementName=Self, Path=Navigator}" Width="{TemplateBinding FixedDrawerWidth}"/>
-                            <ctrls:StackNavActiveContentPresenter Navigator="{Binding ElementName=Self, Path=Navigator}"
-                                                                  BorderBrush="Black" BorderThickness="1"/>
+                            <ctrls:StackNavActiveContentPresenter Navigator="{Binding ElementName=Self, Path=Navigator}"/>
                         </DockPanel>
                     </Border>
                 </ControlTemplate>
