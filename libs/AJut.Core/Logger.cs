@@ -20,7 +20,7 @@
         private volatile bool m_shouldLogToConsole;
         private volatile bool m_shouldLogToTrace;
         private volatile bool m_isEnabled = true;
-        private volatile bool m_flushToFileAfterEach;
+        private volatile bool m_flushToFileAfterEach = true;
         private volatile string m_dateTimeFormat = "MM.dd.yyy-hh.mm.ss";
 
         private readonly object m_logWritingLock = new object();
@@ -42,11 +42,10 @@
         {
             m_shouldLogToConsole = true;
             m_shouldLogToTrace = true;
-            m_flushToFileAfterEach = true;
         }
 
         /// <summary>
-        /// Indicates if calls to <see cref="Logger"/> should additionally direct to <see cref="Console"/>
+        /// Indicates if calls to <see cref="Logger"/> should additionally direct to <see cref="Console"/> (default to true in debug, false otherwise)
         /// </summary>
         public static bool ShouldLogToConsole
         {
@@ -55,7 +54,7 @@
         }
 
         /// <summary>
-        /// Indicates if calls to <see cref="Logger"/> should additionally direct to <see cref="Trace"/>
+        /// Indicates if calls to <see cref="Logger"/> should additionally direct to <see cref="Trace"/> (default to true in debug, false otherwise)
         /// </summary>
         public static bool ShouldLogToTrace
         {
@@ -64,7 +63,7 @@
         }
 
         /// <summary>
-        /// Indicates if the logger should force flush to file after each call (true) or leave it up manual calls to <see cref="ForceFlushToFile"/> (false).
+        /// Indicates if the logger should force flush to file after each call (true) or leave it up manual calls to <see cref="ForceFlushToFile"/> (false). Default is true.
         /// </summary>
         public static bool FlushToFileAfterEach
         {
@@ -80,6 +79,11 @@
             get => g_LoggerInstance.m_dateTimeFormat;
             set => g_LoggerInstance.m_dateTimeFormat = value;
         }
+
+        /// <summary>
+        /// Indicates if the logger is currently enabled (if false, log info/error calls to <see cref="Logger"/> do nothing).
+        /// </summary>
+        public static bool IsEnabled => g_LoggerInstance.m_isEnabled;
 
         /// <summary>
         /// Enables logging
@@ -313,7 +317,7 @@
 
         private class InfoLogType : LogType
         {
-            public override string GenerateOutputText (string message) => $"[Info] {DateTime.Now.ToString(Logger.DateTimeFormat)} |   {message}";
+            public override string GenerateOutputText (string message) => $"\r\n[Info] {DateTime.Now.ToString(Logger.DateTimeFormat)} |   {message}";
         }
 
         private class ErrorLogType : LogType

@@ -35,6 +35,7 @@
             CryptoObfuscation.Seed(projectName);
 
             TypeXT.RegisterSpecialDouble<GridLength>(gl => gl.Value);
+            Application.Current.Exit += _OnAppExit;
 
             if (setupLogging)
             {
@@ -76,7 +77,15 @@
                     g_blockReentrancy = false;
                 }
             }
+            void _OnAppExit (object sender, ExitEventArgs e)
+            {
+                if (Logger.IsEnabled)
+                {
+                    Logger.ForceFlushToFile();
+                }
+            }
         }
+
 
         /// <summary>
         /// Manually purge all logs that are outside of the given time span

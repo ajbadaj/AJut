@@ -20,7 +20,9 @@
                         </Grid.Effect>
                         <ContentControl Content="{TemplateBinding MessageContent}" ContentTemplate="{TemplateBinding MessageContentTemplate}" ContentTemplateSelector="{TemplateBinding MessageContentTemplateSelector}"
                                         FontSize="32" VerticalAlignment="Center" />
-                        <local:BusyWait HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                        <local:BusyWait HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                        Foreground="{TemplateBinding Foreground}"
+                                        TextElement.Foreground="{TemplateBinding Foreground}"/>
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>
