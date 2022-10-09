@@ -13,8 +13,21 @@
         ajutap:WindowXTA.FixMaximizeAsFullscreenIssue="True"
         ajutap:WindowXTA.MaximizedRootElementMargin="4,4"
         ajutap:WindowXTA.FullscreenRootElementMargin="4,3"
-        Background="#F9F9F9"
-        MinWidth="300" MinHeight="300">
+        Background="#F9F9F9" 
+        MinWidth="300" MinHeight="300" BorderThickness="2">
+    <Window.Style>
+        <Style TargetType="{x:Type Window}">
+            <Setter Property="BorderBrush" Value="#48C"/>
+            <Style.Triggers>
+                <Trigger Property="IsActive" Value="False">
+                    <Setter Property="BorderBrush" Value="#997B909E"/>
+                </Trigger>
+                <Trigger Property="ajut:WindowChromeButtonStrip.IsMouseOverClose" Value="True">
+                    <Setter Property="BorderBrush" Value="Red"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Style>
     <WindowChrome.WindowChrome>
         <WindowChrome CaptionHeight="40" ResizeBorderThickness="5"/>
     </WindowChrome.WindowChrome>
@@ -22,12 +35,16 @@
                           FixedDrawerWidth="260">
         <ajut:StackNavDisplay.Resources>
             <Style TargetType="{x:Type ajut:StackNavActiveHeaderPresenter}">
+                <Setter Property="BorderThickness" Value="0,0,0,1"/>
                 <Setter Property="Background" Value="#8CF"/>
                 <Setter Property="AdditionalRightSideDisplay">
                     <Setter.Value>
                         <ajut:WindowChromeButtonStrip Margin="2"/>
                     </Setter.Value>
                 </Setter>
+            </Style>
+            <Style TargetType="{x:Type ajut:StackNavBusyWaitOverlay}">
+                <Setter Property="Foreground" Value="Red"/>
             </Style>
             <Style TargetType="{x:Type ajut:StackNavActiveDrawerPresenter}">
                 <Setter Property="AdditionalBottomDisplay">
