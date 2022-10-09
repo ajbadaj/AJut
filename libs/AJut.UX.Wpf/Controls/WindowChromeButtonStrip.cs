@@ -7,10 +7,12 @@
     using System.Windows.Media;
     using AJut.UX.AttachedProperties;
     using DPUtils = AJut.UX.DPUtils<WindowChromeButtonStrip>;
+    using APUtils = AJut.UX.APUtils<WindowChromeButtonStrip>;
 
     [TemplatePart(Name = nameof(PART_ChromeCloseButton), Type = typeof(ButtonBase))]
     public class WindowChromeButtonStrip : Control
     {
+        private Window m_window;
         static WindowChromeButtonStrip ()
         {
             DefaultStyleKeyProperty.OverrideMetadata(typeof(WindowChromeButtonStrip), new FrameworkPropertyMetadata(typeof(WindowChromeButtonStrip)));
@@ -23,6 +25,25 @@
             this.CommandBindings.Add(new CommandBinding(SystemCommands.RestoreWindowCommand, OnRestoreWindow, OnCanRestoreWindow));
             this.CommandBindings.Add(new CommandBinding(WindowXTA.ToggleFullscreenCommand, OnToggleFullscreen, OnCanToggleFullscreen));
             this.CommandBindings.Add(new CommandBinding(SystemCommands.CloseWindowCommand, OnCloseWindow, OnCanCloseWindow));
+
+            this.Loaded += this.OnLoaded;
+        }
+
+
+        private static DependencyPropertyKey IsMouseOverClosePropertyKey = APUtils.RegisterReadOnly(GetIsMouseOverClose, SetIsMouseOverClose);
+        public static DependencyProperty IsMouseOverCloseProperty = IsMouseOverClosePropertyKey.DependencyProperty;
+        public static bool GetIsMouseOverClose (DependencyObject obj) => (bool)obj.GetValue(IsMouseOverCloseProperty);
+        internal static void SetIsMouseOverClose (DependencyObject obj, bool value) => obj.SetValue(IsMouseOverClosePropertyKey, value);
+
+
+        private void OnLoaded (object sender, RoutedEventArgs e)
+        {
+            if (m_window != null)
+            {
+                SetIsMouseOverClose(m_window, false);
+            }
+
+            m_window = Window.GetWindow(this);
         }
 
         private void OnCanMinimizeWindow (object sender, CanExecuteRoutedEventArgs e)
@@ -32,7 +53,7 @@
 
         private void OnMinimzeWindow (object sender, ExecutedRoutedEventArgs e)
         {
-            Window.GetWindow(this).WindowState = WindowState.Minimized;
+            m_window.WindowState = WindowState.Minimized;
         }
 
         private void OnCanMaximizeWindow (object sender, CanExecuteRoutedEventArgs e)
@@ -42,7 +63,7 @@
 
         private void OnMaximizeWindow (object sender, ExecutedRoutedEventArgs e)
         {
-            Window.GetWindow(this).WindowState = WindowState.Maximized;
+            m_window.WindowState = WindowState.Maximized;
         }
 
         private void OnCanRestoreWindow (object sender, CanExecuteRoutedEventArgs e)
@@ -52,7 +73,7 @@
 
         private void OnRestoreWindow (object sender, ExecutedRoutedEventArgs e)
         {
-            Window.GetWindow(this).WindowState = WindowState.Normal;
+            m_window.WindowState = WindowState.Normal;
         }
 
         private void OnCanToggleFullscreen (object sender, CanExecuteRoutedEventArgs e)
@@ -62,7 +83,7 @@
 
         private void OnToggleFullscreen (object sender, ExecutedRoutedEventArgs e)
         {
-            WindowXTA.ToggleIsFullscreen(Window.GetWindow(this));
+            WindowXTA.ToggleIsFullscreen(m_window);
         }
 
         private void OnCanCloseWindow (object sender, CanExecuteRoutedEventArgs e)
@@ -72,7 +93,7 @@
 
         private void OnCloseWindow (object sender, ExecutedRoutedEventArgs e)
         {
-            Window.GetWindow(this).Close();
+            m_window.Close();
         }
 
         public override void OnApplyTemplate ()
@@ -93,12 +114,12 @@
 
             void _OnChromeCloseButtonMouseEnter (object sender, MouseEventArgs e)
             {
-                this.IsMouseOverClose = true;
+                SetIsMouseOverClose(m_window, true);
             }
 
             void _OnChromeCloseButtonMouseLeave (object sender, MouseEventArgs e)
             {
-                this.IsMouseOverClose = false;
+                SetIsMouseOverClose(m_window, false);
             }
         }
 
@@ -278,14 +299,6 @@
         {
             get => (string)this.GetValue(CloseToolTipProperty);
             set => this.SetValue(CloseToolTipProperty, value);
-        }
-
-        private static readonly DependencyPropertyKey IsMouseOverClosePropertyKey = DPUtils.RegisterReadOnly(_ => _.IsMouseOverClose);
-        public static readonly DependencyProperty IsMouseOverCloseProperty = IsMouseOverClosePropertyKey.DependencyProperty;
-        public bool IsMouseOverClose
-        {
-            get => (bool)this.GetValue(IsMouseOverCloseProperty);
-            protected set => this.SetValue(IsMouseOverClosePropertyKey, value);
         }
     }
 }
