@@ -30,7 +30,7 @@
         }
 
 
-        private static DependencyPropertyKey IsMouseOverClosePropertyKey = APUtils.RegisterReadOnly(GetIsMouseOverClose, SetIsMouseOverClose);
+        private static DependencyPropertyKey IsMouseOverClosePropertyKey = APUtils.RegisterReadOnly(GetIsMouseOverClose, SetIsMouseOverClose, new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.Inherits));
         public static DependencyProperty IsMouseOverCloseProperty = IsMouseOverClosePropertyKey.DependencyProperty;
         public static bool GetIsMouseOverClose (DependencyObject obj) => (bool)obj.GetValue(IsMouseOverCloseProperty);
         internal static void SetIsMouseOverClose (DependencyObject obj, bool value) => obj.SetValue(IsMouseOverClosePropertyKey, value);
