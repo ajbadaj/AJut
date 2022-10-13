@@ -7,11 +7,11 @@
                     xmlns:docking="clr-namespace:AJut.UX.Docking"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
-    <sys:String x:Key="CaretLeft"  >&#xEDD9;</sys:String>
-    <sys:String x:Key="CaretTop"   >&#xEDDB;</sys:String>
-    <sys:String x:Key="CaretRight" >&#xEDDA;</sys:String>
-    <sys:String x:Key="CaretBottom">&#xEDDC;</sys:String>
-    <sys:String x:Key="AddIcon"    >&#xF8AA;</sys:String>
+    <sys:String x:Key="AJut_Symbol_CaretLeft"  >&#xEDD9;</sys:String>
+    <sys:String x:Key="AJut_Symbol_CaretTop"   >&#xEDDB;</sys:String>
+    <sys:String x:Key="AJut_Symbol_CaretRight" >&#xEDDA;</sys:String>
+    <sys:String x:Key="AJut_Symbol_CaretBottom">&#xEDDC;</sys:String>
+    <sys:String x:Key="AJut_Symbol_Add"    >&#xF8AA;</sys:String>
     
     <Style TargetType="{x:Type local:DockDropInsertionDriverWidget}">
         <Setter Property="Opacity" Value="0.85"/>

@@ -186,9 +186,9 @@
         }
 
         public static readonly DependencyProperty ButtonHoverBackgroundProperty = DPUtils.Register(_ => _.ButtonHoverBackground);
-        public string ButtonHoverBackground
+        public Brush ButtonHoverBackground
         {
-            get => (string)this.GetValue(ButtonHoverBackgroundProperty);
+            get => (Brush)this.GetValue(ButtonHoverBackgroundProperty);
             set => this.SetValue(ButtonHoverBackgroundProperty, value);
         }
 

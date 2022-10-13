@@ -2,6 +2,7 @@
 {
     using System.Windows;
     using System.Windows.Controls;
+    using System.Windows.Media;
     using AJut.UX;
     using DPUtils = AJut.UX.DPUtils<StackNavActiveHeaderPresenter>;
 
@@ -48,19 +49,37 @@
             set => this.SetValue(AdditionalRightSideDisplayProperty, value);
         }
 
-        public static readonly DependencyProperty DrawerNavButtonBaseStyleProperty = DPUtils.Register(_ => _.DrawerNavButtonBaseStyle);
-        public Style DrawerNavButtonBaseStyle
+
+        public static readonly DependencyProperty NavButtonForegroundProperty = DPUtils.Register(_ => _.NavButtonForeground);
+        public Brush NavButtonForeground
         {
-            get => (Style)this.GetValue(DrawerNavButtonBaseStyleProperty);
-            set => this.SetValue(DrawerNavButtonBaseStyleProperty, value);
+            get => (Brush)this.GetValue(NavButtonForegroundProperty);
+            set => this.SetValue(NavButtonForegroundProperty, value);
         }
 
-        public static readonly DependencyProperty BackButtonBaseStyleProperty = DPUtils.Register(_ => _.BackButtonBaseStyle);
-        public Style BackButtonBaseStyle
+
+        public static readonly DependencyProperty NavButtonForegroundHighlightProperty = DPUtils.Register(_ => _.NavButtonForegroundHighlight);
+        public Brush NavButtonForegroundHighlight
         {
-            get => (Style)this.GetValue(BackButtonBaseStyleProperty);
-            set => this.SetValue(BackButtonBaseStyleProperty, value);
+            get => (Brush)this.GetValue(NavButtonForegroundHighlightProperty);
+            set => this.SetValue(NavButtonForegroundHighlightProperty, value);
         }
+
+        public static readonly DependencyProperty NavButtonBackgroundHoverProperty = DPUtils.Register(_ => _.NavButtonBackgroundHover);
+        public Brush NavButtonBackgroundHover
+        {
+            get => (Brush)this.GetValue(NavButtonBackgroundHoverProperty);
+            set => this.SetValue(NavButtonBackgroundHoverProperty, value);
+        }
+
+        public static readonly DependencyProperty NavButtonBackgroundPressedProperty = DPUtils.Register(_ => _.NavButtonBackgroundPressed);
+        public Brush NavButtonBackgroundPressed
+        {
+            get => (Brush)this.GetValue(NavButtonBackgroundPressedProperty);
+            set => this.SetValue(NavButtonBackgroundPressedProperty, value);
+        }
+
+
 
         public static readonly DependencyProperty TitleTemplateProperty = DPUtils.Register(_ => _.TitleTemplate);
         public DataTemplate TitleTemplate

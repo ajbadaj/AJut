@@ -1,0 +1,1750 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ajut="clr-namespace:AJut.UX"
+                    xmlns:ajut_ctrls="clr-namespace:AJut.UX.Controls"
+                    xmlns:ajut_ap="clr-namespace:AJut.UX.AttachedProperties"
+                    xmlns:ajut_conv="clr-namespace:AJut.UX.Converters"
+                    xmlns:ajut_theme="clr-namespace:AJut.UX.Themeing"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    
+    <!--To fill out by user-->
+    <FontFamily x:Key="FontFamily_Default">Segoe UI</FontFamily>
+    
+    
+    <FontFamily x:Key="AJut_SymbolFont">Segoe MDL2 Assets</FontFamily>
+    <sys:String x:Key="AJut_Symbol_Check">&#xE73E;</sys:String>
+    <sys:String x:Key="AJut_Symbol_Dash">&#xE9AE;</sys:String>
+    <sys:String x:Key="AJut_Symbol_NeedsEdit">&#xEB7E;</sys:String>
+    <sys:String x:Key="AJut_Symbol_DownChevron"   >&#xE70D;</sys:String>
+    <Style TargetType="{x:Type Window}">
+        <Setter Property="TextElement.FontFamily" Value="{StaticResource FontFamily_Default}" />
+    </Style>
+
+    <Style x:Key="AJut_TXT_Default" TargetType="{x:Type TextBlock}">
+        <Setter Property="FontFamily" Value="{Binding RelativeSource={RelativeSource Self}, Path=(TextElement.FontFamily)}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
+    </Style>
+
+    <Style x:Key="AJut_TXT_Header" TargetType="{x:Type TextBlock}">
+        <Setter Property="FontWeight" Value="Thin"/>
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
+        <Setter Property="FontFamily" Value="Century Gothic"/>
+    </Style>
+
+    <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource AJut_TXT_Default}"/>
+
+    <Style TargetType="{x:Type ajut_ctrls:EditableTextBlock}">
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
+    </Style>
+
+    <Style TargetType="{x:Type ajut_ctrls:NumericEditor}">
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_PopOutControlBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_TextBoxBorder}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_SymbolForeground}"/>
+        <Setter Property="Padding" Value="1"/>
+        <Setter Property="LabelPadding" Value="4"/>
+        <Setter Property="FontFamily" Value="Consolas"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_SymbolForegroundHighlight}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
+            </Trigger>
+            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_SymbolForegroundHighlight}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style TargetType="{x:Type ajut_ctrls:ToggleStrip}">
+        <Setter Property="BorderThickness" Value="5"/>
+        <Setter Property="ajut_ap:BorderXTA.CornerRadius" Value="2"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_OverlayBlockoutBackground}"/>
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_ListBackground}" />
+        <Setter Property="BackgroundPressedColorBase" Value="{DynamicResource AJut_Color_SecondaryHighlightBright}"/>
+        <Setter Property="BackgroundHover" Value="{DynamicResource AJut_Brush_SecondaryHighlight}" />
+        <Setter Property="BackgroundHoverOverPressed">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Offset="0.0" Color="{DynamicResource AJut_Color_SecondaryHighlightDark}" />
+                    <GradientStop Offset="0.3" Color="{DynamicResource AJut_Color_SecondaryHighlightBright}" />
+                    <GradientStop Offset="1" Color="{DynamicResource AJut_Color_SecondaryHighlightBright}" />
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="SeparatorThickness" Value="1"/>
+        <Setter Property="SeparatorBrush" Value="{DynamicResource AJut_Brush_OverlayBlockoutBackground}" />
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
+        <Setter Property="ForegroundHover" Value="{DynamicResource AJut_Brush_ImportantText}"/>
+        <Setter Property="ForegroundPressed" Value="{DynamicResource AJut_Brush_ImportantText}"/>
+    </Style>
+
+
+    <PathGeometry x:Key="AJut_Glyph_RightArrowDown" Figures="m 1.5822262 13.149315 c -0.5104897 -0.205966 -0.92816294 -0.88364 -0.92816294 -1.505871 0 -0.747823 0.41673204 -0.971472 1.22922564 -0.659657 0.7509982 0.288294 1.9081465 -0.165894 2.9742889 -1.1677221 L 6.6026364 8.1766679 4.9774932 6.4468079 C 3.94602 5.3488411 2.8595106 4.8733389 2.0032072 5.1451022 0.00772098 5.7784558 0.30315793 3.6844047 2.3649705 2.5809589 3.8795976 1.7703573 4.5397827 1.9764092 8.1195848 4.3770274 10.343622 5.8684842 12.268372 7.3746665 12.396809 7.7241016 12.525237 8.0735369 11.02162 9.5395199 9.0554204 10.981861 5.6864344 13.453213 3.7367396 14.018674 1.5822262 13.149315 Z M 1.3966051 8.0721009 c 0 -0.7647831 0.4866523 -1.1289737 1.2994289 -0.9724276 C 4.2611719 7.4010096 4.1624834 8.7188969 2.5496184 9.0546959 1.8768988 9.1948119 1.3966021 8.7853539 1.3966051 8.0721009 Z" FillRule="NonZero"/>
+    <PathGeometry x:Key="AJut_Glyph_DownArrowGlyph" Figures="m 1.9572636 1.6982037 c 1.0968071 0.3816158 2.9912883 0.6937946 4.2099563 0.6937946 1.2186747 0 3.1131525 -0.3122099 4.2099561 -0.6937946 1.520237 -0.52888 1.994191 -0.3604182 1.994191 0.7088214 0 1.7263056 -5.2220938 11.1251409 -6.1812262 11.1251409 C 4.1445438 11.057221 -2.0098302 0.43191585 1.9572636 1.6982037 Z" FillRule="NonZero"/>
+
+    <Style TargetType="{x:Type ajut_ctrls:FlatTreeListControl}">
+        <Setter Property="SelectionBrush" Value="{DynamicResource AJut_Brush_TreeSelection}"/>
+        <Setter Property="SelectionInactiveBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightDesat}"/>
+        <Setter Property="CollapsedElementGlyph" Value="{StaticResource AJut_Glyph_RightArrowDown}"/>
+        <Setter Property="ExpandedElementGlyph" Value="{StaticResource AJut_Glyph_DownArrowGlyph}"/>
+        <Setter Property="ExpandCollapseGlyphSize" Value="12"/>
+        <Setter Property="GlyphBrush" Value="{DynamicResource AJut_Brush_NormalText}"/>
+        <Setter Property="GlyphHighlightBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+    </Style>
+
+    <Style TargetType="{x:Type ajut_ctrls:PropertyGrid}">
+        <Setter Property="TextLabelStyle">
+            <Setter.Value>
+                <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource AJut_TXT_Default}">
+                    <Setter Property="FontStyle" Value="Italic" />
+                    <Setter Property="Opacity" Value="0.8" />
+                </Style>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="{x:Type ajut_ctrls:ColorEditIngressControl}">
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="HighlightBorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+        <Setter Property="PopupWidth" Value="275"/>
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_InnerPanelBackground}"/>
+    </Style>
+
+    <Style TargetType="{x:Type ajut_ctrls:ColorValueEditControl}">
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_InnerPanelBackground}"/>
+    </Style>
+
+    <Style TargetType="{x:Type ajut_ctrls:DockZone}">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="PanelBackground" Value="{DynamicResource AJut_Brush_PanelBackground}"/>
+        <Setter Property="PanelBorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="PanelBorderThickness" Value="1"/>
+        <Setter Property="PanelCornerRadius" Value="0,10,0,10"/>
+        <Setter Property="SeparatorBrush" Value="Transparent" />
+    </Style>
+
+    <Style TargetType="{x:Type ajut_ctrls:DockZoneSelectedHeaderControl}">
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="HeaderBackground" Value="{DynamicResource AJut_Brush_BannerBackground}"/>
+        <Setter Property="HeaderHighlightBackground" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+        <Setter Property="HeaderFocusedBackground" Value="{DynamicResource AJut_Brush_PrimaryHighlightDark}"/>
+
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_BannerForeground}"/>
+        <Setter Property="HeaderHighlightedForeground" Value="{DynamicResource AJut_Brush_HighlightText}"/>
+        <Setter Property="HeaderFocusedForeground" Value="{DynamicResource AJut_Brush_ImportantText}"/>
+
+        <Setter Property="FontSize" Value="18"/>
+    </Style>
+    <Style TargetType="{x:Type ajut_ctrls:DockZoneTabHeadersControl}">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="HeaderBackground" Value="{DynamicResource AJut_Brush_InnerPanelBackground}"/>
+        <Setter Property="HeaderSelectedBackground" Value="{DynamicResource AJut_Brush_PanelBackground}"/>
+        <Setter Property="HeaderHighlightBackground" Value="{DynamicResource AJut_Brush_PrimaryHighlightDesat}"/>
+        <Setter Property="HeaderBorder" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_HighContrastText}"/>
+        <Setter Property="TabPanelHeaderMargin" Value="8,-1,3,0"/>
+    </Style>
+
+    <Style TargetType="{x:Type ajut_ctrls:DockDropInsertionDriverWidget}">
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_InnerPanelBackground}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="GlyphBrush" Value="{DynamicResource AJut_Brush_TitleBarForeground}"/>
+        <Setter Property="GlyphBorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+
+        <Setter Property="BackgroundHighlighted" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+        <Setter Property="GlyphHighlightedBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightDark}"/>
+        <Setter Property="GlyphHighlightedBorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightDesat}"/>
+    </Style>
+
+    <Style TargetType="{x:Type ajut_ctrls:WindowChromeButtonStrip}">
+        <Setter Property="ButtonPadding" Value="12" />
+        <Setter Property="ButtonGlyphFontSize" Value="10" />
+        <Setter Property="ButtonBorder" Value="Transparent"/>
+        <Setter Property="ButtonBackground" Value="#01000000"/>
+        <Setter Property="ButtonGlyphForeground" Value="{DynamicResource AJut_Brush_TitleBarForeground}"/>
+        <Setter Property="ButtonCornerRadius" Value="0,0,3,3"/>
+
+        <Setter Property="ButtonHoverBackground" Value="{DynamicResource AJut_Brush_ChromeButtonHover}"/>
+        <Setter Property="ButtonHoverBorder" Value="#C000"/>
+        <Setter Property="ButtonHoverGlyphForeground" Value="{DynamicResource AJut_Brush_TitleBarForegroundImportant}"/>
+
+        <Setter Property="ButtonPressedBackground" Value="{DynamicResource AJut_Brush_ChromeButtonPressed}"/>
+        <Setter Property="ButtonPressedBorder" Value="#3FFF"/>
+        <Setter Property="ButtonPressedGlyphForeground" Value="{DynamicResource AJut_Brush_TitleBarForegroundImportant}"/>
+
+        <Setter Property="ButtonBorder" Value="Transparent"/>
+        <Setter Property="ButtonHoverBorder" Value="#C000"/>
+        <Setter Property="ButtonPressedBorder" Value="#3FFF"/>
+        <Setter Property="CloseButtonHoverBorder" Value="#5FFF"/>
+
+        <!--Special case for close-->
+        <Setter Property="CloseButtonHoverGlyphForeground" Value="#DDD"/>
+        <Setter Property="CloseButtonHoverBackground" Value="{DynamicResource AJut_Brush_ChromeCloseButtonHighlight}"/>
+        <Setter Property="CloseButtonHoverBorder" Value="#5FFF"/>
+    </Style>
+
+    <Style TargetType="{x:Type ajut_ctrls:PopupMenuButton}">
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_PopupBackground}"/>
+    </Style>
+
+    <Style TargetType="{x:Type ajut_ctrls:StackNavActiveHeaderPresenter}">
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_TitleBarBackground}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_TitleBarForeground}"/>
+        <Setter Property="NavButtonForeground" Value="{DynamicResource AJut_Brush_TitleBarForeground}"/>
+        <Setter Property="NavButtonForegroundHighlight" Value="{DynamicResource AJut_Brush_TitleBarForegroundImportant}"/>
+        <Setter Property="NavButtonBackgroundHover" Value="{DynamicResource AJut_Brush_PrimaryHighlightDark}"/>
+        <Setter Property="NavButtonBackgroundPressed" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+    </Style>
+
+    <Style TargetType="{x:Type ajut_ctrls:StackNavActiveDrawerPresenter}">
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_DrawerBackground}"/>
+    </Style>
+
+    <Style TargetType="{x:Type TextBlock}" x:Key="AJut_SymbolText">
+        <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+        <Setter Property="FontSize" Value="20"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_SymbolForeground}"/>
+        <Setter Property="Opacity" Value="0.7"/>
+    </Style>
+
+    <Style TargetType="{x:Type ButtonBase}" x:Key="AJut_Style_SymbolButtonBase">
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_SymbolForeground}"/>
+        <Setter Property="Padding" Value="9" />
+        <Setter Property="FontSize" Value="22"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Background" Value="#01000000"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ButtonBase}">
+                    <Border Background="{TemplateBinding Background}" CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}"
+                            BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}">
+                        <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}"
+                                          Margin="{TemplateBinding Padding}"
+                                          VerticalAlignment="Center"
+                                          HorizontalAlignment="Center">
+                            <ContentPresenter.Resources>
+                                <Style TargetType="{x:Type TextBlock}">
+                                    <Setter Property="Foreground" Value="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType={x:Type ButtonBase}}}"/>
+                                </Style>
+                            </ContentPresenter.Resources>
+                        </ContentPresenter>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_SymbolForegroundHighlight}"/>
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Opacity" Value="0.3"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_PrimaryHighlightBright}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style TargetType="{x:Type ButtonBase}" x:Key="AJut_Style_SymbolButton" BasedOn="{StaticResource AJut_Style_SymbolButtonBase}">
+        <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ButtonBase}">
+                    <Border Background="{TemplateBinding Background}" CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}"
+                            BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}">
+                        <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}"
+                                          TextElement.FontFamily="Segoe MDL2 Assets"
+                                          Margin="{TemplateBinding Padding}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}">
+                            <ContentPresenter.Resources>
+                                <Style TargetType="{x:Type TextBlock}">
+                                    <Setter Property="Foreground" Value="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType={x:Type ButtonBase}}}"/>
+                                </Style>
+                            </ContentPresenter.Resources>
+                        </ContentPresenter>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="{x:Type ToggleButton}" x:Key="AJut_Style_SymbolToggleButton" BasedOn="{StaticResource AJut_Style_SymbolButton}">
+        <Style.Triggers>
+            <Trigger Property="IsChecked" Value="True">
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_PrimaryHighlightDark}"/>
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_SymbolForegroundHighlight}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style TargetType="{x:Type Hyperlink}">
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_HyperLinkNormal}"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_HyperLinkHover}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="AJut_Style_ButtonBase" TargetType="{x:Type ButtonBase}">
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_ControlBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="TextElement.Foreground" Value="{DynamicResource AJut_Brush_NormalText}" />
+        <Setter Property="TextElement.FontFamily" Value="Segoe UI" />
+        <Setter Property="TextElement.FontWeight" Value="Thin" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ButtonBase}">
+                    <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                            Background="{TemplateBinding Background}">
+                        <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" Margin="{TemplateBinding Padding}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          TextElement.Foreground="{TemplateBinding Foreground}">
+                            <ContentPresenter.Resources>
+                                <Style TargetType="{x:Type TextBlock}">
+                                    <Setter Property="Foreground" Value="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType={x:Type ButtonBase}}}"/>
+                                </Style>
+                            </ContentPresenter.Resources>
+                        </ContentPresenter>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_ControlBackgroundHover}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommonHover}"/>
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_HighlightText}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Opacity" Value="0.3"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource AJut_Style_ButtonBase}"/>
+    <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource AJut_Style_ButtonBase}">
+        <Style.Triggers>
+            <Trigger Property="IsChecked" Value="True">
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommonPress}"/>
+                <Setter Property="TextElement.Foreground" Value="{DynamicResource AJut_Brush_HighContrastText}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style TargetType="{x:Type ListBoxItem}">
+        <Setter Property="TextElement.FontFamily" Value="Segoe UI" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                    <Border Background="{TemplateBinding Background}" BorderBrush="{DynamicResource AJut_Brush_BorderCommon}">
+                        <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                            <DockPanel>
+                                <Grid DockPanel.Dock="Left" Background="{TemplateBinding BorderBrush}" Width="10"/>
+                                <ContentPresenter Content="{Binding}" 
+                                                  ContentTemplate="{Binding RelativeSource={RelativeSource AncestorType=ListBox}, Path=ItemTemplate}" 
+                                                  ContentTemplateSelector="{Binding RelativeSource={RelativeSource AncestorType=ListBox}, Path=ItemTemplateSelector}" 
+                                                  Margin="{TemplateBinding Padding}"
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            </DockPanel>
+                        </Border>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ListSelection}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+    <Style TargetType="{x:Type ListBox}">
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_ListBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ListBorder}" />
+    </Style>
+
+    <Style TargetType="{x:Type TabControl}">
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_PanelBackground}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+    </Style>
+    <Style TargetType="{x:Type TabItem}">
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_PanelBackground}" />
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="ajut_ap:BorderXTA.CornerRadius" Value="0"/>
+        <Setter Property="BorderThickness" Value="1,1,0,0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type TabItem}">
+                    <Border x:Name="BorderRoot" 
+                            BorderBrush="{TemplateBinding BorderBrush}" 
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}"
+                            RenderTransformOrigin="1,1">
+                        <Border x:Name="SelectionIndicator" BorderBrush="{DynamicResource AJut_Brush_PrimaryHighlight}" Margin="2">
+                            <ContentPresenter Content="{TemplateBinding Header}" 
+                                              ContentTemplate="{TemplateBinding HeaderTemplate}" 
+                                              ContentTemplateSelector="{TemplateBinding HeaderTemplateSelector}" 
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              Margin="{TemplateBinding Padding}">
+                                <ContentPresenter.Resources>
+                                    <Style TargetType="{x:Type TextBlock}">
+                                        <Setter Property="Foreground" Value="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType={x:Type TabItem}}}"/>
+                                    </Style>
+                                </ContentPresenter.Resources>
+                            </ContentPresenter>
+                        </Border>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <!-- ========================================[ Is Selected: True ]======================================== -->
+                        <!-- Tab strip placement: Left -->
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="True" />
+                                <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabControl}}, Path=TabStripPlacement}" Value="Left" />
+                            </MultiDataTrigger.Conditions>
+                            <MultiDataTrigger.Setters>
+                                <Setter TargetName="BorderRoot" Property="BorderThickness" Value="1,1,0,1" />
+                                <Setter TargetName="BorderRoot" Property="Margin" Value="-1,-1,-2,0" />
+                                <Setter TargetName="SelectionIndicator" Property="BorderThickness" Value="3,0,0,0" />
+                            </MultiDataTrigger.Setters>
+                        </MultiDataTrigger>
+                        <!-- Tab strip placement: Top -->
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="True" />
+                                <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabControl}}, Path=TabStripPlacement}" Value="Top" />
+                            </MultiDataTrigger.Conditions>
+                            <MultiDataTrigger.Setters>
+                                <Setter TargetName="BorderRoot" Property="BorderThickness" Value="1,1,1,0" />
+                                <Setter TargetName="BorderRoot" Property="Margin" Value="-1,-1,0,-2" />
+                                <Setter TargetName="SelectionIndicator" Property="BorderThickness" Value="0,3,0,0" />
+                            </MultiDataTrigger.Setters>
+                        </MultiDataTrigger>
+                        <!-- Tab strip placement: Right -->
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="True" />
+                                <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabControl}}, Path=TabStripPlacement}" Value="Right" />
+                            </MultiDataTrigger.Conditions>
+                            <MultiDataTrigger.Setters>
+                                <Setter TargetName="BorderRoot" Property="BorderThickness" Value="0,1,1,1" />
+                                <Setter TargetName="BorderRoot" Property="Margin" Value="-1,-1,-1,0" />
+                                <Setter TargetName="SelectionIndicator" Property="BorderThickness" Value="0,0,3,0" />
+                            </MultiDataTrigger.Setters>
+                        </MultiDataTrigger>
+                        <!-- Tab strip placement: Bottom -->
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="True" />
+                                <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabControl}}, Path=TabStripPlacement}" Value="Bottom" />
+                            </MultiDataTrigger.Conditions>
+                            <MultiDataTrigger.Setters>
+                                <Setter TargetName="BorderRoot" Property="BorderThickness" Value="1,0,1,1" />
+                                <Setter TargetName="BorderRoot" Property="Margin" Value="0,-1,-1,-1" />
+                                <Setter TargetName="SelectionIndicator" Property="BorderThickness" Value="0,0,0,3" />
+                            </MultiDataTrigger.Setters>
+                        </MultiDataTrigger>
+
+                        <!-- ========================================[ Is Selected: False ]======================================== -->
+                        <!-- Tab strip placement: Left -->
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="False" />
+                                <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabControl}}, Path=TabStripPlacement}" Value="Left" />
+                            </MultiDataTrigger.Conditions>
+                            <MultiDataTrigger.Setters>
+                                <Setter TargetName="BorderRoot" Property="Margin" Value="3,-1,0,0" />
+                            </MultiDataTrigger.Setters>
+                        </MultiDataTrigger>
+                        <!-- Tab strip placement: Top -->
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="False" />
+                                <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabControl}}, Path=TabStripPlacement}" Value="Top" />
+                            </MultiDataTrigger.Conditions>
+                            <MultiDataTrigger.Setters>
+                                <Setter TargetName="BorderRoot" Property="Margin" Value="-1,3,0,0" />
+                            </MultiDataTrigger.Setters>
+                        </MultiDataTrigger>
+                        <!-- Tab strip placement: Right -->
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="False" />
+                                <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabControl}}, Path=TabStripPlacement}" Value="Right" />
+                            </MultiDataTrigger.Conditions>
+                            <MultiDataTrigger.Setters>
+                                <Setter TargetName="BorderRoot" Property="Margin" Value="0,-1,3,0" />
+                            </MultiDataTrigger.Setters>
+                        </MultiDataTrigger>
+                        <!-- Tab strip placement: Bottom -->
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsSelected}" Value="False" />
+                                <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabControl}}, Path=TabStripPlacement}" Value="Bottom" />
+                            </MultiDataTrigger.Conditions>
+                            <MultiDataTrigger.Setters>
+                                <Setter TargetName="BorderRoot" Property="Margin" Value="0,0,-1,3" />
+                            </MultiDataTrigger.Setters>
+                        </MultiDataTrigger>
+                        <!--<Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="BorderRoot" Property="BorderThickness" Value="1,4,1,0" />
+                            <Setter TargetName="BorderRoot" Property="Margin" Value="0,-3,0,-2" />
+                            <Setter TargetName="BorderRoot" Property="CornerRadius" Value="0,0,0,0" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="False">
+                            <Setter TargetName="BorderRoot" Property="Margin" Value="0,2,0,0" />
+                            <Setter TargetName="BorderRoot" Property="CornerRadius" Value="0" />
+                            <Setter TargetName="BorderRoot" Property="Opacity" Value="0.5" />
+                        </Trigger>-->
+                        <Trigger Property="IsSelected" Value="False">
+                            <Setter TargetName="BorderRoot" Property="Opacity" Value="0.6" />
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True" />
+                                <Condition Property="IsSelected" Value="False" />
+                            </MultiTrigger.Conditions>
+                            <MultiTrigger.Setters>
+                                <Setter TargetName="BorderRoot" Property="Opacity" Value="1" />
+                            </MultiTrigger.Setters>
+                        </MultiTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType=TabControl}, Path=Background}" />
+            </Trigger>
+            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabControl}}, Path=TabStripPlacement}" Value="Left">
+                <Setter Property="BorderThickness" Value="1,1,0,1"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabControl}}, Path=TabStripPlacement}" Value="Right">
+                <Setter Property="BorderThickness" Value="0,1,1,1"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabControl}}, Path=TabStripPlacement}" Value="Bottom">
+                <Setter Property="BorderThickness" Value="1,0,1,1"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style TargetType="{x:Type TextBox}">
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_TextBoxBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_TextBoxBorder}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_InteractiveTextUnfocused}" />
+        <Setter Property="IsEnabled" Value="{Binding Path=(ajut_ap:Edit.IsEditable)}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type TextBox}">
+                    <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}">
+                        <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
+            </Trigger>
+            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_InteractiveText}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style TargetType="{x:Type PasswordBox}">
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_TextBoxBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_TextBoxBorder}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_InteractiveTextUnfocused}" />
+        <Setter Property="CaretBrush" Value="{DynamicResource AJut_Brush_InteractiveText}" />
+        <Setter Property="IsEnabled" Value="{Binding Path=(ajut_ap:Edit.IsEditable)}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type PasswordBox}">
+                    <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}">
+                        <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
+            </Trigger>
+            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_InteractiveText}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style TargetType="{x:Type ComboBox}">
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_PopOutControlBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_TextBoxBorder}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_InteractiveTextUnfocused}" />
+        <Setter Property="Height" Value="26"/>
+        <Setter Property="IsReadOnly" Value="{Binding Path=(ajut_ap:Edit.IsReadOnly)}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ComboBox}">
+                    <Grid>
+                        <Popup x:Name="PART_Popup" IsOpen="{TemplateBinding IsDropDownOpen}" 
+                               PlacementTarget="{Binding ElementName=MainButton}" Placement="Bottom" HorizontalOffset="3"
+                               AllowsTransparency="True">
+                            <Grid>
+                                <Border BorderBrush="Black" BorderThickness="0,0,4,4" Margin="10,5,0,0" Opacity="0.5">
+                                    <Border.Effect>
+                                        <BlurEffect Radius="4"/>
+                                    </Border.Effect>
+                                </Border>
+                                <Border Margin="5,0,3,3" Width="{Binding ElementName=MainButton, Path=ActualWidth}"
+                                        MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                                        BorderThickness="1,0,1,1"
+                                        BorderBrush="{DynamicResource AJut_Brush_ListSelection}"
+                                        Background="{DynamicResource AJut_Brush_InnerPanelBackground}">
+                                    <ScrollViewer SnapsToDevicePixels="True">
+                                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained" />
+                                    </ScrollViewer>
+                                </Border>
+                            </Grid>
+                            <!--<ScrollViewer MaxHeight="300">
+                                <ItemsPresenter x:Name="itemsPresenter"/>
+                            </ScrollViewer>-->
+                        </Popup>
+                        <ToggleButton x:Name="MainButton" IsChecked="{ajut:TemplateBinding Path=IsDropDownOpen, Mode=TwoWay}"
+                                      Content="{TemplateBinding SelectedValue}"
+                                      ContentTemplate="{TemplateBinding ItemTemplate}"
+                                      ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="{x:Type ToggleButton}">
+                                    <Border BorderBrush="{Binding RelativeSource={RelativeSource AncestorType=ComboBox}, Path=BorderBrush}" 
+                                            BorderThickness="{Binding RelativeSource={RelativeSource AncestorType=ComboBox}, Path=BorderThickness}" 
+                                            CornerRadius="{Binding RelativeSource={RelativeSource AncestorType=ComboBox}, Path=(ajut_ap:BorderXTA.CornerRadius)}"
+                                            Background="{Binding RelativeSource={RelativeSource AncestorType=ComboBox}, Path=Background}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition />
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Grid  Margin="6,3,3,3">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <ContentPresenter x:Name="ContentSite"
+                                                                  IsHitTestVisible="False"
+                                                                  Content="{Binding RelativeSource={RelativeSource AncestorType=ComboBox}, Path=SelectionBoxItem}"
+                                                                  ContentTemplate="{Binding RelativeSource={RelativeSource AncestorType=ComboBox}, Path=SelectionBoxItemTemplate}"
+                                                                  ContentTemplateSelector="{Binding RelativeSource={RelativeSource AncestorType=ComboBox}, Path=ItemTemplateSelector}"
+                                                                  Visibility="{Binding ElementName=TextEditorContainer, Path=IsVisible, Converter={ajut_conv:BooleanToVisibilityConverter TrueValue=Collapsed, FalseValue=Visible}}"/>
+                                                <Border x:Name="TextEditorContainer" BorderThickness="1,1,0,0" Margin="-3,-1,0,2" 
+                                                        Visibility="{Binding RelativeSource={RelativeSource AncestorType={x:Type ComboBox}}, Path=IsEditable, Converter={ajut_conv:BooleanToVisibilityConverter}}">
+                                                    <Border.Style>
+                                                        <Style TargetType="{x:Type Border}">
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding ElementName=PART_EditableTextBox, Path=IsEditing}" Value="True">
+                                                                    <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_TextBoxBorder}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Border.Style>
+                                                    <Grid>
+
+                                                        <ajut_ctrls:EditableTextBlock x:Name="PART_EditableTextBox" Grid.Column="0" BorderThickness="0"
+                                                                                  EditTextInstagatorAction="MouseOver" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                                                                  IsReadOnly="{Binding RelativeSource={RelativeSource AncestorType={x:Type ComboBox}}, Path=IsReadOnly}"
+                                                                                  Text="{Binding RelativeSource={RelativeSource AncestorType={x:Type ComboBox}}, Path=Text, Mode=TwoWay}">
+                                                        </ajut_ctrls:EditableTextBlock>
+                                                    </Grid>
+                                                </Border>
+                                                <Grid Grid.Column="1" ToolTip="Invalid selection entered, no match found">
+                                                    <Grid.Style>
+                                                        <Style TargetType="{x:Type Grid}">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                            <Style.Triggers>
+                                                                <MultiDataTrigger>
+                                                                    <MultiDataTrigger.Conditions>
+                                                                        <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type ComboBox}}, Path=IsEditable}" Value="True"/>
+                                                                        <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type ComboBox}}, Path=SelectedIndex}" Value="-1"/>
+                                                                        <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type ComboBox}}, Path=Text, Converter={ajut_conv:IsTextNullOrEmptyConverter}}" Value="False"/>
+                                                                    </MultiDataTrigger.Conditions>
+                                                                    <MultiDataTrigger.Setters>
+                                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                                    </MultiDataTrigger.Setters>
+                                                                </MultiDataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Grid.Style>
+                                                    <TextBlock VerticalAlignment="Center" FontSize="12" Margin="2,0" Foreground="{DynamicResource AJut_Brush_BadStuff}"
+                                                           Text="{DynamicResource AJut_Symbol_NeedsEdit}" Style="{StaticResource AJut_SymbolText}"/>
+                                                </Grid>
+
+                                            </Grid>
+                                            <TextBlock Grid.Column="1" Style="{StaticResource AJut_SymbolText}"
+                                                       Text="{DynamicResource AJut_Symbol_DownChevron}"
+                                                       FontSize="11" Margin="0,5,5,5" FontWeight="Heavy"
+                                                       VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
+            </Trigger>
+            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_InteractiveText}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style TargetType="{x:Type CheckBox}">
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_TextBoxBackground}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_TextBoxBorder}"/>
+        <Setter Property="Padding" Value="0,0,5,0"/>
+        <Setter Property="IsEnabled" Value="{Binding Path=(ajut_ap:Edit.IsEditable)}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type CheckBox}">
+                    <DockPanel IsHitTestVisible="True">
+                        <Grid Margin="{TemplateBinding Padding}" >
+                            <Border x:Name="CheckBorder" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"
+                                    Background="{TemplateBinding Background}"
+                                    DockPanel.Dock="Left" Height="12" Width="12"
+                                    ClipToBounds="False">
+                                <Grid Background="#01000000" ClipToBounds="False"/>
+                            </Border>
+                            <Grid>
+                                <!-- Blurred bkg effect -->
+                                <TextBlock x:Name="CheckBkg" Text="{DynamicResource AJut_Symbol_Check}" FontFamily="Segoe MDL2 Assets"
+                                           VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"
+                                           FontSize="16" Margin="0,-4,-3,0" Opacity="0.6"
+                                           Foreground="{DynamicResource AJut_Brush_PrimaryHighlightBright}"
+                                           Visibility="Collapsed">
+                                    <TextBlock.Effect>
+                                        <BlurEffect Radius="4"/>
+                                    </TextBlock.Effect>
+                                </TextBlock>
+
+                                <!-- Actual glyph -->
+                                <TextBlock x:Name="Check" Text="{DynamicResource AJut_Symbol_Check}" FontFamily="Segoe MDL2 Assets"
+                                           VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="Bold"
+                                           FontSize="16" Margin="0,-4,-3,0"/>
+                            </Grid>
+                        </Grid>
+                        <ContentPresenter VerticalAlignment="{TemplateBinding VerticalContentAlignment}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+                    </DockPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Check" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="False">
+                            <Setter TargetName="Check" Property="Visibility" Value="Hidden"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="{x:Null}">
+                            <Setter TargetName="CheckBkg" Property="Text" Value="{DynamicResource AJut_Symbol_Dash}"/>
+                            <Setter TargetName="Check" Property="Text" Value="{DynamicResource AJut_Symbol_Dash}"/>
+                            <Setter TargetName="CheckBorder" Property="BorderThickness" Value="2" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Check" Property="TextElement.Foreground" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                                <Condition Property="IsChecked" Value="False"/>
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="CheckBorder" Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+                        </MultiTrigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="CheckBkg" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="Check" Property="TextElement.Foreground" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_TextBoxBackground}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Geometry x:Key="SliderUpFacing">M0,6C0,6 5.5,0 5.5,0 5.5,0 11,6 11,6 11,6 11,18 11,18 11,18 0,18 0,18 0,18 0,6 0,6z</Geometry>
+    <Geometry x:Key="SliderDownFacing">M0,12C0,12 5.5,18 5.5,18 5.5,18 11,12 11,12 11,12 11,0 11,0 11,0 0,0 0,0 0,0 0,12 0,12z</Geometry>
+    <Geometry x:Key="SliderUpDownFacing">M0,0C0,0 11,0 11,0 11,0 11,18 11,18 11,18 0,18 0,18 0,18 0,0 0,0z</Geometry>
+
+    <Geometry x:Key="SliderLeftFacing">M6,11C6,11 0,5.5 0,5.5 0,5.5 6,0 6,0 6,0 18,0 18,0 18,0 18,11 18,11 18,11 6,11 6,11z</Geometry>
+    <Geometry x:Key="SliderRightFacing">M12,11C12,11 18,5.5 18,5.5 18,5.5 12,0 12,0 12,0 0,0 0,0 0,0 0,11 0,11 0,11 12,11 12,11z</Geometry>
+    <Geometry x:Key="SliderLeftRightFacing">M0.5,0.5L18.5,0.5 18.5,11.5 0.5,11.5z</Geometry>
+
+    <Style TargetType="{x:Type Slider}">
+        <Setter Property="IsEnabled" Value="{Binding Path=(ajut_ap:Edit.IsEditable)}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_TrackBackground}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_ControlBackground}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Slider}">
+                    <Border>
+                        <DockPanel x:Name="PART_Root">
+                            <TickBar x:Name="AnteriorTickBar" Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}"
+                                     IsDirectionReversed="{TemplateBinding IsDirectionReversed}"
+                                     FlowDirection="{TemplateBinding FlowDirection}"
+                                     TickFrequency="{TemplateBinding TickFrequency}" Ticks="{TemplateBinding Ticks}" 
+                                     Fill="{DynamicResource AJut_Brush_UnderstatedText}"
+                                     IsSelectionRangeEnabled="{TemplateBinding IsSelectionRangeEnabled}"
+                                     ReservedSpace="{Binding ElementName=PART_Thumb, Path=ActualWidth}"/>
+                            <TickBar x:Name="PosteriorTickBar" Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}"
+                                     FlowDirection="{TemplateBinding FlowDirection}"
+                                     IsDirectionReversed="{TemplateBinding IsDirectionReversed}" 
+                                     TickFrequency="{TemplateBinding TickFrequency}" Ticks="{TemplateBinding Ticks}"
+                                     Fill="{DynamicResource AJut_Brush_UnderstatedText}"
+                                     ReservedSpace="{Binding ElementName=PART_Thumb, Path=ActualWidth}"/>
+                            <Grid>
+                                <Border x:Name="TrackBackground"
+                                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                                    Background="{TemplateBinding Background}">
+                                    <Canvas x:Name="PART_SelectionRange"/>
+                                </Border>
+                                <Track x:Name="PART_Track">
+                                    <Track.DecreaseRepeatButton>
+                                        <RepeatButton Background="Transparent" BorderThickness="0" Command="{Binding Source={x:Static Slider.DecreaseLarge}}">
+                                            <RepeatButton.Template>
+                                                <ControlTemplate TargetType="{x:Type RepeatButton}">
+                                                    <Grid Background="#01000000"/>
+                                                </ControlTemplate>
+                                            </RepeatButton.Template>
+                                        </RepeatButton>
+                                    </Track.DecreaseRepeatButton>
+                                    <Track.IncreaseRepeatButton>
+                                        <RepeatButton Background="Transparent" BorderThickness="0" Command="{Binding Source={x:Static Slider.IncreaseLarge}}">
+                                            <RepeatButton.Template>
+                                                <ControlTemplate TargetType="{x:Type RepeatButton}">
+                                                    <Grid Background="#01000000"/>
+                                                </ControlTemplate>
+                                            </RepeatButton.Template>
+                                        </RepeatButton>
+                                    </Track.IncreaseRepeatButton>
+                                    <Track.Thumb>
+                                        <Thumb x:Name="PART_Thumb" DataContext="{DynamicResource SliderUpDownFacing}">
+                                            <Thumb.Style>
+                                                <Style TargetType="{x:Type Thumb}">
+                                                    <Setter Property="Template">
+                                                        <Setter.Value>
+                                                            <ControlTemplate TargetType="{x:Type Thumb}">
+                                                                <Path x:Name="ThumbDrawing" StrokeThickness="1" Stroke="{DynamicResource AJut_Brush_BorderCommon}"
+                                                                      Fill="{Binding RelativeSource={RelativeSource AncestorType={x:Type Slider}}, Path=Foreground}"
+                                                                      Data="{Binding .}">
+                                                                </Path>
+                                                                <ControlTemplate.Triggers>
+                                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                                        <Setter TargetName="ThumbDrawing" Property="Stroke" Value="{DynamicResource AJut_Brush_BorderCommonHover}"/>
+                                                                    </Trigger>
+                                                                    <Trigger Property="IsDragging" Value="True">
+                                                                        <Setter TargetName="ThumbDrawing" Property="Stroke" Value="{DynamicResource AJut_Brush_BorderCommonPress}"/>
+                                                                    </Trigger>
+                                                                </ControlTemplate.Triggers>
+                                                            </ControlTemplate>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Style>
+                                            </Thumb.Style>
+                                        </Thumb>
+                                    </Track.Thumb>
+                                </Track>
+                            </Grid>
+                        </DockPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <!-- Horizontal -->
+                        <Trigger Property="Orientation" Value="Horizontal">
+                            <Setter TargetName="AnteriorTickBar" Property="Placement" Value="Top"/>
+                            <Setter TargetName="AnteriorTickBar" Property="DockPanel.Dock" Value="Top"/>
+                            <Setter TargetName="AnteriorTickBar" Property="FlowDirection" Value="LeftToRight"/>
+                            <Setter TargetName="AnteriorTickBar" Property="Height" Value="5"/>
+
+                            <Setter TargetName="PosteriorTickBar" Property="Placement" Value="Bottom"/>
+                            <Setter TargetName="PosteriorTickBar" Property="DockPanel.Dock" Value="Bottom"/>
+                            <Setter TargetName="PosteriorTickBar" Property="FlowDirection" Value="LeftToRight"/>
+                            <Setter TargetName="PosteriorTickBar" Property="Height" Value="5"/>
+
+                            <Setter TargetName="PART_Root" Property="VerticalAlignment" Value="Center"/>
+                            <Setter TargetName="TrackBackground" Property="VerticalAlignment" Value="Center"/>
+                        </Trigger>
+
+                        <!-- Vertical -->
+                        <Trigger Property="Orientation" Value="Vertical">
+                            <Setter TargetName="AnteriorTickBar" Property="Placement" Value="Left"/>
+                            <Setter TargetName="AnteriorTickBar" Property="DockPanel.Dock" Value="Left"/>
+                            <Setter TargetName="AnteriorTickBar" Property="FlowDirection" Value="LeftToRight"/>
+                            <Setter TargetName="AnteriorTickBar" Property="Width" Value="5"/>
+
+                            <Setter TargetName="PosteriorTickBar" Property="Placement" Value="Right"/>
+                            <Setter TargetName="PosteriorTickBar" Property="DockPanel.Dock" Value="Right"/>
+                            <Setter TargetName="PosteriorTickBar" Property="FlowDirection" Value="LeftToRight"/>
+                            <Setter TargetName="PosteriorTickBar" Property="Width" Value="5"/>
+
+                            <Setter TargetName="PART_Root" Property="HorizontalAlignment" Value="Center"/>
+                            <Setter TargetName="TrackBackground" Property="HorizontalAlignment" Value="Center"/>
+                        </Trigger>
+
+                        <!-- None -->
+                        <Trigger Property="TickPlacement" Value="None">
+                            <Setter TargetName="AnteriorTickBar" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="PosteriorTickBar" Property="Visibility" Value="Collapsed"/>
+                        </Trigger>
+
+                        <!-- Vertical | Top/Left -->
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="TickPlacement" Value="TopLeft"/>
+                                <Condition Property="Orientation" Value="Vertical"/>
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="PosteriorTickBar" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="PART_Root" Property="HorizontalAlignment" Value="Left" />
+                            <Setter TargetName="PART_Thumb" Property="DataContext" Value="{StaticResource SliderLeftFacing}"/>
+                        </MultiTrigger>
+
+                        <!-- Vertical | Bottom/Right -->
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="TickPlacement" Value="BottomRight"/>
+                                <Condition Property="Orientation" Value="Vertical"/>
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="AnteriorTickBar" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="PART_Root" Property="HorizontalAlignment" Value="Right" />
+                            <Setter TargetName="PART_Thumb" Property="DataContext" Value="{StaticResource SliderRightFacing}"/>
+                        </MultiTrigger>
+
+                        <!-- Horizontal | Top/Left -->
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="TickPlacement" Value="TopLeft"/>
+                                <Condition Property="Orientation" Value="Horizontal"/>
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="PosteriorTickBar" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="PART_Root" Property="VerticalAlignment" Value="Top" />
+                            <Setter TargetName="PART_Thumb" Property="DataContext" Value="{StaticResource SliderUpFacing}"/>
+                        </MultiTrigger>
+
+                        <!-- Horizontal | Bottom/Right -->
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="TickPlacement" Value="BottomRight"/>
+                                <Condition Property="Orientation" Value="Horizontal"/>
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="AnteriorTickBar" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="PART_Root" Property="VerticalAlignment" Value="Bottom" />
+                            <Setter TargetName="PART_Thumb" Property="DataContext" Value="{StaticResource SliderDownFacing}"/>
+                        </MultiTrigger>
+
+                        <!-- Horizontal | Both -->
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="TickPlacement" Value="Both"/>
+                                <Condition Property="Orientation" Value="Horizontal"/>
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="PART_Thumb" Property="DataContext" Value="{StaticResource SliderUpDownFacing}"/>
+                        </MultiTrigger>
+
+                        <!-- Vertical | Both -->
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="TickPlacement" Value="Both"/>
+                                <Condition Property="Orientation" Value="Vertical"/>
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="PART_Thumb" Property="DataContext" Value="{StaticResource SliderLeftRightFacing}"/>
+                        </MultiTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="{x:Type Thumb}">
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_ControlBackground}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="ajut_ap:BorderXTA.CornerRadius" Value="0" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Thumb}">
+                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="AJut_Style_ButtonHoverRepeat" TargetType="{x:Type RepeatButton}">
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_BorderShadow}"/>
+        <Setter Property="Delay" Value="1" />
+        <Setter Property="Interval" Value="1" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type RepeatButton}">
+                    <Border BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}">
+                        <TextBlock Style="{DynamicResource AJut_SymbolText}" Text="{TemplateBinding Content}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="{x:Type Expander}">
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_InnerPanelBackground}" />
+        <Setter Property="ajut_ap:BorderXTA.CornerRadius" Value="8,8,0,0" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Expander}">
+                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" 
+                            CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}">
+                        <DockPanel Margin="{TemplateBinding Padding}">
+                            <ToggleButton x:Name="PART_Expander"
+                                          DockPanel.Dock="Top"
+                                          ajut_ap:BorderXTA.CornerRadius="3" FontSize="13" Padding="5"
+                                          IsChecked="{ajut:TemplateBinding Path=IsExpanded, Mode=TwoWay}"
+                                          Margin="5">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                                        <ContentPresenter />
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition />
+                                    </Grid.ColumnDefinitions>
+                                    <Border CornerRadius="4" 
+                                            VerticalAlignment="Center" BorderThickness="1,1,0,0"
+                                            Margin="0,0,5,0">
+                                        <Border.Style>
+                                            <Style TargetType="{x:Type Border}">
+                                                <Setter Property="TextElement.Foreground" Value="{DynamicResource AJut_Brush_SymbolForeground}" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ToggleButton}, Path=IsChecked}" Value="True">
+                                                        <Setter Property="Background" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
+                                                        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderShadow}"/>
+                                                        <Setter Property="TextElement.Foreground" Value="{DynamicResource AJut_Brush_SymbolForegroundPressed}" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ToggleButton}, Path=IsMouseOver}" Value="True">
+                                                        <Setter Property="Background" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
+                                                        <Setter Property="TextElement.Foreground" Value="{DynamicResource AJut_Brush_SymbolForegroundHighlight}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <TextBlock Grid.Column="0" Margin="3">
+                                            <TextBlock.Style>
+                                                <Style TargetType="{x:Type TextBlock}">
+                                                    <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type Border}}, Path=(TextElement.Foreground)}"/>
+                                                    <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+                                                    <Setter Property="Text" Value="{DynamicResource AJut_Symbol_RightChevron}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ToggleButton}, Path=IsChecked}" Value="True">
+                                                            <Setter Property="Text" Value="{DynamicResource AJut_Symbol_DownChevron}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </Border>
+                                    <ContentControl Grid.Column="1" Content="{TemplateBinding Header}" 
+                                                    ContentTemplate="{TemplateBinding HeaderTemplate}" 
+                                                    ContentTemplateSelector="{TemplateBinding HeaderTemplateSelector}" 
+                                                    ContentStringFormat="{TemplateBinding HeaderStringFormat}"
+                                                    VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                </Grid>
+                            </ToggleButton>
+                            <ContentControl Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" ContentTemplateSelector="{TemplateBinding ContentTemplateSelector}" ContentStringFormat="{TemplateBinding ContentStringFormat}"
+                                            Visibility="{ajut:TemplateBinding Path=IsExpanded, Converter={ajut_conv:BooleanToVisibilityConverter}}"/>
+                        </DockPanel>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="{x:Type ScrollBar}">
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="OverridesDefaultStyle" Value="True"/>
+        <Style.Triggers>
+            <!-- =========================================================[ Vertical ]========================================================= -->
+            <Trigger Property="Orientation" Value="Vertical">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ScrollBar}">
+                            <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1,0"
+                                    Opacity="{ajut:TemplateBinding Path=IsEnabled, Converter={ajut_conv:BooleanToValueConverter TrueValue=1.0, FalseValue=0.5}}">
+                                <Grid>
+                                    <Grid.Resources>
+                                        <Style TargetType="{x:Type RepeatButton}">
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="{x:Type RepeatButton}">
+                                                        <Border BorderBrush="{TemplateBinding BorderBrush}"
+                                                        Background="{TemplateBinding Background}"
+                                                        BorderThickness="{TemplateBinding BorderThickness}"/>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </Grid.Resources>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="{ajut:TemplateBinding Path=ViewportSize, Mode=TwoWay, Converter={ajut_conv:PercentageToGridLengthConverter}}"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <Grid Grid.RowSpan="3" Margin="1,18" Opacity="0.5">
+                                        <Grid.Background>
+                                            <LinearGradientBrush StartPoint="0,5" EndPoint="-4,8" MappingMode="Absolute" SpreadMethod="Reflect">
+                                                <GradientStop Offset="0.00" Color="{DynamicResource AJut_Color_BorderCommon}" />
+                                                <GradientStop Offset="0.10" Color="{DynamicResource AJut_Color_BorderCommon}" />
+                                                <GradientStop Offset="0.10" Color="{DynamicResource AJut_Color_BorderCommonTransparent}" />
+                                                <GradientStop Offset="0.90" Color="{DynamicResource AJut_Color_BorderCommonTransparent}" />
+                                                <GradientStop Offset="0.90" Color="{DynamicResource AJut_Color_BorderCommon}" />
+                                                <GradientStop Offset="1.00" Color="{DynamicResource AJut_Color_BorderCommon}" />
+                                            </LinearGradientBrush>
+                                        </Grid.Background>
+                                    </Grid>
+
+                                    <Grid Grid.Row="0" Margin="-1,0" Width="17" Height="17">
+                                        <RepeatButton x:Name="PART_LineUpButton"
+                                                      Command="{Binding Source={x:Static ScrollBar.LineUpCommand}}"
+                                                      Style="{DynamicResource AJut_Style_ButtonBase}"/>
+                                        <TextBlock Text="{DynamicResource AJut_Symbol_UpChevron}" IsHitTestVisible="False"
+                                                   FontFamily="Segoe MDL2 Assets" FontSize="8"
+                                                   VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    </Grid>
+
+                                    <Track x:Name="PART_Track" Grid.Row="1" IsDirectionReversed="True" Orientation="Vertical">
+                                        <Track.IncreaseRepeatButton>
+                                            <RepeatButton Command="{Binding Source={x:Static ScrollBar.LineDownCommand}}"
+                                                          Background="Transparent" BorderBrush="Transparent"/>
+                                        </Track.IncreaseRepeatButton>
+                                        <Track.DecreaseRepeatButton>
+                                            <RepeatButton Command="{Binding Source={x:Static ScrollBar.LineUpCommand}}"
+                                                          Background="Transparent" BorderBrush="Transparent"/>
+                                        </Track.DecreaseRepeatButton>
+                                        <Track.Thumb>
+                                            <Thumb Margin="-1,0">
+                                                <Thumb.Style>
+                                                    <Style TargetType="{x:Type Thumb}">
+                                                        <Setter Property="Background" Value="{DynamicResource AJut_Brush_ControlBackground}"/>
+                                                        <Setter Property="Template">
+                                                            <Setter.Value>
+                                                                <ControlTemplate TargetType="{x:Type Thumb}">
+                                                                    <Border BorderThickness="1,1,0,0" BorderBrush="#2FFF">
+                                                                        <Border BorderThickness="0,0,1,1" BorderBrush="#6000"
+                                                                                Background="{TemplateBinding Background}"/>
+                                                                    </Border>
+                                                                </ControlTemplate>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                        <Style.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter Property="Background" Value="{DynamicResource AJut_Brush_ControlBackgroundHover}"/>
+                                                            </Trigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Thumb.Style>
+                                            </Thumb>
+                                        </Track.Thumb>
+                                    </Track>
+
+                                    <Grid Grid.Row="2" Margin="-1,0" Width="17" Height="17">
+                                        <RepeatButton x:Name="PART_LineDownButton"
+                                                      Command="{Binding Source={x:Static ScrollBar.LineDownCommand}}"
+                                                      Style="{DynamicResource AJut_Style_ButtonBase}"/>
+                                        <TextBlock Text="{DynamicResource AJut_Symbol_DownChevron}" IsHitTestVisible="False"
+                                                   FontFamily="Segoe MDL2 Assets" FontSize="8"
+                                                   VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    </Grid>
+                                </Grid>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Trigger>
+            <!-- =========================================================[ Horizontal ]========================================================= -->
+            <Trigger Property="Orientation" Value="Horizontal">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ScrollBar}">
+                            <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1,0"
+                                    Opacity="{ajut:TemplateBinding Path=IsEnabled, Converter={ajut_conv:BooleanToValueConverter TrueValue=1.0, FalseValue=0.5}}">
+                                <Border.Style>
+                                    <Style TargetType="{x:Type Border}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{ajut:TemplateBinding Path=IsEnabled}" Value="False">
+                                                <Setter Property="Opacity" Value="0.5"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <Grid>
+                                    <Grid.Resources>
+                                        <Style TargetType="{x:Type RepeatButton}">
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="{x:Type RepeatButton}">
+                                                        <Border BorderBrush="{TemplateBinding BorderBrush}"
+                                                        Background="{TemplateBinding Background}"
+                                                        BorderThickness="{TemplateBinding BorderThickness}"/>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </Grid.Resources>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="{ajut:TemplateBinding Path=ViewportSize, Mode=TwoWay, Converter={ajut_conv:PercentageToGridLengthConverter}}"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid Grid.ColumnSpan="3" Margin="18,1" Opacity="0.5">
+                                        <Grid.Background>
+                                            <LinearGradientBrush StartPoint="5,0" EndPoint="8,-4" MappingMode="Absolute" SpreadMethod="Reflect">
+                                                <GradientStop Offset="0.00" Color="{DynamicResource AJut_Color_BorderCommon}" />
+                                                <GradientStop Offset="0.10" Color="{DynamicResource AJut_Color_BorderCommon}" />
+                                                <GradientStop Offset="0.10" Color="{DynamicResource AJut_Color_BorderCommonTransparent}" />
+                                                <GradientStop Offset="0.90" Color="{DynamicResource AJut_Color_BorderCommonTransparent}" />
+                                                <GradientStop Offset="0.90" Color="{DynamicResource AJut_Color_BorderCommon}" />
+                                                <GradientStop Offset="1.00" Color="{DynamicResource AJut_Color_BorderCommon}" />
+                                            </LinearGradientBrush>
+                                        </Grid.Background>
+                                    </Grid>
+                                    <Grid Grid.Column="0" Margin="0,-1" Width="17" Height="17">
+                                        <RepeatButton x:Name="PART_LineLeftButton"
+                                                      Command="{Binding Source={x:Static ScrollBar.LineLeftCommand}}"
+                                                      Style="{DynamicResource AJut_Style_ButtonBase}"/>
+                                        <TextBlock Text="{DynamicResource AJut_Symbol_LeftChevron}" IsHitTestVisible="False"
+                                                   FontFamily="Segoe MDL2 Assets" FontSize="8"
+                                                   VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    </Grid>
+
+                                    <Track x:Name="PART_Track" Grid.Column="1" IsDirectionReversed="False" Orientation="Horizontal">
+                                        <Track.IncreaseRepeatButton>
+                                            <RepeatButton Command="{Binding Source={x:Static ScrollBar.LineLeftCommand}}"
+                                                          Background="Transparent" BorderBrush="Transparent"/>
+                                        </Track.IncreaseRepeatButton>
+                                        <Track.DecreaseRepeatButton>
+                                            <RepeatButton Command="{Binding Source={x:Static ScrollBar.LineRightCommand}}"
+                                                          Background="Transparent" BorderBrush="Transparent"/>
+                                        </Track.DecreaseRepeatButton>
+                                        <Track.Thumb>
+                                            <Thumb Margin="-1,0">
+                                                <Thumb.Style>
+                                                    <Style TargetType="{x:Type Thumb}">
+                                                        <Setter Property="Background" Value="{DynamicResource AJut_Brush_ControlBackground}"/>
+                                                        <Setter Property="Template">
+                                                            <Setter.Value>
+                                                                <ControlTemplate TargetType="{x:Type Thumb}">
+                                                                    <Border BorderThickness="1,1,0,0" BorderBrush="#2FFF">
+                                                                        <Border BorderThickness="0,0,1,1" BorderBrush="#6000"
+                                                                                Background="{TemplateBinding Background}"/>
+                                                                    </Border>
+                                                                </ControlTemplate>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                        <Style.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter Property="Background" Value="{DynamicResource AJut_Brush_ControlBackgroundHover}"/>
+                                                            </Trigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Thumb.Style>
+                                            </Thumb>
+                                        </Track.Thumb>
+                                    </Track>
+
+                                    <Grid Grid.Column="2" Margin="-1,0" Width="17" Height="17">
+                                        <RepeatButton x:Name="PART_LineRightButton"
+                                                      Command="{Binding Source={x:Static ScrollBar.LineRightCommand}}"
+                                                      Style="{DynamicResource AJut_Style_ButtonBase}"/>
+                                        <TextBlock Text="{DynamicResource AJut_Symbol_RightChevron}" IsHitTestVisible="False"
+                                                   FontFamily="Segoe MDL2 Assets" FontSize="8"
+                                                   VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                    </Grid>
+                                </Grid>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Trigger>
+            <!--<Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommonHover}"/>
+            </Trigger>-->
+        </Style.Triggers>
+    </Style>
+
+    <BorderGapMaskConverter x:Key="GroupBoxHeaderMaskConverter"/>
+    <Style TargetType="{x:Type GroupBox}">
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}" />
+        <Setter Property="ajut_ap:BorderXTA.CornerRadius" Value="2" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type GroupBox}">
+                    <Grid>
+                        <Border Margin="0,7,0,0" BorderBrush="{DynamicResource AJut_Brush_BorderShadow}" BorderThickness="1"
+                                CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}">
+                            <Border.OpacityMask>
+                                <MultiBinding Converter="{StaticResource GroupBoxHeaderMaskConverter}" ConverterParameter="7">
+                                    <Binding ElementName="Header" Path="ActualWidth" />
+                                    <Binding RelativeSource="{RelativeSource Self}" Path="ActualWidth" />
+                                    <Binding RelativeSource="{RelativeSource Self}" Path="ActualHeight" />
+                                </MultiBinding>
+                            </Border.OpacityMask>
+                            <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"
+                                    CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}">
+                                <Border BorderBrush="{DynamicResource AJut_Brush_BorderShadow}" BorderThickness="1"
+                                        CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}" />
+                            </Border>
+                        </Border>
+                        <ContentPresenter Margin="5,10,5,5"/>
+                        <Grid x:Name="Header" Margin="10,0,0,0"  VerticalAlignment="Top" HorizontalAlignment="Left">
+                            <ContentControl Margin="5,0,5,0" Content="{TemplateBinding Header}" ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                            ContentTemplateSelector="{TemplateBinding HeaderTemplateSelector}"
+                                            VerticalAlignment="Top"/>
+                        </Grid>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="{x:Type ToolTip}" TargetType="ToolTip">
+        <Setter Property="OverridesDefaultStyle" Value="true" />
+        <Setter Property="HasDropShadow" Value="True" />
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_ToolTipBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightDesat}"/>
+        <Setter Property="MaxWidth" Value="420"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToolTip">
+                    <Border Name="Border" BorderThickness="1" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            MaxWidth="{TemplateBinding MaxWidth}">
+                        <ContentPresenter Margin="4" HorizontalAlignment="Left" VerticalAlignment="Top"
+                                          TextElement.FontFamily="Century Gothic"
+                                          TextElement.FontSize="14">
+                            <ContentPresenter.Resources>
+                                <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource AJut_TXT_Default}">
+                                    <Setter Property="TextWrapping" Value="WrapWithOverflow" />
+                                </Style>
+                            </ContentPresenter.Resources>
+                        </ContentPresenter>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="HasDropShadow" Value="true">
+                            <Setter TargetName="Border" Property="CornerRadius" Value="2" />
+                            <Setter TargetName="Border" Property="SnapsToDevicePixels" Value="true" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="{x:Type Border}">
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+    </Style>
+    <Style TargetType="{x:Type GridSplitter}">
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_MouseInteractionHighlight}"/>
+    </Style>
+
+    <Style TargetType="{x:Type ContextMenu}">
+        <Setter Property="BorderThickness" Value="5"/>
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_ListBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ListBorder}" />
+        <Setter Property="TextElement.FontFamily" Value="Segoe UI" />
+    </Style>
+
+    <Style TargetType="{x:Type Menu}">
+        <Setter Property="BorderThickness" Value="5"/>
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ListBorder}" />
+        <Setter Property="TextElement.FontFamily" Value="Segoe UI" />
+    </Style>
+
+    <Style x:Key="{x:Static MenuItem.SeparatorStyleKey}" TargetType="{x:Type Separator}">
+        <Setter Property="Height" Value="1" />
+        <Setter Property="Margin" Value="0,4,0,4" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Separator}">
+                    <Border BorderThickness="1" BorderBrush="{DynamicResource AJut_Brush_BorderCommon}"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- TopLevelHeader -->
+    <ControlTemplate x:Key="{x:Static MenuItem.TopLevelHeaderTemplateKey}" TargetType="{x:Type MenuItem}">
+        <Border x:Name="Border">
+            <Grid>
+                <ContentPresenter Margin="6,3,6,3"
+                                  ContentSource="Header"
+                                  RecognizesAccessKey="True" />
+                <Popup x:Name="Popup"
+                       Placement="Bottom"
+                       IsOpen="{TemplateBinding IsSubmenuOpen}"
+                       AllowsTransparency="True"
+                       Focusable="False"
+                       PopupAnimation="Fade">
+                    <Border x:Name="SubmenuBorder"
+                            SnapsToDevicePixels="True"
+                            BorderThickness="1"
+                            BorderBrush="{DynamicResource AJut_Brush_BorderCommon}"
+                            Background="{DynamicResource AJut_Brush_PopupBackground}"
+                            TextElement.Foreground="{DynamicResource AJut_Brush_NormalText}">
+                        <ScrollViewer CanContentScroll="True" Style="{StaticResource MenuScrollViewer}">
+                            <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
+                        </ScrollViewer>
+                    </Border>
+                </Popup>
+            </Grid>
+        </Border>
+        <ControlTemplate.Triggers>
+            <Trigger Property="IsSuspendingPopupAnimation" Value="true">
+                <Setter TargetName="Popup"
+                        Property="PopupAnimation"
+                        Value="None" />
+            </Trigger>
+            <Trigger Property="IsHighlighted" Value="true">
+                <Setter TargetName="Border" Property="BorderBrush" Value="Transparent" />
+                <Setter Property="Background" TargetName="Border" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+            </Trigger>
+            <Trigger SourceName="Popup" Property="AllowsTransparency" Value="True">
+                <Setter TargetName="SubmenuBorder" Property="CornerRadius" Value="0,0,4,4" />
+                <Setter TargetName="SubmenuBorder" Property="Padding" Value="0,0,0,3" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_UnderstatedText}"/>
+            </Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
+    <!-- TopLevelItem -->
+    <ControlTemplate x:Key="{x:Static MenuItem.TopLevelItemTemplateKey}" TargetType="{x:Type MenuItem}">
+        <Border x:Name="Border">
+            <Grid>
+                <ContentPresenter Margin="6,3,6,3"
+                                  ContentSource="Header"
+                                  RecognizesAccessKey="True" />
+            </Grid>
+        </Border>
+        <ControlTemplate.Triggers>
+            <Trigger Property="IsHighlighted" Value="true">
+                <Setter Property="Background" TargetName="Border" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_UnderstatedText}"/>
+            </Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
+    <!-- SubmenuItem -->
+    <ControlTemplate x:Key="{x:Static MenuItem.SubmenuItemTemplateKey}" TargetType="{x:Type MenuItem}">
+        <Border x:Name="Border" BorderThickness="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="Icon" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="Shortcut" />
+                    <ColumnDefinition Width="13" />
+                </Grid.ColumnDefinitions>
+                <ContentPresenter x:Name="Icon"
+                                  Margin="6,0,6,0"
+                                  VerticalAlignment="Center"
+                                  ContentSource="Icon" />
+                <Border x:Name="Check"
+                        Width="13"
+                        Height="13"
+                        Visibility="Collapsed"
+                        Margin="6,0,6,0"
+                        BorderThickness="1" BorderBrush="{DynamicResource AJut_Brush_BorderCommon}" 
+                        Background="{DynamicResource AJut_Brush_PanelBackground}"/>
+                <Path x:Name="CheckMark"
+                      Width="7"
+                      Height="7"
+                      Visibility="Hidden"
+                      SnapsToDevicePixels="False"
+                      StrokeThickness="2"
+                      Data="M 0 0 L 7 7 M 0 7 L 7 0"
+                      Stroke="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+
+                <ContentPresenter x:Name="HeaderHost"
+                                  Grid.Column="1"
+                                  ContentSource="Header"
+                                  RecognizesAccessKey="True" />
+                <TextBlock x:Name="InputGestureText"
+                           Grid.Column="2"
+                           Text="{TemplateBinding InputGestureText}"
+                           Margin="5,2,0,2"
+                           DockPanel.Dock="Right" />
+            </Grid>
+        </Border>
+        <ControlTemplate.Triggers>
+            <Trigger Property="ButtonBase.Command" Value="{x:Null}" />
+            <Trigger Property="Icon" Value="{x:Null}">
+                <Setter TargetName="Icon" Property="Visibility" Value="Hidden" />
+            </Trigger>
+            <Trigger Property="IsChecked" Value="true">
+                <Setter TargetName="CheckMark" Property="Visibility" Value="Visible" />
+            </Trigger>
+            <Trigger Property="IsCheckable" Value="true">
+                <Setter TargetName="Check" Property="Visibility" Value="Visible" />
+                <Setter TargetName="Icon" Property="Visibility" Value="Hidden" />
+            </Trigger>
+            <Trigger Property="IsHighlighted" Value="true">
+                <Setter Property="Background" TargetName="Border" Value="{DynamicResource AJut_Brush_PrimaryHighlightBright}"/>
+                <Setter Property="BorderBrush" TargetName="Border" Value="{DynamicResource AJut_Brush_BorderCommonHover}"/>
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_UnderstatedText}"/>
+            </Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
+    <ControlTemplate x:Key="{x:Static MenuItem.SubmenuHeaderTemplateKey}"
+                     TargetType="{x:Type MenuItem}">
+        <Border x:Name="Border" BorderThickness="1" Background="{DynamicResource AJut_Brush_PopupBackground}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="Icon" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="Shortcut" />
+                    <ColumnDefinition Width="13" />
+                </Grid.ColumnDefinitions>
+                <ContentPresenter x:Name="Icon"
+                                  Margin="6,0,6,0"
+                                  VerticalAlignment="Center"
+                                  ContentSource="Icon" />
+                <ContentPresenter x:Name="HeaderHost"
+                                  Grid.Column="1"
+                                  ContentSource="Header"
+                                  RecognizesAccessKey="True" />
+                <TextBlock x:Name="InputGestureText"
+                           Grid.Column="2"
+                           Text="{TemplateBinding InputGestureText}"
+                           Margin="5,2,2,2"
+                           DockPanel.Dock="Right" />
+                <Path Grid.Column="3"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center"
+                      Data="M 0 0 L 0 7 L 4 3.5 Z"
+                      Fill="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+                <Popup x:Name="Popup" Placement="Right"
+                       HorizontalOffset="-4"
+                       IsOpen="{TemplateBinding IsSubmenuOpen}"
+                       AllowsTransparency="True"
+                       Focusable="False"
+                       PopupAnimation="Fade">
+                    <Border x:Name="SubmenuBorder"
+                            SnapsToDevicePixels="True"
+                            Background="{DynamicResource AJut_Brush_InnerPanelBackground}"
+                            BorderBrush="{DynamicResource AJut_Brush_BorderCommon}"
+                            BorderThickness="1">
+                        <ScrollViewer CanContentScroll="True"
+                                      Style="{StaticResource MenuScrollViewer}">
+                            <StackPanel IsItemsHost="True"
+                                        KeyboardNavigation.DirectionalNavigation="Cycle" />
+                        </ScrollViewer>
+                    </Border>
+                </Popup>
+            </Grid>
+        </Border>
+        <ControlTemplate.Triggers>
+            <Trigger Property="Icon" Value="{x:Null}">
+                <Setter TargetName="Icon" Property="Visibility" Value="Collapsed" />
+            </Trigger>
+            <Trigger Property="IsHighlighted" Value="true">
+                <Setter Property="Background" TargetName="Border" Value="{DynamicResource AJut_Brush_PrimaryHighlightBright}"/>
+                <Setter Property="BorderBrush" TargetName="Border" Value="{DynamicResource AJut_Brush_BorderCommonHover}"/>
+            </Trigger>
+            <Trigger SourceName="Popup" Property="AllowsTransparency" Value="True">
+                <Setter TargetName="SubmenuBorder" Property="CornerRadius" Value="4" />
+                <Setter TargetName="SubmenuBorder" Property="Padding" Value="0,3,0,3" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="false">
+                <Setter Property="Foreground">
+                    <Setter.Value>
+                        <SolidColorBrush Color="{StaticResource DisabledForegroundColor}" />
+                    </Setter.Value>
+                </Setter>
+            </Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
+    <!-- MenuItem Style -->
+    <Style x:Key="{x:Type MenuItem}" TargetType="{x:Type MenuItem}">
+        <Setter Property="OverridesDefaultStyle" Value="True" />
+        <Style.Triggers>
+            <Trigger Property="Role" Value="TopLevelHeader">
+                <Setter Property="Template" Value="{StaticResource {x:Static MenuItem.TopLevelHeaderTemplateKey}}" />
+                <Setter Property="Grid.IsSharedSizeScope" Value="true" />
+            </Trigger>
+            <Trigger Property="Role" Value="TopLevelItem">
+                <Setter Property="Template" Value="{StaticResource {x:Static MenuItem.TopLevelItemTemplateKey}}" />
+            </Trigger>
+            <Trigger Property="Role" Value="SubmenuHeader">
+                <Setter Property="Template" Value="{StaticResource {x:Static MenuItem.SubmenuHeaderTemplateKey}}" />
+            </Trigger>
+            <Trigger Property="Role" Value="SubmenuItem">
+                <Setter Property="Template" Value="{StaticResource {x:Static MenuItem.SubmenuItemTemplateKey}}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="AJut_Style_ThemedWindow" TargetType="{x:Type Window}">
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamily_Default}"/>
+        <Setter Property="ajut_theme:ThemingHelperUtils.WindowBorderGlowBrush" Value="{DynamicResource AJut_Brush_WindowGlowBorder}"/>
+        <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource Self}, Path=(ajut_theme:ThemingHelperUtils.WindowBorderGlowBrush)}"/>
+        <Setter Property="Margin" Value="0"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="ajut_ap:BorderXTA.CornerRadius" Value="3,3,0,0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Window}">
+                    <Grid>
+                        <Grid.Style>
+                            <Style TargetType="{x:Type Grid}">
+                                <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=Background}"/>
+                                <Style.Triggers>
+                                    <Trigger Property="ajut_ctrls:WindowChromeButtonStrip.IsMouseOverClose" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource AJut_Brush_ChromeCloseButtonHighlight}"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Style>
+                        <Grid x:Name="ThemeWindowRoot" ClipToBounds="False" Margin="{TemplateBinding Margin}">
+                            <!-- ============[ Glow Border]================= -->
+                            <Grid ClipToBounds="False">
+                                <Grid.Style>
+                                    <Style TargetType="{x:Type Grid}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{ajut:TemplateBinding Path=WindowState}" Value="Maximized">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Grid.Style>
+                                <Border Background="Transparent" CornerRadius="3,3,0,0" BorderThickness="4" Margin="0">
+                                    <Border.Style>
+                                        <Style TargetType="{x:Type Border}">
+                                            <Setter Property="BorderBrush" Value="{ajut:TemplateBinding Path=BorderGlowBrush}"/>
+                                            <Style.Triggers>
+                                                <Trigger Property="ajut_ctrls:WindowChromeButtonStrip.IsMouseOverClose" Value="True">
+                                                    <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ChromeCloseButtonHighlight}"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                </Border>
+                                <Border Background="Transparent" CornerRadius="3,3,0,0"
+                                        BorderThickness="3"
+                                        Visibility="{ajut:TemplateBinding Path=IsActive, Converter={ajut_conv:BooleanToVisibilityConverter}}">
+                                    <Border.Style>
+                                        <Style TargetType="{x:Type Border}">
+                                            <Setter Property="BorderBrush" Value="{ajut:TemplateBinding Path=BorderGlowBrush}"/>
+                                            <Style.Triggers>
+                                                <Trigger Property="ajut_ctrls:WindowChromeButtonStrip.IsMouseOverClose" Value="True">
+                                                    <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ChromeCloseButtonHighlight}"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <Border.Effect>
+                                        <BlurEffect Radius="4"/>
+                                    </Border.Effect>
+                                </Border>
+                            </Grid>
+                            <Border x:Name="ClientRoot" BorderBrush="{TemplateBinding BorderBrush}">
+                                <Border.Style>
+                                    <Style TargetType="{x:Type Border}">
+                                        <Setter Property="BorderThickness" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=BorderThickness}"/>
+                                        <Setter Property="CornerRadius" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=(ajut_ap:BorderXTA.CornerRadius)}"/>
+                                        <Setter Property="Margin" Value="2"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=(ajut_ap:WindowXTA.IsFullscreen)}" Value="True">
+                                                <Setter Property="BorderThickness" Value="3"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=WindowState}" Value="Maximized">
+                                                <Setter Property="CornerRadius" Value="0"/>
+                                                <Setter Property="BorderThickness" Value="0"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <!-- ===============[ Client Area ]========================== -->
+                                <Grid>
+                                    <Border BorderThickness="0,0,0,0" CornerRadius="0,0,0,0"
+                                            BorderBrush="{DynamicResource AJut_Brush_PanelBorder}"
+                                            Background="{DynamicResource AJut_Brush_RootPanelBackground}" 
+                                            Margin="0,0,0,0">
+                                        <Grid>
+                                            <ContentPresenter Content="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Content}"/>
+                                        </Grid>
+                                    </Border>
+                                </Grid>
+                            </Border>
+
+                            <Border CornerRadius="{Binding ElementName=ClientRoot, Path=CornerRadius}"
+                                    Margin="{Binding ElementName=ClientRoot, Path=Margin}"
+                                    Background="Black" Opacity="0.7">
+                                <Border.Style>
+                                    <Style TargetType="{x:Type Border}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{ajut:TemplateBinding Path=IsNonModalTarget}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsActive" Value="False">
+                <Setter Property="ajut_theme:ThemingHelperUtils.WindowBorderGlowBrush" Value="{DynamicResource AJut_Brush_WindowGlowBorderInactive}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+</ResourceDictionary>

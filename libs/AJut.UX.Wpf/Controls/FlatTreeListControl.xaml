@@ -6,7 +6,7 @@
                     xmlns:conv="clr-namespace:AJut.UX.Converters"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
-    <Style x:Key="STYLE_FlatTreeListBoxItem" TargetType="{x:Type ListBoxItem}">
+    <Style x:Key="AJut_Style_FlatTreeListBoxItem" TargetType="{x:Type ListBoxItem}">
         <Setter Property="SnapsToDevicePixels" Value="true" />
         <Setter Property="Template">
             <Setter.Value>
@@ -71,7 +71,7 @@
                         <ListBox x:Name="PART_ListBoxDisplay" ItemsSource="{ajut:TemplateBinding Path=Items}"
                                  SelectionMode="{ajut:TemplateBinding Path=SelectionMode}"
                                  VirtualizingPanel.IsVirtualizing="True"
-                                 ItemContainerStyle="{StaticResource STYLE_FlatTreeListBoxItem}"
+                                 ItemContainerStyle="{StaticResource AJut_Style_FlatTreeListBoxItem}"
                                  Background="Transparent"
                                  BorderThickness="0"
                                  BorderBrush="Transparent">
