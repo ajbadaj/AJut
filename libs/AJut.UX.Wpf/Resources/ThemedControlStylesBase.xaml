@@ -1631,8 +1631,8 @@
 
     <Style x:Key="AJut_Style_ThemedWindow" TargetType="{x:Type Window}">
         <Setter Property="FontFamily" Value="{DynamicResource FontFamily_Default}"/>
-        <Setter Property="ajut_theme:ThemingHelperUtils.WindowBorderGlowBrush" Value="{DynamicResource AJut_Brush_WindowGlowBorder}"/>
-        <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource Self}, Path=(ajut_theme:ThemingHelperUtils.WindowBorderGlowBrush)}"/>
+        <Setter Property="ajut_theme:AppThemeManager.WindowBorderGlowBrush" Value="{DynamicResource AJut_Brush_WindowGlowBorder}"/>
+        <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource Self}, Path=(ajut_theme:AppThemeManager.WindowBorderGlowBrush)}"/>
         <Setter Property="Margin" Value="0"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="ajut_ap:BorderXTA.CornerRadius" Value="3,3,0,0"/>
@@ -1743,7 +1743,7 @@
         </Setter>
         <Style.Triggers>
             <Trigger Property="IsActive" Value="False">
-                <Setter Property="ajut_theme:ThemingHelperUtils.WindowBorderGlowBrush" Value="{DynamicResource AJut_Brush_WindowGlowBorderInactive}"/>
+                <Setter Property="ajut_theme:AppThemeManager.WindowBorderGlowBrush" Value="{DynamicResource AJut_Brush_WindowGlowBorderInactive}"/>
             </Trigger>
         </Style.Triggers>
     </Style>
