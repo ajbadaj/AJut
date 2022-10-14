@@ -163,13 +163,13 @@
         <Setter Property="ButtonGlyphForeground" Value="{DynamicResource AJut_Brush_TitleBarForeground}"/>
         <Setter Property="ButtonCornerRadius" Value="0,0,3,3"/>
 
-        <Setter Property="ButtonHoverBackground" Value="{DynamicResource AJut_Brush_ChromeButtonHover}"/>
+        <Setter Property="ButtonHoverBackground" Value="{DynamicResource AJut_Brush_ChromeButtonHoverBackground}"/>
         <Setter Property="ButtonHoverBorder" Value="#C000"/>
-        <Setter Property="ButtonHoverGlyphForeground" Value="{DynamicResource AJut_Brush_TitleBarGlyphHighlight}"/>
+        <Setter Property="ButtonHoverGlyphForeground" Value="{DynamicResource AJut_Brush_ChromeButtonHoverForeground}"/>
 
-        <Setter Property="ButtonPressedBackground" Value="{DynamicResource AJut_Brush_ChromeButtonPressed}"/>
+        <Setter Property="ButtonPressedBackground" Value="{DynamicResource AJut_Brush_ChromeButtonPressedBackground}"/>
         <Setter Property="ButtonPressedBorder" Value="#3FFF"/>
-        <Setter Property="ButtonPressedGlyphForeground" Value="{DynamicResource AJut_Brush_TitleBarGlyphHighlight}"/>
+        <Setter Property="ButtonPressedGlyphForeground" Value="{DynamicResource AJut_Brush_ChromeButtonPressedForeground}"/>
 
         <Setter Property="ButtonBorder" Value="Transparent"/>
         <Setter Property="ButtonHoverBorder" Value="#C000"/>

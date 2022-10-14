@@ -77,9 +77,12 @@
     <sys:Double x:Key="AJut_Double_StandardShadowOpacity">0.6</sys:Double>
 
     <!-- ===================[ Specialty Brushes ]========================= -->
-    <SolidColorBrush x:Key="AJut_Brush_ChromeButtonHover" Color="#000"/>
-    <SolidColorBrush x:Key="AJut_Brush_ChromeButtonPressed" Color="{DynamicResource AJut_Color_PrimaryHighlight}"/>
+    <SolidColorBrush x:Key="AJut_Brush_ChromeButtonHoverBackground" Color="#000"/>
+    <SolidColorBrush x:Key="AJut_Brush_ChromeButtonHoverForeground" Color="#CCC" />
+    <SolidColorBrush x:Key="AJut_Brush_ChromeButtonPressedBackground" Color="{DynamicResource AJut_Color_PrimaryHighlight}"/>
+    <SolidColorBrush x:Key="AJut_Brush_ChromeButtonPressedForeground" Color="#202020" />
     <SolidColorBrush x:Key="AJut_Brush_ChromeCloseButtonHighlight" Color="#A11"/>
+    
     <SolidColorBrush x:Key="AJut_Brush_SecondaryWindowOuterBorder" Color="#30303C"/>
     <SolidColorBrush x:Key="AJut_Brush_WindowGlowBorder" Color="{DynamicResource AJut_Color_PrimaryHighlightBright}"/>
     <SolidColorBrush x:Key="AJut_Brush_WindowGlowBorderInactive" Color="{DynamicResource AJut_Color_PrimaryHighlightDark}"/>
@@ -87,7 +90,6 @@
     <SolidColorBrush x:Key="AJut_Brush_TitleBarBackground" Color="#202020"/>
     <SolidColorBrush x:Key="AJut_Brush_TitleBarForeground" Color="#CCC" />
     <SolidColorBrush x:Key="AJut_Brush_TitleBarForegroundImportant" Color="#FFF" />
-    <SolidColorBrush x:Key="AJut_Brush_TitleBarGlyphHighlight" Color="#CCC" />
 
     <SolidColorBrush x:Key="AJut_Brush_DrawerBackground" Color="#202020"/>
     <SolidColorBrush x:Key="AJut_Brush_DrawerForeground" Color="#333" />
@@ -96,7 +98,6 @@
     <SolidColorBrush x:Key="AJut_Brush_BadStuff" Color="#CD1820"/>
     <SolidColorBrush x:Key="AJut_Brush_TrackBackground" Color="#444"/>
     <SolidColorBrush x:Key="AJut_Brush_ToolTipBackground" Color="#202020"/>
-    <SolidColorBrush x:Key="AJut_Brush_PortraitBackground" Color="#77777A"/>
     <SolidColorBrush x:Key="AJut_Brush_BannerBackground" Color="#111117"/>
     <SolidColorBrush x:Key="AJut_Brush_BannerForeground" Color="#BBB"/>
     <SolidColorBrush x:Key="AJut_Brush_OverlayBlockoutBackground" Color="#D000"/>
