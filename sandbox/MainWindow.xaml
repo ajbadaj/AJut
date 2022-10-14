@@ -42,9 +42,9 @@
                 <Setter Property="AdditionalBottomDisplay">
                     <Setter.Value>
                         <StackPanel HorizontalAlignment="Right" Margin="3" Opacity="0.7">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="App Theme: "/>
-                                <ajut:EnumComboBox SelectedItem="{Binding Source={x:Static local:App.ThemeTracker}, Path=Configuration, Mode=TwoWay}"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                                <TextBlock Text="App Theme: " FontSize="16"/>
+                                <ajut:EnumComboBox SelectedItem="{Binding Source={x:Static local:App.ThemeTracker}, Path=ThemeConfiguration, Mode=TwoWay}" Width="100"/>
                             </StackPanel>
                             <TextBlock Text="ajut.core - Version #1.0.0.1" HorizontalAlignment="Right"/>
                             <TextBlock Text="ajut.ux.wpf - Version #1.0.0.0" HorizontalAlignment="Right"/>

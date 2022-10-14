@@ -16,9 +16,6 @@
     <sys:String x:Key="AJut_Symbol_Dash">&#xE9AE;</sys:String>
     <sys:String x:Key="AJut_Symbol_NeedsEdit">&#xEB7E;</sys:String>
     <sys:String x:Key="AJut_Symbol_DownChevron"   >&#xE70D;</sys:String>
-    <Style TargetType="{x:Type Window}">
-        <Setter Property="TextElement.FontFamily" Value="{StaticResource FontFamily_Default}" />
-    </Style>
 
     <Style x:Key="AJut_TXT_Default" TargetType="{x:Type TextBlock}">
         <Setter Property="FontFamily" Value="{Binding RelativeSource={RelativeSource Self}, Path=(TextElement.FontFamily)}"/>
@@ -57,8 +54,8 @@
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:ToggleStrip}">
-        <Setter Property="BorderThickness" Value="5"/>
-        <Setter Property="ajut_ap:BorderXTA.CornerRadius" Value="2"/>
+        <!--<Setter Property="BorderThickness" Value="5"/>
+        <Setter Property="ajut_ap:BorderXTA.CornerRadius" Value="2"/>-->
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_OverlayBlockoutBackground}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_ListBackground}" />
         <Setter Property="BackgroundPressedColorBase" Value="{DynamicResource AJut_Color_SecondaryHighlightBright}"/>
@@ -1631,6 +1628,7 @@
 
     <Style x:Key="AJut_Style_ThemedWindow" TargetType="{x:Type Window}">
         <Setter Property="FontFamily" Value="{DynamicResource FontFamily_Default}"/>
+        <Setter Property="TextElement.FontFamily" Value="{DynamicResource FontFamily_Default}" />
         <Setter Property="ajut_theme:AppThemeManager.WindowBorderGlowBrush" Value="{DynamicResource AJut_Brush_WindowGlowBorder}"/>
         <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource Self}, Path=(ajut_theme:AppThemeManager.WindowBorderGlowBrush)}"/>
         <Setter Property="Margin" Value="0"/>

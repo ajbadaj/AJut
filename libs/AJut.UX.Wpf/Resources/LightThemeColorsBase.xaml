@@ -5,10 +5,10 @@
     <Color x:Key="AJut_Color_PrimaryHighlightDark">#1667A0</Color>
     <Color x:Key="AJut_Color_PrimaryHighlightBright">#208FE5</Color>
     <Color x:Key="AJut_Color_PrimaryHighlightDesat">#4E8AB7</Color>
-    <SolidColorBrush x:Key="Brush_PrimaryHighlight" Color="{DynamicResource AJut_Color_PrimaryHighlight}"/>
-    <SolidColorBrush x:Key="Brush_PrimaryHighlightDark" Color="{DynamicResource AJut_Color_PrimaryHighlightDark}"/>
-    <SolidColorBrush x:Key="Brush_PrimaryHighlightBright" Color="{DynamicResource AJut_Color_PrimaryHighlightBright}"/>
-    <SolidColorBrush x:Key="Brush_PrimaryHighlightDesat" Color="{DynamicResource AJut_Color_PrimaryHighlightDesat}"/>
+    <SolidColorBrush x:Key="AJut_Brush_PrimaryHighlight" Color="{DynamicResource AJut_Color_PrimaryHighlight}"/>
+    <SolidColorBrush x:Key="AJut_Brush_PrimaryHighlightDark" Color="{DynamicResource AJut_Color_PrimaryHighlightDark}"/>
+    <SolidColorBrush x:Key="AJut_Brush_PrimaryHighlightBright" Color="{DynamicResource AJut_Color_PrimaryHighlightBright}"/>
+    <SolidColorBrush x:Key="AJut_Brush_PrimaryHighlightDesat" Color="{DynamicResource AJut_Color_PrimaryHighlightDesat}"/>
 
     <Color x:Key="AJut_Color_SecondaryHighlight">#CC7000</Color>
     <Color x:Key="AJut_Color_SecondaryHighlightDark">#995100</Color>
@@ -25,7 +25,7 @@
     <Color x:Key="AJut_Color_MouseInteractionHighlight">Purple</Color>
     <SolidColorBrush x:Key="AJut_Brush_MouseInteractionHighlight" Color="{DynamicResource AJut_Color_MouseInteractionHighlight}"/>
 
-    <SolidColorBrush x:Key="AJut_Brush_ImportantText" Color="#FFF" />
+    <SolidColorBrush x:Key="AJut_Brush_ImportantText" Color="#000003" />
     <SolidColorBrush x:Key="AJut_Brush_NormalText" Color="#111" />
     <SolidColorBrush x:Key="AJut_Brush_HighlightText" Color="#000" />
     <SolidColorBrush x:Key="AJut_Brush_UnderstatedText" Color="#444" />
@@ -70,7 +70,7 @@
 
     <SolidColorBrush x:Key="AJut_Brush_SimpleHighContrastRootBackground" Color="#C1B9B4"/>
 
-    <sys:Double x:Key="DBL_StandardShadowOpacity">0.3</sys:Double>
+    <sys:Double x:Key="AJut_Double_StandardShadowOpacity">0.3</sys:Double>
 
     <!-- ===================[ Specialty Brushes ]========================= -->
     <SolidColorBrush x:Key="AJut_Brush_ChromeButtonHover" Color="#5CCC"/>
@@ -90,7 +90,4 @@
     <SolidColorBrush x:Key="AJut_Brush_BannerBackground" Color="#CFCFCF"/>
     <SolidColorBrush x:Key="AJut_Brush_BannerForeground" Color="#202020"/>
     <SolidColorBrush x:Key="AJut_Brush_OverlayBlockoutBackground" Color="#D000"/>
-    <!--<SolidColorBrush x:Key="AJut_Brush_WelcomeImageBackground" Color="#CCC"/>
-    <SolidColorBrush x:Key="AJut_Brush_XAxisColor" Color="#C4200D"/>
-    <SolidColorBrush x:Key="AJut_Brush_YAxisColor" Color="#524AE2"/>-->
 </ResourceDictionary>
