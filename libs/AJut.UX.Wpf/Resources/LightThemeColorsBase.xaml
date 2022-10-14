@@ -1,10 +1,10 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=System.Runtime">
-    <Color x:Key="AJut_Color_PrimaryHighlight">#1972B8</Color>
-    <Color x:Key="AJut_Color_PrimaryHighlightDark">#1667A0</Color>
-    <Color x:Key="AJut_Color_PrimaryHighlightBright">#208FE5</Color>
-    <Color x:Key="AJut_Color_PrimaryHighlightDesat">#4E8AB7</Color>
+    <Color x:Key="AJut_Color_PrimaryHighlight">#036FC1</Color>
+    <Color x:Key="AJut_Color_PrimaryHighlightDark">#035C9B</Color>
+    <Color x:Key="AJut_Color_PrimaryHighlightBright">#1E92EA</Color>
+    <Color x:Key="AJut_Color_PrimaryHighlightDesat">#4E7B99</Color>
     <SolidColorBrush x:Key="AJut_Brush_PrimaryHighlight" Color="{DynamicResource AJut_Color_PrimaryHighlight}"/>
     <SolidColorBrush x:Key="AJut_Brush_PrimaryHighlightDark" Color="{DynamicResource AJut_Color_PrimaryHighlightDark}"/>
     <SolidColorBrush x:Key="AJut_Brush_PrimaryHighlightBright" Color="{DynamicResource AJut_Color_PrimaryHighlightBright}"/>
@@ -73,16 +73,22 @@
     <sys:Double x:Key="AJut_Double_StandardShadowOpacity">0.3</sys:Double>
 
     <!-- ===================[ Specialty Brushes ]========================= -->
-    <SolidColorBrush x:Key="AJut_Brush_ChromeButtonHover" Color="#5CCC"/>
-    <SolidColorBrush x:Key="AJut_Brush_ChromeButtonPressed" Color="{DynamicResource AJut_Color_PrimaryHighlightBright}"/>
+    <SolidColorBrush x:Key="AJut_Brush_ChromeButtonHover" Color="{DynamicResource AJut_Color_PrimaryHighlightDark}"/>
+    <SolidColorBrush x:Key="AJut_Brush_ChromeButtonPressed" Color="{DynamicResource AJut_Color_PrimaryHighlight}"/>
     <SolidColorBrush x:Key="AJut_Brush_ChromeCloseButtonHighlight" Color="#A11"/>
-    <SolidColorBrush x:Key="AJut_Brush_WindowOuterBorder" Color="#4592C1"/>
+    <SolidColorBrush x:Key="AJut_Brush_WindowOuterBorder" Color="#1E92EA"/>
     <SolidColorBrush x:Key="AJut_Brush_SecondaryWindowOuterBorder" Color="#223"/>
     <SolidColorBrush x:Key="AJut_Brush_WindowGlowBorder" Color="{DynamicResource AJut_Color_PrimaryHighlightBright}"/>
-    <SolidColorBrush x:Key="AJut_Brush_WindowGlowBorderInactive" Color="#8849041A"/>
-    <SolidColorBrush x:Key="AJut_Brush_TitleBarBackground" Color="{DynamicResource AJut_Color_PrimaryHighlightDesat}"/>
+    <SolidColorBrush x:Key="AJut_Brush_WindowGlowBorderInactive" Color="{DynamicResource AJut_Color_PrimaryHighlightDark}"/>
+    <SolidColorBrush x:Key="AJut_Brush_TitleBarBackground" Color="#1E92EA"/>
     <SolidColorBrush x:Key="AJut_Brush_TitleBarForeground" Color="#333" />
     <SolidColorBrush x:Key="AJut_Brush_TitleBarForegroundImportant" Color="#000" />
+    <SolidColorBrush x:Key="AJut_Brush_TitleBarGlyphHighlight" Color="#CCC" />
+
+    <SolidColorBrush x:Key="AJut_Brush_DrawerBackground" Color="#CCC"/>
+    <SolidColorBrush x:Key="AJut_Brush_DrawerForeground" Color="#333" />
+    <SolidColorBrush x:Key="AJut_Brush_DrawerForegroundImportant" Color="#000" />
+
     <SolidColorBrush x:Key="AJut_Brush_BadStuff" Color="#E01620"/>
     <SolidColorBrush x:Key="AJut_Brush_TrackBackground" Color="#DDD"/>
     <SolidColorBrush x:Key="AJut_Brush_ToolTipBackground" Color="#CCC"/>

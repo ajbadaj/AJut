@@ -165,11 +165,11 @@
 
         <Setter Property="ButtonHoverBackground" Value="{DynamicResource AJut_Brush_ChromeButtonHover}"/>
         <Setter Property="ButtonHoverBorder" Value="#C000"/>
-        <Setter Property="ButtonHoverGlyphForeground" Value="{DynamicResource AJut_Brush_TitleBarForegroundImportant}"/>
+        <Setter Property="ButtonHoverGlyphForeground" Value="{DynamicResource AJut_Brush_TitleBarGlyphHighlight}"/>
 
         <Setter Property="ButtonPressedBackground" Value="{DynamicResource AJut_Brush_ChromeButtonPressed}"/>
         <Setter Property="ButtonPressedBorder" Value="#3FFF"/>
-        <Setter Property="ButtonPressedGlyphForeground" Value="{DynamicResource AJut_Brush_TitleBarForegroundImportant}"/>
+        <Setter Property="ButtonPressedGlyphForeground" Value="{DynamicResource AJut_Brush_TitleBarGlyphHighlight}"/>
 
         <Setter Property="ButtonBorder" Value="Transparent"/>
         <Setter Property="ButtonHoverBorder" Value="#C000"/>
@@ -197,6 +197,7 @@
 
     <Style TargetType="{x:Type ajut_ctrls:StackNavActiveDrawerPresenter}">
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_DrawerBackground}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_DrawerForeground}"/>
     </Style>
 
     <Style TargetType="{x:Type TextBlock}" x:Key="AJut_SymbolText">
@@ -1632,12 +1633,13 @@
         <Setter Property="ajut_theme:AppThemeManager.WindowBorderGlowBrush" Value="{DynamicResource AJut_Brush_WindowGlowBorder}"/>
         <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource Self}, Path=(ajut_theme:AppThemeManager.WindowBorderGlowBrush)}"/>
         <Setter Property="Margin" Value="0"/>
-        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="BorderThickness" Value="5,2"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_TitleBarBackground}"/>
         <Setter Property="ajut_ap:BorderXTA.CornerRadius" Value="3,3,0,0"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type Window}">
-                    <Grid>
+                    <Grid UseLayoutRounding="True">
                         <Grid.Style>
                             <Style TargetType="{x:Type Grid}">
                                 <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=Background}"/>

@@ -80,13 +80,19 @@
     <SolidColorBrush x:Key="AJut_Brush_ChromeButtonHover" Color="#000"/>
     <SolidColorBrush x:Key="AJut_Brush_ChromeButtonPressed" Color="{DynamicResource AJut_Color_PrimaryHighlight}"/>
     <SolidColorBrush x:Key="AJut_Brush_ChromeCloseButtonHighlight" Color="#A11"/>
-    <SolidColorBrush x:Key="AJut_Brush_DrawerBackground" Color="#202020"/>
     <SolidColorBrush x:Key="AJut_Brush_SecondaryWindowOuterBorder" Color="#30303C"/>
     <SolidColorBrush x:Key="AJut_Brush_WindowGlowBorder" Color="{DynamicResource AJut_Color_PrimaryHighlightBright}"/>
     <SolidColorBrush x:Key="AJut_Brush_WindowGlowBorderInactive" Color="{DynamicResource AJut_Color_PrimaryHighlightDark}"/>
+    
     <SolidColorBrush x:Key="AJut_Brush_TitleBarBackground" Color="#202020"/>
     <SolidColorBrush x:Key="AJut_Brush_TitleBarForeground" Color="#CCC" />
     <SolidColorBrush x:Key="AJut_Brush_TitleBarForegroundImportant" Color="#FFF" />
+    <SolidColorBrush x:Key="AJut_Brush_TitleBarGlyphHighlight" Color="#CCC" />
+
+    <SolidColorBrush x:Key="AJut_Brush_DrawerBackground" Color="#202020"/>
+    <SolidColorBrush x:Key="AJut_Brush_DrawerForeground" Color="#333" />
+    <SolidColorBrush x:Key="AJut_Brush_DrawerForegroundImportant" Color="#000" />
+
     <SolidColorBrush x:Key="AJut_Brush_BadStuff" Color="#CD1820"/>
     <SolidColorBrush x:Key="AJut_Brush_TrackBackground" Color="#444"/>
     <SolidColorBrush x:Key="AJut_Brush_ToolTipBackground" Color="#202020"/>
@@ -94,7 +100,4 @@
     <SolidColorBrush x:Key="AJut_Brush_BannerBackground" Color="#111117"/>
     <SolidColorBrush x:Key="AJut_Brush_BannerForeground" Color="#BBB"/>
     <SolidColorBrush x:Key="AJut_Brush_OverlayBlockoutBackground" Color="#D000"/>
-    <!--<SolidColorBrush x:Key="AJut_Brush_WelcomeImageBackground" Color="#171717"/>
-    <SolidColorBrush x:Key="AJut_Brush_XAxisColor" Color="Red"/>
-    <SolidColorBrush x:Key="AJut_Brush_YAxisColor" Color="#447EFC"/>-->
 </ResourceDictionary>
