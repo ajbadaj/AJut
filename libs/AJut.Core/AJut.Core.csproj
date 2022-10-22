@@ -1,39 +1,39 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
-    <RootNamespace>AJut</RootNamespace>
-    <Authors>AJ Badarni</Authors>
-    <Company />
-    <Version>1.1.1.0</Version>
-    <GenerateDocumentationFile>True</GenerateDocumentationFile>
-    <DocumentationFile>..\..\bin\drip\ajut-core.xml</DocumentationFile>
-	<Copyright>AJ Badarni</Copyright>
-	<PackageProjectUrl>https://www.ajut.dev/</PackageProjectUrl>
-	<PackageIcon>ajut-logo-128.png</PackageIcon>
-	<PackageReadmeFile>README.md</PackageReadmeFile>
-	<RepositoryUrl>https://github.com/ajbadaj/AJut</RepositoryUrl>
-	<RepositoryType>git</RepositoryType>
-	<PackageTags>c#;dotnet;logger;json;tree;extensions;math;</PackageTags>
-	<Description>C# / dotnet 5 utility library, created by AJ Badarni. Logger, Json parsing and building, math, tree logic, and more.</Description>
-	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-	<PackageLicenseExpression>MIT</PackageLicenseExpression>
-	<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net5.0</TargetFramework>
+		<RootNamespace>AJut</RootNamespace>
+		<Authors>AJ Badarni</Authors>
+		<Company />
+		<Version>1.1.2.0</Version>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<DocumentationFile>..\..\bin\drip\ajut-core.xml</DocumentationFile>
+		<Copyright>AJ Badarni</Copyright>
+		<PackageProjectUrl>https://www.ajut.dev/</PackageProjectUrl>
+		<PackageIcon>ajut-logo-128.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryUrl>https://github.com/ajbadaj/AJut</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageTags>c#;dotnet;logger;json;tree;extensions;math;</PackageTags>
+		<Description>C# / dotnet 5 utility library, created by AJ Badarni. Logger, Json parsing/building, extensions, undo/redo, math, tree logic, and more.</Description>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <None Include="..\..\.editorconfig" Link=".editorconfig" />
-    <None Include="..\..\ajut-logo-128.png">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-  </ItemGroup>
+	<ItemGroup>
+		<None Include="..\..\.editorconfig" Link=".editorconfig" />
+		<None Include="..\..\ajut-logo-128.png">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
 
-  <ItemGroup>
-    <None Update="README.md">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-  </ItemGroup>
+	<ItemGroup>
+		<None Update="README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
 
 </Project>
