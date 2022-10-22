@@ -42,10 +42,10 @@
         }
 
         /// <summary>
-        /// The format of the log filename (given a <see cref="DateTime"/>). NOTE: this will not change an activelly running log file session, so set this before <see cref="CreateAndStartWritingToLogFileIn"/> is called.
+        /// The format of the log filename (given a <see cref="DateTime"/>). NOTE: this will not change an actively running log file session, so set this before <see cref="CreateAndStartWritingToLogFileIn"/> is called.
         /// </summary>
         /// <remarks>
-        /// This will not change an activelly running log file session, so set this before <see cref="CreateAndStartWritingToLogFileIn"/> is called.
+        /// This will not change an actively running log file session, so set this before <see cref="CreateAndStartWritingToLogFileIn"/> is called.
         /// </remarks>
         public static string LogFilenameFormat { get; set; } = "log-{0:MM.dd.yyyy-hh.mm.ss}.txt";
 
