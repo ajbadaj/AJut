@@ -25,9 +25,6 @@
 
         private readonly object m_logWritingLock = new object();
 
-        private static string kLogFilenameFormat = "log-{0:MM.dd.yyyy-hh.mm.ss}.txt";
-
-
         #region ========== Instance Code ==========
         private Logger ()
         {
@@ -43,6 +40,14 @@
             m_shouldLogToConsole = true;
             m_shouldLogToTrace = true;
         }
+
+        /// <summary>
+        /// The format of the log filename (given a <see cref="DateTime"/>). NOTE: this will not change an activelly running log file session, so set this before <see cref="CreateAndStartWritingToLogFileIn"/> is called.
+        /// </summary>
+        /// <remarks>
+        /// This will not change an activelly running log file session, so set this before <see cref="CreateAndStartWritingToLogFileIn"/> is called.
+        /// </remarks>
+        public static string LogFilenameFormat { get; set; } = "log-{0:MM.dd.yyyy-hh.mm.ss}.txt";
 
         /// <summary>
         /// Indicates if calls to <see cref="Logger"/> should additionally direct to <see cref="Console"/> (default to true in debug, false otherwise)
@@ -171,7 +176,8 @@
                 g_LoggerInstance = new Logger();
 
                 Directory.CreateDirectory(directoryPath);
-                g_LoggerInstance.BuildAndSetupLogFileStream(Path.Combine(directoryPath, String.Format(kLogFilenameFormat, DateTime.Now)));
+                string logFileName = AJut.IO.PathHelpers.SanitizeFileName(String.Format(LogFilenameFormat, DateTime.Now));
+                g_LoggerInstance.BuildAndSetupLogFileStream(Path.Combine(directoryPath, logFileName));
             }
         }
 
