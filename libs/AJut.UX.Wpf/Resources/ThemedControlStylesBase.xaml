@@ -187,6 +187,7 @@
 
     <Style TargetType="{x:Type ajut_ctrls:PopupMenuButton}">
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_PopupBackground}"/>
+        <Setter Property="ButtonStyle" Value="{DynamicResource AJut_Style_ToggleButton}"/>
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:StackNavActiveHeaderPresenter}">
@@ -341,7 +342,7 @@
     </Style>
 
     <Style TargetType="{x:Type Button}" BasedOn="{StaticResource AJut_Style_ButtonBase}"/>
-    <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource AJut_Style_ButtonBase}">
+    <Style x:Key="AJut_Style_ToggleButton" TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource AJut_Style_ButtonBase}">
         <Style.Triggers>
             <Trigger Property="IsChecked" Value="True">
                 <Setter Property="Background" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
@@ -350,6 +351,8 @@
             </Trigger>
         </Style.Triggers>
     </Style>
+
+    <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource AJut_Style_ToggleButton}" />
 
     <Style TargetType="{x:Type ListBoxItem}">
         <Setter Property="TextElement.FontFamily" Value="Segoe UI" />
@@ -1413,49 +1416,12 @@
         <Setter Property="ajut_ap:HeaderedContentControlXTA.HorizontalHeaderAlignment" Value="Stretch"/>
         <Setter Property="ajut_ap:HeaderedContentControlXTA.VerticalHeaderAlignment" Value="Center"/>
         <Setter Property="ajut_ap:HeaderedContentControlXTA.HeaderFontSize" Value="15"/>
-        <!--<Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="{x:Type GroupBox}">
-                    <Grid SnapsToDevicePixels="true">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="6"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="6"/>
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="6"/>
-                        </Grid.RowDefinitions>
-                        <Border BorderBrush="Transparent" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" Grid.ColumnSpan="4" Grid.Column="0" CornerRadius="4" Grid.Row="1" Grid.RowSpan="3"/>
-                        <Border x:Name="Header" Grid.Column="1" Padding="{ajut:TemplateBinding Path=(ajut_ap:HeaderedContentControlXTA.HeaderPadding)}" Grid.Row="0" Grid.RowSpan="2">
-                            <ContentPresenter ContentSource="Header" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
-                        </Border>
-                        <ContentPresenter Grid.ColumnSpan="2" Grid.Column="1" Margin="{TemplateBinding Padding}" Grid.Row="2" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
-                        <Border BorderBrush="White" BorderThickness="{TemplateBinding BorderThickness}" Grid.ColumnSpan="4" CornerRadius="4" Grid.Row="1" Grid.RowSpan="3">
-                            <Border.OpacityMask>
-                                <MultiBinding ConverterParameter="7" Converter="{StaticResource GroupBoxHeaderMaskConverter}">
-                                    <Binding ElementName="Header" Path="ActualWidth"/>
-                                    <Binding Path="ActualWidth" RelativeSource="{RelativeSource Self}"/>
-                                    <Binding Path="ActualHeight" RelativeSource="{RelativeSource Self}"/>
-                                </MultiBinding>
-                            </Border.OpacityMask>
-                            <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="3">
-                                <Border BorderBrush="White" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="2"/>
-                            </Border>
-                        </Border>
-                    </Grid>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>-->
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type GroupBox}">
                     <Grid>
                         <Grid.RowDefinitions>
-                            <RowDefinition />
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition />
                         </Grid.RowDefinitions>
                         <Border Grid.RowSpan="2" Background="{TemplateBinding Background}"

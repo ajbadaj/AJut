@@ -229,6 +229,12 @@ namespace AJut.UX.Themeing
     using System.Windows;
 
     [Obsolete("This was a naming error, please use AppThemeManager from AJut.Ux.Theming (not this class from AJut.UX.Themeing) - this version will be removed in future updates")]
+    public enum eAppTheme { Dark, Light }
+
+    [Obsolete("This was a naming error, please use AppThemeManager from AJut.Ux.Theming (not this class from AJut.UX.Themeing) - this version will be removed in future updates")]
+    public enum eAppThemeConfiguration { Dark, Light, UseSameAsOS }
+
+    [Obsolete("This was a naming error, please use AppThemeManager from AJut.Ux.Theming (not this class from AJut.UX.Themeing) - this version will be removed in future updates")]
     public class AppThemeManager : Theming.AppThemeManager
     {
         public AppThemeManager (Application target = null, string lightThemeXamlUriPath = null, string darkThemeXamlUriPath = null, int themeColorsInsertionIndex = 0)
