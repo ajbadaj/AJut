@@ -4,7 +4,7 @@
                     xmlns:ajut_ctrls="clr-namespace:AJut.UX.Controls"
                     xmlns:ajut_ap="clr-namespace:AJut.UX.AttachedProperties"
                     xmlns:ajut_conv="clr-namespace:AJut.UX.Converters"
-                    xmlns:ajut_theme="clr-namespace:AJut.UX.Themeing"
+                    xmlns:ajut_theme="clr-namespace:AJut.UX.Theming"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
     
     <!--To fill out by user-->
