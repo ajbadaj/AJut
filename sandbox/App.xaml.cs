@@ -5,7 +5,7 @@
     using AJut;
     using AJut.TypeManagement;
     using AJut.UX;
-    using AJut.UX.Themeing;
+    using AJut.UX.Theming;
 
     public partial class App : Application
     {

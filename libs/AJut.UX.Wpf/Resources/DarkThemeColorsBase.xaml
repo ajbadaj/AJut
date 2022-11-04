@@ -2,7 +2,6 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=System.Runtime">
 
-    <!--To fill out by user-->
     <Color x:Key="AJut_Color_PrimaryHighlight">#0D83D8</Color>
     <Color x:Key="AJut_Color_PrimaryHighlightDark">#074470</Color>
     <Color x:Key="AJut_Color_PrimaryHighlightBright">#119CFF</Color>
@@ -24,7 +23,7 @@
     <Color x:Key="AJut_Color_RimLighting">#7FFF</Color>
     <Color x:Key="AJut_Color_Shadow">#8000</Color>
 
-    <Color x:Key="AJut_Color_MouseInteractionHighlight">Green</Color>
+    <Color x:Key="AJut_Color_MouseInteractionHighlight">#7F6E44</Color>
     <SolidColorBrush x:Key="AJut_Brush_MouseInteractionHighlight" Color="{DynamicResource AJut_Color_MouseInteractionHighlight}"/>
 
     <SolidColorBrush x:Key="AJut_Brush_ImportantText" Color="#FFF" />
@@ -82,7 +81,8 @@
     <SolidColorBrush x:Key="AJut_Brush_ChromeButtonPressedBackground" Color="{DynamicResource AJut_Color_PrimaryHighlight}"/>
     <SolidColorBrush x:Key="AJut_Brush_ChromeButtonPressedForeground" Color="#202020" />
     <SolidColorBrush x:Key="AJut_Brush_ChromeCloseButtonHighlight" Color="#A11"/>
-    
+
+    <SolidColorBrush x:Key="AJut_Brush_WindowOuterBorder" Color="{DynamicResource AJut_Color_PrimaryHighlightBright}"/>
     <SolidColorBrush x:Key="AJut_Brush_SecondaryWindowOuterBorder" Color="#30303C"/>
     <SolidColorBrush x:Key="AJut_Brush_WindowGlowBorder" Color="{DynamicResource AJut_Color_PrimaryHighlightBright}"/>
     <SolidColorBrush x:Key="AJut_Brush_WindowGlowBorderInactive" Color="{DynamicResource AJut_Color_PrimaryHighlightDark}"/>
@@ -90,6 +90,7 @@
     <SolidColorBrush x:Key="AJut_Brush_TitleBarBackground" Color="#202020"/>
     <SolidColorBrush x:Key="AJut_Brush_TitleBarForeground" Color="#CCC" />
     <SolidColorBrush x:Key="AJut_Brush_TitleBarForegroundImportant" Color="#FFF" />
+    <SolidColorBrush x:Key="AJut_Brush_TitleBarGlyphHighlight" Color="#CCC" />
 
     <SolidColorBrush x:Key="AJut_Brush_DrawerBackground" Color="#202020"/>
     <SolidColorBrush x:Key="AJut_Brush_DrawerForeground" Color="#333" />
@@ -101,4 +102,6 @@
     <SolidColorBrush x:Key="AJut_Brush_BannerBackground" Color="#111117"/>
     <SolidColorBrush x:Key="AJut_Brush_BannerForeground" Color="#BBB"/>
     <SolidColorBrush x:Key="AJut_Brush_OverlayBlockoutBackground" Color="#D000"/>
+
+    <SolidColorBrush x:Key="AJut_Brush_GroupBorder" Color="#636363"/>
 </ResourceDictionary>
