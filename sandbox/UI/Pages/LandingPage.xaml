@@ -1,12 +1,8 @@
 ﻿<UserControl x:Class="TheAJutShowRoom.UI.Pages.LandingPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:sys="clr-namespace:System;assembly=mscorlib"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:TheAJutShowRoom.UI.Pages"
-             xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
-             xmlns:ajutap="clr-namespace:AJut.UX.AttachedProperties;assembly=AJut.UX.Wpf"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800"
              x:Name="Self">
@@ -96,28 +92,5 @@
                 </Grid>
             </TabItem>
         </TabControl>
-        <!--<DockPanel>
-            <ajut:BumpStack Orientation="Horizontal" VerticalAlignment="Top">
-                <ajut:ToggleStrip ajutap:BorderXTA.CornerRadius="5">
-                    <ajut:ToggleStrip.Background>
-                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
-                            <GradientStop Offset="0.00" Color="#FFFFFF" />
-                            <GradientStop Offset="0.10" Color="#D5D5D5" />
-                            <GradientStop Offset="0.90" Color="#898989" />
-                            <GradientStop Offset="1.00" Color="#202020" />
-                        </LinearGradientBrush>
-                    </ajut:ToggleStrip.Background>
-                    <ajut:ToggleStrip.ItemsSource>
-                        <x:Array Type="{x:Type sys:String}">
-                            <sys:String>Content Flows</sys:String>
-                            <sys:String>Controls</sys:String>
-                            <sys:String>Utilities</sys:String>
-                            <sys:String>Strategies</sys:String>
-                        </x:Array>
-                    </ajut:ToggleStrip.ItemsSource>
-                </ajut:ToggleStrip>
-            </ajut:BumpStack>
-            
-        </DockPanel>-->
     </DockPanel>
 </UserControl>

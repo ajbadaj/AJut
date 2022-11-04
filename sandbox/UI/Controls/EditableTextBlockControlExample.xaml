@@ -9,7 +9,7 @@
              d:DesignHeight="450" d:DesignWidth="800"
              x:Name="Self">
     <DockPanel>
-        <GroupBox Header="Params">
+        <GroupBox Header="Params" VerticalAlignment="Center" Padding="20">
             <WrapPanel>
                 <CheckBox x:Name="EditTextController" Content="Is Editing"/>
                 <CheckBox x:Name="ReadonlyTextController" Content="Is Readonly"/>
