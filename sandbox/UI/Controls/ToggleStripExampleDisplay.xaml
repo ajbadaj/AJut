@@ -223,7 +223,7 @@
                     <GroupBox Header="No Items" Margin="0,0,20,0" Padding="10" ToolTip="No items">
                         <DockPanel>
                             <Grid DockPanel.Dock="Top" Margin="5">
-                                <ajut:ToggleStrip x:Name="EmptyStrip" AllowNoSelection="True" ItemsSource="{Binding ElementName=Self, Path=ZeroToggleElementsSource, Mode=OneWay}"/>
+                                <ajut:ToggleStrip x:Name="EmptyStrip" AllowNoSelection="True" ItemsSource="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ToggleStripExampleDisplay}}, Path=ZeroToggleElementsSource, Mode=OneWay}"/>
                                 <TextBlock TextWrapping="WrapWithOverflow" Width="250" FontStyle="Italic" Opacity="0.4"
                                            Visibility="{Binding ElementName=EmptyStrip, Path=HasItems, Mode=OneWay, Converter={ajutconv:BooleanToVisibilityConverter TrueValue=Collapsed, FalseValue=Visible}, FallbackValue=Collapsed, TargetNullValue=Collapsed}">
                                     <TextBlock.Inlines>

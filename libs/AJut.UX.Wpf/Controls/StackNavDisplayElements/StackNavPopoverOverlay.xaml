@@ -17,7 +17,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:StackNavPopoverOverlay}">
-                    <Grid ap:ClickableXTA.IsTrackingClick="True">
+                    <Grid ap:ClickableXTA.IsTrackingClick="True" Background="#01000000">
                         <Grid HorizontalAlignment="Center"
                               VerticalAlignment="Center">
                             <Border CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}"
@@ -47,3 +47,4 @@
     </Style>
     
 </ResourceDictionary>
+

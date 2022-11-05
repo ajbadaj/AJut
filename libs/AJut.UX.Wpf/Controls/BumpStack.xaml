@@ -5,10 +5,10 @@
                     xmlns:local="clr-namespace:AJut.UX.Controls"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
-    <sys:String x:Key="RightChevronSymbol">&#xE974;</sys:String>
-    <sys:String x:Key="LeftChevronSymbol" >&#xE973;</sys:String>
-    <sys:String x:Key="UpChevronSymbol"   >&#xE70E;</sys:String>
-    <sys:String x:Key="DownChevronSymbol" >&#xE70D;</sys:String>
+    <sys:String x:Key="AJut_Symbol_RightChevron">&#xE974;</sys:String>
+    <sys:String x:Key="AJut_Symbol_LeftChevron" >&#xE973;</sys:String>
+    <sys:String x:Key="AJut_Symbol_UpChevron"   >&#xE70E;</sys:String>
+    <sys:String x:Key="AJut_Symbol_DownChevron" >&#xE70D;</sys:String>
     
     <Style TargetType="{x:Type local:BumpStack}">
         <Setter Property="ButtonBackground" Value="#000"/>
@@ -56,7 +56,7 @@
                             <!-- ====================[ Bump Buttons ]==================== -->
                             <Grid Margin="0,0,0,0">
                                 <Grid.Resources>
-                                    <Style x:Key="BTN_HoverRepeat" TargetType="{x:Type RepeatButton}">
+                                    <Style x:Key="AJut_Style_ButtonHoverRepeat" TargetType="{x:Type RepeatButton}">
                                         <Setter Property="Delay" Value="1" />
                                         <Setter Property="Interval" Value="1" />
                                         <Setter Property="Opacity" Value="0.8" />
@@ -109,17 +109,17 @@
                                               Delay="{TemplateBinding BumpDelay}"
                                               CommandTarget="{Binding ElementName=PART_ScrollItemsContainer}">
                                     <RepeatButton.Style>
-                                        <Style TargetType="{x:Type RepeatButton}" BasedOn="{StaticResource BTN_HoverRepeat}">
+                                        <Style TargetType="{x:Type RepeatButton}" BasedOn="{StaticResource AJut_Style_ButtonHoverRepeat}">
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:BumpStack}}, Path=Orientation}" Value="Horizontal">
                                                     <Setter Property="HorizontalAlignment" Value="Left"/>
-                                                    <Setter Property="Content" Value="{StaticResource LeftChevronSymbol}"/>
+                                                    <Setter Property="Content" Value="{StaticResource AJut_Symbol_LeftChevron}"/>
                                                     <Setter Property="Command" Value="{Binding Source={x:Static ScrollBar.LineLeftCommand}}"/>
                                                     <Setter Property="IsEnabled" Value="{Binding ElementName=PART_ScrollItemsContainer, Path=(ap:ScrollXTA.CanScrollLeft)}"/>
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:BumpStack}}, Path=Orientation}" Value="Vertical">
                                                     <Setter Property="VerticalAlignment" Value="Top"/>
-                                                    <Setter Property="Content" Value="{StaticResource UpChevronSymbol}"/>
+                                                    <Setter Property="Content" Value="{StaticResource AJut_Symbol_UpChevron}"/>
                                                     <Setter Property="Command" Value="{Binding Source={x:Static ScrollBar.LineUpCommand}}"/>
                                                     <Setter Property="IsEnabled" Value="{Binding ElementName=PART_ScrollItemsContainer, Path=(ap:ScrollXTA.CanScrollUp)}"/>
                                                 </DataTrigger>
@@ -137,19 +137,19 @@
                                               Delay="{TemplateBinding BumpDelay}"
                                               CommandTarget="{Binding ElementName=PART_ScrollItemsContainer}">
                                     <RepeatButton.Style>
-                                        <Style TargetType="{x:Type RepeatButton}" BasedOn="{StaticResource BTN_HoverRepeat}">
+                                        <Style TargetType="{x:Type RepeatButton}" BasedOn="{StaticResource AJut_Style_ButtonHoverRepeat}">
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:BumpStack}}, Path=Orientation}" Value="Horizontal">
                                                     <Setter Property="HorizontalAlignment" Value="Right"/>
                                                     <Setter Property="VerticalContentAlignment" Value="Center"/>
-                                                    <Setter Property="Content" Value="{StaticResource RightChevronSymbol}"/>
+                                                    <Setter Property="Content" Value="{StaticResource AJut_Symbol_RightChevron}"/>
                                                     <Setter Property="Command" Value="{Binding Source={x:Static ScrollBar.LineRightCommand}}"/>
                                                     <Setter Property="IsEnabled" Value="{Binding ElementName=PART_ScrollItemsContainer, Path=(ap:ScrollXTA.CanScrollRight)}"/>
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:BumpStack}}, Path=Orientation}" Value="Vertical">
                                                     <Setter Property="VerticalAlignment" Value="Bottom"/>
                                                     <Setter Property="HorizontalContentAlignment" Value="Center"/>
-                                                    <Setter Property="Content" Value="{StaticResource DownChevronSymbol}"/>
+                                                    <Setter Property="Content" Value="{StaticResource AJut_Symbol_DownChevron}"/>
                                                     <Setter Property="Command" Value="{Binding Source={x:Static ScrollBar.LineDownCommand}}"/>
                                                     <Setter Property="IsEnabled" Value="{Binding ElementName=PART_ScrollItemsContainer, Path=(ap:ScrollXTA.CanScrollDown)}"/>
                                                 </DataTrigger>

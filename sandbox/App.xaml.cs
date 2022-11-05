@@ -6,6 +6,7 @@
     using AJut;
     using AJut.TypeManagement;
     using AJut.UX;
+    using AJut.UX.Theming;
 
     public partial class App : Application
     {
@@ -34,6 +35,8 @@
             // Add an entry to the log so we know we got this far!
             Logger.LogInfo("Starting up AJut Show Room");
         }
+
+        public static AppThemeManager ThemeTracker { get; } = new AppThemeManager();
 
         private static bool UnhandledExceptionProcessor (Exception e)
         {

@@ -11,25 +11,34 @@
         x:Name="Self"
         WindowStyle="None" 
         ajutap:WindowXTA.FixMaximizeAsFullscreenIssue="True"
-        ajutap:WindowXTA.MaximizedRootElementMargin="4,4"
-        ajutap:WindowXTA.FullscreenRootElementMargin="4,3"
-        Background="#F9F9F9"
-        MinWidth="300" MinHeight="300">
+        ajutap:WindowXTA.MaximizedRootElementMargin="4,3"
+        ajutap:WindowXTA.FullscreenRootElementMargin="4,2"
+        MinWidth="300" MinHeight="300"
+        Style="{DynamicResource AJut_Style_ThemedWindow}">
     <WindowChrome.WindowChrome>
         <WindowChrome CaptionHeight="40" ResizeBorderThickness="5"/>
     </WindowChrome.WindowChrome>
     <ajut:StackNavDisplay Navigator="{Binding ElementName=Self, Path=Navigator, Mode=OneTime}"
                           FixedDrawerWidth="260">
         <ajut:StackNavDisplay.Resources>
-            <Style TargetType="{x:Type ajut:StackNavActiveHeaderPresenter}">
-                <Setter Property="Background" Value="#8CF"/>
+            <Style TargetType="{x:Type ajut:StackNavActiveHeaderPresenter}" BasedOn="{StaticResource {x:Type ajut:StackNavActiveHeaderPresenter}}">
                 <Setter Property="AdditionalRightSideDisplay">
                     <Setter.Value>
                         <ajut:WindowChromeButtonStrip Margin="2"/>
                     </Setter.Value>
                 </Setter>
+                <Setter Property="TitleTemplate">
+                    <Setter.Value>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="showroom" FontSize="18" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <TextBlock Text="{Binding}" FontSize="22" VerticalAlignment="Center" Foreground="{DynamicResource AJut_Brush_TitleBarForegroundImportant}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </Setter.Value>
+                </Setter>
             </Style>
-            <Style TargetType="{x:Type ajut:StackNavActiveDrawerPresenter}">
+            <Style TargetType="{x:Type ajut:StackNavActiveDrawerPresenter}" BasedOn="{StaticResource {x:Type ajut:StackNavActiveDrawerPresenter}}">
                 <Setter Property="AdditionalBottomDisplay">
                     <Setter.Value>
                         <StackPanel HorizontalAlignment="Right" Margin="3" Opacity="0.7">
@@ -46,14 +55,6 @@
                                 </TextBlock.Inlines>
                             </TextBlock>
                         </StackPanel>
-                    </Setter.Value>
-                </Setter>
-                <Setter Property="Background">
-                    <Setter.Value>
-                        <LinearGradientBrush>
-                            <GradientStop Offset="0" Color="#F9F9F9"/>
-                            <GradientStop Offset="1" Color="#CCC"/>
-                        </LinearGradientBrush>
                     </Setter.Value>
                 </Setter>
             </Style>

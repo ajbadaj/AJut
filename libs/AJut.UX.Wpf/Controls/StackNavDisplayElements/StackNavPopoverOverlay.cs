@@ -84,7 +84,7 @@
 
         private void OuterContents_OnClick (object sender, MouseButtonEventArgs e)
         {
-            this.DisplayContent.Cancel();
+            this.DisplayContent.CancelViaClickAway();
         }
     }
 }

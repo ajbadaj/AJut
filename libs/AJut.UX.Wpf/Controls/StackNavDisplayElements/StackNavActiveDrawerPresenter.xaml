@@ -7,7 +7,7 @@
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <Style TargetType="{x:Type local:StackNavActiveDrawerPresenter}">
-        <Setter Property="BorderThickness" Value="1,1,0,1"/>
+        <Setter Property="BorderThickness" Value="0,0,1,0"/>
         <Setter Property="BorderBrush" Value="Black"/>
         <Setter Property="Visibility" Value="{Binding RelativeSource={RelativeSource Self}, Path=Navigator.IsDrawerOpen, Converter={ajconv:BooleanToVisibilityConverter FalseValue=Collapsed}}"/>
         <Setter Property="Template">

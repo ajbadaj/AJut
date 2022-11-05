@@ -5,7 +5,7 @@
                     xmlns:ajc="clr-namespace:AJut.UX.Converters"
                     xmlns:docking="clr-namespace:AJut.UX.Docking">
 
-    <DataTemplate x:Key="CONTROLTEMPLATE_VerticalDockZone">
+    <DataTemplate x:Key="AJut_ControlTemplate_VerticalDockZone">
         <Border TextElement.Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelForeground}"
                 CornerRadius="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelCornerRadius}">
             <local:UIElementRepeater DisplayChildren="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ChildZones}">
@@ -13,7 +13,7 @@
             </local:UIElementRepeater>
         </Border>
     </DataTemplate>
-    <DataTemplate x:Key="CONTROLTEMPLATE_HorizontalDockZone">
+    <DataTemplate x:Key="AJut_ControlTemplate_HorizontalDockZone">
         <Border TextElement.Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelForeground}"
                 CornerRadius="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelCornerRadius}">
             <local:UIElementRepeater DisplayChildren="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ChildZones}">
@@ -21,7 +21,7 @@
             </local:UIElementRepeater>
         </Border>
     </DataTemplate>
-    <DataTemplate x:Key="CONTROLTEMPLATE_TabbedDockZone">
+    <DataTemplate x:Key="AJut_ControlTemplate_TabbedDockZone">
         <DockPanel UseLayoutRounding="True" SnapsToDevicePixels="True">
             <!-- Tabs -->
             <local:DockZoneTabHeadersControl x:Name="PanelTabHeaders" DockPanel.Dock="Bottom" UseLayoutRounding="False" SnapsToDevicePixels="False"
@@ -89,7 +89,7 @@
             </Border>
         </DockPanel>
     </DataTemplate>
-    <DataTemplate x:Key="CONTROLTEMPLATE_SingleDockZone" >
+    <DataTemplate x:Key="AJut_ControlTemplate_SingleDockZone" >
         <Border x:Name="SingleBorderRoot"
                 DataContext="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ViewModel.DockedContent[0], FallbackValue={x:Null}}"
                 Background="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelBackground}"
@@ -136,7 +136,7 @@
             </DockPanel>
         </Border>
     </DataTemplate>
-    <DataTemplate x:Key="CONTROLTEMPLATE_Empty">
+    <DataTemplate x:Key="AJut_ControlTemplate_EmptyDockZone">
         <Border Background="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelBackground}"
                 BorderBrush="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelBorderBrush}" 
                 BorderThickness="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=PanelBorderThickness}"
@@ -212,21 +212,21 @@
                         <ContentPresenter>
                             <ContentPresenter.Style>
                                 <Style TargetType="{x:Type ContentPresenter}">
-                                    <Setter Property="ContentTemplate" Value="{StaticResource CONTROLTEMPLATE_Empty}"/>
+                                    <Setter Property="ContentTemplate" Value="{StaticResource AJut_ControlTemplate_EmptyDockZone}"/>
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ViewModel.Orientation}" Value="Vertical">
-                                            <Setter Property="ContentTemplate" Value="{StaticResource CONTROLTEMPLATE_VerticalDockZone}"/>
+                                            <Setter Property="ContentTemplate" Value="{StaticResource AJut_ControlTemplate_VerticalDockZone}"/>
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ViewModel.Orientation}" Value="Horizontal">
-                                            <Setter Property="ContentTemplate" Value="{StaticResource CONTROLTEMPLATE_HorizontalDockZone}"/>
+                                            <Setter Property="ContentTemplate" Value="{StaticResource AJut_ControlTemplate_HorizontalDockZone}"/>
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ViewModel.Orientation}" Value="Tabbed">
-                                            <Setter Property="ContentTemplate" Value="{StaticResource CONTROLTEMPLATE_TabbedDockZone}"/>
+                                            <Setter Property="ContentTemplate" Value="{StaticResource AJut_ControlTemplate_TabbedDockZone}"/>
                                             <Setter Property="MinHeight" Value="60"/>
                                             <Setter Property="MinWidth" Value="60"/>
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DockZone}}, Path=ViewModel.Orientation}" Value="Single">
-                                            <Setter Property="ContentTemplate" Value="{StaticResource CONTROLTEMPLATE_SingleDockZone}"/>
+                                            <Setter Property="ContentTemplate" Value="{StaticResource AJut_ControlTemplate_SingleDockZone}"/>
                                         </DataTrigger>
                                         
                                         <!-- =============[Scoots]=====================-->

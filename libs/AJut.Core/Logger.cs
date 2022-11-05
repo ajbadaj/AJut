@@ -20,13 +20,10 @@
         private volatile bool m_shouldLogToConsole;
         private volatile bool m_shouldLogToTrace;
         private volatile bool m_isEnabled = true;
-        private volatile bool m_flushToFileAfterEach;
+        private volatile bool m_flushToFileAfterEach = true;
         private volatile string m_dateTimeFormat = "MM.dd.yyy-hh.mm.ss";
 
         private readonly object m_logWritingLock = new object();
-
-        private static string kLogFilenameFormat = "log-{0:MM.dd.yyyy-hh.mm.ss}.txt";
-
 
         #region ========== Instance Code ==========
         private Logger ()
@@ -42,11 +39,18 @@
         {
             m_shouldLogToConsole = true;
             m_shouldLogToTrace = true;
-            m_flushToFileAfterEach = true;
         }
 
         /// <summary>
-        /// Indicates if calls to <see cref="Logger"/> should additionally direct to <see cref="Console"/>
+        /// The format of the log filename (given a <see cref="DateTime"/>). NOTE: Unlike -ALL- other properties, this will not change an actively running log file session, so set this before <see cref="CreateAndStartWritingToLogFileIn"/> is called.
+        /// </summary>
+        /// <remarks>
+        /// Unlike -ALL- other properties, this will not change an actively running log file session, so set this before <see cref="CreateAndStartWritingToLogFileIn"/> is called.
+        /// </remarks>
+        public static string LogFilenameFormat { get; set; } = "log-{0:MM.dd.yyyy-hh.mm.ss}.txt";
+
+        /// <summary>
+        /// Indicates if calls to <see cref="Logger"/> should additionally direct to <see cref="Console"/> (default to true in debug, false otherwise)
         /// </summary>
         public static bool ShouldLogToConsole
         {
@@ -55,7 +59,7 @@
         }
 
         /// <summary>
-        /// Indicates if calls to <see cref="Logger"/> should additionally direct to <see cref="Trace"/>
+        /// Indicates if calls to <see cref="Logger"/> should additionally direct to <see cref="Trace"/> (default to true in debug, false otherwise)
         /// </summary>
         public static bool ShouldLogToTrace
         {
@@ -64,7 +68,7 @@
         }
 
         /// <summary>
-        /// Indicates if the logger should force flush to file after each call (true) or leave it up manual calls to <see cref="ForceFlushToFile"/> (false).
+        /// Indicates if the logger should force flush to file after each call (true) or leave it up manual calls to <see cref="ForceFlushToFile"/> (false). Default is true.
         /// </summary>
         public static bool FlushToFileAfterEach
         {
@@ -80,6 +84,11 @@
             get => g_LoggerInstance.m_dateTimeFormat;
             set => g_LoggerInstance.m_dateTimeFormat = value;
         }
+
+        /// <summary>
+        /// Indicates if the logger is currently enabled (if false, log info/error calls to <see cref="Logger"/> do nothing).
+        /// </summary>
+        public static bool IsEnabled => g_LoggerInstance.m_isEnabled;
 
         /// <summary>
         /// Enables logging
@@ -167,7 +176,8 @@
                 g_LoggerInstance = new Logger();
 
                 Directory.CreateDirectory(directoryPath);
-                g_LoggerInstance.BuildAndSetupLogFileStream(Path.Combine(directoryPath, String.Format(kLogFilenameFormat, DateTime.Now)));
+                string logFileName = AJut.IO.PathHelpers.SanitizeFileName(String.Format(LogFilenameFormat, DateTime.Now));
+                g_LoggerInstance.BuildAndSetupLogFileStream(Path.Combine(directoryPath, logFileName));
             }
         }
 
@@ -313,7 +323,7 @@
 
         private class InfoLogType : LogType
         {
-            public override string GenerateOutputText (string message) => $"[Info] {DateTime.Now.ToString(Logger.DateTimeFormat)} |   {message}";
+            public override string GenerateOutputText (string message) => $"\r\n[Info] {DateTime.Now.ToString(Logger.DateTimeFormat)} |   {message}";
         }
 
         private class ErrorLogType : LogType

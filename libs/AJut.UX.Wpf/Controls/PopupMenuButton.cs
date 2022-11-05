@@ -3,6 +3,7 @@
     using System;
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
+    using System.Linq;
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Controls.Primitives;
@@ -44,10 +45,12 @@
             if (this.PART_Popup != null)
             {
                 this.PART_Popup.IsOpen = false;
+                this.PART_Popup.Opened -= this.OnPopupOpened;
             }
 
             base.OnApplyTemplate();
             this.PART_Popup = (Popup)this.GetTemplateChild(nameof(PART_Popup));
+            this.PART_Popup.Opened += this.OnPopupOpened;
         }
 
         public void Dispose ()
@@ -70,9 +73,12 @@
         }
 
         // =================[Simple Properties]===================
+        public event EventHandler<EventArgs<Popup>> MenuPopupOpened;
+
+        // =================[Simple Properties]===================
         private Popup PART_Popup { get; set; }
 
-        public ObservableCollection<MenuItem> MenuItems { get; } = new ObservableCollection<MenuItem>();
+        public ObservableCollection<Control> MenuItems { get; } = new ObservableCollection<Control>();
 
         // =================[Core Dependency Properties]===================
         public static readonly DependencyProperty ButtonStyleProperty = DPUtils.Register(_ => _.ButtonStyle);
@@ -139,7 +145,7 @@
         {
             if (e.OldItems != null)
             {
-                foreach (MenuItem item in e.OldItems)
+                foreach (MenuItem item in e.OldItems.OfType<MenuItem>())
                 {
                     item.Click -= _OnItemClicked;
                 }
@@ -147,7 +153,7 @@
 
             if (e.NewItems != null)
             {
-                foreach (MenuItem item in e.NewItems)
+                foreach (MenuItem item in e.NewItems.OfType<MenuItem>())
                 {
                     item.Click -= _OnItemClicked;
                     item.Click += _OnItemClicked;
@@ -158,6 +164,11 @@
             {
                 this.PART_Popup.IsOpen = false;
             }
+        }
+
+        private void OnPopupOpened (object sender, EventArgs e)
+        {
+            this.MenuPopupOpened?.Invoke(this, this.PART_Popup);
         }
     }
 }

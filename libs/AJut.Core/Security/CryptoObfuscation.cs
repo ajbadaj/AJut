@@ -1,8 +1,12 @@
 ﻿namespace AJut.Security
 {
     using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Diagnostics.Contracts;
     using System.IO;
     using System.Linq;
+    using System.Numerics;
     using System.Security.Cryptography;
     using System.Text;
 
@@ -19,6 +23,7 @@
     /// </summary>
     public static class CryptoObfuscation
     {
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private static string g_key;
 
         public static void Seed (string key)
@@ -28,7 +33,7 @@
 
         public static string RandomizeAndSalt (string seedString)
         {
-            Random rng = new Random(seedString.GetHashCode());
+            var rng = new Random(seedString.GenerateStableHashCode());
             var charList = seedString.ToList();
             for (int i = 0; i < 20; ++i)
             {
@@ -41,7 +46,7 @@
 
         private static Rfc2898DeriveBytes CreateCryptoBytes (string key)
         {
-            Random rng = new Random(key.GetHashCode());
+            Random rng = new Random(key.GenerateStableHashCode());
             byte[] crytpoSalt = new byte[rng.Next(8, 16)];
             rng.NextBytes(crytpoSalt);
             return new Rfc2898DeriveBytes(g_key, crytpoSalt);
@@ -89,6 +94,11 @@
                     return Encoding.Unicode.GetString(ms.ToArray());
                 }
             }
+        }
+
+        public static string Decrypt (ObfuscatedString toDecrypt, string key = null)
+        {
+            return CryptoObfuscation.Decrypt(toDecrypt.Active, key);
         }
     }
 }

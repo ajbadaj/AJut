@@ -14,6 +14,14 @@
         /// </summary>
         /// <param name="cancelReason">The reason for the cancellation, this can be left null if you have no specific user facing information to pass about why it was cancelled</param>
         void Cancel (string cancelReason = null);
+
+        /// <summary>
+        /// Close and cancel the popup due to a clickaway (implement to ignore or perform other actions here)
+        /// </summary>
+        void CancelViaClickAway ()
+        {
+            Cancel("User requested via click away");
+        }
     }
 
     /// <summary>

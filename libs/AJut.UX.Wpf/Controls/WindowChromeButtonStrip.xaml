@@ -6,14 +6,14 @@
                     xmlns:ajc="clr-namespace:AJut.UX.Converters"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
-    <sys:String x:Key="ChromeMaximizeSymbol">&#xE922;</sys:String>
-    <sys:String x:Key="ChromeMinimizeSymbol">&#xE921;</sys:String>
-    <sys:String x:Key="ChromeRestoreSymbol" >&#xE923;</sys:String>
-    <sys:String x:Key="ChromeCloseSymbol"   >&#xE8BB;</sys:String>
-    <sys:String x:Key="ExitFullScreenSymbol">&#xE73F;</sys:String>
-    <sys:String x:Key="FullScreenSymbol"    >&#xE740;</sys:String>
-    
-    <Style TargetType="{x:Type ButtonBase}" x:Key="WindowChromeButton">
+    <sys:String x:Key="AJut_Symbol_ChromeMaximize">&#xE922;</sys:String>
+    <sys:String x:Key="AJut_Symbol_ChromeMinimize">&#xE921;</sys:String>
+    <sys:String x:Key="AJut_Symbol_ChromeRestore" >&#xE923;</sys:String>
+    <sys:String x:Key="AJut_Symbol_ChromeClose"   >&#xE8BB;</sys:String>
+    <sys:String x:Key="AJut_Symbol_ExitFullscreen">&#xE73F;</sys:String>
+    <sys:String x:Key="AJut_Symbol_EnterFullscreen">&#xE740;</sys:String>
+
+    <Style x:Key="AJut_Style_WindowChromeButton" TargetType="{x:Type Button}">
         <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
         <Setter Property="BorderThickness" Value="1,1,0,0"/>
         <Setter Property="FontSize" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonGlyphFontSize}" />
@@ -21,11 +21,15 @@
         <Setter Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonBorder}"/>
         <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonBackground}"/>
         <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonGlyphForeground}"/>
+        <Setter Property="ajap:BorderXTA.CornerRadius" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonCornerRadius}"/>
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="{x:Type ButtonBase}">
-                    <Border x:Name="ChromeButtonBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonCornerRadius}" IsHitTestVisible="True">
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{ajut:TemplateBinding Path=(ajap:BorderXTA.CornerRadius)}" 
+                            IsHitTestVisible="True">
                         <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}"
                                           TextElement.FontFamily="Segoe MDL2 Assets"
                                           Margin="{TemplateBinding Padding}"
@@ -34,30 +38,30 @@
                                           Content="{TemplateBinding Content}">
                             <ContentPresenter.ContentTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding}" Foreground="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType={x:Type ButtonBase}}}"/>
+                                    <TextBlock Text="{Binding}" Foreground="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType={x:Type Button}}}"/>
                                 </DataTemplate>
                             </ContentPresenter.ContentTemplate>
                         </ContentPresenter>
                     </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="ChromeButtonBorder" Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonHoverBackground}"/>
-                            <Setter TargetName="ChromeButtonBorder" Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonHoverBorder}" />
-                            <Setter TargetName="ChromeButtonBorder" Property="TextElement.Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonHoverGlyphForeground}" />
-                        </Trigger>
-                        <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="ChromeButtonBorder" Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonPressedBackground}"/>
-                            <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonPressedGlyphForeground}"/>
-                            <Setter TargetName="ChromeButtonBorder" Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonPressedBorder}" />
-                            <Setter TargetName="ChromeButtonBorder" Property="BorderThickness" Value="0,0,1,1" />
-                        </Trigger>
-                        <Trigger Property="IsEnabled" Value="False">
-                            <Setter TargetName="ChromeButtonBorder" Property="Opacity" Value="0.3"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonHoverBackground}"/>
+                <Setter Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonHoverBorder}" />
+                <Setter Property="TextElement.Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonHoverGlyphForeground}" />
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonPressedBackground}"/>
+                <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonPressedGlyphForeground}"/>
+                <Setter Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonPressedBorder}" />
+                <Setter Property="BorderThickness" Value="0,0,1,1" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Opacity" Value="0.3"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
 
     <Style TargetType="{x:Type local:WindowChromeButtonStrip}">
@@ -102,8 +106,8 @@
                         <StackPanel Margin="{TemplateBinding Padding}" Orientation="Horizontal" VerticalAlignment="Top" HorizontalAlignment="Right">
                             <!-- ==========[ Minimize ]============== -->
                             <Grid Visibility="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=(ajap:WindowXTA.IsFullscreen), Converter={ajc:BooleanToVisibilityConverter TrueValue=Collapsed, FalseValue=Visible}}">
-                                <Button Style="{StaticResource WindowChromeButton}"
-                                        Content="{StaticResource ChromeMinimizeSymbol}"
+                                <Button Style="{StaticResource AJut_Style_WindowChromeButton}"
+                                        Content="{StaticResource AJut_Symbol_ChromeMinimize}"
                                         Visibility="{ajut:TemplateBinding Path=AllowMinimize, Converter={ajc:BooleanToVisibilityConverter}}"
                                         WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=MinimizeToolTip, Mode=OneWay}"
                                         Command="{x:Static SystemCommands.MinimizeWindowCommand}"/>
@@ -111,14 +115,14 @@
                             <!-- ==========[ Restore/Maximize ]=============== -->
                             <Button WindowChrome.IsHitTestVisibleInChrome="True">
                                 <Button.Style>
-                                    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource WindowChromeButton}">
-                                        <Setter Property="Content" Value="{StaticResource ChromeMaximizeSymbol}" />
+                                    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource AJut_Style_WindowChromeButton}">
+                                        <Setter Property="Content" Value="{StaticResource AJut_Symbol_ChromeMaximize}" />
                                         <Setter Property="Command" Value="{x:Static SystemCommands.MaximizeWindowCommand}"/>
                                         <Setter Property="Visibility" Value="Collapsed"/>
                                         <Setter Property="ToolTip" Value="{ajut:TemplateBinding Path=MaximizeWindowedToolTip}"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=WindowState}" Value="Maximized">
-                                                <Setter Property="Content" Value="{StaticResource ChromeRestoreSymbol}" />
+                                                <Setter Property="Content" Value="{StaticResource AJut_Symbol_ChromeRestore}" />
                                                 <Setter Property="Command" Value="{x:Static SystemCommands.RestoreWindowCommand}"/>
                                                 <Setter Property="ToolTip" Value="{ajut:TemplateBinding Path=RestoreMaximizedWindowToolTip}"/>
                                             </DataTrigger>
@@ -144,12 +148,12 @@
                                 <Button.Style>
                                     <Style TargetType="{x:Type Button}" BasedOn="{StaticResource WindowChromeButton}">
                                         <Setter Property="Content" Value="{StaticResource FullScreenSymbol}" />
-                                        <Setter Property="ToolTip" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=EnterFullscreenToolTip, Mode=OneWay}"/>
+                                        <Setter Property="ToolTip" Value="Go to fullscreen (this will cover everything else including the task bar)"/>
                                         <Setter Property="Margin" Value="0,0,7,0"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=(ajap:WindowXTA.IsFullscreen)}" Value="True">
                                                 <Setter Property="Content" Value="{StaticResource ExitFullScreenSymbol}" />
-                                                <Setter Property="ToolTip" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=LeaveFullscreenToolTip, Mode=OneWay}"/>
+                                                <Setter Property="ToolTip" Value="Exit fullscreen"/>
                                                 <Setter Property="Margin" Value="0,0,-3,0"/>
                                             </DataTrigger>
                                         </Style.Triggers>
@@ -170,11 +174,12 @@
                                 </Grid.Style>
                                 <Button x:Name="PART_ChromeCloseButton" Style="{StaticResource WindowChromeButton}" 
                                         Content="{StaticResource ChromeCloseSymbol}"
-                                        WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=CloseToolTip, Mode=OneWay}"
+                                        WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Close"
                                         Command="{x:Static SystemCommands.CloseWindowCommand}">
                                     <Button.Template>
                                         <ControlTemplate TargetType="{x:Type ButtonBase}">
-                                            <Border x:Name="ChromeButtonBorder" Background="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonBackground}" 
+                                            <Border x:Name="ChromeButtonBorder" 
+                                                    Background="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonBackground}" 
                                                     BorderBrush="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonBorder}"
                                                     BorderThickness="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=BorderThickness}"
                                                     CornerRadius="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=ButtonCornerRadius}"
