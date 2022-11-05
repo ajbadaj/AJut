@@ -146,13 +146,13 @@
                                     WindowChrome.IsHitTestVisibleInChrome="True"
                                     Command="{x:Static ajap:WindowXTA.ToggleFullscreenCommand}">
                                 <Button.Style>
-                                    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource WindowChromeButton}">
-                                        <Setter Property="Content" Value="{StaticResource FullScreenSymbol}" />
+                                    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource AJut_Style_WindowChromeButton}">
+                                        <Setter Property="Content" Value="{StaticResource AJut_Symbol_EnterFullscreen}" />
                                         <Setter Property="ToolTip" Value="Go to fullscreen (this will cover everything else including the task bar)"/>
                                         <Setter Property="Margin" Value="0,0,7,0"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=(ajap:WindowXTA.IsFullscreen)}" Value="True">
-                                                <Setter Property="Content" Value="{StaticResource ExitFullScreenSymbol}" />
+                                                <Setter Property="Content" Value="{StaticResource AJut_Symbol_ExitFullscreen}" />
                                                 <Setter Property="ToolTip" Value="Exit fullscreen"/>
                                                 <Setter Property="Margin" Value="0,0,-3,0"/>
                                             </DataTrigger>
@@ -172,8 +172,8 @@
                                         </Style.Triggers>
                                     </Style>
                                 </Grid.Style>
-                                <Button x:Name="PART_ChromeCloseButton" Style="{StaticResource WindowChromeButton}" 
-                                        Content="{StaticResource ChromeCloseSymbol}"
+                                <Button x:Name="PART_ChromeCloseButton" Style="{StaticResource AJut_Style_WindowChromeButton}" 
+                                        Content="{StaticResource AJut_Symbol_ChromeClose}"
                                         WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Close"
                                         Command="{x:Static SystemCommands.CloseWindowCommand}">
                                     <Button.Template>

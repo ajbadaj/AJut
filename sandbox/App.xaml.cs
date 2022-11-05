@@ -36,7 +36,14 @@
             Logger.LogInfo("Starting up AJut Show Room");
         }
 
-        public static AppThemeManager ThemeTracker { get; } = new AppThemeManager();
+        protected override void OnStartup (StartupEventArgs e)
+        {
+            ThemeTracker = new AppThemeManager();
+            ThemeTracker.ThemeConfiguration = eAppThemeConfiguration.UseSameAsOS;
+            base.OnStartup(e);
+        }
+
+        public static AppThemeManager? ThemeTracker { get; private set; }
 
         private static bool UnhandledExceptionProcessor (Exception e)
         {
