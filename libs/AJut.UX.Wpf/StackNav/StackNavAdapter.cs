@@ -1,7 +1,6 @@
 ﻿namespace AJut.UX
 {
     using System;
-    using System.Collections.Generic;
     using System.Threading.Tasks;
     using AJut;
     using AJut.Storage;
@@ -217,6 +216,11 @@
             private set => this.SetAndRaiseIfChanged(ref m_busyWaitText, value);
         }
 
+        /// <summary>
+        /// Should the control be disposed (if IDisposable) when it is closed? Default = true
+        /// </summary>
+        public bool DisposeDisposableDisplays { get; set; } = true;
+
         // ========================================[ Methods ]========================================
 
         /// <summary>
@@ -294,6 +298,13 @@
             }
 
             this.Closed?.Invoke(this, EventArgs.Empty);
+
+            // Dispose
+            if (this.DisposeDisposableDisplays && this.Display is IDisposable disposableDisplay)
+            {
+                disposableDisplay.Dispose();
+            }
+
             return true;
         }
 

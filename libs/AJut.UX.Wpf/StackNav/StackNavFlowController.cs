@@ -3,7 +3,6 @@
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
-    using System.Windows;
     using AJut;
 
     /// <summary>
@@ -244,6 +243,10 @@
                 else
                 {
                     m_displayElementType = adapter.Display.GetType();
+                    if (adapter.DisposeDisposableDisplays && adapter.Display is IDisposable disposableDisplay)
+                    {
+                        disposableDisplay.Dispose();
+                    }
                 }
             }
 
