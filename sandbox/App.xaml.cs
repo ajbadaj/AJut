@@ -57,6 +57,32 @@
             return System.IO.Path.Combine(ApplicationUtilities.AppDataRoot, pathEnd);
         }
 
+        private readonly ResourceDictionary?[] m_themeSaves = new ResourceDictionary?[2];
+
+        public static void SetUseThemes (bool useThemes)
+        {
+            ((App)App.Current).DoSetUseThemes(useThemes);
+        }
+
+        private void DoSetUseThemes (bool useThemes)
+        {
+            if (useThemes)
+            {
+                this.Resources.MergedDictionaries.Insert(0, m_themeSaves[0]);
+                this.Resources.MergedDictionaries.Insert(1, m_themeSaves[1]);
+
+                m_themeSaves[0] = null;
+                m_themeSaves[1] = null;
+            }
+            else
+            {
+                m_themeSaves[0] = this.Resources.MergedDictionaries[0];
+                m_themeSaves[1] = this.Resources.MergedDictionaries[1];
+                this.Resources.MergedDictionaries.Remove(m_themeSaves[0]);
+                this.Resources.MergedDictionaries.Remove(m_themeSaves[1]);
+            }
+        }
+
         public static string AJut_Core_Version { get; }
         public static string AJut_Ux_Wpf_Version { get; }
     }
