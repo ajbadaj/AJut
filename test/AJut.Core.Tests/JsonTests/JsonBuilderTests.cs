@@ -3,6 +3,7 @@
     using AJut.Text.AJson;
     using AJut.TypeManagement;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
     using System;
     using System.Collections.Generic;
     using System.Linq;
@@ -315,6 +316,23 @@
 
             Assert.IsTrue(doc.TryGetValue(nameof(TestStruct.Bar), out string bar));
             Assert.AreEqual(expectedBar, bar);
+        }
+
+        [TestMethod]
+        public void AJson_JsonBuilding_CanBuildJsonWithTimezone ()
+        {
+            var obj = new
+            {
+                LocalTimeZone = TimeZoneInfo.Local
+            };
+
+            Json json = JsonHelper.BuildJsonForObject(obj);
+            Assert.IsTrue(json, json.GetErrorReport());
+            Assert.IsTrue(json.Data.IsDocument);
+
+            var doc = (JsonDocument)json.Data;
+            Assert.IsTrue(doc.ContainsKey(nameof(obj.LocalTimeZone)));
+            Assert.AreEqual(obj.LocalTimeZone.Id, doc.ValueFor(nameof(obj.LocalTimeZone)).StringValue);
         }
 
         public class RuntimeTypeEvaluatorObject
