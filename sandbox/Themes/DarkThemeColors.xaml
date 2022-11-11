@@ -2,15 +2,12 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="/AJut.UX.Wpf;component/Resources/DarkThemeColorsBase.xaml"/>
-        
-        <!-- You can test overriding the default theme values provided by ajut -->
-        <!--<ResourceDictionary>
-            <Color x:Key="AJut_Color_PrimaryHighlight">#DA2</Color>
-            <Color x:Key="AJut_Color_PrimaryHighlightDark">#C70</Color>
-            <Color x:Key="AJut_Color_PrimaryHighlightDesat">#DA5</Color>
-            <Color x:Key="AJut_Color_PrimaryHighlightBright">#FC4</Color>
-        </ResourceDictionary>-->
     </ResourceDictionary.MergedDictionaries>
 
 
+    <!-- You can test overriding the default theme values provided by ajut -->
+    <!--<Color x:Key="AJut_Color_PrimaryHighlight">#DA2</Color>
+    <Color x:Key="AJut_Color_PrimaryHighlightDark">#C70</Color>
+    <Color x:Key="AJut_Color_PrimaryHighlightDesat">#DA5</Color>
+    <Color x:Key="AJut_Color_PrimaryHighlightBright">#FC4</Color>-->
 </ResourceDictionary>

@@ -5,6 +5,7 @@
     using System.Diagnostics;
     using System.IO;
     using System.Windows;
+    using System.Windows.Controls.Primitives;
     using AJut;
     using AJut.Text.AJson;
     using AJut.TypeManagement;
@@ -14,10 +15,12 @@
 
     public partial class App : Application, INotifyPropertyChanged
     {
+        private const int kThemeMeatIndex = 1; // 0 is the theme colors, controlled by the ThemeTracker - 1 is the control styles or the backup
         private const string kConfigFileName = ".ajut-showroom-config";
         public static Random kRNG = new Random(DateTime.Now.Millisecond);
         private static bool g_restrictThemeChangeNotification = true;
-        private readonly ResourceDictionary?[] m_themeSaves = new ResourceDictionary?[2];
+        private ResourceDictionary m_controlThemes;
+        private ResourceDictionary m_themesAreOff;
         private bool m_useThemes = true;
 
         // ==================[ Construction ]========================
@@ -53,9 +56,16 @@
 
             AJutShowroomAppConfig config = GetConfig();
             ThemeTracker.ThemeConfiguration = config.Theme;
-            base.OnStartup(e);
+            m_useThemes = config.UseThemes;
 
-            this.UseThemes = config.UseThemes;
+            // We want startup to be all the way correct, as swapping things with staticresource dependency after the fact does not work very well.
+            //  Thus instead of starting off with control themes in the App.xaml.cs like we normally we would, we're going to insert the correct
+            //  theme thing pre-startup instead.
+            m_controlThemes = (ResourceDictionary)Application.LoadComponent(new Uri($"Themes/ThemedControlStyles.xaml", UriKind.Relative));
+            m_themesAreOff = (ResourceDictionary)Application.LoadComponent(new Uri($"Themes/ThemesAreOffBackup.xaml", UriKind.Relative));
+            this.Resources.MergedDictionaries.Insert(kThemeMeatIndex, config.UseThemes ? m_controlThemes : m_themesAreOff);
+
+            base.OnStartup(e);
             ThemeTracker.PropertyChanged += _OnThemeTrackerChanged;
 
             g_restrictThemeChangeNotification = false;
@@ -89,7 +99,7 @@
                 }
 
                 m_useThemes = value;
-                this.SetUseThemes(value);
+                this.ResetThemeUsage();
                 App.SaveConfig();
                 this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(UseThemes)));
             }
@@ -103,30 +113,25 @@
             return result == MessageBoxResult.Yes;
         }
 
-        private async void SetUseThemes (bool useThemes)
+        private async void ResetThemeUsage ()
         {
-            if (useThemes)
-            {
-                this.Resources.MergedDictionaries.Insert(0, m_themeSaves[0]);
-                this.Resources.MergedDictionaries.Insert(1, m_themeSaves[1]);
+            this.Resources.MergedDictionaries.RemoveAt(1);
 
-                m_themeSaves[0] = null;
-                m_themeSaves[1] = null;
+            if (m_useThemes)
+            {
+                this.Resources.MergedDictionaries.Insert(kThemeMeatIndex, m_controlThemes);
             }
             else
             {
-                m_themeSaves[0] = this.Resources.MergedDictionaries[0];
-                m_themeSaves[1] = this.Resources.MergedDictionaries[1];
-                this.Resources.MergedDictionaries.Remove(m_themeSaves[0]);
-                this.Resources.MergedDictionaries.Remove(m_themeSaves[1]);
+                this.Resources.MergedDictionaries.Insert(kThemeMeatIndex, m_themesAreOff);
             }
 
             SaveConfig();
 
-            if (g_restrictThemeChangeNotification)
+            if (!g_restrictThemeChangeNotification)
             {
                 string msg = m_useThemes ? "on" : "off";
-                await App.Navigator.StackTopDisplayAdapter.ShowPopover(MessageBoxPopover.Generate($"Themes are now {msg}, this may require restart to take proper effect"));
+                await App.Navigator.StackTopDisplayAdapter.ShowPopover(MessageBoxPopover.Generate($"Themes are now {msg}, this may require restart to take proper effect", "Ok"));
             }
         }
 
