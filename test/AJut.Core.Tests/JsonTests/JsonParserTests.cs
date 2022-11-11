@@ -6,6 +6,7 @@
     using System.Web;
     using AJut.Text.AJson;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class JsonParserTests
@@ -528,6 +529,23 @@
             var doc = (JsonDocument)json.Data;
             Assert.IsTrue(doc.ContainsKey(key));
             Assert.AreEqual(value, doc.ValueFor(key).StringValue);
+        }
+
+        [TestMethod]
+        public void AJson_JsonParsing_CanParseJsonWithTimezone ()
+        {
+            const string key = "timezone";
+            TimeZoneInfo value = TimeZoneInfo.Local;
+            string jsonText = $"{{\"{key}\": \"{value.Id}\"}}";
+
+            Json json = JsonHelper.ParseText(jsonText);
+            Assert.IsTrue(json, json.GetErrorReport());
+            Assert.IsTrue(json.Data.IsDocument);
+
+            var doc = (JsonDocument)json.Data;
+            Assert.IsTrue(doc.ContainsKey(key));
+            Assert.IsTrue(doc.TryGetValue(key, out TimeZoneInfo parsedValue));
+            Assert.AreEqual(value, parsedValue);
         }
     }
 }
