@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Linq;
 
     /// <summary>
     /// A delegate used to construct an instance from a json value (given interpretter settings)
@@ -24,6 +25,7 @@
             m_customConstructors.Add(typeof(DateTime), _CreateDateTimeFor);
             m_customConstructors.Add(typeof(TimeSpan), _CreateTimeSpanFor);
             m_customConstructors.Add(typeof(KeyValuePair<,>), _CreateKeyValuePairFor);
+            m_customConstructors.Add(typeof(TimeZoneInfo), _CreateTimezoneInfo);
 
             object _CreateGuidFor (Type fullTarget, JsonValue json, JsonInterpretterSettings settings)
             {
@@ -88,6 +90,11 @@
                 object valueObj = JsonHelper.BuildObjectForJson(valueType, valueJson, settings);
 
                 return kvpType.GetConstructor(genericTypes).Invoke(new[] { keyObj, valueObj });
+            }
+
+            object _CreateTimezoneInfo (Type fullTarget, JsonValue json, JsonInterpretterSettings settings)
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById(json.StringValue);
             }
         }
 

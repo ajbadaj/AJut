@@ -213,6 +213,10 @@
         <Setter Property="ButtonForeground" Value="{DynamicResource AJut_Brush_NormalText}"/>
     </Style>
 
+    <Style TargetType="{x:Type ajut_ctrls:MessageBoxPopover}">
+        <Setter Property="OptionButtonStyle" Value="{DynamicResource AJut_Style_MessageBoxButton}"/>
+    </Style>
+
     <Style TargetType="{x:Type TextBlock}" x:Key="AJut_SymbolText">
         <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
         <Setter Property="FontSize" Value="20"/>
@@ -353,6 +357,20 @@
     </Style>
 
     <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource AJut_Style_ToggleButton}" />
+
+
+    <Style x:Key="AJut_Style_MessageBoxButton" TargetType="{x:Type Button}" BasedOn="{StaticResource AJut_Style_ButtonBase}">
+        <Setter Property="TextElement.FontSize" Value="14"/>
+        <Setter Property="Padding" Value="5,2"/>
+        <Setter Property="Margin" Value="5,0,0,0"/>
+        <Setter Property="MinWidth" Value="60"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding Path=IsCancel, FallbackValue=False, TargetNullValue=False}" Value="True">
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_BadStuff}"/>
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_SymbolForeground}"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
 
     <Style TargetType="{x:Type ListBoxItem}">
         <Setter Property="TextElement.FontFamily" Value="Segoe UI" />

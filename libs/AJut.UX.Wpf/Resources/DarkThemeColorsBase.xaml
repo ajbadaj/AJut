@@ -96,7 +96,7 @@
     <SolidColorBrush x:Key="AJut_Brush_DrawerForeground" Color="#333" />
     <SolidColorBrush x:Key="AJut_Brush_DrawerForegroundImportant" Color="#000" />
 
-    <SolidColorBrush x:Key="AJut_Brush_BadStuff" Color="#CD1820"/>
+    <SolidColorBrush x:Key="AJut_Brush_BadStuff" Color="#A31B22"/>
     <SolidColorBrush x:Key="AJut_Brush_TrackBackground" Color="#444"/>
     <SolidColorBrush x:Key="AJut_Brush_ToolTipBackground" Color="#202020"/>
     <SolidColorBrush x:Key="AJut_Brush_BannerBackground" Color="#111117"/>

@@ -79,6 +79,7 @@
                 m_customJsonConstructor.Add(typeof(DateTime), _DateTimeToJsonString);
                 m_customJsonConstructor.Add(typeof(TimeSpan), _TimeSpanToJsonString);
                 m_customJsonConstructor.Add(typeof(Guid), _GuidToJsonString);
+                m_customJsonConstructor.Add(typeof(TimeZoneInfo), _TimeZoneToAJsonString);
 
                 string _BoolToJsonString (object instance) => ((bool)instance) ? "True" : "False";
                 string _DateTimeToJsonString (object instance)
@@ -93,6 +94,7 @@
                 }
                 string _TimeSpanToJsonString (object instance) => ((TimeSpan)instance).ToString();
                 string _GuidToJsonString (object instance) => ((Guid)instance).ToString();
+                string _TimeZoneToAJsonString (object instance) => ((TimeZoneInfo)instance).Id;
             }
 
             public string Tabbing { get; set; }
