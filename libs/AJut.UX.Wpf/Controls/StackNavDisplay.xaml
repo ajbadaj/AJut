@@ -16,14 +16,14 @@
                             BorderBrush="{TemplateBinding BorderBrush}"
                             Background="{TemplateBinding Background}">
                         <DockPanel>
-                            <ctrls:StackNavActiveHeaderPresenter DockPanel.Dock="Top" Navigator="{Binding ElementName=Self, Path=Navigator}"/>
-                            <ctrls:StackNavActiveDrawerPresenter DockPanel.Dock="Left" Navigator="{Binding ElementName=Self, Path=Navigator}" Width="{TemplateBinding FixedDrawerWidth}"/>
-                            <ctrls:StackNavActiveContentPresenter Navigator="{Binding ElementName=Self, Path=Navigator}"/>
+                            <ctrls:StackNavActiveHeaderPresenter DockPanel.Dock="Top" Navigator="{ajut:TemplateBinding Path=Navigator}"/>
+                            <ctrls:StackNavActiveDrawerPresenter DockPanel.Dock="Left" Navigator="{ajut:TemplateBinding Path=Navigator}" Width="{TemplateBinding FixedDrawerWidth}"/>
+                            <ctrls:StackNavActiveContentPresenter Navigator="{ajut:TemplateBinding Path=Navigator}"/>
                         </DockPanel>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>
-    
+
 </ResourceDictionary>
