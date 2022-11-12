@@ -34,30 +34,38 @@
                             </TextBlock.Inlines>
                         </TextBlock>
                     </StackPanel>
-                    <ajut:BumpStack Grid.Row="1" Orientation="Horizontal" Width="500" Height="250" BorderBrush="{DynamicResource AJut_Brush_PrimaryHighlightDesat}" BorderThickness="2"
-                                    ajut_ap:BorderXTA.CornerRadius="5" Background="{DynamicResource AJut_Brush_PopupBackground}" Padding="10"
-                                    ButtonFontSize="32" ButtonPadding="40">
-                        <StackPanel VerticalAlignment="Center">
-                            <Viewbox Width="120">
-                                <ajut:Svg Source="Images/PenguinExample.svg"/>
-                            </Viewbox>
-                            <TextBlock Text="Check out this ↑ SVG" FontSize="16"/>
-                        </StackPanel>
-                        <ajut:NumericEditor VerticalAlignment="Center" Width="100" Margin="50,0,0,0"/>
-                        <ajut:ToggleStrip VerticalAlignment="Center" Margin="50,0,0,0">
-                            <ajut:ToggleStrip.ItemsSource>
-                                <x:Array Type="{x:Type sys:String}">
-                                    <sys:String>A</sys:String>
-                                    <sys:String>Really</sys:String>
-                                    <sys:String>Cool</sys:String>
-                                    <sys:String>Toggle</sys:String>
-                                    <sys:String>Strip</sys:String>
-                                </x:Array>
-                            </ajut:ToggleStrip.ItemsSource>
-                        </ajut:ToggleStrip>
-                        <ajut:EditableTextBlock Margin="50,0,0,0" Text="And much much more!" FontSize="15" ToolTip="This is edtiable!"
-                                                VerticalAlignment="Center" EditTextInstagatorAction="MouseOver"/>
-                    </ajut:BumpStack>
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1*"/>
+                            <ColumnDefinition Width="3*"/>
+                            <ColumnDefinition Width="1*"/>
+                        </Grid.ColumnDefinitions>
+                        <ajut:BumpStack Grid.Column="1" Orientation="Horizontal" MaxWidth="1000" Height="250" BorderBrush="{DynamicResource AJut_Brush_PrimaryHighlightDesat}" BorderThickness="2"
+                                        ajut_ap:BorderXTA.CornerRadius="5" Background="{DynamicResource AJut_Brush_PopupBackground}" Padding="10"
+                                        ButtonFontSize="32" ButtonPadding="40">
+                            <StackPanel VerticalAlignment="Center">
+                                <Viewbox Width="120">
+                                    <ajut:Svg Source="Images/PenguinExample.svg"/>
+                                </Viewbox>
+                                <TextBlock Text="Check out this ↑ SVG" FontSize="16"/>
+                            </StackPanel>
+                            <ajut:NumericEditor VerticalAlignment="Center" Width="100" Margin="50,0,0,0"/>
+                            <ajut:ToggleStrip VerticalAlignment="Center" Margin="50,0,0,0">
+                                <ajut:ToggleStrip.ItemsSource>
+                                    <x:Array Type="{x:Type sys:String}">
+                                        <sys:String>A</sys:String>
+                                        <sys:String>Really</sys:String>
+                                        <sys:String>Cool</sys:String>
+                                        <sys:String>Toggle</sys:String>
+                                        <sys:String>Strip</sys:String>
+                                    </x:Array>
+                                </ajut:ToggleStrip.ItemsSource>
+                            </ajut:ToggleStrip>
+                            <ajut:EditableTextBlock Margin="50,0,0,0" Text="And much much more!" FontSize="15" ToolTip="This is edtiable!" Width="300"
+                                                    VerticalAlignment="Center" EditTextInstagatorAction="MouseOver"
+                                                    TextBlockTextTrimming="CharacterEllipsis"/>
+                        </ajut:BumpStack>
+                    </Grid>
                     <Button Grid.Row="2" Content="Explore standalone controls →" HorizontalAlignment="Right" Padding="15,10" FontSize="14" Click="NavControls_OnClick"/>
                 </Grid>
             </TabItem>
