@@ -3,6 +3,9 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
+             xmlns:ajut_ap="clr-namespace:AJut.UX.AttachedProperties;assembly=AJut.UX.Wpf"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800"
              x:Name="Self">
@@ -17,6 +20,7 @@
             <TabItem Header="Controls">
                 <Grid>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="auto"/>
                         <RowDefinition />
                         <RowDefinition Height="auto"/>
                     </Grid.RowDefinitions>
@@ -30,7 +34,31 @@
                             </TextBlock.Inlines>
                         </TextBlock>
                     </StackPanel>
-                    <Button Grid.Row="1" Content="Explore standalone controls →" HorizontalAlignment="Right" Padding="15,10" FontSize="14" Click="NavControls_OnClick"/>
+                    <ajut:BumpStack Grid.Row="1" Orientation="Horizontal" Width="500" Height="250" BorderBrush="{DynamicResource AJut_Brush_PrimaryHighlightDesat}" BorderThickness="2"
+                                    ajut_ap:BorderXTA.CornerRadius="5" Background="{DynamicResource AJut_Brush_PopupBackground}" Padding="10"
+                                    ButtonFontSize="32" ButtonPadding="40">
+                        <StackPanel VerticalAlignment="Center">
+                            <Viewbox Width="120">
+                                <ajut:Svg Source="Images/PenguinExample.svg"/>
+                            </Viewbox>
+                            <TextBlock Text="Check out this ↑ SVG" FontSize="16"/>
+                        </StackPanel>
+                        <ajut:NumericEditor VerticalAlignment="Center" Width="100" Margin="50,0,0,0"/>
+                        <ajut:ToggleStrip VerticalAlignment="Center" Margin="50,0,0,0">
+                            <ajut:ToggleStrip.ItemsSource>
+                                <x:Array Type="{x:Type sys:String}">
+                                    <sys:String>A</sys:String>
+                                    <sys:String>Really</sys:String>
+                                    <sys:String>Cool</sys:String>
+                                    <sys:String>Toggle</sys:String>
+                                    <sys:String>Strip</sys:String>
+                                </x:Array>
+                            </ajut:ToggleStrip.ItemsSource>
+                        </ajut:ToggleStrip>
+                        <ajut:EditableTextBlock Margin="50,0,0,0" Text="And much much more!" FontSize="15" ToolTip="This is edtiable!"
+                                                VerticalAlignment="Center" EditTextInstagatorAction="MouseOver"/>
+                    </ajut:BumpStack>
+                    <Button Grid.Row="2" Content="Explore standalone controls →" HorizontalAlignment="Right" Padding="15,10" FontSize="14" Click="NavControls_OnClick"/>
                 </Grid>
             </TabItem>
             <TabItem Header="Content Flows">
