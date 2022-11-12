@@ -19,16 +19,13 @@
     <sys:String x:Key="AJut_Symbol_LeftChevron" >&#xE76B;</sys:String>
     <sys:String x:Key="AJut_Symbol_RightChevron" >&#xE76C;</sys:String>
 
-    <PathGeometry x:Key="AJut_PathGeom_CollapseElement" Figures="m 1.5822262 13.149315 c -0.5104897 -0.205966 -0.92816294 -0.88364 -0.92816294 -1.505871 0 -0.747823 0.41673204 -0.971472 1.22922564 -0.659657 0.7509982 0.288294 1.9081465 -0.165894 2.9742889 -1.1677221 L 6.6026364 8.1766679 4.9774932 6.4468079 C 3.94602 5.3488411 2.8595106 4.8733389 2.0032072 5.1451022 0.00772098 5.7784558 0.30315793 3.6844047 2.3649705 2.5809589 3.8795976 1.7703573 4.5397827 1.9764092 8.1195848 4.3770274 10.343622 5.8684842 12.268372 7.3746665 12.396809 7.7241016 12.525237 8.0735369 11.02162 9.5395199 9.0554204 10.981861 5.6864344 13.453213 3.7367396 14.018674 1.5822262 13.149315 Z M 1.3966051 8.0721009 c 0 -0.7647831 0.4866523 -1.1289737 1.2994289 -0.9724276 C 4.2611719 7.4010096 4.1624834 8.7188969 2.5496184 9.0546959 1.8768988 9.1948119 1.3966021 8.7853539 1.3966051 8.0721009 Z" FillRule="NonZero"/>
-    <PathGeometry x:Key="AJut_PathGeom_ExpandElement" Figures="m 1.9572636 1.6982037 c 1.0968071 0.3816158 2.9912883 0.6937946 4.2099563 0.6937946 1.2186747 0 3.1131525 -0.3122099 4.2099561 -0.6937946 1.520237 -0.52888 1.994191 -0.3604182 1.994191 0.7088214 0 1.7263056 -5.2220938 11.1251409 -6.1812262 11.1251409 C 4.1445438 11.057221 -2.0098302 0.43191585 1.9572636 1.6982037 Z" FillRule="NonZero"/>
+    <PathGeometry x:Key="AJut_PathGeom_SliderUpFacing" Figures="M0,6C0,6 5.5,0 5.5,0 5.5,0 11,6 11,6 11,6 11,18 11,18 11,18 0,18 0,18 0,18 0,6 0,6z"/>
+    <PathGeometry x:Key="AJut_PathGeom_SliderDownFacing"  Figures="M0,12C0,12 5.5,18 5.5,18 5.5,18 11,12 11,12 11,12 11,0 11,0 11,0 0,0 0,0 0,0 0,12 0,12z"/>
+    <PathGeometry x:Key="AJut_PathGeom_SliderUpDownFacing" Figures="M0,0C0,0 11,0 11,0 11,0 11,18 11,18 11,18 0,18 0,18 0,18 0,0 0,0z"/>
 
-    <Geometry x:Key="AJut_PathGeom_SliderUpFacing">M0,6C0,6 5.5,0 5.5,0 5.5,0 11,6 11,6 11,6 11,18 11,18 11,18 0,18 0,18 0,18 0,6 0,6z</Geometry>
-    <Geometry x:Key="AJut_PathGeom_SliderDownFacing">M0,12C0,12 5.5,18 5.5,18 5.5,18 11,12 11,12 11,12 11,0 11,0 11,0 0,0 0,0 0,0 0,12 0,12z</Geometry>
-    <Geometry x:Key="AJut_PathGeom_SliderUpDownFacing">M0,0C0,0 11,0 11,0 11,0 11,18 11,18 11,18 0,18 0,18 0,18 0,0 0,0z</Geometry>
-
-    <Geometry x:Key="AJut_PathGeom_SliderLeftFacing">M6,11C6,11 0,5.5 0,5.5 0,5.5 6,0 6,0 6,0 18,0 18,0 18,0 18,11 18,11 18,11 6,11 6,11z</Geometry>
-    <Geometry x:Key="AJut_PathGeom_SliderRightFacing">M12,11C12,11 18,5.5 18,5.5 18,5.5 12,0 12,0 12,0 0,0 0,0 0,0 0,11 0,11 0,11 12,11 12,11z</Geometry>
-    <Geometry x:Key="AJut_PathGeom_SliderLeftRightFacing">M0.5,0.5L18.5,0.5 18.5,11.5 0.5,11.5z</Geometry>
+    <PathGeometry x:Key="AJut_PathGeom_SliderLeftFacing" Figures="M6,11C6,11 0,5.5 0,5.5 0,5.5 6,0 6,0 6,0 18,0 18,0 18,0 18,11 18,11 18,11 6,11 6,11z"/>
+    <PathGeometry x:Key="AJut_PathGeom_SliderRightFacing" Figures="M12,11C12,11 18,5.5 18,5.5 18,5.5 12,0 12,0 12,0 0,0 0,0 0,0 0,11 0,11 0,11 12,11 12,11z"/>
+    <PathGeometry x:Key="AJut_PathGeom_SliderLeftRightFacing" Figures="M0.5,0.5L18.5,0.5 18.5,11.5 0.5,11.5z"/>
 
 
     <Style x:Key="AJut_Style_DefaultTextBlock" TargetType="{x:Type TextBlock}">
@@ -91,11 +88,11 @@
     <Style TargetType="{x:Type ajut_ctrls:FlatTreeListControl}">
         <Setter Property="SelectionBrush" Value="{DynamicResource AJut_Brush_TreeSelection}"/>
         <Setter Property="SelectionInactiveBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightDesat}"/>
-        <Setter Property="CollapsedElementGlyph" Value="{StaticResource AJut_PathGeom_CollapseElement}"/>
-        <Setter Property="ExpandedElementGlyph" Value="{StaticResource AJut_PathGeom_ExpandElement}"/>
-        <Setter Property="ExpandCollapseGlyphSize" Value="12"/>
+        <Setter Property="ExpandCollapseGlyphSize" Value="10"/>
         <Setter Property="GlyphBrush" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="GlyphHighlightBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_ListBackground}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ListBorder}"/>
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:PropertyGrid}">
