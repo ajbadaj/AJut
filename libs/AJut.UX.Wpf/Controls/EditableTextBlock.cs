@@ -134,6 +134,20 @@ namespace AJut.UX.Controls
         }
 
 
+        public static readonly DependencyProperty TextBlockTextTrimmingProperty = DPUtils.Register(_ => _.TextBlockTextTrimming, TextTrimming.None);
+        public TextTrimming TextBlockTextTrimming
+        {
+            get => (TextTrimming)this.GetValue(TextBlockTextTrimmingProperty);
+            set => this.SetValue(TextBlockTextTrimmingProperty, value);
+        }
+
+        public static readonly DependencyProperty TextBlockTextWrappingProperty = DPUtils.Register(_ => _.TextBlockTextWrapping, TextWrapping.NoWrap);
+        public TextWrapping TextBlockTextWrapping
+        {
+            get => (TextWrapping)this.GetValue(TextBlockTextWrappingProperty);
+            set => this.SetValue(TextBlockTextWrappingProperty, value);
+        }
+
         private void OnIsEditingChanged ()
         {
             if (this.IsEditing)
