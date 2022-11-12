@@ -2,6 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:ajut="clr-namespace:AJut.UX"
                     xmlns:ap="clr-namespace:AJut.UX.AttachedProperties"
+                    xmlns:ac="clr-namespace:AJut.UX.Converters"
                     xmlns:local="clr-namespace:AJut.UX.Controls"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
@@ -9,18 +10,20 @@
     <sys:String x:Key="AJut_Symbol_LeftChevron" >&#xE973;</sys:String>
     <sys:String x:Key="AJut_Symbol_UpChevron"   >&#xE70E;</sys:String>
     <sys:String x:Key="AJut_Symbol_DownChevron" >&#xE70D;</sys:String>
-    
+
     <Style TargetType="{x:Type local:BumpStack}">
         <Setter Property="ButtonBackground" Value="#000"/>
         <Setter Property="ButtonBorder" Value="#000"/>
         <Setter Property="ButtonForeground" Value="#888"/>
         <Setter Property="EdgeClearanceOffset" Value="3"/>
+        <Setter Property="ap:BorderXTA.CornerRadius" Value="0"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:BumpStack}">
                     <Border Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}" 
-                            BorderThickness="{TemplateBinding BorderThickness}">
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}">
                         <Grid>
                             <!-- ====================[ ScrollViewer Items Part ]==================== -->
                             <ScrollViewer x:Name="PART_ScrollItemsContainer"
@@ -63,7 +66,8 @@
                                         <Setter Property="Template">
                                             <Setter.Value>
                                                 <ControlTemplate TargetType="{x:Type RepeatButton}">
-                                                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}">
+                                                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                                            CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}">
                                                         <TextBlock FontFamily="Segoe MDL2 Assets" Text="{TemplateBinding Content}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
                                                     </Border>
                                                     <ControlTemplate.Triggers>
@@ -116,12 +120,14 @@
                                                     <Setter Property="Content" Value="{StaticResource AJut_Symbol_LeftChevron}"/>
                                                     <Setter Property="Command" Value="{Binding Source={x:Static ScrollBar.LineLeftCommand}}"/>
                                                     <Setter Property="IsEnabled" Value="{Binding ElementName=PART_ScrollItemsContainer, Path=(ap:ScrollXTA.CanScrollLeft)}"/>
+                                                    <Setter Property="ap:BorderXTA.CornerRadius" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:BumpStack}}, Path=(ap:BorderXTA.CornerRadius), Converter={ac:CornerRadiusSideExtractionConverter Side=Left, Reduction=1}}"/>
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:BumpStack}}, Path=Orientation}" Value="Vertical">
                                                     <Setter Property="VerticalAlignment" Value="Top"/>
                                                     <Setter Property="Content" Value="{StaticResource AJut_Symbol_UpChevron}"/>
                                                     <Setter Property="Command" Value="{Binding Source={x:Static ScrollBar.LineUpCommand}}"/>
                                                     <Setter Property="IsEnabled" Value="{Binding ElementName=PART_ScrollItemsContainer, Path=(ap:ScrollXTA.CanScrollUp)}"/>
+                                                    <Setter Property="ap:BorderXTA.CornerRadius" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:BumpStack}}, Path=(ap:BorderXTA.CornerRadius), Converter={ac:CornerRadiusSideExtractionConverter Side=Top, Reduction=1}}"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
@@ -145,6 +151,7 @@
                                                     <Setter Property="Content" Value="{StaticResource AJut_Symbol_RightChevron}"/>
                                                     <Setter Property="Command" Value="{Binding Source={x:Static ScrollBar.LineRightCommand}}"/>
                                                     <Setter Property="IsEnabled" Value="{Binding ElementName=PART_ScrollItemsContainer, Path=(ap:ScrollXTA.CanScrollRight)}"/>
+                                                    <Setter Property="ap:BorderXTA.CornerRadius" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:BumpStack}}, Path=(ap:BorderXTA.CornerRadius), Converter={ac:CornerRadiusSideExtractionConverter Side=Right, Reduction=1}}"/>
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:BumpStack}}, Path=Orientation}" Value="Vertical">
                                                     <Setter Property="VerticalAlignment" Value="Bottom"/>
@@ -152,6 +159,7 @@
                                                     <Setter Property="Content" Value="{StaticResource AJut_Symbol_DownChevron}"/>
                                                     <Setter Property="Command" Value="{Binding Source={x:Static ScrollBar.LineDownCommand}}"/>
                                                     <Setter Property="IsEnabled" Value="{Binding ElementName=PART_ScrollItemsContainer, Path=(ap:ScrollXTA.CanScrollDown)}"/>
+                                                    <Setter Property="ap:BorderXTA.CornerRadius" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:BumpStack}}, Path=(ap:BorderXTA.CornerRadius), Converter={ac:CornerRadiusSideExtractionConverter Side=Bottom, Reduction=1}}"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
