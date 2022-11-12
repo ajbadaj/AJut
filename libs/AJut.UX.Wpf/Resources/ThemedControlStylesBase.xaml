@@ -7,11 +7,9 @@
                     xmlns:ajut_theme="clr-namespace:AJut.UX.Theming"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
-    <!--To fill out by user-->
-    <FontFamily x:Key="FontFamily_Default">Segoe UI</FontFamily>
+    <FontFamily x:Key="AJut_Font_Default">Segoe UI</FontFamily>
 
-
-    <FontFamily x:Key="AJut_SymbolFont">Segoe MDL2 Assets</FontFamily>
+    <FontFamily x:Key="AJut_Font_SymbolGlyphText">Segoe MDL2 Assets</FontFamily>
     <sys:String x:Key="AJut_Symbol_Check">&#xE73E;</sys:String>
     <sys:String x:Key="AJut_Symbol_Dash">&#xE9AE;</sys:String>
     <sys:String x:Key="AJut_Symbol_NeedsEdit">&#xEB7E;</sys:String>
@@ -21,19 +19,27 @@
     <sys:String x:Key="AJut_Symbol_LeftChevron" >&#xE76B;</sys:String>
     <sys:String x:Key="AJut_Symbol_RightChevron" >&#xE76C;</sys:String>
 
+    <PathGeometry x:Key="AJut_PathGeom_SliderUpFacing" Figures="M0,6C0,6 5.5,0 5.5,0 5.5,0 11,6 11,6 11,6 11,18 11,18 11,18 0,18 0,18 0,18 0,6 0,6z"/>
+    <PathGeometry x:Key="AJut_PathGeom_SliderDownFacing"  Figures="M0,12C0,12 5.5,18 5.5,18 5.5,18 11,12 11,12 11,12 11,0 11,0 11,0 0,0 0,0 0,0 0,12 0,12z"/>
+    <PathGeometry x:Key="AJut_PathGeom_SliderUpDownFacing" Figures="M0,0C0,0 11,0 11,0 11,0 11,18 11,18 11,18 0,18 0,18 0,18 0,0 0,0z"/>
 
-    <Style x:Key="AJut_TXT_Default" TargetType="{x:Type TextBlock}">
+    <PathGeometry x:Key="AJut_PathGeom_SliderLeftFacing" Figures="M6,11C6,11 0,5.5 0,5.5 0,5.5 6,0 6,0 6,0 18,0 18,0 18,0 18,11 18,11 18,11 6,11 6,11z"/>
+    <PathGeometry x:Key="AJut_PathGeom_SliderRightFacing" Figures="M12,11C12,11 18,5.5 18,5.5 18,5.5 12,0 12,0 12,0 0,0 0,0 0,0 0,11 0,11 0,11 12,11 12,11z"/>
+    <PathGeometry x:Key="AJut_PathGeom_SliderLeftRightFacing" Figures="M0.5,0.5L18.5,0.5 18.5,11.5 0.5,11.5z"/>
+
+
+    <Style x:Key="AJut_Style_DefaultTextBlock" TargetType="{x:Type TextBlock}">
         <Setter Property="FontFamily" Value="{Binding RelativeSource={RelativeSource Self}, Path=(TextElement.FontFamily)}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
     </Style>
 
-    <Style x:Key="AJut_TXT_Header" TargetType="{x:Type TextBlock}">
+    <Style x:Key="AJut_Style_HeaderTextBlock" TargetType="{x:Type TextBlock}">
         <Setter Property="FontWeight" Value="Thin"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="FontFamily" Value="Century Gothic"/>
     </Style>
 
-    <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource AJut_TXT_Default}"/>
+    <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource AJut_Style_DefaultTextBlock}"/>
 
     <Style TargetType="{x:Type ajut_ctrls:EditableTextBlock}">
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
@@ -79,24 +85,20 @@
         <Setter Property="ForegroundPressed" Value="{DynamicResource AJut_Brush_ImportantText}"/>
     </Style>
 
-
-    <PathGeometry x:Key="AJut_Glyph_RightArrowDown" Figures="m 1.5822262 13.149315 c -0.5104897 -0.205966 -0.92816294 -0.88364 -0.92816294 -1.505871 0 -0.747823 0.41673204 -0.971472 1.22922564 -0.659657 0.7509982 0.288294 1.9081465 -0.165894 2.9742889 -1.1677221 L 6.6026364 8.1766679 4.9774932 6.4468079 C 3.94602 5.3488411 2.8595106 4.8733389 2.0032072 5.1451022 0.00772098 5.7784558 0.30315793 3.6844047 2.3649705 2.5809589 3.8795976 1.7703573 4.5397827 1.9764092 8.1195848 4.3770274 10.343622 5.8684842 12.268372 7.3746665 12.396809 7.7241016 12.525237 8.0735369 11.02162 9.5395199 9.0554204 10.981861 5.6864344 13.453213 3.7367396 14.018674 1.5822262 13.149315 Z M 1.3966051 8.0721009 c 0 -0.7647831 0.4866523 -1.1289737 1.2994289 -0.9724276 C 4.2611719 7.4010096 4.1624834 8.7188969 2.5496184 9.0546959 1.8768988 9.1948119 1.3966021 8.7853539 1.3966051 8.0721009 Z" FillRule="NonZero"/>
-    <PathGeometry x:Key="AJut_Glyph_DownArrowGlyph" Figures="m 1.9572636 1.6982037 c 1.0968071 0.3816158 2.9912883 0.6937946 4.2099563 0.6937946 1.2186747 0 3.1131525 -0.3122099 4.2099561 -0.6937946 1.520237 -0.52888 1.994191 -0.3604182 1.994191 0.7088214 0 1.7263056 -5.2220938 11.1251409 -6.1812262 11.1251409 C 4.1445438 11.057221 -2.0098302 0.43191585 1.9572636 1.6982037 Z" FillRule="NonZero"/>
-
     <Style TargetType="{x:Type ajut_ctrls:FlatTreeListControl}">
         <Setter Property="SelectionBrush" Value="{DynamicResource AJut_Brush_TreeSelection}"/>
         <Setter Property="SelectionInactiveBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightDesat}"/>
-        <Setter Property="CollapsedElementGlyph" Value="{StaticResource AJut_Glyph_RightArrowDown}"/>
-        <Setter Property="ExpandedElementGlyph" Value="{StaticResource AJut_Glyph_DownArrowGlyph}"/>
-        <Setter Property="ExpandCollapseGlyphSize" Value="12"/>
+        <Setter Property="ExpandCollapseGlyphSize" Value="10"/>
         <Setter Property="GlyphBrush" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="GlyphHighlightBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_ListBackground}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ListBorder}"/>
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:PropertyGrid}">
         <Setter Property="TextLabelStyle">
             <Setter.Value>
-                <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource AJut_TXT_Default}">
+                <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource AJut_Style_DefaultTextBlock}">
                     <Setter Property="FontStyle" Value="Italic" />
                     <Setter Property="Opacity" Value="0.8" />
                 </Style>
@@ -579,17 +581,11 @@
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_TextBoxBorder}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_InteractiveTextUnfocused}" />
         <Setter Property="IsEnabled" Value="{Binding Path=(ajut_ap:Edit.IsEditable)}"/>
-        <Setter Property="ajut_ap:BorderXTA.CornerRadius" Value="0"/>
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="{x:Type TextBoxBase}">
-                    <Border x:Name="border" 
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}"
-                            Background="{TemplateBinding Background}"
-                            CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}">
-                        <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"
-                                      CanContentScroll="True"/>
+                <ControlTemplate TargetType="{x:Type TextBox}">
+                    <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}">
+                        <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>
@@ -755,30 +751,6 @@
         </Style.Triggers>
     </Style>
 
-    <!--<Style TargetType="{x:Type ComboBoxItem}">
-        <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="{x:Type ComboBoxItem}">
-                    <Border BorderBrush="{TemplateBinding BorderBrush}"
-                            Background="{TemplateBinding Background}"
-                            BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}">
-                        <ContentPresenter Margin="{TemplateBinding Padding}"/>
-                    </Border>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-        <Style.Triggers>
-            <Trigger Property="IsSelected" Value="True">
-                <Setter Property="Background" Value="{DynamicResource AJut_Brush_PrimaryHighlightDesat}"/>
-            </Trigger>
-            <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="Background" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
-            </Trigger>
-        </Style.Triggers>
-    </Style>-->
-
     <Style TargetType="{x:Type CheckBox}">
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_TextBoxBackground}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_TextBoxBorder}"/>
@@ -852,14 +824,6 @@
         </Style.Triggers>
     </Style>
 
-    <Geometry x:Key="SliderUpFacing">M0,6C0,6 5.5,0 5.5,0 5.5,0 11,6 11,6 11,6 11,18 11,18 11,18 0,18 0,18 0,18 0,6 0,6z</Geometry>
-    <Geometry x:Key="SliderDownFacing">M0,12C0,12 5.5,18 5.5,18 5.5,18 11,12 11,12 11,12 11,0 11,0 11,0 0,0 0,0 0,0 0,12 0,12z</Geometry>
-    <Geometry x:Key="SliderUpDownFacing">M0,0C0,0 11,0 11,0 11,0 11,18 11,18 11,18 0,18 0,18 0,18 0,0 0,0z</Geometry>
-
-    <Geometry x:Key="SliderLeftFacing">M6,11C6,11 0,5.5 0,5.5 0,5.5 6,0 6,0 6,0 18,0 18,0 18,0 18,11 18,11 18,11 6,11 6,11z</Geometry>
-    <Geometry x:Key="SliderRightFacing">M12,11C12,11 18,5.5 18,5.5 18,5.5 12,0 12,0 12,0 0,0 0,0 0,0 0,11 0,11 0,11 12,11 12,11z</Geometry>
-    <Geometry x:Key="SliderLeftRightFacing">M0.5,0.5L18.5,0.5 18.5,11.5 0.5,11.5z</Geometry>
-
     <Style TargetType="{x:Type Slider}">
         <Setter Property="IsEnabled" Value="{Binding Path=(ajut_ap:Edit.IsEditable)}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
@@ -910,7 +874,7 @@
                                         </RepeatButton>
                                     </Track.IncreaseRepeatButton>
                                     <Track.Thumb>
-                                        <Thumb x:Name="PART_Thumb" DataContext="{DynamicResource SliderUpDownFacing}">
+                                        <Thumb x:Name="PART_Thumb" DataContext="{DynamicResource AJut_PathGeom_SliderUpDownFacing}">
                                             <Thumb.Style>
                                                 <Style TargetType="{x:Type Thumb}">
                                                     <Setter Property="Template">
@@ -986,7 +950,7 @@
                             </MultiTrigger.Conditions>
                             <Setter TargetName="PosteriorTickBar" Property="Visibility" Value="Collapsed"/>
                             <Setter TargetName="PART_Root" Property="HorizontalAlignment" Value="Left" />
-                            <Setter TargetName="PART_Thumb" Property="DataContext" Value="{StaticResource SliderLeftFacing}"/>
+                            <Setter TargetName="PART_Thumb" Property="DataContext" Value="{StaticResource AJut_PathGeom_SliderLeftFacing}"/>
                         </MultiTrigger>
 
                         <!-- Vertical | Bottom/Right -->
@@ -997,7 +961,7 @@
                             </MultiTrigger.Conditions>
                             <Setter TargetName="AnteriorTickBar" Property="Visibility" Value="Collapsed"/>
                             <Setter TargetName="PART_Root" Property="HorizontalAlignment" Value="Right" />
-                            <Setter TargetName="PART_Thumb" Property="DataContext" Value="{StaticResource SliderRightFacing}"/>
+                            <Setter TargetName="PART_Thumb" Property="DataContext" Value="{StaticResource AJut_PathGeom_SliderRightFacing}"/>
                         </MultiTrigger>
 
                         <!-- Horizontal | Top/Left -->
@@ -1008,7 +972,7 @@
                             </MultiTrigger.Conditions>
                             <Setter TargetName="PosteriorTickBar" Property="Visibility" Value="Collapsed"/>
                             <Setter TargetName="PART_Root" Property="VerticalAlignment" Value="Top" />
-                            <Setter TargetName="PART_Thumb" Property="DataContext" Value="{StaticResource SliderUpFacing}"/>
+                            <Setter TargetName="PART_Thumb" Property="DataContext" Value="{StaticResource AJut_PathGeom_SliderUpFacing}"/>
                         </MultiTrigger>
 
                         <!-- Horizontal | Bottom/Right -->
@@ -1019,7 +983,7 @@
                             </MultiTrigger.Conditions>
                             <Setter TargetName="AnteriorTickBar" Property="Visibility" Value="Collapsed"/>
                             <Setter TargetName="PART_Root" Property="VerticalAlignment" Value="Bottom" />
-                            <Setter TargetName="PART_Thumb" Property="DataContext" Value="{StaticResource SliderDownFacing}"/>
+                            <Setter TargetName="PART_Thumb" Property="DataContext" Value="{StaticResource AJut_PathGeom_SliderDownFacing}"/>
                         </MultiTrigger>
 
                         <!-- Horizontal | Both -->
@@ -1028,7 +992,7 @@
                                 <Condition Property="TickPlacement" Value="Both"/>
                                 <Condition Property="Orientation" Value="Horizontal"/>
                             </MultiTrigger.Conditions>
-                            <Setter TargetName="PART_Thumb" Property="DataContext" Value="{StaticResource SliderUpDownFacing}"/>
+                            <Setter TargetName="PART_Thumb" Property="DataContext" Value="{StaticResource AJut_PathGeom_SliderUpDownFacing}"/>
                         </MultiTrigger>
 
                         <!-- Vertical | Both -->
@@ -1037,7 +1001,7 @@
                                 <Condition Property="TickPlacement" Value="Both"/>
                                 <Condition Property="Orientation" Value="Vertical"/>
                             </MultiTrigger.Conditions>
-                            <Setter TargetName="PART_Thumb" Property="DataContext" Value="{StaticResource SliderLeftRightFacing}"/>
+                            <Setter TargetName="PART_Thumb" Property="DataContext" Value="{StaticResource AJut_PathGeom_SliderLeftRightFacing}"/>
                         </MultiTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -1161,7 +1125,7 @@
         <Setter Property="ajut_ap:BorderXTA.CornerRadius" Value="2" />
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="{x:Type ScrollViewer}">
+                <ControlTemplate TargetType="ScrollViewer">
                     <Border CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}" 
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}">
@@ -1177,8 +1141,7 @@
 
                             <ScrollContentPresenter x:Name="PART_ScrollContentPresenter"
                                                     Margin="{TemplateBinding Padding}"
-                                                    ContentTemplate="{TemplateBinding ContentTemplate}"
-                                                    CanContentScroll="{TemplateBinding CanContentScroll}"/>
+                                                    ContentTemplate="{TemplateBinding ContentTemplate}"/>
 
                             <ScrollBar x:Name="PART_VerticalScrollBar" Width="18"
                                      IsTabStop="False"
@@ -1501,7 +1464,7 @@
                                           TextElement.FontFamily="Century Gothic"
                                           TextElement.FontSize="14">
                             <ContentPresenter.Resources>
-                                <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource AJut_TXT_Default}">
+                                <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource AJut_Style_DefaultTextBlock}">
                                     <Setter Property="TextWrapping" Value="WrapWithOverflow" />
                                 </Style>
                             </ContentPresenter.Resources>
@@ -1551,87 +1514,6 @@
         </Setter>
     </Style>
 
-    <!--ScrollViewer for a MenuItem-->
-    <MenuScrollingVisibilityConverter x:Key="AJut_MenuScrollingVisibilityConverter" />
-
-    <Style x:Key="AJut_Style_MenuHoverButton" TargetType="{x:Type RepeatButton}">
-        <Setter Property="Background" Value="{DynamicResource AJut_Brush_BorderShadow}"/>
-        <Setter Property="Delay" Value="1" />
-        <Setter Property="Interval" Value="1" />
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="{x:Type RepeatButton}">
-                    <Border BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}">
-                        <TextBlock Style="{DynamicResource AJut_SymbolText}" Text="{TemplateBinding Content}" Foreground="{DynamicResource AJut_Brush_HighContrastText}"
-                                   HorizontalAlignment="Center"/>
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsEnabled" Value="False">
-                            <Setter Property="Opacity" Value="0.5"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-    <Style x:Key="AJut_Style_MenuScrollViewer" TargetType="{x:Type ScrollViewer}" BasedOn="{x:Null}">
-        <Setter Property="HorizontalScrollBarVisibility" Value="Hidden" />
-        <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="{x:Type ScrollViewer}">
-                    <Grid SnapsToDevicePixels="True">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-                        <Border Grid.Row="1" Grid.Column="0">
-                            <ScrollContentPresenter Margin="{TemplateBinding Padding}" />
-                        </Border>
-                        <RepeatButton Grid.Row="0"
-                                      Grid.Column="0"
-                                      Command="{x:Static ScrollBar.LineUpCommand}"
-                                      CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
-                                      Focusable="False"
-                                      Content="{DynamicResource AJut_Symbol_UpChevron}"
-                                      Style="{DynamicResource AJut_Style_MenuHoverButton}">
-                            <RepeatButton.Visibility>
-                                <MultiBinding FallbackValue="Visibility.Collapsed"
-                                              Converter="{StaticResource AJut_MenuScrollingVisibilityConverter}"
-                                              ConverterParameter="0">
-                                    <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="ComputedVerticalScrollBarVisibility" />
-                                    <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="VerticalOffset" />
-                                    <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="ExtentHeight" />
-                                    <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="ViewportHeight" />
-                                </MultiBinding>
-                            </RepeatButton.Visibility>
-                        </RepeatButton>
-                        <RepeatButton Grid.Row="2"
-                                      Grid.Column="0"
-                                      Command="{x:Static ScrollBar.LineDownCommand}"
-                                      CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
-                                      Focusable="False"
-                                      Content="{DynamicResource AJut_Symbol_DownChevron}"
-                                      Style="{DynamicResource AJut_Style_MenuHoverButton}">
-                            <RepeatButton.Visibility>
-                                <MultiBinding FallbackValue="Visibility.Collapsed" Converter="{StaticResource AJut_MenuScrollingVisibilityConverter}" ConverterParameter="100">
-                                    <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="ComputedVerticalScrollBarVisibility" />
-                                    <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="VerticalOffset" />
-                                    <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="ExtentHeight" />
-                                    <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="ViewportHeight" />
-                                </MultiBinding>
-                            </RepeatButton.Visibility>
-                        </RepeatButton>
-                    </Grid>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
     <!-- TopLevelHeader -->
     <ControlTemplate x:Key="{x:Static MenuItem.TopLevelHeaderTemplateKey}" TargetType="{x:Type MenuItem}">
         <Border x:Name="Border">
@@ -1651,7 +1533,7 @@
                             BorderBrush="{DynamicResource AJut_Brush_BorderCommon}"
                             Background="{DynamicResource AJut_Brush_PopupBackground}"
                             TextElement.Foreground="{DynamicResource AJut_Brush_NormalText}">
-                        <ScrollViewer CanContentScroll="True" Style="{DynamicResource AJut_Style_MenuScrollViewer}">
+                        <ScrollViewer CanContentScroll="True" Style="{StaticResource MenuScrollViewer}">
                             <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
                         </ScrollViewer>
                     </Border>
@@ -1800,7 +1682,7 @@
                             BorderBrush="{DynamicResource AJut_Brush_BorderCommon}"
                             BorderThickness="1">
                         <ScrollViewer CanContentScroll="True"
-                                      Style="{DynamicResource AJut_Style_MenuScrollViewer}">
+                                      Style="{StaticResource MenuScrollViewer}">
                             <StackPanel IsItemsHost="True"
                                         KeyboardNavigation.DirectionalNavigation="Cycle" />
                         </ScrollViewer>
@@ -1821,7 +1703,11 @@
                 <Setter TargetName="SubmenuBorder" Property="Padding" Value="0,3,0,3" />
             </Trigger>
             <Trigger Property="IsEnabled" Value="false">
-                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_UnderstatedText}"/>
+                <Setter Property="Foreground">
+                    <Setter.Value>
+                        <SolidColorBrush Color="{StaticResource DisabledForegroundColor}" />
+                    </Setter.Value>
+                </Setter>
             </Trigger>
         </ControlTemplate.Triggers>
     </ControlTemplate>
@@ -1847,8 +1733,8 @@
     </Style>
 
     <Style x:Key="AJut_Style_ThemedWindow" TargetType="{x:Type Window}">
-        <Setter Property="FontFamily" Value="{DynamicResource FontFamily_Default}"/>
-        <Setter Property="TextElement.FontFamily" Value="{DynamicResource FontFamily_Default}" />
+        <Setter Property="FontFamily" Value="{DynamicResource AJut_Font_Default}"/>
+        <Setter Property="TextElement.FontFamily" Value="{DynamicResource AJut_Font_Default}" />
         <Setter Property="ajut_theme:AppThemeManager.WindowBorderGlowBrush" Value="{DynamicResource AJut_Brush_WindowGlowBorder}"/>
         <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource Self}, Path=(ajut_theme:AppThemeManager.WindowBorderGlowBrush)}"/>
         <Setter Property="Margin" Value="0"/>
