@@ -7,10 +7,14 @@
 
     <Style TargetType="{x:Type local:EditableTextBlock}">
         <Setter Property="IsReadOnly" Value="{Binding RelativeSource={RelativeSource Self}, Path=(ap:Edit.IsReadOnly), Mode=OneWay}"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:EditableTextBlock}">
-                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}" 
+                            BorderThickness="{TemplateBinding BorderThickness}" 
+                            CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}">
                         <ContentPresenter Margin="{TemplateBinding Padding}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}">
                             <ContentPresenter.Style>
                                 <Style TargetType="{x:Type ContentPresenter}">
@@ -26,6 +30,8 @@
                                                            FontStretch="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:EditableTextBlock}}, Path=FontStretch}"
                                                            Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:EditableTextBlock}},  Path=Foreground}"
                                                            FontStyle="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:EditableTextBlock}},   Path=FontStyle}" 
+                                                           TextTrimming="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:EditableTextBlock}},Path=TextBlockTextTrimming}" 
+                                                           TextWrapping="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:EditableTextBlock}},Path=TextBlockTextWrapping}" 
                                                            Focusable="True"/>
                                             </DataTemplate>
                                         </Setter.Value>
@@ -42,8 +48,8 @@
                                                                    FontWeight="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:EditableTextBlock}},  Path=FontWeight}"
                                                                    FontStretch="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:EditableTextBlock}}, Path=FontStretch}"
                                                                    Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:EditableTextBlock}},  Path=Foreground}"
-                                                                   FontStyle="Italic"                                                                                    
                                                                    Opacity="{Binding RelativeSource={RelativeSource Self}, Path=IsFocused, Converter={conv:BooleanToValueConverter TrueValue=1.0, FalseValue=0.8}}"
+                                                                   FontStyle="Italic"                                                                                    
                                                                    Focusable="True"/>
                                                     </DataTemplate>
                                                 </Setter.Value>
@@ -64,6 +70,7 @@
                                                                  FontWeight="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:EditableTextBlock}},  Path=FontWeight}"
                                                                  FontStretch="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:EditableTextBlock}}, Path=FontStretch}"
                                                                  FontStyle="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:EditableTextBlock}},   Path=FontStyle}"
+                                                                 ScrollViewer.CanContentScroll="True"
                                                                  MinWidth="20"/>
                                                     </DataTemplate>
                                                 </Setter.Value>
@@ -89,6 +96,7 @@
                                                                          FontWeight="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:EditableTextBlock}},  Path=FontWeight}"
                                                                          FontStretch="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:EditableTextBlock}}, Path=FontStretch}"
                                                                          FontStyle="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:EditableTextBlock}},   Path=FontStyle}" 
+                                                                         ScrollViewer.CanContentScroll="True"
                                                                          MinWidth="20"
                                                                          BorderThickness="0"/>
                                                                 <TextBlock Text="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:EditableTextBlock}},        Path=NoTextSetMessage}"

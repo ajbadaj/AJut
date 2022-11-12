@@ -579,11 +579,17 @@
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_TextBoxBorder}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_InteractiveTextUnfocused}" />
         <Setter Property="IsEnabled" Value="{Binding Path=(ajut_ap:Edit.IsEditable)}"/>
+        <Setter Property="ajut_ap:BorderXTA.CornerRadius" Value="0"/>
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="{x:Type TextBox}">
-                    <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}">
-                        <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
+                <ControlTemplate TargetType="{x:Type TextBoxBase}">
+                    <Border x:Name="border" 
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}">
+                        <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"
+                                      CanContentScroll="True"/>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>
@@ -1155,7 +1161,7 @@
         <Setter Property="ajut_ap:BorderXTA.CornerRadius" Value="2" />
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="ScrollViewer">
+                <ControlTemplate TargetType="{x:Type ScrollViewer}">
                     <Border CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}" 
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}">
@@ -1171,7 +1177,8 @@
 
                             <ScrollContentPresenter x:Name="PART_ScrollContentPresenter"
                                                     Margin="{TemplateBinding Padding}"
-                                                    ContentTemplate="{TemplateBinding ContentTemplate}"/>
+                                                    ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                    CanContentScroll="{TemplateBinding CanContentScroll}"/>
 
                             <ScrollBar x:Name="PART_VerticalScrollBar" Width="18"
                                      IsTabStop="False"
@@ -1544,6 +1551,87 @@
         </Setter>
     </Style>
 
+    <!--ScrollViewer for a MenuItem-->
+    <MenuScrollingVisibilityConverter x:Key="AJut_MenuScrollingVisibilityConverter" />
+
+    <Style x:Key="AJut_Style_MenuHoverButton" TargetType="{x:Type RepeatButton}">
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_BorderShadow}"/>
+        <Setter Property="Delay" Value="1" />
+        <Setter Property="Interval" Value="1" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type RepeatButton}">
+                    <Border BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}">
+                        <TextBlock Style="{DynamicResource AJut_SymbolText}" Text="{TemplateBinding Content}" Foreground="{DynamicResource AJut_Brush_HighContrastText}"
+                                   HorizontalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="AJut_Style_MenuScrollViewer" TargetType="{x:Type ScrollViewer}" BasedOn="{x:Null}">
+        <Setter Property="HorizontalScrollBarVisibility" Value="Hidden" />
+        <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ScrollViewer}">
+                    <Grid SnapsToDevicePixels="True">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Border Grid.Row="1" Grid.Column="0">
+                            <ScrollContentPresenter Margin="{TemplateBinding Padding}" />
+                        </Border>
+                        <RepeatButton Grid.Row="0"
+                                      Grid.Column="0"
+                                      Command="{x:Static ScrollBar.LineUpCommand}"
+                                      CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
+                                      Focusable="False"
+                                      Content="{DynamicResource AJut_Symbol_UpChevron}"
+                                      Style="{DynamicResource AJut_Style_MenuHoverButton}">
+                            <RepeatButton.Visibility>
+                                <MultiBinding FallbackValue="Visibility.Collapsed"
+                                              Converter="{StaticResource AJut_MenuScrollingVisibilityConverter}"
+                                              ConverterParameter="0">
+                                    <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="ComputedVerticalScrollBarVisibility" />
+                                    <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="VerticalOffset" />
+                                    <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="ExtentHeight" />
+                                    <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="ViewportHeight" />
+                                </MultiBinding>
+                            </RepeatButton.Visibility>
+                        </RepeatButton>
+                        <RepeatButton Grid.Row="2"
+                                      Grid.Column="0"
+                                      Command="{x:Static ScrollBar.LineDownCommand}"
+                                      CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
+                                      Focusable="False"
+                                      Content="{DynamicResource AJut_Symbol_DownChevron}"
+                                      Style="{DynamicResource AJut_Style_MenuHoverButton}">
+                            <RepeatButton.Visibility>
+                                <MultiBinding FallbackValue="Visibility.Collapsed" Converter="{StaticResource AJut_MenuScrollingVisibilityConverter}" ConverterParameter="100">
+                                    <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="ComputedVerticalScrollBarVisibility" />
+                                    <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="VerticalOffset" />
+                                    <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="ExtentHeight" />
+                                    <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="ViewportHeight" />
+                                </MultiBinding>
+                            </RepeatButton.Visibility>
+                        </RepeatButton>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- TopLevelHeader -->
     <ControlTemplate x:Key="{x:Static MenuItem.TopLevelHeaderTemplateKey}" TargetType="{x:Type MenuItem}">
         <Border x:Name="Border">
@@ -1563,7 +1651,7 @@
                             BorderBrush="{DynamicResource AJut_Brush_BorderCommon}"
                             Background="{DynamicResource AJut_Brush_PopupBackground}"
                             TextElement.Foreground="{DynamicResource AJut_Brush_NormalText}">
-                        <ScrollViewer CanContentScroll="True" Style="{StaticResource MenuScrollViewer}">
+                        <ScrollViewer CanContentScroll="True" Style="{DynamicResource AJut_Style_MenuScrollViewer}">
                             <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
                         </ScrollViewer>
                     </Border>
@@ -1712,7 +1800,7 @@
                             BorderBrush="{DynamicResource AJut_Brush_BorderCommon}"
                             BorderThickness="1">
                         <ScrollViewer CanContentScroll="True"
-                                      Style="{StaticResource MenuScrollViewer}">
+                                      Style="{DynamicResource AJut_Style_MenuScrollViewer}">
                             <StackPanel IsItemsHost="True"
                                         KeyboardNavigation.DirectionalNavigation="Cycle" />
                         </ScrollViewer>
@@ -1733,11 +1821,7 @@
                 <Setter TargetName="SubmenuBorder" Property="Padding" Value="0,3,0,3" />
             </Trigger>
             <Trigger Property="IsEnabled" Value="false">
-                <Setter Property="Foreground">
-                    <Setter.Value>
-                        <SolidColorBrush Color="{StaticResource DisabledForegroundColor}" />
-                    </Setter.Value>
-                </Setter>
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_UnderstatedText}"/>
             </Trigger>
         </ControlTemplate.Triggers>
     </ControlTemplate>
