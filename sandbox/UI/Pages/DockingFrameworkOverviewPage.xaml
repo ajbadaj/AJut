@@ -7,5 +7,5 @@
              xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
-    <ajut:DockZone x:Name="RootZone"/>
+    <ajut:DockZone x:Name="RootZone" Margin="20"/>
 </UserControl>

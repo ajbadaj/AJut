@@ -17,7 +17,7 @@
             this.Docking = new DockingManager(App.Current.MainWindow, "ajut-showroom-docking-overview", autoSaveMethod: this.DockSaveMethod);
             this.Docking.RegisterRootDockZones(this.RootZone);
 
-            this.Docking.RegisterDisplayFactory<DockExampleControls.ColorController>();
+            this.Docking.RegisterDisplayFactory(()=>new DockExampleControls.ColorController(this));
         }
 
         public void Setup (StackNavAdapter adapter)
