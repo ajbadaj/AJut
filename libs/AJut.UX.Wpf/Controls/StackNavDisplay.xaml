@@ -14,11 +14,13 @@
                     <Border CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}"
                             BorderThickness="{TemplateBinding BorderThickness}" 
                             BorderBrush="{TemplateBinding BorderBrush}"
-                            Background="{TemplateBinding Background}">
+                            Background="{TemplateBinding Background}"
+                            UseLayoutRounding="True">
                         <DockPanel>
-                            <ctrls:StackNavActiveHeaderPresenter DockPanel.Dock="Top" Navigator="{ajut:TemplateBinding Path=Navigator}"/>
-                            <ctrls:StackNavActiveDrawerPresenter DockPanel.Dock="Left" Navigator="{ajut:TemplateBinding Path=Navigator}" Width="{TemplateBinding FixedDrawerWidth}"/>
-                            <ctrls:StackNavActiveContentPresenter Navigator="{ajut:TemplateBinding Path=Navigator}"/>
+                            <ctrls:StackNavActiveHeaderPresenter x:Name="HeaderBar" DockPanel.Dock="Top" Navigator="{ajut:TemplateBinding Path=Navigator}"/>
+                            <ctrls:StackNavActiveDrawerPresenter x:Name="Drawer" DockPanel.Dock="Left" Navigator="{ajut:TemplateBinding Path=Navigator}" Width="{TemplateBinding FixedDrawerWidth}"
+                                                                 DrawerSeparatorFill="{Binding ElementName=HeaderBar, Path=Background}"/>
+                            <ctrls:StackNavActiveContentPresenter x:Name="CurrentDisplay" Navigator="{ajut:TemplateBinding Path=Navigator}"/>
                         </DockPanel>
                     </Border>
                 </ControlTemplate>

@@ -7,44 +7,60 @@
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <Style TargetType="{x:Type local:StackNavActiveDrawerPresenter}">
-        <Setter Property="BorderThickness" Value="0,0,1,0"/>
-        <Setter Property="BorderBrush" Value="Black"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="InsetBorderThickness" Value="1,1,0,0"/>
+        <Setter Property="InsetBorderBrush" Value="#8000"/>
+        <Setter Property="InsetBorderCornerRadius" Value="5,0,0,0"/>
+        <Setter Property="ap:BorderXTA.CornerRadius" Value="5,0,0,0"/>
         <Setter Property="Visibility" Value="{Binding RelativeSource={RelativeSource Self}, Path=Navigator.IsDrawerOpen, Converter={ajconv:BooleanToVisibilityConverter FalseValue=Collapsed}}"/>
+        <Setter Property="HeaderTextFontSize" Value="18"/>
+        <Setter Property="DrawerSeparatorThickness" Value="5,0,5,0"/>
+        <Setter Property="DrawerSeparatorCornerRadius" Value="0"/>
+        <Setter Property="HeaderPadding" Value="5,10"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:StackNavActiveDrawerPresenter}">
                     <Border CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}"
-                            BorderThickness="{TemplateBinding BorderThickness}" 
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            Background="{TemplateBinding Background}">
-                        <Grid Margin="{TemplateBinding Padding}">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-                            
-                            <!-- ============[ Heading ]================ -->
-                            <Border Grid.Row="0" BorderThickness="0,0,0,1" BorderBrush="{TemplateBinding BorderBrush}" Margin="2,2,2,0">
-                                <ContentControl Content="{ajut:TemplateBinding Path=Navigator.StackTopDisplayAdapter.DrawerHeading}"
-                                                ContentTemplate="{TemplateBinding DrawerDisplayTemplate}"
-                                                ContentTemplateSelector="{TemplateBinding DrawerDisplayTemplateSelector}">
-                                    <ContentControl.Resources>
-                                        <DataTemplate DataType="{x:Type sys:String}">
-                                            <TextBlock Text="{Binding .}" FontSize="18" TextWrapping="WrapWithOverflow"/>
-                                        </DataTemplate>
-                                    </ContentControl.Resources>
-                                </ContentControl>
+                                BorderThickness="{TemplateBinding BorderThickness}" 
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                Background="{TemplateBinding DrawerSeparatorFill}">
+                        <Border CornerRadius="{TemplateBinding DrawerSeparatorCornerRadius}"
+                                BorderThickness="{TemplateBinding DrawerSeparatorThickness}"
+                                BorderBrush="{TemplateBinding DrawerSeparatorFill}"
+                                Background="{TemplateBinding DrawerSeparatorFill}">
+                            <Border CornerRadius="{TemplateBinding InsetBorderCornerRadius}"
+                                    BorderThickness="{TemplateBinding InsetBorderThickness}" 
+                                    BorderBrush="{TemplateBinding InsetBorderBrush}"
+                                    Background="{TemplateBinding Background}">
+                                <Grid Margin="{TemplateBinding Padding}">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!-- ============[ Heading ]================ -->
+                                    <ContentControl Grid.Row="0" Margin="{TemplateBinding HeaderPadding}"
+                                            Content="{ajut:TemplateBinding Path=Navigator.StackTopDisplayAdapter.DrawerHeading}"
+                                            ContentTemplate="{TemplateBinding DrawerDisplayTemplate}"
+                                            ContentTemplateSelector="{TemplateBinding DrawerDisplayTemplateSelector}">
+                                        <ContentControl.Resources>
+                                            <DataTemplate DataType="{x:Type sys:String}">
+                                                <TextBlock Text="{Binding .}" FontSize="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:StackNavActiveDrawerPresenter}}, Path=HeaderTextFontSize}" TextWrapping="WrapWithOverflow"/>
+                                            </DataTemplate>
+                                        </ContentControl.Resources>
+                                    </ContentControl>
+
+                                    <!-- ============[ Display ]================ -->
+                                    <ContentPresenter Grid.Row="1" Content="{ajut:TemplateBinding Path=Navigator.StackTopDisplayAdapter.DrawerDisplay}"/>
+
+                                    <!-- ============[ Bottom ]================ -->
+                                    <Grid Grid.Row="2" Visibility="{ajut:TemplateBinding Path=AdditionalBottomDisplay, Converter={ajconv:NullnessToVisibilityConverter}}">
+                                        <ContentPresenter Content="{ajut:TemplateBinding Path=AdditionalBottomDisplay}"/>
+                                    </Grid>
+                                </Grid>
                             </Border>
-
-                            <!-- ============[ Display ]================ -->
-                            <ContentPresenter Grid.Row="1" Content="{ajut:TemplateBinding Path=Navigator.StackTopDisplayAdapter.DrawerDisplay}"/>
-
-                            <!-- ============[ Bottom ]================ -->
-                            <Grid Grid.Row="2" Visibility="{ajut:TemplateBinding Path=AdditionalBottomDisplay, Converter={ajconv:NullnessToVisibilityConverter}}">
-                                <ContentPresenter Content="{ajut:TemplateBinding Path=AdditionalBottomDisplay}"/>
-                            </Grid>
-                        </Grid>
+                        </Border>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>

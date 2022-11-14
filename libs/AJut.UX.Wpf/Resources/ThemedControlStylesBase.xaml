@@ -193,6 +193,7 @@
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:StackNavActiveHeaderPresenter}">
+        <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_TitleBarBackground}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_TitleBarForeground}"/>
         <Setter Property="NavButtonForeground" Value="{DynamicResource AJut_Brush_TitleBarForeground}"/>
@@ -204,6 +205,11 @@
     <Style TargetType="{x:Type ajut_ctrls:StackNavActiveDrawerPresenter}">
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_DrawerBackground}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_DrawerForeground}"/>
+        <Setter Property="InsetBorderBrush" Value="{DynamicResource AJut_Brush_BorderShadow}"/>
+    </Style>
+
+    <Style TargetType="{x:Type ajut_ctrls:StackNavActiveContentPresenter}">
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderShadow}"/>
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:StackNavPopoverOverlay}">

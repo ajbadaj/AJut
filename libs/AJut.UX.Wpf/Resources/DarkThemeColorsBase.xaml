@@ -56,7 +56,7 @@
     <SolidColorBrush x:Key="AJut_Brush_BorderCommonPress" Color="#AAA"/>
     <SolidColorBrush x:Key="AJut_Brush_BorderShadow" Color="{DynamicResource AJut_Color_Shadow}"/>
 
-    <SolidColorBrush x:Key="AJut_Brush_RootPanelBackground" Color="#333"/>
+    <SolidColorBrush x:Key="AJut_Brush_RootPanelBackground" Color="#2C2C30"/>
     <SolidColorBrush x:Key="AJut_Brush_PanelBackground" Color="#18181D"/>
     <SolidColorBrush x:Key="AJut_Brush_InnerPanelBackground" Color="#252528"/>
     <SolidColorBrush x:Key="AJut_Brush_PanelBorder" Color="#111"/>
@@ -95,8 +95,8 @@
     <SolidColorBrush x:Key="AJut_Brush_TitleBarForegroundImportant" Color="#FFF" />
     <SolidColorBrush x:Key="AJut_Brush_TitleBarGlyphHighlight" Color="#CCC" />
 
-    <SolidColorBrush x:Key="AJut_Brush_DrawerBackground" Color="#202020"/>
-    <SolidColorBrush x:Key="AJut_Brush_DrawerForeground" Color="#333" />
+    <SolidColorBrush x:Key="AJut_Brush_DrawerBackground" Color="#333"/>
+    <SolidColorBrush x:Key="AJut_Brush_DrawerForeground" Color="#CCC" />
     <SolidColorBrush x:Key="AJut_Brush_DrawerForegroundImportant" Color="#000" />
 
     <SolidColorBrush x:Key="AJut_Brush_BadStuff" Color="#A31B22"/>

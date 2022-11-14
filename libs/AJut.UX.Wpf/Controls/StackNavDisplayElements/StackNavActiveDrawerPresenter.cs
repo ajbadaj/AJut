@@ -1,6 +1,7 @@
 ﻿namespace AJut.UX.Controls
 {
     using System.Windows;
+    using System.Windows.Media;
     using System.Windows.Controls;
     using AJut.UX;
     using DPUtils = AJut.UX.DPUtils<StackNavActiveDrawerPresenter>;
@@ -46,6 +47,64 @@
         {
             get => (StackNavFlowController)this.GetValue(NavigatorProperty);
             set => this.SetValue(NavigatorProperty, value);
+        }
+
+
+        public static readonly DependencyProperty DrawerSeparatorThicknessProperty = DPUtils.Register(_ => _.DrawerSeparatorThickness);
+        public Thickness DrawerSeparatorThickness
+        {
+            get => (Thickness)this.GetValue(DrawerSeparatorThicknessProperty);
+            set => this.SetValue(DrawerSeparatorThicknessProperty, value);
+        }
+
+        public static readonly DependencyProperty DrawerSeparatorFillProperty = DPUtils.Register(_ => _.DrawerSeparatorFill);
+        public Brush DrawerSeparatorFill
+        {
+            get => (Brush)this.GetValue(DrawerSeparatorFillProperty);
+            set => this.SetValue(DrawerSeparatorFillProperty, value);
+        }
+
+        public static readonly DependencyProperty DrawerSeparatorCornerRadiusProperty = DPUtils.Register(_ => _.DrawerSeparatorCornerRadius);
+        public CornerRadius DrawerSeparatorCornerRadius
+        {
+            get => (CornerRadius)this.GetValue(DrawerSeparatorCornerRadiusProperty);
+            set => this.SetValue(DrawerSeparatorCornerRadiusProperty, value);
+        }
+
+        public static readonly DependencyProperty HeaderPaddingProperty = DPUtils.Register(_ => _.HeaderPadding);
+        public Thickness HeaderPadding
+        {
+            get => (Thickness)this.GetValue(HeaderPaddingProperty);
+            set => this.SetValue(HeaderPaddingProperty, value);
+        }
+
+        public static readonly DependencyProperty HeaderTextFontSizeProperty = DPUtils.Register(_ => _.HeaderTextFontSize);
+        public double HeaderTextFontSize
+        {
+            get => (double)this.GetValue(HeaderTextFontSizeProperty);
+            set => this.SetValue(HeaderTextFontSizeProperty, value);
+        }
+
+
+        public static readonly DependencyProperty InsetBorderBrushProperty = DPUtils.Register(_ => _.InsetBorderBrush);
+        public Brush InsetBorderBrush
+        {
+            get => (Brush)this.GetValue(InsetBorderBrushProperty);
+            set => this.SetValue(InsetBorderBrushProperty, value);
+        }
+
+        public static readonly DependencyProperty InsetBorderThicknessProperty = DPUtils.Register(_ => _.InsetBorderThickness);
+        public Thickness InsetBorderThickness
+        {
+            get => (Thickness)this.GetValue(InsetBorderThicknessProperty);
+            set => this.SetValue(InsetBorderThicknessProperty, value);
+        }
+
+        public static readonly DependencyProperty InsetBorderCornerRadiusProperty = DPUtils.Register(_ => _.InsetBorderCornerRadius);
+        public CornerRadius InsetBorderCornerRadius
+        {
+            get => (CornerRadius)this.GetValue(InsetBorderCornerRadiusProperty);
+            set => this.SetValue(InsetBorderCornerRadiusProperty, value);
         }
     }
 }
