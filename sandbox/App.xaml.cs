@@ -36,7 +36,7 @@
             AJut_Ux_Wpf_Version = versionInfo.ProductVersion?.ToString() ?? "unknown version";
             Logger.LogInfo($"Using AJut.UX.Wpf version #{AJut_Ux_Wpf_Version}");
 
-            App.Navigator = new StackNavFlowController();
+            App.Pages = new StackNavFlowController();
         }
         public App ()
         {
@@ -70,7 +70,7 @@
 
             g_restrictThemeChangeNotification = false;
 
-            App.Navigator.GenerateAndPushDisplay<UI.Pages.LandingPage>();
+            App.Pages.GenerateAndPushDisplay<UI.Pages.LandingPage>();
 
             void _OnThemeTrackerChanged (object? sender, PropertyChangedEventArgs e)
             {
@@ -84,7 +84,7 @@
         // ==================[ Properties ]========================
         public static string AJut_Core_Version { get; }
         public static string AJut_Ux_Wpf_Version { get; }
-        public static StackNavFlowController Navigator { get; }
+        public static StackNavFlowController Pages { get; }
 
         public static AppThemeManager? ThemeTracker { get; private set; }
 
@@ -131,7 +131,7 @@
             if (!g_restrictThemeChangeNotification)
             {
                 string msg = m_useThemes ? "on" : "off";
-                await App.Navigator.StackTopDisplayAdapter.ShowPopover(MessageBoxPopover.Generate($"Themes are now {msg}, this may require restart to take proper effect", "Ok"));
+                await App.Pages.StackTopDisplayAdapter.ShowPopover(MessageBoxPopover.Generate($"Themes are now {msg}, this may require restart to take proper effect", "Ok"));
             }
         }
 

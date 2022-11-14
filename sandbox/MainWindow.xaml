@@ -19,7 +19,7 @@
     <WindowChrome.WindowChrome>
         <WindowChrome CaptionHeight="40" ResizeBorderThickness="5"/>
     </WindowChrome.WindowChrome>
-    <ajut:StackNavDisplay Navigator="{Binding Source={x:Static local:App.Navigator}, Mode=OneWay}"
+    <ajut:StackNavDisplay Navigator="{Binding Source={x:Static local:App.Pages}, Mode=OneWay}"
                           FixedDrawerWidth="260">
         <ajut:StackNavDisplay.Resources>
             <Style TargetType="{x:Type ajut:StackNavActiveHeaderPresenter}" BasedOn="{StaticResource {x:Type ajut:StackNavActiveHeaderPresenter}}">

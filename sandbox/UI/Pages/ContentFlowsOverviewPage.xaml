@@ -26,19 +26,19 @@
                     </TextBlock.Inlines>
                 </TextBlock>
             </StackPanel>
-            <Grid Margin="0,10,0,0">
+            <Grid Margin="0,20,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition />
                     <ColumnDefinition />
                 </Grid.ColumnDefinitions>
                 <Border BorderThickness="3" BorderBrush="{DynamicResource AJut_Brush_GroupBorder}"
-                                    Background="{DynamicResource AJut_Brush_HighContrastText}" ajut_ap:ClickableXTA.IsTrackingClick="True" ajut_ap:ClickableXTA.Click="StackNav_OnClick">
+                        Background="{DynamicResource AJut_Brush_HighContrastText}" ajut_ap:ClickableXTA.IsTrackingClick="True" ajut_ap:ClickableXTA.Click="StackNav_OnClick">
                     <Border.Style>
                         <Style TargetType="{x:Type Border}">
-                            <Setter Property="Margin" Value="0,0,5,0"/>
+                            <Setter Property="Margin" Value="0,0,10,0"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=(ajut_ap:ClickableXTA.IsPressed)}" Value="True">
-                                    <Setter Property="Margin" Value="5,5,5,0"/>
+                                    <Setter Property="Margin" Value="5,5,10,0"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
@@ -52,27 +52,31 @@
                             <Image Source="/Images/StackNavExample.png" Stretch="Uniform" Margin="20" MaxWidth="512" MinWidth="128"/>
                         </Grid>
                         <Border Grid.Row="1" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource AJut_Brush_Rimlighting}" Background="{DynamicResource AJut_Brush_BannerBackground}">
-                            <Grid>
+                            <Grid Margin="5,0">
                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition />
-                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="&#xE76F;&#xE76F;&#xE76F;&#xE76F;&#xE76F;&#xE76F;" HorizontalAlignment="Left" FontFamily="Segoe MDL2 Assets" FontSize="18" VerticalAlignment="Center"/>
-                                <TextBlock Text="STACK NAV" Grid.Column="1" FontSize="24" TextAlignment="Center"/>
-                                <TextBlock Grid.Column="2" Text="&#xE76F;&#xE76F;&#xE76F;&#xE76F;&#xE76F;&#xE76F;" HorizontalAlignment="Left" FontFamily="Segoe MDL2 Assets" FontSize="18" VerticalAlignment="Center"/>
+                                <Viewbox Grid.Column="0" Stretch="Fill" Height="20" VerticalAlignment="Center">
+                                    <TextBlock Text="&#xE76F;" FontFamily="Segoe MDL2 Assets" FontSize="18"/>
+                                </Viewbox>
+                                <TextBlock Text="[ STACK NAV ]" Grid.Column="1" FontSize="24" TextAlignment="Center"/>
+                                <Viewbox Grid.Column="2" Stretch="Fill" Height="20" VerticalAlignment="Center">
+                                    <TextBlock Text="&#xE76F;" FontFamily="Segoe MDL2 Assets" FontSize="18"/>
+                                </Viewbox>
                             </Grid>
                         </Border>
                     </Grid>
                 </Border>
-                <Border Grid.Column="1" BorderThickness="3" BorderBrush="{DynamicResource AJut_Brush_GroupBorder}" Margin="5,0,0,0"
-                                    Background="{DynamicResource AJut_Brush_HighContrastText}" ajut_ap:ClickableXTA.IsTrackingClick="True" ajut_ap:ClickableXTA.Click="DockingFramework_OnClick">
+                <Border Grid.Column="1" BorderThickness="3" BorderBrush="{DynamicResource AJut_Brush_GroupBorder}"
+                        Background="{DynamicResource AJut_Brush_HighContrastText}" ajut_ap:ClickableXTA.IsTrackingClick="True" ajut_ap:ClickableXTA.Click="DockingFramework_OnClick">
                     <Border.Style>
                         <Style TargetType="{x:Type Border}">
-                            <Setter Property="Margin" Value="0,0,5,0"/>
+                            <Setter Property="Margin" Value="10,0,0,0"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=(ajut_ap:ClickableXTA.IsPressed)}" Value="True">
-                                    <Setter Property="Margin" Value="5,5,5,0"/>
+                                    <Setter Property="Margin" Value="10,5,5,5"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
@@ -84,15 +88,19 @@
                         </Grid.RowDefinitions>
 
                         <Border Grid.Row="1" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource AJut_Brush_Rimlighting}" Background="{DynamicResource AJut_Brush_BannerBackground}">
-                            <Grid>
+                            <Grid Margin="5,0">
                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition />
-                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="&#xE76F;&#xE76F;&#xE76F;&#xE76F;&#xE76F;&#xE76F;" HorizontalAlignment="Left" FontFamily="Segoe MDL2 Assets" FontSize="18" VerticalAlignment="Center"/>
-                                <TextBlock Text="DOCKING" Grid.Column="1" FontSize="24" TextAlignment="Center"/>
-                                <TextBlock Grid.Column="2" Text="&#xE76F;&#xE76F;&#xE76F;&#xE76F;&#xE76F;&#xE76F;" HorizontalAlignment="Left" FontFamily="Segoe MDL2 Assets" FontSize="18" VerticalAlignment="Center"/>
+                                <Viewbox Grid.Column="0" Stretch="Fill" Height="20" VerticalAlignment="Center">
+                                    <TextBlock Text="&#xE76F;" FontFamily="Segoe MDL2 Assets" FontSize="18"/>
+                                </Viewbox>
+                                <TextBlock Text="[ DOCKING FRAMEWORK ]" Grid.Column="1" FontSize="24" TextAlignment="Center"/>
+                                <Viewbox Grid.Column="2" Stretch="Fill" Height="20" VerticalAlignment="Center">
+                                    <TextBlock Text="&#xE76F;" FontFamily="Segoe MDL2 Assets" FontSize="18"/>
+                                </Viewbox>
                             </Grid>
                         </Border>
                         <Image Source="/Images/Docking.png" Stretch="Uniform" Margin="20" MaxWidth="512" MinWidth="128"/>
