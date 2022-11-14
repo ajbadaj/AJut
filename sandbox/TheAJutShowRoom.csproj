@@ -9,8 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Images\Docking.png" />
     <None Remove="Images\PenguinExample.png" />
     <None Remove="Images\PenguinExample.svg" />
+    <None Remove="Images\StackNavExample.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -18,7 +20,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Images\Docking.png" />
     <Resource Include="Images\PenguinExample.png" />
+    <Resource Include="Images\StackNavExample.png" />
     <Content Include="Images\PenguinExample.svg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

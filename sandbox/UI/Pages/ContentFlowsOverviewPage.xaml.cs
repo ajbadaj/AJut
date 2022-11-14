@@ -21,5 +21,10 @@
         {
 
         }
+
+        private void DockingFramework_OnClick (object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+
+        }
     }
 }
