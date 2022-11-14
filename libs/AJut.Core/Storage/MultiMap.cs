@@ -76,6 +76,12 @@
             return this.GetValuesFor(key, false)?.Count ?? 0;
         }
 
+        public bool TryGetValues (TKey key, out List<TValue> values)
+        {
+            values = this.GetValuesFor(key, createIfNonExistant: false);
+            return values != null;
+        }
+
         protected List<TValue> GetValuesFor (TKey key, bool createIfNonExistant = false)
         {
             if (!m_store.TryGetValue(key, out List<TValue> values))
