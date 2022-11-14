@@ -160,7 +160,7 @@
                                     </Style.Triggers>
                                 </Style>
                             </Border.Style>
-                            <TextBlock Text="{StaticResource AddIcon}"
+                            <TextBlock Text="{StaticResource AJut_Symbol_Add}"
                                        FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" HorizontalAlignment="Center"
                                        FontSize="16" FontWeight="ExtraBold">
                                 <TextBlock.Style>

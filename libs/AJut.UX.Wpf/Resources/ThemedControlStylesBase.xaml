@@ -5,7 +5,8 @@
                     xmlns:ajut_ap="clr-namespace:AJut.UX.AttachedProperties"
                     xmlns:ajut_conv="clr-namespace:AJut.UX.Converters"
                     xmlns:ajut_theme="clr-namespace:AJut.UX.Theming"
-                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib"
+                    xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework">
 
     <FontFamily x:Key="AJut_Font_Default">Segoe UI</FontFamily>
 
@@ -226,7 +227,7 @@
     </Style>
 
     <Style TargetType="{x:Type TextBlock}" x:Key="AJut_SymbolText">
-        <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+        <Setter Property="FontFamily" Value="{DynamicResource AJut_Font_SymbolGlyphText}"/>
         <Setter Property="FontSize" Value="20"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_SymbolForeground}"/>
@@ -616,7 +617,8 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type PasswordBox}">
-                    <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}">
+                    <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}"
+                            CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}">
                         <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
                     </Border>
                 </ControlTemplate>
@@ -1739,6 +1741,7 @@
     </Style>
 
     <Style x:Key="AJut_Style_ThemedWindow" TargetType="{x:Type Window}">
+        <Setter Property="WindowStyle" Value="None"/>
         <Setter Property="FontFamily" Value="{DynamicResource AJut_Font_Default}"/>
         <Setter Property="TextElement.FontFamily" Value="{DynamicResource AJut_Font_Default}" />
         <Setter Property="ajut_theme:AppThemeManager.WindowBorderGlowBrush" Value="{DynamicResource AJut_Brush_WindowGlowBorder}"/>
@@ -1843,4 +1846,140 @@
             </Trigger>
         </Style.Triggers>
     </Style>
+
+    <Style x:Key="AJut_Style_DefaultDockTearoffWindow" TargetType="{x:Type ajut_ctrls:DefaultDockTearoffWindow}">
+        <Setter Property="WindowStyle" Value="None"/>
+        <Setter Property="FontFamily" Value="{DynamicResource AJut_Font_Default}"/>
+        <Setter Property="TextElement.FontFamily" Value="{DynamicResource AJut_Font_Default}" />
+        <Setter Property="ajut_theme:AppThemeManager.WindowBorderGlowBrush" Value="{DynamicResource AJut_Brush_WindowGlowBorder}"/>
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_TitleBarBackground}"/>
+        <Setter Property="Margin" Value="0"/>
+        <Setter Property="BorderThickness" Value="4" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_TitleBarBackground}"/>
+        <Setter Property="ajut_ap:BorderXTA.CornerRadius" Value="3,3,0,0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ajut_ctrls:DefaultDockTearoffWindow}">
+                    <Grid UseLayoutRounding="True">
+                        <Grid.Style>
+                            <Style TargetType="{x:Type Grid}">
+                                <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=Background}"/>
+                                <Style.Triggers>
+                                    <Trigger Property="ajut_ctrls:WindowChromeButtonStrip.IsMouseOverClose" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource AJut_Brush_ChromeCloseButtonHighlight}"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Style>
+                        <Grid x:Name="ThemeWindowRoot" ClipToBounds="False" Margin="{TemplateBinding Margin}">
+                            <!-- ============[ Glow Border]================= -->
+                            <Grid ClipToBounds="False">
+                                <Grid.Style>
+                                    <Style TargetType="{x:Type Grid}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{ajut:TemplateBinding Path=WindowState}" Value="Maximized">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Grid.Style>
+                                <Border Background="Transparent" CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}" BorderThickness="4" Margin="0">
+                                    <Border.Style>
+                                        <Style TargetType="{x:Type Border}">
+                                            <Setter Property="BorderBrush" Value="{ajut:TemplateBinding Path=(ajut_theme:AppThemeManager.WindowBorderGlowBrush)}"/>
+                                            <Style.Triggers>
+                                                <Trigger Property="ajut_ctrls:WindowChromeButtonStrip.IsMouseOverClose" Value="True">
+                                                    <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ChromeCloseButtonHighlight}"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                </Border>
+                                <Border Background="Transparent" CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}"
+                                        BorderThickness="3"
+                                        Visibility="{ajut:TemplateBinding Path=IsActive, Converter={ajut_conv:BooleanToVisibilityConverter}}">
+                                    <Border.Style>
+                                        <Style TargetType="{x:Type Border}">
+                                            <Setter Property="BorderBrush" Value="{ajut:TemplateBinding Path=(ajut_theme:AppThemeManager.WindowBorderGlowBrush)}"/>
+                                            <Style.Triggers>
+                                                <Trigger Property="ajut_ctrls:WindowChromeButtonStrip.IsMouseOverClose" Value="True">
+                                                    <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ChromeCloseButtonHighlight}"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <Border.Effect>
+                                        <BlurEffect Radius="4"/>
+                                    </Border.Effect>
+                                </Border>
+                            </Grid>
+                            <Border x:Name="ClientRoot" BorderBrush="{TemplateBinding BorderBrush}"  CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}">
+                                <Border.Style>
+                                    <Style TargetType="{x:Type Border}">
+                                        <Setter Property="BorderThickness" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=BorderThickness}"/>
+                                        <Setter Property="CornerRadius" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=(ajut_ap:BorderXTA.CornerRadius)}"/>
+                                        <Setter Property="Margin" Value="2"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=(ajut_ap:WindowXTA.IsFullscreen)}" Value="True">
+                                                <Setter Property="BorderThickness" Value="3"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=WindowState}" Value="Maximized">
+                                                <Setter Property="CornerRadius" Value="0"/>
+                                                <Setter Property="BorderThickness" Value="0"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <!-- ===============[ Client Area ]========================== -->
+                                <Grid>
+                                    <Border BorderThickness="0,0,0,0" CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}"
+                                            BorderBrush="{DynamicResource AJut_Brush_PanelBorder}"
+                                            Background="{DynamicResource AJut_Brush_RootPanelBackground}" 
+                                            Margin="0,0,0,0">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="30"/>
+                                                <RowDefinition Height="*"/>
+                                            </Grid.RowDefinitions>
+                                            <ContentPresenter Grid.Row="1" Content="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Content}"/>
+                                            <Grid DockPanel.Dock="Top">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition />
+                                                    <ColumnDefinition Width="Auto" MinWidth="100"/>
+                                                </Grid.ColumnDefinitions>
+                                                <ajut_ctrls:DockWholeWindowDragStartControl Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="3,0" Padding="4"/>
+                                                <ContentControl Grid.Column="1" Content="{TemplateBinding Icon}">
+                                                    <ContentControl.Resources>
+                                                        <DataTemplate DataType="{x:Type ImageSource}">
+                                                            <Image Source="{Binding}"/>
+                                                        </DataTemplate>
+                                                        <DataTemplate DataType="{x:Type sys:String}">
+                                                            <TextBlock Text="{Binding}" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" Margin="2"
+                                                                       FontSize="{Binding RelativeSource={RelativeSource AncestorType={x:Type ajut_ctrls:DefaultDockTearoffWindow}}, Path=TitleBarFontSize}"/>
+                                                        </DataTemplate>
+                                                    </ContentControl.Resources>
+                                                </ContentControl>
+                                                <TextBlock Grid.Column="2" Text="{TemplateBinding Title}" 
+                                                           TextAlignment="Center" FontSize="14" VerticalAlignment="Center" Margin="3,0"/>
+                                                <ajut_ctrls:WindowChromeButtonStrip Grid.Column="3" ajut_ap:BorderXTA.CornerRadius="0,0,0,4" ButtonPadding="12,9"/>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsActive" Value="False">
+                <Setter Property="ajut_theme:AppThemeManager.WindowBorderGlowBrush" Value="{DynamicResource AJut_Brush_WindowGlowBorderInactive}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+    <Style TargetType="{x:Type ajut_ctrls:DefaultDockTearoffWindow}" BasedOn="{StaticResource AJut_Style_DefaultDockTearoffWindow}"/>
+
 </ResourceDictionary>

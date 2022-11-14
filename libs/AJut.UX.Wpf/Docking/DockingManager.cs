@@ -126,6 +126,14 @@
         /// <summary>
         /// Register root <see cref="DockZone"/>(s) that are fixed dock locations. Each DockingManager requires at least one root level zone.
         /// </summary>
+        public void RegisterRootDockZones (params DockZone[] dockZones)
+        {
+            this.RegisterRootDockZones(this.Windows.Root, dockZones);
+        }
+
+        /// <summary>
+        /// Register root <see cref="DockZone"/>(s) that are fixed dock locations. Each DockingManager requires at least one root level zone.
+        /// </summary>
         public void RegisterRootDockZones (Window window, params DockZone[] dockZones)
         {
             foreach (var zone in dockZones)
@@ -276,23 +284,31 @@
         /// Close all zones out, going through the effort first of asking them if that's ok prior to closing them
         /// </summary>
         /// <returns>True if all zones successfully closed, false otherwise</returns>
-        public bool CloseAll ()
+        public bool CloseAll (bool force = false)
         {
-            bool anyDissenters = false;
-            var all = m_rootDockZones.SelectMany(z => TreeTraversal<DockZone>.All(z)).SelectMany(z => _DockedContentOrEmptyFor(z?.ViewModel)).ToList();
-            foreach (var adapter in all)
+            if (force)
             {
-                if (!adapter.CheckCanClose())
-                {
-                    var closeSupression = new RoutedEventArgs(DockZone.NotifyCloseSupressionEvent);
-                    adapter.Location.UI.RaiseEvent(closeSupression);
-                    anyDissenters = true;
-                }
+                m_windowsToCloseSilently.AddRange(this.Windows);
             }
-
-            if (anyDissenters)
+            else
             {
-                return false;
+                List<DockingContentAdapterModel> all = m_rootDockZones.SelectMany(z => TreeTraversal<DockZone>.All(z)).SelectMany(z => _DockedContentOrEmptyFor(z?.ViewModel)).ToList();
+
+                bool anyDissenters = false;
+                foreach (var adapter in all)
+                {
+                    if (!adapter.CheckCanClose())
+                    {
+                        var closeSupression = new RoutedEventArgs(DockZone.NotifyCloseSupressionEvent);
+                        adapter.Location.UI.RaiseEvent(closeSupression);
+                        anyDissenters = true;
+                    }
+                }
+
+                if (anyDissenters)
+                {
+                    return false;
+                }
             }
 
             this.Windows.CloseAllChildWindows();
@@ -329,6 +345,7 @@
                 draggerWindow.WindowStyle = WindowStyle.None;
                 draggerWindow.AllowsTransparency = true;
                 draggerWindow.Opacity = 0.45;
+                draggerWindow.Style = null;
 
                 Point mouseLoc = Mouse.GetPosition(dragSourceWindow);
                 mouseLoc.X += dragSourceWindow.Left;
@@ -424,9 +441,9 @@
             {
                 currentDropTarget = null;
 
-                foreach (var window in this.Windows.Where(w => w != dragSourceWindow))
+                foreach (DockZone rootZones in this.Windows.Where(w => w != dragSourceWindow).SelectMany(w => m_dockZoneMapping.TryGetValues(w, out List<DockZone> zones) ? zones : Enumerable.Empty<DockZone>()))
                 {
-                    var result = VisualTreeHelper.HitTest(window, Mouse.PrimaryDevice.GetPosition(window));
+                    var result = VisualTreeHelper.HitTest(rootZones, Mouse.PrimaryDevice.GetPosition(rootZones));
                     if (result?.VisualHit != null)
                     {
                         var hitWidget = result.VisualHit as DockDropInsertionDriverWidget ?? result.VisualHit.GetFirstParentOf<DockDropInsertionDriverWidget>();
@@ -609,6 +626,20 @@
             }
         }
 
+        public DockZoneViewModel FindFirstAvailableDockZone ()
+        {
+            foreach (DockZoneViewModel zone in m_rootDockZones.SelectMany(z => TreeTraversal<DockZone>.All(z)).Select(z => z.ViewModel))
+            {
+                if (zone.Orientation.IsFlagInGroup(eDockOrientation.AnyLeafDisplay))
+                {
+                    return zone;
+                }
+            }
+
+            Logger.LogError($"DockingManager may be setup wrong, tried to find first available dock zone and couldn't find a leaf zone");
+            return null;
+        }
+
         // ==============================[ Utility Methods ]======================================
 
         internal IDockableDisplayElement BuildNewDisplayElement (string typeId)
@@ -625,7 +656,9 @@
                 return null;
             }
 
-            displayElement.Setup(new DockingContentAdapterModel(this));
+            var adapter = new DockingContentAdapterModel(this);
+            adapter.TitleContent = StringXT.ConvertToFriendlyEn(displayElement.GetType().Name);
+            displayElement.Setup(adapter);
             displayElement.DockingAdapter.Display = displayElement;
             return displayElement;
         }
@@ -716,7 +749,7 @@
                 window.Top = newWindowOrigin.Y;
                 window.Width = previousZoneSize.Width;
                 window.Height = previousZoneSize.Height;
-                window.Closing += OnDockTearoffWindowClosing;
+                window.Closing += this.OnDockTearoffWindowClosing;
                 this.ShowTearoffWindowHandler(window);
                 this.RegisterRootDockZones(window, newRoot);
 

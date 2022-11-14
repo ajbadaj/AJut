@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net5.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
-    <Version>1.2.1.3</Version>
+    <Version>1.2.1.4</Version>
     <Authors>AJ Badarni</Authors>
     <RootNamespace>AJut.UX</RootNamespace>
     <AssemblyName>AJut.UX.Wpf</AssemblyName>
@@ -15,7 +15,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/ajbadaj/AJut</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>c#;dotnet;wpf</PackageTags>
+    <PackageTags>c#;dotnet;wpf;theming;controls;converters;app;utilities</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
   </PropertyGroup>
