@@ -23,5 +23,16 @@
 
             rootAdd.AddDockedContent(m_docking.BuildNewDisplayElement<Pages.DockExampleControls.ColorController>());
         }
+
+        private void AddCommandPanel_OnClick (object sender, RoutedEventArgs e)
+        {
+            DockZoneViewModel rootAdd = m_docking.FindFirstAvailableDockZone();
+            if (rootAdd == null)
+            {
+                return;
+            }
+
+            rootAdd.AddDockedContent(m_docking.BuildNewDisplayElement<Pages.DockExampleControls.CommandSender>());
+        }
     }
 }

@@ -7,9 +7,16 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <WrapPanel Margin="10">
-        <Button Padding="0" Click="AddColorPanel_OnClick">
+        <Button Padding="0" Click="AddColorPanel_OnClick" Margin="0,0,3,3">
             <Grid Margin="3">
                 <TextBlock Text="&#xE790;" Style="{DynamicResource AJut_SymbolText}" FontSize="28" Margin="0,0,4,4"/>
+                <TextBlock Text="&#xE710;" Margin="0,0,-2,-2" Style="{DynamicResource AJut_SymbolText}" HorizontalAlignment="Right" VerticalAlignment="Bottom" FontSize="12" FontWeight="Bold"/>
+            </Grid>
+        </Button>
+
+        <Button Padding="0" Click="AddCommandPanel_OnClick">
+            <Grid Margin="3">
+                <TextBlock Text="&#xE724;" Style="{DynamicResource AJut_SymbolText}" FontSize="28" Margin="0,0,4,4"/>
                 <TextBlock Text="&#xE710;" Margin="0,0,-2,-2" Style="{DynamicResource AJut_SymbolText}" HorizontalAlignment="Right" VerticalAlignment="Bottom" FontSize="12" FontWeight="Bold"/>
             </Grid>
         </Button>
