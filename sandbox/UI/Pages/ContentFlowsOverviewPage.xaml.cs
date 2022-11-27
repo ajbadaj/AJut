@@ -16,5 +16,15 @@
             m_adapter = adapter;
             m_adapter.Title = "Content Flows";
         }
+
+        private void StackNav_OnClick (object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            App.Pages.GenerateAndPushDisplay<StackNavOverviewPage>();
+        }
+
+        private void DockingFramework_OnClick (object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            App.Pages.GenerateAndPushDisplay<DockingFrameworkOverviewPage>();
+        }
     }
 }

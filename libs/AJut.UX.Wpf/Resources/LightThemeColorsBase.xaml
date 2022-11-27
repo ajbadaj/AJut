@@ -23,6 +23,9 @@
     <Color x:Key="AJut_Color_RimLighting">#BFFF</Color>
     <Color x:Key="AJut_Color_Shadow">#9555</Color>
 
+    <SolidColorBrush x:Key="AJut_Brush_Rimlighting" Color="{DynamicResource AJut_Color_RimLighting}"/>
+    <SolidColorBrush x:Key="AJut_Brush_Shadow" Color="{DynamicResource AJut_Color_Shadow}"/>
+
     <Color x:Key="AJut_Color_MouseInteractionHighlight">#D181A1</Color>
     <SolidColorBrush x:Key="AJut_Brush_MouseInteractionHighlight" Color="{DynamicResource AJut_Color_MouseInteractionHighlight}"/>
 

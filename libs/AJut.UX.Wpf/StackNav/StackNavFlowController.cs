@@ -185,7 +185,11 @@
             {
                 newDisplayObj = Activator.CreateInstance(stackNavDisplayControlType);
             }
-            catch { newDisplayObj = null; }
+            catch (Exception exc)
+            {
+                Logger.LogError($"Failed to create a new {stackNavDisplayControlType.Name}", exc);
+                newDisplayObj = null; 
+            }
 
             // Use it if it's valid
             if (newDisplayObj is IStackNavDisplayControl displayControl)

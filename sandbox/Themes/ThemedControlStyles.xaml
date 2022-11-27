@@ -1,6 +1,11 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf">
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="/AJut.UX.Wpf;component/Resources/ThemedControlStylesBase.xaml"/>
     </ResourceDictionary.MergedDictionaries>
+    <Style TargetType="{x:Type Window}" BasedOn="{StaticResource AJut_Style_ThemedWindow}"/>
+    <Style TargetType="{x:Type ajut:DefaultDockTearoffWindow}" BasedOn="{StaticResource AJut_Style_DefaultDockTearoffWindow}">
+        <Setter Property="Title" Value="Showroom Child Window"/>
+    </Style>
 </ResourceDictionary>

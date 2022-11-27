@@ -112,7 +112,7 @@
         /// </summary>
         public object DrawerHeading
         {
-            get => m_drawerHeading ?? "Settings";
+            get => m_drawerHeading ?? m_title ?? "Settings";
             set => this.SetAndRaiseIfChanged(ref m_drawerHeading, value);
         }
 

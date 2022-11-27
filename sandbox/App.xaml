@@ -6,7 +6,12 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Themes/LightThemeColors.xaml"/>
-                <ResourceDictionary Source="Themes/ThemedControlStyles.xaml"/>
+                <!--
+                ======[ NOTICE: Non-Standard Theming Approach ]==========
+                In a normal application, we'd do something like the below to support ajut themes. In here
+                they are commented out because the showroom has a "turn off themes" feature, and the
+                correct stuff will be added in the app.xaml.cs
+                <ResourceDictionary Source="Themes/ThemedControlStyles.xaml"/>-->
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

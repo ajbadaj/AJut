@@ -91,7 +91,7 @@
         <Setter Property="MinimizeToolTip" Value="Minimize"/>
         <Setter Property="MaximizeWindowedToolTip" Value="Maximize"/>
         <Setter Property="RestoreMaximizedWindowToolTip" Value="Restore Down"/>
-        <Setter Property="EnterFullscreenToolTip" Value="Fullscreen"/>
+        <Setter Property="EnterFullscreenToolTip" Value="Enter Fullscreen (cover all, including the task bar)"/>
         <Setter Property="LeaveFullscreenToolTip" Value="Exit Fullscreen"/>
         <Setter Property="CloseToolTip" Value="Close"/>
         <Setter Property="Template">
@@ -109,7 +109,7 @@
                                 <Button Style="{StaticResource AJut_Style_WindowChromeButton}"
                                         Content="{StaticResource AJut_Symbol_ChromeMinimize}"
                                         Visibility="{ajut:TemplateBinding Path=AllowMinimize, Converter={ajc:BooleanToVisibilityConverter}}"
-                                        WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Minimize"
+                                        WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=MinimizeToolTip, Mode=OneWay}"
                                         Command="{x:Static SystemCommands.MinimizeWindowCommand}"/>
                             </Grid>
                             <!-- ==========[ Restore/Maximize ]=============== -->
