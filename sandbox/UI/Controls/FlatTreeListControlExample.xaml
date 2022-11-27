@@ -11,7 +11,7 @@
              xmlns:ajprop="clr-namespace:AJut.UX.PropertyInteraction;assembly=AJut.UX.Wpf"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800"
-             x:Name="Self" Background="White">
+             x:Name="Self">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
