@@ -1434,7 +1434,7 @@
                                 Style="{DynamicResource AJut_GroupBox_RootShadow_Border_Style}"
                                 CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}">
                             <Border.OpacityMask>
-                                <MultiBinding Converter="{DynamicResource AJut_GroupBoxHeaderMaskConverter}">
+                                <MultiBinding Converter="{StaticResource AJut_GroupBoxHeaderMaskConverter}">
                                     <Binding ElementName="Header" Path="ActualWidth" />
                                     <Binding RelativeSource="{RelativeSource Self}" Path="ActualWidth" />
                                     <Binding RelativeSource="{RelativeSource Self}" Path="ActualHeight" />
