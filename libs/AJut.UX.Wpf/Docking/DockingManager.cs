@@ -57,6 +57,7 @@
 
         private readonly List<Window> m_currentlyClosingWindows = new List<Window>();
         private readonly List<Window> m_windowsToCloseSilently = new List<Window>();
+        private readonly List<UIElement> m_commandSources = new List<UIElement>();
 
         /// <summary>
         /// Construct a new <see cref="DockingManager"/> instance.
@@ -739,6 +740,7 @@
             try
             {
                 window = this.CreateNewTearoffWindowHandler();
+                window.CommandBindings.AddEach(this.EnumerateAllCommandBindings());
                 DockWindowConfig.SetDockingTearoffWindowRootZone(window, rootZone);
                 this.Windows.Track(window);
 
@@ -858,6 +860,25 @@
         private static IDockableDisplayElement BuildDefaultDisplayFor (Type elementType)
         {
             return AJutActivator.CreateInstanceOf(elementType) as IDockableDisplayElement;
+        }
+
+        public void AddCommandSource (UIElement source)
+        {
+            if (source != null)
+            {
+                m_commandSources.Add(source);
+            }
+        }
+
+        private IEnumerable<CommandBinding> EnumerateAllCommandBindings ()
+        {
+            foreach (UIElement source in m_commandSources)
+            {
+                foreach (CommandBinding cmd in source.CommandBindings.OfType<CommandBinding>().Where(c => c != null))
+                {
+                    yield return cmd;
+                }
+            }
         }
 
         // ==============================[ Sub Classes ]======================================
