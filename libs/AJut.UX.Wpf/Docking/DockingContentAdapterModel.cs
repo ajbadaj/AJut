@@ -3,7 +3,6 @@
     using System;
     using System.Collections.Specialized;
     using System.Windows;
-    using AJut.UX.Controls;
 
     public class DockingContentAdapterModel : NotifyPropertyChanged, IDisposable
     {
