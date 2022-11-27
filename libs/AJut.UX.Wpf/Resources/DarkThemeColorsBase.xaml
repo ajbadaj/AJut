@@ -5,7 +5,7 @@
     <Color x:Key="AJut_Color_PrimaryHighlight">#0D83D8</Color>
     <Color x:Key="AJut_Color_PrimaryHighlightDark">#074470</Color>
     <Color x:Key="AJut_Color_PrimaryHighlightBright">#119CFF</Color>
-    <Color x:Key="AJut_Color_PrimaryHighlightDesat">#4588B7</Color>
+    <Color x:Key="AJut_Color_PrimaryHighlightDesat">#DD3C6A89</Color>
     <SolidColorBrush x:Key="AJut_Brush_PrimaryHighlight" Color="{DynamicResource AJut_Color_PrimaryHighlight}"/>
     <SolidColorBrush x:Key="AJut_Brush_PrimaryHighlightDark" Color="{DynamicResource AJut_Color_PrimaryHighlightDark}"/>
     <SolidColorBrush x:Key="AJut_Brush_PrimaryHighlightBright" Color="{DynamicResource AJut_Color_PrimaryHighlightBright}"/>
@@ -46,8 +46,8 @@
 
     <SolidColorBrush x:Key="AJut_Brush_ListBackground" Color="#36393A" />
     <SolidColorBrush x:Key="AJut_Brush_ListBorder" Color="#000" />
-    <SolidColorBrush x:Key="AJut_Brush_ListSelection" Color="{DynamicResource AJut_Color_PrimaryHighlight}" />
-    <SolidColorBrush x:Key="AJut_Brush_TreeSelection" Color="{DynamicResource AJut_Color_PrimaryHighlightDark}" />
+    <SolidColorBrush x:Key="AJut_Brush_ListSelection" Color="#0864A5" />
+    <SolidColorBrush x:Key="AJut_Brush_TreeSelection" Color="#0864A5" />
 
     <Color x:Key="AJut_Color_BorderCommon">#555</Color>
     <Color x:Key="AJut_Color_BorderCommonTransparent">#0555</Color>
