@@ -101,6 +101,22 @@
             set => this.SetValue(IsReadOnlyProperty, value);
         }
 
+
+        public static readonly DependencyProperty BackingFillBrushProperty = DPUtils.Register(_ => _.BackingFillBrush);
+        public Brush BackingFillBrush
+        {
+            get => (Brush)this.GetValue(BackingFillBrushProperty);
+            set => this.SetValue(BackingFillBrushProperty, value);
+        }
+
+        public static readonly DependencyProperty TransparencyLinesBrushProperty = DPUtils.Register(_ => _.TransparencyLinesBrush);
+        public Brush TransparencyLinesBrush
+        {
+            get => (Brush)this.GetValue(TransparencyLinesBrushProperty);
+            set => this.SetValue(TransparencyLinesBrushProperty, value);
+        }
+
+
         private void OnEditColorChanged ()
         {
             if (m_isDoingUpdate)
