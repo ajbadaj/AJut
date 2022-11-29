@@ -11,7 +11,20 @@
         <Setter Property="BorderBrush" Value="Black"/>
         <Setter Property="BorderThickness" Value="4" />
         <Setter Property="Padding" Value="10" />
-        <Setter Property="Width" Value="235"/>
+        <Setter Property="MinWidth" Value="300"/>
+        <Setter Property="BackingFillBrush" Value="White"/>
+        <Setter Property="TransparencyLinesBrush">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="5,5" MappingMode="Absolute" SpreadMethod="Reflect">
+                    <GradientStop Offset="0.00" Color="#181818" />
+                    <GradientStop Offset="0.10" Color="#181818" />
+                    <GradientStop Offset="0.10" Color="#00181818" />
+                    <GradientStop Offset="0.90" Color="#00181818" />
+                    <GradientStop Offset="0.90" Color="#181818" />
+                    <GradientStop Offset="1.00" Color="#181818" />
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:ColorValueEditControl}">
@@ -24,13 +37,17 @@
                         <StackPanel  Margin="{TemplateBinding Padding}">
                             <Border BorderThickness="0,0,0,3" BorderBrush="{TemplateBinding BorderBrush}">
                                 <DockPanel Margin="5">
-                                    <Border BorderThickness="2" BorderBrush="{Binding Path=BorderBrush, RelativeSource={RelativeSource AncestorType={x:Type local:ColorValueEditControl}}}" CornerRadius="3"
-                                            Background="Transparent">
+                                    <Border BorderThickness="2" BorderBrush="{Binding Path=BorderBrush, RelativeSource={RelativeSource AncestorType={x:Type local:ColorValueEditControl}}}" CornerRadius="3">
                                         <Border BorderThickness="1" CornerRadius="2" Width="30" Margin="2"
-                                                BorderBrush="{Binding Path=BorderBrush, RelativeSource={RelativeSource AncestorType={x:Type local:ColorValueEditControl}}}">
-                                            <Border.Background>
-                                                <SolidColorBrush Color="{Binding Path=EditColor, RelativeSource={RelativeSource AncestorType={x:Type local:ColorValueEditControl}}}"/>
-                                            </Border.Background>
+                                                BorderBrush="{Binding Path=BorderBrush, RelativeSource={RelativeSource AncestorType={x:Type local:ColorValueEditControl}}}"
+                                                Background="{TemplateBinding BackingFillBrush}">
+                                            <Grid Background="{TemplateBinding TransparencyLinesBrush}">
+                                                <Grid>
+                                                    <Grid.Background>
+                                                        <SolidColorBrush Color="{Binding Path=EditColor, RelativeSource={RelativeSource AncestorType={x:Type local:ColorValueEditControl}}}"/>
+                                                    </Grid.Background>
+                                                </Grid>
+                                            </Grid>
                                         </Border>
                                     </Border>
                                     <CheckBox Margin="0,3,0,0" DockPanel.Dock="Bottom" HorizontalAlignment="Right" Content="Use Shortest Hex" FontSize="10" FontStyle="Italic"

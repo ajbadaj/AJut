@@ -12,6 +12,19 @@
         <Setter Property="BorderBrush" Value="Black"/>
         <Setter Property="HighlightBorderBrush" Value="#186DBA"/>
         <Setter Property="BorderThickness" Value="2" />
+        <Setter Property="BackingFillBrush" Value="White"/>
+        <Setter Property="TransparencyLinesBrush">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="5,5" MappingMode="Absolute" SpreadMethod="Reflect">
+                    <GradientStop Offset="0.00" Color="#181818" />
+                    <GradientStop Offset="0.10" Color="#181818" />
+                    <GradientStop Offset="0.10" Color="#00181818" />
+                    <GradientStop Offset="0.90" Color="#00181818" />
+                    <GradientStop Offset="0.90" Color="#181818" />
+                    <GradientStop Offset="1.00" Color="#181818" />
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:ColorEditIngressControl}">
@@ -31,10 +44,15 @@
                         </Border.Style>
                         <Grid>
                             <Border x:Name="ColorDisplay" CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}"
-                                    Margin="{TemplateBinding Padding}">
-                                <Border.Background>
-                                    <SolidColorBrush Color="{ajut:TemplateBinding Path=EditColor, Mode=OneWay}"/>
-                                </Border.Background>
+                                    Margin="{TemplateBinding Padding}"
+                                    Background="{TemplateBinding BackingFillBrush}">
+                                <Grid Background="{TemplateBinding TransparencyLinesBrush}">
+                                    <Grid>
+                                        <Grid.Background>
+                                            <SolidColorBrush Color="{ajut:TemplateBinding Path=EditColor, Mode=OneWay}"/>
+                                        </Grid.Background>
+                                    </Grid>
+                                </Grid>
                             </Border>
                             <Grid x:Name="FancyCover">
                                 <Grid.Background>
@@ -46,7 +64,6 @@
                                     </LinearGradientBrush>
                                 </Grid.Background>
                             </Grid>
-                            <!--Background="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ColorEditIngressControl}}, Path=EditColor, Mode=OneWay}"-->
                             <Popup PlacementTarget="{Binding ElementName=ColorDisplay}" HorizontalOffset="140" VerticalOffset="20"
                                    IsOpen="{ajut:TemplateBinding Path=ShowEditDisplay, Mode=TwoWay}"
                                    ap:PopupXTA.StaysOpenUnlessClickAway="True"

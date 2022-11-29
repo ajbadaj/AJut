@@ -13,6 +13,7 @@
     public class WindowChromeButtonStrip : Control
     {
         private Window m_window;
+        private readonly CommandBinding[] m_windowControlCommands;
         static WindowChromeButtonStrip ()
         {
             DefaultStyleKeyProperty.OverrideMetadata(typeof(WindowChromeButtonStrip), new FrameworkPropertyMetadata(typeof(WindowChromeButtonStrip)));
@@ -20,11 +21,14 @@
 
         public WindowChromeButtonStrip()
         {
-            this.CommandBindings.Add(new CommandBinding(SystemCommands.MinimizeWindowCommand, OnMinimzeWindow, OnCanMinimizeWindow));
-            this.CommandBindings.Add(new CommandBinding(SystemCommands.MaximizeWindowCommand, OnMaximizeWindow, OnCanMaximizeWindow));
-            this.CommandBindings.Add(new CommandBinding(SystemCommands.RestoreWindowCommand, OnRestoreWindow, OnCanRestoreWindow));
-            this.CommandBindings.Add(new CommandBinding(WindowXTA.ToggleFullscreenCommand, OnToggleFullscreen, OnCanToggleFullscreen));
-            this.CommandBindings.Add(new CommandBinding(SystemCommands.CloseWindowCommand, OnCloseWindow, OnCanCloseWindow));
+            m_windowControlCommands = new[]
+            {
+                new CommandBinding(SystemCommands.MinimizeWindowCommand, this.OnMinimzeWindow, this.OnCanMinimizeWindow),
+                new CommandBinding(SystemCommands.MaximizeWindowCommand, this.OnMaximizeWindow, this.OnCanMaximizeWindow),
+                new CommandBinding(SystemCommands.RestoreWindowCommand, this.OnRestoreWindow, this.OnCanRestoreWindow),
+                new CommandBinding(WindowXTA.ToggleFullscreenCommand, this.OnToggleFullscreen, this.OnCanToggleFullscreen),
+                new CommandBinding(SystemCommands.CloseWindowCommand, this.OnCloseWindow, this.OnCanCloseWindow),
+            };
 
             this.Loaded += this.OnLoaded;
         }
@@ -41,14 +45,19 @@
             if (m_window != null)
             {
                 SetIsMouseOverClose(m_window, false);
+                m_window.CommandBindings.RemoveEach(m_windowControlCommands);
             }
 
             m_window = Window.GetWindow(this);
+            if (m_window != null)
+            {
+                m_window.CommandBindings.AddEach(m_windowControlCommands);
+            }
         }
 
         private void OnCanMinimizeWindow (object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = true;
+            e.CanExecute = this.IsVisible && this.AllowMinimize;
         }
 
         private void OnMinimzeWindow (object sender, ExecutedRoutedEventArgs e)
@@ -58,7 +67,7 @@
 
         private void OnCanMaximizeWindow (object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = true;
+            e.CanExecute = this.IsVisible && this.AllowMaximizeRestore;
         }
 
         private void OnMaximizeWindow (object sender, ExecutedRoutedEventArgs e)
@@ -68,7 +77,7 @@
 
         private void OnCanRestoreWindow (object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = true;
+            e.CanExecute = this.IsVisible && this.AllowMaximizeRestore;
         }
 
         private void OnRestoreWindow (object sender, ExecutedRoutedEventArgs e)
@@ -78,7 +87,7 @@
 
         private void OnCanToggleFullscreen (object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = true;
+            e.CanExecute = this.IsVisible && this.AllowFullscreen;
         }
 
         private void OnToggleFullscreen (object sender, ExecutedRoutedEventArgs e)

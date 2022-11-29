@@ -98,6 +98,22 @@
             set => this.SetValue(ShowEditDisplayProperty, value);
         }
 
+
+        public static readonly DependencyProperty BackingFillBrushProperty = DPUtils.Register(_ => _.BackingFillBrush);
+        public Brush BackingFillBrush
+        {
+            get => (Brush)this.GetValue(BackingFillBrushProperty);
+            set => this.SetValue(BackingFillBrushProperty, value);
+        }
+
+        public static readonly DependencyProperty TransparencyLinesBrushProperty = DPUtils.Register(_ => _.TransparencyLinesBrush);
+        public Brush TransparencyLinesBrush
+        {
+            get => (Brush)this.GetValue(TransparencyLinesBrushProperty);
+            set => this.SetValue(TransparencyLinesBrushProperty, value);
+        }
+
+
         private void OnShowEditDisplayChanged (DependencyPropertyChangedEventArgs<bool> e)
         {
             if (e.NewValue)
