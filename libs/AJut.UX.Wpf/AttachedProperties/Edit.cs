@@ -20,9 +20,13 @@
             SetIsEditable(d, !GetIsReadOnly(d));
         }
 
-        private static DependencyPropertyKey IsEditablePropertyKey = APUtils.RegisterReadOnly(GetIsEditable, SetIsEditable);
+        private static DependencyPropertyKey IsEditablePropertyKey = APUtils.RegisterReadOnly(GetIsEditable, SetIsEditable, new FrameworkPropertyMetadata(true, FrameworkPropertyMetadataOptions.Inherits, OnIsReadOnlyChanged));
+
+        /// <summary>
+        /// The inverse of <see cref="IsReadOnlyProperty"/>, this is a calculated attached property (which is why the property itself is readonly), it is only meant to simplify binding where IsEditable is prefered over IsReadOnly
+        /// </summary>
         public static DependencyProperty IsEditableProperty = IsEditablePropertyKey.DependencyProperty;
         public static bool GetIsEditable (DependencyObject obj) => (bool)obj.GetValue(IsEditableProperty);
-        internal static void SetIsEditable (DependencyObject obj, bool value) => obj.SetValue(IsEditablePropertyKey, value);
+        private static void SetIsEditable (DependencyObject obj, bool value) => obj.SetValue(IsEditablePropertyKey, value);
     }
 }
