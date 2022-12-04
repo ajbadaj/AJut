@@ -8,6 +8,7 @@
     using System.Windows.Controls;
     using System.Windows.Controls.Primitives;
     using System.Windows.Markup;
+    using System.Windows.Media;
     using DPUtils = AJut.UX.DPUtils<PopupMenuButton>;
 
     /// <summary>
@@ -100,6 +101,13 @@
         {
             get => (DataTemplate)this.GetValue(ButtonContentTemplateProperty);
             set => this.SetValue(ButtonContentTemplateProperty, value);
+        }
+
+        public static readonly DependencyProperty MenuBackgroundProperty = DPUtils.Register(_ => _.MenuBackground);
+        public Brush MenuBackground
+        {
+            get => (Brush)this.GetValue(MenuBackgroundProperty);
+            set => this.SetValue(MenuBackgroundProperty, value);
         }
 
         // ===================[Display Dependency Properties]===================

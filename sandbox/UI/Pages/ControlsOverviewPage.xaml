@@ -111,8 +111,27 @@
                                       MenuPopupAlignment="{Binding ElementName=PopupButtonController_Alignment, Path=SelectedItem, Mode=OneWay}"
                                       MenuPopupAnimation="{Binding ElementName=PopupButtonController_Animation, Path=SelectedItem, Mode=OneWay}">
                     <MenuItem Header="Test 1" Click="Test1_OnClick"/>
-                    <MenuItem Header="Test 2 (does nothing)"/>
+                    <MenuItem Header="Test 2 (disabled)" IsEnabled="False"/>
+                    <MenuItem Header="Test 3 (does nothing)"/>
                 </ajut:PopupMenuButton>
+                <Menu>
+                    <MenuItem Header="File">
+                        <MenuItem Header="Load"/>
+                        <Separator />
+                        <MenuItem Header="Save"/>
+                        <MenuItem Header="Save As"/>
+                        <Separator />
+                        <MenuItem Header="Exit" IsEnabled="False"/>
+                    </MenuItem>
+                    <MenuItem Header="Edit">
+                        <MenuItem Header="Undo Redo">
+                            <MenuItem Header="Undo"/>
+                            <MenuItem Header="Redo" IsEnabled="False"/>
+                        </MenuItem>
+                        <MenuItem Header="Resize"/>
+                    </MenuItem>
+                    <MenuItem Header="Fake" IsEnabled="False"/>
+                </Menu>
             </StackPanel>
         </TabItem>
         <TabItem Header="Svg">

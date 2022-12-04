@@ -8,8 +8,9 @@
     <Style TargetType="{x:Type local:PopupMenuButton}">
         <Setter Property="BorderBrush" Value="Black"/>
         <Setter Property="BorderThickness" Value="2"/>
-        <Setter Property="Padding" Value="5"/>
+        <Setter Property="Padding" Value="3"/>
         <Setter Property="Background" Value="#FFF0F0F0"/>
+        <Setter Property="MenuBackground" Value="Transparent"/>
         <Setter Property="ap:BorderXTA.CornerRadius" Value="4"/>
         <Setter Property="Template">
             <Setter.Value>
@@ -17,12 +18,21 @@
                     <Grid>
                         <ToggleButton x:Name="PART_Button" Content="{TemplateBinding ButtonContent}" ContentTemplate="{TemplateBinding ButtonContentTemplate}"
                                       Style="{TemplateBinding ButtonStyle}" IsChecked="{Binding ElementName=PART_Popup, Path=IsOpen, Mode=TwoWay}"/>
-                        <Popup x:Name="PART_Popup" Grid.Row="1" PopupAnimation="{TemplateBinding MenuPopupAnimation}"
+                        <Popup x:Name="PART_Popup" PopupAnimation="{TemplateBinding MenuPopupAnimation}"
                                ap:PopupXTA.StaysOpenUnlessClickAway="True" AllowsTransparency="True">
                             <Grid MinWidth="{Binding ElementName=PART_Button, Path=ActualWidth}">
-                                <Border HorizontalAlignment="{TemplateBinding MenuPopupAlignment}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}">
+                                <Border HorizontalAlignment="{TemplateBinding MenuPopupAlignment}" 
+                                        Background="{TemplateBinding Background}" 
+                                        BorderBrush="{TemplateBinding BorderBrush}" 
+                                        BorderThickness="{TemplateBinding BorderThickness}" 
+                                        CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}"
+                                        Margin="0,0,0,15">
+                                    <Border.Effect>
+                                        <DropShadowEffect ShadowDepth="6" Direction="300" Opacity="{DynamicResource AJut_Double_StandardShadowOpacity}" Color="{DynamicResource AJut_Color_Shadow}"/>
+                                    </Border.Effect>
                                     <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" Margin="{TemplateBinding Padding}">
-                                        <Menu ItemsSource="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PopupMenuButton}}, Path=MenuItems, Mode=OneWay}">
+                                        <Menu ItemsSource="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PopupMenuButton}}, Path=MenuItems, Mode=OneWay}"
+                                              Background="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PopupMenuButton}}, Path=MenuBackground, Mode=OneWay}">
                                             <Menu.ItemsPanel>
                                                 <ItemsPanelTemplate>
                                                     <StackPanel />
