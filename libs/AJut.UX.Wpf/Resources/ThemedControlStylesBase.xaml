@@ -1621,12 +1621,6 @@
                 <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_UnderstatedText}"/>
             </Trigger>
         </ControlTemplate.Triggers>
-        <ControlTemplate.Resources>
-            <Style TargetType="{x:Type TextBlock}">
-                <Setter Property="FontFamily" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=FontFamily, Mode=OneWay}"/>
-                <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=Foreground, Mode=OneWay}"/>
-            </Style>
-        </ControlTemplate.Resources>
     </ControlTemplate>
 
     <!-- TopLevelItem -->
@@ -1642,15 +1636,10 @@
         </Border>
         <ControlTemplate.Triggers>
             <Trigger Property="IsHighlighted" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_HighlightText}"/>
                 <Setter Property="Background" TargetName="TopLevelItemBorder" Value="{DynamicResource AJut_Brush_TreeSelection}"/>
             </Trigger>
         </ControlTemplate.Triggers>
-        <ControlTemplate.Resources>
-            <Style TargetType="{x:Type TextBlock}">
-                <Setter Property="FontFamily" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=FontFamily, Mode=OneWay}"/>
-                <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=Foreground, Mode=OneWay}"/>
-            </Style>
-        </ControlTemplate.Resources>
     </ControlTemplate>
 
     <!-- SubmenuItem -->
@@ -1723,17 +1712,12 @@
                 <Setter TargetName="Icon" Property="Visibility" Value="Hidden" />
             </Trigger>
             <Trigger Property="IsHighlighted" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_HighlightText}"/>
                 <Setter Property="BorderBrush" TargetName="SubmenuItemBorder" Value="{DynamicResource AJut_Brush_BorderShadow}"/>
                 <Setter Property="Background" TargetName="SubmenuItemBorder" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
                 <Setter Property="Visibility" TargetName="SelectionIndicatorBkg" Value="Visible"/>
             </Trigger>
         </ControlTemplate.Triggers>
-        <ControlTemplate.Resources>
-            <Style TargetType="{x:Type TextBlock}">
-                <Setter Property="FontFamily" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=FontFamily, Mode=OneWay}"/>
-                <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=Foreground, Mode=OneWay}"/>
-            </Style>
-        </ControlTemplate.Resources>
     </ControlTemplate>
 
     <ControlTemplate x:Key="{x:Static MenuItem.SubmenuHeaderTemplateKey}"
@@ -1789,7 +1773,7 @@
                 <Setter TargetName="Icon" Property="Visibility" Value="Hidden" />
             </Trigger>
             <Trigger Property="IsHighlighted" Value="True">
-                <Setter Property="Foreground" Value="Green"/>
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_ImportantText}"/>
                 <Setter Property="BorderBrush" TargetName="SubmenuHeaderBorder" Value="{DynamicResource AJut_Brush_BorderShadow}"/>
                 <Setter Property="Background" TargetName="SubmenuHeaderBorder" Value="{DynamicResource AJut_Brush_PrimaryHighlightDesat}"/>
                 <Setter Property="Fill" TargetName="ArrowOverGlyph" Value="{DynamicResource AJut_Brush_SecondaryHighlight}"/>
@@ -1804,23 +1788,18 @@
                 <Setter TargetName="SubmenuBorder" Property="Padding" Value="0,3,0,3" />
             </Trigger>
         </ControlTemplate.Triggers>
-        <ControlTemplate.Resources>
-            <Style TargetType="{x:Type TextBlock}">
-                <Setter Property="FontFamily" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=FontFamily, Mode=OneWay}"/>
-                <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=Foreground, Mode=OneWay}"/>
-            </Style>
-        </ControlTemplate.Resources>
     </ControlTemplate>
 
     <!-- MenuItem Style -->
     <Style x:Key="{x:Type MenuItem}" TargetType="{x:Type MenuItem}">
         <Setter Property="Padding" Value="3"/>
         <Setter Property="BorderThickness" Value="2,2,0,0"/>
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="HeaderTemplateSelector">
             <Setter.Value>
                 <ajut:TypeTemplateSelector>
                     <ajut:TypeTemplateSelector.RegisteredTemplates>
-                        <DataTemplate DataType="{x:Type sys:String}">
+                        <DataTemplate x:Key="{x:Type sys:String}" DataType="{x:Type sys:String}">
                             <TextBlock Text="{Binding}" Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=Foreground, Mode=OneWay}"/>
                         </DataTemplate>
                     </ajut:TypeTemplateSelector.RegisteredTemplates>
@@ -1852,7 +1831,7 @@
                 <Setter Property="MinWidth" Value="85"/>
             </Trigger>
             <Trigger Property="IsEnabled" Value="False">
-                <Setter Property="FontStyle" Value="Italic"/>
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_UnderstatedText}"/>
                 <Setter Property="Opacity" Value="{DynamicResource AJut_Double_StandardDisabledOpacity}"/>
             </Trigger>
         </Style.Triggers>
