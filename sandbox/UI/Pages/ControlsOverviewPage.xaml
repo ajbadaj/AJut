@@ -114,24 +114,44 @@
                     <MenuItem Header="Test 2 (disabled)" IsEnabled="False"/>
                     <MenuItem Header="Test 3 (does nothing)"/>
                 </ajut:PopupMenuButton>
-                <Menu>
-                    <MenuItem Header="File">
-                        <MenuItem Header="Load"/>
-                        <Separator />
-                        <MenuItem Header="Save"/>
-                        <MenuItem Header="Save As"/>
-                        <Separator />
-                        <MenuItem Header="Exit" IsEnabled="False"/>
-                    </MenuItem>
-                    <MenuItem Header="Edit">
-                        <MenuItem Header="Undo Redo">
-                            <MenuItem Header="Undo"/>
-                            <MenuItem Header="Redo" IsEnabled="False"/>
-                        </MenuItem>
-                        <MenuItem Header="Resize"/>
-                    </MenuItem>
-                    <MenuItem Header="Fake" IsEnabled="False"/>
-                </Menu>
+
+                <Expander Header="Compared to other Menu types" Margin="0,15,0,0">
+                    <ScrollViewer Margin="10">
+                        <StackPanel>
+                            <TextBlock Text="Example of a ContextMenu" Margin="0,5,0,0"/>
+                            <TextBlock FontWeight="Bold" Text="Right Click to see this thing's ContextMenu" FontSize="22">
+                                <TextBlock.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Test 1" Click="Test1_OnClick"/>
+                                        <MenuItem Header="Test 2 (disabled)" IsEnabled="False"/>
+                                        <MenuItem Header="Test 3 (does nothing)"/>
+                                    </ContextMenu>
+                                </TextBlock.ContextMenu>
+                            </TextBlock>
+
+                            <TextBlock Text="Example of a normal Menu" Margin="0,10,0,0"/>
+                            <Menu>
+                                <MenuItem Header="File">
+                                    <MenuItem Header="Load"/>
+                                    <Separator />
+                                    <MenuItem Header="Save"/>
+                                    <MenuItem Header="Save As"/>
+                                    <Separator />
+                                    <MenuItem Header="Exit" IsEnabled="False"/>
+                                </MenuItem>
+                                <MenuItem Header="Edit">
+                                    <MenuItem Header="Undo Redo">
+                                        <MenuItem Header="Undo"/>
+                                        <MenuItem Header="Redo" IsEnabled="False"/>
+                                    </MenuItem>
+                                    <MenuItem Header="Resize"/>
+                                </MenuItem>
+                                <MenuItem Header="Fake" IsEnabled="False"/>
+                            </Menu>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Expander>
+                
             </StackPanel>
         </TabItem>
         <TabItem Header="Svg">
