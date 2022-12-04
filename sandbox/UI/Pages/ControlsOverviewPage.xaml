@@ -111,7 +111,8 @@
                                       MenuPopupAlignment="{Binding ElementName=PopupButtonController_Alignment, Path=SelectedItem, Mode=OneWay}"
                                       MenuPopupAnimation="{Binding ElementName=PopupButtonController_Animation, Path=SelectedItem, Mode=OneWay}">
                     <MenuItem Header="Test 1" Click="Test1_OnClick"/>
-                    <MenuItem Header="Test 2 (does nothing)"/>
+                    <MenuItem Header="Test 2 (disabled)" IsEnabled="False"/>
+                    <MenuItem Header="Test 3 (does nothing)"/>
                 </ajut:PopupMenuButton>
             </StackPanel>
         </TabItem>

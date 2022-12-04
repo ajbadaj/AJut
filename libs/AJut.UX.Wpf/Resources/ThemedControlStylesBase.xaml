@@ -194,7 +194,9 @@
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:PopupMenuButton}">
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_PopupBackground}"/>
+        <Setter Property="MenuBackground" Value="{DynamicResource AJut_Brush_ListBackground}"/>
         <Setter Property="ButtonStyle" Value="{DynamicResource AJut_Style_ToggleButton}"/>
     </Style>
 
@@ -1136,7 +1138,6 @@
         <Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
         <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
         <Setter Property="ajut_ap:BorderXTA.CornerRadius" Value="2" />
-        <Setter Property="OverridesDefaultStyle" Value="True"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ScrollViewer}">
@@ -1188,7 +1189,6 @@
     <Style TargetType="{x:Type ScrollBar}">
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
-        <Setter Property="OverridesDefaultStyle" Value="True"/>
         <Style.Triggers>
             <!-- =========================================================[ Vertical ]========================================================= -->
             <Trigger Property="Orientation" Value="Vertical">
@@ -1463,7 +1463,6 @@
     </Style>
 
     <Style x:Key="{x:Type ToolTip}" TargetType="ToolTip">
-        <Setter Property="OverridesDefaultStyle" Value="true" />
         <Setter Property="HasDropShadow" Value="True" />
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_ToolTipBackground}" />
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightDesat}"/>
@@ -1486,9 +1485,9 @@
                         </ContentPresenter>
                     </Border>
                     <ControlTemplate.Triggers>
-                        <Trigger Property="HasDropShadow" Value="true">
+                        <Trigger Property="HasDropShadow" Value="True">
                             <Setter TargetName="Border" Property="CornerRadius" Value="2" />
-                            <Setter TargetName="Border" Property="SnapsToDevicePixels" Value="true" />
+                            <Setter TargetName="Border" Property="SnapsToDevicePixels" Value="True" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -1539,6 +1538,13 @@
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_PopOutControlBackground}" />
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PanelBorder}" />
         <Setter Property="TextElement.FontFamily" Value="{DynamicResource AJut_Font_Default}" />
+        <Setter Property="ItemsPanel">
+            <Setter.Value>
+                <ItemsPanelTemplate>
+                    <StackPanel ClipToBounds="True" Orientation="Horizontal" IsItemsHost="True" />
+                </ItemsPanelTemplate>
+            </Setter.Value>
+        </Setter>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type Menu}">
@@ -1547,7 +1553,7 @@
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             SnapsToDevicePixels="True" UseLayoutRounding="True">
-                        <StackPanel ClipToBounds="True" Orientation="Horizontal" IsItemsHost="True" />
+                        <ItemsPresenter />
                     </Border>
                 </ControlTemplate>
             </Setter.Value>
@@ -1556,11 +1562,13 @@
 
     <Style x:Key="{x:Static MenuItem.SeparatorStyleKey}" TargetType="{x:Type Separator}">
         <Setter Property="Height" Value="1" />
-        <Setter Property="Margin" Value="0,4,0,4" />
+        <Setter Property="Margin" Value="0,4" />
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_SymbolForeground}"/>
+        <Setter Property="Opacity" Value="0.2"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type Separator}">
-                    <Border BorderThickness="1" BorderBrush="{DynamicResource AJut_Brush_BorderCommon}"/>
+                    <Border BorderThickness="1" BorderBrush="{TemplateBinding Foreground}"/>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -1571,7 +1579,9 @@
         <Border x:Name="TopLevelHeaderBorder">
             <Grid>
                 <ContentPresenter Margin="6,3,6,3"
-                                  ContentSource="Header" TextElement.Foreground="{TemplateBinding Foreground}"
+                                  ContentSource="Header"
+                                  ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                  ContentTemplateSelector="{TemplateBinding HeaderTemplateSelector}"
                                   RecognizesAccessKey="True" />
                 <Popup x:Name="Popup"
                        Placement="Bottom"
@@ -1593,12 +1603,12 @@
             </Grid>
         </Border>
         <ControlTemplate.Triggers>
-            <Trigger Property="IsSuspendingPopupAnimation" Value="true">
+            <Trigger Property="IsSuspendingPopupAnimation" Value="True">
                 <Setter TargetName="Popup"
                         Property="PopupAnimation"
                         Value="None" />
             </Trigger>
-            <Trigger Property="IsHighlighted" Value="true">
+            <Trigger Property="IsHighlighted" Value="True">
                 <Setter TargetName="TopLevelHeaderBorder" Property="BorderBrush" Value="Transparent" />
                 <Setter Property="Background" TargetName="TopLevelHeaderBorder" Value="{DynamicResource AJut_Brush_TreeSelection}"/>
                 <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_HighlightText}"/>
@@ -1611,6 +1621,12 @@
                 <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_UnderstatedText}"/>
             </Trigger>
         </ControlTemplate.Triggers>
+        <ControlTemplate.Resources>
+            <Style TargetType="{x:Type TextBlock}">
+                <Setter Property="FontFamily" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=FontFamily, Mode=OneWay}"/>
+                <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=Foreground, Mode=OneWay}"/>
+            </Style>
+        </ControlTemplate.Resources>
     </ControlTemplate>
 
     <!-- TopLevelItem -->
@@ -1619,22 +1635,27 @@
             <Grid>
                 <ContentPresenter Margin="6,3"
                                   ContentSource="Header"
+                                  ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                  ContentTemplateSelector="{TemplateBinding HeaderTemplateSelector}"
                                   RecognizesAccessKey="True" />
             </Grid>
         </Border>
         <ControlTemplate.Triggers>
-            <Trigger Property="IsHighlighted" Value="true">
+            <Trigger Property="IsHighlighted" Value="True">
                 <Setter Property="Background" TargetName="TopLevelItemBorder" Value="{DynamicResource AJut_Brush_TreeSelection}"/>
             </Trigger>
-            <Trigger Property="IsEnabled" Value="False">
-                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_UnderstatedText}"/>
-            </Trigger>
         </ControlTemplate.Triggers>
+        <ControlTemplate.Resources>
+            <Style TargetType="{x:Type TextBlock}">
+                <Setter Property="FontFamily" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=FontFamily, Mode=OneWay}"/>
+                <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=Foreground, Mode=OneWay}"/>
+            </Style>
+        </ControlTemplate.Resources>
     </ControlTemplate>
 
     <!-- SubmenuItem -->
     <ControlTemplate x:Key="{x:Static MenuItem.SubmenuItemTemplateKey}" TargetType="{x:Type MenuItem}">
-        <Border x:Name="SubmenuItemBorder" BorderThickness="0">
+        <Border x:Name="SubmenuItemBorder" BorderThickness="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=BorderThickness}" BorderBrush="Transparent">
             <Grid x:Name="SubmenuItemGridRoot" Background="Transparent">
                 <Grid x:Name="SelectionIndicatorBkg" Opacity="0.2" Visibility="Collapsed">
                     <Grid.Background>
@@ -1653,36 +1674,39 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <Grid x:Name="CheckHolder" Grid.Column="0" Visibility="Collapsed"
-                      Margin="6,0,6,0">
+                          Margin="6,0,6,0">
                         <Border x:Name="Check"
-                            Width="13"
-                            Height="13"
-                            Visibility="Collapsed"
-                            BorderThickness="1" BorderBrush="{DynamicResource AJut_Brush_BorderCommon}" 
-                            Background="{DynamicResource AJut_Brush_PanelBackground}"/>
+                                Width="13"
+                                Height="13"
+                                Visibility="Collapsed"
+                                BorderThickness="1" BorderBrush="{DynamicResource AJut_Brush_BorderCommon}" 
+                                Background="{DynamicResource AJut_Brush_PanelBackground}"/>
                         <Path x:Name="CheckMark"
-                          Width="7"
-                          Height="7"
-                          HorizontalAlignment="Center" VerticalAlignment="Center"
-                          Visibility="Hidden"
-                          SnapsToDevicePixels="False"
-                          StrokeThickness="2"
-                          Data="M 0 0 L 7 7 M 0 7 L 7 0"
-                          Stroke="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+                              Width="7"
+                              Height="7"
+                              HorizontalAlignment="Center" VerticalAlignment="Center"
+                              Visibility="Hidden"
+                              SnapsToDevicePixels="False"
+                              StrokeThickness="2"
+                              Data="M 0 0 L 7 7 M 0 7 L 7 0"
+                              Stroke="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
                     </Grid>
                     <ContentPresenter x:Name="Icon" Grid.Column="0"
-                                  Margin="6,0,6,0"
-                                  VerticalAlignment="Center"
-                                  ContentSource="Icon"/>
+                                      Margin="6,0,6,0"
+                                      VerticalAlignment="Center"
+                                      ContentSource="Icon"/>
 
 
                     <ContentPresenter x:Name="HeaderHost" Grid.Column="1"
-                                  ContentSource="Header"
-                                  RecognizesAccessKey="True" />
+                                      ContentSource="Header"
+                                      ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                      ContentTemplateSelector="{TemplateBinding HeaderTemplateSelector}"
+                                      RecognizesAccessKey="True" />
 
                     <TextBlock x:Name="InputGestureText"  Grid.Column="2"
-                           Text="{TemplateBinding InputGestureText}"
-                           Margin="5,2,0,2"/>
+                               Text="{TemplateBinding InputGestureText}"
+                               Visibility="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=InputGestureText, Converter={ajut_conv:IsTextNullOrEmptyToVisibilityConverter}}"
+                               Margin="5,2,0,2"/>
                 </Grid>
             </Grid>
         </Border>
@@ -1691,28 +1715,30 @@
             <Trigger Property="Icon" Value="{x:Null}">
                 <Setter TargetName="Icon" Property="Visibility" Value="Hidden" />
             </Trigger>
-            <Trigger Property="IsChecked" Value="true">
+            <Trigger Property="IsChecked" Value="True">
                 <Setter TargetName="CheckMark" Property="Visibility" Value="Visible" />
             </Trigger>
-            <Trigger Property="IsCheckable" Value="true">
+            <Trigger Property="IsCheckable" Value="True">
                 <Setter TargetName="CheckHolder" Property="Visibility" Value="Visible" />
                 <Setter TargetName="Icon" Property="Visibility" Value="Hidden" />
             </Trigger>
-            <Trigger Property="IsHighlighted" Value="true">
-                <Setter Property="BorderThickness" TargetName="SubmenuItemBorder" Value="5,1,1,1"/>
-                <Setter Property="Margin" TargetName="SubmenuItemGridRoot" Value="-5,-1,-1,-1"/>
-                <Setter Property="BorderBrush" TargetName="SubmenuItemBorder" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+            <Trigger Property="IsHighlighted" Value="True">
+                <Setter Property="BorderBrush" TargetName="SubmenuItemBorder" Value="{DynamicResource AJut_Brush_BorderShadow}"/>
+                <Setter Property="Background" TargetName="SubmenuItemBorder" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
                 <Setter Property="Visibility" TargetName="SelectionIndicatorBkg" Value="Visible"/>
             </Trigger>
-            <Trigger Property="IsEnabled" Value="False">
-                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_UnderstatedText}"/>
-            </Trigger>
         </ControlTemplate.Triggers>
+        <ControlTemplate.Resources>
+            <Style TargetType="{x:Type TextBlock}">
+                <Setter Property="FontFamily" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=FontFamily, Mode=OneWay}"/>
+                <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=Foreground, Mode=OneWay}"/>
+            </Style>
+        </ControlTemplate.Resources>
     </ControlTemplate>
 
     <ControlTemplate x:Key="{x:Static MenuItem.SubmenuHeaderTemplateKey}"
                      TargetType="{x:Type MenuItem}">
-        <Border x:Name="SubmenuHeaderBorder" BorderThickness="0,0,0,0" UseLayoutRounding="True" SnapsToDevicePixels="True">
+        <Border x:Name="SubmenuHeaderBorder" BorderThickness="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=BorderThickness}" BorderBrush="Transparent" UseLayoutRounding="True" SnapsToDevicePixels="True">
             <Grid x:Name="SubmenuHeaderGridRoot" Background="Transparent">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" SharedSizeGroup="Icon" />
@@ -1727,6 +1753,8 @@
                 <ContentPresenter x:Name="HeaderHost"
                                   Grid.Column="1"
                                   ContentSource="Header"
+                                  ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                  ContentTemplateSelector="{TemplateBinding HeaderTemplateSelector}"
                                   RecognizesAccessKey="True" />
                 <TextBlock x:Name="InputGestureText"
                            Grid.Column="2"
@@ -1760,37 +1788,60 @@
             <Trigger Property="Icon" Value="{x:Null}">
                 <Setter TargetName="Icon" Property="Visibility" Value="Hidden" />
             </Trigger>
-            <Trigger Property="IsHighlighted" Value="true">
-                <Setter Property="BorderThickness" TargetName="SubmenuHeaderBorder" Value="5,1,1,1"/>
-                <Setter Property="BorderBrush" TargetName="SubmenuHeaderBorder" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
-                <Setter Property="Margin" TargetName="SubmenuHeaderGridRoot" Value="-5,-1,-1,-1"/>
-                <Setter Property="Fill" TargetName="ArrowOverGlyph" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+            <Trigger Property="IsHighlighted" Value="True">
+                <Setter Property="Foreground" Value="Green"/>
+                <Setter Property="BorderBrush" TargetName="SubmenuHeaderBorder" Value="{DynamicResource AJut_Brush_BorderShadow}"/>
+                <Setter Property="Background" TargetName="SubmenuHeaderBorder" Value="{DynamicResource AJut_Brush_PrimaryHighlightDesat}"/>
+                <Setter Property="Fill" TargetName="ArrowOverGlyph" Value="{DynamicResource AJut_Brush_SecondaryHighlight}"/>
+                <Setter Property="Effect" TargetName="ArrowOverGlyph">
+                    <Setter.Value>
+                        <DropShadowEffect Color="{DynamicResource AJut_Color_Shadow}" BlurRadius="6" ShadowDepth="0"/>
+                    </Setter.Value>
+                </Setter>
             </Trigger>
             <Trigger SourceName="Popup" Property="AllowsTransparency" Value="True">
                 <Setter TargetName="SubmenuBorder" Property="CornerRadius" Value="4" />
                 <Setter TargetName="SubmenuBorder" Property="Padding" Value="0,3,0,3" />
             </Trigger>
-            <Trigger Property="IsEnabled" Value="false">
-                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_UnderstatedText}"/>
-            </Trigger>
         </ControlTemplate.Triggers>
+        <ControlTemplate.Resources>
+            <Style TargetType="{x:Type TextBlock}">
+                <Setter Property="FontFamily" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=FontFamily, Mode=OneWay}"/>
+                <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=Foreground, Mode=OneWay}"/>
+            </Style>
+        </ControlTemplate.Resources>
     </ControlTemplate>
 
     <!-- MenuItem Style -->
     <Style x:Key="{x:Type MenuItem}" TargetType="{x:Type MenuItem}">
-        <Setter Property="OverridesDefaultStyle" Value="True" />
         <Setter Property="Padding" Value="3"/>
+        <Setter Property="BorderThickness" Value="2,2,0,0"/>
+        <Setter Property="HeaderTemplateSelector">
+            <Setter.Value>
+                <ajut:TypeTemplateSelector>
+                    <ajut:TypeTemplateSelector.RegisteredTemplates>
+                        <DataTemplate DataType="{x:Type sys:String}">
+                            <TextBlock Text="{Binding}" Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=Foreground, Mode=OneWay}"/>
+                        </DataTemplate>
+                    </ajut:TypeTemplateSelector.RegisteredTemplates>
+                    <ajut:TypeTemplateSelector.Default>
+                        <DataTemplate>
+                            <ContentPresenter Content="{Binding}"/>
+                        </DataTemplate>
+                    </ajut:TypeTemplateSelector.Default>
+                </ajut:TypeTemplateSelector>
+            </Setter.Value>
+        </Setter>
+
         <Style.Triggers>
             <Trigger Property="Role" Value="TopLevelHeader">
                 <Setter Property="Template" Value="{DynamicResource {x:Static MenuItem.TopLevelHeaderTemplateKey}}" />
-                <Setter Property="Grid.IsSharedSizeScope" Value="true" />
+                <Setter Property="Grid.IsSharedSizeScope" Value="True" />
                 <Setter Property="MinWidth" Value="45"/>
-                <Setter Property="Margin" Value="0,0,5,0"/>
             </Trigger>
             <Trigger Property="Role" Value="TopLevelItem">
                 <Setter Property="Template" Value="{DynamicResource {x:Static MenuItem.TopLevelItemTemplateKey}}" />
                 <Setter Property="MinWidth" Value="45"/>
-                <Setter Property="Margin" Value="0,0,5,0"/>
             </Trigger>
             <Trigger Property="Role" Value="SubmenuHeader">
                 <Setter Property="Template" Value="{DynamicResource {x:Static MenuItem.SubmenuHeaderTemplateKey}}" />
@@ -1799,6 +1850,10 @@
             <Trigger Property="Role" Value="SubmenuItem">
                 <Setter Property="Template" Value="{DynamicResource {x:Static MenuItem.SubmenuItemTemplateKey}}" />
                 <Setter Property="MinWidth" Value="85"/>
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="FontStyle" Value="Italic"/>
+                <Setter Property="Opacity" Value="{DynamicResource AJut_Double_StandardDisabledOpacity}"/>
             </Trigger>
         </Style.Triggers>
     </Style>
