@@ -4,7 +4,7 @@
                     xmlns:ajut_ctrls="clr-namespace:AJut.UX.Controls"
                     xmlns:ajut_ap="clr-namespace:AJut.UX.AttachedProperties"
                     xmlns:ajut_conv="clr-namespace:AJut.UX.Converters"
-                    xmlns:ajut_theme_tabcontrol="clr-namespace:AJut.UX.Theming.TabControlAJutStyling"
+                    xmlns:ajut_themext="clr-namespace:AJut.UX.Theming.AJutStyleExtensionsForBuiltInWpfControls"
                     xmlns:ajut_theme="clr-namespace:AJut.UX.Theming"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib"
                     xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework">
@@ -427,7 +427,8 @@
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="ajut_ap:BorderXTA.CornerRadius" Value="0"/>
         <Setter Property="SnapsToDevicePixels" Value="True"/>
-        <Setter Property="ajut_theme_tabcontrol:TabControlXTA.TabUnselectedPad" Value="3"/>
+        <Setter Property="ajut_themext:AJutThemedTabControlXTA.TabUnselectedPad" Value="3"/>
+        <Setter Property="ajut_themext:AJutThemedTabControlXTA.TabSelectionIndicatorSize" Value="3"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type TabControl}">
@@ -439,7 +440,7 @@
                                   Background="Transparent" 
                                   DockPanel.Dock="{TemplateBinding TabStripPlacement}">
                             <TabPanel.Margin>
-                                <MultiBinding Converter="{ajut_theme_tabcontrol:TabControlHeaderPanelMarginBuilder}">
+                                <MultiBinding Converter="{ajut_themext:TabControlHeaderPanelMarginBuilder}">
                                     <Binding RelativeSource="{RelativeSource AncestorType={x:Type TabControl}}" Path="TabStripPlacement"/>
                                     <Binding RelativeSource="{RelativeSource AncestorType={x:Type TabControl}}" Path="(ajut_ap:BorderXTA.CornerRadius)"/>
                                     <Binding RelativeSource="{RelativeSource AncestorType={x:Type TabControl}}" Path="BorderThickness"/>
@@ -474,34 +475,36 @@
                 <ControlTemplate TargetType="{x:Type TabItem}">
                     <Grid>
                         <Grid.Margin>
-                            <MultiBinding Converter="{ajut_theme_tabcontrol:TabItemRootMarginGenerator}">
+                            <MultiBinding Converter="{ajut_themext:TabItemRootMarginGenerator}">
                                 <Binding RelativeSource="{RelativeSource AncestorType={x:Type TabItem}}"/>
-                                <Binding RelativeSource="{RelativeSource AncestorType={x:Type TabItem}}" Path="BorderThickness"/>
                                 <Binding RelativeSource="{RelativeSource AncestorType={x:Type TabItem}}" Path="IsSelected"/>
+                                <Binding RelativeSource="{RelativeSource AncestorType={x:Type TabItem}}" Path="BorderThickness"/>
 
 
                                 <Binding RelativeSource="{RelativeSource AncestorType={x:Type TabControl}}"/>
                                 <Binding RelativeSource="{RelativeSource AncestorType={x:Type TabControl}}" Path="BorderThickness"/>
                                 <Binding RelativeSource="{RelativeSource AncestorType={x:Type TabControl}}" Path="TabStripPlacement"/>
-                                <Binding RelativeSource="{RelativeSource AncestorType={x:Type TabControl}}" Path="(ajut_theme_tabcontrol:TabControlXTA.TabUnselectedPad)"/>
+                                <Binding RelativeSource="{RelativeSource AncestorType={x:Type TabControl}}" Path="(ajut_themext:AJutThemedTabControlXTA.TabUnselectedPad)"/>
                             </MultiBinding>
                         </Grid.Margin>
                         <Border x:Name="BorderRoot" 
                             BorderBrush="{TemplateBinding BorderBrush}" 
                             CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}">
                             <Border.BorderThickness>
-                                <MultiBinding Converter="{ajut_theme_tabcontrol:TabItemBorderThicknessConverter}">
+                                <MultiBinding Converter="{ajut_themext:TabItemBorderThicknessConverter}">
                                     <Binding RelativeSource="{RelativeSource AncestorType={x:Type TabItem}}"/>
-                                    <Binding RelativeSource="{RelativeSource AncestorType={x:Type TabControl}}"/>
-                                    <Binding RelativeSource="{RelativeSource AncestorType={x:Type TabItem}}" Path="BorderThickness"/>
                                     <Binding RelativeSource="{RelativeSource AncestorType={x:Type TabItem}}" Path="IsSelected"/>
+                                    <Binding RelativeSource="{RelativeSource AncestorType={x:Type TabItem}}" Path="BorderThickness"/>
+
+                                    <Binding RelativeSource="{RelativeSource AncestorType={x:Type TabControl}}"/>
                                     <Binding RelativeSource="{RelativeSource AncestorType={x:Type TabControl}}" Path="BorderThickness"/>
+                                    <Binding RelativeSource="{RelativeSource AncestorType={x:Type TabControl}}" Path="TabStripPlacement"/>
                                 </MultiBinding>
                             </Border.BorderThickness>
                             <Grid>
                                 <Grid x:Name="AJutTabItem_BackgroundGrid" Background="{TemplateBinding Background}">
                                     <Grid.Margin>
-                                        <MultiBinding Converter="{ajut_theme_tabcontrol:TabItemBackgroundExtensionMarginConverter}">
+                                        <MultiBinding Converter="{ajut_themext:TabItemBackgroundExtensionMarginConverter}">
                                             <Binding RelativeSource="{RelativeSource AncestorType={x:Type TabItem}}"/>
                                             <Binding RelativeSource="{RelativeSource AncestorType={x:Type TabItem}}" Path="IsSelected"/>
 
@@ -538,7 +541,7 @@
                                 <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabControl}}, Path=TabStripPlacement}" Value="Left" />
                             </MultiDataTrigger.Conditions>
                             <MultiDataTrigger.Setters>
-                                <Setter TargetName="SelectionIndicator" Property="BorderThickness" Value="3,0,0,0" />
+                                <Setter TargetName="SelectionIndicator" Property="BorderThickness" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabControl}}, Path=(ajut_themext:AJutThemedTabControlXTA.TabSelectionIndicatorSize), Converter={ajut_conv:ThicknessFromNumberConverter MultiplyMask='1,0,0,0'}}" />
                             </MultiDataTrigger.Setters>
                         </MultiDataTrigger>
                         <!-- Tab strip placement: Top -->
@@ -548,7 +551,7 @@
                                 <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabControl}}, Path=TabStripPlacement}" Value="Top" />
                             </MultiDataTrigger.Conditions>
                             <MultiDataTrigger.Setters>
-                                <Setter TargetName="SelectionIndicator" Property="BorderThickness" Value="0,3,0,0" />
+                                <Setter TargetName="SelectionIndicator" Property="BorderThickness" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabControl}}, Path=(ajut_themext:AJutThemedTabControlXTA.TabSelectionIndicatorSize), Converter={ajut_conv:ThicknessFromNumberConverter MultiplyMask='0,1,0,0'}}" />
                             </MultiDataTrigger.Setters>
                         </MultiDataTrigger>
                         <!-- Tab strip placement: Right -->
@@ -558,7 +561,7 @@
                                 <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabControl}}, Path=TabStripPlacement}" Value="Right" />
                             </MultiDataTrigger.Conditions>
                             <MultiDataTrigger.Setters>
-                                <Setter TargetName="SelectionIndicator" Property="BorderThickness" Value="0,0,3,0" />
+                                <Setter TargetName="SelectionIndicator" Property="BorderThickness" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabControl}}, Path=(ajut_themext:AJutThemedTabControlXTA.TabSelectionIndicatorSize), Converter={ajut_conv:ThicknessFromNumberConverter MultiplyMask='0,0,1,0'}}" />
                             </MultiDataTrigger.Setters>
                         </MultiDataTrigger>
                         <!-- Tab strip placement: Bottom -->
@@ -568,7 +571,7 @@
                                 <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabControl}}, Path=TabStripPlacement}" Value="Bottom" />
                             </MultiDataTrigger.Conditions>
                             <MultiDataTrigger.Setters>
-                                <Setter TargetName="SelectionIndicator" Property="BorderThickness" Value="0,0,0,3" />
+                                <Setter TargetName="SelectionIndicator" Property="BorderThickness" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabControl}}, Path=(ajut_themext:AJutThemedTabControlXTA.TabSelectionIndicatorSize), Converter={ajut_conv:ThicknessFromNumberConverter MultiplyMask='0,0,0,1'}}" />
                             </MultiDataTrigger.Setters>
                         </MultiDataTrigger>
                         <Trigger Property="IsSelected" Value="False">

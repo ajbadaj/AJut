@@ -5,7 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
              xmlns:ajut_ap="clr-namespace:AJut.UX.AttachedProperties;assembly=AJut.UX.Wpf"
-             xmlns:ajut_tabstyle="clr-namespace:AJut.UX.Theming.TabControlAJutStyling;assembly=AJut.UX.Wpf"
+             xmlns:ajut_themext="clr-namespace:AJut.UX.Theming.AJutStyleExtensionsForBuiltInWpfControls;assembly=AJut.UX.Wpf"
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800"
@@ -18,9 +18,10 @@
             <TextBlock Text="To get started, select what area you're interested in dunking more deeply into..." TextWrapping="WrapWithOverflow" Margin="0,15,0,0"/>
         </StackPanel>
         <TabControl TabStripPlacement="Left" SelectedIndex="{Binding ElementName=Self, Path=SelectedTabIndex}"
-                    BorderThickness="3" ajut_ap:BorderXTA.CornerRadius="5" 
-                    ajut_tabstyle:TabControlXTA.TabUnselectedPad="10">
-            <TabItem Header="Controls" FontSize="15" Padding="10,3" BorderThickness="1">
+                    BorderThickness="3" ajut_ap:BorderXTA.CornerRadius="20,0,20,0" Padding="15"
+                    ajut_themext:AJutThemedTabControlXTA.TabUnselectedPad="7"
+                    ajut_themext:AJutThemedTabControlXTA.TabSelectionIndicatorSize="6">
+            <TabItem Header="Controls" FontSize="15" Padding="10,3">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="auto"/>
@@ -72,7 +73,7 @@
                     <Button Grid.Row="2" Content="Explore standalone controls →" HorizontalAlignment="Right" Padding="15,10" FontSize="14" Click="NavControls_OnClick"/>
                 </Grid>
             </TabItem>
-            <TabItem Header="Content Flows" FontSize="15" Padding="10,3" BorderThickness="1">
+            <TabItem Header="Content Flows" FontSize="15" Padding="10,3">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition />
@@ -91,7 +92,7 @@
                     <Button Grid.Row="1" Content="Explore content flows →" HorizontalAlignment="Right" Padding="15,10" FontSize="14" Click="NavContentFlows_OnClick"/>
                 </Grid>
             </TabItem>
-            <TabItem Header="Utilities" FontSize="15" Padding="10,3" BorderThickness="1">
+            <TabItem Header="Utilities" FontSize="15" Padding="10,3">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition />
@@ -113,7 +114,7 @@
                     <Button Grid.Row="1" Content="Explore UX Utils →" HorizontalAlignment="Right" Padding="15,10" FontSize="14" Click="NavUxUtils_OnClick"/>
                 </Grid>
             </TabItem>
-            <TabItem Header="Strategies" FontSize="15" Padding="10,3" BorderThickness="1">
+            <TabItem Header="Strategies" FontSize="15" Padding="10,3">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition />
