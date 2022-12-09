@@ -464,7 +464,7 @@
     </Style>
     
     <Style TargetType="{x:Type TabItem}">
-        <Setter Property="Background" Value="{DynamicResource AJut_Brush_PanelBackground}" />
+        <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabControl}}, Path=Background, Mode=OneWay}" />
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}" />
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
         <Setter Property="ajut_ap:BorderXTA.CornerRadius" Value="0"/>
