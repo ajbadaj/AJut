@@ -17,8 +17,8 @@
                        TextWrapping="WrapWithOverflow"/>
             <TextBlock Text="To get started, select what area you're interested in dunking more deeply into..." TextWrapping="WrapWithOverflow" Margin="0,15,0,0"/>
         </StackPanel>
-        <TabControl TabStripPlacement="Bottom" SelectedIndex="{Binding ElementName=Self, Path=SelectedTabIndex}"
-                    BorderThickness="1,1,5,1" ajut_ap:BorderXTA.CornerRadius="20,0,20,0" Padding="15" Margin="0,10,0,0"
+        <TabControl TabStripPlacement="Top" SelectedIndex="{Binding ElementName=Self, Path=SelectedTabIndex}"
+                    BorderThickness="2,2,4,4" ajut_ap:BorderXTA.CornerRadius="0,0,20,0" Padding="15" Margin="0,10,0,0"
                     ajut_themext:AJutThemedTabControlXTA.TabUnselectedPad="7"
                     ajut_themext:AJutThemedTabControlXTA.TabSelectionIndicatorSize="3">
             <TabItem Header="Controls" FontSize="15" Padding="10,3">
