@@ -96,7 +96,7 @@
                     return new Thickness
                     {
                         Left = isSelected ? 0 : unselectedTabPadding,
-                        Top = !isFirst && isSelected ? -tabItemBorderThickness.Top : 0,
+                        Top = (!isFirst && isSelected) ? -tabItemBorderThickness.Top : 0,
                         Right = 0,
                         Bottom = 0
                     };
@@ -105,7 +105,7 @@
                 case Dock.Top:
                     return new Thickness
                     {
-                        Left = !isFirst && isSelected ? -tabItemBorderThickness.Left : 0,
+                        Left = (!isFirst && isSelected) ? -tabItemBorderThickness.Left : 0,
                         Top = isSelected ? 0 : unselectedTabPadding,
                         Right = 0,
                         Bottom = 0,
@@ -116,7 +116,7 @@
                     return new Thickness
                     {
                         Left = 0,
-                        Top = !isFirst && isSelected ? -tabItemBorderThickness.Top : 0,
+                        Top = (!isFirst && isSelected) ? -tabItemBorderThickness.Top : 0,
                         Right = isSelected ? 0 : unselectedTabPadding,
                         Bottom = 0
                     };
@@ -124,7 +124,7 @@
                 case Dock.Bottom:
                     return new Thickness
                     {
-                        Left = !isFirst && isSelected ? -tabItemBorderThickness.Left : 0,
+                        Left = (!isFirst && isSelected) ? -tabItemBorderThickness.Left : 0,
                         Top = 0,
                         Right = 0,
                         Bottom = isSelected ? 0 : unselectedTabPadding,

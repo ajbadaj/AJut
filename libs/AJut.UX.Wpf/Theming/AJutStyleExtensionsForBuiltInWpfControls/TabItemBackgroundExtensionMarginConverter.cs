@@ -85,7 +85,7 @@
                         Left = 0,
                         Top = 0,
                         Right = 0,
-                        Bottom = isSelected ? -tabControlBorderThickness.Bottom : 0
+                        Bottom = isSelected ? -tabControlBorderThickness.Top : 0
                     };
 
 
@@ -93,7 +93,7 @@
                 case Dock.Right:
                     return new Thickness
                     {
-                        Left = isSelected ? -tabControlBorderThickness.Left : 0,
+                        Left = isSelected ? -tabControlBorderThickness.Right : 0,
                         Top = 0,
                         Right = 0,
                         Bottom = 0,
@@ -104,7 +104,7 @@
                     return new Thickness
                     {
                         Left = 0,
-                        Top = isSelected ? -tabControlBorderThickness.Top : 0,
+                        Top = isSelected ? -tabControlBorderThickness.Bottom : 0,
                         Right = 0,
                         Bottom = 0,
                     };

@@ -90,10 +90,10 @@
                 case Dock.Left:
                     return new Thickness
                     {
-                        Left = isSelected ? tabControlBorderThickness.Right : tabItemBorderThickness.Left,
-                        Top = isSelected ? tabControlBorderThickness.Right : (isFirst ? tabItemBorderThickness.Left : 0),
+                        Left = isSelected ? tabControlBorderThickness.Left : tabItemBorderThickness.Left,
+                        Top = isSelected ? tabControlBorderThickness.Left : (isFirst ? tabItemBorderThickness.Left : 0),
                         Right = 0,
-                        Bottom = isSelected ? tabControlBorderThickness.Right : tabItemBorderThickness.Bottom
+                        Bottom = isSelected ? tabControlBorderThickness.Left : tabItemBorderThickness.Bottom
                     };
 
                 // Top headers are left justified
