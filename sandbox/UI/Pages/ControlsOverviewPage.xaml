@@ -110,7 +110,7 @@
                 <ajut:PopupMenuButton ButtonContent="Click to open context menu" VerticalAlignment="Top" HorizontalAlignment="Left" Width="200"
                                       MenuPopupAlignment="{Binding ElementName=PopupButtonController_Alignment, Path=SelectedItem, Mode=OneWay}"
                                       MenuPopupAnimation="{Binding ElementName=PopupButtonController_Animation, Path=SelectedItem, Mode=OneWay}">
-                    <MenuItem Header="Test 1" Click="Test1_OnClick"/>
+                    <MenuItem Header="_Test 1" Click="Test1_OnClick"/>
                     <MenuItem Header="Test 2 (disabled)" IsEnabled="False"/>
                     <MenuItem Header="Test 3 (does nothing)"/>
                 </ajut:PopupMenuButton>
@@ -123,7 +123,7 @@
                                 <TextBlock.ContextMenu>
                                     <ContextMenu>
                                         <MenuItem Header="Test 1" Click="Test1_OnClick"/>
-                                        <MenuItem Header="Test 2 (disabled)" IsEnabled="False"/>
+                                        <MenuItem Header="_Test 2 (disabled)" IsEnabled="False"/>
                                         <MenuItem Header="Test 3 (does nothing)"/>
                                     </ContextMenu>
                                 </TextBlock.ContextMenu>
@@ -131,13 +131,13 @@
 
                             <TextBlock Text="Example of a normal Menu" Margin="0,10,0,0"/>
                             <Menu>
-                                <MenuItem Header="File">
-                                    <MenuItem Header="Load"/>
+                                <MenuItem Header="_File">
+                                    <MenuItem Header="_Load"/>
                                     <Separator />
-                                    <MenuItem Header="Save"/>
-                                    <MenuItem Header="Save As"/>
+                                    <MenuItem Header="_Save"/>
+                                    <MenuItem Header="Save _As"/>
                                     <Separator />
-                                    <MenuItem Header="Exit" IsEnabled="False"/>
+                                    <MenuItem Header="E_xit" IsEnabled="False"/>
                                 </MenuItem>
                                 <MenuItem Header="Edit">
                                     <MenuItem Header="Undo Redo">

@@ -42,7 +42,6 @@
     </Style>
 
     <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource AJut_Style_DefaultTextBlock}"/>
-
     <Style TargetType="{x:Type ajut_ctrls:EditableTextBlock}">
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
     </Style>
@@ -1817,12 +1816,35 @@
                 <ajut:TypeTemplateSelector>
                     <ajut:TypeTemplateSelector.RegisteredTemplates>
                         <DataTemplate x:Key="{x:Type sys:String}" DataType="{x:Type sys:String}">
-                            <TextBlock Text="{Binding}" Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=Foreground, Mode=OneWay}"/>
+                            <ContentControl Content="{Binding}">
+                                <ContentControl.Style>
+                                    <Style TargetType="{x:Type ContentControl}">
+                                        <Setter Property="ContentTemplate">
+                                            <Setter.Value>
+                                                <DataTemplate>
+                                                    <AccessText Text="{Binding}" Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=Foreground, Mode=OneWay}"/>
+                                                </DataTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type ContentPresenter}}, Path=RecognizesAccessKey, Mode=OneWay}" Value="False">
+                                                <Setter Property="ContentTemplate">
+                                                    <Setter.Value>
+                                                        <DataTemplate>
+                                                            <TextBlock Text="{Binding}" Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=Foreground, Mode=OneWay}"/>
+                                                        </DataTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ContentControl.Style>
+                            </ContentControl>
                         </DataTemplate>
                     </ajut:TypeTemplateSelector.RegisteredTemplates>
                     <ajut:TypeTemplateSelector.Default>
                         <DataTemplate>
-                            <ContentPresenter Content="{Binding}"/>
+                            <ContentPresenter Content="{Binding}" RecognizesAccessKey="True"/>
                         </DataTemplate>
                     </ajut:TypeTemplateSelector.Default>
                 </ajut:TypeTemplateSelector>

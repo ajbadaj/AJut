@@ -176,6 +176,7 @@
 
         private void OnPopupOpened (object sender, EventArgs e)
         {
+            this.PART_Popup.Child.GetFirstChildOf<MenuItem>()?.Focus();
             this.MenuPopupOpened?.Invoke(this, this.PART_Popup);
         }
     }
