@@ -1425,7 +1425,6 @@
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderShadow}"/>
         <Setter Property="BorderThickness" Value="1"/>
     </Style>
-    <ajut_conv:ParameterizedBorderGapMaskConverter x:Key="AJut_GroupBoxHeaderMaskConverter" GapStart="14"/>
     <Style TargetType="{x:Type GroupBox}">
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_GroupBorder}" />
         <Setter Property="BorderThickness" Value="3"/>
@@ -1450,7 +1449,7 @@
                                 Style="{DynamicResource AJut_GroupBox_RootShadow_Border_Style}"
                                 CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}">
                             <Border.OpacityMask>
-                                <MultiBinding Converter="{StaticResource AJut_GroupBoxHeaderMaskConverter}">
+                                <MultiBinding Converter="{ajut_conv:ParameterizedBorderGapMaskConverter GapStart=14}">
                                     <Binding ElementName="Header" Path="ActualWidth" />
                                     <Binding RelativeSource="{RelativeSource Self}" Path="ActualWidth" />
                                     <Binding RelativeSource="{RelativeSource Self}" Path="ActualHeight" />
