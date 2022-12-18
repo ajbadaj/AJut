@@ -23,7 +23,9 @@
         /// <param name="projectName">The name of the project, used for context in logging and potentially elsewhere</param>
         /// <param name="setupLogging">Should logging be setup, will default to a project name specific appdata location</param>
         /// <param name="onExceptionRecieved">Something to handle unhandled exceptions</param>
-        public static void RunOnetimeSetup (string projectName, bool setupLogging = true, ExceptionProcessor onExceptionRecieved = null, int ageMaxInDaysToKeepLogs = 10)
+        /// <param name="ageMaxInDaysToKeepLogs">The max age (in days) to keep logs - this will auto purge logs with this call for all logs older than specified. Pass in -1 to skip log purging (not recommended). Default = 10.</param>
+        /// <param name="sharedProjectName">A shared project name so two or more projects can share a root location (ie CoolProj is the shared project name, but individually the projects are: CoolProjClient, CoolProjServer)</param>
+        public static void RunOnetimeSetup (string projectName, bool setupLogging = true, ExceptionProcessor onExceptionRecieved = null, int ageMaxInDaysToKeepLogs = 10, string sharedProjectName = null)
         {
             if (g_isSetup)
             {
@@ -31,7 +33,7 @@
             }
 
             ProjectName = projectName;
-            AppDataRoot = AppDataHelper.EstablishAppDataLocation(ProjectName);
+            AppDataRoot = AppDataHelper.EstablishAppDataLocation(sharedProjectName ?? projectName);
             CryptoObfuscation.Seed(projectName);
 
             TypeXT.RegisterSpecialDouble<GridLength>(gl => gl.Value);
@@ -39,8 +41,22 @@
 
             if (setupLogging)
             {
-                Logger.CreateAndStartWritingToLogFileIn(AppDataHelper.EstablishAppDataLocation(ProjectName, "Logs"));
-                PurgeAllLogsOlderThan(TimeSpan.FromDays(ageMaxInDaysToKeepLogs));
+                string logsRoot;
+                if (sharedProjectName != null)
+                {
+                    logsRoot = AppDataHelper.EstablishAppDataLocation(sharedProjectName, "Logs", ProjectName);
+                }
+                else
+                {
+                    logsRoot = AppDataHelper.EstablishAppDataLocation(ProjectName, "Logs");
+                }
+
+                Logger.CreateAndStartWritingToLogFileIn(logsRoot);
+
+                if (ageMaxInDaysToKeepLogs != -1)
+                {
+                    PurgeAllLogsOlderThan(TimeSpan.FromDays(ageMaxInDaysToKeepLogs));
+                }
             }
 
             if (onExceptionRecieved != null)
@@ -86,9 +102,8 @@
             }
         }
 
-
         /// <summary>
-        /// Manually purge all logs that are outside of the given time span
+        /// Manually purge all logs that are outside of the given time span (evaluated by last write time)
         /// </summary>
         public static void PurgeAllLogsOlderThan (TimeSpan age)
         {
@@ -96,7 +111,7 @@
             DirectoryInfo logsFolder = new DirectoryInfo(AppDataHelper.EstablishAppDataLocation(ProjectName, "Logs"));
             foreach (FileInfo file in logsFolder.EnumerateFiles().ToList())
             {
-                if (DateTime.Now - file.CreationTime > age)
+                if (DateTime.Now - file.LastWriteTime > age)
                 {
                     file.Delete();
                 }
