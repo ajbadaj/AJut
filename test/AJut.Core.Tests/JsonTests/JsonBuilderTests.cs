@@ -1,18 +1,19 @@
 ﻿namespace AJut.Core.UnitTests.AJson
 {
-    using AJut.Text.AJson;
-    using AJut.TypeManagement;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json.Linq;
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net.NetworkInformation;
+    using AJut.Text.AJson;
+    using AJut.Text.AJson.Attributes;
+    using AJut.TypeManagement;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class JsonBuilderTests
     {
         [TestMethod]
-        public void AJson_BuilderBasicTests_UseBuilder_Works()
+        public void AJson_BuilderBasicTests_UseBuilder_Works ()
         {
             JsonBuilder testBuilder = JsonHelper.MakeRootBuilder();
 
@@ -44,17 +45,17 @@
         }
 
         [TestMethod]
-        public void AJson_JsonHelper_BuildJsonForAnonymous_SimpleObject()
+        public void AJson_JsonHelper_BuildJsonForAnonymous_SimpleObject ()
         {
             float Floaty = 3.14f;
-            var d = new { What = 3, Noice = true, Floaty};
+            var d = new { What = 3, Noice = true, Floaty };
             Json json = JsonHelper.BuildJsonForObject(d);
             Assert.IsNotNull(json);
             Assert.IsFalse(json.HasErrors, "Json parse errors:\n" + String.Join("\n\t", json.Errors));
             Assert.IsNotNull(json.Data);
             Assert.IsTrue(json.Data.IsDocument);
             Assert.AreEqual(3, ((JsonDocument)json.Data).Count);
-            
+
             // What
             JsonValue what = ((JsonDocument)json.Data).ValueFor("What");
             Assert.IsNotNull(what);
@@ -93,7 +94,7 @@
             Assert.IsFalse(json.HasErrors, json.BuildJsonErrorReport());
 
             // Verify we've made a useless read for the dictionary values, but the shape is correct
-            Dictionary<object,object> generatedDictionary = JsonHelper.BuildObjectForJson<Dictionary<object, object>>(json);
+            Dictionary<object, object> generatedDictionary = JsonHelper.BuildObjectForJson<Dictionary<object, object>>(json);
             Assert.AreEqual(1, generatedDictionary.Count);
             Assert.AreEqual(1, generatedDictionary.Keys.Count);
             Assert.AreEqual(1, generatedDictionary.Values.Count);
@@ -106,7 +107,8 @@
             Assert.AreEqual(typeof(Object), generatedObjValue.GetType());
 
             // === Try 2: With kvp option set ===
-            json = JsonHelper.BuildJsonForObject(dictionary, new JsonBuilder.Settings {
+            json = JsonHelper.BuildJsonForObject(dictionary, new JsonBuilder.Settings
+            {
                 KeyValuePairKeyTypeIdToWrite = eTypeIdInfo.FullyQualifiedSystemType,
                 KeyValuePairValueTypeIdToWrite = eTypeIdInfo.FullyQualifiedSystemType
             });
@@ -126,7 +128,7 @@
         }
 
         [TestMethod]
-        public void AJson_JsonHelper_BuildJsonForObject_SimpleObject()
+        public void AJson_JsonHelper_BuildJsonForObject_SimpleObject ()
         {
             SimpleGuy d = new SimpleGuy() { What = 3, Noice = 5 };
             Json json = JsonHelper.BuildJsonForObject(d);
@@ -137,7 +139,7 @@
         }
 
         [TestMethod]
-        public void AJson_JsonHelper_BuildJsonForObject_ObjectWithItems()
+        public void AJson_JsonHelper_BuildJsonForObject_ObjectWithItems ()
         {
             ItemsGuy d = new ItemsGuy("Bob");
             d.Items.AddRange(new[] { 1, 2, 3, 4 });
@@ -149,7 +151,7 @@
         }
 
         [TestMethod]
-        public void AJson_JsonHelper_BuildJsonForObject_ComplexObject()
+        public void AJson_JsonHelper_BuildJsonForObject_ComplexObject ()
         {
             Json json = JsonHelper.BuildJsonForObject(ComplexGuy.MakeOne());
             Assert.IsNotNull(json);
@@ -160,7 +162,7 @@
 
 
         [TestMethod]
-        public void AJson_JsonHelper_BuildObjectForJson_ComplexObject()
+        public void AJson_JsonHelper_BuildObjectForJson_ComplexObject ()
         {
             ComplexGuy theDudeGoinIn = ComplexGuy.MakeOne();
             Json json = JsonHelper.BuildJsonForObject(theDudeGoinIn);
@@ -172,7 +174,7 @@
         }
 
         [TestMethod]
-        public void AJson_JsonBuilding_DeserializeJsonToObject_WorksWithSimpleGuy()
+        public void AJson_JsonBuilding_DeserializeJsonToObject_WorksWithSimpleGuy ()
         {
             SimpleGuy guy = new SimpleGuy();
             guy.What = 2;
@@ -182,18 +184,18 @@
             Assert.IsFalse(json.HasErrors, "Json parse errors:\n" + String.Join("\n\t", json.Errors));
 
             string simpleGuyJson = json.Data.StringValue;
-            SimpleGuy serializedGuy =  JsonHelper.BuildObjectForJson<SimpleGuy>(json);
+            SimpleGuy serializedGuy = JsonHelper.BuildObjectForJson<SimpleGuy>(json);
             Assert.IsTrue(guy.Equals(serializedGuy));
         }
 
         [TestInitialize]
-        public void Setup()
+        public void Setup ()
         {
             TypeIdRegistrar.RegisterAllTypeIds(typeof(JsonBuilderTests).Assembly);
         }
 
         [TestMethod]
-        public void AJson_JsonBuilding_DeserializeJsonToObject_PicksDerivedTypesProperly()
+        public void AJson_JsonBuilding_DeserializeJsonToObject_PicksDerivedTypesProperly ()
         {
             ThingWithDerived thing = new ThingWithDerived() { Guy = new DerivedGuy(462) };
             thing.Guy.What = 5;
@@ -210,7 +212,7 @@
         }
 
         [TestMethod]
-        public void AJson_JsonBuilding_DeserializeJsonToObject_PicksDerivedTypesProperly_UseTypeId()
+        public void AJson_JsonBuilding_DeserializeJsonToObject_PicksDerivedTypesProperly_UseTypeId ()
         {
             var thing = new OtherThingWithDerived() { Guy = new OtherDerivedGuy { Other = 2, Special = "dood" } };
             Json json = JsonHelper.BuildJsonForObject(thing, new JsonBuilder.Settings() { TypeIdToWrite = eTypeIdInfo.TypeIdAttributed | eTypeIdInfo.FullyQualifiedSystemType });
@@ -225,7 +227,7 @@
         }
 
         [TestMethod]
-        public void AJson_JsonBuilding_HandleAttributeProperly_JsonWithJsonPropertyAsSelfAttribute()
+        public void AJson_JsonBuilding_HandleAttributeProperly_JsonWithJsonPropertyAsSelfAttribute ()
         {
             var thing = new ThingThatHoldsElevator { SuperAwesomeInt = new OnlyCareAboutValue<int>(3) };
             Json json = JsonHelper.BuildJsonForObject(thing);
@@ -240,13 +242,13 @@
         }
 
         [TestMethod]
-        public void AJson_JsonBuilding_CanBuildListFromArrays()
+        public void AJson_JsonBuilding_CanBuildListFromArrays ()
         {
             Json json = JsonHelper.ParseText("[ { StringThing: \"Foo\", IntThing: 1}, { StringThing: \"Bar\", IntThing: 2}]");
             Assert.IsNotNull(json);
             Assert.IsFalse(json.HasErrors, "Json parse errors:\n" + String.Join("\n\t", json.Errors));
             Assert.IsTrue(json.Data.IsArray, "Json should have parsed an array");
-            
+
             List<StringAndInt> result = JsonHelper.BuildObjectListForJson<StringAndInt>((JsonArray)json.Data);
             Assert.IsNotNull(result);
             Assert.AreEqual(2, result.Count);
@@ -260,7 +262,7 @@
         }
 
         [TestMethod]
-        public void AJson_JsonBuilding_CanBuildObjectPropertyOfSimpleTypes()
+        public void AJson_JsonBuilding_CanBuildObjectPropertyOfSimpleTypes ()
         {
             double pi = 3.14159;
             RuntimeTypeEvaluatorObject obj = new RuntimeTypeEvaluatorObject();
@@ -335,6 +337,32 @@
             Assert.AreEqual(obj.LocalTimeZone.Id, doc.ValueFor(nameof(obj.LocalTimeZone)).StringValue);
         }
 
+        [TestMethod]
+        public void AJson_JsonBuilding_CanWriteTypeAlias ()
+        {
+            var thing = new ThingWithAliasProps { Foo = 12 };
+            Json json = JsonHelper.BuildJsonForObject(thing);
+            Assert.IsTrue(json, json.GetErrorReport());
+            Assert.IsTrue(json.Data.IsDocument);
+
+            var doc = (JsonDocument)json.Data;
+            Assert.IsTrue(doc.ContainsKey(ThingWithAliasProps.kFooProperty));
+            Assert.IsTrue(doc.TryGetValue(ThingWithAliasProps.kFooProperty, out int foundValue));
+            Assert.AreEqual(thing.Foo, foundValue);
+        }
+
+        [TestMethod]
+        public void AJson_ObjectBuilding_CanTranslateAliasOnBuildObject ()
+        {
+            const int value = 18;
+            string jsonText = $"{{\"{ThingWithAliasProps.kFooProperty}\": {value} }}";
+            Json json = JsonHelper.ParseText(jsonText);
+
+            var parsed = JsonHelper.BuildObjectForJson<ThingWithAliasProps>(json);
+            Assert.IsNotNull(parsed);
+            Assert.AreEqual(value, parsed.Foo);
+        }
+
         public class RuntimeTypeEvaluatorObject
         {
             [JsonRuntimeTypeEval]
@@ -349,7 +377,7 @@
         [JsonPropertyAsSelf("Value")]
         public class OnlyCareAboutValue<T>
         {
-            public OnlyCareAboutValue() { }
+            public OnlyCareAboutValue () { }
             public OnlyCareAboutValue (T value) { this.Value = value; }
             public T Value { get; set; }
         }
@@ -370,7 +398,7 @@
             public int What { get; set; }
             public int Noice { get; set; }
 
-            public bool Equals(SimpleGuy other)
+            public bool Equals (SimpleGuy other)
             {
                 return this.What == other.What && this.Noice == other.Noice;
             }
@@ -380,8 +408,8 @@
         {
             public int TheDerivedSpecificProperty { get; set; }
 
-            public DerivedGuy() : base() { }
-            public DerivedGuy(int dgsp) : this()
+            public DerivedGuy () : base() { }
+            public DerivedGuy (int dgsp) : this()
             {
                 this.TheDerivedSpecificProperty = dgsp;
             }
@@ -409,17 +437,17 @@
             public string Name { get; set; }
             public List<int> Items { get; set; }
 
-            public ItemsGuy()
+            public ItemsGuy ()
             {
                 this.Items = new List<int>();
             }
-            public ItemsGuy(string name, params int[] items) : this()
+            public ItemsGuy (string name, params int[] items) : this()
             {
                 this.Name = name;
                 this.Items.AddRange(items);
             }
 
-            public bool Equals(ItemsGuy other)
+            public bool Equals (ItemsGuy other)
             {
                 if (this.Name != other.Name)
                 {
@@ -431,9 +459,9 @@
                     return false;
                 }
 
-                for(int ind =0; ind < this.Items.Count; ++ind)
+                for (int ind = 0; ind < this.Items.Count; ++ind)
                 {
-                    if(this.Items[ind] != other.Items[ind])
+                    if (this.Items[ind] != other.Items[ind])
                     {
                         return false;
                     }
@@ -451,12 +479,12 @@
 
             public List<ItemsGuy> SuperItemsy { get; set; }
 
-            public ComplexGuy()
+            public ComplexGuy ()
             {
                 this.SuperItemsy = new List<ItemsGuy>();
             }
 
-            public static ComplexGuy MakeOne()
+            public static ComplexGuy MakeOne ()
             {
                 ComplexGuy d = new ComplexGuy { FavoriteNumber = 1234 };
                 d.Kidnapee = new SimpleGuy() { Noice = 40, What = -2 };
@@ -470,7 +498,7 @@
                 return d;
             }
 
-            public bool Equals(ComplexGuy other)
+            public bool Equals (ComplexGuy other)
             {
                 if (this.FavoriteNumber != other.FavoriteNumber)
                 {
@@ -503,6 +531,14 @@
         {
             public int Foo { get; set; }
             public string Bar { get; set; }
+        }
+
+        public class ThingWithAliasProps
+        {
+            public const string kFooProperty = "foo-prop";
+
+            [JsonPropertyAlias(kFooProperty)]
+            public int Foo { get; set; }
         }
     }
 }

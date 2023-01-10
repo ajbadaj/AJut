@@ -10,6 +10,7 @@
     using AJut;
     using AJut.IO;
     using AJut.Text;
+    using AJut.Text.AJson.Attributes;
     using AJut.TypeManagement;
 
     /// <summary>
@@ -433,7 +434,7 @@
                         continue;
                     }
 
-                    PropertyInfo propToSet = allProperties.FirstOrDefault(prop => prop.Name == kvp.Key);
+                    PropertyInfo propToSet = allProperties.FirstOrDefault(prop => _KeyForProperty(prop) == kvp.Key);
                     if (propToSet != null)
                     {
                         object newPropValue = null;
@@ -460,6 +461,14 @@
                         propToSet.SetValue(targetItem, newPropValue);
                     }
                 }
+            }
+
+            string _KeyForProperty (PropertyInfo _prop)
+            {
+                return _prop.GetCustomAttribute<JsonPropertyAliasAttribute>()?.PropertyName is string _overrideKey
+                        ? _overrideKey
+                        : _prop.Name;
+
             }
         }
 
@@ -644,6 +653,16 @@
             // ----------- Handle Value (Simple Type) ------------
             void _HandleApplyProperty (object _propSource, PropertyInfo _propInfo)
             {
+                string _key;
+                if (_propInfo.GetCustomAttribute<JsonPropertyAliasAttribute>()?.PropertyName is string _overrideKey)
+                {
+                    _key = _overrideKey;
+                }
+                else
+                {
+                    _key = _propInfo.Name;
+                }
+
                 object _sourceValue = _propInfo.GetValue(_propSource);
 
                 if (_sourceValue != null)
@@ -651,19 +670,19 @@
                     var runtimeTypeEval = _propInfo.GetAttributes<JsonRuntimeTypeEvalAttribute>()?.FirstOrDefault();
                     if (runtimeTypeEval != null && JsonHelper.TryGetTypeIdForType(runtimeTypeEval.TypeWriteTarget, _sourceValue?.GetType(), out string _foundTypeId))
                     {
-                        JsonBuilder propertyObjectBuilder = target.StartProperty(_propInfo.Name).StartDocument();
+                        JsonBuilder propertyObjectBuilder = target.StartProperty(_key).StartDocument();
                         propertyObjectBuilder.AddProperty(JsonDocument.kTypeIndicator, _foundTypeId);
                         JsonBuilder typedValueObjectBuilder = propertyObjectBuilder.StartProperty(JsonDocument.kRuntimeTypeEvalValue);
                         FillOutJsonBuilderForObject(_sourceValue, typedValueObjectBuilder);
                     }
                     else if (_CheckForSettingsRegisteredSimpleValue(_propInfo.PropertyType, _sourceValue, out isUsuallyQuoted, out string simpleStringValue))
                     {
-                        var created = target.AddProperty(_propInfo.Name, simpleStringValue);
+                        var created = target.AddProperty(_key, simpleStringValue);
                         created.IsValueUsualQuoteTarget = isUsuallyQuoted;
                     }
                     else
                     {
-                        JsonBuilder propertyBuilder = target.StartProperty(_propInfo.Name);
+                        JsonBuilder propertyBuilder = target.StartProperty(_key);
                         FillOutJsonBuilderForObject(_sourceValue, propertyBuilder);
                     }
                 }
