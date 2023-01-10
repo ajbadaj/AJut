@@ -375,6 +375,20 @@
             Assert.IsFalse(json.ToString().Contains('\t'));
         }
 
+        public void AJson_JsonBuilder_CanOverrideBuiltInPreAddedBuilders ()
+        {
+            const string fake = "fake";
+            JsonBuilder.Settings builderSettings = new JsonBuilder.Settings();
+            builderSettings.SetCustomJsonManager(typeof(DateTime), (d)=>fake);
+            Json json = JsonHelper.BuildJsonForObject(new { When = DateTime.Now }, builderSettings);
+            Assert.IsTrue(json, json.GetErrorReport());
+            Assert.IsTrue(json.Data.IsDocument);
+
+            var doc = (JsonDocument)json.Data;
+            Assert.IsTrue(doc.ContainsKey("When"));
+            Assert.AreEqual(fake, doc.ValueFor("When").StringValue);
+        }
+
         public class RuntimeTypeEvaluatorObject
         {
             [JsonRuntimeTypeEval]
