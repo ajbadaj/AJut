@@ -74,6 +74,7 @@
                 this.KeyValuePairKeyTypeIdToWrite = eTypeIdInfo.None;
                 this.KeyValuePairValueTypeIdToWrite = eTypeIdInfo.None;
                 this.UseReadonlyObjectProperties = true;
+                this.SpacingAroundPropertyIndicators = " ";
 
                 m_customJsonConstructor.Add(typeof(bool), _BoolToJsonString);
                 m_customJsonConstructor.Add(typeof(DateTime), _DateTimeToJsonString);
@@ -100,6 +101,8 @@
             public string Tabbing { get; set; }
 
             public string Newline { get; set; }
+
+            public string SpacingAroundPropertyIndicators { get; set; }
 
             public bool QuotePropertyNames { get; set; }
 
@@ -162,6 +165,16 @@
 
                 // Does this need to be unboxed?
                 string _SimpleTypeStringMaker (object _instance) => _instance?.ToString();
+            }
+
+            public static Settings BuildMinifiedSettings ()
+            {
+                return new Settings
+                {
+                    Tabbing = String.Empty,
+                    Newline = String.Empty,
+                    SpacingAroundPropertyIndicators = String.Empty,
+                };
             }
         }
     }

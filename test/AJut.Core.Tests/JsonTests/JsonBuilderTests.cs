@@ -363,6 +363,18 @@
             Assert.AreEqual(value, parsed.Foo);
         }
 
+        [TestMethod]
+        public void AJson_CanBuildMinifiedJson ()
+        {
+            Json json = JsonHelper.BuildJsonForObject(new { Thing = 5, Foo = "Bar", Bat = new { Foo2 = 2, Bar = new[] { "thing" } } }, JsonBuilder.Settings.BuildMinifiedSettings());
+            Assert.IsTrue(json, json.GetErrorReport());
+            Assert.IsTrue(json.Data.IsDocument);
+            Assert.IsFalse(json.ToString().Contains(' '));
+            Assert.IsFalse(json.ToString().Contains('\r'));
+            Assert.IsFalse(json.ToString().Contains('\n'));
+            Assert.IsFalse(json.ToString().Contains('\t'));
+        }
+
         public class RuntimeTypeEvaluatorObject
         {
             [JsonRuntimeTypeEval]
