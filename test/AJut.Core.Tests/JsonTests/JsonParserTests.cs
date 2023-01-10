@@ -3,10 +3,8 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Web;
     using AJut.Text.AJson;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class JsonParserTests
@@ -545,6 +543,23 @@
             var doc = (JsonDocument)json.Data;
             Assert.IsTrue(doc.ContainsKey(key));
             Assert.IsTrue(doc.TryGetValue(key, out TimeZoneInfo parsedValue));
+            Assert.AreEqual(value, parsedValue);
+        }
+
+        [TestMethod]
+        public void AJson_JsonParsing_CanParseJsonWithNonStandardPropertyNames ()
+        {
+            const string key = "prop-with-hyphen";
+            int value = 12;
+            string jsonText = $"{{\"{key}\": \"{value}\"}}";
+
+            Json json = JsonHelper.ParseText(jsonText);
+            Assert.IsTrue(json, json.GetErrorReport());
+            Assert.IsTrue(json.Data.IsDocument);
+
+            var doc = (JsonDocument)json.Data;
+            Assert.IsTrue(doc.ContainsKey(key));
+            Assert.IsTrue(doc.TryGetValue(key, out int parsedValue));
             Assert.AreEqual(value, parsedValue);
         }
     }

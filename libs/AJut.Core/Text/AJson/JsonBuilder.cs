@@ -417,12 +417,12 @@
             if (settings.QuotePropertyNames)
             {
                 headingTextStart = textTracker.NextWriteIndex + 1;
-                textTracker.Write("{1}{0}{1} : ", propName, settings.PropertyNameQuoteChars);
+                textTracker.Write($"{settings.PropertyNameQuoteChars}{propName}{settings.PropertyNameQuoteChars}{settings.SpacingAroundPropertyIndicators}:{settings.SpacingAroundPropertyIndicators}");
             }
             else
             {
                 headingTextStart = textTracker.NextWriteIndex;
-                textTracker.Write("{0} : ", propName);
+                textTracker.Write($"{propName}{settings.SpacingAroundPropertyIndicators}:{settings.SpacingAroundPropertyIndicators}");
             }
         }
 
