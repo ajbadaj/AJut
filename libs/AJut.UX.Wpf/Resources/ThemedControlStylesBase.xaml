@@ -334,7 +334,7 @@
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ButtonBase}">
                     <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
-                            Background="{TemplateBinding Background}">
+                            Background="{TemplateBinding Background}" CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}">
                         <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" Margin="{TemplateBinding Padding}"
                                           HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                           VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
@@ -487,8 +487,8 @@
                             </MultiBinding>
                         </Grid.Margin>
                         <Border x:Name="BorderRoot" 
-                            BorderBrush="{TemplateBinding BorderBrush}" 
-                            CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}">
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}">
                             <Border.BorderThickness>
                                 <MultiBinding Converter="{ajut_themext:TabItemBorderThicknessConverter}">
                                     <Binding RelativeSource="{RelativeSource AncestorType={x:Type TabItem}}"/>
@@ -614,7 +614,8 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type TextBox}">
-                    <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}">
+                    <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}"
+                            CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}">
                         <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
                     </Border>
                 </ControlTemplate>
