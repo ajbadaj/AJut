@@ -135,6 +135,11 @@
             private set => this.SetAndRaiseIfChanged(ref m_currentTheme, value);
         }
 
+        /// <summary>
+        /// Flags that control the theme from a global xaml perspective
+        /// </summary>
+        public static Flags GlobalBindingFlags { get; } = new Flags();
+
         // =========================[ Utility Methods ]=============================
 
         public static eAppTheme GetWindowsUserAppThemeSetting ()
@@ -220,6 +225,17 @@
                 this.AlterApplicationTheme(GetWindowsUserAppThemeSetting());
             }
         }
+
+        // =========================[ Utility Classes ]=============================
+        public class Flags : NotifyPropertyChanged
+        {
+            private bool m_listItemsShowHover = true;
+            public bool ListItemsShowHover
+            {
+                get => m_listItemsShowHover;
+                set => this.SetAndRaiseIfChanged(ref m_listItemsShowHover, value);
+            }
+        }
     }
 }
 
@@ -245,4 +261,3 @@ namespace AJut.UX.Themeing
 
     }
 }
-

@@ -90,15 +90,17 @@
         }
 
         /// <summary>
-        /// Gets the embedded resource name so that an embedded resource can be accessed by it's translated name.
+        /// Gets the embedded resource name that matches the relative path given
         /// </summary>
         /// <param name="relativePath">The relative path to the embedded resource</param>
         /// <param name="assembly">The assembly that the resource is in, or null if you want to use the executing assembly.</param>
-        /// <returns>The translated embedded resource name</returns>
+        /// <returns>The embedded resource name that matches the given relative path, or <c>null</c> if there is no match</returns>
         public static string GenerateEmbeddedResourceName (string relativePath, Assembly assembly = null)
         {
             assembly = assembly ?? Assembly.GetCallingAssembly();
-            return assembly.GetName().Name + "." + relativePath.Replace('/', '.').Replace('\\', '.').TrimStart('.'); ;
+
+            string transformedRelativePath = relativePath.Replace('/', '.').Replace('\\', '.').TrimStart('.');
+            return assembly.GetManifestResourceNames().FirstOrDefault(resource => resource.EndsWith(transformedRelativePath));
         }
 
         /// <summary>

@@ -9,13 +9,14 @@
                     xmlns:sys="clr-namespace:System;assembly=mscorlib"
                     xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework">
 
+
     <FontFamily x:Key="AJut_Font_Default">Segoe UI</FontFamily>
 
     <FontFamily x:Key="AJut_Font_SymbolGlyphText">Segoe MDL2 Assets</FontFamily>
     <sys:String x:Key="AJut_Symbol_Check">&#xE73E;</sys:String>
     <sys:String x:Key="AJut_Symbol_Dash">&#xE9AE;</sys:String>
     <sys:String x:Key="AJut_Symbol_NeedsEdit">&#xEB7E;</sys:String>
-    
+
     <sys:String x:Key="AJut_Symbol_UpChevron"   >&#xE70E;</sys:String>
     <sys:String x:Key="AJut_Symbol_DownChevron" >&#xE70D;</sys:String>
     <sys:String x:Key="AJut_Symbol_LeftChevron" >&#xE76B;</sys:String>
@@ -59,13 +60,13 @@
         <Setter Property="LabelPadding" Value="4"/>
         <Setter Property="FontFamily" Value="Consolas"/>
         <Style.Triggers>
-            <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_SymbolForegroundHighlight}"/>
-                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
-            </Trigger>
             <Trigger Property="IsKeyboardFocusWithin" Value="True">
                 <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_SymbolForegroundHighlight}"/>
                 <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
+            </Trigger>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_SymbolForegroundHighlight}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightBrightBright}" />
             </Trigger>
         </Style.Triggers>
     </Style>
@@ -99,9 +100,68 @@
         <Setter Property="GlyphHighlightBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_ListBackground}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ListBorder}"/>
+        <Setter Property="ListBoxItemContainerStyle">
+            <Setter.Value>
+                <Style TargetType="{x:Type ListBoxItem}">
+                    <Setter Property="SnapsToDevicePixels" Value="True" />
+                    <Setter Property="BorderBrush" Value="Transparent"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                                <Border Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        CornerRadius="{Binding RelativeSource={RelativeSource AncestorType={x:Type ListBoxItem}}, Path=(ajut_ap:BorderXTA.CornerRadius)}"
+                                        IsHitTestVisible="True">
+                                    <DockPanel>
+                                        <Grid DockPanel.Dock="Left" Background="{TemplateBinding BorderBrush}" Width="10"
+                                              Visibility="{Binding Path=IsSelected, Converter={ajut_conv:BooleanToVisibilityConverter TrueValue=Visible, FalseValue=Hidden}}"/>
+                                        <ContentPresenter Content="{Binding}" 
+                                                          ContentTemplate="{Binding RelativeSource={RelativeSource AncestorType=ListBox}, Path=ItemTemplate}" 
+                                                          ContentTemplateSelector="{Binding RelativeSource={RelativeSource AncestorType=ListBox}, Path=ItemTemplateSelector}" 
+                                                          Margin="{TemplateBinding Padding}"
+                                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
+                                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                    </DockPanel>
+                                </Border>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                    <Style.Triggers>
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding Path=IsSelectable}" Value="True" />
+                                <Condition Binding="{Binding Path=IsSelected}" Value="True" />
+                                <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=(Selector.IsSelectionActive)}" Value="True" />
+                            </MultiDataTrigger.Conditions>
+                            <Setter Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type ajut_ctrls:FlatTreeListControl}}, Path=SelectionBrush}"/>
+                        </MultiDataTrigger>
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding Path=IsSelectable}" Value="True" />
+                                <Condition Binding="{Binding Path=IsSelected}" Value="True" />
+                                <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=(Selector.IsSelectionActive)}" Value="False" />
+                            </MultiDataTrigger.Conditions>
+                            <Setter Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type ajut_ctrls:FlatTreeListControl}}, Path=SelectionInactiveBrush}"/>
+                        </MultiDataTrigger>
+                        <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                                <Condition Binding="{Binding Path=IsSelectable}" Value="True" />
+                                <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsMouseOver}" Value="True" />
+                                <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=(ajut_themext:AJutThemedListControlXTA.ListItemsShowHover)}"  Value="True"/>
+                            </MultiDataTrigger.Conditions>
+                            <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ListItemHover}"/>
+                            <Setter Property="Background" Value="{DynamicResource AJut_Brush_ListSelectionBackground}"/>
+                        </MultiDataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:PropertyGrid}">
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ListBorder}" />
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_ListBackground}"/>
         <Setter Property="TextLabelStyle">
             <Setter.Value>
                 <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource AJut_Style_DefaultTextBlock}">
@@ -110,6 +170,11 @@
                 </Style>
             </Setter.Value>
         </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Opacity" Value="{DynamicResource AJut_Double_StandardDisabledOpacity}"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:ColorEditIngressControl}">
@@ -334,7 +399,7 @@
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ButtonBase}">
                     <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
-                            Background="{TemplateBinding Background}">
+                            Background="{TemplateBinding Background}" CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}">
                         <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" Margin="{TemplateBinding Padding}"
                                           HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                           VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
@@ -374,7 +439,6 @@
 
     <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource AJut_Style_ToggleButton}" />
 
-
     <Style x:Key="AJut_Style_MessageBoxButton" TargetType="{x:Type Button}" BasedOn="{StaticResource AJut_Style_ButtonBase}">
         <Setter Property="TextElement.FontSize" Value="14"/>
         <Setter Property="Padding" Value="5,2"/>
@@ -396,7 +460,8 @@
                     <Border Background="{TemplateBinding Background}" BorderBrush="{DynamicResource AJut_Brush_BorderCommon}">
                         <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
                             <DockPanel>
-                                <Grid DockPanel.Dock="Left" Background="{TemplateBinding BorderBrush}" Width="10"/>
+                                <Grid DockPanel.Dock="Left" Background="{DynamicResource AJut_Brush_ListSelection}" Width="10"
+                                      Visibility="{Binding Path=IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Converter={ajut_conv:BooleanToVisibilityConverter TrueValue=Visible, FalseValue=Hidden}}"/>
                                 <ContentPresenter Content="{Binding}" 
                                                   ContentTemplate="{Binding RelativeSource={RelativeSource AncestorType=ListBox}, Path=ItemTemplate}" 
                                                   ContentTemplateSelector="{Binding RelativeSource={RelativeSource AncestorType=ListBox}, Path=ItemTemplateSelector}" 
@@ -413,11 +478,48 @@
             <Trigger Property="IsSelected" Value="True">
                 <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ListSelection}"/>
             </Trigger>
+            <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsMouseOver}" Value="True"/>
+                    <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=(ajut_themext:AJutThemedListControlXTA.ListItemsShowHover)}"  Value="True"/>
+                </MultiDataTrigger.Conditions>
+                <MultiDataTrigger.Setters>
+                    <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ListItemHover}"/>
+                    <Setter Property="Background" Value="{DynamicResource AJut_Brush_ListSelectionBackground}"/>
+                </MultiDataTrigger.Setters>
+            </MultiDataTrigger>
         </Style.Triggers>
     </Style>
     <Style TargetType="{x:Type ListBox}">
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_ListBackground}" />
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ListBorder}" />
+        <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ListBox}">
+                    <Border Background="{TemplateBinding Background}" CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}"
+                            BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}">
+                        <ScrollViewer Focusable="False" Template="{DynamicResource AJut_ControlTemplate_ScrollViewer}"
+                                      HorizontalScrollBarVisibility="{Binding RelativeSource={RelativeSource AncestorType={x:Type ListBox}}, Path=(ScrollViewer.HorizontalScrollBarVisibility)}"
+                                      VerticalScrollBarVisibility="{Binding RelativeSource={RelativeSource AncestorType={x:Type ListBox}}, Path=(ScrollViewer.VerticalScrollBarVisibility)}"
+                                      CanContentScroll="{Binding RelativeSource={RelativeSource AncestorType={x:Type ListBox}}, Path=(ScrollViewer.CanContentScroll)}"
+                                      ajut_ap:BorderXTA.CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}">
+                            <StackPanel Margin="{TemplateBinding Padding}" IsItemsHost="True" />
+                        </ScrollViewer>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsGrouping" Value="True">
+                            <Setter Property="ScrollViewer.CanContentScroll" Value="False" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Opacity" Value="{DynamicResource AJut_Double_StandardDisabledOpacity}"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
 
     <Style TargetType="{x:Type TabControl}">
@@ -462,7 +564,7 @@
             </Setter.Value>
         </Setter>
     </Style>
-    
+
     <Style TargetType="{x:Type TabItem}">
         <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabControl}}, Path=Background, Mode=OneWay}" />
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}" />
@@ -487,8 +589,8 @@
                             </MultiBinding>
                         </Grid.Margin>
                         <Border x:Name="BorderRoot" 
-                            BorderBrush="{TemplateBinding BorderBrush}" 
-                            CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}">
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}">
                             <Border.BorderThickness>
                                 <MultiBinding Converter="{ajut_themext:TabItemBorderThicknessConverter}">
                                     <Binding RelativeSource="{RelativeSource AncestorType={x:Type TabItem}}"/>
@@ -515,11 +617,11 @@
                                 </Grid>
                                 <Border x:Name="SelectionIndicator" BorderBrush="{DynamicResource AJut_Brush_PrimaryHighlight}" Margin="2">
                                     <ContentPresenter x:Name="AJutTabItemThemed_HeaderPresenter" Content="{TemplateBinding Header}" 
-                                              ContentTemplate="{TemplateBinding HeaderTemplate}" 
-                                              ContentTemplateSelector="{TemplateBinding HeaderTemplateSelector}" 
-                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                              Margin="{TemplateBinding Padding}">
+                                                      ContentTemplate="{TemplateBinding HeaderTemplate}" 
+                                                      ContentTemplateSelector="{TemplateBinding HeaderTemplateSelector}" 
+                                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                      Margin="{TemplateBinding Padding}">
                                         <ContentPresenter.Resources>
                                             <Style TargetType="{x:Type TextBlock}">
                                                 <Setter Property="Foreground" Value="{Binding Path=Foreground, RelativeSource={RelativeSource AncestorType={x:Type TabItem}}}"/>
@@ -590,20 +692,6 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
-        <!--<Style.Triggers>
-            <Trigger Property="IsSelected" Value="True">
-                <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType=TabControl}, Path=Background}" />
-            </Trigger>
-            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabControl}}, Path=TabStripPlacement}" Value="Left">
-                <Setter Property="BorderThickness" Value="1,1,0,1"/>
-            </DataTrigger>
-            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabControl}}, Path=TabStripPlacement}" Value="Right">
-                <Setter Property="BorderThickness" Value="0,1,1,1"/>
-            </DataTrigger>
-            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabControl}}, Path=TabStripPlacement}" Value="Bottom">
-                <Setter Property="BorderThickness" Value="1,0,1,1"/>
-            </DataTrigger>
-        </Style.Triggers>-->
     </Style>
 
     <Style TargetType="{x:Type TextBox}">
@@ -614,19 +702,20 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type TextBox}">
-                    <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}">
+                    <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}"
+                            CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}">
                         <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
         <Style.Triggers>
-            <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
-            </Trigger>
             <Trigger Property="IsKeyboardFocusWithin" Value="True">
                 <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_InteractiveText}" />
                 <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
+            </Trigger>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightBright}" />
             </Trigger>
         </Style.Triggers>
     </Style>
@@ -648,12 +737,13 @@
             </Setter.Value>
         </Setter>
         <Style.Triggers>
-            <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
-            </Trigger>
             <Trigger Property="IsKeyboardFocusWithin" Value="True">
                 <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_InteractiveText}" />
                 <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
+            </Trigger>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightBright}" />
             </Trigger>
         </Style.Triggers>
     </Style>
@@ -772,12 +862,12 @@
             </Setter.Value>
         </Setter>
         <Style.Triggers>
-            <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
-            </Trigger>
             <Trigger Property="IsKeyboardFocusWithin" Value="True">
                 <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_InteractiveText}" />
                 <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
+            </Trigger>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightBright}" />
             </Trigger>
         </Style.Triggers>
     </Style>
@@ -1149,59 +1239,55 @@
         </Setter>
     </Style>
 
+    <ControlTemplate x:Key="AJut_ControlTemplate_ScrollViewer" TargetType="{x:Type ScrollViewer}">
+        <Border CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}" 
+                BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}"
+                Background="{TemplateBinding Background}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <ScrollContentPresenter x:Name="PART_ScrollContentPresenter"
+                                        Margin="{TemplateBinding Padding}"
+                                        ContentTemplate="{TemplateBinding ContentTemplate}"
+                                        CanContentScroll="{TemplateBinding CanContentScroll}"/>
+
+                <ScrollBar x:Name="PART_VerticalScrollBar" Width="18"
+                           IsTabStop="False"
+                           Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"
+                           Grid.Column="1" Grid.Row="0" Orientation="Vertical"
+                           ViewportSize="{TemplateBinding ViewportHeight}"
+                           Maximum="{TemplateBinding ScrollableHeight}"
+                           Minimum="0"
+                           Value="{TemplateBinding VerticalOffset}"/>
+
+                <ScrollBar x:Name="PART_HorizontalScrollBar" Height="18"
+                           IsTabStop="False"
+                           Visibility="{TemplateBinding ComputedHorizontalScrollBarVisibility}"
+                           Grid.Column="0" Grid.Row="1" Orientation="Horizontal"
+                           ViewportSize="{TemplateBinding ViewportWidth}"
+                           Maximum="{TemplateBinding ScrollableWidth}"
+                           Minimum="0"
+                           Value="{TemplateBinding HorizontalOffset}"/>
+            </Grid>
+        </Border>
+    </ControlTemplate>
+
     <Style TargetType="{x:Type ScrollViewer}">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
         <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
         <Setter Property="ajut_ap:BorderXTA.CornerRadius" Value="2" />
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="{x:Type ScrollViewer}">
-                    <Border CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}" 
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}">
-                        <Grid Background="{TemplateBinding Background}">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-
-                            <ScrollContentPresenter x:Name="PART_ScrollContentPresenter"
-                                        Margin="{TemplateBinding Padding}"
-                                        ContentTemplate="{TemplateBinding ContentTemplate}"
-                                        CanContentScroll="{TemplateBinding CanContentScroll}"/>
-
-                            <ScrollBar x:Name="PART_VerticalScrollBar" Width="18"
-                                     IsTabStop="False"
-                                     Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"
-                                     Grid.Column="1" Grid.Row="0" Orientation="Vertical"
-                                     ViewportSize="{TemplateBinding ViewportHeight}"
-                                     Maximum="{TemplateBinding ScrollableHeight}"
-                                     Minimum="0"
-                                     Value="{TemplateBinding VerticalOffset}"
-                                     Margin="0,-1,-1,-1"/>
-
-                            <ScrollBar x:Name="PART_HorizontalScrollBar" Height="18"
-                                     IsTabStop="False"
-                                     Visibility="{TemplateBinding ComputedHorizontalScrollBarVisibility}"
-                                     Grid.Column="0" Grid.Row="1" Orientation="Horizontal"
-                                     ViewportSize="{TemplateBinding ViewportWidth}"
-                                     Maximum="{TemplateBinding ScrollableWidth}"
-                                     Minimum="0"
-                                     Value="{TemplateBinding HorizontalOffset}"
-                                     Margin="-1,0,-1,-1"/>
-
-                        </Grid>
-                    </Border>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
+        <Setter Property="Template" Value="{DynamicResource AJut_ControlTemplate_ScrollViewer}"/>
     </Style>
-    
+
     <Style TargetType="{x:Type ScrollBar}">
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
@@ -1211,7 +1297,7 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="{x:Type ScrollBar}">
-                            <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1,0"
+                            <Border BorderBrush="{TemplateBinding BorderBrush}" UseLayoutRounding="True" SnapsToDevicePixels="True"
                                     Opacity="{ajut:TemplateBinding Path=IsEnabled, Converter={ajut_conv:BooleanToValueConverter TrueValue=1.0, FalseValue=0.5}}">
                                 <Grid>
                                     <Grid.Resources>
@@ -1220,8 +1306,8 @@
                                                 <Setter.Value>
                                                     <ControlTemplate TargetType="{x:Type RepeatButton}">
                                                         <Border BorderBrush="{TemplateBinding BorderBrush}"
-                                                        Background="{TemplateBinding Background}"
-                                                        BorderThickness="{TemplateBinding BorderThickness}"/>
+                                                                Background="{TemplateBinding Background}"
+                                                                BorderThickness="{TemplateBinding BorderThickness}"/>
                                                     </ControlTemplate>
                                                 </Setter.Value>
                                             </Setter>
@@ -1233,7 +1319,7 @@
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
 
-                                    <Grid Grid.RowSpan="3" Margin="1,18" Opacity="0.5">
+                                    <Grid Grid.RowSpan="3" Margin="1.7,17,1.7,17" Opacity="0.5">
                                         <Grid.Background>
                                             <LinearGradientBrush StartPoint="0,5" EndPoint="-4,8" MappingMode="Absolute" SpreadMethod="Reflect">
                                                 <GradientStop Offset="0.00" Color="{DynamicResource AJut_Color_BorderCommon}" />
@@ -1246,7 +1332,7 @@
                                         </Grid.Background>
                                     </Grid>
 
-                                    <Grid Grid.Row="0" Margin="-1,0" Width="17" Height="17">
+                                    <Grid Grid.Row="0" Width="17" Height="17">
                                         <RepeatButton x:Name="PART_LineUpButton"
                                                       Command="{Binding Source={x:Static ScrollBar.LineUpCommand}}"
                                                       Style="{DynamicResource AJut_Style_ButtonBase}"/>
@@ -1265,23 +1351,23 @@
                                                           Background="Transparent" BorderBrush="Transparent"/>
                                         </Track.DecreaseRepeatButton>
                                         <Track.Thumb>
-                                            <Thumb Margin="-1,0">
+                                            <Thumb Margin="0.9,-1,0,-1.5">
                                                 <Thumb.Style>
                                                     <Style TargetType="{x:Type Thumb}">
                                                         <Setter Property="Background" Value="{DynamicResource AJut_Brush_ControlBackground}"/>
                                                         <Setter Property="Template">
                                                             <Setter.Value>
                                                                 <ControlTemplate TargetType="{x:Type Thumb}">
-                                                                    <Border BorderThickness="1,1,0,0" BorderBrush="#2FFF">
-                                                                        <Border BorderThickness="0,0,1,1" BorderBrush="#6000"
-                                                                                Background="{TemplateBinding Background}"/>
-                                                                    </Border>
+                                                                    <Border BorderThickness="1,1,0,0" BorderBrush="{DynamicResource AJut_Brush_BorderCommon}"
+                                                                            Background="{TemplateBinding Background}"/>
                                                                 </ControlTemplate>
                                                             </Setter.Value>
                                                         </Setter>
                                                         <Style.Triggers>
                                                             <Trigger Property="IsMouseOver" Value="True">
                                                                 <Setter Property="Background" Value="{DynamicResource AJut_Brush_ControlBackgroundHover}"/>
+                                                                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommonHover}"/>
+                                                                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_HighlightText}" />
                                                             </Trigger>
                                                         </Style.Triggers>
                                                     </Style>
@@ -1290,7 +1376,7 @@
                                         </Track.Thumb>
                                     </Track>
 
-                                    <Grid Grid.Row="2" Margin="-1,0" Width="17" Height="17">
+                                    <Grid Grid.Row="2" Width="17" Height="17">
                                         <RepeatButton x:Name="PART_LineDownButton"
                                                       Command="{Binding Source={x:Static ScrollBar.LineDownCommand}}"
                                                       Style="{DynamicResource AJut_Style_ButtonBase}"/>
@@ -1309,7 +1395,7 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="{x:Type ScrollBar}">
-                            <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1,0"
+                            <Border BorderBrush="{TemplateBinding BorderBrush}"  UseLayoutRounding="True" SnapsToDevicePixels="True"
                                     Opacity="{ajut:TemplateBinding Path=IsEnabled, Converter={ajut_conv:BooleanToValueConverter TrueValue=1.0, FalseValue=0.5}}">
                                 <Border.Style>
                                     <Style TargetType="{x:Type Border}">
@@ -1327,8 +1413,8 @@
                                                 <Setter.Value>
                                                     <ControlTemplate TargetType="{x:Type RepeatButton}">
                                                         <Border BorderBrush="{TemplateBinding BorderBrush}"
-                                                        Background="{TemplateBinding Background}"
-                                                        BorderThickness="{TemplateBinding BorderThickness}"/>
+                                                                Background="{TemplateBinding Background}"
+                                                                BorderThickness="{TemplateBinding BorderThickness}"/>
                                                     </ControlTemplate>
                                                 </Setter.Value>
                                             </Setter>
@@ -1339,7 +1425,7 @@
                                         <ColumnDefinition Width="{ajut:TemplateBinding Path=ViewportSize, Mode=TwoWay, Converter={ajut_conv:PercentageToGridLengthConverter}}"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <Grid Grid.ColumnSpan="3" Margin="18,1" Opacity="0.5">
+                                    <Grid Grid.ColumnSpan="3" Margin="17,1.7,17,1.7" Opacity="0.5">
                                         <Grid.Background>
                                             <LinearGradientBrush StartPoint="5,0" EndPoint="8,-4" MappingMode="Absolute" SpreadMethod="Reflect">
                                                 <GradientStop Offset="0.00" Color="{DynamicResource AJut_Color_BorderCommon}" />
@@ -1351,7 +1437,7 @@
                                             </LinearGradientBrush>
                                         </Grid.Background>
                                     </Grid>
-                                    <Grid Grid.Column="0" Margin="0,-1" Width="17" Height="17">
+                                    <Grid Grid.Column="0" Width="17" Height="17">
                                         <RepeatButton x:Name="PART_LineLeftButton"
                                                       Command="{Binding Source={x:Static ScrollBar.LineLeftCommand}}"
                                                       Style="{DynamicResource AJut_Style_ButtonBase}"/>
@@ -1370,23 +1456,23 @@
                                                           Background="Transparent" BorderBrush="Transparent"/>
                                         </Track.DecreaseRepeatButton>
                                         <Track.Thumb>
-                                            <Thumb Margin="-1,0">
+                                            <Thumb Margin="-1,0.9,-1,0">
                                                 <Thumb.Style>
                                                     <Style TargetType="{x:Type Thumb}">
                                                         <Setter Property="Background" Value="{DynamicResource AJut_Brush_ControlBackground}"/>
                                                         <Setter Property="Template">
                                                             <Setter.Value>
                                                                 <ControlTemplate TargetType="{x:Type Thumb}">
-                                                                    <Border BorderThickness="1,1,0,0" BorderBrush="#2FFF">
-                                                                        <Border BorderThickness="0,0,1,1" BorderBrush="#6000"
-                                                                                Background="{TemplateBinding Background}"/>
-                                                                    </Border>
+                                                                    <Border BorderThickness="1" BorderBrush="{DynamicResource AJut_Brush_BorderCommon}"
+                                                                            Background="{TemplateBinding Background}"/>
                                                                 </ControlTemplate>
                                                             </Setter.Value>
                                                         </Setter>
                                                         <Style.Triggers>
                                                             <Trigger Property="IsMouseOver" Value="True">
                                                                 <Setter Property="Background" Value="{DynamicResource AJut_Brush_ControlBackgroundHover}"/>
+                                                                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommonHover}"/>
+                                                                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_HighlightText}" />
                                                             </Trigger>
                                                         </Style.Triggers>
                                                     </Style>
@@ -1395,7 +1481,7 @@
                                         </Track.Thumb>
                                     </Track>
 
-                                    <Grid Grid.Column="2" Margin="-1,0" Width="17" Height="17">
+                                    <Grid Grid.Column="2" Width="17" Height="17">
                                         <RepeatButton x:Name="PART_LineRightButton"
                                                       Command="{Binding Source={x:Static ScrollBar.LineRightCommand}}"
                                                       Style="{DynamicResource AJut_Style_ButtonBase}"/>

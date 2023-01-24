@@ -291,6 +291,20 @@ namespace AJut.UX.Controls
             set => this.SetValue(GlyphPaddingProperty, value);
         }
 
+        public static readonly DependencyProperty ListBoxItemContainerStyleProperty = DPUtils.Register(_ => _.ListBoxItemContainerStyle);
+        public Style ListBoxItemContainerStyle
+        {
+            get => (Style)this.GetValue(ListBoxItemContainerStyleProperty);
+            set => this.SetValue(ListBoxItemContainerStyleProperty, value);
+        }
+
+        public static readonly DependencyProperty ShouldToggleExpandableItemExpansionOnDoubleClickProperty = DPUtils.Register(_ => _.ShouldToggleExpandableItemExpansionOnDoubleClick, true);
+        public bool ShouldToggleExpandableItemExpansionOnDoubleClick
+        {
+            get => (bool)this.GetValue(ShouldToggleExpandableItemExpansionOnDoubleClickProperty);
+            set => this.SetValue(ShouldToggleExpandableItemExpansionOnDoubleClickProperty, value);
+        }
+
         // ============================[Methods]================================
         public override void OnApplyTemplate ()
         {
@@ -299,12 +313,14 @@ namespace AJut.UX.Controls
             if (this.PART_ListBoxDisplay != null)
             {
                 this.PART_ListBoxDisplay.SelectionChanged -= _OnSelectionChanged;
+                this.PART_ListBoxDisplay.MouseDoubleClick -= _OnMouseDoubleClick;
             }
 
             this.PART_ListBoxDisplay = (ListBox)this.GetTemplateChild(nameof(PART_ListBoxDisplay));
             this.PART_ListBoxDisplay.SelectionChanged += _OnSelectionChanged;
+            this.PART_ListBoxDisplay.MouseDoubleClick += _OnMouseDoubleClick;
 
-            void _OnSelectionChanged (object sender, SelectionChangedEventArgs _e)
+            void _OnSelectionChanged (object _sender, SelectionChangedEventArgs _e)
             {
                 // =====================================================
                 // = What happens when the ListBox's selection changes =
@@ -350,6 +366,13 @@ namespace AJut.UX.Controls
                 finally
                 {
                     m_blockingForSelectionChangeReentrancy = false;
+                }
+            }
+            void _OnMouseDoubleClick (object _sender, MouseButtonEventArgs _e)
+            {
+                if (this.ShouldToggleExpandableItemExpansionOnDoubleClick && this.PART_ListBoxDisplay.SelectedItem is Item item && item.IsExpandable)
+                {
+                    item.IsExpanded = !item.IsExpanded;
                 }
             }
         }

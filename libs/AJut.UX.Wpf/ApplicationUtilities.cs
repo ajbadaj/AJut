@@ -13,6 +13,7 @@
     {
         private static bool g_isSetup = false;
         private static bool g_blockReentrancy = false;
+        public static string g_sharedProjectName = null;
 
         public static string ProjectName { get; private set; }
         public static string AppDataRoot { get; private set; }
@@ -32,6 +33,7 @@
                 return;
             }
 
+            g_sharedProjectName = sharedProjectName;
             ProjectName = projectName;
             AppDataRoot = AppDataHelper.EstablishAppDataLocation(sharedProjectName ?? projectName);
             CryptoObfuscation.Seed(projectName);
@@ -41,18 +43,7 @@
 
             if (setupLogging)
             {
-                string logsRoot;
-                if (sharedProjectName != null)
-                {
-                    logsRoot = AppDataHelper.EstablishAppDataLocation(sharedProjectName, "Logs", ProjectName);
-                }
-                else
-                {
-                    logsRoot = AppDataHelper.EstablishAppDataLocation(ProjectName, "Logs");
-                }
-
-                Logger.CreateAndStartWritingToLogFileIn(logsRoot);
-
+                Logger.CreateAndStartWritingToLogFileIn(EstablisLogsDirectory());
                 if (ageMaxInDaysToKeepLogs != -1)
                 {
                     PurgeAllLogsOlderThan(TimeSpan.FromDays(ageMaxInDaysToKeepLogs));
@@ -108,7 +99,7 @@
         public static void PurgeAllLogsOlderThan (TimeSpan age)
         {
             DateTime olderThan = DateTime.Now - age;
-            DirectoryInfo logsFolder = new DirectoryInfo(AppDataHelper.EstablishAppDataLocation(ProjectName, "Logs"));
+            DirectoryInfo logsFolder = new DirectoryInfo(EstablisLogsDirectory());
             foreach (FileInfo file in logsFolder.EnumerateFiles().ToList())
             {
                 if (DateTime.Now - file.LastWriteTime > age)
@@ -124,6 +115,18 @@
         public static string BuildAppDataProjectPath (params string[] pathParts)
         {
             return Path.Combine(ApplicationUtilities.AppDataRoot, Path.Combine(pathParts));
+        }
+
+        private static string EstablisLogsDirectory ()
+        {
+            if (g_sharedProjectName != null)
+            {
+                return AppDataHelper.EstablishAppDataLocation(g_sharedProjectName, "Logs", ProjectName);
+            }
+            else
+            {
+                return AppDataHelper.EstablishAppDataLocation(ProjectName, "Logs");
+            }
         }
     }
 }
