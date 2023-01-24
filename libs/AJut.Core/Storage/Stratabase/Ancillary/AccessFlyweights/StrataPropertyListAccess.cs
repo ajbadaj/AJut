@@ -178,18 +178,23 @@
             changes.CollectionChanged += this.OnStorageCollectionChanged;
             foreach (StratabaseListInsertion<TElement> item in changes)
             {
-                this.Insert(item);
+                this.AddInsertMarker(item);
             }
         }
 
-        private void Insert (StratabaseListInsertion<TElement> item)
+        private void AddInsertMarker (StratabaseListInsertion<TElement> item)
         {
-            int index = m_insertionsCache.InsertSorted(item, (l, r) => l.Index - r.Index);
-            m_currentListCache.Insert(index, item.Value);
+            // We'll store insertions in the insertion cache at the same location as the item value's
+            //  location in the list cache, this will allow us to match them on removal
+            m_insertionsCache.Insert(item.Index, item);
+            m_currentListCache.Insert(item.Index, item.Value);
         }
 
         private void Remove (StratabaseListInsertion<TElement> item)
         {
+            // We stored insertions in the insertion cache at the same index location of the item in the list cache, so
+            //  by getting that index we can determine what index we need to remove (both from the insertion cache and
+            //  from the list cache)
             int index = m_insertionsCache.IndexOf(item);
             m_insertionsCache.RemoveAt(index);
             m_currentListCache.RemoveAt(index);
@@ -201,7 +206,8 @@
             {
                 foreach (StratabaseListInsertion<TElement> element in e.NewItems)
                 {
-                    this.Insert(element);
+                    // Technically there's a starting index, but insertion markers are only supported as an add/remove op no insertions at random ind will happen... hopefully...
+                    this.AddInsertMarker(element);
                 }
             }
             if (e.OldItems != null)
