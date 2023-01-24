@@ -64,6 +64,10 @@
             //
             //  Also need TearDownOverrideList(5), so if there were elements described in baseline, 0, and 5, then
             //  that teardown would destroy all 
+            //
+            //  This also means we don't ever need the insertion routine. We just store elements either directly
+            //      or as guid ids that get translated into sub objects. The key is, the layers don't blend a final
+            //      result. They are self contained and represent the whole of the list.
             tree.Root.InsertChild(1, 0, Guid.NewGuid());
             Assert.AreEqual(1, tree.Root.Children.Count);
         }
