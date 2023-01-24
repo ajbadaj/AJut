@@ -76,6 +76,11 @@
         }
 
         public static implicit operator bool (Result result) => !result.HasErrors;
+
+        public override string ToString ()
+        {
+            return this ? "<Successful Result>" : this.GetErrorReport();
+        }
     }
 
     /// <summary>
@@ -123,5 +128,10 @@
         public static implicit operator Result<T> (T successValue) => Result<T>.Success(successValue);
         public static implicit operator T (Result<T> successValue) => successValue.Value;
         public static implicit operator bool (Result<T> result) => !result.HasErrors;
+
+        public override string ToString ()
+        {
+            return this ? $"<Successful Result: {this.Value}>" : this.GetErrorReport();
+        }
     }
 }
