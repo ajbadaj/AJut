@@ -2,6 +2,7 @@
 {
     using System.IO;
     using System.Reflection;
+    using AJut.IO;
 
     public static class ResourceFetcher
     {
@@ -11,8 +12,7 @@
         /// <param name="resourceName">A path to the resource in 'dir/name' format</param>
         public static Stream Get(string resourceName)
         {
-            string fullResourceName = string.Format("{0}.{1}", Assembly.GetCallingAssembly().GetName().Name, resourceName.Replace('/', '.'));
-            return typeof(ResourceFetcher).Assembly.GetManifestResourceStream(fullResourceName);
+            return FileHelpers.GetEmbeddedResourceStream(resourceName);
         }
 
         /// <summary>

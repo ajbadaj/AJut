@@ -19,6 +19,7 @@
         [TestMethod]
         public void FileHelpers_GenerateEmbeddedResourceStream_ReturnsValidStream()
         {
+            var type = typeof(FileHelpersTests);
             string[] manifestResources = typeof(FileHelpersTests).Assembly.GetManifestResourceNames();
             Console.WriteLine(String.Join("\n", manifestResources));
 
