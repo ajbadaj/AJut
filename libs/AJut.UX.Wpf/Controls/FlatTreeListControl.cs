@@ -291,6 +291,14 @@ namespace AJut.UX.Controls
             set => this.SetValue(GlyphPaddingProperty, value);
         }
 
+        public static readonly DependencyProperty ListBoxItemContainerStyleProperty = DPUtils.Register(_ => _.ListBoxItemContainerStyle);
+        public Style ListBoxItemContainerStyle
+        {
+            get => (Style)this.GetValue(ListBoxItemContainerStyleProperty);
+            set => this.SetValue(ListBoxItemContainerStyleProperty, value);
+        }
+
+
         // ============================[Methods]================================
         public override void OnApplyTemplate ()
         {

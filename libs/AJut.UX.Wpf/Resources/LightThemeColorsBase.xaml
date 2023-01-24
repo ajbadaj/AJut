@@ -47,8 +47,10 @@
     <SolidColorBrush x:Key="AJut_Brush_ListBackground" Color="#EAEAEA" />
     <SolidColorBrush x:Key="AJut_Brush_ListBorder" Color="#555" />
     <SolidColorBrush x:Key="AJut_Brush_ListSelection" Color="{DynamicResource AJut_Color_PrimaryHighlight}" />
+    <SolidColorBrush x:Key="AJut_Brush_ListSelectionBackground" Color="#190284FF" />
     <SolidColorBrush x:Key="AJut_Brush_TreeSelection" Color="{DynamicResource AJut_Color_PrimaryHighlight}" />
-
+    <SolidColorBrush x:Key="AJut_Brush_ListItemHover" Color="{DynamicResource AJut_Color_PrimaryHighlightBright}" />
+    
     <Color x:Key="AJut_Color_BorderCommon">#8A8A8A</Color>
     <Color x:Key="AJut_Color_BorderCommonTransparent">#008A8A8A</Color>
     <SolidColorBrush x:Key="AJut_Brush_BorderCommon" Color="{DynamicResource AJut_Color_BorderCommon}"/>

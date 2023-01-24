@@ -7,7 +7,7 @@
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <Style x:Key="AJut_Style_FlatTreeListBoxItem" TargetType="{x:Type ListBoxItem}">
-        <Setter Property="SnapsToDevicePixels" Value="true" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ListBoxItem}">
@@ -19,7 +19,7 @@
                                     <MultiDataTrigger>
                                         <MultiDataTrigger.Conditions>
                                             <Condition Binding="{Binding Path=IsSelectable}" Value="True" />
-                                            <Condition Binding="{ajut:TemplateBinding Path=IsSelected}" Value="True" />
+                                            <Condition Binding="{ajut:TemplateBinding Path=(Selector.IsSelectionActive)}" Value="True" />
                                         </MultiDataTrigger.Conditions>
                                         <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType=local:FlatTreeListControl}, Path=SelectionBrush}"/>
                                     </MultiDataTrigger>
@@ -43,13 +43,16 @@
 
     <Style TargetType="{x:Type local:FlatTreeListControl}">
         <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="BorderBrush" Value="Black"/>
+        <Setter Property="BorderBrush" Value="Gray"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="ap:BorderXTA.CornerRadius" Value="3"/>
 
         <Setter Property="SelectionBrush" Value="#2196f3"/>
         <Setter Property="SelectionInactiveBrush" Value="#94B7D1"/>
         <Setter Property="Padding" Value="2,0,0,0"/>
+        
+        <Setter Property="ListBoxItemContainerStyle" Value="{StaticResource AJut_Style_FlatTreeListBoxItem}"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         
         <Setter Property="GlyphBrush" Value="#222"/>
         <Setter Property="GlyphHighlightBrush" Value="Black"/>
@@ -60,95 +63,97 @@
         <Setter Property="CollapsedElementGlyph" Value="&#xE970;"/>
         <Setter Property="ExpandedElementGlyph" Value="&#xE96E;"/>
         <Setter Property="ExpandCollapseGlyphSize" Value="9"/>
-        
+
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
+
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:FlatTreeListControl}">
-                    <Border Background="{TemplateBinding Background}"
-                            BorderThickness="{TemplateBinding BorderThickness}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}">
-                        <ListBox x:Name="PART_ListBoxDisplay" ItemsSource="{ajut:TemplateBinding Path=Items}"
-                                 SelectionMode="{ajut:TemplateBinding Path=SelectionMode}"
-                                 VirtualizingPanel.IsVirtualizing="True"
-                                 ItemContainerStyle="{StaticResource AJut_Style_FlatTreeListBoxItem}"
-                                 Background="Transparent"
-                                 BorderThickness="0"
-                                 BorderBrush="Transparent">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="14"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Grid x:Name="Spacing" Grid.Column="0">
-                                            <Grid.Width>
-                                                <MultiBinding Converter="{conv:ArithmeticConverter Operation=Multiply}">
-                                                    <Binding Path="TreeDepth" Mode="OneWay"/>
-                                                    <Binding RelativeSource="{RelativeSource AncestorType=local:FlatTreeListControl}" Path="TabbingSize"/>
-                                                </MultiBinding>
-                                            </Grid.Width>
-                                        </Grid>
-                                        <ToggleButton x:Name="Expander" Grid.Column="1" IsChecked="{Binding Path=IsExpanded, Mode=TwoWay}" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                            <ToggleButton.Style>
-                                                <Style TargetType="{x:Type ToggleButton}">
-                                                    <Setter Property="Background" Value="Transparent"/>
-                                                    <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=GlyphBrush}"/>
-                                                    <Setter Property="Content" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=CollapsedElementGlyph}" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding Path=IsExpandable}" Value="False">
-                                                            <Setter Property="Visibility" Value="Collapsed" />
-                                                        </DataTrigger>
-                                                        <DataTrigger Binding="{Binding Path=IsExpanded}" Value="True">
-                                                            <Setter Property="Content" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=ExpandedElementGlyph}" />
-                                                        </DataTrigger>
-                                                        <Trigger Property="IsMouseOver" Value="True">
-                                                            <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=GlyphHighlightBrush}"/>
-                                                            <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=GlyphBackgroundHighlightBrush}" />
-                                                        </Trigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </ToggleButton.Style>
-                                            <ToggleButton.Template>
-                                                <ControlTemplate TargetType="{x:Type ToggleButton}">
-                                                    <Border CornerRadius="2" Background="{TemplateBinding Background}">
-                                                        <ContentControl Content="{TemplateBinding Content}" VerticalAlignment="Center" Margin="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=GlyphPadding}">
-                                                            <ContentControl.Resources>
-                                                                <DataTemplate DataType="{x:Type PathGeometry}">
-                                                                    <Path Width="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=ExpandCollapseGlyphSize}"
-                                                                          Height="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=ExpandCollapseGlyphSize}"
-                                                                          Stroke="{Binding RelativeSource={RelativeSource AncestorType={x:Type ToggleButton}}, Path=Foreground}" 
-                                                                          Fill="{Binding RelativeSource={RelativeSource AncestorType={x:Type ToggleButton}}, Path=Foreground}"
-                                                                          Data="{Binding .}"
-                                                                          VerticalAlignment="Center"
-                                                                          HorizontalAlignment="Center"
-                                                                          Stretch="Uniform"/>
-                                                                </DataTemplate>
-                                                                <DataTemplate DataType="{x:Type sys:String}">
-                                                                    <TextBlock Text="{Binding .}"
-                                                                               Foreground="{Binding RelativeSource={RelativeSource AncestorType=ToggleButton}, Path=Foreground}"
-                                                                               FontSize="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=ExpandCollapseGlyphSize}"
-                                                                               FontFamily="Segoe MDL2 Assets"
-                                                                               VerticalAlignment="Center"
-                                                                               HorizontalAlignment="Center"/>
-                                                                </DataTemplate>
-                                                            </ContentControl.Resources>
-                                                        </ContentControl>
-                                                    </Border>
-                                                </ControlTemplate>
-                                            </ToggleButton.Template>
-                                        </ToggleButton>
-                                        <ContentPresenter x:Name="Content" Grid.Column="2" Content="{Binding Source}" HorizontalAlignment="Stretch"
-                                                          Margin="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=Padding}"
-                                                          ContentTemplate="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=ItemTemplate}"
-                                                          ContentTemplateSelector="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=ItemTemplateSelector}"/>
+                    <ListBox x:Name="PART_ListBoxDisplay" ItemsSource="{ajut:TemplateBinding Path=Items}"
+                             SelectionMode="{ajut:TemplateBinding Path=SelectionMode}"
+                             VirtualizingPanel.IsVirtualizing="True"
+                             ItemContainerStyle="{TemplateBinding ListBoxItemContainerStyle}"
+                             ScrollViewer.HorizontalScrollBarVisibility="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=(ScrollViewer.HorizontalScrollBarVisibility)}"
+                             ScrollViewer.VerticalScrollBarVisibility="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=(ScrollViewer.VerticalScrollBarVisibility)}"
+                             Background="{TemplateBinding Background}"
+                             BorderThickness="{TemplateBinding BorderThickness}"
+                             BorderBrush="{TemplateBinding BorderBrush}"
+                             HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                             ap:BorderXTA.CornerRadius="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=(ap:BorderXTA.CornerRadius)}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="14"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid x:Name="Spacing" Grid.Column="0">
+                                        <Grid.Width>
+                                            <MultiBinding Converter="{conv:ArithmeticConverter Operation=Multiply}">
+                                                <Binding Path="TreeDepth" Mode="OneWay"/>
+                                                <Binding RelativeSource="{RelativeSource AncestorType=local:FlatTreeListControl}" Path="TabbingSize"/>
+                                            </MultiBinding>
+                                        </Grid.Width>
                                     </Grid>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                    </Border>
+                                    <ToggleButton x:Name="Expander" Grid.Column="1" IsChecked="{Binding Path=IsExpanded, Mode=TwoWay}" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <ToggleButton.Style>
+                                            <Style TargetType="{x:Type ToggleButton}">
+                                                <Setter Property="Background" Value="Transparent"/>
+                                                <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=GlyphBrush}"/>
+                                                <Setter Property="Content" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=CollapsedElementGlyph}" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Path=IsExpandable}" Value="False">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Path=IsExpanded}" Value="True">
+                                                        <Setter Property="Content" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=ExpandedElementGlyph}" />
+                                                    </DataTrigger>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=GlyphHighlightBrush}"/>
+                                                        <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=GlyphBackgroundHighlightBrush}" />
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </ToggleButton.Style>
+                                        <ToggleButton.Template>
+                                            <ControlTemplate TargetType="{x:Type ToggleButton}">
+                                                <Border CornerRadius="2" Background="{TemplateBinding Background}">
+                                                    <ContentControl Content="{TemplateBinding Content}" VerticalAlignment="Center" Margin="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=GlyphPadding}">
+                                                        <ContentControl.Resources>
+                                                            <DataTemplate DataType="{x:Type PathGeometry}">
+                                                                <Path Width="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=ExpandCollapseGlyphSize}"
+                                                                        Height="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=ExpandCollapseGlyphSize}"
+                                                                        Stroke="{Binding RelativeSource={RelativeSource AncestorType={x:Type ToggleButton}}, Path=Foreground}" 
+                                                                        Fill="{Binding RelativeSource={RelativeSource AncestorType={x:Type ToggleButton}}, Path=Foreground}"
+                                                                        Data="{Binding .}"
+                                                                        VerticalAlignment="Center"
+                                                                        HorizontalAlignment="Center"
+                                                                        Stretch="Uniform"/>
+                                                            </DataTemplate>
+                                                            <DataTemplate DataType="{x:Type sys:String}">
+                                                                <TextBlock Text="{Binding .}"
+                                                                            Foreground="{Binding RelativeSource={RelativeSource AncestorType=ToggleButton}, Path=Foreground}"
+                                                                            FontSize="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=ExpandCollapseGlyphSize}"
+                                                                            FontFamily="Segoe MDL2 Assets"
+                                                                            VerticalAlignment="Center"
+                                                                            HorizontalAlignment="Center"/>
+                                                            </DataTemplate>
+                                                        </ContentControl.Resources>
+                                                    </ContentControl>
+                                                </Border>
+                                            </ControlTemplate>
+                                        </ToggleButton.Template>
+                                    </ToggleButton>
+                                    <ContentPresenter x:Name="Content" Grid.Column="2" Content="{Binding Source}" HorizontalAlignment="Stretch"
+                                                        Margin="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=Padding}"
+                                                        ContentTemplate="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=ItemTemplate}"
+                                                        ContentTemplateSelector="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=ItemTemplateSelector}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
