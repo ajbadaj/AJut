@@ -131,7 +131,7 @@
                             {
                                 if (!keyIndexTracker)
                                 {
-                                    string quote = source.Text.Substring(insideQuoteStart, nextEval - 1);
+                                    string quote = source.Text.SubstringByInd(insideQuoteStart, nextEval - 1);
                                     throw new FormatException("Json parsing failed due to incorrect string formatting around string: " + quote);
                                 }
 

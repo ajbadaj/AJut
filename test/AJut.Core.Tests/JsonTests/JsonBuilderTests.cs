@@ -375,6 +375,7 @@
             Assert.IsFalse(json.ToString().Contains('\t'));
         }
 
+        [TestMethod]
         public void AJson_JsonBuilder_CanOverrideBuiltInPreAddedBuilders ()
         {
             const string fake = "fake";
@@ -387,6 +388,28 @@
             var doc = (JsonDocument)json.Data;
             Assert.IsTrue(doc.ContainsKey("When"));
             Assert.AreEqual(fake, doc.ValueFor("When").StringValue);
+        }
+
+        [TestMethod]
+        public void AJson_JsonBuilder_SerializeStringsWithQuote_ObjToJsonAndBack ()
+        {
+            var originalObj = new StringAndInt { StringThing = "A string with \"Quotes\" somewhere inside it", IntThing = -2 };
+            Json originalJson = JsonHelper.BuildJsonForObject(originalObj);
+            Assert.IsTrue(originalJson, originalJson.GetErrorReport());
+            Assert.IsTrue(originalJson.Data.IsDocument);
+            Assert.IsTrue(((JsonDocument)originalJson.Data).TryGetValue(nameof(StringAndInt.StringThing), out string originalParsedStringValue));
+            Assert.AreEqual(originalObj.StringThing, originalParsedStringValue);
+
+            string txt = originalJson.ToString();
+            Json telephoneJson = JsonHelper.ParseText(txt);
+            Assert.IsTrue(telephoneJson, originalJson.GetErrorReport());
+            Assert.IsTrue(telephoneJson.Data.IsDocument);
+            Assert.IsTrue(((JsonDocument)telephoneJson.Data).TryGetValue(nameof(StringAndInt.StringThing), out string telephoneParsedStringValue));
+            Assert.AreEqual(originalObj.StringThing, telephoneParsedStringValue);
+
+            var telephoneObj = JsonHelper.BuildObjectForJson<StringAndInt>(telephoneJson);
+            Assert.IsNotNull(telephoneObj);
+            Assert.AreEqual(originalObj.StringThing, telephoneObj.StringThing);
         }
 
         public class RuntimeTypeEvaluatorObject

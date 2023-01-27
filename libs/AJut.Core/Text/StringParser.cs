@@ -36,7 +36,7 @@
             
             this.Register(char.Parse);
             this.Register(Guid.Parse);
-            this.Register(s => s); // string
+            this.Register(s => s.Replace("\\\"", "\"")); // string
         }
 
         /// <summary>
