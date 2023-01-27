@@ -711,6 +711,7 @@
 
             void _SetValue (string _value)
             {
+                _value = _value.Replace("\"", "\\\"");
                 if (target.IsValue)
                 {
                     target.Value = _value;
