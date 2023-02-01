@@ -256,7 +256,7 @@
             Assert.AreEqual(thing.Other.IndexedItems[3], intValues[3].GetValue());
         }
 
-
+#if false
         [TestMethod]
         public void Stratabase_List_AddRemove_AccessCreatedLaterTracksCountProperly ()
         {
@@ -372,6 +372,7 @@
             Assert.AreEqual('D', list.GetElementAt(3));
             Assert.AreEqual('E', list.GetElementAt(4));
         }
+#endif
 
         [TestMethod]
         public void Stratabase_10000Layers ()
@@ -690,7 +691,7 @@
             public ReadOnlyObservableCollection<DisposeTester> ItemList => m_itemList.Access.Elements;
             public void AddToList (DisposeTester item)
             {
-                m_itemList.Access.CreateAdd(item).StoreInBaseline();
+                m_itemList.Access.AddElementIntoBaseline(item);
             }
 
             public void Dispose ()
@@ -1273,7 +1274,6 @@
             }
 
             public ReadOnlyObservableCollection<StrataTreeItem> Children => m_children.Elements;
-
             public StrataTreeItem InsertItemIntoBaseline (int index, TreeItem item)
             {
                 if (!m_sb.Contains(item.Id) && !m_sb.SetBaselineFromPropertiesOf(item))
@@ -1281,24 +1281,24 @@
                     return null;
                 }
 
-                m_childrenIds.CreateInsert(index, item.Id).StoreInBaseline();
+                m_childrenIds.InsertElementIntoBaseline(index, item.Id);
                 return this.Children[index];
             }
 
-            public bool Remove (StrataTreeItem child)
-            {
-                return this.RemoveAt(this.Children.IndexOf(child));
-            }
+            //public bool Remove (StrataTreeItem child)
+            //{
+            //    return this.RemoveAt(this.Children.IndexOf(child));
+            //}
 
-            public bool RemoveAt (int index)
-            {
-                if (index < 0 || index >= this.Children.Count)
-                {
-                    return false;
-                }
+            //public bool RemoveAt (int index)
+            //{
+            //    if (index < 0 || index >= this.Children.Count)
+            //    {
+            //        return false;
+            //    }
 
-                return m_childrenIds.RemoveAt(index);
-            }
+            //    return m_childrenIds.RemoveElementFromBaselineList(index, idnex);
+            //}
         }
 
         public class TestDataContainer

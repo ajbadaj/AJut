@@ -7,8 +7,12 @@
     /// </summary>
     public abstract class StrataPropertyAccessBase<T> : IStrataPropertyAccess
     {
+        protected const int kUnsetLayerIndex = -2;
+        protected const int kBaselineLayerIndex = -1;
+
         private bool m_isBaselineSet;
         private bool m_isSet;
+        private int m_activeLayerIndex = kUnsetLayerIndex;
 
         // Invalid base constructor
         internal protected StrataPropertyAccessBase () { }
@@ -78,8 +82,23 @@
             }
         }
 
-        public int ActiveLayerIndex { get; protected set; } = -2;
-        public bool IsActiveLayerBaseline => this.ActiveLayerIndex == -1;
+        public int ActiveLayerIndex
+        {
+            get => m_activeLayerIndex;
+            protected set
+            {
+                int former = m_activeLayerIndex;
+                if (m_activeLayerIndex != value)
+                {
+                    m_activeLayerIndex = value;
+                    this.OnActiveLayerChanged(former);
+                }
+            }
+        }
+
+        protected virtual void OnActiveLayerChanged (int formerActiveLayer) { }
+
+        public bool IsActiveLayerBaseline => this.ActiveLayerIndex == kBaselineLayerIndex;
 
         internal Stratabase.ObjectDataAccessManager ODAM { get; private set; }
         
@@ -112,20 +131,23 @@
             if (e.IsBaseline)
             {
                 this.IsBaselineSet = true;
+
+                // If it's already the baseline layer, then we just need to trigger the value has changed
+                if (this.ActiveLayerIndex == kBaselineLayerIndex)
+                {
+                    this.TriggerValueChanged();
+                }
+                // If it's unset, then we need to move to the baseline layer and trigger value changed
+                else if (this.ActiveLayerIndex == kUnsetLayerIndex)
+                {
+                    this.ActiveLayerIndex = kBaselineLayerIndex;
+                    this.TriggerValueChanged();
+                }
+
                 this.OnBaselineLayerChanged(
                         e.OldData is T oldValue ? oldValue : default,
                         e.NewData is T newValue ? newValue : default
                 );
-
-                if (this.ActiveLayerIndex < -1)
-                {
-                    this.ActiveLayerIndex = -1;
-                    this.TriggerValueChanged();
-                }
-                else if (this.ActiveLayerIndex < 0)
-                {
-                    this.TriggerValueChanged();
-                }
             }
             else
             {
