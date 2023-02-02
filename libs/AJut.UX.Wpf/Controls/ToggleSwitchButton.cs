@@ -13,6 +13,7 @@
     using System.Windows.Documents;
     using System.Windows.Input;
     using System.Windows.Media;
+    using System.Windows.Media.Effects;
     using System.Windows.Media.Imaging;
     using System.Windows.Navigation;
     using System.Windows.Shapes;
@@ -57,6 +58,8 @@
 
         private Panel PART_SwitchHolder { get; set; }
 
+        // ===========================[ Main Properties ]==================================
+
         public static readonly DependencyProperty IsCheckedProperty = DPUtils.Register(_ => _.IsChecked, (d, e) => d.ResetCalculations());
         public bool IsChecked
         {
@@ -88,13 +91,6 @@
         // ===========================[ Style Indicators ]============================
 
         // ========== High Level ==========
-
-        public static readonly DependencyProperty DisplayOrientationProperty = DPUtils.Register(_ => _.DisplayOrientation);
-        public Orientation DisplayOrientation
-        {
-            get => (Orientation)this.GetValue(DisplayOrientationProperty);
-            set => this.SetValue(DisplayOrientationProperty, value);
-        }
 
         public static readonly DependencyProperty SwitchBorderBrushProperty = DPUtils.Register(_ => _.SwitchBorderBrush);
         public Brush SwitchBorderBrush
@@ -146,6 +142,12 @@
             set => this.SetValue(SwitchSizingPercentProperty, value);
         }
 
+        public static readonly DependencyProperty SwitchPaddingProperty = DPUtils.Register(_ => _.SwitchPadding);
+        public Thickness SwitchPadding
+        {
+            get => (Thickness)this.GetValue(SwitchPaddingProperty);
+            set => this.SetValue(SwitchPaddingProperty, value);
+        }
 
         public static readonly DependencyProperty InsetElementHorizontalAlignmentProperty = DPUtils.Register(_ => _.InsetElementHorizontalAlignment);
         public HorizontalAlignment InsetElementHorizontalAlignment
@@ -159,6 +161,20 @@
         {
             get => (VerticalAlignment)this.GetValue(InsetElementVerticalAlignmentProperty);
             set => this.SetValue(InsetElementVerticalAlignmentProperty, value);
+        }
+
+        public static readonly DependencyProperty BorderCornerRadiusProperty = DPUtils.Register(_ => _.BorderCornerRadius);
+        public CornerRadius BorderCornerRadius
+        {
+            get => (CornerRadius)this.GetValue(BorderCornerRadiusProperty);
+            set => this.SetValue(BorderCornerRadiusProperty, value);
+        }
+
+        public static readonly DependencyProperty SwitchEffectProperty = DPUtils.Register(_ => _.SwitchEffect);
+        public Effect SwitchEffect
+        {
+            get => (Effect)this.GetValue(SwitchEffectProperty);
+            set => this.SetValue(SwitchEffectProperty, value);
         }
 
         // ========== Brushes: True ==========
@@ -275,69 +291,20 @@
             double switchAreaWidth = this.PART_SwitchHolder?.ActualWidth ?? 0;
             double switchAreaHeight = this.PART_SwitchHolder?.ActualHeight ?? 0;
 
-            if (this.DisplayOrientation == Orientation.Horizontal)
-            {
-                this.CalculatedColumnSpan = 1;
-                this.CalculatedRowSpan = 3;
+            this.CalculatedColumnSpan = 1;
+            this.CalculatedRowSpan = 3;
 
-                this.CalculatedAnteriorRow = 0;
-                this.CalculatedAnteriorColumn = 0;
+            this.CalculatedAnteriorRow = 0;
+            this.CalculatedAnteriorColumn = 0;
 
-                this.CalculatedPosteriorRow = 0;
-                this.CalculatedPosteriorColumn = 2;
+            this.CalculatedPosteriorRow = 0;
+            this.CalculatedPosteriorColumn = 2;
 
-                this.CalculatedSwitchWidth = switchAreaWidth * this.SwitchSizingPercent;
-                this.CalculatedSwitchHeight = switchAreaHeight;
+            this.CalculatedSwitchWidth = switchAreaWidth * this.SwitchSizingPercent;
+            this.CalculatedSwitchHeight = switchAreaHeight;
 
-                this.CalculatedSwitchLeft = this.IsChecked ? switchAreaWidth - this.CalculatedSwitchWidth : 0;
-                this.CalculatedSwitchTop = 0;
-            }
-            else
-            {
-                this.CalculatedColumnSpan = 3;
-                this.CalculatedRowSpan = 1;
-
-                this.CalculatedAnteriorRow = 2;
-                this.CalculatedAnteriorColumn = 0;
-
-                this.CalculatedPosteriorRow = 0;
-                this.CalculatedPosteriorColumn = 0;
-
-                this.CalculatedSwitchWidth = switchAreaWidth;
-                this.CalculatedSwitchHeight = switchAreaHeight * this.SwitchSizingPercent;
-
-                this.CalculatedSwitchLeft = 0;
-                this.CalculatedSwitchTop = this.IsChecked ? switchAreaHeight - this.CalculatedSwitchWidth : 0;
-            }
+            this.CalculatedSwitchLeft = this.IsChecked ? switchAreaWidth - this.CalculatedSwitchWidth : 0;
+            this.CalculatedSwitchTop = 0;
         }
-
-        //private void HandleIsCheckedChanged (bool newValue)
-        //{
-        //    //this.CalculatedButtonDockSide = this.CalculateButtonPosition(newValue);
-        //}
-
-
-        //private void OnIsAnteriorPositionFalseStateChanged ()
-        //{
-        //    this.CalculatedButtonDockSide = this.CalculateButtonPosition(this.IsChecked);
-        //    this.CalculatedInsetFalseLabelDockSide = this.CalculateButtonPosition(true);
-        //    this.CalculatedInsetTrueLabelDockSide = this.CalculateButtonPosition(false);
-        //}
-
-        //private Dock CalculateButtonPosition (bool on)
-        //{
-        //    if (on)
-        //    {
-        //        return this.DisplayOrientation == Orientation.Horizontal ?
-        //                            (this.IsAnteriorPositionFalseState ? Dock.Right : Dock.Left)
-        //                            : (this.IsAnteriorPositionFalseState ? Dock.Top : Dock.Bottom);
-        //    }
-        //    else
-        //    {
-        //        return this.DisplayOrientation == Orientation.Horizontal ?
-        //                            (this.IsAnteriorPositionFalseState ? Dock.Left : Dock.Right)
-        //                            : (this.IsAnteriorPositionFalseState ? Dock.Bottom : Dock.Top);
-        //    }
-        //}
     }
 }

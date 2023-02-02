@@ -9,7 +9,19 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800"
              x:Name="Self">
-    <Grid>
-        <ajut:ToggleSwitchButton HorizontalAlignment="Left" VerticalAlignment="Top" SwitchSizingPercent="0.5" SwitchBorderCornerRadius="10" ajut_ap:BorderXTA.CornerRadius="15"/>
-    </Grid>
+    <StackPanel>
+        <ajut:ToggleSwitchButton HorizontalAlignment="Left" VerticalAlignment="Top"/>
+
+        <ajut:ToggleSwitchButton HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,30,0,0"
+                                 Width="100" Height="40"
+                                 SwitchPadding="-2,-2,-2,-4" SwitchBorderCornerRadius="1"
+                                 BorderCornerRadius="2" Padding="10,3"
+                                 IsChecked="{Binding ElementName=CB, Path=IsChecked,Mode=TwoWay}">
+            <ajut:ToggleSwitchButton.SwitchEffect>
+                <DropShadowEffect Direction="270" BlurRadius="9" ShadowDepth="3" Opacity="0.7"/>
+            </ajut:ToggleSwitchButton.SwitchEffect>
+        </ajut:ToggleSwitchButton>
+
+        <CheckBox x:Name="CB" Content="Checkbox version for binding testing" Margin="0,50,0,0"/>
+    </StackPanel>
 </UserControl>
