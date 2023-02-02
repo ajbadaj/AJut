@@ -305,7 +305,6 @@
 
         <Setter Property="ForegroundWhenTrue" Value="{DynamicResource AJut_Brush_HighContrastText}"/>
 
-        <!--<Setter Property="BackgroundWhenTrue" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>-->
         <Setter Property="BorderBrushWhenTrue" Value="{DynamicResource AJut_Brush_PrimaryHighlightDark}"/>
         <Setter Property="BackgroundWhenTrue">
             <Setter.Value>

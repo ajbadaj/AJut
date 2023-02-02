@@ -1,25 +1,14 @@
 ﻿namespace AJut.UX.Controls
 {
-    using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Controls.Primitives;
-    using System.Windows.Data;
-    using System.Windows.Documents;
-    using System.Windows.Input;
     using System.Windows.Media;
     using System.Windows.Media.Effects;
-    using System.Windows.Media.Imaging;
-    using System.Windows.Navigation;
-    using System.Windows.Shapes;
     using DPUtils = AJut.UX.DPUtils<ToggleSwitchButton>;
 
-    [TemplatePart(Name=nameof(PART_SwitchHolder), Type=typeof(Panel))]
+    [TemplatePart(Name = nameof(PART_SwitchHolder), Type = typeof(Panel))]
     public class ToggleSwitchButton : ButtonBase
     {
         static ToggleSwitchButton ()
@@ -27,7 +16,7 @@
             DefaultStyleKeyProperty.OverrideMetadata(typeof(ToggleSwitchButton), new FrameworkPropertyMetadata(typeof(ToggleSwitchButton)));
         }
 
-        public ToggleSwitchButton()
+        public ToggleSwitchButton ()
         {
             this.Click += _OnClick;
 
@@ -135,7 +124,7 @@
             set => this.SetValue(SwitchBackgroundHoverProperty, value);
         }
 
-        public static readonly DependencyProperty SwitchSizingPercentProperty = DPUtils.Register(_ => _.SwitchSizingPercent, (d,_)=>d.ResetCalculations());
+        public static readonly DependencyProperty SwitchSizingPercentProperty = DPUtils.Register(_ => _.SwitchSizingPercent, (d, _) => d.ResetCalculations());
         public double SwitchSizingPercent
         {
             get => (double)this.GetValue(SwitchSizingPercentProperty);
