@@ -157,6 +157,9 @@
         <TabItem Header="Svg">
             <ctrls:SvgControlExample />
         </TabItem>
+        <TabItem Header="ToggleSwitchButton">
+            <ctrls:ToggleSwitchButtonExample Margin="10"/>
+        </TabItem>
         <TabItem Header="ToggleStrip">
             <ctrls:ToggleStripExampleDisplay Margin="10"/>
         </TabItem>

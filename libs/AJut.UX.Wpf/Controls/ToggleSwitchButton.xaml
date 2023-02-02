@@ -1,0 +1,122 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ctrls="clr-namespace:AJut.UX.Controls"
+                    xmlns:ajut="clr-namespace:AJut.UX"
+                    xmlns:ajconv="clr-namespace:AJut.UX.Converters"
+                    xmlns:ap="clr-namespace:AJut.UX.AttachedProperties"
+                    xmlns:local="clr-namespace:AJut.UX.Controls"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+    <Style TargetType="{x:Type local:ToggleSwitchButton}">
+        <Setter Property="InsetLabelTrue" Value="ON"/>
+        <Setter Property="InsetLabelFalse" Value="OFF"/>
+
+        <Setter Property="SwitchSizingPercent" Value="0.45"/>
+        <Setter Property="Padding" Value="7,3"/>
+
+        <Setter Property="InsetElementHorizontalAlignment" Value="Center"/>
+        <Setter Property="InsetElementVerticalAlignment" Value="Center"/>
+
+        <Setter Property="Background" Value="#CCC"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="Black"/>
+        <Setter Property="ap:BorderXTA.CornerRadius" Value="3"/>
+        <Setter Property="BorderCornerRadius" Value="{Binding RelativeSource={RelativeSource Self}, Path=(ap:BorderXTA.CornerRadius), Mode=OneWay}"/>
+
+        <Setter Property="ForegroundWhenTrue" Value="White"/>
+
+        <Setter Property="BackgroundWhenTrue" Value="#1353FC"/>
+        <Setter Property="BorderBrushWhenTrue" Value="#1353FC"/>
+
+        <Setter Property="SwitchBackground" Value="#FFF"/>
+        <Setter Property="SwitchBorderBrush" Value="Black"/>
+        <Setter Property="SwitchBorderThickness" Value="1"/>
+        <Setter Property="SwitchBorderCornerRadius" Value="2"/>
+        <Setter Property="SwitchBackgroundHover" Value="White"/>
+        <Setter Property="SwitchBorderBrushHover" Value="#333"/>
+        <Setter Property="SwitchPadding" Value="-2"/>
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:ToggleSwitchButton}">
+                    <Border Background="{ajut:TemplateBinding Background}"
+                            BorderBrush="{ajut:TemplateBinding BorderBrush}"
+                            BorderThickness="{ajut:TemplateBinding BorderThickness}"
+                            CornerRadius="{ajut:TemplateBinding BorderCornerRadius}">
+                        <Grid>
+                            <Grid Margin="{TemplateBinding Padding}">
+                                <Grid.Resources>
+                                    <DataTemplate DataType="{x:Type sys:String}">
+                                        <Grid>
+                                            <Grid.Style>
+                                                <Style TargetType="{x:Type Grid}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ToggleSwitchButton}}, Path=IsChecked}" Value="False">
+                                                            <Setter Property="Opacity" Value="0.5"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Grid.Style>
+                                            <TextBlock Text="{Binding}" FontWeight="DemiBold" Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ToggleSwitchButton}}, Path=Foreground}"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </Grid.Resources>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="10"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="10"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <ContentControl Content="{TemplateBinding InsetLabelTrue}" ContentTemplate="{TemplateBinding InsetLabelTemplate}"
+                                                Grid.Row="{ajut:TemplateBinding Path=CalculatedAnteriorRow}" Grid.Column="{ajut:TemplateBinding Path=CalculatedAnteriorColumn}"
+                                                Grid.RowSpan="{ajut:TemplateBinding Path=CalculatedRowSpan}" Grid.ColumnSpan="{ajut:TemplateBinding Path=CalculatedColumnSpan}"
+                                                HorizontalAlignment="{TemplateBinding InsetElementHorizontalAlignment}" VerticalAlignment="{TemplateBinding InsetElementVerticalAlignment}"
+                                                Visibility="{ajut:TemplateBinding Path=IsChecked, Converter={ajconv:BooleanToVisibilityConverter TrueValue=Visible, FalseValue=Hidden}}"/>
+                                <ContentControl Content="{TemplateBinding InsetLabelFalse}" ContentTemplate="{TemplateBinding InsetLabelTemplate}"
+                                                Grid.Row="{ajut:TemplateBinding Path=CalculatedPosteriorRow}" Grid.Column="{ajut:TemplateBinding Path=CalculatedPosteriorColumn}"
+                                                Grid.ColumnSpan="{ajut:TemplateBinding Path=CalculatedColumnSpan}" Grid.RowSpan="{ajut:TemplateBinding Path=CalculatedRowSpan}"
+                                                HorizontalAlignment="{TemplateBinding InsetElementHorizontalAlignment}" VerticalAlignment="{TemplateBinding InsetElementVerticalAlignment}"
+                                                Visibility="{ajut:TemplateBinding Path=IsChecked, Converter={ajconv:BooleanToVisibilityConverter TrueValue=Hidden, FalseValue=Visible}}"/>
+                            </Grid>
+                            <Grid x:Name="PART_SwitchHolder" Margin="{TemplateBinding SwitchPadding}">
+                                <Canvas HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="False">
+                                    <Border x:Name="PART_Switch" CornerRadius="{ajut:TemplateBinding Path=SwitchBorderCornerRadius, Mode=OneWay}"
+                                            Canvas.Left="{TemplateBinding CalculatedSwitchLeft}" Canvas.Top="{TemplateBinding CalculatedSwitchTop}"
+                                            Width="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleSwitchButton}, Path=CalculatedSwitchWidth, Mode=OneWay}" 
+                                            Height="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleSwitchButton}, Path=CalculatedSwitchHeight, Mode=OneWay}"
+                                            BorderThickness="{TemplateBinding SwitchBorderThickness}"
+                                            DockPanel.Dock="{ajut:TemplateBinding CalculatedButtonDockSide}"
+                                            Effect="{ajut:TemplateBinding SwitchEffect}">
+                                        <Border.Style>
+                                            <Style TargetType="{x:Type Border}">
+                                                <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ToggleSwitchButton}}, Path=SwitchBackground}"/>
+                                                <Setter Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ToggleSwitchButton}}, Path=SwitchBorderBrush}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ToggleSwitchButton}}, Path=IsMouseOver}" Value="True">
+                                                        <Setter Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ToggleSwitchButton}}, Path=SwitchBorderBrushHover}"/>
+                                                        <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ToggleSwitchButton}}, Path=SwitchBackgroundHover}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                    </Border>
+                                </Canvas>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource Self}, Path=BorderBrushWhenTrue}"/>
+                            <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource Self}, Path=BackgroundWhenTrue}"/>
+                            <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource Self}, Path=ForegroundWhenTrue}"/>
+                            <Setter Property="TextElement.Foreground" Value="{Binding RelativeSource={RelativeSource Self}, Path=ForegroundWhenTrue}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

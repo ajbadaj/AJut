@@ -106,6 +106,9 @@
     <Compile Update="Controls\ToggleStrip.cs">
       <DependentUpon>ToggleStrip.xaml</DependentUpon>
     </Compile>
+	  <Compile Update="Controls\ToggleSwitchButton.cs">
+		  <DependentUpon>ToggleSwitchButton.xaml</DependentUpon>
+	  </Compile>
     <Compile Update="Controls\UIElementRepeater.cs">
       <DependentUpon>UIElementRepeater.xaml</DependentUpon>
     </Compile>
