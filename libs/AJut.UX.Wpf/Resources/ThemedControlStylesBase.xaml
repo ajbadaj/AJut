@@ -298,6 +298,36 @@
         <Setter Property="OptionButtonStyle" Value="{DynamicResource AJut_Style_MessageBoxButton}"/>
     </Style>
 
+    <Style TargetType="{x:Type ajut_ctrls:ToggleSwitchButton}">
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_InnerPanelBackground}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+
+        <Setter Property="ForegroundWhenTrue" Value="{DynamicResource AJut_Brush_HighContrastText}"/>
+
+        <!--<Setter Property="BackgroundWhenTrue" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>-->
+        <Setter Property="BorderBrushWhenTrue" Value="{DynamicResource AJut_Brush_PrimaryHighlightDark}"/>
+        <Setter Property="BackgroundWhenTrue">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
+                    <GradientStop Offset="0.00" Color="{DynamicResource AJut_Color_PrimaryHighlightDark}" />
+                    <GradientStop Offset="0.25" Color="{DynamicResource AJut_Color_PrimaryHighlightDesat}" />
+                    <GradientStop Offset="0.50" Color="{DynamicResource AJut_Color_PrimaryHighlight}" />
+                    <GradientStop Offset="0.75" Color="{DynamicResource AJut_Color_PrimaryHighlight}" />
+                    <GradientStop Offset="1.00" Color="{DynamicResource AJut_Color_PrimaryHighlightDesat}" />
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+
+        <Setter Property="SwitchBackground" Value="{DynamicResource AJut_Brush_ControlBackground}"/>
+        <Setter Property="SwitchBorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="SwitchBorderThickness" Value="1"/>
+        <Setter Property="SwitchBorderCornerRadius" Value="2"/>
+        <Setter Property="SwitchBackgroundHover" Value="{DynamicResource AJut_Brush_ControlBackgroundHover}"/>
+        <Setter Property="SwitchBorderBrushHover" Value="{DynamicResource AJut_Brush_BorderCommonHover}"/>
+        <Setter Property="SwitchPadding" Value="-2"/>
+    </Style>
+
     <Style TargetType="{x:Type TextBlock}" x:Key="AJut_SymbolText">
         <Setter Property="FontFamily" Value="{DynamicResource AJut_Font_SymbolGlyphText}"/>
         <Setter Property="FontSize" Value="20"/>

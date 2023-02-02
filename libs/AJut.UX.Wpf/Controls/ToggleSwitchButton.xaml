@@ -4,7 +4,8 @@
                     xmlns:ajut="clr-namespace:AJut.UX"
                     xmlns:ajconv="clr-namespace:AJut.UX.Converters"
                     xmlns:ap="clr-namespace:AJut.UX.AttachedProperties"
-                    xmlns:local="clr-namespace:AJut.UX.Controls">
+                    xmlns:local="clr-namespace:AJut.UX.Controls"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
     <Style TargetType="{x:Type local:ToggleSwitchButton}">
         <Setter Property="InsetLabelTrue" Value="ON"/>
         <Setter Property="InsetLabelFalse" Value="OFF"/>
@@ -43,6 +44,22 @@
                             CornerRadius="{ajut:TemplateBinding BorderCornerRadius}">
                         <Grid>
                             <Grid Margin="{TemplateBinding Padding}">
+                                <Grid.Resources>
+                                    <DataTemplate DataType="{x:Type sys:String}">
+                                        <Grid>
+                                            <Grid.Style>
+                                                <Style TargetType="{x:Type Grid}">
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ToggleSwitchButton}}, Path=IsChecked}" Value="False">
+                                                            <Setter Property="Opacity" Value="0.5"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Grid.Style>
+                                            <TextBlock Text="{Binding}" FontWeight="DemiBold" Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ToggleSwitchButton}}, Path=Foreground}"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </Grid.Resources>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="10"/>
@@ -90,17 +107,16 @@
                             </Grid>
                         </Grid>
                     </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource Self}, Path=BorderBrushWhenTrue}"/>
+                            <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource Self}, Path=BackgroundWhenTrue}"/>
+                            <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource Self}, Path=ForegroundWhenTrue}"/>
+                            <Setter Property="TextElement.Foreground" Value="{Binding RelativeSource={RelativeSource Self}, Path=ForegroundWhenTrue}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
-        <Style.Triggers>
-            <Trigger Property="IsChecked" Value="True">
-                <Setter Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource Self}, Path=BorderBrushWhenTrue}"/>
-                <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource Self}, Path=BackgroundWhenTrue}"/>
-                <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource Self}, Path=ForegroundWhenTrue}"/>
-                <Setter Property="TextElement.Foreground" Value="{Binding RelativeSource={RelativeSource Self}, Path=ForegroundWhenTrue}"/>
-            </Trigger>
-            
-        </Style.Triggers>
     </Style>
 </ResourceDictionary>
