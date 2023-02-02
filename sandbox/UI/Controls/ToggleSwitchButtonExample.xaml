@@ -1,0 +1,15 @@
+﻿<UserControl x:Class="TheAJutShowRoom.UI.Controls.ToggleSwitchButtonExample"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:TheAJutShowRoom.UI.Controls"
+             xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
+             xmlns:ajut_ap="clr-namespace:AJut.UX.AttachedProperties;assembly=AJut.UX.Wpf"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800"
+             x:Name="Self">
+    <Grid>
+        <ajut:ToggleSwitchButton HorizontalAlignment="Left" VerticalAlignment="Top" SwitchSizingPercent="0.5" SwitchBorderCornerRadius="10" ajut_ap:BorderXTA.CornerRadius="15"/>
+    </Grid>
+</UserControl>
