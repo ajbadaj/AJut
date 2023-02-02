@@ -312,7 +312,6 @@
                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
                     <GradientStop Offset="0.00" Color="{DynamicResource AJut_Color_PrimaryHighlightDark}" />
                     <GradientStop Offset="0.25" Color="{DynamicResource AJut_Color_PrimaryHighlightDesat}" />
-                    <GradientStop Offset="0.50" Color="{DynamicResource AJut_Color_PrimaryHighlight}" />
                     <GradientStop Offset="0.75" Color="{DynamicResource AJut_Color_PrimaryHighlight}" />
                     <GradientStop Offset="1.00" Color="{DynamicResource AJut_Color_PrimaryHighlightDesat}" />
                 </LinearGradientBrush>
