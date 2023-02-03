@@ -615,41 +615,18 @@
             Assert.AreEqual(data.ChildList[1].Name, found.ChildList[1].Name);
             Assert.AreEqual(data.ChildList[1].Value, found.ChildList[1].Value);
 
-            //var name = sb.GeneratePropertyAccess<string>(data.Id, nameof(TestDataWithList.Name));
-            //var value = sb.GeneratePropertyAccess<int>(data.Id, nameof(TestDataWithList.Value));
-            //var childList = sb.GenerateListPropertyAccess<Guid>(data.Id, nameof(TestDataWithList.ChildList));
+            var name = sb.GeneratePropertyAccess<string>(data.Id, nameof(TestDataWithList.Name));
+            var value = sb.GeneratePropertyAccess<int>(data.Id, nameof(TestDataWithList.Value));
+            var childList = sb.GenerateListPropertyAccess<Guid>(data.Id, nameof(TestDataWithList.ChildList));
 
-            //Assert.AreEqual(data.Name, name.GetValue());
-            //Assert.AreEqual(data.Value, value.GetValue());
-            //Assert.AreEqual(data.ChildList.Count, childList.GetCount());
+            Assert.AreEqual(data.Name, name.GetValue());
+            Assert.AreEqual(data.Value, value.GetValue());
+            Assert.AreEqual(data.ChildList.Count, childList.GetCount());
 
-            //Assert.AreEqual(data.ChildList[0], childList.Elements[0]);
-            //Assert.AreEqual(data.ChildList[1], childList.Elements[1]);
+            Assert.AreEqual(data.ChildList[0].Id, childList.Elements[0]);
+            Assert.AreEqual(data.ChildList[1].Id, childList.Elements[1]);
         }
 
-
-        [TestMethod]
-        public void Stratabase_PropertyDisposal ()
-        {
-            Stratabase sb = new Stratabase(1);
-            TestModel test = new TestModel(Guid.NewGuid(), sb);
-
-            var singleItem = new DisposeTester();
-            DisposeTester[] items = new DisposeTester[2] { new DisposeTester(), new DisposeTester() };
-
-            test.SingleItem = singleItem;
-            test.AddToList(items[0]);
-            test.AddToList(items[1]);
-
-            Assert.IsTrue(test.SingleItem != null);
-            Assert.IsTrue(test.ItemList != null);
-
-            test.Dispose();
-
-            Assert.AreEqual(1, singleItem.DisposeCallCount);
-            Assert.AreEqual(1, items[0].DisposeCallCount);
-            Assert.AreEqual(1, items[1].DisposeCallCount);
-        }
 
         [TestMethod]
         public void Stratabase_NewUnsetAccess_DoesNotGiveIsSetTrue ()

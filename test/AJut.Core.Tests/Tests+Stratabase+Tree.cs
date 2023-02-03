@@ -1,15 +1,9 @@
-﻿namespace AJut.Core.Tests
+﻿namespace AJut.Core.UnitTests
 {
     using System;
-    using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Linq;
-    using System.Reflection;
-    using System.Text;
-    using System.Threading.Tasks;
     using AJut.Storage;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class Tests_Stratabase_Tree
@@ -52,48 +46,20 @@
             // Nuking that override layer
             tree.Root.ChildrenAccess.ObliterateLayer(kSecondaryOverrideLayer);
             Assert.AreEqual(kBasicOverrideLayer, tree.Root.ChildrenAccess.ActiveLayerIndex);
-            Assert.AreEqual(9, tree.Root.Children.Count);
+            Assert.AreEqual(10, tree.Root.Children.Count);
 
 
             // Copy elements and create new layer
             tree.Root.ChildrenAccess.ResetLayerByCopyingElements(kBasicOverrideLayer, kSecondaryOverrideLayer);
             Assert.AreEqual(kSecondaryOverrideLayer, tree.Root.ChildrenAccess.ActiveLayerIndex);
-            Assert.AreEqual(9, tree.Root.Children.Count);
-
-            //#error Update on the below #error, the above is about done in describing what I want the interrface to look like and work
-
-            //#error This is a big problem, how to rationalize insertions across layers. 
-            // What happens if you add to the baseline?
-            // What happens if you add to override 1, override 0, then override 2?
-            //
-            // My current thinking is to limit list composition to a single layer,
-            //  that would mean if I had 3 elements in baseline, and I added one to override #6
-            //  then the collection would contain 1 element. Then make special list helpers
-            //  to copy overwrite from layer to baseline, from baseline to layer, from layer to layer
-            //  so then you would do:
-            //      list.Access.CopyOverwriteList(0, 5)
-            //      list.Access.Insert(5, 2, new Obj())
-            //  That would be copy the full state from layer override 0, clear and reset layer override 5
-            //  then insert a new Obj into layer 5's version at index 2.
-            //  Similarly:
-            //      list.Access.CopyOverwriteListFromBaseline(5)
-            //          Baseline → 5
-            //      list.Access.CopyOverwriteToBaselineFrom(5)
-            //          5 → Baseline
-            //
-            //  Also need TearDownOverrideList(5), so if there were elements described in baseline, 0, and 5, then
-            //  that teardown would destroy all 
-            //
-            //  This also means we don't ever need the insertion routine. We just store elements either directly
-            //      or as guid ids that get translated into sub objects. The key is, the layers don't blend a final
-            //      result. They are self contained and represent the whole of the list.
+            Assert.AreEqual(10, tree.Root.Children.Count);
         }
 
         public class AnOddStrataTree : StratabaseBackedModel
         {
             private readonly AdaptedProperty<Guid, AnOddStrataTreeItem> m_root;
 
-            public AnOddStrataTree (Stratabase sb) : base (Guid.NewGuid(), sb)
+            public AnOddStrataTree (Stratabase sb) : base(Guid.NewGuid(), sb)
             {
                 m_root = this.GenerateAdaptedProperty<Guid, AnOddStrataTreeItem>(nameof(Root), (sb, value) => new AnOddStrataTreeItem(sb, value));
             }
@@ -159,34 +125,6 @@
             {
                 return this.Name;
             }
-
-            //// Child stuff
-            //public void AddChild (int layer, Guid newElementId)
-            //{
-            //    m_children.Access.AddElementIntoOverrideLayer(layer, newElementId);
-            //}
-
-            //public void InsertChild (int layer, int index, Guid newElementId)
-            //{
-            //    m_children.Access.InsertElementIntoOverrideLayer(layer, index, newElementId);
-            //}
-
-            //public bool RemoveChild (Guid element)
-            //{
-            //    return m_children.Access.RemoveElementFromActiveLayer(element);
-            //}
-
-            //// Name stuff
-            //public void SetOverrideName (int layer, string name)
-            //{
-            //    m_name.Access.SetOverrideValue(layer, name);
-            //}
-
-            //// Tracked ind
-            //public void SetOverrideTrackedInd (int layer, int ind)
-            //{
-            //    m_trackedInd.Access.SetOverrideValue(layer, ind);
-            //}
         }
     }
 }

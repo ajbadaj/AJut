@@ -75,8 +75,16 @@
             base.OnActiveLayerChanged(formerActiveLayer);
             if (this.ActiveLayerIndex != kUnsetLayerIndex)
             {
-                this.IsSet = true;
-                if (this.ODAM.TryGetOverrideValue(this.ActiveLayerIndex, this.PropertyName, out List<TElement> listTracker))
+                if (this.IsActiveLayerBaseline)
+                {
+                    if (this.ODAM.TryGetBaselineValue(this.PropertyName, out List<TElement> listTracker))
+                    {
+                        // TODO: It would be nice to take a more surgical approach
+                        m_currentListCache.Clear();
+                        m_currentListCache.AddEach(listTracker);
+                    }
+                }
+                else if (this.ODAM.TryGetOverrideValue(this.ActiveLayerIndex, this.PropertyName, out List<TElement> listTracker))
                 {
                     // TODO: It would be nice to take a more surgical approach
                     m_currentListCache.Clear();
@@ -88,20 +96,6 @@
         protected override void HandleAdditionalDispose ()
         {
             this.ODAM.LayerListElementsChanged -= this.OnLayerListElementsChanged;
-
-            //if (this.GetBaselineChanges() is ObservableCollection<StratabaseListInsertion<TElement>> baselineCollection)
-            //{
-            //    baselineCollection.CollectionChanged -= this.OnStorageCollectionChanged;
-            //}
-
-            //for (int layerIndex = 0; layerIndex < this.ODAM.SB.OverrideLayerCount; ++layerIndex)
-            //{
-            //    if (this.GetOverrideChanges(layerIndex) is ObservableCollection<StratabaseListInsertion<TElement>> overrideCollection)
-            //    {
-            //        overrideCollection.CollectionChanged -= this.OnStorageCollectionChanged;
-            //    }
-            //}
-
         }
 
         /// <summary>
@@ -109,7 +103,7 @@
         /// and need to create list insertion data, but since the classes are typed that is tricky. Using extension methods to call this indirectly
         /// allows us to more cleanly and in a more unified location, generate the list insertions.
         /// </summary>
-        internal static object GenerateStorageForBaselineListAccess(object[] elements)
+        internal static object GenerateStorageForBaselineListAccess (object[] elements)
         {
             var data = new List<TElement>();
             for (int index = 0; index < elements.Length; ++index)
@@ -217,19 +211,44 @@
         //    return false;
         //}
 
-        public void ResetLayerByCopyingElements (int overrideLayerToCopyFrom, int overrideLayerToCopyTo)
+        public void ResetLayerByCopyingElementsToActive (int overrideLayerToCopyFrom)
         {
 
         }
-
-        public void ResetLayerByCopyingElementsFromBaseline (int overrideLayerToCopyTo)
+        public bool ResetLayerByCopyingElements (int overrideLayerToCopyFrom, int overrideLayerToCopyTo)
         {
+            if (!this.ODAM.TryGetOverrideValue(overrideLayerToCopyFrom, this.PropertyName, out List<TElement> copyFrom))
+            {
+                return false;
+            }
 
+            return this.ODAM.SetOverrideValue(overrideLayerToCopyTo, this.PropertyName, copyFrom);
         }
 
-        public void ResetBaselineByCopyingElementsFrom (int overrideLayerToCopyFrom)
-        {
 
+        public bool ResetLayerByCopyingElementsFromBaselineToActive ()
+        {
+            return this.ResetLayerByCopyingElementsFromBaseline(this.ActiveLayerIndex);
+        }
+
+        public bool ResetLayerByCopyingElementsFromBaseline (int overrideLayerToCopyTo)
+        {
+            if (!this.ODAM.TryGetBaselineValue(this.PropertyName, out List<TElement> copyFrom))
+            {
+                return false;
+            }
+
+            return this.ODAM.SetOverrideValue(overrideLayerToCopyTo, this.PropertyName, copyFrom);
+        }
+
+        public bool ResetBaselineByCopyingElementsFrom (int overrideLayerToCopyFrom)
+        {
+            if (!this.ODAM.TryGetOverrideValue(overrideLayerToCopyFrom, this.PropertyName, out List<TElement> copyFrom))
+            {
+                return false;
+            }
+
+            return this.ODAM.SetBaselineValue(this.PropertyName, copyFrom);
         }
 
 

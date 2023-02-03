@@ -296,12 +296,10 @@
                     // Is it ListAccess backed?
                     Type storedType = storedPropValue.GetType();
                     if (strataListConfig != null
-                        && storedType.IsGenericType && storedType.GetGenericTypeDefinition() == typeof(ObservableCollection<>)
-                        && storedType.GenericTypeArguments[0].IsGenericType
-                        && storedType.GenericTypeArguments[0].GetGenericTypeDefinition() == typeof(List<>))
+                        && storedType.IsGenericType && storedType.GetGenericTypeDefinition() == typeof(List<>))
                     {
                         // Ok it is, now use reflection to generate a StrataPropertyListAccess
-                        Type itemType = storedType.GenericTypeArguments[0].GenericTypeArguments[0];
+                        Type itemType = storedType.GenericTypeArguments[0];
                         var listAccess = (IDisposable)this.InvokeTemplatedMethod(
                             nameof(GenerateListPropertyAccess),
                             itemType, objectId, propPath
