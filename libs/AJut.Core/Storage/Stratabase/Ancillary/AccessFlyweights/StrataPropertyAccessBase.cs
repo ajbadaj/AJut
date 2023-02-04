@@ -145,8 +145,8 @@
                 }
 
                 this.OnBaselineLayerChanged(
-                        e.OldData is T oldValue ? oldValue : default,
-                        e.NewData is T newValue ? newValue : default
+                        e.OldValue is T oldValue ? oldValue : default,
+                        e.NewValue is T newValue ? newValue : default
                 );
             }
             else
@@ -159,8 +159,8 @@
 
                 this.OnOverrideLayerChanged(
                     e.LayerIndex,
-                    e.OldData is T oldValue ? oldValue : default,
-                    e.NewData is T newValue ? newValue : default
+                    e.OldValue is T oldValue ? oldValue : default,
+                    e.NewValue is T newValue ? newValue : default
                 );
             }
         }
@@ -187,8 +187,8 @@
                 _UpdateIsSetAndTopMost();
 
                 this.OnBaselineLayerChanged(
-                    e.OldData is T oldValue ? oldValue : default,
-                    e.NewData is T newValue ? newValue : default
+                    e.OldValue is T oldValue ? oldValue : default,
+                    e.NewValue is T newValue ? newValue : default
                 );
             }
             else
@@ -200,8 +200,8 @@
 
                 this.OnOverrideLayerChanged(
                     e.LayerIndex,
-                    e.OldData is T oldValue ? oldValue : default,
-                    e.NewData is T newValue ? newValue : default
+                    e.OldValue is T oldValue ? oldValue : default,
+                    e.NewValue is T newValue ? newValue : default
                 );
             }
 

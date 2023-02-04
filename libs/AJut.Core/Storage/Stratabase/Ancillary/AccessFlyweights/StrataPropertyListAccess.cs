@@ -22,6 +22,7 @@
             : base(owner, propertyName)
         {
             this.ODAM.LayerListElementsChanged += this.OnLayerListElementsChanged;
+            this.ODAM.LayerListElementsCleared += this.OnLayerListCleared;
             this.ResetElementsFromActive();
             this.Elements = new ReadOnlyObservableCollection<TElement>(m_currentListCache);
         }
@@ -47,16 +48,21 @@
 
         private void OnLayerListElementsChanged (object sender, StratabaseListElementsChangedEventArgs e)
         {
-            if (this.ActiveLayerIndex == kUnsetLayerIndex)
+            if (e.PropertyName != this.PropertyName)
             {
-                this.ActiveLayerIndex = e.WasBaseline ? kBaselineLayerIndex : e.Layer;
+                return;
             }
 
-            if (e.Layer > this.ActiveLayerIndex)
+            if (this.ActiveLayerIndex == kUnsetLayerIndex)
             {
-                this.ActiveLayerIndex = e.Layer;
+                this.ActiveLayerIndex = e.IsBaseline ? kBaselineLayerIndex : e.LayerIndex;
             }
-            else if (e.Layer == this.ActiveLayerIndex)
+
+            if (e.LayerIndex > this.ActiveLayerIndex)
+            {
+                this.ActiveLayerIndex = e.LayerIndex;
+            }
+            else if (e.LayerIndex == this.ActiveLayerIndex)
             {
                 if (e.WasElementAdded)
                 {
@@ -69,6 +75,20 @@
             }
 
             this.TriggerValueChanged();
+        }
+
+        private void OnLayerListCleared (object sender, StratabaseChangeEventArgs e)
+        {
+            if (e.PropertyName != this.PropertyName)
+            {
+                return;
+            }
+
+            if (e.LayerIndex == this.ActiveLayerIndex)
+            {
+                m_currentListCache.Clear();
+                this.TriggerValueChanged();
+            }
         }
 
         protected override void OnActiveLayerChanged (int formerActiveLayer)
@@ -170,43 +190,46 @@
 
         public bool RemoveElementFromBaselineList (TElement element)
         {
-            int index = m_currentListCache.IndexOf(element);
-            if (index != -1)
+            return this.RemoveElementFromBaselineListByIndex(m_currentListCache.IndexOf(element));
+        }
+
+        public bool RemoveElementFromBaselineListByIndex (int elementIndex)
+        {
+            if (elementIndex != -1)
             {
-                return this.ODAM.RemoveElementFromBaselineList(this.PropertyName, index);
+                return this.ODAM.RemoveElementFromBaselineList(this.PropertyName, elementIndex);
             }
 
             return false;
         }
-
         public bool RemoveElementFromOverrideLayerList (int layer, TElement element)
         {
-            int index = m_currentListCache.IndexOf(element);
-            if (index != -1)
+            return this.RemoveElementFromOverrideLayerListByIndex(layer, m_currentListCache.IndexOf(element));
+        }
+
+        public bool RemoveElementFromOverrideLayerListByIndex (int layer, int elementIndex)
+        {
+            if (elementIndex != -1)
             {
-                return this.ODAM.RemoveElementFromOverrideLayerList(layer, this.PropertyName, index);
+                return this.ODAM.RemoveElementFromOverrideLayerList(layer, this.PropertyName, elementIndex);
             }
 
             return false;
         }
 
-        public void OverrideLayerWithListIn (int sourceLayer, int layerToOverride, int startIndex = 0, int endIndex = -1)
+        public bool ResetLayerByCopyingElementsToActive (int layerCopyFrom)
         {
-            throw new NotImplementedException();
+            return this.ResetLayerByCopyingElements(layerCopyFrom, this.ActiveLayerIndex);
         }
 
-        public bool ResetLayerByCopyingElementsToActive (int overrideLayerToCopyFrom)
+        public bool ResetLayerByCopyingElements (int layerCopyFrom, int layerCopyTo)
         {
-            return this.ResetLayerByCopyingElements(overrideLayerToCopyFrom, this.ActiveLayerIndex);
-        }
-        public bool ResetLayerByCopyingElements (int overrideLayerToCopyFrom, int overrideLayerToCopyTo)
-        {
-            if (!this.ODAM.TryGetOverrideValue(overrideLayerToCopyFrom, this.PropertyName, out List<TElement> copyFrom))
+            if (!this.ODAM.TryGetOverrideValue(layerCopyFrom, this.PropertyName, out List<TElement> copyFrom))
             {
                 return false;
             }
 
-            return this.ODAM.SetOverrideValue(overrideLayerToCopyTo, this.PropertyName, copyFrom);
+            return this.ODAM.SetOverrideValue(layerCopyTo, this.PropertyName, copyFrom.ToList());
         }
 
 
@@ -222,7 +245,7 @@
                 return false;
             }
 
-            return this.ODAM.SetOverrideValue(overrideLayerToCopyTo, this.PropertyName, copyFrom);
+            return this.ODAM.SetOverrideValue(overrideLayerToCopyTo, this.PropertyName, copyFrom.ToList());
         }
 
         public bool ResetBaselineByCopyingElementsFrom (int overrideLayerToCopyFrom)
@@ -232,7 +255,7 @@
                 return false;
             }
 
-            return this.ODAM.SetBaselineValue(this.PropertyName, copyFrom);
+            return this.ODAM.SetBaselineValue(this.PropertyName, copyFrom.ToList());
         }
 
 
