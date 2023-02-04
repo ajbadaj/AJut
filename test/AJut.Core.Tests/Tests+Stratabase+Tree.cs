@@ -9,7 +9,7 @@
     public class Tests_Stratabase_Tree
     {
         [TestMethod]
-        public void BasicStrataTreeTest ()
+        public void Stratabase_Tree_ListBasics_EvaluateAccessUsability ()
         {
             const int kStratumCount = 2;
             const int kBasicOverrideLayer = 0;
@@ -20,7 +20,7 @@
             tree.SetRootInBaseline(Guid.NewGuid());
             Assert.IsNotNull(tree.Root);
 
-            tree.Root.ChildrenAccess.AddElementIntoOverrideLayer(kBasicOverrideLayer, Guid.NewGuid());
+            tree.Root.ChildrenAccess.InsertElementIntoOverrideLayer(kBasicOverrideLayer, 0, Guid.NewGuid());
 
             Guid next = Guid.NewGuid();
             Assert.IsTrue(sb.SetBaselinePropertyValue(next, nameof(AnOddStrataTreeItem.TrackedInd), 3));
@@ -105,7 +105,9 @@
             }
 
             public ReadOnlyObservableCollection<AnOddStrataTreeItem> Children => m_children.Value;
+            public AdaptedListProperty<Guid, AnOddStrataTreeItem> ChildrenPropAdapter => m_children;
             public StrataPropertyListAccess<Guid> ChildrenAccess => m_children.Access;
+
             public StrataPropertyValueAccess<string> NameAccess => m_name.Access;
             public StrataPropertyValueAccess<int> TrackerIndexAccess => m_trackedInd.Access;
 
