@@ -1105,6 +1105,49 @@
             Assert.AreEqual(data_b.Foo, test_b.Foo);
         }
 
+        [TestMethod]
+        public void Stratabase_REGRESSION_ThingsWithTwoListsFail ()
+        {
+            ThingWithTwoLists two = new ThingWithTwoLists
+            {
+                Ints = new List<int> { 1, 2, 345 },
+                Strings = new List<string> { "1", "2", "345 but strings!" },
+            };
+
+            Stratabase sb = new Stratabase(1);
+            Assert.IsTrue(sb.SetBaselineFromPropertiesOf(two));
+            StrataPropertyListAccess<int> ints = sb.GenerateListPropertyAccess<int>(two.Id, nameof(ThingWithTwoLists.Ints));
+            Assert.IsNotNull(ints);
+            
+            StrataPropertyListAccess<string> strs = sb.GenerateListPropertyAccess<string>(two.Id, nameof(ThingWithTwoLists.Strings));
+            Assert.IsNotNull(strs);
+
+            sb.InsertElementIntoBaselineList(two.Id, nameof(ThingWithTwoLists.Ints), 0, 0);
+            Assert.AreEqual(4, ints.Elements.Count);
+            Assert.AreEqual(0, ints.Elements[0]);
+            Assert.AreEqual(two.Ints[0], ints.Elements[1]);
+            Assert.AreEqual(two.Ints[1], ints.Elements[2]);
+            Assert.AreEqual(two.Ints[2], ints.Elements[3]);
+
+            Assert.AreEqual(3, strs.Elements.Count);
+            Assert.AreEqual(two.Strings[0], strs.Elements[0]);
+            Assert.AreEqual(two.Strings[1], strs.Elements[1]);
+            Assert.AreEqual(two.Strings[2], strs.Elements[2]);
+
+            sb.InsertElementIntoBaselineList(two.Id, nameof(ThingWithTwoLists.Strings), 0, "Zero");
+            Assert.AreEqual(4, ints.Elements.Count);
+            Assert.AreEqual(0, ints.Elements[0]);
+            Assert.AreEqual(two.Ints[0], ints.Elements[1]);
+            Assert.AreEqual(two.Ints[1], ints.Elements[2]);
+            Assert.AreEqual(two.Ints[2], ints.Elements[3]);
+
+            Assert.AreEqual(4, strs.Elements.Count);
+            Assert.AreEqual("Zero", strs.Elements[0]);
+            Assert.AreEqual(two.Strings[0], strs.Elements[1]);
+            Assert.AreEqual(two.Strings[1], strs.Elements[2]);
+            Assert.AreEqual(two.Strings[2], strs.Elements[3]);
+        }
+
         public class DotClassStore
         {
             [StratabaseId]
@@ -1391,5 +1434,14 @@
             public const string kTypeId = "DerivedTypedItem";
             public int Bat { get; set; }
         }
+
+        public class ThingWithTwoLists
+        {
+            [StratabaseId]
+            public Guid Id { get; } = Guid.NewGuid();
+            public List<int> Ints { get; set; } = new List<int>();
+            public List<string> Strings { get; set; } = new List<string>();
+        }
+
     }
 }

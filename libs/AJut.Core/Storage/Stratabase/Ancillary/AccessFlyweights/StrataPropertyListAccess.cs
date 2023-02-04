@@ -22,6 +22,7 @@
             : base(owner, propertyName)
         {
             this.ODAM.LayerListElementsChanged += this.OnLayerListElementsChanged;
+            this.ODAM.LayerListElementsCleared += this.OnLayerListCleared;
             this.ResetElementsFromActive();
             this.Elements = new ReadOnlyObservableCollection<TElement>(m_currentListCache);
         }
@@ -47,16 +48,21 @@
 
         private void OnLayerListElementsChanged (object sender, StratabaseListElementsChangedEventArgs e)
         {
-            if (this.ActiveLayerIndex == kUnsetLayerIndex)
+            if (e.PropertyName != this.PropertyName)
             {
-                this.ActiveLayerIndex = e.WasBaseline ? kBaselineLayerIndex : e.Layer;
+                return;
             }
 
-            if (e.Layer > this.ActiveLayerIndex)
+            if (this.ActiveLayerIndex == kUnsetLayerIndex)
             {
-                this.ActiveLayerIndex = e.Layer;
+                this.ActiveLayerIndex = e.IsBaseline ? kBaselineLayerIndex : e.LayerIndex;
             }
-            else if (e.Layer == this.ActiveLayerIndex)
+
+            if (e.LayerIndex > this.ActiveLayerIndex)
+            {
+                this.ActiveLayerIndex = e.LayerIndex;
+            }
+            else if (e.LayerIndex == this.ActiveLayerIndex)
             {
                 if (e.WasElementAdded)
                 {
@@ -69,6 +75,20 @@
             }
 
             this.TriggerValueChanged();
+        }
+
+        private void OnLayerListCleared (object sender, StratabaseChangeEventArgs e)
+        {
+            if (e.PropertyName != this.PropertyName)
+            {
+                return;
+            }
+
+            if (e.LayerIndex == this.ActiveLayerIndex)
+            {
+                m_currentListCache.Clear();
+                this.TriggerValueChanged();
+            }
         }
 
         protected override void OnActiveLayerChanged (int formerActiveLayer)

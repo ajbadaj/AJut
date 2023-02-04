@@ -563,11 +563,11 @@
         {
             if (e.IsBaseline)
             {
-                this.BaselineDataChanged?.Invoke(this, new BaselineStratumModificationEventArgs(e.ItemId, e.PropertyName, e.OldData, e.NewData, false));
+                this.BaselineDataChanged?.Invoke(this, new BaselineStratumModificationEventArgs(e.ItemId, e.PropertyName, e.OldValue, e.NewValue, false));
             }
             else
             {
-                this.OverrideDataChanged?.Invoke(this, new OverrideStratumModificationEventArgs(e.LayerIndex, e.ItemId, e.PropertyName, e.OldData, e.NewData, false));
+                this.OverrideDataChanged?.Invoke(this, new OverrideStratumModificationEventArgs(e.LayerIndex, e.ItemId, e.PropertyName, e.OldValue, e.NewValue, false));
             }
         }
 
@@ -575,11 +575,11 @@
         {
             if (e.IsBaseline)
             {
-                this.BaselineDataChanged?.Invoke(this, new BaselineStratumModificationEventArgs(e.ItemId, e.PropertyName, e.OldData, null, true));
+                this.BaselineDataChanged?.Invoke(this, new BaselineStratumModificationEventArgs(e.ItemId, e.PropertyName, e.OldValue, null, true));
             }
             else
             {
-                this.OverrideDataChanged?.Invoke(this, new OverrideStratumModificationEventArgs(e.LayerIndex, e.ItemId, e.PropertyName, e.OldData, null, true));
+                this.OverrideDataChanged?.Invoke(this, new OverrideStratumModificationEventArgs(e.LayerIndex, e.ItemId, e.PropertyName, e.OldValue, null, true));
             }
         }
 
@@ -602,6 +602,7 @@
             internal event EventHandler<StratabasePropertyChangeEventArgs> LayerDataSet;
             internal event EventHandler<StratabasePropertyChangeEventArgs> LayerDataRemoved;
             internal event EventHandler<StratabaseListElementsChangedEventArgs> LayerListElementsChanged;
+            internal event EventHandler<StratabaseChangeEventArgs> LayerListElementsCleared;
 
             public Guid Id { get; }
             public Stratabase SB { get; }
@@ -644,7 +645,15 @@
             {
                 if (this.SB.GetBaselinePropertyBagFor(this.Id).PullValueOut(propertyName, out object oldValue))
                 {
-                    this.LayerDataRemoved?.Invoke(this, new StratabasePropertyChangeEventArgs(this.Id, propertyName, oldValue, null));
+                    this.LayerDataRemoved?.Invoke(this,
+                        new StratabasePropertyChangeEventArgs
+                        {
+                            ItemId = this.Id,
+                            PropertyName = propertyName,
+                            OldValue = oldValue,
+                            NewValue = null
+                        }
+                    );
                     return true;
                 }
 
@@ -655,7 +664,16 @@
             {
                 if (this.SB.GetOverridePropertyBagFor(overrideLayer, this.Id).PullValueOut(propertyName, out object oldValue))
                 {
-                    this.LayerDataRemoved?.Invoke(this, new StratabasePropertyChangeEventArgs(this.Id, overrideLayer, propertyName, oldValue, null));
+                    this.LayerDataRemoved?.Invoke(this,
+                        new StratabasePropertyChangeEventArgs
+                        {
+                            ItemId = this.Id,
+                            LayerIndex = overrideLayer,
+                            PropertyName = propertyName,
+                            OldValue = oldValue,
+                            NewValue = null
+                        }
+                    );
                     return true;
                 }
 
@@ -680,7 +698,15 @@
             {
                 if (this.SB.GetBaselinePropertyBagFor(this.Id).SetValue(property, newValue, out object oldValue))
                 {
-                    this.LayerDataSet?.Invoke(this, new StratabasePropertyChangeEventArgs(this.Id, property, oldValue, newValue));
+                    this.LayerDataSet?.Invoke(this, 
+                        new StratabasePropertyChangeEventArgs
+                        {
+                            ItemId = this.Id,
+                            PropertyName = property,
+                            OldValue = oldValue,
+                            NewValue = newValue
+                        }
+                    );
                     return true;
                 }
 
@@ -691,7 +717,16 @@
             {
                 if (this.SB.GetOverridePropertyBagFor(overrideLayerIndex, this.Id).SetValue(property, newValue, out object oldValue))
                 {
-                    this.LayerDataSet?.Invoke(this, new StratabasePropertyChangeEventArgs(this.Id, overrideLayerIndex, property, oldValue, newValue));
+                    this.LayerDataSet?.Invoke(this,
+                        new StratabasePropertyChangeEventArgs
+                        {
+                            ItemId = this.Id,
+                            LayerIndex = overrideLayerIndex,
+                            PropertyName = property,
+                            OldValue = oldValue,
+                            NewValue = newValue
+                        }
+                    );
                     return true;
                 }
 
@@ -707,9 +742,8 @@
                     this.LayerListElementsChanged?.Invoke(this,
                         new StratabaseListElementsChangedEventArgs
                         {
-                            ObjectId = this.Id,
+                            ItemId = this.Id,
                             PropertyName = propertyName,
-                            Layer = -1,
                             ElementIndex = elementIndex,
                             Element = newElement,
                             WasElementAdded = true,
@@ -729,9 +763,9 @@
                     this.LayerListElementsChanged?.Invoke(this,
                         new StratabaseListElementsChangedEventArgs
                         {
-                            ObjectId = this.Id,
+                            ItemId = this.Id,
                             PropertyName = propertyName,
-                            Layer = overrideLayerIndex,
+                            LayerIndex = overrideLayerIndex,
                             ElementIndex = elementIndex,
                             Element = newElement,
                             WasElementAdded = true,
@@ -751,9 +785,8 @@
                     this.LayerListElementsChanged?.Invoke(this,
                         new StratabaseListElementsChangedEventArgs
                         {
-                            ObjectId = this.Id,
+                            ItemId = this.Id,
                             PropertyName = propertyName,
-                            Layer = -1,
                             ElementIndex = elementIndex,
                             Element = newElement,
                             WasElementAdded = true,
@@ -773,9 +806,9 @@
                     this.LayerListElementsChanged?.Invoke(this,
                         new StratabaseListElementsChangedEventArgs
                         {
-                            ObjectId = this.Id,
+                            ItemId = this.Id,
                             PropertyName = propertyName,
-                            Layer = overrideLayerIndex,
+                            LayerIndex = overrideLayerIndex,
                             ElementIndex = elementIndex,
                             Element = newElement,
                             WasElementAdded = true,
@@ -795,12 +828,11 @@
                     this.LayerListElementsChanged?.Invoke(this,
                         new StratabaseListElementsChangedEventArgs
                         {
-                            ObjectId = this.Id,
+                            ItemId = this.Id,
                             PropertyName = propertyName,
-                            Layer = -1,
                             ElementIndex = elementIndex,
                             Element = removedElement,
-                            WasElementAdded = true,
+                            WasElementAdded = false,
                         }
                     );
 
@@ -817,12 +849,12 @@
                     this.LayerListElementsChanged?.Invoke(this,
                         new StratabaseListElementsChangedEventArgs
                         {
-                            ObjectId = this.Id,
+                            ItemId = this.Id,
                             PropertyName = propertyName,
-                            Layer = -1,
+                            LayerIndex = overrideLayerIndex,
                             ElementIndex = elementIndex,
                             Element = removedElement,
-                            WasElementAdded = true,
+                            WasElementAdded = false,
                         }
                     );
 
@@ -834,28 +866,46 @@
 
             public void RemoveAllElementsInBaselineList (string propertyName)
             {
-
+                this.SB.GetBaselinePropertyBagFor(this.Id).ClearListElements(propertyName);
+                this.LayerListElementsCleared?.Invoke(this,
+                    new StratabaseChangeEventArgs
+                    {
+                        ItemId = this.Id,
+                        PropertyName = propertyName,
+                    }
+                );
             }
 
             public void RemoveAllElementsInOverrideLayerList (int overrideLayerIndex, string propertyName)
             {
-
+                this.SB.GetOverridePropertyBagFor(overrideLayerIndex, this.Id).ClearListElements(propertyName);
+                this.LayerListElementsCleared?.Invoke(this,
+                    new StratabaseChangeEventArgs
+                    {
+                        ItemId = this.Id,
+                        LayerIndex = overrideLayerIndex,
+                        PropertyName = propertyName,
+                    }
+                );
             }
 
 
             public void ResetListLayerByCopyingElements (int overrideLayerToCopyFrom, int overrideLayerToCopyTo, string propertyName)
             {
-
+                this.RemoveAllElementsInOverrideLayerList(overrideLayerToCopyTo, propertyName);
+                this.SB.GetOverridePropertyBagFor(overrideLayerToCopyFrom, this.Id).CopyListElementsTo(propertyName, this.SB.GetOverridePropertyBagFor(overrideLayerToCopyTo, this.Id));
             }
 
             public void ResetListLayerByCopyingElementsFromBaseline (int overrideLayerToCopyTo, string propertyName)
             {
-
+                this.RemoveAllElementsInOverrideLayerList(overrideLayerToCopyTo, propertyName);
+                this.SB.GetBaselinePropertyBagFor(this.Id).CopyListElementsTo(propertyName, this.SB.GetOverridePropertyBagFor(overrideLayerToCopyTo, this.Id));
             }
 
             public void ResetBaselineByCopyingElementsFrom (int overrideLayerToCopyFrom, string propertyName)
             {
-
+                this.RemoveAllElementsInBaselineList(propertyName);
+                this.SB.GetOverridePropertyBagFor(overrideLayerToCopyFrom, this.Id).CopyListElementsTo(propertyName, this.SB.GetBaselinePropertyBagFor(this.Id));
             }
 
             // ------------- Get Value ----------------
@@ -951,7 +1001,13 @@
 
                 if (notifyOfRemovals)
                 {
-                    this.LayerDataRemoved?.Invoke(this, new StratabasePropertyChangeEventArgs(this.Id, String.Empty, null, null));
+                    this.LayerDataRemoved?.Invoke(this,
+                        new StratabasePropertyChangeEventArgs
+                        {
+                            ItemId = this.Id,
+                            PropertyName = String.Empty,
+                        }
+                    );
                 }
             }
 
@@ -1101,10 +1157,18 @@
                 }
             }
 
+            public void CopyListElementsTo (string propertyName, PseudoPropertyBag sourceBag)
+            {
+                if (sourceBag.m_storage.TryGetValue(propertyName, out object sourceListObj) && sourceListObj is IList listTracker
+                    && m_storage.TryGetValue(propertyName, out object destListObj) && destListObj is IList destListTracker)
+                {
+                    destListTracker.AddEach(listTracker);
+                }
+            }
+
             // ==========================[ Search Methods Methods ]=============================
 
             public bool ContainsKey (string property) => m_storage.ContainsKey(property);
-
 
         }
 

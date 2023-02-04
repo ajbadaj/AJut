@@ -1,13 +1,7 @@
 ﻿namespace AJut.Storage
 {
-    using System;
-
-    public class StratabaseListElementsChangedEventArgs : EventArgs
+    internal class StratabaseListElementsChangedEventArgs : StratabaseChangeEventArgs
     {
-        public Guid ObjectId { get; init; }
-        public string PropertyName { get; init; }
-        public bool WasBaseline => this.Layer == -1;
-        public int Layer { get; init; }
         public int ElementIndex { get; init; }
         public object Element { get; init; }
         public bool WasElementAdded { get; init; }
