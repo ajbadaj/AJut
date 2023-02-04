@@ -5,6 +5,7 @@ namespace AJut.UX.Controls
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
     using System.Linq;
+    using System.Reflection;
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Input;
@@ -169,7 +170,7 @@ namespace AJut.UX.Controls
             protected set => this.SetValue(IncludeRootPropertyKey, value);
         }
 
-        public static readonly DependencyProperty SelectedItemProperty = DPUtils.Register(_ => _.SelectedItem);
+        public static readonly DependencyProperty SelectedItemProperty = DPUtils.Register(_ => _.SelectedItem, (d,e)=>d.OnSelectedItemChanged(e));
         public IObservableTreeNode SelectedItem
         {
             get => (IObservableTreeNode)this.GetValue(SelectedItemProperty);
@@ -415,6 +416,20 @@ namespace AJut.UX.Controls
                 this.SelectedItem = null;
             }
             this.StorageItemRemoved?.Invoke(this, new(item));
+        }
+
+        private void OnSelectedItemChanged (DependencyPropertyChangedEventArgs<IObservableTreeNode> e)
+        {
+            if (m_blockingForSelectionChangeReentrancy || this.PART_ListBoxDisplay == null)
+            {
+                return;
+            }
+
+            if (e.NewValue != null)
+            {
+                var item = this.PART_ListBoxDisplay.Items.OfType<Item>().FirstOrDefault(i => i.Source == e.NewValue);
+                this.PART_ListBoxDisplay.SelectedItem = item;
+            }
         }
 
         private void Item_IsSelectedChanged (object sender, EventArgs e)
