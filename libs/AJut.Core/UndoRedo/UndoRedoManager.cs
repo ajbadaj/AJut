@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using AJut.Storage;
 
     /// <summary>
     /// Storage and management of <see cref="IUndoableAction"/> actions
@@ -13,6 +14,7 @@
         private ObservableCollection<IUndoableAction> m_undoStack = new ObservableCollection<IUndoableAction>();
         private ObservableCollection<IUndoableAction> m_redoStack = new ObservableCollection<IUndoableAction>();
         private Dictionary<Guid, UndoRedoManager> m_subStacks = new Dictionary<Guid, UndoRedoManager>();
+        private Guid? m_substackActingAsPrimary = null;
 
         public UndoRedoManager ()
         {
@@ -24,7 +26,14 @@
         public bool AnyUndos => m_undoStack.Count > 0;
         public bool AnyRedos => m_redoStack.Count > 0;
 
+        /// <summary>
+        /// The undo aspect of this undo/redo stack
+        /// </summary>
         public ReadOnlyObservableCollection<IUndoableAction> UndoStack { get; }
+
+        /// <summary>
+        /// The redo aspect of this undo/redo stack
+        /// </summary>
         public ReadOnlyObservableCollection<IUndoableAction> RedoStack { get; }
 
         // ============== [Methods] ================
@@ -59,6 +68,9 @@
             return id;
         }
 
+        /// <summary>
+        /// Returns the substack for the given id (if any)
+        /// </summary>
         public UndoRedoManager GetSubstack (Guid substackId)
         {
             if (m_subStacks.TryGetValue(substackId, out UndoRedoManager substack))
@@ -67,6 +79,35 @@
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Override this stack by forwarding all calls to a substack generated for this purpose. On <see cref="SubstackOverride.CommitAndEndOverride(string, object)"/>
+        /// this created substack will be cleaned up. It is up to the user to ensure commit gets called on the override when complete.
+        /// </summary>
+        public SubstackOverride OverrideUndoRedoCallsToUseNewSubstack ()
+        {
+            Guid id = this.CreateSubsidiaryStack();
+            if (m_substackActingAsPrimary == null)
+            {
+                m_substackActingAsPrimary = id;
+            }
+
+            return new SubstackOverride(this, id, true);
+        }
+
+        /// <summary>
+        /// Override this stack by forwarding all calls to a substack (that has been previously generated). It is up to 
+        /// the user to ensure <see cref="SubstackOverride.CommitAndEndOverride(string, object)"/> gets called on the override when complete.
+        /// </summary>
+        public SubstackOverride OverrideUndoRedoCallsToUse (Guid id)
+        {
+            if (m_subStacks.ContainsKey(id) && m_substackActingAsPrimary == null)
+            {
+                m_substackActingAsPrimary = id;
+            }
+
+            return new SubstackOverride(this, id, false);
         }
 
         /// <summary>
@@ -138,23 +179,30 @@
                 }
             }
 
+            // Determine the stack target (incase it's a different target)
+            UndoRedoManager stack = this;
+            if (m_substackActingAsPrimary != null && m_subStacks.TryGetValue(m_substackActingAsPrimary.Value, out UndoRedoManager actingStack))
+            {
+                stack = actingStack;
+            }
+
+            stack.m_undoStack.Insert(0, action);
+            stack.m_redoStack.Clear();
+
             // AnyUndos will change if we're adding the first one
-            bool anyUndosChange = m_undoStack.Count == 1;
+            bool anyUndosChange = stack.m_undoStack.Count == 1;
 
             // AnyRedos will change if there used to be any (adding actions kills the redo stack, 
             //  because now we've changed the future)
-            bool anyRedosChange = this.AnyRedos;
-
-            m_undoStack.Insert(0, action);
-            m_redoStack.Clear();
+            bool anyRedosChange = stack.AnyRedos;
 
             if (anyUndosChange)
             {
-                this.RaisePropertiesChanged(nameof(AnyUndos));
+                stack.RaisePropertiesChanged(nameof(AnyUndos));
             }
             if (anyRedosChange)
             {
-                this.RaisePropertiesChanged(nameof(AnyRedos));
+                stack.RaisePropertiesChanged(nameof(AnyRedos));
             }
         }
 
@@ -174,6 +222,11 @@
         /// <returns>False if there weren't any undos, true otherwise</returns>
         public bool Undo()
         {
+            if (m_substackActingAsPrimary != null)
+            {
+                return this.Undo(m_substackActingAsPrimary.Value);
+            }
+
             if (!this.AnyUndos)
             {
                 return false;
@@ -218,6 +271,11 @@
         /// <returns>False if there weren't any redos, true otherwise</returns>
         public bool Redo()
         {
+            if (m_substackActingAsPrimary != null)
+            {
+                return this.Redo(m_substackActingAsPrimary.Value);
+            }
+
             if (!this.AnyRedos)
             {
                 return false;
@@ -252,6 +310,68 @@
         public bool Redo (Guid substackId)
         {
             return this.GetSubstack(substackId)?.Redo() ?? false;
+        }
+
+        /// <summary>
+        /// This is an incase of emergency situation, ideally using the <see cref="SubstackOverride"/> will be used to clear itself
+        /// </summary>
+        public void EnsureSubstackOverrideIsCleared ()
+        {
+            m_substackActingAsPrimary = null;
+        }
+
+        /// <summary>
+        /// Represents a temporary override to a "main" undoredo stack, where add/remove/undo/redo commands target instead a substack.
+        /// This culminates in the substack being committed to the mainstack, ending the override (via <see cref="CommitAndEndOverride(string, object)"/>).
+        /// </summary>
+        public class SubstackOverride
+        {
+            private readonly UndoRedoManager m_owner;
+            private readonly bool m_createdSubstack;
+            internal SubstackOverride (UndoRedoManager owner, Guid substackId, bool createdSubstack)
+            {
+                m_owner = owner;
+                this.Id = substackId;
+                m_createdSubstack = createdSubstack;
+            }
+
+            /// <summary>
+            /// The substack's id
+            /// </summary>
+            public Guid Id { get; }
+
+            /// <summary>
+            /// Checks if the override is actively being applied
+            /// </summary>
+            public bool IsActive => m_owner.m_substackActingAsPrimary == this.Id;
+
+            /// <summary>
+            /// Commits the substack as a single undoable entry into the stack that generated this override. Returns if it succeeded, but either way this call should only be made once.
+            /// </summary>
+            /// <param name="name">The name of the undoable group entry</param>
+            /// <param name="typing">The optional typing info of the undoable group entry</param>
+            /// <returns>true if commit was successful, false otherwise.</returns>
+            public bool CommitAndEndOverride (string name, object typing = null)
+            {
+                if (!this.IsActive)
+                {
+                    if (m_createdSubstack)
+                    {
+                        m_owner.m_subStacks.Remove(this.Id);
+                    }
+
+                    return false;
+                }
+
+                m_owner.m_substackActingAsPrimary = null;
+                bool success = m_owner.CommitSubstack(this.Id, name, typing);
+                if (m_createdSubstack)
+                {
+                    m_owner.m_subStacks.Remove(this.Id);
+                }
+
+                return success;
+            }
         }
     }
 }
