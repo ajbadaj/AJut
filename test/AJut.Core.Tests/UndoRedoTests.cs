@@ -182,11 +182,12 @@
             Assert.AreEqual(1, undoRedo.UndoStack.Count);
             Assert.AreEqual(0, undoRedo.RedoStack.Count);
 
-            // Create the substack and set it as 
+            // Create the substack and set it as the override
             UndoRedoManager.SubstackOverride overrideSubstack = undoRedo.OverrideUndoRedoCallsToUseNewSubstack();
             Assert.IsNotNull(overrideSubstack);
             Assert.IsTrue(overrideSubstack.IsActive);
 
+            // Perform some simple undoable actions (should apply to the substack, not the main stack)
             undoRedo.ExecuteAction(new LambdaUndoableAction("SimpleMath", () => mathTarget += 7, () => mathTarget -= 7));
             Assert.AreEqual(22, mathTarget);
             Assert.AreEqual(1, undoRedo.UndoStack.Count);
