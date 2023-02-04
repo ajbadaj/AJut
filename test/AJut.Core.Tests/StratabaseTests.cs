@@ -1168,7 +1168,7 @@
             [StratabaseIdConstructor]
             public TestDataWithList (Guid id) : base(id) { }
 
-            [StrataListConfig(eStrataListConfig.GenerateInsertOverrides)]
+            [StrataListConfig(eStrataListConfig.ObservableElementManagement)]
             public List<TestData> ChildList { get; set; } = new List<TestData>();
         }
 
@@ -1179,7 +1179,7 @@
             [StratabaseIdConstructor]
             public TestDataWithReferenceList (Guid id) : base(id) { }
 
-            [StrataListConfig(eStrataListConfig.GenerateInsertOverrides, buildReferenceList: true)]
+            [StrataListConfig(eStrataListConfig.ObservableElementManagement, buildReferenceList: true)]
             public List<TestData> ChildList { get; set; } = new List<TestData>();
         }
 
@@ -1216,7 +1216,7 @@
 
             public string Name { get; set; }
 
-            [StrataListConfig(eStrataListConfig.GenerateInsertOverrides, buildReferenceList: true)]
+            [StrataListConfig(eStrataListConfig.ObservableElementManagement, buildReferenceList: true)]
             public List<TreeItem> Children { get; set; } = new List<TreeItem>();
         }
 

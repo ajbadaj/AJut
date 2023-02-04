@@ -3,7 +3,6 @@
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
@@ -733,10 +732,10 @@
                             ObjectId = this.Id,
                             PropertyName = propertyName,
                             Layer = overrideLayerIndex,
-                                ElementIndex = elementIndex,
-                                Element = newElement,
-                                WasElementAdded = true,
-                            }
+                            ElementIndex = elementIndex,
+                            Element = newElement,
+                            WasElementAdded = true,
+                        }
                     );
 
                     return true;
@@ -850,10 +849,10 @@
             }
 
             public void ResetListLayerByCopyingElementsFromBaseline (int overrideLayerToCopyTo, string propertyName)
-            {               
-                            
-            }               
-                            
+            {
+
+            }
+
             public void ResetBaselineByCopyingElementsFrom (int overrideLayerToCopyFrom, string propertyName)
             {
 
@@ -1106,7 +1105,7 @@
 
             public bool ContainsKey (string property) => m_storage.ContainsKey(property);
 
-            
+
         }
 
         private class Stratum : Dictionary<Guid, PseudoPropertyBag> { }
