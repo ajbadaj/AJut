@@ -3,7 +3,6 @@
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
@@ -135,7 +134,7 @@
         /// <returns>True if the property was found and cleared, false otherwise.</returns>
         public bool ClearPropertyBaseline (Guid id, string property)
         {
-            return this.EnsureDataAccess(id).ClearBaselinePropertyValue(property);
+            return this.EnsureDataAccess(id).ObliteratePropertyStorageInBaseline(property);
         }
 
         /// <summary>
@@ -144,7 +143,7 @@
         /// <returns>True if the property was found and cleared, false otherwise.</returns>
         public bool ClearPropertyOverride (int layer, Guid id, string property)
         {
-            return this.EnsureDataAccess(id).ClearOverridePropertyValue(layer, property);
+            return this.EnsureDataAccess(id).ObliteratePropertyStorageInLayer(layer, property);
         }
 
         // ----------------- Set From Properties of Object -----------------
@@ -296,12 +295,10 @@
                     // Is it ListAccess backed?
                     Type storedType = storedPropValue.GetType();
                     if (strataListConfig != null
-                        && storedType.IsGenericType && storedType.GetGenericTypeDefinition() == typeof(ObservableCollection<>)
-                        && storedType.GenericTypeArguments[0].IsGenericType
-                        && storedType.GenericTypeArguments[0].GetGenericTypeDefinition() == typeof(StratabaseListInsertion<>))
+                        && storedType.IsGenericType && storedType.GetGenericTypeDefinition() == typeof(List<>))
                     {
                         // Ok it is, now use reflection to generate a StrataPropertyListAccess
-                        Type itemType = storedType.GenericTypeArguments[0].GenericTypeArguments[0];
+                        Type itemType = storedType.GenericTypeArguments[0];
                         var listAccess = (IDisposable)this.InvokeTemplatedMethod(
                             nameof(GenerateListPropertyAccess),
                             itemType, objectId, propPath
@@ -423,6 +420,18 @@
             }
 
             return accessManager.SetOverrideValue(layer, property, value);
+        }
+
+        // ----------------- Insert Element Value -----------------
+
+        public void InsertElementIntoBaselineList (Guid id, string property, int index, object newElement)
+        {
+            EnsureDataAccess(id).InsertElementIntoBaselineList(property, index, newElement);
+        }
+
+        public void InsertElementIntoOverrideList (int layer, Guid id, string property, int index, object newElement)
+        {
+            EnsureDataAccess(id).InsertElementIntoOverrideLayerList(layer, property, index, newElement);
         }
 
         // ----------------- Get Property Value -----------------
@@ -577,6 +586,7 @@
         // ===========================[ Utility Classes ]======================================
 
         /// <summary>
+        /// Manager of all changes and interactions, focused on a particular object.
         /// ALL CHANGES GO THROUGH HERE! This ensures proper routing of events. Stores properties for a given object (indicated by <see cref="Id"/>).
         /// </summary>
         internal class ObjectDataAccessManager
@@ -591,6 +601,7 @@
 
             internal event EventHandler<StratabasePropertyChangeEventArgs> LayerDataSet;
             internal event EventHandler<StratabasePropertyChangeEventArgs> LayerDataRemoved;
+            internal event EventHandler<StratabaseListElementsChangedEventArgs> LayerListElementsChanged;
 
             public Guid Id { get; }
             public Stratabase SB { get; }
@@ -629,22 +640,22 @@
                 return false;
             }
 
-            public bool ClearBaselinePropertyValue (string property)
+            public bool ObliteratePropertyStorageInBaseline (string propertyName)
             {
-                if (this.SB.GetBaselinePropertyBagFor(this.Id).RemoveValue(property, out object oldValue))
+                if (this.SB.GetBaselinePropertyBagFor(this.Id).PullValueOut(propertyName, out object oldValue))
                 {
-                    this.LayerDataRemoved?.Invoke(this, new StratabasePropertyChangeEventArgs(this.Id, property, oldValue, null));
+                    this.LayerDataRemoved?.Invoke(this, new StratabasePropertyChangeEventArgs(this.Id, propertyName, oldValue, null));
                     return true;
                 }
 
                 return false;
             }
 
-            public bool ClearOverridePropertyValue (int overrideLayer, string property)
+            public Result<object> ObliteratePropertyStorageInLayer (int overrideLayer, string propertyName)
             {
-                if (this.SB.GetOverridePropertyBagFor(overrideLayer, this.Id).RemoveValue(property, out object oldValue))
+                if (this.SB.GetOverridePropertyBagFor(overrideLayer, this.Id).PullValueOut(propertyName, out object oldValue))
                 {
-                    this.LayerDataRemoved?.Invoke(this, new StratabasePropertyChangeEventArgs(this.Id, overrideLayer, property, oldValue, null));
+                    this.LayerDataRemoved?.Invoke(this, new StratabasePropertyChangeEventArgs(this.Id, overrideLayer, propertyName, oldValue, null));
                     return true;
                 }
 
@@ -685,6 +696,166 @@
                 }
 
                 return false;
+            }
+
+            // ------------- Element Management: Insert / Remove ----------------
+
+            public bool InsertElementIntoBaselineList (string propertyName, int elementIndex, object newElement)
+            {
+                if (this.SB.GetBaselinePropertyBagFor(this.Id).InsertElement(propertyName, elementIndex, newElement))
+                {
+                    this.LayerListElementsChanged?.Invoke(this,
+                        new StratabaseListElementsChangedEventArgs
+                        {
+                            ObjectId = this.Id,
+                            PropertyName = propertyName,
+                            Layer = -1,
+                            ElementIndex = elementIndex,
+                            Element = newElement,
+                            WasElementAdded = true,
+                        }
+                    );
+
+                    return true;
+                }
+
+                return false;
+            }
+
+            public bool InsertElementIntoOverrideLayerList (int overrideLayerIndex, string propertyName, int elementIndex, object newElement)
+            {
+                if (this.SB.GetOverridePropertyBagFor(overrideLayerIndex, this.Id).InsertElement(propertyName, elementIndex, newElement))
+                {
+                    this.LayerListElementsChanged?.Invoke(this,
+                        new StratabaseListElementsChangedEventArgs
+                        {
+                            ObjectId = this.Id,
+                            PropertyName = propertyName,
+                            Layer = overrideLayerIndex,
+                            ElementIndex = elementIndex,
+                            Element = newElement,
+                            WasElementAdded = true,
+                        }
+                    );
+
+                    return true;
+                }
+
+                return false;
+            }
+
+            public bool AddElementIntoBaselineList (string propertyName, object newElement)
+            {
+                if (this.SB.GetBaselinePropertyBagFor(this.Id).AddElement(propertyName, newElement, out int elementIndex))
+                {
+                    this.LayerListElementsChanged?.Invoke(this,
+                        new StratabaseListElementsChangedEventArgs
+                        {
+                            ObjectId = this.Id,
+                            PropertyName = propertyName,
+                            Layer = -1,
+                            ElementIndex = elementIndex,
+                            Element = newElement,
+                            WasElementAdded = true,
+                        }
+                    );
+
+                    return true;
+                }
+
+                return false;
+            }
+
+            public bool AddElementIntoOverrideList (int overrideLayerIndex, string propertyName, object newElement)
+            {
+                if (this.SB.GetOverridePropertyBagFor(overrideLayerIndex, this.Id).AddElement(propertyName, newElement, out int elementIndex))
+                {
+                    this.LayerListElementsChanged?.Invoke(this,
+                        new StratabaseListElementsChangedEventArgs
+                        {
+                            ObjectId = this.Id,
+                            PropertyName = propertyName,
+                            Layer = overrideLayerIndex,
+                            ElementIndex = elementIndex,
+                            Element = newElement,
+                            WasElementAdded = true,
+                        }
+                    );
+
+                    return true;
+                }
+
+                return false;
+            }
+
+            public bool RemoveElementFromBaselineList (string propertyName, int elementIndex)
+            {
+                if (this.SB.GetBaselinePropertyBagFor(this.Id).RemoveElementAt(propertyName, elementIndex, out object removedElement))
+                {
+                    this.LayerListElementsChanged?.Invoke(this,
+                        new StratabaseListElementsChangedEventArgs
+                        {
+                            ObjectId = this.Id,
+                            PropertyName = propertyName,
+                            Layer = -1,
+                            ElementIndex = elementIndex,
+                            Element = removedElement,
+                            WasElementAdded = true,
+                        }
+                    );
+
+                    return true;
+                }
+
+                return false;
+            }
+
+            public bool RemoveElementFromOverrideLayerList (int overrideLayerIndex, string propertyName, int elementIndex)
+            {
+                if (this.SB.GetOverridePropertyBagFor(overrideLayerIndex, this.Id).RemoveElementAt(propertyName, elementIndex, out object removedElement))
+                {
+                    this.LayerListElementsChanged?.Invoke(this,
+                        new StratabaseListElementsChangedEventArgs
+                        {
+                            ObjectId = this.Id,
+                            PropertyName = propertyName,
+                            Layer = -1,
+                            ElementIndex = elementIndex,
+                            Element = removedElement,
+                            WasElementAdded = true,
+                        }
+                    );
+
+                    return true;
+                }
+
+                return false;
+            }
+
+            public void RemoveAllElementsInBaselineList (string propertyName)
+            {
+
+            }
+
+            public void RemoveAllElementsInOverrideLayerList (int overrideLayerIndex, string propertyName)
+            {
+
+            }
+
+
+            public void ResetListLayerByCopyingElements (int overrideLayerToCopyFrom, int overrideLayerToCopyTo, string propertyName)
+            {
+
+            }
+
+            public void ResetListLayerByCopyingElementsFromBaseline (int overrideLayerToCopyTo, string propertyName)
+            {
+
+            }
+
+            public void ResetBaselineByCopyingElementsFrom (int overrideLayerToCopyFrom, string propertyName)
+            {
+
             }
 
             // ------------- Get Value ----------------
@@ -814,6 +985,10 @@
                 m_storage = storage;
             }
 
+            // ==========================[ Properties ]===================================
+            public IEnumerable<string> Keys => m_storage.Keys;
+
+            // ==========================[ Retrieval Methods ]=============================
             public bool TryGetValue (string propertyName, out object value) => this.m_storage.TryGetValue(propertyName, out value);
             public bool TryGetValue<T> (string propertyName, out T value)
             {
@@ -827,9 +1002,19 @@
                 return false;
             }
 
-            public IEnumerable<string> Keys => m_storage.Keys;
+            public bool PullValueOut (string propertyName, out object oldValue)
+            {
+                if (m_storage.TryGetValue(propertyName, out oldValue))
+                {
+                    return m_storage.Remove(propertyName);
+                }
 
-            internal bool SetValue (string propertyName, object newValue, out object oldValue)
+                return false;
+            }
+
+            // ==========================[ Modifier Methods ]=============================
+
+            public bool SetValue (string propertyName, object newValue, out object oldValue)
             {
                 if (!m_storage.TryGetValue(propertyName, out oldValue))
                 {
@@ -845,17 +1030,82 @@
                 return false;
             }
 
-            internal bool RemoveValue (string propertyName, out object oldValue)
+            public bool InsertElement (string propertyName, int elementIndex, object newElement)
             {
-                if (m_storage.TryGetValue(propertyName, out oldValue))
+                if (!m_storage.TryGetValue(propertyName, out object listTrackerObj) || !(listTrackerObj is IList listTracker))
                 {
-                    return m_storage.Remove(propertyName);
+                    if (newElement == null)
+                    {
+                        return false;
+                    }
+
+                    Type elementType = newElement.GetType();
+                    var finalListType = typeof(List<>).MakeGenericType(elementType);
+                    listTracker = (IList)AJutActivator.CreateInstanceOf(finalListType);
+                    m_storage.Add(propertyName, listTracker);
                 }
 
+                if (elementIndex == -1)
+                {
+                    elementIndex = listTracker.Count - 1;
+                }
+
+                if (listTracker.Count - 1 < elementIndex || elementIndex < 0)
+                {
+                    return false;
+                }
+
+                listTracker.Insert(elementIndex, newElement);
+                return true;
+            }
+
+            public bool AddElement (string propertyName, object newElement, out int newElementIndex)
+            {
+                if (!m_storage.TryGetValue(propertyName, out object listTrackerObj) || !(listTrackerObj is IList listTracker))
+                {
+                    if (newElement == null)
+                    {
+                        newElementIndex = -1;
+                        return false;
+                    }
+
+                    Type elementType = newElement.GetType();
+                    var finalListType = typeof(List<>).MakeGenericType(elementType);
+                    listTracker = (IList)AJutActivator.CreateInstanceOf(finalListType);
+                    m_storage.Add(propertyName, listTracker);
+                }
+
+                newElementIndex = listTracker.Count;
+                listTracker.Insert(newElementIndex, newElement);
+                return true;
+            }
+
+            public bool RemoveElementAt (string propertyName, int elementIndex, out object element)
+            {
+                if (m_storage.TryGetValue(propertyName, out object listTrackerObj) && listTrackerObj is IList listTracker)
+                {
+                    element = m_storage[propertyName];
+                    listTracker.RemoveAt(elementIndex);
+                    return true;
+                }
+
+                element = null;
                 return false;
             }
 
-            internal bool ContainsKey (string property) => m_storage.ContainsKey(property);
+            public void ClearListElements (string propertyName)
+            {
+                if (m_storage.TryGetValue(propertyName, out object listTrackerObj) && listTrackerObj is IList listTracker)
+                {
+                    listTracker.Clear();
+                }
+            }
+
+            // ==========================[ Search Methods Methods ]=============================
+
+            public bool ContainsKey (string property) => m_storage.ContainsKey(property);
+
+
         }
 
         private class Stratum : Dictionary<Guid, PseudoPropertyBag> { }

@@ -5,50 +5,97 @@
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
     using System.Linq;
+    using System.Reflection.Emit;
+    using System.Xml.Linq;
 
     /// <summary>
     /// Represents a property access for a list. You could just store a list manually, but every override layer would essentially be a 100% override of the entire list.
     /// By using this access instead, you can store insertion overrides in any layer, and access the cached list here.
     /// </summary>
     /// <typeparam name="TElement">The type of element stored and inserted through out the <see cref="Stratabase"/></typeparam>
-    public class StrataPropertyListAccess<TElement> : StrataPropertyAccessBase<ObservableCollection<StratabaseListInsertion<TElement>>>
+    public class StrataPropertyListAccess<TElement> : StrataPropertyAccessBase<ObservableCollection<TElement>>
     {
-        private readonly List<StratabaseListInsertion<TElement>> m_insertionsCache = new List<StratabaseListInsertion<TElement>>();
         private readonly ObservableCollection<TElement> m_currentListCache = new ObservableCollection<TElement>();
 
         // =========================[ Construction ]===================================
         internal StrataPropertyListAccess (Stratabase.ObjectDataAccessManager owner, string propertyName)
             : base(owner, propertyName)
         {
+            this.ODAM.LayerListElementsChanged += this.OnLayerListElementsChanged;
+            this.ResetElementsFromActive();
             this.Elements = new ReadOnlyObservableCollection<TElement>(m_currentListCache);
-            this.Reset();
+            //this.Reset();
+        }
+
+        private void ResetElementsFromActive ()
+        {
+            m_currentListCache.Clear();
+            if (this.IsSet)
+            {
+                if (this.IsBaselineSet)
+                {
+                    if (this.ODAM.TryGetBaselineValue(this.PropertyName, out List<TElement> listTracker))
+                    {
+                        m_currentListCache.AddEach(listTracker);
+                    }
+                }
+                else if (this.ODAM.TryGetOverrideValue(this.ActiveLayerIndex, this.PropertyName, out List<TElement> listTracker))
+                {
+                    m_currentListCache.AddEach(listTracker);
+                }
+            }
+        }
+
+        private void OnLayerListElementsChanged (object sender, StratabaseListElementsChangedEventArgs e)
+        {
+            if (this.ActiveLayerIndex == kUnsetLayerIndex)
+            {
+                this.ActiveLayerIndex = e.WasBaseline ? kBaselineLayerIndex : e.Layer;
+            }
+
+            if (e.Layer > this.ActiveLayerIndex)
+            {
+                this.ActiveLayerIndex = e.Layer;
+            }
+            else if (e.Layer == this.ActiveLayerIndex)
+            {
+                if (e.WasElementAdded)
+                {
+                    m_currentListCache.Insert(e.ElementIndex, (TElement)e.Element);
+                }
+                else if (e.WasElementRemoved)
+                {
+                    m_currentListCache.RemoveAt(e.ElementIndex);
+                }
+            }
+        }
+
+        protected override void OnActiveLayerChanged (int formerActiveLayer)
+        {
+            base.OnActiveLayerChanged(formerActiveLayer);
+            if (this.ActiveLayerIndex != kUnsetLayerIndex)
+            {
+                if (this.IsActiveLayerBaseline)
+                {
+                    if (this.ODAM.TryGetBaselineValue(this.PropertyName, out List<TElement> listTracker))
+                    {
+                        // TODO: It would be nice to take a more surgical approach
+                        m_currentListCache.Clear();
+                        m_currentListCache.AddEach(listTracker);
+                    }
+                }
+                else if (this.ODAM.TryGetOverrideValue(this.ActiveLayerIndex, this.PropertyName, out List<TElement> listTracker))
+                {
+                    // TODO: It would be nice to take a more surgical approach
+                    m_currentListCache.Clear();
+                    m_currentListCache.AddEach(listTracker);
+                }
+            }
         }
 
         protected override void HandleAdditionalDispose ()
         {
-            if (this.GetBaselineChanges() is ObservableCollection<StratabaseListInsertion<TElement>> baselineCollection)
-            {
-                baselineCollection.CollectionChanged -= this.OnStorageCollectionChanged;
-            }
-
-            for (int layerIndex = 0; layerIndex < this.ODAM.SB.OverrideLayerCount; ++layerIndex)
-            {
-                if (this.GetOverrideChanges(layerIndex) is ObservableCollection<StratabaseListInsertion<TElement>> overrideCollection)
-                {
-                    overrideCollection.CollectionChanged -= this.OnStorageCollectionChanged;
-                }
-            }
-
-            this.ClearListCache();
-        }
-
-        private void ClearListCache ()
-        {
-            foreach (var element in m_currentListCache.OfType<IDisposable>())
-            {
-                element.Dispose();
-            }
-            m_currentListCache.Clear();
+            this.ODAM.LayerListElementsChanged -= this.OnLayerListElementsChanged;
         }
 
         /// <summary>
@@ -56,13 +103,13 @@
         /// and need to create list insertion data, but since the classes are typed that is tricky. Using extension methods to call this indirectly
         /// allows us to more cleanly and in a more unified location, generate the list insertions.
         /// </summary>
-        internal static object GenerateStorageForBaselineListAccess(object[] elements)
+        internal static object GenerateStorageForBaselineListAccess (object[] elements)
         {
-            ObservableCollection<StratabaseListInsertion<TElement>> data = new ObservableCollection<StratabaseListInsertion<TElement>>();
+            var data = new List<TElement>();
             for (int index = 0; index < elements.Length; ++index)
             {
                 var target = (TElement)elements[index];
-                data.Add(new StratabaseListInsertion<TElement>(StratabaseListInsertion<TElement>.kBaseline, index, target));
+                data.Add(target);
             }
 
             return data;
@@ -70,54 +117,140 @@
 
         // =========================[ Public Interface ]===================================
 
-        public StratabaseListInsertion<TElement>.InsertionBuilder CreateInsert (int index, params TElement[] values)
+        public int FindElementIndex (Predicate<TElement> predicate, int startIndex = 0)
         {
-            return new StratabaseListInsertion<TElement>.InsertionBuilder(this, index, values);
+            return this.Elements.IndexOf(predicate, startIndex);
         }
 
-        public StratabaseListInsertion<TElement>.InsertionBuilder CreateAdd (params TElement[] values)
+        public void ObliterateLayer (int layer)
         {
-            return new StratabaseListInsertion<TElement>.InsertionBuilder(this, m_currentListCache.Count, values);
+            this.ODAM.ObliteratePropertyStorageInLayer(layer, this.PropertyName);
         }
 
-        public bool TryFindLayerIndexForElement (TElement element, out int layerIndex)
+        public bool InsertElementIntoActiveLayer (int index, TElement newElement)
         {
-            return this.TryFindLayerIndexForElementAt(this.Elements.IndexOf(element), out layerIndex);
-        }
-
-        public bool TryFindLayerIndexForElementAt (int elementIndex, out int layerIndex)
-        {
-            if (elementIndex >= 0 && elementIndex < m_insertionsCache.Count)
+            if (this.IsActiveLayerBaseline)
             {
-                layerIndex = m_insertionsCache[elementIndex].SourceLayer;
-                return layerIndex > -2;
+                return this.ODAM.InsertElementIntoBaselineList(this.PropertyName, index, newElement);
             }
 
-            layerIndex = -2;
-            return false;
+            return this.InsertElementIntoOverrideLayer(this.ActiveLayerIndex, index, newElement);
         }
 
-        public bool Remove (TElement element)
+        public bool InsertElementIntoBaseline (int index, TElement newElement)
         {
-            int index = this.Elements.IndexOf(element);
+            return this.ODAM.InsertElementIntoBaselineList(this.PropertyName, index, newElement);
+        }
+
+        public bool InsertElementIntoOverrideLayer (int layer, int index, TElement newElement)
+        {
+            return this.ODAM.InsertElementIntoOverrideLayerList(layer, this.PropertyName, index, newElement);
+        }
+
+        public bool AddElementIntoBaseline (TElement newElement)
+        {
+            return this.ODAM.AddElementIntoBaselineList(this.PropertyName, newElement);
+        }
+
+        public bool AddElementIntoOverrideLayer (int layer, TElement newElement)
+        {
+            return this.ODAM.AddElementIntoOverrideList(layer, this.PropertyName, newElement);
+        }
+
+        public void RemoveAllElementsFrom (int layer)
+        {
+            this.ODAM.RemoveAllElementsInOverrideLayerList(layer, this.PropertyName);
+        }
+
+        public void RemoveAllElementsFromBaseline ()
+        {
+            this.ODAM.RemoveAllElementsInBaselineList(this.PropertyName);
+        }
+
+        public bool RemoveElementFromBaselineList (TElement element)
+        {
+            int index = m_currentListCache.IndexOf(element);
             if (index != -1)
             {
-                return this.RemoveAt(index);
+                return this.ODAM.RemoveElementFromBaselineList(this.PropertyName, index);
             }
 
             return false;
         }
 
-        public bool RemoveAt (int index)
+        public bool RemoveElementFromOverrideLayerList (int layer, TElement element)
         {
-            var insertion = m_insertionsCache[index];
-            if (insertion.IsBaseline)
+            int index = m_currentListCache.IndexOf(element);
+            if (index != -1)
             {
-                return this.GetBaselineChanges(false)?.Remove(insertion) ?? false;
+                return this.ODAM.RemoveElementFromOverrideLayerList(layer, this.PropertyName, index);
             }
 
-            return this.GetOverrideChanges(insertion.SourceLayer, false)?.Remove(insertion) ?? false;
+            return false;
         }
+
+        public void OverrideLayerWithListIn (int sourceLayer, int layerToOverride, int startIndex = 0, int endIndex = -1)
+        {
+            throw new NotImplementedException();
+        }
+
+        //public bool TryFindLayerIndexForElement (TElement element, out int layerIndex)
+        //{
+        //    return this.TryFindLayerIndexForElementAt(this.Elements.IndexOf(element), out layerIndex);
+        //}
+
+        //public bool TryFindLayerIndexForElementAt (int elementIndex, out int layerIndex)
+        //{
+        //    if (elementIndex >= 0 && elementIndex < m_insertionsCache.Count)
+        //    {
+        //        layerIndex = m_insertionsCache[elementIndex].SourceLayer;
+        //        return layerIndex > -2;
+        //    }
+
+        //    layerIndex = -2;
+        //    return false;
+        //}
+
+        public void ResetLayerByCopyingElementsToActive (int overrideLayerToCopyFrom)
+        {
+
+        }
+        public bool ResetLayerByCopyingElements (int overrideLayerToCopyFrom, int overrideLayerToCopyTo)
+        {
+            if (!this.ODAM.TryGetOverrideValue(overrideLayerToCopyFrom, this.PropertyName, out List<TElement> copyFrom))
+            {
+                return false;
+            }
+
+            return this.ODAM.SetOverrideValue(overrideLayerToCopyTo, this.PropertyName, copyFrom);
+        }
+
+
+        public bool ResetLayerByCopyingElementsFromBaselineToActive ()
+        {
+            return this.ResetLayerByCopyingElementsFromBaseline(this.ActiveLayerIndex);
+        }
+
+        public bool ResetLayerByCopyingElementsFromBaseline (int overrideLayerToCopyTo)
+        {
+            if (!this.ODAM.TryGetBaselineValue(this.PropertyName, out List<TElement> copyFrom))
+            {
+                return false;
+            }
+
+            return this.ODAM.SetOverrideValue(overrideLayerToCopyTo, this.PropertyName, copyFrom);
+        }
+
+        public bool ResetBaselineByCopyingElementsFrom (int overrideLayerToCopyFrom)
+        {
+            if (!this.ODAM.TryGetOverrideValue(overrideLayerToCopyFrom, this.PropertyName, out List<TElement> copyFrom))
+            {
+                return false;
+            }
+
+            return this.ODAM.SetBaselineValue(this.PropertyName, copyFrom);
+        }
+
 
         public int GetCount () => this.Elements.Count;
         public TElement GetElementAt (int elementIndex) => m_currentListCache[elementIndex];
@@ -126,7 +259,8 @@
 
         // =========================[ Base Override Impls ]===================================
 
-        protected override void OnBaselineLayerChanged (ObservableCollection<StratabaseListInsertion<TElement>> oldValue, ObservableCollection<StratabaseListInsertion<TElement>> newValue)
+#if false
+        protected override void OnBaselineLayerChanged (ObservableCollection<TElement> oldValue, ObservableCollection<StratabaseListInsertion<TElement>> newValue)
         {
             if (oldValue != null)
             {
@@ -145,20 +279,20 @@
 
             this.TrackChanges(newValue);
         }
+#endif
 
         protected override void OnClearAllTriggered ()
         {
-            m_insertionsCache.Clear();
-            this.ClearListCache();
+            base.OnClearAllTriggered();
+            m_currentListCache.Clear();
         }
 
         // =========================[ Utility Methods ]===================================
+#if false
 
         private void Reset ()
         {
-            m_insertionsCache.Clear();
-            this.ClearListCache();
-
+            m_currentListCache.Clear();
             this.TrackChanges(this.GetBaselineChanges());
             for (int layerIndex = 0; layerIndex < this.ODAM.SB.OverrideLayerCount; ++layerIndex)
             {
@@ -178,18 +312,23 @@
             changes.CollectionChanged += this.OnStorageCollectionChanged;
             foreach (StratabaseListInsertion<TElement> item in changes)
             {
-                this.Insert(item);
+                this.AddInsertMarker(item);
             }
         }
 
-        private void Insert (StratabaseListInsertion<TElement> item)
+        private void AddInsertMarker (StratabaseListInsertion<TElement> item)
         {
-            int index = m_insertionsCache.InsertSorted(item, (l, r) => l.Index - r.Index);
-            m_currentListCache.Insert(index, item.Value);
+            // We'll store insertions in the insertion cache at the same location as the item value's
+            //  location in the list cache, this will allow us to match them on removal
+            m_insertionsCache.Insert(item.Index, item);
+            m_currentListCache.Insert(item.Index, item.Value);
         }
 
         private void Remove (StratabaseListInsertion<TElement> item)
         {
+            // We stored insertions in the insertion cache at the same index location of the item in the list cache, so
+            //  by getting that index we can determine what index we need to remove (both from the insertion cache and
+            //  from the list cache)
             int index = m_insertionsCache.IndexOf(item);
             m_insertionsCache.RemoveAt(index);
             m_currentListCache.RemoveAt(index);
@@ -201,7 +340,8 @@
             {
                 foreach (StratabaseListInsertion<TElement> element in e.NewItems)
                 {
-                    this.Insert(element);
+                    // Technically there's a starting index, but insertion markers are only supported as an add/remove op no insertions at random ind will happen... hopefully...
+                    this.AddInsertMarker(element);
                 }
             }
             if (e.OldItems != null)
@@ -242,5 +382,6 @@
 
             return changes;
         }
+#endif
     }
 }

@@ -8,10 +8,11 @@
     public enum eStrataListConfig
     {
         /// <summary>
-        /// The most complex list storage, this type of list is represented by <see cref="StrataPropertyListAccess{TElement}"/> - essentially list representation
-        /// is a composite of inserts. Each layer stores inserts, and the access actually stores a cached current represetnation of the finally composited element storage
+        /// The most complex list storage, this type of list is represented by <see cref="StrataPropertyListAccess{TElement}"/> - essentially observable list representation
+        /// is managed for you by the Stratabase. Each layer stores an entire list or nothing. The active layer is still the top most layer, and there are utilities that
+        /// make moving between layers easier.
         /// </summary>
-        GenerateInsertOverrides,
+        ObservableElementManagement,
 
         /// <summary>
         /// Stores elements individually with name modification of index. Thus a list property Items were to be marked up this way, you would generate entries with property names like so: "Items[18]"
@@ -24,9 +25,9 @@
         StoreListDirectly,
 
         /// <summary>
-        /// The default, <see cref="GenerateInsertOverrides"/>
+        /// The default, <see cref="ObservableElementManagement"/>
         /// </summary>
-        Default = GenerateInsertOverrides,
+        Default = ObservableElementManagement,
     }
 
     /// <summary>

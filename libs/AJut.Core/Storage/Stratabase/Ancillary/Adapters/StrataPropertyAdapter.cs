@@ -61,6 +61,14 @@
         {
             this.ClearInstanceStorage();
             m_instanceStorage = new Lazy<TAdaptedValue>(_Constructor);
+
+            // If debugging gets difficult because of async nature of Lazy, just set this to true
+#if false
+            if (m_instanceStorage.Value != null)
+            {
+
+            }
+#endif
             this.ValueChanged?.Invoke(this, EventArgs.Empty);
 
             TAdaptedValue _Constructor()

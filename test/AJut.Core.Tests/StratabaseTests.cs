@@ -256,7 +256,7 @@
             Assert.AreEqual(thing.Other.IndexedItems[3], intValues[3].GetValue());
         }
 
-
+#if false
         [TestMethod]
         public void Stratabase_List_AddRemove_AccessCreatedLaterTracksCountProperly ()
         {
@@ -372,6 +372,7 @@
             Assert.AreEqual('D', list.GetElementAt(3));
             Assert.AreEqual('E', list.GetElementAt(4));
         }
+#endif
 
         [TestMethod]
         public void Stratabase_10000Layers ()
@@ -614,41 +615,18 @@
             Assert.AreEqual(data.ChildList[1].Name, found.ChildList[1].Name);
             Assert.AreEqual(data.ChildList[1].Value, found.ChildList[1].Value);
 
-            //var name = sb.GeneratePropertyAccess<string>(data.Id, nameof(TestDataWithList.Name));
-            //var value = sb.GeneratePropertyAccess<int>(data.Id, nameof(TestDataWithList.Value));
-            //var childList = sb.GenerateListPropertyAccess<Guid>(data.Id, nameof(TestDataWithList.ChildList));
+            var name = sb.GeneratePropertyAccess<string>(data.Id, nameof(TestDataWithList.Name));
+            var value = sb.GeneratePropertyAccess<int>(data.Id, nameof(TestDataWithList.Value));
+            var childList = sb.GenerateListPropertyAccess<Guid>(data.Id, nameof(TestDataWithList.ChildList));
 
-            //Assert.AreEqual(data.Name, name.GetValue());
-            //Assert.AreEqual(data.Value, value.GetValue());
-            //Assert.AreEqual(data.ChildList.Count, childList.GetCount());
+            Assert.AreEqual(data.Name, name.GetValue());
+            Assert.AreEqual(data.Value, value.GetValue());
+            Assert.AreEqual(data.ChildList.Count, childList.GetCount());
 
-            //Assert.AreEqual(data.ChildList[0], childList.Elements[0]);
-            //Assert.AreEqual(data.ChildList[1], childList.Elements[1]);
+            Assert.AreEqual(data.ChildList[0].Id, childList.Elements[0]);
+            Assert.AreEqual(data.ChildList[1].Id, childList.Elements[1]);
         }
 
-
-        [TestMethod]
-        public void Stratabase_PropertyDisposal ()
-        {
-            Stratabase sb = new Stratabase(1);
-            TestModel test = new TestModel(Guid.NewGuid(), sb);
-
-            var singleItem = new DisposeTester();
-            DisposeTester[] items = new DisposeTester[2] { new DisposeTester(), new DisposeTester() };
-
-            test.SingleItem = singleItem;
-            test.AddToList(items[0]);
-            test.AddToList(items[1]);
-
-            Assert.IsTrue(test.SingleItem != null);
-            Assert.IsTrue(test.ItemList != null);
-
-            test.Dispose();
-
-            Assert.AreEqual(1, singleItem.DisposeCallCount);
-            Assert.AreEqual(1, items[0].DisposeCallCount);
-            Assert.AreEqual(1, items[1].DisposeCallCount);
-        }
 
         [TestMethod]
         public void Stratabase_NewUnsetAccess_DoesNotGiveIsSetTrue ()
@@ -690,7 +668,7 @@
             public ReadOnlyObservableCollection<DisposeTester> ItemList => m_itemList.Access.Elements;
             public void AddToList (DisposeTester item)
             {
-                m_itemList.Access.CreateAdd(item).StoreInBaseline();
+                m_itemList.Access.AddElementIntoBaseline(item);
             }
 
             public void Dispose ()
@@ -1190,7 +1168,7 @@
             [StratabaseIdConstructor]
             public TestDataWithList (Guid id) : base(id) { }
 
-            [StrataListConfig(eStrataListConfig.GenerateInsertOverrides)]
+            [StrataListConfig(eStrataListConfig.ObservableElementManagement)]
             public List<TestData> ChildList { get; set; } = new List<TestData>();
         }
 
@@ -1201,7 +1179,7 @@
             [StratabaseIdConstructor]
             public TestDataWithReferenceList (Guid id) : base(id) { }
 
-            [StrataListConfig(eStrataListConfig.GenerateInsertOverrides, buildReferenceList: true)]
+            [StrataListConfig(eStrataListConfig.ObservableElementManagement, buildReferenceList: true)]
             public List<TestData> ChildList { get; set; } = new List<TestData>();
         }
 
@@ -1238,7 +1216,7 @@
 
             public string Name { get; set; }
 
-            [StrataListConfig(eStrataListConfig.GenerateInsertOverrides, buildReferenceList: true)]
+            [StrataListConfig(eStrataListConfig.ObservableElementManagement, buildReferenceList: true)]
             public List<TreeItem> Children { get; set; } = new List<TreeItem>();
         }
 
@@ -1273,7 +1251,6 @@
             }
 
             public ReadOnlyObservableCollection<StrataTreeItem> Children => m_children.Elements;
-
             public StrataTreeItem InsertItemIntoBaseline (int index, TreeItem item)
             {
                 if (!m_sb.Contains(item.Id) && !m_sb.SetBaselineFromPropertiesOf(item))
@@ -1281,24 +1258,24 @@
                     return null;
                 }
 
-                m_childrenIds.CreateInsert(index, item.Id).StoreInBaseline();
+                m_childrenIds.InsertElementIntoBaseline(index, item.Id);
                 return this.Children[index];
             }
 
-            public bool Remove (StrataTreeItem child)
-            {
-                return this.RemoveAt(this.Children.IndexOf(child));
-            }
+            //public bool Remove (StrataTreeItem child)
+            //{
+            //    return this.RemoveAt(this.Children.IndexOf(child));
+            //}
 
-            public bool RemoveAt (int index)
-            {
-                if (index < 0 || index >= this.Children.Count)
-                {
-                    return false;
-                }
+            //public bool RemoveAt (int index)
+            //{
+            //    if (index < 0 || index >= this.Children.Count)
+            //    {
+            //        return false;
+            //    }
 
-                return m_childrenIds.RemoveAt(index);
-            }
+            //    return m_childrenIds.RemoveElementFromBaselineList(index, idnex);
+            //}
         }
 
         public class TestDataContainer

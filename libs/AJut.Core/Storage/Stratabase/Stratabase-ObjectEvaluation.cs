@@ -159,7 +159,7 @@
                                 foreach (object element in elementValues)
                                 {
                                     var elementEval = ObjectEvaluation.Generate(null, null, element);
-                                    if (listConfigAttr.Config == eStrataListConfig.GenerateInsertOverrides)
+                                    if (listConfigAttr.Config == eStrataListConfig.ObservableElementManagement)
                                     {
                                         if (elementEval == null)
                                         {
@@ -183,7 +183,7 @@
                                     }
                                 }
 
-                                if (elementIds.Count > 0 && listConfigAttr.Config == eStrataListConfig.GenerateInsertOverrides)
+                                if (elementIds.Count > 0 && listConfigAttr.Config == eStrataListConfig.ObservableElementManagement)
                                 {
                                     insertGenerationLists.Add(subObjectName, new ListInfo(elementIds.ToArray(), typeof(Guid)));
                                 }
@@ -191,7 +191,7 @@
                             // ========= Whatever is in 'em lists ==============
                             else
                             {
-                                if (listConfigAttr.Config == eStrataListConfig.GenerateInsertOverrides)
+                                if (listConfigAttr.Config == eStrataListConfig.ObservableElementManagement)
                                 {
                                     insertGenerationLists.Add(subObjectName, new ListInfo(elementValues.OfType<object>().ToArray(), listConfigAttr.ElementType));
                                 }

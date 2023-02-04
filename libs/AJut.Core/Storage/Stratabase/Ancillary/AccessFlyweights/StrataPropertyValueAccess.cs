@@ -30,8 +30,8 @@
         public bool SetBaselineValue (TProperty value) => this.ODAM.SetBaselineValue(this.PropertyName, value);
         public bool SetOverrideValue (int layerIndex, TProperty value) => this.ODAM.SetOverrideValue(layerIndex, this.PropertyName, value);
 
-        public void ClearBaselineValue () => this.ODAM.ClearBaselinePropertyValue(this.PropertyName);
-        public void ClearOverrideValue (int layerIndex) => this.ODAM.ClearOverridePropertyValue(layerIndex, this.PropertyName);
+        public void ClearBaselineValue () => this.ODAM.ObliteratePropertyStorageInBaseline(this.PropertyName);
+        public void ClearOverrideValue (int layerIndex) => this.ODAM.ObliteratePropertyStorageInLayer(layerIndex, this.PropertyName);
 
         private class InvalidStrataPropertyValueAccess : StrataPropertyValueAccess<TProperty> { }
     }
