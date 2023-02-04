@@ -424,14 +424,49 @@
 
         // ----------------- Insert Element Value -----------------
 
-        public void InsertElementIntoBaselineList (Guid id, string property, int index, object newElement)
+        public void InsertElementIntoBaselineList (Guid id, string property, int elementIndex, object newElement)
         {
-            EnsureDataAccess(id).InsertElementIntoBaselineList(property, index, newElement);
+            EnsureDataAccess(id).InsertElementIntoBaselineList(property, elementIndex, newElement);
         }
 
-        public void InsertElementIntoOverrideList (int layer, Guid id, string property, int index, object newElement)
+        public void InsertElementIntoOverrideList (int layer, Guid id, string property, int elementIndex, object newElement)
         {
-            EnsureDataAccess(id).InsertElementIntoOverrideLayerList(layer, property, index, newElement);
+            EnsureDataAccess(id).InsertElementIntoOverrideLayerList(layer, property, elementIndex, newElement);
+        }
+
+        public void RemoveElementFromBaselineList (Guid id, string property, int elementIndex)
+        {
+            EnsureDataAccess(id).RemoveElementFromBaselineList(property, elementIndex);
+        }
+
+        public void RemoveElementFromOverrideList (int layer, Guid id, string property, int elementIndex)
+        {
+            EnsureDataAccess(id).RemoveElementFromOverrideLayerList(layer, property, elementIndex);
+        }
+
+        public void RemoveAllElementsFromBaselineList (Guid id, string property)
+        {
+            EnsureDataAccess(id).RemoveAllElementsInBaselineList(property);
+        }
+
+        public void RemoveAllElementsFromOverrideList (int layer, Guid id, string property)
+        {
+            EnsureDataAccess(id).RemoveAllElementsInOverrideLayerList(layer, property);
+        }
+
+        public void ResetListLayerByCopyingElements (int layerCopyFrom, int layerCopyTo, Guid id, string propertyName)
+        {
+            EnsureDataAccess(id).ResetListLayerByCopyingElements(layerCopyFrom, layerCopyTo, propertyName);
+        }
+
+        public void ResetListLayerByCopyingElementsFromBaseline (int layerCopyTo, Guid id, string propertyName)
+        {
+            EnsureDataAccess(id).ResetListLayerByCopyingElementsFromBaseline(layerCopyTo, propertyName);
+        }
+
+        public void ResetBaselineByCopyingElementsFrom (int overrideLayerToCopyFrom, Guid id, string propertyName)
+        {
+            EnsureDataAccess(id).ResetBaselineByCopyingElementsFrom(overrideLayerToCopyFrom, propertyName);
         }
 
         // ----------------- Get Property Value -----------------
@@ -888,7 +923,6 @@
                     }
                 );
             }
-
 
             public void ResetListLayerByCopyingElements (int overrideLayerToCopyFrom, int overrideLayerToCopyTo, string propertyName)
             {

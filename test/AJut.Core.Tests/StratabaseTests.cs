@@ -1148,6 +1148,160 @@
             Assert.AreEqual(two.Strings[2], strs.Elements[3]);
         }
 
+        [TestMethod]
+        public void Stratabase_REGRESSION_ElementRemoval ()
+        {
+            ThingWithTwoLists two = new ThingWithTwoLists
+            {
+                Ints = new List<int> { 1, 2, 345 },
+                Strings = new List<string> { "1", "2", "345 but strings!" },
+            };
+
+            // Fill a stratabase baseline layer with this object's data
+            Stratabase sb = new Stratabase(1);
+            Assert.IsTrue(sb.SetBaselineFromPropertiesOf(two));
+
+            // Create accessors for easy testing
+            StrataPropertyListAccess<int> ints = sb.GenerateListPropertyAccess<int>(two.Id, nameof(ThingWithTwoLists.Ints));
+            Assert.IsNotNull(ints);
+
+            StrataPropertyListAccess<string> strs = sb.GenerateListPropertyAccess<string>(two.Id, nameof(ThingWithTwoLists.Strings));
+            Assert.IsNotNull(strs);
+            
+            // Baseline: Ensure counts and items match
+            Assert.AreEqual(3, ints.Elements.Count);
+            Assert.AreEqual(two.Ints[0], ints.Elements[0]);
+            Assert.AreEqual(two.Ints[1], ints.Elements[1]);
+            Assert.AreEqual(two.Ints[2], ints.Elements[2]);
+
+            Assert.AreEqual(3, strs.Elements.Count);
+            Assert.AreEqual(two.Strings[0], strs.Elements[0]);
+            Assert.AreEqual(two.Strings[1], strs.Elements[1]);
+            Assert.AreEqual(two.Strings[2], strs.Elements[2]);
+
+            // Remove Ints[0]: Ensure counts and items match
+            ints.RemoveElementFromBaselineListByIndex(0);
+            Assert.AreEqual(2, ints.Elements.Count);
+            Assert.AreEqual(two.Ints[1], ints.Elements[0]);
+            Assert.AreEqual(two.Ints[2], ints.Elements[1]);
+
+            Assert.AreEqual(3, strs.Elements.Count);
+            Assert.AreEqual(two.Strings[0], strs.Elements[0]);
+            Assert.AreEqual(two.Strings[1], strs.Elements[1]);
+            Assert.AreEqual(two.Strings[2], strs.Elements[2]);
+
+            // Remove Ints[0]: Ensure counts and items match
+            ints.RemoveElementFromBaselineListByIndex(0);
+            Assert.AreEqual(1, ints.Elements.Count);
+            Assert.AreEqual(two.Ints[2], ints.Elements[0]);
+
+            Assert.AreEqual(3, strs.Elements.Count);
+            Assert.AreEqual(two.Strings[0], strs.Elements[0]);
+            Assert.AreEqual(two.Strings[1], strs.Elements[1]);
+            Assert.AreEqual(two.Strings[2], strs.Elements[2]);
+        }
+
+        [TestMethod]
+        public void Stratabase_CopyListsAround_BasicTest ()
+        {
+            ThingWithTwoLists two = new ThingWithTwoLists
+            {
+                Ints = new List<int> { 1, 2, 345 },
+                Strings = new List<string> { "1", "2", "345 but strings!" },
+            };
+
+            // Setup new stratabase baseline with data from above obj
+            Stratabase sb = new Stratabase(2);
+            Assert.IsTrue(sb.SetBaselineFromPropertiesOf(two));
+            StrataPropertyListAccess<int> ints = sb.GenerateListPropertyAccess<int>(two.Id, nameof(ThingWithTwoLists.Ints));
+            Assert.IsNotNull(ints);
+
+            StrataPropertyListAccess<string> strs = sb.GenerateListPropertyAccess<string>(two.Id, nameof(ThingWithTwoLists.Strings));
+            Assert.IsNotNull(strs);
+
+            // Baseline: Element count & contents match
+            Assert.AreEqual(3, ints.Elements.Count);
+            Assert.AreEqual(two.Ints[0], ints.Elements[0]);
+            Assert.AreEqual(two.Ints[1], ints.Elements[1]);
+            Assert.AreEqual(two.Ints[2], ints.Elements[2]);
+            _AssertStrsMatch();
+
+            // Insert[0]: Element count & contents match
+            ints.InsertElementIntoBaseline(0, 555);
+            Assert.AreEqual(4, ints.Elements.Count);
+            Assert.AreEqual(555, ints.Elements[0]);
+            Assert.AreEqual(two.Ints[0], ints.Elements[1]);
+            Assert.AreEqual(two.Ints[1], ints.Elements[2]);
+            Assert.AreEqual(two.Ints[2], ints.Elements[3]);
+            _AssertStrsMatch();
+
+            // Setting override layer #0 from baseline
+            ints.ResetLayerByCopyingElementsFromBaseline(0);
+            Assert.AreEqual(0, ints.ActiveLayerIndex);
+            Assert.AreEqual(4, ints.Elements.Count);
+            Assert.AreEqual(555, ints.Elements[0]);
+            Assert.AreEqual(two.Ints[0], ints.Elements[1]);
+            Assert.AreEqual(two.Ints[1], ints.Elements[2]);
+            Assert.AreEqual(two.Ints[2], ints.Elements[3]);
+            _AssertStrsMatch();
+
+            // Setting override layer #1 from layer #0
+            ints.ResetLayerByCopyingElements(0, /* ---→ */ 1);
+            Assert.AreEqual(1, ints.ActiveLayerIndex);
+            Assert.AreEqual(4, ints.Elements.Count);
+            Assert.AreEqual(555, ints.Elements[0]);
+            Assert.AreEqual(two.Ints[0], ints.Elements[1]);
+            Assert.AreEqual(two.Ints[1], ints.Elements[2]);
+            Assert.AreEqual(two.Ints[2], ints.Elements[3]);
+            _AssertStrsMatch();
+
+            // Clearing layer #1
+            ints.RemoveAllElementsFrom(1);
+            Assert.AreEqual(1, ints.ActiveLayerIndex);
+            Assert.AreEqual(0, ints.Elements.Count);
+            _AssertStrsMatch();
+
+            // Adding new single element to layer #1
+            ints.InsertElementIntoOverrideLayer(1, 0, 999);
+            Assert.AreEqual(1, ints.ActiveLayerIndex);
+            Assert.AreEqual(1, ints.Elements.Count);
+            Assert.AreEqual(999, ints.Elements[0]);
+            _AssertStrsMatch();
+
+            // Reset baseline from layer #1
+            ints.ResetBaselineByCopyingElementsFrom(1);
+            Assert.AreEqual(1, ints.ActiveLayerIndex);
+            Assert.AreEqual(1, ints.Elements.Count);
+            Assert.AreEqual(999, ints.Elements[0]);
+            _AssertStrsMatch();
+
+            // Destroy layer #1, making layer #0 the new top (pre removeall data)
+            ints.ObliterateLayer(1);
+            Assert.AreEqual(0, ints.ActiveLayerIndex);
+            Assert.AreEqual(4, ints.Elements.Count);
+            Assert.AreEqual(555, ints.Elements[0]);
+            Assert.AreEqual(two.Ints[0], ints.Elements[1]);
+            Assert.AreEqual(two.Ints[1], ints.Elements[2]);
+            Assert.AreEqual(two.Ints[2], ints.Elements[3]);
+            _AssertStrsMatch();
+
+            // Destroy layer #0, making baeline the new top (with the reset data set earlier, single element)
+            ints.ObliterateLayer(0);
+            Assert.IsTrue(ints.IsActiveLayerBaseline);
+            Assert.AreEqual(1, ints.Elements.Count);
+            Assert.AreEqual(999, ints.Elements[0]);
+            _AssertStrsMatch();
+
+            // There was once a bug that made list removal of unrelated elements hit each other, this is more a paranoia test
+            void _AssertStrsMatch ()
+            {
+                Assert.AreEqual(3, strs.Elements.Count);
+                Assert.AreEqual(two.Strings[0], strs.Elements[0]);
+                Assert.AreEqual(two.Strings[1], strs.Elements[1]);
+                Assert.AreEqual(two.Strings[2], strs.Elements[2]);
+            }
+        }
+
         public class DotClassStore
         {
             [StratabaseId]
@@ -1438,7 +1592,7 @@
         public class ThingWithTwoLists
         {
             [StratabaseId]
-            public Guid Id { get; } = Guid.NewGuid();
+            public Guid Id { get; set; } = Guid.NewGuid();
             public List<int> Ints { get; set; } = new List<int>();
             public List<string> Strings { get; set; } = new List<string>();
         }
