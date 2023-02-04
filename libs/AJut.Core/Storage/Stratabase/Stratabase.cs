@@ -1050,7 +1050,7 @@
                     elementIndex = listTracker.Count - 1;
                 }
 
-                if (listTracker.Count - 1 < elementIndex || elementIndex < 0)
+                if (listTracker.Count < elementIndex || elementIndex < 0)
                 {
                     return false;
                 }
