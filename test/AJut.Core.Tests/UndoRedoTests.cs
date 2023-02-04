@@ -3,6 +3,7 @@
     using AJut.MathUtilities;
     using AJut.UndoRedo;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System;
     using System.Linq;
 
     [TestClass]
@@ -167,6 +168,86 @@
             Assert.IsTrue(undoredo.AnyUndos);
             Assert.AreEqual(1, undoredo.UndoStack.Count);
             Assert.AreEqual("Nothing", undoredo.UndoStack.First().DisplayName);
+        }
+
+        [TestMethod]
+        public void UndoRedo_SubstackOverride_BasicUsage ()
+        {
+            var undoRedo = new UndoRedoManager();
+            int mathTarget = 10;
+
+            // Stock the current undo/redo with an undoable
+            undoRedo.ExecuteAction(new LambdaUndoableAction("SimpleMath", () => mathTarget += 5, () => mathTarget -= 5));
+            Assert.AreEqual(15, mathTarget);
+            Assert.AreEqual(1, undoRedo.UndoStack.Count);
+            Assert.AreEqual(0, undoRedo.RedoStack.Count);
+
+            // Create the substack and set it as 
+            UndoRedoManager.SubstackOverride overrideSubstack = undoRedo.OverrideUndoRedoCallsToUseNewSubstack();
+            Assert.IsNotNull(overrideSubstack);
+            Assert.IsTrue(overrideSubstack.IsActive);
+
+            undoRedo.ExecuteAction(new LambdaUndoableAction("SimpleMath", () => mathTarget += 7, () => mathTarget -= 7));
+            Assert.AreEqual(22, mathTarget);
+            Assert.AreEqual(1, undoRedo.UndoStack.Count);
+            Assert.AreEqual(0, undoRedo.RedoStack.Count);
+            Assert.AreEqual(1, undoRedo.GetSubstack(overrideSubstack.Id).UndoStack.Count);
+            Assert.AreEqual(0, undoRedo.GetSubstack(overrideSubstack.Id).RedoStack.Count);
+
+            undoRedo.ExecuteAction(new LambdaUndoableAction("SimpleMath", () => mathTarget += 10, () => mathTarget -= 10));
+            Assert.AreEqual(32, mathTarget);
+            Assert.AreEqual(1, undoRedo.UndoStack.Count);
+            Assert.AreEqual(0, undoRedo.RedoStack.Count);
+            Assert.AreEqual(2, undoRedo.GetSubstack(overrideSubstack.Id).UndoStack.Count);
+            Assert.AreEqual(0, undoRedo.GetSubstack(overrideSubstack.Id).RedoStack.Count);
+
+            // Undo, this should undo something done on the substack - not on the main stack!
+            Assert.IsTrue(undoRedo.Undo());
+            Assert.AreEqual(22, mathTarget);
+            Assert.AreEqual(1, undoRedo.UndoStack.Count);
+            Assert.AreEqual(0, undoRedo.RedoStack.Count);
+            Assert.AreEqual(1, undoRedo.GetSubstack(overrideSubstack.Id).UndoStack.Count);
+            Assert.AreEqual(1, undoRedo.GetSubstack(overrideSubstack.Id).RedoStack.Count);
+
+            // Redo, this should redo something done on the substack - not on the main stack!
+            Assert.IsTrue(undoRedo.Redo());
+            Assert.AreEqual(32, mathTarget);
+            Assert.AreEqual(1, undoRedo.UndoStack.Count);
+            Assert.AreEqual(0, undoRedo.RedoStack.Count);
+            Assert.AreEqual(2, undoRedo.GetSubstack(overrideSubstack.Id).UndoStack.Count);
+            Assert.AreEqual(0, undoRedo.GetSubstack(overrideSubstack.Id).RedoStack.Count);
+
+            // Commit the substack, this should now add the second entry to the main stack as a grouped entry
+            Assert.IsTrue(overrideSubstack.CommitAndEndOverride("Grouped Math"));
+            Assert.AreEqual(32, mathTarget);
+            Assert.AreEqual(2, undoRedo.UndoStack.Count);
+            Assert.AreEqual(0, undoRedo.RedoStack.Count);
+
+            // Undo should now undo the group entry
+            Assert.IsTrue(undoRedo.Undo());
+            Assert.AreEqual(15, mathTarget);
+            Assert.AreEqual(1, undoRedo.UndoStack.Count);
+            Assert.AreEqual(1, undoRedo.RedoStack.Count);
+
+            // Undo should now undo the first entry that was made directly to the main stack
+            Assert.IsTrue(undoRedo.Undo());
+            Assert.AreEqual(10, mathTarget);
+            Assert.AreEqual(0, undoRedo.UndoStack.Count);
+            Assert.AreEqual(2, undoRedo.RedoStack.Count);
+            Assert.IsFalse(undoRedo.Undo());
+
+            // Redo should now put the main stack to how it started with the first entry
+            Assert.IsTrue(undoRedo.Redo());
+            Assert.AreEqual(15, mathTarget);
+            Assert.AreEqual(1, undoRedo.UndoStack.Count);
+            Assert.AreEqual(1, undoRedo.RedoStack.Count);
+
+            // Redo should now apply the group that represents the comitted substack
+            Assert.IsTrue(undoRedo.Redo());
+            Assert.AreEqual(32, mathTarget);
+            Assert.AreEqual(2, undoRedo.UndoStack.Count);
+            Assert.AreEqual(0, undoRedo.RedoStack.Count);
+            Assert.IsFalse(undoRedo.Redo());
         }
     }
 }
