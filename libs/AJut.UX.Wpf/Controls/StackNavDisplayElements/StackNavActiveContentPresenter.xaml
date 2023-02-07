@@ -13,6 +13,12 @@
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="BorderBrush" Value="#8000"/>
         <Setter Property="BorderThickness" Value="0,1,0,0"/>
+        <Setter Property="BusyWaitOverlayWidth" Value="5*"/>
+        <Setter Property="BusyWaitOverlayHeight" Value="Auto"/>
+        <Setter Property="PopoverOverlayWidth" Value="Auto"/>
+        <Setter Property="PopoverOverlayHeight" Value="Auto"/>
+        <Setter Property="OverlayColumnMarginWidth" Value="1*"/>
+        <Setter Property="OverlayRowMarginHeight" Value="1*"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:StackNavActiveContentPresenter}">
@@ -26,8 +32,18 @@
                                     Background="{TemplateBinding CoverBackgroundBrush}"
                                     Visibility="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:StackNavActiveContentPresenter}}, Path=Navigator.StackTopDisplayAdapter.AnyCoversShown, Converter={ajconv:BooleanToVisibilityConverter}}">
                                 <Grid Margin="10">
-                                    <local:StackNavBusyWaitOverlay Visibility="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:StackNavActiveContentPresenter}}, Path=Navigator.StackTopDisplayAdapter.IsBusyWaitActive, Converter={ajconv:BooleanToVisibilityConverter}}"/>
-                                    <local:StackNavPopoverOverlay Visibility="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:StackNavActiveContentPresenter}}, Path=Navigator.StackTopDisplayAdapter.IsShowingPopover, Converter={ajconv:BooleanToVisibilityConverter}}"
+                                    <local:StackNavBusyWaitOverlay OverlayWidth="{TemplateBinding BusyWaitOverlayWidth}" OverlayHeight="{TemplateBinding BusyWaitOverlayHeight}"
+                                                                   OverlayColumnMarginWidth="{TemplateBinding OverlayColumnMarginWidth}" OverlayRowMarginHeight="{TemplateBinding OverlayRowMarginHeight}"
+                                                                   Visibility="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:StackNavActiveContentPresenter}}, Path=Navigator.StackTopDisplayAdapter.IsBusyWaitActive, Converter={ajconv:BooleanToVisibilityConverter}}">
+                                        <local:StackNavBusyWaitOverlay.MessageContentTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding .}" TextAlignment="Justify" TextWrapping="WrapWithOverflow"/>
+                                            </DataTemplate>
+                                        </local:StackNavBusyWaitOverlay.MessageContentTemplate>
+                                    </local:StackNavBusyWaitOverlay>
+                                    <local:StackNavPopoverOverlay OverlayWidth="{TemplateBinding PopoverOverlayWidth}" OverlayHeight="{TemplateBinding PopoverOverlayHeight}"
+                                                                  OverlayColumnMarginWidth="{TemplateBinding OverlayColumnMarginWidth}" OverlayRowMarginHeight="{TemplateBinding OverlayRowMarginHeight}"
+                                                                  Visibility="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:StackNavActiveContentPresenter}}, Path=Navigator.StackTopDisplayAdapter.IsShowingPopover, Converter={ajconv:BooleanToVisibilityConverter}}"
                                                                   DisplayContent="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:StackNavActiveContentPresenter}}, Path=Navigator.StackTopDisplayAdapter.PopoverDisplay}"/>
                                 </Grid>
                             </Border>

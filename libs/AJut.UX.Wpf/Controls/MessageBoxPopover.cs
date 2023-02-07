@@ -54,6 +54,20 @@
             set => this.SetValue(SeparatorLineHeightProperty, value);
         }
 
+        public static readonly DependencyProperty OptionsPanelTemplateProperty = DPUtils.Register(_ => _.OptionsPanelTemplate);
+        public ItemsPanelTemplate OptionsPanelTemplate
+        {
+            get => (ItemsPanelTemplate)this.GetValue(OptionsPanelTemplateProperty);
+            set => this.SetValue(OptionsPanelTemplateProperty, value);
+        }
+
+        public static readonly DependencyProperty PromptTextAlignmentProperty = DPUtils.Register(_ => _.PromptTextAlignment);
+        public TextAlignment PromptTextAlignment
+        {
+            get => (TextAlignment)this.GetValue(PromptTextAlignmentProperty);
+            set => this.SetValue(PromptTextAlignmentProperty, value);
+        }
+
         public static MessageBoxPopover Generate (string message, params string[] options)
         {
             return new MessageBoxPopover(message, false, options);
