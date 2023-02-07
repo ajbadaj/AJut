@@ -285,6 +285,10 @@
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderShadow}"/>
     </Style>
 
+    <Style TargetType="{x:Type ajut_ctrls:StackNavBusyWaitOverlay}">
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_HighContrastText}"/>
+    </Style>
+    
     <Style TargetType="{x:Type ajut_ctrls:StackNavPopoverOverlay}">
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_RootPanelBackground}"/>
     </Style>

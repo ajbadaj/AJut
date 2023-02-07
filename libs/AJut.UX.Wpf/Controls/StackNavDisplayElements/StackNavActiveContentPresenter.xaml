@@ -37,7 +37,8 @@
                                                                    Visibility="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:StackNavActiveContentPresenter}}, Path=Navigator.StackTopDisplayAdapter.IsBusyWaitActive, Converter={ajconv:BooleanToVisibilityConverter}}">
                                         <local:StackNavBusyWaitOverlay.MessageContentTemplate>
                                             <DataTemplate>
-                                                <TextBlock Text="{Binding .}" TextAlignment="Justify" TextWrapping="WrapWithOverflow"/>
+                                                <TextBlock Text="{Binding .}" TextAlignment="Justify" TextWrapping="WrapWithOverflow"
+                                                           Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:StackNavBusyWaitOverlay}}, Path=Foreground, Mode=OneWay}"/>
                                             </DataTemplate>
                                         </local:StackNavBusyWaitOverlay.MessageContentTemplate>
                                     </local:StackNavBusyWaitOverlay>
