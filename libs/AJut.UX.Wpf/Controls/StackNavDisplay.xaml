@@ -8,6 +8,12 @@
 
     <Style TargetType="{x:Type local:StackNavDisplay}">
         <Setter Property="Focusable" Value="True"/>
+        <Setter Property="BusyWaitOverlayWidth" Value="5*"/>
+        <Setter Property="BusyWaitOverlayHeight" Value="Auto"/>
+        <Setter Property="PopoverOverlayWidth" Value="2*"/>
+        <Setter Property="PopoverOverlayHeight" Value="Auto"/>
+        <Setter Property="OverlayColumnMarginWidth" Value="1*"/>
+        <Setter Property="OverlayRowMarginHeight" Value="1*"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:StackNavDisplay}">
@@ -20,7 +26,13 @@
                             <ctrls:StackNavActiveHeaderPresenter x:Name="HeaderBar" DockPanel.Dock="Top" Navigator="{ajut:TemplateBinding Path=Navigator}"/>
                             <ctrls:StackNavActiveDrawerPresenter x:Name="Drawer" DockPanel.Dock="Left" Navigator="{ajut:TemplateBinding Path=Navigator}" Width="{TemplateBinding FixedDrawerWidth}"
                                                                  DrawerSeparatorFill="{Binding ElementName=HeaderBar, Path=Background}"/>
-                            <ctrls:StackNavActiveContentPresenter x:Name="CurrentDisplay" Navigator="{ajut:TemplateBinding Path=Navigator}"/>
+                            <ctrls:StackNavActiveContentPresenter x:Name="CurrentDisplay" Navigator="{ajut:TemplateBinding Path=Navigator}"
+                                                                  OverlayColumnMarginWidth="{TemplateBinding OverlayColumnMarginWidth}"
+                                                                  OverlayRowMarginHeight="{TemplateBinding OverlayRowMarginHeight}"
+                                                                  BusyWaitOverlayWidth="{TemplateBinding BusyWaitOverlayWidth}"
+                                                                  BusyWaitOverlayHeight="{TemplateBinding BusyWaitOverlayHeight}"
+                                                                  PopoverOverlayWidth="{TemplateBinding PopoverOverlayWidth}"
+                                                                  PopoverOverlayHeight="{TemplateBinding PopoverOverlayHeight}"/>
                         </DockPanel>
                     </Border>
                 </ControlTemplate>
