@@ -10,7 +10,7 @@
         <Setter Property="Focusable" Value="True"/>
         <Setter Property="BusyWaitOverlayWidth" Value="5*"/>
         <Setter Property="BusyWaitOverlayHeight" Value="Auto"/>
-        <Setter Property="PopoverOverlayWidth" Value="2*"/>
+        <Setter Property="PopoverOverlayWidth" Value="Auto"/>
         <Setter Property="PopoverOverlayHeight" Value="Auto"/>
         <Setter Property="OverlayColumnMarginWidth" Value="1*"/>
         <Setter Property="OverlayRowMarginHeight" Value="1*"/>
