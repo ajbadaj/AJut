@@ -33,13 +33,21 @@
 
     <Style x:Key="AJut_Style_DefaultTextBlock" TargetType="{x:Type TextBlock}">
         <Setter Property="FontFamily" Value="{Binding RelativeSource={RelativeSource Self}, Path=(TextElement.FontFamily)}"/>
-        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type TextBlock}}, Path=(TextElement.Foreground), Converter={ajut_conv:NullnessChecker}}" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
+            </DataTrigger>
+        </Style.Triggers>
     </Style>
 
     <Style x:Key="AJut_Style_HeaderTextBlock" TargetType="{x:Type TextBlock}">
         <Setter Property="FontWeight" Value="Thin"/>
-        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="FontFamily" Value="Century Gothic"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type TextBlock}}, Path=(TextElement.Foreground), Converter={ajut_conv:NullnessChecker}}" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
+            </DataTrigger>
+        </Style.Triggers>
     </Style>
 
     <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource AJut_Style_DefaultTextBlock}"/>
@@ -49,7 +57,11 @@
 
     <Style TargetType="{x:Type AccessText}">
         <Setter Property="FontFamily" Value="{Binding RelativeSource={RelativeSource Self}, Path=(TextElement.FontFamily)}"/>
-        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type TextBlock}}, Path=(TextElement.Foreground), Converter={ajut_conv:NullnessChecker}}" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
+            </DataTrigger>
+        </Style.Triggers>
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:NumericEditor}">
@@ -100,11 +112,13 @@
         <Setter Property="GlyphHighlightBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_ListBackground}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ListBorder}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="ListBoxItemContainerStyle">
             <Setter.Value>
                 <Style TargetType="{x:Type ListBoxItem}">
                     <Setter Property="SnapsToDevicePixels" Value="True" />
                     <Setter Property="BorderBrush" Value="Transparent"/>
+                    <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="{x:Type ListBoxItem}">
@@ -181,10 +195,12 @@
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
         <Setter Property="HighlightBorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
         <Setter Property="PopupWidth" Value="275"/>
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_InnerPanelBackground}"/>
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:ColorValueEditControl}">
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_InnerPanelBackground}"/>
     </Style>
 
@@ -210,6 +226,7 @@
 
         <Setter Property="FontSize" Value="18"/>
     </Style>
+    
     <Style TargetType="{x:Type ajut_ctrls:DockZoneTabHeadersControl}">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="HeaderBackground" Value="{DynamicResource AJut_Brush_InnerPanelBackground}"/>
@@ -336,6 +353,11 @@
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_SymbolForeground}"/>
         <Setter Property="Opacity" Value="0.7"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type TextBlock}}, Path=(TextElement.Foreground), Converter={ajut_conv:NullnessChecker}}" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_SymbolForeground}"/>
+            </DataTrigger>
+        </Style.Triggers>
     </Style>
 
     <Style TargetType="{x:Type ButtonBase}" x:Key="AJut_Style_SymbolButtonBase">
@@ -424,7 +446,7 @@
     <Style x:Key="AJut_Style_ButtonBase" TargetType="{x:Type ButtonBase}">
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_ControlBackground}" />
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
-        <Setter Property="TextElement.Foreground" Value="{DynamicResource AJut_Brush_NormalText}" />
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}" />
         <Setter Property="TextElement.FontFamily" Value="Segoe UI" />
         <Setter Property="TextElement.FontWeight" Value="Thin" />
         <Setter Property="Template">
@@ -472,6 +494,7 @@
     <Style TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource AJut_Style_ToggleButton}" />
 
     <Style x:Key="AJut_Style_MessageBoxButton" TargetType="{x:Type Button}" BasedOn="{StaticResource AJut_Style_ButtonBase}">
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}" />
         <Setter Property="TextElement.FontSize" Value="16"/>
         <Setter Property="Padding" Value="5,2"/>
         <Setter Property="Margin" Value="5,0,0,0"/>
@@ -486,6 +509,7 @@
 
     <Style TargetType="{x:Type ListBoxItem}">
         <Setter Property="TextElement.FontFamily" Value="Segoe UI" />
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ListBoxItem}">
@@ -523,6 +547,7 @@
         </Style.Triggers>
     </Style>
     <Style TargetType="{x:Type ListBox}">
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}" />
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_ListBackground}" />
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ListBorder}" />
         <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
@@ -555,6 +580,7 @@
     </Style>
 
     <Style TargetType="{x:Type TabControl}">
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}" />
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_PanelBackground}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
         <Setter Property="BorderThickness" Value="1"/>
@@ -781,6 +807,7 @@
     </Style>
 
     <Style TargetType="{x:Type ComboBox}">
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_PopOutControlBackground}" />
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_TextBoxBorder}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_InteractiveTextUnfocused}" />
@@ -909,6 +936,7 @@
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_TextBoxBorder}"/>
         <Setter Property="Padding" Value="0,0,5,0"/>
         <Setter Property="IsEnabled" Value="{Binding RelativeSource={RelativeSource Self}, Path=(ajut_ap:Edit.IsEditable)}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type CheckBox}">
@@ -978,6 +1006,7 @@
     </Style>
 
     <Style TargetType="{x:Type Slider}">
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="IsEnabled" Value="{Binding RelativeSource={RelativeSource Self}, Path=(ajut_ap:Edit.IsEditable)}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
         <Setter Property="BorderThickness" Value="1"/>
@@ -1163,6 +1192,7 @@
     </Style>
 
     <Style TargetType="{x:Type Thumb}">
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_ControlBackground}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
         <Setter Property="ajut_ap:BorderXTA.CornerRadius" Value="0" />
@@ -1177,6 +1207,7 @@
     </Style>
 
     <Style x:Key="AJut_Style_ButtonHoverRepeat" TargetType="{x:Type RepeatButton}">
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_BorderShadow}"/>
         <Setter Property="Delay" Value="1" />
         <Setter Property="Interval" Value="1" />
@@ -1197,6 +1228,7 @@
     </Style>
 
     <Style TargetType="{x:Type Expander}">
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_InnerPanelBackground}" />
         <Setter Property="ajut_ap:BorderXTA.CornerRadius" Value="8,8,0,0" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -1313,6 +1345,7 @@
     </ControlTemplate>
 
     <Style TargetType="{x:Type ScrollViewer}">
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
         <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
@@ -1321,6 +1354,7 @@
     </Style>
 
     <Style TargetType="{x:Type ScrollBar}">
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
         <Style.Triggers>
@@ -1544,6 +1578,7 @@
         <Setter Property="BorderThickness" Value="1"/>
     </Style>
     <Style TargetType="{x:Type GroupBox}">
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_GroupBorder}" />
         <Setter Property="BorderThickness" Value="3"/>
         <Setter Property="Padding" Value="10"/>
@@ -1597,6 +1632,7 @@
 
     <Style x:Key="{x:Type ToolTip}" TargetType="ToolTip">
         <Setter Property="HasDropShadow" Value="True" />
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_ToolTipBackground}" />
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightDesat}"/>
         <Setter Property="MaxWidth" Value="420"/>
@@ -1668,6 +1704,7 @@
 
     <Style TargetType="{x:Type Menu}">
         <Setter Property="BorderThickness" Value="3"/>
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_PopOutControlBackground}" />
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PanelBorder}" />
         <Setter Property="TextElement.FontFamily" Value="{DynamicResource AJut_Font_Default}" />
@@ -1996,6 +2033,7 @@
     <Style x:Key="AJut_Style_ThemedWindow" TargetType="{x:Type Window}">
         <Setter Property="WindowStyle" Value="None"/>
         <Setter Property="FontFamily" Value="{DynamicResource AJut_Font_Default}"/>
+        <Setter Property="TextElement.Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="TextElement.FontFamily" Value="{DynamicResource AJut_Font_Default}" />
         <Setter Property="ajut_theme:AppThemeManager.WindowBorderGlowBrush" Value="{DynamicResource AJut_Brush_WindowGlowBorder}"/>
         <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource Self}, Path=(ajut_theme:AppThemeManager.WindowBorderGlowBrush)}"/>
@@ -2104,6 +2142,7 @@
         <Setter Property="WindowStyle" Value="None"/>
         <Setter Property="FontFamily" Value="{DynamicResource AJut_Font_Default}"/>
         <Setter Property="TextElement.FontFamily" Value="{DynamicResource AJut_Font_Default}" />
+        <Setter Property="TextElement.Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="ajut_theme:AppThemeManager.WindowBorderGlowBrush" Value="{DynamicResource AJut_Brush_WindowGlowBorder}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_TitleBarBackground}"/>
         <Setter Property="Margin" Value="0"/>
