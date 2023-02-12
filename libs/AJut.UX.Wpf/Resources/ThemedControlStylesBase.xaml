@@ -248,6 +248,11 @@
         <Setter Property="GlyphHighlightedBorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightDesat}"/>
     </Style>
 
+    <Style TargetType="{x:Type ajut_ctrls:DockWholeWindowDragStartControl}">
+        <Setter Property="GlyphBrush" Value="{DynamicResource AJut_Brush_SymbolForeground}"/>
+        <Setter Property="GlyphBrushHighlighted" Value="{DynamicResource AJut_Brush_SymbolForegroundHighlight}"/>
+    </Style>
+
     <Style TargetType="{x:Type ajut_ctrls:WindowChromeButtonStrip}">
         <Setter Property="ButtonPadding" Value="12" />
         <Setter Property="ButtonGlyphFontSize" Value="10" />
