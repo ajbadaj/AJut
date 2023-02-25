@@ -1,12 +1,10 @@
 # The AJut Libraries
-`AJut.Core`
-[![NuGet version (AJut.Core)](https://img.shields.io/nuget/v/AJut.Core.svg?style=flat-square)](https://www.nuget.org/packages/AJut.Core/)
-[![MIT License](https://img.shields.io/badge/license-MIT-green.svg?style=flat-square)](/LICENSE)\
-`AJut.UX.Wpf`
-[![NuGet version (AJut.UX.Wpf)](https://img.shields.io/nuget/v/AJut.UX.Wpf.svg?style=flat-square)](https://www.nuget.org/packages/AJut.UX.Wpf/)
-[![MIT License](https://img.shields.io/badge/license-MIT-green.svg?style=flat-square)](/LICENSE)
-
 C# / dotnet 5 / wpf - utility libraries, created by AJ Badarni
+<!-- 👇 nuget package table -->
+| | |
+|-|-|
+|<sup><sub>`AJut.Core`</sub></sup>|[![NuGet version (AJut.Core)](https://img.shields.io/nuget/v/AJut.Core.svg?style=flat-square)](https://www.nuget.org/packages/AJut.Core/) [![MIT License](https://img.shields.io/badge/license-MIT-green.svg?style=flat-square)](/LICENSE)
+<sup><sub>`AJut.UX.Wpf`</sub></sup>|[![NuGet version (AJut.UX.Wpf)](https://img.shields.io/nuget/v/AJut.UX.Wpf.svg?style=flat-square)](https://www.nuget.org/packages/AJut.UX.Wpf/) [![MIT License](https://img.shields.io/badge/license-MIT-green.svg?style=flat-square)](/LICENSE)|
 
 ## Greetings
 I hope you enjoy this library. AJut is short for AJ Utilities, (pronounced like the dipping sauce Au Jus).
