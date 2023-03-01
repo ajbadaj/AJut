@@ -19,14 +19,15 @@
         public static string AppDataRoot { get; private set; }
 
         /// <summary>
-        /// Will setup your project with logging & an exception processor
+        /// Sets up your application with standard project setup mechanisms including optionally logging, exception processing, and configuration of the <see cref="AppDataRoot"/>
         /// </summary>
         /// <param name="projectName">The name of the project, used for context in logging and potentially elsewhere</param>
         /// <param name="setupLogging">Should logging be setup, will default to a project name specific appdata location</param>
         /// <param name="onExceptionRecieved">Something to handle unhandled exceptions</param>
         /// <param name="ageMaxInDaysToKeepLogs">The max age (in days) to keep logs - this will auto purge logs with this call for all logs older than specified. Pass in -1 to skip log purging (not recommended). Default = 10.</param>
         /// <param name="sharedProjectName">A shared project name so two or more projects can share a root location (ie CoolProj is the shared project name, but individually the projects are: CoolProjClient, CoolProjServer)</param>
-        public static void RunOnetimeSetup (string projectName, bool setupLogging = true, ExceptionProcessor onExceptionRecieved = null, int ageMaxInDaysToKeepLogs = 10, string sharedProjectName = null)
+        /// <param name="applicationStorageRoot">What <see cref="Environment.SpecialFolder"/> do you want to keep things like logs in? This will seed the <see cref="AppDataRoot"/> location which is commonly used in establishing app storage info, including in <see cref="BuildAppDataProjectPath"/></param>
+        public static void RunOnetimeSetup (string projectName, bool setupLogging = true, ExceptionProcessor onExceptionRecieved = null, int ageMaxInDaysToKeepLogs = 10, string sharedProjectName = null, Environment.SpecialFolder applicationStorageRoot = Environment.SpecialFolder.ApplicationData)
         {
             if (g_isSetup)
             {
@@ -35,7 +36,7 @@
 
             g_sharedProjectName = sharedProjectName;
             ProjectName = projectName;
-            AppDataRoot = AppDataHelper.EstablishAppDataLocation(sharedProjectName ?? projectName);
+            AppDataRoot = WindowsEnvironmentHelper.EstablishSpecialFolderLocation(applicationStorageRoot, sharedProjectName ?? projectName);
             CryptoObfuscation.Seed(projectName);
 
             TypeXT.RegisterSpecialDouble<GridLength>(gl => gl.Value);
@@ -43,7 +44,7 @@
 
             if (setupLogging)
             {
-                Logger.CreateAndStartWritingToLogFileIn(EstablisLogsDirectory());
+                Logger.CreateAndStartWritingToLogFileIn(EstablishLogsDirectory());
                 if (ageMaxInDaysToKeepLogs != -1)
                 {
                     PurgeAllLogsOlderThan(TimeSpan.FromDays(ageMaxInDaysToKeepLogs));
@@ -98,8 +99,7 @@
         /// </summary>
         public static void PurgeAllLogsOlderThan (TimeSpan age)
         {
-            DateTime olderThan = DateTime.Now - age;
-            DirectoryInfo logsFolder = new DirectoryInfo(EstablisLogsDirectory());
+            DirectoryInfo logsFolder = new DirectoryInfo(EstablishLogsDirectory());
             foreach (FileInfo file in logsFolder.EnumerateFiles().ToList())
             {
                 if (DateTime.Now - file.LastWriteTime > age)
@@ -117,16 +117,20 @@
             return Path.Combine(ApplicationUtilities.AppDataRoot, Path.Combine(pathParts));
         }
 
-        private static string EstablisLogsDirectory ()
+        private static string EstablishLogsDirectory ()
         {
+            string logsDir;
             if (g_sharedProjectName != null)
             {
-                return AppDataHelper.EstablishAppDataLocation(g_sharedProjectName, "Logs", ProjectName);
+                logsDir = Path.Combine(AppDataRoot, "Logs", ProjectName);
             }
             else
             {
-                return AppDataHelper.EstablishAppDataLocation(ProjectName, "Logs");
+                logsDir = Path.Combine(AppDataRoot, "Logs");
             }
+
+            Directory.CreateDirectory(logsDir);
+            return logsDir;
         }
     }
 }
