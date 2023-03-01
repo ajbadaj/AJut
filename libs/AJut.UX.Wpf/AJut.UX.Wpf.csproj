@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net5.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
-    <Version>1.2.9.51</Version>
+    <Version>1.2.10.52</Version>
     <Authors>AJ Badarni</Authors>
     <RootNamespace>AJut.UX</RootNamespace>
     <AssemblyName>AJut.UX.Wpf</AssemblyName>
