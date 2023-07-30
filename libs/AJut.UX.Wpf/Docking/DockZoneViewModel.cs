@@ -5,6 +5,7 @@
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Windows;
+    using System.Windows.Threading;
     using AJut.Storage;
     using AJut.Tree;
     using AJut.TypeManagement;
@@ -479,7 +480,24 @@
                 //  as well as visually there is an expectation that what I'm dropping in just fills the space.
                 if (this.Orientation == eDockOrientation.Empty)
                 {
+                    List<Size> sizes = newSibling.Children.Select(c => c.UI.RenderSize).ToList();
                     newSibling.CopyIntoAndClear(this);
+                    if (eDockOrientation.AnySplitOrientation.HasFlag(this.Orientation))
+                    {
+                        Size rootSize = this.UI.RenderSize;
+                        if (this.Orientation == eDockOrientation.Horizontal)
+                        {
+                            double fullHorizontal = sizes.Sum(s => s.Width);
+                            List<double> horizontalSizes = sizes.Select(s => rootSize.Width * (s.Width / fullHorizontal)).ToList();
+                            this.UI.Dispatcher.InvokeAsync(() => this.UI.SetTargetSize(horizontalSizes), DispatcherPriority.Input);
+                        }
+                        else
+                        {
+                            double fullVertical = sizes.Sum(s => s.Height);
+                            List<double> verticalSizes = sizes.Select(s => rootSize.Height * (s.Height / fullVertical)).ToList();
+                            this.UI.Dispatcher.InvokeAsync(() => this.UI.SetTargetSize(verticalSizes), DispatcherPriority.Input);
+                        }
+                    }
                 }
                 else if (this.Orientation.IsFlagInGroup(eDockOrientation.AnyLeafDisplay))
                 {
@@ -584,6 +602,10 @@
             else
             {
                 m_children.Select(z => z.GenerateSerializationState()).ForEach(data.ChildZones.Add);
+                if (data.SizeOnParent.Width == 0.0 && data.SizeOnParent.Height == 0.0)
+                {
+                    data.SizeOnParent = this.UI.RenderSize;
+                }
             }
 
             return data;

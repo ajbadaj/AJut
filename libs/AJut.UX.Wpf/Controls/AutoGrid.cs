@@ -1,19 +1,15 @@
 ﻿namespace AJut.UX.Controls
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
     using System.Windows;
     using System.Windows.Controls;
-    using System.Windows.Markup;
-    using System.Windows.Media;
-    using DPUtils = AJut.UX.DPUtils<AutoGrid>;
-    using APUtils = AJut.UX.APUtils<AutoGrid>;
-    using AJut.MathUtilities;
     using System.Windows.Data;
+    using System.Windows.Media;
+    using AJut.MathUtilities;
+    using APUtils = AJut.UX.APUtils<AutoGrid>;
+    using DPUtils = AJut.UX.DPUtils<AutoGrid>;
 
     public enum eAutoPopulationOrder
     {
@@ -365,50 +361,45 @@
             {
                 this.EnsureRowAndColumnDefinitionsAreUnitSized();
             }
-
-            //GridLength _BuildInitialRowHeight ()
-            //{
-            //    return new GridLength(newRowCount == 0 ? 1 : 1 / newRowCount, GridUnitType.Star);
-            //}
-            //GridLength _BuildInitialColumnWidth ()
-            //{
-            //    return new GridLength(newColumnCount == 0 ? 1 : 1 / newColumnCount, GridUnitType.Star);
-            //}
         }
 
-        protected void EnsureRowAndColumnDefinitionsAreUnitSized ()
+        public void EnsureRowAndColumnDefinitionsAreUnitSized ()
         {
             /* Need to write improved unit size so everything is expressed as a percent out of the whole
              * Then it's also easy to see if everything is in unit size via adding everything up and seeing
              * if it's approximately 1.0
              */
-            
+
             if (this.RowDefinitions.Count > 0 && !_AreRowsUnitSized())
             {
                 double unitBase = this.RowDefinitions.Select(r => r.Height.Value).Sum();
-                this.RowDefinitions.ForEach(r => r.SetCurrentValue(RowDefinition.HeightProperty, new GridLength(r.Height.Value / unitBase, GridUnitType.Star)));
+                if (unitBase != 0.0)
+                {
+                    this.RowDefinitions.ForEach(r => r.SetCurrentValue(RowDefinition.HeightProperty, new GridLength(r.Height.Value / unitBase, GridUnitType.Star)));
+                }
             }
 
             if (this.ColumnDefinitions.Count > 0 && !_AreColumnsUnitSized())
             {
                 double unitBase = this.ColumnDefinitions.Select(r => r.Width.Value).Sum();
-                this.ColumnDefinitions.ForEach(c => c.SetCurrentValue(ColumnDefinition.WidthProperty, new GridLength(c.Width.Value / unitBase, GridUnitType.Star)));
+                if (unitBase != 0.0)
+                {
+                    this.ColumnDefinitions.ForEach(c => c.SetCurrentValue(ColumnDefinition.WidthProperty, new GridLength(c.Width.Value / unitBase, GridUnitType.Star)));
+                }
             }
 
             bool _AreRowsUnitSized ()
             {
                 return this.RowDefinitions.Select(r => r.Height.Value).Sum().IsApproximatelyEqualTo(1.0, 0.001);
-                //return Calculate.QuickEvaluateIfSumIsLessThanOrEqualTo(this.RowDefinitions.Select(r => r.Height.Value), 1.1);
             }
 
             bool _AreColumnsUnitSized ()
             {
                 return this.ColumnDefinitions.Select(c => c.Width.Value).Sum().IsApproximatelyEqualTo(1.0, 0.001);
-                //return Calculate.QuickEvaluateIfSumIsLessThanOrEqualTo(this.ColumnDefinitions.Select(r => r.Width.Value), 1.1);
             }
         }
 
-//#error this is still slightly flawed, if this is drag/drop where you're dropping to might be smaller and all of these won't work properly. Better to to store targetSize as percents (though this is auto-grid so maybe support both?)
+        //#error this is still slightly flawed, if this is drag/drop where you're dropping to might be smaller and all of these won't work properly. Better to to store targetSize as percents (though this is auto-grid so maybe support both?)
         public void SetTargetFixedSizeFor (int targetRow, int targetColumn, Size targetSize)
         {
             if (targetSize.HasZeroArea())
@@ -505,7 +496,7 @@
              */
         }
 
-        protected virtual bool CalculateRowColumnForIndex(int index, out int row, out int column)
+        protected virtual bool CalculateRowColumnForIndex (int index, out int row, out int column)
         {
             int maxColumns = this.FixedColumnCount;
             int maxRows = this.FixedRowCount;
