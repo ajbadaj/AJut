@@ -42,7 +42,7 @@
             return display;
         }
 
-        public static bool SerializeStateTo(string filePath, DockingManager manager)
+        public static bool SerializeStateTo (string filePath, DockingManager manager)
         {
             Directory.CreateDirectory(Path.GetDirectoryName(filePath));
 
@@ -104,7 +104,7 @@
             try
             {
                 manager.IsLoadingFromLayout = true;
-            
+
                 if (stream == null)
                 {
                     Logger.LogError("Dock Loading Error: File stream indicated was null");
@@ -186,6 +186,7 @@
 
             void _SetZoneDataToZone (DockZoneViewModel _zone, ZoneData _data)
             {
+                List<Size> sizes = _data.ChildZones.Select(d => d.SizeOnParent).ToList();
                 _zone.Configure(_data.Orientation);
                 _zone.StorePassAlongUISize(_data.SizeOnParent);
 

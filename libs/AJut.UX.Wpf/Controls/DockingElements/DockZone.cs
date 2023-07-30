@@ -1,16 +1,14 @@
 ﻿namespace AJut.UX.Controls
 {
-    using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
-    using System.Diagnostics;
     using System.Linq;
     using System.Windows;
     using System.Windows.Controls;
-    using System.Windows.Data;
     using System.Windows.Input;
+    using System.Windows.Threading;
     using AJut.Tree;
     using AJut.UX;
     using AJut.UX.Docking;
@@ -86,13 +84,45 @@
                 return;
             }
 
-            foreach (var zone in added)
+            List<Size> sizes = this.ChildZones.Select(z => z.ViewModel.TakePassAlongUISize(out Size size) ? size : z.RenderSize).ToList();
+
+            Size rootSize = this.RenderSize;
+            if (this.ViewModel.Orientation == eDockOrientation.Horizontal)
             {
-                if (zone.ViewModel.TakePassAlongUISize(out Size formerSize))
+                double fullHorizontal = sizes.Sum(s => s.Width);
+                List<double> horizontalSizes = sizes.Select(s => rootSize.Width * (s.Width / fullHorizontal)).ToList();
+                this.Dispatcher.InvokeAsync(() => this.SetTargetSize(horizontalSizes), DispatcherPriority.Input);
+            }
+            else
+            {
+                double fullVertical = sizes.Sum(s => s.Height);
+                List<double> verticalSizes = sizes.Select(s => rootSize.Height * (s.Height / fullVertical)).ToList();
+                this.Dispatcher.InvokeAsync(() => this.SetTargetSize(verticalSizes), DispatcherPriority.Input);
+            }
+        }
+
+        internal void SetTargetSize (List<double> sizes)
+        {
+            var grid = this.GetFirstChildOf<AutoGrid>();
+            if (grid == null)
+            {
+                return;
+            }
+
+            for (int index = 0; index < this.ChildZones.Count; ++index)
+            {
+                DockZone zone = this.ChildZones[index];
+                if (this.ViewModel.Orientation == eDockOrientation.Horizontal)
                 {
-                    grid.SetTargetFixedSizeFor(Grid.GetRow(zone), Grid.GetColumn(zone), formerSize);
+                    grid.ColumnDefinitions[index].Width = new GridLength(sizes[index], GridUnitType.Pixel);
+                }
+                if (this.ViewModel.Orientation == eDockOrientation.Vertical)
+                {
+                    grid.RowDefinitions[index].Height = new GridLength(sizes[index], GridUnitType.Pixel);
                 }
             }
+
+            grid.EnsureRowAndColumnDefinitionsAreUnitSized();
         }
 
         private void HandleDragDropItemsSwapForHeaders (object sender, DragDropItemsSwapEventArgs e)
