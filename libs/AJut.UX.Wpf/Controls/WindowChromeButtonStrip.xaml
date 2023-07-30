@@ -65,6 +65,9 @@
     </Style>
 
     <Style TargetType="{x:Type local:WindowChromeButtonStrip}">
+
+        <Setter Property="CloseButtonGlyph" Value="{StaticResource AJut_Symbol_ChromeClose}"/>
+
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="ButtonPadding" Value="12,6"/>
         <Setter Property="ButtonGlyphFontSize" Value="10"/>
@@ -173,7 +176,7 @@
                                     </Style>
                                 </Grid.Style>
                                 <Button x:Name="PART_ChromeCloseButton" Style="{StaticResource AJut_Style_WindowChromeButton}" 
-                                        Content="{StaticResource AJut_Symbol_ChromeClose}"
+                                        Content="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:WindowChromeButtonStrip}}, Path=CloseButtonGlyph, Mode=OneWay}"
                                         WindowChrome.IsHitTestVisibleInChrome="True" ToolTip="Close"
                                         Command="{x:Static SystemCommands.CloseWindowCommand}">
                                     <Button.Template>

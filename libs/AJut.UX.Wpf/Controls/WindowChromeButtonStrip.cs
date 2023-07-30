@@ -155,6 +155,16 @@
             set => this.SetValue(ButtonCornerRadiusProperty, value);
         }
 
+        // == Glyph Override
+
+
+        public static readonly DependencyProperty CloseButtonGlyphProperty = DPUtils.Register(_ => _.CloseButtonGlyph);
+        public string CloseButtonGlyph
+        {
+            get => (string)this.GetValue(CloseButtonGlyphProperty);
+            set => this.SetValue(CloseButtonGlyphProperty, value);
+        }
+
         // == Glyph Foreground
 
         public static readonly DependencyProperty ButtonGlyphForegroundProperty = DPUtils.Register(_ => _.ButtonGlyphForeground);
