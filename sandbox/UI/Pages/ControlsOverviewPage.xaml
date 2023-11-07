@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:TheAJutShowRoom.UI.Pages"
              xmlns:ctrls="clr-namespace:TheAJutShowRoom.UI.Controls"
+             xmlns:conv="clr-namespace:AJut.UX.Converters;assembly=AJut.UX.Wpf"
              xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
              xmlns:ajut_core_io="clr-namespace:AJut.IO;assembly=AJut.Core"
              mc:Ignorable="d" 
@@ -78,15 +79,18 @@
         </TabItem>
         <TabItem Header="PathSelector">
             <StackPanel Margin="20">
-                <ajut:PathSelectionControl  VerticalAlignment="Center" MaxWidth="300" PathType="{Binding ElementName=PathType, Path=SelectedItem}"
-                                                FileFilter="{Binding ElementName=FileFilter, Path=Text, UpdateSourceTrigger=PropertyChanged}"
-                                                TreatNonExistentPathAsInvalid="{Binding ElementName=NonExistant, Path=IsChecked}"
-                                                TreatEmptyPathAsInvalid="{Binding ElementName=EmptyAsError, Path=IsChecked}"
-                                                UnsetTextPrompt="Select a path"/>
+                <ajut:PathSelectionControl VerticalAlignment="Center" MaxWidth="300" PathType="{Binding ElementName=PathType, Path=SelectedItem}"
+                                           FileDialogType="{Binding ElementName=FileOpenType, Path=SelectedItem}"
+                                           FileFilter="{Binding ElementName=FileFilter, Path=Text, UpdateSourceTrigger=PropertyChanged}"
+                                           TreatNonExistentPathAsInvalid="{Binding ElementName=NonExistant, Path=IsChecked}"
+                                           TreatEmptyPathAsInvalid="{Binding ElementName=EmptyAsError, Path=IsChecked}"
+                                           UnsetTextPrompt="Select a path"/>
                 <StackPanel>
                     <CheckBox x:Name="NonExistant" Content="Treat Non-existant as error" Margin="0,0,5,5" VerticalAlignment="Center"/>
                     <CheckBox x:Name="EmptyAsError" Content="Treat empty as error" Margin="0,0,5,5" VerticalAlignment="Center"/>
                     <ajut:EnumComboBox x:Name="PathType" SelectedItem="{x:Static ajut:ePathType.File}" Margin="0,0,5,5" VerticalAlignment="Center"/>
+                    <ajut:EnumComboBox x:Name="FileOpenType" SelectedItem="{x:Static ajut:eFileDialogType.OpenFile}" Margin="0,0,5,5" VerticalAlignment="Center"
+                                       Visibility="{Binding ElementName=PathType, Path=SelectedItem, Converter={conv:NumericComparisonToVisibilityConverter Comp=Equal, To=0, CompTrueValue=Visible, CompFalseValue=Collapsed}}"/>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="Filter" VerticalAlignment="Center"/>
                         <TextBox x:Name="FileFilter" Text="{Binding Source={x:Static ajut_core_io:ImageTypes.AnyOrAllImageTypeFilter}, Mode=OneTime}" MaxWidth="300" VerticalAlignment="Center"/>
