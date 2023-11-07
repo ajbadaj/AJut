@@ -12,6 +12,6 @@
         bool IsBaselineSet { get; }
         bool IsSet { get; }
         int ActiveLayerIndex { get; }
-        bool IsActiveLayerBaseline => this.ActiveLayerIndex == -1;
+        bool IsActiveLayerBaseline => this.ActiveLayerIndex == Stratabase.kActiveLayerBaseline;
     }
 }

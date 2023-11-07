@@ -17,6 +17,12 @@
         Folder
     }
 
+    public enum eFileDialogType
+    {
+        OpenFile,
+        SaveFile
+    }
+
     public class PathSelectionControl : Control
     {
         static PathSelectionControl ()
@@ -38,7 +44,11 @@
             {
                 if (this.PathType == ePathType.File)
                 {
-                    string userSelectedPath = PathHelpersUI.PromptUserToPickAFile<OpenFileDialog>(this.BrowsePrompt, this.SelectedPath, this.FileFilter);
+                    string userSelectedPath =
+                        this.FileDialogType == eFileDialogType.OpenFile
+                            ? PathHelpersUI.PromptUserToPickAFile<OpenFileDialog>(this.BrowsePrompt, this.SelectedPath, this.FileFilter)
+                            : PathHelpersUI.PromptUserToPickAFile<SaveFileDialog>(this.BrowsePrompt, this.SelectedPath, this.FileFilter);
+
                     if (userSelectedPath != null)
                     {
                         this.SelectedPath = userSelectedPath;
@@ -193,6 +203,13 @@
         {
             get => (Brush)this.GetValue(ButtonPressedForegroundProperty);
             set => this.SetValue(ButtonPressedForegroundProperty, value);
+        }
+
+        public static readonly DependencyProperty FileDialogTypeProperty = DPUtils.Register(_ => _.FileDialogType, eFileDialogType.OpenFile);
+        public eFileDialogType FileDialogType
+        {
+            get => (eFileDialogType)this.GetValue(FileDialogTypeProperty);
+            set => this.SetValue(FileDialogTypeProperty, value);
         }
 
         private void EvaluatePath (string path)

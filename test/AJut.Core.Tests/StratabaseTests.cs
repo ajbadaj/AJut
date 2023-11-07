@@ -1302,6 +1302,54 @@
             }
         }
 
+        [TestMethod]
+        public void Stratabase_EnsureListElementType_NullInsertionAtFirstElementWorks ()
+        {
+            Stratabase sb = new Stratabase(1);
+
+            Guid target = Guid.NewGuid();
+            string property = "listThing";
+            Assert.IsFalse(sb.InsertElementIntoBaselineList(target, property, 0, null));
+            Assert.IsTrue(sb.EstablishListElementType<TestData>(target, property));
+            Assert.IsTrue(sb.InsertElementIntoBaselineList(target, property, 0, null));
+            Assert.IsTrue(sb.TryGetBaselineElementValue(target, property, 0, out object value));
+            Assert.IsNull(value);
+        }
+
+        [TestMethod]
+        public void Stratabase_EnsureListElementType_FailsIfDataExistsAndFalsePassedIn ()
+        {
+            Stratabase sb = new Stratabase(1);
+
+            Guid target = Guid.NewGuid();
+            string property = "listThing";
+            Assert.IsTrue(sb.InsertElementIntoBaselineList(target, property, 0, 5));
+            Assert.IsFalse(sb.EstablishListElementType<TestData>(target, property, false));
+
+            // Make sure we didn't lose the existing list data
+            Assert.IsTrue(sb.TryGetBaselinePropertyElementValue(target, property, 0, out object value));
+            Assert.AreEqual(5, value);
+        }
+
+        [DataTestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public void Stratabase_EnsureListElementType_SucceedsWhenRestablishedWithCastableType (bool clearFirst)
+        {
+            Stratabase sb = new Stratabase(1);
+
+            Guid target = Guid.NewGuid();
+            string property = "listThing";
+            Child child = new Child { Id = target, IntValue = 5, StringValue = "Sweet" };
+            Assert.IsTrue(sb.InsertElementIntoBaselineList(target, property, 0, child));
+            Assert.IsTrue(sb.EstablishListElementType<Base>(target, property, clearIfIncorrectElementsExist: clearFirst));
+            Assert.AreEqual(1, sb.GetElementCount(target, property));
+            Assert.IsTrue(sb.TryGetBaselinePropertyElementValue(target, property, 0, out object value));
+            Child castedChild = value as Child;
+            Assert.IsNotNull(castedChild);
+            Assert.AreSame(child, castedChild);
+        }
+
         public class DotClassStore
         {
             [StratabaseId]

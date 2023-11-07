@@ -148,33 +148,54 @@
             this.ODAM.ObliteratePropertyStorageInLayer(layer, this.PropertyName);
         }
 
+        public bool EstablishListElementType<T> (bool clearIfIncorrectElementsExist = true)
+        {
+            return this.ODAM.EstablishListElementType(this.PropertyName, typeof(T), clearIfIncorrectElementsExist);
+        }
+
+        public bool EstablishListElementType (Type elementType, bool clearIfIncorrectElementsExist = true)
+        {
+            return this.ODAM.EstablishListElementType(this.PropertyName, elementType, clearIfIncorrectElementsExist);
+        }
+
         public bool InsertElementIntoActiveLayer (int index, TElement newElement)
         {
             if (this.IsActiveLayerBaseline)
             {
+                this.EstablishListElementType(typeof(TElement));
                 return this.ODAM.InsertElementIntoBaselineList(this.PropertyName, index, newElement);
             }
 
             return this.InsertElementIntoOverrideLayer(this.ActiveLayerIndex, index, newElement);
         }
 
+        /// <summary>
+        /// Inserts an element at the given index into the BASELINE layer
+        /// </summary>
+        /// <param name="index">Index to insert at</param>
+        /// <param name="newElement">Element to insert</param>
+        /// <returns>bool indicating <c>true</c> if insertion was successful, or <c>false</c> if it wasn't</returns>
         public bool InsertElementIntoBaseline (int index, TElement newElement)
         {
+            this.EstablishListElementType(typeof(TElement));
             return this.ODAM.InsertElementIntoBaselineList(this.PropertyName, index, newElement);
         }
 
         public bool InsertElementIntoOverrideLayer (int layer, int index, TElement newElement)
         {
+            this.EstablishListElementType(typeof(TElement));
             return this.ODAM.InsertElementIntoOverrideLayerList(layer, this.PropertyName, index, newElement);
         }
 
         public bool AddElementIntoBaseline (TElement newElement)
         {
+            this.EstablishListElementType(typeof(TElement));
             return this.ODAM.AddElementIntoBaselineList(this.PropertyName, newElement);
         }
 
         public bool AddElementIntoOverrideLayer (int layer, TElement newElement)
         {
+            this.EstablishListElementType(typeof(TElement));
             return this.ODAM.AddElementIntoOverrideList(layer, this.PropertyName, newElement);
         }
 

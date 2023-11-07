@@ -79,6 +79,27 @@
 
         // ===========================[ Style Indicators ]============================
 
+        public static readonly DependencyProperty ContentForegroundProperty = DPUtils.Register(_ => _.ContentForeground);
+        public Brush ContentForeground
+        {
+            get => (Brush)this.GetValue(ContentForegroundProperty);
+            set => this.SetValue(ContentForegroundProperty, value);
+        }
+
+        public static readonly DependencyProperty ContentPaddingProperty = DPUtils.Register(_ => _.ContentPadding);
+        public Thickness ContentPadding
+        {
+            get => (Thickness)this.GetValue(ContentPaddingProperty);
+            set => this.SetValue(ContentPaddingProperty, value);
+        }
+
+        public static readonly DependencyProperty InsetLabelFalseOpacityProperty = DPUtils.Register(_ => _.InsetLabelFalseOpacity, 1.0);
+        public double InsetLabelFalseOpacity
+        {
+            get => (double)this.GetValue(InsetLabelFalseOpacityProperty);
+            set => this.SetValue(InsetLabelFalseOpacityProperty, value);
+        }
+
         // ========== High Level ==========
 
         public static readonly DependencyProperty SwitchBorderBrushProperty = DPUtils.Register(_ => _.SwitchBorderBrush);

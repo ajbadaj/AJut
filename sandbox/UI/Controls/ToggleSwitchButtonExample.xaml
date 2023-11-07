@@ -11,13 +11,14 @@
              x:Name="Self">
     <StackPanel>
         <ajut:ToggleSwitchButton HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,10,0,0"/>
-        <ajut:ToggleSwitchButton HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,10,0,0"/>
-        <ajut:ToggleSwitchButton HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,10,0,0"/>
-        <ajut:ToggleSwitchButton HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,10,0,0"/>
+        <ajut:ToggleSwitchButton HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,10,0,0" InsetLabelTrue="True" InsetLabelFalse="False">True/false override of inset labels:</ajut:ToggleSwitchButton>
+        <ajut:ToggleSwitchButton HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,10,0,0">Toggle Switch Content:</ajut:ToggleSwitchButton>
 
-        <ajut:ToggleSwitchButton HorizontalAlignment="Left" VerticalAlignment="Top" Margin="0,30,0,0"
+        <TextBlock Text="This one has some padding, a subtle dropshadow effect on the switch, a large corner radius on the button, and is bound to the checkbox"
+                   Margin="0,30,0,5"/>
+        <ajut:ToggleSwitchButton HorizontalAlignment="Left" VerticalAlignment="Top"
                                  Width="100" Height="40"
-                                 SwitchPadding="-2,-2,-2,-4" SwitchBorderCornerRadius="1"
+                                 SwitchPadding="-2,-2,-2,-4" SwitchBorderCornerRadius="5"
                                  BorderCornerRadius="2" Padding="10,3"
                                  IsChecked="{Binding ElementName=CB, Path=IsChecked,Mode=TwoWay}">
             <ajut:ToggleSwitchButton.SwitchEffect>

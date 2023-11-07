@@ -6,6 +6,8 @@
     using System.Diagnostics;
     using System.Linq;
     using System.Reflection;
+    using System.Security.Cryptography.X509Certificates;
+    using System.Xml.Linq;
     using AJut.TypeManagement;
 
     public delegate bool ObjectEqualityTester (object o1, object o2);
@@ -20,6 +22,16 @@
     public sealed partial class Stratabase
     {
         public const string kTypeIdStorage = "__type";
+
+        /// <summary>
+        /// Used with <see cref="ObjectDataAccessManager.TryFindActiveLayer(int, string, out int)"/>, index that indicates the baseline layer
+        /// </summary>
+        internal const int kActiveLayerBaseline = -1;
+
+        /// <summary>
+        /// Used with <see cref="ObjectDataAccessManager.TryFindActiveLayer(int, string, out int)"/>, index that indicates that there is no layer set
+        /// </summary>
+        internal const int kActiveLayerNotSet = -2;
 
         private readonly Stratum m_baselineStorageLayer;
         private readonly Stratum[] m_overrideStorageLayers;
@@ -422,26 +434,84 @@
             return accessManager.SetOverrideValue(layer, property, value);
         }
 
+        // ----------------- List Element Misc -----------------
+
+        public int GetElementCount (Guid id, string property)
+        {
+            ObjectDataAccessManager odam = this.EnsureDataAccess(id);
+            if (odam.TryFindActiveLayer(property, out int activeLayer))
+            {
+                if (activeLayer == kActiveLayerBaseline)
+                {
+                    return odam.GetElementCountFromBaseline(property);
+                }
+                else
+                {
+                    return odam.GetElementCountFromOverrideLayer(activeLayer, property);
+                }
+            }
+
+            return -1;
+        }
+
+        public int GetElementCountInBaseline (Guid id, string property)
+        {
+            return this.EnsureDataAccess(id).GetElementCountFromBaseline(property);
+        }
+
+        public int GetElementCountInOverrideLayer (int layer, Guid id, string property)
+        {
+            return this.EnsureDataAccess(id).GetElementCountFromOverrideLayer(layer, property);
+        }
+
+        /// <summary>
+        /// It may be that inserting directly into a list fails if it's the first insertion and the element is null. In cases like that and others, 
+        /// separately establishing the list element type can fix problems proactively if you know you might run into them.
+        /// </summary>
+        /// <typeparam name="TElement">The element type to establish</typeparam>
+        /// <param name="id">The object's id</param>
+        /// <param name="property">The property name</param>
+        /// <param name="clearIfIncorrectElementsExist">If the list has already been established and the elements are of a different type, then should the list be cleared first?</param>
+        /// <returns>bool indicating if the list type is correct (can be false if <paramref name="clearIfIncorrectElementsExist"/> is <c>false</c> and elements of a different type are already established).</returns>
+        public bool EstablishListElementType<TElement> (Guid id, string property, bool clearIfIncorrectElementsExist = true)
+        {
+            return this.EstablishListElementType(id, property, typeof(TElement), clearIfIncorrectElementsExist);
+        }
+
+        /// <summary>
+        /// It may be that inserting directly into a list fails if it's the first insertion and the element is null. In cases like that and others, 
+        /// separately establishing the list element type can fix problems proactively if you know you might run into them.
+        /// </summary>
+        /// <param name="id">The object's id</param>
+        /// <param name="property">The property name</param>
+        /// <param name="elementType">The element type to establish</param>
+        /// <param name="clearIfIncorrectElementsExist">If the list has already been established and the elements are of a different type, then should the list be cleared first?</param>
+        /// <returns>bool indicating if the list type is correct (can be false if <paramref name="clearIfIncorrectElementsExist"/> is <c>false</c> and elements of a different type are already established).</returns>
+        public bool EstablishListElementType (Guid id, string property, Type elementType, bool clearIfIncorrectElementsExist = true)
+        {
+            return EnsureDataAccess(id).EstablishListElementType(property, elementType, clearIfIncorrectElementsExist);
+        }
+
         // ----------------- Insert Element Value -----------------
 
-        public void InsertElementIntoBaselineList (Guid id, string property, int elementIndex, object newElement)
+        public bool InsertElementIntoBaselineList (Guid id, string property, int elementIndex, object newElement)
         {
-            EnsureDataAccess(id).InsertElementIntoBaselineList(property, elementIndex, newElement);
+            return this.EnsureDataAccess(id).InsertElementIntoBaselineList(property, elementIndex, newElement);
         }
 
-        public void InsertElementIntoOverrideList (int layer, Guid id, string property, int elementIndex, object newElement)
+        public bool InsertElementIntoOverrideList (int layer, Guid id, string property, int elementIndex, object newElement)
         {
-            EnsureDataAccess(id).InsertElementIntoOverrideLayerList(layer, property, elementIndex, newElement);
+            return EnsureDataAccess(id).InsertElementIntoOverrideLayerList(layer, property, elementIndex, newElement);
         }
 
-        public void RemoveElementFromBaselineList (Guid id, string property, int elementIndex)
+        public bool RemoveElementFromBaselineList (Guid id, string property, int elementIndex)
         {
-            EnsureDataAccess(id).RemoveElementFromBaselineList(property, elementIndex);
+            return EnsureDataAccess(id).RemoveElementFromBaselineList(property, elementIndex);
         }
 
-        public void RemoveElementFromOverrideList (int layer, Guid id, string property, int elementIndex)
+        public bool RemoveElementFromOverrideList (int layer, Guid id, string property, int elementIndex)
         {
-            EnsureDataAccess(id).RemoveElementFromOverrideLayerList(layer, property, elementIndex);
+            return EnsureDataAccess(id).RemoveElementFromOverrideLayerList(layer, property, elementIndex);
         }
 
         public void RemoveAllElementsFromBaselineList (Guid id, string property)
@@ -503,6 +573,42 @@
         public bool TryGetOverridePropertyValue (int layer, Guid id, string property, out object value)
         {
             return TryGetOverridePropertyValue<object>(layer, id, property, out value);
+        }
+
+        // ----------------- Get Element Value -----------------
+
+        /// <summary>
+        /// Try and extract a baseline property value for a given object id (typed)
+        /// </summary>
+        public bool TryGetBaselineElementValue<T> (Guid id, string property, int elementIndex, out T value)
+        {
+            value = default;
+            return this.GetAccessManager(id)?.TryGetBaselineElementValue(property, elementIndex, out value) == true;
+        }
+
+        /// <summary>
+        /// Try and extract a baseline property value for a given object id (untyped)
+        /// </summary>
+        public bool TryGetBaselinePropertyElementValue (Guid id, string property, int elementIndex, out object value)
+        {
+            return TryGetBaselineElementValue<object>(id, property, elementIndex, out value);
+        }
+
+        /// <summary>
+        /// Try and extract an override property value for a given object id (typed)
+        /// </summary>
+        public bool TryGetOverridePropertyElementValue<T> (int layer, Guid id, string property, int elementIndex, out T value)
+        {
+            value = default;
+            return this.GetAccessManager(id)?.TryGetOverrideElementValue(layer, property, elementIndex, out value) == true;
+        }
+
+        /// <summary>
+        /// Try and extract an override property value for a given object id (untyped)
+        /// </summary>
+        public bool TryGetOverridePropertyElementValue (int layer, Guid id, string property, int elementIndex, out object value)
+        {
+            return TryGetOverridePropertyElementValue<object>(layer, id, property, elementIndex, out value);
         }
 
         // ------- Get Typing Info ----------
@@ -668,11 +774,11 @@
                 }
                 else if (this.HasBaselineValueSet(propertyName))
                 {
-                    activeLayer = -1;
+                    activeLayer = kActiveLayerBaseline;
                     return true;
                 }
 
-                activeLayer = -2;
+                activeLayer = kActiveLayerNotSet;
                 return false;
             }
 
@@ -769,6 +875,24 @@
             }
 
             // ------------- Element Management: Insert / Remove ----------------
+
+            public bool EstablishListElementType(string propertyName, Type elementType, bool clearIfIncorrectElementsExist)
+            {
+                bool soFarSoGood = true;
+                if (!this.SB.GetBaselinePropertyBagFor(this.Id).EnsureListElementsOfType(propertyName, elementType, clearIfIncorrectElementsExist))
+                {
+                    soFarSoGood = false;
+                }
+                for (int overrideLayerIndex = 0; overrideLayerIndex < this.SB.OverrideLayerCount; ++overrideLayerIndex)
+                {
+                    if (!this.SB.GetOverridePropertyBagFor(overrideLayerIndex, this.Id).EnsureListElementsOfType(propertyName, elementType, clearIfIncorrectElementsExist))
+                    {
+                        soFarSoGood = false;
+                    }
+                }
+
+                return soFarSoGood;
+            }
 
             public bool InsertElementIntoBaselineList (string propertyName, int elementIndex, object newElement)
             {
@@ -1014,6 +1138,53 @@
                         && propertyBag.ContainsKey(property);
             }
 
+            public int GetElementCountFromBaseline (string property)
+            {
+                var propBag = this.SB.GetBaselinePropertyBagFor(this.Id);
+                if (propBag != null && propBag.TryGetValue(property, out IList list))
+                {
+                    return list.Count;
+                }
+
+                return -1;
+            }
+
+            public int GetElementCountFromOverrideLayer (int layerIndex, string property)
+            {
+                var propBag = this.SB.GetOverridePropertyBagFor(layerIndex, this.Id);
+                if (propBag != null && propBag.TryGetValue(property, out IList list))
+                {
+                    return list.Count;
+                }
+
+                return -1;
+            }
+
+            public bool TryGetBaselineElementValue<T> (string property, int elementIndex, out T value)
+            {
+                var propBag = this.SB.GetBaselinePropertyBagFor(this.Id);
+                if (propBag != null && propBag.TryGetElementValue<T>(property, elementIndex, out value))
+                {
+                    return true;
+                }
+
+                value = default;
+                return false;
+            }
+
+
+            public bool TryGetOverrideElementValue<T> (int layerIndex, string property, int elementIndex, out T value)
+            {
+                if (this.SB.m_overrideStorageLayers[layerIndex].TryGetValue(this.Id, out PseudoPropertyBag propertyBag)
+                    && propertyBag.TryGetElementValue(property, elementIndex, out value))
+                {
+                    return true;
+                }
+
+                value = default;
+                return false;
+            }
+
             public bool HasOverrideValueSet (int layerIndex, string property)
             {
                 return this.SB.m_overrideStorageLayers[layerIndex].TryGetValue(this.Id, out PseudoPropertyBag propertyBag)
@@ -1062,6 +1233,7 @@
         {
             private readonly Stratabase m_stratabase;
             internal readonly Dictionary<string, object> m_storage;
+            private readonly Dictionary<string, Type> m_propertyListElementTypeRestriction = new Dictionary<string, Type>();
 
             public PseudoPropertyBag (Stratabase stratabase)
             {
@@ -1073,6 +1245,10 @@
             {
                 m_stratabase = stratabase;
                 m_storage = storage;
+                foreach (KeyValuePair<string,object> kvps in m_storage.Where(kvp => kvp.Value is IList))
+                {
+                    m_propertyListElementTypeRestriction[kvps.Key] = kvps.Value.GetType().GetGenericArguments()[0];
+                }
             }
 
             // ==========================[ Properties ]===================================
@@ -1085,6 +1261,30 @@
                 if (this.TryGetValue(propertyName, out object objValue))
                 {
                     value = (T)objValue;
+                    return true;
+                }
+
+                value = default;
+                return false;
+            }
+
+            public bool TryGetElementValue (string propertyName, int elementIndex, out object value)
+            {
+                if (m_storage.TryGetValue(propertyName, out object listObj) && listObj is IList list)
+                {
+                    value = list[elementIndex];
+                    return true;
+                }
+
+                value = null;
+                return false;
+            }
+
+            public bool TryGetElementValue<T> (string propertyName, int elementIndex, out T value)
+            {
+                if (m_storage.TryGetValue(propertyName, out object listObj) && listObj is IList list)
+                {
+                    value = (T)list[elementIndex];
                     return true;
                 }
 
@@ -1120,16 +1320,106 @@
                 return false;
             }
 
+            public bool EnsureListElementsOfType(string propertyName, Type targetElementType, bool clearIfIncorrectElementsExist)
+            {
+                if (!m_propertyListElementTypeRestriction.TryGetValue(propertyName, out Type currentElementType))
+                {
+                    // It's fully non-established, establish it and move on
+                    m_propertyListElementTypeRestriction[propertyName] = targetElementType;
+                    return true;
+                }
+
+                if (currentElementType == targetElementType)
+                {
+                    // It's already correct, no need to do more
+                    return true;
+                }
+
+                if (m_storage[propertyName] is IList listTracker)
+                {
+                    // There's no need to safely get the first element type since this code controls what it will be exactly
+                    if (currentElementType == null)
+                    {
+                        currentElementType = listTracker.GetType().GenericTypeArguments[0];
+                    }
+
+                    if (currentElementType == targetElementType)
+                    {
+                        // Everything is right!
+                        return true;
+                    }
+
+                    Logger.LogInfo($"{nameof(Stratabase)}::{propertyName} - attempting to ensure list elements of type {targetElementType.Name} - existing storage had a different element type {currentElementType.Name} instead!");
+
+                    if (listTracker.Count == 0)
+                    {
+                        // It wan't right - but that's ok because it was empty anyway
+                        m_storage.Remove(propertyName);
+                        _DoListCreation();
+                        return true;
+                    }
+
+                    if (currentElementType.IsAssignableTo(targetElementType))
+                    {
+                        // It wasn't right - but it's still ok because the element type was of one castable to the new type
+                        Logger.LogInfo($"{nameof(Stratabase)}::{propertyName} - target type is assignable from existing type - so reallocating the list and keeping the elements");
+                        m_storage.Remove(propertyName);
+                        IList newList = _DoListCreation();
+                        newList.AddEach(listTracker);
+                        return true;
+                    }
+
+                    if (clearIfIncorrectElementsExist)
+                    {
+                        // Everything is not right, but we got the go ahead to wipe it all out and start over
+                        m_storage.Remove(propertyName);
+                        _DoListCreation();
+                        return true;
+                    }
+                    else
+                    {
+                        // Everything is not right, and we can't start over :(
+                        return false;
+                    }
+                }
+                else
+                {
+                    Logger.LogInfo($"{nameof(Stratabase)}::{propertyName} - attempting to ensure list elements of type {targetElementType.Name} - existing storage was not a list at all! Overwriting to be a list.");
+                    m_storage.Remove(propertyName);
+                    _DoListCreation();
+                    return true;
+                }
+
+                IList _DoListCreation ()
+                {
+                    Type _finalListType = typeof(List<>).MakeGenericType(targetElementType);
+                    IList _listTracker = (IList)AJutActivator.CreateInstanceOf(_finalListType);
+                    m_storage.Add(propertyName, _listTracker);
+                    return _listTracker;
+                }
+            }
+
             public bool InsertElement (string propertyName, int elementIndex, object newElement)
             {
-                if (!m_storage.TryGetValue(propertyName, out object listTrackerObj) || !(listTrackerObj is IList listTracker))
+                if (!m_storage.TryGetValue(propertyName, out object listTrackerObj) || listTrackerObj is not IList listTracker)
                 {
-                    if (newElement == null)
+                    Type elementType = null;
+                    if (m_propertyListElementTypeRestriction.TryGetValue(propertyName, out Type restrictedType))
+                    {
+                        elementType = restrictedType;
+                    }
+                    else if (newElement != null)
+                    {
+                        elementType = newElement.GetType();
+                        m_propertyListElementTypeRestriction[propertyName] = elementType;
+                    }
+
+                    // We couldn't establish a valid element type
+                    if (elementType == null)
                     {
                         return false;
                     }
 
-                    Type elementType = newElement.GetType();
                     var finalListType = typeof(List<>).MakeGenericType(elementType);
                     listTracker = (IList)AJutActivator.CreateInstanceOf(finalListType);
                     m_storage.Add(propertyName, listTracker);
