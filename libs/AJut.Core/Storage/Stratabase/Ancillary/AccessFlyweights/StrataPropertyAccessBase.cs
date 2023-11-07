@@ -119,7 +119,6 @@
             this.ValueChanged?.Invoke(this, EventArgs.Empty);
         }
 
-
         private void OnLayerDataSet (object sender, StratabasePropertyChangeEventArgs e)
         {
             if (this.PropertyName != e.PropertyName)
