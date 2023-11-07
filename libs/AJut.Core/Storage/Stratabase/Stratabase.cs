@@ -1233,6 +1233,7 @@
         {
             private readonly Stratabase m_stratabase;
             internal readonly Dictionary<string, object> m_storage;
+            private readonly Dictionary<string, Type> m_propertyListElementTypeRestriction = new Dictionary<string, Type>();
 
             public PseudoPropertyBag (Stratabase stratabase)
             {
@@ -1244,6 +1245,10 @@
             {
                 m_stratabase = stratabase;
                 m_storage = storage;
+                foreach (KeyValuePair<string,object> kvps in m_storage.Where(kvp => kvp.Value is IList))
+                {
+                    m_propertyListElementTypeRestriction[kvps.Key] = kvps.Value.GetType().GetGenericArguments()[0];
+                }
             }
 
             // ==========================[ Properties ]===================================
@@ -1287,7 +1292,6 @@
                 return false;
             }
 
-
             public bool PullValueOut (string propertyName, out object oldValue)
             {
                 if (m_storage.TryGetValue(propertyName, out oldValue))
@@ -1318,16 +1322,27 @@
 
             public bool EnsureListElementsOfType(string propertyName, Type targetElementType, bool clearIfIncorrectElementsExist)
             {
-                if (!m_storage.TryGetValue(propertyName, out object listTrackerObj))
+                if (!m_propertyListElementTypeRestriction.TryGetValue(propertyName, out Type currentElementType))
                 {
-                    // It's not set, so nothing to do!
+                    // It's fully non-established, establish it and move on
+                    m_propertyListElementTypeRestriction[propertyName] = targetElementType;
                     return true;
                 }
-                
-                if (listTrackerObj is IList listTracker)
+
+                if (currentElementType == targetElementType)
+                {
+                    // It's already correct, no need to do more
+                    return true;
+                }
+
+                if (m_storage[propertyName] is IList listTracker)
                 {
                     // There's no need to safely get the first element type since this code controls what it will be exactly
-                    Type currentElementType = listTracker.GetType().GenericTypeArguments[0];
+                    if (currentElementType == null)
+                    {
+                        currentElementType = listTracker.GetType().GenericTypeArguments[0];
+                    }
+
                     if (currentElementType == targetElementType)
                     {
                         // Everything is right!
@@ -1388,12 +1403,23 @@
             {
                 if (!m_storage.TryGetValue(propertyName, out object listTrackerObj) || listTrackerObj is not IList listTracker)
                 {
-                    if (newElement == null)
+                    Type elementType = null;
+                    if (m_propertyListElementTypeRestriction.TryGetValue(propertyName, out Type restrictedType))
+                    {
+                        elementType = restrictedType;
+                    }
+                    else if (newElement != null)
+                    {
+                        elementType = newElement.GetType();
+                        m_propertyListElementTypeRestriction[propertyName] = elementType;
+                    }
+
+                    // We couldn't establish a valid element type
+                    if (elementType == null)
                     {
                         return false;
                     }
 
-                    Type elementType = newElement.GetType();
                     var finalListType = typeof(List<>).MakeGenericType(elementType);
                     listTracker = (IList)AJutActivator.CreateInstanceOf(finalListType);
                     m_storage.Add(propertyName, listTracker);
