@@ -19,16 +19,21 @@ namespace AJut.UX.Converters
 
         protected override object Convert (object objValue)
         {
+            if (objValue.GetType().IsEnum)
+            {
+                objValue = (int)objValue;
+            }
+
             dynamic sourceValue = (dynamic)objValue;
             dynamic toValue = (dynamic)System.Convert.ChangeType(this.To, objValue.GetType());
             switch (this.Comp)
             {
-                case eComparison.NotEqual: return sourceValue != toValue;
-                case eComparison.Equal: return sourceValue == toValue;
-                case eComparison.GreaterThan: return sourceValue > toValue;
-                case eComparison.LessThan: return sourceValue < toValue;
-                case eComparison.GreaterThanOrEqual: return sourceValue >= toValue;
-                case eComparison.LessThanOrEqual: return sourceValue <= toValue;
+                case eComparison.NotEqual: return sourceValue != toValue ? this.CompTrueValue : this.CompFalseValue;
+                case eComparison.Equal: return sourceValue == toValue ? this.CompTrueValue : this.CompFalseValue;
+                case eComparison.GreaterThan: return sourceValue > toValue ? this.CompTrueValue : this.CompFalseValue;
+                case eComparison.LessThan: return sourceValue < toValue ? this.CompTrueValue : this.CompFalseValue;
+                case eComparison.GreaterThanOrEqual: return sourceValue >= toValue ? this.CompTrueValue : this.CompFalseValue;
+                case eComparison.LessThanOrEqual: return sourceValue <= toValue ? this.CompTrueValue : this.CompFalseValue;
             }
 
             return false;
