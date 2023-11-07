@@ -105,20 +105,6 @@
             set => this.SetValue(SizerLengthProperty, value);
         }
 
-        public static readonly DependencyProperty InitialRowHeightProperty = DPUtils.Register(_ => _.InitialRowHeight, new GridLength(1.0, GridUnitType.Star));
-        public GridLength InitialRowHeight
-        {
-            get => (GridLength)this.GetValue(InitialRowHeightProperty);
-            set => this.SetValue(InitialRowHeightProperty, value);
-        }
-
-        public static readonly DependencyProperty InitialColumnWidthProperty = DPUtils.Register(_ => _.InitialColumnWidth, new GridLength(1.0, GridUnitType.Star));
-        public GridLength InitialColumnWidth
-        {
-            get => (GridLength)this.GetValue(InitialColumnWidthProperty);
-            set => this.SetValue(InitialColumnWidthProperty, value);
-        }
-
         public static readonly DependencyProperty ShrinkRowColumnsToUtilizedElementCountProperty = DPUtils.Register(_ => _.ShrinkRowColumnsToUtilizedElementCount, (d, e) => d.EvaluateAndSetSetRowColumnInfo());
         public bool ShrinkRowColumnsToUtilizedElementCount
         {
@@ -339,8 +325,6 @@
             double newRowSize = 1.0 / Math.Max(1, this.RowDefinitions.Count);
             double newColumnSize = 1.0 / Math.Max(1, this.ColumnDefinitions.Count);
 
-            //var initRowHeight = new Lazy<GridLength>(_BuildInitialRowHeight);
-            //var initColumnWidth = new Lazy<GridLength>(_BuildInitialColumnWidth);
             bool addedAny = false;
             while (this.RowDefinitions.Count <= row)
             {
