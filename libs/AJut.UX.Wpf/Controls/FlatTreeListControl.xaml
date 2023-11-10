@@ -65,7 +65,7 @@
         <Setter Property="ExpandCollapseGlyphSize" Value="9"/>
 
         <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
-        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
 
         <Setter Property="Template">
             <Setter.Value>
