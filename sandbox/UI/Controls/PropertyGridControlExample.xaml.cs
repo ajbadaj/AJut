@@ -61,6 +61,14 @@
 
         public Person? NullThing { get; set; }
 
+        private string m_dogSaveFileLocation = string.Empty;
+        [PGEditor("SavePath")]
+        public string DogSaveFileLocation
+        {
+            get => m_dogSaveFileLocation;
+            set => this.SetAndRaiseIfChanged(ref m_dogSaveFileLocation, value);
+        }
+
         public IEnumerable<PropertyEditTarget> GenerateEditTargets ()
         {
             foreach (var p in PropertyEditTarget.GenerateForPropertiesOf(this))
