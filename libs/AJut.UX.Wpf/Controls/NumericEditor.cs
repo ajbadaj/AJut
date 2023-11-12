@@ -2,6 +2,8 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
+    using System.Text.RegularExpressions;
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Data;
@@ -138,7 +140,7 @@
         public static RoutedCommand NudgeDecreaseCommand = new RoutedCommand(nameof(NudgeDecrease), typeof(NumericEditor));
 
         // ===========================[ Dependency Properties ]===================================
-        public static readonly DependencyProperty ValueProperty = DPUtils.RegisterFP(_ => _.Value, 0.0f, (d, e) => d.OnValueChanged(e.NewValue), FrameworkPropertyMetadataOptions.BindsTwoWayByDefault);
+        public static readonly DependencyProperty ValueProperty = DPUtils.RegisterFP(_ => _.Value, 0.0f, (d, e) => d.OnValueChanged(e.NewValue), (d, e) => d.OnCoerceValue(e), FrameworkPropertyMetadataOptions.BindsTwoWayByDefault);
         public object Value
         {
             get => (object)this.GetValue(ValueProperty);
@@ -160,25 +162,67 @@
             protected set => this.SetValue(DisplayValuePropertyKey, value);
         }
 
-        public static readonly DependencyProperty DecimalPlacesAllowedProperty = DPUtils.Register(_ => _.DecimalPlacesAllowed, -1);
+        public static readonly DependencyProperty EnforceNumericTypeProperty = DPUtils.Register(_ => _.EnforceNumericType, (d,e)=>d.DisplayValue.ForceType(e.NewValue));
+        public Type EnforceNumericType
+        {
+            get => (Type)this.GetValue(EnforceNumericTypeProperty);
+            set => this.SetValue(EnforceNumericTypeProperty, value);
+        }
+
+        public static readonly DependencyProperty DecimalPlacesAllowedProperty = DPUtils.Register(_ => _.DecimalPlacesAllowed, -1, (d,e)=>d.DisplayValue?.TryCapTextToMaxDecimalPlaces());
         public int DecimalPlacesAllowed
         {
             get => (int)this.GetValue(DecimalPlacesAllowedProperty);
             set => this.SetValue(DecimalPlacesAllowedProperty, value);
         }
 
-        public static readonly DependencyProperty MinimumProperty = DPUtils.Register(_ => _.Minimum, Double.MinValue, (d, e) => d.OnCapChanged());
-        public double Minimum
+        public static readonly DependencyProperty MinimumProperty = DPUtils.RegisterFP(_ => _.Minimum, null, (d, e) => d.OnCapChanged(), (d, v) => d.OnCoerceBoundaryNumeric(v));
+        public object Minimum
         {
-            get => (double)this.GetValue(MinimumProperty);
+            get => this.GetValue(MinimumProperty);
             set => this.SetValue(MinimumProperty, value);
         }
 
-        public static readonly DependencyProperty MaximumProperty = DPUtils.Register(_ => _.Maximum, Double.MaxValue, (d, e) => d.OnCapChanged());
-        public double Maximum
+        public static readonly DependencyProperty MaximumProperty = DPUtils.RegisterFP(_ => _.Maximum, null, (d, e) => d.OnCapChanged(), (d,v)=> d.OnCoerceBoundaryNumeric(v));
+        public object Maximum
         {
-            get => (double)this.GetValue(MaximumProperty);
+            get => this.GetValue(MaximumProperty);
             set => this.SetValue(MaximumProperty, value);
+        }
+
+        private object OnCoerceBoundaryNumeric (object valueAsObj)
+        {
+            // This is actually handled better elsewhere, ignore
+            if (valueAsObj == null)
+            {
+                return null;
+            }
+
+            // If we haven't determined this yet, there's not a ton we can do - keep it as is for now and cast it after
+            if (this.DisplayValue.ValueType == null)
+            {
+                return valueAsObj;
+            }
+
+            Type providedValueType = valueAsObj.GetType();
+
+            // Are we parsing a string?
+            if (providedValueType == typeof(string))
+            {
+                if (TextEditNumberViewModel.TryParseString(this.DisplayValue.ValueType, (string)valueAsObj, out dynamic castedValue))
+                {
+                    return castedValue;
+                }
+            }
+
+            // Are we parsing a numeric?
+            if (TextEditNumberViewModel.IsSupportedNumericType(providedValueType))
+            {
+                return TextEditNumberViewModel.PerformSafeNumericCastToTarget(valueAsObj, providedValueType, out bool _, out bool _);
+            }
+
+            // Do fallback
+            return null;
         }
 
         public static readonly DependencyProperty BigNudgeProperty = DPUtils.Register(_ => _.BigNudge, 5.0);
@@ -368,7 +412,7 @@
             this.DisplayValue.Nudge(positive, Convert.ChangeType(value, this.DisplayValue.ValueType));
 
             // Preserve the caret location
-            caretOffset = MathUtilities.Cap.Within(0, this.DisplayValue.Text.Length, this.DisplayValue.Text.Length - caretOffset);
+            caretOffset = MathUtilities.Cap.Within(0, this.PART_TextArea.Text.Length - 1, this.DisplayValue.Text.Length - caretOffset);
             selectionLength = Math.Min(selectionLength, this.DisplayValue.Text.Length - caretOffset);
             if (selectionLength > 0)
             {
@@ -383,7 +427,7 @@
             }
             else
             {
-                this.PART_TextArea.CaretIndex = caretOffset;
+                this.PART_TextArea.CaretIndex = MathUtilities.Cap.Within(0, this.PART_TextArea.Text.Length - 1, caretOffset);
             }
 
             if (notifyOfUserEdit)
@@ -394,6 +438,12 @@
 
         public bool PerformTextUpdate ()
         {
+            if (!this.DisplayValue.TryCapTextToMaxDecimalPlaces())
+            {
+                // Text was real bad
+                return false;
+            }
+
             var binding = BindingOperations.GetBindingExpression(this.PART_TextArea, TextBox.TextProperty);
             if (binding != null)
             {
@@ -432,68 +482,32 @@
             try
             {
                 m_blockValueChangeReentrancy = true;
-                switch (newValue)
+
+                this.DisplayValue = new TextEditNumberViewModel(this, newValue, this.EnforceNumericType);
+                if (newValue is string)
                 {
-                    case float v:
-                        _ForceCapMinMax(float.MinValue, float.MaxValue);
-                        this.DisplayValue = new TextEditNumberViewModel(this, v);
-                        break;
-
-                    case double v:
-                        _ForceCapMinMax(double.MinValue, double.MaxValue);
-                        this.DisplayValue = new TextEditNumberViewModel(this, v);
-                        break;
-
-                    case decimal v:
-                        _ForceCapMinMax(decimal.MinValue, decimal.MaxValue);
-                        this.DisplayValue = new TextEditNumberViewModel(this, v);
-                        break;
-
-                    case byte v:
-                        _ForceCapMinMax(byte.MinValue, byte.MaxValue);
-                        this.DisplayValue = new TextEditNumberViewModel(this, v);
-                        break;
-
-                    case short v:
-                        _ForceCapMinMax(short.MinValue, short.MaxValue);
-                        this.DisplayValue = new TextEditNumberViewModel(this, v);
-                        break;
-
-                    case int v:
-                        _ForceCapMinMax(int.MinValue, int.MaxValue);
-                        this.DisplayValue = new TextEditNumberViewModel(this, v);
-                        break;
-
-                    case long v:
-                        _ForceCapMinMax(long.MinValue, long.MaxValue);
-                        this.DisplayValue = new TextEditNumberViewModel(this, v);
-                        break;
-
-                    case GridLength v:
-                        _ForceCapMinMax(double.MinValue, double.MaxValue);
-                        this.DisplayValue = new TextEditNumberViewModel(this, v.Value);
-                        break;
+                    this.Value = this.DisplayValue.SourceValue;
                 }
             }
             finally
             {
                 m_blockValueChangeReentrancy = false;
             }
+        }
 
-            void _ForceCapMinMax<T> (T _typedMin, T _typedMax)
+        private object OnCoerceValue (object baseValue)
+        {
+            if (baseValue is string strCasted)
             {
-                var _doubleMin = (double)Convert.ChangeType(_typedMin, typeof(double));
-                if (this.Minimum < _doubleMin)
+                if (this.DisplayValue.TryParseString(strCasted, out dynamic castedValue))
                 {
-                    this.Minimum = _doubleMin;
+                    return castedValue;
                 }
 
-                var _doubleMax = (double)Convert.ChangeType(_typedMax, typeof(double));
-                if (this.Maximum > _doubleMax)
-                {
-                    this.Maximum = _doubleMax;
-                }
+                return 0.0f;
             }
+
+            return baseValue;
         }
 
         private void OnDisplayValueSet (TextEditNumberViewModel oldValue, TextEditNumberViewModel newValue)
@@ -532,17 +546,45 @@
     public class TextEditNumberViewModel : NotifyPropertyChanged
     {
         private readonly NumericEditor m_owner;
+        private bool m_isTypeForced;
+        private Type m_valueType;
 
         // =====================[ Construction ]==========================
-        public TextEditNumberViewModel (NumericEditor owner, object value)
+        public TextEditNumberViewModel (NumericEditor owner, object value, Type enforcedType = null)
         {
             m_owner = owner;
-            if (value == null)
+
+            if (enforcedType != null)
             {
-                value = 0.0f;
+                m_isTypeForced = true;
+                m_valueType = enforcedType;
             }
 
-            this.ValueType = value.GetType();
+            if (value is string stringValue)
+            {
+                if (TryParseString(enforcedType ?? typeof(float), stringValue, out dynamic castedValue))
+                {
+                    value = castedValue;
+                }
+            }
+
+            if (value == null)
+            {
+                if (enforcedType != null)
+                {
+                    value = Activator.CreateInstance(enforcedType);
+                }
+                else
+                {
+                    value = 0.0f;
+                }
+            }
+
+            if (this.ValueType == null)
+            {
+                this.ValueType = value.GetType();
+            }
+
             this.SetSourceValueOneWay(value);
             this.SetTextOneWay();
         }
@@ -573,6 +615,7 @@
                 if (this.SetSourceValueOneWay(value))
                 {
                     this.SetTextOneWay();
+                    this.TryCapTextToMaxDecimalPlaces();
                 }
             }
         }
@@ -603,9 +646,49 @@
             get => m_textErrorMessage != null;
         }
 
-        public Type ValueType { get; private set; }
+        public Type ValueType
+        {
+            get => m_valueType;
+            private set
+            {
+                if (!m_isTypeForced)
+                {
+                    m_valueType = value;
+                }
+            }
+        }
 
         // =====================[ Methods ]=============================
+
+        public bool TryCapTextToMaxDecimalPlaces()
+        {
+            Regex digitManagedParse;
+            // Wildcard for "however many, idc"
+            if (m_owner.DecimalPlacesAllowed < 0)
+            {
+                // The first number with or without a decimal place
+                digitManagedParse = new Regex(@"(-?\d+\.\d+)?(-?\d+)?");
+            }
+            else if (m_owner.DecimalPlacesAllowed == 0)
+            {
+                // The first number not including decimals
+                digitManagedParse = new Regex(@"(-?\d+)");
+            }
+            else // > 0
+            {
+                digitManagedParse = new Regex($@"(-?\d+\.?\d{{0,{m_owner.DecimalPlacesAllowed}}})");
+            }
+
+            // Text was real bad
+            Match output = digitManagedParse.Match(this.Text);
+            if (!output.Success)
+            {
+                return false;
+            }
+
+            this.Text = output.Captures[0].Value;
+            return true;
+        }
 
         public void Nudge (bool positive, object nudgeValue)
         {
@@ -631,9 +714,31 @@
             this.ApplyTextChange(updateSourceValue: false);
         }
 
+        public static bool TryParseString(Type type, string value, out dynamic castedValue)
+        {
+            if(kParsers[type](value, out castedValue))
+            {
+                return true;
+            }
+
+            castedValue = 0.0;
+            return false;
+        }
+
+        public bool TryParseString(string value, out dynamic castedValue)
+        {
+            return TryParseString(this.ValueType, value, out castedValue);
+        }
+
+        internal void ForceType (Type newValue)
+        {
+            m_valueType = newValue;
+            m_isTypeForced = true;
+        }
+
         private void ApplyTextChange (bool updateSourceValue)
         {
-            if (kParsers[this.ValueType](m_text, out dynamic sourceValue))
+            if (this.TryParseString(m_text, out dynamic sourceValue))
             {
                 if (updateSourceValue)
                 {
@@ -644,8 +749,8 @@
                 // but it's the easiest to read & understand way to do this, so taking the small hit due to IsAtMinimum not
                 // differentiating if it's too small, and same with maximum - and adding that seems wasteful since that can only
                 // be done here.
-                dynamic min = Convert.ChangeType(m_owner.Minimum, this.ValueType);
-                dynamic max = Convert.ChangeType(m_owner.Maximum, this.ValueType);
+                dynamic min = m_owner.Minimum == null ? kMinMaxes[this.ValueType].Min : PerformSafeNumericCastToTarget(m_owner.Minimum, this.ValueType, out bool _, out bool _);
+                dynamic max = m_owner.Maximum == null ? kMinMaxes[this.ValueType].Max : PerformSafeNumericCastToTarget(m_owner.Maximum, this.ValueType, out bool _, out bool _);
                 if (sourceValue > max)
                 {
                     this.TextErrorMessage = $"Value is invalid: beyond max ({m_owner.Maximum})";
@@ -661,7 +766,7 @@
             }
             else
             {
-                this.TextErrorMessage = "Value is invalid: number not detected";
+                this.TextErrorMessage = $"Value is invalid: {this.ValueType.Name} could not be determined from input";
             }
         }
 
@@ -676,7 +781,6 @@
 
             if (this.SetAndRaiseIfChanged(ref m_sourceValue, cappedValue, nameof(SourceValue)))
             {
-                this.ValueType = this.SourceValue.GetType();
                 this.ValueChanged?.Invoke(this, new EventArgs<object>(m_sourceValue));
                 return true;
             }
@@ -685,27 +789,29 @@
         }
 
         // ==================[ Static number boxing\unboxing helpers ]==================================
-        private delegate object Nudger (bool positive, object original, object nudge);
-        private delegate object Capper (object newValue, object min, object max, out bool cappedInMin, out bool cappedInMax);
-        private delegate bool TryParser (string text, out object value);
-        private delegate bool TypedTryParser<T> (string text, out T value);
+        internal delegate object NumericValueNudger (bool positive, object original, object nudge);
+        internal delegate object NumericValueCapper (object newValue, object min, object max, out bool cappedInMin, out bool cappedInMax);
+        internal delegate bool TryParser (string text, out object value);
+        internal delegate bool TypedTryParser<T> (string text, out T value);
+
+        public static bool IsSupportedNumericType (Type type) => kParsers.Keys.Contains(type);
 
         private static readonly Dictionary<Type, TryParser> kParsers = new Dictionary<Type, TryParser>
         {
-            { typeof(byte), DownCastTryParse<byte>(byte.TryParse) },
-            { typeof(short), DownCastTryParse<short>(short.TryParse) },
-            { typeof(int), DownCastTryParse<int>(int.TryParse) },
-            { typeof(long), DownCastTryParse<long>(long.TryParse) },
-            { typeof(float), DownCastTryParse<float>(float.TryParse) },
-            { typeof(double), DownCastTryParse<double>(double.TryParse) },
-            { typeof(decimal), DownCastTryParse<decimal>(decimal.TryParse) },
-            { typeof(sbyte), DownCastTryParse<sbyte>(sbyte.TryParse) },
-            { typeof(uint), DownCastTryParse<uint>(uint.TryParse) },
-            { typeof(ushort), DownCastTryParse<ushort>(ushort.TryParse) },
-            { typeof(ulong), DownCastTryParse<ulong>(ulong.TryParse) },
+            { typeof(byte), BuildTypedParseFromStringToNumeric<byte>(byte.TryParse) },
+            { typeof(short), BuildTypedParseFromStringToNumeric<short>(short.TryParse) },
+            { typeof(int), BuildTypedParseFromStringToNumeric<int>(int.TryParse) },
+            { typeof(long), BuildTypedParseFromStringToNumeric<long>(long.TryParse) },
+            { typeof(float), BuildTypedParseFromStringToNumeric<float>(float.TryParse) },
+            { typeof(double), BuildTypedParseFromStringToNumeric<double>(double.TryParse) },
+            { typeof(decimal), BuildTypedParseFromStringToNumeric<decimal>(decimal.TryParse) },
+            { typeof(sbyte), BuildTypedParseFromStringToNumeric<sbyte>(sbyte.TryParse) },
+            { typeof(uint), BuildTypedParseFromStringToNumeric<uint>(uint.TryParse) },
+            { typeof(ushort), BuildTypedParseFromStringToNumeric<ushort>(ushort.TryParse) },
+            { typeof(ulong), BuildTypedParseFromStringToNumeric<ulong>(ulong.TryParse) },
         };
 
-        private static readonly Dictionary<Type, Nudger> kNudgers = new Dictionary<Type, Nudger>
+        private static readonly Dictionary<Type, NumericValueNudger> kNudgers = new Dictionary<Type, NumericValueNudger>
         {
             { typeof(byte), RunNudge<byte> },
             { typeof(short), RunNudge<short> },
@@ -719,7 +825,8 @@
             { typeof(ushort), RunNudge<ushort> },
             { typeof(ulong), RunNudge<ulong> },
         };
-        private static readonly Dictionary<Type, Capper> kCappers = new Dictionary<Type, Capper>
+
+        private static readonly Dictionary<Type, NumericValueCapper> kCappers = new Dictionary<Type, NumericValueCapper>
         {
             { typeof(byte), RunCapper<byte> },
             { typeof(short), RunCapper<short> },
@@ -734,48 +841,198 @@
             { typeof(ulong), RunCapper<ulong> },
         };
 
+        private static readonly Dictionary<Type, (dynamic Min, dynamic Max)> kMinMaxes = new Dictionary<Type, (dynamic Min, dynamic Max)>
+        {
+            { typeof(byte), (byte.MinValue, byte.MaxValue) },
+            { typeof(short), (short.MinValue, short.MaxValue) },
+            { typeof(int), (int.MinValue, int.MaxValue) },
+            { typeof(long), (long.MinValue, long.MaxValue) },
+            { typeof(float), (float.MinValue, float.MaxValue) },
+            { typeof(double), (double.MinValue, double.MaxValue) },
+            { typeof(decimal), (decimal.MinValue, decimal.MaxValue) },
+            { typeof(sbyte), (sbyte.MinValue, sbyte.MaxValue) },
+            { typeof(uint), (uint.MinValue, uint.MaxValue) },
+            { typeof(ushort), (ushort.MinValue, ushort.MaxValue) },
+            { typeof(ulong), (ulong.MinValue, ulong.MaxValue) },
+        };
+
+
+        private static readonly Dictionary<Type, bool> kIsFloatingPointBasedNumericType = new Dictionary<Type, bool>
+        {
+            { typeof(byte), false },
+            { typeof(short), false },
+            { typeof(int), false },
+            { typeof(long), false },
+            { typeof(float), true },
+            { typeof(double), true },
+            { typeof(decimal), true },
+            { typeof(sbyte), false },
+            { typeof(uint), false },
+            { typeof(ushort), false },
+            { typeof(ulong), false },
+        };
+
+        private static readonly Dictionary<Type, bool> kIsUnsignedNumericType = new Dictionary<Type, bool>
+        {
+            { typeof(byte), true },
+            { typeof(short), true },
+            { typeof(int), false },
+            { typeof(long), false },
+            { typeof(float), true },
+            { typeof(double), true },
+            { typeof(decimal), true },
+            { typeof(sbyte), true },
+            { typeof(uint), true },
+            { typeof(ushort), true },
+            { typeof(ulong), true },
+        };
+
+        public static dynamic PerformSafeNumericCastToTarget (dynamic value, Type targetType, out bool didCapToNumericBoundaryMin, out bool didCapToNumericBoundaryMax)
+        {
+            didCapToNumericBoundaryMin = false;
+            didCapToNumericBoundaryMax = false;
+
+            // If the value is already of the target type, just return it
+            if (value.GetType() == targetType)
+            {
+                return value;
+            }
+
+            // Otherwise we're going to follow three simple steps:
+            //  1. Convert the value, minimum, and maximum to their respective "largest container" (to avoid overflow)
+            //  2. Compare and cap the largest container value with the largest container minimum and maximum
+            //  3. Return the capped value
+            //
+            // In this case by "largest container", I mean numeric type that can hold the biggest and smallest numbers. This is important
+            //  because otherwise you may cast an int of 5,000,000 to byte which would cause an overflow exception. So step one of byte would
+            //  be to put the byte's value and byte.Minimum & byte.Maximum all expressed as ulong (the largest comperable container possible)
+            //  then make the comparison & cap with the ulong values, then finally cast back the ulong to a byte.
+
+            var minMaxOfTarget = kMinMaxes[targetType];
+
+            // If we're a floating point based target
+            if (kIsFloatingPointBasedNumericType[targetType])
+            {
+                // .. then double hold the largest minimum and maximum values
+                double valueInLargestContainer = DoNumericCast<double>(value);
+                double targetMinInLargestContainer = DoNumericCast<double>(minMaxOfTarget.Min);
+                double targetMaxInLargestContainer = DoNumericCast<double>(minMaxOfTarget.Max);
+
+                if (valueInLargestContainer < targetMinInLargestContainer)
+                {
+                    valueInLargestContainer = targetMinInLargestContainer;
+                    didCapToNumericBoundaryMin = true;
+                }
+                else if (valueInLargestContainer > targetMaxInLargestContainer)
+                {
+                    valueInLargestContainer = targetMaxInLargestContainer;
+                    didCapToNumericBoundaryMax = true;
+                }
+
+                return Convert.ChangeType(valueInLargestContainer, targetType);
+            }
+            // If it's an integer type, then we can only determine min/max after we decide if it's an unsigned type or not
+            else if (kIsUnsignedNumericType[targetType])
+            {
+                // ... largest/smallest unsigned integer is ulong
+                ulong valueInLargestContainer = DoNumericCast<ulong>(value);
+                ulong targetMinInLargestContainer = DoNumericCast<ulong>(minMaxOfTarget.Min);
+                ulong targetMaxInLargestContainer = DoNumericCast<ulong>(minMaxOfTarget.Max);
+
+                if (valueInLargestContainer < targetMinInLargestContainer)
+                {
+                    valueInLargestContainer = targetMinInLargestContainer;
+                    didCapToNumericBoundaryMin = true;
+                }
+                else if (valueInLargestContainer > targetMaxInLargestContainer)
+                {
+                    valueInLargestContainer = targetMaxInLargestContainer;
+                    didCapToNumericBoundaryMax = true;
+                }
+
+                return Convert.ChangeType(valueInLargestContainer, targetType);
+            }
+            else
+            {
+                // ... largest/smallest signed integer is long
+                long valueInLargestContainer = DoNumericCast<long>(value);
+                long targetMinInLargestContainer = DoNumericCast<long>(minMaxOfTarget.Min);
+                long targetMaxInLargestContainer = DoNumericCast<long>(minMaxOfTarget.Max);
+
+                if (valueInLargestContainer < targetMinInLargestContainer)
+                {
+                    valueInLargestContainer = targetMinInLargestContainer;
+                    didCapToNumericBoundaryMin = true;
+                }
+                else if (valueInLargestContainer > targetMaxInLargestContainer)
+                {
+                    valueInLargestContainer = targetMaxInLargestContainer;
+                    didCapToNumericBoundaryMax = true;
+                }
+
+                return Convert.ChangeType(valueInLargestContainer, targetType);
+            }
+
+            T DoNumericCast<T>(dynamic inputValue)
+            {
+                return (T)Convert.ChangeType(inputValue, typeof(T));
+            }
+        }
+
         private static object RunCapper<T> (object value, object min, object max, out bool hadToCapAtMin, out bool hadToCapAtMax)
         {
-            hadToCapAtMin = false;
-            hadToCapAtMax = false;
-            dynamic newValue = Convert.ChangeType(value, typeof(T));
+            // First cap value to be within the numeric bounds
+            Type targetType = typeof(T);
 
-            dynamic castedMin = Convert.ChangeType(min, typeof(T));
-            dynamic castedMax = Convert.ChangeType(max, typeof(T));
-            if (newValue <= castedMin)
+            // This will ensure value is expressed in terms of the numeric boundaries (ie an int of 5,000,00 will be cast to a byte of 255)
+            dynamic castedValue = PerformSafeNumericCastToTarget(value, targetType, out hadToCapAtMin, out hadToCapAtMax);
+
+            var targetTypedMinMax = kMinMaxes[targetType];
+            dynamic castedMin = min == null ? targetTypedMinMax.Min : PerformSafeNumericCastToTarget(min, targetType, out _, out _);
+            dynamic castedMax = max == null ? targetTypedMinMax.Max : PerformSafeNumericCastToTarget(max, targetType, out _, out _);
+
+            // Next to ensure our value is within the user set boundaries
+            if (castedValue < castedMin)
             {
+                castedValue = castedMin;
                 hadToCapAtMin = true;
-                return castedMin;
             }
-
-            if (newValue >= castedMax)
+            else if (castedValue > castedMax)
             {
+                castedValue = castedMax;
                 hadToCapAtMax = true;
-                return castedMax;
             }
 
-            return value;
+            return castedValue;
         }
 
         private static object RunNudge<T> (bool positive, object original, object nudge)
         {
-            dynamic castedOriginal = Convert.ChangeType(original, typeof(T));
-            dynamic castedNudge = Convert.ChangeType(nudge, typeof(T));
-            return Convert.ChangeType(castedOriginal + (positive ? castedNudge : -castedNudge), typeof(T));
+            dynamic castedOriginal = PerformSafeNumericCastToTarget(original, typeof(T), out _, out _);
+            dynamic castedNudge = PerformSafeNumericCastToTarget(nudge, typeof(T), out _, out _);
+            return castedOriginal + (positive ? castedNudge : -castedNudge);
         }
 
-        private static TryParser DownCastTryParse<T> (TypedTryParser<T> typedParser)
+        private static readonly Regex kLastDitchNumericParser = new Regex(@"-?\d*\.\d*");
+        internal static TryParser BuildTypedParseFromStringToNumeric<T> (TypedTryParser<T> typedParser)
         {
             return
-                (string t, out object o) =>
+                (string stringValue, out object parsedOutputValue) =>
                 {
-                    if (typedParser(t, out T value))
+                    if (typedParser(stringValue, out T parsedValueTyped))
                     {
-                        o = value;
+                        parsedOutputValue = parsedValueTyped;
                         return true;
                     }
 
-                    o = null;
+                    Match match = kLastDitchNumericParser.Match(stringValue);
+                    if (match.Success && typedParser(stringValue.Substring(match.Index, match.Length), out parsedValueTyped))
+                    {
+                        parsedOutputValue = parsedValueTyped;
+                        return true;
+                    }
+                    
+                    parsedOutputValue = null;
                     return false;
                 };
         }

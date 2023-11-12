@@ -178,9 +178,14 @@
 
                                 <!-- ==========[Textbox Area]==================== -->
                                 <Grid VerticalAlignment="Center" Margin="{TemplateBinding Padding}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition />
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
                                     <TextBox x:Name="PART_TextArea" BorderThickness="0" TextAlignment="{TemplateBinding NumberTextAlignment}" Padding="{TemplateBinding Padding}"
                                              Text="{ajut:TemplateBinding Path=DisplayValue.Text, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" IsReadOnly="{TemplateBinding IsReadOnly}" IsReadOnlyCaretVisible="True"/>
-                                    <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,4,2,2" FontSize="12"
+                                    <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" HorizontalAlignment="Right" 
+                                               Grid.Column="1" Margin="2,4,2,2" FontSize="12"
                                                Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:NumericEditor}}, Path=ErrorBrush}"
                                                Visibility="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:NumericEditor}}, Path=DisplayValue.IsTextInErrorState, Converter={conv:BooleanToVisibilityConverter}}"/>
                                     <Border BorderBrush="#8000" BorderThickness="1.4,1.4,0,0">
