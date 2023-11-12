@@ -23,8 +23,10 @@
         SaveFile
     }
 
+    [TemplatePart(Name = nameof(PART_PathTextBox), Type = typeof(TextBox))]
     public class PathSelectionControl : Control
     {
+        private TextBox PART_PathTextBox;
         static PathSelectionControl ()
         {
             DefaultStyleKeyProperty.OverrideMetadata(typeof(PathSelectionControl), new FrameworkPropertyMetadata(typeof(PathSelectionControl)));
@@ -49,17 +51,52 @@
                             ? PathHelpersUI.PromptUserToPickAFile<OpenFileDialog>(this.BrowsePrompt, this.SelectedPath, this.FileFilter)
                             : PathHelpersUI.PromptUserToPickAFile<SaveFileDialog>(this.BrowsePrompt, this.SelectedPath, this.FileFilter);
 
-                    if (userSelectedPath != null)
-                    {
-                        this.SelectedPath = userSelectedPath;
-                    }
+                    _SetText(userSelectedPath);
                 }
                 else
                 {
                     string userSelectedPath = PathHelpersUI.PromptUserToPickADirectory(this.BrowsePrompt, this.SelectedPath);
-                    if (userSelectedPath != null)
+                    _SetText(userSelectedPath);
+                }
+            }
+
+            void _SetText(string _userSelectedPath)
+            {
+                if (_userSelectedPath != null)
+                {
+                    this.SelectedPath = _userSelectedPath;
+
+                    this.Dispatcher.InvokeAsync(() =>
                     {
-                        this.SelectedPath = userSelectedPath;
+                        // For some reason it's ScrollToEnd and ScrollToHorizontalOffset of the normal viewport width fail in some circumstances :facpalm:
+                        this.PART_PathTextBox.ScrollToHorizontalOffset(this.PART_PathTextBox.ViewportWidth * 1.5f);
+                    }, System.Windows.Threading.DispatcherPriority.Loaded);
+                }
+            }
+        }
+
+        public override void OnApplyTemplate ()
+        {
+            base.OnApplyTemplate();
+
+            if (this.PART_PathTextBox != null)
+            {
+                this.PART_PathTextBox.PreviewKeyDown -= _PreviewOnTextAreaKeyDown;
+                this.PART_PathTextBox = null;
+            }
+
+            this.PART_PathTextBox = (TextBox)this.GetTemplateChild(nameof(PART_PathTextBox));
+            this.PART_PathTextBox.PreviewKeyDown += _PreviewOnTextAreaKeyDown;
+
+            void _PreviewOnTextAreaKeyDown (object _s, KeyEventArgs _e)
+            {
+                if (this.PathType == ePathType.Folder && _e.KeyboardDevice.Modifiers == ModifierKeys.Control && _e.Key == Key.Up)
+                {
+                    DirectoryInfo dir = new DirectoryInfo(this.SelectedPath);
+                    if (dir.Parent != null)
+                    {
+                        this.SelectedPath = dir.Parent.FullName;
+                        _e.Handled = true;
                     }
                 }
             }
@@ -154,7 +191,6 @@
             set => this.SetValue(InvalidPathBorderBrushProperty, value);
         }
 
-
         public static readonly DependencyProperty InvalidForegroundSymbolProperty = DPUtils.RegisterFP(_ => _.InvalidForegroundSymbol, null, null, CoerceUtils.CallbackForBrush);
         public Brush InvalidForegroundSymbol
         {
@@ -210,6 +246,13 @@
         {
             get => (eFileDialogType)this.GetValue(FileDialogTypeProperty);
             set => this.SetValue(FileDialogTypeProperty, value);
+        }
+
+        public static readonly DependencyProperty DefaultButtonMDL2IconProperty = DPUtils.Register(_ => _.DefaultButtonMDL2Icon);
+        public string DefaultButtonMDL2Icon
+        {
+            get => (string)this.GetValue(DefaultButtonMDL2IconProperty);
+            set => this.SetValue(DefaultButtonMDL2IconProperty, value);
         }
 
         private void EvaluatePath (string path)
