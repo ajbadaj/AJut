@@ -4,6 +4,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800"
              x:Name="Self">
@@ -33,6 +34,15 @@
                     <TextBlock Text="Min -10, Max 10" VerticalAlignment="Center" HorizontalAlignment="Center" Width="120"/>
                     <ajut:NumericEditor Value="{Binding ElementName=Self, Path=FloatValue}" VerticalContentAlignment="Stretch"
                                                    Minimum="-10" Maximum="10"/>
+                </DockPanel>
+
+                <DockPanel Margin="0,0,0,15">
+                    <TextBlock Text="Decimal places - first controls decimal places, second caps to that place"
+                               DockPanel.Dock="Top"/>
+                    <StackPanel Margin="30,0,0,0" Width="150" HorizontalAlignment="Left">
+                        <ajut:NumericEditor x:Name="DecimalPlaces" EnforceNumericType="{x:Type sys:Int32}" Value="2" Minimum="-1" Maximum="10" Nudge="1" BigNudge="2" SmallNudge="1"/>
+                        <ajut:NumericEditor Value="25.57" DecimalPlacesAllowed="{Binding ElementName=DecimalPlaces, Path=Value}" />
+                    </StackPanel>
                 </DockPanel>
                 <DockPanel Margin="0,0,0,15">
                     <TextBlock Text="Alt Padding (size 1)" HorizontalAlignment="Center" Width="120"/>

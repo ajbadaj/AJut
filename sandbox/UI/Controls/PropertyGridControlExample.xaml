@@ -26,6 +26,9 @@
                                                 Maximum="{Binding Path=EditContext.Maximum, FallbackValue=100}"
                                                 NumberTextAlignment="Left"/>
                         </DataTemplate>
+                        <DataTemplate x:Key="SavePath" DataType="{x:Type ajprop:PropertyEditTarget}">
+                            <ajut:PathSelectionControl SelectedPath="{Binding Path=EditValue}"/>
+                        </DataTemplate>
                     </ajut:PropertyGridTemplateSelector.RegisteredTemplates>
                     <ajut:PropertyGridTemplateSelector.Default>
                         <DataTemplate DataType="{x:Type ajprop:PropertyEditTarget}">

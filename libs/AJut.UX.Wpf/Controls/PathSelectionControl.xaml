@@ -5,9 +5,12 @@
                     xmlns:ajut="clr-namespace:AJut.UX"
                     xmlns:ajconv="clr-namespace:AJut.UX.Converters"
                     xmlns:ap="clr-namespace:AJut.UX.AttachedProperties">
-    
+
+    <sys:String x:Key="OpenDialogIcon">&#xE712;</sys:String>
     <sys:String x:Key="OpenFolderSymbol">&#xED25;</sys:String>
     <sys:String x:Key="ClosedFolderSymbol">&#xF12B;</sys:String>
+    <sys:String x:Key="BaseFileSymbol">&#xF56E;</sys:String>
+    <sys:String x:Key="SelectFileSymbol">&#xF000;</sys:String>
     <sys:String x:Key="WarningSymbol">&#xE7BA;</sys:String>
 
     <Style TargetType="{x:Type local:PathSelectionControl}">
@@ -15,6 +18,8 @@
         <Setter Property="BorderThickness" Value="1,1,1,2"/>
         <Setter Property="Background" Value="#CCC"/>
         <Setter Property="BorderBrush" Value="Black"/>
+        <Setter Property="Padding" Value="0,1,0,0"/>
+        <Setter Property="DefaultButtonMDL2Icon" Value="{StaticResource OpenDialogIcon}"/>
         <Setter Property="InvalidPathBorderBrush" Value="#C31"/>
         <Setter Property="InvalidForegroundSymbol" Value="#FCD"/>
         <Setter Property="FocusedBorderBrush" Value="#38C"/>
@@ -65,34 +70,29 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition />
                                 <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
-                            <TextBox x:Name="PathTextDisplay" Grid.Column="0" Text="{ajut:TemplateBinding Path=SelectedPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            <TextBox x:Name="PART_PathTextBox" Grid.Column="0" Text="{ajut:TemplateBinding Path=SelectedPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                      ap:BorderXTA.CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius), Converter={ajconv:CornerRadiusSideExtractionConverter Side=Left}}"
                                      BorderThickness="1,1,0,0" BorderBrush="#8000" Margin="3" FontSize="12"
-                                     VerticalContentAlignment="Center" Padding="2,3"/>
-                            <TextBlock Margin="3" Padding="{Binding ElementName=PathTextDisplay, Path=Padding}" Opacity="0.5" FontStyle="Italic" 
-                                       FontSize="{Binding ElementName=PathTextDisplay, Path=FontSize}" IsHitTestVisible="False"
-                                       Text="{TemplateBinding UnsetTextPrompt}">
+                                     VerticalContentAlignment="Center" Padding="{ajut:TemplateBinding Path=Padding}"/>
+                            <TextBlock Margin="10,3" Padding="{Binding ElementName=PART_PathTextBox, Path=Padding}" Opacity="0.5" FontStyle="Italic" 
+                                       FontSize="{Binding ElementName=PART_PathTextBox, Path=FontSize}" IsHitTestVisible="False"
+                                       Text="{TemplateBinding UnsetTextPrompt}" HorizontalAlignment="Stretch">
                                 <TextBlock.Visibility>
                                     <MultiBinding Converter="{ajconv:BooleanAndToVisibilityConverter}">
                                         <MultiBinding.Bindings>
                                             <Binding RelativeSource="{RelativeSource AncestorType={x:Type local:PathSelectionControl}}" Path="SelectedPath" Converter="{ajconv:IsTextNullOrEmptyConverter}"/>
-                                            <Binding ElementName="PathTextDisplay" Path="IsKeyboardFocusWithin" Converter="{ajconv:BooleanInverseConverter}"/>
+                                            <Binding ElementName="PART_PathTextBox" Path="IsKeyboardFocusWithin" Converter="{ajconv:BooleanInverseConverter}"/>
                                         </MultiBinding.Bindings>
                                     </MultiBinding>
                                 </TextBlock.Visibility>
                             </TextBlock>
-                            <Border x:Name="PathWarningDisplay" CornerRadius="0,40,0,0" Visibility="Collapsed" IsHitTestVisible="False"
-                                    Background="{Binding ElementName=PathSelectorBorderRoot, Path=BorderBrush}" 
-                                    Width="16" Height="16" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="0,0,0,-2">
-                                <TextBlock Foreground="{TemplateBinding InvalidForegroundSymbol}" FontSize="12"
-                                           Text="{StaticResource WarningSymbol}" FontFamily="Segoe MDL2 Assets" 
-                                           Margin="-2,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                            </Border>
-                            <Button Grid.Column="1" FontSize="16" Padding="5,3"
+                            <Button Grid.Column="2" FontSize="16" Padding="5,3"
                                     ap:BorderXTA.CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius), Converter={ajconv:CornerRadiusSideExtractionConverter Side=Right, Reduction=1}}"
-                                    BorderThickness="1,0,0,0" BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="1,0,0,0" 
+                                    BorderBrush="{Binding ElementName=PathSelectorBorderRoot, Path=BorderBrush}"
                                     Background="{TemplateBinding ButtonBackground}"
                                     Foreground="{TemplateBinding ButtonForeground}"
                                     Command="{x:Static local:PathSelectionControl.PromptUserForNewPathCommand}">
@@ -103,28 +103,51 @@
                                                 Background="{TemplateBinding Background}"
                                                 CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}"
                                                 TextElement.Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PathSelectionControl}}, Path=ButtonBackground}">
-                                            <TextBlock x:Name="Icon" Text="{StaticResource ClosedFolderSymbol}" FontFamily="Segoe MDL2 Assets" 
+                                            <TextBlock x:Name="Icon" Text="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PathSelectionControl}}, Path=DefaultButtonMDL2Icon}" FontFamily="Segoe MDL2 Assets" 
                                                        Foreground="{TemplateBinding Foreground}" Margin="{TemplateBinding Padding}" VerticalAlignment="Center"/>
                                         </Border>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
                                                 <Setter TargetName="Border" Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PathSelectionControl}}, Path=ButtonHoverBackground}"/>
                                                 <Setter TargetName="Icon"   Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PathSelectionControl}}, Path=ButtonHoverForeground}"/>
-                                                <Setter TargetName="Icon"   Property="Text" Value="{StaticResource OpenFolderSymbol}"/>
+                                                <Setter TargetName="Icon"   Property="Text" Value="{StaticResource ClosedFolderSymbol}"/>
                                             </Trigger>
                                             <Trigger Property="IsPressed" Value="True">
                                                 <Setter TargetName="Border" Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PathSelectionControl}}, Path=ButtonPressedBackground}"/>
                                                 <Setter TargetName="Icon"   Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PathSelectionControl}}, Path=ButtonPressedForeground}"/>
+                                                <Setter TargetName="Icon"   Property="Text" Value="{StaticResource OpenFolderSymbol}"/>
                                             </Trigger>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PathSelectionControl}}, Path=PathType}" Value="File"/>
+                                                    <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PathSelectionControl}}, Path=IsMouseOver}" Value="True"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter TargetName="Icon"   Property="Text" Value="{StaticResource BaseFileSymbol}"/>
+                                            </MultiDataTrigger>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PathSelectionControl}}, Path=PathType}" Value="File"/>
+                                                    <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PathSelectionControl}}, Path=IsPressed}" Value="True"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter TargetName="Icon"   Property="Text" Value="{StaticResource SelectFileSymbol}"/>
+                                            </MultiDataTrigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
                                 </Button.Template>
                             </Button>
+                            
+                            <Border x:Name="PathWarningDisplay" Grid.Column="1" Visibility="Collapsed" IsHitTestVisible="False"
+                                    Background="{Binding ElementName=PathSelectorBorderRoot, Path=BorderBrush}"
+                                    Margin="0,0,-1,0">
+                                <TextBlock Foreground="{TemplateBinding InvalidForegroundSymbol}" FontSize="12"
+                                           Margin="2"
+                                           Text="{StaticResource WarningSymbol}" FontFamily="Segoe MDL2 Assets" 
+                                           VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            </Border>
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsPathValid" Value="False">
-                            <Setter TargetName="PathTextDisplay" Property="Padding" Value="9,3,2,3"/>
                             <Setter TargetName="PathWarningDisplay" Property="Visibility" Value="Visible"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
