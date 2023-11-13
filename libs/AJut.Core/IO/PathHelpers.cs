@@ -338,7 +338,7 @@
         ///     1. Look for: *.
         ///     2. Look for extension text, words, numbers,
         /// </summary>
-        private static readonly Regex kExtensionParser = new Regex(@"[|;]\*?\.([\*\w\d_-]+)(?:$|\||;)");
+        private static readonly Regex kExtensionParser = new Regex(@"[|;](?:[\*\.]+|[\*])([\w\d\-\.\*]+)(?:$|\||;)");
 
         /// <summary>
         /// Provides all the extensions in format: <code>.extension</code>

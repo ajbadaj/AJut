@@ -69,7 +69,7 @@
 
 
         [TestMethod]
-        public void PathHelpers_TestExtensionParsing ()
+        public void PathHelpers_ExtensionFromFilterTesting_MultiFileFilterExtensions ()
         {
             string extensionsTest = "Bmp Files (*.bmp)|*.bmp|All files (*.*)|*.*|Icon Files (*.ico)|*.ico";
             var result = PathHelpers.ParseExtensionsFrom(extensionsTest).ToArray();
@@ -79,8 +79,18 @@
             Assert.AreEqual("ico", result[2]);
         }
 
+
         [TestMethod]
-        public void PathHelpers_TestFilterExamination()
+        public void PathHelpers_ExtensionFromFilterTesting_FilenameAndExtension ()
+        {
+            string extensionsTest = "AJut.Core.Dll (Core Dll)|*ajut.core.dll";
+            var result = PathHelpers.ParseExtensionsFrom(extensionsTest).ToArray();
+            Assert.AreEqual(1, result.Length);
+            Assert.AreEqual("ajut.core.dll", result[0]);
+        }
+
+        [TestMethod]
+        public void PathHelpers_ExtensionFromFilterTesting_FindMatching ()
         {
             Assert.IsTrue(PathHelpers.FindMatchingExtensionsFromFilter(
                     @"C:\Test.jpg",
