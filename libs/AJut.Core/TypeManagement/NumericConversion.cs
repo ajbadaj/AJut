@@ -22,7 +22,9 @@
         // ===================================
         // Private Helper Fields
         // ===================================
-        private static readonly Regex kNumericStringParser = new Regex(@"(?:-?\d*\.\d+)|(?:-?\d+)");
+        private static readonly Regex kNumericWithFloatPointParser = new Regex(@"(?:-?\d*\.\d+)|(?:-?\d+)");
+        private static readonly Regex kNumericUnsignedIntegerPointParser = new Regex(@"\d+");
+        private static readonly Regex kNumericSignedIntegerPointParser = new Regex(@"\-?\d+");
 
         private static readonly Dictionary<Type, (dynamic Min, dynamic Max)> kMinMaxes = new Dictionary<Type, (dynamic Min, dynamic Max)>
         {
@@ -246,6 +248,7 @@
 
         private static AdvancedStringParser BuildTypedNumericStringParser<T> (TypedNumericStringParser<T> typedParser)
         {
+            Type targetType = typeof(T);
             return (string stringValue, out dynamic parsedOutputValue) =>
             {
                 // First try the normal string parser
@@ -269,7 +272,21 @@
 
             bool _TryGetSubstringFor(string _toSearch, out string _subString)
             {
-                Match match = kNumericStringParser.Match(_toSearch);
+                Regex toUse;
+                if (kIsFloatingPointBasedNumericType[targetType])
+                {
+                    toUse = kNumericWithFloatPointParser;
+                }
+                else if (kIsUnsignedNumericType[targetType])
+                {
+                    toUse = kNumericUnsignedIntegerPointParser;
+                }
+                else
+                {
+                    toUse = kNumericSignedIntegerPointParser;
+                }
+
+                Match match = toUse.Match(_toSearch);
                 if (match.Success)
                 {
                     _subString = _toSearch.Substring(match.Index, match.Length);
