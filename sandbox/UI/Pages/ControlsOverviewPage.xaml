@@ -84,13 +84,27 @@
                                            FileFilter="{Binding ElementName=FileFilter, Path=Text, UpdateSourceTrigger=PropertyChanged}"
                                            TreatNonExistentPathAsInvalid="{Binding ElementName=NonExistant, Path=IsChecked}"
                                            TreatEmptyPathAsInvalid="{Binding ElementName=EmptyAsError, Path=IsChecked}"
+                                           IsOpenInExplorerButtonAllowed="{Binding ElementName=ShowOpenInExplorer, Path=IsChecked}"
+                                           InitialBrowseRoot="{Binding ElementName=InitialRootDir, Path=SelectedPath}"
+                                           FixedRootPath="{Binding ElementName=FixedRoot, Path=SelectedPath}"
+                                           ShortenPathToFixedRoot="{Binding ElementName=ShortenPath, Path=IsChecked}"
                                            UnsetTextPrompt="Select a path"/>
                 <StackPanel>
                     <CheckBox x:Name="NonExistant" Content="Treat Non-existant as error" Margin="0,0,5,5" VerticalAlignment="Center"/>
                     <CheckBox x:Name="EmptyAsError" Content="Treat empty as error" Margin="0,0,5,5" VerticalAlignment="Center"/>
+                    <CheckBox x:Name="ShowOpenInExplorer" Content="Show 'Open In Explorer' button"/>
+                    <CheckBox x:Name="ShortenPath" Content="Shorten path relative to Fixed Root?"/>
                     <ajut:EnumComboBox x:Name="PathType" SelectedItem="{x:Static ajut:ePathType.File}" Margin="0,0,5,5" VerticalAlignment="Center"/>
                     <ajut:EnumComboBox x:Name="FileOpenType" SelectedItem="{x:Static ajut:eFileDialogType.OpenFile}" Margin="0,0,5,5" VerticalAlignment="Center"
                                        Visibility="{Binding ElementName=PathType, Path=SelectedItem, Converter={conv:NumericComparisonToVisibilityConverter Comp=Equal, To=0, CompTrueValue=Visible, CompFalseValue=Collapsed}}"/>
+                    <DockPanel>
+                        <TextBlock Text="Initial Root Dir" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <ajut:PathSelectionControl x:Name="InitialRootDir" PathType="Folder"/>
+                    </DockPanel>
+                    <DockPanel>
+                        <TextBlock Text="Fixed Root" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <ajut:PathSelectionControl x:Name="FixedRoot" PathType="Folder"/>
+                    </DockPanel>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="Filter" VerticalAlignment="Center"/>
                         <TextBox x:Name="FileFilter" Text="{Binding Source={x:Static ajut_core_io:ImageTypes.AnyOrAllImageTypeFilter}, Mode=OneTime}" MaxWidth="300" VerticalAlignment="Center"/>
