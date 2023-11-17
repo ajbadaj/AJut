@@ -69,7 +69,15 @@
                 else if (path[1] == pathSeparator)
                 {
                     start = path.IndexOf(pathSeparator, 2);
-                    nextSeparator = path.IndexOf(pathSeparator, start);
+                    if (start < 0)
+                    {
+                        yield return path.Substring(2);
+                        yield break;
+                    }
+                    else
+                    {
+                        nextSeparator = path.IndexOf(pathSeparator, start);
+                    }
                 }
 
                 // Invalid
@@ -244,7 +252,7 @@
             }
 
             StringBuilder outputPath = new StringBuilder(path.Length);
-            char[] invalidPathChars = Path.GetInvalidFileNameChars();
+            char[] invalidPathChars = Path.GetInvalidPathChars();
             foreach (char pathChar in path)
             {
                 if (!invalidPathChars.Contains(pathChar))
