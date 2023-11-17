@@ -36,6 +36,7 @@
             this.EvaluatePath(null);
 
             this.CommandBindings.Add(new CommandBinding(PromptUserForNewPathCommand, _OnPromptUserForNewPathExecuted, _OnCanPromptUserForNewPath));
+            this.CommandBindings.Add(new CommandBinding(ShowPathInExplorerCommand, _OnShowPathInExplorerExecuted, _OnCanShowPathInExplorer));
 
             void _OnCanPromptUserForNewPath (object _sender, CanExecuteRoutedEventArgs _e)
             {
@@ -44,28 +45,71 @@
 
             void _OnPromptUserForNewPathExecuted (object _sender, ExecutedRoutedEventArgs _e)
             {
+                //string browseRootFolder = this.FixedBrowseRoot
                 if (this.PathType == ePathType.File)
                 {
+                    string _root = string.Empty;
+                    try { 
+                        _root = _FirstExistingValidDiretory(this.FixedRootPath, this.SelectedPath.IsNullOrEmpty() ? this.InitialBrowseRoot : Path.GetDirectoryName(this.GetFullyExpandedPath())); 
+                    } catch { }
                     string userSelectedPath =
                         this.FileDialogType == eFileDialogType.OpenFile
-                            ? PathHelpersUI.PromptUserToPickAFile<OpenFileDialog>(this.BrowsePrompt, this.SelectedPath, this.FileFilter)
-                            : PathHelpersUI.PromptUserToPickAFile<SaveFileDialog>(this.BrowsePrompt, this.SelectedPath, this.FileFilter);
+                            ? PathHelpersUI.PromptUserToPickAFile<OpenFileDialog>(this.BrowsePrompt, _root, this.FileFilter)
+                            : PathHelpersUI.PromptUserToPickAFile<SaveFileDialog>(this.BrowsePrompt, _root, this.FileFilter);
 
                     _SetText(userSelectedPath);
                 }
                 else
                 {
-                    string userSelectedPath = PathHelpersUI.PromptUserToPickADirectory(this.BrowsePrompt, this.SelectedPath);
+                    string _root = string.Empty;
+                    try { 
+                        _root = _FirstExistingValidDiretory(this.FixedRootPath, this.SelectedPath.IsNullOrEmpty() ? this.InitialBrowseRoot : this.GetFullyExpandedPath());
+                    } catch { }
+                    string userSelectedPath = PathHelpersUI.PromptUserToPickADirectory(this.BrowsePrompt, _root);
                     _SetText(userSelectedPath);
+                }
+
+                string _FirstExistingValidDiretory (params string[] _paths)
+                {
+                    foreach (string _path in _paths.Where(_p => _p.IsNotNullOrEmpty()))
+                    {
+                        try
+                        {
+                            string _fullPath = Path.GetFullPath(_path);
+                            if (Directory.Exists(_fullPath))
+                            {
+                                return _fullPath;
+                            }
+                        }
+                        catch { }
+                    }
+                    return null;
                 }
             }
 
-            void _SetText(string _userSelectedPath)
+            void _OnCanShowPathInExplorer (object _sender, CanExecuteRoutedEventArgs _e)
+            {
+                _e.CanExecute = this.IsPathValid;
+            }
+
+            void _OnShowPathInExplorerExecuted (object _sender, ExecutedRoutedEventArgs _e)
+            {
+                if (this.PathType == ePathType.File)
+                {
+                    System.Diagnostics.Process.Start("explorer", $"/select,\"{this.GetFullyExpandedPath()}\"");
+                }
+                else
+                {
+                    System.Diagnostics.Process.Start("explorer", $"/n,{this.GetFullyExpandedPath()}");
+                }
+            }
+
+            void _SetText (string _userSelectedPath)
             {
                 if (_userSelectedPath != null)
                 {
+                    this.TryToApplyPathShorteningIfAny(ref _userSelectedPath);
                     this.SelectedPath = _userSelectedPath;
-
                     this.Dispatcher.InvokeAsync(() =>
                     {
                         // For some reason it's ScrollToEnd and ScrollToHorizontalOffset of the normal viewport width fail in some circumstances :facpalm:
@@ -87,6 +131,7 @@
 
             this.PART_PathTextBox = (TextBox)this.GetTemplateChild(nameof(PART_PathTextBox));
             this.PART_PathTextBox.PreviewKeyDown += _PreviewOnTextAreaKeyDown;
+            this.PART_PathTextBox.LostFocus += _TextBoxOnLostFocus;
 
             void _PreviewOnTextAreaKeyDown (object _s, KeyEventArgs _e)
             {
@@ -100,9 +145,19 @@
                     }
                 }
             }
+
+            void _TextBoxOnLostFocus (object sender, RoutedEventArgs e)
+            {
+                string path = this.SelectedPath;
+                if (this.TryToApplyPathShorteningIfAny(ref path))
+                {
+                    this.SelectedPath = path;
+                }    
+            }
         }
 
         public static RoutedCommand PromptUserForNewPathCommand = new RoutedCommand(nameof(PromptUserForNewPathCommand), typeof(PathSelectionControl));
+        public static RoutedCommand ShowPathInExplorerCommand = new RoutedCommand(nameof(ShowPathInExplorerCommand), typeof(PathSelectionControl));
 
         public static readonly DependencyProperty PathTypeProperty = DPUtils.Register(_ => _.PathType, (d, e) => d.EvaluatePath(d.SelectedPath));
         public ePathType PathType
@@ -255,10 +310,79 @@
             set => this.SetValue(DefaultButtonMDL2IconProperty, value);
         }
 
+        public static readonly DependencyProperty IsOpenInExplorerButtonAllowedProperty = DPUtils.Register(_ => _.IsOpenInExplorerButtonAllowed);
+        public bool IsOpenInExplorerButtonAllowed
+        {
+            get => (bool)this.GetValue(IsOpenInExplorerButtonAllowedProperty);
+            set => this.SetValue(IsOpenInExplorerButtonAllowedProperty, value);
+        }
+
+        public static readonly DependencyProperty OpenInExplorerMDL2IconProperty = DPUtils.Register(_ => _.OpenInExplorerMDL2Icon);
+        public string OpenInExplorerMDL2Icon
+        {
+            get => (string)this.GetValue(OpenInExplorerMDL2IconProperty);
+            set => this.SetValue(OpenInExplorerMDL2IconProperty, value);
+        }
+
+        public static readonly DependencyProperty FixedRootPathProperty = DPUtils.Register(_ => _.FixedRootPath, (d, e) => d.EvaluatePath(d.SelectedPath));
+        /// <summary>
+        /// A rooted directory path which the <see cref="SelectedPath"/> must adhere to
+        /// </summary>
+        public string FixedRootPath
+        {
+            get => (string)this.GetValue(FixedRootPathProperty);
+            set => this.SetValue(FixedRootPathProperty, value);
+        }
+
+        public static readonly DependencyProperty InitialBrowseRootProperty = DPUtils.Register(_ => _.InitialBrowseRoot);
+        /// <summary>
+        /// The browse root used when there is no valid path selected (if <see cref="FixedRootPath"/> is set, this will be overwritten)
+        /// </summary>
+        public string InitialBrowseRoot
+        {
+            get => (string)this.GetValue(InitialBrowseRootProperty);
+            set => this.SetValue(InitialBrowseRootProperty, value);
+        }
+
+        public static readonly DependencyProperty ShortenPathToFixedRootProperty = DPUtils.Register(_ => _.ShortenPathToFixedRoot, (d, e) => d.EvaluatePath(d.SelectedPath));
+        /// <summary>
+        /// If <c>true</c>, then the <see cref="SelectedPath"/> will be displayed relative to the <see cref="FixedRootPath"/>
+        /// </summary>
+        public bool ShortenPathToFixedRoot
+        {
+            get => (bool)this.GetValue(ShortenPathToFixedRootProperty);
+            set => this.SetValue(ShortenPathToFixedRootProperty, value);
+        }
+
+        private bool TryToApplyPathShorteningIfAny (ref string target)
+        {
+            if (this.FixedRootPath.IsNotNullOrEmpty() && this.ShortenPathToFixedRoot && target.StartsWith(this.FixedRootPath, StringComparison.CurrentCultureIgnoreCase))
+            {
+                target = target.Substring(this.FixedRootPath.Length + 1);
+                return true;
+            }
+
+            return false;
+        }
+
+        public string GetFullyExpandedPath (string path = null)
+        {
+            path = path ?? this.SelectedPath;
+            if (this.FixedRootPath.IsNullOrEmpty()
+                || Path.IsPathRooted(path))
+            {
+                return path;
+            }
+
+            return Path.Combine(this.FixedRootPath, path);
+        }
+
         private void EvaluatePath (string path)
         {
             if (!this.TreatEmptyPathAsInvalid && path.IsNullOrEmpty())
             {
+                // The path is null or empty - since that's explicitly allowed, early outing here
+                //  will help make the other tests easier to perform.
                 this.IsPathValid = true;
                 this.InvalidPathReason = null;
                 this.DoesPathExist = false;
@@ -269,6 +393,12 @@
             if (!result)
             {
                 _SetError(result.GetErrorReport());
+            }
+            else if (this.FixedRootPath.IsNotNullOrEmpty()
+                        && Path.IsPathRooted(path)
+                        && !path.StartsWith(this.FixedRootPath, StringComparison.CurrentCulture))
+            {
+                _SetError($"Path does not indicate a location under the fixed root path (fixed root path is '{this.FixedRootPath}')");
             }
             else if (this.PathType == ePathType.File && !PathHelpers.FindMatchingExtensionsFromFilter(path, this.FileFilter).Any())
             {
@@ -281,11 +411,11 @@
                 bool existsAsDirectory = false;
                 try
                 {
-                    existsAsFile = File.Exists(path);
+                    existsAsFile = File.Exists(this.GetFullyExpandedPath(path));
                 } catch { }
                 try
                 {
-                    existsAsDirectory = Directory.Exists(path);
+                    existsAsDirectory = Directory.Exists(this.GetFullyExpandedPath(path));
                 }
                 catch { }
 

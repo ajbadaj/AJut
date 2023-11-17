@@ -12,6 +12,7 @@
     <sys:String x:Key="BaseFileSymbol">&#xF56E;</sys:String>
     <sys:String x:Key="SelectFileSymbol">&#xF000;</sys:String>
     <sys:String x:Key="WarningSymbol">&#xE7BA;</sys:String>
+    <sys:String x:Key="OpenInExplorer">&#xE8A7;</sys:String>
 
     <Style TargetType="{x:Type local:PathSelectionControl}">
         <Setter Property="ap:BorderXTA.CornerRadius" Value="0,3,3,0"/>
@@ -20,6 +21,7 @@
         <Setter Property="BorderBrush" Value="Black"/>
         <Setter Property="Padding" Value="0,1,0,0"/>
         <Setter Property="DefaultButtonMDL2Icon" Value="{StaticResource OpenDialogIcon}"/>
+        <Setter Property="OpenInExplorerMDL2Icon" Value="{StaticResource OpenInExplorer}"/>
         <Setter Property="InvalidPathBorderBrush" Value="#C31"/>
         <Setter Property="InvalidForegroundSymbol" Value="#FCD"/>
         <Setter Property="FocusedBorderBrush" Value="#38C"/>
@@ -71,6 +73,7 @@
                                 <ColumnDefinition />
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
                             <TextBox x:Name="PART_PathTextBox" Grid.Column="0" Text="{ajut:TemplateBinding Path=SelectedPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -89,7 +92,14 @@
                                     </MultiBinding>
                                 </TextBlock.Visibility>
                             </TextBlock>
-                            <Button Grid.Column="2" FontSize="16" Padding="5,3"
+                            <Button x:Name="OpenInExplorerButton" Grid.Column="2" FontSize="12" Padding="3,2" Margin="0,3,2,3"
+                                    ap:BorderXTA.CornerRadius="3"
+                                    Content="{ajut:TemplateBinding Path=OpenInExplorerMDL2Icon}" FontFamily="Segoe MDL2 Assets"
+                                    Background="{TemplateBinding ButtonBackground}"
+                                    Foreground="{TemplateBinding ButtonForeground}"
+                                    Visibility="{ajut:TemplateBinding Path=IsOpenInExplorerButtonAllowed, Converter={ajconv:BooleanToVisibilityConverter}}"
+                                    Command="{x:Static local:PathSelectionControl.ShowPathInExplorerCommand}"/>
+                            <Button Grid.Column="3" FontSize="16" Padding="5,3"
                                     ap:BorderXTA.CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius), Converter={ajconv:CornerRadiusSideExtractionConverter Side=Right, Reduction=1}}"
                                     BorderThickness="1,0,0,0" 
                                     BorderBrush="{Binding ElementName=PathSelectorBorderRoot, Path=BorderBrush}"
@@ -149,6 +159,7 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsPathValid" Value="False">
                             <Setter TargetName="PathWarningDisplay" Property="Visibility" Value="Visible"/>
+                            <Setter TargetName="OpenInExplorerButton" Property="Visibility" Value="Collapsed"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

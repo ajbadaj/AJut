@@ -12,15 +12,21 @@
 
     public static class PathHelpersUI
     {
-        public static string PromptUserToPickAFile<TFileDialog> (string prompt = "Select a file", string currentPath = null, string fileFilter = PathHelpers.kAnyFileFilter)
+        public static string PromptUserToPickAFile<TFileDialog> (string prompt = "Select a file", string currentPathOrDirectoryRoot = null, string fileFilter = PathHelpers.kAnyFileFilter)
             where TFileDialog : FileDialog, new()
         {
             var dlg = new TFileDialog();
-            dlg.FileName = currentPath;
-            string dir = currentPath != null ? Path.GetDirectoryName(PathHelpers.SanitizePath(currentPath)) : string.Empty;
-            if (Directory.Exists(dir))
+
+            // A quick sanitization to help ensure we avoid any errant throws
+            currentPathOrDirectoryRoot = PathHelpers.SanitizePath(currentPathOrDirectoryRoot);
+            if (File.Exists(currentPathOrDirectoryRoot))
             {
-                dlg.InitialDirectory = dir;
+                dlg.FileName = currentPathOrDirectoryRoot;
+                dlg.InitialDirectory = Path.GetDirectoryName(currentPathOrDirectoryRoot);
+            }
+            else if (Directory.Exists(currentPathOrDirectoryRoot))
+            {
+                dlg.InitialDirectory = currentPathOrDirectoryRoot;
             }
 
             dlg.Filter = fileFilter;
