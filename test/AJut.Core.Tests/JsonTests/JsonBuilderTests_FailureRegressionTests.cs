@@ -54,7 +54,7 @@
             Json json = JsonHelper.ParseText(testJson);
 
             object test = new TestFillOutDirectly();
-            JsonHelper.FillOutObjectWithJson(ref test, (JsonDocument)json.Data);
+            JsonHelper.FillOutObjectWithJson(ref test, typeof(TestFillOutDirectly), (JsonDocument)json.Data);
             Assert.IsInstanceOfType(test, typeof(TestFillOutDirectly));
             Assert.AreEqual("Test", ((TestFillOutDirectly)test).Title);
             if (test is TestFillOutDirectly gameInfo)
