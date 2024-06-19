@@ -351,7 +351,7 @@
                 outputInstance = settings.ConstructInstanceFor(type, sourceJsonValue);
             }
 
-            FillOutObjectWithJson(ref outputInstance, sourceJsonValue, settings);
+            FillOutObjectWithJson(ref outputInstance, type, sourceJsonValue, settings);
             return outputInstance;
         }
 
@@ -361,16 +361,31 @@
         /// <param name="targetItem">The instance to fill out</param>
         /// <param name="sourceJsonValue">The <see cref="JsonValue"/> used</param>
         /// <param name="settings">Special interpretter settings</param>
-        public static void FillOutObjectWithJson (ref object targetItem, JsonValue sourceJsonValue, JsonInterpretterSettings settings = null)
+        public static void FillOutObjectWithJson (ref object targetItem, Type targetType, JsonValue sourceJsonValue, JsonInterpretterSettings settings = null)
         {
-            Type targetType = targetItem.GetType();
+            // Favor the object's type info as it may be more derived
+            if (targetItem != null)
+            {
+                targetType = targetItem.GetType();
+            }
+
             settings = settings ?? JsonInterpretterSettings.Default;
 
             if (sourceJsonValue.IsValue)
             {
-                if (settings.StringParser.CanConvert(targetType))
+                Type nullableElementType = targetType.TargetsSameTypeAs(typeof(Nullable<>)) ? targetType.GenericTypeArguments[0] : null;
+                if (settings.StringParser.CanConvert(nullableElementType ?? targetType))
                 {
-                    targetItem = settings.StringParser.Convert(sourceJsonValue.StringValue, targetType);
+                    object parsedValue = settings.StringParser.Convert(sourceJsonValue.StringValue, nullableElementType ?? targetType);
+                    if (nullableElementType != null)
+                    {
+                        var nullableConstructor = typeof(Nullable<>).MakeGenericType(nullableElementType).GetConstructor(new[] { nullableElementType });
+                        targetItem = nullableConstructor.Invoke(new[] { parsedValue });
+                    }
+                    else
+                    {
+                        targetItem = parsedValue;
+                    }
                 }
 
                 return;

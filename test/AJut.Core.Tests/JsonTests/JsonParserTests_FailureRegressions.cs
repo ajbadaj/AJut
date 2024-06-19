@@ -328,5 +328,23 @@
             Assert.AreEqual(2, arr.Count);
             Assert.AreEqual("Word", arr[1]);
         }
+
+        [TestMethod]
+        public void AJson_NullableProperty_June_19_2024 ()
+        {
+            Guid value = Guid.NewGuid();
+            var json = JsonHelper.ParseText($"{{ Value: \"{value}\"}}");
+            Assert.IsTrue(json, "Failed to do basic json parsing, we're in trouble!");
+
+            NullableGuidPropertyTest testOutput = JsonHelper.BuildObjectForJson<NullableGuidPropertyTest>(json);
+            Assert.IsNotNull(testOutput);
+            Assert.IsNotNull(testOutput.Value);
+            Assert.AreEqual(value, testOutput.Value);
+        }
+
+        public class NullableGuidPropertyTest
+        {
+            public Guid? Value { get; set; }
+        }
     }
 }
