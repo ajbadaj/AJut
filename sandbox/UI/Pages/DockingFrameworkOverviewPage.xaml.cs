@@ -58,9 +58,12 @@
         public DockingManager Docking { get; }
         public StackNavAdapter? PageNav { get; private set; }
 
-        private void ShowPopup_OnExecuted (object sender, ExecutedRoutedEventArgs e)
+        private async void ShowPopup_OnExecuted (object sender, ExecutedRoutedEventArgs e)
         {
-            this.PageNav.ShowPopover(MessageBoxPopover.Generate("This popup was triggered by the command from the button in the 'Command Route Example' docked element"));
+            if (this.PageNav != null)
+            {
+                await this.PageNav.ShowPopover(MessageBoxPopover.Generate("This popup was triggered by the command from the button in the 'Command Route Example' docked element"));
+            }
         }
     }
 }

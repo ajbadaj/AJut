@@ -57,7 +57,7 @@
         internal static void SetFrameUpdateTimer (DependencyObject obj, DispatcherTimer value) => obj.SetValue(FrameUpdateTimerPropertyKey, value);
 
         // =============[ Private Update Handlers ]================
-        private static void HandlePathChanged (DependencyObject d, DependencyPropertyChangedEventArgs<Uri> e)
+        private static async void HandlePathChanged (DependencyObject d, DependencyPropertyChangedEventArgs<Uri> e)
         {
             if (!(d is ImageControl) || e.HasOldValue)
             {
@@ -74,11 +74,17 @@
             {
                 SetCurrentFrameIndex(d, -1);
 
-                using (Stream stream = FileHelpers.GetStreamForFileUri(e.NewValue))
+                using Stream localStream = FileHelpers.GetStreamFromLocalFileUri(e.NewValue);
+                if (localStream != null)
                 {
-                    if (stream != null)
+                    SetInfo(d, new GifInfoCache(ImageStorage.FromStream(localStream)));
+                }
+                else
+                {
+                    using Stream remoteStream = await FileHelpers.GetStreamForRemoteFileUri(e.NewValue);
+                    if (remoteStream != null)
                     {
-                        SetInfo(d, new GifInfoCache(ImageStorage.FromStream(stream)));
+                        SetInfo(d, new GifInfoCache(ImageStorage.FromStream(remoteStream)));
                     }
                     else
                     {
@@ -88,6 +94,7 @@
 
                 SetCurrentFrameIndex(d, 0);
                 ResetTimer(d);
+
             }
             catch (Exception exception)
             {

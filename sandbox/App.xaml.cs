@@ -178,7 +178,7 @@
 
             return _GetConfig(null);
 
-            AJutShowroomAppConfig _GetConfig (AJutShowroomAppConfig _built)
+            AJutShowroomAppConfig _GetConfig (AJutShowroomAppConfig? _built)
             {
                 if (_built == null)
                 {

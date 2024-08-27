@@ -26,9 +26,17 @@
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private static string g_key;
 
-        public static void Seed (string key)
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private static int g_defaultIterations;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private static HashAlgorithmName g_defaultAlgorithm;
+
+        public static void Seed (string key, int iterations = 1000, HashAlgorithmName? algorithm = null)
         {
             g_key = RandomizeAndSalt(key);
+            g_defaultIterations = iterations;
+            g_defaultAlgorithm = algorithm ?? HashAlgorithmName.MD5;
         }
 
         public static string RandomizeAndSalt (string seedString)
@@ -44,21 +52,21 @@
             return String.Join("", charList);
         }
 
-        private static Rfc2898DeriveBytes CreateCryptoBytes (string key)
+        private static Rfc2898DeriveBytes CreateCryptoBytes (string key, int iterations, HashAlgorithmName hashAlgorithm)
         {
             Random rng = new Random(key.GenerateStableHashCode());
             byte[] crytpoSalt = new byte[rng.Next(8, 16)];
             rng.NextBytes(crytpoSalt);
-            return new Rfc2898DeriveBytes(g_key, crytpoSalt);
+            return new Rfc2898DeriveBytes(g_key, crytpoSalt, iterations, hashAlgorithm);
         }
 
-        public static string Encrypt (string toEncrypt, string key = null)
+        public static string Encrypt (string toEncrypt, string key = null, int? iterations = null, HashAlgorithmName? hashAlgorithm = null)
         {
             byte[] clearBytes = Encoding.Unicode.GetBytes(toEncrypt);
             using (Aes encryptor = Aes.Create())
             {
                 encryptor.Padding = PaddingMode.PKCS7;
-                var cryptoBytes = CreateCryptoBytes(key ?? g_key);
+                var cryptoBytes = CreateCryptoBytes(key ?? g_key, iterations ?? g_defaultIterations, hashAlgorithm ?? g_defaultAlgorithm);
                 encryptor.Key = cryptoBytes.GetBytes(32);
                 encryptor.IV = cryptoBytes.GetBytes(16);
                 using (var ms = new MemoryStream())
@@ -74,13 +82,13 @@
             }
         }
 
-        public static string Decrypt (string toDecrypt, string key = null)
+        public static string Decrypt (string toDecrypt, string key = null, int? iterations = null, HashAlgorithmName? hashAlgorithm = null)
         {
             byte[] cipherBytes = Convert.FromBase64String(toDecrypt.Replace(" ", "+"));
             using (Aes decryptor = Aes.Create())
             {
                 decryptor.Padding = PaddingMode.PKCS7;
-                var cryptoBytes = CreateCryptoBytes(key ?? g_key);
+                var cryptoBytes = CreateCryptoBytes(key ?? g_key, iterations ?? g_defaultIterations, hashAlgorithm ?? g_defaultAlgorithm);
                 decryptor.Key = cryptoBytes.GetBytes(32);
                 decryptor.IV = cryptoBytes.GetBytes(16);
                 using (var ms = new MemoryStream())

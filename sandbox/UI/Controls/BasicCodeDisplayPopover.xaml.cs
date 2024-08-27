@@ -17,9 +17,9 @@
 
         public string CodeText { get; }
 
-        public event EventHandler<EventArgs<Result>> ResultSet;
+        public event EventHandler<EventArgs<Result>>? ResultSet;
 
-        public void Cancel (string cancelReason = null)
+        public void Cancel (string? cancelReason = null)
         {
             this.SetResult(Result.Error(cancelReason));
         }
