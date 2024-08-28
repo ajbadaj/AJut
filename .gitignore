@@ -20,6 +20,7 @@
 !**/_TestData
 !*.snippet
 !*.docklayout
+!*.yml
 
 # ============[ And finally nix these ]=========================
 *Settings.Designer.cs
