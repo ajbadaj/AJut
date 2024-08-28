@@ -1,12 +1,7 @@
 name: Publish to Nuget
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   build_and_test_all:
@@ -26,12 +21,11 @@ jobs:
 
     - name: Create Version Numbers
       run: |
-        LAST_PR=${{ github.event.pull_request.number }}
-        AJUT_CORE_BASELINE=${{ env.AJUT_CORE_BASELINE_VERSION }}
-        AJUT_CORE_VERSION="${AJUT_CORE_BASELINE}.${LAST_PR}
-        AJUT_UX_WPF_BASELINE=${{ env.AJUT_UX_WPF_BASELINE_VERSION }}
-        AJUT_UX_WPF_VERSION="${AJUT_UX_WPF_BASELINE}.${LAST_PR}
+        set LAST_PR=
+        set AJUT_CORE_VERSION=${{ env.AJUT_CORE_BASELINE_VERSION }}.${{ github.event.pull_request.number }}
         echo "AJUT_CORE_VERSION=AJUT_CORE_VERSION" >> $GITHUB_ENV
+
+        set AJUT_UX_WPF_VERSION=${{ env.AJUT_UX_WPF_BASELINE_VERSION }}.${{ github.event.pull_request.number }}
         echo "AJUT_UX_WPF_VERSION=AJUT_UX_WPF_VERSION" >> $GITHUB_ENV
 
     - name: Build Core
