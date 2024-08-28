@@ -7,7 +7,7 @@
     [TestClass]
     public class StringXT_Tests
     {
-        private static int g_hashcodeForTest = 696679732; // generated from string "This works well"
+        private static int g_hashcodeForTest = Environment.Is64BitProcess ? 696679732 : -274170572; // generated from string "This works well"
 
         [TestMethod]
         public void Extensions_GenerateStableHashCode_ProducesExpectedResults ()

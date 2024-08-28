@@ -32,11 +32,13 @@
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private static HashAlgorithmName g_defaultAlgorithm;
 
-        public static void Seed (string key, int iterations = 1000, HashAlgorithmName? algorithm = null)
+        public static Encoding DefaultEncoding { get; set; } = Encoding.Unicode;
+
+        public static void SeedDefaults (string key, int iterations = 1000, HashAlgorithmName? algorithm = null)
         {
             g_key = RandomizeAndSalt(key);
             g_defaultIterations = iterations;
-            g_defaultAlgorithm = algorithm ?? HashAlgorithmName.MD5;
+            g_defaultAlgorithm = algorithm ?? HashAlgorithmName.SHA1;
         }
 
         public static string RandomizeAndSalt (string seedString)
@@ -52,61 +54,72 @@
             return String.Join("", charList);
         }
 
-        private static Rfc2898DeriveBytes CreateCryptoBytes (string key, int iterations, HashAlgorithmName hashAlgorithm)
+        private static Rfc2898DeriveBytes CreateCryptoBytes (string key, int? iterationCountOverride, HashAlgorithmName? hashAlgorithmOverride)
         {
+            if (key == null)
+            {
+                key = g_key;
+            }
+            else
+            {
+                key = RandomizeAndSalt(key);
+            }
+
+            int iterations = iterationCountOverride ?? g_defaultIterations;
+            HashAlgorithmName hashAlgorithm = hashAlgorithmOverride ?? g_defaultAlgorithm;
+
             Random rng = new Random(key.GenerateStableHashCode());
             byte[] crytpoSalt = new byte[rng.Next(8, 16)];
             rng.NextBytes(crytpoSalt);
-            return new Rfc2898DeriveBytes(g_key, crytpoSalt, iterations, hashAlgorithm);
+            return new Rfc2898DeriveBytes(key, crytpoSalt, iterations, hashAlgorithm);
         }
 
-        public static string Encrypt (string toEncrypt, string key = null, int? iterations = null, HashAlgorithmName? hashAlgorithm = null)
+        /// <summary>
+        /// Use <see cref="Aes"/> to generate an encrypted string
+        /// </summary>
+        /// <param name="toEncrypt">The string to encrypt</param>
+        /// <param name="encryptionKey">The plain encryption key to use (will be scrambled and salted before applying), or null if you want to use the default key registered via <see cref="SeedDefaults(string, int, HashAlgorithmName?)"/></param>
+        /// <param name="encodingOverride">The encoding to use</param>
+        /// <param name="iterationCountOverride"></param>
+        /// <param name="hashAlgorithmOverride"></param>
+        /// <returns></returns>
+        public static string Encrypt (string toEncrypt, string encryptionKey = null, Encoding encodingOverride = null, int? iterationCountOverride = null, HashAlgorithmName? hashAlgorithmOverride = null)
         {
-            byte[] clearBytes = Encoding.Unicode.GetBytes(toEncrypt);
-            using (Aes encryptor = Aes.Create())
-            {
-                encryptor.Padding = PaddingMode.PKCS7;
-                var cryptoBytes = CreateCryptoBytes(key ?? g_key, iterations ?? g_defaultIterations, hashAlgorithm ?? g_defaultAlgorithm);
-                encryptor.Key = cryptoBytes.GetBytes(32);
-                encryptor.IV = cryptoBytes.GetBytes(16);
-                using (var ms = new MemoryStream())
-                {
-                    using (CryptoStream cs = new CryptoStream(ms, encryptor.CreateEncryptor(), CryptoStreamMode.Write))
-                    {
-                        cs.Write(clearBytes, 0, clearBytes.Length);
-                        cs.Close();
-                    }
+            Rfc2898DeriveBytes cryptoBytes = CreateCryptoBytes(encryptionKey, iterationCountOverride, hashAlgorithmOverride);
+            byte[] bytesToEncode = (encodingOverride ?? DefaultEncoding).GetBytes(toEncrypt);
 
-                    return Convert.ToBase64String(ms.ToArray());
-                }
-            }
+            using Aes encryptor = Aes.Create();
+            encryptor.Padding = PaddingMode.PKCS7;
+            encryptor.Key = cryptoBytes.GetBytes(32);
+            encryptor.IV = cryptoBytes.GetBytes(16);
+            using var ms = new MemoryStream();
+            using CryptoStream cs = new CryptoStream(ms, encryptor.CreateEncryptor(), CryptoStreamMode.Write);
+            cs.Write(bytesToEncode, 0, bytesToEncode.Length);
+            cs.FlushFinalBlock();
+            cs.Close();
+
+            return Convert.ToBase64String(ms.ToArray());
         }
 
-        public static string Decrypt (string toDecrypt, string key = null, int? iterations = null, HashAlgorithmName? hashAlgorithm = null)
+        public static string Decrypt (string toDecrypt, string decryptionKey = null, Encoding encodingOverride = null, int? iterationCountOverride = null, HashAlgorithmName? hashAlgorithmOverride = null)
         {
-            byte[] cipherBytes = Convert.FromBase64String(toDecrypt.Replace(" ", "+"));
-            using (Aes decryptor = Aes.Create())
-            {
-                decryptor.Padding = PaddingMode.PKCS7;
-                var cryptoBytes = CreateCryptoBytes(key ?? g_key, iterations ?? g_defaultIterations, hashAlgorithm ?? g_defaultAlgorithm);
-                decryptor.Key = cryptoBytes.GetBytes(32);
-                decryptor.IV = cryptoBytes.GetBytes(16);
-                using (var ms = new MemoryStream())
-                {
-                    using (var cs = new CryptoStream(ms, decryptor.CreateDecryptor(), CryptoStreamMode.Write))
-                    {
-                        cs.Write(cipherBytes, 0, cipherBytes.Length);
-                        cs.Close();
-                    }
+            Rfc2898DeriveBytes cryptoBytes = CreateCryptoBytes(decryptionKey, iterationCountOverride, hashAlgorithmOverride);
 
-                    return Encoding.Unicode.GetString(ms.ToArray());
-                }
-            }
+            byte[] encodedBytes = Convert.FromBase64String(toDecrypt);
+            using Aes decryptor = Aes.Create();
+            decryptor.Padding = PaddingMode.PKCS7;
+            decryptor.Key = cryptoBytes.GetBytes(32);
+            decryptor.IV = cryptoBytes.GetBytes(16);
+            using var memoryStreamOfEncodedBytes = new MemoryStream(encodedBytes);
+            using var cryptographicStreamToRead = new CryptoStream(memoryStreamOfEncodedBytes, decryptor.CreateDecryptor(), CryptoStreamMode.Read);
+            using StreamReader reader = new StreamReader(cryptographicStreamToRead, encodingOverride ?? DefaultEncoding);
+            string value = reader.ReadToEnd();
+            return value;
         }
 
-        public static string Decrypt (ObfuscatedString toDecrypt, string key = null)
+        public static string Decrypt (ObfuscatedString toDecrypt, string decryptionKey = null, Encoding encodingOverride = null, int? iterationCountOverride = null, HashAlgorithmName? hashAlgorithmOverride = null)
         {
-            return CryptoObfuscation.Decrypt(toDecrypt.Active, key);
+            return CryptoObfuscation.Decrypt(toDecrypt.Active, decryptionKey, encodingOverride, iterationCountOverride, hashAlgorithmOverride);
         }
     }
 }
