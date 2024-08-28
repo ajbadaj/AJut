@@ -8,7 +8,7 @@
     <RootNamespace>AJut.UX</RootNamespace>
     <AssemblyName>AJut.UX.Wpf</AssemblyName>
 	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <Description>C# / dotnet 5 / wpf controls &amp; utility library, created by AJ Badarni</Description>
+    <Description>C# / dotnet 8 / wpf controls &amp; utility library, created by AJ Badarni</Description>
     <Copyright>AJ Badarni</Copyright>
 	<PackageProjectUrl>https://www.ajut.dev/</PackageProjectUrl>
 	<PackageIcon>ajut-logo-128.png</PackageIcon>

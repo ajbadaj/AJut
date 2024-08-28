@@ -15,7 +15,7 @@
 		<RepositoryUrl>https://github.com/ajbadaj/AJut</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>c#;dotnet;logger;json;tree;extensions;math;</PackageTags>
-		<Description>C# / dotnet 5 utility library, created by AJ Badarni. Logger, Json parsing/building, extensions, undo/redo, math, tree logic, and more.</Description>
+		<Description>C# / dotnet 8 utility library, created by AJ Badarni. Logger, Json parsing/building, extensions, undo/redo, math, tree logic, and more.</Description>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
