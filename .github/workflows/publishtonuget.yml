@@ -9,7 +9,15 @@ jobs:
 
     steps:
     - name: Initial decleration
-      run: echo "Publish To Nuget (Version 3)"
+      run: echo "Publish To Nuget (Version 4)"
+      
+    - name: Create Version Numbers
+      run: |
+        set "AJUT_CORE_VERSION=${{ env.AJUT_CORE_BASELINE_VERSION }}.${{ github.event.pull_request.number }}"
+        echo "AJUT_CORE_VERSION=AJUT_CORE_VERSION" >> $GITHUB_ENV
+
+        set "AJUT_UX_WPF_VERSION=${{ env.AJUT_UX_WPF_BASELINE_VERSION }}.${{ github.event.pull_request.number }}"
+        echo "AJUT_UX_WPF_VERSION=AJUT_UX_WPF_VERSION" >> $GITHUB_ENV
 
     - name: Checkout code
       uses: actions/checkout@v2
@@ -21,14 +29,6 @@ jobs:
 
     - name: Restore dependencies
       run: dotnet restore
-
-    - name: Create Version Numbers
-      run: |
-        set AJUT_CORE_VERSION="${{ env.AJUT_CORE_BASELINE_VERSION }}.${{ github.event.pull_request.number }}"
-        echo "AJUT_CORE_VERSION=AJUT_CORE_VERSION" >> $GITHUB_ENV
-
-        set AJUT_UX_WPF_VERSION="${{ env.AJUT_UX_WPF_BASELINE_VERSION }}.${{ github.event.pull_request.number }}"
-        echo "AJUT_UX_WPF_VERSION=AJUT_UX_WPF_VERSION" >> $GITHUB_ENV
 
     - name: Build Core
       run: dotnet build libs/AJut.Core/AJut.Core.csproj --no-restore --configuration Release /p:Version=${{ env.AJUT_CORE_VERSION }}
