@@ -2,7 +2,6 @@ name: Publish to Nuget
 
 on:
   workflow_dispatch:
-  pull_request:
 
 jobs:
   build_and_test_all:
@@ -10,12 +9,13 @@ jobs:
 
     steps:
     - name: Initial decleration
-      run: echo "Publish To Nuget (Version 6)"
+      run: echo "Publish To Nuget (Version 8)"
       
     - name: Create Version Numbers
       run: |
-        gh api repos/${{ github.repository }}/pulls --jq '.[0].number' > pr_number.txt
-        set /p PR_NUMBER=<pr_number.txt
+        gh api repos/ajbadaj/AJut/pulls/pulls --jq '[.[] | select(.state=="closed")] | .[0].number' > pr_number.txt
+        set "/p PR_NUMBER=<pr_number.txt"
+        echo "PR_NUMBER=$PR_NUMBER >> $GITHUB_ENV"
 
         set "AJUT_CORE_VERSION=${{ vars.AJUT_CORE_BASELINE_VERSION }}.$PR_NUMBER"
         echo "AJUT_CORE_VERSION=AJUT_CORE_VERSION" >> $GITHUB_ENV
