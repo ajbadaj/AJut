@@ -4,14 +4,14 @@ on:
   workflow_dispatch:
 
 jobs:
-  build_and_test_all:
+  build_versioned_release_publish_and_test:
     runs-on: windows-latest
     env:
       GH_TOKEN: ${{ github.token }}
 
     steps:
     - name: Initial decleration
-      run: echo "Publish To Nuget (Version 19)"
+      run: echo "Publish To Nuget (Version 20)"
 
     - name: Testing Env Values
       run: |
@@ -38,32 +38,22 @@ jobs:
     - name: Run unit tests
       run: dotnet test --configuration Release
 
-  publish_ajut_core:
-    runs-on: windows-latest
-    needs: build_and_test_all
-
-    steps:
     - name: Publish AJut.Core to NuGet
       run: |
-          $filePath = "libs/AJut.Core/bin/Release/*/ajut.core.${{ vars.AJUT_CORE_BASELINE_VERSION }}.${{ vars.last_merged_PR }}.nupkg"
+          $filePath = "*/Release/*/ajut.core.${{ vars.AJUT_CORE_BASELINE_VERSION }}.${{ vars.last_merged_PR }}.nupkg"
           if (Test-Path $filePath) {
-              echo "Publishing would look like this: dotnet nuget push $filePath --api-key ${{ secrets.NUGETPUBLISHKEY }} --source https://api.nuget.org/v3/index.json"
+              echo "Publishing would look like this... dotnet nuget push $filePath --api-key ${{ secrets.NUGETPUBLISHKEY }} --source https://api.nuget.org/v3/index.json"
           } else {
-              throw "File not found: $filePath"
+              throw "File not found $filePath"
           }
       shell: pwsh
 
-  publish_ajut_ux_wpf:
-    runs-on: windows-latest
-    needs: build_and_test_all
-
-    steps:
     - name: Publish AJut.Core to NuGet
       run: |
-          $filePath = "libs/AJut.UX.Wpf/bin/Release/*/ajut.ux.wpf.${{ vars.AJUT_UX_WPF_BASELINE_VERSION }}.${{ vars.last_merged_PR }}.nupkg"
+          $filePath = "*/Release/*/ajut.ux.wpf.${{ vars.AJUT_UX_WPF_BASELINE_VERSION }}.${{ vars.last_merged_PR }}.nupkg"
           if (Test-Path $filePath) {
-              echo "Publishing would look like this: dotnet nuget push $filePath --api-key ${{ secrets.NUGETPUBLISHKEY }} --source https://api.nuget.org/v3/index.json"
+              echo "Publishing would look like this... dotnet nuget push $filePath --api-key ${{ secrets.NUGETPUBLISHKEY }} --source https://api.nuget.org/v3/index.json"
           } else {
-              throw "File not found: $filePath"
+              throw "File not found $filePath"
           }
       shell: pwsh
