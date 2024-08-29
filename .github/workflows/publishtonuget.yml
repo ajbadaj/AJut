@@ -11,7 +11,7 @@ jobs:
 
     steps:
     - name: Initial decleration
-      run: echo "Publish To Nuget (Version 18)"
+      run: echo "Publish To Nuget (Version 19)"
 
     - name: Testing Env Values
       run: |
@@ -45,7 +45,7 @@ jobs:
     steps:
     - name: Publish AJut.Core to NuGet
       run: |
-          $filePath = "libs/AJut.Core/bin/Release/ajut.core.${{ vars.AJUT_CORE_BASELINE_VERSION }}.${{ vars.last_merged_PR }}.nupkg"
+          $filePath = "libs/AJut.Core/bin/Release/*/ajut.core.${{ vars.AJUT_CORE_BASELINE_VERSION }}.${{ vars.last_merged_PR }}.nupkg"
           if (Test-Path $filePath) {
               echo "Publishing would look like this: dotnet nuget push $filePath --api-key ${{ secrets.NUGETPUBLISHKEY }} --source https://api.nuget.org/v3/index.json"
           } else {
@@ -60,7 +60,7 @@ jobs:
     steps:
     - name: Publish AJut.Core to NuGet
       run: |
-          $filePath = "libs/AJut.UX.Wpf/bin/Release/ajut.ux.wpf.${{ vars.AJUT_UX_WPF_BASELINE_VERSION }}.${{ vars.last_merged_PR }}.nupkg"
+          $filePath = "libs/AJut.UX.Wpf/bin/Release/*/ajut.ux.wpf.${{ vars.AJUT_UX_WPF_BASELINE_VERSION }}.${{ vars.last_merged_PR }}.nupkg"
           if (Test-Path $filePath) {
               echo "Publishing would look like this: dotnet nuget push $filePath --api-key ${{ secrets.NUGETPUBLISHKEY }} --source https://api.nuget.org/v3/index.json"
           } else {
