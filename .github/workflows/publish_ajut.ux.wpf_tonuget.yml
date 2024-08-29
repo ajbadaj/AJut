@@ -1,0 +1,42 @@
+name: Publish to Nuget
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_ajut_ux_wpf_versioned_release_publish_and_test:
+    runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+    - name: Initial decleration
+      run: echo "Publish To Nuget (Version 1)"
+
+    - name: Testing Env Values
+      run: echo "AJut.UX.Wpf Version Number saved as ${{ vars.AJUT_UX_WPF_BASELINE_VERSION }}.${{ vars.last_merged_PR }}"
+
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build WPF
+      run: dotnet build libs/AJut.UX.Wpf/AJut.UX.Wpf.csproj --no-restore --configuration Release  /p:Version=${{ vars.AJUT_UX_WPF_BASELINE_VERSION }}.${{ vars.last_merged_PR }}
+
+    - name: Publish AJut.UX.Wpf to NuGet
+      run: |
+          $file = Get-ChildItem -Path "./" -Recurse -Filter "AJut.UX.Wpf.${{ vars.AJUT_UX_WPF_BASELINE_VERSION }}.${{ vars.last_merged_PR }}.nupkg" | Where-Object { $_.FullName -match "Release" } | Select-Object -First 1
+          if ($file) {
+            echo "$($file.FullName)"
+            #run this... dotnet nuget push "$($file.FullName)" --api-key ${{ secrets.NUGETPUBLISHKEY }} --source https://api.nuget.org/v3/index.json
+          } else {
+            throw "File not found"
+          }
+      shell: pwsh
