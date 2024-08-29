@@ -9,14 +9,14 @@ jobs:
 
     steps:
     - name: Initial decleration
-      run: echo "Publish To Nuget (Version 4)"
+      run: echo "Publish To Nuget (Version 5)"
       
     - name: Create Version Numbers
       run: |
-        set "AJUT_CORE_VERSION=${{ env.AJUT_CORE_BASELINE_VERSION }}.${{ github.event.pull_request.number }}"
+        set "AJUT_CORE_VERSION=${{ vars.AJUT_CORE_BASELINE_VERSION }}.${{ github.event.pull_request.number }}"
         echo "AJUT_CORE_VERSION=AJUT_CORE_VERSION" >> $GITHUB_ENV
 
-        set "AJUT_UX_WPF_VERSION=${{ env.AJUT_UX_WPF_BASELINE_VERSION }}.${{ github.event.pull_request.number }}"
+        set "AJUT_UX_WPF_VERSION=${{ vars.AJUT_UX_WPF_BASELINE_VERSION }}.${{ github.event.pull_request.number }}"
         echo "AJUT_UX_WPF_VERSION=AJUT_UX_WPF_VERSION" >> $GITHUB_ENV
 
     - name: Checkout code
