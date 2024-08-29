@@ -8,6 +8,9 @@ jobs:
     runs-on: windows-latest
 
     steps:
+    - name: Initial decleration
+      uses: echo "Publish To Nuget (Version 3)"
+
     - name: Checkout code
       uses: actions/checkout@v2
 
@@ -21,10 +24,10 @@ jobs:
 
     - name: Create Version Numbers
       run: |
-        set AJUT_CORE_VERSION=${{ env.AJUT_CORE_BASELINE_VERSION }}.${{ github.event.pull_request.number }}
+        set AJUT_CORE_VERSION="${{ env.AJUT_CORE_BASELINE_VERSION }}.${{ github.event.pull_request.number }}"
         echo "AJUT_CORE_VERSION=AJUT_CORE_VERSION" >> $GITHUB_ENV
 
-        set AJUT_UX_WPF_VERSION=${{ env.AJUT_UX_WPF_BASELINE_VERSION }}.${{ github.event.pull_request.number }}
+        set AJUT_UX_WPF_VERSION="${{ env.AJUT_UX_WPF_BASELINE_VERSION }}.${{ github.event.pull_request.number }}"
         echo "AJUT_UX_WPF_VERSION=AJUT_UX_WPF_VERSION" >> $GITHUB_ENV
 
     - name: Build Core
