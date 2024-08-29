@@ -11,19 +11,14 @@ jobs:
 
     steps:
     - name: Initial decleration
-      run: echo "Publish To Nuget (Version 13)"
-
-    - name: Create Version Numbers
-      run: |
-        FOR /F "tokens=* USEBACKQ" %%F IN (`gh api repos/ajbadaj/AJut/pulls/pulls --jq '[.[] | select(.state=="closed")] | .[0].number'`) DO (SET PR_NUMBER=%%F)
-        echo LAST_CLOSED_PR_NUMBER=$PR_NUMBER >> $GITHUB_ENV
+      run: echo "Publish To Nuget (Version 15)"
 
     - name: Test Version Numbers
       run: |
-        set "AJUT_CORE_VERSION=${{ vars.AJUT_CORE_BASELINE_VERSION }}.${{ env.LAST_CLOSED_PR_NUMBER }}"
+        set "AJUT_CORE_VERSION=${{ vars.AJUT_CORE_BASELINE_VERSION }}.${{ vars.last_merged_PR }}"
         echo "AJUT_CORE_VERSION=AJUT_CORE_VERSION" >> $GITHUB_ENV
 
-        set "AJUT_UX_WPF_VERSION=${{ vars.AJUT_UX_WPF_BASELINE_VERSION }}.${{ env.LAST_CLOSED_PR_NUMBER }}"
+        set "AJUT_UX_WPF_VERSION=${{ vars.AJUT_UX_WPF_BASELINE_VERSION }}.${{ vars.last_merged_PR }}"
         echo "AJUT_UX_WPF_VERSION=AJUT_UX_WPF_VERSION" >> $GITHUB_ENV
 
     - name: Checkout code
@@ -53,11 +48,13 @@ jobs:
     steps:
     - name: Publish AJut.Core to NuGet
       run: |
-          echo "Using Concatenated for core ${{ env.AJUT_CORE_VERSION }}"
-          for file in libs/AJut.Core/bin/Release/*.nupkg; do
-            echo "$file"
-          done
-      #run: dotnet nuget push libs/AJut.Core/bin/Release/*.nupkg --api-key ${{ secrets.NUGETPUBLISHKEY }} --source https://api.nuget.org/v3/index.json
+          $filePath = "libs/AJut.Core/bin/Release/ajut.core.${{ env.AJUT_CORE_VERSION }}.nupkg"
+          if (Test-Path $filePath) {
+              echo "Publishing would look like this: dotnet nuget push $filePath --api-key ${{ secrets.NUGETPUBLISHKEY }} --source https://api.nuget.org/v3/index.json"
+          } else {
+              throw "File not found: $filePath"
+          }
+      shell: pwsh
 
   publish_ajut_ux_wpf:
     runs-on: windows-latest

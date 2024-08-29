@@ -1,0 +1,29 @@
+name: PR Merged, Update Next Publish Version Numbers
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [closed]
+
+jobs:
+  update-variable:
+    if: github.event.pull_request.merged == true
+    runs-on: windows-latest
+
+    steps:
+    - name: Set new value for variable
+      run: |
+        $new_value = "${{ github.event.pull_request.number }}"
+        $repo = "${{ github.repository }}"
+        $token = "${{ secrets.GH_TOKEN }}"
+        $url = "https://api.github.com/repos/$repo/actions/variables/LAST_MERGED_PR"
+        $body = @{
+          name = "last_merged_PR"
+          value = $new_value
+        } | ConvertTo-Json
+        $headers = @{
+          Authorization = "Bearer $token"
+          Accept = "application/vnd.github.v3+json"
+        }
+        Invoke-RestMethod -Uri $url -Method PATCH -Headers $headers -Body $body
+      shell: pwsh
