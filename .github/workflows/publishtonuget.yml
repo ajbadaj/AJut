@@ -11,15 +11,17 @@ jobs:
 
     steps:
     - name: Initial decleration
-      run: echo "Publish To Nuget (Version 15)"
+      run: echo "Publish To Nuget (Version 16)"
 
-    - name: Test Version Numbers
+    - name: Stocking Environment with Version Numbers
       run: |
-        set "AJUT_CORE_VERSION=${{ vars.AJUT_CORE_BASELINE_VERSION }}.${{ vars.last_merged_PR }}"
-        echo "AJUT_CORE_VERSION=AJUT_CORE_VERSION" >> $GITHUB_ENV
+        echo "AJUT_CORE_VERSION=${{ vars.AJUT_CORE_BASELINE_VERSION }}.${{ vars.last_merged_PR }}" >> $GITHUB_ENV
+        echo "AJUT_UX_WPF_VERSION=${{ vars.AJUT_UX_WPF_BASELINE_VERSION }}.${{ vars.last_merged_PR }}" >> $GITHUB_ENV
 
-        set "AJUT_UX_WPF_VERSION=${{ vars.AJUT_UX_WPF_BASELINE_VERSION }}.${{ vars.last_merged_PR }}"
-        echo "AJUT_UX_WPF_VERSION=AJUT_UX_WPF_VERSION" >> $GITHUB_ENV
+    - name: Testing Env Values
+      run: |
+        echo "AJut.Core Version Number saved as = ${{ env.AJUT_CORE_VERSION }}"
+        echo "AJut.UX.Wpf Version Number saved as = ${{ env.AJUT_UX_WPF_VERSION }}"
 
     - name: Checkout code
       uses: actions/checkout@v2

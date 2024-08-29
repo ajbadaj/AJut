@@ -11,6 +11,9 @@ jobs:
     runs-on: windows-latest
 
     steps:
+    - name: Initial decleration
+      run: echo "Last PR Saver (Version 1)"
+
     - name: Set new value for variable
       run: |
         $new_value = "${{ github.event.pull_request.number }}"
