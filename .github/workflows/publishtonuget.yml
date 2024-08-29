@@ -11,7 +11,7 @@ jobs:
 
     steps:
     - name: Initial decleration
-      run: echo "Publish To Nuget (Version 21)"
+      run: echo "Publish To Nuget (Version 22)"
 
     - name: Testing Env Values
       run: |
@@ -40,20 +40,20 @@ jobs:
 
     - name: Publish AJut.Core to NuGet
       run: |
-          $filePath = "*\Release\ajut.core.${{ vars.AJUT_CORE_BASELINE_VERSION }}.${{ vars.last_merged_PR }}.nupkg"
-          if (Test-Path $filePath) {
-              echo "Publishing would look like this... dotnet nuget push $filePath --api-key ${{ secrets.NUGETPUBLISHKEY }} --source https://api.nuget.org/v3/index.json"
+          $file = Get-ChildItem -Path "./" -Recurse -Filter "AJut.Core.${{ vars.AJUT_CORE_BASELINE_VERSION }}.${{ vars.last_merged_PR }}.nupkg" | Where-Object { $_.FullName -match "Release" } | Select-Object -First 1
+          if ($file) {
+            echo "$file.FullName"
           } else {
-              throw "File not found $filePath"
+            throw "File not found"
           }
       shell: pwsh
 
     - name: Publish AJut.Core to NuGet
       run: |
-          $filePath = "*\Release\ajut.ux.wpf.${{ vars.AJUT_UX_WPF_BASELINE_VERSION }}.${{ vars.last_merged_PR }}.nupkg"
-          if (Test-Path $filePath) {
-              echo "Publishing would look like this... dotnet nuget push $filePath --api-key ${{ secrets.NUGETPUBLISHKEY }} --source https://api.nuget.org/v3/index.json"
+          $file = Get-ChildItem -Path "./" -Recurse -Filter "AJut.UX.Wpf.${{ vars.AJUT_UX_WPF_BASELINE_VERSION }}.${{ vars.last_merged_PR }}.nupkg" | Where-Object { $_.FullName -match "Release" } | Select-Object -First 1
+          if ($file) {
+            echo "$file.FullName"
           } else {
-              throw "File not found $filePath"
+            throw "File not found"
           }
       shell: pwsh
