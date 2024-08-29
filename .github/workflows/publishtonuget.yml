@@ -11,18 +11,18 @@ jobs:
 
     steps:
     - name: Initial decleration
-      run: echo "Publish To Nuget (Version 10)"
+      run: echo "Publish To Nuget (Version 11)"
 
     - name: Create Version Numbers
       run: |
         gh api repos/ajbadaj/AJut/pulls/pulls --jq '[.[] | select(.state=="closed")] | .[0].number' > pr_number.txt
         set /p PR_NUMBER=<pr_number.txt
-        echo "Found $PR_NUMBER"
+        echo "Found ${PR_NUMBER}"
 
-        set "AJUT_CORE_VERSION=${{ vars.AJUT_CORE_BASELINE_VERSION }}.$PR_NUMBER"
+        set "AJUT_CORE_VERSION=${{ vars.AJUT_CORE_BASELINE_VERSION }}.${PR_NUMBER}"
         echo "AJUT_CORE_VERSION=AJUT_CORE_VERSION" >> $GITHUB_ENV
 
-        set "AJUT_UX_WPF_VERSION=${{ vars.AJUT_UX_WPF_BASELINE_VERSION }}.$PR_NUMBER"
+        set "AJUT_UX_WPF_VERSION=${{ vars.AJUT_UX_WPF_BASELINE_VERSION }}.${PR_NUMBER}"
         echo "AJUT_UX_WPF_VERSION=AJUT_UX_WPF_VERSION" >> $GITHUB_ENV
 
     - name: Checkout code
