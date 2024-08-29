@@ -4,7 +4,9 @@
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using System.Reflection;
+    using System.Reflection.Metadata.Ecma335;
     using System.Threading.Tasks;
     using AJut;
 
@@ -170,12 +172,7 @@
             }
         }
 
-        /// <summary>
-        /// Get a readable and complete stream for a file at an absolute path, an embedded manifest resource (packed file), or a file from the interwebs
-        /// </summary>
-        /// <param name="fileUri">The uri of the file</param>
-        /// <returns>The stream, up to the caller to dispose.</returns>
-        public static Stream GetStreamForFileUri (Uri fileUri)
+        public static Stream GetStreamFromLocalFileUri (Uri fileUri)
         {
             if (!fileUri.IsAbsoluteUri || fileUri.IsFile)
             {
@@ -200,24 +197,26 @@
                 embeddedResourcePath = FileHelpers.GenerateEmbeddedResourceName(embeddedResourcePath, assembly);
                 return assembly.GetManifestResourceStream(embeddedResourcePath);
             }
-            else
-            {
-                var finalStream = new MemoryStream();
-                using (HttpWebResponse response = (HttpWebResponse)WebRequest.Create(fileUri).GetResponse())
-                {
-                    using (BinaryReader reader = new BinaryReader(response.GetResponseStream()))
-                    {
-                        byte[] transferBuffer = reader.ReadBytes(1024);
-                        while (transferBuffer.Length > 0)
-                        {
-                            finalStream.Write(transferBuffer, 0, transferBuffer.Length);
-                            transferBuffer = reader.ReadBytes(1024);
-                        }
 
-                        return finalStream;
-                    }
-                }
+            return null;
+        }
+
+        /// <summary>
+        /// Get a readable and complete stream for a file at an absolute path, an embedded manifest resource (packed file), or a file from the interwebs
+        /// </summary>
+        /// <param name="fileUri">The uri of the file</param>
+        /// <returns>The stream, up to the caller to dispose.</returns>
+        public static async Task<Stream> GetStreamForRemoteFileUri (Uri fileUri)
+        {
+            var finalStream = new MemoryStream();
+            using HttpClient client = new HttpClient();
+            HttpResponseMessage response = await client.GetAsync(fileUri);
+            if (response.IsSuccessStatusCode)
+            {
+                return response.Content.ReadAsStream();
             }
+
+            return null;
         }
     }
 }

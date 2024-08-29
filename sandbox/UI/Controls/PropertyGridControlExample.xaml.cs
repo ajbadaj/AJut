@@ -38,7 +38,7 @@
 
     public class Person
     {
-        public string Name { get; set; }
+        public string? Name { get; set; }
     }
 
     public class SelfAwarePropertyGridSource : NotifyPropertyChanged, IPropertyEditManager

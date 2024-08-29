@@ -21,35 +21,63 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_global", "_global", "{BC1B
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
 		ajut-logo-128.png = ajut-logo-128.png
+		.github\workflows\buildandtest.yml = .github\workflows\buildandtest.yml
 		LICENSE = LICENSE
 		license.txt = license.txt
+		.github\workflows\publishtonuget.yml = .github\workflows\publishtonuget.yml
 		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TheAJutShowRoom", "sandbox\TheAJutShowRoom.csproj", "{F315258B-16BF-4C36-B91E-451DFE774257}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Git", "Git", "{55475A1E-7834-48EA-8B38-F2F7800AB42F}"
+	ProjectSection(SolutionItems) = preProject
+		.gitattributes = .gitattributes
+		.gitignore = .gitignore
+		.github\workflows\buildandtest.yml = .github\workflows\buildandtest.yml
+		.github\workflows\publishtonuget.yml = .github\workflows\publishtonuget.yml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
 		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{8488E399-FD26-42A4-AAF5-24233E611592}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{8488E399-FD26-42A4-AAF5-24233E611592}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8488E399-FD26-42A4-AAF5-24233E611592}.Debug|x64.ActiveCfg = Debug|x64
+		{8488E399-FD26-42A4-AAF5-24233E611592}.Debug|x64.Build.0 = Debug|x64
 		{8488E399-FD26-42A4-AAF5-24233E611592}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8488E399-FD26-42A4-AAF5-24233E611592}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8488E399-FD26-42A4-AAF5-24233E611592}.Release|x64.ActiveCfg = Release|x64
+		{8488E399-FD26-42A4-AAF5-24233E611592}.Release|x64.Build.0 = Release|x64
 		{1186C8E7-52E8-47FF-8535-650F2C7F471A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1186C8E7-52E8-47FF-8535-650F2C7F471A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1186C8E7-52E8-47FF-8535-650F2C7F471A}.Debug|x64.ActiveCfg = Debug|x64
+		{1186C8E7-52E8-47FF-8535-650F2C7F471A}.Debug|x64.Build.0 = Debug|x64
 		{1186C8E7-52E8-47FF-8535-650F2C7F471A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1186C8E7-52E8-47FF-8535-650F2C7F471A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1186C8E7-52E8-47FF-8535-650F2C7F471A}.Release|x64.ActiveCfg = Release|x64
+		{1186C8E7-52E8-47FF-8535-650F2C7F471A}.Release|x64.Build.0 = Release|x64
 		{7F992FB6-2115-4095-A5D4-4DD8E604ADFE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7F992FB6-2115-4095-A5D4-4DD8E604ADFE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F992FB6-2115-4095-A5D4-4DD8E604ADFE}.Debug|x64.ActiveCfg = Debug|x64
+		{7F992FB6-2115-4095-A5D4-4DD8E604ADFE}.Debug|x64.Build.0 = Debug|x64
 		{7F992FB6-2115-4095-A5D4-4DD8E604ADFE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7F992FB6-2115-4095-A5D4-4DD8E604ADFE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7F992FB6-2115-4095-A5D4-4DD8E604ADFE}.Release|x64.ActiveCfg = Release|x64
+		{7F992FB6-2115-4095-A5D4-4DD8E604ADFE}.Release|x64.Build.0 = Release|x64
 		{F315258B-16BF-4C36-B91E-451DFE774257}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F315258B-16BF-4C36-B91E-451DFE774257}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F315258B-16BF-4C36-B91E-451DFE774257}.Debug|x64.ActiveCfg = Debug|x64
+		{F315258B-16BF-4C36-B91E-451DFE774257}.Debug|x64.Build.0 = Debug|x64
 		{F315258B-16BF-4C36-B91E-451DFE774257}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F315258B-16BF-4C36-B91E-451DFE774257}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F315258B-16BF-4C36-B91E-451DFE774257}.Release|x64.ActiveCfg = Release|x64
+		{F315258B-16BF-4C36-B91E-451DFE774257}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -59,6 +87,7 @@ Global
 		{1186C8E7-52E8-47FF-8535-650F2C7F471A} = {7C5EB0C7-99CC-4649-9FCB-6BA45E857DE5}
 		{7F992FB6-2115-4095-A5D4-4DD8E604ADFE} = {7FBB779C-F4F3-4D29-8BE6-2211BAE46978}
 		{F315258B-16BF-4C36-B91E-451DFE774257} = {E3757F0F-E0D0-4C25-A1CE-12814A545AA3}
+		{55475A1E-7834-48EA-8B38-F2F7800AB42F} = {BC1B7CD1-83F9-411B-8D37-A9329F674DBB}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {4A5A9F1C-6846-4922-AF3E-B2DE44160171}

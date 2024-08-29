@@ -67,11 +67,12 @@
             return m_builder.ToString();
         }
 
-        public bool OutputTo(Stream stream, int offset = 0)
+        public bool OutputTo(Stream stream, int offset = 0, Encoding encoding = null)
         {
             try
             {
-                var outputBytes = CompileText().Cast<byte>().ToArray();
+                encoding ??= Encoding.UTF8;
+                var outputBytes = encoding.GetBytes(this.CompileText());
                 stream.Write(outputBytes, offset, outputBytes.Length);
                 return true;
             }

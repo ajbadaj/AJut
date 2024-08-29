@@ -1,14 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows7.0</TargetFramework>
     <UseWPF>true</UseWPF>
     <Version>1.2.15.59</Version>
     <Authors>AJ Badarni</Authors>
     <RootNamespace>AJut.UX</RootNamespace>
     <AssemblyName>AJut.UX.Wpf</AssemblyName>
 	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <Description>C# / dotnet 5 / wpf controls &amp; utility library, created by AJ Badarni</Description>
+    <Description>C# / dotnet 8 / wpf controls &amp; utility library, created by AJ Badarni</Description>
     <Copyright>AJ Badarni</Copyright>
 	<PackageProjectUrl>https://www.ajut.dev/</PackageProjectUrl>
 	<PackageIcon>ajut-logo-128.png</PackageIcon>
@@ -21,7 +21,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Drawing.Common" Version="5.0.0" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.8" />
   </ItemGroup>
   
   <ItemGroup>

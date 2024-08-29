@@ -1,5 +1,5 @@
 # The AJut Libraries
-C# / dotnet 5 / wpf - utility libraries, created by AJ Badarni
+C# / dotnet 8 / wpf - utility libraries, created by AJ Badarni
 <!-- 👇 nuget package table -->
 | | |
 |-|-|

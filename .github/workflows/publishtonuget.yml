@@ -1,0 +1,63 @@
+name: Publish to Nuget
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build_and_test_all:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Create Version Numbers
+      run: |
+        set AJUT_CORE_VERSION=${{ env.AJUT_CORE_BASELINE_VERSION }}.${{ github.event.pull_request.number }}
+        echo "AJUT_CORE_VERSION=AJUT_CORE_VERSION" >> $GITHUB_ENV
+
+        set AJUT_UX_WPF_VERSION=${{ env.AJUT_UX_WPF_BASELINE_VERSION }}.${{ github.event.pull_request.number }}
+        echo "AJUT_UX_WPF_VERSION=AJUT_UX_WPF_VERSION" >> $GITHUB_ENV
+
+    - name: Build Core
+      run: dotnet build libs/AJut.Core/AJut.Core.csproj --no-restore --configuration Release /p:Version=${{ env.AJUT_CORE_VERSION }}
+
+    - name: Build WPF
+      run: dotnet build libs/AJut.UX.Wpf/AJut.UX.Wpf.csproj --no-restore --configuration Release  /p:Version=${{ env.AJUT_UX_WPF_VERSION }}
+
+    - name: Run unit tests
+      run: dotnet test --configuration Release
+
+  publish_ajut_core:
+    runs-on: windows-latest
+    needs: build_and_test_all
+
+    steps:
+    - name: Publish AJut.Core to NuGet
+      run: |
+          echo "Using Concatenated for core ${{ env.AJUT_CORE_VERSION }}"
+          for file in libs/AJut.Core/bin/Release/*.nupkg; do
+            echo "$file"
+          done
+      #run: dotnet nuget push libs/AJut.Core/bin/Release/*.nupkg --api-key ${{ secrets.NUGETPUBLISHKEY }} --source https://api.nuget.org/v3/index.json
+
+  publish_ajut_ux_wpf:
+    runs-on: windows-latest
+    needs: build_and_test_all
+
+    steps:
+    - name: Publish AJut.UX.Wpf to NuGet
+      run: |
+          echo "Using Concatenated for core ${{ env.AJUT_CORE_VERSION }}"
+          for file in libs/AJut.Core/bin/Release/*.nupkg; do
+            echo "$file"
+          done
+      #run: dotnet nuget push libs/AJut.UX.Wpf/bin/Release/*.nupkg --api-key ${{ secrets.NUGETPUBLISHKEY }} --source https://api.nuget.org/v3/index.json

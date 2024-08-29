@@ -152,7 +152,7 @@
                     return eAppTheme.Dark;
                 }
 
-                object? isLightTheCasted = themeRootKey.GetValue(kRegistryIsLightThemeValue);
+                object isLightTheCasted = themeRootKey.GetValue(kRegistryIsLightThemeValue);
                 return (isLightTheCasted is int isLightThemeInt && isLightThemeInt == 0) ? eAppTheme.Dark : eAppTheme.Light;
             }
         }

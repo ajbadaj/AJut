@@ -79,7 +79,7 @@
                 bool result = false;
                 if (Uri.TryCreate(filePath, UriKind.RelativeOrAbsolute, out var uri))
                 {
-                    using (Stream stream = FileHelpers.GetStreamForFileUri(uri))
+                    using (Stream stream = FileHelpers.GetStreamFromLocalFileUri(uri))
                     {
                         result = ResetFromState(stream, manager);
                     }

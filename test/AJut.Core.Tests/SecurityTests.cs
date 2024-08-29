@@ -1,21 +1,22 @@
 ﻿namespace AJut.Core.UnitTests
 {
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using AJut.Security;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class SecurityTests
     {
         // Original - "Wow that's great!"
+        string g_wowThatsGreatSource = "Wow that's great!";
         ObfuscatedString g_wowThatsGreat = new ObfuscatedString(
-            "yg4UVNKI7GZPf45IB47jxtOQaemMkwKQoWADjkY7nfqyGNta1ybWVm1l0eQ3751s",
+            "gvwzqsAlCm4sQOfl9W08/PN1BZX0nQXeiPrs7tyfoS17U3T9CueatfTPS9BmvuWV",
             "yg4UVNKI7GZPf45IB47jxtOQaemMkwKQoWADjkY7nfqyGNta1ybWVm1l0eQ3751s"
         );
 
         [TestInitialize]
         public void Setup ()
         {
-            CryptoObfuscation.Seed("Unit Testing");
+            CryptoObfuscation.SeedDefaults("Unit Testing");
         }
 
         [TestMethod]
@@ -41,10 +42,22 @@
         }
 
         [TestMethod]
+        public void Encrypt_IsDeterministic_WithObscureString ()
+        {
+            string test = "Fancy String II";
+
+            string expected = CryptoObfuscation.Encrypt(test);
+            Assert.AreEqual(expected, CryptoObfuscation.Encrypt(test));
+            Assert.AreEqual(expected, CryptoObfuscation.Encrypt(test));
+            Assert.AreEqual(expected, CryptoObfuscation.Encrypt(test));
+        }
+
+        [TestMethod]
         public void Decrypt_Fixed_Str ()
         {
-            string wow = CryptoObfuscation.Encrypt("Wow that's great!");
-            Assert.AreEqual("Wow that's great!", CryptoObfuscation.Decrypt(g_wowThatsGreat));
+            string test = CryptoObfuscation.Encrypt(g_wowThatsGreatSource);
+            Assert.AreEqual(g_wowThatsGreat.Active, CryptoObfuscation.Encrypt(g_wowThatsGreatSource));
+            Assert.AreEqual(g_wowThatsGreatSource, CryptoObfuscation.Decrypt(g_wowThatsGreat));
         }
     }
 }

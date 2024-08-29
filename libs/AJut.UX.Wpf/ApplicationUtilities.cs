@@ -37,7 +37,7 @@
             g_sharedProjectName = sharedProjectName;
             ProjectName = projectName;
             AppDataRoot = WindowsEnvironmentHelper.EstablishSpecialFolderLocation(applicationStorageRoot, sharedProjectName ?? projectName);
-            CryptoObfuscation.Seed(projectName);
+            CryptoObfuscation.SeedDefaults(projectName);
 
             TypeXT.RegisterSpecialDouble<GridLength>(gl => gl.Value);
             Application.Current.Exit += _OnAppExit;
