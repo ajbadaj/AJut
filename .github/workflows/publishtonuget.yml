@@ -21,7 +21,6 @@ jobs:
 
     - name: Create Version Numbers
       run: |
-        set LAST_PR=
         set AJUT_CORE_VERSION=${{ env.AJUT_CORE_BASELINE_VERSION }}.${{ github.event.pull_request.number }}
         echo "AJUT_CORE_VERSION=AJUT_CORE_VERSION" >> $GITHUB_ENV
 
