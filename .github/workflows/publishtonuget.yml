@@ -11,12 +11,11 @@ jobs:
 
     steps:
     - name: Initial decleration
-      run: echo "Publish To Nuget (Version 12)"
+      run: echo "Publish To Nuget (Version 13)"
 
     - name: Create Version Numbers
       run: |
-        gh api repos/ajbadaj/AJut/pulls/pulls --jq '[.[] | select(.state=="closed")] | .[0].number' > pr_number.txt
-        set /p PR_NUMBER=<pr_number.txt
+        FOR /F "tokens=* USEBACKQ" %%F IN (`gh api repos/ajbadaj/AJut/pulls/pulls --jq '[.[] | select(.state=="closed")] | .[0].number'`) DO (SET PR_NUMBER=%%F)
         echo LAST_CLOSED_PR_NUMBER=$PR_NUMBER >> $GITHUB_ENV
 
     - name: Test Version Numbers
