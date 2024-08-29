@@ -21,10 +21,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_global", "_global", "{BC1B
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
 		ajut-logo-128.png = ajut-logo-128.png
-		.github\workflows\buildandtest.yml = .github\workflows\buildandtest.yml
 		LICENSE = LICENSE
 		license.txt = license.txt
-		.github\workflows\publishtonuget.yml = .github\workflows\publishtonuget.yml
 		README.md = README.md
 	EndProjectSection
 EndProject
@@ -35,7 +33,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Git", "Git", "{55475A1E-783
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
 		.github\workflows\buildandtest.yml = .github\workflows\buildandtest.yml
-		.github\workflows\publishtonuget.yml = .github\workflows\publishtonuget.yml
+		.github\workflows\on_pull_request_merged.yml = .github\workflows\on_pull_request_merged.yml
+		.github\workflows\publish_ajut.core_tonuget.yml = .github\workflows\publish_ajut.core_tonuget.yml
+		.github\workflows\publish_ajut.ux.wpf_tonuget.yml = .github\workflows\publish_ajut.ux.wpf_tonuget.yml
+		.github\workflows\publish_all_tonuget.yml = .github\workflows\publish_all_tonuget.yml
 	EndProjectSection
 EndProject
 Global
