@@ -9,7 +9,7 @@ jobs:
 
     steps:
     - name: Initial decleration
-      uses: echo "Publish To Nuget (Version 3)"
+      run: echo "Publish To Nuget (Version 3)"
 
     - name: Checkout code
       uses: actions/checkout@v2
