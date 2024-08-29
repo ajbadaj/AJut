@@ -13,10 +13,13 @@ jobs:
       
     - name: Create Version Numbers
       run: |
-        set "AJUT_CORE_VERSION=${{ vars.AJUT_CORE_BASELINE_VERSION }}.${{ github.event.pull_request.number }}"
+        gh api repos/${{ github.repository }}/pulls --jq '.[0].number' > pr_number.txt
+        set /p PR_NUMBER=<pr_number.txt
+
+        set "AJUT_CORE_VERSION=${{ vars.AJUT_CORE_BASELINE_VERSION }}.$PR_NUMBER"
         echo "AJUT_CORE_VERSION=AJUT_CORE_VERSION" >> $GITHUB_ENV
 
-        set "AJUT_UX_WPF_VERSION=${{ vars.AJUT_UX_WPF_BASELINE_VERSION }}.${{ github.event.pull_request.number }}"
+        set "AJUT_UX_WPF_VERSION=${{ vars.AJUT_UX_WPF_BASELINE_VERSION }}.$PR_NUMBER"
         echo "AJUT_UX_WPF_VERSION=AJUT_UX_WPF_VERSION" >> $GITHUB_ENV
 
     - name: Checkout code
