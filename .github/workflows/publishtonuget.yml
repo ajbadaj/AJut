@@ -6,11 +6,13 @@ on:
 jobs:
   build_and_test_all:
     runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
 
     steps:
     - name: Initial decleration
-      run: echo "Publish To Nuget (Version 9)"
-      
+      run: echo "Publish To Nuget (Version 10)"
+
     - name: Create Version Numbers
       run: |
         gh api repos/ajbadaj/AJut/pulls/pulls --jq '[.[] | select(.state=="closed")] | .[0].number' > pr_number.txt
