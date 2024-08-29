@@ -11,19 +11,12 @@ jobs:
 
     steps:
     - name: Initial decleration
-      run: echo "Publish To Nuget (Version 17)"
-
-    - name: Stocking Environment with Version Numbers
-      run: |
-        echo "AJUT_CORE_VERSION=${{ vars.AJUT_CORE_BASELINE_VERSION }}.${{ vars.last_merged_PR }}" >> $GITHUB_ENV
-        echo "AJUT_UX_WPF_VERSION=${{ vars.AJUT_UX_WPF_BASELINE_VERSION }}.${{ vars.last_merged_PR }}" >> $GITHUB_ENV
-        echo "VersionNumber=1.2" >> $GITHUB_ENV
+      run: echo "Publish To Nuget (Version 18)"
 
     - name: Testing Env Values
       run: |
-        echo "The value of VersionNumber is ${{ env.VersionNumber }}"
-        echo "AJut.Core Version Number saved as ${{ env.AJUT_CORE_VERSION }}"
-        echo "AJut.UX.Wpf Version Number saved as ${{ env.AJUT_UX_WPF_VERSION }}"
+        echo "AJut.Core Version Number saved as ${{ vars.AJUT_CORE_BASELINE_VERSION }}.${{ vars.last_merged_PR }}"
+        echo "AJut.UX.Wpf Version Number saved as ${{ vars.AJUT_UX_WPF_BASELINE_VERSION }}.${{ vars.last_merged_PR }}"
 
     - name: Checkout code
       uses: actions/checkout@v2
@@ -37,10 +30,10 @@ jobs:
       run: dotnet restore
 
     - name: Build Core
-      run: dotnet build libs/AJut.Core/AJut.Core.csproj --no-restore --configuration Release /p:Version=${{ env.AJUT_CORE_VERSION }}
+      run: dotnet build libs/AJut.Core/AJut.Core.csproj --no-restore --configuration Release /p:Version=${{ vars.AJUT_CORE_BASELINE_VERSION }}.${{ vars.last_merged_PR }}
 
     - name: Build WPF
-      run: dotnet build libs/AJut.UX.Wpf/AJut.UX.Wpf.csproj --no-restore --configuration Release  /p:Version=${{ env.AJUT_UX_WPF_VERSION }}
+      run: dotnet build libs/AJut.UX.Wpf/AJut.UX.Wpf.csproj --no-restore --configuration Release  /p:Version=${{ vars.AJUT_UX_WPF_BASELINE_VERSION }}.${{ vars.last_merged_PR }}
 
     - name: Run unit tests
       run: dotnet test --configuration Release
@@ -52,7 +45,7 @@ jobs:
     steps:
     - name: Publish AJut.Core to NuGet
       run: |
-          $filePath = "libs/AJut.Core/bin/Release/ajut.core.${{ env.AJUT_CORE_VERSION }}.nupkg"
+          $filePath = "libs/AJut.Core/bin/Release/ajut.core.${{ vars.AJUT_CORE_BASELINE_VERSION }}.${{ vars.last_merged_PR }}.nupkg"
           if (Test-Path $filePath) {
               echo "Publishing would look like this: dotnet nuget push $filePath --api-key ${{ secrets.NUGETPUBLISHKEY }} --source https://api.nuget.org/v3/index.json"
           } else {
@@ -65,10 +58,12 @@ jobs:
     needs: build_and_test_all
 
     steps:
-    - name: Publish AJut.UX.Wpf to NuGet
+    - name: Publish AJut.Core to NuGet
       run: |
-          echo "Using Concatenated for core ${{ env.AJUT_CORE_VERSION }}"
-          for file in libs/AJut.Core/bin/Release/*.nupkg; do
-            echo "$file"
-          done
-      #run: dotnet nuget push libs/AJut.UX.Wpf/bin/Release/*.nupkg --api-key ${{ secrets.NUGETPUBLISHKEY }} --source https://api.nuget.org/v3/index.json
+          $filePath = "libs/AJut.UX.Wpf/bin/Release/ajut.ux.wpf.${{ vars.AJUT_UX_WPF_BASELINE_VERSION }}.${{ vars.last_merged_PR }}.nupkg"
+          if (Test-Path $filePath) {
+              echo "Publishing would look like this: dotnet nuget push $filePath --api-key ${{ secrets.NUGETPUBLISHKEY }} --source https://api.nuget.org/v3/index.json"
+          } else {
+              throw "File not found: $filePath"
+          }
+      shell: pwsh
