@@ -9,7 +9,7 @@ jobs:
 
     steps:
     - name: Initial decleration
-      run: echo "Publish To Nuget (Version 5)"
+      run: echo "Publish To Nuget (Version 6)"
       
     - name: Create Version Numbers
       run: |
