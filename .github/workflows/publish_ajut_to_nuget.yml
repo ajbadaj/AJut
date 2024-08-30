@@ -37,12 +37,12 @@ jobs:
       run: |
           $coreNugetFile = Get-ChildItem -Path "./" -Recurse -Filter "AJut.Core.*.nupkg" | Where-Object { $_.FullName -match "Release" } | Select-Object -First 1
           $uxWpfNugetFile = Get-ChildItem -Path "./" -Recurse -Filter "AJut.UX.Wpf.*.nupkg" | Where-Object { $_.FullName -match "Release" } | Select-Object -First 1
-          if ($coreNugetFile && $uxWpfNugetFile) {
-            dotnet nuget push "$($coreNugetFile.FullName)" --api-key ${{ secrets.NUGETPUBLISHKEY }} --source https://api.nuget.org/v3/index.json
-            dotnet nuget push "$($uxWpfNugetFile.FullName)" --api-key ${{ secrets.NUGETPUBLISHKEY }} --source https://api.nuget.org/v3/index.json
-          } else if (!$coreNugetFile) {
-            throw "Core file not found"
-          } else
-            throw "UX.Wpf file not found"
-          }
+
+          echo "Core found as $coreNugetFile"
+          echo "UX.Wpf found as $uxWpfNugetFile"
+          
+          echo "Publishing..."
+          dotnet nuget push "$($coreNugetFile.FullName)" --api-key ${{ secrets.NUGETPUBLISHKEY }} --source https://api.nuget.org/v3/index.json
+          dotnet nuget push "$($uxWpfNugetFile.FullName)" --api-key ${{ secrets.NUGETPUBLISHKEY }} --source https://api.nuget.org/v3/index.json
+
       shell: pwsh
