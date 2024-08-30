@@ -14,9 +14,6 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Set up PowerShell
-      uses: actions/setup-powershell@v1
-
     - name: Update AJut.Core version number for next run
       run: |
         $csprojPath = "libs/AJut.Core/AJut.Core.csproj"
