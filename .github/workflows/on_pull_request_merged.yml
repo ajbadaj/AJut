@@ -9,10 +9,12 @@ jobs:
   update-variable:
     if: github.event.pull_request.merged == true
     runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
 
     steps:
     - name: Initial decleration
-      run: echo "Last PR Saver (Version 2)"
+      run: echo "Last PR Saver (Version 4)"
 
     - name: Set new value for variable
       run: |
