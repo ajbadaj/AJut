@@ -34,9 +34,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Git", "Git", "{55475A1E-783
 		.gitignore = .gitignore
 		.github\workflows\buildandtest.yml = .github\workflows\buildandtest.yml
 		.github\workflows\on_pull_request_merged.yml = .github\workflows\on_pull_request_merged.yml
-		.github\workflows\publish_ajut.core_tonuget.yml = .github\workflows\publish_ajut.core_tonuget.yml
-		.github\workflows\publish_ajut.ux.wpf_tonuget.yml = .github\workflows\publish_ajut.ux.wpf_tonuget.yml
-		.github\workflows\publish_all_tonuget.yml = .github\workflows\publish_all_tonuget.yml
+		.github\workflows\publish_ajut_to_nuget.yml = .github\workflows\publish_ajut_to_nuget.yml
 	EndProjectSection
 EndProject
 Global

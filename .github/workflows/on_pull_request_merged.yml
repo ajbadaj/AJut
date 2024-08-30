@@ -6,27 +6,39 @@ on:
     types: [closed]
 
 jobs:
-  update-variable:
+  update-version:
     if: github.event.pull_request.merged == true
     runs-on: windows-latest
-    env:
-      GH_TOKEN: ${{ github.token }}
 
     steps:
-    - name: Initial decleration
-      run: echo "Last PR Saver (Version 4)"
+    - name: Checkout repository
+      uses: actions/checkout@v2
 
-    - name: Set new value for variable
+    - name: Set up PowerShell
+      uses: actions/setup-powershell@v1
+
+    - name: Update AJut.Core version number for next run
       run: |
-         $headers = @{
-            Authorization = "Bearer ${{ secrets.GH_TOKEN }}"
-            Accept = "application/vnd.github+json"
-         }
-         $url = "https://api.github.com/repos/ajbadaj/ajut/actions/variables/LAST_MERGED_PR"
-         $body = @{
-           name = "last_merged_PR"
-           value = "${{ github.event.pull_request.number }}"
-         } | ConvertTo-Json
-         echo $body
-         Invoke-RestMethod -Uri $url -Method PATCH -Headers $headers -Body $body
+        $csprojPath = "libs/AJut.Core/AJut.Core.csproj"
+        [xml]$csproj = Get-Content $csprojPath
+        $csproj.Project.PropertyGroup.Version = "${{ vars.AJUT_CORE_BASELINE_VERSION }}.${{ github.event.pull_request.number }}"
+        $csproj.Save($csprojPath)
+      shell: pwsh
+
+    - name: Update AJut.UX.Wpf version number for next run
+      run: |
+        $csprojPath = "libs/AJut.UX.Wpf/AJut.UX.Wpf.csproj"
+        [xml]$csproj = Get-Content $csprojPath
+        $csproj.Project.PropertyGroup.Version = "${{ vars.AJUT_UX_WPF_BASELINE_VERSION }}.${{ github.event.pull_request.number }}"
+        $csproj.Save($csprojPath)
+      shell: pwsh
+
+    - name: Commit changes
+      run: |
+        git config --global user.name 'github-actions'
+        git config --global user.email 'github-actions@github.com'
+        git add libs/AJut.Core/AJut.Core.csproj
+        git add libs/AJut.UX.Wpf/AJut.UX.Wpf.csproj
+        git commit -m "Update version to use last submitted pr ${{ github.event.pull_request.number }}"
+        git push
       shell: pwsh
