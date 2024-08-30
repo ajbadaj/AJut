@@ -12,18 +12,19 @@ jobs:
 
     steps:
     - name: Initial decleration
-      run: echo "Last PR Saver (Version 1)"
+      run: echo "Last PR Saver (Version 2)"
 
     - name: Set new value for variable
       run: |
-        $url = "https://api.github.com/repos/${{ github.repository }}/settings/variables/actions/LAST_MERGED_PR"
-        $body = @{
-          name = "last_merged_PR"
-          value = $new_value
-        } | ConvertTo-Json
-        $headers = @{
-          Authorization = "Bearer ${{ secrets.GH_TOKEN }}"
-          Accept = "application/vnd.github.v3+json"
-        }
-        Invoke-RestMethod -Uri $url -Method PATCH -Headers $headers -Body $body
+         $headers = @{
+            Authorization = "Bearer ${{ secrets.GH_TOKEN }}"
+            Accept = "application/vnd.github+json"
+         }
+         $url = "https://api.github.com/repos/ajbadaj/ajut/actions/variables/LAST_MERGED_PR"
+         $body = @{
+           name = "last_merged_PR"
+           value = "${{ github.event.pull_request.number }}"
+         } | ConvertTo-Json
+         echo $body
+         Invoke-RestMethod -Uri $url -Method PATCH -Headers $headers -Body $body
       shell: pwsh
