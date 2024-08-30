@@ -16,15 +16,13 @@ jobs:
 
     - name: Set new value for variable
       run: |
-        $repo = "${{ github.repository }}"
-        $token = "${{ secrets.GH_TOKEN }}"
-        $url = "https://api.github.com/repos/$repo/actions/variables/LAST_MERGED_PR"
+        $url = "https://api.github.com/repos/${{ github.repository }}/settings/variables/actions/LAST_MERGED_PR"
         $body = @{
           name = "last_merged_PR"
-          value = ${{ github.event.pull_request.number }}
+          value = $new_value
         } | ConvertTo-Json
         $headers = @{
-          Authorization = "Bearer $token"
+          Authorization = "Bearer ${{ secrets.GH_TOKEN }}"
           Accept = "application/vnd.github.v3+json"
         }
         Invoke-RestMethod -Uri $url -Method PATCH -Headers $headers -Body $body
