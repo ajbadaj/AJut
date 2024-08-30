@@ -16,13 +16,12 @@ jobs:
 
     - name: Set new value for variable
       run: |
-        $new_value = "${{ github.event.pull_request.number }}"
         $repo = "${{ github.repository }}"
         $token = "${{ secrets.GH_TOKEN }}"
         $url = "https://api.github.com/repos/$repo/actions/variables/LAST_MERGED_PR"
         $body = @{
           name = "last_merged_PR"
-          value = $new_value
+          value = ${{ github.event.pull_request.number }}
         } | ConvertTo-Json
         $headers = @{
           Authorization = "Bearer $token"
