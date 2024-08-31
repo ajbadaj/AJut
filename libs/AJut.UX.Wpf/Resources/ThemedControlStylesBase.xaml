@@ -482,6 +482,10 @@
             <Trigger Property="IsEnabled" Value="False">
                 <Setter Property="Opacity" Value="0.3"/>
             </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_ButtonBackgroundPressed}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+            </Trigger>
         </Style.Triggers>
     </Style>
 

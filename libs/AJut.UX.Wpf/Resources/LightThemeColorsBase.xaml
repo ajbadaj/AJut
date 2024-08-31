@@ -73,6 +73,7 @@
         <GradientStop Offset="1.00" Color="#202020" />
     </LinearGradientBrush>
     <SolidColorBrush x:Key="AJut_Brush_ControlBackgroundHover" Color="#EEE"/>
+    <SolidColorBrush x:Key="AJut_Brush_ButtonBackgroundPressed" Color="#CCC"/>
     <SolidColorBrush x:Key="AJut_Brush_TextBoxBackground" Color="#FFF"/>
     <SolidColorBrush x:Key="AJut_Brush_TextBoxBorder" Color="#222"/>
 
