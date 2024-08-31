@@ -28,12 +28,12 @@
         {
             var assembly = typeof(Logger).Assembly;
             var versionInfo = FileVersionInfo.GetVersionInfo(assembly.Location);
-            AJut_Core_Version = versionInfo.ProductVersion?.ToString() ?? "unknown version";
+            AJut_Core_Version = versionInfo.FileVersion?.ToString() ?? "unknown version";
             Logger.LogInfo($"Using AJut.Core version #{AJut_Core_Version}");
 
             assembly = typeof(ApplicationUtilities).Assembly;
             versionInfo = FileVersionInfo.GetVersionInfo(assembly.Location);
-            AJut_Ux_Wpf_Version = versionInfo.ProductVersion?.ToString() ?? "unknown version";
+            AJut_Ux_Wpf_Version = versionInfo.FileVersion?.ToString() ?? "unknown version";
             Logger.LogInfo($"Using AJut.UX.Wpf version #{AJut_Ux_Wpf_Version}");
 
             App.Pages = new StackNavFlowController();
