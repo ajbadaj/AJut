@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="AJutShowRoomWinUI.ColorParseExample"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:AJutShowRoomWinUI"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    x:Name="Self">
+
+    <Border BorderThickness="2" BorderBrush="Green">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid>
+                <Grid.Background>
+                    <SolidColorBrush Color="{x:Bind ParsedColor, Mode=OneWay}"/>
+                </Grid.Background>
+            </Grid>
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="Color:" FontWeight="Bold"/>
+                <TextBox Grid.Column="1" Text="{Binding ElementName=Self, Path=ParsedColorText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="5,0,0,0"/>
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>

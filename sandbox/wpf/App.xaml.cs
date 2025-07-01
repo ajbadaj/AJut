@@ -44,7 +44,7 @@
             TypeIdRegistrar.RegisterAllTypeIds(typeof(App).Assembly);
 
             // Run a one time setup which will establish an appdata location, project name, logging, seed obfuscation, and optionally apply root exception handling
-            ApplicationUtilities.RunOnetimeSetup("AJut.ShowRoom", onExceptionRecieved: UnhandledExceptionProcessor);
+            ApplicationUtilities.RunOnetimeSetup("WPF_ShowRoom", sharedProjectName: "AJut.ShowRoom", onExceptionRecieved: UnhandledExceptionProcessor);
 
             // Add an entry to the log so we know we got this far!
             Logger.LogInfo("Starting up AJut Show Room");

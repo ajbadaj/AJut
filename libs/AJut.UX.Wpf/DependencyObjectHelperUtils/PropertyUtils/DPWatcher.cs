@@ -35,7 +35,16 @@ namespace AJut.UX
         {
             foreach (var property in properties)
             {
-                var binding = m_source.CreateBinding(property, BindingMode.OneWay);
+                var binding = m_source.CreateBinding(property.Name, BindingMode.OneWay);
+                this.SetBinding(ValueProperty, binding);
+            }
+        }
+
+        public void WatchAttached (params DependencyProperty[] properties)
+        {
+            foreach (var property in properties)
+            {
+                var binding = m_source.CreateAttachedBinding(property, BindingMode.OneWay);
                 this.SetBinding(ValueProperty, binding);
             }
         }
