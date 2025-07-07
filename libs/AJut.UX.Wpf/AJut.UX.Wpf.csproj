@@ -119,6 +119,7 @@
   
   <ItemGroup>
     <ProjectReference Include="..\AJut.Core\AJut.Core.csproj" />
+    <ProjectReference Include="..\AJut.UX\AJut.UX.csproj" />
   </ItemGroup>
   
   <ItemGroup>

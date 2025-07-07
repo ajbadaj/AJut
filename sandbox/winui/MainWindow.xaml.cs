@@ -3,21 +3,9 @@
 
 namespace AJutShowRoomWinUI
 {
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
-    using System.Runtime.InteropServices.WindowsRuntime;
     using Microsoft.UI.Xaml;
-    using Microsoft.UI.Xaml.Controls;
-    using Microsoft.UI.Xaml.Controls.Primitives;
-    using Microsoft.UI.Xaml.Data;
-    using Microsoft.UI.Xaml.Input;
-    using Microsoft.UI.Xaml.Media;
-    using Microsoft.UI.Xaml.Navigation;
-    using Windows.Foundation;
-    using Windows.Foundation.Collections;
-    using Windows.UI;
+
 
     /// <summary>
     /// An empty window that can be used on its own or navigated to within a Frame.
@@ -26,15 +14,41 @@ namespace AJutShowRoomWinUI
     {
         public MainWindow ()
         {
+            this.Application = App.Instance;
             this.InitializeComponent();
+            this.Root.SetupFor(this);
         }
+
+        public App Application { get; }
 
         private void myButton_Click (object sender, RoutedEventArgs e)
         {
             myButton.Content = "Clicked";
+            //this.PerformPresenterTask<OverlappedPresenter>(p => p.SetBorderAndTitleBar(true, false));
+
+            //this.AppWindow.TitleBar.ExtendsContentIntoTitleBar = true;
+            //this.SetTitleBar(this.CustomTitleBar);
         }
 
 
+        // Helper method to get a theme brush by key from resources
+        private T? GetThemeResource<T> (string key)
+        {
+            // Try window resources first
+            if (App.Current.Resources.TryGetValue(key, out var value) && value is T resource)
+            {
+                return resource;
+            }
+            // Try theme dictionaries (Light/Dark/Default)
+            foreach (var themeDict in App.Current.Resources.ThemeDictionaries.Values.OfType<ResourceDictionary>())
+            {
+                if (themeDict.TryGetValue(key, out value) && value is T dictionaryResource)
+                {
+                    return dictionaryResource;
+                }
+            }
 
+            return default;
+        }
     }
 }

@@ -100,7 +100,7 @@
         /// <param name="originalValue">The original value.</param>
         /// <param name="assemblyShortName">Short name of the assembly (optional).</param>
         /// <returns>The coereced <see cref="Uri"/>.</returns>
-        public static Uri CoerceUriSourceFrom (object originalValue, string assemblyShortName = null)
+        public static Uri CoerceUriSourceFrom (object originalValue)
         {
             if (null == originalValue)
             {
@@ -126,29 +126,7 @@
                 return newUri;
             }
 
-            // Can we generate a fully resolved pack URI given the path?
-            if (assemblyShortName == null)
-            {
-                // Some partial URIs are specified as /AssemblyShortName;component/path.png
-                //  This does not count as a fully qualified packurl so the TryCreate above will fail
-                //  but it does give us an assembly short name.
-                const string partiallyQualifiedPathSegment = ";component/";
-
-                int ind = strValue.IndexOf(partiallyQualifiedPathSegment);
-                if (ind != -1)
-                {
-                    assemblyShortName = strValue.Remove(ind).TrimStart('/');
-                    strValue = strValue.Substring(ind + partiallyQualifiedPathSegment.Length);
-                }
-                // Otherwise just guess
-                else
-                {
-                    assemblyShortName = Assembly.GetEntryAssembly().GetName().Name;
-                }
-            }
-
-            string newAbsoluteUriString = string.Format("pack://application:,,,/{0};component/{1}", assemblyShortName, strValue.TrimStart('/'));
-            if (Uri.TryCreate(newAbsoluteUriString, UriKind.Absolute, out newUri))
+            if (Uri.TryCreate($"ms-appx:///{strValue.TrimStart('/')}", UriKind.Relative, out newUri))
             {
                 return newUri;
             }
@@ -263,7 +241,7 @@
         /// <param name="originalValue">The original value.</param>
         /// <param name="assemblyShortName">The short name of the assembly to look up (default is null which will cause the entry assembly to be used)</param>
         /// <returns>An ImageSource coerced out of the original value.</returns>
-        public static ImageSource CoerceImageSourceFrom (object originalValue, string assemblyShortName = null)
+        public static ImageSource CoerceImageSourceFrom (object originalValue)
         {
             if (null == originalValue)
             {
@@ -275,7 +253,7 @@
                 return originalAsImageSource;
             }
 
-            Uri uri = CoerceUriSourceFrom(originalValue, assemblyShortName);
+            Uri uri = CoerceUriSourceFrom(originalValue);
             if (null == uri)
             {
                 return null;

@@ -14,6 +14,7 @@
   </PropertyGroup>
   <ItemGroup>
     <None Remove="ColorParseExample.xaml" />
+    <None Remove="Themes\LightThemeColors.xaml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -48,6 +49,14 @@
   </ItemGroup>
   <ItemGroup>
     <Page Update="ColorParseExample.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Update="Themes\DarkThemeColors.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Themes\LightThemeColors.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>

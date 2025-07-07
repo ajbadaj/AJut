@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+	<TargetFramework>net8.0</TargetFramework>
+	<ImplicitUsings>enable</ImplicitUsings>
+	<Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\ajut-logo-128.png">
+	  <Pack>True</Pack>
+	  <PackagePath>\</PackagePath>
+	</None>
+    <None Include="..\..\license.txt" Link="license.txt">
+      <PackagePath></PackagePath>
+      <Pack>True</Pack>
+    </None>
+    <ProjectReference Include="..\AJut.Core\AJut.Core.csproj" />
+    <None Update="README.md">
+      <PackagePath>\</PackagePath>
+      <Pack>True</Pack>
+    </None>
+  </ItemGroup>
+
+</Project>

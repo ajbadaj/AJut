@@ -14,14 +14,14 @@
         public delegate void SetValue (object value);
 
         private readonly GetValue m_getValue;
-        private readonly SetValue m_setValue;
+        private readonly SetValue? m_setValue;
 
         static PropertyEditTarget ()
         {
             //TreeTraversal<PropertyEditTarget>.SetupDefaults();
         }
 
-        public PropertyEditTarget (string propertyPathTarget, GetValue getValue, SetValue setValue = null)
+        public PropertyEditTarget (string propertyPathTarget, GetValue getValue, SetValue? setValue = null)
         {
             this.PropertyPathTarget = propertyPathTarget;
             m_getValue = getValue;
