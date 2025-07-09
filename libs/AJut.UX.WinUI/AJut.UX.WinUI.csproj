@@ -7,20 +7,12 @@
     <UseWinUI>true</UseWinUI>
   </PropertyGroup>
   <ItemGroup>
-    <None Remove="Theming\Controls\ThemedWindowRoot.xaml" />
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4188" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250606001" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AJut.Core\AJut.Core.csproj" />
     <ProjectReference Include="..\AJut.UX\AJut.UX.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Page Update="Theming\Controls\ThemedWindowRoot.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Converters\" />
@@ -33,6 +25,9 @@
   </ItemGroup>
 
   <ItemGroup>
+	  <Compile Update="Theming\Controls\ThemedWindowRoot..cs">
+		  <DependentUpon>ThemedWindowRoot.xaml</DependentUpon>
+	  </Compile>
 	<Compile Update="Controls\EnumComboBox.cs">
 	  <DependentUpon>EnumComboBox.xaml</DependentUpon>
 	</Compile>

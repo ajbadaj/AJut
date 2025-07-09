@@ -6,7 +6,6 @@
     xmlns:local="using:AJutShowRoomWinUI"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:ajut_theming="using:AJut.UX.Theming.Controls"
     mc:Ignorable="d"
     Title="AJut Showroom for WinUI"
     x:Name="Self"
@@ -15,14 +14,14 @@
         <MicaBackdrop />
     </Window.SystemBackdrop>
 
-    <ajut_theming:ThemedWindowRoot x:Name="Root" TitleBarButtonHighlightColor="{ThemeResource SystemAccentColor}" TargetBorderThickness="2"
-                                   ActiveTitlebarBackground="{ThemeResource AppBarBackgroundThemeBrush}"
-                                   InactiveTitlebarBackground="#5000">
-        <ajut_theming:ThemedWindowRoot.CustomTilteBar>
+    <ajut:ThemedWindowRootControl x:Name="Root" TitleBarButtonHighlightColor="{ThemeResource SystemAccentColor}" TargetBorderThickness="2"
+                                  ActiveTitlebarBackground="{ThemeResource AppBarBackgroundThemeBrush}"
+                                  InactiveTitlebarBackground="#5000">
+        <ajut:ThemedWindowRootControl.CustomTilteBar>
             <Grid>
                 <TextBlock Text="What's up" Foreground="#CCC" VerticalAlignment="Center" Margin="5,0,0,0" FontSize="18"/>
             </Grid>
-        </ajut_theming:ThemedWindowRoot.CustomTilteBar>
+        </ajut:ThemedWindowRootControl.CustomTilteBar>
         <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="1" Margin="5">
                 <Button x:Name="myButton" Click="myButton_Click">Click Me</Button>
@@ -30,6 +29,6 @@
                 <local:ColorParseExample Width="200" Height="200" HorizontalAlignment="Left"/>
             </StackPanel>
         </Grid>
-    </ajut_theming:ThemedWindowRoot>
+    </ajut:ThemedWindowRootControl>
     
 </Window>

@@ -6,13 +6,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:EnumComboBox">
-                    <ComboBox x:Name="PART_ComboBox">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding Path=Name}"/>
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
+                    <ComboBox x:Name="PART_ComboBox" DisplayMemberPath="Name"/>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

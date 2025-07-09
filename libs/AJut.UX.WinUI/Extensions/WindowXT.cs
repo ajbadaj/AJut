@@ -2,6 +2,8 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Runtime.CompilerServices;
+    using System.Runtime.InteropServices;
     using Microsoft.UI;
     using Microsoft.UI.Windowing;
     using Microsoft.UI.Xaml;
@@ -62,6 +64,25 @@
             }
         }
 
+        public static int DetermineActiveDPI(this Window window)
+        {
+            try
+            {
+                return NativeMethods.GetDpiForWindow(window.GetHWND());
+            }
+            catch (Exception ex)
+            {
+                // Handle the case where the DPI cannot be determined
+                Logger.LogError($"Error determining DPI for window: {ex.Message}");
+                return 96; // Default DPI value
+            }
+        }
+
+        public static double DetermineActiveDPIScale(this Window window)
+        {
+            return window.DetermineActiveDPI() / 96.0; // Assuming 96 DPI is the base scale 
+        }
+
         public static eWindowState GetWindowState (this Window window)
         {
             // Get the AppWindow from a WinUI Window
@@ -86,6 +107,35 @@
             }
 
             return eWindowState.Unknown;
+        }
+
+        public static bool IsFullScreened(this Window window)
+        {
+            return window.AppWindow.Presenter is FullScreenPresenter;
+        }
+
+        public static bool EnterFullscreen (this Window window)
+        {
+            return window.PerformPresenterTask<OverlappedPresenter>((presenter) =>
+            {
+                // Enter fullscreen mode
+                presenter.SetBorderAndTitleBar(false, false);
+                presenter.Maximize();
+                window.AppWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
+            });
+        }
+
+        public static bool ExitFullscreen (this Window window, int? minimmumWidth = null, int? minimumHeight = null)
+        {
+            window.AppWindow.SetPresenter(AppWindowPresenterKind.Overlapped);
+            return window.PerformPresenterTask<OverlappedPresenter>(presenter =>
+            {
+                // Exit fullscreen mode
+                presenter.SetBorderAndTitleBar(true, true);
+                presenter.Restore();
+                presenter.PreferredMinimumWidth = minimmumWidth;
+                presenter.PreferredMinimumHeight = minimumHeight;
+            });
         }
 
         public static void BringToFront(this Window window)
@@ -154,6 +204,9 @@
 
             [System.Runtime.InteropServices.DllImport("user32.dll")]
             public static extern int SetWindowLong (IntPtr hWnd, int nIndex, int dwNewLong);
+
+            [DllImport("User32.dll")]
+            public static extern int GetDpiForWindow (IntPtr hwnd);
         }
     }
 }

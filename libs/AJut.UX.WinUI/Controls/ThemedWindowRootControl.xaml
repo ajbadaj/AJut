@@ -1,0 +1,41 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="using:AJut.UX.Controls" 
+                    xmlns:ajut_conv="using:AJut.UX.Converters">
+
+    <x:String x:Key="AJut_Symbol_ExitFullScreenSymbol">&#xE73F;</x:String>
+    <x:String x:Key="AJut_Symbol_FullScreenSymbol"    >&#xE740;</x:String>
+    
+    <Style TargetType="local:ThemedWindowRootControl">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:ThemedWindowRootControl">
+                    <Grid x:Name="PART_WindowRoot" UseLayoutRounding="True">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="40"/>
+                            <RowDefinition />
+                        </Grid.RowDefinitions>
+
+                        <!-- Titlebar Area -->
+                        <Grid x:Name="PART_CustomTitleBarContainer" Height="40" Background="{TemplateBinding CurrentlySetTitlebarBackground}">
+                            <ContentControl Content="{TemplateBinding CustomTilteBar}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
+                            <Button x:Name="PART_EnterFullscreenButton" FontFamily="Segoe MDL2 Assets" Background="Transparent" BorderThickness="0" Content="{StaticResource AJut_Symbol_FullScreenSymbol}" HorizontalAlignment="Right" Margin="0,0,138,0" CornerRadius="0" Width="48" Height="32" VerticalAlignment="Top"/>
+                            <Button x:Name="PART_ExitFullscreenButton" FontFamily="Segoe MDL2 Assets" Content="{StaticResource AJut_Symbol_ExitFullScreenSymbol}" HorizontalAlignment="Right" CornerRadius="0" Width="48" Height="32" VerticalAlignment="Top"/>
+                            
+                            <Border x:Name="PART_TitleBarBorder" BorderBrush="{Binding ElementName=PART_WindowRoot, Path=Background}"/>
+                        </Grid>
+
+                        <!-- Client Area -->
+                        <ContentControl x:Name="PART_ClientContainer" Grid.Row="1" Content="{TemplateBinding WindowContents}"
+                                        HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
+                        <!--<Border Grid.RowSpan="2"
+            BorderBrush="{x:Bind ActiveBorderBrush}" 
+            BorderThickness="{x:Bind ActiveBorderThickness}" />-->
+
+
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>
