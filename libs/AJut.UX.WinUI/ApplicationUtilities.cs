@@ -6,8 +6,9 @@
     using AJut.OS.Windows;
     using AJut.Security;
     using Microsoft.UI.Xaml;
+    using Windows.Storage;
 
-    public delegate void ExceptionProcessor (object exceptionObject, bool isTerminating);
+    public delegate bool ExceptionProcessor (object exceptionObject);
     public static class ApplicationUtilities
     {
         private static bool g_isSetup = false;
@@ -26,7 +27,7 @@
         /// <param name="ageMaxInDaysToKeepLogs">The max age (in days) to keep logs - this will auto purge logs with this call for all logs older than specified. Pass in -1 to skip log purging (not recommended). Default = 10.</param>
         /// <param name="sharedProjectName">A shared project name so two or more projects can share a root location (ie CoolProj is the shared project name, but individually the projects are: CoolProjClient, CoolProjServer)</param>
         /// <param name="applicationStorageRoot">What <see cref="Environment.SpecialFolder"/> do you want to keep things like logs in? This will seed the <see cref="AppDataRoot"/> location which is commonly used in establishing app storage info, including in <see cref="BuildAppDataProjectPath"/></param>
-        public static void RunOnetimeSetup (string projectName, bool setupLogging = true, ExceptionProcessor onExceptionRecieved = null, int ageMaxInDaysToKeepLogs = 10, string sharedProjectName = null, Environment.SpecialFolder applicationStorageRoot = Environment.SpecialFolder.ApplicationData)
+        public static void RunOnetimeSetup (string projectName, Application application, bool setupLogging = true, ExceptionProcessor onExceptionRecieved = null, int ageMaxInDaysToKeepLogs = 10, string sharedProjectName = null, StorageFolder storageRoot = null)
         {
             if (g_isSetup)
             {
@@ -35,16 +36,16 @@
 
             g_sharedProjectName = sharedProjectName;
             ProjectName = projectName;
-            AppDataRoot = WindowsEnvironmentHelper.EstablishSpecialFolderLocation(applicationStorageRoot, sharedProjectName ?? projectName);
-            CryptoObfuscation.SeedDefaults(projectName);
+            AppDataRoot = (storageRoot ?? ApplicationData.Current.LocalFolder).Path;
+            CryptoObfuscation.SeedDefaults(g_sharedProjectName);
 
             TypeXT.RegisterSpecialDouble<GridLength>(gl => gl.Value);
             
             if (onExceptionRecieved != null)
             {
-
+                AppDomain.CurrentDomain.UnhandledException += _OnHandleException;
+                application.UnhandledException += _AppOnUnhandledException;
             }
-            AppDomain.CurrentDomain.UnhandledException += _OnHandleException;
 
 
             if (setupLogging)
@@ -66,7 +67,6 @@
                     Logger.ForceFlushToFile();
                 }
             }
-
             void _OnHandleException (object sender, System.UnhandledExceptionEventArgs e)
             {
                 if (g_blockReentrancy)
@@ -77,7 +77,38 @@
                 g_blockReentrancy = true;
                 try
                 {
-                    onExceptionRecieved(e.ExceptionObject, e.IsTerminating);
+                    Logger.LogError($"Unhandled excpetion recieved: {e.ExceptionObject}");
+                    if (onExceptionRecieved(e.ExceptionObject))
+                    {
+                        if (e.IsTerminating)
+                        {
+                            Logger.LogError("Tried to handle unhandled exception - but termination is moving ahead.");
+                        }
+                    }
+                }
+                catch
+                {
+                }
+                finally
+                {
+                    g_blockReentrancy = false;
+                }
+            }
+            void _AppOnUnhandledException (object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
+            {
+                if (g_blockReentrancy)
+                {
+                    return;
+                }
+
+                g_blockReentrancy = true;
+                try
+                {
+                    Logger.LogError($"Unhandled excpetion recieved: {e.Exception}");
+                    if (onExceptionRecieved(e.Exception))
+                    {
+                        e.Handled = true;
+                    }
                 }
                 catch
                 {

@@ -37,8 +37,7 @@
         /// <param name="args">Details about the launch request and process.</param>
         protected override void OnLaunched (Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
-
-            ApplicationUtilities.RunOnetimeSetup("WinUI_ShowRoom", sharedProjectName: "AJut.ShowRoom", onExceptionRecieved: LogException);
+            ApplicationUtilities.RunOnetimeSetup("WinUI_ShowRoom", this, sharedProjectName: "AJut.ShowRoom", onExceptionRecieved: LogException);
             Logger.FlushToFileAfterEach = true;
             Logger.LogInfo("Starting up AJut Show Room for WinUI");
             Logger.LogInfo($"Using AJut.Core version #{this.AJut_Core_Version}");
@@ -50,9 +49,9 @@
             this.ThemeManager.Setup(this, m_windowManager);
         }
 
-        private void LogException (object exceptionObject, bool isTerminating)
+        private bool LogException (object exceptionObject)
         {
-            Logger.LogError($"Exception received: {exceptionObject} - {(isTerminating ? "is" : "not")} terminating");
+            return true;
         }
 
         private Window? m_window;
