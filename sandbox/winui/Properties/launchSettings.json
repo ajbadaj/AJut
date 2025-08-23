@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "AJutShowRoomWinUI (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "AJutShowRoomWinUI (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

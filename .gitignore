@@ -23,6 +23,8 @@
 !*.yml
 !app.manifest
 !*.appxmanifest
+!launchSettings.json
+!*.pubxml
 
 # ============[ And finally nix these ]=========================
 *Settings.Designer.cs
