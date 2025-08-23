@@ -21,6 +21,8 @@
 !*.snippet
 !*.docklayout
 !*.yml
+!app.manifest
+!*.appxmanifest
 
 # ============[ And finally nix these ]=========================
 *Settings.Designer.cs
