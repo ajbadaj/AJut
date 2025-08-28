@@ -20,6 +20,8 @@
 
         public void Setup(Application target, WindowManager windows, string lightThemeXamlUriPath = null, string darkThemeXamlUriPath = null, int themeColorsInsertionIndex = 1)
         {
+            m_windows = windows;
+
             m_targetApplication = target ?? Application.Current;
             m_themeColorsInsertionIndex = themeColorsInsertionIndex;
 
@@ -31,8 +33,6 @@
 
             m_uiSettings = new UISettings();
             m_uiSettings.ColorValuesChanged += OnColorValuesChanged;
-
-            m_windows = windows;
         }
 
         public void Dispose ()
@@ -102,7 +102,7 @@
             if (this.ThemeConfiguration == ElementTheme.Default)
             {
                 // UI thread dispatch required
-                DispatcherQueue.GetForCurrentThread().TryEnqueue(()=>
+                DispatcherQueue.GetForCurrentThread()?.TryEnqueue(()=>
                 {
                     this.SetTheme(m_targetApplication.RequestedTheme);
                 });
