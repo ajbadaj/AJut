@@ -178,7 +178,13 @@ namespace AJut.UX.Controls
                         m_editTextBox.LostFocus -= _EditTextBoxLostFocus;
                         m_editTextBox = null;
                     }
+                    
                     m_editTextBox = this.GetFirstChildOf<TextBox>();
+                    if (m_editTextBox == null)
+                    {
+                        return;
+                    }
+
                     if (!m_dontAutoFocusNextEdit || m_editTextBox.Focus())
                     {
                         m_editTextBox.LostFocus += _EditTextBoxLostFocus;
