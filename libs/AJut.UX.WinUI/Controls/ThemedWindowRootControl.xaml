@@ -7,6 +7,8 @@
     <x:String x:Key="AJut_Symbol_FullScreenSymbol"    >&#xE740;</x:String>
     
     <Style TargetType="local:ThemedWindowRootControl">
+        <Setter Property="ActiveTitlebarBackground" Value="{ThemeResource AJut_Brush_TitleBarBackground}"/>
+        <Setter Property="InactiveTitlebarBackground" Value="{ThemeResource AJut_Brush_TitleBarBackground}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:ThemedWindowRootControl">

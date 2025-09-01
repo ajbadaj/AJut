@@ -41,12 +41,13 @@
             Logger.FlushToFileAfterEach = true;
             Logger.LogInfo("Starting up AJut Show Room for WinUI");
             Logger.LogInfo($"Using AJut.Core version #{this.AJut_Core_Version}");
-            Logger.LogInfo($"Using AJut.UX.Wpf version #{this.AJut_UX_WinUI_Version}");
+            Logger.LogInfo($"Using AJut.UX.WinUI version #{this.AJut_UX_WinUI_Version}");
+
+            this.ThemeManager.Setup(this, m_windowManager);
 
             m_window = new MainWindow();
             m_window.Activate();
             m_windowManager.Setup(m_window);
-            this.ThemeManager.Setup(this, m_windowManager);
         }
 
         private bool LogException (object exceptionObject)

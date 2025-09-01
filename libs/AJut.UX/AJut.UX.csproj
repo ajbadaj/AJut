@@ -3,6 +3,19 @@
 	<TargetFramework>net8.0</TargetFramework>
 	<ImplicitUsings>enable</ImplicitUsings>
 	<Nullable>enable</Nullable>
+	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+	<Description>C# / dotnet 8 - common lib for Wpf / WinUI3 utility libraries, created by AJ Badarni</Description>
+	<Authors>AJ Badarni</Authors>
+	<Company />
+	<Version>1.0.0.0</Version>
+	<PackageProjectUrl>https://www.ajut.dev/</PackageProjectUrl>
+	<PackageIcon>ajut-logo-128.png</PackageIcon>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
+	<RepositoryUrl>https://github.com/ajbadaj/AJut</RepositoryUrl>
+	<RepositoryType>git</RepositoryType>
+	<PackageTags>c#;dotnet;theming;controls;converters;app;utilities</PackageTags>
+	<PackageLicenseExpression>MIT</PackageLicenseExpression>
+	<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
   <ItemGroup>

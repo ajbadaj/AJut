@@ -8,9 +8,6 @@
     public class AppThemeManager : NotifyPropertyChanged, IDisposable
     {
         private Application m_targetApplication;
-        private int m_themeColorsInsertionIndex;
-        private ResourceDictionary m_lightThemeColors;
-        private ResourceDictionary m_darkThemeColors;
         private ElementTheme m_themeConfiguration = ElementTheme.Default;
         private ApplicationTheme m_currentTheme = ApplicationTheme.Dark;
         private UISettings m_uiSettings;
@@ -18,15 +15,15 @@
 
         public event EventHandler<EventArgs<ApplicationTheme>> ThemeChanged;
 
-        public void Setup(Application target, WindowManager windows, string lightThemeXamlUriPath = null, string darkThemeXamlUriPath = null, int themeColorsInsertionIndex = 1)
+        public void Setup(Application target, WindowManager windows, string lightThemeXamlUriPath = null, string darkThemeXamlUriPath = null)
         {
             m_windows = windows;
 
             m_targetApplication = target ?? Application.Current;
-            m_themeColorsInsertionIndex = themeColorsInsertionIndex;
 
-            m_lightThemeColors = new ResourceDictionary { Source = new Uri(lightThemeXamlUriPath ?? "ms-appx:///Themes/LightThemeColors.xaml") };
-            m_darkThemeColors = new ResourceDictionary { Source = new Uri(darkThemeXamlUriPath ?? "ms-appx:///Themes/DarkThemeColors.xaml") };
+            Application.Current.Resources.ThemeDictionaries["Light"] = new ResourceDictionary { Source = new Uri(lightThemeXamlUriPath ?? "ms-appx:///Themes/LightThemeColors.xaml") };
+            Application.Current.Resources.ThemeDictionaries["Dark"] = new ResourceDictionary { Source = new Uri(darkThemeXamlUriPath ?? "ms-appx:///Themes/DarkThemeColors.xaml") };
+
 
             // Insert the initial theme
             SetTheme(m_targetApplication.RequestedTheme);
@@ -73,16 +70,6 @@
             {
                 return;
             }
-
-            var dictionaries = m_targetApplication.Resources.MergedDictionaries;
-            // Remove existing theme dictionary if present
-            if (dictionaries.Count > m_themeColorsInsertionIndex)
-            {
-                dictionaries.RemoveAt(m_themeColorsInsertionIndex);
-            }
-
-            // Insert the new theme dictionary
-            dictionaries.Insert(m_themeColorsInsertionIndex, theme == ApplicationTheme.Dark ? m_darkThemeColors : m_lightThemeColors);
 
             // Update the WinUI defaults for each content root
             foreach (Window window in m_windows)

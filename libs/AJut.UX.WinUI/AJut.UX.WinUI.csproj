@@ -5,7 +5,27 @@
     <RootNamespace>AJut.UX</RootNamespace>
     <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
     <UseWinUI>true</UseWinUI>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Description>C# / dotnet 8 / WinUI3 controls &amp; utility library, created by AJ Badarni</Description>
+	<Authors>AJ Badarni</Authors>
+	<Company />
+	<Version>1.0.0.0</Version>
+	<PackageProjectUrl>https://www.ajut.dev/</PackageProjectUrl>
+	<PackageIcon>ajut-logo-128.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/ajbadaj/AJut</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>c#;dotnet;wpf;theming;controls;converters;app;utilities</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
   </PropertyGroup>
+  <ItemGroup>
+  	<None Include="..\..\.editorconfig" Link=".editorconfig" />
+  	<None Include="..\..\ajut-logo-128.png">
+  		<Pack>True</Pack>
+  		<PackagePath>\</PackagePath>
+  	</None>
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4188" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250606001" />
@@ -16,6 +36,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Converters\" />
+    <Folder Include="Resources\" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\license.txt" Link="license.txt">
