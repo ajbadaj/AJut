@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
@@ -19,6 +19,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
   </PropertyGroup>
+  
   <ItemGroup>
   	<None Include="..\..\.editorconfig" Link=".editorconfig" />
   	<None Include="..\..\ajut-logo-128.png">
@@ -27,7 +28,7 @@
   	</None>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4188" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4948" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250606001" />
   </ItemGroup>
   <ItemGroup>
@@ -46,11 +47,14 @@
   </ItemGroup>
 
   <ItemGroup>
-	  <Compile Update="Theming\Controls\ThemedWindowRoot..cs">
-		  <DependentUpon>ThemedWindowRoot.xaml</DependentUpon>
+	  <Compile Update="Controls\ThemedWindowRootControl.cs">
+		  <DependentUpon>ThemedWindowRootControl.xaml</DependentUpon>
 	  </Compile>
 	<Compile Update="Controls\EnumComboBox.cs">
 	  <DependentUpon>EnumComboBox.xaml</DependentUpon>
+	</Compile>
+	<Compile Update="Controls\TitleBarCaptionButton.cs">
+	  <DependentUpon>TitleBarCaptionButton.xaml</DependentUpon>
 	</Compile>
   </ItemGroup>
 

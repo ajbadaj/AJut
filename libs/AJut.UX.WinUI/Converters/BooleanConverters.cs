@@ -1,6 +1,8 @@
 ﻿namespace AJut.UX.Converters
 {
     using Microsoft.UI.Xaml;
+    using Microsoft.UI.Xaml.Media;
+    using Windows.UI;
 
     /*Example
      * 
@@ -60,5 +62,21 @@
     public sealed class BooleanToDoubleConverter : BooleanConverter<double>
     {
         public BooleanToDoubleConverter () : base(1.0, 0.0) { }
+    }
+
+    public sealed class BooleanToColorConverter : BooleanConverter<Color>
+    {
+        private static Color kTransparent = new Color();
+        public BooleanToColorConverter() : base(kTransparent , kTransparent)
+        {
+        }
+    }
+
+    public sealed class BooleanToBrushConverter : BooleanConverter<Brush>
+    {
+        private static Brush kTransparent = new SolidColorBrush(new Color());
+        public BooleanToBrushConverter() : base(kTransparent, kTransparent)
+        {
+        }
     }
 }

@@ -29,9 +29,9 @@ namespace AJut.UX.Controls
     [TemplatePart(Name = nameof(PART_WindowRoot), Type = typeof(UIElement))]
     [TemplatePart(Name = nameof(PART_EnterFullscreenButton), Type = typeof(Button))]
     [TemplatePart(Name = nameof(PART_ExitFullscreenButton), Type = typeof(Button))] 
-    public class ThemedWindowRootControl : Control
+    public partial class ThemedWindowRootControl : Control
     {
-        private static readonly SolidColorBrush kTransparent = new SolidColorBrush(Colors.Transparent);
+        private static readonly SolidColorBrush kTransparent = new(Colors.Transparent);
 
         private eWindowState m_cachedWindowState = eWindowState.Unknown;
         private Window m_owner;
@@ -60,6 +60,7 @@ namespace AJut.UX.Controls
             {
                 this.PART_EnterFullscreenButton.Click -= this.EnterFullScreen_OnClick;
             }
+            
             this.PART_EnterFullscreenButton = (Button)this.GetTemplateChild(nameof(PART_EnterFullscreenButton));
             this.PART_EnterFullscreenButton.Click += this.EnterFullScreen_OnClick;
 
@@ -136,22 +137,29 @@ namespace AJut.UX.Controls
             m_owner.AppWindow.Changed -= this.OwnerWindow_OnAppWindowChanged;
             m_owner.AppWindow.Changed += this.OwnerWindow_OnAppWindowChanged;
 
+
             m_owner.AppWindow.TitleBar.ButtonBackgroundColor = Colors.Transparent;
             m_owner.AppWindow.TitleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
             m_owner.AppWindow.TitleBar.ButtonHoverBackgroundColor = this.TitleBarButtonHighlightColor;
-            //m_owner.AppWindow.TitleBar.ButtonHoverBackgroundColor = this.GetThemeResource<Color>("SystemAccentColor");
+            //m_owner.AppWindow.TitleBar.ButtonHoverBackgroundColor = Application.Current.Resources.GetRes.GetThemeResource<Color>("SystemAccentColor");
 
             // Other, keep gone
             //this.AppWindow.TitleBar.ButtonPressedBackgroundColor = Colors.Transparent;
-            //this.AppWindow.TitleBar.ButtonForegroundColor = Colors.Transparent;
-            //this.AppWindow.TitleBar.ButtonInactiveForegroundColor = Colors.Transparent;
+            //OwnerAppWindow.TitleBar.ButtonForegroundColor = Colors.Transparent;
+            //this.AppWindow.TitleBar.ButtonInactiveForegroundColorColor = Colors.Transparent;
+            //OwnerAppWindow.TitleBar.Button
 
             //this.SetWindowAsFrameless();
             if (this.IsLoaded)
             {
                 this.HandlePrimaryRefresh();
             }
+
+            this.IsSetupChanged?.Invoke(this, EventArgs.Empty);
         }
+
+        public bool IsSetup => m_owner != null;
+        public event EventHandler<EventArgs> IsSetupChanged;
 
         private void OwnerWindow_OnAppWindowChanged (AppWindow sender, AppWindowChangedEventArgs args)
         {
@@ -171,12 +179,21 @@ namespace AJut.UX.Controls
             m_owner.Activated -= this.OwnerWindow_OnActivated;
             m_owner.SizeChanged -= this.OnSizeChanged;
             m_owner.AppWindow.Changed -= this.OwnerWindow_OnAppWindowChanged;
-            m_owner.StopTrackingActivation();
             m_owner = null;
         }
 
 
         #region Dependency Properties
+
+        public Window Owner => m_owner;
+        public AppWindow OwnerAppWindow => m_owner.AppWindow;
+
+        public static readonly DependencyProperty TitleBarHeightProperty = DPUtils.Register(_ => _.TitleBarHeight);
+        public double TitleBarHeight
+        {
+            get => (double)this.GetValue(TitleBarHeightProperty);
+            set => this.SetValue(TitleBarHeightProperty, value);
+        }
 
         public static readonly DependencyProperty CustomTilteBarProperty = DPUtils.Register(_ => _.CustomTilteBar);
         public UIElement CustomTilteBar
@@ -255,6 +272,50 @@ namespace AJut.UX.Controls
             set => this.SetValue(ShowFullscreenButtonsProperty, value);
         }
 
+
+        //private static readonly APUtilsRegistrationHelper APUtils = new APUtilsRegistrationHelper(typeof(ThemedWindowRootControl));
+
+        //public static DependencyProperty CaptionButtonNormalForegroundColorProperty = APUtils.Register(GetCaptionButtonNormalForegroundColor, SetCaptionButtonNormalForegroundColor);
+        //public static Color GetCaptionButtonNormalForegroundColor(DependencyObject obj) => (Color)obj.GetValue(CaptionButtonNormalForegroundColorProperty);
+        //public static void SetCaptionButtonNormalForegroundColor(DependencyObject obj, Color value) => obj.SetValue(CaptionButtonNormalForegroundColorProperty, value);
+
+
+        //public static DependencyProperty CaptionButtonHoverForegroundColorProperty = APUtils.Register(GetCaptionButtonHoverForegroundColor, SetCaptionButtonHoverForegroundColor);
+        //public static Color GetCaptionButtonHoverForegroundColor(DependencyObject obj) => (Color)obj.GetValue(CaptionButtonHoverForegroundColorProperty);
+        //public static void SetCaptionButtonHoverForegroundColor(DependencyObject obj, Color value) => obj.SetValue(CaptionButtonHoverForegroundColorProperty, value);
+
+
+        //public static DependencyProperty CaptionButtonPressedForegroundColorProperty = APUtils.Register(GetCaptionButtonPressedForegroundColor, SetCaptionButtonPressedForegroundColor);
+        //public static Color GetCaptionButtonPressedForegroundColor(DependencyObject obj) => (Color)obj.GetValue(CaptionButtonPressedForegroundColorProperty);
+        //public static void SetCaptionButtonPressedForegroundColor(DependencyObject obj, Color value) => obj.SetValue(CaptionButtonPressedForegroundColorProperty, value);
+
+
+        //public static DependencyProperty CaptionButtonInactiveForegroundColorProperty = APUtils.Register(GetCaptionButtonInactiveForegroundColor, SetCaptionButtonInactiveForegroundColor);
+        //public static Color GetCaptionButtonInactiveForegroundColor(DependencyObject obj) => (Color)obj.GetValue(CaptionButtonInactiveForegroundColorProperty);
+        //public static void SetCaptionButtonInactiveForegroundColor(DependencyObject obj, Color value) => obj.SetValue(CaptionButtonInactiveForegroundColorProperty, value);
+
+
+
+        //public static DependencyProperty CaptionButtonNormalBackgroundColorProperty = APUtils.Register(GetCaptionButtonNormalBackgroundColor, SetCaptionButtonNormalBackgroundColor);
+        //public static Color GetCaptionButtonNormalBackgroundColor(DependencyObject obj) => (Color)obj.GetValue(CaptionButtonNormalBackgroundColorProperty);
+        //public static void SetCaptionButtonNormalBackgroundColor(DependencyObject obj, Color value) => obj.SetValue(CaptionButtonNormalBackgroundColorProperty, value);
+
+
+        //public static DependencyProperty CaptionButtonHoverBackgroundColorProperty = APUtils.Register(GetCaptionButtonHoverBackgroundColor, SetCaptionButtonHoverBackgroundColor);
+        //public static Color GetCaptionButtonHoverBackgroundColor(DependencyObject obj) => (Color)obj.GetValue(CaptionButtonHoverBackgroundColorProperty);
+        //public static void SetCaptionButtonHoverBackgroundColor(DependencyObject obj, Color value) => obj.SetValue(CaptionButtonHoverBackgroundColorProperty, value);
+
+
+        //public static DependencyProperty CaptionButtonPressedBackgroundColorProperty = APUtils.Register(GetCaptionButtonPressedBackgroundColor, SetCaptionButtonPressedBackgroundColor);
+        //public static Color GetCaptionButtonPressedBackgroundColor(DependencyObject obj) => (Color)obj.GetValue(CaptionButtonPressedBackgroundColorProperty);
+        //public static void SetCaptionButtonPressedBackgroundColor(DependencyObject obj, Color value) => obj.SetValue(CaptionButtonPressedBackgroundColorProperty, value);
+
+
+        //public static DependencyProperty CaptionButtonInactiveBackgroundColorProperty = APUtils.Register(GetCaptionButtonInactiveBackgroundColor, SetCaptionButtonInactiveBackgroundColor);
+        //public static Color GetCaptionButtonInactiveBackgroundColor(DependencyObject obj) => (Color)obj.GetValue(CaptionButtonInactiveBackgroundColorProperty);
+        //public static void SetCaptionButtonInactiveBackgroundColor(DependencyObject obj, Color value) => obj.SetValue(CaptionButtonInactiveBackgroundColorProperty, value);
+
+
         #endregion // Dependency Properties
 
         private void ResetFullscreenButtons()
@@ -288,10 +349,12 @@ namespace AJut.UX.Controls
         {
             if (m_owner.IsActivated())
             {
+                VisualStateManager.GoToState(this, "Normal", true);
                 this.CurrentlySetTitlebarBackground = this.ActiveTitlebarBackground;
             }
             else
             {
+                VisualStateManager.GoToState(this, "Inactive", true);
                 this.HandlePointerNotInWindowChromeButtonRange();
                 this.CurrentlySetTitlebarBackground = this.InactiveTitlebarBackground;
                 m_activePointerId = 0;
@@ -315,6 +378,8 @@ namespace AJut.UX.Controls
             }
 
             m_isHighlightingWindowChromeButtons = false;
+            this.IsHoveringOverClose = false;
+            VisualStateManager.GoToState(this, "Normal", true);
         }
 
         private void OnPointerMoved (object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
@@ -325,13 +390,15 @@ namespace AJut.UX.Controls
 
         private void HandlePointerMoved(Point point)
         {
-            if (this.PART_WindowRoot == null)
+            if (this.PART_WindowRoot == null || m_owner == null)
             {
+                this.IsHoveringOverClose = false;
                 return;
             }
 
             if (m_owner.IsFullScreened())
             {
+                this.IsHoveringOverClose = false;
                 return;
             }
 
@@ -341,12 +408,18 @@ namespace AJut.UX.Controls
                 {
                     this.PART_WindowRoot.Background = this.CloseButtonHighlightBrush;
                     m_isHighlightingWindowChromeButtons = true;
+                    this.IsHoveringOverClose = true;
+                    VisualStateManager.GoToState(this, "CloseHover", true);
                     return;
                 }
-                else if (point.X > this.ActualWidth - 138)
+                else if (point.X > this.ActualWidth - 138
+                            || this.PART_EnterFullscreenButton.IsPointerOver
+                            || this.PART_ExitFullscreenButton.IsPointerOver)
                 {
                     this.PART_WindowRoot.Background = m_owner.IsActivated() ? m_normalBorderHighlightBrush : this.InactiveTitlebarBackground;
                     m_isHighlightingWindowChromeButtons = true;
+                    this.IsHoveringOverClose = false;
+                    VisualStateManager.GoToState(this, "Normal", true);
                     return;
                 }
             }
@@ -354,6 +427,13 @@ namespace AJut.UX.Controls
             this.HandlePointerNotInWindowChromeButtonRange();
         }
 
+
+        public static readonly DependencyProperty IsHoveringOverCloseProperty = DPUtils.Register(_ => _.IsHoveringOverClose);
+        public bool IsHoveringOverClose
+        {
+            get => (bool)this.GetValue(IsHoveringOverCloseProperty);
+            set => this.SetValue(IsHoveringOverCloseProperty, value);
+        }
 
         private void OnPointerExited (object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
         {
@@ -405,12 +485,11 @@ namespace AJut.UX.Controls
                 {
                     case eWindowState.Maximized:
                     case eWindowState.FullScreened:
-                        this.PART_TitleBarBorder.BorderThickness = this.PART_ClientContainer.Margin = new Thickness(0);
+                        this.PART_TitleBarBorder.BorderThickness = new Thickness(0);
                         break;
 
                     default:
-                        this.PART_ClientContainer.Margin = new Thickness(this.TargetBorderThickness.Left, 0, this.TargetBorderThickness.Right, this.TargetBorderThickness.Bottom);
-                        this.PART_TitleBarBorder.BorderThickness = new Thickness(this.TargetBorderThickness.Left, this.TargetBorderThickness.Top, this.TargetBorderThickness.Right, 0);
+                        this.PART_TitleBarBorder.BorderThickness = new Thickness(this.TargetBorderThickness.Left, this.TargetBorderThickness.Top, this.TargetBorderThickness.Right, this.TargetBorderThickness.Bottom);
                         break;
                 }
             }

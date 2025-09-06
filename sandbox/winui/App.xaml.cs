@@ -44,10 +44,8 @@
             Logger.LogInfo($"Using AJut.UX.WinUI version #{this.AJut_UX_WinUI_Version}");
 
             this.ThemeManager.Setup(this, m_windowManager);
-
-            m_window = new MainWindow();
+            m_window = new MainWindow(m_windowManager, this.ThemeManager);
             m_window.Activate();
-            m_windowManager.Setup(m_window);
         }
 
         private bool LogException (object exceptionObject)

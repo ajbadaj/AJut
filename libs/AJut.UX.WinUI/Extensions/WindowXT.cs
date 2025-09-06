@@ -7,6 +7,7 @@
     using Microsoft.UI;
     using Microsoft.UI.Windowing;
     using Microsoft.UI.Xaml;
+    using Microsoft.UI.Xaml.Controls;
 
     public enum eWindowState
     {
@@ -22,7 +23,12 @@
     /// </summary>
     public static class WindowXT
     {
+
         private static readonly Dictionary<Window, bool> g_isActivatedTracker = new Dictionary<Window, bool>();
+
+        /// <summary>
+        /// Initiates activation tracking if not already active, or updates state if tracking is already active
+        /// </summary>
         public static void TrackActivation(this Window window, bool isActivated = false)
         {
             if (!g_isActivatedTracker.ContainsKey(window))
@@ -38,9 +44,13 @@
                 g_isActivatedTracker[window] = isActivated;
             }
         }
-        public static void StopTrackingActivation(this Window window)
+
+        public static bool IsActivated(this Window window) => g_isActivatedTracker.TryGetValue(window, out bool isActivated) ? isActivated : false;
+        public static bool IsDeactivated(this Window window) => !window.IsActivated();
+
+        private static void Window_OnClosed (object sender, WindowEventArgs args)
         {
-            if (g_isActivatedTracker.ContainsKey(window))
+            if (sender is Window window && g_isActivatedTracker.ContainsKey(window))
             {
                 g_isActivatedTracker.Remove(window);
                 window.Activated -= Window_OnActivationChanged;
@@ -48,19 +58,22 @@
             }
         }
 
-        public static bool IsActivated(this Window window) => g_isActivatedTracker.TryGetValue(window, out bool isActivated) ? isActivated : false;
-        public static bool IsDeactivated(this Window window) => !window.IsActivated();
-
-        private static void Window_OnClosed (object sender, WindowEventArgs args)
-        {
-            (sender as Window)?.StopTrackingActivation();
-        }
-
         private static void Window_OnActivationChanged (object sender, WindowActivatedEventArgs args)
         {
             if (sender is Window window)
             {
                 window.TrackActivation(args.WindowActivationState != WindowActivationState.Deactivated);
+                if (args.WindowActivationState == WindowActivationState.Deactivated)
+                {
+                    if (window.Content.GetFirstChildOf<Control>() is Control control)
+                    {
+                        VisualStateManager.GoToState(control, "Inactive", true);
+                    }
+                }
+                else if (window.Content.GetFirstChildOf<Control>() is Control control)
+                {
+                    VisualStateManager.GoToState(window.Content.GetFirstChildOf<Microsoft.UI.Xaml.Controls.Control>(), "Normal", true);
+                }
             }
         }
 

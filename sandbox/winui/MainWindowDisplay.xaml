@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="AJutShowRoomWinUI.MainWindowDisplay"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:AJutShowRoomWinUI"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    xmlns:ajut="using:AJut.UX.Controls" 
+    xmlns:ajut_conv="using:AJut.UX.Converters">
+
+    <ajut:ThemedWindowRootControl x:Name="Root" TargetBorderThickness="2" TitleBarHeight="40" ShowFullscreenButtons="False">
+        <ajut:ThemedWindowRootControl.CustomTilteBar>
+            <StackPanel Orientation="Horizontal">
+                <Grid>
+                    <Path x:Name="Path" Data="M 0,0 L 40,0 L 60,20 L 40,40 L 0,40 Z" StrokeThickness="0">
+                        <Path.Fill>
+                            <Binding ElementName="Root" Path="IsHoveringOverClose" Mode="OneWay">
+                                <Binding.Converter>
+                                    <ajut_conv:BooleanToBrushConverter>
+                                        <ajut_conv:BooleanToBrushConverter.FalseValue>
+                                            <SolidColorBrush Color="{ThemeResource SystemAccentColor}"/>
+                                        </ajut_conv:BooleanToBrushConverter.FalseValue>
+                                        <ajut_conv:BooleanToBrushConverter.TrueValue>
+                                            <SolidColorBrush Color="{ThemeResource AJut_Brush_ChromeCloseButtonHighlightColor}"/>
+                                        </ajut_conv:BooleanToBrushConverter.TrueValue>
+                                    </ajut_conv:BooleanToBrushConverter>
+                                </Binding.Converter>
+                            </Binding>
+                        </Path.Fill>
+                    </Path>
+                </Grid>
+                <TextBlock x:Name="Flippancy" Text="What's up" VerticalAlignment="Center" Margin="5,0,0,0" FontSize="18"/>
+            </StackPanel>
+        </ajut:ThemedWindowRootControl.CustomTilteBar>
+        <Grid>
+            <Border x:Name="Colorization" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" CornerRadius="0,0,0,0" 
+                BorderThickness="8,0,0,0" Margin="0,0,0,0">
+                <Border.BorderBrush>
+                    <Binding ElementName="Root" Path="IsHoveringOverClose" Mode="OneWay">
+                        <Binding.Converter>
+                            <ajut_conv:BooleanToBrushConverter>
+                                <ajut_conv:BooleanToBrushConverter.FalseValue>
+                                    <SolidColorBrush Color="{ThemeResource SystemAccentColor}"/>
+                                </ajut_conv:BooleanToBrushConverter.FalseValue>
+                                <ajut_conv:BooleanToBrushConverter.TrueValue>
+                                    <SolidColorBrush Color="{ThemeResource AJut_Brush_ChromeCloseButtonHighlightColor}"/>
+                                </ajut_conv:BooleanToBrushConverter.TrueValue>
+                            </ajut_conv:BooleanToBrushConverter>
+                        </Binding.Converter>
+                    </Binding>
+                </Border.BorderBrush>
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="1" Margin="5">
+                    <Button x:Name="myButton" Click="myButton_Click">Click Me</Button>
+                    <ajut:EnumComboBox SelectedItem="{x:Bind Path=Application.ThemeManager.ThemeConfiguration, Mode=TwoWay}"/>
+                    <local:ColorParseExample Width="200" Height="200" HorizontalAlignment="Left"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </ajut:ThemedWindowRootControl>
+</UserControl>

@@ -1,11 +1,12 @@
 ﻿namespace AJut.UX.Theming
 {
-    using System;
     using Microsoft.UI.Dispatching;
     using Microsoft.UI.Xaml;
+    using Microsoft.UI.Xaml.Controls.Primitives;
+    using System;
     using Windows.UI.ViewManagement;
 
-    public class AppThemeManager : NotifyPropertyChanged, IDisposable
+    public partial class AppThemeManager : NotifyPropertyChanged, IDisposable
     {
         private Application m_targetApplication;
         private ElementTheme m_themeConfiguration = ElementTheme.Default;
@@ -32,8 +33,9 @@
             m_uiSettings.ColorValuesChanged += OnColorValuesChanged;
         }
 
-        public void Dispose ()
+        void IDisposable.Dispose ()
         {
+            GC.SuppressFinalize(this);
             if (m_uiSettings != null)
             {
                 m_uiSettings.ColorValuesChanged -= OnColorValuesChanged;
@@ -74,10 +76,7 @@
             // Update the WinUI defaults for each content root
             foreach (Window window in m_windows)
             {
-                if (window.Content is FrameworkElement fe)
-                {
-                    fe.RequestedTheme = theme == ApplicationTheme.Dark ? ElementTheme.Dark : ElementTheme.Light;
-                }
+                this.ApplyTheme(window, theme);
             }
 
             m_currentTheme = theme;
@@ -104,6 +103,19 @@
             return background.R < 128 && background.G < 128 && background.B < 128
                 ? ApplicationTheme.Dark
                 : ApplicationTheme.Light;
+        }
+
+        public void ApplyTheme(Window window)
+        {
+            this.ApplyTheme(window, m_currentTheme);
+        }
+
+        public void ApplyTheme(Window window, ApplicationTheme theme)
+        {
+            if (window.Content is FrameworkElement fe)
+            {
+                fe.RequestedTheme = theme == ApplicationTheme.Dark ? ElementTheme.Dark : ElementTheme.Light;
+            }
         }
     }
 }

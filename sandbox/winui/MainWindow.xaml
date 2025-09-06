@@ -9,26 +9,10 @@
     mc:Ignorable="d"
     Title="AJut Showroom for WinUI"
     x:Name="Self"
-    xmlns:ajut="using:AJut.UX.Controls">
+    xmlns:ajut="using:AJut.UX.Controls" 
+    xmlns:ajut_conv="using:AJut.UX.Converters">
     <Window.SystemBackdrop>
         <MicaBackdrop />
     </Window.SystemBackdrop>
-
-    <ajut:ThemedWindowRootControl x:Name="Root" TitleBarButtonHighlightColor="{ThemeResource SystemAccentColor}" TargetBorderThickness="2"
-                                  ActiveTitlebarBackground="{ThemeResource AppBarBackgroundThemeBrush}"
-                                  InactiveTitlebarBackground="#5000">
-        <ajut:ThemedWindowRootControl.CustomTilteBar>
-            <Grid>
-                <TextBlock Text="What's up" Foreground="#CCC" VerticalAlignment="Center" Margin="5,0,0,0" FontSize="18"/>
-            </Grid>
-        </ajut:ThemedWindowRootControl.CustomTilteBar>
-        <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="1" Margin="5">
-                <Button x:Name="myButton" Click="myButton_Click">Click Me</Button>
-                <ajut:EnumComboBox SelectedItem="{x:Bind Path=Application.ThemeManager.ThemeConfiguration, Mode=TwoWay}"/>
-                <local:ColorParseExample Width="200" Height="200" HorizontalAlignment="Left"/>
-            </StackPanel>
-        </Grid>
-    </ajut:ThemedWindowRootControl>
-    
+    <local:MainWindowDisplay />
 </Window>

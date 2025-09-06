@@ -3,7 +3,8 @@
 
 namespace AJutShowRoomWinUI
 {
-    using System.Linq;
+    using AJut.UX;
+    using AJut.UX.Theming;
     using Microsoft.UI.Xaml;
 
 
@@ -12,43 +13,11 @@ namespace AJutShowRoomWinUI
     /// </summary>
     public sealed partial class MainWindow : Window
     {
-        public MainWindow ()
+        public MainWindow (WindowManager manager, AppThemeManager themeManager)
         {
-            this.Application = App.Instance;
+            manager.Setup(this);
+            themeManager.ApplyTheme(this);
             this.InitializeComponent();
-            this.Root.SetupFor(this);
-        }
-
-        public App Application { get; }
-
-        private void myButton_Click (object sender, RoutedEventArgs e)
-        {
-            myButton.Content = "Clicked";
-            //this.PerformPresenterTask<OverlappedPresenter>(p => p.SetBorderAndTitleBar(true, false));
-
-            //this.AppWindow.TitleBar.ExtendsContentIntoTitleBar = true;
-            //this.SetTitleBar(this.CustomTitleBar);
-        }
-
-
-        // Helper method to get a theme brush by key from resources
-        private T? GetThemeResource<T> (string key)
-        {
-            // Try window resources first
-            if (App.Current.Resources.TryGetValue(key, out var value) && value is T resource)
-            {
-                return resource;
-            }
-            // Try theme dictionaries (Light/Dark/Default)
-            foreach (var themeDict in App.Current.Resources.ThemeDictionaries.Values.OfType<ResourceDictionary>())
-            {
-                if (themeDict.TryGetValue(key, out value) && value is T dictionaryResource)
-                {
-                    return dictionaryResource;
-                }
-            }
-
-            return default;
         }
     }
 }
