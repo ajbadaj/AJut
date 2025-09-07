@@ -4,6 +4,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="/AJut.UX.WinUI/Resources/DarkThemeColorsBase.xaml"/>
+        <ResourceDictionary Source="/AJut.UX.WinUI/Resources/SystemColorAliasing.xaml"/>
     </ResourceDictionary.MergedDictionaries>
 
+    <Color x:Key="AJut_Color_PrimaryHighlight">#551165</Color>
 </ResourceDictionary>

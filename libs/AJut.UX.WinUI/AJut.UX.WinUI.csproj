@@ -37,13 +37,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Converters\" />
-    <Folder Include="Resources\" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\license.txt" Link="license.txt">
-      <PackagePath></PackagePath>
-      <Pack>True</Pack>
-    </None>
   </ItemGroup>
 
   <ItemGroup>
@@ -56,6 +49,9 @@
 	<Compile Update="Controls\TitleBarCaptionButton.cs">
 	  <DependentUpon>TitleBarCaptionButton.xaml</DependentUpon>
 	</Compile>
+	<Compile Update="Controls\GeometryButton.cs">
+		<DependentUpon>GeometryButton.xaml</DependentUpon>
+	</Compile>
   </ItemGroup>
 
   <ItemGroup>
@@ -63,6 +59,10 @@
       <PackagePath>\</PackagePath>
       <Pack>True</Pack>
     </None>
+	<None Include="..\..\license.txt" Link="license.txt">
+		<PackagePath></PackagePath>
+		<Pack>True</Pack>
+	</None>
   </ItemGroup>
   
 </Project>

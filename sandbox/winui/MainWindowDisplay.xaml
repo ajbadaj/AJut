@@ -10,7 +10,8 @@
     xmlns:ajut="using:AJut.UX.Controls" 
     xmlns:ajut_conv="using:AJut.UX.Converters">
 
-    <ajut:ThemedWindowRootControl x:Name="Root" TargetBorderThickness="2" TitleBarHeight="40" ShowFullscreenButtons="False">
+    <ajut:ThemedWindowRootControl x:Name="Root" TargetBorderThickness="2" TitleBarHeight="40"
+                                  ActiveTitlebarBackground="{ThemeResource AJut_Brush_TitleBarBackground}">
         <ajut:ThemedWindowRootControl.CustomTilteBar>
             <StackPanel Orientation="Horizontal">
                 <Grid>
@@ -23,7 +24,7 @@
                                             <SolidColorBrush Color="{ThemeResource SystemAccentColor}"/>
                                         </ajut_conv:BooleanToBrushConverter.FalseValue>
                                         <ajut_conv:BooleanToBrushConverter.TrueValue>
-                                            <SolidColorBrush Color="{ThemeResource AJut_Brush_ChromeCloseButtonHighlightColor}"/>
+                                            <SolidColorBrush Color="{ThemeResource AJut_Color_ChromeCloseButtonHighlight}"/>
                                         </ajut_conv:BooleanToBrushConverter.TrueValue>
                                     </ajut_conv:BooleanToBrushConverter>
                                 </Binding.Converter>
@@ -34,7 +35,7 @@
                 <TextBlock x:Name="Flippancy" Text="What's up" VerticalAlignment="Center" Margin="5,0,0,0" FontSize="18"/>
             </StackPanel>
         </ajut:ThemedWindowRootControl.CustomTilteBar>
-        <Grid>
+        <Grid Background="{ThemeResource AJut_Brush_RootPanelBackground}">
             <Border x:Name="Colorization" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}" CornerRadius="0,0,0,0" 
                 BorderThickness="8,0,0,0" Margin="0,0,0,0">
                 <Border.BorderBrush>
@@ -45,17 +46,71 @@
                                     <SolidColorBrush Color="{ThemeResource SystemAccentColor}"/>
                                 </ajut_conv:BooleanToBrushConverter.FalseValue>
                                 <ajut_conv:BooleanToBrushConverter.TrueValue>
-                                    <SolidColorBrush Color="{ThemeResource AJut_Brush_ChromeCloseButtonHighlightColor}"/>
+                                    <SolidColorBrush Color="{ThemeResource AJut_Color_ChromeCloseButtonHighlight}"/>
                                 </ajut_conv:BooleanToBrushConverter.TrueValue>
                             </ajut_conv:BooleanToBrushConverter>
                         </Binding.Converter>
                     </Binding>
                 </Border.BorderBrush>
-                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="1" Margin="5">
-                    <Button x:Name="myButton" Click="myButton_Click">Click Me</Button>
-                    <ajut:EnumComboBox SelectedItem="{x:Bind Path=Application.ThemeManager.ThemeConfiguration, Mode=TwoWay}"/>
-                    <local:ColorParseExample Width="200" Height="200" HorizontalAlignment="Left"/>
-                </StackPanel>
+                <TabView IsAddTabButtonVisible="False">
+                    <TabViewItem Header="Theme Test" IsClosable="False">
+                        <TabViewItem.IconSource>
+                            <SymbolIconSource Symbol="Highlight"/>
+                        </TabViewItem.IconSource>
+                        <TabViewItem.Content>
+                            <ScrollViewer VerticalScrollMode="Enabled">
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="1">
+                                    <Button x:Name="myButton" >Click Me</Button>
+                                    <ListBox MaxWidth="250">
+                                        <ListBoxItem>
+                                            <TextBlock Text="Sweet"/>
+                                        </ListBoxItem>
+                                        <ListBoxItem>
+                                            <TextBlock Text="Oogalie"/>
+                                        </ListBoxItem>
+                                        <ListBoxItem>
+                                            <TextBlock Text="Moogalies"/>
+                                        </ListBoxItem>
+                                    </ListBox>
+                                    <MenuBar>
+                                        <MenuBarItem Title="File">
+                                            <MenuFlyoutItem Text="Open"/>
+                                            <MenuFlyoutSeparator/>
+                                            <MenuFlyoutItem Text="Exit"/>
+                                        </MenuBarItem>
+                                        <MenuBarItem Title="Edit">
+                                            <MenuFlyoutItem Text="Copy"/>
+                                            <MenuFlyoutSeparator/>
+                                            <MenuFlyoutItem Text="Undo"/>
+                                            <MenuFlyoutItem Text="Redo"/>
+                                        </MenuBarItem>
+                                    </MenuBar>
+                                    <NumberBox Value="3.14159"/>
+                                    <ToggleSwitch OnContent="Ready" OffContent="Invalid"/>
+                                    <ToggleButton>Toggle</ToggleButton>
+                                    <ColorPicker />
+                                </StackPanel>
+                            </ScrollViewer>
+                        </TabViewItem.Content>
+                    </TabViewItem>
+                    <TabViewItem Header="Custom AJut Controls" IsClosable="False">
+                        <TabViewItem.IconSource>
+                            <SymbolIconSource Symbol="Edit"/>
+                        </TabViewItem.IconSource>
+                        <TabViewItem.Content>
+                            <ScrollViewer>
+                                <StackPanel HorizontalAlignment="Left">
+                                    <Grid Margin="0,0,5,5" >
+                                        <ajut:GeometryButton Content="Geometry Button" BackgroundGeometry="M 0,0 20,20 40,0 150,0 150,100 100,90 0,100 Z"
+                                                             TraceThickness="5" Margin="5"/>
+                                    </Grid>
+                                    <ajut:EnumComboBox SelectedItem="{x:Bind Path=Application.ThemeManager.ThemeConfiguration, Mode=TwoWay}"/>
+                                    <local:ColorParseExample Width="200" Height="200" HorizontalAlignment="Left"/>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </TabViewItem.Content>
+                    </TabViewItem>
+                </TabView>
             </Border>
         </Grid>
     </ajut:ThemedWindowRootControl>

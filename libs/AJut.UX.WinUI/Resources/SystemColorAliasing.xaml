@@ -1,0 +1,21 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="using:System">
+
+    <StaticResource x:Key="SystemAccentColor" ResourceKey="AJut_Color_PrimaryHighlight" />
+    <StaticResource x:Key="SystemAccentColorDark1" ResourceKey="AJut_Color_PrimaryHighlightDark" />
+    <StaticResource x:Key="SystemAccentColorLight1" ResourceKey="AJut_Color_PrimaryHighlightBright" />
+    <StaticResource x:Key="SystemAccentColorLight2" ResourceKey="AJut_Color_PrimaryHighlightDesat" />
+
+    <StaticResource x:Key="SystemAccentColor2" ResourceKey="AJut_Color_SecondaryHighlight" />
+    <StaticResource x:Key="SystemAccentColor2Dark1" ResourceKey="AJut_Color_SecondaryHighlightDark" />
+    <StaticResource x:Key="SystemAccentColor2Light1" ResourceKey="AJut_Color_SecondaryHighlightBright" />
+    <StaticResource x:Key="SystemAccentColor2Light2" ResourceKey="AJut_Color_SecondaryHighlightDesat" />
+
+    <StaticResource x:Key="SystemListLowBrush" ResourceKey="AJut_Brush_ListBackground" />
+    <StaticResource x:Key="SystemListMediumBrush" ResourceKey="AJut_Brush_ListBorder" />
+    <StaticResource x:Key="SystemListAccentMediumBrush" ResourceKey="AJut_Brush_ListSelection" />
+
+    <StaticResource x:Key="SystemChromeBlackHighBrush" ResourceKey="AJut_Brush_ChromeButtonHoverBackground" />
+
+</ResourceDictionary>

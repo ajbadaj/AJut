@@ -4,7 +4,8 @@
 
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="/AJut.UX.WinUI/Controls/EnumComboBox.xaml"/>
-        <ResourceDictionary Source="/AJut.UX.WinUI/Controls/ThemedWindowRootControl.xaml"/>
+        <ResourceDictionary Source="/AJut.UX.WinUI/Controls/GeometryButton.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WinUI/Controls/TitleBarCaptionButton.xaml"/>
+        <ResourceDictionary Source="/AJut.UX.WinUI/Controls/ThemedWindowRootControl.xaml"/>
     </ResourceDictionary.MergedDictionaries>
 </ResourceDictionary>

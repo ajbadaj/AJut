@@ -22,7 +22,7 @@
 
                         <!-- Client Area -->
                         <ContentControl x:Name="PART_ClientContainer" Grid.Row="1" Content="{TemplateBinding WindowContents}"
-                                        Margin="0" Padding="0" BorderThickness="0" CornerRadius="0"
+                                        Margin="0" Padding="0" BorderThickness="0" CornerRadius="0,0,8,8"
                                         HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
 
                         <!-- Titlebar Area -->
@@ -83,7 +83,7 @@
                         </Grid>
 
                         <Border x:Name="PART_TitleBarBorder" BorderBrush="{Binding ElementName=PART_WindowRoot, Path=Background}"
-                                Grid.RowSpan="2" BorderThickness="1" CornerRadius="4"/>
+                                Grid.RowSpan="2" BorderThickness="1" CornerRadius="8,8,0,0"/>
 
 
                         <local:TitleBarCaptionButton x:Name="PART_EnterFullscreenButton"

@@ -316,6 +316,13 @@ namespace AJut.UX.Controls
         //public static void SetCaptionButtonInactiveBackgroundColor(DependencyObject obj, Color value) => obj.SetValue(CaptionButtonInactiveBackgroundColorProperty, value);
 
 
+        public static readonly DependencyProperty IsMaximizedOrFullScreenedProperty = DPUtils.Register(_ => _.IsMaximizedOrFullScreened);
+        public bool IsMaximizedOrFullScreened
+        {
+            get => (bool)this.GetValue(IsMaximizedOrFullScreenedProperty);
+            set => this.SetValue(IsMaximizedOrFullScreenedProperty, value);
+        }
+
         #endregion // Dependency Properties
 
         private void ResetFullscreenButtons()
@@ -331,17 +338,20 @@ namespace AJut.UX.Controls
                 {
                     this.PART_EnterFullscreenButton.Visibility = Visibility.Collapsed;
                     this.PART_ExitFullscreenButton.Visibility = Visibility.Visible;
+                    this.IsMaximizedOrFullScreened = true;
                 }
                 else
                 {
                     this.PART_EnterFullscreenButton.Visibility = Visibility.Visible;
                     this.PART_ExitFullscreenButton.Visibility = Visibility.Collapsed;
+                    this.IsMaximizedOrFullScreened = m_owner.GetWindowState() == eWindowState.Maximized;
                 }
             }
             else
             {
                 this.PART_EnterFullscreenButton.Visibility = Visibility.Collapsed;
                 this.PART_ExitFullscreenButton.Visibility = Visibility.Collapsed;
+                this.IsMaximizedOrFullScreened = m_owner.GetWindowState() == eWindowState.Maximized;
             }
         }
 
