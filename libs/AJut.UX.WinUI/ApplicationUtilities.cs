@@ -1,11 +1,10 @@
 ﻿namespace AJut.UX
 {
+    using AJut.Security;
+    using Microsoft.UI.Xaml;
     using System;
     using System.IO;
     using System.Linq;
-    using AJut.OS.Windows;
-    using AJut.Security;
-    using Microsoft.UI.Xaml;
     using Windows.Storage;
 
     public delegate bool ExceptionProcessor (object exceptionObject);

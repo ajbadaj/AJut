@@ -16,15 +16,10 @@
 
         public event EventHandler<EventArgs<ApplicationTheme>> ThemeChanged;
 
-        public void Setup(Application target, WindowManager windows, string lightThemeXamlUriPath = null, string darkThemeXamlUriPath = null)
+        public void Setup(Application target, WindowManager windows)
         {
             m_windows = windows;
-
             m_targetApplication = target ?? Application.Current;
-
-            Application.Current.Resources.ThemeDictionaries["Light"] = new ResourceDictionary { Source = new Uri(lightThemeXamlUriPath ?? "ms-appx:///Themes/LightThemeColors.xaml") };
-            Application.Current.Resources.ThemeDictionaries["Dark"] = new ResourceDictionary { Source = new Uri(darkThemeXamlUriPath ?? "ms-appx:///Themes/DarkThemeColors.xaml") };
-
 
             // Insert the initial theme
             SetTheme(m_targetApplication.RequestedTheme);

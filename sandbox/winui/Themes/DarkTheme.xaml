@@ -7,5 +7,9 @@
         <ResourceDictionary Source="/AJut.UX.WinUI/Resources/SystemColorAliasing.xaml"/>
     </ResourceDictionary.MergedDictionaries>
 
-    <Color x:Key="AJut_Color_PrimaryHighlight">#551165</Color>
+    <!--<Color x:Key="AJut_Color_PrimaryHighlight">#B5176E</Color>
+    <Color x:Key="AJut_Color_PrimaryHighlightDark">#7A1A51</Color>
+    <Color x:Key="AJut_Color_PrimaryHighlightBright">#E01D8B</Color>
+    <Color x:Key="AJut_Color_PrimaryHighlightDesat">#B25389</Color>-->
+
 </ResourceDictionary>

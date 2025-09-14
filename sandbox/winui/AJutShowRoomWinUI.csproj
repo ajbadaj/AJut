@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
@@ -14,8 +14,6 @@
   </PropertyGroup>
   <ItemGroup>
     <None Remove="ColorParseExample.xaml" />
-    <None Remove="MainWindowDisplay.xaml" />
-    <None Remove="Themes\LightThemeColors.xaml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -29,7 +27,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Manifest Include="$(ApplicationManifest)" />
+	  <Manifest Include="$(ApplicationManifest)">
+		<SubType>Designer</SubType>
+	  </Manifest>
   </ItemGroup>
 
   <!--
@@ -41,6 +41,12 @@
     <ProjectCapability Include="Msix" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\ajut-logo-128.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4948" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250606001" />
   </ItemGroup>
@@ -49,20 +55,20 @@
 	<ProjectReference Include="..\..\libs\AJut.UX.WinUI\AJut.UX.WinUI.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Page Update="MainWindowDisplay.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
+    <Content Update="Assets\app.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Page Update="ColorParseExample.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Update="Themes\DarkThemeColors.xaml">
+    <Page Update="Themes\DarkTheme.xaml">
       <SubType>Designer</SubType>
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Page Update="Themes\LightThemeColors.xaml">
+    <Page Update="Themes\LightTheme.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
@@ -83,5 +89,11 @@
     <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
     <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <PackageIcon>ajut-logo-128.png</PackageIcon>
+    <Title>AJut Showroom (WinUI)</Title>
+    <Company>AJ Badarni</Company>
+    <Description>The showroom for evaluating AJut and exemplifying how to use it.</Description>
+    <PackageProjectUrl>https://github.com/ajbadaj/AJut</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ajbadaj/AJut</RepositoryUrl>
   </PropertyGroup>
 </Project>

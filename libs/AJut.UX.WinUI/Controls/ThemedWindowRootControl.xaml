@@ -7,9 +7,9 @@
     <x:String x:Key="AJut_Symbol_FullScreenSymbol"    >&#xE740;</x:String>
     
     <Style TargetType="local:ThemedWindowRootControl">
-        <Setter Property="TitleBarButtonHighlightColor" Value="{ThemeResource SystemAccentColor}"/>
-        <Setter Property="ActiveTitlebarBackground" Value="{ThemeResource AJut_Brush_TitleBarBackground}"/>
-        <Setter Property="InactiveTitlebarBackground" Value="{ThemeResource AJut_Brush_TitleBarBackground}"/>
+        <Setter Property="TitleBarButtonHighlightColor" Value="Transparent"/>
+        <Setter Property="ActiveTitlebarBackground" Value="{ThemeResource LayerOnMicaBaseAltFillColorTransparentBrush}"/>
+        <Setter Property="InactiveTitlebarBackground" Value="{ThemeResource LayerOnMicaBaseAltFillColorTransparentBrush}"/>
         <Setter Property="TitleBarHeight" Value="40"/>
         <Setter Property="Template">
             <Setter.Value>
@@ -20,72 +20,134 @@
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <!--
+                                <VisualState x:Name="Normal">
+                                    <VisualState.Setters>
+                                        <Setter Target="TitleBarContent.Foreground">
+                                            <Setter.Value>
+                                                <SolidColorBrush Color="{ThemeResource TitleBarCaptionButtonForegroundColor}"/>
+                                            </Setter.Value>
+                                        </Setter>
+                                        <Setter Target="PART_TitleBarBorder.Background">
+                                            <Setter.Value>
+                                                <SolidColorBrush Color="{ThemeResource ActiveTitlebarBackground}"/>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="PointerOver">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Foreground">
+                                            <DiscreteObjectKeyFrame KeyTime="0">
+                                                <DiscreteObjectKeyFrame.Value>
+                                                    <SolidColorBrush Color="{ThemeResource TitleBarCaptionButtonPressedForegroundColor}"/>
+                                                </DiscreteObjectKeyFrame.Value>
+                                            </DiscreteObjectKeyFrame>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="CloseHover">
+                                    <VisualState.Setters>
+                                        <Setter Target="TitleBarContent.Foreground">
+                                            <Setter.Value>
+                                                <SolidColorBrush Color="{ThemeResource TitleBarCaptionButtonForegroundColor}"/>
+                                            </Setter.Value>
+                                        </Setter>
+                                        <Setter Target="PART_CustomTitleBarContainer.Background">
+                                            <Setter.Value>
+                                                <SolidColorBrush Color="Red"/>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Foreground">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource SystemBaseHighColor}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Inactive">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Foreground">
+                                            <DiscreteObjectKeyFrame KeyTime="0">
+                                                <DiscreteObjectKeyFrame.Value>
+                                                    <SolidColorBrush Color="{ThemeResource TitleBarCaptionButtonPressedForegroundColor}"/>
+                                                </DiscreteObjectKeyFrame.Value>
+                                            </DiscreteObjectKeyFrame>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_TitleBarBorder" Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{TemplateBinding InactiveTitlebarBackground}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Disabled">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Foreground">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource SystemBaseLowColor}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_TitleBarBorder" Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{TemplateBinding InactiveTitlebarBackground}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>-->
+                                <VisualState x:Name="Normal">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="TitleBarContent" Storyboard.TargetProperty="Foreground">
+                                            <DiscreteObjectKeyFrame KeyTime="0">
+                                                <DiscreteObjectKeyFrame.Value>
+                                                    <SolidColorBrush Color="{ThemeResource TitleBarCaptionButtonForegroundColor}"/>
+                                                </DiscreteObjectKeyFrame.Value>
+                                            </DiscreteObjectKeyFrame>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_TitleBarBorder" Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{TemplateBinding ActiveTitlebarBackground}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="CloseHover">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="TitleBarContent" Storyboard.TargetProperty="Foreground">
+                                            <DiscreteObjectKeyFrame KeyTime="0">
+                                                <DiscreteObjectKeyFrame.Value>
+                                                    <SolidColorBrush Color="{ThemeResource }"/>
+                                                </DiscreteObjectKeyFrame.Value>
+                                            </DiscreteObjectKeyFrame>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_TitleBarBorder" Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{TemplateBinding ActiveTitlebarBackground}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+
                         <!-- Client Area -->
                         <ContentControl x:Name="PART_ClientContainer" Grid.Row="1" Content="{TemplateBinding WindowContents}"
                                         Margin="0" Padding="0" BorderThickness="0" CornerRadius="0,0,8,8"
                                         HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
 
                         <!-- Titlebar Area -->
-                        <Grid x:Name="PART_CustomTitleBarContainer" Height="{TemplateBinding TitleBarHeight}" Background="{TemplateBinding CurrentlySetTitlebarBackground}">
-                            <ContentControl Content="{TemplateBinding CustomTilteBar}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
-                                <VisualStateManager.VisualStateGroups>
-                                    <VisualStateGroup x:Name="CommonStates">
-                                        <VisualState x:Name="Normal">
-                                            <Storyboard>
-                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Foreground">
-                                                    <DiscreteObjectKeyFrame KeyTime="0">
-                                                        <DiscreteObjectKeyFrame.Value>
-                                                            <SolidColorBrush Color="{ThemeResource TitleBarCaptionButtonForegroundColor}"/>
-                                                        </DiscreteObjectKeyFrame.Value>
-                                                    </DiscreteObjectKeyFrame>
-                                                </ObjectAnimationUsingKeyFrames>
-                                            </Storyboard>
-                                        </VisualState>
-                                        <VisualState x:Name="PointerOver">
-                                            <Storyboard>
-                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Foreground">
-                                                    <DiscreteObjectKeyFrame KeyTime="0">
-                                                        <DiscreteObjectKeyFrame.Value>
-                                                            <SolidColorBrush Color="{ThemeResource TitleBarCaptionButtonPressedForegroundColor}"/>
-                                                        </DiscreteObjectKeyFrame.Value>
-                                                    </DiscreteObjectKeyFrame>
-                                                </ObjectAnimationUsingKeyFrames>
-                                            </Storyboard>
-                                        </VisualState>
-                                        <VisualState x:Name="Pressed">
-                                            <Storyboard>
-                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Foreground">
-                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource SystemBaseHighColor}"/>
-                                                </ObjectAnimationUsingKeyFrames>
-                                            </Storyboard>
-                                        </VisualState>
-                                        <VisualState x:Name="Inactive">
-                                            <Storyboard>
-                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Foreground">
-                                                    <DiscreteObjectKeyFrame KeyTime="0">
-                                                        <DiscreteObjectKeyFrame.Value>
-                                                            <SolidColorBrush Color="{ThemeResource TitleBarCaptionButtonPressedForegroundColor}"/>
-                                                        </DiscreteObjectKeyFrame.Value>
-                                                    </DiscreteObjectKeyFrame>
-                                                </ObjectAnimationUsingKeyFrames>
-                                            </Storyboard>
-                                        </VisualState>
-                                        <VisualState x:Name="Disabled">
-                                            <Storyboard>
-                                                <ObjectAnimationUsingKeyFrames Storyboard.TargetProperty="Foreground">
-                                                    <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource SystemBaseLowColor}"/>
-                                                </ObjectAnimationUsingKeyFrames>
-                                            </Storyboard>
-                                        </VisualState>
-                                    </VisualStateGroup>
-                                </VisualStateManager.VisualStateGroups>
-                            </ContentControl>
+                        <Grid x:Name="PART_CustomTitleBarContainer" Height="{TemplateBinding TitleBarHeight}">
+                            <ContentControl x:Name="TitleBarContent" Content="{TemplateBinding CustomTilteBar}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
                         </Grid>
 
                         <Border x:Name="PART_TitleBarBorder" BorderBrush="{Binding ElementName=PART_WindowRoot, Path=Background}"
                                 Grid.RowSpan="2" BorderThickness="1" CornerRadius="8,8,0,0"/>
 
 
+                        <!--<Button x:Name="PART_EnterFullscreenButton" Style="{ThemeResource WindowCaptionButton}"
+                                Content="{StaticResource AJut_Symbol_FullScreenSymbol}"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"
+                                Margin="0,0,138,0"/>
+
+                        <Button x:Name="PART_ExitFullscreenButton" Style="{ThemeResource WindowCaptionButton}"
+                                Content="{StaticResource AJut_Symbol_ExitFullScreenSymbol}"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Top"/>-->
                         <local:TitleBarCaptionButton x:Name="PART_EnterFullscreenButton"
                              Content="{StaticResource AJut_Symbol_FullScreenSymbol}"
                              HorizontalAlignment="Right"

@@ -5,7 +5,6 @@
     using Microsoft.UI.Xaml.Controls;
     using Microsoft.UI.Xaml.Media;
     using System;
-    using Windows.UI;
     using DPUtils = AJut.UX.DPUtils<TitleBarCaptionButton>;
 
     public partial class TitleBarCaptionButton : Button
@@ -16,6 +15,12 @@
             this.Loaded += this.OnLoaded;
             this.PointerEntered += this.OnPointerEntered;
             this.PointerExited += this.OnPointerExited;
+            this.ActualThemeChanged += this.OnThemeChanged;
+        }
+
+        private void OnThemeChanged(FrameworkElement sender, object args)
+        {
+            this.EvaluteCurrentBrushes();
         }
 
         public event EventHandler<EventArgs<bool>> IsPointerInsideChanged;
@@ -34,24 +39,21 @@
         Window m_currentWindow = null;
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            if (m_currentWindow != null)
-            {
-                m_currentWindow.Activated -= _OnOwnerActivated;
-                m_currentWindow = null;
-            }
+            _SetWindow(null);
 
-            if (this.XamlRoot.Content is  ThemedWindowRootControl windowRoot)
+            var windowRoot = this.XamlRoot.Content.GetFirstChildOf<ThemedWindowRootControl>();
+            if (windowRoot != null)
             {
                 windowRoot.IsSetupChanged += _OnOwnerFirstSetup;
                 if (windowRoot.IsSetup)
                 {
-                    SetWindow(windowRoot.Owner);
+                    _SetWindow(windowRoot.Owner);
                 }
 
                 void _OnOwnerFirstSetup(object sender, EventArgs e)
                 {
                     windowRoot.IsSetupChanged -= _OnOwnerFirstSetup;
-                    SetWindow(windowRoot.Owner);
+                    _SetWindow(windowRoot.Owner);
                 }
             }
 
@@ -61,11 +63,20 @@
                 this.EvaluteCurrentBrushes();
             }
 
-            void SetWindow(Window newCurrentWindow)
+            void _SetWindow(Window newCurrentWindow)
             {
+                if (m_currentWindow != null)
+                {
+                    m_currentWindow.Activated -= _OnOwnerActivated;
+                }
+
                 m_currentWindow = newCurrentWindow;
-                m_currentWindow.Activated += _OnOwnerActivated;
-                WindowXT.TrackActivation(m_currentWindow, true);
+                if (m_currentWindow != null)
+                {
+                    m_currentWindow.Activated += _OnOwnerActivated;
+                    WindowXT.TrackActivation(m_currentWindow, true);
+                }
+
                 this.EvaluteCurrentBrushes();
             }
 
@@ -87,23 +98,6 @@
             set => this.SetValue(GlyphProperty, value);
         }
 
-
-        public static readonly DependencyProperty CurrentForegroundProperty = DPUtils.Register(_ => _.CurrentForeground);
-        public Brush CurrentForeground
-        {
-            get => (Brush)this.GetValue(CurrentForegroundProperty);
-            set => this.SetValue(CurrentForegroundProperty, value);
-        }
-
-
-        public static readonly DependencyProperty CurrentBackgroundProperty = DPUtils.Register(_ => _.CurrentBackground);
-        public Brush CurrentBackground
-        {
-            get => (Brush)this.GetValue(CurrentBackgroundProperty);
-            set => this.SetValue(CurrentBackgroundProperty, value);
-        }
-
-
         public int OnWindowIsActivatedChanged { get; private set; }
 
         private static SolidColorBrush g_transparent = new SolidColorBrush(Colors.Transparent);
@@ -117,56 +111,26 @@
 
             if (this.IsPressed)
             {
-                this.CurrentForeground = GetBrushOrFallback(m_currentWindow.AppWindow.TitleBar.ButtonPressedForegroundColor, "TitleBarCaptionButtonPressedForegroundColor");
-                this.CurrentBackground = GetBrushOrFallback(m_currentWindow.AppWindow.TitleBar.ButtonPressedBackgroundColor, "WindowCaptionButtonBackground");
+                VisualStateManager.GoToState(this, "Pressed", true);
                 return;
             }
             else if (this.IsPointerOver)
             {
-                this.CurrentForeground = GetBrushOrFallback(m_currentWindow.AppWindow.TitleBar.ButtonHoverForegroundColor, "TitleBarCaptionButtonHoverForegroundColor");
-                this.CurrentBackground = GetBrushOrFallback(m_currentWindow.AppWindow.TitleBar.ButtonHoverBackgroundColor, "WindowCaptionButtonBackground");
+                VisualStateManager.GoToState(this, "PointerOver", true);
                 return;
             }
-            if (!m_currentWindow.IsActivated())
-            {
-                this.CurrentForeground = GetBrushOrFallback(m_currentWindow.AppWindow.TitleBar.ButtonInactiveForegroundColor, "TitleBarCaptionButtonInactiveForegroundColor");
-                this.CurrentBackground = GetBrushOrFallback(m_currentWindow.AppWindow.TitleBar.ButtonInactiveBackgroundColor, "WindowCaptionButtonBackground");
-                return;
-            }
+            VisualStateManager.GoToState(this, m_currentWindow.IsActivated() ? "Normal" : "Inactive", true);
+            
 
-            this.CurrentForeground = GetBrushOrFallback(m_currentWindow.AppWindow.TitleBar.ButtonForegroundColor, "TitleBarCaptionButtonForegroundColor");
-            this.CurrentBackground = GetBrushOrFallback(m_currentWindow.AppWindow.TitleBar.ButtonBackgroundColor, "WindowCaptionButtonBackground");
 
-            Brush GetBrushOrFallback(Color? color, string fallbackResourceKey)
-            {
-                if (color.HasValue)
-                {
-                    return new SolidColorBrush(color.Value);
-                }
-
-                if (fallbackResourceKey != null && (Application.Current?.Resources?.TryGetValue(fallbackResourceKey, out object resourceValue) ?? false))
-                {
-                    if (resourceValue is Brush brush)
-                    {
-                        return brush;
-                    }
-                    if (resourceValue is Color c)
-                    {
-                        return new SolidColorBrush(c);
-                    }
-                }
-
-                return g_transparent;
-            }
-
-            //< !--local:ThemedWindowRootControl.CaptionButtonNormalForegroundColor = "{Binding OwnerAppWindow.TitleBar.ButtonForegroundColor, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"
-            //                            local: ThemedWindowRootControl.CaptionButtonHoverForegroundColor = "{Binding OwnerAppWindow.TitleBar.ButtonHoverForegroundColor, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"
-            //                            local: ThemedWindowRootControl.CaptionButtonPressedForegroundColor = "{Binding OwnerAppWindow.TitleBar.ButtonPressedForegroundColor, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"
-            //                            local: ThemedWindowRootControl.CaptionButtonInactiveForegroundColor = "{Binding OwnerAppWindow.TitleBar.ButtonInactiveForegroundColor, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"
-            //                            local: ThemedWindowRootControl.CaptionButtonNormalBackgroundColor = "{Binding OwnerAppWindow.TitleBar.ButtonBackgroundColor, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"
-            //                            local: ThemedWindowRootControl.CaptionButtonHoverBackgroundColor = "{Binding OwnerAppWindow.TitleBar.ButtonHoverBackgroundColor, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"
-            //                            local: ThemedWindowRootControl.CaptionButtonPressedBackgroundColor = "{Binding OwnerAppWindow.TitleBar.ButtonPressedBackgroundColor, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"
-            //                            local: ThemedWindowRootControl.CaptionButtonInactiveBackgroundColor = "{Binding OwnerAppWindow.TitleBar.ButtonInactiveBackgroundColor, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}" /> -->
+            // CaptionButtonNormalForegroundColor = "{Binding OwnerAppWindow.TitleBar.ButtonForegroundColor, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"
+            // CaptionButtonHoverForegroundColor = "{Binding OwnerAppWindow.TitleBar.ButtonHoverForegroundColor, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"
+            // CaptionButtonPressedForegroundColor = "{Binding OwnerAppWindow.TitleBar.ButtonPressedForegroundColor, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"
+            // CaptionButtonInactiveForegroundColor = "{Binding OwnerAppWindow.TitleBar.ButtonInactiveForegroundColor, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"
+            // CaptionButtonNormalBackgroundColor = "{Binding OwnerAppWindow.TitleBar.ButtonBackgroundColor, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"
+            // CaptionButtonHoverBackgroundColor = "{Binding OwnerAppWindow.TitleBar.ButtonHoverBackgroundColor, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"
+            // CaptionButtonPressedBackgroundColor = "{Binding OwnerAppWindow.TitleBar.ButtonPressedBackgroundColor, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"
+            // CaptionButtonInactiveBackgroundColor = "{Binding OwnerAppWindow.TitleBar.ButtonInactiveBackgroundColor, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}" /> -->
         }
     }
 }

@@ -9,6 +9,7 @@ namespace AJut.UX.Controls
     using Microsoft.UI.Windowing;
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
+    using Microsoft.UI.Xaml.Input;
     using Microsoft.UI.Xaml.Markup;
     using Microsoft.UI.Xaml.Media;
     using Windows.Foundation;
@@ -44,8 +45,11 @@ namespace AJut.UX.Controls
         {
             this.DefaultStyleKey = typeof(ThemedWindowRootControl);
             this.Loaded += this.OnLoaded;
-            this.PointerMoved += this.OnPointerMoved;
-            this.PointerExited += this.OnPointerExited;
+
+            this.AddHandler(UIElement.PointerMovedEvent, new PointerEventHandler(this.OnPointerMoved), true);
+            this.AddHandler(UIElement.PointerExitedEvent, new PointerEventHandler(this.OnPointerExited), true);
+            //this.PointerMoved += this.OnPointerMoved;
+            //this.PointerExited += this.OnPointerExited;
         }
 
         protected override void OnApplyTemplate ()
@@ -68,32 +72,9 @@ namespace AJut.UX.Controls
             this.PART_ExitFullscreenButton.Click += this.ExitFullScreen_OnClick;
             if (m_owner != null)
             {
-                m_owner.SetTitleBar(this.PART_CustomTitleBarContainer);
+                this.ResetCustomTitleBar();
                 this.ResetFullscreenButtons();
             }
-
-            //if (m_winUI3BugFixTimer == null)
-            //{
-            //    m_winUI3BugFixTimer = this.DispatcherQueue.CreateTimer();
-            //    m_winUI3BugFixTimer.Interval = TimeSpan.FromMilliseconds(1000);
-            //    m_winUI3BugFixTimer.IsRepeating = true;
-            //    m_winUI3BugFixTimer.Tick += (s, e) =>
-            //    {
-            //        if (m_owner.IsActivated() && m_isHighlightingWindowChromeButtons)
-            //        {
-            //            if (m_activePointerId != 0)
-            //            {
-            //                Windows.UI.Input.PointerPoint pointer = Windows.UI.Input.PointerPoint.GetCurrentPoint(m_activePointerId);
-            //                this.HandlePointerMoved(pointer.Position);
-            //            }
-            //        }
-            //        else
-            //        {
-            //            this.HandlePointerNotInWindowChromeButtonRange();
-            //        }
-            //    };
-            //    m_winUI3BugFixTimer.Start();
-            //}
         }
 
         private void EnterFullScreen_OnClick (object sender, RoutedEventArgs e)
@@ -104,6 +85,19 @@ namespace AJut.UX.Controls
         private void ExitFullScreen_OnClick (object sender, RoutedEventArgs e)
         {
             m_owner?.ExitFullscreen(this.MinimumRestoredWindowWidth, this.MinimumRestoredWindowHeight);
+        }
+
+        private void ResetCustomTitleBar()
+        {
+            if (!this.ShouldAutomaticallySetCustomTitlebar)
+            {
+                return;
+            }
+
+            m_owner.SetTitleBar(this.PART_CustomTitleBarContainer);
+            m_owner.AppWindow.TitleBar.SetDragRectangles(
+                [new Windows.Graphics.RectInt32(250, 0, (int)this.PART_CustomTitleBarContainer.ActualWidth - 250, (int)this.PART_CustomTitleBarContainer.ActualHeight)]
+            );
         }
 
         public Panel PART_WindowRoot { get; private set; }
@@ -124,7 +118,8 @@ namespace AJut.UX.Controls
 
             if (this.PART_CustomTitleBarContainer != null)
             {
-                m_owner.SetTitleBar(this.PART_CustomTitleBarContainer);
+                this.ResetCustomTitleBar();
+                this.ResetFullscreenButtons();
             }
 
             m_owner.AppWindow.TitleBar.ExtendsContentIntoTitleBar = true;
@@ -138,9 +133,14 @@ namespace AJut.UX.Controls
             m_owner.AppWindow.Changed += this.OwnerWindow_OnAppWindowChanged;
 
 
-            m_owner.AppWindow.TitleBar.ButtonBackgroundColor = Colors.Transparent;
-            m_owner.AppWindow.TitleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
-            m_owner.AppWindow.TitleBar.ButtonHoverBackgroundColor = this.TitleBarButtonHighlightColor;
+            //m_owner.AppWindow.TitleBar.ButtonBackgroundColor = Colors.Transparent;
+            //m_owner.AppWindow.TitleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
+            //m_owner.AppWindow.TitleBar.ButtonHoverBackgroundColor = this.TitleBarButtonHighlightColor;
+            //m_owner.AppWindow.TitleBar.ButtonPressedForegroundColor
+
+
+
+
             //m_owner.AppWindow.TitleBar.ButtonHoverBackgroundColor = Application.Current.Resources.GetRes.GetThemeResource<Color>("SystemAccentColor");
 
             // Other, keep gone
@@ -251,12 +251,12 @@ namespace AJut.UX.Controls
             set => this.SetValue(InactiveTitlebarBackgroundProperty, value);
         }
 
-        public static readonly DependencyProperty CurrentlySetTitlebarBackgroundProperty = DPUtils.Register(_ => _.CurrentlySetTitlebarBackground);
-        public Brush CurrentlySetTitlebarBackground
-        {
-            get => (Brush)this.GetValue(CurrentlySetTitlebarBackgroundProperty);
-            set => this.SetValue(CurrentlySetTitlebarBackgroundProperty, value);
-        }
+        //public static readonly DependencyProperty CurrentlySetTitlebarBackgroundProperty = DPUtils.Register(_ => _.CurrentlySetTitlebarBackground);
+        //public Brush CurrentlySetTitlebarBackground
+        //{
+        //    get => (Brush)this.GetValue(CurrentlySetTitlebarBackgroundProperty);
+        //    set => this.SetValue(CurrentlySetTitlebarBackgroundProperty, value);
+        //}
 
         public static readonly DependencyProperty TargetBorderThicknessProperty = DPUtils.Register(_ => _.TargetBorderThickness, new Thickness(2));
         public Thickness TargetBorderThickness
@@ -270,6 +270,13 @@ namespace AJut.UX.Controls
         {
             get => (bool)this.GetValue(ShowFullscreenButtonsProperty);
             set => this.SetValue(ShowFullscreenButtonsProperty, value);
+        }
+
+        public static readonly DependencyProperty ShouldAutomaticallySetCustomTitlebarProperty = DPUtils.Register(_ => _.ShouldAutomaticallySetCustomTitlebar, true, (d,e)=> d.ResetCustomTitleBar() );
+        public bool ShouldAutomaticallySetCustomTitlebar
+        {
+            get => (bool)this.GetValue(ShouldAutomaticallySetCustomTitlebarProperty);
+            set => this.SetValue(ShouldAutomaticallySetCustomTitlebarProperty, value);
         }
 
 
@@ -360,32 +367,32 @@ namespace AJut.UX.Controls
             if (m_owner.IsActivated())
             {
                 VisualStateManager.GoToState(this, "Normal", true);
-                this.CurrentlySetTitlebarBackground = this.ActiveTitlebarBackground;
+                //this.CurrentlySetTitlebarBackground = this.ActiveTitlebarBackground;
             }
             else
             {
                 VisualStateManager.GoToState(this, "Inactive", true);
                 this.HandlePointerNotInWindowChromeButtonRange();
-                this.CurrentlySetTitlebarBackground = this.InactiveTitlebarBackground;
+                //this.CurrentlySetTitlebarBackground = this.InactiveTitlebarBackground;
                 m_activePointerId = 0;
             }
         }
         private void OnTitleBarButtonHighlightColorChanged ()
         {
-            if (m_owner != null)
-            {
-                m_owner.AppWindow.TitleBar.ButtonHoverBackgroundColor = this.TitleBarButtonHighlightColor;
-            }
+            //if (m_owner != null)
+            //{
+            //    m_owner.AppWindow.TitleBar.ButtonHoverBackgroundColor = this.TitleBarButtonHighlightColor;
+            //}
 
-            m_normalBorderHighlightBrush = new SolidColorBrush(this.TitleBarButtonHighlightColor);
+            //m_normalBorderHighlightBrush = new SolidColorBrush(this.TitleBarButtonHighlightColor);
         }
 
         private void HandlePointerNotInWindowChromeButtonRange()
         {
-            if (this.PART_WindowRoot != null)
-            {
-                this.PART_WindowRoot.Background = kTransparent;
-            }
+            //if (this.PART_WindowRoot != null)
+            //{
+            //    this.PART_WindowRoot.Background = kTransparent;
+            //}
 
             m_isHighlightingWindowChromeButtons = false;
             this.IsHoveringOverClose = false;
@@ -416,7 +423,7 @@ namespace AJut.UX.Controls
             {
                 if (point.X > this.ActualWidth - 46)
                 {
-                    this.PART_WindowRoot.Background = this.CloseButtonHighlightBrush;
+                    //this.PART_WindowRoot.Background = this.CloseButtonHighlightBrush;
                     m_isHighlightingWindowChromeButtons = true;
                     this.IsHoveringOverClose = true;
                     VisualStateManager.GoToState(this, "CloseHover", true);
@@ -426,7 +433,7 @@ namespace AJut.UX.Controls
                             || this.PART_EnterFullscreenButton.IsPointerOver
                             || this.PART_ExitFullscreenButton.IsPointerOver)
                 {
-                    this.PART_WindowRoot.Background = m_owner.IsActivated() ? m_normalBorderHighlightBrush : this.InactiveTitlebarBackground;
+                    //this.PART_WindowRoot.Background = m_owner.IsActivated() ? m_normalBorderHighlightBrush : this.InactiveTitlebarBackground;
                     m_isHighlightingWindowChromeButtons = true;
                     this.IsHoveringOverClose = false;
                     VisualStateManager.GoToState(this, "Normal", true);

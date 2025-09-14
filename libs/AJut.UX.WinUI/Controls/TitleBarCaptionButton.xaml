@@ -15,11 +15,40 @@
 		<Setter Property="Template">
 			<Setter.Value>
 				<ControlTemplate TargetType="local:TitleBarCaptionButton">
-					<Grid x:Name="RootGrid" Background="{TemplateBinding CurrentBackground}">
-						<ContentPresenter x:Name="Presenter" HorizontalAlignment="Center"
+                    <Grid x:Name="RootGrid">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal">
+                                    <VisualState.Setters>
+                                        <Setter Target="RootGrid.Background" Value="{ThemeResource WindowCaptionBackground}" />
+                                        <Setter Target="Presenter.Foreground" Value="{ThemeResource WindowCaptionForeground}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="RootGrid.Background" Value="{ThemeResource WindowCaptionButtonBackgroundPointerOver}" />
+                                        <Setter Target="Presenter.Foreground" Value="{ThemeResource WindowCaptionForeground}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="RootGrid.Background" Value="{ThemeResource WindowCaptionButtonBackgroundPressed}" />
+                                        <Setter Target="Presenter.Foreground" Value="{ThemeResource WindowCaptionForegroundDisabled}" />
+
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Inactive">
+                                    <VisualState.Setters>
+                                        <Setter Target="Presenter.Foreground" Value="{ThemeResource TitleBarCaptionButtonInactiveForegroundColor}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <ContentPresenter x:Name="Presenter" HorizontalAlignment="Center"
 										  VerticalAlignment="Center"
 										  Content="{TemplateBinding Content}"
-									      Foreground="{TemplateBinding CurrentForeground}"
 										  FontFamily="Segoe MDL2 Assets"/>
 					</Grid>
 				</ControlTemplate>

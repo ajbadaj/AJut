@@ -1,7 +1,7 @@
 ﻿namespace AJut.UX
 {
-    using System;
     using Microsoft.UI;
+    using System;
     using Windows.UI;
 
     public static class ColorHelper

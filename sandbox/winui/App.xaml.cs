@@ -1,10 +1,11 @@
 ﻿namespace AJutShowRoomWinUI
 {
-    using System.Diagnostics;
     using AJut;
     using AJut.UX;
     using AJut.UX.Theming;
     using Microsoft.UI.Xaml;
+    using Microsoft.UI.Xaml.Media;
+    using System.Diagnostics;
 
     /// <summary>
     /// Provides application-specific behavior to supplement the default Application class.

@@ -6,15 +6,15 @@
     <Color x:Key="AJut_Color_PrimaryHighlightDark">#01417C</Color>
     <Color x:Key="AJut_Color_PrimaryHighlightBright">#0284FF</Color>
     <Color x:Key="AJut_Color_PrimaryHighlightDesat">#4D8ECC</Color>
-    <SolidColorBrush x:Key="AJut_Brush_PrimaryHighlight" Color="{ThemeResource AJut_Color_PrimaryHighlight}"/>
-    <SolidColorBrush x:Key="AJut_Brush_PrimaryHighlightDark" Color="{ThemeResource AJut_Color_PrimaryHighlightDark}"/>
-    <SolidColorBrush x:Key="AJut_Brush_PrimaryHighlightBright" Color="{ThemeResource AJut_Color_PrimaryHighlightBright}"/>
-    <SolidColorBrush x:Key="AJut_Brush_PrimaryHighlightDesat" Color="{ThemeResource AJut_Color_PrimaryHighlightDesat}"/>
-
     <Color x:Key="AJut_Color_SecondaryHighlight">#CC7000</Color>
     <Color x:Key="AJut_Color_SecondaryHighlightDark">#995100</Color>
     <Color x:Key="AJut_Color_SecondaryHighlightBright">#FF8800</Color>
     <Color x:Key="AJut_Color_SecondaryHighlightDesat">#CC944F</Color>
+    
+    <SolidColorBrush x:Key="AJut_Brush_PrimaryHighlight" Color="{ThemeResource AJut_Color_PrimaryHighlight}"/>
+    <SolidColorBrush x:Key="AJut_Brush_PrimaryHighlightDark" Color="{ThemeResource AJut_Color_PrimaryHighlightDark}"/>
+    <SolidColorBrush x:Key="AJut_Brush_PrimaryHighlightBright" Color="{ThemeResource AJut_Color_PrimaryHighlightBright}"/>
+    <SolidColorBrush x:Key="AJut_Brush_PrimaryHighlightDesat" Color="{ThemeResource AJut_Color_PrimaryHighlightDesat}"/>
     <SolidColorBrush x:Key="AJut_Brush_SecondaryHighlight"  Color="{ThemeResource AJut_Color_SecondaryHighlight}"/>
     <SolidColorBrush x:Key="AJut_Brush_SecondaryHighlightDark"  Color="{ThemeResource AJut_Color_SecondaryHighlightDark}"/>
     <SolidColorBrush x:Key="AJut_Brush_SecondaryHighlightBright" Color="{ThemeResource AJut_Color_SecondaryHighlightBright}"/>
@@ -60,7 +60,9 @@
 
     <SolidColorBrush x:Key="AJut_Brush_RootPanelBackground" Color="#DDD"/>
     <SolidColorBrush x:Key="AJut_Brush_PanelBackground" Color="#EDF0F3"/>
-    <SolidColorBrush x:Key="AJut_Brush_InnerPanelBackground" Color="#E6E6E6"/>
+    <Color x:Key="AJut_Color_InnerPanelBackground">#E6E6E6</Color>
+    <Color x:Key="AJut_Color_InnerPanelBackgroundHover">#EEE</Color>
+    <SolidColorBrush x:Key="AJut_Brush_InnerPanelBackground" Color="{ThemeResource AJut_Color_InnerPanelBackground}"/>
     <SolidColorBrush x:Key="AJut_Brush_PanelBorder" Color="#5000"/>
 
     <SolidColorBrush x:Key="AJut_Brush_PopupBackground" Color="#BCBCBC"/>
@@ -83,23 +85,34 @@
     <sys:Double x:Key="AJut_Double_StandardDisabledOpacity">0.6</sys:Double>
 
     <!-- ===================[ Specialty Brushes ]========================= -->
-    <SolidColorBrush x:Key="AJut_Brush_ChromeButtonHoverBackground" Color="{ThemeResource AJut_Color_PrimaryHighlightDark}"/>
-    <SolidColorBrush x:Key="AJut_Brush_ChromeButtonHoverForeground" Color="#202020" />
-    <SolidColorBrush x:Key="AJut_Brush_ChromeButtonPressedBackground" Color="{ThemeResource AJut_Color_PrimaryHighlight}"/>
-    <SolidColorBrush x:Key="AJut_Brush_ChromeButtonPressedForeground" Color="#202020" />
+    <Color x:Key="AJut_Color_ChromeButtonBackground">Transparent</Color>
+    <Color x:Key="AJut_Color_ChromeButtonForeground">#333</Color>
+    <StaticResource x:Key="AJut_Color_ChromeButtonHoverBackground" ResourceKey="AJut_Color_PrimaryHighlightDark"/>
+    <Color x:Key="AJut_Color_ChromeButtonHoverForeground">#202020</Color>
+    <StaticResource x:Key="AJut_Color_ChromeButtonPressedBackground" ResourceKey="AJut_Color_PrimaryHighlight"/>
+    <Color x:Key="AJut_Color_ChromeButtonPressedForeground">#202020</Color>
     <Color x:Key="AJut_Color_ChromeCloseButtonHighlight">#E81123</Color>
-    <SolidColorBrush x:Key="AJut_Brush_ChromeCloseButtonHighlight" Color="{ThemeResource AJut_Color_ChromeCloseButtonHighlight}"/>
     <Color x:Key="AJut_Color_ChromeCloseButtonComplement">#892630</Color>
+    <Color x:Key="AJut_Color_ChromeCloseButtonHoverForeground">#FFF</Color>
+    <Color x:Key="AJut_Color_ChromeButtonInactiveForeground">#444</Color>
+    
+    <SolidColorBrush x:Key="AJut_Brush_ChromeButtonPressedForeground" Color="{ThemeResource AJut_Color_ChromeButtonPressedForeground}" />
+    <SolidColorBrush x:Key="AJut_Brush_ChromeCloseButtonHighlight" Color="{ThemeResource AJut_Color_ChromeCloseButtonHighlight}"/>
     <SolidColorBrush x:Key="AJut_Brush_ChromeCloseButtonComplement" Color="{ThemeResource AJut_Color_ChromeCloseButtonComplement}"/>
+    
     
     <SolidColorBrush x:Key="AJut_Brush_WindowOuterBorder" Color="{ThemeResource AJut_Color_PrimaryHighlightBright}"/>
     <SolidColorBrush x:Key="AJut_Brush_SecondaryWindowOuterBorder" Color="#223"/>
     <SolidColorBrush x:Key="AJut_Brush_WindowGlowBorder" Color="#00A3F5"/>
     <SolidColorBrush x:Key="AJut_Brush_WindowGlowBorderInactive" Color="{ThemeResource AJut_Color_PrimaryHighlightDark}"/>
 
-    <SolidColorBrush x:Key="AJut_Brush_TitleBarBackground" Color="#0273D1"/>
-    <SolidColorBrush x:Key="AJut_Brush_TitleBarBackgroundInactive" Color="{ThemeResource AJut_Color_PrimaryHighlightDesat}"/>
+    <StaticResource x:Key="AJut_Color_TitleBarBackground" ResourceKey="AJut_Color_PrimaryHighlightBright"/>
+    <StaticResource x:Key="AJut_Color_TitleBarBackgroundInactive" ResourceKey="AJut_Color_PrimaryHighlightDesat"/>
+
+    <SolidColorBrush x:Key="AJut_Brush_TitleBarBackground" Color="{ThemeResource AJut_Color_TitleBarBackground}"/>
+    <SolidColorBrush x:Key="AJut_Brush_TitleBarBackgroundInactive" Color="{ThemeResource AJut_Color_TitleBarBackgroundInactive}"/>
     <SolidColorBrush x:Key="AJut_Brush_TitleBarForeground" Color="#333" />
+    <SolidColorBrush x:Key="AJut_Brush_TitleBarForegroundDesat" Color="#666" />
     <SolidColorBrush x:Key="AJut_Brush_TitleBarForegroundImportant" Color="#000" />
     <SolidColorBrush x:Key="AJut_Brush_TitleBarGlyphHighlight" Color="#CCC" />
 
