@@ -56,7 +56,7 @@
             return BinarySearchXT_Helper(list, 0, list.Count - 1, list.Count / 2, compareTargetToItem);
         }
 
-        private static int DefaultPivotGenerator (int start, int end)
+        public static int DefaultPivotGenerator (int start, int end)
         {
             return start + (end - start) / 2;
         }
