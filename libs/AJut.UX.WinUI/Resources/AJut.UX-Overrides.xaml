@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:ajut="using:AJut.UX.Controls">
+    <Style TargetType="ajut:ThemedWindowRootControl">
+        <Setter Property="ActiveTitleBarBackground" Value="{ThemeResource AJut_Brush_TitleBarBackground}"/>
+        <Setter Property="InactiveTitlebarBackground" Value="{ThemeResource AJut_Brush_TitleBarBackgroundInactive}"/>
+        <Setter Property="CloseHoverBackground" Value="{ThemeResource AJut_Brush_ChromeCloseButtonComplement}"/>
+    </Style>
+
+</ResourceDictionary>

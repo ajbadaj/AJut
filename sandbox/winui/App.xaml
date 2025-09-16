@@ -7,12 +7,12 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+                <ResourceDictionary Source="/AJut.UX.WinUI/Resources/AllControlThemeOverrides.xaml"/>
                 <ResourceDictionary>
                     <ResourceDictionary.ThemeDictionaries>
                         <ResourceDictionary x:Key="Light" Source="/Themes/LightTheme.xaml"/>
                         <ResourceDictionary x:Key="Dark" Source="/Themes/DarkTheme.xaml"/>
                     </ResourceDictionary.ThemeDictionaries>
-
                 </ResourceDictionary>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>

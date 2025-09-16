@@ -10,6 +10,7 @@
     <Color x:Key="SolidBackgroundFillColorTertiary">Orange</Color>
     <SolidColorBrush x:Key="SolidBackgroundFillColorTertiaryBrush" Color="{ThemeResource SolidBackgroundFillColorTertiary}" />
 
+    <SolidColorBrush x:Key="WindowCaptionButtonBackgroundPointerOver">#F0F</SolidColorBrush>
     
 
 </ResourceDictionary>

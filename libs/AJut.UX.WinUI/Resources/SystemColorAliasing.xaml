@@ -94,8 +94,8 @@
     <Color x:Key="SystemAccentColorLight3">#FFA6D8FF</Color>-->
 
     <SolidColorBrush x:Key="WindowCaptionBackground" Color="{ThemeResource AJut_Color_ChromeButtonBackground}" />
-    <StaticResource x:Key="WindowCaptionBackgroundDisabled" ResourceKey="SystemControlBackgroundBaseLowBrush" />
-    <StaticResource x:Key="WindowCaptionForeground" ResourceKey="SystemControlForegroundBaseHighBrush" />
+    <SolidColorBrush x:Key="WindowCaptionBackgroundDisabled" Color="Transparent" />
+    <SolidColorBrush x:Key="WindowCaptionForeground" Color="{ThemeResource AJut_Color_ChromeButtonForeground}" />
     <StaticResource x:Key="WindowCaptionForegroundDisabled" ResourceKey="SystemControlDisabledBaseMediumLowBrush" />
     <SolidColorBrush x:Key="WindowCaptionButtonBackgroundPointerOver" Color="{ThemeResource AJut_Color_ChromeButtonHoverBackground}" />
     <StaticResource x:Key="WindowCaptionButtonBackgroundPressed" ResourceKey="SystemControlBackgroundBaseMediumLowBrush" />

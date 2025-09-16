@@ -87,14 +87,19 @@
     <!-- ===================[ Specialty Brushes ]========================= -->
     <Color x:Key="AJut_Color_ChromeButtonBackground">Transparent</Color>
     <Color x:Key="AJut_Color_ChromeButtonForeground">#333</Color>
-    <StaticResource x:Key="AJut_Color_ChromeButtonHoverBackground" ResourceKey="AJut_Color_PrimaryHighlightDark"/>
+    
     <Color x:Key="AJut_Color_ChromeButtonHoverForeground">#202020</Color>
+    <StaticResource x:Key="AJut_Color_ChromeButtonHoverBackground" ResourceKey="AJut_Color_PrimaryHighlightDark"/>
+    
     <StaticResource x:Key="AJut_Color_ChromeButtonPressedBackground" ResourceKey="AJut_Color_PrimaryHighlight"/>
     <Color x:Key="AJut_Color_ChromeButtonPressedForeground">#202020</Color>
+
+    <Color x:Key="AJut_Color_ChromeButtonInactiveBackground">Transparent</Color>
+    <Color x:Key="AJut_Color_ChromeButtonInactiveForeground">#444</Color>
+    
     <Color x:Key="AJut_Color_ChromeCloseButtonHighlight">#E81123</Color>
     <Color x:Key="AJut_Color_ChromeCloseButtonComplement">#892630</Color>
     <Color x:Key="AJut_Color_ChromeCloseButtonHoverForeground">#FFF</Color>
-    <Color x:Key="AJut_Color_ChromeButtonInactiveForeground">#444</Color>
     
     <SolidColorBrush x:Key="AJut_Brush_ChromeButtonPressedForeground" Color="{ThemeResource AJut_Color_ChromeButtonPressedForeground}" />
     <SolidColorBrush x:Key="AJut_Brush_ChromeCloseButtonHighlight" Color="{ThemeResource AJut_Color_ChromeCloseButtonHighlight}"/>
@@ -106,7 +111,7 @@
     <SolidColorBrush x:Key="AJut_Brush_WindowGlowBorder" Color="#00A3F5"/>
     <SolidColorBrush x:Key="AJut_Brush_WindowGlowBorderInactive" Color="{ThemeResource AJut_Color_PrimaryHighlightDark}"/>
 
-    <StaticResource x:Key="AJut_Color_TitleBarBackground" ResourceKey="AJut_Color_PrimaryHighlightBright"/>
+    <Color x:Key="AJut_Color_TitleBarBackground">#CCC</Color>
     <StaticResource x:Key="AJut_Color_TitleBarBackgroundInactive" ResourceKey="AJut_Color_PrimaryHighlightDesat"/>
 
     <SolidColorBrush x:Key="AJut_Brush_TitleBarBackground" Color="{ThemeResource AJut_Color_TitleBarBackground}"/>

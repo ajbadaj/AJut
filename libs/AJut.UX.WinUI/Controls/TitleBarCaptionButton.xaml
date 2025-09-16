@@ -35,7 +35,7 @@
                                 <VisualState x:Name="Pressed">
                                     <VisualState.Setters>
                                         <Setter Target="RootGrid.Background" Value="{ThemeResource WindowCaptionButtonBackgroundPressed}" />
-                                        <Setter Target="Presenter.Foreground" Value="{ThemeResource WindowCaptionForegroundDisabled}" />
+                                        <Setter Target="Presenter.Foreground" Value="{ThemeResource WindowCaptionButtonStrokePressed}" />
 
                                     </VisualState.Setters>
                                 </VisualState>

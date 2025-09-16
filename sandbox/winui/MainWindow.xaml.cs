@@ -49,7 +49,6 @@ namespace AJutShowRoomWinUI
             }
 
             this.ThemeColorsList.ItemsSource = m_themeColorResolver;
-            this.SetTitleBar(this.TitleArea);
         }
 
 
@@ -90,7 +89,7 @@ namespace AJutShowRoomWinUI
                 string debugText;
                 bool result;
 
-                if (App.Current.Resources.TryGetValue(resourceName, out object obj))
+                if (this.Root.TryFindThemedResource(resourceName, out object obj))
                 {
                     result = true;
                     string value;

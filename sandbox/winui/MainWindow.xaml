@@ -15,11 +15,10 @@
         <MicaBackdrop />
     </Window.SystemBackdrop>
     <ajut:ThemedWindowRootControl x:Name="Root" TargetBorderThickness="2" TitleBarHeight="40" ShowFullscreenButtons="True" 
-                                  ShouldAutomaticallySetCustomTitlebar="False"
                                   InactiveTitlebarBackground="{ThemeResource AJut_Brush_TitleBarBackgroundInactive}">
-        <ajut:ThemedWindowRootControl.ActiveTitlebarBackground>
-            <AcrylicBrush TintColor="{ThemeResource AJut_Color_TitleBarBackground}" TintLuminosityOpacity="0.3" TintOpacity="1"/>
-        </ajut:ThemedWindowRootControl.ActiveTitlebarBackground>
+        <ajut:ThemedWindowRootControl.ActiveTitleBarBackground>
+            <AcrylicBrush TintColor="{ThemeResource AJut_Color_TitleBarBackground}" TintLuminosityOpacity="1" TintOpacity="0.3" Opacity="0.8"/>
+        </ajut:ThemedWindowRootControl.ActiveTitleBarBackground>
         <ajut:ThemedWindowRootControl.CustomTilteBar>
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -46,13 +45,13 @@
                     <Image Source="/Assets/app.ico" Margin="3"/>
                 </Grid>
                 <Grid x:Name="TitleArea" Grid.Column="1">
-                    <TextBlock Text="AJut Showroom: WinUI3" VerticalAlignment="Center" Margin="5,0,0,0" FontSize="18" HorizontalAlignment="Left"/>
+                    <TextBlock Text="AJut Showroom: WinUI3" Foreground="{ThemeResource AJut_Brush_ImportantText}" VerticalAlignment="Center" Margin="5,0,0,0" FontSize="18" HorizontalAlignment="Left"/>
                 </Grid>
             </Grid>
         </ajut:ThemedWindowRootControl.CustomTilteBar>
         <Grid >
             <Border x:Name="Colorization" Background="{Binding ElementName=Root, Path=Background}" CornerRadius="0,0,0,0" 
-            BorderThickness="8,0,0,0" Margin="0,0,0,0">
+                    BorderThickness="8,0,0,0" Margin="0,0,0,0">
                 <Border.BorderBrush>
                     <Binding ElementName="Root" Path="IsHoveringOverClose" Mode="OneWay">
                         <Binding.Converter>
@@ -67,13 +66,19 @@
                         </Binding.Converter>
                     </Binding>
                 </Border.BorderBrush>
-                <TabView IsAddTabButtonVisible="False" VerticalAlignment="Stretch">
+                <TabView VerticalAlignment="Stretch">
+                    <TabView.Resources>
+                        <ResourceDictionary>
+                            <x:Double x:Key="AJut_Double_TabViewStrokeThickness">1.0</x:Double>
+                            <SolidColorBrush x:Key="TabViewBorderBrush" Color="{ThemeResource AJut_Color_Shadow}"/>
+                        </ResourceDictionary>
+                    </TabView.Resources>
                     <TabViewItem Header="Theme Test" IsClosable="False">
                         <TabViewItem.IconSource>
                             <SymbolIconSource Symbol="Highlight"/>
                         </TabViewItem.IconSource>
                         <TabViewItem.Content>
-                            <ScrollViewer VerticalScrollMode="Enabled" Background="{ThemeResource AJut_Brush_InnerPanelBackground}">
+                            <ScrollViewer VerticalScrollMode="Enabled">
                                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="1" Width="500">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
@@ -110,7 +115,7 @@
                             <SymbolIconSource Symbol="Edit"/>
                         </TabViewItem.IconSource>
                         <TabViewItem.Content>
-                            <ScrollViewer VerticalAlignment="Stretch" Padding="10" Background="{ThemeResource AJut_Brush_InnerPanelBackground}">
+                            <ScrollViewer VerticalAlignment="Stretch" Padding="10">
                                 <StackPanel HorizontalAlignment="Left">
                                     <TextBlock Text="Theme Switcher" Style="{ThemeResource HeaderTextBlockStyle}"/>
                                     <ajut:EnumComboBox SelectedItem="{x:Bind Path=Application.ThemeManager.ThemeConfiguration, Mode=TwoWay}"/>
@@ -119,7 +124,7 @@
                                     <StackPanel Margin="0,20,5,5" >
                                         <TextBlock Text="Geometry Button" Style="{ThemeResource HeaderTextBlockStyle}"/>
                                         <ajut:GeometryButton Content="Geometry Button" BackgroundGeometry="M 0,0 20,20 40,0 150,0 150,100 100,90 0,100 Z"
-                                                         TraceThickness="5" Margin="5"/>
+                                                             TraceThickness="1" Margin="5"/>
                                     </StackPanel>
 
                                     <TextBlock Text="Color Parsing Example" Style="{ThemeResource HeaderTextBlockStyle}" Margin="0,20,0,0"/>

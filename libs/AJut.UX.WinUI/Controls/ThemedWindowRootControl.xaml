@@ -7,14 +7,13 @@
     <x:String x:Key="AJut_Symbol_FullScreenSymbol"    >&#xE740;</x:String>
     
     <Style TargetType="local:ThemedWindowRootControl">
-        <Setter Property="TitleBarButtonHighlightColor" Value="Transparent"/>
-        <Setter Property="ActiveTitlebarBackground" Value="{ThemeResource LayerOnMicaBaseAltFillColorTransparentBrush}"/>
+        <Setter Property="ActiveTitleBarBackground" Value="{ThemeResource LayerOnMicaBaseAltFillColorTransparentBrush}"/>
         <Setter Property="InactiveTitlebarBackground" Value="{ThemeResource LayerOnMicaBaseAltFillColorTransparentBrush}"/>
         <Setter Property="TitleBarHeight" Value="40"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:ThemedWindowRootControl">
-                    <Grid x:Name="PART_WindowRoot" UseLayoutRounding="True" CornerRadius="8,0,0,0">
+                    <Grid x:Name="PART_WindowRoot" UseLayoutRounding="True">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
@@ -25,14 +24,14 @@
                                 <!--
                                 <VisualState x:Name="Normal">
                                     <VisualState.Setters>
-                                        <Setter Target="TitleBarContent.Foreground">
+                                        <Setter Target="PART_CustomTitleBarContent.Foreground">
                                             <Setter.Value>
                                                 <SolidColorBrush Color="{ThemeResource TitleBarCaptionButtonForegroundColor}"/>
                                             </Setter.Value>
                                         </Setter>
                                         <Setter Target="PART_TitleBarBorder.Background">
                                             <Setter.Value>
-                                                <SolidColorBrush Color="{ThemeResource ActiveTitlebarBackground}"/>
+                                                <SolidColorBrush Color="{ThemeResource ActiveTitleBarBackground}"/>
                                             </Setter.Value>
                                         </Setter>
                                     </VisualState.Setters>
@@ -50,12 +49,12 @@
                                 </VisualState>
                                 <VisualState x:Name="CloseHover">
                                     <VisualState.Setters>
-                                        <Setter Target="TitleBarContent.Foreground">
+                                        <Setter Target="PART_CustomTitleBarContent.Foreground">
                                             <Setter.Value>
                                                 <SolidColorBrush Color="{ThemeResource TitleBarCaptionButtonForegroundColor}"/>
                                             </Setter.Value>
                                         </Setter>
-                                        <Setter Target="PART_CustomTitleBarContainer.Background">
+                                        <Setter Target="PART_CustomTitleBarContent.Background">
                                             <Setter.Value>
                                                 <SolidColorBrush Color="Red"/>
                                             </Setter.Value>
@@ -95,7 +94,7 @@
                                 </VisualState>-->
                                 <VisualState x:Name="Normal">
                                     <Storyboard>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="TitleBarContent" Storyboard.TargetProperty="Foreground">
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_CustomTitleBarContent" Storyboard.TargetProperty="Foreground">
                                             <DiscreteObjectKeyFrame KeyTime="0">
                                                 <DiscreteObjectKeyFrame.Value>
                                                     <SolidColorBrush Color="{ThemeResource TitleBarCaptionButtonForegroundColor}"/>
@@ -103,21 +102,35 @@
                                             </DiscreteObjectKeyFrame>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_TitleBarBorder" Storyboard.TargetProperty="Background">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{TemplateBinding ActiveTitlebarBackground}" />
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{TemplateBinding ActiveTitleBarBackground}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="ChromeButtonsHover">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_CustomTitleBarContent" Storyboard.TargetProperty="Foreground">
+                                            <DiscreteObjectKeyFrame KeyTime="0">
+                                                <DiscreteObjectKeyFrame.Value>
+                                                    <SolidColorBrush Color="{TemplateBinding ActiveTitleBarBackground}"/>
+                                                </DiscreteObjectKeyFrame.Value>
+                                            </DiscreteObjectKeyFrame>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_TitleBarBorder" Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{TemplateBinding ActiveTitleBarBackground}" />
                                         </ObjectAnimationUsingKeyFrames>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="CloseHover">
                                     <Storyboard>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="TitleBarContent" Storyboard.TargetProperty="Foreground">
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_CustomTitleBarContent" Storyboard.TargetProperty="Foreground">
                                             <DiscreteObjectKeyFrame KeyTime="0">
                                                 <DiscreteObjectKeyFrame.Value>
-                                                    <SolidColorBrush Color="{ThemeResource }"/>
+                                                    <SolidColorBrush Color="{TemplateBinding CloseHoverBackground}"/>
                                                 </DiscreteObjectKeyFrame.Value>
                                             </DiscreteObjectKeyFrame>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_TitleBarBorder" Storyboard.TargetProperty="Background">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{TemplateBinding ActiveTitlebarBackground}" />
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{TemplateBinding ActiveTitleBarBackground}" />
                                         </ObjectAnimationUsingKeyFrames>
                                     </Storyboard>
                                 </VisualState>
@@ -130,24 +143,12 @@
                                         HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
 
                         <!-- Titlebar Area -->
-                        <Grid x:Name="PART_CustomTitleBarContainer" Height="{TemplateBinding TitleBarHeight}">
-                            <ContentControl x:Name="TitleBarContent" Content="{TemplateBinding CustomTilteBar}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
-                        </Grid>
+                        <ContentControl x:Name="PART_CustomTitleBarContent" Content="{TemplateBinding CustomTilteBar}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                                        Height="{TemplateBinding TitleBarHeight}"/>
 
                         <Border x:Name="PART_TitleBarBorder" BorderBrush="{Binding ElementName=PART_WindowRoot, Path=Background}"
                                 Grid.RowSpan="2" BorderThickness="1" CornerRadius="8,8,0,0"/>
 
-
-                        <!--<Button x:Name="PART_EnterFullscreenButton" Style="{ThemeResource WindowCaptionButton}"
-                                Content="{StaticResource AJut_Symbol_FullScreenSymbol}"
-                                HorizontalAlignment="Right"
-                                VerticalAlignment="Top"
-                                Margin="0,0,138,0"/>
-
-                        <Button x:Name="PART_ExitFullscreenButton" Style="{ThemeResource WindowCaptionButton}"
-                                Content="{StaticResource AJut_Symbol_ExitFullScreenSymbol}"
-                                HorizontalAlignment="Right"
-                                VerticalAlignment="Top"/>-->
                         <local:TitleBarCaptionButton x:Name="PART_EnterFullscreenButton"
                              Content="{StaticResource AJut_Symbol_FullScreenSymbol}"
                              HorizontalAlignment="Right"
@@ -155,9 +156,10 @@
                              Margin="0,0,138,0"/>
 
                         <local:TitleBarCaptionButton x:Name="PART_ExitFullscreenButton"
-                             Content="{StaticResource AJut_Symbol_ExitFullScreenSymbol}"
-                             HorizontalAlignment="Right"
-                             VerticalAlignment="Top"/>
+                                                     Content="{StaticResource AJut_Symbol_ExitFullScreenSymbol}"
+                                                     HorizontalAlignment="Right"
+                                                     VerticalAlignment="Top"
+                                                     Margin="0,-1,-1,0"/>
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>

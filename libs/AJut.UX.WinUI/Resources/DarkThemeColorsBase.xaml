@@ -88,10 +88,14 @@
     <!-- ===================[ Specialty Brushes ]========================= -->
     <Color x:Key="AJut_Color_ChromeButtonBackground">Transparent</Color>
     <Color x:Key="AJut_Color_ChromeButtonForeground">#BBB</Color>
+    
     <Color x:Key="AJut_Color_ChromeButtonHoverBackground">#000</Color>
     <Color x:Key="AJut_Color_ChromeButtonHoverForeground">#CCC</Color>
+    
     <StaticResource x:Key="AJut_Color_ChromeButtonPressedBackground" ResourceKey="AJut_Color_PrimaryHighlight"/>
     <Color x:Key="AJut_Color_ChromeButtonPressedForeground">#202020</Color>
+
+    <Color x:Key="AJut_Color_ChromeButtonInactiveBackground">Transparent</Color>
     <Color x:Key="AJut_Color_ChromeButtonInactiveForeground">#444</Color>
     <Color x:Key="AJut_Color_ChromeCloseButtonHighlight">#E81123</Color>
     <Color x:Key="AJut_Color_ChromeCloseButtonHoverForeground">#FFF</Color>

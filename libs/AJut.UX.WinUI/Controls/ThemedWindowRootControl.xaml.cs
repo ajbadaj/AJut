@@ -4,6 +4,7 @@
 namespace AJut.UX.Controls
 {
     using System;
+    using AJut.UX.Theming;
     using Microsoft.UI;
     using Microsoft.UI.Dispatching;
     using Microsoft.UI.Windowing;
@@ -22,17 +23,26 @@ namespace AJut.UX.Controls
      * - Inactive background color
      * 
      */
+    public interface ITitleBarDragSizer
+    {
+        event EventHandler<EventArgs> ReadyToGenerateTitleBarDragRectangles;
+
+        Windows.Graphics.RectInt32[] GenerateTitleBarDragRectangles();
+        bool IsReadyToGenerateTitleBarDragRectangles() => true;
+    }
 
     [ContentProperty(Name = nameof(WindowContents))]
-    [TemplatePart(Name = nameof(PART_CustomTitleBarContainer), Type = typeof(Panel))]
     [TemplatePart(Name = nameof(PART_TitleBarBorder), Type = typeof(Border))]
     [TemplatePart(Name = nameof(PART_ClientContainer), Type = typeof(ContentControl))]
     [TemplatePart(Name = nameof(PART_WindowRoot), Type = typeof(UIElement))]
     [TemplatePart(Name = nameof(PART_EnterFullscreenButton), Type = typeof(Button))]
-    [TemplatePart(Name = nameof(PART_ExitFullscreenButton), Type = typeof(Button))] 
-    public partial class ThemedWindowRootControl : Control
+    [TemplatePart(Name = nameof(PART_ExitFullscreenButton), Type = typeof(Button))]
+    [TemplatePart(Name = nameof(PART_CustomTitleBarContent), Type = typeof(ContentControl))]
+    public partial class ThemedWindowRootControl : Control, ITitleBarDragSizer
     {
         private static readonly SolidColorBrush kTransparent = new(Colors.Transparent);
+        private const int kChromeButtonsAreaWidth = 278;
+        private const int kChromeButtonsHeight = 32;
 
         private eWindowState m_cachedWindowState = eWindowState.Unknown;
         private Window m_owner;
@@ -50,15 +60,113 @@ namespace AJut.UX.Controls
             this.AddHandler(UIElement.PointerExitedEvent, new PointerEventHandler(this.OnPointerExited), true);
             //this.PointerMoved += this.OnPointerMoved;
             //this.PointerExited += this.OnPointerExited;
+
+            this.ActualThemeChanged += (s, a) => this.ApplyTitleBarTheming();
+            this.ApplyTitleBarTheming();
         }
 
+        public event EventHandler<EventArgs> ReadyToGenerateTitleBarDragRectangles;
+        bool ITitleBarDragSizer.IsReadyToGenerateTitleBarDragRectangles() => m_owner?.AppWindow?.TitleBar != null && this.PART_CustomTitleBarContent != null;
+
+        private void ApplyTitleBarTheming()
+        {
+            if (m_owner?.AppWindow?.Title == null || this.PART_WindowRoot == null)
+            {
+                return;
+            }
+
+            // Set the theme colors
+            m_owner.AppWindow.TitleBar.ButtonBackgroundColor = _TryGetColor("WindowCaptionBackground");
+            m_owner.AppWindow.TitleBar.ButtonInactiveBackgroundColor = _TryGetColor("WindowCaptionBackground");
+            m_owner.AppWindow.TitleBar.ButtonHoverBackgroundColor = _TryGetColor("WindowCaptionButtonBackgroundPointerOver");
+            m_owner.AppWindow.TitleBar.ButtonPressedBackgroundColor = _TryGetColor("WindowCaptionButtonBackgroundPressed");
+
+            m_owner.AppWindow.TitleBar.ButtonForegroundColor = _TryGetColor("WindowCaptionForeground");
+            m_owner.AppWindow.TitleBar.ButtonInactiveForegroundColor = _TryGetColor("TitleBarCaptionButtonInactiveForegroundColor");
+            m_owner.AppWindow.TitleBar.ButtonHoverForegroundColor = _TryGetColor("WindowCaptionButtonStrokePointerOver");
+            m_owner.AppWindow.TitleBar.ButtonPressedForegroundColor = _TryGetColor("WindowCaptionButtonStrokePressed");
+
+            this.ResetTitleBarDragRectangles();
+
+            Color? _TryGetColor(string resourceName)
+            {
+                if (this.PART_WindowRoot.TryFindThemedResource(resourceName, out object result))
+                {
+                    if (result is Color color)
+                    {
+                        return color;
+                    }
+
+                    if (result is SolidColorBrush scb)
+                    {
+                        return scb.Color;
+                    }
+                }
+
+                return null;
+            }
+        }
+
+        public void ResetTitleBarDragRectangles()
+        {
+            ITitleBarDragSizer titleBarDragRectanglesCustomizer = this.TitleBarDragRectanglesCustomizer ?? this;
+            if (titleBarDragRectanglesCustomizer.IsReadyToGenerateTitleBarDragRectangles())
+            {
+                _HandleCustomTitleBarSetup();
+                titleBarDragRectanglesCustomizer.ReadyToGenerateTitleBarDragRectangles -= _OnReadyToGenerate;
+                titleBarDragRectanglesCustomizer.ReadyToGenerateTitleBarDragRectangles += _OnReadyToGenerate;
+            }
+
+            void _OnReadyToGenerate(object sender, EventArgs e)
+            {
+                titleBarDragRectanglesCustomizer.ReadyToGenerateTitleBarDragRectangles -= _OnReadyToGenerate;
+                _HandleCustomTitleBarSetup();
+            }
+
+            void _HandleCustomTitleBarSetup()
+            {
+                m_owner.ExtendsContentIntoTitleBar = true;
+
+                // Set the drag rectangles
+                m_owner.SetTitleBar(this.PART_CustomTitleBarContent);
+                //m_owner.AppWindow.TitleBar.SetDragRectangles((this.TitleBarDragRectanglesCustomizer ?? this).GenerateTitleBarDragRectangles());
+            }
+        }
+
+        Windows.Graphics.RectInt32[] ITitleBarDragSizer.GenerateTitleBarDragRectangles()
+        {
+            var transform = this.TransformToVisual(this.PART_CustomTitleBarContent);
+            //var backToRoot = transform.TransformPoint(new Point());
+            Point backToRoot = new Point(-100.0, 0.0);
+            //return [
+            //    new Windows.Graphics.RectInt32(
+            //        (int)-backToRoot.X, (int)-backToRoot.Y, (int)this.PART_CustomTitleBarContent.ActualWidth - kChromeButtonsAreaWidth, (int)this.TitleBarHeight
+            //    )
+            //];
+
+            //double dpiScale = m_owner.DetermineActiveDPIScale();
+            //return [new Windows.Graphics.RectInt32(
+            //    -(int)(backToRoot.X * dpiScale),
+            //    -(int)(backToRoot.Y * dpiScale),
+            //    (int)((this.PART_CustomTitleBarContent.ActualWidth - kChromeButtonsAreaWidth + backToRoot.X) * dpiScale),
+            //    (int)((this.PART_CustomTitleBarContent.ActualHeight + backToRoot.Y) * dpiScale)
+            //)];
+
+            return [
+                new Windows.Graphics.RectInt32(
+                    0, 0,
+                    (int)(this.PART_CustomTitleBarContent.ActualWidth),
+                    (int)(this.PART_CustomTitleBarContent.ActualHeight)
+                )
+            ];
+        }
         protected override void OnApplyTemplate ()
         {
             base.OnApplyTemplate();
             this.PART_WindowRoot = (Panel)this.GetTemplateChild(nameof(PART_WindowRoot));
-            this.PART_CustomTitleBarContainer = (Panel)this.GetTemplateChild(nameof(PART_CustomTitleBarContainer));
             this.PART_TitleBarBorder = (Border)this.GetTemplateChild(nameof(PART_TitleBarBorder));
             this.PART_ClientContainer = (ContentControl)this.GetTemplateChild(nameof(PART_ClientContainer));
+            this.PART_CustomTitleBarContent = (ContentControl)this.GetTemplateChild(nameof(PART_CustomTitleBarContent));
 
             if (this.PART_EnterFullscreenButton != null)
             {
@@ -72,8 +180,7 @@ namespace AJut.UX.Controls
             this.PART_ExitFullscreenButton.Click += this.ExitFullScreen_OnClick;
             if (m_owner != null)
             {
-                this.ResetCustomTitleBar();
-                this.ResetFullscreenButtons();
+                this.HandlePrimaryRefresh();
             }
         }
 
@@ -87,25 +194,12 @@ namespace AJut.UX.Controls
             m_owner?.ExitFullscreen(this.MinimumRestoredWindowWidth, this.MinimumRestoredWindowHeight);
         }
 
-        private void ResetCustomTitleBar()
-        {
-            if (!this.ShouldAutomaticallySetCustomTitlebar)
-            {
-                return;
-            }
-
-            m_owner.SetTitleBar(this.PART_CustomTitleBarContainer);
-            m_owner.AppWindow.TitleBar.SetDragRectangles(
-                [new Windows.Graphics.RectInt32(250, 0, (int)this.PART_CustomTitleBarContainer.ActualWidth - 250, (int)this.PART_CustomTitleBarContainer.ActualHeight)]
-            );
-        }
-
         public Panel PART_WindowRoot { get; private set; }
-        public Panel PART_CustomTitleBarContainer { get; private set; }
         public Border PART_TitleBarBorder { get; private set; }
         public ContentControl PART_ClientContainer { get; private set; }
         public Button PART_EnterFullscreenButton { get; private set; }
         public Button PART_ExitFullscreenButton { get; private set; }
+        public ContentControl PART_CustomTitleBarContent { get; private set; }
         public void SetupFor(Window owner)
         {
             m_owner = owner;
@@ -116,11 +210,6 @@ namespace AJut.UX.Controls
                 p.PreferredMinimumHeight = this.MinimumRestoredWindowWidth;
             });
 
-            if (this.PART_CustomTitleBarContainer != null)
-            {
-                this.ResetCustomTitleBar();
-                this.ResetFullscreenButtons();
-            }
 
             m_owner.AppWindow.TitleBar.ExtendsContentIntoTitleBar = true;
             m_owner.TrackActivation(isActivated: true);
@@ -132,24 +221,6 @@ namespace AJut.UX.Controls
             m_owner.AppWindow.Changed -= this.OwnerWindow_OnAppWindowChanged;
             m_owner.AppWindow.Changed += this.OwnerWindow_OnAppWindowChanged;
 
-
-            //m_owner.AppWindow.TitleBar.ButtonBackgroundColor = Colors.Transparent;
-            //m_owner.AppWindow.TitleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
-            //m_owner.AppWindow.TitleBar.ButtonHoverBackgroundColor = this.TitleBarButtonHighlightColor;
-            //m_owner.AppWindow.TitleBar.ButtonPressedForegroundColor
-
-
-
-
-            //m_owner.AppWindow.TitleBar.ButtonHoverBackgroundColor = Application.Current.Resources.GetRes.GetThemeResource<Color>("SystemAccentColor");
-
-            // Other, keep gone
-            //this.AppWindow.TitleBar.ButtonPressedBackgroundColor = Colors.Transparent;
-            //OwnerAppWindow.TitleBar.ButtonForegroundColor = Colors.Transparent;
-            //this.AppWindow.TitleBar.ButtonInactiveForegroundColorColor = Colors.Transparent;
-            //OwnerAppWindow.TitleBar.Button
-
-            //this.SetWindowAsFrameless();
             if (this.IsLoaded)
             {
                 this.HandlePrimaryRefresh();
@@ -224,24 +295,11 @@ namespace AJut.UX.Controls
             set => this.SetValue(MinimumRestoredWindowHeightProperty, value);
         }
 
-        public static readonly DependencyProperty TitleBarButtonHighlightColorProperty = DPUtils.Register(_ => _.TitleBarButtonHighlightColor, (d,e)=>d.OnTitleBarButtonHighlightColorChanged());
-        public Color TitleBarButtonHighlightColor
+        public static readonly DependencyProperty ActiveTitleBarBackgroundProperty = DPUtils.Register(_ => _.ActiveTitleBarBackground, CoerceUtils.CoerceBrushFrom("#202020"));
+        public Brush ActiveTitleBarBackground
         {
-            get => (Color)this.GetValue(TitleBarButtonHighlightColorProperty);
-            set => this.SetValue(TitleBarButtonHighlightColorProperty, value);
-        }
-        public static readonly DependencyProperty CloseButtonHighlightBrushProperty = DPUtils.Register(_ => _.CloseButtonHighlightBrush, CoerceUtils.CoerceBrushFrom("#E81123"));
-        public Brush CloseButtonHighlightBrush
-        {
-            get => (Brush)this.GetValue(CloseButtonHighlightBrushProperty);
-            set => this.SetValue(CloseButtonHighlightBrushProperty, value);
-        }
-
-        public static readonly DependencyProperty ActiveTitlebarBackgroundProperty = DPUtils.Register(_ => _.ActiveTitlebarBackground, CoerceUtils.CoerceBrushFrom("#202020"));
-        public Brush ActiveTitlebarBackground
-        {
-            get => (Brush)this.GetValue(ActiveTitlebarBackgroundProperty);
-            set => this.SetValue(ActiveTitlebarBackgroundProperty, value);
+            get => (Brush)this.GetValue(ActiveTitleBarBackgroundProperty);
+            set => this.SetValue(ActiveTitleBarBackgroundProperty, value);
         }
 
         public static readonly DependencyProperty InactiveTitlebarBackgroundProperty = DPUtils.Register(_ => _.InactiveTitlebarBackground, CoerceUtils.CoerceBrushFrom("#2E2E2E"));
@@ -251,12 +309,12 @@ namespace AJut.UX.Controls
             set => this.SetValue(InactiveTitlebarBackgroundProperty, value);
         }
 
-        //public static readonly DependencyProperty CurrentlySetTitlebarBackgroundProperty = DPUtils.Register(_ => _.CurrentlySetTitlebarBackground);
-        //public Brush CurrentlySetTitlebarBackground
-        //{
-        //    get => (Brush)this.GetValue(CurrentlySetTitlebarBackgroundProperty);
-        //    set => this.SetValue(CurrentlySetTitlebarBackgroundProperty, value);
-        //}
+        public static readonly DependencyProperty CloseHoverBackgroundProperty = DPUtils.Register(_ => _.CloseHoverBackground);
+        public Brush CloseHoverBackground
+        {
+            get => (Brush)this.GetValue(CloseHoverBackgroundProperty);
+            set => this.SetValue(CloseHoverBackgroundProperty, value);
+        }
 
         public static readonly DependencyProperty TargetBorderThicknessProperty = DPUtils.Register(_ => _.TargetBorderThickness, new Thickness(2));
         public Thickness TargetBorderThickness
@@ -272,56 +330,12 @@ namespace AJut.UX.Controls
             set => this.SetValue(ShowFullscreenButtonsProperty, value);
         }
 
-        public static readonly DependencyProperty ShouldAutomaticallySetCustomTitlebarProperty = DPUtils.Register(_ => _.ShouldAutomaticallySetCustomTitlebar, true, (d,e)=> d.ResetCustomTitleBar() );
-        public bool ShouldAutomaticallySetCustomTitlebar
+        public static readonly DependencyProperty TitleBarDragRectanglesCustomizerProperty = DPUtils.Register(_ => _.TitleBarDragRectanglesCustomizer);
+        public ITitleBarDragSizer TitleBarDragRectanglesCustomizer
         {
-            get => (bool)this.GetValue(ShouldAutomaticallySetCustomTitlebarProperty);
-            set => this.SetValue(ShouldAutomaticallySetCustomTitlebarProperty, value);
+            get => (ITitleBarDragSizer)this.GetValue(TitleBarDragRectanglesCustomizerProperty);
+            set => this.SetValue(TitleBarDragRectanglesCustomizerProperty, value);
         }
-
-
-        //private static readonly APUtilsRegistrationHelper APUtils = new APUtilsRegistrationHelper(typeof(ThemedWindowRootControl));
-
-        //public static DependencyProperty CaptionButtonNormalForegroundColorProperty = APUtils.Register(GetCaptionButtonNormalForegroundColor, SetCaptionButtonNormalForegroundColor);
-        //public static Color GetCaptionButtonNormalForegroundColor(DependencyObject obj) => (Color)obj.GetValue(CaptionButtonNormalForegroundColorProperty);
-        //public static void SetCaptionButtonNormalForegroundColor(DependencyObject obj, Color value) => obj.SetValue(CaptionButtonNormalForegroundColorProperty, value);
-
-
-        //public static DependencyProperty CaptionButtonHoverForegroundColorProperty = APUtils.Register(GetCaptionButtonHoverForegroundColor, SetCaptionButtonHoverForegroundColor);
-        //public static Color GetCaptionButtonHoverForegroundColor(DependencyObject obj) => (Color)obj.GetValue(CaptionButtonHoverForegroundColorProperty);
-        //public static void SetCaptionButtonHoverForegroundColor(DependencyObject obj, Color value) => obj.SetValue(CaptionButtonHoverForegroundColorProperty, value);
-
-
-        //public static DependencyProperty CaptionButtonPressedForegroundColorProperty = APUtils.Register(GetCaptionButtonPressedForegroundColor, SetCaptionButtonPressedForegroundColor);
-        //public static Color GetCaptionButtonPressedForegroundColor(DependencyObject obj) => (Color)obj.GetValue(CaptionButtonPressedForegroundColorProperty);
-        //public static void SetCaptionButtonPressedForegroundColor(DependencyObject obj, Color value) => obj.SetValue(CaptionButtonPressedForegroundColorProperty, value);
-
-
-        //public static DependencyProperty CaptionButtonInactiveForegroundColorProperty = APUtils.Register(GetCaptionButtonInactiveForegroundColor, SetCaptionButtonInactiveForegroundColor);
-        //public static Color GetCaptionButtonInactiveForegroundColor(DependencyObject obj) => (Color)obj.GetValue(CaptionButtonInactiveForegroundColorProperty);
-        //public static void SetCaptionButtonInactiveForegroundColor(DependencyObject obj, Color value) => obj.SetValue(CaptionButtonInactiveForegroundColorProperty, value);
-
-
-
-        //public static DependencyProperty CaptionButtonNormalBackgroundColorProperty = APUtils.Register(GetCaptionButtonNormalBackgroundColor, SetCaptionButtonNormalBackgroundColor);
-        //public static Color GetCaptionButtonNormalBackgroundColor(DependencyObject obj) => (Color)obj.GetValue(CaptionButtonNormalBackgroundColorProperty);
-        //public static void SetCaptionButtonNormalBackgroundColor(DependencyObject obj, Color value) => obj.SetValue(CaptionButtonNormalBackgroundColorProperty, value);
-
-
-        //public static DependencyProperty CaptionButtonHoverBackgroundColorProperty = APUtils.Register(GetCaptionButtonHoverBackgroundColor, SetCaptionButtonHoverBackgroundColor);
-        //public static Color GetCaptionButtonHoverBackgroundColor(DependencyObject obj) => (Color)obj.GetValue(CaptionButtonHoverBackgroundColorProperty);
-        //public static void SetCaptionButtonHoverBackgroundColor(DependencyObject obj, Color value) => obj.SetValue(CaptionButtonHoverBackgroundColorProperty, value);
-
-
-        //public static DependencyProperty CaptionButtonPressedBackgroundColorProperty = APUtils.Register(GetCaptionButtonPressedBackgroundColor, SetCaptionButtonPressedBackgroundColor);
-        //public static Color GetCaptionButtonPressedBackgroundColor(DependencyObject obj) => (Color)obj.GetValue(CaptionButtonPressedBackgroundColorProperty);
-        //public static void SetCaptionButtonPressedBackgroundColor(DependencyObject obj, Color value) => obj.SetValue(CaptionButtonPressedBackgroundColorProperty, value);
-
-
-        //public static DependencyProperty CaptionButtonInactiveBackgroundColorProperty = APUtils.Register(GetCaptionButtonInactiveBackgroundColor, SetCaptionButtonInactiveBackgroundColor);
-        //public static Color GetCaptionButtonInactiveBackgroundColor(DependencyObject obj) => (Color)obj.GetValue(CaptionButtonInactiveBackgroundColorProperty);
-        //public static void SetCaptionButtonInactiveBackgroundColor(DependencyObject obj, Color value) => obj.SetValue(CaptionButtonInactiveBackgroundColorProperty, value);
-
 
         public static readonly DependencyProperty IsMaximizedOrFullScreenedProperty = DPUtils.Register(_ => _.IsMaximizedOrFullScreened);
         public bool IsMaximizedOrFullScreened
@@ -362,30 +376,56 @@ namespace AJut.UX.Controls
             }
         }
 
+
+        public static readonly DependencyProperty LastStateProperty = DPUtils.Register(_ => _.LastState);
+        public string LastState
+        {
+            get => (string)this.GetValue(LastStateProperty);
+            set => this.SetValue(LastStateProperty, value);
+        }
+
+        private void GoToState(string state, bool useTransitions = true, bool transitionButtonsToo = true)
+        {
+            this.LastState = state;
+            VisualStateManager.GoToState(this, state, useTransitions);
+
+            //if (transitionButtonsToo)
+            //{
+            //    if (this.PART_EnterFullscreenButton != null)
+            //    {
+            //        VisualStateManager.GoToState(this.PART_EnterFullscreenButton, state, useTransitions);
+            //    }
+            //    if (this.PART_ExitFullscreenButton != null)
+            //    {
+            //        VisualStateManager.GoToState(this.PART_ExitFullscreenButton, state, useTransitions);
+            //    }
+            //}
+        }
+
         private void OwnerWindow_OnActivated (object sender, WindowActivatedEventArgs args)
         {
-            if (m_owner.IsActivated())
+            if (args.WindowActivationState != WindowActivationState.Deactivated)
             {
-                VisualStateManager.GoToState(this, "Normal", true);
-                //this.CurrentlySetTitlebarBackground = this.ActiveTitlebarBackground;
+                this.GoToState("Normal", false);
+                //this.CurrentlySetTitlebarBackground = this.ActiveTitleBarBackground;
             }
             else
             {
-                VisualStateManager.GoToState(this, "Inactive", true);
+                this.GoToState("Inactive");
                 this.HandlePointerNotInWindowChromeButtonRange();
                 //this.CurrentlySetTitlebarBackground = this.InactiveTitlebarBackground;
                 m_activePointerId = 0;
             }
         }
-        private void OnTitleBarButtonHighlightColorChanged ()
-        {
-            //if (m_owner != null)
-            //{
-            //    m_owner.AppWindow.TitleBar.ButtonHoverBackgroundColor = this.TitleBarButtonHighlightColor;
-            //}
+        //private void OnTitleBarButtonHighlightColorChanged ()
+        //{
+        //    //if (m_owner != null)
+        //    //{
+        //    //    m_owner.AppWindow.TitleBar.ButtonHoverBackgroundColor = this.TitleBarButtonHighlightColor;
+        //    //}
 
-            //m_normalBorderHighlightBrush = new SolidColorBrush(this.TitleBarButtonHighlightColor);
-        }
+        //    //m_normalBorderHighlightBrush = new SolidColorBrush(this.TitleBarButtonHighlightColor);
+        //}
 
         private void HandlePointerNotInWindowChromeButtonRange()
         {
@@ -396,7 +436,6 @@ namespace AJut.UX.Controls
 
             m_isHighlightingWindowChromeButtons = false;
             this.IsHoveringOverClose = false;
-            VisualStateManager.GoToState(this, "Normal", true);
         }
 
         private void OnPointerMoved (object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
@@ -426,18 +465,21 @@ namespace AJut.UX.Controls
                     //this.PART_WindowRoot.Background = this.CloseButtonHighlightBrush;
                     m_isHighlightingWindowChromeButtons = true;
                     this.IsHoveringOverClose = true;
-                    VisualStateManager.GoToState(this, "CloseHover", true);
+                    this.GoToState("CloseHover", transitionButtonsToo: false);
                     return;
                 }
-                else if (point.X > this.ActualWidth - 138
+                else if (point.X > this.ActualWidth - kChromeButtonsAreaWidth
                             || this.PART_EnterFullscreenButton.IsPointerOver
                             || this.PART_ExitFullscreenButton.IsPointerOver)
                 {
                     //this.PART_WindowRoot.Background = m_owner.IsActivated() ? m_normalBorderHighlightBrush : this.InactiveTitlebarBackground;
                     m_isHighlightingWindowChromeButtons = true;
                     this.IsHoveringOverClose = false;
-                    VisualStateManager.GoToState(this, "Normal", true);
-                    return;
+                    this.GoToState("ChromeButtonsHover", transitionButtonsToo: false);
+                }
+                else
+                {
+                    this.GoToState("Normal");
                 }
             }
 
@@ -463,32 +505,16 @@ namespace AJut.UX.Controls
             this.HandlePrimaryRefresh();
         }
 
-        private void SetDragRegion ()
-        {
-            if (m_owner == null || this.PART_CustomTitleBarContainer == null)
-            {
-                return;
-            }
-
-            double dpiScale = m_owner.DetermineActiveDPIScale();
-            var rect = new Windows.Graphics.RectInt32(
-                0,
-                0,
-                (int)(this.PART_CustomTitleBarContainer.ActualWidth * dpiScale),
-                (int)(this.PART_CustomTitleBarContainer.ActualHeight * dpiScale)
-            );
-
-            // Set the drag rectangles
-            m_owner.AppWindow.TitleBar.SetDragRectangles([rect]);
-        }
-
         private void OnSizeChanged (object sender, WindowSizeChangedEventArgs args)
         {
-            this.HandlePrimaryRefresh();
+            this.ResetTitleBarDragRectangles();
         }
 
         private void HandlePrimaryRefresh()
         {
+            this.ResetFullscreenButtons();
+            this.ApplyTitleBarTheming();
+
             if (this.PART_ClientContainer == null || this.PART_TitleBarBorder == null || m_owner == null)
             {
                 return;
@@ -510,8 +536,6 @@ namespace AJut.UX.Controls
                         break;
                 }
             }
-
-            this.SetDragRegion();
         }
     }
 }
