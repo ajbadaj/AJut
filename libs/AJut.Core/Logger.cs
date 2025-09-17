@@ -40,7 +40,7 @@
         {
             m_shouldLogToConsole = true;
             m_shouldLogToTrace = true;
-            m_shouldLogToDebug = true;
+            //m_shouldLogToDebug = true;
         }
 
         /// <summary>

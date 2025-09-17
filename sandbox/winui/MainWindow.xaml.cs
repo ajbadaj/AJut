@@ -35,6 +35,8 @@ namespace AJutShowRoomWinUI
             this.InitializeComponent();
             this.Root.SetupFor(this);
 
+            this.AppWindow.Resize(new Windows.Graphics.SizeInt32(800, 1000));
+
             ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
             if (localSettings.Values.TryGetValue(kThemeColorsSettingsKey, out object themeColorsObj) && themeColorsObj is string[] strs)
             {
@@ -133,10 +135,6 @@ namespace AJutShowRoomWinUI
                 await myDialog.ShowAsync();
                 return result;
             }
-            //this.PerformPresenterTask<OverlappedPresenter>(p => p.SetBorderAndTitleBar(true, false));
-
-            //this.AppWindow.TitleBar.ExtendsContentIntoTitleBar = true;
-            //this.SetTitleBar(this.CustomTitleBar);
         }
 
         private void ThemeColorsList_OnDoubleTapped(object sender, Microsoft.UI.Xaml.Input.DoubleTappedRoutedEventArgs e)

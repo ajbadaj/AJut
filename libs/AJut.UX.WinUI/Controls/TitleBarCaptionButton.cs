@@ -1,96 +1,48 @@
 ﻿namespace AJut.UX.Controls
 {
-    using Microsoft.UI;
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
-    using Microsoft.UI.Xaml.Media;
     using System;
     using DPUtils = AJut.UX.DPUtils<TitleBarCaptionButton>;
 
     public partial class TitleBarCaptionButton : Button
     {
+        private Window m_currentWindow = null;
+
+        // ======================[ Construction / Setup ]==================================
         public TitleBarCaptionButton()
         {
             this.DefaultStyleKey = typeof(TitleBarCaptionButton);
-            this.Loaded += this.OnLoaded;
             this.PointerEntered += this.OnPointerEntered;
             this.PointerExited += this.OnPointerExited;
             this.ActualThemeChanged += this.OnThemeChanged;
         }
-
-        private void OnThemeChanged(FrameworkElement sender, object args)
+        public void SetupFor(Window window)
         {
-            this.EvaluteCurrentBrushes();
-        }
-
-        public event EventHandler<EventArgs<bool>> IsPointerInsideChanged;
-        private void OnPointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
-        {
-            this.IsPointerInsideChanged?.Invoke(this, new EventArgs<bool>(true));
-            this.EvaluteCurrentBrushes();
-        }
-
-        private void OnPointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
-        {
-            this.IsPointerInsideChanged?.Invoke(this, new EventArgs<bool>(false));
-            this.EvaluteCurrentBrushes();
-        }
-
-        Window m_currentWindow = null;
-        private void OnLoaded(object sender, RoutedEventArgs e)
-        {
-            _SetWindow(null);
-
-            var windowRoot = this.XamlRoot.Content.GetFirstChildOf<ThemedWindowRootControl>();
-            if (windowRoot != null)
+            if (m_currentWindow != null)
             {
-                windowRoot.IsSetupChanged += _OnOwnerFirstSetup;
-                if (windowRoot.IsSetup)
-                {
-                    _SetWindow(windowRoot.Owner);
-                }
-
-                void _OnOwnerFirstSetup(object sender, EventArgs e)
-                {
-                    windowRoot.IsSetupChanged -= _OnOwnerFirstSetup;
-                    _SetWindow(windowRoot.Owner);
-                }
+                m_currentWindow.Activated -= _OnOwnerActivated;
             }
 
-            if (Window.Current != null)
+            m_currentWindow = window;
+            if (m_currentWindow != null)
             {
-                Window.Current.Activated += this.CurrentWindowOnActivated;
-                this.EvaluteCurrentBrushes();
+                m_currentWindow.Activated += _OnOwnerActivated;
+                WindowXT.TrackActivation(m_currentWindow, true);
             }
 
-            void _SetWindow(Window newCurrentWindow)
-            {
-                if (m_currentWindow != null)
-                {
-                    m_currentWindow.Activated -= _OnOwnerActivated;
-                }
-
-                m_currentWindow = newCurrentWindow;
-                if (m_currentWindow != null)
-                {
-                    m_currentWindow.Activated += _OnOwnerActivated;
-                    WindowXT.TrackActivation(m_currentWindow, true);
-                }
-
-                this.EvaluteCurrentBrushes();
-            }
+            this.EvaluateState();
 
             void _OnOwnerActivated(object sender, WindowActivatedEventArgs args)
             {
-                this.EvaluteCurrentBrushes();
+                this.EvaluateState();
             }
         }
 
-        private void CurrentWindowOnActivated(object sender, WindowActivatedEventArgs args)
-        {
-            this.EvaluteCurrentBrushes();
-        }
+        // ======================[ Events ]==========================
+        public event EventHandler<EventArgs<bool>> IsPointerInsideChanged;
 
+        // ======================[ Properties ]==========================
         public static readonly DependencyProperty GlyphProperty = DPUtils.Register(_ => _.Glyph);
         public string Glyph
         {
@@ -98,13 +50,10 @@
             set => this.SetValue(GlyphProperty, value);
         }
 
-        public int OnWindowIsActivatedChanged { get; private set; }
-
-        private static SolidColorBrush g_transparent = new SolidColorBrush(Colors.Transparent);
-
-        private void EvaluteCurrentBrushes()
+        // ======================[ Public Interface Methods ]==========================
+        public void EvaluateState()
         {
-            if (m_currentWindow == null || m_currentWindow.AppWindow == null || m_currentWindow.AppWindow.TitleBar == null)
+            if (m_currentWindow == null)
             {
                 return;
             }
@@ -119,6 +68,7 @@
                 VisualStateManager.GoToState(this, "PointerOver", true);
                 return;
             }
+
             VisualStateManager.GoToState(this, m_currentWindow.IsActivated() ? "Normal" : "Inactive", true);
             
 
@@ -131,6 +81,24 @@
             // CaptionButtonHoverBackgroundColor = "{Binding OwnerAppWindow.TitleBar.ButtonHoverBackgroundColor, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"
             // CaptionButtonPressedBackgroundColor = "{Binding OwnerAppWindow.TitleBar.ButtonPressedBackgroundColor, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"
             // CaptionButtonInactiveBackgroundColor = "{Binding OwnerAppWindow.TitleBar.ButtonInactiveBackgroundColor, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}" /> -->
+        }
+
+        // ======================[ Event Handlers ]==========================
+        private void OnThemeChanged(FrameworkElement sender, object args)
+        {
+            this.EvaluateState();
+        }
+
+        private void OnPointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+        {
+            this.IsPointerInsideChanged?.Invoke(this, new EventArgs<bool>(true));
+            this.EvaluateState();
+        }
+
+        private void OnPointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+        {
+            this.IsPointerInsideChanged?.Invoke(this, new EventArgs<bool>(false));
+            this.EvaluateState();
         }
     }
 }

@@ -32,7 +32,7 @@
                                 <Binding.Converter>
                                     <ajut_conv:BooleanToBrushConverter>
                                         <ajut_conv:BooleanToBrushConverter.FalseValue>
-                                            <SolidColorBrush Color="{ThemeResource SystemAccentColor}"/>
+                                            <SolidColorBrush Color="{ThemeResource AJut_Color_PrimaryHighlight}"/>
                                         </ajut_conv:BooleanToBrushConverter.FalseValue>
                                         <ajut_conv:BooleanToBrushConverter.TrueValue>
                                             <SolidColorBrush Color="{ThemeResource AJut_Color_ChromeCloseButtonComplement}"/>
@@ -57,7 +57,7 @@
                         <Binding.Converter>
                             <ajut_conv:BooleanToBrushConverter>
                                 <ajut_conv:BooleanToBrushConverter.FalseValue>
-                                    <SolidColorBrush Color="{ThemeResource SystemAccentColor}"/>
+                                    <SolidColorBrush Color="{ThemeResource AJut_Color_PrimaryHighlight}"/>
                                 </ajut_conv:BooleanToBrushConverter.FalseValue>
                                 <ajut_conv:BooleanToBrushConverter.TrueValue>
                                     <SolidColorBrush Color="{ThemeResource AJut_Color_ChromeCloseButtonComplement}"/>

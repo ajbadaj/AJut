@@ -131,24 +131,28 @@
         {
             return window.PerformPresenterTask<OverlappedPresenter>((presenter) =>
             {
-                // Enter fullscreen mode
-                presenter.SetBorderAndTitleBar(false, false);
-                presenter.Maximize();
+                // Remove 
+                //presenter.SetBorderAndTitleBar(false, false);
+                //window.AppWindow.TitleBar.ExtendsContentIntoTitleBar = false;
+                //window.ExtendsContentIntoTitleBar = false;
+                //window.SetTitleBar(new Grid());
                 window.AppWindow.SetPresenter(AppWindowPresenterKind.FullScreen);
+                //window.AppWindow.TitleBar.SetDragRectangles(Array.Empty<Windows.Graphics.RectInt32>());
             });
         }
 
         public static bool ExitFullscreen (this Window window, int? minimmumWidth = null, int? minimumHeight = null)
         {
             window.AppWindow.SetPresenter(AppWindowPresenterKind.Overlapped);
-            return window.PerformPresenterTask<OverlappedPresenter>(presenter =>
-            {
-                // Exit fullscreen mode
-                presenter.SetBorderAndTitleBar(true, true);
-                presenter.Restore();
-                presenter.PreferredMinimumWidth = minimmumWidth;
-                presenter.PreferredMinimumHeight = minimumHeight;
-            });
+            return true;
+            //return window.PerformPresenterTask<OverlappedPresenter>(presenter =>
+            //{
+            //    // Exit fullscreen mode
+            //    presenter.SetBorderAndTitleBar(true, true);
+            //    presenter.Restore();
+            //    presenter.PreferredMinimumWidth = minimmumWidth;
+            //    presenter.PreferredMinimumHeight = minimumHeight;
+            //});
         }
 
         public static void BringToFront(this Window window)
