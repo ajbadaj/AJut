@@ -13,84 +13,91 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:ThemedWindowRootControl">
-                    <Grid x:Name="PART_WindowRoot" UseLayoutRounding="True">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
+                    <Border x:Name="PART_WindowRoot" 
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}">
+                        <Grid UseLayoutRounding="True">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
 
-                        <VisualStateManager.VisualStateGroups>
-                            <VisualStateGroup x:Name="CommonStates">
-                                <VisualState x:Name="Normal">
-                                    <Storyboard>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_CustomTitleBarContent" Storyboard.TargetProperty="Foreground">
-                                            <DiscreteObjectKeyFrame KeyTime="0">
-                                                <DiscreteObjectKeyFrame.Value>
-                                                    <SolidColorBrush Color="{ThemeResource TitleBarCaptionButtonForegroundColor}"/>
-                                                </DiscreteObjectKeyFrame.Value>
-                                            </DiscreteObjectKeyFrame>
-                                        </ObjectAnimationUsingKeyFrames>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_TitleBarBorder" Storyboard.TargetProperty="Background">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{TemplateBinding ActiveTitleBarBackground}" />
-                                        </ObjectAnimationUsingKeyFrames>
-                                    </Storyboard>
-                                </VisualState>
-                                <VisualState x:Name="ChromeButtonsHover">
-                                    <Storyboard>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_CustomTitleBarContent" Storyboard.TargetProperty="Foreground">
-                                            <DiscreteObjectKeyFrame KeyTime="0">
-                                                <DiscreteObjectKeyFrame.Value>
-                                                    <SolidColorBrush Color="{TemplateBinding ActiveTitleBarBackground}"/>
-                                                </DiscreteObjectKeyFrame.Value>
-                                            </DiscreteObjectKeyFrame>
-                                        </ObjectAnimationUsingKeyFrames>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_TitleBarBorder" Storyboard.TargetProperty="Background">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{TemplateBinding ActiveTitleBarBackground}" />
-                                        </ObjectAnimationUsingKeyFrames>
-                                    </Storyboard>
-                                </VisualState>
-                                <VisualState x:Name="CloseHover">
-                                    <Storyboard>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_CustomTitleBarContent" Storyboard.TargetProperty="Foreground">
-                                            <DiscreteObjectKeyFrame KeyTime="0">
-                                                <DiscreteObjectKeyFrame.Value>
-                                                    <SolidColorBrush Color="{TemplateBinding CloseHoverBackground}"/>
-                                                </DiscreteObjectKeyFrame.Value>
-                                            </DiscreteObjectKeyFrame>
-                                        </ObjectAnimationUsingKeyFrames>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_TitleBarBorder" Storyboard.TargetProperty="Background">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{TemplateBinding CloseHoverBackground}" />
-                                        </ObjectAnimationUsingKeyFrames>
-                                    </Storyboard>
-                                </VisualState>
-                            </VisualStateGroup>
-                        </VisualStateManager.VisualStateGroups>
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal">
+                                        <Storyboard>
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_CustomTitleBarContent" Storyboard.TargetProperty="Foreground">
+                                                <DiscreteObjectKeyFrame KeyTime="0">
+                                                    <DiscreteObjectKeyFrame.Value>
+                                                        <SolidColorBrush Color="{ThemeResource TitleBarCaptionButtonForegroundColor}"/>
+                                                    </DiscreteObjectKeyFrame.Value>
+                                                </DiscreteObjectKeyFrame>
+                                            </ObjectAnimationUsingKeyFrames>
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_TitleBarBorder" Storyboard.TargetProperty="Background">
+                                                <DiscreteObjectKeyFrame KeyTime="0" Value="{TemplateBinding ActiveTitleBarBackground}" />
+                                            </ObjectAnimationUsingKeyFrames>
+                                        </Storyboard>
+                                    </VisualState>
+                                    <VisualState x:Name="ChromeButtonsHover">
+                                        <Storyboard>
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_CustomTitleBarContent" Storyboard.TargetProperty="Foreground">
+                                                <DiscreteObjectKeyFrame KeyTime="0">
+                                                    <DiscreteObjectKeyFrame.Value>
+                                                        <SolidColorBrush Color="{TemplateBinding ActiveTitleBarBackground}"/>
+                                                    </DiscreteObjectKeyFrame.Value>
+                                                </DiscreteObjectKeyFrame>
+                                            </ObjectAnimationUsingKeyFrames>
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_TitleBarBorder" Storyboard.TargetProperty="Background">
+                                                <DiscreteObjectKeyFrame KeyTime="0" Value="{TemplateBinding ActiveTitleBarBackground}" />
+                                            </ObjectAnimationUsingKeyFrames>
+                                        </Storyboard>
+                                    </VisualState>
+                                    <VisualState x:Name="CloseHover">
+                                        <Storyboard>
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_CustomTitleBarContent" Storyboard.TargetProperty="Foreground">
+                                                <DiscreteObjectKeyFrame KeyTime="0">
+                                                    <DiscreteObjectKeyFrame.Value>
+                                                        <SolidColorBrush Color="{TemplateBinding CloseHoverBackground}"/>
+                                                    </DiscreteObjectKeyFrame.Value>
+                                                </DiscreteObjectKeyFrame>
+                                            </ObjectAnimationUsingKeyFrames>
+                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_TitleBarBorder" Storyboard.TargetProperty="Background">
+                                                <DiscreteObjectKeyFrame KeyTime="0" Value="{TemplateBinding CloseHoverBackground}" />
+                                            </ObjectAnimationUsingKeyFrames>
+                                        </Storyboard>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
 
-                        <!-- Client Area -->
-                        <ContentControl x:Name="PART_ClientContainer" Grid.Row="1" Content="{TemplateBinding WindowContents}"
-                                        Margin="0" Padding="0" BorderThickness="0" CornerRadius="0,0,8,8"
-                                        HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
+                            <!-- Client Area -->
+                            <ContentControl x:Name="PART_ClientContainer" Grid.Row="1" Content="{TemplateBinding WindowContents}"
+                                            Margin="0" Padding="0" BorderThickness="0"
+                                            CornerRadius="{Binding ElementName=PART_WindowRoot, Path=CornerRadius, Converter={ajut_conv:CornerRadiusSideExtractionConverter Side=Bottom}}"
+                                            HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
 
-                        <!-- Titlebar Area -->
-                        <ContentControl x:Name="PART_CustomTitleBarContent" Content="{TemplateBinding CustomTilteBar}"
-                                        HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                                        Height="{TemplateBinding TitleBarHeight}"/>
+                            <!-- Titlebar Area -->
+                            <ContentControl x:Name="PART_CustomTitleBarContent" Content="{TemplateBinding CustomTilteBar}"
+                                            HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                                            Height="{TemplateBinding TitleBarHeight}"/>
 
-                        <Border x:Name="PART_TitleBarBorder" BorderBrush="{Binding ElementName=PART_WindowRoot, Path=Background}"
-                                Grid.RowSpan="2" BorderThickness="1" CornerRadius="8,8,0,0"/>
+                            <Border x:Name="PART_TitleBarBorder" BorderBrush="{Binding ElementName=PART_WindowRoot, Path=Background}"
+                                    Grid.RowSpan="2" BorderThickness="1" 
+                                    CornerRadius="{Binding ElementName=PART_WindowRoot, Path=CornerRadius, Converter={ajut_conv:CornerRadiusSideExtractionConverter Side=Top}}"/>
 
-                        <local:TitleBarCaptionButton x:Name="PART_EnterFullscreenButton"
-                                                     Content="{StaticResource AJut_Symbol_FullScreenSymbol}"
-                                                     HorizontalAlignment="Right"
-                                                     VerticalAlignment="Top"
-                                                     Margin="0,0,138,0"/>
+                            <local:TitleBarCaptionButton x:Name="PART_EnterFullscreenButton"
+                                                         Content="{StaticResource AJut_Symbol_FullScreenSymbol}"
+                                                         HorizontalAlignment="Right"
+                                                         VerticalAlignment="Top"
+                                                         Margin="0,0,138,0"/>
 
-                        <local:TitleBarCaptionButton x:Name="PART_ExitFullscreenButton"
-                                                     Content="{StaticResource AJut_Symbol_ExitFullScreenSymbol}"
-                                                     HorizontalAlignment="Right"
-                                                     VerticalAlignment="Top"
-                                                     Margin="0,-1,-1,0"/>
-                    </Grid>
+                            <local:TitleBarCaptionButton x:Name="PART_ExitFullscreenButton"
+                                                         Content="{StaticResource AJut_Symbol_ExitFullScreenSymbol}"
+                                                         HorizontalAlignment="Right"
+                                                         VerticalAlignment="Top"
+                                                         Margin="0,-1,-1,0"/>
+                        </Grid>
+                    </Border>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

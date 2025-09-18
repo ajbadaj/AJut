@@ -11,17 +11,11 @@ namespace AJutShowRoomWinUI
     using Microsoft.UI.Xaml.Media;
     using System;
     using System.Collections.ObjectModel;
-    using System.Diagnostics;
     using System.Linq;
     using System.Threading.Tasks;
     using Windows.Storage;
     using Windows.UI;
-    using Windows.UI.Popups;
 
-
-    /// <summary>
-    /// An empty window that can be used on its own or navigated to within a Frame.
-    /// </summary>
     public sealed partial class MainWindow : Window
     {
         private const string kThemeColorsSettingsKey = "_Hidden_theme_colors";

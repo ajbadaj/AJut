@@ -1,6 +1,5 @@
 namespace AJut.UX.Controls
 {
-    using AJut.Text.AJson;
     using AJut.UX.Theming;
     using Microsoft.UI;
     using Microsoft.UI.Input;
@@ -16,12 +15,6 @@ namespace AJut.UX.Controls
     using Windows.UI;
     using DPUtils = DPUtils<ThemedWindowRootControl>;
 
-    /*
-     * TODOs:
-     * - Move over converters
-     * - Inactive background color
-     * 
-     */
     public interface ITitleBarDragSizer
     {
         event EventHandler<EventArgs> ReadyToGenerateTitleBarDragRectangles;
@@ -33,7 +26,7 @@ namespace AJut.UX.Controls
     [ContentProperty(Name = nameof(WindowContents))]
     [TemplatePart(Name = nameof(PART_TitleBarBorder), Type = typeof(Border))]
     [TemplatePart(Name = nameof(PART_ClientContainer), Type = typeof(ContentControl))]
-    [TemplatePart(Name = nameof(PART_WindowRoot), Type = typeof(UIElement))]
+    [TemplatePart(Name = nameof(PART_WindowRoot), Type = typeof(Border))]
     [TemplatePart(Name = nameof(PART_EnterFullscreenButton), Type = typeof(TitleBarCaptionButton))]
     [TemplatePart(Name = nameof(PART_ExitFullscreenButton), Type = typeof(TitleBarCaptionButton))]
     [TemplatePart(Name = nameof(PART_CustomTitleBarContent), Type = typeof(ContentControl))]
@@ -99,7 +92,7 @@ namespace AJut.UX.Controls
         protected override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
-            this.PART_WindowRoot = (Panel)this.GetTemplateChild(nameof(PART_WindowRoot));
+            this.PART_WindowRoot = (Border)this.GetTemplateChild(nameof(PART_WindowRoot));
             this.PART_TitleBarBorder = (Border)this.GetTemplateChild(nameof(PART_TitleBarBorder));
             this.PART_ClientContainer = (ContentControl)this.GetTemplateChild(nameof(PART_ClientContainer));
             this.PART_CustomTitleBarContent = (ContentControl)this.GetTemplateChild(nameof(PART_CustomTitleBarContent));
@@ -133,7 +126,7 @@ namespace AJut.UX.Controls
         public event EventHandler<EventArgs> IsSetupChanged;
 
         // ============================[ Properties ]========================================
-        public Panel PART_WindowRoot { get; private set; }
+        public Border PART_WindowRoot { get; private set; }
         public Border PART_TitleBarBorder { get; private set; }
         public ContentControl PART_ClientContainer { get; private set; }
         public TitleBarCaptionButton PART_EnterFullscreenButton { get; private set; }
@@ -252,6 +245,7 @@ namespace AJut.UX.Controls
             get => (bool)this.GetValue(IsHoveringOverCloseProperty);
             set => this.SetValue(IsHoveringOverCloseProperty, value);
         }
+
         #endregion // === [ Dependency Properties ] ===
 
         // ============================[ Public Interface Methods ]================================
@@ -308,12 +302,10 @@ namespace AJut.UX.Controls
                 InputNonClientPointerSource ipc = InputNonClientPointerSource.GetForWindowId(m_owner.GetWindowId());
                 if (ipc != null)
                 {
-                    Logger.LogInfo($"[IPC] Set drag rectangles from customizer:\n{JsonHelper.BuildJsonForObject(rects).ToString()}");
                     ipc.SetRegionRects(NonClientRegionKind.Caption, rects);
                 }
                 else
                 {
-                    Logger.LogInfo($"[TitleBar.SetDragRectangles] Set drag rectangles from customizer:\n{JsonHelper.BuildJsonForObject(rects).ToString()}");
                     m_owner.AppWindow.TitleBar.SetDragRectangles(rects);
                 }
             }
@@ -399,31 +391,18 @@ namespace AJut.UX.Controls
             }
         }
 
-        Windows.Graphics.RectInt32[] ITitleBarDragSizer.GenerateTitleBarDragRectangles()
+        RectInt32[] ITitleBarDragSizer.GenerateTitleBarDragRectangles()
         {
+            double dpiScale = m_owner.DetermineActiveDPIScale();
             var transform = this.PART_CustomTitleBarContent.TransformToVisual(this);
             var toCustomTitleBarStart = transform.TransformPoint(new Point());
-            //Point backToRoot = new Point(-100.0, 0.0);
-            //return [
-            //    new Windows.Graphics.RectInt32(
-            //        (int)-backToRoot.X, (int)-backToRoot.Y, (int)this.PART_CustomTitleBarContent.ActualWidth - kChromeButtonsAreaWidth, (int)this.TitleBarHeight
-            //    )
-            //];
-
-            //double dpiScale = m_owner.DetermineActiveDPIScale();
-            //return [new Windows.Graphics.RectInt32(
-            //    -(int)(backToRoot.X * dpiScale),
-            //    -(int)(backToRoot.Y * dpiScale),
-            //    (int)((this.PART_CustomTitleBarContent.ActualWidth - kChromeButtonsAreaWidth + backToRoot.X) * dpiScale),
-            //    (int)((this.PART_CustomTitleBarContent.ActualHeight + backToRoot.Y) * dpiScale)
-            //)];
 
             return [
-                new Windows.Graphics.RectInt32(
-                    (int)toCustomTitleBarStart.X, 
-                    (int)toCustomTitleBarStart.Y,
-                    (int)(this.PART_CustomTitleBarContent.ActualWidth - kChromeButtonsAreaWidth),
-                    (int)(this.PART_CustomTitleBarContent.ActualHeight)
+                new RectInt32(
+                    (int)(dpiScale * toCustomTitleBarStart.X), 
+                    (int)(dpiScale * toCustomTitleBarStart.Y),
+                    (int)(dpiScale * (this.PART_CustomTitleBarContent.ActualWidth - kChromeButtonsAreaWidth)),
+                    (int)(dpiScale * (this.PART_CustomTitleBarContent.ActualHeight))
                 )
             ];
         }
@@ -460,41 +439,13 @@ namespace AJut.UX.Controls
 
         private void GoToState(string state, bool useTransitions = true, bool transitionButtonsToo = true)
         {
+            if (state == this.LastState)
+            {
+                return;
+            }
+
             this.LastState = state;
             VisualStateManager.GoToState(this, state, useTransitions);
-
-            //if (transitionButtonsToo)
-            //{
-            //    if (this.PART_EnterFullscreenButton != null)
-            //    {
-            //        VisualStateManager.GoToState(this.PART_EnterFullscreenButton, state, useTransitions);
-            //    }
-            //    if (this.PART_ExitFullscreenButton != null)
-            //    {
-            //        VisualStateManager.GoToState(this.PART_ExitFullscreenButton, state, useTransitions);
-            //    }
-            //}
-        }
-
-        //private void OnTitleBarButtonHighlightColorChanged ()
-        //{
-        //    //if (m_owner != null)
-        //    //{
-        //    //    m_owner.AppWindow.TitleBar.ButtonHoverBackgroundColor = this.TitleBarButtonHighlightColor;
-        //    //}
-
-        //    //m_normalBorderHighlightBrush = new SolidColorBrush(this.TitleBarButtonHighlightColor);
-        //}
-
-        private void HandlePointerNotInWindowChromeButtonRange()
-        {
-            //if (this.PART_WindowRoot != null)
-            //{
-            //    this.PART_WindowRoot.Background = kTransparent;
-            //}
-
-            this.IsHoveringOverClose = false;
-            this.GoToState(m_owner.IsActivated() ? "Normal" : "Inactive");
         }
 
         // ============================[ Event Hanlders ]================================
@@ -503,13 +454,10 @@ namespace AJut.UX.Controls
             if (args.WindowActivationState != WindowActivationState.Deactivated)
             {
                 this.GoToState("Normal", false);
-                //this.CurrentlySetTitlebarBackground = this.ActiveTitleBarBackground;
             }
             else
             {
-                this.HandlePointerNotInWindowChromeButtonRange();
                 this.GoToState("Inactive");
-                //this.CurrentlySetTitlebarBackground = this.InactiveTitlebarBackground;
             }
         }
 
@@ -551,13 +499,6 @@ namespace AJut.UX.Controls
             {
                 this.ResetTitleBarDragRectangles();
             }
-            //else if (args.DidZOrderChange)
-            //{
-            //    DispatcherQueue.GetForCurrentThread()?.TryEnqueue(() =>
-            //    {
-            //        m_owner.ExitFullscreen();
-            //    });
-            //}
         }
 
         private void OnPointerMoved (object sender, PointerRoutedEventArgs e)
@@ -583,31 +524,33 @@ namespace AJut.UX.Controls
             {
                 if (point.X > this.ActualWidth - 46)
                 {
-                    //this.PART_WindowRoot.Background = this.CloseButtonHighlightBrush;
                     this.IsHoveringOverClose = true;
                     this.GoToState("CloseHover", transitionButtonsToo: false);
-                    return;
                 }
                 else if (point.X > this.ActualWidth - kBuiltInChromeButtonsWidth
                             || this.PART_EnterFullscreenButton.IsPointerOver
                             || this.PART_ExitFullscreenButton.IsPointerOver)
                 {
-                    //this.PART_WindowRoot.Background = m_owner.IsActivated() ? m_normalBorderHighlightBrush : this.InactiveTitlebarBackground;
                     this.IsHoveringOverClose = false;
                     this.GoToState("ChromeButtonsHover", transitionButtonsToo: false);
                 }
                 else
                 {
-                    this.GoToState("Normal");
+                    this.IsHoveringOverClose = false;
+                    this.GoToState(m_owner.IsActivated() ? "Normal" : "Inactive");
                 }
             }
-
-            this.HandlePointerNotInWindowChromeButtonRange();
+            else
+            {
+                this.GoToState(m_owner.IsActivated() ? "Normal" : "Inactive");
+                this.IsHoveringOverClose = false;
+            }
         }
 
         private void OnPointerExited (object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
         {
-            this.HandlePointerNotInWindowChromeButtonRange();
+            this.IsHoveringOverClose = false;
+            this.GoToState(m_owner.IsActivated() ? "Normal" : "Inactive");
         }
     }
 }

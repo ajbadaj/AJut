@@ -79,4 +79,17 @@
         {
         }
     }
+
+    public sealed class BooleanToThicknessConverter : BooleanConverter<Thickness>
+    {
+        public BooleanToThicknessConverter() : base(new Thickness(), new Thickness())
+        {
+        }
+    }
+    public sealed class BooleanToCornerRadiusConverter : BooleanConverter<CornerRadius>
+    {
+        public BooleanToCornerRadiusConverter() : base(new CornerRadius(), new CornerRadius())
+        {
+        }
+    }
 }

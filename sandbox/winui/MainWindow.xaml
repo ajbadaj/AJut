@@ -15,7 +15,8 @@
         <MicaBackdrop />
     </Window.SystemBackdrop>
     <ajut:ThemedWindowRootControl x:Name="Root" TargetBorderThickness="2" TitleBarHeight="40" ShowFullscreenButtons="True" 
-                                  InactiveTitlebarBackground="{ThemeResource AJut_Brush_TitleBarBackgroundInactive}">
+                                  InactiveTitlebarBackground="{ThemeResource AJut_Brush_TitleBarBackgroundInactive}"
+                                  CornerRadius="{Binding ElementName=Root, Path=IsMaximizedOrFullScreened, Converter={ajut_conv:BooleanToCornerRadiusConverter TrueValue='0', FalseValue='5'}}">
         <ajut:ThemedWindowRootControl.ActiveTitleBarBackground>
             <AcrylicBrush TintColor="{ThemeResource AJut_Color_TitleBarBackground}" TintLuminosityOpacity="1" TintOpacity="0.3" Opacity="0.8"/>
         </ajut:ThemedWindowRootControl.ActiveTitleBarBackground>
@@ -26,18 +27,20 @@
                     <ColumnDefinition />
                 </Grid.ColumnDefinitions>
                 <Grid Grid.Column="0">
-                    <Path x:Name="Path" Data="M 0,0 L 40,0 L 60,20 L 40,40 L 0,40 Z" StrokeThickness="0">
+                    <Path x:Name="JewelBkgPath" Data="M 0,0 L 40,0 L 60,20 L 40,40 L 0,40 Z" StrokeThickness="0">
                         <Path.Fill>
-                            <Binding ElementName="Root" Path="IsHoveringOverClose" Mode="OneWay">
+                            <Binding ElementName="Root" Path="LastState">
                                 <Binding.Converter>
-                                    <ajut_conv:BooleanToBrushConverter>
-                                        <ajut_conv:BooleanToBrushConverter.FalseValue>
-                                            <SolidColorBrush Color="{ThemeResource AJut_Color_PrimaryHighlight}"/>
-                                        </ajut_conv:BooleanToBrushConverter.FalseValue>
-                                        <ajut_conv:BooleanToBrushConverter.TrueValue>
-                                            <SolidColorBrush Color="{ThemeResource AJut_Color_ChromeCloseButtonComplement}"/>
-                                        </ajut_conv:BooleanToBrushConverter.TrueValue>
-                                    </ajut_conv:BooleanToBrushConverter>
+                                    <ajut_conv:StringToBrushSwitchConverter>
+                                        <ajut_conv:StringToBrushSwitchConverter.Cases>
+                                            <ajut_conv:BrushDictionary>
+                                                <SolidColorBrush x:Key="CloseHover" Color="{ThemeResource AJut_Color_ChromeCloseButtonComplement}"/>
+                                                <SolidColorBrush x:Key="ChromeButtonsHover" Color="{ThemeResource AJut_Color_PrimaryHighlightBright}"/>
+                                                <SolidColorBrush x:Key="Normal" Color="{ThemeResource AJut_Color_PrimaryHighlight}"/>
+                                                <SolidColorBrush x:Key="Inactive" Color="{ThemeResource AJut_Color_PrimaryHighlightDesat}"/>
+                                            </ajut_conv:BrushDictionary>
+                                        </ajut_conv:StringToBrushSwitchConverter.Cases>
+                                    </ajut_conv:StringToBrushSwitchConverter>
                                 </Binding.Converter>
                             </Binding>
                         </Path.Fill>
@@ -50,22 +53,10 @@
             </Grid>
         </ajut:ThemedWindowRootControl.CustomTilteBar>
         <Grid >
-            <Border x:Name="Colorization" Background="{Binding ElementName=Root, Path=Background}" CornerRadius="0,0,0,0" 
-                    BorderThickness="8,0,0,0" Margin="0,0,0,0">
-                <Border.BorderBrush>
-                    <Binding ElementName="Root" Path="IsHoveringOverClose" Mode="OneWay">
-                        <Binding.Converter>
-                            <ajut_conv:BooleanToBrushConverter>
-                                <ajut_conv:BooleanToBrushConverter.FalseValue>
-                                    <SolidColorBrush Color="{ThemeResource AJut_Color_PrimaryHighlight}"/>
-                                </ajut_conv:BooleanToBrushConverter.FalseValue>
-                                <ajut_conv:BooleanToBrushConverter.TrueValue>
-                                    <SolidColorBrush Color="{ThemeResource AJut_Color_ChromeCloseButtonComplement}"/>
-                                </ajut_conv:BooleanToBrushConverter.TrueValue>
-                            </ajut_conv:BooleanToBrushConverter>
-                        </Binding.Converter>
-                    </Binding>
-                </Border.BorderBrush>
+            <Border x:Name="Colorization" 
+                    BorderThickness="8,0,0,0" Margin="0,0,0,0" CornerRadius="0,0,0,0" 
+                    Background="{Binding ElementName=Root, Path=Background}"
+                    BorderBrush="{Binding ElementName=JewelBkgPath, Path=Fill}">
                 <TabView VerticalAlignment="Stretch">
                     <TabView.Resources>
                         <ResourceDictionary>

@@ -38,9 +38,6 @@
     <ProjectReference Include="..\AJut.Core\AJut.Core.csproj" />
     <ProjectReference Include="..\AJut.UX\AJut.UX.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Converters\" />
-  </ItemGroup>
 
   <ItemGroup>
 	  <Compile Update="Controls\ThemedWindowRootControl.cs">

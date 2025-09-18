@@ -4,7 +4,6 @@
     using AJut.UX;
     using AJut.UX.Theming;
     using Microsoft.UI.Xaml;
-    using Microsoft.UI.Xaml.Media;
     using System.Diagnostics;
 
     /// <summary>
@@ -36,7 +35,7 @@
         /// Invoked when the application is launched.
         /// </summary>
         /// <param name="args">Details about the launch request and process.</param>
-        protected override void OnLaunched (Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
+        protected override void OnLaunched (LaunchActivatedEventArgs args)
         {
             ApplicationUtilities.RunOnetimeSetup("WinUI_ShowRoom", this, sharedProjectName: "AJut.ShowRoom", onExceptionRecieved: LogException);
             Logger.FlushToFileAfterEach = true;
