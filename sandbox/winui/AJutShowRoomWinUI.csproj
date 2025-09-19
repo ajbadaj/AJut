@@ -52,7 +52,8 @@
   </ItemGroup>
   <ItemGroup>
 	<ProjectReference Include="..\..\libs\AJut.Core\AJut.Core.csproj" />
-	<ProjectReference Include="..\..\libs\AJut.UX.WinUI\AJut.UX.WinUI.csproj" />
+	<ProjectReference Include="..\..\libs\AJut.UX.WinUI3\AJut.UX.WinUI3.csproj" />
+	<ProjectReference Include="..\..\libs\AJut.UX\AJut.UX.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Content Update="Assets\app.ico">

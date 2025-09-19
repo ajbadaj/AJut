@@ -3,8 +3,8 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <ResourceDictionary.MergedDictionaries>
-        <ResourceDictionary Source="/AJut.UX.WinUI/Resources/LightThemeColorsBase.xaml"/>
-        <ResourceDictionary Source="/AJut.UX.WinUI/Resources/SystemColorAliasing.xaml"/>
+        <ResourceDictionary Source="/AJut.UX.WinUI3/Resources/LightThemeColorsBase.xaml"/>
+        <ResourceDictionary Source="/AJut.UX.WinUI3/Resources/SystemColorAliasing.xaml"/>
     </ResourceDictionary.MergedDictionaries>
 
     <Color x:Key="SolidBackgroundFillColorTertiary">Orange</Color>

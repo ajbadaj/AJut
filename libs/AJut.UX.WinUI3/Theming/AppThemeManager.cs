@@ -2,7 +2,6 @@
 {
     using Microsoft.UI.Dispatching;
     using Microsoft.UI.Xaml;
-    using Microsoft.UI.Xaml.Controls.Primitives;
     using Microsoft.Win32;
     using System;
     using Windows.Storage;
