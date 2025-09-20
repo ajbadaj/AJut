@@ -13,26 +13,26 @@
     <StaticResource x:Key="SystemAccentColor2Light1" ResourceKey="AJut_Color_SecondaryHighlightBright" />
     <StaticResource x:Key="SystemAccentColor2Light2" ResourceKey="AJut_Color_SecondaryHighlightDesat" />
 
+    <SolidColorBrush x:Key="TextFillColorPrimaryBrush" Color="{ThemeResource AJut_Color_NormalText}"/>
+    <SolidColorBrush x:Key="TextBoxForegroundThemeBrush" Color="{ThemeResource AJut_Color_NormalText}"/>
+    <SolidColorBrush x:Key="TextFillColorSecondaryBrush" Color="{ThemeResource AJut_Color_InteractiveText}"/>
+    <SolidColorBrush x:Key="SubtleFillColorSecondaryBrush" Color="{ThemeResource AJut_Color_HighlightText}"/>
+    <SolidColorBrush x:Key="DefaultTextForegroundThemeBrush" Color="{ThemeResource AJut_Color_NormalText}"/>
+    <SolidColorBrush x:Key="ControlStrokeColorDefaultBrush" Color="{ThemeResource AJut_Color_NormalText}"/>
+    <!--<SolidColorBrush x:Key="ControlElevationBorderBrush" Color="{ThemeResource AJut_}"/>-->
+
+    <StaticResource x:Key="SystemListAccentLowColor" ResourceKey="AJut_Color_PrimaryHighlightDesat" />
+    <StaticResource x:Key="SystemListAccentMediumColor" ResourceKey="AJut_Color_PrimaryHighlight" />
+    <StaticResource x:Key="SystemListAccentHighColor" ResourceKey="AJut_Color_PrimaryHighlightBright" />
     <StaticResource x:Key="SystemListLowBrush" ResourceKey="AJut_Brush_ListBackground" />
     <StaticResource x:Key="SystemListMediumBrush" ResourceKey="AJut_Brush_ListBorder" />
     <StaticResource x:Key="SystemListAccentMediumBrush" ResourceKey="AJut_Brush_ListSelection" />
-
-    <Color x:Key="SystemListAccentLowColor">#660078D7</Color>
-    <Color x:Key="SystemListAccentMediumColor">#990078D7</Color>
-    <Color x:Key="SystemListAccentHighColor">#B20078D7</Color>
     
     <StaticResource x:Key="SystemChromeBlackHighBrush" ResourceKey="AJut_Brush_ChromeButtonHoverBackground" />
-
     <StaticResource x:Key="TitleBarCaptionButtonHoverForegroundColor" ResourceKey="AJut_Brush_ChromeButtonHoverBackground"/>
     <StaticResource x:Key="TitleBarCaptionButtonPressedForegroundColor" ResourceKey="AJut_Color_ChromeButtonPressedForeground"/>
     <StaticResource x:Key="TitleBarCaptionButtonInactiveForegroundColor" ResourceKey="AJut_Color_ChromeButtonInactiveForeground"/>
-
-
     <StaticResource x:Key="TitleBarCaptionButtonForegroundColor" ResourceKey="AJut_Brush_TitleBarForeground"/>
-
-    <!--<SolidColorBrush x:Key="CloseButtonBackgroundPointerOver" Color="{ThemeResource AJut_Color_ChromeCloseButtonHighlight}"/>
-    <SolidColorBrush x:Key="CloseButtonStrokePointerOver" Color="{ThemeResource AJut_Color_ChromeCloseButtonHoverForeground}"/>-->
-    
     <StaticResource x:Key="TitleBarForegroundBrush" ResourceKey="AJut_Brush_TitleBarForeground"/>
     <StaticResource x:Key="TitleBarDeactivatedForegroundBrush" ResourceKey="AJut_Brush_TitleBarForegroundDesat"/>
 
@@ -40,59 +40,11 @@
     <SolidColorBrush x:Key="TabViewItemHeaderBackground" Color="Transparent"/>
     <SolidColorBrush x:Key="TabViewItemHeaderBackgroundPointerOver" Color="{ThemeResource AJut_Color_InnerPanelBackgroundHover}"/>
 
-    <!--<StaticResource x:Key="TabViewItemHeaderBackground" ResourceKey="LayerOnMicaBaseAltFillColorTransparentBrush" />-->
     <SolidColorBrush x:Key="TabViewItemHeaderBackgroundSelected" Color="{ThemeResource AJut_Color_InnerPanelBackground}" />
     <StaticResource x:Key="TabViewItemHeaderDragBackground" ResourceKey="AJut_Brush_PopupBackground" />
-    <!--<StaticResource x:Key="TabViewItemHeaderBackgroundPointerOver" ResourceKey="AJut_Brush_ControlBackground" />-->
     <StaticResource x:Key="TabViewItemHeaderBackgroundPressed" ResourceKey="AJut_Brush_PopupBackground" />
     <StaticResource x:Key="TabViewItemHeaderBackgroundDisabled" ResourceKey="LayerOnMicaBaseAltFillColorTransparentBrush" />
-    <!--<StaticResource x:Key="TabViewItemHeaderForeground" ResourceKey="TextFillColorSecondaryBrush" />
-    <StaticResource x:Key="TabViewItemHeaderForegroundPressed" ResourceKey="TextFillColorTertiaryBrush" />
-    <StaticResource x:Key="TabViewItemHeaderForegroundSelected" ResourceKey="TextFillColorPrimaryBrush" />
-    <StaticResource x:Key="TabViewItemHeaderForegroundPointerOver" ResourceKey="TextFillColorSecondaryBrush" />
-    <StaticResource x:Key="TabViewItemHeaderForegroundDisabled" ResourceKey="TextFillColorDisabledBrush" />-->
-
-
-    <!--<Color x:Key="SystemColorActiveCaptionColor">#FF99B4D1</Color>
-    <SolidColorBrush x:Key="SystemColorActiveCaptionBrush" Color="#FF99B4D1"/>
-    <Color x:Key="SystemColorBackgroundColor">#FF000000</Color>
-    <SolidColorBrush x:Key="SystemColorBackgroundBrush" Color="#FF000000"/>
-    <Color x:Key="SystemColorButtonFaceColor">#FFF0F0F0</Color>
-    <SolidColorBrush x:Key="SystemColorButtonFaceBrush" Color="#FFF0F0F0"/>
-    <Color x:Key="SystemColorButtonTextColor">#FF000000</Color>
-    <SolidColorBrush x:Key="SystemColorButtonTextBrush" Color="#FF000000"/>
-    <Color x:Key="SystemColorCaptionTextColor">#FF000000</Color>
-    <SolidColorBrush x:Key="SystemColorCaptionTextBrush" Color="#FF000000"/>
-    <Color x:Key="SystemColorGrayTextColor">#FF6D6D6D</Color>
-    <SolidColorBrush x:Key="SystemColorGrayTextBrush" Color="#FF6D6D6D"/>
-    <Color x:Key="SystemColorHighlightColor">#FF3399FF</Color>
-    <SolidColorBrush x:Key="SystemColorHighlightBrush" Color="#FF3399FF"/>
-    <Color x:Key="SystemColorHighlightTextColor">#FFFFFFFF</Color>
-    <SolidColorBrush x:Key="SystemColorHighlightTextBrush" Color="#FFFFFFFF"/>
-    <Color x:Key="SystemColorHotlightColor">#FF0066CC</Color>
-    <SolidColorBrush x:Key="SystemColorHotlightBrush" Color="#FF0066CC"/>
-    <Color x:Key="SystemColorInactiveCaptionColor">#FFBFCDDB</Color>
-    <SolidColorBrush x:Key="SystemColorInactiveCaptionBrush" Color="#FFBFCDDB"/>
-    <Color x:Key="SystemColorInactiveCaptionTextColor">#FF000000</Color>
-    <SolidColorBrush x:Key="SystemColorInactiveCaptionTextBrush" Color="#FF000000"/>
-    <Color x:Key="SystemColorWindowColor">#FFFFFFFF</Color>
-    <SolidColorBrush x:Key="SystemColorWindowBrush" Color="#FFFFFFFF"/>
-    <Color x:Key="SystemColorWindowTextColor">#FF000000</Color>
-    <SolidColorBrush x:Key="SystemColorWindowTextBrush" Color="#FF000000"/>
-    <Color x:Key="SystemColorDisabledTextColor">#FF333333</Color>
-    <SolidColorBrush x:Key="SystemColorDisabledTextBrush" Color="#FF333333"/>
-
-    <Color x:Key="SystemColorControlAccentColor">#FF0078D7</Color>
-    <SolidColorBrush x:Key="SystemColorControlAccentBrush" Color="#FF0078D7"/>
-
-    <Color x:Key="SystemAccentColor">#FF0078D7</Color>
-    <Color x:Key="SystemAccentColorDark1">#FF005A9E</Color>
-    <Color x:Key="SystemAccentColorDark2">#FF004275</Color>
-    <Color x:Key="SystemAccentColorDark3">#FF002642</Color>
-    <Color x:Key="SystemAccentColorLight1">#FF429CE3</Color>
-    <Color x:Key="SystemAccentColorLight2">#FF76B9ED</Color>
-    <Color x:Key="SystemAccentColorLight3">#FFA6D8FF</Color>-->
-
+    
     <SolidColorBrush x:Key="WindowCaptionBackground" Color="{ThemeResource AJut_Color_ChromeButtonBackground}" />
     <SolidColorBrush x:Key="WindowCaptionBackgroundDisabled" Color="Transparent" />
     <SolidColorBrush x:Key="WindowCaptionForeground" Color="{ThemeResource AJut_Color_ChromeButtonForeground}" />
@@ -106,6 +58,47 @@
     <SolidColorBrush x:Key="CloseButtonBackgroundPointerOver" Color="{ThemeResource AJut_Color_ChromeCloseButtonHighlight}" />
     <SolidColorBrush x:Key="CloseButtonStrokePointerOver" Color="{ThemeResource AJut_Color_ChromeButtonHoverForeground}" />
     <SolidColorBrush x:Key="CloseButtonBackgroundPressed" Color="{ThemeResource AJut_Color_ChromeCloseButtonComplement}" />
-    <SolidColorBrush x:Key="CloseButtonStrokePressed" Color="Black" />
+    <SolidColorBrush x:Key="CloseButtonStrokePressed" Color="{ThemeResource AJut_Color_ChromeCloseButtonHoverForeground}" />
+
+
+    <StaticResource x:Key="TextControlForeground" ResourceKey="AJut_Color_NormalText" />
+    <StaticResource x:Key="TextControlForegroundPointerOver" ResourceKey="AJut_Color_HighlightText" />
+    <StaticResource x:Key="TextControlForegroundFocused" ResourceKey="AJut_Color_InteractiveText" />
+    <StaticResource x:Key="TextControlForegroundDisabled" ResourceKey="AJut_Color_UnderstatedText" />
+    <!--<StaticResource x:Key="TextControlBackground" ResourceKey="ControlFillColorDefaultBrush" />
+    <StaticResource x:Key="TextControlBackgroundPointerOver" ResourceKey="ControlFillColorSecondaryBrush" />
+    <StaticResource x:Key="TextControlBackgroundFocused" ResourceKey="ControlFillColorInputActiveBrush" />
+    <StaticResource x:Key="TextControlBackgroundDisabled" ResourceKey="ControlFillColorDisabledBrush" />
+    <StaticResource x:Key="TextControlBorderBrush" ResourceKey="TextControlElevationBorderBrush" />
+    <StaticResource x:Key="TextControlBorderBrushPointerOver" ResourceKey="TextControlElevationBorderBrush" />
+    <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="TextControlElevationBorderFocusedBrush" />
+    <StaticResource x:Key="TextControlBorderBrushDisabled" ResourceKey="ControlStrokeColorDefaultBrush" />
+    <StaticResource x:Key="TextControlPlaceholderForeground" ResourceKey="TextFillColorSecondaryBrush" />
+    <StaticResource x:Key="TextControlPlaceholderForegroundPointerOver" ResourceKey="TextFillColorSecondaryBrush" />
+    <StaticResource x:Key="TextControlPlaceholderForegroundFocused" ResourceKey="TextFillColorSecondaryBrush" />
+    <StaticResource x:Key="TextControlPlaceholderForegroundDisabled" ResourceKey="TextFillColorDisabledBrush" />
+    <StaticResource x:Key="TextControlHeaderForeground" ResourceKey="SystemControlForegroundBaseHighBrush" />
+    <StaticResource x:Key="TextControlHeaderForegroundDisabled" ResourceKey="SystemControlDisabledBaseMediumLowBrush" />
+    <StaticResource x:Key="TextControlSelectionHighlightColor" ResourceKey="AccentFillColorSelectedTextBackgroundBrush" />
+    <StaticResource x:Key="TextControlButtonBackground" ResourceKey="SystemControlTransparentBrush" />
+    <StaticResource x:Key="TextControlButtonBackgroundPointerOver" ResourceKey="SubtleFillColorSecondaryBrush" />
+    <StaticResource x:Key="TextControlButtonBackgroundPressed" ResourceKey="SubtleFillColorTertiaryBrush" />
+    <StaticResource x:Key="TextControlButtonBorderBrush" ResourceKey="ControlFillColorTransparent" />
+    <StaticResource x:Key="TextControlButtonBorderBrushPointerOver" ResourceKey="ControlFillColorTransparent" />
+    <StaticResource x:Key="TextControlButtonBorderBrushPressed" ResourceKey="ControlFillColorTransparent" />
+    <StaticResource x:Key="TextControlButtonForeground" ResourceKey="TextFillColorSecondaryBrush" />
+    <StaticResource x:Key="TextControlButtonForegroundPointerOver" ResourceKey="TextFillColorSecondaryBrush" />
+    <StaticResource x:Key="TextControlButtonForegroundPressed" ResourceKey="TextFillColorTertiaryBrush" />-->
+
+    <StaticResource x:Key="ControlFillColorDefaultBrush" ResourceKey="AJut_Brush_ControlBackground"/>
+    <StaticResource x:Key="ControlFillColorSecondaryBrush" ResourceKey="AJut_Brush_ControlBackgroundHover"/>
+    <StaticResource x:Key="ControlFillColorInputActiveBrush" ResourceKey="AJut_Brush_ControlBackground"/>
+
+    <StaticResource x:Key="ButtonForeground" ResourceKey="AJut_Color_NormalText"/>
+    <StaticResource x:Key="ButtonBackground" ResourceKey="AJut_Brush_ControlBackground"/>
+    <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="AJut_Brush_ControlBackgroundHover"/>
+    <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="AJut_Brush_ButtonBackgroundPressed"/>
+
+    <!-- AJut_Brush_ControlBackgroundHover, AJut_Brush_ButtonBackgroundPressed -->
 
 </ResourceDictionary>

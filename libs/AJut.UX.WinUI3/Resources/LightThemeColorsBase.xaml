@@ -2,6 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="using:System">
 
+    <!-- ================[ Highlights ]====================== -->
     <Color x:Key="AJut_Color_PrimaryHighlight">#0167BC</Color>
     <Color x:Key="AJut_Color_PrimaryHighlightDark">#01417C</Color>
     <Color x:Key="AJut_Color_PrimaryHighlightBright">#0284FF</Color>
@@ -20,6 +21,7 @@
     <SolidColorBrush x:Key="AJut_Brush_SecondaryHighlightBright" Color="{ThemeResource AJut_Color_SecondaryHighlightBright}"/>
     <SolidColorBrush x:Key="AJut_Brush_SecondaryHighlightDesat" Color="{ThemeResource AJut_Color_SecondaryHighlightDesat}"/>
 
+    <!-- ================[ Specialty Border Accents ]====================== -->
     <Color x:Key="AJut_Color_RimLighting">#BFFF</Color>
     <Color x:Key="AJut_Color_Shadow">#9555</Color>
 
@@ -29,28 +31,48 @@
     <Color x:Key="AJut_Color_MouseInteractionHighlight">#D181A1</Color>
     <SolidColorBrush x:Key="AJut_Brush_MouseInteractionHighlight" Color="{ThemeResource AJut_Color_MouseInteractionHighlight}"/>
 
-    <SolidColorBrush x:Key="AJut_Brush_ImportantText" Color="#000003" />
-    <SolidColorBrush x:Key="AJut_Brush_NormalText" Color="#111" />
-    <SolidColorBrush x:Key="AJut_Brush_HighlightText" Color="#000" />
-    <SolidColorBrush x:Key="AJut_Brush_UnderstatedText" Color="#444" />
-    <SolidColorBrush x:Key="AJut_Brush_InteractiveText" Color="#000" />
-    <SolidColorBrush x:Key="AJut_Brush_InteractiveTextUnfocused" Color="#E000" />
-    <SolidColorBrush x:Key="AJut_Brush_HighContrastText" Color="#CCC" />
+    <!-- ================[ Text & Glyphs ]====================== -->
+    <Color x:Key="AJut_Color_ImportantText">#000003</Color>
+    <Color x:Key="AJut_Color_NormalText">#111</Color>
+    <Color x:Key="AJut_Color_HighlightText">#000</Color>
+    <Color x:Key="AJut_Color_UnderstatedText">#444</Color>
+    <Color x:Key="AJut_Color_InteractiveText">#000</Color>
+    <Color x:Key="AJut_Color_InteractiveTextUnfocused">#E000</Color>
+    <Color x:Key="AJut_Color_HighContrastText">#CCC</Color>
+    <Color x:Key="AJut_Color_SymbolForeground">#202020</Color>
+    <Color x:Key="AJut_Color_SymbolForegroundPressed">#E000</Color>
+    <Color x:Key="AJut_Color_SymbolForegroundHighlight">#CCC</Color>
 
-    <SolidColorBrush x:Key="AJut_Brush_SymbolForeground" Color="#202020" />
-    <SolidColorBrush x:Key="AJut_Brush_SymbolForegroundPressed" Color="#DDD" />
-    <SolidColorBrush x:Key="AJut_Brush_SymbolForegroundHighlight" Color="#FFF" />
+    <SolidColorBrush x:Key="AJut_Brush_ImportantText" Color="{ThemeResource AJut_Color_ImportantText}" />
+    <SolidColorBrush x:Key="AJut_Brush_NormalText" Color="{ThemeResource AJut_Color_NormalText}" />
+    <SolidColorBrush x:Key="AJut_Brush_HighlightText" Color="{ThemeResource AJut_Color_HighlightText}" />
+    <SolidColorBrush x:Key="AJut_Brush_UnderstatedText" Color="{ThemeResource AJut_Color_UnderstatedText}" />
+    <SolidColorBrush x:Key="AJut_Brush_InteractiveText" Color="{ThemeResource AJut_Color_InteractiveText}" />
+    <SolidColorBrush x:Key="AJut_Brush_InteractiveTextUnfocused" Color="{ThemeResource AJut_Color_InteractiveTextUnfocused}" />
+    <SolidColorBrush x:Key="AJut_Brush_HighContrastText" Color="{ThemeResource AJut_Color_HighContrastText}" />
+    <SolidColorBrush x:Key="AJut_Brush_SymbolForeground" Color="{ThemeResource AJut_Color_SymbolForeground}" />
+    <SolidColorBrush x:Key="AJut_Brush_SymbolForegroundPressed" Color="{ThemeResource AJut_Color_SymbolForegroundPressed}" />
+    <SolidColorBrush x:Key="AJut_Brush_SymbolForegroundHighlight" Color="{ThemeResource AJut_Color_SymbolForegroundHighlight}" />
 
     <SolidColorBrush x:Key="AJut_Brush_HyperLinkNormal" Color="{ThemeResource AJut_Color_PrimaryHighlight}"/>
     <SolidColorBrush x:Key="AJut_Brush_HyperLinkHover" Color="{ThemeResource AJut_Color_SecondaryHighlight}"/>
 
-    <SolidColorBrush x:Key="AJut_Brush_ListBackground" Color="#EAEAEA" />
-    <SolidColorBrush x:Key="AJut_Brush_ListBorder" Color="#555" />
-    <SolidColorBrush x:Key="AJut_Brush_ListSelection" Color="{ThemeResource AJut_Color_PrimaryHighlight}" />
-    <SolidColorBrush x:Key="AJut_Brush_ListSelectionBackground" Color="#190284FF" />
-    <SolidColorBrush x:Key="AJut_Brush_TreeSelection" Color="{ThemeResource AJut_Color_PrimaryHighlight}" />
-    <SolidColorBrush x:Key="AJut_Brush_ListItemHover" Color="{ThemeResource AJut_Color_PrimaryHighlightBright}" />
+    <!-- ================[ Lists ]====================== -->
+    <Color x:Key="AJut_Color_ListBackground">#EAEAEA</Color>
+    <Color x:Key="AJut_Color_ListBorder">#555</Color>
+    <StaticResource x:Key="AJut_Color_ListSelection" ResourceKey="AJut_Color_PrimaryHighlight"/>
+    <Color x:Key="AJut_Color_ListSelectionBackground">#190284FF</Color>
+    <StaticResource x:Key="AJut_Color_TreeSelection" ResourceKey="AJut_Color_PrimaryHighlight"/>
+    <StaticResource x:Key="AJut_Color_ListItemHover" ResourceKey="AJut_Color_PrimaryHighlightBright"/>
 
+    <SolidColorBrush x:Key="AJut_Brush_ListBackground" Color="{ThemeResource AJut_Color_ListBackground}" />
+    <SolidColorBrush x:Key="AJut_Brush_ListBorder" Color="{ThemeResource AJut_Color_ListBorder}" />
+    <SolidColorBrush x:Key="AJut_Brush_ListSelection" Color="{ThemeResource AJut_Color_ListSelection}" />
+    <SolidColorBrush x:Key="AJut_Brush_ListSelectionBackground" Color="{ThemeResource AJut_Color_ListSelectionBackground}" />
+    <SolidColorBrush x:Key="AJut_Brush_TreeSelection" Color="{ThemeResource AJut_Color_TreeSelection}" />
+    <SolidColorBrush x:Key="AJut_Brush_ListItemHover" Color="{ThemeResource AJut_Color_ListItemHover}" />
+
+    <!-- ================[ Panels & Borders ]====================== -->
     <Color x:Key="AJut_Color_BorderCommon">#8A8A8A</Color>
     <Color x:Key="AJut_Color_BorderCommonTransparent">#008A8A8A</Color>
     <SolidColorBrush x:Key="AJut_Brush_BorderCommon" Color="{ThemeResource AJut_Color_BorderCommon}"/>
@@ -84,7 +106,7 @@
     <sys:Double x:Key="AJut_Double_StandardShadowOpacity">0.3</sys:Double>
     <sys:Double x:Key="AJut_Double_StandardDisabledOpacity">0.6</sys:Double>
 
-    <!-- ===================[ Specialty Brushes ]========================= -->
+    <!-- ===================[ Window / Titlebar / Navigation ]========================= -->
     <Color x:Key="AJut_Color_ChromeButtonBackground">Transparent</Color>
     <Color x:Key="AJut_Color_ChromeButtonForeground">#333</Color>
     
@@ -125,6 +147,7 @@
     <SolidColorBrush x:Key="AJut_Brush_DrawerForeground" Color="#333" />
     <SolidColorBrush x:Key="AJut_Brush_DrawerForegroundImportant" Color="#000" />
 
+    <!-- ===================[ Misc ]========================= -->
     <SolidColorBrush x:Key="AJut_Brush_BadStuff" Color="#E01620"/>
     <SolidColorBrush x:Key="AJut_Brush_TrackBackground" Color="#DDD"/>
     <SolidColorBrush x:Key="AJut_Brush_ToolTipBackground" Color="#CCC"/>
