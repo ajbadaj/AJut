@@ -3,9 +3,9 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <ResourceDictionary.MergedDictionaries>
-        <ResourceDictionary Source="/AJut.UX.WinUI3/Controls/EnumComboBox.xaml"/>
-        <ResourceDictionary Source="/AJut.UX.WinUI3/Controls/GeometryButton.xaml"/>
-        <ResourceDictionary Source="/AJut.UX.WinUI3/Controls/TitleBarCaptionButton.xaml"/>
-        <ResourceDictionary Source="/AJut.UX.WinUI3/Controls/ThemedWindowRootControl.xaml"/>
+        <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/EnumComboBox.xaml"/>
+        <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/GeometryButton.xaml"/>
+        <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/TitleBarCaptionButton.xaml"/>
+        <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/ThemedWindowRootControl.xaml"/>
     </ResourceDictionary.MergedDictionaries>
 </ResourceDictionary>

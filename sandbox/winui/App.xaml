@@ -7,7 +7,7 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
-                <ResourceDictionary Source="/AJut.UX.WinUI3/Resources/AllControlThemeOverrides.xaml"/>
+                <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Resources/AllControlThemeOverrides.xaml"/>
                 <ResourceDictionary>
                     <ResourceDictionary.ThemeDictionaries>
                         <ResourceDictionary x:Key="Light" Source="/Themes/LightTheme.xaml"/>

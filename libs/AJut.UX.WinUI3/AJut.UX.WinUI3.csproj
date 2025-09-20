@@ -63,15 +63,6 @@
       <PackagePath>\</PackagePath>
       <Pack>True</Pack>
     </None>
-    <Page Update="Resources\AJut.UX-Overrides.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Update="Resources\AllControlThemeOverrides.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Update="Resources\Microsoft.UI.Xaml-Overrides.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
 	<None Include="..\..\license.txt" Link="license.txt">
 		<PackagePath></PackagePath>
 		<Pack>True</Pack>
