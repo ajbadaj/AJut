@@ -1,4 +1,4 @@
-name: Publish To Nuget (Manual, Combined)
+name: Publish To Nuget (Manual)
 
 on:
   workflow_dispatch:
@@ -11,25 +11,25 @@ on:
       # The following inputs are should match from ProjectOrder.json
       # For now, I don't know how to pull this in dynamically, so we'll keep it hard coded.
       buildAJutCore:
-        description: 'Build AJut.Core'
+        description: 'Build & Publish AJut.Core'
         required: false
         type: boolean
         default: true
       buildAJutUX:
-        description: 'Build AJut.UX'
+        description: 'Build & Publish  AJut.UX'
         required: false
         type: boolean
-        default: false
+        default: true
       buildAJutUXWpf:
-        description: 'Build AJut.UX.Wpf'
+        description: 'Build & Publish  AJut.UX.Wpf'
         required: false
         type: boolean
-        default: false
+        default: true
       buildAJutUXWinUI3:
-        description: 'Build AJut.UX.WinUI3'
+        description: 'Build & Publish  AJut.UX.WinUI3'
         required: false
         type: boolean
-        default: false
+        default: true
 
 jobs:
   build_test_publish:
