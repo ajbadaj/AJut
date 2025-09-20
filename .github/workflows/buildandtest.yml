@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    if: github.event.pull_request.merged == false || !contains(github.event.pull_request.labels.*.name, 'publish-nuget')
 
     steps:
     - name: Checkout code
