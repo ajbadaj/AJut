@@ -6,11 +6,10 @@ on:
       - main
     types:
       - closed
-      - labeled
 
 # This job will only run if the pull request was merged AND the 'publish-nuget' label was added.
 jobs:
-  build_ajut_release_publish_and_test:
+  build:
     if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'publish-nuget')
     runs-on: windows-latest
     env:
@@ -56,13 +55,15 @@ jobs:
         # Read and parse the ProjectOrder.json file to get the deterministic build order
         $projectOrder = Get-Content -Raw -Path "ProjectOrder.json" | ConvertFrom-Json
         $changedFiles = $env:CHANGED_FILES.Split("`n")
+        
+        $builtProjects = @()
 
         foreach ($projectName in $projectOrder) {
             $projectPath = "libs/$projectName/$projectName.csproj"
             $hasChanges = $changedFiles | Where-Object { $_ -like "libs/$projectName/*" }
             
             if ($null -ne $hasChanges) {
-                echo "--> Changes detected in $projectName. Building and publishing..."
+                echo "--> Changes detected in $projectName. Building..."
 
                 # Get the version prefix and suffix from the project's .csproj file
                 $csproj = ([xml](Get-Content $projectPath)).Project.PropertyGroup
@@ -86,8 +87,87 @@ jobs:
                 # Build the project with the calculated version
                 dotnet build $projectPath --no-restore --configuration Release /p:Version=$fullVersion
 
-                # Run tests for the project (optional, but good practice)
-                dotnet test libs/$projectName --configuration Release
+                $builtProjects += $projectName
+            } else {
+                echo "No changes detected in $projectName. Skipping build."
+            }
+        }
+        # Save the list of built projects to be used by the test and publish jobs
+        echo "BUILT_PROJECTS=$(ConvertTo-Json $builtProjects)" >> $env:GITHUB_ENV
+      shell: pwsh
+      
+  test:
+    needs: build
+    runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BUILT_PROJECTS: ${{ needs.build.outputs.BUILT_PROJECTS }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Run tests for built projects
+      run: |
+        $builtProjects = ConvertFrom-Json $env:BUILT_PROJECTS
+        
+        foreach ($projectName in $builtProjects) {
+            $testProjectPath = "libs/$projectName/$projectName.Test.csproj"
+            if (Test-Path $testProjectPath) {
+                echo "--> Running tests for $projectName..."
+                dotnet test $testProjectPath --configuration Release
+            } else {
+                echo "No test project found for $projectName. Skipping tests."
+            }
+        }
+      shell: pwsh
+      
+  publish:
+    needs: [build, test]
+    runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BUILT_PROJECTS: ${{ needs.build.outputs.BUILT_PROJECTS }}
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Publish built packages to NuGet
+      run: |
+        $projectOrder = Get-Content -Raw -Path "ProjectOrder.json" | ConvertFrom-Json
+        $builtProjects = ConvertFrom-Json $env:BUILT_PROJECTS
+
+        foreach ($projectName in $projectOrder) {
+            if ($builtProjects -contains $projectName) {
+                echo "--> Publishing $projectName..."
+                $projectPath = "libs/$projectName/$projectName.csproj"
+                
+                # Get the version prefix and suffix from the project's .csproj file
+                $csproj = ([xml](Get-Content $projectPath)).Project.PropertyGroup
+                $versionPrefix = $csproj.VersionPrefix
+                $versionSuffix = $csproj.VersionSuffix
+                
+                # Construct the full version number based on whether a suffix exists
+                $prNumber = ${{ needs.build.outputs.PR_NUMBER }}
+                if ($versionSuffix) {
+                    $fullVersion = "${versionPrefix}.${prNumber}-${versionSuffix}"
+                } else {
+                    $fullVersion = "${versionPrefix}.${prNumber}"
+                }
 
                 # Publish the Nuget package
                 $nugetPackage = Get-ChildItem -Path "libs/$projectName/bin/Release" -Filter "$projectName.${fullVersion}.nupkg" | Select-Object -First 1
@@ -101,8 +181,6 @@ jobs:
                 echo "Publishing..."
                 dotnet nuget push "$($nugetPackage.FullName)" --api-key ${{ secrets.NUGETPUBLISHKEY }} --source https://api.nuget.org/v3/index.json
                 echo "Publish complete for $projectName!"
-            } else {
-                echo "No changes detected in $projectName. Skipping build and publish."
             }
         }
       shell: pwsh
