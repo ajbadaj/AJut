@@ -3,6 +3,7 @@
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
 
     /// <summary>
@@ -16,7 +17,7 @@
         {
             return !This.Any();
         }
-        public static bool IsNullOrEmpty<T> (this IEnumerable<T> This)
+        public static bool IsNullOrEmpty<T> ([NotNullWhen(false)] this IEnumerable<T> This)
         {
             return This == null || !This.Any();
         }
@@ -24,7 +25,7 @@
         {
             return This.Any();
         }
-        public static bool IsNotNullOrEmpty<T> (this IEnumerable<T> This)
+        public static bool IsNotNullOrEmpty<T> ([NotNullWhen(true)] this IEnumerable<T> This)
         {
             return This != null && This.Any();
         }

@@ -13,8 +13,9 @@
     using AJut.Storage;
     using DPUtils = DPUtils<PropertyGrid>;
 
-    public class PropertyGrid : Control, IDisposable
+    public class PropertyGrid : Control, IDisposable, IPropertyGrid
     {
+        private readonly PropertyGridManager m_manager;
         static PropertyGrid ()
         {
             DefaultStyleKeyProperty.OverrideMetadata(typeof(PropertyGrid), new FrameworkPropertyMetadata(typeof(PropertyGrid)));
@@ -22,7 +23,7 @@
 
         public PropertyGrid ()
         {
-            this.Items = new ObservableFlatTreeStore<PropertyEditTarget>();
+            m_manager = new PropertyGridManager(this);
             this.Items.IncludeRoot = false;
         }
 
@@ -47,13 +48,7 @@
             set => this.SetValue(SingleItemSourceProperty, value);
         }
 
-        private static readonly DependencyPropertyKey ItemsPropertyKey = DPUtils.RegisterReadOnly(_ => _.Items);
-        public static readonly DependencyProperty ItemsProperty = ItemsPropertyKey.DependencyProperty;
-        public ObservableFlatTreeStore<PropertyEditTarget> Items
-        {
-            get => (ObservableFlatTreeStore<PropertyEditTarget>)this.GetValue(ItemsProperty);
-            protected set => this.SetValue(ItemsPropertyKey, value);
-        }
+        public ObservableFlatTreeStore<PropertyEditTarget> Items => m_manager.Items;
 
         public static readonly DependencyProperty ItemTemplateSelectorProperty = DPUtils.Register(_ => _.ItemTemplateSelector);
         public PropertyGridTemplateSelector ItemTemplateSelector
@@ -148,55 +143,7 @@
 
         private void RebuildEditTargets ()
         {
-            this.Items.Clear();
-            if (this.ItemsSource == null && this.SingleItemSource == null)
-            {
-                return;
-            }
-
-            IEnumerable sourceItems;
-            if (this.SingleItemSource != null)
-            {
-                sourceItems = Enumerable.Repeat(this.SingleItemSource, 1);
-            }
-            else
-            {
-                sourceItems = this.ItemsSource;
-            }
-
-            Dictionary<int, PropertyEditTarget> editTargets = new Dictionary<int, PropertyEditTarget>();
-            foreach (object item in sourceItems)
-            {
-                if (item is IPropertyEditManager propManager)
-                {
-                    propManager.GenerateEditTargets().ForEach(_Add);
-                }
-                else
-                {
-                    PropertyEditTarget.GenerateForPropertiesOf(item).ForEach(_Add);
-                }
-            }
-
-            var root = new PropertyEditTarget("$_root_", () => null, null);
-            foreach (PropertyEditTarget target in editTargets.Values)
-            {
-                target.Setup();
-                root.AddChild(target);
-            }
-
-            this.Items.RootNode = root;
-
-            void _Add (PropertyEditTarget _target)
-            {
-                int _id = _target.GetHashCode();
-                if (editTargets.TryGetValue(_id, out PropertyEditTarget _found))
-                {
-                    _found.TakeOn(_target);
-                    return;
-                }
-
-                editTargets.Add(_id, _target);
-            }
+            m_manager.RebuildEditTargets();
         }
     }
 }

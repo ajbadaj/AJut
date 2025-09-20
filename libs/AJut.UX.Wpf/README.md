@@ -1,5 +1,5 @@
 # AJut.UX.Wpf
-C# / wpf / dotnet 5 utility library, created by AJ Badarni
+C# / wpf / dotnet 8 utility library, created by AJ Badarni
 
 ## Greetings
 I hope you enjoy using ajut.ux. AJut is short for AJ Utilities, (pronounced like the dipping sauce Au Jus). This ux library contains controls, converters, extensions, content navigation, theming helpers, dark and light themes, utilities - and much more. I've been building these up since I first started developing - through the many side projects I've done over the years. The goal was to provide a simple project reference (ajut.core + ajut.ux.wpf) that will allow you to build and innovate without having to start completely from scratch or to have to bring in many many libraries to get things done.

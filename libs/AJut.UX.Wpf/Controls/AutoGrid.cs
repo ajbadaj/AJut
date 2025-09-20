@@ -201,7 +201,7 @@
                         };
 
                         MultiBinding binding = new MultiBinding();
-                        gs.SetBinding(GridSplitter.WidthProperty, this.CreateBinding(SizerLengthProperty, System.Windows.Data.BindingMode.OneWay));
+                        gs.SetBinding(GridSplitter.WidthProperty, this.CreateBinding(nameof(SizerLength), System.Windows.Data.BindingMode.OneWay));
 
                         m_generatedColumnSizers.Add(gs);
                         sizersToAdd.Add(gs);
@@ -232,7 +232,7 @@
                             VerticalAlignment = VerticalAlignment.Bottom,
                             ResizeDirection = GridResizeDirection.Rows,
                         };
-                        gs.SetBinding(GridSplitter.HeightProperty, this.CreateBinding(SizerLengthProperty, System.Windows.Data.BindingMode.OneWay));
+                        gs.SetBinding(GridSplitter.HeightProperty, this.CreateBinding(nameof(SizerLength), System.Windows.Data.BindingMode.OneWay));
 
                         m_generatedRowSizers.Add(gs);
                         sizersToAdd.Add(gs);
@@ -329,14 +329,14 @@
             while (this.RowDefinitions.Count <= row)
             {
                 var def = new RowDefinition { Height = new GridLength(newRowSize, GridUnitType.Star) };
-                def.SetBinding(RowDefinition.MinHeightProperty, this.CreateBinding(AutoGrid.MinElementHeightProperty));
+                def.SetBinding(RowDefinition.MinHeightProperty, this.CreateBinding(nameof(MinElementHeight)));
                 this.RowDefinitions.Add(def);
                 addedAny = true;
             }
             while (this.ColumnDefinitions.Count <= column)
             {
                 var def = new ColumnDefinition { Width = new GridLength(newColumnSize, GridUnitType.Star) };
-                def.SetBinding(ColumnDefinition.MinWidthProperty, this.CreateBinding(AutoGrid.MinElementWidthProperty));
+                def.SetBinding(ColumnDefinition.MinWidthProperty, this.CreateBinding(nameof(MinElementWidth)));
                 this.ColumnDefinitions.Add(def);
                 addedAny = true;
             }

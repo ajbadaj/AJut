@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="/AJut.UX.WinUI3/Resources/DarkThemeColorsBase.xaml"/>
+        <ResourceDictionary Source="/AJut.UX.WinUI3/Resources/SystemColorAliasing.xaml"/>
+    </ResourceDictionary.MergedDictionaries>
+
+    <!-- Some examples of changing ajut colors to change the theme
+    <Color x:Key="AJut_Color_PrimaryHighlight">#B5176E</Color>
+    <Color x:Key="AJut_Color_PrimaryHighlightDark">#7A1A51</Color>
+    <Color x:Key="AJut_Color_PrimaryHighlightBright">#E01D8B</Color>
+    <Color x:Key="AJut_Color_PrimaryHighlightDesat">#B25389</Color>
+    
+    <Color x:Key="AJut_Color_NormalText">#F0F</Color>
+    -->
+
+</ResourceDictionary>

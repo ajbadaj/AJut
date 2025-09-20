@@ -2059,7 +2059,7 @@
                                 <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=Background}"/>
                                 <Style.Triggers>
                                     <Trigger Property="ajut_ctrls:WindowChromeButtonStrip.IsMouseOverClose" Value="True">
-                                        <Setter Property="Background" Value="{DynamicResource AJut_Brush_ChromeCloseButtonHighlight}"/>
+                                        <Setter Property="Background" Value="{DynamicResource AJut_Brush_ChromeCloseButtonComplement}"/>
                                     </Trigger>
                                 </Style.Triggers>
                             </Style>
@@ -2082,7 +2082,7 @@
                                             <Setter Property="BorderBrush" Value="{ajut:TemplateBinding Path=(ajut_theme:AppThemeManager.WindowBorderGlowBrush)}"/>
                                             <Style.Triggers>
                                                 <Trigger Property="ajut_ctrls:WindowChromeButtonStrip.IsMouseOverClose" Value="True">
-                                                    <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ChromeCloseButtonHighlight}"/>
+                                                    <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ChromeCloseButtonComplement}"/>
                                                 </Trigger>
                                             </Style.Triggers>
                                         </Style>
@@ -2096,7 +2096,7 @@
                                             <Setter Property="BorderBrush" Value="{ajut:TemplateBinding Path=(ajut_theme:AppThemeManager.WindowBorderGlowBrush)}"/>
                                             <Style.Triggers>
                                                 <Trigger Property="ajut_ctrls:WindowChromeButtonStrip.IsMouseOverClose" Value="True">
-                                                    <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ChromeCloseButtonHighlight}"/>
+                                                    <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ChromeCloseButtonComplement}"/>
                                                 </Trigger>
                                             </Style.Triggers>
                                         </Style>

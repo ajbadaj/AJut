@@ -61,7 +61,7 @@
             {
                 // Note: This is a bit hacky as we do not have access to an actual display yet. That means this will
                 //  be the default display's dpi I believe.
-                using (System.Drawing.Graphics graphics = System.Drawing.Graphics.FromHwnd(IntPtr.Zero))
+                using (System.Drawing.Graphics graphics = System.Drawing.Graphics.FromHwnd(hwnd))
                 {
                     dpiX = graphics.DpiX;
                     dpiY = graphics.DpiY;

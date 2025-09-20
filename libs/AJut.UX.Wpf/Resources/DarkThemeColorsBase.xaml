@@ -87,8 +87,10 @@
     <SolidColorBrush x:Key="AJut_Brush_ChromeButtonHoverForeground" Color="#CCC" />
     <SolidColorBrush x:Key="AJut_Brush_ChromeButtonPressedBackground" Color="{DynamicResource AJut_Color_PrimaryHighlight}"/>
     <SolidColorBrush x:Key="AJut_Brush_ChromeButtonPressedForeground" Color="#202020" />
-    <SolidColorBrush x:Key="AJut_Brush_ChromeCloseButtonHighlight" Color="#A11"/>
-
+    <SolidColorBrush x:Key="AJut_Brush_ChromeCloseButtonHighlight" Color="#D31515"/>
+    <Color x:Key="AJut_Color_ChromeCloseButtonComplement">#892630</Color>
+    <SolidColorBrush x:Key="AJut_Brush_ChromeCloseButtonComplement" Color="{DynamicResource AJut_Color_ChromeCloseButtonComplement}"/>
+    
     <SolidColorBrush x:Key="AJut_Brush_WindowOuterBorder" Color="{DynamicResource AJut_Color_PrimaryHighlightBright}"/>
     <SolidColorBrush x:Key="AJut_Brush_SecondaryWindowOuterBorder" Color="#30303C"/>
     <SolidColorBrush x:Key="AJut_Brush_WindowGlowBorder" Color="{DynamicResource AJut_Color_PrimaryHighlightBright}"/>

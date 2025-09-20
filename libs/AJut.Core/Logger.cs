@@ -19,6 +19,7 @@
 
         private volatile bool m_shouldLogToConsole;
         private volatile bool m_shouldLogToTrace;
+        private volatile bool m_shouldLogToDebug;
         private volatile bool m_isEnabled = true;
         private volatile bool m_flushToFileAfterEach = true;
         private volatile string m_dateTimeFormat = "MM.dd.yyy-hh.mm.ss";
@@ -39,6 +40,7 @@
         {
             m_shouldLogToConsole = true;
             m_shouldLogToTrace = true;
+            //m_shouldLogToDebug = true;
         }
 
         /// <summary>
@@ -65,6 +67,12 @@
         {
             get => g_LoggerInstance.m_shouldLogToTrace;
             set => g_LoggerInstance.m_shouldLogToTrace = value;
+        }
+
+        public static bool ShouldLogToDebug
+        {
+            get => g_LoggerInstance.m_shouldLogToDebug;
+            set => g_LoggerInstance.m_shouldLogToDebug = value;
         }
 
         /// <summary>
@@ -293,6 +301,11 @@
                 {
                     Trace.WriteLine(output);
                 }
+            }
+
+            if (ShouldLogToDebug)
+            {
+                Debug.WriteLine(output);
             }
 
             WriteTextUnformattedToLog(output);

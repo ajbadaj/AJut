@@ -29,8 +29,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\libs\AJut.Core\AJut.Core.csproj" />
-    <ProjectReference Include="..\libs\AJut.UX.Wpf\AJut.UX.Wpf.csproj" />
+    <ProjectReference Include="..\..\libs\AJut.Core\AJut.Core.csproj" />
+    <ProjectReference Include="..\..\libs\AJut.UX.Wpf\AJut.UX.Wpf.csproj" />
   </ItemGroup>
 
 </Project>

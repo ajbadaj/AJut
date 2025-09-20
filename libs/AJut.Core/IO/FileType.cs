@@ -33,11 +33,17 @@
         public string FileFilter { get; }
 
         // =============================[ Methods ]=========================================
+        /// <summary>
+        /// Expects a file name or file path, gets the extension and checks that
+        /// </summary>
         public bool MatchesFileExtension (string path)
         {
             return this.DoExtensionMatchingWithProperString(Path.GetExtension(path).TrimStart('.'));
         }
 
+        /// <summary>
+        /// Expects a file extension, and checks that against the stored extensions
+        /// </summary>
         public bool MatchesExtension (string extension)
         {
             if (extension.StartsWith('.'))
@@ -58,6 +64,31 @@
         {
             string pathxt = Path.GetExtension(path).Trim('.');
             return g_allRegisteredTypes.Where(t => t.MatchesExtension(pathxt));
+        }
+
+        // =============================[ Subclasses ]=========================
+        public class ExtensionGroup : List<FileType>
+        {
+            public ExtensionGroup(params FileType[] fileTypes)
+            {
+                this.AddRange(fileTypes);
+            }
+
+            /// <summary>
+            /// Expects a file name or file path, gets the extension and checks that
+            /// </summary>
+            public bool AnyMatchFileExtension (string path)
+            {
+                return this.Any(ft => ft.MatchesFileExtension(path));
+            }
+
+            /// <summary>
+            /// Expects a file extension, and checks that against the stored extensions
+            /// </summary>
+            public bool AnyMatchExtension (string extension)
+            {
+                return this.Any(ft => ft.MatchesExtension(extension));
+            }
         }
     }
 }

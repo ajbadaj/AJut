@@ -59,7 +59,7 @@
         public ToggleStrip ()
         {
             // By default these are linked, feel free to set it to something else
-            this.SetBinding(SeparatorBrushProperty, this.CreateBinding(BorderBrushProperty, BindingMode.OneWay));
+            this.SetBinding(SeparatorBrushProperty, this.CreateBinding(nameof(BorderBrush), BindingMode.OneWay));
             this.Items = new ToggleItemsCollection(this);
             this.Items.CollectionChanged += _OnItemsCollectionChanged;
 

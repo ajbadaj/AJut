@@ -4,9 +4,9 @@ namespace AJut.UX
     using System.Windows.Data;
     public static class BindingXT
     {
-        public static Binding CreateBinding (this object This, DependencyProperty target, BindingMode mode = BindingMode.Default)
+        public static Binding CreateAttachedBinding (this object This, DependencyProperty target, BindingMode mode = BindingMode.Default)
         {
-            return new Binding() { Source = This, Path = new PropertyPath(target), Mode = mode };
+            return new Binding() { Source = This, Path = new PropertyPath($"({target.OwnerType.FullName}.{target.Name})"), Mode = mode };
         }
 
         public static Binding CreateBinding (this object This, string path, BindingMode mode = BindingMode.Default)
