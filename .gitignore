@@ -24,6 +24,7 @@
 !app.manifest
 !*.appxmanifest
 !launchSettings.json
+!ProjectOrder.json
 !*.pubxml
 
 # ============[ And finally nix these ]=========================
