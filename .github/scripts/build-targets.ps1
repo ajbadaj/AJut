@@ -69,7 +69,7 @@ try {
         }
 
         Write-Host "Building with full version: $fullVersion"
-        dotnet build $projectPath --no-restore --configuration Release /p:Version=$fullVersion
+        dotnet build $projectPath --configuration Release /p:Version=$fullVersion
     }
 
     # Save the list of built projects to a file so it can be used by other scripts
