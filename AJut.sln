@@ -49,7 +49,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Workflows", "Workflows", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 	ProjectSection(SolutionItems) = preProject
 		.github\workflows\auto_publish_ajut_to_nuget.yml = .github\workflows\auto_publish_ajut_to_nuget.yml
-		.github\workflows\buildandtest.yml = .github\workflows\buildandtest.yml
+		.github\workflows\auto_buildandtest.yml = .github\workflows\auto_buildandtest.yml
 		.github\workflows\manual_publish_ajut_to_nuget.yml = .github\workflows\manual_publish_ajut_to_nuget.yml
 	EndProjectSection
 EndProject

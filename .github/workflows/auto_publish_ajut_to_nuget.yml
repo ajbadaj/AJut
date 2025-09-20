@@ -9,44 +9,13 @@ on:
 
 # This job will only run if the pull request was merged AND the 'publish-nuget' label was added.
 jobs:
-  build:
+  build_test_publish:
     if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'publish-nuget')
     runs-on: windows-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-
-    - name: Get PR Number
-      id: get_pr_number
-      run: |
-        $prNumber = ${{ github.event.pull_request.number }}
-        echo "PR_NUMBER=$prNumber" >> $env:GITHUB_ENV
-      shell: pwsh
-      
-    - name: Build Projects
-      run: ./.github/scripts/build-targets.ps1 -prNumber ${{ env.PR_NUMBER }}
-      shell: pwsh
-
-  test:
-    needs: build
-    runs-on: windows-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-      
-    - name: Test Projects
-      run: ./.github/scripts/test-targets.ps1
-      shell: pwsh
-      
-  publish:
-    needs: [build, test]
-    runs-on: windows-latest
     env:
-      NUGET_API_KEY: ${{ secrets.NUGETPUBLISHKEY }}
+      GH_TOKEN: ${{ github.token }}
+      NUGETPUBLISHKEY: ${{ secrets.NUGETPUBLISHKEY }}
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-
     - name: Get PR Number
       id: get_pr_number
       run: |
@@ -54,6 +23,22 @@ jobs:
         echo "PR_NUMBER=$prNumber" >> $env:GITHUB_ENV
       shell: pwsh
       
-    - name: Publish Projects
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build AJut Libraries
+      run: ./.github/scripts/build-targets.ps1 -prNumber ${{ env.PR_NUMBER }}
+    
+    - name: Test AJut Libraries
+      run: ./.github/scripts/test-targets.ps1
+
+    - name: Publish AJut Libraries
       run: ./.github/scripts/publish-targets.ps1 -prNumber ${{ env.PR_NUMBER }} -apiKey $env:NUGET_API_KEY
-      shell: pwsh

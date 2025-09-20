@@ -16,7 +16,7 @@ try {
         $testProjectPath = "libs/$projectName/$projectName.Test.csproj"
         if (Test-Path $testProjectPath) {
             Write-Host "--> Running tests for $projectName..."
-            dotnet test $testProjectPath --configuration Release
+            dotnet test --no-build --verbosity normal $testProjectPath --configuration Release
         } else {
             Write-Host "No test project found for $projectName. Skipping tests."
         }
