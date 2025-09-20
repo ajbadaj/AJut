@@ -37,13 +37,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Get PR Number
-      id: get_pr_number
-      run: |
-        $prNumber = ${{ github.event.pull_request.number }}
-        echo "PR_NUMBER=$prNumber" >> $env:GITHUB_ENV
-      shell: pwsh
-      
     - name: Build Projects
       run: ./.github/scripts/build-targets.ps1 -prNumber ${{ github.event.inputs.prNumber }} -projectsToBuild "${{ toJSON(github.event.inputs) }}"
       shell: pwsh
