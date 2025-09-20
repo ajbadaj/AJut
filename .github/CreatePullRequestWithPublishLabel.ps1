@@ -15,6 +15,9 @@ try {
         throw "GitHub CLI ('gh') is not installed. Please install it to use this script."
     }
 
+    Write-Host "Pushing to ensure all changes are represented..."
+    git push
+
     Write-Host "Starting the automated pull request workflow..."
 
     # Get the current branch name
