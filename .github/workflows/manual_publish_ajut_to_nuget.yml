@@ -1,4 +1,4 @@
-name: Publish To Nuget (Manual)
+﻿name: AJut → Nuget (Manual)
 
 on:
   workflow_dispatch:

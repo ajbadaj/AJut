@@ -1,4 +1,4 @@
-name: Publish all AJut packages -> Nuget (Automatic)
+name: AJut -> Nuget (Automatic)
 
 on:
   pull_request:
