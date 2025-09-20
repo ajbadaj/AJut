@@ -23,28 +23,10 @@ try {
         throw "You are on the '$BaseBranch' branch. Please switch to a feature branch before running this script."
     }
 
-    # Push changes to the current branch
-    Write-Host "Pushing changes to '$CurrentBranch'..."
-    gh push origin $CurrentBranch
-
     # Create the pull request
     Write-Host "Creating pull request from '$CurrentBranch' to '$BaseBranch'..."
-    $prResult = gh pr create --base $BaseBranch --head $CurrentBranch --fill --label $LabelName --json number,url,title
-
-    if ($prResult) {
-        $prData = $prResult | ConvertFrom-Json
-        $prNumber = $prData.number
-        $prUrl = $prData.url
-        $prTitle = $prData.title
-
-        Write-Host "Successfully created pull request #$prNumber:"
-        Write-Host "Title: $prTitle"
-        Write-Host "URL: $prUrl"
-        Write-Host "Label '$LabelName' has been added."
-    } else {
-        throw "Failed to create pull request. Please check for errors above."
-    }
-
+    $prResult = gh pr create --base $BaseBranch --head $CurrentBranch --fill --label $LabelName -w
+    Write-Host $prResult
 } catch {
     Write-Error $_.Exception.Message
     Write-Host "The script has stopped due to an error."
