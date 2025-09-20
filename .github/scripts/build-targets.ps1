@@ -47,8 +47,8 @@ try {
             Write-Host "Git diff returned: $changedFiles"
         }
         else {
-            Write-Host "Pull Request Diff: comparing this branch to head"
-            $changedFiles = git diff --name-only origin/main HEAD
+            Write-Host "No target filtering set, building all"
+            $targetProjects = $projectOrder
         }
 
         foreach ($projectName in $projectOrder) {
@@ -66,8 +66,9 @@ try {
     }
 
     # NOTE: This will build all projects, despite potentially not needing that.
-    # This is important though because otherwise we'd have to build with --no-dependencies
-    # which might mean a dependency is not skipped (ie asking for AJut.UX.Wpf and not AJut.UX)
+    # This is important though because in order not to force dependencies to all have the same
+    #   version number, we have to build with --no-dependencies which might mean a dependency is
+    #   skipped that was otherwise needed (ie asking for AJut.UX.Wpf and not AJut.UX)
     foreach ($projectName in $projectOrder) {
         $projectPath = "libs/$projectName/$projectName.csproj"
         
@@ -83,7 +84,7 @@ try {
         }
 
         Write-Host "Building with full version: $fullVersion"
-        dotnet build $projectPath --configuration Release /p:Version=$fullVersion
+        dotnet build $projectPath --configuration Release /p:Version=$fullVersion --no-dependencies
     }
 
     # Save the list of target projects to a file so it can be used by other scripts
