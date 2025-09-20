@@ -1,13 +1,15 @@
 name: Build & Test
 
 on:
+  pull_request:
+    types: [opened]
   push:
     branches: [ main ]
 
 jobs:
   build:
     runs-on: windows-latest
-    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    if: github.event_name == 'push' && !contains(github.ref, 'pull')
 
     steps:
     - name: Checkout code
@@ -21,8 +23,8 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
 
-    - name: Build
-      run: dotnet build --no-restore
-
-    - name: Test
-      run: dotnet test --no-build --verbosity normal
+    - name: Build AJut Libraries
+      run: ./.github/scripts/build-targets.ps1 -prNumber ${{ env.PR_NUMBER }} -prHeadSHA ${{ env.GH_HEAD_SHA }} -prBaseSHA {{ env.GH_BASE_SHA }}
+    
+    - name: Test AJut Libraries
+      run: ./.github/scripts/test-targets.ps1
