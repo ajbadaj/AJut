@@ -38,7 +38,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Build Projects
-      run: ./.github/scripts/build-targets.ps1 -prNumber ${{ github.event.inputs.prNumber }} -projectsToBuild "${{ toJSON(github.event.inputs) }}"
+      run: ./.github/scripts/build-targets.ps1 -prNumber ${{ github.event.inputs.prNumber }} -projectsToBuild '${{ toJSON(github.event.inputs) }}'
       shell: pwsh
 
   test:
