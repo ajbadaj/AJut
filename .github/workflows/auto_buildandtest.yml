@@ -9,6 +9,7 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
 
     steps:
     - name: Checkout code

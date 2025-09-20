@@ -1,7 +1,9 @@
 [CmdletBinding()]
 param (
     [int]$prNumber,
-    [string]$projectsToBuild = ""
+    [string]$projectsToBuild = "",
+    [string]$prHeadSHA = "",
+    [string]$prBaseSHA = ""
 )
 
 try {
@@ -36,9 +38,19 @@ try {
             }
         }
     } else {
-        # Default to finding changed files if no specific projects are specified (e.g., from the automatic workflow)
         git fetch origin main
-        $changedFiles = git diff --name-only origin/main HEAD
+
+        # We're trying instead to use the diffs to determine what has changed
+        if ($prBaseSHA -and $prHeadSHA) {
+            Write-Host "Pull Request Diff: comparing $prBaseSHA to $prHeadSHA"
+            $changedFiles = git diff --name-only $prBaseSHA $prHeadSHA
+            Write-Host "Git diff returned: $changedFiles"
+        }
+        else {
+            Write-Host "Pull Request Diff: comparing this branch to head"
+            $changedFiles = git diff --name-only origin/main HEAD
+        }
+
         foreach ($projectName in $projectOrder) {
             $projectPath = "libs/$projectName/$projectName.csproj"
             if ($changedFiles -like "libs/$projectName/*") {

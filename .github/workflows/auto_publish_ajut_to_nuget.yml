@@ -14,6 +14,8 @@ jobs:
     runs-on: windows-latest
     env:
       GH_TOKEN: ${{ github.token }}
+      GH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      GH_BASE_SHA: ${{ github.event.pull_request.base.sha }}
       NUGETPUBLISHKEY: ${{ secrets.NUGETPUBLISHKEY }}
     steps:
     - name: Get PR Number
@@ -35,7 +37,7 @@ jobs:
       run: dotnet restore
 
     - name: Build AJut Libraries
-      run: ./.github/scripts/build-targets.ps1 -prNumber ${{ env.PR_NUMBER }}
+      run: ./.github/scripts/build-targets.ps1 -prNumber ${{ env.PR_NUMBER }} -prHeadSHA ${{ env.GH_HEAD_SHA }} -prBaseSHA {{ env.GH_BASE_SHA }}
     
     - name: Test AJut Libraries
       run: ./.github/scripts/test-targets.ps1
