@@ -9,14 +9,14 @@ try {
     
     # Load the list of built projects from the file created by build command
     # Note: This list is already deterministically sorted from the ProjectOrder.json so we don't need to re-enforce this order for publishing
-    $builtProjects = Get-Content -Raw -Path "built_projects.json" | ConvertFrom-Json
+    $targetProjects = Get-Content -Raw -Path "target_projects.json" | ConvertFrom-Json
     
-    if ($null -eq $builtProjects -or $builtProjects.Count -eq 0) {
+    if ($null -eq $targetProjects -or $targetProjects.Count -eq 0) {
         Write-Host "No projects to publish. Skipping."
         exit 0
     }
 
-    foreach ($projectName in $builtProjects) {
+    foreach ($projectName in $targetProjects) {
         $projectPath = "libs/$projectName/$projectName.csproj"
         
         Write-Host "--> Publishing $projectName..."

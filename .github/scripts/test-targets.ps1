@@ -5,14 +5,14 @@ try {
     Write-Host "Starting test process..."
     
     # Load the list of built projects from the file
-    $builtProjects = Get-Content -Raw -Path "built_projects.json" | ConvertFrom-Json
+    $targetProjects = Get-Content -Raw -Path "target_projects.json" | ConvertFrom-Json
     
-    if ($null -eq $builtProjects -or $builtProjects.Count -eq 0) {
+    if ($null -eq $targetProjects -or $targetProjects.Count -eq 0) {
         Write-Host "No projects to test. Skipping."
         exit 0
     }
     
-    foreach ($projectName in $builtProjects) {
+    foreach ($projectName in $targetProjects) {
         $testProjectPath = "libs/$projectName/$projectName.Test.csproj"
         if (Test-Path $testProjectPath) {
             Write-Host "--> Running tests for $projectName..."

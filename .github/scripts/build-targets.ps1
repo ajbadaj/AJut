@@ -13,7 +13,7 @@ try {
     $projectOrder = Get-Content -Raw -Path "ProjectOrder.json" | ConvertFrom-Json
     
     # Determine which projects to build based on input
-    $builtProjects = @()
+    $targetProjects = @()
     if ($projectsToBuild) {
         $inputProjects = ConvertFrom-Json $projectsToBuild
         
@@ -34,7 +34,7 @@ try {
             Write-Host "Checking: $project against '$normalizedKey'"
             
             if ($lowerCaseInputs.ContainsKey($normalizedKey) -and $lowerCaseInputs[$normalizedKey] -eq $true) {
-                $builtProjects += $project
+                $targetProjects += $project
             }
         }
     } else {
@@ -54,22 +54,24 @@ try {
         foreach ($projectName in $projectOrder) {
             $projectPath = "libs/$projectName/$projectName.csproj"
             if ($changedFiles -like "libs/$projectName/*") {
-                $builtProjects += $projectName
+                $targetProjects += $projectName
             }
         }
     }
 
-    Write-Host "Found projects list: $builtProjects"
-    if (!$builtProjects) {
+    Write-Host "Found projects list: $targetProjects"
+    if (!$targetProjects) {
         Write-Error "Could not determine any projects to build"
         exit 2
     }
 
-    foreach ($projectName in $builtProjects) {
+    # NOTE: This will build all projects, despite potentially not needing that.
+    # This is important though because otherwise we'd have to build with --no-dependencies
+    # which might mean a dependency is not skipped (ie asking for AJut.UX.Wpf and not AJut.UX)
+    foreach ($projectName in $projectOrder) {
         $projectPath = "libs/$projectName/$projectName.csproj"
         
         Write-Host "--> Building $projectName..."
-
         $csproj = ([xml](Get-Content $projectPath)).Project.PropertyGroup
         $versionPrefix = $csproj.VersionPrefix
         $versionSuffix = $csproj.VersionSuffix
@@ -84,8 +86,8 @@ try {
         dotnet build $projectPath --configuration Release /p:Version=$fullVersion
     }
 
-    # Save the list of built projects to a file so it can be used by other scripts
-    $builtProjects | ConvertTo-Json | Set-Content "built_projects.json"
+    # Save the list of target projects to a file so it can be used by other scripts
+    $targetProjects | ConvertTo-Json | Set-Content "target_projects.json"
     Write-Host "Build process complete."
 } catch {
     Write-Error $_.Exception.Message
