@@ -31,9 +31,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Git", "Git", "{55475A1E-783
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
 		.github\workflows\buildandtest.yml = .github\workflows\buildandtest.yml
-		.github\workflows\publish_ajut_core_to_nuget.yml = .github\workflows\publish_ajut_core_to_nuget.yml
-		.github\workflows\publish_ajut_to_nuget.yml = .github\workflows\publish_ajut_to_nuget.yml
-		.github\workflows\publish_ajut_ux_wpf_to_nuget.yml = .github\workflows\publish_ajut_ux_wpf_to_nuget.yml
+		.github\workflows\auto_publish_ajut_to_nuget.yml = .github\workflows\auto_publish_ajut_to_nuget.yml
+		ProjectOrder.json = ProjectOrder.json
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TheAJutShowRoomWPF", "sandbox\wpf\TheAJutShowRoomWPF.csproj", "{2DD821C6-8B89-18AC-5583-F97123FF46FA}"
