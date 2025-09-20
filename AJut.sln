@@ -26,13 +26,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_global", "_global", "{BC1B
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Git", "Git", "{55475A1E-7834-48EA-8B38-F2F7800AB42F}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Git and Github", "Git and Github", "{55475A1E-7834-48EA-8B38-F2F7800AB42F}"
 	ProjectSection(SolutionItems) = preProject
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
-		.github\workflows\buildandtest.yml = .github\workflows\buildandtest.yml
 		.github\workflows\auto_publish_ajut_to_nuget.yml = .github\workflows\auto_publish_ajut_to_nuget.yml
-		ProjectOrder.json = ProjectOrder.json
+		.github\workflows\buildandtest.yml = .github\workflows\buildandtest.yml
+		.github\workflows\manual_publish_ajut_to_nuget.yml = .github\workflows\manual_publish_ajut_to_nuget.yml
+		.github\CreatePullRequestWithPublishLabel.ps1 = .github\CreatePullRequestWithPublishLabel.ps1
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TheAJutShowRoomWPF", "sandbox\wpf\TheAJutShowRoomWPF.csproj", "{2DD821C6-8B89-18AC-5583-F97123FF46FA}"
@@ -42,6 +43,13 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AJut.UX", "libs\AJut.UX\AJut.UX.csproj", "{9D6D62BE-E5AE-4E9D-9531-AC550B35125B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AJut.UX.WinUI3", "libs\AJut.UX.WinUI3\AJut.UX.WinUI3.csproj", "{027E662B-DB59-743F-575C-23D404F5773D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CI-CD Scripts", "CI-CD Scripts", "{B9437204-8957-47EC-B168-1BBF92619DB8}"
+	ProjectSection(SolutionItems) = preProject
+		.github\scripts\build-targets.ps1 = .github\scripts\build-targets.ps1
+		.github\scripts\test-targets.ps1 = .github\scripts\test-targets.ps1
+		.github\scripts\publish-targets.ps1 = .github\scripts\publish-targets.ps1
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -124,6 +132,7 @@ Global
 		{32F511B6-2FBE-CDAB-CD7F-69010D26D6F3} = {E3757F0F-E0D0-4C25-A1CE-12814A545AA3}
 		{9D6D62BE-E5AE-4E9D-9531-AC550B35125B} = {7C5EB0C7-99CC-4649-9FCB-6BA45E857DE5}
 		{027E662B-DB59-743F-575C-23D404F5773D} = {7C5EB0C7-99CC-4649-9FCB-6BA45E857DE5}
+		{B9437204-8957-47EC-B168-1BBF92619DB8} = {55475A1E-7834-48EA-8B38-F2F7800AB42F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {4A5A9F1C-6846-4922-AF3E-B2DE44160171}

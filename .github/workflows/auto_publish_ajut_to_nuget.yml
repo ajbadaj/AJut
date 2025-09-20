@@ -1,4 +1,4 @@
-name: Publish all AJut packages -> Nuget
+name: Publish all AJut packages -> Nuget (Automatic)
 
 on:
   pull_request:
@@ -6,103 +6,54 @@ on:
       - main
     types:
       - closed
-      - labeled
 
 # This job will only run if the pull request was merged AND the 'publish-nuget' label was added.
 jobs:
-  build_ajut_release_publish_and_test:
+  build:
     if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'publish-nuget')
     runs-on: windows-latest
-    env:
-      GH_TOKEN: ${{ github.token }}
-
     steps:
-    - name: Initial decleration
-      run: echo "Starting Nuget publish workflow for all AJut libraries..."
-
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v2
-      with:
-        dotnet-version: '8.0.x'
-
-    - name: Restore dependencies
-      run: dotnet restore
-
-    - name: Find changed files in PR
-      id: find_changes
-      # Fetches the main branch to allow for a proper diff
-      run: |
-        git fetch origin main
-        # Gets a list of all files changed between the main branch and the current PR
-        $changedFiles = git diff --name-only origin/main ${{ github.sha }}
-        $changedFilesString = $changedFiles | Out-String
-        echo "The following files have changed:`n$changedFilesString"
-        echo "CHANGED_FILES=$changedFilesString" >> $env:GITHUB_ENV
-      shell: pwsh
-
-    - name: Get the pull request number
+    - name: Get PR Number
       id: get_pr_number
       run: |
         $prNumber = ${{ github.event.pull_request.number }}
-        echo "The merged PR number is $prNumber"
         echo "PR_NUMBER=$prNumber" >> $env:GITHUB_ENV
       shell: pwsh
       
-    - name: Build and Publish Changed Projects
+    - name: Build Projects
+      run: ./.github/scripts/build-targets.ps1 -prNumber ${{ env.PR_NUMBER }}
+      shell: pwsh
+
+  test:
+    needs: build
+    runs-on: windows-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      
+    - name: Test Projects
+      run: ./.github/scripts/test-targets.ps1
+      shell: pwsh
+      
+  publish:
+    needs: [build, test]
+    runs-on: windows-latest
+    env:
+      NUGET_API_KEY: ${{ secrets.NUGETPUBLISHKEY }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Get PR Number
+      id: get_pr_number
       run: |
-        # Read and parse the ProjectOrder.json file to get the deterministic build order
-        $projectOrder = Get-Content -Raw -Path "ProjectOrder.json" | ConvertFrom-Json
-        $changedFiles = $env:CHANGED_FILES.Split("`n")
-
-        foreach ($projectName in $projectOrder) {
-            $projectPath = "libs/$projectName/$projectName.csproj"
-            $hasChanges = $changedFiles | Where-Object { $_ -like "libs/$projectName/*" }
-            
-            if ($null -ne $hasChanges) {
-                echo "--> Changes detected in $projectName. Building and publishing..."
-
-                # Get the version prefix and suffix from the project's .csproj file
-                $csproj = ([xml](Get-Content $projectPath)).Project.PropertyGroup
-                $versionPrefix = $csproj.VersionPrefix
-                $versionSuffix = $csproj.VersionSuffix
-                
-                # Construct the full version number based on whether a suffix exists
-                $prNumber = ${{ env.PR_NUMBER }}
-                if ($versionSuffix) {
-                    $fullVersion = "${versionPrefix}.${prNumber}-${versionSuffix}"
-                } else {
-                    $fullVersion = "${versionPrefix}.${prNumber}"
-                }
-
-                echo "Found VersionPrefix: $versionPrefix"
-                if ($versionSuffix) {
-                    echo "Found VersionSuffix: $versionSuffix"
-                }
-                echo "Building with full version: $fullVersion"
-
-                # Build the project with the calculated version
-                dotnet build $projectPath --no-restore --configuration Release /p:Version=$fullVersion
-
-                # Run tests for the project (optional, but good practice)
-                dotnet test libs/$projectName --configuration Release
-
-                # Publish the Nuget package
-                $nugetPackage = Get-ChildItem -Path "libs/$projectName/bin/Release" -Filter "$projectName.${fullVersion}.nupkg" | Select-Object -First 1
-                
-                if (-not $nugetPackage) {
-                    Write-Error "Could not find the .nupkg file for $projectName version $fullVersion."
-                    exit 1
-                }
-                
-                echo "Found Nuget package: $($nugetPackage.FullName)"
-                echo "Publishing..."
-                dotnet nuget push "$($nugetPackage.FullName)" --api-key ${{ secrets.NUGETPUBLISHKEY }} --source https://api.nuget.org/v3/index.json
-                echo "Publish complete for $projectName!"
-            } else {
-                echo "No changes detected in $projectName. Skipping build and publish."
-            }
-        }
+        $prNumber = ${{ github.event.pull_request.number }}
+        echo "PR_NUMBER=$prNumber" >> $env:GITHUB_ENV
+      shell: pwsh
+      
+    - name: Publish Projects
+      run: ./.github/scripts/publish-targets.ps1 -prNumber ${{ env.PR_NUMBER }} -apiKey $env:NUGET_API_KEY
       shell: pwsh

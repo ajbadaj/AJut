@@ -1,0 +1,80 @@
+name: Publish AJut packages -> Nuget (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      prNumber:
+        description: 'GitHub Pull Request number to use for the build version number.'
+        required: true
+        type: number
+      # The following inputs are should match from ProjectOrder.json
+      # For now, I don't know how to pull this in dynamically, so we'll keep it hard coded.
+      buildAJutCore:
+        description: 'Build and publish AJut.Core'
+        required: false
+        type: boolean
+        default: false
+      buildAJutUX:
+        description: 'Build and publish AJut.UX'
+        required: false
+        type: boolean
+        default: false
+      buildAJutUXWpf:
+        description: 'Build and publish AJut.UX.Wpf'
+        required: false
+        type: boolean
+        default: false
+      buildAJutUXWinUI3:
+        description: 'Build and publish AJut.UX.WinUI3'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Get PR Number
+      id: get_pr_number
+      run: |
+        $prNumber = ${{ github.event.pull_request.number }}
+        echo "PR_NUMBER=$prNumber" >> $env:GITHUB_ENV
+      shell: pwsh
+      
+    - name: Build Projects
+      run: ./.github/scripts/build-targets.ps1 -prNumber ${{ github.event.inputs.prNumber }} -projectsToBuild "${{ toJSON(github.event.inputs) }}"
+      shell: pwsh
+
+  test:
+    needs: build
+    runs-on: windows-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      
+    - name: Test Projects
+      run: ./.github/scripts/test-targets.ps1
+      shell: pwsh
+      
+  publish:
+    needs: [build, test]
+    runs-on: windows-latest
+    env:
+      NUGET_API_KEY: ${{ secrets.NUGETPUBLISHKEY }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Get PR Number
+      id: get_pr_number
+      run: |
+        $prNumber = ${{ github.event.pull_request.number }}
+        echo "PR_NUMBER=$prNumber" >> $env:GITHUB_ENV
+      shell: pwsh
+      
+    - name: Publish Projects
+      run: ./.github/scripts/publish-targets.ps1 -prNumber ${{ github.event.inputs.prNumber }} -apiKey $env:NUGET_API_KEY"
+      shell: pwsh
