@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
@@ -20,17 +20,17 @@
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <EnableMsixTooling>true</EnableMsixTooling>
     <WindowsPackageType>None</WindowsPackageType>
-    <Version>1.0.0.78-beta</Version>
-	<DisableEmbeddedXbf>false</DisableEmbeddedXbf>
+    <Version>1.0.0.79-beta</Version>
+    <DisableEmbeddedXbf>false</DisableEmbeddedXbf>
   </PropertyGroup>
   <ItemGroup>
-	<Content Include="Resources\AllControlThemeOverrides.xaml" />
-	<Content Include="Resources\AJut.UX-Overrides.xaml" />
-	<Content Include="Resources\DarkThemeColorsBase.xaml" />
-	<Content Include="Resources\LightThemeColorsBase.xaml" />
-	<Content Include="Resources\Microsoft.UI.Xaml-Overrides.xaml" />
-	<Content Include="Resources\SystemColorAliasing.xaml" />
-	<Content Include="Themes\Generic.xaml" />
+    <Content Include="Resources\AllControlThemeOverrides.xaml" />
+    <Content Include="Resources\AJut.UX-Overrides.xaml" />
+    <Content Include="Resources\DarkThemeColorsBase.xaml" />
+    <Content Include="Resources\LightThemeColorsBase.xaml" />
+    <Content Include="Resources\Microsoft.UI.Xaml-Overrides.xaml" />
+    <Content Include="Resources\SystemColorAliasing.xaml" />
+    <Content Include="Themes\Generic.xaml" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\.editorconfig" Link=".editorconfig" />
