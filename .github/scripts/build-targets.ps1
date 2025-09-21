@@ -71,6 +71,8 @@ try {
 
         Write-Host "--> Building $projectName..."
         dotnet build $projectPath --configuration Release
+        Write-Host "--> Packing $projectName..."
+        dotnet pack $projectPath --configuration Release --no-build
     }
 
     # Save the list of target projects to a file so it can be used by other scripts
