@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
@@ -21,16 +21,19 @@
     <EnableMsixTooling>true</EnableMsixTooling>
     <WindowsPackageType>None</WindowsPackageType>
     <Version>1.0.0.79-beta</Version>
-    <DisableEmbeddedXbf>false</DisableEmbeddedXbf>
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="Resources\AllControlThemeOverrides.xaml" />
-    <Content Include="Resources\AJut.UX-Overrides.xaml" />
-    <Content Include="Resources\DarkThemeColorsBase.xaml" />
-    <Content Include="Resources\LightThemeColorsBase.xaml" />
-    <Content Include="Resources\Microsoft.UI.Xaml-Overrides.xaml" />
-    <Content Include="Resources\SystemColorAliasing.xaml" />
-    <Content Include="Themes\Generic.xaml" />
+    <Page Include="Resources\AllControlThemeOverrides.xaml" />
+    <Page Include="Resources\AJut.UX-Overrides.xaml" />
+    <Page Include="Resources\DarkThemeColorsBase.xaml" />
+    <Page Include="Resources\LightThemeColorsBase.xaml" />
+    <Page Include="Resources\Microsoft.UI.Xaml-Overrides.xaml" />
+    <Page Include="Resources\SystemColorAliasing.xaml" />
+    <Page Include="Themes\Generic.xaml" />
+	<Page Include="Controls\EnumComboBox.xaml"/>
+	<Page Include="Controls\GeometryButton.xaml"/>
+	<Page Include="Controls\ThemedWindowRootControl.xaml"/>
+	<Page Include="Controls\TitleBarCaptionButton.xaml"/>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\.editorconfig" Link=".editorconfig" />
@@ -41,7 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4948" />
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.250606001" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.250907003" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AJut.Core\AJut.Core.csproj" />

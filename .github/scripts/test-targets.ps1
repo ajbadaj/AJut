@@ -1,12 +1,18 @@
 [CmdletBinding()]
-param ()
+param (
+    [string]$testTargets = ""
+)
 
 try {
     Write-Host "Starting test process..."
     
-    # Load the list of built projects from the file
-    $targetProjects = Get-Content -Raw -Path "target_projects.json" | ConvertFrom-Json
-    
+    # If test targets was unset, we're testing them all
+    if ($testTargets -eq "") {
+        $testTargets = Get-Content -Raw -Path "ProjectOrder.json"
+    }
+
+    $targetProjects = ConvertFrom-Json $testTargets
+
     if ($null -eq $targetProjects -or $targetProjects.Count -eq 0) {
         Write-Host "No projects to test. Skipping."
         exit 0
