@@ -1,14 +1,11 @@
 [CmdletBinding()]
 param (
-    [int]$prNumber,
     [string]$projectsToBuild = "",
     [string]$prHeadSHA = "",
     [string]$prBaseSHA = ""
 )
 
 try {
-    Write-Host "Starting build process with PR Number: $prNumber"
-
     # Read and parse the ProjectOrder.json file to get the deterministic build order
     $projectOrder = Get-Content -Raw -Path "ProjectOrder.json" | ConvertFrom-Json
     
@@ -51,8 +48,8 @@ try {
             foreach ($projectName in $projectOrder) {
                 $projectPath = "libs/$projectName/$projectName.csproj"
                 if ($changedFiles -like "libs/$projectName/*") {
-                    if (-not $targetProjects.Contains($project)) {
-                        $targetProjects += $project
+                    if (-not $targetProjects.Contains($projectName)) {
+                        $targetProjects += $projectName
                     }
                 }
             }
@@ -71,39 +68,6 @@ try {
 
     foreach ($projectName in $targetProjects) {
         $projectPath = "libs/$projectName/$projectName.csproj"
-
-        if ($prNumber) {
-            Write-Host " --> Reading existing VersionSuffix from the project"
-            # Load the XML from the project file
-            try {
-                [xml]$xml = Get-Content -Path $projectPath
-            } catch {
-                Write-Error "Failed to load XML from $projectPath. Please check the file format."
-                return
-            }
-        
-            # Find the first PropertyGroup element
-            $rootGroup = $xml.Project.PropertyGroup | Select-Object -First 1
-
-            if ($rootGroup) {
-                $versionPrefix = $rootGroup.VersionPrefix
-                $versionSuffix = $rootGroup.VersionSuffix
-                if ($versionSuffix) {
-                    $fullVersion = "${versionPrefix}.${prNumber}-${versionSuffix}"
-                } else {
-                    $fullVersion = "${versionPrefix}.${prNumber}"
-                }
-
-                $newElement = $xml.CreateElement("Version")
-                $newElement.InnerText = $fullVersion
-                [void]$rootGroup.AppendChild($newElement)
-                $xml.Save($projectPath)
-                Write-Host " ... Version set successfully to $fullVersion"
-            } else {
-                Write-Error "CSProj is not configured in an expected manner, cannot write Version"
-                return
-            }
-        }
 
         Write-Host "--> Building $projectName..."
         dotnet build $projectPath --configuration Release

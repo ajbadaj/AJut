@@ -43,14 +43,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CI-CD Scripts", "CI-CD Scri
 	ProjectSection(SolutionItems) = preProject
 		.github\scripts\build-targets.ps1 = .github\scripts\build-targets.ps1
 		.github\scripts\publish-targets.ps1 = .github\scripts\publish-targets.ps1
+		.github\scripts\set-version-numbers.ps1 = .github\scripts\set-version-numbers.ps1
 		.github\scripts\test-targets.ps1 = .github\scripts\test-targets.ps1
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Workflows", "Workflows", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 	ProjectSection(SolutionItems) = preProject
-		.github\workflows\auto_publish_ajut_to_nuget.yml = .github\workflows\auto_publish_ajut_to_nuget.yml
-		.github\workflows\auto_buildandtest.yml = .github\workflows\auto_buildandtest.yml
-		.github\workflows\manual_publish_ajut_to_nuget.yml = .github\workflows\manual_publish_ajut_to_nuget.yml
+		.github\workflows\BasicBuildAndTest.yml = .github\workflows\BasicBuildAndTest.yml
+		.github\workflows\PublishToNuget.yml = .github\workflows\PublishToNuget.yml
+		.github\workflows\SetLatestVersions.yml = .github\workflows\SetLatestVersions.yml
 	EndProjectSection
 EndProject
 Global
