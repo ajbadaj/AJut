@@ -9,7 +9,10 @@ try {
     Write-Host "Starting publish process..."
     
     if ($publishTargets -eq "") {
-        $publishTargets = Get-Content -Raw -Path "ProjectOrder.json"
+        $publishTargets = Get-Content -Raw -Path "target_projects.json"
+        if ($publishTargets -eq "") {
+            $publishTargets = Get-Content -Raw -Path "ProjectOrder.json"
+        }
     }
 
     # Load the list of built projects from the file created by build command

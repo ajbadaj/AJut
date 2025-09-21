@@ -69,17 +69,13 @@ jobs:
         # }
 
     - name: Test AJut Libraries
-      env:
-        PROJECTS_TO_BUILD: ${{ toJSON(github.event.inputs) }}
-      run: ./.github/scripts/test-targets.ps1 -testTargets $env:PROJECTS_TO_BUILD
+      run: ./.github/scripts/test-targets.ps1
 
     - name: Publish AJut Libraries
-      env:
-        PROJECTS_TO_BUILD: ${{ toJSON(github.event.inputs) }}
       run: |
         if (${{ github.event.inputs.dryRunPublish }}) {
-            ./.github/scripts/publish-targets.ps1 -apiKey "$env:NUGETPUBLISHKEY" -publishTargets "$env:PROJECTS_TO_BUILD" -dryRun
+            ./.github/scripts/publish-targets.ps1 -apiKey "$env:NUGETPUBLISHKEY" -dryRun
         } else{
-            ./.github/scripts/publish-targets.ps1 -apiKey "$env:NUGETPUBLISHKEY" -publishTargets "$env:PROJECTS_TO_BUILD"
+            ./.github/scripts/publish-targets.ps1 -apiKey "$env:NUGETPUBLISHKEY"
         }
         

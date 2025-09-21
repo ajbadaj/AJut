@@ -8,7 +8,10 @@ try {
     
     # If test targets was unset, we're testing them all
     if ($testTargets -eq "") {
-        $testTargets = Get-Content -Raw -Path "ProjectOrder.json"
+        $testTargets = Get-Content -Raw -Path "target_projects.json"
+        if ($testTargets -eq "") {
+            $testTargets = Get-Content -Raw -Path "ProjectOrder.json"
+        }
     }
 
     $targetProjects = ConvertFrom-Json $testTargets

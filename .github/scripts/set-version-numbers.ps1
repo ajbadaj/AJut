@@ -3,18 +3,14 @@ param (
     [int]$prNumber,
     [string]$prHeadSHA = "",
     [string]$prBaseSHA = "",
-    [switch]$dryRun,
-    [switch]$testRunNoChanges
+    [string]$targetProjects = ""
+    [switch]$dryRun
 )
 
 try {        
     # Determine changed projects
     $projectOrder = Get-Content -Raw -Path "ProjectOrder.json" | ConvertFrom-Json
     $changedProjects = @()
-
-    if ($testRunNoChanges){
-        return $changedProjects
-    }
 
     if ($prBaseSHA -and $prHeadSHA) {
         $changedFiles = git diff --name-only $prBaseSHA $prHeadSHA
@@ -27,7 +23,11 @@ try {
             }
         }
     } else {
-        $changedProjects = $projectOrder
+        if ($targetProjects -eq "") {
+            $changedProjects = Get-Content -Raw -Path "target_projects.json"
+        } else {
+            $changedProjects = $projectOrder
+        }
     }
 
     if ($changedProjects.Count -eq 0) {

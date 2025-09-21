@@ -77,9 +77,6 @@ jobs:
 
     - name: Commit and push changes
       if: env.SHOULD_RUN == 'true'
-      env:
-        GH_ADMIN_ACCESS_TOKEN: ${{ secrets.CICDAUTOMATION_ACCESS_TOKEN }}
-        GH_TOKEN: ${{ github.token }}
       run: |
         git remote set-url origin git@github.com:${{ github.repository }}.git
         git add .
