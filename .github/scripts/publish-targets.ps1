@@ -47,7 +47,7 @@ try {
         
         Write-Host "Found Nuget package: $($nugetPackage.FullName)"
         Write-Host "----------------------------------------------------------------------------------------------------------"
-        if ($dryRun) {
+        if ($dryRun -eq $true) {
            Write-Host "DRY RUN: The following command would be executed:" -ForegroundColor Yellow
            Write-Host "dotnet nuget push `"$($nugetPackage.FullName)`" --api-key API_KEY --source https://api.nuget.org/v3/index.json" -ForegroundColor Cyan
         } else {

@@ -56,7 +56,7 @@ try {
             exit 1
         }
 
-        if ($dryRun) {
+        if ($dryRun -eq $true) {
             Write-Host " ... Version would be set to $fullVersion for $projectName"
         } else {
             $newVersionElement = $xml.CreateElement("Version")
