@@ -1,29 +1,26 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>net8.0-windows7.0</TargetFramework>
     <UseWPF>true</UseWPF>
-	<VersionPrefix>1.4.0</VersionPrefix>
+    <VersionPrefix>1.4.0</VersionPrefix>
     <Authors>AJ Badarni</Authors>
     <RootNamespace>AJut.UX</RootNamespace>
     <AssemblyName>AJut.UX.Wpf</AssemblyName>
-	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Description>C# / dotnet 8 / wpf controls &amp; utility library, created by AJ Badarni</Description>
     <Copyright>AJ Badarni</Copyright>
-	<PackageProjectUrl>https://www.ajut.dev/</PackageProjectUrl>
-	<PackageIcon>ajut-logo-128.png</PackageIcon>
+    <PackageProjectUrl>https://www.ajut.dev/</PackageProjectUrl>
+    <PackageIcon>ajut-logo-128.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/ajbadaj/AJut</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>c#;dotnet;wpf;theming;controls;converters;app;utilities</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <Version>1.4.0.78</Version>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="System.Drawing.Common" Version="8.0.8" />
   </ItemGroup>
-  
   <ItemGroup>
     <Compile Update="Controls\BumpStack.cs">
       <DependentUpon>BumpStack.xaml</DependentUpon>
@@ -37,7 +34,7 @@
     <Compile Update="Controls\ColorValueEditControl.cs">
       <DependentUpon>ColorValueEditControl.xaml</DependentUpon>
     </Compile>
-	  <Compile Update="Controls\DockingElements\DefaultDockTearoffWindow.cs">
+    <Compile Update="Controls\DockingElements\DefaultDockTearoffWindow.cs">
       <DependentUpon>DefaultDockTearoffWindow.xaml</DependentUpon>
     </Compile>
     <Compile Update="Controls\DockingElements\DockDropInsertionDriverWidget.cs">
@@ -58,15 +55,15 @@
     <Compile Update="Controls\EditableTextBlock.cs">
       <DependentUpon>EditableTextBlock.xaml</DependentUpon>
     </Compile>
-	  <Compile Update="Controls\EnumComboBox.cs">
+    <Compile Update="Controls\EnumComboBox.cs">
       <DependentUpon>EnumComboBox.xaml</DependentUpon>
     </Compile>
     <Compile Update="Controls\FlatTreeListControl.cs">
       <DependentUpon>FlatTreeListControl.xaml</DependentUpon>
     </Compile>
-	  <Compile Update="Controls\MessageBoxPopover.cs">
-		  <DependentUpon>MessageBoxPopover.xaml</DependentUpon>
-	  </Compile>
+    <Compile Update="Controls\MessageBoxPopover.cs">
+      <DependentUpon>MessageBoxPopover.xaml</DependentUpon>
+    </Compile>
     <Compile Update="Controls\NumericEditor.cs">
       <DependentUpon>NumericEditor.xaml</DependentUpon>
     </Compile>
@@ -79,7 +76,7 @@
     <Compile Update="Controls\PopupMenuButton.cs">
       <DependentUpon>PopupMenuButton.xaml</DependentUpon>
     </Compile>
-	  <Compile Update="Controls\PropertyGrid.cs">
+    <Compile Update="Controls\PropertyGrid.cs">
       <DependentUpon>PropertyGrid.xaml</DependentUpon>
     </Compile>
     <Compile Update="Controls\StackNavDisplayElements\StackNavPopoverOverlay.cs">
@@ -106,9 +103,9 @@
     <Compile Update="Controls\ToggleStrip.cs">
       <DependentUpon>ToggleStrip.xaml</DependentUpon>
     </Compile>
-	  <Compile Update="Controls\ToggleSwitchButton.cs">
-		  <DependentUpon>ToggleSwitchButton.xaml</DependentUpon>
-	  </Compile>
+    <Compile Update="Controls\ToggleSwitchButton.cs">
+      <DependentUpon>ToggleSwitchButton.xaml</DependentUpon>
+    </Compile>
     <Compile Update="Controls\UIElementRepeater.cs">
       <DependentUpon>UIElementRepeater.xaml</DependentUpon>
     </Compile>
@@ -116,12 +113,10 @@
       <DependentUpon>WindowChromeButtonStrip.xaml</DependentUpon>
     </Compile>
   </ItemGroup>
-  
   <ItemGroup>
     <ProjectReference Include="..\AJut.Core\AJut.Core.csproj" />
     <ProjectReference Include="..\AJut.UX\AJut.UX.csproj" />
   </ItemGroup>
-  
   <ItemGroup>
     <None Include="..\..\ajut-logo-128.png">
       <Pack>True</Pack>
@@ -129,15 +124,14 @@
     </None>
     <None Include="..\..\license.txt">
       <Pack>True</Pack>
-      <PackagePath></PackagePath>
+      <PackagePath>
+      </PackagePath>
     </None>
   </ItemGroup>
-  
   <ItemGroup>
     <None Update="README.md">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
   </ItemGroup>
-      
 </Project>

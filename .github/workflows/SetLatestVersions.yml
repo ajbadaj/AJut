@@ -1,5 +1,8 @@
 name: Set & Push Version
 
+# NOTE: This is not going to work until I figure out how to exclude the bot from
+# restrictions on pushing
+
 on:
   # If run manually
   workflow_dispatch:
@@ -44,23 +47,36 @@ jobs:
         }
       shell: pwsh
           
+    - name: Configure Git
+      run: |
+        git config --global user.name "${{ secrets.CICDAUTOMATION_USERNAME }}"
+        git config --global user.email "${{ secrets.CICDAUTOMATION_EMAIL }}"
+
     - name: Set new version numbers
       run: |
           if ("${{ github.event.inputs.prNumber }}" -ne "") {
             Write-Host "This is a manual run."
-            ./.github/scripts/set-version-numbers.ps1 -prNumber ${{ env.PR_NUMBER }}
+            $changes = ./.github/scripts/set-version-numbers.ps1 -prNumber ${{ env.PR_NUMBER }}
           } else {
             Write-Host "This is an automatic run."
-            ./.github/scripts/set-version-numbers.ps1 -prNumber ${{ env.PR_NUMBER }}  -prHeadSHA ${{ github.event.pull_request.head.sha }} -prBaseSHA ${{ github.event.pull_request.base.sha }}
+            $changes = ./.github/scripts/set-version-numbers.ps1 -prNumber ${{ env.PR_NUMBER }}  -prHeadSHA ${{ github.event.pull_request.head.sha }} -prBaseSHA ${{ github.event.pull_request.base.sha }}
+          }
+
+          if ($changes.Count -gt 0) {
+            echo "::set-output name=should_run::true"
+          } else {
+            echo "::set-output name=should_run::false"
           }
       shell: pwsh
 
     - name: Commit and push changes
-      run: |
-        git config --global user.name "github-actions"
-        git config --global user.email "github-actions@github.com"
-        git add .
-        git commit -m "chore: Update versions to reflect merged PR ${{ env.PR_NUMBER }}"
-        git push
+      if: steps.get_changes.outputs.should_run == 'true'
       env:
+        GH_ADMIN_ACCESS_TOKEN: ${{ secrets.CICDAUTOMATION_ACCESS_TOKEN }}
         GH_TOKEN: ${{ github.token }}
+      run: |
+        git remote set-url origin https://x-access-token:${{ env.GH_ADMIN_ACCESS_TOKEN }}@github.com/ajbadaj/AJut.git
+        git add .
+        git commit -m "Automated commit from workflow"
+        git push origin HEAD
+        

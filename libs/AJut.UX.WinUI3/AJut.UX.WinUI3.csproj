@@ -5,33 +5,39 @@
     <RootNamespace>AJut.UX</RootNamespace>
     <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
     <UseWinUI>true</UseWinUI>
-    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Description>C# / dotnet 8 / WinUI3 controls &amp; utility library, created by AJ Badarni</Description>
-	<Authors>AJ Badarni</Authors>
-	<Company />
-	<VersionPrefix>1.0.0</VersionPrefix>
+    <Authors>AJ Badarni</Authors>
+    <Company />
+    <VersionPrefix>1.0.0</VersionPrefix>
     <VersionSuffix>beta</VersionSuffix>
-	<PackageProjectUrl>https://www.ajut.dev/</PackageProjectUrl>
-	<PackageIcon>ajut-logo-128.png</PackageIcon>
+    <PackageProjectUrl>https://www.ajut.dev/</PackageProjectUrl>
+    <PackageIcon>ajut-logo-128.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/ajbadaj/AJut</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>c#;dotnet;wpf;theming;controls;converters;app;utilities</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-	<EnableMsixTooling>true</EnableMsixTooling>
-	<WindowsPackageType>None</WindowsPackageType>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <WindowsPackageType>None</WindowsPackageType>
+    <Version>1.0.0.78-beta</Version>
+	<DisableEmbeddedXbf>false</DisableEmbeddedXbf>
   </PropertyGroup>
   <ItemGroup>
-    <None Remove="Resources\AllControlThemeOverrides.xaml" />
+	<Content Include="Resources\AllControlThemeOverrides.xaml" />
+	<Content Include="Resources\AJut.UX-Overrides.xaml" />
+	<Content Include="Resources\DarkThemeColorsBase.xaml" />
+	<Content Include="Resources\LightThemeColorsBase.xaml" />
+	<Content Include="Resources\Microsoft.UI.Xaml-Overrides.xaml" />
+	<Content Include="Resources\SystemColorAliasing.xaml" />
+	<Content Include="Themes\Generic.xaml" />
   </ItemGroup>
-  
   <ItemGroup>
-  	<None Include="..\..\.editorconfig" Link=".editorconfig" />
-  	<None Include="..\..\ajut-logo-128.png">
-  		<Pack>True</Pack>
-  		<PackagePath>\</PackagePath>
-  	</None>
+    <None Include="..\..\.editorconfig" Link=".editorconfig" />
+    <None Include="..\..\ajut-logo-128.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4948" />
@@ -41,32 +47,29 @@
     <ProjectReference Include="..\AJut.Core\AJut.Core.csproj" />
     <ProjectReference Include="..\AJut.UX\AJut.UX.csproj" />
   </ItemGroup>
-
   <ItemGroup>
-	<Compile Update="Controls\ThemedWindowRootControl.cs">
-	  <DependentUpon>ThemedWindowRootControl.xaml</DependentUpon>
-	</Compile>
-	<Compile Update="Controls\EnumComboBox.cs">
-	  <DependentUpon>EnumComboBox.xaml</DependentUpon>
-	</Compile>
-	<Compile Update="Controls\TitleBarCaptionButton.cs">
-	  <DependentUpon>TitleBarCaptionButton.xaml</DependentUpon>
-	</Compile>
-	<Compile Update="Controls\GeometryButton.cs">
-		<DependentUpon>GeometryButton.xaml</DependentUpon>
-	</Compile>
+    <Compile Update="Controls\ThemedWindowRootControl.cs">
+      <DependentUpon>ThemedWindowRootControl.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\EnumComboBox.cs">
+      <DependentUpon>EnumComboBox.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\TitleBarCaptionButton.cs">
+      <DependentUpon>TitleBarCaptionButton.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\GeometryButton.cs">
+      <DependentUpon>GeometryButton.xaml</DependentUpon>
+    </Compile>
   </ItemGroup>
-
   <ItemGroup>
-
     <None Update="README.md">
       <PackagePath>\</PackagePath>
       <Pack>True</Pack>
     </None>
-	<None Include="..\..\license.txt" Link="license.txt">
-		<PackagePath></PackagePath>
-		<Pack>True</Pack>
-	</None>
+    <None Include="..\..\license.txt" Link="license.txt">
+      <PackagePath>
+      </PackagePath>
+      <Pack>True</Pack>
+    </None>
   </ItemGroup>
-  
 </Project>

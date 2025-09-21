@@ -2,13 +2,19 @@
 param (
     [int]$prNumber,
     [string]$prHeadSHA = "",
-    [string]$prBaseSHA = ""
+    [string]$prBaseSHA = "",
+    [switch]$dryRun,
+    [switch]$testRunNoChanges
 )
 
 try {        
     # Determine changed projects
     $projectOrder = Get-Content -Raw -Path "ProjectOrder.json" | ConvertFrom-Json
     $changedProjects = @()
+
+    if ($testRunNoChanges){
+        return $changedProjects
+    }
 
     if ($prBaseSHA -and $prHeadSHA) {
         $changedFiles = git diff --name-only $prBaseSHA $prHeadSHA
@@ -26,7 +32,7 @@ try {
 
     if ($changedProjects.Count -eq 0) {
         Write-Host "No projects changed, skipping version update."
-        exit 0
+        return $changedProjects
     }
 
     Write-Host "Projects to update: $changedProjects"
@@ -39,11 +45,20 @@ try {
         if ($rootGroup) {
             $versionPrefix = $rootGroup.VersionPrefix
             $versionSuffix = $rootGroup.VersionSuffix
-            $fullVersion = "${versionPrefix}.${prNumber}"
+            
             if ($versionSuffix) {
-                $fullVersion += "-${versionSuffix}"
+                $fullVersion = "${versionPrefix}.${prNumber}-${versionSuffix}"
+            } else {
+                $fullVersion = "${versionPrefix}.${prNumber}"
             }
+        } else {
+            Write-Error "CSProj is not configured in an expected manner, cannot write Version"
+            exit 1
+        }
 
+        if ($dryRun) {
+            Write-Host " ... Version would be set to $fullVersion for $projectName"
+        } else {
             $newVersionElement = $xml.CreateElement("Version")
             $newVersionElement.InnerText = $fullVersion
             if ($rootGroup.SelectSingleNode("Version")) {
@@ -53,11 +68,10 @@ try {
             }
             $xml.Save($projectPath)
             Write-Host " ... Version set successfully to $fullVersion for $projectName"
-        } else {
-            Write-Error "CSProj is not configured in an expected manner, cannot write Version"
-            exit 1
         }
     }
+
+    return $changedProjects
 } catch {
     Write-Error $_.Exception.Message
     exit 1

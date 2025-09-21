@@ -1,13 +1,17 @@
 ﻿[CmdletBinding()]
 param (
     [string]$apiKey,
-    [string]$publishTargets,
+    [string]$publishTargets = "",
     [switch]$dryRun
 )
 
 try {
     Write-Host "Starting publish process..."
     
+    if ($publishTargets -eq "") {
+        $publishTargets = Get-Content -Raw -Path "ProjectOrder.json"
+    }
+
     # Load the list of built projects from the file created by build command
     $targetProjects = ConvertFrom-Json $publishTargets
     

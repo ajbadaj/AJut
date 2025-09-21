@@ -1,30 +1,30 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-	<TargetFramework>net8.0</TargetFramework>
-	<ImplicitUsings>enable</ImplicitUsings>
-	<Nullable>enable</Nullable>
-	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-	<Description>C# / dotnet 8 - common lib for Wpf / WinUI3 utility libraries, created by AJ Badarni</Description>
-	<Authors>AJ Badarni</Authors>
-	<Company />
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Description>C# / dotnet 8 - common lib for Wpf / WinUI3 utility libraries, created by AJ Badarni</Description>
+    <Authors>AJ Badarni</Authors>
+    <Company />
     <VersionPrefix>1.0.0</VersionPrefix>
-	<PackageProjectUrl>https://www.ajut.dev/</PackageProjectUrl>
-	<PackageIcon>ajut-logo-128.png</PackageIcon>
-	<PackageReadmeFile>README.md</PackageReadmeFile>
-	<RepositoryUrl>https://github.com/ajbadaj/AJut</RepositoryUrl>
-	<RepositoryType>git</RepositoryType>
-	<PackageTags>c#;dotnet;theming;controls;converters;app;utilities</PackageTags>
-	<PackageLicenseExpression>MIT</PackageLicenseExpression>
-	<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageProjectUrl>https://www.ajut.dev/</PackageProjectUrl>
+    <PackageIcon>ajut-logo-128.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/ajbadaj/AJut</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>c#;dotnet;theming;controls;converters;app;utilities</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <Version>1.0.0.78</Version>
   </PropertyGroup>
-
   <ItemGroup>
     <None Include="..\..\ajut-logo-128.png">
-	  <Pack>True</Pack>
-	  <PackagePath>\</PackagePath>
-	</None>
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
     <None Include="..\..\license.txt" Link="license.txt">
-      <PackagePath></PackagePath>
+      <PackagePath>
+      </PackagePath>
       <Pack>True</Pack>
     </None>
     <ProjectReference Include="..\AJut.Core\AJut.Core.csproj" />
@@ -33,5 +33,4 @@
       <Pack>True</Pack>
     </None>
   </ItemGroup>
-
 </Project>
