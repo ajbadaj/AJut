@@ -23,19 +23,6 @@
     <Version>1.0.0.79-beta</Version>
   </PropertyGroup>
   <ItemGroup>
-    <Page Include="Resources\AllControlThemeOverrides.xaml" />
-    <Page Include="Resources\AJut.UX-Overrides.xaml" />
-    <Page Include="Resources\DarkThemeColorsBase.xaml" />
-    <Page Include="Resources\LightThemeColorsBase.xaml" />
-    <Page Include="Resources\Microsoft.UI.Xaml-Overrides.xaml" />
-    <Page Include="Resources\SystemColorAliasing.xaml" />
-    <Page Include="Themes\Generic.xaml" />
-	<Page Include="Controls\EnumComboBox.xaml"/>
-	<Page Include="Controls\GeometryButton.xaml"/>
-	<Page Include="Controls\ThemedWindowRootControl.xaml"/>
-	<Page Include="Controls\TitleBarCaptionButton.xaml"/>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="..\..\.editorconfig" Link=".editorconfig" />
     <None Include="..\..\ajut-logo-128.png">
       <Pack>True</Pack>
