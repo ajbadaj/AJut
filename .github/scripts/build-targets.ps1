@@ -20,7 +20,7 @@ try {
         # Create a lowercase version of the input object keys for case-insensitive lookup
         $lowerCaseInputs = @{}
         $inputProjects.psobject.Properties | ForEach-Object {
-            $lowerCaseInputs.Add($_.Name.ToLower(), $_.Value)
+            $lowerCaseInputs.Add($_.Name, $_.Value)
         }
         
         Write-Host "Normalized inputs for lookup:"
@@ -31,10 +31,12 @@ try {
         foreach ($project in $projectOrder) {
             # Normalize the project name to remove dots, matching the YML input parameter name
             $normalizedKey = ("build" + ($project -replace '\.', '')).ToLower()
-            Write-Host "Checking: $project against '$normalizedKey'"
+            Write-Host "Checking: $project via '$normalizedKey'"
             
             if ($lowerCaseInputs.ContainsKey($normalizedKey) -and $lowerCaseInputs[$normalizedKey] -eq $true) {
-                $targetProjects += $project
+                if (-not $targetProjects.Contains($project)) {
+                    $targetProjects += $project
+                }
             }
         }
     } else {
@@ -45,17 +47,19 @@ try {
             Write-Host "Pull Request Diff: comparing $prBaseSHA to $prHeadSHA"
             $changedFiles = git diff --name-only $prBaseSHA $prHeadSHA
             Write-Host "Git diff returned: $changedFiles"
+
+            foreach ($projectName in $projectOrder) {
+                $projectPath = "libs/$projectName/$projectName.csproj"
+                if ($changedFiles -like "libs/$projectName/*") {
+                    if (-not $targetProjects.Contains($project)) {
+                        $targetProjects += $project
+                    }
+                }
+            }
         }
         else {
-            Write-Host "No target filtering set, building all"
+            Write-Host "Building all"
             $targetProjects = $projectOrder
-        }
-
-        foreach ($projectName in $projectOrder) {
-            $projectPath = "libs/$projectName/$projectName.csproj"
-            if ($changedFiles -like "libs/$projectName/*") {
-                $targetProjects += $projectName
-            }
         }
     }
 
@@ -65,26 +69,44 @@ try {
         exit 2
     }
 
-    # NOTE: This will build all projects, despite potentially not needing that.
-    # This is important though because in order not to force dependencies to all have the same
-    #   version number, we have to build with --no-dependencies which might mean a dependency is
-    #   skipped that was otherwise needed (ie asking for AJut.UX.Wpf and not AJut.UX)
-    foreach ($projectName in $projectOrder) {
+    foreach ($projectName in $targetProjects) {
         $projectPath = "libs/$projectName/$projectName.csproj"
+
+        if ($prNumber) {
+            Write-Host " --> Reading existing VersionSuffix from the project"
+            # Load the XML from the project file
+            try {
+                [xml]$xml = Get-Content -Path $projectPath
+            } catch {
+                Write-Error "Failed to load XML from $projectPath. Please check the file format."
+                return
+            }
         
-        Write-Host "--> Building $projectName..."
-        $csproj = ([xml](Get-Content $projectPath)).Project.PropertyGroup
-        $versionPrefix = $csproj.VersionPrefix
-        $versionSuffix = $csproj.VersionSuffix
-        
-        if ($versionSuffix) {
-            $fullVersion = "${versionPrefix}.${prNumber}-${versionSuffix}"
-        } else {
-            $fullVersion = "${versionPrefix}.${prNumber}"
+            # Find the first PropertyGroup element
+            $rootGroup = $xml.Project.PropertyGroup | Select-Object -First 1
+
+            if ($rootGroup) {
+                $versionPrefix = $rootGroup.VersionPrefix
+                $versionSuffix = $rootGroup.VersionSuffix
+                if ($versionSuffix) {
+                    $fullVersion = "${versionPrefix}.${prNumber}-${versionSuffix}"
+                } else {
+                    $fullVersion = "${versionPrefix}.${prNumber}"
+                }
+
+                $newElement = $xml.CreateElement("Version")
+                $newElement.InnerText = $fullVersion
+                [void]$rootGroup.AppendChild($newElement)
+                $xml.Save($projectPath)
+                Write-Host " ... Version set successfully to $fullVersion"
+            } else {
+                Write-Error "CSProj is not configured in an expected manner, cannot write Version"
+                return
+            }
         }
 
-        Write-Host "Building with full version: $fullVersion"
-        dotnet build $projectPath --configuration Release /p:Version=$fullVersion --no-dependencies
+        Write-Host "--> Building $projectName..."
+        dotnet build $projectPath --configuration Release
     }
 
     # Save the list of target projects to a file so it can be used by other scripts

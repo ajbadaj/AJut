@@ -24,7 +24,7 @@ jobs:
       run: dotnet restore
 
     - name: Build AJut Libraries
-      run: ./.github/scripts/build-targets.ps1 -prNumber ${{ env.PR_NUMBER }} -prHeadSHA ${{ env.GH_HEAD_SHA }} -prBaseSHA {{ env.GH_BASE_SHA }}
+      run: ./.github/scripts/build-targets.ps1
     
     - name: Test AJut Libraries
       run: ./.github/scripts/test-targets.ps1
