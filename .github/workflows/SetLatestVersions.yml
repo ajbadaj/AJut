@@ -64,7 +64,7 @@ jobs:
             $changes = ./.github/scripts/set-version-numbers.ps1 -prNumber ${{ env.PR_NUMBER }}  -prHeadSHA ${{ github.event.pull_request.head.sha }} -prBaseSHA ${{ github.event.pull_request.base.sha }}
           }
 
-          if ($changedProjects.Count -gt 0) {
+          if ($changes.Count -gt 0) {
             echo "SHOULD_RUN=true" >> $env:GITHUB_ENV
             $preview = $changes.Count
             Write-Host "$preview projects updated, continuing."
