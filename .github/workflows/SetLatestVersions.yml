@@ -26,12 +26,13 @@ jobs:
     
     - name: Configure Git
       run: |
-        git config --global user.name "${{ secrets.CICDAUTOMATION_USERNAME }}"
-        git config --global user.email "${{ secrets.CICDAUTOMATION_EMAIL }}"
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
+        ssh-key: ${{ secrets.CICDAUTOMATION_DEPLOYMENT_KEY }}
         fetch-depth: 0 # Get all history to correctly determine changed files
 
     - name: Setup .NET
@@ -80,7 +81,7 @@ jobs:
         GH_ADMIN_ACCESS_TOKEN: ${{ secrets.CICDAUTOMATION_ACCESS_TOKEN }}
         GH_TOKEN: ${{ github.token }}
       run: |
-        git remote set-url origin https://x-access-token:${{ env.GH_ADMIN_ACCESS_TOKEN }}@github.com/ajbadaj/AJut.git
+        git remote set-url origin git@github.com:${{ github.repository }}.git
         git add .
         git commit -m "Automated commit from workflow"
         git push origin HEAD
