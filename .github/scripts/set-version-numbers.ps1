@@ -3,7 +3,7 @@ param (
     [int]$prNumber,
     [string]$prHeadSHA = "",
     [string]$prBaseSHA = "",
-    [string]$targetProjects = ""
+    [string]$targetProjects = "",
     [switch]$dryRun
 )
 
@@ -26,7 +26,7 @@ try {
         if ($targetProjects -eq "") {
             $changedProjects = Get-Content -Raw -Path "target_projects.json"
         } else {
-            $changedProjects = $projectOrder
+            $changedProjects = ConvertFrom-Json $targetProjects
         }
     }
 

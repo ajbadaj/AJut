@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
@@ -20,8 +20,8 @@
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <EnableMsixTooling>true</EnableMsixTooling>
     <WindowsPackageType>None</WindowsPackageType>
-    <Version>1.0.0.80-beta</Version>
-	<EnableDefaultPageItems>false</EnableDefaultPageItems>
+    <Version>1.0.0.81-beta</Version>
+    <EnableDefaultPageItems>false</EnableDefaultPageItems>
   </PropertyGroup>
   <ItemGroup>
     <Page Include="Controls\EnumComboBox.xaml" />
@@ -30,10 +30,10 @@
     <Page Include="Controls\TitleBarCaptionButton.xaml" />
     <Page Include="Resources\AJut.UX-Overrides.xaml" />
     <Page Include="Resources\AllControlThemeOverrides.xaml" />
-	<Page Include="Resources\DarkThemeColorsBase.xaml" />
-	<Page Include="Resources\LightThemeColorsBase.xaml" />
-	<Page Include="Resources\Microsoft.UI.Xaml-Overrides.xaml" />
-	<Page Include="Resources\SystemColorAliasing.xaml" />
+    <Page Include="Resources\DarkThemeColorsBase.xaml" />
+    <Page Include="Resources\LightThemeColorsBase.xaml" />
+    <Page Include="Resources\Microsoft.UI.Xaml-Overrides.xaml" />
+    <Page Include="Resources\SystemColorAliasing.xaml" />
     <Page Include="Themes\Generic.xaml" />
   </ItemGroup>
   <ItemGroup>
