@@ -37,18 +37,18 @@
     <Page Include="Themes\Generic.xaml" />
   </ItemGroup>
   <ItemGroup>
-	<Content Include="Controls\*.xaml">
+	<None Include="Controls\*.xaml">
 	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  <PackageCopyToOutput>true</PackageCopyToOutput>
-	</Content>
-	<Content Include="Resources\*.xaml">
+	</None>
+	<None Include="Resources\*.xaml">
 	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  <PackageCopyToOutput>true</PackageCopyToOutput>
-	</Content>
-	<Content Include="Themes\*.xaml">
+	</None>
+	<None Include="Themes\*.xaml">
 	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  <PackageCopyToOutput>true</PackageCopyToOutput>
-	</Content>
+	</None>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\.editorconfig" Link=".editorconfig" />
