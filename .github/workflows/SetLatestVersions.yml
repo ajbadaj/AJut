@@ -1,0 +1,66 @@
+name: Set & Push Version
+
+on:
+  # If run manually
+  workflow_dispatch:
+    inputs:
+      prNumber:
+        description: 'Pull Request Number (the final int in version number). NOTE: will set all projects when run manually.'
+        required: true
+        type: number
+  # If run automatically
+  pull_request:
+   types:
+     - closed
+   branches:
+     - main
+
+jobs:
+  update_version:
+    #if: github.event.pull_request.merged == true
+    runs-on: windows-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0 # Get all history to correctly determine changed files
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Set PR Number
+      run: |
+        if ("${{ github.event.inputs.prNumber }}" -ne "") {
+          $prNumber = ${{ github.event.inputs.prNumber }}
+          echo "PR_NUMBER=$prNumber" >> $env:GITHUB_ENV
+        } else {
+          $prNumber = ${{ github.event.pull_request.number }}
+          echo "PR_NUMBER=$prNumber" >> $env:GITHUB_ENV
+        }
+      shell: pwsh
+          
+    - name: Set new version numbers
+      run: |
+          if ("${{ github.event.inputs.prNumber }}" -ne "") {
+            Write-Host "This is a manual run."
+            ./.github/scripts/set-version-numbers.ps1 -prNumber ${{ env.PR_NUMBER }}
+          } else {
+            Write-Host "This is an automatic run."
+            ./.github/scripts/set-version-numbers.ps1 -prNumber ${{ env.PR_NUMBER }}  -prHeadSHA ${{ github.event.pull_request.head.sha }} -prBaseSHA ${{ github.event.pull_request.base.sha }}
+          }
+      shell: pwsh
+
+    - name: Commit and push changes
+      run: |
+        git config --global user.name "github-actions"
+        git config --global user.email "github-actions@github.com"
+        git add .
+        git commit -m "chore: Update versions to reflect merged PR ${{ env.PR_NUMBER }}"
+        git push
+      env:
+        GH_TOKEN: ${{ github.token }}

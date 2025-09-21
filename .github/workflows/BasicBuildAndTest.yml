@@ -1,15 +1,15 @@
-name: Build & Test
+name: Basic Build & Test
 
 on:
   pull_request:
-    types: [opened]
+    types: [opened, synchronize]
   push:
     branches: [ main ]
 
 jobs:
   build:
     runs-on: windows-latest
-    if: github.event_name == 'push' && !contains(github.ref, 'pull')
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action == 'opened' || github.event.action == 'synchronize')
 
     steps:
     - name: Checkout code
@@ -24,7 +24,7 @@ jobs:
       run: dotnet restore
 
     - name: Build AJut Libraries
-      run: ./.github/scripts/build-targets.ps1 -prNumber ${{ env.PR_NUMBER }} -prHeadSHA ${{ env.GH_HEAD_SHA }} -prBaseSHA {{ env.GH_BASE_SHA }}
+      run: ./.github/scripts/build-targets.ps1
     
     - name: Test AJut Libraries
       run: ./.github/scripts/test-targets.ps1

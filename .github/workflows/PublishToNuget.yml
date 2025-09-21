@@ -1,13 +1,13 @@
-﻿name: AJut → Nuget (Manual)
+name: Publish AJut -> Nuget
+
+# ============================================================================================================
+# This is manual only for now. I'd like to do it automatically, but after messing up the build for over a day
+#   it's not worth it right now IMO :)
+# ============================================================================================================
 
 on:
   workflow_dispatch:
     inputs:
-      prNumber:
-        description: 'Pull Request Number'
-        required: true
-        type: number
-      
       # The following inputs are should match from ProjectOrder.json
       # For now, I don't know how to pull this in dynamically, so we'll keep it hard coded.
       buildAJutCore:
@@ -31,6 +31,7 @@ on:
         type: boolean
         default: true
 
+# This job will now run when a .csproj file is pushed to main or is manually dispatched
 jobs:
   build_test_publish:
     runs-on: windows-latest
@@ -38,6 +39,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       NUGETPUBLISHKEY: ${{ secrets.NUGETPUBLISHKEY }}
     steps:
+      
     - name: Checkout code
       uses: actions/checkout@v2
 
@@ -51,13 +53,19 @@ jobs:
 
     - name: Build AJut Libraries
       run: |
-        $projectsToBuildJson = '${{ toJSON(github.event.inputs) }}'
-        ./.github/scripts/build-targets.ps1 -prNumber ${{ github.event.inputs.prNumber }} -projectsToBuild $projectsToBuildJson
-    
+        ./.github/scripts/build-targets.ps1 -projectsToBuild "${{ toJSON(github.event.inputs) }}"
+        # # On push, we diff to find target projects
+        # if ("${{ github.event_name }}" -eq "push") {
+        #   ./.github/scripts/build-targets.ps1 -prHeadSHA ${{ github.event.after }} -prBaseSHA ${{ github.event.before }}
+        # } else {
+        #   # On manual dispatch, we have the targets built in
+        #   ./.github/scripts/build-targets.ps1 -projectsToBuild "${{ toJSON(github.event.inputs) }}"
+        # }
+
     - name: Test AJut Libraries
-      run: |
-        ./.github/scripts/test-targets.ps1
+      run: ./.github/scripts/test-targets.ps1
 
     - name: Publish AJut Libraries
       run: |
-        ./.github/scripts/publish-targets.ps1 -prNumber ${{ github.event.inputs.prNumber }} -apiKey "$env:NUGETPUBLISHKEY"
+        $publishTargets = Get-Content -Raw -Path "target_projects.json"
+        ./.github/scripts/publish-targets.ps1 -apiKey "$env:NUGETPUBLISHKEY" -publishTargets "$publishTargets"
