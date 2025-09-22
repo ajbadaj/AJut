@@ -21,24 +21,8 @@
     <EnableMsixTooling>true</EnableMsixTooling>
     <WindowsPackageType>None</WindowsPackageType>
     <Version>1.0.0.85-beta</Version>
-
-	<!-- All XAMLs SHOULD be pages, but doing so in a default manner doesn't seem to be working -->
-    <EnableDefaultPageItems>false</EnableDefaultPageItems>
   </PropertyGroup>
-  <!-- XAML Resources that are externally addressable -->
-  <ItemGroup>
-    <Page Include="Controls\EnumComboBox.xaml" />
-    <Page Include="Controls\GeometryButton.xaml" />
-    <Page Include="Controls\ThemedWindowRootControl.xaml" />
-    <Page Include="Controls\TitleBarCaptionButton.xaml" />
-    <Page Include="Resources\AJut.UX-Overrides.xaml" />
-    <Page Include="Resources\AllControlThemeOverrides.xaml" />
-    <Page Include="Resources\DarkThemeColorsBase.xaml" />
-    <Page Include="Resources\LightThemeColorsBase.xaml" />
-    <Page Include="Resources\Microsoft.UI.Xaml-Overrides.xaml" />
-    <Page Include="Resources\SystemColorAliasing.xaml" />
-    <Page Include="Themes\Generic.xaml" />
-  </ItemGroup>
+
   <ItemGroup>
     <None Include="..\..\.editorconfig" Link=".editorconfig" />
     <None Include="..\..\ajut-logo-128.png">
@@ -46,14 +30,17 @@
       <PackagePath>\</PackagePath>
     </None>
   </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4948" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.250907003" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\AJut.Core\AJut.Core.csproj" />
     <ProjectReference Include="..\AJut.UX\AJut.UX.csproj" />
   </ItemGroup>
+
   <ItemGroup>
     <Compile Update="Controls\ThemedWindowRootControl.cs">
       <DependentUpon>ThemedWindowRootControl.xaml</DependentUpon>
@@ -68,6 +55,7 @@
       <DependentUpon>GeometryButton.xaml</DependentUpon>
     </Compile>
   </ItemGroup>
+  
   <ItemGroup>
     <None Update="README.md">
       <PackagePath>\</PackagePath>
