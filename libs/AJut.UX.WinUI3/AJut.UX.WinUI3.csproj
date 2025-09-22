@@ -23,32 +23,20 @@
     <Version>1.0.0.83-beta</Version>
     <EnableDefaultPageItems>false</EnableDefaultPageItems>
   </PropertyGroup>
+  <!-- XAML Resources that are externally addressable -->
   <ItemGroup>
-    <Page Include="Controls\EnumComboBox.xaml" />
-    <Page Include="Controls\GeometryButton.xaml" />
-    <Page Include="Controls\ThemedWindowRootControl.xaml" />
-    <Page Include="Controls\TitleBarCaptionButton.xaml" />
-    <Page Include="Resources\AJut.UX-Overrides.xaml" />
-    <Page Include="Resources\AllControlThemeOverrides.xaml" />
-    <Page Include="Resources\DarkThemeColorsBase.xaml" />
-    <Page Include="Resources\LightThemeColorsBase.xaml" />
-    <Page Include="Resources\Microsoft.UI.Xaml-Overrides.xaml" />
-    <Page Include="Resources\SystemColorAliasing.xaml" />
-    <Page Include="Themes\Generic.xaml" />
-  </ItemGroup>
-  <ItemGroup>
-	<None Include="Controls\*.xaml">
+	<Page Include="Controls\*.xaml">
 	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  <PackageCopyToOutput>true</PackageCopyToOutput>
-	</None>
-	<None Include="Resources\*.xaml">
+	</Page>
+	<Page Include="Resources\*.xaml">
 	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  <PackageCopyToOutput>true</PackageCopyToOutput>
-	</None>
-	<None Include="Themes\*.xaml">
+	</Page>
+	<Page Include="Themes\*.xaml">
 	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  <PackageCopyToOutput>true</PackageCopyToOutput>
-	</None>
+	</Page>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\.editorconfig" Link=".editorconfig" />
