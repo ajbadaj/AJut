@@ -62,7 +62,7 @@ jobs:
             $changes = ./.github/scripts/set-version-numbers.ps1 -prNumber ${{ env.PR_NUMBER }}
           } else {
             Write-Host "This is an automatic run."
-            $changes = ./.github/scripts/set-version-numbers.ps1 -prNumber ${{ env.PR_NUMBER }}  -prHeadSHA ${{ github.event.pull_request.head.sha }} -prBaseSHA ${{ github.event.pull_request.base.sha }}
+            $changes = ./.github/scripts/set-version-numbers.ps1 -prNumber ${{ env.PR_NUMBER }}  -prHeadSHA "${{ github.event.pull_request.head.sha }}" -prBaseSHA "${{ github.event.pull_request.base.sha }}"
           }
 
           if ($changes.Count -gt 0) {
