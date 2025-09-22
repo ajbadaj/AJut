@@ -20,7 +20,7 @@
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <EnableMsixTooling>true</EnableMsixTooling>
     <WindowsPackageType>None</WindowsPackageType>
-    <Version>1.0.0.84-beta</Version>
+    <Version>1.0.0.85-beta</Version>
 
 	<!-- All XAMLs SHOULD be pages, but doing so in a default manner doesn't seem to be working -->
     <EnableDefaultPageItems>false</EnableDefaultPageItems>
