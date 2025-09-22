@@ -13,7 +13,10 @@ try {
     $changedProjects = @()
 
     if ($prBaseSHA -and $prHeadSHA) {
+        Write-Host "Attempting to diff the provided SHAs to see if we can automatically determine changes via:"
+        Write-Host "git diff --name-only `"$($prBaseSHA)`" `"$($prHeadSHA)`"" -ForegroundColor Cyan
         $changedFiles = git diff --name-only $prBaseSHA $prHeadSHA
+        Write-Host "Searching: $changedFiles"
         
         foreach ($projectName in $projectOrder) {
             if ($changedFiles -like "libs/$projectName/*") {
@@ -35,7 +38,7 @@ try {
         return $changedProjects
     }
 
-    Write-Host "Projects to update: $changedProjects"
+    Write-Host "Found projects to update: $changedProjects"
 
     foreach ($projectName in $changedProjects) {
         $projectPath = "libs/$projectName/$projectName.csproj"
