@@ -21,22 +21,23 @@
     <EnableMsixTooling>true</EnableMsixTooling>
     <WindowsPackageType>None</WindowsPackageType>
     <Version>1.0.0.84-beta</Version>
+
+	<!-- All XAMLs SHOULD be pages, but doing so in a default manner doesn't seem to be working -->
     <EnableDefaultPageItems>false</EnableDefaultPageItems>
   </PropertyGroup>
   <!-- XAML Resources that are externally addressable -->
   <ItemGroup>
-	<Page Include="Controls\*.xaml">
-	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  <PackageCopyToOutput>true</PackageCopyToOutput>
-	</Page>
-	<Page Include="Resources\*.xaml">
-	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  <PackageCopyToOutput>true</PackageCopyToOutput>
-	</Page>
-	<Page Include="Themes\*.xaml">
-	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  <PackageCopyToOutput>true</PackageCopyToOutput>
-	</Page>
+    <Page Include="Controls\EnumComboBox.xaml" />
+    <Page Include="Controls\GeometryButton.xaml" />
+    <Page Include="Controls\ThemedWindowRootControl.xaml" />
+    <Page Include="Controls\TitleBarCaptionButton.xaml" />
+    <Page Include="Resources\AJut.UX-Overrides.xaml" />
+    <Page Include="Resources\AllControlThemeOverrides.xaml" />
+    <Page Include="Resources\DarkThemeColorsBase.xaml" />
+    <Page Include="Resources\LightThemeColorsBase.xaml" />
+    <Page Include="Resources\Microsoft.UI.Xaml-Overrides.xaml" />
+    <Page Include="Resources\SystemColorAliasing.xaml" />
+    <Page Include="Themes\Generic.xaml" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\.editorconfig" Link=".editorconfig" />
