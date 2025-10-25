@@ -1,149 +1,68 @@
 ﻿namespace AJut.Text.AJson
 {
+    using System;
+    using System.Buffers;
     using System.Collections.Generic;
-    using System.Linq;
+    using System.Runtime.CompilerServices;
+    using System.Runtime.InteropServices;
 
     /// <summary>
-    /// Class that stores json separator char index locations for fast processing of json
+    /// Reduce the iteration time of json indexing, by looping through the whole string once and marking separators, 
+    /// and then dealing directly with separators during json parsing.
     /// </summary>
     public class JsonTextIndexer
     {
-        private const char QuoteChar = '\"';
+        private const char kQuoteChar = '"';
+        private readonly List<FoundSeparator> m_separatorsFound = new List<FoundSeparator>();
 
-        private readonly List<FoundSeparator> m_separatorOccurenceTracker = new List<FoundSeparator>();
-        private readonly Dictionary<char, List<int>> m_separatorIndexTracker = new Dictionary<char, List<int>>
+        private readonly HashSet<char> m_separatorChars = new HashSet<char>(9)
         {
-            { '{', new List<int>() },
-            { '}', new List<int>() },
-            { '[', new List<int>() },
-            { ']', new List<int>() },
-            { ':', new List<int>() },
-            { ',', new List<int>() },
-            { '\n', new List<int>() },
-            { QuoteChar, new List<int>() },
-            { '\'', new List<int>() },
+            '{', '}', '[', ']', ':', ',', '\n', kQuoteChar, '\''
         };
+
+        // ====================================[ Setup / Construction ]=================================================
 
         public JsonTextIndexer(string text, ParserRules rules = null)
         {
             rules = rules ?? new ParserRules();
-            foreach(char separator in rules.AdditionalSeparatorChars)
+
+            // Build separator flags from default set + rules
+            foreach (char sep in rules.AdditionalSeparatorChars)
             {
-                m_separatorIndexTracker.Add(separator, new List<int>());
+                m_separatorChars.Add(sep);
             }
 
-            var commentStartChars = new List<char>(rules.CommentIndicators.Select(c => c.Item1.First()));
+            // Pre-size the list to avoid resizing (assume ~10% of chars are separators)
+            int estimatedSeparators = text.Length / 10;
+            m_separatorsFound.Capacity = estimatedSeparators;
 
-            bool isBetweenQuoteStartAndEnd = false;
-            string targetCommentEnd = null;
-            for(int currCharTargetIndex = 0; currCharTargetIndex < text.Length; ++currCharTargetIndex)
-            {
-                // If we're waiting for the end of a comment, then skip text until it's found
-                if (targetCommentEnd != null)
-                {
-                    string subStr = text.Substring(currCharTargetIndex, targetCommentEnd.Length);
-                    if (subStr == targetCommentEnd)
-                    {
-                        currCharTargetIndex += targetCommentEnd.Length - 1;
-                        targetCommentEnd = null;
-                    }
-
-                    continue;
-                }
-
-                char charInQuestion = text[currCharTargetIndex];
-
-                // If we've started looking for a quote, skip text until end quote is found
-                if (isBetweenQuoteStartAndEnd)
-                {
-                    if (charInQuestion == QuoteChar && text[currCharTargetIndex - 1] != '\\')
-                    {
-                        isBetweenQuoteStartAndEnd = false;
-                        _StoreFoundSeparators(currCharTargetIndex, QuoteChar, m_separatorIndexTracker[QuoteChar]);
-                    }
-                }
-                else
-                {
-                    // First, look for comments, if we're starting one of those that superceeds everything else
-                    for (int index = 0; index < commentStartChars.Count; ++index)
-                    {
-                        char commentStart = commentStartChars[index];
-                        if (charInQuestion == commentStart)
-                        {
-                            string commentStr = rules.CommentIndicators[index].Item1;
-                            string subStr = text.Substring(currCharTargetIndex, commentStr.Length);
-                            if (subStr == commentStr)
-                            {
-                                targetCommentEnd = rules.CommentIndicators[index].Item2;
-                                break;
-                            }
-                        }
-                    }
-
-                    // Second look for separators, that's the main goal!
-                    if (targetCommentEnd == null)
-                    {
-                        foreach (var kvp in m_separatorIndexTracker)
-                        {
-                            if (kvp.Key == charInQuestion)
-                            {
-                                // Additionally, keep track of the separator is a quote, because in that case we need to ignore
-                                //  everything until the end quote, so we need to go into quote searching mode.
-                                if (kvp.Key == QuoteChar)
-                                {
-                                    isBetweenQuoteStartAndEnd = true;
-                                }
-
-                                _StoreFoundSeparators(currCharTargetIndex, charInQuestion, kvp.Value);
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Note: We're looping in order, thus all of our add calls will be putting items in index order
-            //          without having to do binary searches so we'll just call add
-            void _StoreFoundSeparators (int _characterIndex, char _separator, List<int> _separatorIndexTracker)
-            {
-                m_separatorOccurenceTracker.Add(new FoundSeparator(_characterIndex, _separator));
-                _separatorIndexTracker.Add(_characterIndex);
-            }
+            this.ParseSeparators(text, rules);
         }
+
+
+        // ====================================[ Public Interface Methods ]=================================================
 
         public int Next(char c, int start)
         {
-            if(m_separatorIndexTracker.Count == 0)
+            if (m_separatorsFound.Count == 0)
             {
                 return -1;
             }
 
-            if(!m_separatorIndexTracker.ContainsKey(c))
-            {
-                return -1;
-            }
-
-            var list = m_separatorIndexTracker[c];
-            if(list == null)
-            {
-                return -1;
-            }
-
-            int index = list.BinarySearch(start);
+            // Binary search to find starting position
+            int index = this.BinarySearchForStart(start);
             if (index < 0)
             {
-                index = ~index;
-            }
-            else
-            {
-                index = index + 1;
+                return -1;
             }
 
-            for (; index < list.Count; ++index)
+            // Linear scan from binary search result (already optimal position)
+            for (int i = index; i < m_separatorsFound.Count; i++)
             {
-                if ( list[index] > start )
+                var sep = m_separatorsFound[i];
+                if (sep.Char == c && sep.Index > start)
                 {
-                    return list[index];
+                    return sep.Index;
                 }
             }
 
@@ -152,49 +71,187 @@
 
         public int NextAny(int start, params char[] set)
         {
-            if (m_separatorOccurenceTracker.Count == 0)
+            if (m_separatorsFound.Count == 0)
             {
                 return -1;
             }
 
-            int index = m_separatorOccurenceTracker.BinarySearchXT(f => start.CompareTo(f.Index));
+            // Binary search to find starting position
+            int index = BinarySearchForStart(start);
             if (index < 0)
+                return -1;
+
+            // If no filter provided, return first result
+            if (set == null || set.Length == 0)
             {
-                index = ~index;
+                var sep = m_separatorsFound[index];
+                return sep.Index >= start ? sep.Index : -1;
             }
 
-            for (; index < m_separatorOccurenceTracker.Count; ++index)
+            // Using span for faster contains check
+            ReadOnlySpan<char> filterSpan = set.AsSpan();
+
+            for (int i = index; i < m_separatorsFound.Count; i++)
             {
-                var foundChar = m_separatorOccurenceTracker[index];
-                if (foundChar.Index >= start && foundChar.PassesFilter(set))
+                var sep = m_separatorsFound[i];
+                if (sep.Index >= start && filterSpan.Contains(sep.Char))
                 {
-                    return m_separatorOccurenceTracker[index].Index;
+                    return sep.Index;
                 }
             }
 
             return -1;
         }
 
-        private class FoundSeparator
+        // ====================================[ Private Workhorse Methods ]=================================================
+
+        private void ParseSeparators(string text, ParserRules rules)
         {
-            public FoundSeparator (int index, char separator)
+            ReadOnlySpan<char> textSpan = text.AsSpan();
+
+            char[] commentStartCharsArray = null;
+            ReadOnlySpan<char> commentStartChars = default;
+
+            if (rules.CommentIndicators.Count > 0)
             {
-                this.Index = index;
-                this.SeparatorChar = separator;
+                commentStartCharsArray = ArrayPool<char>.Shared.Rent(rules.CommentIndicators.Count);
+                for (int i = 0; i < rules.CommentIndicators.Count; i++)
+                {
+                    commentStartCharsArray[i] = rules.CommentIndicators[i].Item1[0];
+                }
+                commentStartChars = commentStartCharsArray.AsSpan(0, rules.CommentIndicators.Count);
             }
 
-            public int Index { get; }
-            public char SeparatorChar { get; }
-
-            public bool PassesFilter (char[] targets)
+            try
             {
-                return targets == null || targets.Length == 0 || targets.Contains(this.SeparatorChar);
+                bool insideQuote = false;
+                string commentEnd = null;
+
+                for (int i = 0; i < textSpan.Length; i++)
+                {
+                    if (commentEnd != null)
+                    {
+                        // Check if we've reached comment end
+                        int remaining = textSpan.Length - i;
+                        if (remaining >= commentEnd.Length)
+                        {
+                            var slice = textSpan.Slice(i, commentEnd.Length);
+                            if (slice.SequenceEqual(commentEnd.AsSpan()))
+                            {
+                                i += commentEnd.Length - 1;
+                                commentEnd = null;
+                            }
+                        }
+
+                        continue;
+                    }
+
+                    char ch = textSpan[i];
+
+                    // Handle quoted sections
+                    if (insideQuote)
+                    {
+                        // Check for end quote (with escape handling)
+                        if (ch == kQuoteChar && (i == 0 || textSpan[i - 1] != '\\'))
+                        {
+                            insideQuote = false;
+                            this.MarkFoundSeparator(i, kQuoteChar);
+                        }
+
+                        continue;
+                    }
+
+                    // Check for comment start (span-based)
+                    if (!commentStartChars.IsEmpty && commentStartChars.Contains(ch))
+                    {
+                        for (int idx = 0; idx < rules.CommentIndicators.Count; idx++)
+                        {
+                            string commentStart = rules.CommentIndicators[idx].Item1;
+                            int remaining = textSpan.Length - i;
+
+                            if (remaining >= commentStart.Length)
+                            {
+                                var slice = textSpan.Slice(i, commentStart.Length);
+                                if (slice.SequenceEqual(commentStart.AsSpan()))
+                                {
+                                    commentEnd = rules.CommentIndicators[idx].Item2;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (commentEnd != null)
+                        {
+                            continue;
+                        }
+                    }
+
+                    // Check for separators
+                    if (m_separatorChars.Contains(ch))
+                    {
+                        if (ch == kQuoteChar)
+                        {
+                            insideQuote = true;
+                        }
+
+                        this.MarkFoundSeparator(i, ch);
+                    }
+                }
+            }
+            finally
+            {
+                if (commentStartCharsArray != null)
+                {
+                    ArrayPool<char>.Shared.Return(commentStartCharsArray);
+                }
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void MarkFoundSeparator(int index, char separator)
+        {
+            m_separatorsFound.Add(new FoundSeparator(index, separator));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private int BinarySearchForStart(int targetIndex)
+        {
+            int left = 0;
+            int right = m_separatorsFound.Count - 1;
+
+            while (left <= right)
+            {
+                int mid = left + ((right - left) >> 1); // Faster than (left + right) / 2
+                int midIndex = m_separatorsFound[mid].Index;
+
+                if (midIndex < targetIndex)
+                {
+                    left = mid + 1;
+                }
+                else
+                {
+                    right = mid - 1;
+                }
             }
 
-            public override string ToString ()
+            return left < m_separatorsFound.Count ? left : -1;
+        }
+
+        // ====================================[ Private Substructures ]=================================================
+
+        [StructLayout(LayoutKind.Auto)]
+        private readonly struct FoundSeparator
+        {
+            public readonly int Index;
+            public readonly char Char;
+
+            public FoundSeparator(int index, char ch)
             {
-                return $"{this.Index}] = '{this.SeparatorChar}'";
+                Index = index;
+                Char = ch;
             }
+
+            public override string ToString() => $"{Index}] = '{Char}'";
         }
     }
 }

@@ -53,7 +53,7 @@
         /// <param name="parser">The parser function to register</param>
         public void Register<T>(Func<string, T> parser)
         {
-            m_parsers.Add(typeof(T), (s) => parser(s));
+            m_parsers[typeof(T)]= (s) => parser(s);
         }
 
         /// <summary>
