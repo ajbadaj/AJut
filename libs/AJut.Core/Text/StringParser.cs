@@ -2,7 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
+    using System.Net;
 
     /// <summary>
     /// A class that registers parsers from string to objects of a certain type.
@@ -28,7 +28,10 @@
             this.Register(Int16.Parse);
             this.Register(Int32.Parse);
             this.Register(Int64.Parse);
-            
+            this.Register(UInt16.Parse);
+            this.Register(UInt32.Parse);
+            this.Register(UInt64.Parse);
+
             this.Register(double.Parse);
             this.Register(float.Parse);
             
@@ -36,6 +39,10 @@
             
             this.Register(char.Parse);
             this.Register(Guid.Parse);
+
+            this.Register(IPAddress.Parse);
+            this.Register(IPEndPoint.Parse);
+
             this.Register(s => s.Replace("\\\"", "\"")); // string
         }
 

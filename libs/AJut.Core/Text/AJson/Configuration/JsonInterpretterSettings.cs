@@ -1,9 +1,9 @@
 ﻿namespace AJut.Text.AJson
 {
+    using AJut.TypeManagement;
     using System;
     using System.Collections.Generic;
     using System.Globalization;
-    using System.Linq;
 
     /// <summary>
     /// A delegate used to construct an instance from a json value (given interpretter settings)
@@ -135,8 +135,8 @@
                 return String.Empty;
             }
 
-            // Otherwise the normal Activator.CreateInstance
-            return Activator.CreateInstance(type);
+            // Otherwise the normal create instance
+            return AJutActivator.CreateInstanceOf(type);
         }
     }
 }
