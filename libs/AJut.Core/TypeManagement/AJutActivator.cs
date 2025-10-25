@@ -28,10 +28,24 @@
 
             if (type.IsArray)
             {
-                return Activator.CreateInstance(type, new object[] { 0 });
+                return CreateInstanceOfArray(type, 0);
             }
 
             return Activator.CreateInstance(type);
+        }
+
+        /// <summary>
+        /// Create an instance of the given type, avoiding common <see cref="Activator.CreateInstance"/> issues, and
+        /// including the custom type factories registered.
+        /// </summary>
+        public static object CreateInstanceOfArray(Type arrayType, int arrayCount)
+        {
+            if (arrayType.IsArray)
+            {
+                return Activator.CreateInstance(arrayType, new object[] { arrayCount });
+            }
+
+            return Activator.CreateInstance(arrayType);
         }
 
         /// <summary>

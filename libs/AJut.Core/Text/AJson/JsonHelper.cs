@@ -309,7 +309,7 @@
                 PropertyInfo targetProp = type.GetProperty(elevatedPropertyName, BindingFlags.Public | BindingFlags.Instance);
                 if (targetProp != null)
                 {
-                    outputInstance = Activator.CreateInstance(type);
+                    outputInstance = AJutActivator.CreateInstanceOf(type);
 
                     // Basically forward the json value onto building the child, and set value of that to the output instance
                     object childInstance = BuildObjectForJson(targetProp.PropertyType, sourceJsonValue, settings);
@@ -327,7 +327,7 @@
                 {
                     if (TryGetTypeForTypeId(typeIndicator, out Type targetType))
                     {
-                        outputInstance = Activator.CreateInstance(targetType);
+                        outputInstance = AJutActivator.CreateInstanceOf(targetType);
                     }
                     else
                     {
@@ -342,7 +342,7 @@
                 // You have to create arrays with an argument
                 if (type.IsArray)
                 {
-                    outputInstance = Activator.CreateInstance(type, array.Count);
+                    outputInstance = AJutActivator.CreateInstanceOfArray(type, array.Count);
                 }
             }
 

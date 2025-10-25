@@ -96,6 +96,24 @@
             Assert.AreEqual("McFartpantz", twa_output.Names[2]);
         }
 
+        [TestMethod]
+        public void AJson_JsonBuilding_UIntNotSupportedByDefault()
+        {
+            Json json = JsonHelper.ParseText("{ Value: 35 }");
+            Assert.IsNotNull(json);
+            Assert.IsFalse(json.HasErrors, "Json parse errors:\n" + String.Join("\n\t", json.Errors));
+
+            var thing = JsonHelper.BuildObjectForJson<ThingWithUint>(json);
+            Assert.IsNotNull(thing);
+            Assert.AreEqual(35u, thing.Value);
+        }
+
+        private class ThingWithUint
+        {
+            public uint Value { get; set; }
+        }
+
+
         public class ThingWithSpecialStuff
         {
             public Dictionary<int,bool> DictionaryItem { get; set; }
