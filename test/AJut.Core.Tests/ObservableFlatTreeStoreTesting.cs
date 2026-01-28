@@ -169,18 +169,18 @@
             Kernal32.HighAccuracyStopwatch timer = new Kernal32.HighAccuracyStopwatch();
             int itemCount = kFirstBatchCount;
 
-            timer.Start();
+            timer.Reset();
             var leaves = this.ConstructTree(root, itemCount);
-            TimeSpan elapsed = timer.Stop();
+            TimeSpan elapsed = timer.GetElapsed();
 
             double averageSeconds1 = elapsed.TotalSeconds / kFirstBatchCount;
             Console.WriteLine($"Run 1 => Took {elapsed.TotalSeconds:N5} seconds to add {kFirstBatchCount}");
             Console.WriteLine($"Run 1 => Average of {averageSeconds1} seconds per item");
             Console.WriteLine("-----------------------------------------");
 
-            timer.Start();
+            timer.Reset();
             ConstructTree(leaves, itemCount, itemCount += kSecondBatchCount);
-            elapsed = timer.Stop();
+            elapsed = timer.GetElapsed();
             double averageSeconds2 = elapsed.TotalSeconds / kSecondBatchCount;
             double increase_1_to_2 = (averageSeconds2 - averageSeconds1) / averageSeconds2;
 
@@ -190,9 +190,9 @@
             Console.WriteLine("-----------------------------------------");
             Assert.IsTrue(increase_1_to_2 < kAcceptablePercentIncrease_1_to_2, $"Average seconds per add increased from frist {kFirstBatchCount} by over {kAcceptablePercentIncrease_1_to_2 * 100.0}%");
 
-            timer.Start();
+            timer.Reset();
             ConstructTree(leaves, itemCount, itemCount += kThirdBatchCount);
-            elapsed = timer.Stop();
+            elapsed = timer.GetElapsed();
             double averageSeconds3 = elapsed.TotalSeconds / kThirdBatchCount;
             double increase_1_to_3 = (averageSeconds3 - averageSeconds1) / averageSeconds3;
             double increase_2_to_3 = (averageSeconds3 - averageSeconds2) / averageSeconds3;
@@ -221,7 +221,7 @@
             Random rng = new Random();
             var timer = new Kernal32.HighAccuracyStopwatch();
             
-            timer.Start();
+            timer.Reset();
             TreeNode currParent = root;
             for(int depth = 0; depth < kDepth; ++depth)
             {
@@ -239,20 +239,20 @@
                 currParent = nextParent;
             }
 
-            double genisis = timer.Stop().TotalMilliseconds;
+            double genisis = timer.GetElapsed().TotalMilliseconds;
             Console.WriteLine($"Tree genesis took: {genisis:N5} MS");
 
-            timer.Start();
+            timer.Reset();
             var flat = new ObservableFlatTreeStore();
             flat.SwitchToFixedTimeIndexGeneration();
             flat.RootNode = root;
-            double buildup = timer.Stop().TotalMilliseconds;
+            double buildup = timer.GetElapsed().TotalMilliseconds;
             Console.WriteLine($"Flat tree store generation took: {buildup:N5} MS");
             Assert.AreEqual(kDepth * kNodesPerLevel + 1, flat.Count);
 
-            timer.Start();
+            timer.Reset();
             var end = root.AddChild("end");
-            double addEnd = timer.Stop().TotalMilliseconds;
+            double addEnd = timer.GetElapsed().TotalMilliseconds;
             Console.WriteLine($"Adding to end took: {addEnd:N5} MS");
 
             int endIndex = flat.IndexOf(end);

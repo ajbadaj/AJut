@@ -874,7 +874,7 @@
              *       |
              *       D
              * */
-            timer.Start();
+            timer.Reset();
             TreeItem R = new TreeItem { Name = "Root" };
             TreeItem A = new TreeItem { Name = "A" };
             TreeItem B = new TreeItem { Name = "B" };
@@ -884,20 +884,20 @@
             R.Children.Add(C);
 
             B.Children.Add(D);
-            TimeSpan setup = timer.Stop();
+            TimeSpan setup = timer.GetElapsed();
 
-            timer.Stop();
+            timer.GetElapsed();
             Stratabase sb = new Stratabase(1);
             sb.SetBaselineFromPropertiesOf(R);
-            TimeSpan sballocs = timer.Stop();
+            TimeSpan sballocs = timer.GetElapsed();
 
-            timer.Start();
+            timer.Reset();
             StrataTreeItem r = new StrataTreeItem(sb, R.Id);
             StrataTreeItem a = r.Children[0];
             StrataTreeItem b = r.InsertItemIntoBaseline(1, B);
             StrataTreeItem c = r.Children[2];
             StrataTreeItem d = b.Children[0];
-            TimeSpan reftree = timer.Stop();
+            TimeSpan reftree = timer.GetElapsed();
 
 
             Assert.AreEqual(R.Name, r.Name);
