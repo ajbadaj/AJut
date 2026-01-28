@@ -195,7 +195,7 @@
             return this;
         }
 
-        public JsonBuilder AddProperty(string propertyName, object propertyValue)
+        public JsonBuilder AddProperty(string propertyName, object propertyValue, bool isUsuallyQuoted = true)
         {
             if (this.IsDocument)
             {
@@ -204,8 +204,8 @@
                     JsonBuilder child = new JsonBuilder(this);
                     child.Key = propertyName;
                     child.DocumentKVPValue = new JsonBuilder(child);
+                    child.DocumentKVPValue.IsValueUsualQuoteTarget = isUsuallyQuoted;
                     child.DocumentKVPValue.IsValue = true;
-
                     JsonHelper.FillOutJsonBuilderForObject(propertyValue, child.DocumentKVPValue);
 
                     this.Children.Add(child);
@@ -434,21 +434,21 @@
                 return;
             }
 
-            if (settings.PropertyValueQuoting == ePropertyValueQuoting.NeverQuoteValues ||
-                (settings.PropertyValueQuoting == ePropertyValueQuoting.QuoteAnyUsuallyQuotedItem && !isUsuallyQuoted))
-            {
-                propStart = jsonTextAssembler.NextWriteIndex;
-                jsonTextAssembler.Write(propValue);
-                // The next write index would be one after the end, so nextWritIndex - 1
-                propEnd = jsonTextAssembler.NextWriteIndex - 1;
-            }
-            else
+            if (settings.PropertyValueQuoting == ePropertyValueQuoting.QuoteAll
+                                    || (settings.PropertyValueQuoting == ePropertyValueQuoting.QuoteAnyUsuallyQuotedItem && isUsuallyQuoted))
             {
                 propStart = jsonTextAssembler.NextWriteIndex + 1;
                 jsonTextAssembler.Write("{1}{0}{1}", propValue, settings.PropertyValueQuoteChars);
                 // The next write index would be one after the end usually, but we want to track where the value
                 //  inside the qutoes are, so instead it's -2
                 propEnd = jsonTextAssembler.NextWriteIndex - 2;
+            }
+            else
+            {
+                propStart = jsonTextAssembler.NextWriteIndex;
+                jsonTextAssembler.Write(propValue);
+                // The next write index would be one after the end, so nextWritIndex - 1
+                propEnd = jsonTextAssembler.NextWriteIndex - 1;
             }
         }
     }

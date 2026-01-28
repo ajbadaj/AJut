@@ -68,7 +68,7 @@
                 this.Tabbing = "\t";
                 this.QuotePropertyNames = true;
                 this.Newline = "\n";
-                this.PropertyValueQuoting = ePropertyValueQuoting.QuoteAll;
+                this.PropertyValueQuoting = ePropertyValueQuoting.QuoteAnyUsuallyQuotedItem;
                 this.MakeDateTimesUTC = true;
                 this.TypeIdToWrite = eTypeIdInfo.TypeIdAttributed;
                 this.KeyValuePairKeyTypeIdToWrite = eTypeIdInfo.None;
@@ -82,7 +82,7 @@
                 m_customJsonConstructor.Add(typeof(Guid), _GuidToJsonString);
                 m_customJsonConstructor.Add(typeof(TimeZoneInfo), _TimeZoneToAJsonString);
 
-                string _BoolToJsonString (object instance) => ((bool)instance) ? "True" : "False";
+                string _BoolToJsonString (object instance) => ((bool)instance) ? "true" : "false";
                 string _DateTimeToJsonString (object instance)
                 {
                     var date = (DateTime)instance;

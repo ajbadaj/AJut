@@ -692,8 +692,7 @@
                     }
                     else if (_CheckForSettingsRegisteredSimpleValue(_propInfo.PropertyType, _sourceValue, out isUsuallyQuoted, out string simpleStringValue))
                     {
-                        var created = target.AddProperty(_key, simpleStringValue);
-                        created.IsValueUsualQuoteTarget = isUsuallyQuoted;
+                        var created = target.AddProperty(_key, _sourceValue, isUsuallyQuoted);
                     }
                     else
                     {
@@ -715,6 +714,14 @@
                         || _type.IsEnum)
                     {
                         _isUsuallyQuoted = true;
+                    }
+                    else if (_type.IsNumericType())
+                    {
+                        _isUsuallyQuoted = false;
+                    }
+                    else if (_type == typeof(bool))
+                    {
+                        _isUsuallyQuoted = false;
                     }
 
                     return true;

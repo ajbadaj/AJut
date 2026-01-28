@@ -64,7 +64,7 @@
             // Noice
             JsonValue noice = ((JsonDocument)json.Data).ValueFor("Noice");
             Assert.IsNotNull(noice);
-            Assert.AreEqual(true.ToString(), noice.StringValue);
+            Assert.AreEqual("true", noice.StringValue);
 
             JsonValue floaty = ((JsonDocument)json.Data).ValueFor("Floaty");
             Assert.IsNotNull(floaty);
@@ -412,6 +412,39 @@
             Assert.AreEqual(originalObj.StringThing, telephoneObj.StringThing);
         }
 
+        [TestMethod]
+        public void AJson_JsonBuilder_SerializeNotUsuallyQuotedStringsVsAlwaysQuoted()
+        {
+            var obj = new UsuallyNotQuotedTypeComparison
+            {
+                BoolNotQuoted = false,
+                FloatNotQuoted = 3.14f,
+                IntNotQuoted = 666,
+                UsuallyQuoted = "This is a string so obviously"
+            };
+
+            Json defaultAjson = JsonHelper.BuildJsonForObject(obj);
+            Assert.IsTrue(defaultAjson, defaultAjson.GetErrorReport());
+
+            string partiallyQuotedJsonText = defaultAjson.ToString();
+            Assert.IsTrue(partiallyQuotedJsonText.Contains("\"This is a string so obviously\""));
+            Assert.IsFalse(partiallyQuotedJsonText.Contains("\"3.14")); // Not doing an end quote because I believe it could be a slightly different decimal text than expected
+            Assert.IsFalse(partiallyQuotedJsonText.Contains("\"666\""));
+            Assert.IsFalse(partiallyQuotedJsonText.Contains("\"false\""));
+
+
+            Json fullyQuotedAJson = JsonHelper.BuildJsonForObject(obj, new JsonBuilder.Settings
+            {
+                PropertyValueQuoting = ePropertyValueQuoting.QuoteAll
+            });
+            string fullyQuotedJsonText = fullyQuotedAJson.ToString();
+            Assert.AreNotEqual(partiallyQuotedJsonText, fullyQuotedJsonText);
+            Assert.IsTrue(fullyQuotedJsonText.Contains("\"This is a string so obviously\""));
+            Assert.IsTrue(fullyQuotedJsonText.Contains("\"3.14")); // Not doing an end quote because I believe it could be a slightly different decimal text than expected
+            Assert.IsTrue(fullyQuotedJsonText.Contains("\"666\""));
+            Assert.IsTrue(fullyQuotedJsonText.Contains("\"false\""));
+        }
+
         public class RuntimeTypeEvaluatorObject
         {
             [JsonRuntimeTypeEval]
@@ -588,6 +621,14 @@
 
             [JsonPropertyAlias(kFooProperty)]
             public int Foo { get; set; }
+        }
+
+        public class UsuallyNotQuotedTypeComparison
+        {
+            public string UsuallyQuoted { get; set; }
+            public int IntNotQuoted { get; set; }
+            public bool BoolNotQuoted { get; set; }
+            public float FloatNotQuoted { get; set; }
         }
     }
 }
