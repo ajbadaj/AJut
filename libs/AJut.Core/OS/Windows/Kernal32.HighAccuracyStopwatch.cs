@@ -18,16 +18,25 @@
             public HighAccuracyStopwatch ()
             {
                 Kernal32DllImports.QueryPerformanceFrequency(out m_frequency);
+                this.Reset();
             }
-            public void Start ()
+            public void Reset ()
             {
                 Kernal32DllImports.QueryPerformanceCounter(out m_startTime);
             }
 
-            public TimeSpan Stop ()
+            public TimeSpan GetElapsed ()
             {
                 Kernal32DllImports.QueryPerformanceCounter(out long endTime);
-                return TimeSpan.FromSeconds((double)(endTime - m_startTime) / (double)m_frequency);
+                return TimeSpan.FromSeconds((double)(endTime - m_startTime) / m_frequency);
+            }
+
+            public TimeSpan MeasureAndReset()
+            {
+                Kernal32DllImports.QueryPerformanceCounter(out long endTime);
+                TimeSpan found = TimeSpan.FromSeconds((double)(endTime - m_startTime) / m_frequency);
+                m_startTime = endTime;
+                return found;
             }
         }
 
