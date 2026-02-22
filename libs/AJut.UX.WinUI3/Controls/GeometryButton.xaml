@@ -94,10 +94,12 @@
 
                         </VisualStateManager.VisualStateGroups>
 
-                        <Path x:Name="BkgGeometry" Fill="{TemplateBinding Background}"
+                        <Path x:Name="BkgGeometry" 
+                              Fill="{TemplateBinding Background}"
                               StrokeThickness="{TemplateBinding TraceThickness}"
                               Stroke="{TemplateBinding BorderBrush}"
-                              Data="{TemplateBinding BackgroundGeometry}"/>
+                              Data="{TemplateBinding BackgroundGeometry}"
+                              Stretch="{TemplateBinding GeometryStretch}"/>
                         <ContentPresenter x:Name="ContentPresenter"
                                           Foreground="{TemplateBinding Foreground}" 
                                           BackgroundSizing="{TemplateBinding BackgroundSizing}" 

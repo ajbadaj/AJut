@@ -124,6 +124,88 @@
                             </ScrollViewer>
                         </TabViewItem.Content>
                     </TabViewItem>
+
+                    <!-- ===[ Flat Tree List ]====================================================== -->
+                    <TabViewItem Header="Flat Tree List" IsClosable="False" VerticalContentAlignment="Stretch">
+                        <TabViewItem.IconSource>
+                            <SymbolIconSource Symbol="List"/>
+                        </TabViewItem.IconSource>
+                        <TabViewItem.Content>
+                            <Grid Margin="8">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Text="FlatTreeListControl — expand/collapse tree nodes" FontStyle="Italic" Margin="0,0,0,8"/>
+                                <ajut:FlatTreeListControl Grid.Row="1"
+                                                          Root="{x:Bind TreeRoot}"
+                                                          IncludeRoot="True"
+                                                          StartItemsExpanded="True">
+                                    <ajut:FlatTreeListControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Source.NodeName}" VerticalAlignment="Center"/>
+                                        </DataTemplate>
+                                    </ajut:FlatTreeListControl.ItemTemplate>
+                                </ajut:FlatTreeListControl>
+                            </Grid>
+                        </TabViewItem.Content>
+                    </TabViewItem>
+
+                    <!-- ===[ Property Grid ]======================================================= -->
+                    <TabViewItem Header="Property Grid" IsClosable="False" VerticalContentAlignment="Stretch">
+                        <TabViewItem.IconSource>
+                            <SymbolIconSource Symbol="View"/>
+                        </TabViewItem.IconSource>
+                        <TabViewItem.Content>
+                            <Grid Margin="8">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Text="PropertyGrid — reflects properties with per-type editor templates" FontStyle="Italic" Margin="0,0,0,8"/>
+                                <ajut:PropertyGrid Grid.Row="1" SingleItemSource="{x:Bind TestObj}">
+                                    <ajut:PropertyGrid.ItemTemplateSelector>
+                                        <ajut:PropertyGridTemplateSelector>
+                                            <ajut:PropertyGridTemplateSelector.Default>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding EditValue}" VerticalAlignment="Center"/>
+                                                </DataTemplate>
+                                            </ajut:PropertyGridTemplateSelector.Default>
+                                            <ajut:PropertyGridTemplateSelector.RegisteredTemplates>
+                                                <DataTemplate x:Key="Single">
+                                                    <ajut:NumericEditor Value="{Binding EditValue}"/>
+                                                </DataTemplate>
+                                                <DataTemplate x:Key="ColorPick">
+                                                    <ajut:ColorEditIngressControl EditColor="{Binding EditValue}"/>
+                                                </DataTemplate>
+                                            </ajut:PropertyGridTemplateSelector.RegisteredTemplates>
+                                        </ajut:PropertyGridTemplateSelector>
+                                    </ajut:PropertyGrid.ItemTemplateSelector>
+                                </ajut:PropertyGrid>
+                            </Grid>
+                        </TabViewItem.Content>
+                    </TabViewItem>
+
+                    <!-- ===[ Dock Zone ]=========================================================== -->
+                    <TabViewItem Header="Dock Zone" IsClosable="False" VerticalContentAlignment="Stretch">
+                        <TabViewItem.IconSource>
+                            <SymbolIconSource Symbol="DockLeft"/>
+                        </TabViewItem.IconSource>
+                        <TabViewItem.Content>
+                            <Grid Loaded="DockZoneTab_OnLoaded">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="4,4,4,4">
+                                    <Button Content="Add Panel"   Click="DockZone_OnAddPanelClicked"/>
+                                    <Button Content="Save Layout" Click="DockZone_OnSaveLayoutClicked"/>
+                                    <Button Content="Load Layout" Click="DockZone_OnLoadLayoutClicked"/>
+                                </StackPanel>
+                                <ajut:DockZone x:Name="TestDockZone" Grid.Row="1"/>
+                            </Grid>
+                        </TabViewItem.Content>
+                    </TabViewItem>
                 </TabView>
             </Border>
         </Grid>

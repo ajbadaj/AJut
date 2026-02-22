@@ -2,6 +2,7 @@
 {
     using System.Windows;
     using System.Windows.Controls;
+    using AJut.UX.Docking;
     using DPUtils = AJut.UX.DPUtils<DockDropSiblingSplitSpannerWidget>;
 
     public class DockDropSiblingSplitSpannerWidget : Control

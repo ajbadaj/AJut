@@ -26,5 +26,14 @@
             get => (Geometry)this.GetValue(BackgroundGeometryProperty);
             set => this.SetValue(BackgroundGeometryProperty, value);
         }
+
+
+        public static readonly DependencyProperty GeometryStretchProperty = DPUtils.Register(_ => _.GeometryStretch, Stretch.UniformToFill);
+        public Stretch GeometryStretch
+        {
+            get => (Stretch)this.GetValue(GeometryStretchProperty);
+            set => this.SetValue(GeometryStretchProperty, value);
+        }
+
     }
 }

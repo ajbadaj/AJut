@@ -1,9 +1,6 @@
 ﻿namespace AJut.UX.Controls
 {
     using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text.RegularExpressions;
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Data;
@@ -14,8 +11,12 @@
     using DPUtils = DPUtils<NumericEditor>;
 
     [TemplatePart(Name = nameof(PART_TextArea), Type = typeof(TextBox))]
-    public class NumericEditor : Control, IUserEditNotifier
+    public class NumericEditor : Control, IUserEditNotifier, INumericEditorSettings
     {
+        // ===========[ INumericEditorSettings ]===================================
+        int INumericEditorSettings.DecimalPlacesAllowed => this.DecimalPlacesAllowed;
+        object INumericEditorSettings.Minimum => this.Minimum;
+        object INumericEditorSettings.Maximum => this.Maximum;
         private TextBox PART_TextArea;
         private bool m_blockValueChangeReentrancy;
         private object m_textEditPreviousData = null;
@@ -23,7 +24,7 @@
         // ===========================[ Construction ]============================================
         public NumericEditor ()
         {
-            this.DisplayValue = new TextEditNumberViewModel(this, 0f);
+            this.DisplayValue = new NumericEditorViewModel(this, 0f);
             this.CommandBindings.Add(new CommandBinding(NudgeIncreaseCommand, _OnNudgeIncreaseExecuted, _OnCanNudgeLarger));
             this.CommandBindings.Add(new CommandBinding(NudgeDecreaseCommand, _OnNudgeDecreaseExecuted, _OnCanNudgeSmaller));
 
@@ -157,9 +158,9 @@
 
         private static readonly DependencyPropertyKey DisplayValuePropertyKey = DPUtils.RegisterReadOnly(_ => _.DisplayValue, (d, e) => d.OnDisplayValueSet(e.OldValue, e.NewValue));
         public static readonly DependencyProperty DisplayValueProperty = DisplayValuePropertyKey.DependencyProperty;
-        public TextEditNumberViewModel DisplayValue
+        public NumericEditorViewModel DisplayValue
         {
-            get => (TextEditNumberViewModel)this.GetValue(DisplayValueProperty);
+            get => (NumericEditorViewModel)this.GetValue(DisplayValueProperty);
             protected set => this.SetValue(DisplayValuePropertyKey, value);
         }
 
@@ -484,7 +485,7 @@
             {
                 m_blockValueChangeReentrancy = true;
 
-                this.DisplayValue = new TextEditNumberViewModel(this, newValue, this.EnforceNumericType);
+                this.DisplayValue = new NumericEditorViewModel(this, newValue, this.EnforceNumericType);
                 if (newValue is string)
                 {
                     this.Value = this.DisplayValue.SourceValue;
@@ -511,7 +512,7 @@
             return baseValue;
         }
 
-        private void OnDisplayValueSet (TextEditNumberViewModel oldValue, TextEditNumberViewModel newValue)
+        private void OnDisplayValueSet (NumericEditorViewModel oldValue, NumericEditorViewModel newValue)
         {
             if (oldValue != null)
             {
@@ -544,284 +545,4 @@
         }
     }
 
-    public class TextEditNumberViewModel : NotifyPropertyChanged
-    {
-        private readonly NumericEditor m_owner;
-        private bool m_isTypeForced;
-        private Type m_valueType;
-
-        // =====================[ Construction ]==========================
-        public TextEditNumberViewModel (NumericEditor owner, object value, Type enforcedType = null)
-        {
-            m_owner = owner;
-
-            if (enforcedType != null)
-            {
-                m_isTypeForced = true;
-                m_valueType = enforcedType;
-            }
-
-            if (value is string stringValue)
-            {
-                if (NumericConversion.TryParseString(stringValue, enforcedType ?? typeof(float), out dynamic castedValue))
-                {
-                    value = castedValue;
-                }
-            }
-
-            if (value == null)
-            {
-                if (enforcedType != null)
-                {
-                    value = Activator.CreateInstance(enforcedType);
-                }
-                else
-                {
-                    value = 0.0f;
-                }
-            }
-
-            if (this.ValueType == null)
-            {
-                this.ValueType = value.GetType();
-            }
-
-            this.SetSourceValueOneWay(value);
-            this.SetTextOneWay();
-        }
-
-        // =====================[ Events ]================================
-        public event EventHandler<EventArgs<object>> ValueChanged;
-
-        // =====================[ Properties ]=============================
-        private string m_text;
-        public string Text
-        {
-            get => m_text;
-            set
-            {
-                if (this.SetAndRaiseIfChanged(ref m_text, value))
-                {
-                    this.ApplyTextChange(updateSourceValue: true);
-                }
-            }
-        }
-
-        private object m_sourceValue;
-        public object SourceValue
-        {
-            get => m_sourceValue;
-            set
-            {
-                if (this.SetSourceValueOneWay(value))
-                {
-                    this.SetTextOneWay();
-                    this.TryCapTextToMaxDecimalPlaces();
-                }
-            }
-        }
-
-        private bool m_isAtMinimum;
-        public bool IsAtMinimum
-        {
-            get => m_isAtMinimum;
-            set => this.SetAndRaiseIfChanged(ref m_isAtMinimum, value);
-        }
-
-        private bool m_isAtMaximum;
-        public bool IsAtMaximum
-        {
-            get => m_isAtMaximum;
-            set => this.SetAndRaiseIfChanged(ref m_isAtMaximum, value);
-        }
-
-        private string m_textErrorMessage;
-        public string TextErrorMessage
-        {
-            get => m_textErrorMessage;
-            set => this.SetAndRaiseIfChanged(ref m_textErrorMessage, value, nameof(TextErrorMessage), nameof(IsTextInErrorState));
-        }
-
-        public bool IsTextInErrorState
-        {
-            get => m_textErrorMessage != null;
-        }
-
-        public Type ValueType
-        {
-            get => m_valueType;
-            private set
-            {
-                if (!m_isTypeForced)
-                {
-                    m_valueType = value;
-                }
-            }
-        }
-
-        // =====================[ Methods ]=============================
-
-        public bool TryCapTextToMaxDecimalPlaces()
-        {
-            Regex digitManagedParse;
-            // Wildcard for "however many, idc"
-            if (m_owner.DecimalPlacesAllowed < 0)
-            {
-                // The first number with or without a decimal place
-                digitManagedParse = new Regex(@"(-?\d+\.\d+)?(-?\d+)?");
-            }
-            else if (m_owner.DecimalPlacesAllowed == 0)
-            {
-                // The first number not including decimals
-                digitManagedParse = new Regex(@"(-?\d+)");
-            }
-            else // > 0
-            {
-                digitManagedParse = new Regex($@"(-?\d+\.?\d{{0,{m_owner.DecimalPlacesAllowed}}})");
-            }
-
-            // Text was real bad
-            Match output = digitManagedParse.Match(this.Text);
-            if (!output.Success)
-            {
-                return false;
-            }
-
-            this.Text = output.Captures[0].Value;
-            return true;
-        }
-
-        public void Nudge (bool positive, object nudgeValue)
-        {
-            this.SourceValue = kNudgers[this.ValueType].Invoke(positive, this.SourceValue, nudgeValue);
-        }
-
-        internal void ReevaluateCap ()
-        {
-            this.SourceValue = this.SourceValue;
-        }
-
-        private object RunValueCapping (object value, out bool wasBelowMin, out bool wasAboveMax)
-        {
-            return kCappers[this.ValueType](value, m_owner.Minimum, m_owner.Maximum, out wasBelowMin, out wasAboveMax);
-        }
-
-        /// <summary>
-        /// Setting text via the <see cref="Text"/> property will update the value, this will only set the text
-        /// </summary>
-        private void SetTextOneWay ()
-        {
-            this.SetAndRaiseIfChanged(ref m_text, this.SourceValue.ToString(), nameof(Text));
-            this.ApplyTextChange(updateSourceValue: false);
-        }
-
-        public bool TryParseString(string value, out dynamic castedValue)
-        {
-            return NumericConversion.TryParseString(value, this.ValueType, out castedValue);
-        }
-
-        internal void ForceType (Type newValue)
-        {
-            m_valueType = newValue;
-            m_isTypeForced = true;
-        }
-
-        private void ApplyTextChange (bool updateSourceValue)
-        {
-            if (this.TryParseString(m_text, out dynamic sourceValue))
-            {
-                if (updateSourceValue)
-                {
-                    this.SetSourceValueOneWay(sourceValue);
-                }
-
-                // It's potentially a little bit of repeated work to do this cast (due to the SetSourceValueOneWay call above,
-                // but it's the easiest to read & understand way to do this, so taking the small hit due to IsAtMinimum not
-                // differentiating if it's too small, and same with maximum - and adding that seems wasteful since that can only
-                // be done here.
-                dynamic min = m_owner.Minimum == null ? NumericConversion.MinFor(this.ValueType) : NumericConversion.PerformSafeNumericCastToTarget(m_owner.Minimum, this.ValueType, out bool _, out bool _);
-                dynamic max = m_owner.Maximum == null ? NumericConversion.MaxFor(this.ValueType) : NumericConversion.PerformSafeNumericCastToTarget(m_owner.Maximum, this.ValueType, out bool _, out bool _);
-                if (sourceValue > max)
-                {
-                    this.TextErrorMessage = $"Value is invalid: beyond max ({m_owner.Maximum})";
-                }
-                else if (sourceValue < min)
-                {
-                    this.TextErrorMessage = $"Value is invalid: beyond min ({m_owner.Minimum})";
-                }
-                else
-                {
-                    this.TextErrorMessage = null;
-                }
-            }
-            else
-            {
-                this.TextErrorMessage = $"Value is invalid: {this.ValueType.Name} could not be determined from input";
-            }
-        }
-
-        /// <summary>
-        /// Setting the value via the <see cref="SourceValue"/> property will update the text, this will only set the value
-        /// </summary>
-        private bool SetSourceValueOneWay (object value)
-        {
-            var cappedValue = this.RunValueCapping(value, out bool wasBelowMin, out bool wasAboveMax);
-            this.IsAtMinimum = wasBelowMin;
-            this.IsAtMaximum = wasAboveMax;
-
-            if (this.SetAndRaiseIfChanged(ref m_sourceValue, cappedValue, nameof(SourceValue)))
-            {
-                this.ValueChanged?.Invoke(this, new EventArgs<object>(m_sourceValue));
-                return true;
-            }
-
-            return false;
-        }
-
-        // ==================[ Static number boxing\unboxing helpers ]==================================
-        internal delegate object NumericValueNudger (bool positive, object original, object nudge);
-        internal delegate object NumericValueCapper (object value, object min, object max, out bool hadToCapAtMin, out bool hadToCapAtMax);
-        internal delegate bool TryParser (string text, out object value);
-
-        private static readonly Dictionary<Type, NumericValueNudger> kNudgers = new Dictionary<Type, NumericValueNudger>
-        {
-            { typeof(byte), RunNudge<byte> },
-            { typeof(short), RunNudge<short> },
-            { typeof(int), RunNudge<int> },
-            { typeof(long), RunNudge<long> },
-            { typeof(float), RunNudge<float> },
-            { typeof(double), RunNudge<double> },
-            { typeof(decimal), RunNudge<decimal> },
-            { typeof(sbyte), RunNudge<sbyte> },
-            { typeof(uint), RunNudge<uint> },
-            { typeof(ushort), RunNudge<ushort> },
-            { typeof(ulong), RunNudge<ulong> },
-        };
-
-        private static readonly Dictionary<Type, NumericValueCapper> kCappers = new Dictionary<Type, NumericValueCapper>
-        {
-            { typeof(byte), RunCapper<byte> },
-            { typeof(short), RunCapper<short> },
-            { typeof(int),  RunCapper<int> },
-            { typeof(long),  RunCapper<long> },
-            { typeof(float),  RunCapper<float> },
-            { typeof(double),  RunCapper<double> },
-            { typeof(decimal),  RunCapper<decimal> },
-            { typeof(sbyte), RunCapper<sbyte> },
-            { typeof(uint), RunCapper<uint> },
-            { typeof(ushort), RunCapper<ushort> },
-            { typeof(ulong), RunCapper<ulong> },
-        };
-
-        private static object RunCapper<T> (object value, object min, object max, out bool hadToCapAtMin, out bool hadToCapAtMax)
-        {
-            return NumericConversion.PerformNumericTypeSafeCapping<T>(value, min, max, out hadToCapAtMin, out hadToCapAtMax);
-        }
-        private static object RunNudge<T> (bool positive, object original, object nudge)
-        {
-            dynamic castedOriginal = NumericConversion.PerformSafeNumericCastToTarget(original, typeof(T), out _, out _);
-            dynamic castedNudge = NumericConversion.PerformSafeNumericCastToTarget(nudge, typeof(T), out _, out _);
-            return castedOriginal + (positive ? castedNudge : -castedNudge);
-        }
-    }
 }

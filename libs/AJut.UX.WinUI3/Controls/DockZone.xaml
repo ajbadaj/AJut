@@ -1,0 +1,44 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="using:AJut.UX.Controls">
+
+    <!-- ===========[ DockZone: Default Style ]================================ -->
+    <!-- All layout content (header, content presenter, tab strip, child zones,
+         splitters) is built entirely in code-behind via RebuildLayout().
+         The template exposes only PART_Root which the code-behind populates. -->
+
+    <Style TargetType="local:DockZone">
+        <Setter Property="MinHeight" Value="30"/>
+        <Setter Property="MinWidth" Value="30"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="VerticalAlignment" Value="Stretch"/>
+
+        <!-- Visual defaults — callers can override any of these per-instance or in an app style -->
+        <Setter Property="PanelBackground">
+            <Setter.Value><SolidColorBrush Color="#FF2B2B2B"/></Setter.Value>
+        </Setter>
+        <Setter Property="PanelForeground">
+            <Setter.Value><SolidColorBrush Color="#FFF0F0F0"/></Setter.Value>
+        </Setter>
+        <Setter Property="PanelBorderBrush">
+            <Setter.Value><SolidColorBrush Color="#FF4A4A4A"/></Setter.Value>
+        </Setter>
+        <Setter Property="PanelBorderThickness" Value="1"/>
+        <!-- TabStripBackground: darker than the panel to distinguish the tab strip row -->
+        <Setter Property="TabStripBackground">
+            <Setter.Value><SolidColorBrush Color="#FF1A1A1A"/></Setter.Value>
+        </Setter>
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:DockZone">
+                    <Grid x:Name="PART_Root"
+                          Background="Transparent"
+                          HorizontalAlignment="Stretch"
+                          VerticalAlignment="Stretch"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

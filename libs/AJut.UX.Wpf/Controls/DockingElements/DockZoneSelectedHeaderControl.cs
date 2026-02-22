@@ -29,7 +29,8 @@
             var window = Window.GetWindow(castedSource);
             Point desktopMouseLocation = (Point)((Vector)window.PointToScreen(castedSource.TranslatePoint(dragTracking.StartPoint, window)) - (Vector)dragTracking.StartPoint);
 
-            var result = target.DockingOwner.DoGroupTearoff(target.Location, desktopMouseLocation);
+            var dockingManager = (DockingManager)target.DockingOwner;
+            var result = dockingManager.DoGroupTearoff(target.Location, desktopMouseLocation);
             if (result)
             {
                 window = result.Value;
@@ -38,9 +39,9 @@
                 this.Dispatcher.InvokeAsync(_DoDragMoveSafe);
                 async void _DoDragMoveSafe ()
                 {
-                    if (MouseXT.GetPrimaryButtonState() == MouseButtonState.Pressed) 
+                    if (MouseXT.GetPrimaryButtonState() == MouseButtonState.Pressed)
                     {
-                        await target.DockingOwner.RunDragSearch(result.Value, target.Location.UI).ConfigureAwait(false);
+                        await dockingManager.RunDragSearch(result.Value, (DockZone)target.Location.UI).ConfigureAwait(false);
                     }
                 }
             }

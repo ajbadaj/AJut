@@ -1,4 +1,4 @@
-﻿namespace AJut.UX.Docking
+namespace AJut.UX.Docking
 {
     using System;
 

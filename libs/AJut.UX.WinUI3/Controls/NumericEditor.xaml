@@ -1,0 +1,28 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="using:AJut.UX.Controls">
+
+    <!-- ===[ NumericEditor ]=== -->
+    <!-- Wraps NumberBox so callers can bind Value:object TwoWay to
+         PropertyEditTarget.EditValue without a converter.
+         SpinButtonPlacementMode=Compact gives +/- buttons on hover.
+         ValidationMode=InvalidInputOverwritten snaps bad text back to the last
+         valid value instead of leaving the field red. -->
+    <Style TargetType="local:NumericEditor">
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:NumericEditor">
+                    <NumberBox x:Name="PART_NumberBox"
+                               HorizontalAlignment="Stretch"
+                               SpinButtonPlacementMode="Compact"
+                               ValidationMode="InvalidInputOverwritten"
+                               Background="{TemplateBinding Background}"
+                               BorderBrush="{TemplateBinding BorderBrush}"
+                               BorderThickness="{TemplateBinding BorderThickness}"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

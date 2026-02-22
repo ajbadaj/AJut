@@ -9,7 +9,7 @@
 
     public partial class AppThemeManager : NotifyPropertyChanged, IDisposable
     {
-        private const string kPersistentAppSettingsKey = "AppThemeManager::UserSelectedTheme";
+        private const string kUserSelectedTheme = "AppThemeManager::UserSelectedTheme";
         private const string kRegistryThemeRootKey = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
         private const string kRegistryIsLightThemeValue = "AppsUseLightTheme";
 
@@ -31,7 +31,7 @@
             if (persistUserThemeSelection)
             {
                 m_persistedSettings = ApplicationData.Current.LocalSettings;
-                if (m_persistedSettings.Values.TryGetValue(kPersistentAppSettingsKey, out object value) 
+                if (m_persistedSettings.Values.TryGetValue(kUserSelectedTheme, out object value) 
                     && value is string themeConfigStr 
                     && Enum.TryParse(themeConfigStr, false, out ElementTheme themeConfig))
                 {
@@ -89,7 +89,7 @@
         {
             if (m_persistedSettings != null)
             {
-                m_persistedSettings.Values[kPersistentAppSettingsKey] = m_themeConfiguration.ToString();
+                m_persistedSettings.Values[kUserSelectedTheme] = m_themeConfiguration.ToString();
             }
 
             if (theme == ElementTheme.Default)

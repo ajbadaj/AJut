@@ -1,7 +1,5 @@
-﻿namespace AJut.UX.Docking
+namespace AJut.UX.Docking
 {
-    using AJut.TypeManagement;
-
     public interface IDockableDisplayElement
     {
         DockingContentAdapterModel DockingAdapter { get; }
@@ -10,5 +8,4 @@
         void ApplyState (object state) { }
         object GenerateState () => null;
     }
-
 }

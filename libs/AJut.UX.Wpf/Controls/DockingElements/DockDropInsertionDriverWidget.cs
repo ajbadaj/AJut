@@ -3,16 +3,8 @@
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Media;
+    using AJut.UX.Docking;
     using DPUtils = AJut.UX.DPUtils<DockDropInsertionDriverWidget>;
-
-    public enum eDockInsertionDirection
-    {
-        Left,
-        Top,
-        Right,
-        Bottom,
-        AddToTabbedDisplay,
-    }
 
     public class DockDropInsertionDriverWidget : Control
     {

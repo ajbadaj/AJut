@@ -1,4 +1,4 @@
-﻿namespace AJut.UX.Docking
+namespace AJut.UX.Docking
 {
     using System;
     using System.Collections.Generic;
@@ -16,30 +16,6 @@
         {
             uniqueManagerId = PathHelpers.SanitizeFileName(uniqueManagerId);
             return Path.Combine(ApplicationUtilities.AppDataRoot, "Layouts", $"{uniqueManagerId}.layout");
-        }
-
-        public static IDockableDisplayElement BuildDisplayElement (DockingManager manager, DisplayData s)
-        {
-            IDockableDisplayElement display = null;
-            if (TypeIdRegistrar.TryGetType(s.TypeId, out Type type))
-            {
-                display = manager.BuildNewDisplayElement(type);
-            }
-            else
-            {
-                type = Type.GetType(s.TypeId);
-                if (type != null)
-                {
-                    display = manager.BuildNewDisplayElement(type);
-                }
-            }
-
-            if (display != null)
-            {
-                display.ApplyState(s.State);
-            }
-
-            return display;
         }
 
         public static bool SerializeStateTo (string filePath, DockingManager manager)
@@ -145,13 +121,13 @@
                             zone = defaultLoadZone;
                         }
 
-                        _SetZoneDataToZone(zone, state.Core.ZoneInfoByRoot[groupId]);
+                        _ApplyZoneData(zone, state.Core.ZoneInfoByRoot[groupId]);
                     }
 
                     foreach (var ancillaryWindowData in state.Ancillary)
                     {
                         var zone = new DockZoneViewModel(manager);
-                        _SetZoneDataToZone(zone, ancillaryWindowData.State);
+                        _ApplyZoneData(zone, ancillaryWindowData.State);
                         var windowResult = manager.CreateAndStockTearoffWindow(zone, ancillaryWindowData.WindowLocation, ancillaryWindowData.WindowSize);
                         if (windowResult.HasErrors)
                         {
@@ -184,89 +160,63 @@
                 manager.IsLoadingFromLayout = false;
             }
 
-            void _SetZoneDataToZone (DockZoneViewModel _zone, ZoneData _data)
+            void _ApplyZoneData (DockZoneViewModel _zone, DockZoneSerializationData _data)
             {
-                List<Size> sizes = _data.ChildZones.Select(d => d.SizeOnParent).ToList();
-                _zone.Configure(_data.Orientation);
                 _zone.StorePassAlongUISize(_data.SizeOnParent);
+                _zone.BuildFromState(_data, _BuildDisplayAdapter);
+            }
 
-                if (_data.ChildZones.IsNotNullOrEmpty())
+            DockingContentAdapterModel _BuildDisplayAdapter (DockDisplaySerializationData displayData)
+            {
+                IDockableDisplayElement display = null;
+                if (TypeIdRegistrar.TryGetType(displayData.TypeId, out Type type))
                 {
-                    foreach (ZoneData childData in _data.ChildZones)
+                    display = manager.BuildNewDisplayElement(type);
+                }
+                else
+                {
+                    type = Type.GetType(displayData.TypeId);
+                    if (type != null)
                     {
-                        var child = new DockZoneViewModel(manager);
-                        _SetZoneDataToZone(child, childData);
-                        _zone.AddChild(child);
+                        display = manager.BuildNewDisplayElement(type);
                     }
                 }
-                else if (_data.DisplayState.IsNotNullOrEmpty())
+
+                if (display == null)
                 {
-                    foreach (DisplayData data in _data.DisplayState)
-                    {
-                        IDockableDisplayElement display = manager.BuildNewDisplayElement(data.TypeId);
-                        if (display != null)
-                        {
-                            if (data.State != null)
-                            {
-                                display.ApplyState(data.State);
-                            }
-
-                            _zone.AddDockedContent(display.DockingAdapter);
-                        }
-                        else
-                        {
-                            Logger.LogError($"Dock Loading Error: Failed to intepret zone display element with type id: '{data.TypeId}'");
-                        }
-                    }
-
-                    _zone.SelectedIndex = _data.SelectedIndex;
+                    Logger.LogError($"Dock Loading Error: Failed to interpret zone display element with type id: '{displayData.TypeId}'");
+                    return null;
                 }
+
+                if (displayData.State != null)
+                {
+                    display.ApplyState(displayData.State);
+                }
+
+                return display.DockingAdapter;
             }
         }
 
+        // ===========[ Serialization Data Classes (WPF-specific window state) ]===================================
+
         public class CoreStorageData
         {
-            public Dictionary<string, ZoneData> ZoneInfoByRoot { get; set; } = new Dictionary<string, ZoneData>();
+            public Dictionary<string, DockZoneSerializationData> ZoneInfoByRoot { get; set; } = new();
         }
 
         public class WindowStorageData
         {
             public Size WindowSize { get; set; }
             public WindowState WindowState { get; set; }
-            public ZoneData State { get; set; }
+            public DockZoneSerializationData State { get; set; }
             public Point WindowLocation { get; set; }
             public bool WindowIsFullscreened { get; set; }
-        }
-
-        public class ZoneData
-        {
-            public ZoneData () { }
-            internal ZoneData (eDockOrientation orientation)
-            {
-                this.Orientation = orientation;
-                this.ChildZones = new List<ZoneData>();
-            }
-
-            public List<ZoneData> ChildZones { get; set; }
-            public Size SizeOnParent { get; set; }
-            public eDockOrientation Orientation { get; set; }
-            public DisplayData[] DisplayState { get; set; }
-            public int SelectedIndex { get; set; }
-        }
-
-        public class DisplayData
-        {
-            public string TypeId { get; set; }
-
-            [JsonRuntimeTypeEval]
-            public object State { get; set; }
         }
 
         public class SerializationInfo
         {
             public CoreStorageData Core { get; set; }
             public WindowStorageData[] Ancillary { get; set; }
-
         }
     }
 }

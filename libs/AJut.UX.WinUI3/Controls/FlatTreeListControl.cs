@@ -1,0 +1,374 @@
+namespace AJut.UX.Controls
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Collections.Specialized;
+    using System.Linq;
+    using AJut.Storage;
+    using AJut.Tree;
+    using AJut.UX;
+    using Microsoft.UI.Xaml;
+    using Microsoft.UI.Xaml.Controls;
+    using Microsoft.UI.Xaml.Input;
+    using DPUtils = AJut.UX.DPUtils<FlatTreeListControl>;
+
+    // ===========[ FlatTreeListControl ]=======================================
+    // A tree control backed by an ObservableFlatTreeStore<FlatTreeItem>. Source
+    // nodes must implement IObservableTreeNode.
+    //
+    // Bind Root (single root) or RootItemsSource (multi-root) to populate.
+    // The store auto-manages the flat list via ChildInserted/ChildRemoved events
+    // from FlatTreeItem, which wraps each IObservableTreeNode source.
+    //
+    // Each ListView row is a FlatTreeItemRow — a thin wrapper Control with a
+    // ContentTemplate DP. FlatTreeListControl pushes its ItemTemplate down to
+    // each realized FlatTreeItemRow via ContainerContentChanging (necessary
+    // because WinUI3 DataTemplates have no ancestor binding).
+    //
+    // Template parts:
+    //   PART_ListView  — the inner ListView that does the actual rendering
+
+    [TemplatePart(Name = nameof(PART_ListView), Type = typeof(ListView))]
+    public class FlatTreeListControl : Control
+    {
+        // ===========[ Instance fields ]==========================================
+        private ListView PART_ListView;
+        private readonly ObservableFlatTreeStore<FlatTreeItem> m_store;
+        private readonly ObservableCollection<FlatTreeItem> m_selectedItems = new ObservableCollection<FlatTreeItem>();
+        private bool m_blockingReentrancy;
+
+        // ===========[ Construction ]=============================================
+        public FlatTreeListControl ()
+        {
+            this.DefaultStyleKey = typeof(FlatTreeListControl);
+            m_store = new ObservableFlatTreeStore<FlatTreeItem>();
+        }
+
+        // ===========[ Events ]===================================================
+        public event EventHandler<SelectionChange<FlatTreeItem>> SelectionChanged;
+        public event EventHandler<FlatTreeItem> ItemDoubleClicked;
+
+        // ===========[ Dependency Properties ]=====================================
+        public static readonly DependencyProperty RootProperty = DPUtils.Register(_ => _.Root, (d, e) => d.OnRootChanged(e.NewValue));
+        public IObservableTreeNode Root
+        {
+            get => (IObservableTreeNode)this.GetValue(RootProperty);
+            set => this.SetValue(RootProperty, value);
+        }
+        private void OnRootChanged (IObservableTreeNode newRoot)
+        {
+            m_store.IncludeRoot = this.IncludeRoot;
+            m_store.RootNode = newRoot == null
+                ? null
+                : FlatTreeItem.CreateRoot(newRoot, this.TabbingSize, this.StartItemsExpanded);
+        }
+
+        public static readonly DependencyProperty RootItemsSourceProperty = DPUtils.Register(_ => _.RootItemsSource, (d, e) => d.OnRootItemsSourceChanged(e.OldValue, e.NewValue));
+        public IEnumerable<IObservableTreeNode> RootItemsSource
+        {
+            get => (IEnumerable<IObservableTreeNode>)this.GetValue(RootItemsSourceProperty);
+            set => this.SetValue(RootItemsSourceProperty, value);
+        }
+        private void OnRootItemsSourceChanged (IEnumerable<IObservableTreeNode> oldValue, IEnumerable<IObservableTreeNode> newValue)
+        {
+            m_store.IncludeRoot = false;
+            m_store.RootNode = FlatTreeItem.CreateUberRoot(
+                newValue ?? Enumerable.Empty<IObservableTreeNode>(), this.TabbingSize);
+
+            if (oldValue is INotifyCollectionChanged oldObservable)
+            {
+                oldObservable.CollectionChanged -= this.RootItems_OnCollectionChanged;
+            }
+            if (newValue is INotifyCollectionChanged newObservable)
+            {
+                newObservable.CollectionChanged += this.RootItems_OnCollectionChanged;
+            }
+        }
+
+        public static readonly DependencyProperty IncludeRootProperty = DPUtils.Register(_ => _.IncludeRoot, true, (d, e) => d.m_store.IncludeRoot = e.NewValue);
+        public bool IncludeRoot
+        {
+            get => (bool)this.GetValue(IncludeRootProperty);
+            set => this.SetValue(IncludeRootProperty, value);
+        }
+
+        public static readonly DependencyProperty TabbingSizeProperty = DPUtils.Register(_ => _.TabbingSize, 16.0, (d, e) => d.OnTabbingSizeChanged());
+        public double TabbingSize
+        {
+            get => (double)this.GetValue(TabbingSizeProperty);
+            set => this.SetValue(TabbingSizeProperty, value);
+        }
+        private void OnTabbingSizeChanged ()
+        {
+            if (m_store.RootNode == null)
+            {
+                return;
+            }
+
+            double size = this.TabbingSize;
+            foreach (FlatTreeItem item in TreeTraversal<FlatTreeItem>.All(m_store.RootNode))
+            {
+                item.TabbingSize = size;
+            }
+        }
+
+        public static readonly DependencyProperty StartItemsExpandedProperty = DPUtils.Register(_ => _.StartItemsExpanded);
+        public bool StartItemsExpanded
+        {
+            get => (bool)this.GetValue(StartItemsExpandedProperty);
+            set => this.SetValue(StartItemsExpandedProperty, value);
+        }
+
+        public static readonly DependencyProperty ItemTemplateProperty = DPUtils.Register(_ => _.ItemTemplate, (d, e) => d.OnItemTemplateChanged());
+        public DataTemplate ItemTemplate
+        {
+            get => (DataTemplate)this.GetValue(ItemTemplateProperty);
+            set => this.SetValue(ItemTemplateProperty, value);
+        }
+
+        public static readonly DependencyProperty SelectionModeProperty = DPUtils.Register(_ => _.SelectionMode, eFlatTreeSelectionMode.Single, (d, e) => d.ApplySelectionMode());
+        public eFlatTreeSelectionMode SelectionMode
+        {
+            get => (eFlatTreeSelectionMode)this.GetValue(SelectionModeProperty);
+            set => this.SetValue(SelectionModeProperty, value);
+        }
+
+        public static readonly DependencyProperty SelectedItemProperty = DPUtils.Register(_ => _.SelectedItem, (d, e) => d.OnSelectedItemChanged(e.NewValue));
+        public FlatTreeItem SelectedItem
+        {
+            get => (FlatTreeItem)this.GetValue(SelectedItemProperty);
+            set => this.SetValue(SelectedItemProperty, value);
+        }
+
+        public ObservableCollection<FlatTreeItem> SelectedItems => m_selectedItems;
+
+        public static readonly DependencyProperty ShouldToggleExpansionOnDoubleClickProperty = DPUtils.Register(_ => _.ShouldToggleExpansionOnDoubleClick, true);
+        public bool ShouldToggleExpansionOnDoubleClick
+        {
+            get => (bool)this.GetValue(ShouldToggleExpansionOnDoubleClickProperty);
+            set => this.SetValue(ShouldToggleExpansionOnDoubleClickProperty, value);
+        }
+
+        // ===========[ Template application ]====================================
+        protected override void OnApplyTemplate ()
+        {
+            base.OnApplyTemplate();
+
+            if (this.PART_ListView != null)
+            {
+                this.PART_ListView.SelectionChanged -= this.ListView_OnSelectionChanged;
+                this.PART_ListView.DoubleTapped -= this.ListView_OnDoubleTapped;
+                this.PART_ListView.KeyUp -= this.ListView_OnKeyUp;
+                this.PART_ListView.ContainerContentChanging -= this.ListView_OnContainerContentChanging;
+            }
+
+            this.PART_ListView = (ListView)this.GetTemplateChild(nameof(PART_ListView));
+            if (this.PART_ListView == null)
+            {
+                return;
+            }
+
+            this.PART_ListView.SelectionChanged += this.ListView_OnSelectionChanged;
+            this.PART_ListView.DoubleTapped += this.ListView_OnDoubleTapped;
+            this.PART_ListView.KeyUp += this.ListView_OnKeyUp;
+            this.PART_ListView.ContainerContentChanging += this.ListView_OnContainerContentChanging;
+
+            this.ApplySelectionMode();
+            this.PART_ListView.ItemsSource = m_store;
+        }
+
+        // ===========[ Public interface ]=========================================
+        public void ScrollIntoView (FlatTreeItem item)
+        {
+            this.PART_ListView?.ScrollIntoView(item);
+        }
+
+        public void ExpandAll ()
+        {
+            if (m_store.RootNode == null)
+            {
+                return;
+            }
+
+            foreach (FlatTreeItem item in TreeTraversal<FlatTreeItem>.All(m_store.RootNode).ToList())
+            {
+                if (item.IsExpandable && !item.IsExpanded)
+                {
+                    item.IsExpanded = true;
+                }
+            }
+        }
+
+        public void CollapseAll ()
+        {
+            if (m_store.RootNode == null)
+            {
+                return;
+            }
+
+            // Collapse bottom-up so children are hidden before parents.
+            foreach (FlatTreeItem item in TreeTraversal<FlatTreeItem>.All(m_store.RootNode).Reverse().ToList())
+            {
+                if (item.IsExpandable && item.IsExpanded)
+                {
+                    item.IsExpanded = false;
+                }
+            }
+        }
+
+        // ===========[ ListView event handlers ]==================================
+        private void ListView_OnSelectionChanged (object sender, SelectionChangedEventArgs e)
+        {
+            if (m_blockingReentrancy)
+            {
+                return;
+            }
+
+            m_blockingReentrancy = true;
+            try
+            {
+                FlatTreeItem[] added = e.AddedItems.OfType<FlatTreeItem>().ToArray();
+                FlatTreeItem[] removed = e.RemovedItems.OfType<FlatTreeItem>().ToArray();
+
+                foreach (FlatTreeItem item in removed)
+                {
+                    item.IsSelected = false;
+                    this.SelectedItems.Remove(item);
+                }
+
+                foreach (FlatTreeItem item in added)
+                {
+                    item.IsSelected = true;
+                    if (!this.SelectedItems.Contains(item))
+                    {
+                        this.SelectedItems.Add(item);
+                    }
+                }
+
+                this.SelectedItem = this.PART_ListView.SelectedItem as FlatTreeItem;
+                this.FireSelectionChanged(added, removed);
+            }
+            finally
+            {
+                m_blockingReentrancy = false;
+            }
+        }
+
+        private void ListView_OnDoubleTapped (object sender, DoubleTappedRoutedEventArgs e)
+        {
+            if (this.PART_ListView.SelectedItem is FlatTreeItem item)
+            {
+                if (this.ShouldToggleExpansionOnDoubleClick && item.IsExpandable)
+                {
+                    item.IsExpanded = !item.IsExpanded;
+                }
+
+                this.ItemDoubleClicked?.Invoke(this, item);
+            }
+        }
+
+        private void ListView_OnKeyUp (object sender, KeyRoutedEventArgs e)
+        {
+            if (e.Key == Windows.System.VirtualKey.Left)
+            {
+                foreach (FlatTreeItem item in this.SelectedItems.ToList())
+                {
+                    item.IsExpanded = false;
+                }
+                e.Handled = true;
+            }
+            else if (e.Key == Windows.System.VirtualKey.Right)
+            {
+                foreach (FlatTreeItem item in this.SelectedItems.ToList())
+                {
+                    item.IsExpanded = true;
+                }
+                e.Handled = true;
+            }
+        }
+
+        private void ListView_OnContainerContentChanging (ListViewBase sender, ContainerContentChangingEventArgs e)
+        {
+            if (e.ItemContainer?.ContentTemplateRoot is FlatTreeItemRow row)
+            {
+                row.ContentTemplate = this.ItemTemplate;
+            }
+        }
+
+        // ===========[ Property change handlers ]=================================
+        private void OnItemTemplateChanged ()
+        {
+            if (this.PART_ListView == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < this.PART_ListView.Items.Count; ++i)
+            {
+                if (this.PART_ListView.ContainerFromIndex(i) is ListViewItem container
+                    && container.ContentTemplateRoot is FlatTreeItemRow row)
+                {
+                    row.ContentTemplate = this.ItemTemplate;
+                }
+            }
+        }
+
+        private void OnSelectedItemChanged (FlatTreeItem newItem)
+        {
+            if (m_blockingReentrancy || this.PART_ListView == null)
+            {
+                return;
+            }
+
+            m_blockingReentrancy = true;
+            try
+            {
+                this.PART_ListView.SelectedItem = newItem;
+            }
+            finally
+            {
+                m_blockingReentrancy = false;
+            }
+        }
+
+        private void RootItems_OnCollectionChanged (object sender, NotifyCollectionChangedEventArgs e)
+        {
+            // ObservableFlatTreeStore does not observe (subscribe to) the uber root when IncludeRoot=false,
+            // so InsertChild/RemoveChild on the uber root fires events no one hears. Rebuild from the
+            // current full state of RootItemsSource on every change instead.
+            m_store.RootNode = FlatTreeItem.CreateUberRoot(
+                this.RootItemsSource ?? Enumerable.Empty<IObservableTreeNode>(), this.TabbingSize);
+        }
+
+        // ===========[ Apply helpers ]============================================
+        private void ApplySelectionMode ()
+        {
+            if (this.PART_ListView == null)
+            {
+                return;
+            }
+
+            this.PART_ListView.SelectionMode = this.SelectionMode switch
+            {
+                eFlatTreeSelectionMode.None => ListViewSelectionMode.None,
+                eFlatTreeSelectionMode.Multi => ListViewSelectionMode.Multiple,
+                _ => ListViewSelectionMode.Single,
+            };
+        }
+
+        private void FireSelectionChanged (FlatTreeItem[] added, FlatTreeItem[] removed)
+        {
+            bool isClear = this.SelectedItems.Count == 0;
+            this.SelectionChanged?.Invoke(this, new SelectionChange<FlatTreeItem>(added, removed, isClear));
+        }
+    }
+
+    // ===========[ eFlatTreeSelectionMode ]=====================================
+    public enum eFlatTreeSelectionMode
+    {
+        None,
+        Single,
+        Multi,
+    }
+}

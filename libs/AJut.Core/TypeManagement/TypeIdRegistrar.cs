@@ -23,9 +23,9 @@
         /// </summary>
         public static bool RegisterTypeId (string id, Type type)
         {
-            if (g_typeAliases.TryGetValue(id, out Type existing) && existing != type)
+            if (g_typeAliases.TryGetValue(id, out Type existing))
             {
-                return false;
+                return existing != type;
             }
 
             g_typeAliases.Add(id, type);

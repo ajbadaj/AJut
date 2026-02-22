@@ -17,26 +17,6 @@
     using AJut.UX.AttachedProperties;
     using AJut.UX.Controls;
 
-    public enum eDockingAutoSaveMethod
-    {
-        /// <summary>
-        /// Never auto save
-        /// </summary>
-        None,
-
-        /// <summary>
-        /// Auto save to the <see cref="DockingManager.DockLayoutPersistentStorageFile"/> whenever anything happens
-        /// </summary>
-        AutoSaveOnAllChanges,
-
-        /// <summary>
-        /// Auto save to a temp file next to the <see cref="DockingManager.DockLayoutPersistentStorageFile"/> file whenever anything happens, but wait
-        /// for explicit calls to save to the <see cref="DockingManager.DockLayoutPersistentStorageFile"/> directly.
-        /// </summary>
-        AutoSaveToTemp,
-    }
-
-
     /* TODO: Auto save
      * Notes...
      * Enable auto save (bool, notify property changed)
@@ -47,7 +27,7 @@
     /// <summary>
     /// The centralized manager for a single docking experience
     /// </summary>
-    public class DockingManager : NotifyPropertyChanged
+    public class DockingManager : NotifyPropertyChanged, IDockingManager
     {
         private readonly Dictionary<Type, DisplayBuilder> m_factory = new Dictionary<Type, DisplayBuilder>();
         private readonly ObservableCollection<DockZone> m_rootDockZones = new ObservableCollection<DockZone>();
@@ -301,7 +281,7 @@
                     if (!adapter.CheckCanClose())
                     {
                         var closeSupression = new RoutedEventArgs(DockZone.NotifyCloseSupressionEvent);
-                        adapter.Location.UI.RaiseEvent(closeSupression);
+                        ((DockZone)adapter.Location.UI).RaiseEvent(closeSupression);
                         anyDissenters = true;
                     }
                 }
@@ -489,7 +469,8 @@
         /// </summary>
         public Result<Window> DoTearoff (IDockableDisplayElement element, Point newWindowOrigin)
         {
-            Size previousZoneSize = new Size(element.DockingAdapter.Location.UI.ActualWidth, element.DockingAdapter.Location.UI.ActualHeight);
+            DockZoneSize dockSize = element.DockingAdapter.Location.UI?.RenderSize ?? DockZoneSize.Empty;
+            Size previousZoneSize = new Size(dockSize.Width, dockSize.Height);
             return this.DoTearoff(element, newWindowOrigin, previousZoneSize);
         }
 
@@ -539,7 +520,7 @@
         /// <returns>The result containing the window that was created and stocked</returns>
         public Result<Window> DoGroupTearoff (DockZoneViewModel sourceZone, Point newWindowOrigin)
         {
-            return this.DoGroupTearoff(sourceZone, newWindowOrigin, sourceZone.UI.RenderSize);
+            return this.DoGroupTearoff(sourceZone, newWindowOrigin, new Size(sourceZone.UI.RenderSize.Width, sourceZone.UI.RenderSize.Height));
         }
 
         /// <summary>
@@ -563,7 +544,7 @@
                 else
                 {
                     // First check to see if it's the only zone in the window, if that's the case then we're good to go
-                    var window = Window.GetWindow(sourceZone.UI);
+                    var window = Window.GetWindow((DockZone)sourceZone.UI);
                     if (DockWindowConfig.GetIsDockingTearoffWindow(window))
                     {
                         return Result<Window>.Success(window);

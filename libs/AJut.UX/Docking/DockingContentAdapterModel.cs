@@ -1,14 +1,22 @@
-﻿namespace AJut.UX.Docking
+namespace AJut.UX.Docking
 {
     using System;
     using System.Collections.Specialized;
-    using System.Windows;
 
     public class DockingContentAdapterModel : NotifyPropertyChanged, IDisposable
     {
-        public DockingContentAdapterModel (DockingManager manager)
+        // ===========[ Instance Fields ]===================================
+        private DockZoneViewModel m_location;
+        private int m_tabOrder;
+        private object m_titleContent;
+        private object m_titleTemplate;
+        private object m_tooltipContent;
+        private object m_tooltipTemplate;
+
+        // ===========[ Construction ]===================================
+        public DockingContentAdapterModel (object dockingOwner)
         {
-            this.DockingOwner = manager;
+            this.DockingOwner = dockingOwner;
         }
 
         public void Dispose ()
@@ -19,20 +27,20 @@
             }
         }
 
+        // ===========[ Events ]===================================
         public event EventHandler<EventArgs<object>> SetupComplete;
         public event EventHandler<EventArgs> Docked;
         public event EventHandler<EventArgs> TabOrderChanged;
         public event EventHandler<IsReadyToCloseEventArgs> CanClose;
         public event EventHandler<ClosedEventArgs> Closed;
 
-        private DockZoneViewModel m_location;
+        // ===========[ Properties ]===================================
         public DockZoneViewModel Location
         {
             get => m_location;
             private set => this.SetAndRaiseIfChanged(ref m_location, value);
         }
 
-        private int m_tabOrder;
         public int TabOrder
         {
             get => m_tabOrder;
@@ -45,37 +53,46 @@
             }
         }
 
-        private object m_titleContent;
         public object TitleContent
         {
             get => m_titleContent;
             set => this.SetAndRaiseIfChanged(ref m_titleContent, value);
         }
 
-        private DataTemplate m_titleTemplate;
-        public DataTemplate TitleTemplate
+        /// <summary>
+        /// Platform-specific DataTemplate (WPF: System.Windows.DataTemplate; WinUI3: Microsoft.UI.Xaml.DataTemplate).
+        /// Stored as <c>object?</c> to keep this class platform-agnostic.
+        /// </summary>
+        public object TitleTemplate
         {
             get => m_titleTemplate;
             set => this.SetAndRaiseIfChanged(ref m_titleTemplate, value);
         }
 
-        private object m_tooltipContent;
         public object TooltipContent
         {
             get => m_tooltipContent;
             set => this.SetAndRaiseIfChanged(ref m_tooltipContent, value);
         }
 
-        private DataTemplate m_tooltipTemplate;
-        public DataTemplate TooltipTemplate
+        /// <summary>
+        /// Platform-specific DataTemplate. Stored as <c>object?</c> to keep this class platform-agnostic.
+        /// </summary>
+        public object TooltipTemplate
         {
             get => m_tooltipTemplate;
             set => this.SetAndRaiseIfChanged(ref m_tooltipTemplate, value);
         }
 
-        public DockingManager DockingOwner { get; }
-        public IDockableDisplayElement Display { get; internal set; }
+        /// <summary>
+        /// The owning DockingManager — typed as <c>object</c> to keep this class platform-agnostic.
+        /// Cast to the concrete manager type when platform-specific operations are needed.
+        /// </summary>
+        public object DockingOwner { get; }
 
+        public IDockableDisplayElement Display { get; set; }
+
+        // ===========[ Public Interface ]===================================
         public bool CheckCanClose ()
         {
             var readyToClose = new IsReadyToCloseEventArgs();
@@ -94,9 +111,10 @@
             return false;
         }
 
+        // ===========[ Internal Utilities ]===================================
         internal void InternalClose (bool isForForcedClose)
         {
-            this.Closed?.Invoke(this, new ClosedEventArgs { IsForForcedClose = isForForcedClose});
+            this.Closed?.Invoke(this, new ClosedEventArgs { IsForForcedClose = isForForcedClose });
         }
 
         internal void SetNewLocation (DockZoneViewModel dockZone)
@@ -119,6 +137,11 @@
             this.ResetTabOrder();
         }
 
+        internal void FinalizeSetup (object state)
+        {
+            this.SetupComplete?.Invoke(this, new EventArgs<object>(state));
+        }
+
         private void OnOrderChangedInDockZone (object sender, NotifyCollectionChangedEventArgs e)
         {
             this.ResetTabOrder();
@@ -127,11 +150,6 @@
         private void ResetTabOrder ()
         {
             this.TabOrder = this.Location?.DockedContent.IndexOf(this) ?? -1;
-        }
-
-        internal void FinalizeSetup (object state)
-        {
-            this.SetupComplete?.Invoke(this, new EventArgs<object>(state));
         }
     }
 }

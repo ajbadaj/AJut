@@ -1,4 +1,4 @@
-﻿namespace AJut.UX.Controls
+namespace AJut.UX.Controls
 {
     using System.Collections;
     using System.Collections.Generic;
@@ -16,7 +16,7 @@
     using DPUtils = AJut.UX.DPUtils<DockZone>;
     using REUtils = AJut.UX.REUtils<DockZone>;
 
-    public sealed partial class DockZone : Control
+    public sealed partial class DockZone : Control, IDockZoneUI
     {
         private readonly ObservableCollection<DockZone> m_childZones = new ObservableCollection<DockZone>();
 
@@ -37,7 +37,7 @@
                 }
             }
 
-            DockZone _GetParent (DockZone z) => z.ViewModel?.Parent?.UI;
+            DockZone _GetParent (DockZone z) => z.ViewModel?.Parent?.UI as DockZone;
         }
 
         public DockZone ()
@@ -54,6 +54,17 @@
                 this.HandleNewChildZonesAdded(m_childZones);
             }
         }
+
+        // ===========[ IDockZoneUI Implementation ]===================================
+
+        DockZoneSize IDockZoneUI.RenderSize => new DockZoneSize(this.RenderSize.Width, this.RenderSize.Height);
+
+        void IDockZoneUI.SetTargetSizeAsync (List<double> sizes)
+        {
+            this.Dispatcher.InvokeAsync(() => this.SetTargetSize(sizes), DispatcherPriority.Input);
+        }
+
+        // ===========[ Child Zone Handling ]===================================
 
         private void OnChildZoneUIAdded (object sender, NotifyCollectionChangedEventArgs e)
         {
@@ -84,9 +95,11 @@
                 return;
             }
 
-            List<Size> sizes = this.ChildZones.Select(z => z.ViewModel.TakePassAlongUISize(out Size size) ? size : z.RenderSize).ToList();
+            List<DockZoneSize> sizes = this.ChildZones
+                .Select(z => z.ViewModel.TakePassAlongUISize(out DockZoneSize dockSize) ? dockSize : ((IDockZoneUI)z).RenderSize)
+                .ToList();
 
-            Size rootSize = this.RenderSize;
+            DockZoneSize rootSize = ((IDockZoneUI)this).RenderSize;
             if (this.ViewModel.Orientation == eDockOrientation.Horizontal)
             {
                 double fullHorizontal = sizes.Sum(s => s.Width);
@@ -111,11 +124,11 @@
 
             for (int index = 0; index < this.ChildZones.Count; ++index)
             {
-                DockZone zone = this.ChildZones[index];
                 if (this.ViewModel.Orientation == eDockOrientation.Horizontal)
                 {
                     grid.ColumnDefinitions[index].Width = new GridLength(sizes[index], GridUnitType.Pixel);
                 }
+
                 if (this.ViewModel.Orientation == eDockOrientation.Vertical)
                 {
                     grid.RowDefinitions[index].Height = new GridLength(sizes[index], GridUnitType.Pixel);
@@ -133,9 +146,8 @@
             }
         }
 
-        // ============================[ Events / Commands ]====================================
+        // ===========[ Events / Commands ]===================================
 
-        // Identifies the group of docking the zone is part of, allows things to share docking
         public static DependencyProperty GroupIdProperty = APUtils.Register(GetGroupId, SetGroupId);
         public static string GetGroupId (DependencyObject obj) => (string)obj.GetValue(GroupIdProperty);
         public static void SetGroupId (DependencyObject obj, string value) => obj.SetValue(GroupIdProperty, value);
@@ -143,7 +155,7 @@
         public static RoutedEvent NotifyCloseSupressionEvent = REUtils.Register<RoutedEventHandler>(nameof(NotifyCloseSupressionEvent));
         public static RoutedUICommand CloseDockedContentCommand = new RoutedUICommand("Close", nameof(CloseDockedContentCommand), typeof(DockZone), new InputGestureCollection(new[] { new KeyGesture(Key.F4, ModifierKeys.Control) }));
 
-        // ============================[ Properties ]====================================
+        // ===========[ Properties ]===================================
 
         private DockingManager m_manager;
         public DockingManager Manager
@@ -207,7 +219,8 @@
 
         public ReadOnlyObservableCollection<DockZone> ChildZones { get; }
 
-        // ============================[ Private Utilities ]====================================
+        // ===========[ Private Utilities ]===================================
+
         private void OnCanCloseDockedContent (object sender, CanExecuteRoutedEventArgs e)
         {
             if (e.Parameter is DockingContentAdapterModel panelAdapter)
@@ -226,10 +239,9 @@
 
         private void OnViewModelChanged (DependencyPropertyChangedEventArgs<DockZoneViewModel> e)
         {
-            // If the old value still has a ref to this, clear it
             if (e.HasOldValue)
             {
-                if (e.OldValue.UI == this)
+                if (e.OldValue.UI == (IDockZoneUI)this)
                 {
                     e.OldValue.UI = null;
                 }
@@ -238,10 +250,9 @@
                 e.OldValue.PropertyChanged -= _OnViewModelPropertyChanged;
             }
 
-            // Setup these and the new values
             if (e.HasNewValue)
             {
-                this.Manager = e.NewValue.Manager;
+                this.Manager = e.NewValue.Manager as DockingManager;
                 e.NewValue.UI = this;
 
                 ((INotifyCollectionChanged)e.NewValue.Children).CollectionChanged -= _OnDockZoneViewModelChildrenChanged;
@@ -297,13 +308,11 @@
 
             void _OnViewModelPropertyChanged (object sender, System.ComponentModel.PropertyChangedEventArgs e)
             {
-                this.HasSplitZoneOrientation = this.ViewModel == null
-                                                ? false
-                                                : this.ViewModel.Orientation.IsFlagInGroup(eDockOrientation.AnySplitOrientation);
+                this.HasSplitZoneOrientation = this.ViewModel != null
+                    && this.ViewModel.Orientation.IsFlagInGroup(eDockOrientation.AnySplitOrientation);
 
                 this.IsEmpty = this.ViewModel == null
-                                ? true
-                                : this.ViewModel.Orientation == eDockOrientation.Empty;
+                    || this.ViewModel.Orientation == eDockOrientation.Empty;
             }
         }
 

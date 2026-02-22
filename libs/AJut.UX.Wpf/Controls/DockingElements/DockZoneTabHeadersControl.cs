@@ -229,10 +229,11 @@
             Point desktopMouseLocation = (Point)((Vector)window.PointToScreen(tracking.DragOwner.TranslatePoint(tracking.StartPoint, window)) - (Vector)tracking.StartPoint);
 
             DockingContentAdapterModel target = ((HeaderItem)tracking.SenderContext).Adapter;
-            var result = target.DockingOwner.DoTearoff(target.Display, desktopMouseLocation);
+            var dockingManager = (DockingManager)target.DockingOwner;
+            var result = dockingManager.DoTearoff(target.Display, desktopMouseLocation);
             if (result)
             {
-                await target.DockingOwner.RunDragSearch(result.Value, target.Location.UI).ConfigureAwait(false);
+                await dockingManager.RunDragSearch(result.Value, (DockZone)target.Location.UI).ConfigureAwait(false);
             }
         }
 

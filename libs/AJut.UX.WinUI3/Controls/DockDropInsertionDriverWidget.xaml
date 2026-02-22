@@ -1,0 +1,22 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="using:AJut.UX.Controls">
+
+    <!-- ===========[ DockDropInsertionDriverWidget: Default Style ]=========== -->
+    <!-- Visual is entirely code-built in OnApplyTemplate.
+         PART_Root (Border) receives its background, border, and child TextBlock
+         from the code-behind based on Direction and IsEngaged state. -->
+
+    <Style TargetType="local:DockDropInsertionDriverWidget">
+        <Setter Property="IsTabStop" Value="False"/>
+        <Setter Property="Padding" Value="2"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:DockDropInsertionDriverWidget">
+                    <Border x:Name="PART_Root"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

@@ -27,6 +27,7 @@
 !ProjectOrder.json
 !*.pubxml
 !*.ps1
+!*.targets
 
 # ============[ And finally nix these ]=========================
 *Settings.Designer.cs
