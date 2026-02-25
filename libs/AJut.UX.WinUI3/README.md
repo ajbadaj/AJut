@@ -11,7 +11,7 @@ Many of these are my takes on ideas that aren't new - and yet those ideas have t
 ### Direct NuGet reference (simplest)
 Add a direct `PackageReference` in your WinExe `.csproj`:
 ```xml
-<PackageReference Include="AJut.UX.WinUI3" Version="1.0.0.89" />
+<PackageReference Include="AJut.UX.WinUI3" Version="1.0.0.90" />
 ```
 The package's `build/AJut.UX.WinUI3.targets` file automatically injects the library's XAML
 files into your app's build as compiled `Page` items. This produces the correct
@@ -36,7 +36,7 @@ it uses controls from the library) AND the consuming app has its own direct refe
 Fix this by suppressing build assets in the **library's** reference:
 ```xml
 <!-- In the library .csproj — suppresses .targets injection, keeps the DLL reference -->
-<PackageReference Include="AJut.UX.WinUI3" Version="1.0.0.89">
+<PackageReference Include="AJut.UX.WinUI3" Version="1.0.0.90">
   <ExcludeAssets>build;buildTransitive;buildMultitargeting;contentFiles</ExcludeAssets>
   <PrivateAssets>all</PrivateAssets>
 </PackageReference>

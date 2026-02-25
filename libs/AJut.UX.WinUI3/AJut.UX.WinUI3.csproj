@@ -20,7 +20,7 @@
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <EnableMsixTooling>true</EnableMsixTooling>
     <WindowsPackageType>None</WindowsPackageType>
-    <Version>1.0.0.89</Version>
+    <Version>1.0.0.90</Version>
     <!-- =========[ NuGet packaging - ensure XBF + PRI resources are included ]======== -->
     <DisableEmbeddedXbf>false</DisableEmbeddedXbf>
     <GenerateLibraryLayout>true</GenerateLibraryLayout>
