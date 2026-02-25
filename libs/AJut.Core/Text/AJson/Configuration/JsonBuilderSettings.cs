@@ -2,6 +2,8 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
+    using System.Numerics;
 
     public enum ePropertyValueQuoting
     {
@@ -81,6 +83,7 @@
                 m_customJsonConstructor.Add(typeof(TimeSpan), _TimeSpanToJsonString);
                 m_customJsonConstructor.Add(typeof(Guid), _GuidToJsonString);
                 m_customJsonConstructor.Add(typeof(TimeZoneInfo), _TimeZoneToAJsonString);
+                m_customJsonConstructor.Add(typeof(Vector2), _Vector2ToAJsonString);
 
                 string _BoolToJsonString (object instance) => ((bool)instance) ? "true" : "false";
                 string _DateTimeToJsonString (object instance)
@@ -96,6 +99,12 @@
                 string _TimeSpanToJsonString (object instance) => ((TimeSpan)instance).ToString();
                 string _GuidToJsonString (object instance) => ((Guid)instance).ToString();
                 string _TimeZoneToAJsonString (object instance) => ((TimeZoneInfo)instance).Id;
+                string _Vector2ToAJsonString(object instance)
+                {
+                    var vec2 = (Vector2)instance;
+                    return $"<{vec2.X},{vec2.Y}>";
+                }
+
             }
 
             public string Tabbing { get; set; }
