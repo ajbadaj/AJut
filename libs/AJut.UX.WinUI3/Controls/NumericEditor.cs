@@ -29,6 +29,8 @@ namespace AJut.UX.Controls
         public NumericEditor ()
         {
             this.DefaultStyleKey = typeof(NumericEditor);
+            this.GotFocus += this.OnGotFocus;
+            this.LostFocus += this.OnLostFocus;
         }
 
         // ===========[ INumericEditorSettings ]===================================
@@ -168,6 +170,13 @@ namespace AJut.UX.Controls
                 m_blockReentrancy = false;
             }
         }
+
+        // ===========[ Events ]===================================================
+        private void OnGotFocus (object sender, RoutedEventArgs e)
+            => VisualStateManager.GoToState(this, "Focused", false);
+
+        private void OnLostFocus (object sender, RoutedEventArgs e)
+            => VisualStateManager.GoToState(this, "Unfocused", false);
 
         // ===========[ Helpers ]=================================================
         private static double ToDouble (object value)

@@ -41,6 +41,12 @@ namespace AJutShowRoomWinUI
             this.InitializeComponent();
             this.Root.SetupFor(this);
 
+            // ToggleStrip demo items
+            this.ToggleStripSingle.ItemsSource = new[] { "Option A", "Option B", "Option C" };
+            this.ToggleStripMulti.ItemsSource = new[] { "Bold", "Italic", "Underline", "Strikethrough" };
+            this.ToggleStripFreeform.ItemsSource = new[] { "First", "Second", "Third" };
+            this.ToggleStripCustom.ItemsSource = new[] { "Red", "Green", "Blue" };
+
             this.AppWindow.Resize(new Windows.Graphics.SizeInt32(800, 1000));
 
             ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;

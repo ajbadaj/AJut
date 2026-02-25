@@ -6,25 +6,89 @@
     <!-- Shows a solid-color swatch. Tap/click opens a Flyout (built in code-behind)
          containing the native WinUI3 ColorPicker.
          White Background on the outer Border provides an opaque backdrop for
-         semi-transparent colors so the alpha channel is visually apparent. -->
+         semi-transparent colors so the alpha channel is visually apparent.
+         On hover:  gloss overlay hides, edit indicator overlay appears.
+         On open:   border swaps to HighlightBorderBrush (via code). -->
     <Style TargetType="local:ColorEditIngressControl">
         <Setter Property="MinWidth" Value="36"/>
         <Setter Property="MinHeight" Value="24"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="BorderBrush" Value="{ThemeResource ControlStrokeColorDefaultBrush}"/>
-        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="CornerRadius" Value="2"/>
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="HighlightBorderBrush">
+            <Setter.Value>
+                <SolidColorBrush Color="#186DBA"/>
+            </Setter.Value>
+        </Setter>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:ColorEditIngressControl">
-                    <!-- Outer white border: alpha-channel backdrop + selection border. -->
-                    <Border BorderThickness="{TemplateBinding BorderThickness}"
+                    <!-- PART_Root: outer border; BorderBrush swapped in code on open/close. -->
+                    <Border x:Name="PART_Root"
+                            BorderThickness="{TemplateBinding BorderThickness}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             CornerRadius="{TemplateBinding CornerRadius}"
                             Background="White">
-                        <!-- PART_Swatch: Background is set in code to EditColor. -->
-                        <Border x:Name="PART_Swatch"
-                                CornerRadius="{TemplateBinding CornerRadius}"/>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_FancyCover.Visibility" Value="Visible"/>
+                                        <Setter Target="PART_EditOverlay.Visibility" Value="Collapsed"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_FancyCover.Visibility" Value="Collapsed"/>
+                                        <Setter Target="PART_EditOverlay.Visibility" Value="Visible"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+
+                        <Grid>
+                            <!-- PART_Swatch: Background set in code to EditColor. -->
+                            <Border x:Name="PART_Swatch"/>
+
+                            <!-- Gloss overlay: visible in Normal state, hidden on hover. -->
+                            <Grid x:Name="PART_FancyCover"
+                                  IsHitTestVisible="False">
+                                <Grid.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                        <GradientStop Color="#25FFFFFF" Offset="0"/>
+                                        <GradientStop Color="#0CFFFFFF" Offset="0.5"/>
+                                        <GradientStop Color="#0C000000" Offset="0.5"/>
+                                        <GradientStop Color="#23000000" Offset="1"/>
+                                    </LinearGradientBrush>
+                                </Grid.Background>
+                            </Grid>
+
+                            <!-- Edit overlay: shown on hover and while flyout is open. -->
+                            <Grid x:Name="PART_EditOverlay"
+                                  IsHitTestVisible="False"
+                                  Visibility="Collapsed">
+                                <Grid.Background>
+                                    <SolidColorBrush Color="#60000000"/>
+                                </Grid.Background>
+                                <!-- Dog-ear triangle at bottom-right corner -->
+                                <Path Data="M 0,14 L 14,14 L 14,0 Z"
+                                      Fill="White"
+                                      Opacity="0.85"
+                                      HorizontalAlignment="Right"
+                                      VerticalAlignment="Bottom"
+                                      IsHitTestVisible="False"/>
+                                <!-- Pencil edit glyph -->
+                                <FontIcon Glyph="&#xE70F;"
+                                          FontFamily="Segoe Fluent Icons"
+                                          FontSize="9"
+                                          Foreground="White"
+                                          HorizontalAlignment="Right"
+                                          VerticalAlignment="Bottom"
+                                          Margin="0,0,1,1"
+                                          IsHitTestVisible="False"/>
+                            </Grid>
+                        </Grid>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>

@@ -22,14 +22,80 @@
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Resources/AJut.UX_Overrides.xaml"/>
     </ResourceDictionary.MergedDictionaries>
 
-    <!-- Re-declare converter so this file is self-contained (same key as FlatTreeListControl.xaml). -->
+    <!-- Re-declare shared resources so this file is self-contained when used as an implicit-style
+         override. These match the keys defined in FlatTreeListControl.xaml. -->
     <conv:BooleanToVisibilityConverter x:Key="FlatTree_HasChildrenToVisibility"
                                        TrueValue="Visible"
                                        FalseValue="Collapsed"/>
+    <DataTemplate x:Key="FlatTree_RowDataTemplate">
+        <local:FlatTreeItemRow HorizontalAlignment="Stretch"/>
+    </DataTemplate>
+
+    <!--
+    ===[ FlatTreeListControl ListViewItem - AJut-themed override ]===
+    AJut signature selection style: 4px colored strip on left edge + subtle tint
+    on the row body. Overrides the same-key resource in FlatTreeListControl.xaml.
+    -->
+    <Style x:Key="AJut_FlatTree_ListViewItemStyle" TargetType="ListViewItem">
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="MinHeight" Value="0"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListViewItem">
+                    <Grid x:Name="ContentBorder"
+                          Background="Transparent">
+                        <Rectangle x:Name="SelectionStrip"
+                                   Width="4"
+                                   HorizontalAlignment="Left"
+                                   VerticalAlignment="Stretch"
+                                   Fill="Transparent"/>
+                        <Border x:Name="HoverTint"
+                                Background="Transparent"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"/>
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          Margin="6,0,0,0"/>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="SelectionStates">
+                                <VisualState x:Name="Unselected"/>
+                                <VisualState x:Name="Selected">
+                                    <VisualState.Setters>
+                                        <Setter Target="SelectionStrip.Fill"
+                                                Value="{ThemeResource AJut_Brush_ListSelection}"/>
+                                        <Setter Target="HoverTint.Background"
+                                                Value="{ThemeResource AJut_Brush_ListSelectionBackground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="SelectedUnfocused">
+                                    <VisualState.Setters>
+                                        <Setter Target="SelectionStrip.Fill"
+                                                Value="{ThemeResource AJut_Brush_PrimaryHighlightDesat}"/>
+                                        <Setter Target="HoverTint.Background"
+                                                Value="{ThemeResource AJut_Brush_ListSelectionBackground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal"/>
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="HoverTint.Background"
+                                                Value="{ThemeResource AJut_Brush_ListItemHover}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 
     <!--
     ===[ FlatTreeItemRow - AJut-themed override ]===
-    Restores AJut theme brushes for the expander button states and list selection.
+    Restores AJut theme brushes for the expander button states.
     -->
     <Style TargetType="local:FlatTreeItemRow">
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
@@ -134,48 +200,30 @@
     </Style>
 
     <!--
-    ===[ FlatTreeListControl ListViewItem - AJut-themed override ]===
-    Restores AJut selection and hover brushes for the inner ListView item container.
+    ===[ FlatTreeListControl - AJut-themed override ]===
+    Applies AJut list background/border and the AJut-branded selection strip item style.
     -->
-    <Style x:Key="AJut_FlatTree_ListViewItemStyle" TargetType="ListViewItem">
-        <Setter Property="Padding" Value="0"/>
-        <Setter Property="MinHeight" Value="0"/>
+    <Style TargetType="local:FlatTreeListControl">
+        <Setter Property="Background" Value="{ThemeResource AJut_Brush_ListBackground}"/>
+        <Setter Property="BorderBrush" Value="{ThemeResource AJut_Brush_ListBorder}"/>
+        <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         <Setter Property="Template">
             <Setter.Value>
-                <ControlTemplate TargetType="ListViewItem">
-                    <Grid x:Name="ContentBorder"
-                          Background="Transparent">
-                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                          Margin="{TemplateBinding Padding}"/>
-                        <VisualStateManager.VisualStateGroups>
-                            <VisualStateGroup x:Name="SelectionStates">
-                                <VisualState x:Name="Unselected"/>
-                                <VisualState x:Name="Selected">
-                                    <VisualState.Setters>
-                                        <Setter Target="ContentBorder.Background"
-                                                Value="{ThemeResource AJut_Brush_ListSelection}"/>
-                                    </VisualState.Setters>
-                                </VisualState>
-                                <VisualState x:Name="SelectedUnfocused">
-                                    <VisualState.Setters>
-                                        <Setter Target="ContentBorder.Background"
-                                                Value="{ThemeResource AJut_Brush_ListSelectionBackground}"/>
-                                    </VisualState.Setters>
-                                </VisualState>
-                            </VisualStateGroup>
-                            <VisualStateGroup x:Name="CommonStates">
-                                <VisualState x:Name="Normal"/>
-                                <VisualState x:Name="PointerOver">
-                                    <VisualState.Setters>
-                                        <Setter Target="ContentBorder.Background"
-                                                Value="{ThemeResource AJut_Brush_ListItemHover}"/>
-                                    </VisualState.Setters>
-                                </VisualState>
-                            </VisualStateGroup>
-                        </VisualStateManager.VisualStateGroups>
-                    </Grid>
+                <ControlTemplate TargetType="local:FlatTreeListControl">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}">
+                        <ListView x:Name="PART_ListView"
+                                  Background="Transparent"
+                                  BorderThickness="0"
+                                  SelectionMode="Single"
+                                  ItemTemplate="{StaticResource FlatTree_RowDataTemplate}"
+                                  ItemContainerStyle="{StaticResource AJut_FlatTree_ListViewItemStyle}"
+                                  HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                    </Border>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -215,6 +263,221 @@
                                         Content="{Binding}"
                                         ContentTemplateSelector="{TemplateBinding EditorTemplateSelector}"/>
                     </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--
+    ===[ NumericEditor - AJut-themed override ]===
+    Replaces the gradient background with AJut_Brush_PopOutControlBackground and
+    uses AJut_Brush_PrimaryHighlight for the focused border state.
+    -->
+    <Style TargetType="local:NumericEditor">
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="Background" Value="{ThemeResource AJut_Brush_PopOutControlBackground}"/>
+        <Setter Property="BorderBrush" Value="{ThemeResource AJut_Brush_TextBoxBorder}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:NumericEditor">
+                    <Border x:Name="PART_Root"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="2">
+                        <!-- Rim-lighting via nested semi-transparent borders -->
+                        <Border BorderBrush="#8000" BorderThickness="1.4,1.4,0,0">
+                            <Border BorderBrush="#5FFF" BorderThickness="0,0,1,1">
+                                <NumberBox x:Name="PART_NumberBox"
+                                           FontFamily="Consolas"
+                                           SpinButtonPlacementMode="Compact"
+                                           ValidationMode="InvalidInputOverwritten"
+                                           Background="Transparent"
+                                           BorderThickness="0"
+                                           HorizontalAlignment="Stretch"/>
+                            </Border>
+                        </Border>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="FocusStates">
+                                <VisualState x:Name="Unfocused"/>
+                                <VisualState x:Name="Focused">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_Root.BorderBrush"
+                                                Value="{ThemeResource AJut_Brush_PrimaryHighlight}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--
+    ===[ DockZone - AJut-themed override ]===
+    Applies AJut brush tokens to the DockZone's panel appearance properties.
+    The hardcoded defaults in DockZone.xaml remain intact for no-theme usage.
+    -->
+    <Style TargetType="local:DockZone">
+        <Setter Property="PanelBackground" Value="{ThemeResource AJut_Brush_PanelBackground}"/>
+        <Setter Property="PanelForeground" Value="{ThemeResource AJut_Brush_NormalText}"/>
+        <Setter Property="PanelBorderBrush" Value="{ThemeResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="PanelBorderThickness" Value="1"/>
+        <Setter Property="TabStripBackground" Value="{ThemeResource AJut_Brush_BannerBackground}"/>
+        <Setter Property="PanelCornerRadius" Value="0,8,0,8"/>
+    </Style>
+
+    <!--
+    ===[ PathSelectionControl - AJut-themed override ]===
+    Applies AJut text-control colors to the path entry container and uses
+    AJut_Brush_PrimaryHighlight for the focused border state.
+    -->
+    <Style TargetType="local:PathSelectionControl">
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="Background" Value="{ThemeResource AJut_Brush_PopOutControlBackground}"/>
+        <Setter Property="BorderBrush" Value="{ThemeResource AJut_Brush_TextBoxBorder}"/>
+        <Setter Property="BorderThickness" Value="1,1,1,2"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:PathSelectionControl">
+                    <Border x:Name="PART_Root"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="0,3,3,0"
+                            ToolTipService.ToolTip="{TemplateBinding SelectedPath}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBox x:Name="PART_PathTextBox"
+                                     Grid.Column="0"
+                                     PlaceholderText="{TemplateBinding UnsetTextPrompt}"
+                                     FontFamily="Consolas"
+                                     TextWrapping="NoWrap"
+                                     BorderThickness="0"
+                                     Background="Transparent"
+                                     VerticalAlignment="Stretch"
+                                     VerticalContentAlignment="Center"/>
+
+                            <Border x:Name="PART_WarningDisplay"
+                                    Grid.Column="1"
+                                    Visibility="Collapsed"
+                                    IsHitTestVisible="False"
+                                    Padding="4,2"
+                                    ToolTipService.ToolTip="{TemplateBinding InvalidPathReason}">
+                                <FontIcon Glyph="&#xE7BA;"
+                                          FontFamily="Segoe Fluent Icons"
+                                          FontSize="14"
+                                          Foreground="{ThemeResource AJut_Brush_NormalText}"/>
+                            </Border>
+
+                            <Button x:Name="PART_ShowInExplorerButton"
+                                    Grid.Column="2"
+                                    Visibility="Collapsed"
+                                    Padding="6,4"
+                                    BorderThickness="1,0,0,0"
+                                    BorderBrush="{ThemeResource AJut_Brush_BorderCommon}"
+                                    Background="Transparent"
+                                    ToolTipService.ToolTip="Show in Explorer">
+                                <FontIcon Glyph="{TemplateBinding OpenInExplorerMDL2Icon}"
+                                          FontFamily="Segoe Fluent Icons"
+                                          FontSize="14"
+                                          Foreground="{ThemeResource AJut_Brush_SymbolForeground}"/>
+                            </Button>
+
+                            <Button x:Name="PART_BrowseButton"
+                                    Grid.Column="3"
+                                    Padding="8,4"
+                                    BorderThickness="1,0,0,0"
+                                    BorderBrush="{ThemeResource AJut_Brush_BorderCommon}"
+                                    Background="Transparent"
+                                    ToolTipService.ToolTip="{TemplateBinding BrowsePrompt}">
+                                <FontIcon Glyph="{TemplateBinding DefaultButtonMDL2Icon}"
+                                          FontFamily="Segoe Fluent Icons"
+                                          FontSize="14"
+                                          Foreground="{ThemeResource AJut_Brush_SymbolForeground}"/>
+                            </Button>
+                        </Grid>
+
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="BorderStates">
+                                <VisualState x:Name="Normal"/>
+                                <VisualState x:Name="Focused">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_Root.BorderBrush"
+                                                Value="{ThemeResource AJut_Brush_PrimaryHighlight}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="PathInvalid">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_Root.BorderBrush"
+                                                Value="#C00000"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                            <VisualStateGroup x:Name="WarningDisplayStates">
+                                <VisualState x:Name="WarningHidden"/>
+                                <VisualState x:Name="WarningShown">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_WarningDisplay.Visibility"
+                                                Value="Visible"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                            <VisualStateGroup x:Name="ExplorerButtonStates">
+                                <VisualState x:Name="ExplorerButtonHidden"/>
+                                <VisualState x:Name="ExplorerButtonShown">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_ShowInExplorerButton.Visibility"
+                                                Value="Visible"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--
+    ===[ ColorEditIngressControl - AJut-themed override ]===
+    Replaces the hardcoded HighlightBorderBrush with AJut_Brush_PrimaryHighlight
+    so the flyout-open border flash matches the rest of the AJut accent system.
+    Uses AJut_Brush_BorderCommon for the resting border.
+    -->
+    <Style TargetType="local:ColorEditIngressControl">
+        <Setter Property="BorderBrush" Value="{ThemeResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="HighlightBorderBrush" Value="{ThemeResource AJut_Brush_PrimaryHighlight}"/>
+    </Style>
+
+    <!--
+    ===[ ToggleStrip - AJut-themed override ]===
+    Applies AJut strip container colors. Individual ToggleButtons inside the
+    strip pick up AJut colors from SystemColorAliasing.xaml automatically.
+    -->
+    <Style TargetType="local:ToggleStrip">
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+        <Setter Property="Background" Value="{ThemeResource AJut_Brush_PopOutControlBackground}"/>
+        <Setter Property="BorderBrush" Value="{ThemeResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:ToggleStrip">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="2">
+                        <StackPanel x:Name="PART_ItemsPanel"
+                                    Orientation="Horizontal"/>
+                    </Border>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

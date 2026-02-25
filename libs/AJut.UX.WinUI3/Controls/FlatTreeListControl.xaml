@@ -16,6 +16,69 @@
         <local:FlatTreeItemRow HorizontalAlignment="Stretch"/>
     </DataTemplate>
 
+    <!-- ===[ FlatTreeListControl default ListViewItem style ]=== -->
+    <!-- Uses WinUI3 system brush keys only. AllControlThemeOverrides.xaml overrides
+         this key with AJut-colored brushes when the AJut theme is loaded. -->
+    <Style x:Key="AJut_FlatTree_ListViewItemStyle" TargetType="ListViewItem">
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="MinHeight" Value="0"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListViewItem">
+                    <Grid x:Name="ContentBorder"
+                          Background="Transparent">
+                        <!-- Left-edge selection strip — 4px, system accent color when selected -->
+                        <Rectangle x:Name="SelectionStrip"
+                                   Width="4"
+                                   HorizontalAlignment="Left"
+                                   VerticalAlignment="Stretch"
+                                   Fill="Transparent"/>
+                        <!-- Hover/selection tint overlaid on the full row -->
+                        <Border x:Name="HoverTint"
+                                Background="Transparent"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"/>
+                        <!-- Row content — left margin leaves room for the strip -->
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          Margin="6,0,0,0"/>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="SelectionStates">
+                                <VisualState x:Name="Unselected"/>
+                                <VisualState x:Name="Selected">
+                                    <VisualState.Setters>
+                                        <Setter Target="SelectionStrip.Fill"
+                                                Value="{ThemeResource SystemControlHighlightListAccentHighBrush}"/>
+                                        <Setter Target="HoverTint.Background"
+                                                Value="{ThemeResource SystemControlHighlightListAccentLowBrush}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="SelectedUnfocused">
+                                    <VisualState.Setters>
+                                        <Setter Target="SelectionStrip.Fill"
+                                                Value="{ThemeResource SystemControlHighlightListAccentMediumBrush}"/>
+                                        <Setter Target="HoverTint.Background"
+                                                Value="{ThemeResource SystemControlHighlightListAccentLowBrush}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal"/>
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="HoverTint.Background"
+                                                Value="{ThemeResource SystemControlHighlightListLowBrush}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ===[ FlatTreeItemRow - per-row presenter ]=== -->
     <!-- DataContext = FlatTreeItem, set by ListView.
          ContentTemplate = set from FlatTreeListControl code via ContainerContentChanging. -->
@@ -68,14 +131,14 @@
                                                               Glyph="&#xE76C;"
                                                               HorizontalAlignment="Center"
                                                               VerticalAlignment="Center"
-                                                              Foreground="#FFBBBBBB"/>
+                                                              Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                                     <VisualStateManager.VisualStateGroups>
                                                         <VisualStateGroup x:Name="CommonStates">
                                                             <VisualState x:Name="Normal"/>
                                                             <VisualState x:Name="PointerOver">
                                                                 <VisualState.Setters>
                                                                     <Setter Target="Root.Background"
-                                                                            Value="#3FFFFFFF"/>
+                                                                            Value="{ThemeResource SubtleFillColorSecondaryBrush}"/>
                                                                 </VisualState.Setters>
                                                             </VisualState>
                                                             <VisualState x:Name="Pressed">
@@ -93,7 +156,7 @@
                                                             <VisualState x:Name="CheckedPointerOver">
                                                                 <VisualState.Setters>
                                                                     <Setter Target="Root.Background"
-                                                                            Value="#3FFFFFFF"/>
+                                                                            Value="{ThemeResource SubtleFillColorSecondaryBrush}"/>
                                                                     <Setter Target="ExpanderIcon.Glyph"
                                                                             Value="&#xE70D;"/>
                                                                 </VisualState.Setters>
@@ -145,55 +208,10 @@
                                   BorderThickness="0"
                                   SelectionMode="Single"
                                   ItemTemplate="{StaticResource FlatTree_RowDataTemplate}"
+                                  ItemContainerStyle="{StaticResource AJut_FlatTree_ListViewItemStyle}"
                                   HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
                                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                  ScrollViewer.VerticalScrollBarVisibility="Auto">
-                            <ListView.ItemContainerStyle>
-                                <Style TargetType="ListViewItem">
-                                    <Setter Property="Padding" Value="0"/>
-                                    <Setter Property="MinHeight" Value="0"/>
-                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="ListViewItem">
-                                                <Grid x:Name="ContentBorder"
-                                                      Background="Transparent">
-                                                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                                                      Margin="{TemplateBinding Padding}"/>
-                                                    <VisualStateManager.VisualStateGroups>
-                                                        <VisualStateGroup x:Name="SelectionStates">
-                                                            <VisualState x:Name="Unselected"/>
-                                                            <VisualState x:Name="Selected">
-                                                                <VisualState.Setters>
-                                                                    <Setter Target="ContentBorder.Background"
-                                                                            Value="{ThemeResource SystemControlHighlightListAccentHighBrush}"/>
-                                                                </VisualState.Setters>
-                                                            </VisualState>
-                                                            <VisualState x:Name="SelectedUnfocused">
-                                                                <VisualState.Setters>
-                                                                    <Setter Target="ContentBorder.Background"
-                                                                            Value="{ThemeResource SystemControlHighlightListAccentMediumBrush}"/>
-                                                                </VisualState.Setters>
-                                                            </VisualState>
-                                                        </VisualStateGroup>
-                                                        <VisualStateGroup x:Name="CommonStates">
-                                                            <VisualState x:Name="Normal"/>
-                                                            <VisualState x:Name="PointerOver">
-                                                                <VisualState.Setters>
-                                                                    <Setter Target="ContentBorder.Background"
-                                                                            Value="{ThemeResource SystemControlHighlightListLowBrush}"/>
-                                                                </VisualState.Setters>
-                                                            </VisualState>
-                                                        </VisualStateGroup>
-                                                    </VisualStateManager.VisualStateGroups>
-                                                </Grid>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </ListView.ItemContainerStyle>
-                        </ListView>
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"/>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>

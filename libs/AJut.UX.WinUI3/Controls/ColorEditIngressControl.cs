@@ -1,11 +1,11 @@
 namespace AJut.UX.Controls
 {
-    using System;
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
     using Microsoft.UI.Xaml.Controls.Primitives;
     using Microsoft.UI.Xaml.Input;
     using Microsoft.UI.Xaml.Media;
+    using System;
     using Windows.UI;
     using DPUtils = AJut.UX.DPUtils<ColorEditIngressControl>;
 
@@ -24,22 +24,31 @@ namespace AJut.UX.Controls
     // color-space math natively, so the WPF TextBox-based ColorValueEditControl
     // has no equivalent here.
     //
-    // Template part:
-    //   PART_Swatch  - Border whose Background is kept in sync with EditColor
+    // Template parts:
+    //   PART_Root    - outer Border (BorderBrush swaps to HighlightBorderBrush when open)
+    //   PART_Swatch  - inner Border whose Background is kept in sync with EditColor
+    //
+    // VSM groups:
+    //   CommonStates — Normal (gloss visible) / PointerOver (gloss hidden, edit overlay shown)
 
+    [TemplatePart(Name = nameof(PART_Root), Type = typeof(Border))]
     [TemplatePart(Name = nameof(PART_Swatch), Type = typeof(Border))]
     public class ColorEditIngressControl : Control, IUserEditNotifier
     {
         // ===========[ Instance fields ]==========================================
+        private Border PART_Root;
         private Border PART_Swatch;
         private Flyout m_flyout;
         private ColorPicker m_colorPicker;
         private Color? m_editCache;
+        private Brush m_normalBorderBrush;
 
         // ===========[ Construction ]=============================================
-        public ColorEditIngressControl ()
+        public ColorEditIngressControl()
         {
             this.DefaultStyleKey = typeof(ColorEditIngressControl);
+            this.PointerEntered += this.OnPointerEntered;
+            this.PointerExited += this.OnPointerExited;
         }
 
         // ===========[ IUserEditNotifier ]========================================
@@ -64,8 +73,33 @@ namespace AJut.UX.Controls
             set => this.SetValue(IsReadOnlyProperty, value);
         }
 
+        // ShowEditDisplay: true while the flyout is open; drives border highlight + VSM state.
+        public static readonly DependencyProperty ShowEditDisplayProperty = DPUtils.Register(_ => _.ShowEditDisplay, (d, e) => d.OnShowEditDisplayChanged((bool)e.NewValue));
+        public bool ShowEditDisplay
+        {
+            get => (bool)this.GetValue(ShowEditDisplayProperty);
+            private set => this.SetValue(ShowEditDisplayProperty, value);
+        }
+
+        // HighlightBorderBrush: border color used while the flyout is open.
+        // Default is a neutral blue set via the Style setter in ColorEditIngressControl.xaml.
+        // AJut theme override replaces it with AJut_Brush_PrimaryHighlight.
+        public static readonly DependencyProperty HighlightBorderBrushProperty = DPUtils.Register(_ => _.HighlightBorderBrush);
+        public Brush HighlightBorderBrush
+        {
+            get => (Brush)this.GetValue(HighlightBorderBrushProperty);
+            set => this.SetValue(HighlightBorderBrushProperty, value);
+        }
+
+        public static readonly DependencyProperty IsPointerOverProperty = DPUtils.Register(_ => _.IsPointerOver);
+        public bool IsPointerOver
+        {
+            get => (bool)this.GetValue(IsPointerOverProperty);
+            set => this.SetValue(IsPointerOverProperty, value);
+        }
+
         // ===========[ Template application ]====================================
-        protected override void OnApplyTemplate ()
+        protected override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
 
@@ -74,6 +108,7 @@ namespace AJut.UX.Controls
                 this.PART_Swatch.Tapped -= this.Swatch_OnTapped;
             }
 
+            this.PART_Root = (Border)this.GetTemplateChild(nameof(PART_Root));
             this.PART_Swatch = (Border)this.GetTemplateChild(nameof(PART_Swatch));
             if (this.PART_Swatch == null)
             {
@@ -82,6 +117,9 @@ namespace AJut.UX.Controls
 
             this.PART_Swatch.Background = new SolidColorBrush(this.EditColor);
             this.PART_Swatch.Tapped += this.Swatch_OnTapped;
+
+            // Seed VSM into Normal state on first template application.
+            VisualStateManager.GoToState(this, "Normal", false);
 
             // Build flyout + ColorPicker once; reuse across opens.
             // Created in code rather than XAML to avoid GetTemplateChild limitations
@@ -105,7 +143,7 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ Event handlers ]==========================================
-        private void Swatch_OnTapped (object sender, TappedRoutedEventArgs e)
+        private void Swatch_OnTapped(object sender, TappedRoutedEventArgs e)
         {
             if (this.IsReadOnly || m_flyout == null)
             {
@@ -114,16 +152,19 @@ namespace AJut.UX.Controls
 
             m_editCache = this.EditColor;
             m_colorPicker.Color = this.EditColor;
+            this.ShowEditDisplay = true;
             m_flyout.ShowAt(this.PART_Swatch);
         }
 
-        private void ColorPicker_OnColorChanged (ColorPicker sender, ColorChangedEventArgs e)
+        private void ColorPicker_OnColorChanged(ColorPicker sender, ColorChangedEventArgs e)
         {
             this.EditColor = e.NewColor;
         }
 
-        private void Flyout_OnClosed (object sender, object e)
+        private void Flyout_OnClosed(object sender, object e)
         {
+            this.ShowEditDisplay = false;
+
             if (m_editCache.HasValue && m_editCache.Value != this.EditColor)
             {
                 this.UserEditComplete?.Invoke(this, new UserEditAppliedEventArgs(m_editCache.Value, this.EditColor));
@@ -132,14 +173,53 @@ namespace AJut.UX.Controls
             m_editCache = null;
         }
 
+        private void OnPointerEntered(object sender, PointerRoutedEventArgs e)
+        {
+            this.IsPointerOver = true;
+            VisualStateManager.GoToState(this, "PointerOver", true);
+        }
+
+        private void OnPointerExited(object sender, PointerRoutedEventArgs e)
+        {
+            this.IsPointerOver = false;
+            // Only revert to Normal if the flyout is not open; if it is, keep
+            // the edit overlay visible as an indicator that an edit is in progress.
+            if (!this.ShowEditDisplay)
+            {
+                VisualStateManager.GoToState(this, "Normal", true);
+            }
+        }
+
         // ===========[ Property change handlers ]================================
-        private void OnEditColorChanged (Color newColor)
+        private void OnEditColorChanged(Color newColor)
         {
             if (this.PART_Swatch != null)
             {
                 // Replace brush rather than mutate it - SolidColorBrush.Color
                 // is animatable so mutation can interfere with the ColorPicker.
                 this.PART_Swatch.Background = new SolidColorBrush(newColor);
+            }
+        }
+
+        private void OnShowEditDisplayChanged(bool isOpen)
+        {
+            // Keep edit overlay visible while open; restore based on pointer position on close.
+            VisualStateManager.GoToState(this, isOpen || this.IsPointerOver ? "PointerOver" : "Normal", true);
+
+            if (this.PART_Root == null)
+            {
+                return;
+            }
+
+            if (isOpen)
+            {
+                m_normalBorderBrush = this.PART_Root.BorderBrush;
+                this.PART_Root.BorderBrush = this.HighlightBorderBrush ?? this.BorderBrush;
+            }
+            else
+            {
+                this.PART_Root.BorderBrush = m_normalBorderBrush ?? this.BorderBrush;
+                m_normalBorderBrush = null;
             }
         }
     }

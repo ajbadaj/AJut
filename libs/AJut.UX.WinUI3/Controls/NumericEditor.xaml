@@ -3,23 +3,57 @@
                     xmlns:local="using:AJut.UX.Controls">
 
     <!-- ===[ NumericEditor ]=== -->
-    <!-- Wraps NumberBox so callers can bind Value:object TwoWay to
-         PropertyEditTarget.EditValue without a converter.
-         SpinButtonPlacementMode=Compact gives +/- buttons on hover.
-         ValidationMode=InvalidInputOverwritten snaps bad text back to the last
-         valid value instead of leaving the field red. -->
+    <!-- Default style: gradient background matching WPF AJut aesthetic, rim-lighting
+         borders, Consolas font. Works without AJut theme loaded.
+         AllControlThemeOverrides.xaml overrides Background/BorderBrush with AJut keys
+         and replaces the Focused VSM state border with AJut_Brush_PrimaryHighlight. -->
     <Style TargetType="local:NumericEditor">
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="{ThemeResource ControlStrokeColorDefaultBrush}"/>
+        <Setter Property="Background">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Offset="0.00" Color="#585865"/>
+                    <GradientStop Offset="0.10" Color="#353540"/>
+                    <GradientStop Offset="0.90" Color="#222228"/>
+                    <GradientStop Offset="1.00" Color="#000008"/>
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:NumericEditor">
-                    <NumberBox x:Name="PART_NumberBox"
-                               HorizontalAlignment="Stretch"
-                               SpinButtonPlacementMode="Compact"
-                               ValidationMode="InvalidInputOverwritten"
-                               Background="{TemplateBinding Background}"
-                               BorderBrush="{TemplateBinding BorderBrush}"
-                               BorderThickness="{TemplateBinding BorderThickness}"/>
+                    <!-- Outer border: receives TemplateBinding for background and focus-state border color -->
+                    <Border x:Name="PART_Root"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="2">
+                        <!-- Rim-lighting: dark top-left shadow + light bottom-right highlight -->
+                        <Border BorderBrush="#8000" BorderThickness="1.4,1.4,0,0">
+                            <Border BorderBrush="#5FFF" BorderThickness="0,0,1,1">
+                                <NumberBox x:Name="PART_NumberBox"
+                                           FontFamily="Consolas"
+                                           SpinButtonPlacementMode="Compact"
+                                           ValidationMode="InvalidInputOverwritten"
+                                           Background="Transparent"
+                                           BorderThickness="0"
+                                           HorizontalAlignment="Stretch"/>
+                            </Border>
+                        </Border>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="FocusStates">
+                                <VisualState x:Name="Unfocused"/>
+                                <VisualState x:Name="Focused">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_Root.BorderBrush"
+                                                Value="{ThemeResource SystemAccentColor}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Border>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
