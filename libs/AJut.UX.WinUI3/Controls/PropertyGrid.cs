@@ -108,7 +108,7 @@ namespace AJut.UX.Controls
             if (this.PART_TreeList != null)
             {
                 // WinUI3 TemplateBinding does not read the current source DP value at
-                // binding-establishment time — it only reacts to post-establishment changes.
+                // binding-establishment time - it only reacts to post-establishment changes.
                 // RebuildEditTargets() commonly runs before the template is applied (e.g. when
                 // the PropertyGrid lives in a tab that isn't yet selected), so push manually.
                 this.PART_TreeList.RootItemsSource = this.PropertyTreeItems;
@@ -195,7 +195,7 @@ namespace AJut.UX.Controls
             m_manager.RebuildEditTargets();
             // Pass the root's children (not the root itself) as RootItemsSource so that
             // FlatTreeListControl.CreateUberRoot wraps each top-level property in a FlatTreeItem
-            // with the uber root always expanded — making all top-level rows visible immediately
+            // with the uber root always expanded - making all top-level rows visible immediately
             // while sub-object rows start collapsed until the user expands them.
             this.PropertyTreeItems = m_manager.RootNode != null
                 ? ((IObservableTreeNode)m_manager.RootNode).Children

@@ -21,13 +21,13 @@ namespace AJut.UX.Controls
     // The store auto-manages the flat list via ChildInserted/ChildRemoved events
     // from FlatTreeItem, which wraps each IObservableTreeNode source.
     //
-    // Each ListView row is a FlatTreeItemRow — a thin wrapper Control with a
+    // Each ListView row is a FlatTreeItemRow - a thin wrapper Control with a
     // ContentTemplate DP. FlatTreeListControl pushes its ItemTemplate down to
     // each realized FlatTreeItemRow via ContainerContentChanging (necessary
     // because WinUI3 DataTemplates have no ancestor binding).
     //
     // Template parts:
-    //   PART_ListView  — the inner ListView that does the actual rendering
+    //   PART_ListView  - the inner ListView that does the actual rendering
 
     [TemplatePart(Name = nameof(PART_ListView), Type = typeof(ListView))]
     public class FlatTreeListControl : Control

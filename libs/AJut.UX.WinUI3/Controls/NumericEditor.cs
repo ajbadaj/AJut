@@ -15,7 +15,7 @@ namespace AJut.UX.Controls
     // used for type-detection and round-trip conversion.
     //
     // Template part:
-    //   PART_NumberBox  — inner NumberBox
+    //   PART_NumberBox  - inner NumberBox
 
     [TemplatePart(Name = nameof(PART_NumberBox), Type = typeof(NumberBox))]
     public class NumericEditor : Control, INumericEditorSettings
@@ -46,7 +46,7 @@ namespace AJut.UX.Controls
 
         // ===========[ Dependency Properties ]====================================
 
-        // Value: object — TwoWay binding target for PropertyEditTarget.EditValue.
+        // Value: object - TwoWay binding target for PropertyEditTarget.EditValue.
         public static readonly DependencyProperty ValueProperty = DPUtils.Register(
             _ => _.Value,
             (d, e) => d.OnValueChanged(e.NewValue));
@@ -159,7 +159,7 @@ namespace AJut.UX.Controls
             m_blockReentrancy = true;
             try
             {
-                // Update view model — it converts the double back to the source type.
+                // Update view model - it converts the double back to the source type.
                 m_vm.SourceValue = e.NewValue;
                 this.Value = m_vm.SourceValue;
             }

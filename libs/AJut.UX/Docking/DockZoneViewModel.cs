@@ -9,7 +9,7 @@ namespace AJut.UX.Docking
     using AJut.TypeManagement;
 
     /// <summary>
-    /// The view model used to populate a DockZone control. Platform-agnostic — works with
+    /// The view model used to populate a DockZone control. Platform-agnostic - works with
     /// both the WPF and WinUI3 DockZone controls via the <see cref="IDockZoneUI"/> interface.
     /// </summary>
     public sealed class DockZoneViewModel : NotifyPropertyChanged
@@ -50,7 +50,7 @@ namespace AJut.UX.Docking
         // ===========[ Properties ]===================================
 
         /// <summary>
-        /// Optional debug name — not guaranteed unique; overrides ToString when set.
+        /// Optional debug name - not guaranteed unique; overrides ToString when set.
         /// </summary>
         public string DebugTrackingMoniker
         {
@@ -234,7 +234,7 @@ namespace AJut.UX.Docking
         }
 
         /// <summary>
-        /// Recursively (leaf-up) closes all docked content then clears. Does not ask permission — use
+        /// Recursively (leaf-up) closes all docked content then clears. Does not ask permission - use
         /// <see cref="RequestCloseAllAndClear"/> to check first.
         /// </summary>
         public void ForceCloseAllAndClear ()
@@ -400,7 +400,7 @@ namespace AJut.UX.Docking
             {
                 if (this.Orientation == eDockOrientation.Empty)
                 {
-                    // Dropped on empty zone — copy the entire source in and rescale
+                    // Dropped on empty zone - copy the entire source in and rescale
                     List<DockZoneSize> sizes = newSibling.Children.Select(c => c.UI?.RenderSize ?? DockZoneSize.Empty).ToList();
                     newSibling.CopyIntoAndClear(this);
                     if (eDockOrientation.AnySplitOrientation.HasFlag(this.Orientation))
@@ -516,7 +516,7 @@ namespace AJut.UX.Docking
 
         /// <summary>
         /// Rebuild this zone's tree from serialized state. The <paramref name="displayFactory"/> is called
-        /// for each stored display element — it creates the display and returns its adapter, or null to skip.
+        /// for each stored display element - it creates the display and returns its adapter, or null to skip.
         /// </summary>
         public void BuildFromState (
             DockZoneSerializationData data,

@@ -175,7 +175,7 @@ namespace AJut.UX.PropertyInteraction
 
         internal void TakeOn (PropertyEditTarget target)
         {
-            // Intentionally empty — merging of duplicate targets not yet implemented.
+            // Intentionally empty - merging of duplicate targets not yet implemented.
         }
 
         internal void Setup ()

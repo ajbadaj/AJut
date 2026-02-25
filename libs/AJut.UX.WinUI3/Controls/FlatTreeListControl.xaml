@@ -16,7 +16,7 @@
         <local:FlatTreeItemRow HorizontalAlignment="Stretch"/>
     </DataTemplate>
 
-    <!-- ===[ FlatTreeItemRow — per-row presenter ]=== -->
+    <!-- ===[ FlatTreeItemRow - per-row presenter ]=== -->
     <!-- DataContext = FlatTreeItem, set by ListView.
          ContentTemplate = set from FlatTreeListControl code via ContainerContentChanging. -->
     <Style TargetType="local:FlatTreeItemRow">

@@ -7,7 +7,7 @@
          expanded to show their sub-properties as indented child rows.
          RootItemsSource is pushed in code (OnApplyTemplate / RebuildEditTargets) rather
          than via TemplateBinding because WinUI3 TemplateBinding does not read the source
-         DP's current value at binding-establishment time — so if RebuildEditTargets ran
+         DP's current value at binding-establishment time - so if RebuildEditTargets ran
          before the tab/page containing the PropertyGrid was first shown, the binding would
          always see null. PropertyGrid.cs handles both orderings explicitly.
          RowTemplate DataTemplate: DataContext is FlatTreeItem, but we set

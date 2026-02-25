@@ -99,7 +99,7 @@
       themselves reference AJut.UX.WinUI3 as a NuGet, so their consumers don't also
       need to manually add a direct PackageReference.
       NOTE: NuGet → ProjectReference chains still require a direct PackageReference
-      in the final WinExe app — see README for details and the ExcludeAssets workaround
+      in the final WinExe app - see README for details and the ExcludeAssets workaround
       for double-injection when a library and its app both reference this package.
     -->
     <None Include="buildTransitive\AJut.UX.WinUI3.targets" Pack="True" PackagePath="buildTransitive\" />

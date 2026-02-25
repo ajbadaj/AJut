@@ -85,7 +85,7 @@ namespace AJut.UX.Docking
         }
 
         /// <summary>
-        /// The owning DockingManager — typed as <c>object</c> to keep this class platform-agnostic.
+        /// The owning DockingManager - typed as <c>object</c> to keep this class platform-agnostic.
         /// Cast to the concrete manager type when platform-specific operations are needed.
         /// </summary>
         public object DockingOwner { get; }

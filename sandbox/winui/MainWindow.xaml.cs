@@ -226,7 +226,7 @@ namespace AJutShowRoomWinUI
         }
     }
 
-    // ===========[ ShowRoomTreeNode — FlatTreeListControl smoke-test source ]=========
+    // ===========[ ShowRoomTreeNode - FlatTreeListControl smoke-test source ]=========
     public class ShowRoomTreeNode : ObservableTreeNode<ShowRoomTreeNode>
     {
         public ShowRoomTreeNode(string name)
@@ -262,7 +262,7 @@ namespace AJutShowRoomWinUI
         }
     }
 
-    // ===========[ ShowRoomTester — PropertyGrid smoke-test source ]==================
+    // ===========[ ShowRoomTester - PropertyGrid smoke-test source ]==================
     public class ShowRoomTester
     {
         [PGEditor("Single")]
@@ -278,7 +278,7 @@ namespace AJutShowRoomWinUI
         public int SubObjValue { get; set; } = 9001;
     }
 
-    // ===========[ ShowRoomPanelState — DockZone save/load state bag ]===============
+    // ===========[ ShowRoomPanelState - DockZone save/load state bag ]===============
     [TypeId("ShowRoomPanelState")]
     public class ShowRoomPanelState
     {
@@ -286,7 +286,7 @@ namespace AJutShowRoomWinUI
         public double Value { get; set; }
     }
 
-    // ===========[ ShowRoomPanel — DockZone smoke-test display element ]=============
+    // ===========[ ShowRoomPanel - DockZone smoke-test display element ]=============
     [TypeId("ShowRoomPanel")]
     public sealed class ShowRoomPanel : ContentControl, IDockableDisplayElement
     {

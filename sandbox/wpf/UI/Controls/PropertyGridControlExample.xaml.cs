@@ -36,7 +36,7 @@
         }
     }
 
-    /// <summary>Sub-object with its own editable properties — shows up as an expandable node.</summary>
+    /// <summary>Sub-object with its own editable properties - shows up as an expandable node.</summary>
     public class DogOwner
     {
         public string? OwnerName { get; set; } = "Unknown Owner";
@@ -62,7 +62,7 @@
             set => this.SetAndRaiseIfChanged(ref m_dogsAge, value);
         }
 
-        /// <summary>Non-null sub-object — should appear as expandable in the PropertyGrid tree.</summary>
+        /// <summary>Non-null sub-object - should appear as expandable in the PropertyGrid tree.</summary>
         public DogOwner Owner { get; set; } = new DogOwner();
 
         private string m_dogSaveFileLocation = string.Empty;

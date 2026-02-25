@@ -35,7 +35,7 @@ namespace AJut.UX.Docking
 
     public class DockingManager : NotifyPropertyChanged, IDockingManager
     {
-        // ===========[ P/Invoke — cursor + key state ]========================
+        // ===========[ P/Invoke - cursor + key state ]========================
         [DllImport("user32.dll")]
         private static extern bool GetCursorPos (out POINT lpPoint);
 
@@ -321,7 +321,7 @@ namespace AJut.UX.Docking
                 }
             }
 
-            Logger.LogError("DockingManager: tried to find first available dock zone but none exists — manager may be set up incorrectly");
+            Logger.LogError("DockingManager: tried to find first available dock zone but none exists - manager may be set up incorrectly");
             return null;
         }
 
@@ -339,7 +339,7 @@ namespace AJut.UX.Docking
             {
                 if (!element.DockingAdapter.Location.RemoveDockedContent(element.DockingAdapter))
                 {
-                    var result = Result<Window>.Error("DockingManager: Tear off failed — could not remove content from zone");
+                    var result = Result<Window>.Error("DockingManager: Tear off failed - could not remove content from zone");
                     Logger.LogError(result.GetErrorReport());
                     return result;
                 }
@@ -376,7 +376,7 @@ namespace AJut.UX.Docking
                 }
                 else
                 {
-                    // Already root of a tearoff window — return its existing window
+                    // Already root of a tearoff window - return its existing window
                     var existingWindow = m_tearoffRootZones
                         .Where(kv => kv.Value == sourceZone)
                         .Select(kv => kv.Key)
@@ -387,7 +387,7 @@ namespace AJut.UX.Docking
                         return Result<Window>.Success(existingWindow);
                     }
 
-                    // Root zone on the main window — duplicate so the main zone keeps its slot
+                    // Root zone on the main window - duplicate so the main zone keeps its slot
                     sourceZone = sourceZone.DuplicateAndClear();
                 }
 
@@ -596,7 +596,7 @@ namespace AJut.UX.Docking
                             var hits = Microsoft.UI.Xaml.Media.VisualTreeHelper
                                 .FindElementsInHostCoordinates(localPt, rootZone);
 
-                            // Check insertion widget first — takes priority over zone hit
+                            // Check insertion widget first - takes priority over zone hit
                             var hitWidget = hits.OfType<DockDropInsertionDriverWidget>().FirstOrDefault();
                             if (hitWidget != null)
                             {
@@ -663,7 +663,7 @@ namespace AJut.UX.Docking
 
                     // Always close the tearoff after a successful drop. For tab-add drops the
                     // source zone is emptied; for directional splits the source ViewModel is
-                    // transplanted into the root hierarchy so DockedContent stays non-empty —
+                    // transplanted into the root hierarchy so DockedContent stays non-empty -
                     // but the tearoff window is no longer needed in either case.
                     this.CloseTearoffWindow(dragSourceWindow);
                 }
@@ -734,7 +734,7 @@ namespace AJut.UX.Docking
         public string GenerateDefaultStateStorageAutoSaveTempPath ()
             => this.DockLayoutPersistentStorageFile + "~";
 
-        // ===========[ Internal — used by DockingSerialization ]==============
+        // ===========[ Internal - used by DockingSerialization ]==============
 
         internal DockZoneViewModel GetFallbackRootZone ()
             => m_rootDockZones.FirstOrDefault()?.ViewModel;
@@ -774,7 +774,7 @@ namespace AJut.UX.Docking
                     string groupId = DockZone.GetGroupId(rootZone) ?? string.Empty;
                     if (!storage.ZoneInfoByRoot.TryAdd(groupId, rootZone.ViewModel.GenerateSerializationState()))
                     {
-                        Logger.LogError($"Docking Serialization: Duplicate root zone group id '{groupId}' — serialization skipped for that zone");
+                        Logger.LogError($"Docking Serialization: Duplicate root zone group id '{groupId}' - serialization skipped for that zone");
                     }
                 }
             }
@@ -1086,7 +1086,7 @@ namespace AJut.UX.Docking
         // OnTearoffWindowClosing (AppWindow.Closing), CloseAll, and OnRootWindowClosed.
         private void OnWindowManagerCollectionChanged (object sender, NotifyCollectionChangedEventArgs e)
         {
-            // Intentional no-op — see comment above.
+            // Intentional no-op - see comment above.
         }
 
         // Force-close all tearoff windows when the root window closes so no

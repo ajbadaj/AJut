@@ -28,7 +28,7 @@
                                        FalseValue="Collapsed"/>
 
     <!--
-    ===[ FlatTreeItemRow — AJut-themed override ]===
+    ===[ FlatTreeItemRow - AJut-themed override ]===
     Restores AJut theme brushes for the expander button states and list selection.
     -->
     <Style TargetType="local:FlatTreeItemRow">
@@ -134,7 +134,7 @@
     </Style>
 
     <!--
-    ===[ FlatTreeListControl ListViewItem — AJut-themed override ]===
+    ===[ FlatTreeListControl ListViewItem - AJut-themed override ]===
     Restores AJut selection and hover brushes for the inner ListView item container.
     -->
     <Style x:Key="AJut_FlatTree_ListViewItemStyle" TargetType="ListViewItem">
@@ -182,7 +182,7 @@
     </Style>
 
     <!--
-    ===[ PropertyGridItemRow — AJut-themed override ]===
+    ===[ PropertyGridItemRow - AJut-themed override ]===
     Restores AJut_Brush_NormalText for the property label.
     -->
     <Style TargetType="local:PropertyGridItemRow">
