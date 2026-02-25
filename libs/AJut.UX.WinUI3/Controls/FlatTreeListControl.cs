@@ -21,13 +21,13 @@ namespace AJut.UX.Controls
     // The store auto-manages the flat list via ChildInserted/ChildRemoved events
     // from FlatTreeItem, which wraps each IObservableTreeNode source.
     //
-    // Each ListView row is a FlatTreeItemRow — a thin wrapper Control with a
+    // Each ListView row is a FlatTreeItemRow - a thin wrapper Control with a
     // ContentTemplate DP. FlatTreeListControl pushes its ItemTemplate down to
     // each realized FlatTreeItemRow via ContainerContentChanging (necessary
     // because WinUI3 DataTemplates have no ancestor binding).
     //
     // Template parts:
-    //   PART_ListView  — the inner ListView that does the actual rendering
+    //   PART_ListView  - the inner ListView that does the actual rendering
 
     [TemplatePart(Name = nameof(PART_ListView), Type = typeof(ListView))]
     public class FlatTreeListControl : Control
@@ -48,6 +48,12 @@ namespace AJut.UX.Controls
         // ===========[ Events ]===================================================
         public event EventHandler<SelectionChange<FlatTreeItem>> SelectionChanged;
         public event EventHandler<FlatTreeItem> ItemDoubleClicked;
+
+        /// <summary>
+        /// Fires after FlatTreeListControl's own ContainerContentChanging handling (ItemTemplate push).
+        /// Consumers (e.g. PropertyGrid) can subscribe to push additional state into each realized row.
+        /// </summary>
+        public event Windows.Foundation.TypedEventHandler<ListViewBase, ContainerContentChangingEventArgs> ContainerContentChanging;
 
         // ===========[ Dependency Properties ]=====================================
         public static readonly DependencyProperty RootProperty = DPUtils.Register(_ => _.Root, (d, e) => d.OnRootChanged(e.NewValue));
@@ -149,6 +155,10 @@ namespace AJut.UX.Controls
             get => (bool)this.GetValue(ShouldToggleExpansionOnDoubleClickProperty);
             set => this.SetValue(ShouldToggleExpansionOnDoubleClickProperty, value);
         }
+
+        // ===========[ Other Properties ]====================================
+
+        public ObservableFlatTreeStore<FlatTreeItem> Items => m_store;
 
         // ===========[ Template application ]====================================
         protected override void OnApplyTemplate ()
@@ -294,6 +304,9 @@ namespace AJut.UX.Controls
             {
                 row.ContentTemplate = this.ItemTemplate;
             }
+
+            // Fire passthrough so consumers (e.g. PropertyGrid) can push additional state.
+            this.ContainerContentChanging?.Invoke(sender, e);
         }
 
         // ===========[ Property change handlers ]=================================

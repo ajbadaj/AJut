@@ -4,6 +4,7 @@
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Numerics;
 
     /// <summary>
     /// A delegate used to construct an instance from a json value (given interpretter settings)
@@ -26,6 +27,7 @@
             m_customConstructors.Add(typeof(TimeSpan), _CreateTimeSpanFor);
             m_customConstructors.Add(typeof(KeyValuePair<,>), _CreateKeyValuePairFor);
             m_customConstructors.Add(typeof(TimeZoneInfo), _CreateTimezoneInfo);
+            m_customConstructors.Add(typeof(Vector2), _CreateVector2);
 
             object _CreateGuidFor (Type fullTarget, JsonValue json, JsonInterpretterSettings settings)
             {
@@ -96,6 +98,20 @@
             {
                 return TimeZoneInfo.FindSystemTimeZoneById(json.StringValue);
             }
+
+            object _CreateVector2(Type fullTarget, JsonValue json, JsonInterpretterSettings settings)
+            {
+                string[] xystrs = json.StringValue.Trim('<', '>').Split([','], StringSplitOptions.RemoveEmptyEntries);
+                if (xystrs.Length == 2
+                    && float.TryParse(xystrs[0], out float x)
+                    && float.TryParse(xystrs[1], out float y))
+                {
+                    return new Vector2(x, y);
+                }
+
+                return Vector2.Zero;
+            }
+
         }
 
         // ===========================[ Properties ]===============================

@@ -48,7 +48,7 @@ namespace AJut.UX
         private double m_tabbingSize = 16.0;
 
         // ===========[ Construction ]=============================================
-        // Private — use factory methods.
+        // Private - use factory methods.
         private FlatTreeItem () { }
 
         private FlatTreeItem (IObservableTreeNode source, FlatTreeItem parent, double tabbingSize, bool startExpanded)

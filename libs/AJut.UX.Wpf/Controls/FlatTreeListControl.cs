@@ -67,7 +67,7 @@ namespace AJut.UX.Controls
         private void OnRootItemsSourceChanged (IEnumerable<IObservableTreeNode> oldValue, IEnumerable<IObservableTreeNode> newValue)
         {
             // IncludeRoot must be false before setting RootNode so the uber root is never
-            // subscribed (observed) by the store — it will be rebuilt from scratch on each
+            // subscribed (observed) by the store - it will be rebuilt from scratch on each
             // collection change rather than incrementally updated via events on the root.
             this.IncludeRoot = false;
             this.Items.RootNode = FlatTreeItem.CreateUberRoot(newValue ?? Enumerable.Empty<IObservableTreeNode>(), this.TabbingSize);
@@ -347,7 +347,7 @@ namespace AJut.UX.Controls
 
             if (this.SelectedItems.Contains(item.Source))
             {
-                // Was selected and collapsed — restore visual selection
+                // Was selected and collapsed - restore visual selection
                 if (this.PART_ListBoxDisplay != null && !this.PART_ListBoxDisplay.SelectedItems.Contains(item))
                 {
                     this.PART_ListBoxDisplay.SelectedItems.Add(item);

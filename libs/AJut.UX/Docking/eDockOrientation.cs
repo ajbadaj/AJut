@@ -20,7 +20,7 @@ namespace AJut.UX.Docking
         /// <summary>Leaf: more than one element to display (shown as tabs).</summary>
         Tabbed = 0b1000,
 
-        /// <summary>Either horizontal or vertical — zone contains two sub-zones.</summary>
+        /// <summary>Either horizontal or vertical - zone contains two sub-zones.</summary>
         AnySplitOrientation = Horizontal | Vertical,
 
         /// <summary>Leaf orientations that contain displayable elements.</summary>

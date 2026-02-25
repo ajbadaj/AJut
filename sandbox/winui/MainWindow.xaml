@@ -136,7 +136,7 @@
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
-                                <TextBlock Grid.Row="0" Text="FlatTreeListControl — expand/collapse tree nodes" FontStyle="Italic" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="0" Text="FlatTreeListControl - expand/collapse tree nodes" FontStyle="Italic" Margin="0,0,0,8"/>
                                 <ajut:FlatTreeListControl Grid.Row="1"
                                                           Root="{x:Bind TreeRoot}"
                                                           IncludeRoot="True"
@@ -162,7 +162,7 @@
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
-                                <TextBlock Grid.Row="0" Text="PropertyGrid — reflects properties with per-type editor templates" FontStyle="Italic" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="0" Text="PropertyGrid - reflects properties with per-type editor templates" FontStyle="Italic" Margin="0,0,0,8"/>
                                 <ajut:PropertyGrid Grid.Row="1" SingleItemSource="{x:Bind TestObj}">
                                     <ajut:PropertyGrid.ItemTemplateSelector>
                                         <ajut:PropertyGridTemplateSelector>

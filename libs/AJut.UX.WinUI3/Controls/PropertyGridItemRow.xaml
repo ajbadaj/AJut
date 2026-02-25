@@ -30,7 +30,7 @@
                                    Opacity="0.8"
                                    TextTrimming="CharacterEllipsis"
                                    ToolTipService.ToolTip="{Binding DisplayName}"
-                                   Foreground="{ThemeResource AJut_Brush_NormalText}"/>
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
 
                         <!-- Content = PropertyEditTarget; selector picks editor template
                              based on PropertyEditTarget.Editor (type name or [PGEditor]). -->

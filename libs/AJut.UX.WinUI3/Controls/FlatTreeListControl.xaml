@@ -16,7 +16,7 @@
         <local:FlatTreeItemRow HorizontalAlignment="Stretch"/>
     </DataTemplate>
 
-    <!-- ===[ FlatTreeItemRow — per-row presenter ]=== -->
+    <!-- ===[ FlatTreeItemRow - per-row presenter ]=== -->
     <!-- DataContext = FlatTreeItem, set by ListView.
          ContentTemplate = set from FlatTreeListControl code via ContainerContentChanging. -->
     <Style TargetType="local:FlatTreeItemRow">
@@ -60,34 +60,50 @@
                                                         Background="{TemplateBinding Background}"
                                                         CornerRadius="{TemplateBinding CornerRadius}"
                                                         Padding="{TemplateBinding Padding}">
-                                                    <ContentPresenter HorizontalAlignment="Center"
-                                                                      VerticalAlignment="Center"/>
+                                                    <!-- Chevron glyph: E76C=right (collapsed), E70D=down (expanded).
+                                                         Glyph is swapped in Checked VSM states below. -->
+                                                    <FontIcon x:Name="ExpanderIcon"
+                                                              FontFamily="Segoe Fluent Icons"
+                                                              FontSize="9"
+                                                              Glyph="&#xE76C;"
+                                                              HorizontalAlignment="Center"
+                                                              VerticalAlignment="Center"
+                                                              Foreground="#FFBBBBBB"/>
                                                     <VisualStateManager.VisualStateGroups>
                                                         <VisualStateGroup x:Name="CommonStates">
                                                             <VisualState x:Name="Normal"/>
                                                             <VisualState x:Name="PointerOver">
                                                                 <VisualState.Setters>
                                                                     <Setter Target="Root.Background"
-                                                                            Value="{ThemeResource AJut_Brush_MouseInteractionHighlight}"/>
+                                                                            Value="#3FFFFFFF"/>
                                                                 </VisualState.Setters>
                                                             </VisualState>
                                                             <VisualState x:Name="Pressed">
                                                                 <VisualState.Setters>
                                                                     <Setter Target="Root.Background"
-                                                                            Value="{ThemeResource AJut_Brush_PrimaryHighlightDark}"/>
+                                                                            Value="#FF074470"/>
                                                                 </VisualState.Setters>
                                                             </VisualState>
-                                                            <VisualState x:Name="Checked"/>
+                                                            <VisualState x:Name="Checked">
+                                                                <VisualState.Setters>
+                                                                    <Setter Target="ExpanderIcon.Glyph"
+                                                                            Value="&#xE70D;"/>
+                                                                </VisualState.Setters>
+                                                            </VisualState>
                                                             <VisualState x:Name="CheckedPointerOver">
                                                                 <VisualState.Setters>
                                                                     <Setter Target="Root.Background"
-                                                                            Value="{ThemeResource AJut_Brush_MouseInteractionHighlight}"/>
+                                                                            Value="#3FFFFFFF"/>
+                                                                    <Setter Target="ExpanderIcon.Glyph"
+                                                                            Value="&#xE70D;"/>
                                                                 </VisualState.Setters>
                                                             </VisualState>
                                                             <VisualState x:Name="CheckedPressed">
                                                                 <VisualState.Setters>
                                                                     <Setter Target="Root.Background"
-                                                                            Value="{ThemeResource AJut_Brush_PrimaryHighlightDark}"/>
+                                                                            Value="#FF074470"/>
+                                                                    <Setter Target="ExpanderIcon.Glyph"
+                                                                            Value="&#xE70D;"/>
                                                                 </VisualState.Setters>
                                                             </VisualState>
                                                         </VisualStateGroup>
@@ -98,14 +114,6 @@
                                     </Setter>
                                 </Style>
                             </ToggleButton.Style>
-                            <!-- Chevron right (&#xE76C;) for collapsed, chevron down (&#xE70D;) for expanded.
-                                 A simple Rotation transform on the ToggleButton's IsChecked state would be ideal;
-                                 for simplicity we use two glyphs swapped by VSM. -->
-                            <FontIcon x:Name="ExpanderIcon"
-                                      FontFamily="Segoe Fluent Icons"
-                                      FontSize="9"
-                                      Glyph="&#xE76C;"
-                                      Foreground="{ThemeResource AJut_Brush_SymbolForeground}"/>
                         </ToggleButton>
 
                         <!-- User row content. DataContext = FlatTreeItem; ContentTemplate = user's template. -->
@@ -159,13 +167,13 @@
                                                             <VisualState x:Name="Selected">
                                                                 <VisualState.Setters>
                                                                     <Setter Target="ContentBorder.Background"
-                                                                            Value="{ThemeResource AJut_Brush_ListSelection}"/>
+                                                                            Value="{ThemeResource SystemControlHighlightListAccentHighBrush}"/>
                                                                 </VisualState.Setters>
                                                             </VisualState>
                                                             <VisualState x:Name="SelectedUnfocused">
                                                                 <VisualState.Setters>
                                                                     <Setter Target="ContentBorder.Background"
-                                                                            Value="{ThemeResource AJut_Brush_ListSelectionBackground}"/>
+                                                                            Value="{ThemeResource SystemControlHighlightListAccentMediumBrush}"/>
                                                                 </VisualState.Setters>
                                                             </VisualState>
                                                         </VisualStateGroup>
@@ -174,7 +182,7 @@
                                                             <VisualState x:Name="PointerOver">
                                                                 <VisualState.Setters>
                                                                     <Setter Target="ContentBorder.Background"
-                                                                            Value="{ThemeResource AJut_Brush_ListItemHover}"/>
+                                                                            Value="{ThemeResource SystemControlHighlightListLowBrush}"/>
                                                                 </VisualState.Setters>
                                                             </VisualState>
                                                         </VisualStateGroup>

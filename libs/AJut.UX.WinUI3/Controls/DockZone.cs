@@ -35,7 +35,7 @@ namespace AJut.UX.Controls
     // Drag-and-drop (tearoff, zone reorder) is deferred to a later session.
     //
     // Template part:
-    //   PART_Root — Grid populated by code-behind
+    //   PART_Root - Grid populated by code-behind
 
     [TemplatePart(Name = nameof(PART_Root), Type = typeof(Grid))]
     public sealed class DockZone : Control, IDockZoneUI
@@ -93,7 +93,7 @@ namespace AJut.UX.Controls
             this.RebuildLayout();
         }
 
-        // ===========[ Dependency Properties — ViewModel / Manager ]=========
+        // ===========[ Dependency Properties - ViewModel / Manager ]=========
 
         public static readonly DependencyProperty ViewModelProperty = DPUtils.Register(_ => _.ViewModel, (d, e) => d.OnViewModelChanged(e));
         public DockZoneViewModel ViewModel
@@ -121,7 +121,7 @@ namespace AJut.UX.Controls
             }
         }
 
-        // ===========[ Dependency Properties — State ]========================
+        // ===========[ Dependency Properties - State ]========================
 
         // IsSetup: true when both ViewModel and Manager are non-null.
         public static readonly DependencyProperty IsSetupProperty = DPUtils.Register(_ => _.IsSetup);
@@ -141,7 +141,7 @@ namespace AJut.UX.Controls
 
         public ReadOnlyObservableCollection<DockZone> ChildZones { get; }
 
-        // ===========[ Dependency Properties — Styling ]======================
+        // ===========[ Dependency Properties - Styling ]======================
 
         public static readonly DependencyProperty PanelBackgroundProperty = DPUtils.Register(_ => _.PanelBackground);
         public Brush PanelBackground
@@ -178,7 +178,7 @@ namespace AJut.UX.Controls
             set => this.SetValue(PanelCornerRadiusProperty, value);
         }
 
-        // Background for the tab strip row — typically darker than PanelBackground.
+        // Background for the tab strip row - typically darker than PanelBackground.
         public static readonly DependencyProperty TabStripBackgroundProperty = DPUtils.Register(_ => _.TabStripBackground);
         public Brush TabStripBackground
         {
@@ -186,7 +186,7 @@ namespace AJut.UX.Controls
             set => this.SetValue(TabStripBackgroundProperty, value);
         }
 
-        // ===========[ Attached Properties — GroupId ]========================
+        // ===========[ Attached Properties - GroupId ]========================
 
         // Identifies a root zone within a DockingManager (used for serialization mapping).
         // Mirrors WPF DockZone.GroupId. Set explicitly or auto-assigned from Name in RegisterRootDockZones.
@@ -194,7 +194,7 @@ namespace AJut.UX.Controls
         public static string GetGroupId(DependencyObject obj) => (string)obj.GetValue(GroupIdProperty);
         public static void SetGroupId(DependencyObject obj, string value) => obj.SetValue(GroupIdProperty, value);
 
-        // ===========[ Dependency Properties — Drag Feedback ]================
+        // ===========[ Dependency Properties - Drag Feedback ]================
 
         // IsDirectDropTarget: true while a drag-search is hovering over this zone.
         // DockingManager sets/clears this; triggers the drop overlay to show/hide.
@@ -278,9 +278,9 @@ namespace AJut.UX.Controls
         private void BuildLeafLayout(bool tabbed)
         {
             // Row layout:
-            //   0 (Auto)  — header bar (title of the selected panel)
-            //   1 (*)     — content presenter
-            //   2 (Auto)  — tab strip (tabbed mode only)
+            //   0 (Auto)  - header bar (title of the selected panel)
+            //   1 (*)     - content presenter
+            //   2 (Auto)  - tab strip (tabbed mode only)
 
             // Cancel any in-progress header drag (the old header border is being replaced).
             m_headerDragPending = false;
@@ -471,7 +471,7 @@ namespace AJut.UX.Controls
                     Child           = tabContent,
                 };
 
-                // Per-tab drag state — closures capture these per-iteration
+                // Per-tab drag state - closures capture these per-iteration
                 bool   isPressedForDrag  = false;
                 bool   isDragModeDecided = false;
                 bool   isReorderDrag     = false;
@@ -517,7 +517,7 @@ namespace AJut.UX.Controls
                     {
                         if (dx * dx + dy * dy < threshold * threshold)
                         {
-                            return;  // Below threshold — not yet decided
+                            return;  // Below threshold - not yet decided
                         }
 
                         // Decide mode based on dominant direction.
@@ -558,7 +558,7 @@ namespace AJut.UX.Controls
                             && reorderTargetIdx >= 0
                             && reorderTargetIdx < this.ViewModel.DockedContent.Count)
                         {
-                            // Execute reorder — triggers RebuildLayout which clears all tab items
+                            // Execute reorder - triggers RebuildLayout which clears all tab items
                             this.ViewModel.SwapDockedContentOrder(capturedIndex, reorderTargetIdx);
                         }
                         else if (!isDragModeDecided)
@@ -916,7 +916,7 @@ namespace AJut.UX.Controls
 
         private void BuildDropOverlay()
         {
-            // 3×3 grid (84×60 px) centered over the zone — shown when IsDirectDropTarget=true
+            // 3×3 grid (84×60 px) centered over the zone - shown when IsDirectDropTarget=true
             //   Col layout: 20 | 44 | 20
             //   Row layout: 19 | 22 | 19
             //   [1,0]=Left  [0,1]=Top  [1,2]=Right  [2,1]=Bottom  [1,1]=Center(AddToTabbed)
@@ -1018,12 +1018,12 @@ namespace AJut.UX.Controls
                     return;
                 }
 
-                // Non-root panel in a tearoff — dragging moves the whole tearoff window.
+                // Non-root panel in a tearoff - dragging moves the whole tearoff window.
                 m_headerDragZone = rootZone;
             }
             else
             {
-                // Root window — dragging tears this zone off.
+                // Root window - dragging tears this zone off.
                 m_headerDragZone = this;
             }
 
@@ -1065,7 +1065,7 @@ namespace AJut.UX.Controls
                 // Pass the screen press position so the window appears with the cursor
                 // at the same relative position. The header is inside the DockZone which
                 // sits at row 1 (after the 30 px custom title bar) of the tearoff window,
-                // so add 30 to the Y component — but only when we're tearing off from the
+                // so add 30 to the Y component - but only when we're tearing off from the
                 // root window (creating a brand-new tearoff). For moves of an existing
                 // tearoff (m_headerDragZone != this) the tearoff window already exists
                 // and we don't have a reliable offset, so fall back to default centering.

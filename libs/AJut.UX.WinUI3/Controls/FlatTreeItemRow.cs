@@ -24,9 +24,7 @@ namespace AJut.UX.Controls
         // ===========[ Dependency Properties ]====================================
         // ContentTemplate is applied to the ContentPresenter that renders the
         // user-supplied row content. DataContext (= FlatTreeItem) is the Content.
-        public static readonly DependencyProperty ContentTemplateProperty = DPUtils.Register(
-            _ => _.ContentTemplate
-        );
+        public static readonly DependencyProperty ContentTemplateProperty = DPUtils.Register(_ => _.ContentTemplate);
         public DataTemplate ContentTemplate
         {
             get => (DataTemplate)this.GetValue(ContentTemplateProperty);
