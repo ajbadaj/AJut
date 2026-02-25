@@ -3,9 +3,18 @@
                     xmlns:local="using:AJut.UX.Controls">
 
     <!-- ===[ PropertyGrid style ]=== -->
-    <!-- RowTemplate default wraps each PropertyEditTarget in a PropertyGridItemRow.
-         EditorTemplateSelector is pushed to each realized row via ContainerContentChanging.
-         Consumers can override RowTemplate to change the entire row structure. -->
+    <!-- Uses FlatTreeListControl so that complex reference-type properties can be
+         expanded to show their sub-properties as indented child rows.
+         RootItemsSource is pushed in code (OnApplyTemplate / RebuildEditTargets) rather
+         than via TemplateBinding because WinUI3 TemplateBinding does not read the source
+         DP's current value at binding-establishment time — so if RebuildEditTargets ran
+         before the tab/page containing the PropertyGrid was first shown, the binding would
+         always see null. PropertyGrid.cs handles both orderings explicitly.
+         RowTemplate DataTemplate: DataContext is FlatTreeItem, but we set
+         PropertyGridItemRow.DataContext = {Binding Source} so its bindings
+         ({Binding DisplayName}, etc.) see PropertyEditTarget directly.
+         EditorTemplateSelector is resolved by PropertyGridItemRow.Loaded walking
+         up the visual tree to find the enclosing PropertyGrid. -->
     <Style TargetType="local:PropertyGrid">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
@@ -13,7 +22,11 @@
         <Setter Property="RowTemplate">
             <Setter.Value>
                 <DataTemplate>
-                    <local:PropertyGridItemRow HorizontalAlignment="Stretch"/>
+                    <!-- DataContext = FlatTreeItem (from FlatTreeListControl).
+                         Set DataContext on PropertyGridItemRow to FlatTreeItem.Source
+                         so its template sees PropertyEditTarget. -->
+                    <local:PropertyGridItemRow DataContext="{Binding Source}"
+                                               HorizontalAlignment="Stretch"/>
                 </DataTemplate>
             </Setter.Value>
         </Setter>
@@ -23,48 +36,11 @@
                     <Border Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}">
-                        <ListView x:Name="PART_ListView"
-                                  Background="Transparent"
-                                  BorderThickness="0"
-                                  SelectionMode="None"
-                                  HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                  ScrollViewer.VerticalScrollBarVisibility="Auto">
-                            <!-- RowTemplate and ContainerContentChanging are wired from code.
-                                 RowTemplate default is set via the style Setter above. -->
-                            <ListView.ItemContainerStyle>
-                                <Style TargetType="ListViewItem">
-                                    <Setter Property="Padding" Value="0"/>
-                                    <Setter Property="MinHeight" Value="0"/>
-                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="ListViewItem">
-                                                <Grid x:Name="ContentBorder">
-                                                    <Grid.Background>
-                                                        <SolidColorBrush Color="Transparent"/>
-                                                    </Grid.Background>
-                                                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                                                      Margin="{TemplateBinding Padding}"/>
-                                                    <VisualStateManager.VisualStateGroups>
-                                                        <VisualStateGroup x:Name="CommonStates">
-                                                            <VisualState x:Name="Normal"/>
-                                                            <VisualState x:Name="PointerOver">
-                                                                <VisualState.Setters>
-                                                                    <Setter Target="ContentBorder.Background"
-                                                                            Value="{ThemeResource AJut_Brush_ListItemHover}"/>
-                                                                </VisualState.Setters>
-                                                            </VisualState>
-                                                        </VisualStateGroup>
-                                                    </VisualStateManager.VisualStateGroups>
-                                                </Grid>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </ListView.ItemContainerStyle>
-                        </ListView>
+                        <local:FlatTreeListControl x:Name="PART_TreeList"
+                                                   ItemTemplate="{TemplateBinding RowTemplate}"
+                                                   Background="Transparent"
+                                                   BorderThickness="0"
+                                                   HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"/>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>

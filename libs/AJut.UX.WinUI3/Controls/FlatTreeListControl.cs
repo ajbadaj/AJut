@@ -49,6 +49,12 @@ namespace AJut.UX.Controls
         public event EventHandler<SelectionChange<FlatTreeItem>> SelectionChanged;
         public event EventHandler<FlatTreeItem> ItemDoubleClicked;
 
+        /// <summary>
+        /// Fires after FlatTreeListControl's own ContainerContentChanging handling (ItemTemplate push).
+        /// Consumers (e.g. PropertyGrid) can subscribe to push additional state into each realized row.
+        /// </summary>
+        public event Windows.Foundation.TypedEventHandler<ListViewBase, ContainerContentChangingEventArgs> ContainerContentChanging;
+
         // ===========[ Dependency Properties ]=====================================
         public static readonly DependencyProperty RootProperty = DPUtils.Register(_ => _.Root, (d, e) => d.OnRootChanged(e.NewValue));
         public IObservableTreeNode Root
@@ -298,6 +304,9 @@ namespace AJut.UX.Controls
             {
                 row.ContentTemplate = this.ItemTemplate;
             }
+
+            // Fire passthrough so consumers (e.g. PropertyGrid) can push additional state.
+            this.ContainerContentChanging?.Invoke(sender, e);
         }
 
         // ===========[ Property change handlers ]=================================

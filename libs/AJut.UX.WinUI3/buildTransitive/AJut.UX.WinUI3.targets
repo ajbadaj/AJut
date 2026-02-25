@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <!--
+    Add AJut.UX.WinUI3 resource dictionaries as Page (compiled XAML) items in the
+    consuming app so that ms-appx:///AJut.UX.WinUI3/... URIs resolve at runtime.
+
+    Page compilation is required — NOT Content deployment. Content deploys loose XAML
+    files which WinUI3's runtime parser cannot process (no String→Uri type converter).
+    Page compilation converts Source="string" → Uri at build time, produces XBF, and
+    registers PRI entries — exactly what ProjectReference does automatically.
+  -->
+  <ItemGroup>
+    <Page Include="$(MSBuildThisFileDirectory)..\lib\net8.0-windows10.0.19041\AJut.UX.WinUI3\**\*.xaml"
+          Link="AJut.UX.WinUI3\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

@@ -36,9 +36,12 @@
         }
     }
 
-    public class Person
+    /// <summary>Sub-object with its own editable properties — shows up as an expandable node.</summary>
+    public class DogOwner
     {
-        public string? Name { get; set; }
+        public string? OwnerName { get; set; } = "Unknown Owner";
+        [PGEditor("Number")]
+        public int OwnerAge { get; set; } = 30;
     }
 
     public class SelfAwarePropertyGridSource : NotifyPropertyChanged, IPropertyEditManager
@@ -59,7 +62,8 @@
             set => this.SetAndRaiseIfChanged(ref m_dogsAge, value);
         }
 
-        public Person? NullThing { get; set; }
+        /// <summary>Non-null sub-object — should appear as expandable in the PropertyGrid tree.</summary>
+        public DogOwner Owner { get; set; } = new DogOwner();
 
         private string m_dogSaveFileLocation = string.Empty;
         [PGEditor("SavePath")]
