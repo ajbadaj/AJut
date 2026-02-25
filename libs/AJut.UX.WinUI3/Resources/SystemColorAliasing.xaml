@@ -234,8 +234,11 @@
     <StaticResource x:Key="RadioButtonCheckGlyphFill" ResourceKey="AJut_Brush_ImportantText"/>
 
     <!-- ===[ ScrollViewer / ScrollBar ]=== -->
-    <SolidColorBrush x:Key="ScrollBarThumbBackgroundColor" Color="{ThemeResource AJut_Color_BorderCommon}"/>
-    <SolidColorBrush x:Key="ScrollBarThumbBackgroundColorPointerOver" Color="{ThemeResource AJut_Color_BorderCommonTransparent}"/>
-    <SolidColorBrush x:Key="ScrollBarPanningThumbBackgroundColor" Color="{ThemeResource AJut_Color_BorderCommon}"/>
+    <!-- NOTE: These keys must be Color type (not Brush) — WinUI3's ScrollBar template uses them   -->
+    <!-- as Color="{ThemeResource ScrollBarThumb*}" inside its own SolidColorBrush declarations.   -->
+    <!-- Overriding them as SolidColorBrush causes: SolidColorBrush.Color ← SolidColorBrush crash. -->
+    <StaticResource x:Key="ScrollBarThumbBackgroundColor" ResourceKey="AJut_Color_BorderCommon"/>
+    <StaticResource x:Key="ScrollBarThumbBackgroundColorPointerOver" ResourceKey="AJut_Color_BorderCommonTransparent"/>
+    <StaticResource x:Key="ScrollBarPanningThumbBackgroundColor" ResourceKey="AJut_Color_BorderCommon"/>
 
 </ResourceDictionary>
