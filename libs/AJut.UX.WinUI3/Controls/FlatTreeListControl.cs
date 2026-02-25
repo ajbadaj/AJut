@@ -150,6 +150,10 @@ namespace AJut.UX.Controls
             set => this.SetValue(ShouldToggleExpansionOnDoubleClickProperty, value);
         }
 
+        // ===========[ Other Properties ]====================================
+
+        public ObservableFlatTreeStore<FlatTreeItem> Items => m_store;
+
         // ===========[ Template application ]====================================
         protected override void OnApplyTemplate ()
         {
