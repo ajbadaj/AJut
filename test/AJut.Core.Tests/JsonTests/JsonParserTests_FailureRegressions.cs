@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Numerics;
     using AJut.IO;
     using AJut.Text.AJson;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -61,6 +62,31 @@
             Json json = JsonHelper.BuildJsonForObject(da);
             Assert.IsFalse(json.HasErrors, json.BuildJsonErrorReport());
         }
+
+        [TestMethod]
+        public void AJson_Parse_Vector2()
+        {
+            ThingWithVector2 testObj = new ThingWithVector2
+            {
+                Name = "Bob",
+                Value = new Vector2(3.14159f, 9001f)
+            };
+            Json json = JsonHelper.BuildJsonForObject(testObj);
+            Assert.IsFalse(json.HasErrors, json.BuildJsonErrorReport());
+
+            ThingWithVector2 parsed = JsonHelper.BuildObjectForJson<ThingWithVector2>(json);
+            Assert.IsNotNull(parsed);
+
+            Assert.AreEqual(testObj.Name, parsed.Name);
+            Assert.AreEqual(testObj.Value, parsed.Value);
+        }
+
+        public class ThingWithVector2
+        { 
+            public string Name { get; set; }
+            public Vector2 Value { get; set; }
+        }
+        
 
         private static Json JsonForEmbeddedResource(string resourcePath)
         {
