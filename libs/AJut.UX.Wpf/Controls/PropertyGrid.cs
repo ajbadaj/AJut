@@ -1,4 +1,4 @@
-﻿namespace AJut.UX.Controls
+namespace AJut.UX.Controls
 {
     using System;
     using System.Collections;
@@ -16,6 +16,7 @@
     public class PropertyGrid : Control, IDisposable, IPropertyGrid
     {
         private readonly PropertyGridManager m_manager;
+
         static PropertyGrid ()
         {
             DefaultStyleKeyProperty.OverrideMetadata(typeof(PropertyGrid), new FrameworkPropertyMetadata(typeof(PropertyGrid)));
@@ -24,12 +25,11 @@
         public PropertyGrid ()
         {
             m_manager = new PropertyGridManager(this);
-            this.Items.IncludeRoot = false;
         }
 
         public void Dispose ()
         {
-            this.Items.Clear();
+            m_manager.Dispose();
             this.ItemsSource = null;
             this.SingleItemSource = null;
         }
@@ -48,7 +48,20 @@
             set => this.SetValue(SingleItemSourceProperty, value);
         }
 
-        public ObservableFlatTreeStore<PropertyEditTarget> Items => m_manager.Items;
+        /// <summary>
+        /// The top-level PropertyEditTarget items (children of the hidden $root node).
+        /// Bind FlatTreeListControl.RootItemsSource to this so it creates an always-expanded
+        /// uber root, making all top-level properties immediately visible while keeping
+        /// sub-object children collapsed until the user expands them.
+        /// Updated whenever RebuildEditTargets runs.
+        /// </summary>
+        private static readonly DependencyPropertyKey PropertyTreeItemsPropertyKey = DPUtils.RegisterReadOnly(_ => _.PropertyTreeItems);
+        public static readonly DependencyProperty PropertyTreeItemsProperty = PropertyTreeItemsPropertyKey.DependencyProperty;
+        public IReadOnlyList<IObservableTreeNode> PropertyTreeItems
+        {
+            get => (IReadOnlyList<IObservableTreeNode>)this.GetValue(PropertyTreeItemsProperty);
+            private set => this.SetValue(PropertyTreeItemsPropertyKey, value);
+        }
 
         public static readonly DependencyProperty ItemTemplateSelectorProperty = DPUtils.Register(_ => _.ItemTemplateSelector);
         public PropertyGridTemplateSelector ItemTemplateSelector
@@ -71,10 +84,8 @@
                 oldPropChanged.PropertyChanged -= this.OnSourceItemPropertyChanged;
             }
 
-            this.Items.Clear();
             if (e.HasNewValue)
             {
-                // There can only be one (of these set)
                 this.ItemsSource = null;
                 this.RebuildEditTargets();
 
@@ -82,6 +93,11 @@
                 {
                     newPropChanged.PropertyChanged += this.OnSourceItemPropertyChanged;
                 }
+            }
+            else
+            {
+                m_manager.Dispose();
+                this.PropertyTreeItems = null;
             }
         }
 
@@ -97,11 +113,8 @@
                 }
             }
 
-            this.Items.Clear();
-
             if (e.HasNewValue)
             {
-                // There can only be one (of these set)
                 this.SingleItemSource = null;
                 this.RebuildEditTargets();
 
@@ -116,11 +129,16 @@
                     pc.PropertyChanged += this.OnSourceItemPropertyChanged;
                 }
             }
+            else
+            {
+                m_manager.Dispose();
+                this.PropertyTreeItems = null;
+            }
         }
 
         private void OnSourceItemPropertyChanged (object sender, PropertyChangedEventArgs e)
         {
-            foreach (var item in this.Items.Where(i => i.ShouldEvaluateFor(e.PropertyName)))
+            foreach (var item in m_manager.Items.Where(i => i.ShouldEvaluateFor(e.PropertyName)))
             {
                 item.RecacheEditValue();
             }
@@ -144,6 +162,9 @@
         private void RebuildEditTargets ()
         {
             m_manager.RebuildEditTargets();
+            this.PropertyTreeItems = m_manager.RootNode != null
+                ? ((IObservableTreeNode)m_manager.RootNode).Children
+                : null;
         }
     }
 }

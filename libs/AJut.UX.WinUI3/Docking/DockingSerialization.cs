@@ -18,7 +18,7 @@ namespace AJut.UX.Docking
     // state as JSON) but uses WinUI3 window types for ancillary window data.
     //
     // The zone tree itself is serialized via the shared DockZoneSerializationData
-    // type in AJut.UX — no WinUI3-specific code in those structures.
+    // type in AJut.UX - no WinUI3-specific code in those structures.
     //
     // WindowStorageData stores position/size as integers (AppWindow.Position /
     // AppWindow.Size use Windows.Graphics.PointInt32 / SizeInt32) and boolean
@@ -135,7 +135,7 @@ namespace AJut.UX.Docking
                         DockZoneViewModel zone = manager.GetRootZone(groupId);
                         if (zone == null)
                         {
-                            Logger.LogError($"Dock Loading Error: No zone for group id '{groupId}' — falling back to default zone");
+                            Logger.LogError($"Dock Loading Error: No zone for group id '{groupId}' - falling back to default zone");
                             zone = defaultLoadZone;
                         }
 

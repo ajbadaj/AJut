@@ -14,11 +14,11 @@ namespace AJut.UX.Controls
     // a drag operation.
     //
     // Visual is code-built in OnApplyTemplate:
-    //   PART_Root (Border) — background/border react to IsEngaged
-    //   Child TextBlock    — Segoe Fluent Icons glyph keyed to Direction
+    //   PART_Root (Border) - background/border react to IsEngaged
+    //   Child TextBlock    - Segoe Fluent Icons glyph keyed to Direction
     //
     // Template part:
-    //   PART_Root — Border whose Background/BorderBrush change on IsEngaged
+    //   PART_Root - Border whose Background/BorderBrush change on IsEngaged
 
     [TemplatePart(Name = nameof(PART_Root), Type = typeof(Border))]
     public class DockDropInsertionDriverWidget : Control

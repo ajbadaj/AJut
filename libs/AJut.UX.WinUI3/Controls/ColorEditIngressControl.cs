@@ -20,12 +20,12 @@ namespace AJut.UX.Controls
     //
     // IsReadOnly blocks the flyout from opening.
     //
-    // No shared view model is needed — WinUI3's ColorPicker handles all
+    // No shared view model is needed - WinUI3's ColorPicker handles all
     // color-space math natively, so the WPF TextBox-based ColorValueEditControl
     // has no equivalent here.
     //
     // Template part:
-    //   PART_Swatch  — Border whose Background is kept in sync with EditColor
+    //   PART_Swatch  - Border whose Background is kept in sync with EditColor
 
     [TemplatePart(Name = nameof(PART_Swatch), Type = typeof(Border))]
     public class ColorEditIngressControl : Control, IUserEditNotifier
@@ -137,7 +137,7 @@ namespace AJut.UX.Controls
         {
             if (this.PART_Swatch != null)
             {
-                // Replace brush rather than mutate it — SolidColorBrush.Color
+                // Replace brush rather than mutate it - SolidColorBrush.Color
                 // is animatable so mutation can interfere with the ColorPicker.
                 this.PART_Swatch.Background = new SolidColorBrush(newColor);
             }

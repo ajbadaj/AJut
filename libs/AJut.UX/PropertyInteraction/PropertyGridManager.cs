@@ -1,11 +1,9 @@
-﻿namespace AJut.UX.PropertyInteraction
+namespace AJut.UX.PropertyInteraction
 {
     using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
     using AJut.Storage;
 
     public interface IPropertyGrid
@@ -17,21 +15,36 @@
     public class PropertyGridManager : IDisposable
     {
         private readonly IPropertyGrid m_propertyGrid;
-        public PropertyGridManager(IPropertyGrid propertyGrid)
+
+        public PropertyGridManager (IPropertyGrid propertyGrid)
         {
             m_propertyGrid = propertyGrid;
         }
 
+        /// <summary>
+        /// The hidden root node whose children are the top-level property edit targets.
+        /// Bind a FlatTreeListControl to this with IncludeRoot=false to get a proper
+        /// expandable tree view of all properties (including sub-object properties).
+        /// </summary>
+        public PropertyEditTarget RootNode { get; private set; }
+
+        /// <summary>
+        /// Legacy flat-store access. The store's RootNode is the same as <see cref="RootNode"/>;
+        /// IncludeRoot is false so the store contains only top-level items.
+        /// </summary>
         public ObservableFlatTreeStore<PropertyEditTarget> Items { get; } = new ObservableFlatTreeStore<PropertyEditTarget>();
 
         public void Dispose ()
         {
             this.Items.Clear();
+            this.RootNode = null;
         }
 
-        public void RebuildEditTargets()
+        public void RebuildEditTargets ()
         {
             this.Items.Clear();
+            this.RootNode = null;
+
             if (m_propertyGrid.ItemsSource == null && m_propertyGrid.SingleItemSource == null)
             {
                 return;
@@ -52,26 +65,35 @@
                 return;
             }
 
-            Dictionary<int, PropertyEditTarget> editTargets = new Dictionary<int, PropertyEditTarget>();
+            var root = new PropertyEditTarget("$_root_", () => null, null);
+            var editTargets = new Dictionary<int, PropertyEditTarget>();
+
             foreach (object item in sourceItems)
             {
+                IEnumerable<PropertyEditTarget> targets;
                 if (item is IPropertyEditManager propManager)
                 {
-                    propManager.GenerateEditTargets().ForEach(_Add);
+                    targets = propManager.GenerateEditTargets();
                 }
                 else
                 {
-                    PropertyEditTarget.GenerateForPropertiesOf(item).ForEach(_Add);
+                    targets = PropertyEditTarget.GenerateForPropertiesOf(item);
+                }
+
+                foreach (PropertyEditTarget target in targets)
+                {
+                    _Add(target);
                 }
             }
 
-            var root = new PropertyEditTarget("$_root_", () => null, null);
             foreach (PropertyEditTarget target in editTargets.Values)
             {
                 target.Setup();
-                root.AddChild(target);
+                root.InsertChild(root.Children.Count, target);
             }
 
+            this.RootNode = root;
+            this.Items.IncludeRoot = false;
             this.Items.RootNode = root;
 
             void _Add (PropertyEditTarget _target)

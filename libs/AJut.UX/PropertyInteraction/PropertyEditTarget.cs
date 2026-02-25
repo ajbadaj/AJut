@@ -1,4 +1,4 @@
-﻿namespace AJut.UX.PropertyInteraction
+namespace AJut.UX.PropertyInteraction
 {
     using System;
     using System.Collections.Generic;
@@ -16,11 +16,6 @@
         private readonly GetValue m_getValue;
         private readonly SetValue? m_setValue;
 
-        static PropertyEditTarget ()
-        {
-            //TreeTraversal<PropertyEditTarget>.SetupDefaults();
-        }
-
         public PropertyEditTarget (string propertyPathTarget, GetValue getValue, SetValue? setValue = null)
         {
             this.PropertyPathTarget = propertyPathTarget;
@@ -37,7 +32,15 @@
         public bool IsExpandable
         {
             get => m_isExpandable;
-            set => this.SetAndRaiseIfChanged(ref m_isExpandable, value);
+            set
+            {
+                if (this.SetAndRaiseIfChanged(ref m_isExpandable, value))
+                {
+                    // Keep IObservableTreeNode.CanHaveChildren in sync so FlatTreeItem
+                    // shows/hides the expand toggle correctly.
+                    this.CanHaveChildren = value;
+                }
+            }
         }
 
         private string m_editor;
@@ -95,19 +98,48 @@
             return this.PropertyPathTarget.GetHashCode();
         }
 
+        /// <summary>
+        /// Generates PropertyEditTarget nodes for every public, settable property on <paramref name="sourceItem"/>.
+        /// For complex reference-type properties whose current value is non-null, child targets are recursively
+        /// generated and attached so the property tree can be expanded in a FlatTreeListControl.
+        /// </summary>
         public static IEnumerable<PropertyEditTarget> GenerateForPropertiesOf (object sourceItem)
+        {
+            return GenerateForPropertiesOf(sourceItem, depth: 0);
+        }
+
+        private static IEnumerable<PropertyEditTarget> GenerateForPropertiesOf (object sourceItem, int depth)
         {
             foreach (PropertyInfo prop in _GetRelevantProperties(sourceItem))
             {
-                var editor = prop.GetAttributes<PGEditorAttribute>().FirstOrDefault();
+                var editorAttr = prop.GetAttributes<PGEditorAttribute>().FirstOrDefault();
                 string displayName = prop.GetAttributes<DisplayNameAttribute>().FirstOrDefault()?.DisplayName;
                 string[] aliases = prop.GetAttributes<PGAltPropertyAliasAttribute>().FirstOrDefault()?.AltPropertyAliases;
-                yield return new PropertyEditTarget(prop.Name, () => prop.GetValue(sourceItem), (v) => prop.SetValue(sourceItem, v))
+
+                var target = new PropertyEditTarget(prop.Name, () => prop.GetValue(sourceItem), (v) => prop.SetValue(sourceItem, v))
                 {
                     DisplayName = displayName ?? prop.Name.ConvertToFriendlyEn(),
-                    Editor = editor?.Editor ?? prop.PropertyType.Name,
+                    Editor = editorAttr?.Editor ?? prop.PropertyType.Name,
                     AdditionalEvalTargets = aliases,
                 };
+
+                // Recurse into complex reference types (non-string, non-enum, non-value-type) that
+                // have a non-null value and editable sub-properties. Cap recursion at depth 5.
+                if (editorAttr == null && depth < 5 && _IsComplexObjectType(prop.PropertyType))
+                {
+                    object subValue = prop.GetValue(sourceItem);
+                    if (subValue != null && _GetRelevantProperties(subValue).Any())
+                    {
+                        target.IsExpandable = true;
+                        foreach (PropertyEditTarget child in GenerateForPropertiesOf(subValue, depth + 1))
+                        {
+                            child.Setup();
+                            target.InsertChild(target.Children.Count, child);
+                        }
+                    }
+                }
+
+                yield return target;
             }
 
             IEnumerable<PropertyInfo> _GetRelevantProperties (object _item)
@@ -132,11 +164,18 @@
             }
         }
 
-        // TODO: Next is to add source
+        private static bool _IsComplexObjectType (Type type)
+        {
+            return !type.IsValueType
+                && type != typeof(string)
+                && !type.IsEnum
+                && !type.IsArray
+                && !typeof(System.Collections.IEnumerable).IsAssignableFrom(type);
+        }
 
         internal void TakeOn (PropertyEditTarget target)
         {
-            //throw new NotImplementedException();
+            // Intentionally empty - merging of duplicate targets not yet implemented.
         }
 
         internal void Setup ()
@@ -148,7 +187,7 @@
 
             if (this.EditValue == null)
             {
-                m_editValue = m_getValue();
+                m_editValue = m_getValue?.Invoke();
             }
         }
     }

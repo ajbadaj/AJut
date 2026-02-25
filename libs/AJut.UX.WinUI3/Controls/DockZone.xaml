@@ -13,7 +13,7 @@
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
         <Setter Property="VerticalAlignment" Value="Stretch"/>
 
-        <!-- Visual defaults — callers can override any of these per-instance or in an app style -->
+        <!-- Visual defaults - callers can override any of these per-instance or in an app style -->
         <Setter Property="PanelBackground">
             <Setter.Value><SolidColorBrush Color="#FF2B2B2B"/></Setter.Value>
         </Setter>

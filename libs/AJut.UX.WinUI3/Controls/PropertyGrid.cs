@@ -2,11 +2,13 @@ namespace AJut.UX.Controls
 {
     using System;
     using System.Collections;
+    using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.ComponentModel;
     using System.Linq;
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
+    using AJut.Storage;
     using AJut.UX.PropertyInteraction;
     using DPUtils = AJut.UX.DPUtils<PropertyGrid>;
 
@@ -18,22 +20,25 @@ namespace AJut.UX.Controls
     // Consumers register editor templates on PropertyGridTemplateSelector keyed by
     // PropertyEditTarget.Editor (the property type name or [PGEditor] override).
     //
+    // Complex reference-type properties whose value is non-null are shown as
+    // expandable tree nodes whose children are the sub-object's properties.
+    // Uses FlatTreeListControl internally for tree expansion/indentation.
+    //
     // Template parts:
-    //   PART_ListView  - the inner ListView that renders property rows
+    //   PART_TreeList  - the inner FlatTreeListControl that renders property rows
 
-    [TemplatePart(Name = nameof(PART_ListView), Type = typeof(ListView))]
+    [TemplatePart(Name = nameof(PART_TreeList), Type = typeof(FlatTreeListControl))]
     public class PropertyGrid : Control, IPropertyGrid, IDisposable
     {
         // ===========[ Instance fields ]==========================================
         private readonly PropertyGridManager m_manager;
-        private ListView PART_ListView;
+        private FlatTreeListControl PART_TreeList;
 
         // ===========[ Construction ]=============================================
         public PropertyGrid ()
         {
             this.DefaultStyleKey = typeof(PropertyGrid);
             m_manager = new PropertyGridManager(this);
-            m_manager.Items.IncludeRoot = false;
         }
 
         public void Dispose ()
@@ -62,7 +67,7 @@ namespace AJut.UX.Controls
             set => this.SetValue(SingleItemSourceProperty, value);
         }
 
-        public static readonly DependencyProperty ItemTemplateSelectorProperty = DPUtils.Register(_ => _.ItemTemplateSelector, (d, e) => d.ApplyTemplateSelector());
+        public static readonly DependencyProperty ItemTemplateSelectorProperty = DPUtils.Register(_ => _.ItemTemplateSelector);
         public PropertyGridTemplateSelector ItemTemplateSelector
         {
             get => (PropertyGridTemplateSelector)this.GetValue(ItemTemplateSelectorProperty);
@@ -83,37 +88,33 @@ namespace AJut.UX.Controls
             set => this.SetValue(IsReadOnlyProperty, value);
         }
 
+        /// <summary>
+        /// The top-level PropertyEditTarget items (children of the hidden $root node).
+        /// Updated whenever RebuildEditTargets runs. Pushed to PART_TreeList.RootItemsSource
+        /// in code rather than via TemplateBinding (see PropertyGrid.xaml for why).
+        /// </summary>
+        public static readonly DependencyProperty PropertyTreeItemsProperty = DPUtils.Register(_ => _.PropertyTreeItems);
+        public IReadOnlyList<IObservableTreeNode> PropertyTreeItems
+        {
+            get => (IReadOnlyList<IObservableTreeNode>)this.GetValue(PropertyTreeItemsProperty);
+            private set => this.SetValue(PropertyTreeItemsProperty, value);
+        }
+
         // ===========[ Template application ]====================================
         protected override void OnApplyTemplate ()
         {
             base.OnApplyTemplate();
-
-            if (this.PART_ListView != null)
+            this.PART_TreeList = this.GetTemplateChild(nameof(PART_TreeList)) as FlatTreeListControl;
+            if (this.PART_TreeList != null)
             {
-                this.PART_ListView.ContainerContentChanging -= this.ListView_OnContainerContentChanging;
+                // WinUI3 TemplateBinding does not read the current source DP value at
+                // binding-establishment time - it only reacts to post-establishment changes.
+                // RebuildEditTargets() commonly runs before the template is applied (e.g. when
+                // the PropertyGrid lives in a tab that isn't yet selected), so push manually.
+                this.PART_TreeList.RootItemsSource = this.PropertyTreeItems;
             }
 
-            this.PART_ListView = (ListView)this.GetTemplateChild(nameof(PART_ListView));
-            if (this.PART_ListView == null)
-            {
-                return;
-            }
-
-            this.PART_ListView.ContainerContentChanging += this.ListView_OnContainerContentChanging;
-            this.PART_ListView.ItemTemplate = this.RowTemplate;
-            // m_manager.Items is observable — ListView stays in sync when RebuildEditTargets is called.
-            this.PART_ListView.ItemsSource = m_manager.Items;
-        }
-
-        // ===========[ Container content changing ]===============================
-        private void ListView_OnContainerContentChanging (ListViewBase sender, ContainerContentChangingEventArgs e)
-        {
-            // Push EditorTemplateSelector to each realized PropertyGridItemRow so the
-            // ContentControl inside it can select the type-appropriate editor template.
-            if (e.ItemContainer?.ContentTemplateRoot is PropertyGridItemRow row)
-            {
-                row.EditorTemplateSelector = this.ItemTemplateSelector;
-            }
+            this.ApplyRowTemplate();
         }
 
         // ===========[ Property change handlers ]=================================
@@ -126,9 +127,8 @@ namespace AJut.UX.Controls
 
             if (newValue != null)
             {
-                // SingleItemSource and ItemsSource are mutually exclusive
                 this.ItemsSource = null;
-                m_manager.RebuildEditTargets();
+                this.RebuildEditTargets();
 
                 if (newValue is INotifyPropertyChanged newPropChanged)
                 {
@@ -138,6 +138,7 @@ namespace AJut.UX.Controls
             else
             {
                 m_manager.Dispose();
+                this.PropertyTreeItems = null;
             }
         }
 
@@ -154,7 +155,7 @@ namespace AJut.UX.Controls
 
             if (newValue != null)
             {
-                m_manager.RebuildEditTargets();
+                this.RebuildEditTargets();
 
                 if (newValue is INotifyCollectionChanged newCollectionChange)
                 {
@@ -169,6 +170,7 @@ namespace AJut.UX.Controls
             else
             {
                 m_manager.Dispose();
+                this.PropertyTreeItems = null;
             }
         }
 
@@ -185,33 +187,34 @@ namespace AJut.UX.Controls
 
         private void ItemsSource_OnCollectionChanged (object sender, NotifyCollectionChangedEventArgs e)
         {
+            this.RebuildEditTargets();
+        }
+
+        private void RebuildEditTargets ()
+        {
             m_manager.RebuildEditTargets();
+            // Pass the root's children (not the root itself) as RootItemsSource so that
+            // FlatTreeListControl.CreateUberRoot wraps each top-level property in a FlatTreeItem
+            // with the uber root always expanded - making all top-level rows visible immediately
+            // while sub-object rows start collapsed until the user expands them.
+            this.PropertyTreeItems = m_manager.RootNode != null
+                ? ((IObservableTreeNode)m_manager.RootNode).Children
+                : null;
+
+            // Also push directly in case the template is already applied (TemplateBinding in
+            // WinUI3 does not backfill pre-establishment values, so OnApplyTemplate handles
+            // the opposite ordering; this handles source changes after the template is applied).
+            if (this.PART_TreeList != null)
+            {
+                this.PART_TreeList.RootItemsSource = this.PropertyTreeItems;
+            }
         }
 
         private void ApplyRowTemplate ()
         {
-            if (this.PART_ListView != null)
+            if (this.PART_TreeList != null)
             {
-                this.PART_ListView.ItemTemplate = this.RowTemplate;
-            }
-        }
-
-        private void ApplyTemplateSelector ()
-        {
-            if (this.PART_ListView == null)
-            {
-                return;
-            }
-
-            // Push updated EditorTemplateSelector to all currently realized PropertyGridItemRows.
-            // New rows are handled via ContainerContentChanging.
-            for (int i = 0; i < this.PART_ListView.Items.Count; ++i)
-            {
-                var container = this.PART_ListView.ContainerFromIndex(i) as ListViewItem;
-                if (container?.ContentTemplateRoot is PropertyGridItemRow row)
-                {
-                    row.EditorTemplateSelector = this.ItemTemplateSelector;
-                }
+                this.PART_TreeList.ItemTemplate = this.RowTemplate;
             }
         }
     }
