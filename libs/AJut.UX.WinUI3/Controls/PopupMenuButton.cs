@@ -185,7 +185,7 @@ namespace AJut.UX.Controls
                 m_flyout.Closed -= this.Flyout_OnClosed;
             }
 
-            m_flyout = new MenuFlyout();
+            m_flyout = new MenuFlyout { Placement = FlyoutPlacementMode.Bottom };
             m_flyout.Opened += this.Flyout_OnOpened;
             m_flyout.Closed += this.Flyout_OnClosed;
 
