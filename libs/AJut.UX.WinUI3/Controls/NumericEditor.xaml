@@ -25,6 +25,7 @@
                 </LinearGradientBrush>
             </Setter.Value>
         </Setter>
+        <Setter Property="TextBoxBackground" Value="#444"/>
 
         <!-- Hover: blue-tinted gradient on the increase button -->
         <Setter Property="IncreaseHoverHighlight">
@@ -80,101 +81,132 @@
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="2">
-                        <!-- Rim-lighting: dark top-left shadow + light bottom-right highlight -->
-                        <Border BorderBrush="#8000" BorderThickness="1.4,1.4,0,0">
-                            <Border BorderBrush="#5FFF" BorderThickness="0,0,1,1">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <!-- Auto: label + hit-area RepeatButtons -->
-                                        <ColumnDefinition Width="Auto"/>
-                                        <!-- *: TextBox fills the rest -->
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <!-- *: TextBox fills the rest -->
+                                <ColumnDefinition Width="*"/>
+                                <!-- Auto: label + hit-area RepeatButtons -->
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
 
-                                    <!-- ===[ Column 0: button hit area + label overlay ]=== -->
-                                    <Grid Grid.Column="0" MinWidth="22">
-                                        <Grid.RowDefinitions>
-                                            <!-- Top half: increase -->
-                                            <RowDefinition/>
-                                            <!-- Bottom half: decrease -->
-                                            <RowDefinition/>
-                                        </Grid.RowDefinitions>
+                            <!-- ===[ Column 0: TextBox ]=== -->
 
-                                        <!-- Increase RepeatButton: nearly-transparent so it's
-                                             hit-testable but invisible. Background is changed in
-                                             code-behind on hover/press. -->
-                                        <prim:RepeatButton x:Name="PART_IncreaseButton"
-                                                           Grid.Row="0">
-                                            <prim:RepeatButton.Style>
-                                                <Style TargetType="prim:RepeatButton">
-                                                    <Setter Property="Background" Value="#01000000"/>
-                                                    <Setter Property="BorderThickness" Value="0"/>
-                                                    <Setter Property="Padding" Value="0"/>
-                                                    <Setter Property="Template">
-                                                        <Setter.Value>
-                                                            <ControlTemplate TargetType="prim:RepeatButton">
-                                                                <Border Background="{TemplateBinding Background}"
-                                                                        BorderThickness="{TemplateBinding BorderThickness}"/>
-                                                            </ControlTemplate>
-                                                        </Setter.Value>
-                                                    </Setter>
-                                                </Style>
-                                            </prim:RepeatButton.Style>
-                                        </prim:RepeatButton>
+                            <Border Grid.Column="0" BorderBrush="#8000" BorderThickness="1.4,1.4,0,0"
+                                    Margin="3">
+                                <Border BorderBrush="#5FFF" BorderThickness="0,0,1,1"
+                                        Background="{TemplateBinding TextBoxBackground}">
 
-                                        <!-- Decrease RepeatButton: same approach as increase. -->
-                                        <prim:RepeatButton x:Name="PART_DecreaseButton"
-                                                           Grid.Row="1">
-                                            <prim:RepeatButton.Style>
-                                                <Style TargetType="prim:RepeatButton">
-                                                    <Setter Property="Background" Value="#01000000"/>
-                                                    <Setter Property="BorderThickness" Value="0"/>
-                                                    <Setter Property="Padding" Value="0"/>
-                                                    <Setter Property="Template">
-                                                        <Setter.Value>
-                                                            <ControlTemplate TargetType="prim:RepeatButton">
-                                                                <Border Background="{TemplateBinding Background}"
-                                                                        BorderThickness="{TemplateBinding BorderThickness}"/>
-                                                            </ControlTemplate>
-                                                        </Setter.Value>
-                                                    </Setter>
-                                                </Style>
-                                            </prim:RepeatButton.Style>
-                                        </prim:RepeatButton>
-
-                                        <!-- Label overlay: sits on top of both RepeatButtons,
-                                             not hit-testable so clicks pass through to the buttons.
-                                             PART_DefaultLabel shows when LabelContent is null;
-                                             PART_LabelArea shows the custom LabelContent. -->
-                                        <Grid Grid.RowSpan="2"
-                                              IsHitTestVisible="False">
-                                            <TextBlock x:Name="PART_DefaultLabel"
-                                                       Text="#"
-                                                       FontFamily="Consolas"
-                                                       FontWeight="Bold"
-                                                       FontSize="10"
-                                                       VerticalAlignment="Center"
-                                                       HorizontalAlignment="Center"
-                                                       Opacity="0.7"/>
-                                            <ContentControl x:Name="PART_LabelArea"
-                                                            Visibility="Collapsed"
-                                                            VerticalAlignment="Center"
-                                                            HorizontalAlignment="Center"/>
-                                        </Grid>
-                                    </Grid>
-
-                                    <!-- ===[ Column 1: TextBox ]=== -->
                                     <TextBox x:Name="PART_TextBox"
-                                             Grid.Column="1"
                                              FontFamily="Consolas"
                                              BorderThickness="0"
                                              Background="Transparent"
+                                             BorderBrush="Transparent"
                                              CornerRadius="0"
-                                             Padding="4,2"
-                                             VerticalAlignment="Center"/>
-                                </Grid>
+                                             Padding="4,2">
+                                        <TextBox.Style>
+                                            <Style TargetType="TextBox">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="TextBox">
+                                                            <Grid>
+                                                                <Grid.RowDefinitions>
+                                                                    <RowDefinition Height="Auto" />
+                                                                    <RowDefinition Height="*" />
+                                                                    <RowDefinition Height="Auto" />
+                                                                </Grid.RowDefinitions>
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="*" />
+                                                                    <ColumnDefinition Width="Auto" />
+                                                                </Grid.ColumnDefinitions>
+                                                                <ContentPresenter x:Name="HeaderContentPresenter" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Content="{TemplateBinding Header}" ContentTemplate="{TemplateBinding HeaderTemplate}" FontWeight="Normal" Foreground="{ThemeResource TextControlHeaderForeground}" Margin="{ThemeResource TextBoxTopHeaderMargin}" TextWrapping="Wrap" VerticalAlignment="Top" Visibility="Collapsed" x:DeferLoadStrategy="Lazy" />
+                                                                <ScrollViewer x:Name="ContentElement" Grid.Row="1" Grid.Column="0" HorizontalScrollMode="{TemplateBinding ScrollViewer.HorizontalScrollMode}" HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}" VerticalScrollMode="{TemplateBinding ScrollViewer.VerticalScrollMode}" VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}" IsHorizontalRailEnabled="{TemplateBinding ScrollViewer.IsHorizontalRailEnabled}" IsVerticalRailEnabled="{TemplateBinding ScrollViewer.IsVerticalRailEnabled}" IsDeferredScrollingEnabled="{TemplateBinding ScrollViewer.IsDeferredScrollingEnabled}" Margin="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" Foreground="{TemplateBinding Foreground}" IsTabStop="False" AutomationProperties.AccessibilityView="Raw" ZoomMode="Disabled" />
+                                                                <TextBlock x:Name="PlaceholderTextContentPresenter" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Foreground="{Binding PlaceholderForeground, RelativeSource={RelativeSource TemplatedParent}, TargetNullValue={ThemeResource TextControlPlaceholderForeground}}" Margin="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" Text="{TemplateBinding PlaceholderText}" TextAlignment="{TemplateBinding TextAlignment}" TextWrapping="{TemplateBinding TextWrapping}" IsHitTestVisible="False" />
+                                                                <ContentPresenter x:Name="DescriptionPresenter"
+                                                                                  Grid.Row="2"
+                                                                                  Grid.Column="0"
+                                                                                  Grid.ColumnSpan="2"
+                                                                                  Content="{TemplateBinding Description}"
+                                                                                  Foreground="{ThemeResource SystemControlDescriptionTextForegroundBrush}"
+                                                                                  AutomationProperties.AccessibilityView="Raw"
+                                                                                  x:Load="False"/>
+                                                            </Grid>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </TextBox.Style>
+                                    </TextBox>
+                                </Border>
                             </Border>
-                        </Border>
+
+                            <!-- ===[ Column 1: button hit area + label overlay ]=== -->
+                            <Grid Grid.Column="1" MinWidth="22">
+                                <Grid.RowDefinitions>
+                                    <!-- Top half: increase -->
+                                    <RowDefinition/>
+                                    <!-- Bottom half: decrease -->
+                                    <RowDefinition/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Label: Marks the control as a numeric control (more of a visual id)
+                                             can be overriden with LabelContent (and/or LabelContentTemplate).
+                                        
+                                             PART_DefaultLabel shows when LabelContent is null;
+                                             PART_LabelArea shows the custom LabelContent. -->
+                                <Grid Grid.RowSpan="2" IsHitTestVisible="False" Padding="3">
+                                    <Viewbox x:Name="PART_DefaultLabel" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="3"
+                                             MaxWidth="22">
+                                        <Path Fill="{Binding RelativeSource={RelativeSource Mode=TemplatedParent}, Path=Foreground}"
+                                              Data="m 5.7274579 31.027604 c 6.1e-4 -0.181901 0.29828 -1.991458 0.66146 -4.02124 0.36319 -2.02978 0.66034 -3.845483 0.66034 -4.034895 0 -0.264424 -0.76791 -0.344385 -3.3073 -0.344385 H 0.43466788 V 21.436459 20.245834 H 4.0015079 c 3.4835 0 3.56991 -0.01391 3.69861 -0.595313 0.32839 -1.483507 0.93664 -5.067738 0.93664 -5.519332 0 -0.468693 -0.25631 -0.499939 -4.10105 -0.499939 H 0.43466788 V 12.440625 11.25 H 4.8002979 c 2.40109 0 4.37335 -0.02976 4.3828 -0.06614 0.009 -0.03638 0.46088 -2.5069269 1.0031901 -5.4901039 l 0.98601 -5.42395898 1.40053 -0.08075 c 1.2453 -0.0718 1.38481 -0.02782 1.25873 0.396875 -0.24227 0.81606498 -1.75522 9.54501688 -1.75522 10.12673388 0 0.537766 0.0985 0.549066 4.16719 0.477924 l 4.16718 -0.07286 0.91985 -5.4901039 0.91985 -5.49010398 h 1.26297 c 1.02759 0 1.26239 0.08629 1.25991 0.46302 -0.002 0.254662 -0.3575 2.54661498 -0.7907 5.09322998 -0.4332 2.546614 -0.78902 4.8385669 -0.7907 5.0932289 -0.003 0.418257 0.34226 0.46302 3.56882 0.46302 h 3.57188 v 1.190625 1.190625 h -3.83646 c -2.11005 0 -3.83725 0.02977 -3.83821 0.06615 -9.7e-4 0.03638 -0.2383 1.435365 -0.52741 3.108854 -0.28912 1.67349 -0.52645 3.132005 -0.52742 3.241146 -9.6e-4 0.109141 1.96278 0.198438 4.36387 0.198438 h 4.36563 v 1.184377 1.184377 l -4.56406 0.07239 -4.56407 0.07239 -0.58489 3.439583 c -0.32169 1.891771 -0.6545 3.826537 -0.73959 4.29948 -0.14998 0.833622 -0.19476 0.859895 -1.46563 0.859895 -0.72101 0 -1.30978 -0.0893 -1.30838 -0.198437 10e-4 -0.109141 0.29791 -1.924844 0.65891 -4.034896 0.36101 -2.110052 0.65752 -3.988236 0.65892 -4.173741 0.002 -0.262543 -0.94974 -0.321173 -4.29481 -0.264584 l -4.2973501 0.0727 -0.77415 4.299479 -0.77415 4.299479 h -1.2785 c -0.84701 0 -1.27812 -0.111619 -1.27738 -0.330729 z M 18.823788 19.980316 c 0.30491 -0.493356 1.14494 -5.950483 0.94788 -6.157766 -0.10749 -0.113067 -2.03088 -0.172598 -4.2742 -0.132292 l -4.07876 0.07328 -0.54914 3.112841 c -0.30203 1.712062 -0.49141 3.170578 -0.42084 3.241145 0.25749 0.257487 8.21167 0.12717 8.37506 -0.137212 z"/>
+                                    </Viewbox>
+                                    <ContentControl x:Name="PART_LabelArea"
+                                                            Visibility="Collapsed"
+                                                            VerticalAlignment="Center"
+                                                            HorizontalAlignment="Center"/>
+                                </Grid>
+                                <!-- Increase RepeatButton: nearly-transparent so it's
+                                             hit-testable but invisible. Background is changed in
+                                             code-behind on hover/press. -->
+                                <prim:RepeatButton x:Name="PART_IncreaseButton" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+                                    <prim:RepeatButton.Style>
+                                        <Style TargetType="prim:RepeatButton">
+                                            <Setter Property="Background" Value="#01000000"/>
+                                            <Setter Property="BorderThickness" Value="0"/>
+                                            <Setter Property="Padding" Value="0"/>
+                                            <!--<Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="prim:RepeatButton">
+                                                        <Border Background="{TemplateBinding Background}"
+                                                                BorderThickness="{TemplateBinding BorderThickness}"/>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>-->
+                                        </Style>
+                                    </prim:RepeatButton.Style>
+                                </prim:RepeatButton>
+
+                                <!-- Decrease RepeatButton: same approach as increase. -->
+                                <prim:RepeatButton x:Name="PART_DecreaseButton" Grid.Row="1"  VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+                                    <prim:RepeatButton.Style>
+                                        <Style TargetType="prim:RepeatButton">
+                                            <Setter Property="Background" Value="#01000000"/>
+                                            <Setter Property="BorderThickness" Value="0"/>
+                                            <Setter Property="Padding" Value="0"/>
+                                            <!--<Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="prim:RepeatButton">
+                                                        <Border Background="{TemplateBinding Background}"
+                                                                        BorderThickness="{TemplateBinding BorderThickness}"/>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>-->
+                                        </Style>
+                                    </prim:RepeatButton.Style>
+                                </prim:RepeatButton>
+
+                            </Grid>
+
+                        </Grid>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>

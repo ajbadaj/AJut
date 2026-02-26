@@ -377,6 +377,7 @@
                                             <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
 
                                         <TextBlock Grid.Row="0" Grid.Column="0" Text="Integer" VerticalAlignment="Center" Margin="0,4"/>
@@ -393,6 +394,25 @@
 
                                         <TextBlock Grid.Row="4" Grid.Column="0" Text="Step by 0.5" VerticalAlignment="Center" Margin="0,4"/>
                                         <ajut:NumericEditor Grid.Row="4" Grid.Column="1" Value="1.5" SmallChange="0.5" Margin="0,4"/>
+
+                                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Override Labels" VerticalAlignment="Top" Margin="0,4"/>
+                                        <StackPanel Grid.Row="5" Grid.Column="1">
+                                            <ajut:NumericEditor Value="1.5" SmallChange="0.5" Margin="0,4">
+                                                <ajut:NumericEditor.LabelContent>
+                                                    <TextBlock Text="X" Foreground="Red" FontWeight="Bold" Margin="5,0" VerticalAlignment="Center" FontSize="20" FontFamily="Segoe UI"/>
+                                                </ajut:NumericEditor.LabelContent>
+                                            </ajut:NumericEditor>
+                                            <ajut:NumericEditor Value="1.5" SmallChange="0.5" Margin="0,4">
+                                                <ajut:NumericEditor.LabelContent>
+                                                    <TextBlock Text="Y" Foreground="#5C3" FontWeight="Bold" Margin="5,0" VerticalAlignment="Center" FontSize="20" FontFamily="Segoe UI"/>
+                                                </ajut:NumericEditor.LabelContent>
+                                            </ajut:NumericEditor>
+                                            <ajut:NumericEditor Value="1.5" SmallChange="0.5" Margin="0,4">
+                                                <ajut:NumericEditor.LabelContent>
+                                                    <TextBlock Text="Z" Foreground="#38F" FontWeight="Bold" Margin="5,0" VerticalAlignment="Center" FontSize="20" FontFamily="Segoe UI"/>
+                                                </ajut:NumericEditor.LabelContent>
+                                            </ajut:NumericEditor>
+                                        </StackPanel>
                                     </Grid>
                                 </StackPanel>
                             </ScrollViewer>

@@ -25,21 +25,20 @@ namespace AJut.UX.Controls
     [TemplatePart(Name = nameof(PART_IncreaseButton), Type = typeof(RepeatButton))]
     [TemplatePart(Name = nameof(PART_DecreaseButton), Type = typeof(RepeatButton))]
     [TemplatePart(Name = nameof(PART_TextBox), Type = typeof(TextBox))]
-    [TemplatePart(Name = nameof(PART_DefaultLabel), Type = typeof(TextBlock))]
+    [TemplatePart(Name = nameof(PART_DefaultLabel), Type = typeof(FrameworkElement))]
     [TemplatePart(Name = nameof(PART_LabelArea), Type = typeof(ContentControl))]
     public class NumericEditor : Control, INumericEditorSettings
     {
         // ===========[ Const-like ]===============================================
         // Nearly-transparent but fully hit-testable background for the RepeatButtons.
-        private static readonly SolidColorBrush kNearlyTransparentBrush
-            = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0));
+        private static readonly SolidColorBrush kNearlyTransparentBrush = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0));
 
         // ===========[ Instance fields ]==========================================
         private Border PART_Root;
         private RepeatButton PART_IncreaseButton;
         private RepeatButton PART_DecreaseButton;
         private TextBox PART_TextBox;
-        private TextBlock PART_DefaultLabel;
+        private FrameworkElement PART_DefaultLabel;
         private ContentControl PART_LabelArea;
 
         private NumericEditorViewModel m_vm;
@@ -58,18 +57,14 @@ namespace AJut.UX.Controls
         // ===========[ INumericEditorSettings ]===================================
         int INumericEditorSettings.DecimalPlacesAllowed => -1;
 
-        object INumericEditorSettings.Minimum
-            => double.IsNegativeInfinity(this.Minimum) ? null : (object)this.Minimum;
+        object INumericEditorSettings.Minimum => double.IsNegativeInfinity(this.Minimum) ? null : (object)this.Minimum;
 
-        object INumericEditorSettings.Maximum
-            => double.IsPositiveInfinity(this.Maximum) ? null : (object)this.Maximum;
+        object INumericEditorSettings.Maximum => double.IsPositiveInfinity(this.Maximum) ? null : (object)this.Maximum;
 
         // ===========[ Dependency Properties ]====================================
 
         // Value: object - TwoWay binding target for PropertyEditTarget.EditValue.
-        public static readonly DependencyProperty ValueProperty = DPUtils.Register(
-            _ => _.Value,
-            (d, e) => d.OnValueChanged(e.NewValue));
+        public static readonly DependencyProperty ValueProperty = DPUtils.Register(_ => _.Value, (d, e) => d.OnValueChanged(e.NewValue));
         public object Value
         {
             get => this.GetValue(ValueProperty);
@@ -77,16 +72,14 @@ namespace AJut.UX.Controls
         }
 
         // Minimum / Maximum (±∞ sentinels = unconstrained).
-        public static readonly DependencyProperty MinimumProperty = DPUtils.Register(
-            _ => _.Minimum, double.NegativeInfinity);
+        public static readonly DependencyProperty MinimumProperty = DPUtils.Register(_ => _.Minimum, double.NegativeInfinity);
         public double Minimum
         {
             get => (double)this.GetValue(MinimumProperty);
             set => this.SetValue(MinimumProperty, value);
         }
 
-        public static readonly DependencyProperty MaximumProperty = DPUtils.Register(
-            _ => _.Maximum, double.PositiveInfinity);
+        public static readonly DependencyProperty MaximumProperty = DPUtils.Register(_ => _.Maximum, double.PositiveInfinity);
         public double Maximum
         {
             get => (double)this.GetValue(MaximumProperty);
@@ -94,8 +87,7 @@ namespace AJut.UX.Controls
         }
 
         // SmallChange: increment/decrement step for the RepeatButtons (default 1).
-        public static readonly DependencyProperty SmallChangeProperty = DPUtils.Register(
-            _ => _.SmallChange, 1.0);
+        public static readonly DependencyProperty SmallChangeProperty = DPUtils.Register(_ => _.SmallChange, 1.0);
         public double SmallChange
         {
             get => (double)this.GetValue(SmallChangeProperty);
@@ -104,18 +96,14 @@ namespace AJut.UX.Controls
 
         // LabelContent / LabelContentTemplate: custom label for the button area.
         // When both are null the default "#" glyph (PART_DefaultLabel) is shown.
-        public static readonly DependencyProperty LabelContentProperty = DPUtils.Register(
-            _ => _.LabelContent,
-            (d, e) => d.UpdateLabelVisibility());
+        public static readonly DependencyProperty LabelContentProperty = DPUtils.Register(_ => _.LabelContent, (d, e) => d.UpdateLabelVisibility());
         public object LabelContent
         {
             get => this.GetValue(LabelContentProperty);
             set => this.SetValue(LabelContentProperty, value);
         }
 
-        public static readonly DependencyProperty LabelContentTemplateProperty = DPUtils.Register(
-            _ => _.LabelContentTemplate,
-            (d, e) => d.UpdateLabelVisibility());
+        public static readonly DependencyProperty LabelContentTemplateProperty = DPUtils.Register(_ => _.LabelContentTemplate, (d, e) => d.UpdateLabelVisibility());
         public DataTemplate LabelContentTemplate
         {
             get => (DataTemplate)this.GetValue(LabelContentTemplateProperty);
@@ -123,16 +111,14 @@ namespace AJut.UX.Controls
         }
 
         // Hover / pressed highlight brushes for the increase RepeatButton.
-        public static readonly DependencyProperty IncreaseHoverHighlightProperty = DPUtils.Register(
-            _ => _.IncreaseHoverHighlight);
+        public static readonly DependencyProperty IncreaseHoverHighlightProperty = DPUtils.Register(_ => _.IncreaseHoverHighlight);
         public Brush IncreaseHoverHighlight
         {
             get => (Brush)this.GetValue(IncreaseHoverHighlightProperty);
             set => this.SetValue(IncreaseHoverHighlightProperty, value);
         }
 
-        public static readonly DependencyProperty IncreasePressedHighlightProperty = DPUtils.Register(
-            _ => _.IncreasePressedHighlight);
+        public static readonly DependencyProperty IncreasePressedHighlightProperty = DPUtils.Register(_ => _.IncreasePressedHighlight);
         public Brush IncreasePressedHighlight
         {
             get => (Brush)this.GetValue(IncreasePressedHighlightProperty);
@@ -140,20 +126,25 @@ namespace AJut.UX.Controls
         }
 
         // Hover / pressed highlight brushes for the decrease RepeatButton.
-        public static readonly DependencyProperty DecreaseHoverHighlightProperty = DPUtils.Register(
-            _ => _.DecreaseHoverHighlight);
+        public static readonly DependencyProperty DecreaseHoverHighlightProperty = DPUtils.Register(_ => _.DecreaseHoverHighlight);
         public Brush DecreaseHoverHighlight
         {
             get => (Brush)this.GetValue(DecreaseHoverHighlightProperty);
             set => this.SetValue(DecreaseHoverHighlightProperty, value);
         }
 
-        public static readonly DependencyProperty DecreasePressedHighlightProperty = DPUtils.Register(
-            _ => _.DecreasePressedHighlight);
+        public static readonly DependencyProperty DecreasePressedHighlightProperty = DPUtils.Register(_ => _.DecreasePressedHighlight);
         public Brush DecreasePressedHighlight
         {
             get => (Brush)this.GetValue(DecreasePressedHighlightProperty);
             set => this.SetValue(DecreasePressedHighlightProperty, value);
+        }
+
+        public static readonly DependencyProperty TextBoxBackgroundProperty = DPUtils.Register(_ => _.TextBoxBackground);
+        public Brush TextBoxBackground
+        {
+            get => (Brush)this.GetValue(TextBoxBackgroundProperty);
+            set => this.SetValue(TextBoxBackgroundProperty, value);
         }
 
         // ===========[ Template application ]=====================================
@@ -190,7 +181,7 @@ namespace AJut.UX.Controls
             this.PART_IncreaseButton = this.GetTemplateChild(nameof(PART_IncreaseButton)) as RepeatButton;
             this.PART_DecreaseButton = this.GetTemplateChild(nameof(PART_DecreaseButton)) as RepeatButton;
             this.PART_TextBox = this.GetTemplateChild(nameof(PART_TextBox)) as TextBox;
-            this.PART_DefaultLabel = this.GetTemplateChild(nameof(PART_DefaultLabel)) as TextBlock;
+            this.PART_DefaultLabel = this.GetTemplateChild(nameof(PART_DefaultLabel)) as FrameworkElement;
             this.PART_LabelArea = this.GetTemplateChild(nameof(PART_LabelArea)) as ContentControl;
 
             // 3. Wire new parts
@@ -363,7 +354,7 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ Helpers ]==================================================
-        private void Nudge (bool positive)
+        private void Nudge (bool positive, bool includeKeyboardMods = true)
         {
             if (m_vm == null)
             {
