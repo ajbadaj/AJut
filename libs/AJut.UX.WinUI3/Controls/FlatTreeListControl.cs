@@ -337,6 +337,13 @@ namespace AJut.UX.Controls
             m_blockingReentrancy = true;
             try
             {
+                // In Extended/Multiple modes, SelectedItem = x adds rather than replaces.
+                // Clear first so programmatic single-item select replaces existing selection.
+                if (this.SelectionMode != eFlatTreeSelectionMode.Single)
+                {
+                    this.PART_ListView.SelectedItems.Clear();
+                }
+
                 this.PART_ListView.SelectedItem = newItem;
             }
             finally
@@ -364,9 +371,10 @@ namespace AJut.UX.Controls
 
             this.PART_ListView.SelectionMode = this.SelectionMode switch
             {
-                eFlatTreeSelectionMode.None => ListViewSelectionMode.None,
-                eFlatTreeSelectionMode.Multi => ListViewSelectionMode.Multiple,
-                _ => ListViewSelectionMode.Single,
+                eFlatTreeSelectionMode.None     => ListViewSelectionMode.None,
+                eFlatTreeSelectionMode.Multi    => ListViewSelectionMode.Multiple,
+                eFlatTreeSelectionMode.Extended => ListViewSelectionMode.Extended,
+                _                               => ListViewSelectionMode.Single,
             };
         }
 
@@ -383,5 +391,6 @@ namespace AJut.UX.Controls
         None,
         Single,
         Multi,
+        Extended,   // click = replace selection; Ctrl+click = add to selection
     }
 }
