@@ -723,6 +723,10 @@
                     {
                         _isUsuallyQuoted = false;
                     }
+                    else
+                    {
+                        _isUsuallyQuoted = true;
+                    }
 
                     return true;
                 }
