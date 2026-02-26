@@ -51,8 +51,18 @@
                                    HorizontalAlignment="Left"
                                    VerticalAlignment="Stretch"
                                    Fill="Transparent"/>
+                        <!-- Selection outline: 1px box border driven by SelectionStates. -->
+                        <Border x:Name="SelectionHighlight"
+                                BorderThickness="1"
+                                BorderBrush="Transparent"
+                                Background="Transparent"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"/>
+                        <!-- Hover tint: background + 1px border driven by CommonStates. -->
                         <Border x:Name="HoverTint"
                                 Background="Transparent"
+                                BorderBrush="Transparent"
+                                BorderThickness="1"
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Stretch"/>
                         <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
@@ -60,38 +70,61 @@
                                           Margin="6,0,0,0"/>
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="SelectionStates">
-                                <!-- Explicit revert setters required: WinUI3 VisualState.Setters
-                                     do NOT auto-revert when leaving a state (unlike WPF triggers). -->
-                                <VisualState x:Name="Unselected">
-                                    <VisualState.Setters>
-                                        <Setter Target="SelectionStrip.Fill" Value="Transparent"/>
-                                        <Setter Target="HoverTint.Background" Value="Transparent"/>
-                                    </VisualState.Setters>
-                                </VisualState>
+                                <VisualState x:Name="Unselected"/>
                                 <VisualState x:Name="Selected">
-                                    <VisualState.Setters>
-                                        <Setter Target="SelectionStrip.Fill"
-                                                Value="{ThemeResource AJut_Brush_ListSelection}"/>
-                                        <Setter Target="HoverTint.Background"
-                                                Value="{ThemeResource AJut_Brush_ListSelectionBackground}"/>
-                                    </VisualState.Setters>
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionStrip"
+                                                                       Storyboard.TargetProperty="Fill">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource AJut_Brush_ListSelection}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
+                                                                       Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource AJut_Brush_ListSelection}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
+                                                                       Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource AJut_Brush_ListSelectionBackground}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="SelectedUnfocused">
-                                    <VisualState.Setters>
-                                        <Setter Target="SelectionStrip.Fill"
-                                                Value="{ThemeResource AJut_Brush_PrimaryHighlightDesat}"/>
-                                        <Setter Target="HoverTint.Background"
-                                                Value="{ThemeResource AJut_Brush_ListSelectionBackground}"/>
-                                    </VisualState.Setters>
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionStrip"
+                                                                       Storyboard.TargetProperty="Fill">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource AJut_Brush_PrimaryHighlightDesat}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
+                                                                       Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource AJut_Brush_PrimaryHighlightDesat}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
+                                                                       Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource AJut_Brush_ListSelectionBackground}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
                                 </VisualState>
                             </VisualStateGroup>
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal"/>
                                 <VisualState x:Name="PointerOver">
-                                    <VisualState.Setters>
-                                        <Setter Target="HoverTint.Background"
-                                                Value="{ThemeResource AJut_Brush_ListItemHover}"/>
-                                    </VisualState.Setters>
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
+                                                                       Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource AJut_Brush_ListItemHover}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
+                                                                       Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource AJut_Brush_BorderCommon}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
                                 </VisualState>
                             </VisualStateGroup>
                         </VisualStateManager.VisualStateGroups>
@@ -443,6 +476,44 @@
     </Style>
 
     <!--
+    ===[ PopupMenuButton - AJut-themed override ]===
+    Applies AJut border/background to the ToggleButton wrapper.
+    The ToggleButton's Checked state uses AJut_Brush_PrimaryHighlight automatically
+    via SystemColorAliasing.xaml (ToggleButtonBackgroundChecked override).
+    -->
+    <Style TargetType="local:PopupMenuButton">
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+        <Setter Property="BorderBrush" Value="{ThemeResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="6,4"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:PopupMenuButton">
+                    <ToggleButton x:Name="PART_Button"
+                                  BorderBrush="{TemplateBinding BorderBrush}"
+                                  BorderThickness="{TemplateBinding BorderThickness}"
+                                  Padding="{TemplateBinding Padding}"
+                                  HorizontalAlignment="{TemplateBinding HorizontalAlignment}"
+                                  VerticalAlignment="{TemplateBinding VerticalAlignment}"
+                                  CornerRadius="2">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <ContentControl Content="{TemplateBinding ButtonContent}"
+                                            ContentTemplate="{TemplateBinding ButtonContentTemplate}"
+                                            IsTabStop="False"
+                                            VerticalAlignment="Center"/>
+                            <FontIcon Glyph="&#xE972;"
+                                      FontFamily="Segoe Fluent Icons"
+                                      FontSize="9"
+                                      Foreground="{ThemeResource AJut_Brush_SymbolForeground}"
+                                      VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </ToggleButton>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!--
     ===[ ToggleStrip - AJut-themed override ]===
     Applies AJut strip container colors. Individual ToggleButtons inside the
     strip pick up AJut colors from SystemColorAliasing.xaml automatically.
@@ -459,6 +530,29 @@
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="{TemplateBinding CornerRadius}">
+                        <Border.Resources>
+                            <!-- AJut-themed "depressed button" gradients for checked ToggleButtons.
+                                 Uses a dark overlay with a slight cool tint for the checked state,
+                                 matching the AJut aesthetic of depressed/active controls. -->
+                            <LinearGradientBrush x:Key="ToggleButtonBackgroundChecked"
+                                                 StartPoint="0,0" EndPoint="0,1">
+                                <GradientStop Offset="0.00" Color="#CC000000"/>
+                                <GradientStop Offset="0.20" Color="#801090A0"/>
+                                <GradientStop Offset="1.00" Color="#331090A0"/>
+                            </LinearGradientBrush>
+                            <LinearGradientBrush x:Key="ToggleButtonBackgroundCheckedPointerOver"
+                                                 StartPoint="0,0" EndPoint="0,1">
+                                <GradientStop Offset="0.00" Color="#CC000000"/>
+                                <GradientStop Offset="0.20" Color="#991090A0"/>
+                                <GradientStop Offset="1.00" Color="#551090A0"/>
+                            </LinearGradientBrush>
+                            <LinearGradientBrush x:Key="ToggleButtonBackgroundCheckedPressed"
+                                                 StartPoint="0,0" EndPoint="0,1">
+                                <GradientStop Offset="0.00" Color="#EE000000"/>
+                                <GradientStop Offset="0.20" Color="#AA1090A0"/>
+                                <GradientStop Offset="1.00" Color="#661090A0"/>
+                            </LinearGradientBrush>
+                        </Border.Resources>
                         <StackPanel x:Name="PART_ItemsPanel"
                                     Orientation="Horizontal"/>
                     </Border>

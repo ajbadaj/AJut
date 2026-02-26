@@ -35,9 +35,20 @@
                                    HorizontalAlignment="Left"
                                    VerticalAlignment="Stretch"
                                    Fill="Transparent"/>
-                        <!-- Hover/selection tint overlaid on the full row -->
+                        <!-- Selection outline: 1px box border around the row when selected.
+                             BorderBrush starts Transparent; animated to accent color on Selected. -->
+                        <Border x:Name="SelectionHighlight"
+                                BorderThickness="1"
+                                BorderBrush="Transparent"
+                                Background="Transparent"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"/>
+                        <!-- Hover tint: background + 1px border on pointer-over.
+                             Uses ObjectAnimationUsingKeyFrames so it auto-reverts on Normal. -->
                         <Border x:Name="HoverTint"
                                 Background="Transparent"
+                                BorderBrush="Transparent"
+                                BorderThickness="1"
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Stretch"/>
                         <!-- Row content — left margin leaves room for the strip -->
@@ -46,38 +57,64 @@
                                           Margin="6,0,0,0"/>
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="SelectionStates">
-                                <!-- Explicit revert setters required: WinUI3 VisualState.Setters
-                                     do NOT auto-revert when leaving a state (unlike WPF triggers). -->
-                                <VisualState x:Name="Unselected">
-                                    <VisualState.Setters>
-                                        <Setter Target="SelectionStrip.Fill" Value="Transparent"/>
-                                        <Setter Target="HoverTint.Background" Value="Transparent"/>
-                                    </VisualState.Setters>
-                                </VisualState>
+                                <!-- ObjectAnimationUsingKeyFrames auto-reverts to the element's
+                                     base (XAML) value when the state is left — no explicit
+                                     revert setters needed (unlike VisualState.Setters). -->
+                                <VisualState x:Name="Unselected"/>
                                 <VisualState x:Name="Selected">
-                                    <VisualState.Setters>
-                                        <Setter Target="SelectionStrip.Fill"
-                                                Value="{ThemeResource SystemControlHighlightListAccentHighBrush}"/>
-                                        <Setter Target="HoverTint.Background"
-                                                Value="{ThemeResource SystemControlHighlightListAccentLowBrush}"/>
-                                    </VisualState.Setters>
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionStrip"
+                                                                       Storyboard.TargetProperty="Fill">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource SystemControlHighlightListAccentHighBrush}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
+                                                                       Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource SystemControlHighlightListAccentHighBrush}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
+                                                                       Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource SystemControlHighlightListAccentLowBrush}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="SelectedUnfocused">
-                                    <VisualState.Setters>
-                                        <Setter Target="SelectionStrip.Fill"
-                                                Value="{ThemeResource SystemControlHighlightListAccentMediumBrush}"/>
-                                        <Setter Target="HoverTint.Background"
-                                                Value="{ThemeResource SystemControlHighlightListAccentLowBrush}"/>
-                                    </VisualState.Setters>
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionStrip"
+                                                                       Storyboard.TargetProperty="Fill">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource SystemControlHighlightListAccentMediumBrush}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
+                                                                       Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource SystemControlHighlightListAccentMediumBrush}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
+                                                                       Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource SystemControlHighlightListAccentLowBrush}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
                                 </VisualState>
                             </VisualStateGroup>
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal"/>
                                 <VisualState x:Name="PointerOver">
-                                    <VisualState.Setters>
-                                        <Setter Target="HoverTint.Background"
-                                                Value="{ThemeResource SystemControlHighlightListLowBrush}"/>
-                                    </VisualState.Setters>
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
+                                                                       Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource SystemControlHighlightListLowBrush}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
+                                                                       Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource ControlStrokeColorDefaultBrush}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
                                 </VisualState>
                             </VisualStateGroup>
                         </VisualStateManager.VisualStateGroups>

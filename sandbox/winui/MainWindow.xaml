@@ -447,6 +447,54 @@
                         </TabViewItem.Content>
                     </TabViewItem>
 
+                    <!-- ===[ PopupMenuButton ]===================================================== -->
+                    <TabViewItem Header="PopupMenuButton" IsClosable="False">
+                        <TabViewItem.IconSource>
+                            <SymbolIconSource Symbol="List"/>
+                        </TabViewItem.IconSource>
+                        <TabViewItem.Content>
+                            <ScrollViewer VerticalScrollMode="Enabled" Padding="12">
+                                <StackPanel Spacing="20" HorizontalAlignment="Left">
+                                    <TextBlock Text="PopupMenuButton" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                                    <TextBlock Text="A ToggleButton that opens a MenuFlyout. Button stays 'checked' (accent) while flyout is open."
+                                               FontStyle="Italic" Opacity="0.7" TextWrapping="Wrap"/>
+
+                                    <StackPanel Spacing="12">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="Simple menu" FontSize="11" Opacity="0.7"/>
+                                            <ajut:PopupMenuButton>
+                                                <ajut:PopupMenuButton.ButtonContent>
+                                                    <TextBlock Text="Actions" VerticalAlignment="Center"/>
+                                                </ajut:PopupMenuButton.ButtonContent>
+                                                <ajut:PopupMenuButton.MenuItems>
+                                                    <MenuFlyoutItem Text="New File"/>
+                                                    <MenuFlyoutItem Text="Open..."/>
+                                                    <MenuFlyoutSeparator/>
+                                                    <MenuFlyoutItem Text="Exit"/>
+                                                </ajut:PopupMenuButton.MenuItems>
+                                            </ajut:PopupMenuButton>
+                                        </StackPanel>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="Edit menu" FontSize="11" Opacity="0.7"/>
+                                            <ajut:PopupMenuButton>
+                                                <ajut:PopupMenuButton.ButtonContent>
+                                                    <TextBlock Text="Edit" VerticalAlignment="Center"/>
+                                                </ajut:PopupMenuButton.ButtonContent>
+                                                <ajut:PopupMenuButton.MenuItems>
+                                                    <MenuFlyoutItem Text="Cut"/>
+                                                    <MenuFlyoutItem Text="Copy"/>
+                                                    <MenuFlyoutItem Text="Paste"/>
+                                                    <MenuFlyoutSeparator/>
+                                                    <MenuFlyoutItem Text="Select All"/>
+                                                </ajut:PopupMenuButton.MenuItems>
+                                            </ajut:PopupMenuButton>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </TabViewItem.Content>
+                    </TabViewItem>
+
                     <!-- ===[ Property Grid ]======================================================= -->
                     <TabViewItem Header="Property Grid" IsClosable="False" VerticalContentAlignment="Stretch">
                         <TabViewItem.IconSource>

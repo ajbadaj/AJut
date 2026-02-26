@@ -18,6 +18,30 @@
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="{TemplateBinding CornerRadius}">
+                        <Border.Resources>
+                            <!-- "Depressed button" gradient for checked ToggleButtons within the strip.
+                                 Dark at top fades lighter toward bottom — simulates a sunken surface.
+                                 These override the WinUI3 default ToggleButton theme resources locally
+                                 so only buttons inside this ToggleStrip get the effect. -->
+                            <LinearGradientBrush x:Key="ToggleButtonBackgroundChecked"
+                                                 StartPoint="0,0" EndPoint="0,1">
+                                <GradientStop Offset="0.00" Color="#CC000000"/>
+                                <GradientStop Offset="0.20" Color="#80000000"/>
+                                <GradientStop Offset="1.00" Color="#33000000"/>
+                            </LinearGradientBrush>
+                            <LinearGradientBrush x:Key="ToggleButtonBackgroundCheckedPointerOver"
+                                                 StartPoint="0,0" EndPoint="0,1">
+                                <GradientStop Offset="0.00" Color="#CC000000"/>
+                                <GradientStop Offset="0.20" Color="#99000000"/>
+                                <GradientStop Offset="1.00" Color="#55000000"/>
+                            </LinearGradientBrush>
+                            <LinearGradientBrush x:Key="ToggleButtonBackgroundCheckedPressed"
+                                                 StartPoint="0,0" EndPoint="0,1">
+                                <GradientStop Offset="0.00" Color="#EE000000"/>
+                                <GradientStop Offset="0.20" Color="#AA000000"/>
+                                <GradientStop Offset="1.00" Color="#66000000"/>
+                            </LinearGradientBrush>
+                        </Border.Resources>
                         <StackPanel x:Name="PART_ItemsPanel"
                                     Orientation="Horizontal"/>
                     </Border>

@@ -1,11 +1,14 @@
 namespace AJut.UX.Controls
 {
     using System;
+    using Microsoft.UI.Input;
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
     using Microsoft.UI.Xaml.Controls.Primitives;
     using Microsoft.UI.Xaml.Media;
+    using Windows.System;
     using Windows.UI;
+    using Windows.UI.Core;
     using DPUtils = AJut.UX.DPUtils<NumericEditor>;
 
     // ===========[ NumericEditor ]=============================================
@@ -86,12 +89,29 @@ namespace AJut.UX.Controls
             set => this.SetValue(MaximumProperty, value);
         }
 
-        // SmallChange: increment/decrement step for the RepeatButtons (default 1).
+        // SmallChange: default (normal) increment/decrement step for the RepeatButtons.
+        // Hold CTRL to use BigNudge, hold SHIFT to use SmallNudge.
         public static readonly DependencyProperty SmallChangeProperty = DPUtils.Register(_ => _.SmallChange, 1.0);
         public double SmallChange
         {
             get => (double)this.GetValue(SmallChangeProperty);
             set => this.SetValue(SmallChangeProperty, value);
+        }
+
+        // BigNudge: large increment/decrement step applied when CTRL is held (default 5).
+        public static readonly DependencyProperty BigNudgeProperty = DPUtils.Register(_ => _.BigNudge, 5.0);
+        public double BigNudge
+        {
+            get => (double)this.GetValue(BigNudgeProperty);
+            set => this.SetValue(BigNudgeProperty, value);
+        }
+
+        // SmallNudge: fine increment/decrement step applied when SHIFT is held (default 0.5).
+        public static readonly DependencyProperty SmallNudgeProperty = DPUtils.Register(_ => _.SmallNudge, 0.5);
+        public double SmallNudge
+        {
+            get => (double)this.GetValue(SmallNudgeProperty);
+            set => this.SetValue(SmallNudgeProperty, value);
         }
 
         // LabelContent / LabelContentTemplate: custom label for the button area.
@@ -354,14 +374,29 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ Helpers ]==================================================
-        private void Nudge (bool positive, bool includeKeyboardMods = true)
+        private void Nudge (bool positive)
         {
             if (m_vm == null)
             {
                 m_vm = new NumericEditorViewModel(this, 0.0);
             }
 
-            m_vm.Nudge(positive, this.SmallChange);
+            // CTRL → BigNudge, SHIFT → SmallNudge, otherwise normal SmallChange.
+            double amount;
+            if (IsKeyDown(VirtualKey.Control))
+            {
+                amount = this.BigNudge;
+            }
+            else if (IsKeyDown(VirtualKey.Shift))
+            {
+                amount = this.SmallNudge;
+            }
+            else
+            {
+                amount = this.SmallChange;
+            }
+
+            m_vm.Nudge(positive, amount);
 
             m_blockReentrancy = true;
             try
@@ -377,6 +412,11 @@ namespace AJut.UX.Controls
             {
                 m_blockReentrancy = false;
             }
+        }
+
+        private static bool IsKeyDown (VirtualKey key)
+        {
+            return (InputKeyboardSource.GetKeyStateForCurrentThread(key) & CoreVirtualKeyStates.Down) != 0;
         }
 
         private void UpdateLabelVisibility ()
