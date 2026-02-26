@@ -5,6 +5,10 @@
     using System;
     using DPUtils = AJut.UX.DPUtils<TitleBarCaptionButton>;
 
+    // ===========[ TitleBarCaptionButton ]==========================================
+    // WinUI3-specific: no WPF equivalent.
+    // Custom caption button used in ThemedWindowRootControl's title bar. Tracks
+    // per-window activation state and applies DPI-aware theming via AppWindow.TitleBar.
     public partial class TitleBarCaptionButton : Button
     {
         private Window m_currentWindow = null;

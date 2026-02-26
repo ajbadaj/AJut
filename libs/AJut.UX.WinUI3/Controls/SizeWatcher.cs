@@ -5,6 +5,9 @@ namespace AJut.UX.Controls;
 
 using DPUtils = DPUtils<SizeWatcher>;
 
+// ===========[ SizeWatcher ]================================================
+// WinUI3-specific: no WPF equivalent.
+// ContentControl wrapper that surfaces its inner content element's SizeChanged event.
 public sealed class SizeWatcher : ContentControl
 {
     public SizeWatcher()

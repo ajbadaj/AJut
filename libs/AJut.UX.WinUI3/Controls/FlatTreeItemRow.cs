@@ -2,6 +2,7 @@ namespace AJut.UX.Controls
 {
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
+    using Microsoft.UI.Xaml.Media;
     using DPUtils = AJut.UX.DPUtils<FlatTreeItemRow>;
 
     // ===========[ FlatTreeItemRow ]============================================
@@ -29,6 +30,16 @@ namespace AJut.UX.Controls
         {
             get => (DataTemplate)this.GetValue(ContentTemplateProperty);
             set => this.SetValue(ContentTemplateProperty, value);
+        }
+
+        // ExpanderGlyphForeground: foreground for the expand/collapse chevron glyph.
+        // Set by FlatTreeListControl via ContainerContentChanging so callers can
+        // customize the glyph color without loading the full AJut theme.
+        public static readonly DependencyProperty ExpanderGlyphForegroundProperty = DPUtils.Register(_ => _.ExpanderGlyphForeground);
+        public Brush ExpanderGlyphForeground
+        {
+            get => (Brush)this.GetValue(ExpanderGlyphForegroundProperty);
+            set => this.SetValue(ExpanderGlyphForegroundProperty, value);
         }
     }
 }

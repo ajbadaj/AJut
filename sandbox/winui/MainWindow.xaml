@@ -342,7 +342,7 @@
                                             <ajut:PathSelectionControl x:Name="PathPickSaveFile"
                                                                         PathType="File"
                                                                         FileDialogType="SaveFile"
-                                                                        FileFilter="Text files (*.txt)|*.txt|All files (*.*)|*.*"
+                                                                        FileFilter="Text files (*.txt)|*.txt"
                                                                         UnsetTextPrompt="Save path..."/>
                                         </StackPanel>
                                     </StackPanel>

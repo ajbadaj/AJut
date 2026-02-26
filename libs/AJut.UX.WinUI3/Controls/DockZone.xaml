@@ -3,39 +3,19 @@
                     xmlns:local="using:AJut.UX.Controls">
 
     <!-- ===========[ DockZone: Default Style ]================================ -->
-    <!-- All layout content (header, content presenter, tab strip, child zones,
-         splitters) is built entirely in code-behind via RebuildLayout().
-         The template exposes only PART_Root which the code-behind populates. -->
+    <!-- The template exposes only PART_Root (a Grid). RebuildLayout() in code-behind
+         populates it with one of:
+           • DockLeafLayout  (Single/Tabbed) — a proper Control whose ControlTemplate
+             in DockLeafLayout.xaml owns the header/content/tab-strip visual structure
+           • child DockZones + DockZoneSplitters  (Horizontal/Vertical splits)
+         Visual appearance is entirely owned by DockLeafLayout and DockTabItem styles.
+         DockZone itself has no visual DPs — only structural/layout setters here. -->
 
     <Style TargetType="local:DockZone">
         <Setter Property="MinHeight" Value="30"/>
         <Setter Property="MinWidth" Value="30"/>
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
         <Setter Property="VerticalAlignment" Value="Stretch"/>
-
-        <!-- Visual defaults - callers can override any of these per-instance or in an app style -->
-        <Setter Property="PanelBackground">
-            <Setter.Value>
-                <SolidColorBrush Color="#FF2B2B2B"/>
-            </Setter.Value>
-        </Setter>
-        <Setter Property="PanelForeground">
-            <Setter.Value>
-                <SolidColorBrush Color="#FFF0F0F0"/>
-            </Setter.Value>
-        </Setter>
-        <Setter Property="PanelBorderBrush">
-            <Setter.Value>
-                <SolidColorBrush Color="#FF4A4A4A"/>
-            </Setter.Value>
-        </Setter>
-        <Setter Property="PanelBorderThickness" Value="1"/>
-        <!-- TabStripBackground: darker than the panel to distinguish the tab strip row -->
-        <Setter Property="TabStripBackground">
-            <Setter.Value>
-                <SolidColorBrush Color="#FF1A1A1A"/>
-            </Setter.Value>
-        </Setter>
 
         <Setter Property="Template">
             <Setter.Value>

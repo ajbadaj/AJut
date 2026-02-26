@@ -89,8 +89,13 @@
 
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="BorderStates">
-                                <!-- Normal: no setters — restores TemplateBinding on BorderBrush -->
-                                <VisualState x:Name="Normal"/>
+                                <!-- Normal: explicit revert — WinUI3 Setters do not auto-revert on state exit -->
+                                <VisualState x:Name="Normal">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_Root.BorderBrush"
+                                                Value="{ThemeResource TextControlBorderBrush}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
                                 <VisualState x:Name="Focused">
                                     <VisualState.Setters>
                                         <Setter Target="PART_Root.BorderBrush"
@@ -105,7 +110,12 @@
                                 </VisualState>
                             </VisualStateGroup>
                             <VisualStateGroup x:Name="WarningDisplayStates">
-                                <VisualState x:Name="WarningHidden"/>
+                                <!-- WarningHidden: explicit revert — WinUI3 Setters do not auto-revert on state exit -->
+                                <VisualState x:Name="WarningHidden">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_WarningDisplay.Visibility" Value="Collapsed"/>
+                                    </VisualState.Setters>
+                                </VisualState>
                                 <VisualState x:Name="WarningShown">
                                     <VisualState.Setters>
                                         <Setter Target="PART_WarningDisplay.Visibility"

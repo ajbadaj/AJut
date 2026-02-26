@@ -3,6 +3,7 @@ namespace AJut.UX.Controls
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using AJut;
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
     using Microsoft.UI.Xaml.Controls.Primitives;
@@ -61,9 +62,7 @@ namespace AJut.UX.Controls
             set => this.SetValue(PathTypeProperty, value);
         }
 
-        public static readonly DependencyProperty FileFilterProperty = DPUtils.Register(
-            _ => _.FileFilter, "*.*",
-            (d, e) => d.EvaluatePath(d.SelectedPath));
+        public static readonly DependencyProperty FileFilterProperty = DPUtils.Register(_ => _.FileFilter, "*.*", (d, e) => d.EvaluatePath(d.SelectedPath));
         public string FileFilter
         {
             get => (string)this.GetValue(FileFilterProperty);
@@ -374,7 +373,10 @@ namespace AJut.UX.Controls
                     userSelectedPath = await this.PickFolderAsync(hwnd);
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Logger.LogError("PathSelectionControl: OS file picker failed", ex);
+            }
 
             if (userSelectedPath != null)
             {
@@ -556,19 +558,15 @@ namespace AJut.UX.Controls
             return folder?.Path;
         }
 
-        private IntPtr GetWindowHandle ()
+        private nint GetWindowHandle ()
         {
-            try
+            var env = this.XamlRoot?.ContentIslandEnvironment;
+            if (env == null)
             {
-                Microsoft.UI.WindowId? appWindowId = this.XamlRoot?.ContentIslandEnvironment?.AppWindowId;
-                if (appWindowId is not null)
-                {
-                    return Microsoft.UI.Win32Interop.GetWindowFromWindowId(appWindowId.Value);
-                }
+                return 0;
             }
-            catch { }
 
-            return IntPtr.Zero;
+            return Microsoft.UI.Win32Interop.GetWindowFromWindowId(env.AppWindowId);
         }
 
         // ===========[ Path helpers ]=============================================
@@ -644,9 +642,11 @@ namespace AJut.UX.Controls
             IDictionary<string, IList<string>> target,
             string filter)
         {
+            // FileSavePicker.FileTypeChoices does not support "*" (unlike FileOpenPicker).
+            // When no filter is set, leave the dictionary empty — WinRT will throw a clear
+            // error that gets logged, telling the caller to set a FileFilter for SaveFile mode.
             if (string.IsNullOrEmpty(filter) || filter == "*.*" || filter == "*")
             {
-                target["All files"] = new List<string> { "*" };
                 return;
             }
 

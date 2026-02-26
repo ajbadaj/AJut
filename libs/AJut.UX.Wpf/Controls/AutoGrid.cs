@@ -18,6 +18,8 @@
         Auto
     }
 
+    // ===========[ AutoGrid ]=======================================================
+    // WinUI3 port: pending.
     /// <summary>
     /// A grid which will automatically add rows and/or columns as child elements are inserted (and optionally grid resizers) based off of setup guidelines.
     /// </summary>

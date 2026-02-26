@@ -290,11 +290,14 @@
                                 Background="Transparent"/>
 
                         <!-- Expand / collapse toggle -->
+                        <!-- Foreground passes ExpanderGlyphForeground down to the nested ToggleButton
+                             template where {TemplateBinding Foreground} picks it up for the FontIcon. -->
                         <ToggleButton Grid.Column="1"
                                       IsChecked="{Binding IsExpanded, Mode=TwoWay}"
                                       Visibility="{Binding IsExpandable, Converter={StaticResource FlatTree_HasChildrenToVisibility}}"
                                       HorizontalAlignment="Center"
-                                      VerticalAlignment="Center">
+                                      VerticalAlignment="Center"
+                                      Foreground="{TemplateBinding ExpanderGlyphForeground}">
                             <ToggleButton.Style>
                                 <Style TargetType="ToggleButton">
                                     <Setter Property="Background" Value="Transparent"/>
@@ -309,14 +312,16 @@
                                                         CornerRadius="{TemplateBinding CornerRadius}"
                                                         Padding="{TemplateBinding Padding}">
                                                     <!-- Chevron glyph: E76C=right (collapsed), E70D=down (expanded).
-                                                         Glyph is swapped in Checked VSM states below. -->
+                                                         Glyph is swapped in Checked VSM states below.
+                                                         Foreground comes from ToggleButton.Foreground which
+                                                         is set to FlatTreeItemRow.ExpanderGlyphForeground above. -->
                                                     <FontIcon x:Name="ExpanderIcon"
                                                               FontFamily="Segoe Fluent Icons"
                                                               FontSize="9"
                                                               Glyph="&#xE76C;"
                                                               HorizontalAlignment="Center"
                                                               VerticalAlignment="Center"
-                                                              Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                                              Foreground="{TemplateBinding Foreground}"/>
                                                     <VisualStateManager.VisualStateGroups>
                                                         <VisualStateGroup x:Name="CommonStates">
                                                             <VisualState x:Name="Normal"/>
@@ -382,6 +387,7 @@
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="ExpanderGlyphForeground" Value="{ThemeResource TextFillColorSecondaryBrush}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:FlatTreeListControl">

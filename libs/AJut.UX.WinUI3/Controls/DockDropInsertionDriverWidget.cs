@@ -8,6 +8,7 @@ namespace AJut.UX.Controls
     using DPUtils = AJut.UX.DPUtils<DockDropInsertionDriverWidget>;
 
     // ===========[ DockDropInsertionDriverWidget ]===========================
+    // WinUI3-specific: no WPF equivalent.
     // Directional drop-target arrow shown as part of the DockZone drop overlay.
     // Five of these are arranged in a 3×3 grid (Left/Top/Right/Bottom/Center)
     // centered over a DockZone when DockZone.IsDirectDropTarget = true during

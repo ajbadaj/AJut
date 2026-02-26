@@ -8,6 +8,8 @@
     using AJut.Storage;
     using DPUtils = AJut.UX.DPUtils<MessageBoxPopover>;
 
+    // ===========[ MessageBoxPopover ]==============================================
+    // WinUI3 port: pending.
     public class MessageBoxPopover : Control, IStackNavPopoverDisplay<string>
     {
         static MessageBoxPopover ()

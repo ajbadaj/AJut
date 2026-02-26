@@ -11,6 +11,17 @@
     using System.Windows.Media;
     using DPUtils = AJut.UX.DPUtils<PopupMenuButton>;
 
+    // ===========[ PopupMenuButton ]============================================
+    // A button which shows a menu whose items are expressed as the content of
+    // this control (see MenuItems).
+    //
+    // WPF vs WinUI3 platform differences:
+    //   - WPF (this file): uses a raw Popup control (PART_Popup) whose IsOpen is
+    //     set directly on button click. MenuItems are WPF MenuItem objects.
+    //     IDisposable handles window-reference cleanup.
+    //   - WinUI3 counterpart: uses ToggleButton (PART_Button) + MenuFlyout. The
+    //     flyout manages its own dismiss lifecycle; IsOpen state is tracked via
+    //     Flyout.Opened/Closed events. MenuItems are MenuFlyoutItemBase subtypes.
     /// <summary>
     /// A button which shows a menu, the <see cref="MenuItem"/>s of which are expressed as the content of this control
     /// </summary>

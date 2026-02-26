@@ -11,6 +11,8 @@
 
     using DPUtils = AJut.UX.DPUtils<BumpStack>;
 
+    // ===========[ BumpStack ]======================================================
+    // WinUI3 port: pending.
     [ContentProperty(nameof(Children))]
     [DefaultProperty(nameof(Children))]
     [TemplatePart(Name = nameof(PART_ScrollItemsContainer), Type = typeof(ScrollViewer))]

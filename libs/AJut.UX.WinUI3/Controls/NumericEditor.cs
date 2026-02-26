@@ -23,6 +23,15 @@ namespace AJut.UX.Controls
     //   PART_TextBox         - TextBox for direct numeric text entry
     //   PART_DefaultLabel    - TextBlock showing "#" when LabelContent is null
     //   PART_LabelArea       - ContentControl showing custom LabelContent
+    //
+    // WinUI3 limitation note: VisualState Setters cannot source values via
+    // TemplateBinding (no ancestor binding support). As a result, the hover and
+    // pressed Background changes for PART_IncreaseButton and PART_DecreaseButton
+    // are applied directly from PointerEntered/Exited/Pressed/Released event
+    // handlers rather than from VSM states in the ControlTemplate. The DPs
+    // IncreaseHoverHighlight, IncreasePressedHighlight, DecreaseHoverHighlight,
+    // and DecreasePressedHighlight exist precisely to surface these as customizable
+    // style properties despite this limitation.
 
     [TemplatePart(Name = nameof(PART_Root), Type = typeof(Border))]
     [TemplatePart(Name = nameof(PART_IncreaseButton), Type = typeof(RepeatButton))]

@@ -294,11 +294,13 @@
                                 Width="{Binding IndentWidth}"
                                 Background="Transparent"/>
 
+                        <!-- Foreground passes ExpanderGlyphForeground to the nested template. -->
                         <ToggleButton Grid.Column="1"
                                       IsChecked="{Binding IsExpanded, Mode=TwoWay}"
                                       Visibility="{Binding IsExpandable, Converter={StaticResource FlatTree_HasChildrenToVisibility}}"
                                       HorizontalAlignment="Center"
-                                      VerticalAlignment="Center">
+                                      VerticalAlignment="Center"
+                                      Foreground="{TemplateBinding ExpanderGlyphForeground}">
                             <ToggleButton.Style>
                                 <Style TargetType="ToggleButton">
                                     <Setter Property="Background" Value="Transparent"/>
@@ -318,7 +320,7 @@
                                                               Glyph="&#xE76C;"
                                                               HorizontalAlignment="Center"
                                                               VerticalAlignment="Center"
-                                                              Foreground="{ThemeResource AJut_Brush_SymbolForeground}"/>
+                                                              Foreground="{TemplateBinding Foreground}"/>
                                                     <VisualStateManager.VisualStateGroups>
                                                         <VisualStateGroup x:Name="CommonStates">
                                                             <VisualState x:Name="Normal"/>
@@ -387,6 +389,7 @@
         <Setter Property="BorderBrush" Value="{ThemeResource AJut_Brush_ListBorder}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="ExpanderGlyphForeground" Value="{ThemeResource AJut_Brush_SymbolForeground}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:FlatTreeListControl">
@@ -480,19 +483,30 @@
     </Style>
 
     <!--
-    ===[ DockZone - AJut-themed override ]===
-    Applies AJut brush tokens to the DockZone's panel appearance properties.
-    The hardcoded defaults in DockZone.xaml remain intact for no-theme usage.
+    ===[ DockLeafLayout - AJut-themed override ]===
+    Applies AJut brush tokens to the leaf panel's visual DPs.
+    The default colors in DockLeafLayout.xaml remain intact for no-theme usage.
+    No template redefinition — only DP setters.
     -->
-    <Style TargetType="local:DockZone">
-        <Setter Property="PanelBackground" Value="{ThemeResource AJut_Brush_PanelBackground}"/>
-        <Setter Property="PanelForeground" Value="{ThemeResource AJut_Brush_NormalText}"/>
-        <Setter Property="PanelBorderBrush" Value="{ThemeResource AJut_Brush_BorderCommon}"/>
+    <Style TargetType="local:DockLeafLayout">
+        <Setter Property="Foreground"           Value="{ThemeResource AJut_Brush_NormalText}"/>
+        <Setter Property="PanelBackground"      Value="{ThemeResource AJut_Brush_PanelBackground}"/>
+        <Setter Property="PanelBorderBrush"     Value="{ThemeResource AJut_Brush_BorderCommon}"/>
         <Setter Property="PanelBorderThickness" Value="1"/>
-        <Setter Property="TabStripBackground" Value="{ThemeResource AJut_Brush_BannerBackground}"/>
+        <Setter Property="TabStripBackground"   Value="{ThemeResource AJut_Brush_BannerBackground}"/>
         <!-- TopLeft=0, TopRight=0: flat top merges with header bar.
              BottomRight=8, BottomLeft=8: rounded bottom corners above the tab strip. -->
-        <Setter Property="PanelCornerRadius" Value="0,0,8,8"/>
+        <Setter Property="PanelCornerRadius"    Value="0,0,8,8"/>
+    </Style>
+
+    <!--
+    ===[ DockTabItem - AJut-themed override ]===
+    Applies AJut brush tokens to tab item background and border.
+    No template redefinition — only DP setters.
+    -->
+    <Style TargetType="local:DockTabItem">
+        <Setter Property="Background"   Value="{ThemeResource AJut_Brush_PanelBackground}"/>
+        <Setter Property="BorderBrush"  Value="{ThemeResource AJut_Brush_BorderCommon}"/>
     </Style>
 
     <!--
@@ -576,7 +590,13 @@
 
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="BorderStates">
-                                <VisualState x:Name="Normal"/>
+                                <!-- Normal: explicit revert — WinUI3 Setters do not auto-revert on state exit -->
+                                <VisualState x:Name="Normal">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_Root.BorderBrush"
+                                                Value="{ThemeResource AJut_Brush_TextBoxBorder}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
                                 <VisualState x:Name="Focused">
                                     <VisualState.Setters>
                                         <Setter Target="PART_Root.BorderBrush"
@@ -591,7 +611,12 @@
                                 </VisualState>
                             </VisualStateGroup>
                             <VisualStateGroup x:Name="WarningDisplayStates">
-                                <VisualState x:Name="WarningHidden"/>
+                                <!-- WarningHidden: explicit revert — WinUI3 Setters do not auto-revert on state exit -->
+                                <VisualState x:Name="WarningHidden">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_WarningDisplay.Visibility" Value="Collapsed"/>
+                                    </VisualState.Setters>
+                                </VisualState>
                                 <VisualState x:Name="WarningShown">
                                     <VisualState.Setters>
                                         <Setter Target="PART_WarningDisplay.Visibility"

@@ -18,6 +18,15 @@ namespace AJut.UX.Controls
     //
     // Template parts:
     //   PART_Button  - ToggleButton that triggers and reflects the flyout state
+    //
+    // WinUI3 vs WPF platform differences:
+    //   - WinUI3 (this file): uses ToggleButton (PART_Button) + MenuFlyout. The
+    //     flyout manages its own dismiss lifecycle; this class syncs PART_Button
+    //     .IsChecked to the flyout state via Flyout.Opened/Closed events.
+    //     MenuItems are MenuFlyoutItemBase subtypes (MenuFlyoutItem, etc.).
+    //   - WPF counterpart: uses a raw Popup control (PART_Popup) whose IsOpen is
+    //     set directly on button click. MenuItems are WPF MenuItem objects.
+    //     IDisposable is needed for window-reference cleanup.
 
     [TemplatePart(Name = nameof(PART_Button), Type = typeof(ToggleButton))]
     public class PopupMenuButton : Control

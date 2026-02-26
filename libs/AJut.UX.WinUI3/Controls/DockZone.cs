@@ -1,12 +1,5 @@
 namespace AJut.UX.Controls
 {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Collections.Specialized;
-    using System.ComponentModel;
-    using System.Linq;
     using AJut.Tree;
     using AJut.UX.Docking;
     using Microsoft.UI.Dispatching;
@@ -14,10 +7,15 @@ namespace AJut.UX.Controls
     using Microsoft.UI.Xaml.Controls;
     using Microsoft.UI.Xaml.Input;
     using Microsoft.UI.Xaml.Media;
+    using System;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Collections.Specialized;
+    using System.ComponentModel;
+    using System.Linq;
+    using Windows.Foundation;
     using APUtils = AJut.UX.APUtils<DockZone>;
     using DPUtils = AJut.UX.DPUtils<DockZone>;
-
-    using Windows.Foundation;
 
     // ===========[ DockZone ]====================================================
     // WinUI3 docking zone control. Backed by a DockZoneViewModel which drives
@@ -27,10 +25,14 @@ namespace AJut.UX.Controls
     //   RenderSize       → ActualWidth / ActualHeight
     //   SetTargetSizeAsync → schedules SetTargetSize on the DispatcherQueue
     //
-    // The template contains only PART_Root (a Grid). All layout elements
-    // (headers, content presenters, tab strips, child DockZones, DockZoneSplitters)
-    // are built entirely in code-behind via RebuildLayout() whenever the
-    // ViewModel's Orientation or DockedContent changes.
+    // The template contains only PART_Root (a Grid). All structural children
+    // (DockLeafLayout, child DockZones, DockZoneSplitters) are built in code-behind
+    // via RebuildLayout() whenever the ViewModel's Orientation or DockedContent changes.
+    //
+    // Leaf layout (Single / Tabbed orientations) is delegated to DockLeafLayout, a
+    // proper WinUI3 Control with its own ControlTemplate in DockLeafLayout.xaml. This
+    // gives the 3-row structure (header / content / tab strip) a real XAML home so
+    // theming, border overlap, and padding live in markup rather than code.
     //
     // Drag-and-drop (tearoff, zone reorder) is deferred to a later session.
     //
@@ -81,7 +83,11 @@ namespace AJut.UX.Controls
 
         void IDockZoneUI.SetTargetSizeAsync(List<double> sizes)
         {
-            this.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () => this.SetTargetSize(sizes));
+            this.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
+            {
+                if (this.XamlRoot == null) { return; }
+                this.SetTargetSize(sizes);
+            });
         }
 
         // ===========[ Template ]=============================================
@@ -140,51 +146,6 @@ namespace AJut.UX.Controls
         }
 
         public ReadOnlyObservableCollection<DockZone> ChildZones { get; }
-
-        // ===========[ Dependency Properties - Styling ]======================
-
-        public static readonly DependencyProperty PanelBackgroundProperty = DPUtils.Register(_ => _.PanelBackground);
-        public Brush PanelBackground
-        {
-            get => (Brush)this.GetValue(PanelBackgroundProperty);
-            set => this.SetValue(PanelBackgroundProperty, value);
-        }
-
-        public static readonly DependencyProperty PanelForegroundProperty = DPUtils.Register(_ => _.PanelForeground);
-        public Brush PanelForeground
-        {
-            get => (Brush)this.GetValue(PanelForegroundProperty);
-            set => this.SetValue(PanelForegroundProperty, value);
-        }
-
-        public static readonly DependencyProperty PanelBorderBrushProperty = DPUtils.Register(_ => _.PanelBorderBrush);
-        public Brush PanelBorderBrush
-        {
-            get => (Brush)this.GetValue(PanelBorderBrushProperty);
-            set => this.SetValue(PanelBorderBrushProperty, value);
-        }
-
-        public static readonly DependencyProperty PanelBorderThicknessProperty = DPUtils.Register(_ => _.PanelBorderThickness);
-        public Thickness PanelBorderThickness
-        {
-            get => (Thickness)this.GetValue(PanelBorderThicknessProperty);
-            set => this.SetValue(PanelBorderThicknessProperty, value);
-        }
-
-        public static readonly DependencyProperty PanelCornerRadiusProperty = DPUtils.Register(_ => _.PanelCornerRadius);
-        public CornerRadius PanelCornerRadius
-        {
-            get => (CornerRadius)this.GetValue(PanelCornerRadiusProperty);
-            set => this.SetValue(PanelCornerRadiusProperty, value);
-        }
-
-        // Background for the tab strip row - typically darker than PanelBackground.
-        public static readonly DependencyProperty TabStripBackgroundProperty = DPUtils.Register(_ => _.TabStripBackground);
-        public Brush TabStripBackground
-        {
-            get => (Brush)this.GetValue(TabStripBackgroundProperty);
-            set => this.SetValue(TabStripBackgroundProperty, value);
-        }
 
         // ===========[ Attached Properties - GroupId ]========================
 
@@ -277,40 +238,25 @@ namespace AJut.UX.Controls
 
         private void BuildLeafLayout(bool tabbed)
         {
-            // Row layout:
-            //   0 (Auto)  - header bar (title of the selected panel)
-            //   1 (*)     - content presenter
-            //   2 (Auto)  - tab strip (tabbed mode only)
-
-            // Cancel any in-progress header drag (the old header border is being replaced).
+            // Cancel any in-progress header drag (the old leaf layout is being replaced).
             m_headerDragPending = false;
-
-            PART_Root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            PART_Root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-            if (tabbed)
-            {
-                PART_Root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            }
 
             int selectedIndex = this.ViewModel.SelectedIndex;
             var selectedAdapter = (selectedIndex >= 0 && selectedIndex < this.ViewModel.DockedContent.Count)
                 ? this.ViewModel.DockedContent[selectedIndex]
                 : this.ViewModel.DockedContent.FirstOrDefault();
 
-            // Header bar
+            // Header content UIElement: title text + optional close button.
+            // Foreground is NOT set here — it inherits from DockLeafLayout.Foreground (set via Style).
             var headerText = new TextBlock
             {
                 Text = selectedAdapter?.TitleContent?.ToString() ?? string.Empty,
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(6, 4, 6, 4),
             };
-            if (this.PanelForeground != null)
-            {
-                headerText.Foreground = this.PanelForeground;
-            }
 
             var dockingManager = m_manager as DockingManager;
-            var hostWindow     = dockingManager?.GetWindowForZone(this);
+            var hostWindow = dockingManager?.GetWindowForZone(this);
 
             // Show the panel-level close button only when this zone is a non-root panel
             // inside a tearoff window. On the root window the OS chrome handles closure.
@@ -330,8 +276,7 @@ namespace AJut.UX.Controls
                     Padding = new Thickness(6, 3, 6, 3),
                     VerticalAlignment = VerticalAlignment.Stretch,
                     BorderThickness = new Thickness(0),
-                    Background = new SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0)),
-                    Foreground = this.PanelForeground,
+                    Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
                 };
                 var capturedAdapter = selectedAdapter;
                 headerCloseBtn.Click += (s, e) =>
@@ -353,21 +298,6 @@ namespace AJut.UX.Controls
                 headerContent = headerText;
             }
 
-            var headerBorder = new Border
-            {
-                Background = this.PanelBackground,
-                BorderBrush = this.PanelBorderBrush,
-                BorderThickness = new Thickness(0, 0, 0, 1),
-                Child = headerContent,
-            };
-            headerBorder.PointerPressed      += this.OnHeaderPointerPressed;
-            headerBorder.PointerMoved        += this.OnHeaderPointerMoved;
-            headerBorder.PointerReleased     += this.OnHeaderPointerReleased;
-            headerBorder.PointerCaptureLost  += this.OnHeaderPointerCaptureLost;
-            Grid.SetRow(headerBorder, 0);
-            PART_Root.Children.Add(headerBorder);
-
-            // Content presenter
             // WinUI3 does not auto-detach UIElements from their old parent (unlike WPF).
             // If the display element is still hosted in a ContentPresenter from the tearoff
             // that triggered this drop, explicitly detach it before claiming it here.
@@ -380,54 +310,51 @@ namespace AJut.UX.Controls
                 }
             }
 
-            var contentPresenter = new ContentPresenter
+            // DockLeafLayout owns the 3-row visual structure (header / content / tab strip).
+            // All visual DPs are pushed directly — WinUI3 TemplateBinding does not backfill.
+            var leaf = new DockLeafLayout
             {
-                Content = displayElement,
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                VerticalAlignment = VerticalAlignment.Stretch,
+                IsTabbed = tabbed,
+                HeaderContent = headerContent,
+                PanelContent = displayElement,
             };
-            var contentBorder = new Border
-            {
-                Background = this.PanelBackground,
-                BorderBrush = this.PanelBorderBrush,
-                BorderThickness = this.PanelBorderThickness,
-                CornerRadius = this.PanelCornerRadius,
-                // Small padding keeps user content from pressing right against the panel border.
-                Padding = new Thickness(2),
-                Child = contentPresenter,
-            };
-            Grid.SetRow(contentBorder, 1);
-            PART_Root.Children.Add(contentBorder);
 
-            // Tab strip (tabbed mode only)
             if (tabbed)
             {
-                var tabStrip = this.BuildTabStrip(selectedAdapter);
-                Grid.SetRow(tabStrip, 2);
-                PART_Root.Children.Add(tabStrip);
+                leaf.TabNavContent = this.BuildTabNavContent(selectedAdapter);
             }
+
+            // Forward header pointer events to this DockZone's handlers.
+            // DockLeafLayout passes PART_HeaderBar (a Border) as the event sender,
+            // so existing handler casts — (Border)sender — remain valid.
+            leaf.HeaderPointerPressed += this.OnHeaderPointerPressed;
+            leaf.HeaderPointerMoved += this.OnHeaderPointerMoved;
+            leaf.HeaderPointerReleased += this.OnHeaderPointerReleased;
+            leaf.HeaderPointerCaptureLost += this.OnHeaderPointerCaptureLost;
+
+            PART_Root.Children.Add(leaf);
         }
 
-        private FrameworkElement BuildTabStrip(DockingContentAdapterModel selectedAdapter)
+        // Returns the tab-navigation Grid (left scroll btn + ScrollViewer + right scroll btn).
+        // The outer wrapper Border (background, top border, padding) lives in DockLeafLayout's
+        // PART_TabStripWrapper template part — only the inner content is built here.
+        private FrameworkElement BuildTabNavContent(DockingContentAdapterModel selectedAdapter)
         {
-            const double kTabUnselectedOpacity = 0.35;
-            const double kTabHoverOpacity = 0.8;
-
-            var tabPanel       = new StackPanel { Orientation = Orientation.Horizontal };
+            var tabPanel = new StackPanel { Orientation = Orientation.Horizontal };
             var dockingManager = m_manager as DockingManager;
 
             for (int i = 0; i < this.ViewModel.DockedContent.Count; i++)
             {
-                var adapter      = this.ViewModel.DockedContent[i];
+                var adapter = this.ViewModel.DockedContent[i];
                 int capturedIndex = i;
-                bool isSelected   = adapter == selectedAdapter;
+                bool isSelected = adapter == selectedAdapter;
 
+                // Foreground inherits from DockLeafLayout.Foreground through the visual tree.
                 var tabLabel = new TextBlock
                 {
-                    Text              = adapter.TitleContent?.ToString() ?? $"Tab {i + 1}",
-                    Foreground        = this.PanelForeground,
+                    Text = adapter.TitleContent?.ToString() ?? $"Tab {i + 1}",
                     VerticalAlignment = VerticalAlignment.Center,
-                    Padding           = new Thickness(6, 3, 6, 3),
+                    Padding = new Thickness(6, 3, 6, 3),
                 };
 
                 UIElement tabContent;
@@ -435,13 +362,12 @@ namespace AJut.UX.Controls
                 {
                     var tabCloseBtn = new Button
                     {
-                        Content           = "✕",
-                        Padding           = new Thickness(3, 1, 3, 1),
+                        Content = "✕",
+                        Padding = new Thickness(3, 1, 3, 1),
                         VerticalAlignment = VerticalAlignment.Center,
-                        BorderThickness   = new Thickness(0),
-                        Background        = new SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0)),
-                        Foreground        = this.PanelForeground,
-                        FontSize          = 10,
+                        BorderThickness = new Thickness(0),
+                        Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
+                        FontSize = 10,
                     };
                     tabCloseBtn.Click += (s, e) =>
                     {
@@ -466,42 +392,33 @@ namespace AJut.UX.Controls
 
                 // Tab border logic:
                 //   Left  : first tab and selected tab get a left border (outer edge + selected outline)
-                //   Top   : never — the open top is how the tab "connects" to the content panel above
-                //   Right : every tab except those immediately left of a selected tab (selected provides left)
+                //   Top   : never — the open top visually connects to the content panel above
+                //   Right : every tab except those immediately left of a selected tab (selected provides its own left)
                 //   Bottom: always — visible outline at the bottom of the tab strip
-                //
-                // Selected tab has Margin top=-1 to overlap the content panel's bottom border by 1px,
-                // making the tab and panel appear as one continuous connected shape.
                 bool nextIsSelected = (i + 1 < this.ViewModel.DockedContent.Count)
                     && (this.ViewModel.DockedContent[i + 1] == selectedAdapter);
 
-                int leftBorder  = (i == 0 || isSelected) ? 1 : 0;
+                int leftBorder = (i == 0 || isSelected) ? 1 : 0;
                 int rightBorder = nextIsSelected ? 0 : 1;
 
-                var tabItem = new Border
+                // DockTabItem owns the IsSelected/hover VSM states so no opacity or
+                // PointerEntered/PointerExited closures are needed here.
+                // Background and BorderBrush come from DockTabItem's Style (no code override).
+                // BorderThickness is index-aware so it stays in code.
+                var tabItem = new DockTabItem
                 {
-                    Background      = this.PanelBackground,
-                    Opacity         = isSelected ? 1.0 : kTabUnselectedOpacity,
-                    BorderBrush     = this.PanelBorderBrush,
+                    IsSelected = isSelected,
                     BorderThickness = new Thickness(leftBorder, 0, rightBorder, 1),
-                    Margin          = new Thickness(0, isSelected ? -1 : 0, 0, 0),
-                    Child           = tabContent,
+                    Content = tabContent,
                 };
 
-                // Hover: briefly restore opacity on unselected tabs so the user can read them.
-                if (!isSelected)
-                {
-                    tabItem.PointerEntered += (s, e) => tabItem.Opacity = kTabHoverOpacity;
-                    tabItem.PointerExited  += (s, e) => tabItem.Opacity = kTabUnselectedOpacity;
-                }
-
                 // Per-tab drag state - closures capture these per-iteration
-                bool   isPressedForDrag  = false;
-                bool   isDragModeDecided = false;
-                bool   isReorderDrag     = false;
-                int    reorderTargetIdx  = capturedIndex;
-                Point  dragStartPt       = default;
-                Point  screenPressPt     = default;
+                bool isPressedForDrag = false;
+                bool isDragModeDecided = false;
+                bool isReorderDrag = false;
+                int reorderTargetIdx = capturedIndex;
+                Point dragStartPt = default;
+                Point screenPressPt = default;
 
                 tabItem.PointerPressed += (s, e) =>
                 {
@@ -515,12 +432,12 @@ namespace AJut.UX.Controls
                     }
 
                     tabItem.CapturePointer(e.Pointer);
-                    dragStartPt   = e.GetCurrentPoint(tabItem).Position;
+                    dragStartPt = e.GetCurrentPoint(tabItem).Position;
                     dockingManager?.TryGetCursorScreenPos(out screenPressPt);
-                    isPressedForDrag  = true;
+                    isPressedForDrag = true;
                     isDragModeDecided = false;
-                    isReorderDrag     = false;
-                    reorderTargetIdx  = capturedIndex;
+                    isReorderDrag = false;
+                    reorderTargetIdx = capturedIndex;
                 };
 
                 tabItem.PointerMoved += (s, e) =>
@@ -546,12 +463,12 @@ namespace AJut.UX.Controls
 
                         // Decide mode based on dominant direction.
                         isDragModeDecided = true;
-                        isReorderDrag     = Math.Abs(dx) > Math.Abs(dy);
+                        isReorderDrag = Math.Abs(dx) > Math.Abs(dy);
 
                         if (!isReorderDrag)
                         {
                             // Vertical → tearoff mode: initiate immediately
-                            isPressedForDrag  = false;
+                            isPressedForDrag = false;
                             isDragModeDecided = false;
                             tabItem.ReleasePointerCapture(e.Pointer);
                             e.Handled = true;
@@ -592,16 +509,16 @@ namespace AJut.UX.Controls
                         }
                     }
 
-                    isPressedForDrag  = false;
+                    isPressedForDrag = false;
                     isDragModeDecided = false;
-                    isReorderDrag     = false;
+                    isReorderDrag = false;
                 };
 
                 tabItem.PointerCaptureLost += (s, e) =>
                 {
-                    isPressedForDrag  = false;
+                    isPressedForDrag = false;
                     isDragModeDecided = false;
-                    isReorderDrag     = false;
+                    isReorderDrag = false;
                 };
 
                 tabPanel.Children.Add(tabItem);
@@ -612,21 +529,20 @@ namespace AJut.UX.Controls
             // individually hidden when already at the start or end of the scroll range.
             var scrollViewer = new ScrollViewer
             {
-                HorizontalScrollMode          = ScrollMode.Enabled,
-                VerticalScrollMode            = ScrollMode.Disabled,
+                HorizontalScrollMode = ScrollMode.Enabled,
+                VerticalScrollMode = ScrollMode.Disabled,
                 HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden,
-                VerticalScrollBarVisibility   = ScrollBarVisibility.Disabled,
-                Content                       = tabPanel,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Disabled,
+                Content = tabPanel,
             };
 
             var leftScrollBtn = new Button
             {
-                Content           = "◂",
-                Padding           = new Thickness(4, 2, 4, 2),
-                BorderThickness   = new Thickness(0),
-                Background        = new SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0)),
-                Foreground        = this.PanelForeground,
-                Visibility        = Visibility.Collapsed,
+                Content = "◂",
+                Padding = new Thickness(4, 2, 4, 2),
+                BorderThickness = new Thickness(0),
+                Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
+                Visibility = Visibility.Collapsed,
                 VerticalAlignment = VerticalAlignment.Stretch,
             };
             leftScrollBtn.Click += (s, e) =>
@@ -634,12 +550,11 @@ namespace AJut.UX.Controls
 
             var rightScrollBtn = new Button
             {
-                Content           = "▸",
-                Padding           = new Thickness(4, 2, 4, 2),
-                BorderThickness   = new Thickness(0),
-                Background        = new SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0)),
-                Foreground        = this.PanelForeground,
-                Visibility        = Visibility.Collapsed,
+                Content = "▸",
+                Padding = new Thickness(4, 2, 4, 2),
+                BorderThickness = new Thickness(0),
+                Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
+                Visibility = Visibility.Collapsed,
                 VerticalAlignment = VerticalAlignment.Stretch,
             };
             rightScrollBtn.Click += (s, e) =>
@@ -648,39 +563,30 @@ namespace AJut.UX.Controls
             void UpdateScrollButtons(double offset)
             {
                 bool needsScroll = tabPanel.ActualWidth > scrollViewer.ActualWidth;
-                leftScrollBtn.Visibility  = needsScroll && offset > 0
+                leftScrollBtn.Visibility = needsScroll && offset > 0
                     ? Visibility.Visible : Visibility.Collapsed;
                 rightScrollBtn.Visibility = needsScroll && offset < scrollViewer.ScrollableWidth
                     ? Visibility.Visible : Visibility.Collapsed;
             }
 
-            scrollViewer.ViewChanged        += (s, e) => UpdateScrollButtons(scrollViewer.HorizontalOffset);
-            tabPanel.SizeChanged            += (s, e) => UpdateScrollButtons(scrollViewer.HorizontalOffset);
-            scrollViewer.SizeChanged        += (s, e) => UpdateScrollButtons(scrollViewer.HorizontalOffset);
+            scrollViewer.ViewChanged += (s, e) => UpdateScrollButtons(scrollViewer.HorizontalOffset);
+            tabPanel.SizeChanged += (s, e) => UpdateScrollButtons(scrollViewer.HorizontalOffset);
+            scrollViewer.SizeChanged += (s, e) => UpdateScrollButtons(scrollViewer.HorizontalOffset);
 
             var navGrid = new Grid();
             navGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             navGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             navGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            Grid.SetColumn(leftScrollBtn,  0);
-            Grid.SetColumn(scrollViewer,   1);
+            Grid.SetColumn(leftScrollBtn, 0);
+            Grid.SetColumn(scrollViewer, 1);
             Grid.SetColumn(rightScrollBtn, 2);
             navGrid.Children.Add(leftScrollBtn);
             navGrid.Children.Add(scrollViewer);
             navGrid.Children.Add(rightScrollBtn);
 
-            // Wrap nav grid in the tab strip background container.
-            // No negative top margin on the wrapper — the selected tab item itself uses Margin top=-1
-            // to overlap the content panel's bottom border by 1px, making them appear connected.
-            // Top padding = 0 so the tab item's -1 margin is not cancelled out by wrapper padding.
-            return new Border
-            {
-                Background      = this.TabStripBackground,
-                BorderBrush     = this.PanelBorderBrush,
-                BorderThickness = new Thickness(0, 0, 0, 1),
-                Padding         = new Thickness(2, 0, 2, 2),
-                Child           = navGrid,
-            };
+            // Return only the inner nav grid. The outer wrapper (background, top border, padding)
+            // is PART_TabStripWrapper in DockLeafLayout's ControlTemplate — see DockLeafLayout.xaml.
+            return navGrid;
         }
 
         // Returns the index of the tab whose x-range contains cursorX within the panel.
@@ -745,7 +651,11 @@ namespace AJut.UX.Controls
             }
 
             // After a layout pass, apply stored pass-along sizes (e.g. from serialization).
-            this.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () => this.HandleNewChildZonesAdded(m_childZones));
+            this.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
+            {
+                if (this.XamlRoot == null) { return; }
+                this.HandleNewChildZonesAdded(m_childZones);
+            });
         }
 
         private void HandleNewChildZonesAdded(IEnumerable<DockZone> added)
@@ -769,7 +679,11 @@ namespace AJut.UX.Controls
                 if (full > 0 && rootSize.Width > 0)
                 {
                     var pixelSizes = sizes.Select(s => rootSize.Width * (s.Width / full)).ToList();
-                    this.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () => this.SetTargetSize(pixelSizes));
+                    this.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
+                    {
+                        if (this.XamlRoot == null) { return; }
+                        this.SetTargetSize(pixelSizes);
+                    });
                 }
             }
             else if (this.ViewModel.Orientation == eDockOrientation.Vertical)
@@ -778,7 +692,11 @@ namespace AJut.UX.Controls
                 if (full > 0 && rootSize.Height > 0)
                 {
                     var pixelSizes = sizes.Select(s => rootSize.Height * (s.Height / full)).ToList();
-                    this.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () => this.SetTargetSize(pixelSizes));
+                    this.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
+                    {
+                        if (this.XamlRoot == null) { return; }
+                        this.SetTargetSize(pixelSizes);
+                    });
                 }
             }
         }

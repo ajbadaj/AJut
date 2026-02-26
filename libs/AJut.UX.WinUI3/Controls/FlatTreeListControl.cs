@@ -11,6 +11,7 @@ namespace AJut.UX.Controls
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
     using Microsoft.UI.Xaml.Input;
+    using Microsoft.UI.Xaml.Media;
     using DPUtils = AJut.UX.DPUtils<FlatTreeListControl>;
 
     // ===========[ FlatTreeListControl ]=======================================
@@ -154,6 +155,19 @@ namespace AJut.UX.Controls
         {
             get => (bool)this.GetValue(ShouldToggleExpansionOnDoubleClickProperty);
             set => this.SetValue(ShouldToggleExpansionOnDoubleClickProperty, value);
+        }
+
+        // ExpanderGlyphForeground: foreground brush for each row's expand/collapse glyph.
+        // Default is set in the default style (TextFillColorSecondaryBrush). Propagated to
+        // each FlatTreeItemRow via ContainerContentChanging so callers can customize the
+        // glyph color without requiring the AJut theme to be loaded.
+        public static readonly DependencyProperty ExpanderGlyphForegroundProperty = DPUtils.Register(
+            _ => _.ExpanderGlyphForeground,
+            (d, e) => d.OnExpanderGlyphForegroundChanged());
+        public Brush ExpanderGlyphForeground
+        {
+            get => (Brush)this.GetValue(ExpanderGlyphForegroundProperty);
+            set => this.SetValue(ExpanderGlyphForegroundProperty, value);
         }
 
         // ===========[ Other Properties ]====================================
@@ -303,6 +317,7 @@ namespace AJut.UX.Controls
             if (e.ItemContainer?.ContentTemplateRoot is FlatTreeItemRow row)
             {
                 row.ContentTemplate = this.ItemTemplate;
+                row.ExpanderGlyphForeground = this.ExpanderGlyphForeground;
             }
 
             // Fire passthrough so consumers (e.g. PropertyGrid) can push additional state.
@@ -323,6 +338,23 @@ namespace AJut.UX.Controls
                     && container.ContentTemplateRoot is FlatTreeItemRow row)
                 {
                     row.ContentTemplate = this.ItemTemplate;
+                }
+            }
+        }
+
+        private void OnExpanderGlyphForegroundChanged ()
+        {
+            if (this.PART_ListView == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < this.PART_ListView.Items.Count; ++i)
+            {
+                if (this.PART_ListView.ContainerFromIndex(i) is ListViewItem container
+                    && container.ContentTemplateRoot is FlatTreeItemRow row)
+                {
+                    row.ExpanderGlyphForeground = this.ExpanderGlyphForeground;
                 }
             }
         }

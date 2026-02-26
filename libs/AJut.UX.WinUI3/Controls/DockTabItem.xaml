@@ -1,0 +1,90 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="using:AJut.UX.Controls">
+
+    <!-- ===========[ DockTabItem: Default Style ]============================= -->
+    <!-- Tab header item used by DockZone.BuildTabNavContent.
+         Background and BorderBrush come from Style Setters below (override in a theme
+         Style without redefining the template). BorderThickness is computed per-tab by
+         DockZone code (index-aware left/right borders) and pushed in OnApplyTemplate.
+         The VSM SelectionStates group drives opacity and vertical position:
+           Normal              - 0.35 opacity, slight inset margin
+           PointerOver         - 0.80 opacity, raised slightly
+           Selected            - 1.00 opacity, -2px top margin bleeds into content panel
+           SelectedPointerOver - same as Selected (hover does not disturb the overlap) -->
+    <Style TargetType="local:DockTabItem">
+        <Setter Property="IsTabStop" Value="False"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+
+        <!-- Default colors — override in a theme Style (no template redefinition needed) -->
+        <Setter Property="Background">
+            <Setter.Value><SolidColorBrush Color="#FF2B2B2B"/></Setter.Value>
+        </Setter>
+        <Setter Property="BorderBrush">
+            <Setter.Value><SolidColorBrush Color="#FF4A4A4A"/></Setter.Value>
+        </Setter>
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:DockTabItem">
+                    <!-- Root: carries the tab border (set from code) and VSM state changes.
+                         Background is transparent so the inner border's color shows through
+                         without interfering with the opacity/margin transitions. -->
+                    <Border x:Name="Root"
+                            Background="Transparent"
+                            Padding="{TemplateBinding Padding}">
+                        <!-- InnerBorder: Background and BorderBrush pushed from OnApplyTemplate
+                             (WinUI3 TemplateBinding does not backfill pre-template local values).
+                             No border here — borders are on Root via code-push. -->
+                        <Border x:Name="InnerBorder">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Border>
+
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="SelectionStates">
+                                <!-- Normal: explicit revert so returning from Selected/PointerOver always restores -->
+                                <VisualState x:Name="Normal">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Opacity" Value="0.35"/>
+                                        <Setter Target="Root.Margin" Value="0,2,0,2"/>
+                                        <Setter Target="Root.(Canvas.ZIndex)" Value="0"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Opacity" Value="0.80"/>
+                                        <Setter Target="Root.Margin" Value="0,1,0,0"/>
+                                        <Setter Target="Root.(Canvas.ZIndex)" Value="1"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <!-- Selected: -2px top margin so the tab bleeds into the
+                                     content panel above (matching DockLeafLayout's 1px strip
+                                     offset); ZIndex=5 renders it above the strip border. -->
+                                <VisualState x:Name="Selected">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Opacity" Value="1.0"/>
+                                        <Setter Target="Root.Margin" Value="0,-2,0,0"/>
+                                        <Setter Target="Root.(Canvas.ZIndex)" Value="5"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <!-- SelectedPointerOver: keep the overlap so hover doesn't
+                                     visually disconnect the selected tab from the content. -->
+                                <VisualState x:Name="SelectedPointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Opacity" Value="1.0"/>
+                                        <Setter Target="Root.Margin" Value="0,-2,0,0"/>
+                                        <Setter Target="Root.(Canvas.ZIndex)" Value="5"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

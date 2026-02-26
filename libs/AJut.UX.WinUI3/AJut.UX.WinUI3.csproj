@@ -87,6 +87,12 @@
     <Compile Update="Controls\DockDropInsertionDriverWidget.cs">
       <DependentUpon>DockDropInsertionDriverWidget.xaml</DependentUpon>
     </Compile>
+    <Compile Update="Controls\DockTabItem.cs">
+      <DependentUpon>DockTabItem.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\DockLeafLayout.cs">
+      <DependentUpon>DockLeafLayout.xaml</DependentUpon>
+    </Compile>
     <Compile Update="Controls\DockZone.cs">
       <DependentUpon>DockZone.xaml</DependentUpon>
     </Compile>
