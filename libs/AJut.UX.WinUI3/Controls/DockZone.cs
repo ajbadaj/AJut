@@ -464,16 +464,27 @@ namespace AJut.UX.Controls
                     tabContent = tabLabel;
                 }
 
-                // Per-tab left/right border; selected tab has no bottom border and a slight
-                // negative top margin so it visually merges with the content border above.
-                // Unselected tabs are dimmed to ~35% opacity so the selected tab stands out.
+                // Tab border logic:
+                //   Left  : first tab and selected tab get a left border (outer edge + selected outline)
+                //   Top   : never — the open top is how the tab "connects" to the content panel above
+                //   Right : every tab except those immediately left of a selected tab (selected provides left)
+                //   Bottom: always — visible outline at the bottom of the tab strip
+                //
+                // Selected tab has Margin top=-1 to overlap the content panel's bottom border by 1px,
+                // making the tab and panel appear as one continuous connected shape.
+                bool nextIsSelected = (i + 1 < this.ViewModel.DockedContent.Count)
+                    && (this.ViewModel.DockedContent[i + 1] == selectedAdapter);
+
+                int leftBorder  = (i == 0 || isSelected) ? 1 : 0;
+                int rightBorder = nextIsSelected ? 0 : 1;
+
                 var tabItem = new Border
                 {
                     Background      = this.PanelBackground,
                     Opacity         = isSelected ? 1.0 : kTabUnselectedOpacity,
                     BorderBrush     = this.PanelBorderBrush,
-                    BorderThickness = new Thickness(1, 0, 1, 0),
-                    Margin          = new Thickness(i == 0 ? 0 : 2, isSelected ? -1 : 0, 0, 0),
+                    BorderThickness = new Thickness(leftBorder, 0, rightBorder, 1),
+                    Margin          = new Thickness(0, isSelected ? -1 : 0, 0, 0),
                     Child           = tabContent,
                 };
 
@@ -658,15 +669,16 @@ namespace AJut.UX.Controls
             navGrid.Children.Add(scrollViewer);
             navGrid.Children.Add(rightScrollBtn);
 
-            // Issue 7: slight negative top margin so the selected tab visually overlaps
-            // the content border's bottom edge, creating a unified "tab is part of panel" look.
+            // Wrap nav grid in the tab strip background container.
+            // No negative top margin on the wrapper — the selected tab item itself uses Margin top=-1
+            // to overlap the content panel's bottom border by 1px, making them appear connected.
+            // Top padding = 0 so the tab item's -1 margin is not cancelled out by wrapper padding.
             return new Border
             {
                 Background      = this.TabStripBackground,
                 BorderBrush     = this.PanelBorderBrush,
-                BorderThickness = new Thickness(0, 1, 0, 0),
-                Padding         = new Thickness(4, 1, 4, 2),
-                Margin          = new Thickness(0, -3, 0, 0),
+                BorderThickness = new Thickness(0, 0, 0, 1),
+                Padding         = new Thickness(2, 0, 2, 2),
                 Child           = navGrid,
             };
         }

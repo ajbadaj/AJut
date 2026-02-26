@@ -15,18 +15,26 @@
 
         <!-- Visual defaults - callers can override any of these per-instance or in an app style -->
         <Setter Property="PanelBackground">
-            <Setter.Value><SolidColorBrush Color="#FF2B2B2B"/></Setter.Value>
+            <Setter.Value>
+                <SolidColorBrush Color="#FF2B2B2B"/>
+            </Setter.Value>
         </Setter>
         <Setter Property="PanelForeground">
-            <Setter.Value><SolidColorBrush Color="#FFF0F0F0"/></Setter.Value>
+            <Setter.Value>
+                <SolidColorBrush Color="#FFF0F0F0"/>
+            </Setter.Value>
         </Setter>
         <Setter Property="PanelBorderBrush">
-            <Setter.Value><SolidColorBrush Color="#FF4A4A4A"/></Setter.Value>
+            <Setter.Value>
+                <SolidColorBrush Color="#FF4A4A4A"/>
+            </Setter.Value>
         </Setter>
         <Setter Property="PanelBorderThickness" Value="1"/>
         <!-- TabStripBackground: darker than the panel to distinguish the tab strip row -->
         <Setter Property="TabStripBackground">
-            <Setter.Value><SolidColorBrush Color="#FF1A1A1A"/></Setter.Value>
+            <Setter.Value>
+                <SolidColorBrush Color="#FF1A1A1A"/>
+            </Setter.Value>
         </Setter>
 
         <Setter Property="Template">
