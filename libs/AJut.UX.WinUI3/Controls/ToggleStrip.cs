@@ -13,10 +13,11 @@ namespace AJut.UX.Controls
     using Microsoft.UI.Xaml.Controls.Primitives;
     using Microsoft.UI.Xaml.Data;
     using Microsoft.UI.Xaml.Media;
-    using Microsoft.UI.Xaml.Shapes;
     using DPUtils = AJut.UX.DPUtils<ToggleStrip>;
 
     // ===========[ ToggleStrip ]================================================
+    // Template parts:
+    //   PART_ItemsPanel  - StackPanel that holds the generated toggle buttons
     // A horizontal (or vertical) strip of mutually exclusive toggle buttons.
     // Exactly one item is selected at a time (unless AllowNoSelection = true).
     // Items are provided via ItemsSource or built manually via the Items collection.
@@ -30,6 +31,7 @@ namespace AJut.UX.Controls
         // ===========[ Const-like ]===============================================
         private static readonly PropertyPath kIsSelectedPath = new PropertyPath("IsSelected");
         private static readonly PropertyPath kNamePath = new PropertyPath("Name");
+        private static readonly PropertyPath kBorderBrushPath = new PropertyPath("BorderBrush");
 
         // ===========[ Instance fields ]==========================================
         private StackPanel PART_ItemsPanel;
@@ -133,6 +135,16 @@ namespace AJut.UX.Controls
         {
             get => (ToggleItemsCollection)this.GetValue(ItemsProperty);
             private set => this.SetValue(ItemsProperty, value);
+        }
+
+        // CornerRadius: distributed to the first/last buttons so rounded corners appear as a unit.
+        public static readonly DependencyProperty CornerRadiusProperty = DPUtils.Register(
+            _ => _.CornerRadius, new CornerRadius(2),
+            (d, e) => d.RebuildItems());
+        public CornerRadius CornerRadius
+        {
+            get => (CornerRadius)this.GetValue(CornerRadiusProperty);
+            set => this.SetValue(CornerRadiusProperty, value);
         }
 
         // ===========[ Template application ]=====================================
@@ -303,33 +315,56 @@ namespace AJut.UX.Controls
 
             this.PART_ItemsPanel.Children.Clear();
 
+            int totalItems = this.Items.Count;
             int index = 0;
             foreach (ToggleItem item in this.Items)
             {
-                // Add separator between items (not before the first)
-                if (index > 0 && this.SeparatorThickness > 0)
-                {
-                    var separator = new Rectangle
-                    {
-                        Width = this.SeparatorThickness,
-                        VerticalAlignment = VerticalAlignment.Stretch,
-                        Fill = this.BorderBrush ?? new SolidColorBrush(Microsoft.UI.Colors.Gray),
-                    };
-                    this.PART_ItemsPanel.Children.Add(separator);
-                }
-
-                var btn = this.CreateItemButton(item);
+                var btn = this.CreateItemButton(item, index, isLast: index == totalItems - 1);
                 this.PART_ItemsPanel.Children.Add(btn);
                 ++index;
             }
         }
 
-        private ToggleButton CreateItemButton (ToggleItem item)
+        private ToggleButton CreateItemButton (ToggleItem item, int index, bool isLast)
         {
             var btn = new ToggleButton();
             btn.Padding = new Thickness(8, 4, 8, 4);
 
-            // Bind IsChecked ↔ IsSelected (TwoWay so clicking the button drives selection logic)
+            // 1. Left-edge separator border: first button has no border; others show a
+            //    1px left-only divider using the strip's BorderBrush.
+            btn.BorderThickness = index == 0
+                ? new Thickness(0)
+                : new Thickness(this.SeparatorThickness, 0, 0, 0);
+
+            btn.SetBinding(ToggleButton.BorderBrushProperty, new Binding
+            {
+                Source = this,
+                Path = kBorderBrushPath,
+                Mode = BindingMode.OneWay,
+            });
+
+            // 2. Corner radius: distribute the strip's outer CornerRadius to each button
+            //    so the group reads as one cohesive control with a shared silhouette.
+            bool isFirst = index == 0;
+            CornerRadius cr = this.CornerRadius;
+            if (isFirst && isLast)
+            {
+                btn.CornerRadius = cr;
+            }
+            else if (isFirst)
+            {
+                btn.CornerRadius = new CornerRadius(cr.TopLeft, 0, 0, cr.BottomLeft);
+            }
+            else if (isLast)
+            {
+                btn.CornerRadius = new CornerRadius(0, cr.TopRight, cr.BottomRight, 0);
+            }
+            else
+            {
+                btn.CornerRadius = new CornerRadius(0);
+            }
+
+            // 3. Bind IsChecked ↔ IsSelected (TwoWay so clicking drives selection logic)
             btn.SetBinding(ToggleButton.IsCheckedProperty, new Binding
             {
                 Source = item,

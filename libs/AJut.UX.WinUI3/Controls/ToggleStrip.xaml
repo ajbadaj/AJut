@@ -17,7 +17,7 @@
                     <Border Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="2">
+                            CornerRadius="{TemplateBinding CornerRadius}">
                         <StackPanel x:Name="PART_ItemsPanel"
                                     Orientation="Horizontal"/>
                     </Border>

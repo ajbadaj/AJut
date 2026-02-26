@@ -3,27 +3,49 @@ namespace AJut.UX.Controls
     using System;
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
+    using Microsoft.UI.Xaml.Controls.Primitives;
+    using Microsoft.UI.Xaml.Media;
+    using Windows.UI;
     using DPUtils = AJut.UX.DPUtils<NumericEditor>;
 
     // ===========[ NumericEditor ]=============================================
     // WinUI3 numeric editor for PropertyGrid DataTemplates. Accepts and returns
     // Value as object (TwoWay-bindable to PropertyEditTarget.EditValue) and
-    // preserves the source type (float, int, double, …) across edits.
+    // preserves the source type (float, int, double, ...) across edits.
     //
-    // Wraps WinUI3 NumberBox which handles text entry, spin buttons, and
-    // min/max enforcement. NumericEditorViewModel (shared with WPF version) is
-    // used for type-detection and round-trip conversion.
-    //
-    // Template part:
-    //   PART_NumberBox  - inner NumberBox
+    // Template parts:
+    //   PART_Root            - outer Border (focus border color is set here)
+    //   PART_IncreaseButton  - RepeatButton for incrementing Value
+    //   PART_DecreaseButton  - RepeatButton for decrementing Value
+    //   PART_TextBox         - TextBox for direct numeric text entry
+    //   PART_DefaultLabel    - TextBlock showing "#" when LabelContent is null
+    //   PART_LabelArea       - ContentControl showing custom LabelContent
 
-    [TemplatePart(Name = nameof(PART_NumberBox), Type = typeof(NumberBox))]
+    [TemplatePart(Name = nameof(PART_Root), Type = typeof(Border))]
+    [TemplatePart(Name = nameof(PART_IncreaseButton), Type = typeof(RepeatButton))]
+    [TemplatePart(Name = nameof(PART_DecreaseButton), Type = typeof(RepeatButton))]
+    [TemplatePart(Name = nameof(PART_TextBox), Type = typeof(TextBox))]
+    [TemplatePart(Name = nameof(PART_DefaultLabel), Type = typeof(TextBlock))]
+    [TemplatePart(Name = nameof(PART_LabelArea), Type = typeof(ContentControl))]
     public class NumericEditor : Control, INumericEditorSettings
     {
+        // ===========[ Const-like ]===============================================
+        // Nearly-transparent but fully hit-testable background for the RepeatButtons.
+        private static readonly SolidColorBrush kNearlyTransparentBrush
+            = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0));
+
         // ===========[ Instance fields ]==========================================
-        private NumberBox PART_NumberBox;
+        private Border PART_Root;
+        private RepeatButton PART_IncreaseButton;
+        private RepeatButton PART_DecreaseButton;
+        private TextBox PART_TextBox;
+        private TextBlock PART_DefaultLabel;
+        private ContentControl PART_LabelArea;
+
         private NumericEditorViewModel m_vm;
         private bool m_blockReentrancy;
+        private bool m_isIncreasePointerOver;
+        private bool m_isDecreasePointerOver;
 
         // ===========[ Construction ]=============================================
         public NumericEditor ()
@@ -34,12 +56,8 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ INumericEditorSettings ]===================================
-        // DecimalPlacesAllowed: -1 means unconstrained; NumberBox handles
-        // formatting so the view model's text-cap logic is a no-op here.
         int INumericEditorSettings.DecimalPlacesAllowed => -1;
 
-        // Translate double sentinels (±∞) back to null so the view model
-        // treats them as unconstrained bounds.
         object INumericEditorSettings.Minimum
             => double.IsNegativeInfinity(this.Minimum) ? null : (object)this.Minimum;
 
@@ -58,11 +76,9 @@ namespace AJut.UX.Controls
             set => this.SetValue(ValueProperty, value);
         }
 
-        // Minimum / Maximum forwarded to NumberBox (optional).
-        // ±∞ sentinel means unconstrained (matches NumberBox default behaviour).
+        // Minimum / Maximum (±∞ sentinels = unconstrained).
         public static readonly DependencyProperty MinimumProperty = DPUtils.Register(
-            _ => _.Minimum, double.NegativeInfinity,
-            (d, e) => { if (d.PART_NumberBox != null) d.PART_NumberBox.Minimum = e.NewValue; });
+            _ => _.Minimum, double.NegativeInfinity);
         public double Minimum
         {
             get => (double)this.GetValue(MinimumProperty);
@@ -70,55 +86,262 @@ namespace AJut.UX.Controls
         }
 
         public static readonly DependencyProperty MaximumProperty = DPUtils.Register(
-            _ => _.Maximum, double.PositiveInfinity,
-            (d, e) => { if (d.PART_NumberBox != null) d.PART_NumberBox.Maximum = e.NewValue; });
+            _ => _.Maximum, double.PositiveInfinity);
         public double Maximum
         {
             get => (double)this.GetValue(MaximumProperty);
             set => this.SetValue(MaximumProperty, value);
         }
 
-        // SmallChange: step for spin buttons / arrow keys (default 1).
+        // SmallChange: increment/decrement step for the RepeatButtons (default 1).
         public static readonly DependencyProperty SmallChangeProperty = DPUtils.Register(
-            _ => _.SmallChange, 1.0,
-            (d, e) => { if (d.PART_NumberBox != null) d.PART_NumberBox.SmallChange = e.NewValue; });
+            _ => _.SmallChange, 1.0);
         public double SmallChange
         {
             get => (double)this.GetValue(SmallChangeProperty);
             set => this.SetValue(SmallChangeProperty, value);
         }
 
-        // ===========[ Template application ]====================================
+        // LabelContent / LabelContentTemplate: custom label for the button area.
+        // When both are null the default "#" glyph (PART_DefaultLabel) is shown.
+        public static readonly DependencyProperty LabelContentProperty = DPUtils.Register(
+            _ => _.LabelContent,
+            (d, e) => d.UpdateLabelVisibility());
+        public object LabelContent
+        {
+            get => this.GetValue(LabelContentProperty);
+            set => this.SetValue(LabelContentProperty, value);
+        }
+
+        public static readonly DependencyProperty LabelContentTemplateProperty = DPUtils.Register(
+            _ => _.LabelContentTemplate,
+            (d, e) => d.UpdateLabelVisibility());
+        public DataTemplate LabelContentTemplate
+        {
+            get => (DataTemplate)this.GetValue(LabelContentTemplateProperty);
+            set => this.SetValue(LabelContentTemplateProperty, value);
+        }
+
+        // Hover / pressed highlight brushes for the increase RepeatButton.
+        public static readonly DependencyProperty IncreaseHoverHighlightProperty = DPUtils.Register(
+            _ => _.IncreaseHoverHighlight);
+        public Brush IncreaseHoverHighlight
+        {
+            get => (Brush)this.GetValue(IncreaseHoverHighlightProperty);
+            set => this.SetValue(IncreaseHoverHighlightProperty, value);
+        }
+
+        public static readonly DependencyProperty IncreasePressedHighlightProperty = DPUtils.Register(
+            _ => _.IncreasePressedHighlight);
+        public Brush IncreasePressedHighlight
+        {
+            get => (Brush)this.GetValue(IncreasePressedHighlightProperty);
+            set => this.SetValue(IncreasePressedHighlightProperty, value);
+        }
+
+        // Hover / pressed highlight brushes for the decrease RepeatButton.
+        public static readonly DependencyProperty DecreaseHoverHighlightProperty = DPUtils.Register(
+            _ => _.DecreaseHoverHighlight);
+        public Brush DecreaseHoverHighlight
+        {
+            get => (Brush)this.GetValue(DecreaseHoverHighlightProperty);
+            set => this.SetValue(DecreaseHoverHighlightProperty, value);
+        }
+
+        public static readonly DependencyProperty DecreasePressedHighlightProperty = DPUtils.Register(
+            _ => _.DecreasePressedHighlight);
+        public Brush DecreasePressedHighlight
+        {
+            get => (Brush)this.GetValue(DecreasePressedHighlightProperty);
+            set => this.SetValue(DecreasePressedHighlightProperty, value);
+        }
+
+        // ===========[ Template application ]=====================================
         protected override void OnApplyTemplate ()
         {
             base.OnApplyTemplate();
 
-            if (this.PART_NumberBox != null)
+            // 1. Unwire old parts
+            if (this.PART_IncreaseButton != null)
             {
-                this.PART_NumberBox.ValueChanged -= this.NumberBox_OnValueChanged;
+                this.PART_IncreaseButton.Click -= this.IncreaseButton_OnClick;
+                this.PART_IncreaseButton.PointerEntered -= this.IncreaseButton_OnPointerEntered;
+                this.PART_IncreaseButton.PointerExited -= this.IncreaseButton_OnPointerExited;
+                this.PART_IncreaseButton.PointerPressed -= this.IncreaseButton_OnPointerPressed;
+                this.PART_IncreaseButton.PointerReleased -= this.IncreaseButton_OnPointerReleased;
             }
 
-            this.PART_NumberBox = (NumberBox)this.GetTemplateChild(nameof(PART_NumberBox));
-            if (this.PART_NumberBox == null)
+            if (this.PART_DecreaseButton != null)
+            {
+                this.PART_DecreaseButton.Click -= this.DecreaseButton_OnClick;
+                this.PART_DecreaseButton.PointerEntered -= this.DecreaseButton_OnPointerEntered;
+                this.PART_DecreaseButton.PointerExited -= this.DecreaseButton_OnPointerExited;
+                this.PART_DecreaseButton.PointerPressed -= this.DecreaseButton_OnPointerPressed;
+                this.PART_DecreaseButton.PointerReleased -= this.DecreaseButton_OnPointerReleased;
+            }
+
+            if (this.PART_TextBox != null)
+            {
+                this.PART_TextBox.TextChanged -= this.TextBox_OnTextChanged;
+            }
+
+            // 2. Acquire new parts
+            this.PART_Root = this.GetTemplateChild(nameof(PART_Root)) as Border;
+            this.PART_IncreaseButton = this.GetTemplateChild(nameof(PART_IncreaseButton)) as RepeatButton;
+            this.PART_DecreaseButton = this.GetTemplateChild(nameof(PART_DecreaseButton)) as RepeatButton;
+            this.PART_TextBox = this.GetTemplateChild(nameof(PART_TextBox)) as TextBox;
+            this.PART_DefaultLabel = this.GetTemplateChild(nameof(PART_DefaultLabel)) as TextBlock;
+            this.PART_LabelArea = this.GetTemplateChild(nameof(PART_LabelArea)) as ContentControl;
+
+            // 3. Wire new parts
+            if (this.PART_IncreaseButton != null)
+            {
+                this.PART_IncreaseButton.Click += this.IncreaseButton_OnClick;
+                this.PART_IncreaseButton.PointerEntered += this.IncreaseButton_OnPointerEntered;
+                this.PART_IncreaseButton.PointerExited += this.IncreaseButton_OnPointerExited;
+                this.PART_IncreaseButton.PointerPressed += this.IncreaseButton_OnPointerPressed;
+                this.PART_IncreaseButton.PointerReleased += this.IncreaseButton_OnPointerReleased;
+            }
+
+            if (this.PART_DecreaseButton != null)
+            {
+                this.PART_DecreaseButton.Click += this.DecreaseButton_OnClick;
+                this.PART_DecreaseButton.PointerEntered += this.DecreaseButton_OnPointerEntered;
+                this.PART_DecreaseButton.PointerExited += this.DecreaseButton_OnPointerExited;
+                this.PART_DecreaseButton.PointerPressed += this.DecreaseButton_OnPointerPressed;
+                this.PART_DecreaseButton.PointerReleased += this.DecreaseButton_OnPointerReleased;
+            }
+
+            if (this.PART_TextBox != null)
+            {
+                this.PART_TextBox.TextChanged += this.TextBox_OnTextChanged;
+
+                // Push current value into the text box (template-before-data case).
+                if (m_vm != null)
+                {
+                    m_blockReentrancy = true;
+                    try { this.PART_TextBox.Text = m_vm.Text; }
+                    finally { m_blockReentrancy = false; }
+                }
+            }
+
+            this.UpdateLabelVisibility();
+        }
+
+        // ===========[ Events ]===================================================
+        private void OnGotFocus (object sender, RoutedEventArgs e)
+        {
+            if (this.PART_Root != null)
+            {
+                this.PART_Root.BorderBrush = this.FocusedBorderBrushResolved();
+            }
+        }
+
+        private void OnLostFocus (object sender, RoutedEventArgs e)
+        {
+            if (this.PART_Root != null)
+            {
+                this.PART_Root.BorderBrush = this.BorderBrush;
+            }
+        }
+
+        private void IncreaseButton_OnClick (object sender, RoutedEventArgs e) => this.Nudge(positive: true);
+        private void DecreaseButton_OnClick (object sender, RoutedEventArgs e) => this.Nudge(positive: false);
+
+        private void IncreaseButton_OnPointerEntered (object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+        {
+            m_isIncreasePointerOver = true;
+            if (this.PART_IncreaseButton != null)
+            {
+                this.PART_IncreaseButton.Background = this.IncreaseHoverHighlight ?? kNearlyTransparentBrush;
+            }
+        }
+
+        private void IncreaseButton_OnPointerExited (object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+        {
+            m_isIncreasePointerOver = false;
+            if (this.PART_IncreaseButton != null)
+            {
+                this.PART_IncreaseButton.Background = kNearlyTransparentBrush;
+            }
+        }
+
+        private void IncreaseButton_OnPointerPressed (object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+        {
+            if (this.PART_IncreaseButton != null)
+            {
+                this.PART_IncreaseButton.Background = this.IncreasePressedHighlight ?? kNearlyTransparentBrush;
+            }
+        }
+
+        private void IncreaseButton_OnPointerReleased (object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+        {
+            if (this.PART_IncreaseButton != null)
+            {
+                this.PART_IncreaseButton.Background = m_isIncreasePointerOver
+                    ? (this.IncreaseHoverHighlight ?? kNearlyTransparentBrush)
+                    : kNearlyTransparentBrush;
+            }
+        }
+
+        private void DecreaseButton_OnPointerEntered (object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+        {
+            m_isDecreasePointerOver = true;
+            if (this.PART_DecreaseButton != null)
+            {
+                this.PART_DecreaseButton.Background = this.DecreaseHoverHighlight ?? kNearlyTransparentBrush;
+            }
+        }
+
+        private void DecreaseButton_OnPointerExited (object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+        {
+            m_isDecreasePointerOver = false;
+            if (this.PART_DecreaseButton != null)
+            {
+                this.PART_DecreaseButton.Background = kNearlyTransparentBrush;
+            }
+        }
+
+        private void DecreaseButton_OnPointerPressed (object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+        {
+            if (this.PART_DecreaseButton != null)
+            {
+                this.PART_DecreaseButton.Background = this.DecreasePressedHighlight ?? kNearlyTransparentBrush;
+            }
+        }
+
+        private void DecreaseButton_OnPointerReleased (object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+        {
+            if (this.PART_DecreaseButton != null)
+            {
+                this.PART_DecreaseButton.Background = m_isDecreasePointerOver
+                    ? (this.DecreaseHoverHighlight ?? kNearlyTransparentBrush)
+                    : kNearlyTransparentBrush;
+            }
+        }
+
+        private void TextBox_OnTextChanged (object sender, TextChangedEventArgs e)
+        {
+            if (m_blockReentrancy || this.PART_TextBox == null)
             {
                 return;
             }
 
-            this.PART_NumberBox.Minimum = this.Minimum;
-            this.PART_NumberBox.Maximum = this.Maximum;
-            this.PART_NumberBox.SmallChange = this.SmallChange;
-
-            // Sync current Value → NumberBox (m_vm may already be initialised if
-            // Value was set before the template was applied).
-            if (m_vm != null)
+            // m_vm may be null if text is typed before Value was ever set.
+            if (m_vm == null)
             {
-                this.PART_NumberBox.Value = ToDouble(m_vm.SourceValue);
+                m_vm = new NumericEditorViewModel(this, 0.0);
             }
 
-            this.PART_NumberBox.ValueChanged += this.NumberBox_OnValueChanged;
+            // Route text through the view model (handles parse, capping, type-preservation).
+            m_vm.Text = this.PART_TextBox.Text;
+
+            m_blockReentrancy = true;
+            try { this.Value = m_vm.SourceValue; }
+            finally { m_blockReentrancy = false; }
         }
 
-        // ===========[ Property change handlers ]================================
+        // ===========[ Property change handlers ]=================================
         private void OnValueChanged (object newValue)
         {
             if (m_blockReentrancy)
@@ -126,43 +349,37 @@ namespace AJut.UX.Controls
                 return;
             }
 
-            // Rebuild the view model so type detection runs on the new value.
+            // Rebuild view model so type detection runs on the new value.
             m_vm = new NumericEditorViewModel(this, newValue ?? 0.0);
 
-            if (this.PART_NumberBox == null)
+            if (this.PART_TextBox == null)
             {
                 return;
             }
 
             m_blockReentrancy = true;
-            try
-            {
-                this.PART_NumberBox.Value = ToDouble(m_vm.SourceValue);
-            }
-            finally
-            {
-                m_blockReentrancy = false;
-            }
+            try { this.PART_TextBox.Text = m_vm.Text; }
+            finally { m_blockReentrancy = false; }
         }
 
-        private void NumberBox_OnValueChanged (NumberBox sender, NumberBoxValueChangedEventArgs e)
+        // ===========[ Helpers ]==================================================
+        private void Nudge (bool positive)
         {
-            if (m_blockReentrancy || double.IsNaN(e.NewValue))
-            {
-                return;
-            }
-
-            // m_vm may be null if the template was applied before Value was ever set.
             if (m_vm == null)
             {
-                m_vm = new NumericEditorViewModel(this, e.NewValue);
+                m_vm = new NumericEditorViewModel(this, 0.0);
             }
+
+            m_vm.Nudge(positive, this.SmallChange);
 
             m_blockReentrancy = true;
             try
             {
-                // Update view model - it converts the double back to the source type.
-                m_vm.SourceValue = e.NewValue;
+                if (this.PART_TextBox != null)
+                {
+                    this.PART_TextBox.Text = m_vm.Text;
+                }
+
                 this.Value = m_vm.SourceValue;
             }
             finally
@@ -171,19 +388,47 @@ namespace AJut.UX.Controls
             }
         }
 
-        // ===========[ Events ]===================================================
-        private void OnGotFocus (object sender, RoutedEventArgs e)
-            => VisualStateManager.GoToState(this, "Focused", false);
-
-        private void OnLostFocus (object sender, RoutedEventArgs e)
-            => VisualStateManager.GoToState(this, "Unfocused", false);
-
-        // ===========[ Helpers ]=================================================
-        private static double ToDouble (object value)
+        private void UpdateLabelVisibility ()
         {
-            if (value == null) return 0.0;
-            try { return Convert.ToDouble(value); }
-            catch { return 0.0; }
+            if (this.PART_DefaultLabel == null || this.PART_LabelArea == null)
+            {
+                return;
+            }
+
+            bool hasCustomLabel = (this.LabelContent != null) || (this.LabelContentTemplate != null);
+
+            this.PART_DefaultLabel.Visibility = hasCustomLabel ? Visibility.Collapsed : Visibility.Visible;
+            this.PART_LabelArea.Visibility = hasCustomLabel ? Visibility.Visible : Visibility.Collapsed;
+
+            if (hasCustomLabel)
+            {
+                this.PART_LabelArea.Content = this.LabelContent;
+                this.PART_LabelArea.ContentTemplate = this.LabelContentTemplate;
+            }
+        }
+
+        // Resolves the focus-state border brush. The default implementation uses
+        // the system accent color so the default style has no AJut dependency.
+        // The AJut theme override replaces BorderBrush and FocusBorderBrush via
+        // Style Setters, so we can check if the user set a FocusBorderBrush DP.
+        private Brush FocusedBorderBrushResolved ()
+        {
+            // If caller set a FocusBorderBrush DP we'd return it here, but for
+            // simplicity the Focused border is handled via code setting PART_Root.BorderBrush
+            // directly in OnGotFocus / OnLostFocus. The AJut override style can set
+            // BorderBrush to the accent, but the focused color reverts to the system accent.
+            // To properly customize, subclass or use the AJut override template variant.
+            return (Brush)this.GetValue(FocusBorderBrushProperty) ?? this.BorderBrush;
+        }
+
+        // FocusBorderBrush DP: set to AJut_Brush_PrimaryHighlight in AllControlThemeOverrides.xaml
+        // so the focused border uses the AJut accent without duplicating the full template.
+        public static readonly DependencyProperty FocusBorderBrushProperty = DPUtils.Register(
+            _ => _.FocusBorderBrush);
+        public Brush FocusBorderBrush
+        {
+            get => (Brush)this.GetValue(FocusBorderBrushProperty);
+            set => this.SetValue(FocusBorderBrushProperty, value);
         }
     }
 }

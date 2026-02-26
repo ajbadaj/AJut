@@ -1,12 +1,16 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:local="using:AJut.UX.Controls">
+                    xmlns:local="using:AJut.UX.Controls"
+                    xmlns:prim="using:Microsoft.UI.Xaml.Controls.Primitives">
 
     <!-- ===[ NumericEditor ]=== -->
-    <!-- Default style: gradient background matching WPF AJut aesthetic, rim-lighting
-         borders, Consolas font. Works without AJut theme loaded.
-         AllControlThemeOverrides.xaml overrides Background/BorderBrush with AJut keys
-         and replaces the Focused VSM state border with AJut_Brush_PrimaryHighlight. -->
+    <!-- Custom template: a narrow left column holds hit-test-invisible RepeatButtons
+         (increase top half, decrease bottom half) with the "#" label rendered on top
+         (non-hit-testable). The right column is a plain TextBox.
+         Outer rim-lighting borders give the WPF AJut aesthetic.
+         Works without the AJut theme loaded (uses system resources / gradient defaults).
+         AllControlThemeOverrides.xaml overrides Background, BorderBrush, and the
+         hover/pressed highlight brushes with AJut theme keys. -->
     <Style TargetType="local:NumericEditor">
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
         <Setter Property="BorderThickness" Value="1"/>
@@ -21,10 +25,56 @@
                 </LinearGradientBrush>
             </Setter.Value>
         </Setter>
+
+        <!-- Hover: blue-tinted gradient on the increase button -->
+        <Setter Property="IncreaseHoverHighlight">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" Opacity="0.6">
+                    <GradientStop Offset="0" Color="#EE87D7FF"/>
+                    <GradientStop Offset="1" Color="#DD55C4FF"/>
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+
+        <!-- Pressed: dark concave gradient on the increase button -->
+        <Setter Property="IncreasePressedHighlight">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Offset="0.00" Color="#B888"/>
+                    <GradientStop Offset="0.05" Color="#C333"/>
+                    <GradientStop Offset="0.30" Color="#E222"/>
+                    <GradientStop Offset="0.65" Color="#B666"/>
+                    <GradientStop Offset="1.00" Color="#A111"/>
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+
+        <!-- Decrease hover: same gradient but inverted (bottom → top) -->
+        <Setter Property="DecreaseHoverHighlight">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" Opacity="0.6">
+                    <GradientStop Offset="0" Color="#DD55C4FF"/>
+                    <GradientStop Offset="1" Color="#EE87D7FF"/>
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+
+        <!-- Decrease pressed: same dark gradient but inverted -->
+        <Setter Property="DecreasePressedHighlight">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Offset="0.00" Color="#A111"/>
+                    <GradientStop Offset="0.35" Color="#C000"/>
+                    <GradientStop Offset="0.75" Color="#C888"/>
+                    <GradientStop Offset="1.00" Color="#E111"/>
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:NumericEditor">
-                    <!-- Outer border: receives TemplateBinding for background and focus-state border color -->
+                    <!-- PART_Root: outer border; BorderBrush swapped in code on focus. -->
                     <Border x:Name="PART_Root"
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
@@ -33,26 +83,98 @@
                         <!-- Rim-lighting: dark top-left shadow + light bottom-right highlight -->
                         <Border BorderBrush="#8000" BorderThickness="1.4,1.4,0,0">
                             <Border BorderBrush="#5FFF" BorderThickness="0,0,1,1">
-                                <NumberBox x:Name="PART_NumberBox"
-                                           FontFamily="Consolas"
-                                           SpinButtonPlacementMode="Compact"
-                                           ValidationMode="InvalidInputOverwritten"
-                                           Background="Transparent"
-                                           BorderThickness="0"
-                                           HorizontalAlignment="Stretch"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <!-- Auto: label + hit-area RepeatButtons -->
+                                        <ColumnDefinition Width="Auto"/>
+                                        <!-- *: TextBox fills the rest -->
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- ===[ Column 0: button hit area + label overlay ]=== -->
+                                    <Grid Grid.Column="0" MinWidth="22">
+                                        <Grid.RowDefinitions>
+                                            <!-- Top half: increase -->
+                                            <RowDefinition/>
+                                            <!-- Bottom half: decrease -->
+                                            <RowDefinition/>
+                                        </Grid.RowDefinitions>
+
+                                        <!-- Increase RepeatButton: nearly-transparent so it's
+                                             hit-testable but invisible. Background is changed in
+                                             code-behind on hover/press. -->
+                                        <prim:RepeatButton x:Name="PART_IncreaseButton"
+                                                           Grid.Row="0">
+                                            <prim:RepeatButton.Style>
+                                                <Style TargetType="prim:RepeatButton">
+                                                    <Setter Property="Background" Value="#01000000"/>
+                                                    <Setter Property="BorderThickness" Value="0"/>
+                                                    <Setter Property="Padding" Value="0"/>
+                                                    <Setter Property="Template">
+                                                        <Setter.Value>
+                                                            <ControlTemplate TargetType="prim:RepeatButton">
+                                                                <Border Background="{TemplateBinding Background}"
+                                                                        BorderThickness="{TemplateBinding BorderThickness}"/>
+                                                            </ControlTemplate>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Style>
+                                            </prim:RepeatButton.Style>
+                                        </prim:RepeatButton>
+
+                                        <!-- Decrease RepeatButton: same approach as increase. -->
+                                        <prim:RepeatButton x:Name="PART_DecreaseButton"
+                                                           Grid.Row="1">
+                                            <prim:RepeatButton.Style>
+                                                <Style TargetType="prim:RepeatButton">
+                                                    <Setter Property="Background" Value="#01000000"/>
+                                                    <Setter Property="BorderThickness" Value="0"/>
+                                                    <Setter Property="Padding" Value="0"/>
+                                                    <Setter Property="Template">
+                                                        <Setter.Value>
+                                                            <ControlTemplate TargetType="prim:RepeatButton">
+                                                                <Border Background="{TemplateBinding Background}"
+                                                                        BorderThickness="{TemplateBinding BorderThickness}"/>
+                                                            </ControlTemplate>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Style>
+                                            </prim:RepeatButton.Style>
+                                        </prim:RepeatButton>
+
+                                        <!-- Label overlay: sits on top of both RepeatButtons,
+                                             not hit-testable so clicks pass through to the buttons.
+                                             PART_DefaultLabel shows when LabelContent is null;
+                                             PART_LabelArea shows the custom LabelContent. -->
+                                        <Grid Grid.RowSpan="2"
+                                              IsHitTestVisible="False">
+                                            <TextBlock x:Name="PART_DefaultLabel"
+                                                       Text="#"
+                                                       FontFamily="Consolas"
+                                                       FontWeight="Bold"
+                                                       FontSize="10"
+                                                       VerticalAlignment="Center"
+                                                       HorizontalAlignment="Center"
+                                                       Opacity="0.7"/>
+                                            <ContentControl x:Name="PART_LabelArea"
+                                                            Visibility="Collapsed"
+                                                            VerticalAlignment="Center"
+                                                            HorizontalAlignment="Center"/>
+                                        </Grid>
+                                    </Grid>
+
+                                    <!-- ===[ Column 1: TextBox ]=== -->
+                                    <TextBox x:Name="PART_TextBox"
+                                             Grid.Column="1"
+                                             FontFamily="Consolas"
+                                             BorderThickness="0"
+                                             Background="Transparent"
+                                             CornerRadius="0"
+                                             Padding="4,2"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
                             </Border>
                         </Border>
-                        <VisualStateManager.VisualStateGroups>
-                            <VisualStateGroup x:Name="FocusStates">
-                                <VisualState x:Name="Unfocused"/>
-                                <VisualState x:Name="Focused">
-                                    <VisualState.Setters>
-                                        <Setter Target="PART_Root.BorderBrush"
-                                                Value="{ThemeResource SystemAccentColor}"/>
-                                    </VisualState.Setters>
-                                </VisualState>
-                            </VisualStateGroup>
-                        </VisualStateManager.VisualStateGroups>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>

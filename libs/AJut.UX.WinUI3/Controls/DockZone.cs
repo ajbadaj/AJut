@@ -392,6 +392,8 @@ namespace AJut.UX.Controls
                 BorderBrush = this.PanelBorderBrush,
                 BorderThickness = this.PanelBorderThickness,
                 CornerRadius = this.PanelCornerRadius,
+                // Small padding keeps user content from pressing right against the panel border.
+                Padding = new Thickness(2),
                 Child = contentPresenter,
             };
             Grid.SetRow(contentBorder, 1);
@@ -408,6 +410,9 @@ namespace AJut.UX.Controls
 
         private FrameworkElement BuildTabStrip(DockingContentAdapterModel selectedAdapter)
         {
+            const double kTabUnselectedOpacity = 0.35;
+            const double kTabHoverOpacity = 0.8;
+
             var tabPanel       = new StackPanel { Orientation = Orientation.Horizontal };
             var dockingManager = m_manager as DockingManager;
 
@@ -459,17 +464,25 @@ namespace AJut.UX.Controls
                     tabContent = tabLabel;
                 }
 
-                // Issue 7: per-tab left/right border; selected tab has no bottom border
-                // and a slight negative top margin so it visually merges with the content.
+                // Per-tab left/right border; selected tab has no bottom border and a slight
+                // negative top margin so it visually merges with the content border above.
+                // Unselected tabs are dimmed to ~35% opacity so the selected tab stands out.
                 var tabItem = new Border
                 {
                     Background      = this.PanelBackground,
-                    Opacity         = isSelected ? 1.0 : 0.6,
+                    Opacity         = isSelected ? 1.0 : kTabUnselectedOpacity,
                     BorderBrush     = this.PanelBorderBrush,
                     BorderThickness = new Thickness(1, 0, 1, 0),
                     Margin          = new Thickness(i == 0 ? 0 : 2, isSelected ? -1 : 0, 0, 0),
                     Child           = tabContent,
                 };
+
+                // Hover: briefly restore opacity on unselected tabs so the user can read them.
+                if (!isSelected)
+                {
+                    tabItem.PointerEntered += (s, e) => tabItem.Opacity = kTabHoverOpacity;
+                    tabItem.PointerExited  += (s, e) => tabItem.Opacity = kTabUnselectedOpacity;
+                }
 
                 // Per-tab drag state - closures capture these per-iteration
                 bool   isPressedForDrag  = false;

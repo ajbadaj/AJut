@@ -39,6 +39,7 @@
     <Style x:Key="AJut_FlatTree_ListViewItemStyle" TargetType="ListViewItem">
         <Setter Property="Padding" Value="0"/>
         <Setter Property="MinHeight" Value="0"/>
+        <Setter Property="UseSystemFocusVisuals" Value="False"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         <Setter Property="Template">
             <Setter.Value>
@@ -59,7 +60,14 @@
                                           Margin="6,0,0,0"/>
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="SelectionStates">
-                                <VisualState x:Name="Unselected"/>
+                                <!-- Explicit revert setters required: WinUI3 VisualState.Setters
+                                     do NOT auto-revert when leaving a state (unlike WPF triggers). -->
+                                <VisualState x:Name="Unselected">
+                                    <VisualState.Setters>
+                                        <Setter Target="SelectionStrip.Fill" Value="Transparent"/>
+                                        <Setter Target="HoverTint.Background" Value="Transparent"/>
+                                    </VisualState.Setters>
+                                </VisualState>
                                 <VisualState x:Name="Selected">
                                     <VisualState.Setters>
                                         <Setter Target="SelectionStrip.Fill"
@@ -270,49 +278,21 @@
 
     <!--
     ===[ NumericEditor - AJut-themed override ]===
-    Replaces the gradient background with AJut_Brush_PopOutControlBackground and
-    uses AJut_Brush_PrimaryHighlight for the focused border state.
+    Replaces the gradient background with AJut_Brush_PopOutControlBackground.
+    Sets FocusBorderBrush so the focused border uses AJut_Brush_PrimaryHighlight
+    (handled in code-behind — no template duplication needed).
+    Sets hover/pressed highlight brushes to AJut interaction brushes.
     -->
     <Style TargetType="local:NumericEditor">
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
         <Setter Property="Background" Value="{ThemeResource AJut_Brush_PopOutControlBackground}"/>
         <Setter Property="BorderBrush" Value="{ThemeResource AJut_Brush_TextBoxBorder}"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="local:NumericEditor">
-                    <Border x:Name="PART_Root"
-                            Background="{TemplateBinding Background}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="2">
-                        <!-- Rim-lighting via nested semi-transparent borders -->
-                        <Border BorderBrush="#8000" BorderThickness="1.4,1.4,0,0">
-                            <Border BorderBrush="#5FFF" BorderThickness="0,0,1,1">
-                                <NumberBox x:Name="PART_NumberBox"
-                                           FontFamily="Consolas"
-                                           SpinButtonPlacementMode="Compact"
-                                           ValidationMode="InvalidInputOverwritten"
-                                           Background="Transparent"
-                                           BorderThickness="0"
-                                           HorizontalAlignment="Stretch"/>
-                            </Border>
-                        </Border>
-                        <VisualStateManager.VisualStateGroups>
-                            <VisualStateGroup x:Name="FocusStates">
-                                <VisualState x:Name="Unfocused"/>
-                                <VisualState x:Name="Focused">
-                                    <VisualState.Setters>
-                                        <Setter Target="PART_Root.BorderBrush"
-                                                Value="{ThemeResource AJut_Brush_PrimaryHighlight}"/>
-                                    </VisualState.Setters>
-                                </VisualState>
-                            </VisualStateGroup>
-                        </VisualStateManager.VisualStateGroups>
-                    </Border>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
+        <Setter Property="FocusBorderBrush" Value="{ThemeResource AJut_Brush_PrimaryHighlight}"/>
+        <Setter Property="IncreaseHoverHighlight" Value="{ThemeResource AJut_Brush_MouseInteractionHighlight}"/>
+        <Setter Property="IncreasePressedHighlight" Value="{ThemeResource AJut_Brush_PrimaryHighlightDark}"/>
+        <Setter Property="DecreaseHoverHighlight" Value="{ThemeResource AJut_Brush_MouseInteractionHighlight}"/>
+        <Setter Property="DecreasePressedHighlight" Value="{ThemeResource AJut_Brush_PrimaryHighlightDark}"/>
     </Style>
 
     <!--
@@ -326,7 +306,9 @@
         <Setter Property="PanelBorderBrush" Value="{ThemeResource AJut_Brush_BorderCommon}"/>
         <Setter Property="PanelBorderThickness" Value="1"/>
         <Setter Property="TabStripBackground" Value="{ThemeResource AJut_Brush_BannerBackground}"/>
-        <Setter Property="PanelCornerRadius" Value="0,8,0,8"/>
+        <!-- TopLeft=0, TopRight=0: flat top merges with header bar.
+             BottomRight=8, BottomLeft=8: rounded bottom corners above the tab strip. -->
+        <Setter Property="PanelCornerRadius" Value="0,0,8,8"/>
     </Style>
 
     <!--
@@ -363,6 +345,8 @@
                                      TextWrapping="NoWrap"
                                      BorderThickness="0"
                                      Background="Transparent"
+                                     CornerRadius="0"
+                                     Padding="6,4"
                                      VerticalAlignment="Stretch"
                                      VerticalContentAlignment="Center"/>
 
@@ -381,7 +365,7 @@
                             <Button x:Name="PART_ShowInExplorerButton"
                                     Grid.Column="2"
                                     Visibility="Collapsed"
-                                    Padding="6,4"
+                                    Padding="10,6"
                                     BorderThickness="1,0,0,0"
                                     BorderBrush="{ThemeResource AJut_Brush_BorderCommon}"
                                     Background="Transparent"
@@ -394,7 +378,7 @@
 
                             <Button x:Name="PART_BrowseButton"
                                     Grid.Column="3"
-                                    Padding="8,4"
+                                    Padding="10,6"
                                     BorderThickness="1,0,0,0"
                                     BorderBrush="{ThemeResource AJut_Brush_BorderCommon}"
                                     Background="Transparent"
@@ -474,7 +458,7 @@
                     <Border Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="2">
+                            CornerRadius="{TemplateBinding CornerRadius}">
                         <StackPanel x:Name="PART_ItemsPanel"
                                     Orientation="Horizontal"/>
                     </Border>

@@ -40,6 +40,8 @@
                                      TextWrapping="NoWrap"
                                      BorderThickness="0"
                                      Background="Transparent"
+                                     CornerRadius="0"
+                                     Padding="6,4"
                                      VerticalAlignment="Stretch"
                                      VerticalContentAlignment="Center"/>
 
@@ -60,7 +62,7 @@
                             <Button x:Name="PART_ShowInExplorerButton"
                                     Grid.Column="2"
                                     Visibility="Collapsed"
-                                    Padding="6,4"
+                                    Padding="10,6"
                                     BorderThickness="1,0,0,0"
                                     BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
                                     Background="Transparent"
@@ -73,7 +75,7 @@
                             <!-- Browse button -->
                             <Button x:Name="PART_BrowseButton"
                                     Grid.Column="3"
-                                    Padding="8,4"
+                                    Padding="10,6"
                                     BorderThickness="1,0,0,0"
                                     BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
                                     Background="Transparent"
