@@ -8,26 +8,20 @@
          White Background on the outer Border provides an opaque backdrop for
          semi-transparent colors so the alpha channel is visually apparent.
          On hover:  gloss overlay hides, edit indicator overlay appears.
-         On open:   border swaps to HighlightBorderBrush (via code). -->
+         On open:   border swaps to EditingOpen state via VSM (EditingStates group). -->
     <Style TargetType="local:ColorEditIngressControl">
         <Setter Property="MinWidth" Value="60"/>
         <Setter Property="MinHeight" Value="40"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="BorderBrush" Value="{ThemeResource ControlStrokeColorDefaultBrush}"/>
+        <Setter Property="BorderBrush" Value="{ThemeResource AJut_ColorEditIngressControl_NormalBorderBrush}"/>
         <Setter Property="CornerRadius" Value="2"/>
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
-        <Setter Property="HighlightBorderBrush">
-            <Setter.Value>
-                <SolidColorBrush Color="#186DBA"/>
-            </Setter.Value>
-        </Setter>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:ColorEditIngressControl">
-                    <!-- PART_Root: outer border; BorderBrush swapped in code on open/close. -->
+                    <!-- PART_Root: outer border; BorderBrush controlled by EditingStates VSM. -->
                     <Border x:Name="PART_Root"
                             BorderThickness="{TemplateBinding BorderThickness}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
                             CornerRadius="{TemplateBinding CornerRadius}"
                             Background="White">
                         <VisualStateManager.VisualStateGroups>
@@ -42,6 +36,20 @@
                                     <VisualState.Setters>
                                         <Setter Target="PART_FancyCover.Visibility" Value="Collapsed"/>
                                         <Setter Target="PART_EditOverlay.Visibility" Value="Visible"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                            <VisualStateGroup x:Name="EditingStates">
+                                <VisualState x:Name="EditingOpen">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_Root.BorderBrush"
+                                                Value="{ThemeResource AJut_ColorEditIngressControl_HighlightBorderBrush}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="EditingClosed">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_Root.BorderBrush"
+                                                Value="{ThemeResource AJut_ColorEditIngressControl_NormalBorderBrush}"/>
                                     </VisualState.Setters>
                                 </VisualState>
                             </VisualStateGroup>

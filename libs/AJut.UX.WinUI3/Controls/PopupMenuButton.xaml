@@ -34,6 +34,7 @@
                             <FontIcon Glyph="&#xE972;"
                                       FontFamily="Segoe Fluent Icons"
                                       FontSize="9"
+                                      Foreground="{ThemeResource AJut_PopupMenuButton_ChevronForeground}"
                                       VerticalAlignment="Center"/>
                         </StackPanel>
                     </ToggleButton>

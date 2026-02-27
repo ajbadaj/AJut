@@ -1,13 +1,11 @@
 namespace AJut.UX.Controls
 {
-    using System;
     using Microsoft.UI.Input;
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
     using Microsoft.UI.Xaml.Controls.Primitives;
     using Microsoft.UI.Xaml.Media;
     using Windows.System;
-    using Windows.UI;
     using Windows.UI.Core;
     using DPUtils = AJut.UX.DPUtils<NumericEditor>;
 
@@ -17,21 +15,17 @@ namespace AJut.UX.Controls
     // preserves the source type (float, int, double, ...) across edits.
     //
     // Template parts:
-    //   PART_Root            - outer Border (focus border color is set here)
-    //   PART_IncreaseButton  - RepeatButton for incrementing Value
-    //   PART_DecreaseButton  - RepeatButton for decrementing Value
+    //   PART_Root            - outer Border (FocusStates VSM group drives BorderBrush)
+    //   PART_IncreaseButton  - RepeatButton for incrementing Value (VSM CommonStates drives Background)
+    //   PART_DecreaseButton  - RepeatButton for decrementing Value (VSM CommonStates drives Background)
     //   PART_TextBox         - TextBox for direct numeric text entry
-    //   PART_DefaultLabel    - TextBlock showing "#" when LabelContent is null
+    //   PART_DefaultLabel    - Viewbox showing "#" glyph when LabelContent is null
     //   PART_LabelArea       - ContentControl showing custom LabelContent
     //
-    // WinUI3 limitation note: VisualState Setters cannot source values via
-    // TemplateBinding (no ancestor binding support). As a result, the hover and
-    // pressed Background changes for PART_IncreaseButton and PART_DecreaseButton
-    // are applied directly from PointerEntered/Exited/Pressed/Released event
-    // handlers rather than from VSM states in the ControlTemplate. The DPs
-    // IncreaseHoverHighlight, IncreasePressedHighlight, DecreaseHoverHighlight,
-    // and DecreasePressedHighlight exist precisely to surface these as customizable
-    // style properties despite this limitation.
+    // VSM groups:
+    //   FocusStates (on PART_Root)           — Focused / Unfocused
+    //   CommonStates (on each RepeatButton)  — Normal / PointerOver / Pressed
+    //     (ButtonBase drives RepeatButton's CommonStates automatically)
 
     [TemplatePart(Name = nameof(PART_Root), Type = typeof(Border))]
     [TemplatePart(Name = nameof(PART_IncreaseButton), Type = typeof(RepeatButton))]
@@ -41,10 +35,6 @@ namespace AJut.UX.Controls
     [TemplatePart(Name = nameof(PART_LabelArea), Type = typeof(ContentControl))]
     public class NumericEditor : Control, INumericEditorSettings
     {
-        // ===========[ Const-like ]===============================================
-        // Nearly-transparent but fully hit-testable background for the RepeatButtons.
-        private static readonly SolidColorBrush kNearlyTransparentBrush = new SolidColorBrush(Color.FromArgb(1, 0, 0, 0));
-
         // ===========[ Instance fields ]==========================================
         private Border PART_Root;
         private RepeatButton PART_IncreaseButton;
@@ -55,8 +45,6 @@ namespace AJut.UX.Controls
 
         private NumericEditorViewModel m_vm;
         private bool m_blockReentrancy;
-        private bool m_isIncreasePointerOver;
-        private bool m_isDecreasePointerOver;
 
         // ===========[ Construction ]=============================================
         public NumericEditor ()
@@ -139,36 +127,6 @@ namespace AJut.UX.Controls
             set => this.SetValue(LabelContentTemplateProperty, value);
         }
 
-        // Hover / pressed highlight brushes for the increase RepeatButton.
-        public static readonly DependencyProperty IncreaseHoverHighlightProperty = DPUtils.Register(_ => _.IncreaseHoverHighlight);
-        public Brush IncreaseHoverHighlight
-        {
-            get => (Brush)this.GetValue(IncreaseHoverHighlightProperty);
-            set => this.SetValue(IncreaseHoverHighlightProperty, value);
-        }
-
-        public static readonly DependencyProperty IncreasePressedHighlightProperty = DPUtils.Register(_ => _.IncreasePressedHighlight);
-        public Brush IncreasePressedHighlight
-        {
-            get => (Brush)this.GetValue(IncreasePressedHighlightProperty);
-            set => this.SetValue(IncreasePressedHighlightProperty, value);
-        }
-
-        // Hover / pressed highlight brushes for the decrease RepeatButton.
-        public static readonly DependencyProperty DecreaseHoverHighlightProperty = DPUtils.Register(_ => _.DecreaseHoverHighlight);
-        public Brush DecreaseHoverHighlight
-        {
-            get => (Brush)this.GetValue(DecreaseHoverHighlightProperty);
-            set => this.SetValue(DecreaseHoverHighlightProperty, value);
-        }
-
-        public static readonly DependencyProperty DecreasePressedHighlightProperty = DPUtils.Register(_ => _.DecreasePressedHighlight);
-        public Brush DecreasePressedHighlight
-        {
-            get => (Brush)this.GetValue(DecreasePressedHighlightProperty);
-            set => this.SetValue(DecreasePressedHighlightProperty, value);
-        }
-
         public static readonly DependencyProperty TextBoxBackgroundProperty = DPUtils.Register(_ => _.TextBoxBackground);
         public Brush TextBoxBackground
         {
@@ -185,19 +143,11 @@ namespace AJut.UX.Controls
             if (this.PART_IncreaseButton != null)
             {
                 this.PART_IncreaseButton.Click -= this.IncreaseButton_OnClick;
-                this.PART_IncreaseButton.PointerEntered -= this.IncreaseButton_OnPointerEntered;
-                this.PART_IncreaseButton.PointerExited -= this.IncreaseButton_OnPointerExited;
-                this.PART_IncreaseButton.PointerPressed -= this.IncreaseButton_OnPointerPressed;
-                this.PART_IncreaseButton.PointerReleased -= this.IncreaseButton_OnPointerReleased;
             }
 
             if (this.PART_DecreaseButton != null)
             {
                 this.PART_DecreaseButton.Click -= this.DecreaseButton_OnClick;
-                this.PART_DecreaseButton.PointerEntered -= this.DecreaseButton_OnPointerEntered;
-                this.PART_DecreaseButton.PointerExited -= this.DecreaseButton_OnPointerExited;
-                this.PART_DecreaseButton.PointerPressed -= this.DecreaseButton_OnPointerPressed;
-                this.PART_DecreaseButton.PointerReleased -= this.DecreaseButton_OnPointerReleased;
             }
 
             if (this.PART_TextBox != null)
@@ -213,23 +163,18 @@ namespace AJut.UX.Controls
             this.PART_DefaultLabel = this.GetTemplateChild(nameof(PART_DefaultLabel)) as FrameworkElement;
             this.PART_LabelArea = this.GetTemplateChild(nameof(PART_LabelArea)) as ContentControl;
 
-            // 3. Wire new parts
+            // 3. Seed VSM — Unfocused is the initial state (no TemplateBinding on BorderBrush)
+            VisualStateManager.GoToState(this, "Unfocused", false);
+
+            // 4. Wire new parts
             if (this.PART_IncreaseButton != null)
             {
                 this.PART_IncreaseButton.Click += this.IncreaseButton_OnClick;
-                this.PART_IncreaseButton.PointerEntered += this.IncreaseButton_OnPointerEntered;
-                this.PART_IncreaseButton.PointerExited += this.IncreaseButton_OnPointerExited;
-                this.PART_IncreaseButton.PointerPressed += this.IncreaseButton_OnPointerPressed;
-                this.PART_IncreaseButton.PointerReleased += this.IncreaseButton_OnPointerReleased;
             }
 
             if (this.PART_DecreaseButton != null)
             {
                 this.PART_DecreaseButton.Click += this.DecreaseButton_OnClick;
-                this.PART_DecreaseButton.PointerEntered += this.DecreaseButton_OnPointerEntered;
-                this.PART_DecreaseButton.PointerExited += this.DecreaseButton_OnPointerExited;
-                this.PART_DecreaseButton.PointerPressed += this.DecreaseButton_OnPointerPressed;
-                this.PART_DecreaseButton.PointerReleased += this.DecreaseButton_OnPointerReleased;
             }
 
             if (this.PART_TextBox != null)
@@ -251,94 +196,16 @@ namespace AJut.UX.Controls
         // ===========[ Events ]===================================================
         private void OnGotFocus (object sender, RoutedEventArgs e)
         {
-            if (this.PART_Root != null)
-            {
-                this.PART_Root.BorderBrush = this.FocusedBorderBrushResolved();
-            }
+            VisualStateManager.GoToState(this, "Focused", true);
         }
 
         private void OnLostFocus (object sender, RoutedEventArgs e)
         {
-            if (this.PART_Root != null)
-            {
-                this.PART_Root.BorderBrush = this.BorderBrush;
-            }
+            VisualStateManager.GoToState(this, "Unfocused", true);
         }
 
         private void IncreaseButton_OnClick (object sender, RoutedEventArgs e) => this.Nudge(positive: true);
         private void DecreaseButton_OnClick (object sender, RoutedEventArgs e) => this.Nudge(positive: false);
-
-        private void IncreaseButton_OnPointerEntered (object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
-        {
-            m_isIncreasePointerOver = true;
-            if (this.PART_IncreaseButton != null)
-            {
-                this.PART_IncreaseButton.Background = this.IncreaseHoverHighlight ?? kNearlyTransparentBrush;
-            }
-        }
-
-        private void IncreaseButton_OnPointerExited (object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
-        {
-            m_isIncreasePointerOver = false;
-            if (this.PART_IncreaseButton != null)
-            {
-                this.PART_IncreaseButton.Background = kNearlyTransparentBrush;
-            }
-        }
-
-        private void IncreaseButton_OnPointerPressed (object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
-        {
-            if (this.PART_IncreaseButton != null)
-            {
-                this.PART_IncreaseButton.Background = this.IncreasePressedHighlight ?? kNearlyTransparentBrush;
-            }
-        }
-
-        private void IncreaseButton_OnPointerReleased (object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
-        {
-            if (this.PART_IncreaseButton != null)
-            {
-                this.PART_IncreaseButton.Background = m_isIncreasePointerOver
-                    ? (this.IncreaseHoverHighlight ?? kNearlyTransparentBrush)
-                    : kNearlyTransparentBrush;
-            }
-        }
-
-        private void DecreaseButton_OnPointerEntered (object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
-        {
-            m_isDecreasePointerOver = true;
-            if (this.PART_DecreaseButton != null)
-            {
-                this.PART_DecreaseButton.Background = this.DecreaseHoverHighlight ?? kNearlyTransparentBrush;
-            }
-        }
-
-        private void DecreaseButton_OnPointerExited (object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
-        {
-            m_isDecreasePointerOver = false;
-            if (this.PART_DecreaseButton != null)
-            {
-                this.PART_DecreaseButton.Background = kNearlyTransparentBrush;
-            }
-        }
-
-        private void DecreaseButton_OnPointerPressed (object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
-        {
-            if (this.PART_DecreaseButton != null)
-            {
-                this.PART_DecreaseButton.Background = this.DecreasePressedHighlight ?? kNearlyTransparentBrush;
-            }
-        }
-
-        private void DecreaseButton_OnPointerReleased (object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
-        {
-            if (this.PART_DecreaseButton != null)
-            {
-                this.PART_DecreaseButton.Background = m_isDecreasePointerOver
-                    ? (this.DecreaseHoverHighlight ?? kNearlyTransparentBrush)
-                    : kNearlyTransparentBrush;
-            }
-        }
 
         private void TextBox_OnTextChanged (object sender, TextChangedEventArgs e)
         {
@@ -382,7 +249,7 @@ namespace AJut.UX.Controls
             finally { m_blockReentrancy = false; }
         }
 
-        // ===========[ Helpers ]==================================================
+        // ===========[ Helpers ]=================================================
         private void Nudge (bool positive)
         {
             if (m_vm == null)
@@ -445,30 +312,6 @@ namespace AJut.UX.Controls
                 this.PART_LabelArea.Content = this.LabelContent;
                 this.PART_LabelArea.ContentTemplate = this.LabelContentTemplate;
             }
-        }
-
-        // Resolves the focus-state border brush. The default implementation uses
-        // the system accent color so the default style has no AJut dependency.
-        // The AJut theme override replaces BorderBrush and FocusBorderBrush via
-        // Style Setters, so we can check if the user set a FocusBorderBrush DP.
-        private Brush FocusedBorderBrushResolved ()
-        {
-            // If caller set a FocusBorderBrush DP we'd return it here, but for
-            // simplicity the Focused border is handled via code setting PART_Root.BorderBrush
-            // directly in OnGotFocus / OnLostFocus. The AJut override style can set
-            // BorderBrush to the accent, but the focused color reverts to the system accent.
-            // To properly customize, subclass or use the AJut override template variant.
-            return (Brush)this.GetValue(FocusBorderBrushProperty) ?? this.BorderBrush;
-        }
-
-        // FocusBorderBrush DP: set to AJut_Brush_PrimaryHighlight in AllControlThemeOverrides.xaml
-        // so the focused border uses the AJut accent without duplicating the full template.
-        public static readonly DependencyProperty FocusBorderBrushProperty = DPUtils.Register(
-            _ => _.FocusBorderBrush);
-        public Brush FocusBorderBrush
-        {
-            get => (Brush)this.GetValue(FocusBorderBrushProperty);
-            set => this.SetValue(FocusBorderBrushProperty, value);
         }
     }
 }

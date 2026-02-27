@@ -55,7 +55,7 @@
                                 <FontIcon Glyph="&#xE7BA;"
                                           FontFamily="Segoe Fluent Icons"
                                           FontSize="14"
-                                          Foreground="#C00000"/>
+                                          Foreground="{ThemeResource AJut_PathSelectionControl_WarningIconForeground}"/>
                             </Border>
 
                             <!-- Show in Explorer button (hidden until IsOpenInExplorerButtonAllowed and IsPathValid) -->
@@ -64,12 +64,13 @@
                                     Visibility="Collapsed"
                                     Padding="10,6"
                                     BorderThickness="1,0,0,0"
-                                    BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                                    BorderBrush="{ThemeResource AJut_PathSelectionControl_ButtonBorderBrush}"
                                     Background="Transparent"
                                     ToolTipService.ToolTip="Show in Explorer">
                                 <FontIcon Glyph="{TemplateBinding OpenInExplorerMDL2Icon}"
                                           FontFamily="Segoe Fluent Icons"
-                                          FontSize="14"/>
+                                          FontSize="14"
+                                          Foreground="{ThemeResource AJut_PathSelectionControl_ButtonIconForeground}"/>
                             </Button>
 
                             <!-- Browse button -->
@@ -77,12 +78,13 @@
                                     Grid.Column="3"
                                     Padding="10,6"
                                     BorderThickness="1,0,0,0"
-                                    BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                                    BorderBrush="{ThemeResource AJut_PathSelectionControl_ButtonBorderBrush}"
                                     Background="Transparent"
                                     ToolTipService.ToolTip="{TemplateBinding BrowsePrompt}">
                                 <FontIcon Glyph="{TemplateBinding DefaultButtonMDL2Icon}"
                                           FontFamily="Segoe Fluent Icons"
-                                          FontSize="14"/>
+                                          FontSize="14"
+                                          Foreground="{ThemeResource AJut_PathSelectionControl_ButtonIconForeground}"/>
                             </Button>
 
                         </Grid>
@@ -93,13 +95,13 @@
                                 <VisualState x:Name="Normal">
                                     <VisualState.Setters>
                                         <Setter Target="PART_Root.BorderBrush"
-                                                Value="{ThemeResource TextControlBorderBrush}"/>
+                                                Value="{ThemeResource AJut_PathSelectionControl_NormalBorderBrush}"/>
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="Focused">
                                     <VisualState.Setters>
                                         <Setter Target="PART_Root.BorderBrush"
-                                                Value="{ThemeResource SystemAccentColor}"/>
+                                                Value="{ThemeResource AJut_PathSelectionControl_FocusedBorderBrush}"/>
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="PathInvalid">

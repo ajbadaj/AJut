@@ -20,28 +20,21 @@
                             BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="{TemplateBinding CornerRadius}">
                         <Border.Resources>
-                            <!-- "Depressed button" gradient for checked ToggleButtons within the strip.
-                                 Dark at top fades lighter toward bottom — simulates a sunken surface.
-                                 These override the WinUI3 default ToggleButton theme resources locally
-                                 so only buttons inside this ToggleStrip get the effect. -->
-                            <LinearGradientBrush x:Key="ToggleButtonBackgroundChecked"
-                                                 StartPoint="0,0" EndPoint="0,1">
-                                <GradientStop Offset="0.00" Color="#CC000000"/>
-                                <GradientStop Offset="0.20" Color="#80000000"/>
-                                <GradientStop Offset="1.00" Color="#33000000"/>
-                            </LinearGradientBrush>
-                            <LinearGradientBrush x:Key="ToggleButtonBackgroundCheckedPointerOver"
-                                                 StartPoint="0,0" EndPoint="0,1">
-                                <GradientStop Offset="0.00" Color="#CC000000"/>
-                                <GradientStop Offset="0.20" Color="#99000000"/>
-                                <GradientStop Offset="1.00" Color="#55000000"/>
-                            </LinearGradientBrush>
-                            <LinearGradientBrush x:Key="ToggleButtonBackgroundCheckedPressed"
-                                                 StartPoint="0,0" EndPoint="0,1">
-                                <GradientStop Offset="0.00" Color="#EE000000"/>
-                                <GradientStop Offset="0.20" Color="#AA000000"/>
-                                <GradientStop Offset="1.00" Color="#66000000"/>
-                            </LinearGradientBrush>
+                            <!-- "Depressed button" checked-state gradients for ToggleButtons within
+                                 the strip. These locally override WinUI3 ToggleButton theme resources
+                                 so only buttons inside this strip are affected.
+                                 StaticResource aliases point to keys defined in
+                                 AJutCustomControlStylingDefaults.xaml (Generic.xaml scope).
+                                 NOTE: Border.Resources StaticResource entries resolve at parse time
+                                 from Generic.xaml scope. To provide AJut-themed variants, the
+                                 AllControlThemeOverrides.xaml ToggleStrip style must supply a full
+                                 template with its own Border.Resources (unavoidable duplication). -->
+                            <StaticResource x:Key="ToggleButtonBackgroundChecked"
+                                            ResourceKey="AJut_ToggleStrip_BackgroundChecked"/>
+                            <StaticResource x:Key="ToggleButtonBackgroundCheckedPointerOver"
+                                            ResourceKey="AJut_ToggleStrip_BackgroundCheckedPointerOver"/>
+                            <StaticResource x:Key="ToggleButtonBackgroundCheckedPressed"
+                                            ResourceKey="AJut_ToggleStrip_BackgroundCheckedPressed"/>
                         </Border.Resources>
                         <StackPanel x:Name="PART_ItemsPanel"
                                     Orientation="Horizontal"/>

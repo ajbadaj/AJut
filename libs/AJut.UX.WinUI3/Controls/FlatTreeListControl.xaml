@@ -107,12 +107,12 @@
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
                                                                        Storyboard.TargetProperty="Background">
                                             <DiscreteObjectKeyFrame KeyTime="0"
-                                                                    Value="{ThemeResource SystemControlHighlightListLowBrush}"/>
+                                                                    Value="{ThemeResource AJut_FlatTree_HoverBackground}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
                                                                        Storyboard.TargetProperty="BorderBrush">
                                             <DiscreteObjectKeyFrame KeyTime="0"
-                                                                    Value="{ThemeResource ControlStrokeColorDefaultBrush}"/>
+                                                                    Value="{ThemeResource AJut_FlatTree_HoverBorderBrush}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                     </Storyboard>
                                 </VisualState>
@@ -133,12 +133,12 @@
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
                                                                        Storyboard.TargetProperty="Background">
                                             <DiscreteObjectKeyFrame KeyTime="0"
-                                                                    Value="{ThemeResource SystemControlHighlightListLowBrush}"/>
+                                                                    Value="{ThemeResource AJut_FlatTree_HoverBackground}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
                                                                        Storyboard.TargetProperty="BorderBrush">
                                             <DiscreteObjectKeyFrame KeyTime="0"
-                                                                    Value="{ThemeResource ControlStrokeColorDefaultBrush}"/>
+                                                                    Value="{ThemeResource AJut_FlatTree_HoverBorderBrush}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                     </Storyboard>
                                 </VisualState>
@@ -148,17 +148,17 @@
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionStrip"
                                                                        Storyboard.TargetProperty="Fill">
                                             <DiscreteObjectKeyFrame KeyTime="0"
-                                                                    Value="{ThemeResource SystemControlHighlightListAccentHighBrush}"/>
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBrush}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
                                                                        Storyboard.TargetProperty="BorderBrush">
                                             <DiscreteObjectKeyFrame KeyTime="0"
-                                                                    Value="{ThemeResource SystemControlHighlightListAccentHighBrush}"/>
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBrush}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
                                                                        Storyboard.TargetProperty="Background">
                                             <DiscreteObjectKeyFrame KeyTime="0"
-                                                                    Value="{ThemeResource SystemControlHighlightListAccentLowBrush}"/>
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBackground}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
                                                                        Storyboard.TargetProperty="Background">
@@ -176,22 +176,22 @@
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionStrip"
                                                                        Storyboard.TargetProperty="Fill">
                                             <DiscreteObjectKeyFrame KeyTime="0"
-                                                                    Value="{ThemeResource SystemControlHighlightListAccentHighBrush}"/>
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBrush}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
                                                                        Storyboard.TargetProperty="BorderBrush">
                                             <DiscreteObjectKeyFrame KeyTime="0"
-                                                                    Value="{ThemeResource SystemControlHighlightListAccentHighBrush}"/>
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBrush}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
                                                                        Storyboard.TargetProperty="Background">
                                             <DiscreteObjectKeyFrame KeyTime="0"
-                                                                    Value="{ThemeResource SystemControlHighlightListAccentLowBrush}"/>
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBackground}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
                                                                        Storyboard.TargetProperty="Background">
                                             <DiscreteObjectKeyFrame KeyTime="0"
-                                                                    Value="{ThemeResource SystemControlHighlightListLowBrush}"/>
+                                                                    Value="{ThemeResource AJut_FlatTree_HoverBackground}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
                                                                        Storyboard.TargetProperty="BorderBrush">
@@ -205,22 +205,22 @@
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionStrip"
                                                                        Storyboard.TargetProperty="Fill">
                                             <DiscreteObjectKeyFrame KeyTime="0"
-                                                                    Value="{ThemeResource SystemControlHighlightListAccentHighBrush}"/>
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBrush}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
                                                                        Storyboard.TargetProperty="BorderBrush">
                                             <DiscreteObjectKeyFrame KeyTime="0"
-                                                                    Value="{ThemeResource SystemControlHighlightListAccentHighBrush}"/>
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBrush}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
                                                                        Storyboard.TargetProperty="Background">
                                             <DiscreteObjectKeyFrame KeyTime="0"
-                                                                    Value="{ThemeResource SystemControlHighlightListAccentLowBrush}"/>
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBackground}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
                                                                        Storyboard.TargetProperty="Background">
                                             <DiscreteObjectKeyFrame KeyTime="0"
-                                                                    Value="{ThemeResource SystemControlHighlightListLowBrush}"/>
+                                                                    Value="{ThemeResource AJut_FlatTree_HoverBackground}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
                                                                        Storyboard.TargetProperty="BorderBrush">
@@ -234,17 +234,17 @@
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionStrip"
                                                                        Storyboard.TargetProperty="Fill">
                                             <DiscreteObjectKeyFrame KeyTime="0"
-                                                                    Value="{ThemeResource SystemControlHighlightListAccentMediumBrush}"/>
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBrushUnfocused}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
                                                                        Storyboard.TargetProperty="BorderBrush">
                                             <DiscreteObjectKeyFrame KeyTime="0"
-                                                                    Value="{ThemeResource SystemControlHighlightListAccentMediumBrush}"/>
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBrushUnfocused}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
                                                                        Storyboard.TargetProperty="Background">
                                             <DiscreteObjectKeyFrame KeyTime="0"
-                                                                    Value="{ThemeResource SystemControlHighlightListAccentLowBrush}"/>
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBackground}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
                                                                        Storyboard.TargetProperty="Background">
@@ -328,13 +328,13 @@
                                                             <VisualState x:Name="PointerOver">
                                                                 <VisualState.Setters>
                                                                     <Setter Target="Root.Background"
-                                                                            Value="{ThemeResource SubtleFillColorSecondaryBrush}"/>
+                                                                            Value="{ThemeResource AJut_FlatTreeItemRow_ExpanderPointerOverBackground}"/>
                                                                 </VisualState.Setters>
                                                             </VisualState>
                                                             <VisualState x:Name="Pressed">
                                                                 <VisualState.Setters>
                                                                     <Setter Target="Root.Background"
-                                                                            Value="#FF074470"/>
+                                                                            Value="{ThemeResource AJut_FlatTreeItemRow_ExpanderPressedBackground}"/>
                                                                 </VisualState.Setters>
                                                             </VisualState>
                                                             <VisualState x:Name="Checked">
@@ -346,7 +346,7 @@
                                                             <VisualState x:Name="CheckedPointerOver">
                                                                 <VisualState.Setters>
                                                                     <Setter Target="Root.Background"
-                                                                            Value="{ThemeResource SubtleFillColorSecondaryBrush}"/>
+                                                                            Value="{ThemeResource AJut_FlatTreeItemRow_ExpanderPointerOverBackground}"/>
                                                                     <Setter Target="ExpanderIcon.Glyph"
                                                                             Value="&#xE70D;"/>
                                                                 </VisualState.Setters>
@@ -354,7 +354,7 @@
                                                             <VisualState x:Name="CheckedPressed">
                                                                 <VisualState.Setters>
                                                                     <Setter Target="Root.Background"
-                                                                            Value="#FF074470"/>
+                                                                            Value="{ThemeResource AJut_FlatTreeItemRow_ExpanderPressedBackground}"/>
                                                                     <Setter Target="ExpanderIcon.Glyph"
                                                                             Value="&#xE70D;"/>
                                                                 </VisualState.Setters>
@@ -399,7 +399,7 @@
                                   BorderThickness="0"
                                   SelectionMode="Single"
                                   ItemTemplate="{StaticResource FlatTree_RowDataTemplate}"
-                                  ItemContainerStyle="{StaticResource AJut_FlatTree_ListViewItemStyle}"
+                                  ItemContainerStyle="{ThemeResource AJut_FlatTree_ListViewItemStyle}"
                                   HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
                                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                   ScrollViewer.VerticalScrollBarVisibility="Auto">
