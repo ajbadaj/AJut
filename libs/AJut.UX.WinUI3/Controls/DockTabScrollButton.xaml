@@ -1,0 +1,54 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="using:AJut.UX.Controls">
+
+    <!-- ===========[ DockTabScrollButton: Default Style ]==================== -->
+    <!-- Minimal scroll-arrow button for DockZone's tab navigation strip.
+         Transparent background at rest; subtle highlight on hover/pressed.
+         Background NOT TemplateBinding'd on Root — VSM owns it so hover/pressed
+         Setters don't fight a TemplateBinding restoration. -->
+
+    <Style TargetType="local:DockTabScrollButton">
+        <Setter Property="IsTabStop"             Value="False"/>
+        <Setter Property="UseSystemFocusVisuals" Value="False"/>
+        <Setter Property="BorderThickness"       Value="0"/>
+        <Setter Property="Padding"               Value="4,2"/>
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:DockTabScrollButton">
+                    <Border x:Name="Root"
+                            Padding="{TemplateBinding Padding}"
+                            CornerRadius="2">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal"/>
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{ThemeResource AJut_DockTabScrollButton_HoverBackground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{ThemeResource AJut_DockTabScrollButton_PressedBackground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Disabled">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Opacity" Value="0.4"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          Foreground="{TemplateBinding Foreground}"
+                                          FontSize="{TemplateBinding FontSize}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

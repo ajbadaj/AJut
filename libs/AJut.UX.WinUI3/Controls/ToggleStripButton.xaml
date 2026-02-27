@@ -1,0 +1,75 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="using:AJut.UX.Controls">
+
+    <!-- ===========[ ToggleStripButton: Default Style ]======================= -->
+    <!-- Single selectable button within a ToggleStrip. Background is fully VSM-driven
+         through ThemeResource keys defined in AJutCustomControlStylingDefaults.xaml
+         (default) and redirected by AJutThemeMapAliasing.xaml (AJut theme).
+         BorderThickness and CornerRadius are set by ToggleStrip code (index-aware,
+         structural) and pushed to PART_Root in OnApplyTemplate — TemplateBinding is
+         intentionally absent from those properties since WinUI3 TemplateBinding cannot
+         backfill pre-template local values.
+         Normal state uses a literal #01000000 background (nearly-transparent, hit-testable)
+         rather than a ThemeResource — it is purely structural and needs no theme variation. -->
+    <Style TargetType="local:ToggleStripButton">
+        <Setter Property="IsTabStop" Value="False"/>
+        <Setter Property="UseSystemFocusVisuals" Value="False"/>
+        <Setter Property="Padding" Value="8,4"/>
+        <Setter Property="BorderBrush" Value="{ThemeResource ControlStrokeColorDefaultBrush}"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:ToggleStripButton">
+                    <!-- PART_Root: carries per-button BorderThickness/CornerRadius (pushed from
+                         OnApplyTemplate) and owns the CommonStates VSM background. No TemplateBinding
+                         on Background — VSM owns that property entirely; GoToState("Normal", false)
+                         in OnApplyTemplate sets the initial state. -->
+                    <Border x:Name="PART_Root"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            Padding="{TemplateBinding Padding}">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal">
+                                    <VisualState.Setters>
+                                        <!-- Literal: purely structural, no theme variation needed -->
+                                        <Setter Target="PART_Root.Background" Value="#01000000"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_Root.Background" Value="{ThemeResource AJut_ToggleStripButton_PointerOverBackground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_Root.Background" Value="{ThemeResource AJut_ToggleStripButton_PressedBackground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Checked">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_Root.Background" Value="{ThemeResource AJut_ToggleStripButton_CheckedBackground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="CheckedPointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_Root.Background" Value="{ThemeResource AJut_ToggleStripButton_CheckedPointerOverBackground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="CheckedPressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_Root.Background" Value="{ThemeResource AJut_ToggleStripButton_CheckedPressedBackground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

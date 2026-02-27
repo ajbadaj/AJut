@@ -14,7 +14,7 @@
     <Window.SystemBackdrop>
         <MicaBackdrop />
     </Window.SystemBackdrop>
-    <ajut:ThemedWindowRootControl x:Name="Root" TargetBorderThickness="2" TitleBarHeight="40" ShowFullscreenButtons="True" 
+    <ajut:ThemedWindowRootControl x:Name="Root" TargetBorderThickness="2" TitleBarHeight="40" ShowFullscreenButtons="True"
                                   InactiveTitlebarBackground="{ThemeResource AJut_Brush_TitleBarBackgroundInactive}"
                                   CornerRadius="{Binding ElementName=Root, Path=IsMaximizedOrFullScreened, Converter={ajut_conv:BooleanToCornerRadiusConverter TrueValue='0', FalseValue='5'}}">
         <ajut:ThemedWindowRootControl.ActiveTitleBarBackground>
@@ -52,9 +52,9 @@
                 </Grid>
             </Grid>
         </ajut:ThemedWindowRootControl.CustomTilteBar>
-        <Grid >
-            <Border x:Name="Colorization" 
-                    BorderThickness="8,0,0,0" Margin="0,0,0,0" CornerRadius="0,0,0,0" 
+        <Grid>
+            <Border x:Name="Colorization"
+                    BorderThickness="8,0,0,0" Margin="0,0,0,0" CornerRadius="0,0,0,0"
                     Background="{Binding ElementName=Root, Path=Background}"
                     BorderBrush="{Binding ElementName=JewelBkgPath, Path=Fill}">
                 <TabView VerticalAlignment="Stretch">
@@ -64,6 +64,8 @@
                             <SolidColorBrush x:Key="TabViewBorderBrush" Color="{ThemeResource AJut_Color_Shadow}"/>
                         </ResourceDictionary>
                     </TabView.Resources>
+
+                    <!-- ===[ Theme Test ]========================================================== -->
                     <TabViewItem Header="Theme Test" IsClosable="False">
                         <TabViewItem.IconSource>
                             <SymbolIconSource Symbol="Highlight"/>
@@ -101,25 +103,324 @@
                             </ScrollViewer>
                         </TabViewItem.Content>
                     </TabViewItem>
+
+                    <!-- ===[ Standard Controls ]================================================== -->
+                    <TabViewItem Header="Standard Controls" IsClosable="False">
+                        <TabViewItem.IconSource>
+                            <SymbolIconSource Symbol="AllApps"/>
+                        </TabViewItem.IconSource>
+                        <TabViewItem.Content>
+                            <ScrollViewer VerticalScrollMode="Enabled" Padding="12">
+                                <StackPanel Spacing="20">
+
+                                    <!-- Buttons -->
+                                    <TextBlock Text="Buttons" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Button Content="Normal Button"/>
+                                        <Button Content="Disabled" IsEnabled="False"/>
+                                        <ToggleButton Content="Toggle (Off)"/>
+                                        <ToggleButton Content="Toggle (On)" IsChecked="True"/>
+                                        <DropDownButton Content="Dropdown">
+                                            <DropDownButton.Flyout>
+                                                <MenuFlyout>
+                                                    <MenuFlyoutItem Text="Option One"/>
+                                                    <MenuFlyoutItem Text="Option Two"/>
+                                                    <MenuFlyoutSeparator/>
+                                                    <MenuFlyoutItem Text="Option Three"/>
+                                                </MenuFlyout>
+                                            </DropDownButton.Flyout>
+                                        </DropDownButton>
+                                        <SplitButton Content="Split Action">
+                                            <SplitButton.Flyout>
+                                                <MenuFlyout>
+                                                    <MenuFlyoutItem Text="Alt Action A"/>
+                                                    <MenuFlyoutItem Text="Alt Action B"/>
+                                                </MenuFlyout>
+                                            </SplitButton.Flyout>
+                                        </SplitButton>
+                                    </StackPanel>
+
+                                    <!-- Text Input -->
+                                    <TextBlock Text="Text Input" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                                    <StackPanel Spacing="6" MaxWidth="400" HorizontalAlignment="Left">
+                                        <TextBox PlaceholderText="Normal TextBox"/>
+                                        <TextBox PlaceholderText="Disabled TextBox" IsEnabled="False"/>
+                                        <PasswordBox PlaceholderText="Password"/>
+                                        <NumberBox PlaceholderText="NumberBox" SpinButtonPlacementMode="Compact" Value="42"/>
+                                    </StackPanel>
+
+                                    <!-- Selection -->
+                                    <TextBlock Text="Selection" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Top">
+                                        <StackPanel Spacing="4" Width="180">
+                                            <TextBlock Text="ComboBox" FontStyle="Italic" Opacity="0.7"/>
+                                            <ComboBox SelectedIndex="0" HorizontalAlignment="Stretch">
+                                                <ComboBoxItem Content="Choice Alpha"/>
+                                                <ComboBoxItem Content="Choice Beta"/>
+                                                <ComboBoxItem Content="Choice Gamma"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                        <StackPanel Spacing="4" Width="180">
+                                            <TextBlock Text="ListBox" FontStyle="Italic" Opacity="0.7"/>
+                                            <ListBox SelectedIndex="1" Height="100">
+                                                <ListBoxItem Content="Item One"/>
+                                                <ListBoxItem Content="Item Two (selected)"/>
+                                                <ListBoxItem Content="Item Three"/>
+                                                <ListBoxItem Content="Item Four"/>
+                                            </ListBox>
+                                        </StackPanel>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="Checkboxes" FontStyle="Italic" Opacity="0.7"/>
+                                            <CheckBox Content="Unchecked"/>
+                                            <CheckBox Content="Checked" IsChecked="True"/>
+                                            <CheckBox Content="Indeterminate" IsChecked="{x:Null}"/>
+                                            <CheckBox Content="Disabled" IsEnabled="False"/>
+                                        </StackPanel>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="RadioButtons" FontStyle="Italic" Opacity="0.7"/>
+                                            <RadioButton Content="Option A" GroupName="Demo" IsChecked="True"/>
+                                            <RadioButton Content="Option B" GroupName="Demo"/>
+                                            <RadioButton Content="Option C" GroupName="Demo"/>
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <!-- Toggle -->
+                                    <TextBlock Text="Toggle Switch" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="16">
+                                        <ToggleSwitch Header="Off state" IsOn="False"/>
+                                        <ToggleSwitch Header="On state (AJut primary highlight)" IsOn="True"/>
+                                        <ToggleSwitch Header="Disabled" IsEnabled="False"/>
+                                    </StackPanel>
+
+                                    <!-- Navigation / Expander -->
+                                    <TextBlock Text="Expander" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                                    <Expander Header="Section A — click to expand" HorizontalAlignment="Left" MinWidth="340">
+                                        <StackPanel Padding="8" Spacing="4">
+                                            <TextBlock Text="This is the AJut-themed Expander content area."/>
+                                            <TextBlock Text="Background uses AJut_Brush_PanelBackground."/>
+                                            <Button Content="A button inside the expander"/>
+                                        </StackPanel>
+                                    </Expander>
+                                    <Expander Header="Section B — starts open" IsExpanded="True" HorizontalAlignment="Left" MinWidth="340">
+                                        <TextBlock Text="Content visible on load." Padding="8"/>
+                                    </Expander>
+
+                                    <!-- Menu -->
+                                    <TextBlock Text="MenuBar" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                                    <MenuBar>
+                                        <MenuBarItem Title="File">
+                                            <MenuFlyoutItem Text="New"/>
+                                            <MenuFlyoutItem Text="Open..."/>
+                                            <MenuFlyoutItem Text="Save"/>
+                                            <MenuFlyoutSeparator/>
+                                            <MenuFlyoutItem Text="Exit"/>
+                                        </MenuBarItem>
+                                        <MenuBarItem Title="Edit">
+                                            <MenuFlyoutItem Text="Undo"/>
+                                            <MenuFlyoutItem Text="Redo"/>
+                                            <MenuFlyoutSeparator/>
+                                            <MenuFlyoutItem Text="Cut"/>
+                                            <MenuFlyoutItem Text="Copy"/>
+                                            <MenuFlyoutItem Text="Paste"/>
+                                        </MenuBarItem>
+                                        <MenuBarItem Title="View">
+                                            <MenuFlyoutItem Text="Zoom In"/>
+                                            <MenuFlyoutItem Text="Zoom Out"/>
+                                        </MenuBarItem>
+                                    </MenuBar>
+
+                                </StackPanel>
+                            </ScrollViewer>
+                        </TabViewItem.Content>
+                    </TabViewItem>
+
+                    <!-- ===[ Toggle Controls ]================================================= -->
+                    <TabViewItem Header="Toggle Controls" IsClosable="False">
+                        <TabViewItem.IconSource>
+                            <SymbolIconSource Symbol="Switch"/>
+                        </TabViewItem.IconSource>
+                        <TabViewItem.Content>
+                            <ScrollViewer VerticalScrollMode="Enabled" Padding="12">
+                                <StackPanel Spacing="20">
+
+                                    <TextBlock Text="ToggleSwitch" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                                    <TextBlock Text="On state uses AJut primary highlight color." FontStyle="Italic" Opacity="0.7"/>
+                                    <StackPanel Spacing="8">
+                                        <ToggleSwitch Header="Feature A" IsOn="False" OnContent="Enabled" OffContent="Disabled"/>
+                                        <ToggleSwitch Header="Feature B" IsOn="True" OnContent="Enabled" OffContent="Disabled"/>
+                                        <ToggleSwitch Header="Feature C (disabled)" IsOn="True" IsEnabled="False" OnContent="Enabled" OffContent="Disabled"/>
+                                        <ToggleSwitch Header="Feature D (disabled off)" IsOn="False" IsEnabled="False" OnContent="Enabled" OffContent="Disabled"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="ToggleButton" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                                    <TextBlock Text="Checked state uses AJut_Brush_PrimaryHighlight background." FontStyle="Italic" Opacity="0.7"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <ToggleButton Content="Bold" IsChecked="False"/>
+                                        <ToggleButton Content="Italic" IsChecked="True"/>
+                                        <ToggleButton Content="Underline" IsChecked="False"/>
+                                        <ToggleButton Content="Strikethrough" IsChecked="True"/>
+                                        <ToggleButton Content="Disabled (on)" IsChecked="True" IsEnabled="False"/>
+                                    </StackPanel>
+
+                                    <TextBlock Text="ToggleStrip" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                                    <TextBlock Text="Single-select by default. AllowMultiSelect for multi-select, AllowNoSelection to permit zero selected." FontStyle="Italic" Opacity="0.7" TextWrapping="Wrap"/>
+                                    <StackPanel Spacing="12">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="Single-select (default)" FontSize="11" Opacity="0.7"/>
+                                            <ajut:ToggleStrip x:Name="ToggleStripSingle"/>
+                                        </StackPanel>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="Multi-select" FontSize="11" Opacity="0.7"/>
+                                            <ajut:ToggleStrip x:Name="ToggleStripMulti" AllowMultiSelect="True"/>
+                                        </StackPanel>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="Allow no selection" FontSize="11" Opacity="0.7"/>
+                                            <ajut:ToggleStrip x:Name="ToggleStripFreeform" AllowNoSelection="True"/>
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                </StackPanel>
+                            </ScrollViewer>
+                        </TabViewItem.Content>
+                    </TabViewItem>
+
+                    <!-- ===[ Custom AJut Controls ]======================================== -->
                     <TabViewItem Header="Custom AJut Controls" IsClosable="False" VerticalContentAlignment="Stretch">
                         <TabViewItem.IconSource>
                             <SymbolIconSource Symbol="Edit"/>
                         </TabViewItem.IconSource>
                         <TabViewItem.Content>
-                            <ScrollViewer VerticalAlignment="Stretch" Padding="10">
-                                <StackPanel HorizontalAlignment="Left">
-                                    <TextBlock Text="Theme Switcher" Style="{ThemeResource HeaderTextBlockStyle}"/>
-                                    <ajut:EnumComboBox SelectedItem="{x:Bind Path=Application.ThemeManager.ThemeConfiguration, Mode=TwoWay}"/>
-                                    <TextBlock Text="Using theme management + EnumComboBox" FontStyle="Italic"/>
+                            <ScrollViewer VerticalAlignment="Stretch" Padding="12">
+                                <StackPanel Spacing="20" HorizontalAlignment="Left">
 
-                                    <StackPanel Margin="0,20,5,5" >
-                                        <TextBlock Text="Geometry Button" Style="{ThemeResource HeaderTextBlockStyle}"/>
-                                        <ajut:GeometryButton Content="Geometry Button" BackgroundGeometry="M 0,0 20,20 40,0 150,0 150,100 100,90 0,100 Z"
-                                                             TraceThickness="1" Margin="5"/>
+                                    <TextBlock Text="Theme Switcher" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                                    <ajut:EnumComboBox SelectedItem="{x:Bind Path=Application.ThemeManager.ThemeConfiguration, Mode=TwoWay}"/>
+                                    <TextBlock Text="Using theme management + EnumComboBox" FontStyle="Italic" Opacity="0.7"/>
+
+                                    <TextBlock Text="GeometryButton" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                                    <ajut:GeometryButton Content="Geometry Button" BackgroundGeometry="M 0,0 20,20 40,0 150,0 150,100 100,90 0,100 Z"
+                                                         TraceThickness="1"/>
+
+                                    <TextBlock Text="ColorEditIngressControl" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                                    <TextBlock Text="Shows the color swatch with hover edit overlay and glossy cover." FontStyle="Italic" Opacity="0.7"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="Solid red" FontSize="11" Opacity="0.7"/>
+                                            <ajut:ColorEditIngressControl Width="60" Height="40"/>
+                                        </StackPanel>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="Blue" FontSize="11" Opacity="0.7"/>
+                                            <ajut:ColorEditIngressControl Width="60" Height="40"/>
+                                        </StackPanel>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="Semi-transparent orange" FontSize="11" Opacity="0.7"/>
+                                            <ajut:ColorEditIngressControl Width="60" Height="40"/>
+                                        </StackPanel>
                                     </StackPanel>
 
-                                    <TextBlock Text="Color Parsing Example" Style="{ThemeResource HeaderTextBlockStyle}" Margin="0,20,0,0"/>
+                                    <TextBlock Text="ToggleStrip" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                                    <ajut:ToggleStrip x:Name="ToggleStripCustom"
+                                                      CornerRadius="15"/>
+
+                                    <TextBlock Text="PathSelectionControl" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                                    <TextBlock Text="Browse button opens OS file/folder picker. Invalid paths show red border + warning icon." FontStyle="Italic" Opacity="0.7" TextWrapping="Wrap"/>
+                                    <StackPanel Spacing="12" MaxWidth="500" HorizontalAlignment="Left">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="File picker (open)" FontSize="11" Opacity="0.7"/>
+                                            <ajut:PathSelectionControl x:Name="PathPickFile"
+                                                                       PathType="File"
+                                                                       TextBoxHeight="22"
+                                                                       UnsetTextPrompt="Select a file..."
+                                                                       TreatEmptyPathAsInvalid="True"
+                                                                       TreatNonExistentPathAsInvalid="True"/>
+                                        </StackPanel>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="Folder picker" FontSize="11" Opacity="0.7"/>
+                                            <ajut:PathSelectionControl x:Name="PathPickFolder"
+                                                                       PathType="Folder"
+                                                                       UnsetTextPrompt="Select a folder..."
+                                                                       IsOpenInExplorerButtonAllowed="True"
+                                                                       TreatNonExistentPathAsInvalid="True"
+                                                                       TextBoxPadding="0"
+                                                                       />
+                                        </StackPanel>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="File picker (save, validates extension)" FontSize="11" Opacity="0.7"/>
+                                            <ajut:PathSelectionControl x:Name="PathPickSaveFile"
+                                                                        PathType="File"
+                                                                        FileDialogType="SaveFile"
+                                                                        FileFilter="Text files (*.txt)|*.txt"
+                                                                        UnsetTextPrompt="Save path..."/>
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Color Parsing Example" Style="{ThemeResource SubtitleTextBlockStyle}"/>
                                     <local:ColorParseExample Width="200" Height="200" HorizontalAlignment="Left"/>
+
+                                </StackPanel>
+                            </ScrollViewer>
+                        </TabViewItem.Content>
+                    </TabViewItem>
+
+                    <!-- ===[ NumericEditor ]=============================================== -->
+                    <TabViewItem Header="NumericEditor" IsClosable="False">
+                        <TabViewItem.IconSource>
+                            <SymbolIconSource Symbol="Calculator"/>
+                        </TabViewItem.IconSource>
+                        <TabViewItem.Content>
+                            <ScrollViewer VerticalScrollMode="Enabled" Padding="12">
+                                <StackPanel Spacing="16" MaxWidth="420" HorizontalAlignment="Left">
+                                    <TextBlock Text="NumericEditor" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                                    <TextBlock Text="Gradient background, Consolas font, rim-lighting border, focus highlight, AJut-themed spin buttons." FontStyle="Italic" Opacity="0.7" TextWrapping="Wrap"/>
+
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Integer" VerticalAlignment="Center" Margin="0,4"/>
+                                        <ajut:NumericEditor Grid.Row="0" Grid.Column="1" Value="42" Margin="0,4"/>
+
+                                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Float" VerticalAlignment="Center" Margin="0,4"/>
+                                        <ajut:NumericEditor Grid.Row="1" Grid.Column="1" Value="3.14" Margin="0,4"/>
+
+                                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Double" VerticalAlignment="Center" Margin="0,4"/>
+                                        <ajut:NumericEditor Grid.Row="2" Grid.Column="1" Value="2.71828" Margin="0,4"/>
+
+                                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Clamped (0-100)" VerticalAlignment="Center" Margin="0,4"/>
+                                        <ajut:NumericEditor Grid.Row="3" Grid.Column="1" Value="50" Minimum="0" Maximum="100" Margin="0,4"/>
+
+                                        <TextBlock Grid.Row="4" Grid.Column="0" Text="Step by 0.5" VerticalAlignment="Center" Margin="0,4"/>
+                                        <ajut:NumericEditor Grid.Row="4" Grid.Column="1" Value="1.5" SmallChange="0.5" Margin="0,4"/>
+
+                                        <TextBlock Grid.Row="5" Grid.Column="0" Text="Override Labels" VerticalAlignment="Top" Margin="0,4"/>
+                                        <StackPanel Grid.Row="5" Grid.Column="1">
+                                            <ajut:NumericEditor Value="1.5" SmallChange="0.5" Margin="0,4">
+                                                <ajut:NumericEditor.LabelContent>
+                                                    <TextBlock Text="X" Foreground="Red" FontWeight="Bold" Margin="5,0" VerticalAlignment="Center" FontSize="20" FontFamily="Segoe UI"/>
+                                                </ajut:NumericEditor.LabelContent>
+                                            </ajut:NumericEditor>
+                                            <ajut:NumericEditor Value="1.5" SmallChange="0.5" Margin="0,4">
+                                                <ajut:NumericEditor.LabelContent>
+                                                    <TextBlock Text="Y" Foreground="#5C3" FontWeight="Bold" Margin="5,0" VerticalAlignment="Center" FontSize="20" FontFamily="Segoe UI"/>
+                                                </ajut:NumericEditor.LabelContent>
+                                            </ajut:NumericEditor>
+                                            <ajut:NumericEditor Value="1.5" SmallChange="0.5" Margin="0,4">
+                                                <ajut:NumericEditor.LabelContent>
+                                                    <TextBlock Text="Z" Foreground="#38F" FontWeight="Bold" Margin="5,0" VerticalAlignment="Center" FontSize="20" FontFamily="Segoe UI"/>
+                                                </ajut:NumericEditor.LabelContent>
+                                            </ajut:NumericEditor>
+                                        </StackPanel>
+                                    </Grid>
                                 </StackPanel>
                             </ScrollViewer>
                         </TabViewItem.Content>
@@ -134,10 +435,12 @@
                             <Grid Margin="8">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
-                                <TextBlock Grid.Row="0" Text="FlatTreeListControl - expand/collapse tree nodes" FontStyle="Italic" Margin="0,0,0,8"/>
-                                <ajut:FlatTreeListControl Grid.Row="1"
+                                <TextBlock Grid.Row="0" Text="FlatTreeListControl — expand/collapse tree nodes, multi-level nesting" FontStyle="Italic" Margin="0,0,0,4"/>
+                                <TextBlock Grid.Row="1" Text="Selection indicator: 4px colored strip on the left edge (AJut signature selection style). Row background receives only a subtle tint." TextWrapping="Wrap" Opacity="0.7" Margin="0,0,0,8"/>
+                                <ajut:FlatTreeListControl Grid.Row="2"
                                                           Root="{x:Bind TreeRoot}"
                                                           IncludeRoot="True"
                                                           StartItemsExpanded="True">
@@ -148,6 +451,54 @@
                                     </ajut:FlatTreeListControl.ItemTemplate>
                                 </ajut:FlatTreeListControl>
                             </Grid>
+                        </TabViewItem.Content>
+                    </TabViewItem>
+
+                    <!-- ===[ PopupMenuButton ]===================================================== -->
+                    <TabViewItem Header="PopupMenuButton" IsClosable="False">
+                        <TabViewItem.IconSource>
+                            <SymbolIconSource Symbol="List"/>
+                        </TabViewItem.IconSource>
+                        <TabViewItem.Content>
+                            <ScrollViewer VerticalScrollMode="Enabled" Padding="12">
+                                <StackPanel Spacing="20" HorizontalAlignment="Left">
+                                    <TextBlock Text="PopupMenuButton" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                                    <TextBlock Text="A ToggleButton that opens a MenuFlyout. Button stays 'checked' (accent) while flyout is open."
+                                               FontStyle="Italic" Opacity="0.7" TextWrapping="Wrap"/>
+
+                                    <StackPanel Spacing="12">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="Simple menu" FontSize="11" Opacity="0.7"/>
+                                            <ajut:PopupMenuButton>
+                                                <ajut:PopupMenuButton.ButtonContent>
+                                                    <TextBlock Text="Actions" VerticalAlignment="Center"/>
+                                                </ajut:PopupMenuButton.ButtonContent>
+                                                <ajut:PopupMenuButton.MenuItems>
+                                                    <MenuFlyoutItem Text="New File"/>
+                                                    <MenuFlyoutItem Text="Open..."/>
+                                                    <MenuFlyoutSeparator/>
+                                                    <MenuFlyoutItem Text="Exit"/>
+                                                </ajut:PopupMenuButton.MenuItems>
+                                            </ajut:PopupMenuButton>
+                                        </StackPanel>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="Edit menu" FontSize="11" Opacity="0.7"/>
+                                            <ajut:PopupMenuButton>
+                                                <ajut:PopupMenuButton.ButtonContent>
+                                                    <TextBlock Text="Edit" VerticalAlignment="Center"/>
+                                                </ajut:PopupMenuButton.ButtonContent>
+                                                <ajut:PopupMenuButton.MenuItems>
+                                                    <MenuFlyoutItem Text="Cut"/>
+                                                    <MenuFlyoutItem Text="Copy"/>
+                                                    <MenuFlyoutItem Text="Paste"/>
+                                                    <MenuFlyoutSeparator/>
+                                                    <MenuFlyoutItem Text="Select All"/>
+                                                </ajut:PopupMenuButton.MenuItems>
+                                            </ajut:PopupMenuButton>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </StackPanel>
+                            </ScrollViewer>
                         </TabViewItem.Content>
                     </TabViewItem>
 
@@ -163,7 +514,10 @@
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
                                 <TextBlock Grid.Row="0" Text="PropertyGrid - reflects properties with per-type editor templates" FontStyle="Italic" Margin="0,0,0,8"/>
-                                <ajut:PropertyGrid Grid.Row="1" SingleItemSource="{x:Bind TestObj}">
+                                <ajut:PropertyGrid Grid.Row="1" SingleItemSource="{x:Bind TestObj}"
+                                                   RowSpacing="5"
+                                                   FixedRowHeight="28"
+                                                   LabelColumnWidth="180">
                                     <ajut:PropertyGrid.ItemTemplateSelector>
                                         <ajut:PropertyGridTemplateSelector>
                                             <ajut:PropertyGridTemplateSelector.Default>
@@ -173,10 +527,10 @@
                                             </ajut:PropertyGridTemplateSelector.Default>
                                             <ajut:PropertyGridTemplateSelector.RegisteredTemplates>
                                                 <DataTemplate x:Key="Single">
-                                                    <ajut:NumericEditor Value="{Binding EditValue}"/>
+                                                    <ajut:NumericEditor Value="{Binding EditValue}" TextBoxHeight="20"/>
                                                 </DataTemplate>
                                                 <DataTemplate x:Key="ColorPick">
-                                                    <ajut:ColorEditIngressControl EditColor="{Binding EditValue}"/>
+                                                    <ajut:ColorEditIngressControl EditColor="{Binding EditValue}" VerticalAlignment="Stretch" MaxWidth="150" HorizontalAlignment="Left"/>
                                                 </DataTemplate>
                                             </ajut:PropertyGridTemplateSelector.RegisteredTemplates>
                                         </ajut:PropertyGridTemplateSelector>
@@ -206,6 +560,7 @@
                             </Grid>
                         </TabViewItem.Content>
                     </TabViewItem>
+
                 </TabView>
             </Border>
         </Grid>

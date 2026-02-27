@@ -16,6 +16,254 @@
         <local:FlatTreeItemRow HorizontalAlignment="Stretch"/>
     </DataTemplate>
 
+    <!-- ===[ FlatTreeListControl default ListViewItem style ]=== -->
+    <!-- Uses WinUI3 system brush keys only. AllControlThemeOverrides.xaml overrides
+         this key with AJut-colored brushes when the AJut theme is loaded.
+
+         WinUI3 ListView calls states from a single CommonStates group on its items —
+         including combined states like PointerOverSelected and PressedSelected. Using
+         two separate groups (SelectionStates + CommonStates) caused the deselection
+         storyboard never to fire because WinUI3 calls "Normal" to reset, not "Unselected".
+         Single group ensures Normal always resets all visual properties. -->
+    <Style x:Key="AJut_FlatTree_ListViewItemStyle" TargetType="ListViewItem">
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="MinHeight" Value="0"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="UseSystemFocusVisuals" Value="False"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListViewItem">
+                    <Grid x:Name="ContentBorder" Background="Transparent">
+                        <!-- Left-edge selection strip — 4px, system accent color when selected -->
+                        <Rectangle x:Name="SelectionStrip"
+                                   Width="4"
+                                   HorizontalAlignment="Left"
+                                   VerticalAlignment="Stretch"
+                                   Fill="Transparent"/>
+                        <!-- Selection outline: 1px box border around the row when selected.
+                             BorderBrush starts Transparent; animated to accent color on Selected. -->
+                        <Border x:Name="SelectionHighlight"
+                                BorderThickness="1"
+                                BorderBrush="Transparent"
+                                Background="Transparent"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"/>
+                        <!-- Hover tint: subtle background + 1px border on pointer-over.
+                             Rendered on top of SelectionHighlight so hover tint adds to selection bg. -->
+                        <Border x:Name="HoverTint"
+                                Background="Transparent"
+                                BorderBrush="Transparent"
+                                BorderThickness="1"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"/>
+                        <!-- Row content — left margin leaves room for the strip -->
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          Margin="6,0,0,0"/>
+                        <VisualStateManager.VisualStateGroups>
+                            <!-- Single group required for WinUI3 ListView: it calls combined states
+                                 (PointerOverSelected, PressedSelected) rather than two separate GoToState
+                                 calls. Using one group ensures Normal resets all five visual properties. -->
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionStrip"
+                                                                       Storyboard.TargetProperty="Fill">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Transparent"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
+                                                                       Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Transparent"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
+                                                                       Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Transparent"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
+                                                                       Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Transparent"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
+                                                                       Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Transparent"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="PointerOver">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionStrip"
+                                                                       Storyboard.TargetProperty="Fill">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Transparent"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
+                                                                       Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Transparent"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
+                                                                       Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Transparent"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
+                                                                       Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource AJut_FlatTree_HoverBackground}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
+                                                                       Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource AJut_FlatTree_HoverBorderBrush}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionStrip"
+                                                                       Storyboard.TargetProperty="Fill">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Transparent"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
+                                                                       Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Transparent"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
+                                                                       Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Transparent"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
+                                                                       Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource AJut_FlatTree_HoverBackground}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
+                                                                       Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource AJut_FlatTree_HoverBorderBrush}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <!-- Selected (focused): 4px nub + outline. HoverTint transparent. -->
+                                <VisualState x:Name="Selected">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionStrip"
+                                                                       Storyboard.TargetProperty="Fill">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBrush}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
+                                                                       Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBrush}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
+                                                                       Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBackground}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
+                                                                       Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Transparent"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
+                                                                       Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Transparent"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <!-- PointerOverSelected: nub + outline from selection, hover fill added. -->
+                                <VisualState x:Name="PointerOverSelected">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionStrip"
+                                                                       Storyboard.TargetProperty="Fill">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBrush}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
+                                                                       Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBrush}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
+                                                                       Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBackground}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
+                                                                       Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource AJut_FlatTree_HoverBackground}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
+                                                                       Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Transparent"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <!-- PressedSelected: same visuals as PointerOverSelected. -->
+                                <VisualState x:Name="PressedSelected">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionStrip"
+                                                                       Storyboard.TargetProperty="Fill">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBrush}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
+                                                                       Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBrush}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
+                                                                       Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBackground}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
+                                                                       Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource AJut_FlatTree_HoverBackground}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
+                                                                       Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Transparent"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                                <!-- SelectedUnfocused: desaturated nub + outline to signal focus loss. -->
+                                <VisualState x:Name="SelectedUnfocused">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionStrip"
+                                                                       Storyboard.TargetProperty="Fill">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBrushUnfocused}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
+                                                                       Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBrushUnfocused}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
+                                                                       Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0"
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBackground}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
+                                                                       Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Transparent"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
+                                                                       Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Transparent"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ===[ FlatTreeItemRow - per-row presenter ]=== -->
     <!-- DataContext = FlatTreeItem, set by ListView.
          ContentTemplate = set from FlatTreeListControl code via ContainerContentChanging. -->
@@ -42,11 +290,14 @@
                                 Background="Transparent"/>
 
                         <!-- Expand / collapse toggle -->
+                        <!-- Foreground passes ExpanderGlyphForeground down to the nested ToggleButton
+                             template where {TemplateBinding Foreground} picks it up for the FontIcon. -->
                         <ToggleButton Grid.Column="1"
                                       IsChecked="{Binding IsExpanded, Mode=TwoWay}"
                                       Visibility="{Binding IsExpandable, Converter={StaticResource FlatTree_HasChildrenToVisibility}}"
                                       HorizontalAlignment="Center"
-                                      VerticalAlignment="Center">
+                                      VerticalAlignment="Center"
+                                      Foreground="{TemplateBinding ExpanderGlyphForeground}">
                             <ToggleButton.Style>
                                 <Style TargetType="ToggleButton">
                                     <Setter Property="Background" Value="Transparent"/>
@@ -61,27 +312,29 @@
                                                         CornerRadius="{TemplateBinding CornerRadius}"
                                                         Padding="{TemplateBinding Padding}">
                                                     <!-- Chevron glyph: E76C=right (collapsed), E70D=down (expanded).
-                                                         Glyph is swapped in Checked VSM states below. -->
+                                                         Glyph is swapped in Checked VSM states below.
+                                                         Foreground comes from ToggleButton.Foreground which
+                                                         is set to FlatTreeItemRow.ExpanderGlyphForeground above. -->
                                                     <FontIcon x:Name="ExpanderIcon"
                                                               FontFamily="Segoe Fluent Icons"
                                                               FontSize="9"
                                                               Glyph="&#xE76C;"
                                                               HorizontalAlignment="Center"
                                                               VerticalAlignment="Center"
-                                                              Foreground="#FFBBBBBB"/>
+                                                              Foreground="{TemplateBinding Foreground}"/>
                                                     <VisualStateManager.VisualStateGroups>
                                                         <VisualStateGroup x:Name="CommonStates">
                                                             <VisualState x:Name="Normal"/>
                                                             <VisualState x:Name="PointerOver">
                                                                 <VisualState.Setters>
                                                                     <Setter Target="Root.Background"
-                                                                            Value="#3FFFFFFF"/>
+                                                                            Value="{ThemeResource AJut_FlatTreeItemRow_ExpanderPointerOverBackground}"/>
                                                                 </VisualState.Setters>
                                                             </VisualState>
                                                             <VisualState x:Name="Pressed">
                                                                 <VisualState.Setters>
                                                                     <Setter Target="Root.Background"
-                                                                            Value="#FF074470"/>
+                                                                            Value="{ThemeResource AJut_FlatTreeItemRow_ExpanderPressedBackground}"/>
                                                                 </VisualState.Setters>
                                                             </VisualState>
                                                             <VisualState x:Name="Checked">
@@ -93,7 +346,7 @@
                                                             <VisualState x:Name="CheckedPointerOver">
                                                                 <VisualState.Setters>
                                                                     <Setter Target="Root.Background"
-                                                                            Value="#3FFFFFFF"/>
+                                                                            Value="{ThemeResource AJut_FlatTreeItemRow_ExpanderPointerOverBackground}"/>
                                                                     <Setter Target="ExpanderIcon.Glyph"
                                                                             Value="&#xE70D;"/>
                                                                 </VisualState.Setters>
@@ -101,7 +354,7 @@
                                                             <VisualState x:Name="CheckedPressed">
                                                                 <VisualState.Setters>
                                                                     <Setter Target="Root.Background"
-                                                                            Value="#FF074470"/>
+                                                                            Value="{ThemeResource AJut_FlatTreeItemRow_ExpanderPressedBackground}"/>
                                                                     <Setter Target="ExpanderIcon.Glyph"
                                                                             Value="&#xE70D;"/>
                                                                 </VisualState.Setters>
@@ -134,6 +387,8 @@
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="ExpanderGlyphForeground" Value="{ThemeResource TextFillColorSecondaryBrush}"/>
+        <Setter Property="ListViewItemContainerStyle" Value="{StaticResource AJut_FlatTree_ListViewItemStyle}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:FlatTreeListControl">
@@ -145,54 +400,25 @@
                                   BorderThickness="0"
                                   SelectionMode="Single"
                                   ItemTemplate="{StaticResource FlatTree_RowDataTemplate}"
+                                  ItemContainerStyle="{TemplateBinding ListViewItemContainerStyle}"
                                   HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
                                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                   ScrollViewer.VerticalScrollBarVisibility="Auto">
-                            <ListView.ItemContainerStyle>
-                                <Style TargetType="ListViewItem">
-                                    <Setter Property="Padding" Value="0"/>
-                                    <Setter Property="MinHeight" Value="0"/>
-                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="ListViewItem">
-                                                <Grid x:Name="ContentBorder"
-                                                      Background="Transparent">
-                                                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                                                      Margin="{TemplateBinding Padding}"/>
-                                                    <VisualStateManager.VisualStateGroups>
-                                                        <VisualStateGroup x:Name="SelectionStates">
-                                                            <VisualState x:Name="Unselected"/>
-                                                            <VisualState x:Name="Selected">
-                                                                <VisualState.Setters>
-                                                                    <Setter Target="ContentBorder.Background"
-                                                                            Value="{ThemeResource SystemControlHighlightListAccentHighBrush}"/>
-                                                                </VisualState.Setters>
-                                                            </VisualState>
-                                                            <VisualState x:Name="SelectedUnfocused">
-                                                                <VisualState.Setters>
-                                                                    <Setter Target="ContentBorder.Background"
-                                                                            Value="{ThemeResource SystemControlHighlightListAccentMediumBrush}"/>
-                                                                </VisualState.Setters>
-                                                            </VisualState>
-                                                        </VisualStateGroup>
-                                                        <VisualStateGroup x:Name="CommonStates">
-                                                            <VisualState x:Name="Normal"/>
-                                                            <VisualState x:Name="PointerOver">
-                                                                <VisualState.Setters>
-                                                                    <Setter Target="ContentBorder.Background"
-                                                                            Value="{ThemeResource SystemControlHighlightListLowBrush}"/>
-                                                                </VisualState.Setters>
-                                                            </VisualState>
-                                                        </VisualStateGroup>
-                                                    </VisualStateManager.VisualStateGroups>
-                                                </Grid>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </ListView.ItemContainerStyle>
+                            <ListView.Resources>
+                                <!-- Suppress WinUI3 ListView host-level selection chrome (drawn at panel
+                                     level, independent of the item ControlTemplate). Without this, WinUI3
+                                     paints an accent-colored selection indicator even when the item
+                                     template has no ListViewItemPresenter. -->
+                                <SolidColorBrush x:Key="ListViewItemSelectionIndicatorBrush" Color="Transparent"/>
+                                <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPointerOverBrush" Color="Transparent"/>
+                                <SolidColorBrush x:Key="ListViewItemSelectionIndicatorPressedBrush" Color="Transparent"/>
+                                <SolidColorBrush x:Key="ListViewItemSelectionIndicatorDisabledBrush" Color="Transparent"/>
+                                <SolidColorBrush x:Key="ListViewItemBackgroundSelected" Color="Transparent"/>
+                                <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPointerOver" Color="Transparent"/>
+                                <SolidColorBrush x:Key="ListViewItemBackgroundSelectedUnfocused" Color="Transparent"/>
+                                <SolidColorBrush x:Key="ListViewItemBackgroundPointerOver" Color="Transparent"/>
+                                <SolidColorBrush x:Key="ListViewItemBackgroundPressed" Color="Transparent"/>
+                            </ListView.Resources>
                         </ListView>
                     </Border>
                 </ControlTemplate>

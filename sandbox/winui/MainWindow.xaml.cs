@@ -41,6 +41,12 @@ namespace AJutShowRoomWinUI
             this.InitializeComponent();
             this.Root.SetupFor(this);
 
+            // ToggleStrip demo items
+            this.ToggleStripSingle.ItemsSource = new[] { "Option A", "Option B", "Option C" };
+            this.ToggleStripMulti.ItemsSource = new[] { "Bold", "Italic", "Underline", "Strikethrough" };
+            this.ToggleStripFreeform.ItemsSource = new[] { "First", "Second", "Third" };
+            this.ToggleStripCustom.ItemsSource = new[] { "Red", "Green", "Blue" };
+
             this.AppWindow.Resize(new Windows.Graphics.SizeInt32(800, 1000));
 
             ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
@@ -178,8 +184,10 @@ namespace AJutShowRoomWinUI
             TypeIdRegistrar.RegisterTypeId<ShowRoomPanelState>("ShowRoomPanelState");
 
             m_dockingManager = new DockingManager(this, "ShowRoomDock");
-            m_dockingManager.RegisterRootDockZones(TestDockZone);
+            m_dockingManager.FixedTearoffWindowTitle = "Show Room";
+            m_dockingManager.RegisterMainWindowRootDockZones(this.TestDockZone);
             m_dockingManager.RegisterDisplayFactory<ShowRoomPanel>();
+            
 
             var zone = m_dockingManager.FindFirstAvailableDockZone();
             if (zone != null)
@@ -271,6 +279,9 @@ namespace AJutShowRoomWinUI
         public Color ColorValue { get; set; } = new Color { A = 255, B = 255 };
         public string Name { get; set; } = "AJut Is Cool";
         public ShowRoomSubObject SubObj { get; set; } = new ShowRoomSubObject();
+
+        [PGElevateChildProperty(nameof(ShowRoomSubObject.SubObjValue))]
+        public ShowRoomSubObject SubObjWithElevation { get; set; } = new ShowRoomSubObject();
     }
 
     public class ShowRoomSubObject

@@ -7,6 +7,8 @@
     using System.Windows.Media;
     using DPUtils = DPUtils<ColorValueEditControl>;
 
+    // ===========[ ColorValueEditControl ]=========================================
+    // WinUI3 port: pending.
     public class ColorValueEditControl : Control
     {
         private bool m_isDoingUpdate = false;

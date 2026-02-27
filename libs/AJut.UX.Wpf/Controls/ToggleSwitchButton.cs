@@ -8,6 +8,8 @@
     using System.Windows.Media.Effects;
     using DPUtils = AJut.UX.DPUtils<ToggleSwitchButton>;
 
+    // ===========[ ToggleSwitchButton ]============================================
+    // WinUI3 port: not applicable — WinUI3 provides ToggleSwitch as a platform control.
     [TemplatePart(Name = nameof(PART_SwitchHolder), Type = typeof(Panel))]
     public class ToggleSwitchButton : ButtonBase
     {

@@ -9,6 +9,8 @@
     using System.Windows.Controls;
     using DPUtils = AJut.UX.DPUtils<BusyWait>;
 
+    // ===========[ BusyWait ]======================================================
+    // WinUI3 port: pending.
     public class BusyWait : ContentControl
     {
         static BusyWait ()

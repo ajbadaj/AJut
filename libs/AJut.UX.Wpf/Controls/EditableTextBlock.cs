@@ -26,6 +26,8 @@ namespace AJut.UX.Controls
         MouseOver,
     }
 
+    // ===========[ EditableTextBlock ]=============================================
+    // WinUI3 port: pending.
     public class EditableTextBlock : Control
     {
         private bool m_isManuallyEscapingEdit;

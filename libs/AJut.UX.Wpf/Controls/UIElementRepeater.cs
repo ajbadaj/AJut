@@ -9,6 +9,8 @@
     using System.Windows.Markup;
     using DPUtils = AJut.UX.DPUtils<UIElementRepeater>;
 
+    // ===========[ UIElementRepeater ]=============================================
+    // WinUI3 port: pending.
     [ContentProperty(nameof(Container))]
     public class UIElementRepeater : Control
     {

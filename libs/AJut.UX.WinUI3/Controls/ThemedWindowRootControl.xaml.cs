@@ -23,6 +23,11 @@ namespace AJut.UX.Controls
         bool IsReadyToGenerateTitleBarDragRectangles() => true;
     }
 
+    // ===========[ ThemedWindowRootControl ]=======================================
+    // WinUI3-specific: no WPF equivalent.
+    // Custom-chrome window root: replaces the system title bar, hosts caption buttons
+    // (fullscreen toggle), tracks activation/presenter state, and manages
+    // InputNonClientPointerSource drag rectangles for the custom title bar area.
     [ContentProperty(Name = nameof(WindowContents))]
     [TemplatePart(Name = nameof(PART_TitleBarBorder), Type = typeof(Border))]
     [TemplatePart(Name = nameof(PART_ClientContainer), Type = typeof(ContentControl))]

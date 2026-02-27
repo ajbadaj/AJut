@@ -1,0 +1,59 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="using:AJut.UX.Controls">
+
+    <!-- ===[ DockCloseButton ]=== -->
+    <!-- Close button used in DockZone panel headers and tab strips.
+         CommonStates VSM (Normal / PointerOver / Pressed) is driven
+         automatically by ButtonBase — no pointer event handlers needed.
+
+         Background is NOT TemplateBinding'd on Root — VSM owns that property.
+         TemplateBinding + VSM targeting the same property causes the binding
+         to overwrite VSM-applied values.
+
+         Brush keys are in AJutCustomControlStylingDefaults.xaml (Generic.xaml
+         scope); AJutThemeMapAliasing.xaml redirects to AJut palette at runtime.
+         Both keys MUST be present in AJutThemeMapAliasing.xaml so {ThemeResource}
+         in VSM Setters can find them when the AJut theme is loaded. -->
+    <Style TargetType="local:DockCloseButton">
+        <Setter Property="Content"               Value="&#x2715;"/>
+        <Setter Property="BorderThickness"       Value="0"/>
+        <Setter Property="Padding"               Value="6,3,6,3"/>
+        <Setter Property="IsTabStop"             Value="False"/>
+        <Setter Property="UseSystemFocusVisuals" Value="False"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:DockCloseButton">
+                    <Border x:Name="Root"
+                            Padding="{TemplateBinding Padding}"
+                            CornerRadius="2">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal"/>
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background"
+                                                Value="{ThemeResource AJut_DockCloseButton_HoverBackground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background"
+                                                Value="{ThemeResource AJut_DockCloseButton_PressedBackground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Disabled"/>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          Foreground="{TemplateBinding Foreground}"
+                                          FontSize="{TemplateBinding FontSize}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

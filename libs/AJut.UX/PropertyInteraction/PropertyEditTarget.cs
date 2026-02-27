@@ -28,6 +28,18 @@ namespace AJut.UX.PropertyInteraction
         public bool IsReadOnly => m_setValue == null;
         public string[] AdditionalEvalTargets { get; set; }
 
+        /// <summary>
+        /// Set when either elevation attribute is found on this or a child property.
+        /// Non-null means this row is non-expandable; the elevated child's editor shows inline.
+        /// </summary>
+        public PropertyEditTarget ElevatedChildTarget { get; private set; }
+
+        /// <summary>True when this row should show an inline editor.</summary>
+        public bool HasInlineEditor => !this.IsExpandable || this.ElevatedChildTarget != null;
+
+        /// <summary>Returns ElevatedChildTarget if set, otherwise self. Used as ContentControl.Content.</summary>
+        public PropertyEditTarget EffectiveEditorTarget => this.ElevatedChildTarget ?? this;
+
         private bool m_isExpandable;
         public bool IsExpandable
         {
@@ -130,11 +142,58 @@ namespace AJut.UX.PropertyInteraction
                     object subValue = prop.GetValue(sourceItem);
                     if (subValue != null && _GetRelevantProperties(subValue).Any())
                     {
-                        target.IsExpandable = true;
-                        foreach (PropertyEditTarget child in GenerateForPropertiesOf(subValue, depth + 1))
+                        // 1. Check for [PGElevateChildProperty("X")] on the property itself.
+                        var elevateChildAttr = prop.GetAttributes<PGElevateChildPropertyAttribute>().FirstOrDefault();
+                        if (elevateChildAttr != null)
                         {
-                            child.Setup();
-                            target.InsertChild(target.Children.Count, child);
+                            PropertyInfo childProp = prop.PropertyType.GetProperty(elevateChildAttr.ChildPropertyName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty);
+                            if (childProp != null)
+                            {
+                                var childTarget = new PropertyEditTarget(
+                                    childProp.Name,
+                                    () => childProp.GetValue(prop.GetValue(sourceItem)),
+                                    childProp.SetMethod != null ? v => childProp.SetValue(prop.GetValue(sourceItem), v) : (SetValue?)null
+                                )
+                                {
+                                    DisplayName = childProp.GetAttributes<DisplayNameAttribute>().FirstOrDefault()?.DisplayName ?? childProp.Name.ConvertToFriendlyEn(),
+                                    Editor = childProp.GetAttributes<PGEditorAttribute>().FirstOrDefault()?.Editor ?? childProp.PropertyType.Name,
+                                };
+                                childTarget.Setup();
+                                target.ElevatedChildTarget = childTarget;
+                                target.IsExpandable = false;
+                            }
+                        }
+                        else
+                        {
+                            // 2. Check if any property of the sub-type has [PGElevateAsParent].
+                            PropertyInfo elevatedProp = prop.PropertyType
+                                .GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty)
+                                .FirstOrDefault(p => p.IsTaggedWithAttribute<PGElevateAsParentAttribute>());
+                            if (elevatedProp != null)
+                            {
+                                var childTarget = new PropertyEditTarget(
+                                    elevatedProp.Name,
+                                    () => elevatedProp.GetValue(prop.GetValue(sourceItem)),
+                                    elevatedProp.SetMethod != null ? v => elevatedProp.SetValue(prop.GetValue(sourceItem), v) : (SetValue?)null
+                                )
+                                {
+                                    DisplayName = elevatedProp.GetAttributes<DisplayNameAttribute>().FirstOrDefault()?.DisplayName ?? elevatedProp.Name.ConvertToFriendlyEn(),
+                                    Editor = elevatedProp.GetAttributes<PGEditorAttribute>().FirstOrDefault()?.Editor ?? elevatedProp.PropertyType.Name,
+                                };
+                                childTarget.Setup();
+                                target.ElevatedChildTarget = childTarget;
+                                target.IsExpandable = false;
+                            }
+                            else
+                            {
+                                // 3. Normal expandable sub-object.
+                                target.IsExpandable = true;
+                                foreach (PropertyEditTarget child in GenerateForPropertiesOf(subValue, depth + 1))
+                                {
+                                    child.Setup();
+                                    target.InsertChild(target.Children.Count, child);
+                                }
+                            }
                         }
                     }
                 }

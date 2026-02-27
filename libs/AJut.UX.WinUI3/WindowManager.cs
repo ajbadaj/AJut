@@ -7,6 +7,7 @@ namespace AJut.UX
     using System.Linq;
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Input;
+    using Windows.Gaming.Input;
 
     /// <summary>
     /// How child window showing/hiding is coordinated for all windows in a <see cref="WindowManager"/>
@@ -50,13 +51,14 @@ namespace AJut.UX
         private bool m_ignoreOrderingChanges;
         private readonly List<UIElement> m_commandRetargetters = new();
         private bool m_setOwnerAsRootForEachChildWindow = true;
-
+        private FrameworkElement m_rootElement;
         public WindowManager () : base(new ObservableCollection<Window>())
         {
         }
 
         public void Setup(Window root)
         {
+            this.Dispose();
             if (root == null)
             {
                 throw new Exception("Window manager requires a root window");
@@ -71,14 +73,27 @@ namespace AJut.UX
             this.Root.VisibilityChanged += this.OnRootVisibilityChanged;
             this.Root.Activated += this.OnRootActivated;
             this.Root.Closed += this.OnRootClosed;
+
+            // Attempt to capture root element now for theme tracking.
+            // If Setup is called before InitializeComponent (Content is null),
+            // TryInitRootElement retries on the first root Activated event.
+            this.TryInitRootElement();
         }
 
         public void Dispose ()
         {
-            this.DoStandaradWindowTrackingRemoval(this.Root);
-            this.Root.Activated -= this.OnRootActivated;
-            this.Root.Closed -= this.OnRootClosed;
-            this.Root = null;
+            if (this.Root != null)
+            {
+                this.DoStandaradWindowTrackingRemoval(this.Root);
+                this.Root.Activated -= this.OnRootActivated;
+                this.Root.Closed -= this.OnRootClosed;
+                this.Root = null;
+            }
+
+            if (m_rootElement != null)
+            {
+                m_rootElement.ActualThemeChanged -= OnRootThemeChanged;
+            }
         }
 
         // =====================[ Property Interface ]=====================================
@@ -123,6 +138,7 @@ namespace AJut.UX
             if (window.Content is UIElement root)
             {
                 root.KeyboardAccelerators.AddEach(this.GlobalAccelerators);
+                this.ApplyTheme(window);
             }
 
             this.BringToFront(window);
@@ -171,7 +187,7 @@ namespace AJut.UX
         /// </summary>
         public void ShowAllWindows (bool includingRoot = false)
         {
-            this.ForEachBackToFront(includingRoot, child => child.AppWindow.Show());
+            this.ForEachBackToFront(includingRoot, child => child.Show());
         }
 
         /// <summary>
@@ -179,7 +195,7 @@ namespace AJut.UX
         /// </summary>
         public void HideAllWindows (bool includingRoot = false)
         {
-            this.ForEach(includingRoot, w => w.AppWindow.Hide());
+            this.ForEach(includingRoot, w => w.Hide());
         }
 
         /// <summary>
@@ -208,6 +224,24 @@ namespace AJut.UX
             this.RunActionForEachWithoutDisruptingOrder(includingRoot, false, action);
         }
 
+        private void TryInitRootElement()
+        {
+            if (m_rootElement == null && this.Root?.Content is FrameworkElement rootElement)
+            {
+                m_rootElement = rootElement;
+                m_rootElement.ActualThemeChanged += this.OnRootThemeChanged;
+            }
+        }
+
+        public void ApplyTheme(Window window)
+        {
+            this.TryInitRootElement();
+            if (m_rootElement != null && window != this.Root && window.Content is FrameworkElement windowRoot)
+            {
+                windowRoot.RequestedTheme = m_rootElement.ActualTheme;
+            }
+        }
+
         // =====================[ Private Utility Methods ]=====================================
 
         private void DoSignupAndStorageTracking (Window window)
@@ -220,15 +254,24 @@ namespace AJut.UX
 
         private bool DoStandaradWindowTrackingRemoval (Window window)
         {
-            // Since it doesn't hurt, and it fulfills some protection from paranoia, keeping this before the remove
-            window.Closed -= this.Window_OnClosed;
-            window.Activated -= this.Window_Activated;
-
-            if (window.Content is UIElement root)
+            try
             {
-                root.KeyboardAccelerators.RemoveEach(this.GlobalAccelerators);
-            }
+                if (window != null)
+                {
+                    // Since it doesn't hurt, and it fulfills some protection from paranoia, keeping this before the remove
+                    window.Closed -= this.Window_OnClosed;
+                    window.Activated -= this.Window_Activated;
 
+                    if (window.Content is UIElement root)
+                    {
+                        root.KeyboardAccelerators.RemoveEach(this.GlobalAccelerators);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
             return this.Items.Remove(window);
         }
 
@@ -243,6 +286,9 @@ namespace AJut.UX
 
         private void OnRootActivated (object sender, WindowActivatedEventArgs e)
         {
+            // Retry root-element capture in case Setup was called before InitializeComponent.
+            this.TryInitRootElement();
+
             if (this.ShowHideChildrenWhen == eChildWindowDisplayCoordinationStyle.RootActivationDeactivation)
             {
                 if (this.Items.Any(w => !w.Visible))
@@ -322,12 +368,33 @@ namespace AJut.UX
 
         private void Window_Activated (object sender, WindowActivatedEventArgs e)
         {
-            this.OnItemActivatationChanged((Window)sender, e.WindowActivationState);
+            if (sender is Window window)
+            {
+                this.OnItemActivatationChanged(window, e.WindowActivationState);
+                this.ApplyTheme(window);
+            }
         }
 
         private void Window_OnClosed (object sender, WindowEventArgs e)
         {
             this.StopTracking((Window)sender);
         }
+
+        private void OnRootThemeChanged(FrameworkElement sender, object args)
+        {
+            if (m_rootElement == null)
+            {
+                return;
+            }
+
+            foreach (var window in this.Items)
+            {
+                if (window != this.Root && window.Content is FrameworkElement windowRoot)
+                {
+                    windowRoot.RequestedTheme = m_rootElement.ActualTheme;
+                }
+            }
+        }
+
     }
 }

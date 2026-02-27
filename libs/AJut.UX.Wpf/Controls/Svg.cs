@@ -5,6 +5,8 @@
     using AJut.Storage;
     using DPUtils = DPUtils<Svg>;
 
+    // ===========[ Svg ]============================================================
+    // WinUI3 port: pending.
     public class Svg : Control
     {
 

@@ -19,6 +19,12 @@
         /// </summary>
         public App ()
         {
+            this.UnhandledException += (sender, e) =>
+            {
+                e.Handled = true;   // prevents the crash
+                System.Diagnostics.Debug.WriteLine(e.Exception.ToString());
+            };
+
             Instance = this;
             this.InitializeComponent();
 

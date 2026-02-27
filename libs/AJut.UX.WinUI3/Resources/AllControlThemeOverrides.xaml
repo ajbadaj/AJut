@@ -15,209 +15,119 @@
 -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:local="using:AJut.UX.Controls"
-                    xmlns:conv="using:AJut.UX.Converters">
+                    xmlns:local="using:AJut.UX.Controls">
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Resources/Microsoft.UI.Xaml_Overrides.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Resources/AJut.UX_Overrides.xaml"/>
+        <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Resources/AJutThemeMapAliasing.xaml"/>
     </ResourceDictionary.MergedDictionaries>
 
-    <!-- Re-declare converter so this file is self-contained (same key as FlatTreeListControl.xaml). -->
-    <conv:BooleanToVisibilityConverter x:Key="FlatTree_HasChildrenToVisibility"
-                                       TrueValue="Visible"
-                                       FalseValue="Collapsed"/>
-
     <!--
-    ===[ FlatTreeItemRow - AJut-themed override ]===
-    Restores AJut theme brushes for the expander button states and list selection.
+    ===[ FlatTreeListControl - AJut-themed override ]===
+    Applies AJut list background/border. No template duplication needed.
+    AJut_FlatTree_ListViewItemStyle template lives only in FlatTreeListControl.xaml;
+    brush keys are redirected via AJutThemeMapAliasing.xaml.
     -->
-    <Style TargetType="local:FlatTreeItemRow">
-        <Setter Property="HorizontalAlignment" Value="Stretch"/>
-        <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="local:FlatTreeItemRow">
-                    <Grid HorizontalAlignment="Stretch"
-                          Background="{TemplateBinding Background}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="18"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <Border Grid.Column="0"
-                                Width="{Binding IndentWidth}"
-                                Background="Transparent"/>
-
-                        <ToggleButton Grid.Column="1"
-                                      IsChecked="{Binding IsExpanded, Mode=TwoWay}"
-                                      Visibility="{Binding IsExpandable, Converter={StaticResource FlatTree_HasChildrenToVisibility}}"
-                                      HorizontalAlignment="Center"
-                                      VerticalAlignment="Center">
-                            <ToggleButton.Style>
-                                <Style TargetType="ToggleButton">
-                                    <Setter Property="Background" Value="Transparent"/>
-                                    <Setter Property="BorderThickness" Value="0"/>
-                                    <Setter Property="Padding" Value="3"/>
-                                    <Setter Property="CornerRadius" Value="2"/>
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="ToggleButton">
-                                                <Border x:Name="Root"
-                                                        Background="{TemplateBinding Background}"
-                                                        CornerRadius="{TemplateBinding CornerRadius}"
-                                                        Padding="{TemplateBinding Padding}">
-                                                    <FontIcon x:Name="ExpanderIcon"
-                                                              FontFamily="Segoe Fluent Icons"
-                                                              FontSize="9"
-                                                              Glyph="&#xE76C;"
-                                                              HorizontalAlignment="Center"
-                                                              VerticalAlignment="Center"
-                                                              Foreground="{ThemeResource AJut_Brush_SymbolForeground}"/>
-                                                    <VisualStateManager.VisualStateGroups>
-                                                        <VisualStateGroup x:Name="CommonStates">
-                                                            <VisualState x:Name="Normal"/>
-                                                            <VisualState x:Name="PointerOver">
-                                                                <VisualState.Setters>
-                                                                    <Setter Target="Root.Background"
-                                                                            Value="{ThemeResource AJut_Brush_MouseInteractionHighlight}"/>
-                                                                </VisualState.Setters>
-                                                            </VisualState>
-                                                            <VisualState x:Name="Pressed">
-                                                                <VisualState.Setters>
-                                                                    <Setter Target="Root.Background"
-                                                                            Value="{ThemeResource AJut_Brush_PrimaryHighlightDark}"/>
-                                                                </VisualState.Setters>
-                                                            </VisualState>
-                                                            <VisualState x:Name="Checked">
-                                                                <VisualState.Setters>
-                                                                    <Setter Target="ExpanderIcon.Glyph"
-                                                                            Value="&#xE70D;"/>
-                                                                </VisualState.Setters>
-                                                            </VisualState>
-                                                            <VisualState x:Name="CheckedPointerOver">
-                                                                <VisualState.Setters>
-                                                                    <Setter Target="Root.Background"
-                                                                            Value="{ThemeResource AJut_Brush_MouseInteractionHighlight}"/>
-                                                                    <Setter Target="ExpanderIcon.Glyph"
-                                                                            Value="&#xE70D;"/>
-                                                                </VisualState.Setters>
-                                                            </VisualState>
-                                                            <VisualState x:Name="CheckedPressed">
-                                                                <VisualState.Setters>
-                                                                    <Setter Target="Root.Background"
-                                                                            Value="{ThemeResource AJut_Brush_PrimaryHighlightDark}"/>
-                                                                    <Setter Target="ExpanderIcon.Glyph"
-                                                                            Value="&#xE70D;"/>
-                                                                </VisualState.Setters>
-                                                            </VisualState>
-                                                        </VisualStateGroup>
-                                                    </VisualStateManager.VisualStateGroups>
-                                                </Border>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </ToggleButton.Style>
-                        </ToggleButton>
-
-                        <ContentPresenter Grid.Column="2"
-                                          HorizontalAlignment="Stretch"
-                                          VerticalAlignment="Center"
-                                          Margin="2,0"
-                                          Content="{Binding .}"
-                                          ContentTemplate="{TemplateBinding ContentTemplate}"/>
-                    </Grid>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
-    <!--
-    ===[ FlatTreeListControl ListViewItem - AJut-themed override ]===
-    Restores AJut selection and hover brushes for the inner ListView item container.
-    -->
-    <Style x:Key="AJut_FlatTree_ListViewItemStyle" TargetType="ListViewItem">
-        <Setter Property="Padding" Value="0"/>
-        <Setter Property="MinHeight" Value="0"/>
+    <Style TargetType="local:FlatTreeListControl">
+        <Setter Property="Background" Value="{ThemeResource AJut_Brush_ListBackground}"/>
+        <Setter Property="BorderBrush" Value="{ThemeResource AJut_Brush_ListBorder}"/>
+        <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="ListViewItem">
-                    <Grid x:Name="ContentBorder"
-                          Background="Transparent">
-                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                          Margin="{TemplateBinding Padding}"/>
-                        <VisualStateManager.VisualStateGroups>
-                            <VisualStateGroup x:Name="SelectionStates">
-                                <VisualState x:Name="Unselected"/>
-                                <VisualState x:Name="Selected">
-                                    <VisualState.Setters>
-                                        <Setter Target="ContentBorder.Background"
-                                                Value="{ThemeResource AJut_Brush_ListSelection}"/>
-                                    </VisualState.Setters>
-                                </VisualState>
-                                <VisualState x:Name="SelectedUnfocused">
-                                    <VisualState.Setters>
-                                        <Setter Target="ContentBorder.Background"
-                                                Value="{ThemeResource AJut_Brush_ListSelectionBackground}"/>
-                                    </VisualState.Setters>
-                                </VisualState>
-                            </VisualStateGroup>
-                            <VisualStateGroup x:Name="CommonStates">
-                                <VisualState x:Name="Normal"/>
-                                <VisualState x:Name="PointerOver">
-                                    <VisualState.Setters>
-                                        <Setter Target="ContentBorder.Background"
-                                                Value="{ThemeResource AJut_Brush_ListItemHover}"/>
-                                    </VisualState.Setters>
-                                </VisualState>
-                            </VisualStateGroup>
-                        </VisualStateManager.VisualStateGroups>
-                    </Grid>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
+        <Setter Property="ExpanderGlyphForeground" Value="{ThemeResource AJut_Brush_SymbolForeground}"/>
     </Style>
 
     <!--
-    ===[ PropertyGridItemRow - AJut-themed override ]===
-    Restores AJut_Brush_NormalText for the property label.
+    ===[ NumericEditor - AJut-themed override ]===
+    Redefines control-specific ThemeResource keys. No template duplication needed.
+    Brush key redirects in AJutThemeMapAliasing.xaml handle focus/hover/pressed colors.
     -->
-    <Style TargetType="local:PropertyGridItemRow">
+    <Style TargetType="local:NumericEditor">
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
-        <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="local:PropertyGridItemRow">
-                    <Grid HorizontalAlignment="Stretch"
-                          Background="{TemplateBinding Background}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" MinWidth="80"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
+        <Setter Property="Background" Value="{ThemeResource AJut_Brush_PopOutControlBackground}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="TextBoxBackground" Value="{ThemeResource AJut_Brush_TextBoxBackground}"/>
+    </Style>
 
-                        <TextBlock Grid.Column="0"
-                                   Text="{Binding DisplayName}"
-                                   VerticalAlignment="Center"
-                                   Margin="0,0,8,0"
-                                   FontStyle="Italic"
-                                   Opacity="0.8"
-                                   TextTrimming="CharacterEllipsis"
-                                   ToolTipService.ToolTip="{Binding DisplayName}"
-                                   Foreground="{ThemeResource AJut_Brush_NormalText}"/>
+    <!--
+    ===[ DockTearoffContainerPanel - AJut-themed override ]===
+    Overrides the default ApplicationPageBackgroundThemeBrush with the AJut panel
+    background so the tearoff window background matches the docked panels.
+    -->
+    <Style TargetType="local:DockTearoffContainerPanel">
+        <Setter Property="Background" Value="{ThemeResource AJut_Brush_PanelBackground}"/>
+    </Style>
 
-                        <ContentControl Grid.Column="1"
-                                        HorizontalAlignment="Stretch"
-                                        HorizontalContentAlignment="Stretch"
-                                        VerticalAlignment="Center"
-                                        Content="{Binding}"
-                                        ContentTemplateSelector="{TemplateBinding EditorTemplateSelector}"/>
-                    </Grid>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
+    <!--
+    ===[ DockLeafLayout - AJut-themed override ]===
+    Applies AJut brush tokens to the leaf panel's visual DPs.
+    The default colors in DockLeafLayout.xaml remain intact for no-theme usage.
+    No template redefinition — only DP setters.
+    -->
+    <Style TargetType="local:DockLeafLayout">
+        <Setter Property="Foreground"           Value="{ThemeResource AJut_Brush_NormalText}"/>
+        <Setter Property="PanelBackground"      Value="{ThemeResource AJut_Brush_PanelBackground}"/>
+        <Setter Property="PanelBorderBrush"     Value="{ThemeResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="PanelBorderThickness" Value="1"/>
+        <Setter Property="TabStripBackground"   Value="Transparent"/>
+        <!-- TopLeft=0, TopRight=0: flat top merges with header bar.
+             BottomRight=8, BottomLeft=8: rounded bottom corners above the tab strip. -->
+        <Setter Property="PanelCornerRadius"    Value="0,0,8,8"/>
+    </Style>
+
+    <!--
+    ===[ DockTabItem - AJut-themed override ]===
+    Applies AJut brush tokens to tab item background and border.
+    No template redefinition — only DP setters.
+    -->
+    <Style TargetType="local:DockTabItem">
+        <Setter Property="Background"   Value="{ThemeResource AJut_Brush_PanelBackground}"/>
+        <Setter Property="BorderBrush"  Value="{ThemeResource AJut_Brush_BorderCommon}"/>
+    </Style>
+
+    <!--
+    ===[ PathSelectionControl - AJut-themed override ]===
+    Redefines control-specific ThemeResource keys. No template duplication needed.
+    -->
+    <Style TargetType="local:PathSelectionControl">
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="Background" Value="{ThemeResource AJut_Brush_PopOutControlBackground}"/>
+        <Setter Property="BorderBrush" Value="{ThemeResource AJut_Brush_TextBoxBorder}"/>
+        <Setter Property="BorderThickness" Value="1,1,1,2"/>
+    </Style>
+
+    <!--
+    ===[ ColorEditIngressControl - AJut-themed override ]===
+    Redefines EditingStates border brush keys. No template duplication needed.
+    AJut_ColorEditIngressControl_HighlightBorderBrush → AJut_Brush_PrimaryHighlight
+    AJut_ColorEditIngressControl_NormalBorderBrush    → AJut_Brush_BorderCommon
+    -->
+    <Style TargetType="local:ColorEditIngressControl">
+        <Setter Property="BorderBrush" Value="{ThemeResource AJut_Brush_BorderCommon}"/>
+    </Style>
+
+    <!--
+    ===[ PopupMenuButton - AJut-themed override ]===
+    Redefines chevron glyph foreground key. No template duplication needed.
+    -->
+    <Style TargetType="local:PopupMenuButton">
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+        <Setter Property="BorderBrush" Value="{ThemeResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="6,4"/>
+    </Style>
+
+    <!--
+    ===[ ToggleStrip - AJut-themed override ]===
+    ToggleStripButton controls handle all button-level visual states via ThemeResource
+    keys (redirected in AJutThemeMapAliasing.xaml). The strip container only needs
+    AJut brush assignments. No template duplication needed.
+    -->
+    <Style TargetType="local:ToggleStrip">
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+        <Setter Property="Background" Value="{ThemeResource AJut_Brush_PopOutControlBackground}"/>
+        <Setter Property="BorderBrush" Value="{ThemeResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="ItemPadding" Value="8,4"/>
     </Style>
 
 </ResourceDictionary>

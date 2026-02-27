@@ -7,7 +7,9 @@ namespace AJut.UX.Controls
     using System.Linq;
     using System.Windows;
     using System.Windows.Controls;
+    using System.Windows.Controls.Primitives;
     using System.Windows.Input;
+    using System.Windows.Media;
     using AJut;
     using AJut.Storage;
     using AJut.Tree;
@@ -36,6 +38,10 @@ namespace AJut.UX.Controls
             this.Items = new ItemsStorageContainer(this);
             this.SelectedItems = new ObservableCollection<IObservableTreeNode>();
             this.SelectedItems.CollectionChanged += this.SelectedItems_OnCollectionChanged;
+
+            // Sync RowSpacingThickness with the default RowSpacing value since the
+            // DP change handler only fires on changes, not on initialization.
+            this.RowSpacingThickness = new Thickness(0, 0, 0, this.RowSpacing);
         }
 
         // ============================[Events]================================
@@ -55,7 +61,7 @@ namespace AJut.UX.Controls
             this.Items.IncludeRoot = this.IncludeRoot;
             this.Items.RootNode = newRoot == null
                 ? null
-                : FlatTreeItem.CreateRoot(newRoot, this.TabbingSize, this.StartItemsExpanded);
+                : FlatTreeItem.CreateRoot(newRoot, this.TreeDepthIndentSize, this.StartItemsExpanded);
         }
 
         public static readonly DependencyProperty RootItemsSourceProperty = DPUtils.Register(_ => _.RootItemsSource, (d, e) => d.OnRootItemsSourceChanged(e.OldValue, e.NewValue));
@@ -70,7 +76,7 @@ namespace AJut.UX.Controls
             // subscribed (observed) by the store - it will be rebuilt from scratch on each
             // collection change rather than incrementally updated via events on the root.
             this.IncludeRoot = false;
-            this.Items.RootNode = FlatTreeItem.CreateUberRoot(newValue ?? Enumerable.Empty<IObservableTreeNode>(), this.TabbingSize);
+            this.Items.RootNode = FlatTreeItem.CreateUberRoot(newValue ?? Enumerable.Empty<IObservableTreeNode>(), this.TreeDepthIndentSize);
 
             if (oldValue is INotifyCollectionChanged oldObservable)
             {
@@ -120,24 +126,50 @@ namespace AJut.UX.Controls
         }
 
         // ===================[Display Dependency Properties]===================
-        public static readonly DependencyProperty TabbingSizeProperty = DPUtils.Register(_ => _.TabbingSize, 8.0, (d, e) => d.OnTabbingSizeChanged());
-        public double TabbingSize
+        public static readonly DependencyProperty TreeDepthIndentSizeProperty = DPUtils.Register(_ => _.TreeDepthIndentSize, 8.0, (d, e) => d.OnTreeDepthIndentSizeChanged());
+        public double TreeDepthIndentSize
         {
-            get => (double)this.GetValue(TabbingSizeProperty);
-            set => this.SetValue(TabbingSizeProperty, value);
+            get => (double)this.GetValue(TreeDepthIndentSizeProperty);
+            set => this.SetValue(TreeDepthIndentSizeProperty, value);
         }
-        private void OnTabbingSizeChanged ()
+        private void OnTreeDepthIndentSizeChanged ()
         {
             if (this.Items?.RootNode == null)
             {
                 return;
             }
 
-            double size = this.TabbingSize;
+            double size = this.TreeDepthIndentSize;
             foreach (FlatTreeItem item in TreeTraversal<FlatTreeItem>.All(this.Items.RootNode))
             {
-                item.TabbingSize = size;
+                item.TreeDepthIndentSize = size;
             }
+        }
+
+        public static readonly DependencyProperty RowSpacingProperty = DPUtils.Register(_ => _.RowSpacing, 2.0, (d, e) => d.OnRowSpacingChanged(e.NewValue));
+        public double RowSpacing
+        {
+            get => (double)this.GetValue(RowSpacingProperty);
+            set => this.SetValue(RowSpacingProperty, value);
+        }
+        private void OnRowSpacingChanged (double newValue)
+        {
+            this.RowSpacingThickness = new Thickness(0, 0, 0, newValue);
+        }
+
+        private static readonly DependencyPropertyKey RowSpacingThicknessPropertyKey = DPUtils.RegisterReadOnly(_ => _.RowSpacingThickness);
+        public static readonly DependencyProperty RowSpacingThicknessProperty = RowSpacingThicknessPropertyKey.DependencyProperty;
+        public Thickness RowSpacingThickness
+        {
+            get => (Thickness)this.GetValue(RowSpacingThicknessProperty);
+            private set => this.SetValue(RowSpacingThicknessPropertyKey, value);
+        }
+
+        public static readonly DependencyProperty FixedRowHeightProperty = DPUtils.Register(_ => _.FixedRowHeight, double.NaN);
+        public double FixedRowHeight
+        {
+            get => (double)this.GetValue(FixedRowHeightProperty);
+            set => this.SetValue(FixedRowHeightProperty, value);
         }
 
         private static readonly DependencyPropertyKey ItemsPropertyKey = DPUtils.RegisterReadOnly(_ => _.Items);
@@ -477,11 +509,29 @@ namespace AJut.UX.Controls
         private void ListBox_OnMouseDoubleClick (object sender, MouseButtonEventArgs e)
         {
             if (this.ShouldToggleExpandableItemExpansionOnDoubleClick
+                && !IsDoubleClickFromInteractiveControl(e.OriginalSource as DependencyObject)
                 && this.PART_ListBoxDisplay.SelectedItem is FlatTreeItem item
                 && item.IsExpandable)
             {
                 item.IsExpanded = !item.IsExpanded;
             }
+        }
+
+        // Returns true if the click source is inside a ButtonBase or TextBoxBase before
+        // reaching a ListBoxItem — used to prevent double-click expand/collapse from firing
+        // when the user rapidly clicks inside an editor (NumericEditor buttons, TextBox, etc.).
+        private static bool IsDoubleClickFromInteractiveControl (DependencyObject source)
+        {
+            var current = source;
+            while (current != null)
+            {
+                if (current is ButtonBase || current is TextBoxBase)
+                    return true;
+                if (current is ListBoxItem)
+                    return false;
+                current = VisualTreeHelper.GetParent(current);
+            }
+            return false;
         }
 
         private void SelectedItems_OnCollectionChanged (object sender, NotifyCollectionChangedEventArgs e)
@@ -540,7 +590,7 @@ namespace AJut.UX.Controls
             // so InsertChild/RemoveChild on the uber root fires events no one hears. Rebuild from the
             // current full state of RootItemsSource on every change instead.
             this.Items.RootNode = FlatTreeItem.CreateUberRoot(
-                this.RootItemsSource ?? Enumerable.Empty<IObservableTreeNode>(), this.TabbingSize);
+                this.RootItemsSource ?? Enumerable.Empty<IObservableTreeNode>(), this.TreeDepthIndentSize);
         }
 
         // ============================[Inner types]================================

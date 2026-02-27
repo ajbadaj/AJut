@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    AJutCustomControlStylingDefaults.xaml
+    ======================================
+    Flat (non-ThemeDictionaries) default brush resources for AJut custom controls.
+    Merged as the FIRST dictionary in Generic.xaml so these act as the library-level
+    fallback for {ThemeResource} lookups from within control templates.
+
+    App.Resources flat resources (from AllControlThemeOverrides.xaml) have higher
+    priority than these Generic.xaml flat resources in the {ThemeResource} fallback
+    lookup chain, which is what allows AJutThemeMapAliasing.xaml to override them
+    when the AJut theme is loaded.
+
+    Do NOT use ThemeDictionaries here — keeping these flat is intentional and is
+    what makes the App.Resources override work correctly.
+-->
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ===========[ DockDropInsertionDriverWidget ]========================= -->
+    <!-- Idle: neutral gray resting state. Engaged: blue highlight. -->
+    <SolidColorBrush x:Key="AJut_DockDropInsertionDriverWidget_BorderIdleBrush"        Color="#333"/>
+    <SolidColorBrush x:Key="AJut_DockDropInsertionDriverWidget_BackgroundIdleBrush"    Color="#DDD"/>
+    <SolidColorBrush x:Key="AJut_DockDropInsertionDriverWidget_GlyphIdleBrush"         Color="#000"/>
+    <SolidColorBrush x:Key="AJut_DockDropInsertionDriverWidget_BorderEngagedBrush"     Color="#133954"/>
+    <SolidColorBrush x:Key="AJut_DockDropInsertionDriverWidget_BackgroundEngagedBrush" Color="#3399E4"/>
+    <SolidColorBrush x:Key="AJut_DockDropInsertionDriverWidget_GlyphEngagedBrush"      Color="#133954"/>
+
+    <!-- ===========[ DockTearoffContainerPanel ]============================= -->
+    <SolidColorBrush x:Key="AJut_DockTearoffContainerPanel_TitleBarBackground"              Color="#FF1A1A1A"/>
+    <SolidColorBrush x:Key="AJut_DockTearoffContainerPanel_TitleBarForeground"              Color="#FFF0F0F0"/>
+    <SolidColorBrush x:Key="AJut_DockTearoffContainerPanel_CloseButtonHoverBackground"      Color="#40FFFFFF"/>
+    <SolidColorBrush x:Key="AJut_DockTearoffContainerPanel_CloseButtonPressedBackground"    Color="#CC3333"/>
+
+    <!-- ===========[ PropertyGridItemRow ]================================== -->
+    <!-- Property label foreground (default: muted gray matching WinUI3 secondary text) -->
+    <SolidColorBrush x:Key="AJut_PropertyGridItemRow_LabelForeground" Color="#CCCCCC"/>
+    <!-- Selection border brush: 4px left nub + 1px top/right/bottom outline. Default: bright accent blue. -->
+    <SolidColorBrush x:Key="AJut_PropertyGridItemRow_SelectionBorderBrush" Color="#FF2196F3"/>
+    <!-- Hover background: very low-opacity tint shown when pointer is over a row. -->
+    <SolidColorBrush x:Key="AJut_PropertyGridItemRow_HoverBackground" Color="#1A2196F3"/>
+    <!-- Hover border: 1px outline around the full row on hover. Default: subtle gray. -->
+    <SolidColorBrush x:Key="AJut_PropertyGridItemRow_HoverBorderBrush" Color="#888888"/>
+
+    <!-- ===========[ PopupMenuButton ]====================================== -->
+    <!-- Dropdown chevron glyph foreground (default: light gray, readable on most backgrounds) -->
+    <SolidColorBrush x:Key="AJut_PopupMenuButton_ChevronForeground" Color="#CCCCCC"/>
+
+    <!-- ===========[ PathSelectionControl ]================================= -->
+    <!-- Normal border (matches default BorderBrush style setter) -->
+    <SolidColorBrush x:Key="AJut_PathSelectionControl_NormalBorderBrush"   Color="#888888"/>
+    <!-- Focused border -->
+    <SolidColorBrush x:Key="AJut_PathSelectionControl_FocusedBorderBrush"  Color="#0078D4"/>
+    <!-- Warning icon foreground (default: red warning color) -->
+    <SolidColorBrush x:Key="AJut_PathSelectionControl_WarningIconForeground" Color="#C00000"/>
+    <!-- Button separator border -->
+    <SolidColorBrush x:Key="AJut_PathSelectionControl_ButtonBorderBrush"   Color="#888888"/>
+    <!-- Button icon glyph foreground -->
+    <SolidColorBrush x:Key="AJut_PathSelectionControl_ButtonIconForeground" Color="#DDDDDD"/>
+    <!-- Focused background (of the textbox) -->
+    <SolidColorBrush x:Key="AJut_PathSelectionControl_FocusedTextBoxBackgroundBrush" Color="#888"/>
+
+    <!-- ===========[ FlatTreeItemRow ]====================================== -->
+    <!-- Expander ToggleButton interaction brushes -->
+    <SolidColorBrush x:Key="AJut_FlatTreeItemRow_ExpanderPointerOverBackground" Color="#20FFFFFF"/>
+    <SolidColorBrush x:Key="AJut_FlatTreeItemRow_ExpanderPressedBackground"     Color="#FF074470"/>
+
+    <!-- ===========[ FlatTree ListViewItem ]================================ -->
+    <!-- Default: point at WinUI3 system brushes; AJutThemeMapAliasing.xaml redirects to AJut palette -->
+    <StaticResource x:Key="AJut_FlatTree_SelectionBrush"         ResourceKey="SystemControlHighlightListAccentHighBrush"/>
+    <StaticResource x:Key="AJut_FlatTree_SelectionBackground"    ResourceKey="SystemControlHighlightListAccentLowBrush"/>
+    <StaticResource x:Key="AJut_FlatTree_SelectionBrushUnfocused" ResourceKey="SystemControlHighlightListAccentMediumBrush"/>
+    <StaticResource x:Key="AJut_FlatTree_HoverBackground"        ResourceKey="SystemControlHighlightListLowBrush"/>
+    <StaticResource x:Key="AJut_FlatTree_HoverBorderBrush"       ResourceKey="ControlStrokeColorDefaultBrush"/>
+
+    <!-- ===========[ ToggleStripButton ]===================================== -->
+    <!-- Unchecked interaction backgrounds — alpha overlays that work on any background.
+         Normal state uses a literal #01000000 in the XAML VSM Setter (no key needed here). -->
+    <SolidColorBrush x:Key="AJut_ToggleStripButton_PointerOverBackground" Color="#20FFFFFF"/>
+    <SolidColorBrush x:Key="AJut_ToggleStripButton_PressedBackground"     Color="#40000000"/>
+    <!-- Checked backgrounds — dark overlay gradients, default for no-AJut-theme usage.
+         AJutThemeMapAliasing.xaml provides AJut-tinted (cool teal) variants. -->
+    <LinearGradientBrush x:Key="AJut_ToggleStripButton_CheckedBackground" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0.00" Color="#CC000000"/>
+        <GradientStop Offset="0.20" Color="#80000000"/>
+        <GradientStop Offset="1.00" Color="#33000000"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="AJut_ToggleStripButton_CheckedPointerOverBackground" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0.00" Color="#CC000000"/>
+        <GradientStop Offset="0.20" Color="#99000000"/>
+        <GradientStop Offset="1.00" Color="#55000000"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="AJut_ToggleStripButton_CheckedPressedBackground" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0.00" Color="#EE000000"/>
+        <GradientStop Offset="0.20" Color="#AA000000"/>
+        <GradientStop Offset="1.00" Color="#66000000"/>
+    </LinearGradientBrush>
+
+    <!-- ===========[ ColorEditIngressControl ]============================== -->
+    <!-- Highlight border while flyout is open -->
+    <SolidColorBrush x:Key="AJut_ColorEditIngressControl_HighlightBorderBrush" Color="#186DBA"/>
+    <!-- Normal resting border -->
+    <SolidColorBrush x:Key="AJut_ColorEditIngressControl_NormalBorderBrush"    Color="#888888"/>
+
+    <!-- ===========[ DockCloseButton ]====================================== -->
+    <!-- Warm reddish hover/press — conventionally recognisable as "close" -->
+    <SolidColorBrush x:Key="AJut_DockCloseButton_HoverBackground"   Color="#40FF5050"/>
+    <SolidColorBrush x:Key="AJut_DockCloseButton_PressedBackground" Color="#80CC2020"/>
+
+    <!-- ===========[ DockTabScrollButton ]=================================== -->
+    <!-- Neutral white-overlay hover/press for the tab-strip scroll arrow buttons -->
+    <SolidColorBrush x:Key="AJut_DockTabScrollButton_HoverBackground"   Color="#25FFFFFF"/>
+    <SolidColorBrush x:Key="AJut_DockTabScrollButton_PressedBackground" Color="#45FFFFFF"/>
+
+    <!-- ===========[ NumericEditor ]======================================== -->
+    <!-- Increase button hover/pressed (blue-tinted gradient, top-to-bottom) -->
+    <LinearGradientBrush x:Key="AJut_NumericEditor_IncreasePointerOverBackground"
+                         StartPoint="0,0" EndPoint="0,1" Opacity="0.6">
+        <GradientStop Offset="0" Color="#EE87D7FF"/>
+        <GradientStop Offset="1" Color="#DD55C4FF"/>
+    </LinearGradientBrush>
+    <!-- Decrease button hover/pressed (same gradients, inverted top/bottom) -->
+    <LinearGradientBrush x:Key="AJut_NumericEditor_DecreasePointerOverBackground"
+                         StartPoint="0,0" EndPoint="0,1" Opacity="0.6">
+        <GradientStop Offset="0" Color="#DD55C4FF"/>
+        <GradientStop Offset="1" Color="#EE87D7FF"/>
+    </LinearGradientBrush>
+    
+    <!-- Focus/Unfocus border brushes (FocusStates VSM group on PART_Root) -->
+    <SolidColorBrush x:Key="AJut_NumericEditor_FocusBorderBrush"  Color="#0078D4"/>
+    <SolidColorBrush x:Key="AJut_NumericEditor_NormalBorderBrush" Color="#888888"/>
+
+</ResourceDictionary>

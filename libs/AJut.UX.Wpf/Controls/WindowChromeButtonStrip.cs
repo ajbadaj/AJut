@@ -9,6 +9,8 @@
     using DPUtils = AJut.UX.DPUtils<WindowChromeButtonStrip>;
     using APUtils = AJut.UX.APUtils<WindowChromeButtonStrip>;
 
+    // ===========[ WindowChromeButtonStrip ]=======================================
+    // WinUI3 port: not applicable — WinUI3 uses ThemedWindowRootControl instead.
     [TemplatePart(Name = nameof(PART_ChromeCloseButton), Type = typeof(ButtonBase))]
     public class WindowChromeButtonStrip : Control
     {

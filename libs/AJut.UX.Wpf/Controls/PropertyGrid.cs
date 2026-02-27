@@ -77,6 +77,34 @@ namespace AJut.UX.Controls
             set => this.SetValue(TextLabelStyleProperty, value);
         }
 
+        public static readonly DependencyProperty TreeDepthIndentSizeProperty = DPUtils.Register(_ => _.TreeDepthIndentSize, 8.0);
+        public double TreeDepthIndentSize
+        {
+            get => (double)this.GetValue(TreeDepthIndentSizeProperty);
+            set => this.SetValue(TreeDepthIndentSizeProperty, value);
+        }
+
+        public static readonly DependencyProperty RowSpacingProperty = DPUtils.Register(_ => _.RowSpacing, 2.0);
+        public double RowSpacing
+        {
+            get => (double)this.GetValue(RowSpacingProperty);
+            set => this.SetValue(RowSpacingProperty, value);
+        }
+
+        public static readonly DependencyProperty FixedRowHeightProperty = DPUtils.Register(_ => _.FixedRowHeight, double.NaN);
+        public double FixedRowHeight
+        {
+            get => (double)this.GetValue(FixedRowHeightProperty);
+            set => this.SetValue(FixedRowHeightProperty, value);
+        }
+
+        public static readonly DependencyProperty LabelColumnWidthProperty = DPUtils.Register(_ => _.LabelColumnWidth, double.NaN);
+        public double LabelColumnWidth
+        {
+            get => (double)this.GetValue(LabelColumnWidthProperty);
+            set => this.SetValue(LabelColumnWidthProperty, value);
+        }
+
         private void OnSingleItemSourceChanged (DependencyPropertyChangedEventArgs<object> e)
         {
             if (e.OldValue is INotifyPropertyChanged oldPropChanged)

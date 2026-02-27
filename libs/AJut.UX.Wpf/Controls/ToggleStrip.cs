@@ -42,6 +42,7 @@
         public static readonly DependencyProperty ForegroundHoverProperty = DPUtils.Register(_ => _.ForegroundHover);
 
         public static readonly DependencyProperty ItemPaddingProperty = DPUtils.Register(_ => _.ItemPadding, new Thickness(6));
+        public static readonly DependencyProperty CornerRadiusProperty = DPUtils.Register(_ => _.CornerRadius, (d, e) => BorderXTA.SetCornerRadius(d, e.NewValue));
         public static readonly DependencyProperty AllowNoSelectionProperty = DPUtils.Register(_ => _.AllowNoSelection, false);
         private static readonly DependencyPropertyKey HasItemsPropertyKey = DPUtils.RegisterReadOnly(_ => _.HasItems);
         public static readonly DependencyProperty HasItemsProperty = HasItemsPropertyKey.DependencyProperty;
@@ -154,6 +155,12 @@
         {
             get => (Thickness)this.GetValue(ItemPaddingProperty);
             set => this.SetValue(ItemPaddingProperty, value);
+        }
+
+        public CornerRadius CornerRadius
+        {
+            get => (CornerRadius)this.GetValue(CornerRadiusProperty);
+            set => this.SetValue(CornerRadiusProperty, value);
         }
 
         public bool AllowNoSelection

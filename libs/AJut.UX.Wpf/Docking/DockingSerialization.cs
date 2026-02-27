@@ -69,8 +69,9 @@ namespace AJut.UX.Docking
                 Logger.LogInfo($"Docking: Loading state for file '{filePath ?? "<null>"}' complete.");
                 return result;
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.LogError(ex);
                 return false;
             }
         }
