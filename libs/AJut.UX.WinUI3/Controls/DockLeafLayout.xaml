@@ -21,18 +21,26 @@
 
         <!-- Default colors — override in a theme Style (no template redefinition needed) -->
         <Setter Property="Foreground">
-            <Setter.Value><SolidColorBrush Color="#FFF0F0F0"/></Setter.Value>
+            <Setter.Value>
+                <SolidColorBrush Color="#FFF0F0F0"/>
+            </Setter.Value>
         </Setter>
         <Setter Property="PanelBackground">
-            <Setter.Value><SolidColorBrush Color="#FF2B2B2B"/></Setter.Value>
+            <Setter.Value>
+                <SolidColorBrush Color="#FF2B2B2B"/>
+            </Setter.Value>
         </Setter>
         <Setter Property="PanelBorderBrush">
-            <Setter.Value><SolidColorBrush Color="#FF4A4A4A"/></Setter.Value>
+            <Setter.Value>
+                <SolidColorBrush Color="#FF4A4A4A"/>
+            </Setter.Value>
         </Setter>
         <Setter Property="PanelBorderThickness" Value="1"/>
         <Setter Property="PanelCornerRadius"    Value="0"/>
         <Setter Property="TabStripBackground">
-            <Setter.Value><SolidColorBrush Color="#FF1A1A1A"/></Setter.Value>
+            <Setter.Value>
+                <SolidColorBrush Color="Transparent"/>
+            </Setter.Value>
         </Setter>
 
         <Setter Property="Template">
@@ -65,7 +73,7 @@
                         <Border x:Name="PART_ContentBorder"
                                 Grid.Row="1"
                                 Padding="2"
-                                BorderThickness="1"
+                                BorderThickness="{TemplateBinding PanelBorderThickness}"
                                 CornerRadius="0"
                                 Background="{TemplateBinding PanelBackground}"
                                 BorderBrush="{TemplateBinding PanelBorderBrush}"
@@ -87,7 +95,7 @@
                                 Margin="5,-1.5,5,5"
                                 BorderThickness="0,0,0,0"
                                 Padding="2,0,2,2"
-                                Background="Transparent"
+                                Background="{TemplateBinding TabStripBackground}"
                                 Visibility="Collapsed"
                                 Height="28"
                                 UseLayoutRounding="True">

@@ -20,10 +20,14 @@
 
         <!-- Default colors — override in a theme Style (no template redefinition needed) -->
         <Setter Property="Background">
-            <Setter.Value><SolidColorBrush Color="#FF2B2B2B"/></Setter.Value>
+            <Setter.Value>
+                <SolidColorBrush Color="#FF2B2B2B"/>
+            </Setter.Value>
         </Setter>
         <Setter Property="BorderBrush">
-            <Setter.Value><SolidColorBrush Color="#FF4A4A4A"/></Setter.Value>
+            <Setter.Value>
+                <SolidColorBrush Color="#FF4A4A4A"/>
+            </Setter.Value>
         </Setter>
 
         <Setter Property="Template">

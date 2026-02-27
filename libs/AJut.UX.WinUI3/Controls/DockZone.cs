@@ -270,13 +270,11 @@ namespace AJut.UX.Controls
             UIElement headerContent;
             if (isNonRootInTearoff && dockingManager?.ShowPanelClose == true && selectedAdapter != null)
             {
-                var headerCloseBtn = new Button
+                var headerCloseBtn = new DockCloseButton
                 {
-                    Content = "✕",
                     Padding = new Thickness(6, 3, 6, 3),
+                    Margin = new Thickness(2,2,2,2),
                     VerticalAlignment = VerticalAlignment.Stretch,
-                    BorderThickness = new Thickness(0),
-                    Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
                 };
                 var capturedAdapter = selectedAdapter;
                 headerCloseBtn.Click += (s, e) =>
@@ -360,13 +358,10 @@ namespace AJut.UX.Controls
                 UIElement tabContent;
                 if (dockingManager?.ShowTabHeaderClose == true)
                 {
-                    var tabCloseBtn = new Button
+                    var tabCloseBtn = new DockCloseButton
                     {
-                        Content = "✕",
                         Padding = new Thickness(3, 1, 3, 1),
                         VerticalAlignment = VerticalAlignment.Center,
-                        BorderThickness = new Thickness(0),
-                        Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
                         FontSize = 10,
                     };
                     tabCloseBtn.Click += (s, e) =>

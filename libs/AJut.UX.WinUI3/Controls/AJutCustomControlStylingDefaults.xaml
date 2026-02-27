@@ -92,6 +92,11 @@
     <!-- Normal resting border -->
     <SolidColorBrush x:Key="AJut_ColorEditIngressControl_NormalBorderBrush"    Color="#888888"/>
 
+    <!-- ===========[ DockCloseButton ]====================================== -->
+    <!-- Warm reddish hover/press — conventionally recognisable as "close" -->
+    <SolidColorBrush x:Key="AJut_DockCloseButton_HoverBackground"   Color="#40FF5050"/>
+    <SolidColorBrush x:Key="AJut_DockCloseButton_PressedBackground" Color="#80CC2020"/>
+
     <!-- ===========[ NumericEditor ]======================================== -->
     <!-- Increase button hover/pressed (blue-tinted gradient, top-to-bottom) -->
     <LinearGradientBrush x:Key="AJut_NumericEditor_IncreasePointerOverBackground"

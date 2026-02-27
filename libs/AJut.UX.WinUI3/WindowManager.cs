@@ -140,6 +140,7 @@ namespace AJut.UX
             if (window.Content is UIElement root)
             {
                 root.KeyboardAccelerators.AddEach(this.GlobalAccelerators);
+                this.ApplyTheme(window);
             }
 
             this.BringToFront(window);
@@ -223,6 +224,14 @@ namespace AJut.UX
         public void ForEachBackToFront (bool includingRoot, Action<Window> action)
         {
             this.RunActionForEachWithoutDisruptingOrder(includingRoot, false, action);
+        }
+
+        private void ApplyTheme(Window window)
+        {
+            if (m_rootElement != null && window != this.Root && window.Content is FrameworkElement windowRoot)
+            {
+                windowRoot.RequestedTheme = m_rootElement.ActualTheme;
+            }
         }
 
         // =====================[ Private Utility Methods ]=====================================
@@ -351,11 +360,7 @@ namespace AJut.UX
             if (sender is Window window)
             {
                 this.OnItemActivatationChanged(window, e.WindowActivationState);
-
-                if (m_rootElement != null && window != this.Root && window.Content is FrameworkElement windowRoot)
-                {
-                    windowRoot.RequestedTheme = m_rootElement.ActualTheme;
-                }
+                this.ApplyTheme(window);
             }
         }
 

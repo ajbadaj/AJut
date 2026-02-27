@@ -59,7 +59,7 @@
         <Setter Property="PanelBackground"      Value="{ThemeResource AJut_Brush_PanelBackground}"/>
         <Setter Property="PanelBorderBrush"     Value="{ThemeResource AJut_Brush_BorderCommon}"/>
         <Setter Property="PanelBorderThickness" Value="1"/>
-        <Setter Property="TabStripBackground"   Value="{ThemeResource AJut_Brush_BannerBackground}"/>
+        <Setter Property="TabStripBackground"   Value="Transparent"/>
         <!-- TopLeft=0, TopRight=0: flat top merges with header bar.
              BottomRight=8, BottomLeft=8: rounded bottom corners above the tab strip. -->
         <Setter Property="PanelCornerRadius"    Value="0,0,8,8"/>
