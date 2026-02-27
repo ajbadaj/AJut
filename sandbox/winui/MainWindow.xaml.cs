@@ -184,8 +184,9 @@ namespace AJutShowRoomWinUI
             TypeIdRegistrar.RegisterTypeId<ShowRoomPanelState>("ShowRoomPanelState");
 
             m_dockingManager = new DockingManager(this, "ShowRoomDock");
-            m_dockingManager.RegisterRootDockZones(TestDockZone);
+            m_dockingManager.RegisterMainWindowRootDockZones(this.TestDockZone);
             m_dockingManager.RegisterDisplayFactory<ShowRoomPanel>();
+            
 
             var zone = m_dockingManager.FindFirstAvailableDockZone();
             if (zone != null)

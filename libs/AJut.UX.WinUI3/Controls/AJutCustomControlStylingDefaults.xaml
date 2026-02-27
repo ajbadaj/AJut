@@ -97,6 +97,11 @@
     <SolidColorBrush x:Key="AJut_DockCloseButton_HoverBackground"   Color="#40FF5050"/>
     <SolidColorBrush x:Key="AJut_DockCloseButton_PressedBackground" Color="#80CC2020"/>
 
+    <!-- ===========[ DockTabScrollButton ]=================================== -->
+    <!-- Neutral white-overlay hover/press for the tab-strip scroll arrow buttons -->
+    <SolidColorBrush x:Key="AJut_DockTabScrollButton_HoverBackground"   Color="#25FFFFFF"/>
+    <SolidColorBrush x:Key="AJut_DockTabScrollButton_PressedBackground" Color="#45FFFFFF"/>
+
     <!-- ===========[ NumericEditor ]======================================== -->
     <!-- Increase button hover/pressed (blue-tinted gradient, top-to-bottom) -->
     <LinearGradientBrush x:Key="AJut_NumericEditor_IncreasePointerOverBackground"

@@ -186,6 +186,18 @@ namespace AJut.UX.Controls
                 return;
             }
 
+            // WinUI3 does not auto-detach UIElements from their old parent when a new
+            // parent tries to claim them (unlike WPF). Display UIElements are reused
+            // across rebuilds, so if a DockLeafLayout's ContentPresenter still holds the
+            // display element when we try to reparent it to a NEW ContentPresenter, WinUI3
+            // throws a WinRT COM exception. Null out PanelContent on all outgoing leaf
+            // layouts BEFORE the Children.Clear() so the display element is detached from
+            // its old ContentPresenter while the layout is still properly in the visual tree.
+            foreach (var oldLeaf in this.PART_Root.Children.OfType<DockLeafLayout>().ToList())
+            {
+                oldLeaf.PanelContent = null;
+            }
+
             this.PART_Root.Children.Clear();
             this.PART_Root.RowDefinitions.Clear();
             this.PART_Root.ColumnDefinitions.Clear();
@@ -363,6 +375,7 @@ namespace AJut.UX.Controls
                         Padding = new Thickness(3, 1, 3, 1),
                         VerticalAlignment = VerticalAlignment.Center,
                         FontSize = 10,
+                        Margin = new Thickness(2),
                     };
                     tabCloseBtn.Click += (s, e) =>
                     {
@@ -494,8 +507,11 @@ namespace AJut.UX.Controls
                             && reorderTargetIdx >= 0
                             && reorderTargetIdx < this.ViewModel.DockedContent.Count)
                         {
-                            // Execute reorder - triggers RebuildLayout which clears all tab items
+                            // Execute reorder - triggers RebuildLayout which clears all tab items.
+                            // Update SelectedIndex to track the dragged tab to its new position so
+                            // the reordered tab remains selected after the rebuild.
                             this.ViewModel.SwapDockedContentOrder(capturedIndex, reorderTargetIdx);
+                            this.ViewModel.SelectedIndex = reorderTargetIdx;
                         }
                         else if (!isDragModeDecided)
                         {
@@ -519,6 +535,13 @@ namespace AJut.UX.Controls
                 tabPanel.Children.Add(tabItem);
             }
 
+            // Trailing spacer: when fully scrolled right, the right scroll button disappears.
+            // Without a spacer the button collapses over the last tab's X button, and the
+            // user's click-in-progress can accidentally close that tab. The spacer adds
+            // dead empty space at the end so there is nothing clickable under the vanishing
+            // right button.
+            tabPanel.Children.Add(new Border { Width = 32 });
+
             // Issue 4: wrap tab panel in a ScrollViewer with left/right nav buttons.
             // Buttons appear only when the tabs overflow the available width, and are
             // individually hidden when already at the start or end of the scroll range.
@@ -531,24 +554,18 @@ namespace AJut.UX.Controls
                 Content = tabPanel,
             };
 
-            var leftScrollBtn = new Button
+            var leftScrollBtn = new DockTabScrollButton
             {
                 Content = "◂",
-                Padding = new Thickness(4, 2, 4, 2),
-                BorderThickness = new Thickness(0),
-                Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
                 Visibility = Visibility.Collapsed,
                 VerticalAlignment = VerticalAlignment.Stretch,
             };
             leftScrollBtn.Click += (s, e) =>
                 scrollViewer.ChangeView(scrollViewer.HorizontalOffset - 80, null, null);
 
-            var rightScrollBtn = new Button
+            var rightScrollBtn = new DockTabScrollButton
             {
                 Content = "▸",
-                Padding = new Thickness(4, 2, 4, 2),
-                BorderThickness = new Thickness(0),
-                Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
                 Visibility = Visibility.Collapsed,
                 VerticalAlignment = VerticalAlignment.Stretch,
             };

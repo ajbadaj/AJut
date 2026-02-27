@@ -33,7 +33,7 @@ namespace AJut.UX.Docking
     // loop will move the ghost and set DockZone.IsDirectDropTarget, but no actual
     // drop will execute until Phase 3C adds the insertion widgets.
 
-    public class DockingManager : NotifyPropertyChanged, IDockingManager
+    public class DockingManager : NotifyPropertyChanged, IDockingManager, IDisposable
     {
         // ===========[ Constants ]============================================
         private const double kTearoffDragOpacity = 0.65;
@@ -49,7 +49,7 @@ namespace AJut.UX.Docking
         private bool m_isZoneDragDropUnderway;
         private bool m_isReadyToTrackAutoSave;
 
-        // ===========[ Construction ]=========================================
+        // ===========[ Construction / Disposal ]=========================================
         public DockingManager(
             Window rootWindow,
             string uniqueId,
@@ -79,6 +79,26 @@ namespace AJut.UX.Docking
             // When the root window is re-activated (e.g. user clicks our taskbar entry),
             // bring all tearoff windows back to front in their relative activation order.
             this.RootWindow.Activated += this.OnRootWindowActivated;
+        }
+
+        public void Dispose()
+        {
+            this.CloseAll(force: true);
+
+            this.CreateNewTearoffWindowHandler = null;
+            this.ShowTearoffWindowHandler = null;
+
+            foreach (DockZone zone in m_rootDockZones)
+            {
+                zone.Loaded += this.MainWindowDockZone_Loaded;
+                zone.Unloaded += this.MainWindowDockZone_Unloaded;
+            }
+
+            m_rootDockZones.Clear();
+            m_tearoffRootZones.Clear();
+            m_windowsToCloseSilently.Clear();
+            m_currentlyClosingWindows.Clear();
+            m_factory.Clear();
         }
 
         // ===========[ Properties ]===========================================
@@ -140,6 +160,27 @@ namespace AJut.UX.Docking
         }
 
         // ===========[ Zone Registration ]====================================
+
+        public void RegisterMainWindowRootDockZones(params DockZone[] dockZones)
+        {
+            this.RegisterRootDockZones(this.RootWindow, dockZones);
+
+            foreach (DockZone zone in dockZones)
+            {
+                zone.Loaded += this.MainWindowDockZone_Loaded;
+                zone.Unloaded += this.MainWindowDockZone_Unloaded;
+            }
+        }
+
+        private void MainWindowDockZone_Loaded(object sender, RoutedEventArgs e)
+        {
+            this.ShowAllTearoffWindows();
+        }
+
+        private void MainWindowDockZone_Unloaded(object sender, RoutedEventArgs e)
+        {
+            this.HideAllTearoffWindows();
+        }
 
         public void RegisterRootDockZones(params DockZone[] dockZones)
             => this.RegisterRootDockZones(this.RootWindow, dockZones);
@@ -210,6 +251,22 @@ namespace AJut.UX.Docking
 
         // ===========[ Layout Control ]=======================================
 
+        public void ShowAllTearoffWindows()
+        {
+            // The window manager preserves activation order, so iterating through windows in this way
+            //  means we'll show our windows in the order they had activated them!
+            m_windowManager.ShowAllWindows(includingRoot: true);
+        }
+
+        public void HideAllTearoffWindows()
+        {
+            List<Window> tearoffs = m_dockZoneMapping.Keys.Where(w => w != this.RootWindow).ToList();
+            foreach (Window window in tearoffs)
+            {
+                window.Hide();
+            }
+        }
+
         public bool CloseAll(bool force = false)
         {
             if (!force)
@@ -232,12 +289,12 @@ namespace AJut.UX.Docking
 
             var tearoffs = m_dockZoneMapping.Keys.Where(w => w != this.RootWindow).ToList();
             m_windowsToCloseSilently.AddRange(tearoffs);
-            foreach (var w in tearoffs)
+            foreach (Window window in tearoffs)
             {
-                m_tearoffRootZones.Remove(w);
-                m_dockZoneMapping.Remove(w);
-                m_windowManager.StopTracking(w);
-                w.Close();
+                m_tearoffRootZones.Remove(window);
+                m_dockZoneMapping.Remove(window);
+                m_windowManager.StopTracking(window);
+                window.Close();
             }
 
             m_windowsToCloseSilently.Clear();
@@ -820,7 +877,19 @@ namespace AJut.UX.Docking
 
                 panel.TitleBarDragInitiated += this.OnTearoffPanelDragInitiated;
                 panel.CloseRequested += this.OnTearoffPanelCloseRequested;
+
+                // Apply theme BEFORE assigning panel as window content. When window.Content
+                // is set, the visual tree builds immediately (OnApplyTemplate chain fires) and
+                // {ThemeResource} Style Setter values resolve using the element's current
+                // ActualTheme. Setting RequestedTheme here ensures DockLeafLayout and all
+                // other controls in the tearoff render with the correct theme on first paint.
+                if (m_windowManager.Root?.Content is FrameworkElement rootContent)
+                {
+                    panel.RequestedTheme = rootContent.ActualTheme;
+                }
+
                 window.Content = panel;
+                m_windowManager.ApplyTheme(window); // belt-and-suspenders for any later theme change
 
                 var appWindow = window.AppWindow;
                 appWindow.Resize(new Windows.Graphics.SizeInt32((int)size.Width, (int)size.Height));

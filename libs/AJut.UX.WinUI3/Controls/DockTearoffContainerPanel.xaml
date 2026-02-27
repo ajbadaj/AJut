@@ -29,10 +29,16 @@
         <Setter Property="TitleBarBackground"    Value="{ThemeResource AJut_DockTearoffContainerPanel_TitleBarBackground}"/>
         <Setter Property="TitleBarForeground"    Value="{ThemeResource AJut_DockTearoffContainerPanel_TitleBarForeground}"/>
 
+        <!-- ApplicationPageBackgroundThemeBrush is the standard WinUI3 page background.
+             AllControlThemeOverrides.xaml overrides this with AJut_Brush_PanelBackground
+             when the AJut theme is loaded. Using a built-in ThemeResource here ensures
+             the panel always has a non-transparent background even without the AJut theme. -->
+        <Setter Property="Background" Value="{ThemeResource ApplicationPageBackgroundThemeBrush}"/>
+
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:DockTearoffContainerPanel">
-                    <Grid>
+                    <Grid Background="{TemplateBinding Background}">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>

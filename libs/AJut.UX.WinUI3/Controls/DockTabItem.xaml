@@ -33,16 +33,16 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:DockTabItem">
-                    <!-- Root: carries the tab border (set from code) and VSM state changes.
-                         Background is transparent so the inner border's color shows through
-                         without interfering with the opacity/margin transitions. -->
+                    <!-- Root: carries the per-tab BorderThickness (set from DockZone code) and
+                         VSM state changes (opacity/margin). BorderBrush uses TemplateBinding;
+                         BorderThickness is index-aware and pushed in OnApplyTemplate. -->
                     <Border x:Name="Root"
-                            Background="Transparent"
+                            BorderBrush="{TemplateBinding BorderBrush}"
                             Padding="{TemplateBinding Padding}">
-                        <!-- InnerBorder: Background and BorderBrush pushed from OnApplyTemplate
-                             (WinUI3 TemplateBinding does not backfill pre-template local values).
-                             No border here — borders are on Root via code-push. -->
-                        <Border x:Name="InnerBorder">
+                        <!-- InnerBorder: holds the actual tab background color so opacity
+                             transitions on Root don't affect the content rendering. -->
+                        <Border x:Name="InnerBorder"
+                                Background="{TemplateBinding Background}">
                             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
                         </Border>

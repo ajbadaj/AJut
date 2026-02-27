@@ -58,6 +58,10 @@
     <StaticResource x:Key="AJut_DockCloseButton_HoverBackground"   ResourceKey="AJut_Brush_MouseInteractionHighlight"/>
     <StaticResource x:Key="AJut_DockCloseButton_PressedBackground" ResourceKey="AJut_Brush_PrimaryHighlightDark"/>
 
+    <!-- ===========[ DockTabScrollButton ]================================= -->
+    <StaticResource x:Key="AJut_DockTabScrollButton_HoverBackground"   ResourceKey="AJut_Brush_MouseInteractionHighlight"/>
+    <StaticResource x:Key="AJut_DockTabScrollButton_PressedBackground" ResourceKey="AJut_Brush_PrimaryHighlightDark"/>
+
     <!-- ===========[ NumericEditor ]======================================= -->
     <StaticResource x:Key="AJut_NumericEditor_IncreasePointerOverBackground" ResourceKey="AJut_Brush_MouseInteractionHighlight"/>
     <StaticResource x:Key="AJut_NumericEditor_DecreasePointerOverBackground" ResourceKey="AJut_Brush_MouseInteractionHighlight"/>

@@ -49,6 +49,15 @@
     </Style>
 
     <!--
+    ===[ DockTearoffContainerPanel - AJut-themed override ]===
+    Overrides the default ApplicationPageBackgroundThemeBrush with the AJut panel
+    background so the tearoff window background matches the docked panels.
+    -->
+    <Style TargetType="local:DockTearoffContainerPanel">
+        <Setter Property="Background" Value="{ThemeResource AJut_Brush_PanelBackground}"/>
+    </Style>
+
+    <!--
     ===[ DockLeafLayout - AJut-themed override ]===
     Applies AJut brush tokens to the leaf panel's visual DPs.
     The default colors in DockLeafLayout.xaml remain intact for no-theme usage.

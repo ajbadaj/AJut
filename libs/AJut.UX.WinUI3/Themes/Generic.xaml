@@ -20,6 +20,7 @@
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/DockDropInsertionDriverWidget.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/DockTabItem.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/DockCloseButton.xaml"/>
+        <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/DockTabScrollButton.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/DockLeafLayout.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/DockTearoffContainerPanel.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/DockZone.xaml"/>

@@ -10,11 +10,10 @@ namespace AJut.UX.Controls
     // transitions for Normal/PointerOver/Selected/SelectedPointerOver via IsSelected DP
     // and pointer event overrides.
     //
-    // Visual styling (Background, BorderBrush) comes from the XAML Style Setters so
-    // themes can override them without redefining the ControlTemplate.
-    // BorderThickness is index-aware (computed per-tab position by DockZone code) and
-    // pushed to PART_Root in OnApplyTemplate since WinUI3 TemplateBinding does not
-    // backfill local values set before template application.
+    // Visual styling (Background, BorderBrush) comes from XAML Style Setters with
+    // TemplateBinding in the template — themes override without redefining the ControlTemplate.
+    // BorderThickness is the only property pushed in OnApplyTemplate: it is a pre-template
+    // local value (index-aware, set by DockZone code) that TemplateBinding cannot backfill.
     //
     // Template visual states (group: SelectionStates):
     //   Normal              - unselected, resting   (opacity 0.35, slight vertical inset)
@@ -31,7 +30,6 @@ namespace AJut.UX.Controls
         // ===========[ Fields ]================================================
         private bool m_isPointerOver;
         private Border m_rootBorder;
-        private Border m_innerBorder;
 
         // ===========[ Construction ]==========================================
         public DockTabItem()
@@ -45,20 +43,15 @@ namespace AJut.UX.Controls
             base.OnApplyTemplate();
 
             m_rootBorder = this.GetTemplateChild("Root") as Border;
-            m_innerBorder = this.GetTemplateChild("InnerBorder") as Border;
 
-            // Push visual DPs to template parts. BorderThickness is a local value set by
-            // DockZone code before the template is applied; WinUI3 TemplateBinding does not
-            // backfill local values so we push manually here. Background and BorderBrush come
-            // from Style Setters (read correctly by code here as the effective value).
+            // BorderThickness is a local value set by DockZone code before template application
+            // (per-tab index-aware left/right borders). WinUI3 TemplateBinding does not backfill
+            // pre-template local values, so push manually here.
+            // Background and BorderBrush come from Style Setters and are handled by
+            // TemplateBinding in the XAML template — no code-push needed.
             if (m_rootBorder != null)
             {
                 m_rootBorder.BorderThickness = this.BorderThickness;
-                m_rootBorder.BorderBrush = this.BorderBrush;
-            }
-            if (m_innerBorder != null)
-            {
-                m_innerBorder.Background = this.Background;
             }
 
             this.UpdateVisualState();

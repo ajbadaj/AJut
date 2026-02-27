@@ -81,6 +81,9 @@
     <Compile Update="Controls\PathSelectionControl.cs">
       <DependentUpon>PathSelectionControl.xaml</DependentUpon>
     </Compile>
+	<Compile Update="Controls\DockCloseButton.cs">
+	  <DependentUpon>DockCloseButton.xaml</DependentUpon>
+	</Compile>
     <Compile Update="Controls\DockZoneSplitter.cs">
       <DependentUpon>DockZoneSplitter.xaml</DependentUpon>
     </Compile>

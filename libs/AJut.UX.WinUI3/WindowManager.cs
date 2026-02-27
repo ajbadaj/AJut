@@ -74,12 +74,10 @@ namespace AJut.UX
             this.Root.Activated += this.OnRootActivated;
             this.Root.Closed += this.OnRootClosed;
 
-            // 2. Access the content of your RootWindow to find the current active theme
-            if (this.Root.Content is FrameworkElement rootElement)
-            {
-                m_rootElement = rootElement;
-                m_rootElement.ActualThemeChanged += this.OnRootThemeChanged;
-            }
+            // Attempt to capture root element now for theme tracking.
+            // If Setup is called before InitializeComponent (Content is null),
+            // TryInitRootElement retries on the first root Activated event.
+            this.TryInitRootElement();
         }
 
         public void Dispose ()
@@ -189,7 +187,7 @@ namespace AJut.UX
         /// </summary>
         public void ShowAllWindows (bool includingRoot = false)
         {
-            this.ForEachBackToFront(includingRoot, child => child.AppWindow.Show());
+            this.ForEachBackToFront(includingRoot, child => child.Show());
         }
 
         /// <summary>
@@ -197,7 +195,7 @@ namespace AJut.UX
         /// </summary>
         public void HideAllWindows (bool includingRoot = false)
         {
-            this.ForEach(includingRoot, w => w.AppWindow.Hide());
+            this.ForEach(includingRoot, w => w.Hide());
         }
 
         /// <summary>
@@ -226,8 +224,18 @@ namespace AJut.UX
             this.RunActionForEachWithoutDisruptingOrder(includingRoot, false, action);
         }
 
-        private void ApplyTheme(Window window)
+        private void TryInitRootElement()
         {
+            if (m_rootElement == null && this.Root?.Content is FrameworkElement rootElement)
+            {
+                m_rootElement = rootElement;
+                m_rootElement.ActualThemeChanged += this.OnRootThemeChanged;
+            }
+        }
+
+        public void ApplyTheme(Window window)
+        {
+            this.TryInitRootElement();
             if (m_rootElement != null && window != this.Root && window.Content is FrameworkElement windowRoot)
             {
                 windowRoot.RequestedTheme = m_rootElement.ActualTheme;
@@ -278,6 +286,9 @@ namespace AJut.UX
 
         private void OnRootActivated (object sender, WindowActivatedEventArgs e)
         {
+            // Retry root-element capture in case Setup was called before InitializeComponent.
+            this.TryInitRootElement();
+
             if (this.ShowHideChildrenWhen == eChildWindowDisplayCoordinationStyle.RootActivationDeactivation)
             {
                 if (this.Items.Any(w => !w.Visible))

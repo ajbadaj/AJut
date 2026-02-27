@@ -4,6 +4,7 @@ namespace AJut.UX.Controls
     using Microsoft.UI.Xaml.Controls;
     using Microsoft.UI.Xaml.Input;
     using Microsoft.UI.Xaml.Media;
+    using System;
     using DPUtils = AJut.UX.DPUtils<DockLeafLayout>;
 
     // ===========[ DockLeafLayout ]=============================================
@@ -192,24 +193,31 @@ namespace AJut.UX.Controls
         // ===========[ Apply helpers ]=========================================
         private void ApplyAll ()
         {
-            if (this.PART_ContentBorder != null)
+            try
             {
-                this.PART_ContentBorder.CornerRadius = this.PanelCornerRadius;
-            }
-            if (this.PART_HeaderBar != null && this.HeaderContent != null)
-            {
-                this.PART_HeaderBar.Child = this.HeaderContent;
-            }
-            if (this.PART_ContentPresenter != null && this.PanelContent != null)
-            {
-                this.PART_ContentPresenter.Content = this.PanelContent;
-            }
-            if (this.PART_TabNavPresenter != null && this.TabNavContent != null)
-            {
-                this.PART_TabNavPresenter.Content = this.TabNavContent;
-            }
+                if (this.PART_ContentBorder != null)
+                {
+                    this.PART_ContentBorder.CornerRadius = this.PanelCornerRadius;
+                }
+                if (this.PART_HeaderBar != null && this.HeaderContent != null)
+                {
+                    this.PART_HeaderBar.Child = this.HeaderContent;
+                }
+                if (this.PART_ContentPresenter != null && this.PanelContent != null)
+                {
+                    this.PART_ContentPresenter.Content = this.PanelContent;
+                }
+                if (this.PART_TabNavPresenter != null && this.TabNavContent != null)
+                {
+                    this.PART_TabNavPresenter.Content = this.TabNavContent;
+                }
 
-            this.ApplyTabbedState();
+                this.ApplyTabbedState();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("Error in DockLeafLayout::ApplyAll", ex);
+            }
         }
 
         private void ApplyTabbedState ()
