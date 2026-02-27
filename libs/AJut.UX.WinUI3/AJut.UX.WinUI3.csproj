@@ -75,6 +75,9 @@
     <Compile Update="Controls\ToggleStrip.cs">
       <DependentUpon>ToggleStrip.xaml</DependentUpon>
     </Compile>
+    <Compile Update="Controls\ToggleStripButton.cs">
+      <DependentUpon>ToggleStripButton.xaml</DependentUpon>
+    </Compile>
     <Compile Update="Controls\PopupMenuButton.cs">
       <DependentUpon>PopupMenuButton.xaml</DependentUpon>
     </Compile>

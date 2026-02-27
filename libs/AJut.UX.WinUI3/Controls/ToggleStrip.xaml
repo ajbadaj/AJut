@@ -5,13 +5,16 @@
     <!-- ===[ ToggleStrip ]=== -->
     <!-- Default style: WinUI3 system resources only, no AJut_ brush keys.
          AllControlThemeOverrides.xaml provides the AJut-branded variant.
-         PART_ItemsPanel is a StackPanel; code populates it with ToggleButtons. -->
+         PART_ItemsPanel is a StackPanel; code populates it with ToggleStripButton items.
+         ToggleStripButton controls own all button-level visual state — no Border.Resources
+         overrides are needed here. -->
     <Style TargetType="local:ToggleStrip">
         <Setter Property="HorizontalAlignment" Value="Left"/>
         <Setter Property="Background" Value="{ThemeResource ControlFillColorDefaultBrush}"/>
         <Setter Property="BorderBrush" Value="{ThemeResource ControlStrokeColorDefaultBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="ItemPadding" Value="8,4"/>
+        <Setter Property="CornerRadius" Value="2"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:ToggleStrip">
@@ -19,23 +22,6 @@
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="{TemplateBinding CornerRadius}">
-                        <Border.Resources>
-                            <!-- "Depressed button" checked-state gradients for ToggleButtons within
-                                 the strip. These locally override WinUI3 ToggleButton theme resources
-                                 so only buttons inside this strip are affected.
-                                 StaticResource aliases point to keys defined in
-                                 AJutCustomControlStylingDefaults.xaml (Generic.xaml scope).
-                                 NOTE: Border.Resources StaticResource entries resolve at parse time
-                                 from Generic.xaml scope. To provide AJut-themed variants, the
-                                 AllControlThemeOverrides.xaml ToggleStrip style must supply a full
-                                 template with its own Border.Resources (unavoidable duplication). -->
-                            <StaticResource x:Key="ToggleButtonBackgroundChecked"
-                                            ResourceKey="AJut_ToggleStrip_BackgroundChecked"/>
-                            <StaticResource x:Key="ToggleButtonBackgroundCheckedPointerOver"
-                                            ResourceKey="AJut_ToggleStrip_BackgroundCheckedPointerOver"/>
-                            <StaticResource x:Key="ToggleButtonBackgroundCheckedPressed"
-                                            ResourceKey="AJut_ToggleStrip_BackgroundCheckedPressed"/>
-                        </Border.Resources>
                         <StackPanel x:Name="PART_ItemsPanel"
                                     Orientation="Horizontal"/>
                     </Border>

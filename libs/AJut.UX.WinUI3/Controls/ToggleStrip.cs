@@ -10,7 +10,6 @@ namespace AJut.UX.Controls
     using System.Runtime.CompilerServices;
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
-    using Microsoft.UI.Xaml.Controls.Primitives;
     using Microsoft.UI.Xaml.Data;
     using Microsoft.UI.Xaml.Media;
     using DPUtils = AJut.UX.DPUtils<ToggleStrip>;
@@ -56,109 +55,82 @@ namespace AJut.UX.Controls
 
         // ===========[ Dependency Properties ]====================================
 
-        public static readonly DependencyProperty ItemsSourceProperty = DPUtils.Register(
-            _ => _.ItemsSource,
-            (d, e) => d.OnItemsSourceChanged(e));
+        public static readonly DependencyProperty ItemsSourceProperty = DPUtils.Register(_ => _.ItemsSource, (d, e) => d.OnItemsSourceChanged(e));
         public IEnumerable ItemsSource
         {
             get => (IEnumerable)this.GetValue(ItemsSourceProperty);
             set => this.SetValue(ItemsSourceProperty, value);
         }
 
-        public static readonly DependencyProperty AllowMultiSelectProperty = DPUtils.Register(
-            _ => _.AllowMultiSelect, false);
+        public static readonly DependencyProperty AllowMultiSelectProperty = DPUtils.Register(_ => _.AllowMultiSelect, false);
         public bool AllowMultiSelect
         {
             get => (bool)this.GetValue(AllowMultiSelectProperty);
             set => this.SetValue(AllowMultiSelectProperty, value);
         }
 
-        public static readonly DependencyProperty AllowNoSelectionProperty = DPUtils.Register(
-            _ => _.AllowNoSelection, false);
+        public static readonly DependencyProperty AllowNoSelectionProperty = DPUtils.Register(_ => _.AllowNoSelection, false);
         public bool AllowNoSelection
         {
             get => (bool)this.GetValue(AllowNoSelectionProperty);
             set => this.SetValue(AllowNoSelectionProperty, value);
         }
 
-        public static readonly DependencyProperty SelectedItemProperty = DPUtils.Register(
-            _ => _.SelectedItem,
-            (d, e) => d.OnSelectedItemChanged(e));
+        public static readonly DependencyProperty SelectedItemProperty = DPUtils.Register(_ => _.SelectedItem, (d, e) => d.OnSelectedItemChanged(e));
         public object SelectedItem
         {
             get => this.GetValue(SelectedItemProperty);
             set => this.SetValue(SelectedItemProperty, value);
         }
 
-        public static readonly DependencyProperty SelectedItemsProperty = DPUtils.Register(
-            _ => _.SelectedItems,
-            (d, e) => d.OnSelectedItemsChanged(e));
+        public static readonly DependencyProperty SelectedItemsProperty = DPUtils.Register(_ => _.SelectedItems, (d, e) => d.OnSelectedItemsChanged(e));
         public IList SelectedItems
         {
             get => (IList)this.GetValue(SelectedItemsProperty);
             set => this.SetValue(SelectedItemsProperty, value);
         }
 
-        public static readonly DependencyProperty DisplayPropertyPathProperty = DPUtils.Register(
-            _ => _.DisplayPropertyPath, "",
-            (d, e) => d.OnDisplayPropertyPathChanged(e.NewValue));
+        public static readonly DependencyProperty DisplayPropertyPathProperty = DPUtils.Register(_ => _.DisplayPropertyPath, "", (d, e) => d.OnDisplayPropertyPathChanged(e.NewValue));
         public string DisplayPropertyPath
         {
             get => (string)this.GetValue(DisplayPropertyPathProperty);
             set => this.SetValue(DisplayPropertyPathProperty, value);
         }
 
-        public static readonly DependencyProperty ItemTemplateProperty = DPUtils.Register(
-            _ => _.ItemTemplate,
-            (d, e) => d.RebuildItems());
+        public static readonly DependencyProperty ItemTemplateProperty = DPUtils.Register(_ => _.ItemTemplate, (d, e) => d.RebuildItems());
         public DataTemplate ItemTemplate
         {
             get => (DataTemplate)this.GetValue(ItemTemplateProperty);
             set => this.SetValue(ItemTemplateProperty, value);
         }
 
-        public static readonly DependencyProperty SeparatorThicknessProperty = DPUtils.Register(
-            _ => _.SeparatorThickness, 1.0,
-            (d, e) => d.RebuildItems());
+        public static readonly DependencyProperty SeparatorThicknessProperty = DPUtils.Register(_ => _.SeparatorThickness, 1.0, (d, e) => d.RebuildItems());
         public double SeparatorThickness
         {
             get => (double)this.GetValue(SeparatorThicknessProperty);
             set => this.SetValue(SeparatorThicknessProperty, value);
         }
 
-        public static readonly DependencyProperty HasItemsProperty = DPUtils.Register(
-            _ => _.HasItems, false);
+        public static readonly DependencyProperty HasItemsProperty = DPUtils.Register(_ => _.HasItems, false);
         public bool HasItems
         {
             get => (bool)this.GetValue(HasItemsProperty);
             private set => this.SetValue(HasItemsProperty, value);
         }
 
-        public static readonly DependencyProperty ItemsProperty = DPUtils.Register(
-            _ => _.Items);
+        public static readonly DependencyProperty ItemsProperty = DPUtils.Register(_ => _.Items);
         public ToggleItemsCollection Items
         {
             get => (ToggleItemsCollection)this.GetValue(ItemsProperty);
             private set => this.SetValue(ItemsProperty, value);
         }
 
-        // CornerRadius: distributed to the first/last buttons so rounded corners appear as a unit.
-        public static readonly DependencyProperty CornerRadiusProperty = DPUtils.Register(
-            _ => _.CornerRadius, new CornerRadius(2),
-            (d, e) => d.RebuildItems());
-        public CornerRadius CornerRadius
-        {
-            get => (CornerRadius)this.GetValue(CornerRadiusProperty);
-            set => this.SetValue(CornerRadiusProperty, value);
-        }
-
-        // ToggleButtonItemStyle: optional Style applied to each generated ToggleButton.
+        // ToggleButtonItemStyle: optional Style applied to each generated ToggleStripButton.
         // Use this to customize button appearance (font, colors, etc.) without subclassing.
-        // Note: code still sets CornerRadius, BorderThickness, and Padding (via ItemPadding)
-        // after applying this style because those values are index-aware or DP-driven.
-        public static readonly DependencyProperty ToggleButtonItemStyleProperty = DPUtils.Register(
-            _ => _.ToggleButtonItemStyle,
-            (d, e) => d.RebuildItems());
+        // Note: style TargetType must be ToggleStripButton or a compatible base type.
+        // Code still sets CornerRadius, BorderThickness, and Padding (via ItemPadding) after
+        // applying this style because those values are index-aware or DP-driven.
+        public static readonly DependencyProperty ToggleButtonItemStyleProperty = DPUtils.Register(_ => _.ToggleButtonItemStyle, (d, e) => d.RebuildItems());
         public Style ToggleButtonItemStyle
         {
             get => (Style)this.GetValue(ToggleButtonItemStyleProperty);
@@ -167,9 +139,7 @@ namespace AJut.UX.Controls
 
         // ItemPadding: applied to each generated ToggleButton as a local value.
         // Default set in XAML style; override via this DP to adjust without replacing ToggleButtonItemStyle.
-        public static readonly DependencyProperty ItemPaddingProperty = DPUtils.Register(
-            _ => _.ItemPadding, new Thickness(8, 4, 8, 4),
-            (d, e) => d.RebuildItems());
+        public static readonly DependencyProperty ItemPaddingProperty = DPUtils.Register(_ => _.ItemPadding, new Thickness(8, 4, 8, 4), (d, e) => d.RebuildItems());
         public Thickness ItemPadding
         {
             get => (Thickness)this.GetValue(ItemPaddingProperty);
@@ -354,9 +324,9 @@ namespace AJut.UX.Controls
             }
         }
 
-        private ToggleButton CreateItemButton (ToggleItem item, int index, bool isLast)
+        private ToggleStripButton CreateItemButton (ToggleItem item, int index, bool isLast)
         {
-            var btn = new ToggleButton();
+            var btn = new ToggleStripButton();
 
             // Apply caller-provided style first so structural overrides below
             // (CornerRadius, BorderThickness, Padding) are set as local values and take precedence.
@@ -373,7 +343,7 @@ namespace AJut.UX.Controls
                 ? new Thickness(0)
                 : new Thickness(this.SeparatorThickness, 0, 0, 0);
 
-            btn.SetBinding(ToggleButton.BorderBrushProperty, new Binding
+            btn.SetBinding(Control.BorderBrushProperty, new Binding
             {
                 Source = this,
                 Path = kBorderBrushPath,
@@ -401,8 +371,8 @@ namespace AJut.UX.Controls
                 btn.CornerRadius = new CornerRadius(0);
             }
 
-            // 3. Bind IsChecked ↔ IsSelected (TwoWay so clicking drives selection logic)
-            btn.SetBinding(ToggleButton.IsCheckedProperty, new Binding
+            // 3. Bind IsSelected ↔ IsSelected (TwoWay so clicking drives selection logic)
+            btn.SetBinding(ToggleStripButton.IsSelectedProperty, new Binding
             {
                 Source = item,
                 Path = kIsSelectedPath,

@@ -319,7 +319,8 @@
                                     </StackPanel>
 
                                     <TextBlock Text="ToggleStrip" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-                                    <ajut:ToggleStrip x:Name="ToggleStripCustom"/>
+                                    <ajut:ToggleStrip x:Name="ToggleStripCustom"
+                                                      CornerRadius="15"/>
 
                                     <TextBlock Text="PathSelectionControl" Style="{ThemeResource SubtitleTextBlockStyle}"/>
                                     <TextBlock Text="Browse button opens OS file/folder picker. Invalid paths show red border + warning icon." FontStyle="Italic" Opacity="0.7" TextWrapping="Wrap"/>
@@ -327,15 +328,21 @@
                                         <StackPanel Spacing="4">
                                             <TextBlock Text="File picker (open)" FontSize="11" Opacity="0.7"/>
                                             <ajut:PathSelectionControl x:Name="PathPickFile"
-                                                                        PathType="File"
-                                                                        UnsetTextPrompt="Select a file..."/>
+                                                                       PathType="File"
+                                                                       TextBoxHeight="22"
+                                                                       UnsetTextPrompt="Select a file..."
+                                                                       TreatEmptyPathAsInvalid="True"
+                                                                       TreatNonExistentPathAsInvalid="True"/>
                                         </StackPanel>
                                         <StackPanel Spacing="4">
                                             <TextBlock Text="Folder picker" FontSize="11" Opacity="0.7"/>
                                             <ajut:PathSelectionControl x:Name="PathPickFolder"
-                                                                        PathType="Folder"
-                                                                        UnsetTextPrompt="Select a folder..."
-                                                                        IsOpenInExplorerButtonAllowed="True"/>
+                                                                       PathType="Folder"
+                                                                       UnsetTextPrompt="Select a folder..."
+                                                                       IsOpenInExplorerButtonAllowed="True"
+                                                                       TreatNonExistentPathAsInvalid="True"
+                                                                       TextBoxPadding="0"
+                                                                       />
                                         </StackPanel>
                                         <StackPanel Spacing="4">
                                             <TextBlock Text="File picker (save, validates extension)" FontSize="11" Opacity="0.7"/>

@@ -118,14 +118,9 @@
 
     <!--
     ===[ ToggleStrip - AJut-themed override ]===
-    Applies AJut strip container colors. The template is duplicated here — unavoidable
-    because Border.Resources StaticResource entries resolve at parse time from the scope
-    where they are parsed. There is no runtime mechanism to override Border.Resources
-    from App.Resources without code-behind. The default template in ToggleStrip.xaml
-    uses StaticResource aliases (AJut_ToggleStrip_BackgroundChecked*) that point to
-    AJutCustomControlStylingDefaults.xaml. This override re-provides those keys as
-    AJut-tinted cool-dark gradients via inline gradient definitions. The structure is
-    identical; only the gradient colors differ.
+    ToggleStripButton controls handle all button-level visual states via ThemeResource
+    keys (redirected in AJutThemeMapAliasing.xaml). The strip container only needs
+    AJut brush assignments. No template duplication needed.
     -->
     <Style TargetType="local:ToggleStrip">
         <Setter Property="HorizontalAlignment" Value="Left"/>
@@ -133,41 +128,6 @@
         <Setter Property="BorderBrush" Value="{ThemeResource AJut_Brush_BorderCommon}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="ItemPadding" Value="8,4"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="local:ToggleStrip">
-                    <Border Background="{TemplateBinding Background}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="{TemplateBinding CornerRadius}">
-                        <Border.Resources>
-                            <!-- AJut-themed "depressed button" gradients for checked ToggleButtons.
-                                 Cool dark tint (teal/cyan hue) distinguishes AJut active state. -->
-                            <LinearGradientBrush x:Key="ToggleButtonBackgroundChecked"
-                                                 StartPoint="0,0" EndPoint="0,1">
-                                <GradientStop Offset="0.00" Color="#CC000000"/>
-                                <GradientStop Offset="0.20" Color="#801090A0"/>
-                                <GradientStop Offset="1.00" Color="#331090A0"/>
-                            </LinearGradientBrush>
-                            <LinearGradientBrush x:Key="ToggleButtonBackgroundCheckedPointerOver"
-                                                 StartPoint="0,0" EndPoint="0,1">
-                                <GradientStop Offset="0.00" Color="#CC000000"/>
-                                <GradientStop Offset="0.20" Color="#991090A0"/>
-                                <GradientStop Offset="1.00" Color="#551090A0"/>
-                            </LinearGradientBrush>
-                            <LinearGradientBrush x:Key="ToggleButtonBackgroundCheckedPressed"
-                                                 StartPoint="0,0" EndPoint="0,1">
-                                <GradientStop Offset="0.00" Color="#EE000000"/>
-                                <GradientStop Offset="0.20" Color="#AA1090A0"/>
-                                <GradientStop Offset="1.00" Color="#661090A0"/>
-                            </LinearGradientBrush>
-                        </Border.Resources>
-                        <StackPanel x:Name="PART_ItemsPanel"
-                                    Orientation="Horizontal"/>
-                    </Border>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
     </Style>
 
 </ResourceDictionary>
