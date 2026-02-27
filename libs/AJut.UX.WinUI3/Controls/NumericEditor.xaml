@@ -43,6 +43,8 @@
             </Setter.Value>
         </Setter>
         <Setter Property="TextBoxBackground" Value="#444"/>
+        <Setter Property="TextBoxHeight" Value="26"/>
+        <Setter Property="TextBoxPadding" Value="4,2"/>
 
         <Setter Property="Template">
             <Setter.Value>
@@ -90,7 +92,11 @@
                                              Background="Transparent"
                                              BorderBrush="Transparent"
                                              CornerRadius="0"
-                                             Padding="4,2">
+                                             Header="{TemplateBinding TextBoxHeader}"
+                                             Height="{TemplateBinding TextBoxHeight}"
+                                             Padding="{TemplateBinding TextBoxPadding}"
+                                             VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                             TextAlignment="{TemplateBinding TextAlignment}">
                                         <TextBox.Style>
                                             <Style TargetType="TextBox">
                                                 <Setter Property="Template">

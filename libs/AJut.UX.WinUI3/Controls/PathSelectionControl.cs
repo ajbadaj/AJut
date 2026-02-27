@@ -1,13 +1,13 @@
 namespace AJut.UX.Controls
 {
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
     using AJut;
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
     using Microsoft.UI.Xaml.Controls.Primitives;
     using Microsoft.UI.Xaml.Input;
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
     using Windows.Storage.Pickers;
     using DPUtils = AJut.UX.DPUtils<PathSelectionControl>;
 
@@ -27,9 +27,9 @@ namespace AJut.UX.Controls
     public enum ePathType { File, Folder }
     public enum eFileDialogType { OpenFile, SaveFile }
 
-    [TemplatePart(Name = nameof(PART_Root),                 Type = typeof(Border))]
-    [TemplatePart(Name = nameof(PART_PathTextBox),          Type = typeof(TextBox))]
-    [TemplatePart(Name = nameof(PART_BrowseButton),         Type = typeof(ButtonBase))]
+    [TemplatePart(Name = nameof(PART_Root), Type = typeof(Border))]
+    [TemplatePart(Name = nameof(PART_PathTextBox), Type = typeof(TextBox))]
+    [TemplatePart(Name = nameof(PART_BrowseButton), Type = typeof(ButtonBase))]
     [TemplatePart(Name = nameof(PART_ShowInExplorerButton), Type = typeof(ButtonBase))]
     public class PathSelectionControl : Control
     {
@@ -43,10 +43,10 @@ namespace AJut.UX.Controls
         private bool m_isFocused;
 
         // ===========[ Construction ]=============================================
-        public PathSelectionControl ()
+        public PathSelectionControl()
         {
             this.DefaultStyleKey = typeof(PathSelectionControl);
-            this.GotFocus  += this.OnGotFocus;
+            this.GotFocus += this.OnGotFocus;
             this.LostFocus += this.OnLostFocus;
             this.EvaluatePath(null);
         }
@@ -69,68 +69,57 @@ namespace AJut.UX.Controls
             set => this.SetValue(FileFilterProperty, value);
         }
 
-        public static readonly DependencyProperty FileDialogTypeProperty = DPUtils.Register(
-            _ => _.FileDialogType, eFileDialogType.OpenFile);
+        public static readonly DependencyProperty FileDialogTypeProperty = DPUtils.Register(_ => _.FileDialogType, eFileDialogType.OpenFile);
         public eFileDialogType FileDialogType
         {
             get => (eFileDialogType)this.GetValue(FileDialogTypeProperty);
             set => this.SetValue(FileDialogTypeProperty, value);
         }
 
-        public static readonly DependencyProperty SelectedPathProperty = DPUtils.Register(
-            _ => _.SelectedPath,
-            (d, e) => d.OnSelectedPathChanged(e.NewValue));
+        public static readonly DependencyProperty SelectedPathProperty = DPUtils.Register(_ => _.SelectedPath, (d, e) => d.OnSelectedPathChanged(e.NewValue));
         public string SelectedPath
         {
             get => (string)this.GetValue(SelectedPathProperty);
             set => this.SetValue(SelectedPathProperty, value);
         }
 
-        public static readonly DependencyProperty IsPathValidProperty = DPUtils.Register(
-            _ => _.IsPathValid, false);
+        public static readonly DependencyProperty IsPathValidProperty = DPUtils.Register(_ => _.IsPathValid, false, (d,e) => d.OnIsPathValidChanged(e));
         public bool IsPathValid
         {
             get => (bool)this.GetValue(IsPathValidProperty);
             private set => this.SetValue(IsPathValidProperty, value);
         }
 
-        public static readonly DependencyProperty DoesPathExistProperty = DPUtils.Register(
-            _ => _.DoesPathExist, false);
+
+        public static readonly DependencyProperty DoesPathExistProperty = DPUtils.Register(_ => _.DoesPathExist, false);
         public bool DoesPathExist
         {
             get => (bool)this.GetValue(DoesPathExistProperty);
             private set => this.SetValue(DoesPathExistProperty, value);
         }
 
-        public static readonly DependencyProperty InvalidPathReasonProperty = DPUtils.Register(
-            _ => _.InvalidPathReason);
+        public static readonly DependencyProperty InvalidPathReasonProperty = DPUtils.Register(_ => _.InvalidPathReason);
         public string InvalidPathReason
         {
             get => (string)this.GetValue(InvalidPathReasonProperty);
             private set => this.SetValue(InvalidPathReasonProperty, value);
         }
 
-        public static readonly DependencyProperty TreatEmptyPathAsInvalidProperty = DPUtils.Register(
-            _ => _.TreatEmptyPathAsInvalid,
-            (d, e) => d.EvaluatePath(d.SelectedPath));
+        public static readonly DependencyProperty TreatEmptyPathAsInvalidProperty = DPUtils.Register(_ => _.TreatEmptyPathAsInvalid, (d, e) => d.EvaluatePath(d.SelectedPath));
         public bool TreatEmptyPathAsInvalid
         {
             get => (bool)this.GetValue(TreatEmptyPathAsInvalidProperty);
             set => this.SetValue(TreatEmptyPathAsInvalidProperty, value);
         }
 
-        public static readonly DependencyProperty TreatNonExistentPathAsInvalidProperty = DPUtils.Register(
-            _ => _.TreatNonExistentPathAsInvalid,
-            (d, e) => d.EvaluatePath(d.SelectedPath));
+        public static readonly DependencyProperty TreatNonExistentPathAsInvalidProperty = DPUtils.Register(_ => _.TreatNonExistentPathAsInvalid, (d, e) => d.EvaluatePath(d.SelectedPath));
         public bool TreatNonExistentPathAsInvalid
         {
             get => (bool)this.GetValue(TreatNonExistentPathAsInvalidProperty);
             set => this.SetValue(TreatNonExistentPathAsInvalidProperty, value);
         }
 
-        public static readonly DependencyProperty FixedRootPathProperty = DPUtils.Register(
-            _ => _.FixedRootPath,
-            (d, e) => d.EvaluatePath(d.SelectedPath));
+        public static readonly DependencyProperty FixedRootPathProperty = DPUtils.Register(_ => _.FixedRootPath, (d, e) => d.EvaluatePath(d.SelectedPath));
         /// <summary>A directory that the SelectedPath must be located under.</summary>
         public string FixedRootPath
         {
@@ -147,9 +136,7 @@ namespace AJut.UX.Controls
             set => this.SetValue(InitialBrowseRootProperty, value);
         }
 
-        public static readonly DependencyProperty ShortenPathToFixedRootProperty = DPUtils.Register(
-            _ => _.ShortenPathToFixedRoot,
-            (d, e) => d.EvaluatePath(d.SelectedPath));
+        public static readonly DependencyProperty ShortenPathToFixedRootProperty = DPUtils.Register(_ => _.ShortenPathToFixedRoot, (d, e) => d.EvaluatePath(d.SelectedPath));
         /// <summary>When true, SelectedPath is stored relative to FixedRootPath.</summary>
         public bool ShortenPathToFixedRoot
         {
@@ -157,58 +144,80 @@ namespace AJut.UX.Controls
             set => this.SetValue(ShortenPathToFixedRootProperty, value);
         }
 
-        public static readonly DependencyProperty BrowsePromptProperty = DPUtils.Register(
-            _ => _.BrowsePrompt, "Select");
+        public static readonly DependencyProperty BrowsePromptProperty = DPUtils.Register(_ => _.BrowsePrompt, "Select");
         public string BrowsePrompt
         {
             get => (string)this.GetValue(BrowsePromptProperty);
             set => this.SetValue(BrowsePromptProperty, value);
         }
 
-        public static readonly DependencyProperty UnsetTextPromptProperty = DPUtils.Register(
-            _ => _.UnsetTextPrompt);
+        public static readonly DependencyProperty UnsetTextPromptProperty = DPUtils.Register(_ => _.UnsetTextPrompt);
         public string UnsetTextPrompt
         {
             get => (string)this.GetValue(UnsetTextPromptProperty);
             set => this.SetValue(UnsetTextPromptProperty, value);
         }
 
-        public static readonly DependencyProperty IsOpenInExplorerButtonAllowedProperty = DPUtils.Register(
-            _ => _.IsOpenInExplorerButtonAllowed,
-            (d, e) => d.UpdateVisualState());
+        public static readonly DependencyProperty IsOpenInExplorerButtonAllowedProperty = DPUtils.Register(_ => _.IsOpenInExplorerButtonAllowed, (d, e) => d.UpdateVisualState());
         public bool IsOpenInExplorerButtonAllowed
         {
             get => (bool)this.GetValue(IsOpenInExplorerButtonAllowedProperty);
             set => this.SetValue(IsOpenInExplorerButtonAllowedProperty, value);
         }
 
-        public static readonly DependencyProperty DefaultButtonMDL2IconProperty = DPUtils.Register(
-            _ => _.DefaultButtonMDL2Icon, "\xE712");
+        public static readonly DependencyProperty DefaultButtonMDL2IconProperty = DPUtils.Register(_ => _.DefaultButtonMDL2Icon, "\xE712");
         public string DefaultButtonMDL2Icon
         {
             get => (string)this.GetValue(DefaultButtonMDL2IconProperty);
             set => this.SetValue(DefaultButtonMDL2IconProperty, value);
         }
 
-        public static readonly DependencyProperty OpenInExplorerMDL2IconProperty = DPUtils.Register(
-            _ => _.OpenInExplorerMDL2Icon, "\xE8A7");
+        public static readonly DependencyProperty OpenInExplorerMDL2IconProperty = DPUtils.Register(_ => _.OpenInExplorerMDL2Icon, "\xE8A7");
         public string OpenInExplorerMDL2Icon
         {
             get => (string)this.GetValue(OpenInExplorerMDL2IconProperty);
             set => this.SetValue(OpenInExplorerMDL2IconProperty, value);
         }
 
+        public static readonly DependencyProperty TextBoxHeaderProperty = DPUtils.Register(_ => _.TextBoxHeader);
+        public string TextBoxHeader
+        {
+            get => (string)this.GetValue(TextBoxHeaderProperty);
+            set => this.SetValue(TextBoxHeaderProperty, value);
+        }
+
+        public static readonly DependencyProperty TextBoxHeightProperty = DPUtils.Register(_ => _.TextBoxHeight);
+        public double TextBoxHeight
+        {
+            get => (double)this.GetValue(TextBoxHeightProperty);
+            set => this.SetValue(TextBoxHeightProperty, value);
+        }
+
+        public static readonly DependencyProperty TextBoxPaddingProperty = DPUtils.Register(_ => _.TextBoxPadding);
+        public Thickness TextBoxPadding
+        {
+            get => (Thickness)this.GetValue(TextBoxPaddingProperty);
+            set => this.SetValue(TextBoxPaddingProperty, value);
+        }
+
+        public static readonly DependencyProperty CurrentToolTipProperty = DPUtils.Register(_ => _.CurrentToolTip);
+        public string CurrentToolTip
+        {
+            get => (string)this.GetValue(CurrentToolTipProperty);
+            set => this.SetValue(CurrentToolTipProperty, value);
+        }
+
         // ===========[ Template application ]=====================================
-        protected override void OnApplyTemplate ()
+        protected override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
 
             // Unhook previous template children
             if (this.PART_PathTextBox != null)
             {
-                this.PART_PathTextBox.KeyDown      -= this.PathTextBox_OnKeyDown;
-                this.PART_PathTextBox.LostFocus    -= this.PathTextBox_OnLostFocus;
-                this.PART_PathTextBox.TextChanged  -= this.PathTextBox_OnTextChanged;
+                this.PART_PathTextBox.KeyDown -= this.PathTextBox_OnKeyDown;
+                this.PART_PathTextBox.LostFocus -= this.PathTextBox_OnLostFocus;
+                this.PART_PathTextBox.TextChanged -= this.PathTextBox_OnTextChanged;
             }
 
             if (this.PART_BrowseButton != null)
@@ -221,9 +230,9 @@ namespace AJut.UX.Controls
                 this.PART_ShowInExplorerButton.Click -= this.ShowInExplorerButton_OnClick;
             }
 
-            this.PART_Root                 = (Border)this.GetTemplateChild(nameof(PART_Root));
-            this.PART_PathTextBox          = (TextBox)this.GetTemplateChild(nameof(PART_PathTextBox));
-            this.PART_BrowseButton         = (ButtonBase)this.GetTemplateChild(nameof(PART_BrowseButton));
+            this.PART_Root = (Border)this.GetTemplateChild(nameof(PART_Root));
+            this.PART_PathTextBox = (TextBox)this.GetTemplateChild(nameof(PART_PathTextBox));
+            this.PART_BrowseButton = (ButtonBase)this.GetTemplateChild(nameof(PART_BrowseButton));
             this.PART_ShowInExplorerButton = (ButtonBase)this.GetTemplateChild(nameof(PART_ShowInExplorerButton));
 
             if (this.PART_PathTextBox != null)
@@ -239,8 +248,8 @@ namespace AJut.UX.Controls
                     m_blockPathSync = false;
                 }
 
-                this.PART_PathTextBox.KeyDown     += this.PathTextBox_OnKeyDown;
-                this.PART_PathTextBox.LostFocus   += this.PathTextBox_OnLostFocus;
+                this.PART_PathTextBox.KeyDown += this.PathTextBox_OnKeyDown;
+                this.PART_PathTextBox.LostFocus += this.PathTextBox_OnLostFocus;
                 this.PART_PathTextBox.TextChanged += this.PathTextBox_OnTextChanged;
             }
 
@@ -258,7 +267,7 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ Public helpers ]============================================
-        public string GetFullyExpandedPath (string path = null)
+        public string GetFullyExpandedPath(string path = null)
         {
             path = path ?? this.SelectedPath ?? string.Empty;
             if (this.FixedRootPath?.Length == 0 || Path.IsPathRooted(path))
@@ -270,7 +279,7 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ Property change handlers ]================================
-        private void OnSelectedPathChanged (string newPath)
+        private void OnSelectedPathChanged(string newPath)
         {
             if (m_blockPathSync)
             {
@@ -298,7 +307,7 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ TextBox event handlers ]===================================
-        private void PathTextBox_OnTextChanged (object sender, TextChangedEventArgs e)
+        private void PathTextBox_OnTextChanged(object sender, TextChangedEventArgs e)
         {
             if (m_blockPathSync)
             {
@@ -319,7 +328,7 @@ namespace AJut.UX.Controls
             // EvaluatePath is triggered by OnSelectedPathChanged
         }
 
-        private void PathTextBox_OnKeyDown (object sender, KeyRoutedEventArgs e)
+        private void PathTextBox_OnKeyDown(object sender, KeyRoutedEventArgs e)
         {
             // Ctrl+Up: navigate to parent directory (Folder mode only)
             if (this.PathType != ePathType.Folder || e.Key != Windows.System.VirtualKey.Up)
@@ -347,7 +356,7 @@ namespace AJut.UX.Controls
             catch { }
         }
 
-        private void PathTextBox_OnLostFocus (object sender, RoutedEventArgs e)
+        private void PathTextBox_OnLostFocus(object sender, RoutedEventArgs e)
         {
             string path = this.SelectedPath;
             if (this.TryToApplyPathShorteningIfAny(ref path))
@@ -357,7 +366,7 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ Button event handlers ]====================================
-        private async void BrowseButton_OnClick (object sender, RoutedEventArgs e)
+        private async void BrowseButton_OnClick(object sender, RoutedEventArgs e)
         {
             string userSelectedPath = null;
             var hwnd = this.GetWindowHandle();
@@ -385,7 +394,7 @@ namespace AJut.UX.Controls
             }
         }
 
-        private void ShowInExplorerButton_OnClick (object sender, RoutedEventArgs e)
+        private void ShowInExplorerButton_OnClick(object sender, RoutedEventArgs e)
         {
             if (!this.IsPathValid)
             {
@@ -404,11 +413,12 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ Focus state handlers ]=====================================
-        private void OnGotFocus  (object sender, RoutedEventArgs e) { m_isFocused = true;  this.UpdateVisualState(); }
-        private void OnLostFocus (object sender, RoutedEventArgs e) { m_isFocused = false; this.UpdateVisualState(); }
+        private void OnGotFocus(object sender, RoutedEventArgs e) { m_isFocused = true; this.UpdateVisualState(); }
+        private void OnLostFocus(object sender, RoutedEventArgs e) { m_isFocused = false; this.UpdateVisualState(); }
 
         // ===========[ Path evaluation ]==========================================
-        private void EvaluatePath (string path)
+
+        private void EvaluatePath(string path)
         {
             // Empty path handling
             if (string.IsNullOrEmpty(path))
@@ -463,9 +473,9 @@ namespace AJut.UX.Controls
 
             // Existence checks
             bool existsAsFile = false;
-            bool existsAsDir  = false;
-            try { existsAsFile = File.Exists(expandedPath); }      catch { }
-            try { existsAsDir  = Directory.Exists(expandedPath); } catch { }
+            bool existsAsDir = false;
+            try { existsAsFile = File.Exists(expandedPath); } catch { }
+            try { existsAsDir = Directory.Exists(expandedPath); } catch { }
 
             if (this.PathType == ePathType.File && existsAsDir)
             {
@@ -495,16 +505,31 @@ namespace AJut.UX.Controls
             this.UpdateVisualState();
         }
 
-        private void SetInvalid (string reason)
+        private void SetInvalid(string reason)
         {
             this.DoesPathExist = false;
             this.IsPathValid = false;
             this.InvalidPathReason = reason;
             this.UpdateVisualState();
+
+            this.CurrentToolTip = reason;
         }
 
         // ===========[ Visual state management ]===================================
-        private void UpdateVisualState ()
+
+        private void OnIsPathValidChanged(DependencyPropertyChangedEventArgs<bool> e)
+        {
+            if (e.NewValue)
+            {
+                this.SetBinding(CurrentToolTipProperty, this.CreateBinding(nameof(SelectedPath), Microsoft.UI.Xaml.Data.BindingMode.OneWay));
+            }
+            else
+            {
+                this.SetBinding(CurrentToolTipProperty, this.CreateBinding(nameof(InvalidPathReason), Microsoft.UI.Xaml.Data.BindingMode.OneWay));
+            }
+        }
+
+        private void UpdateVisualState()
         {
             // Invalid path takes priority over focused border
             string borderState = !this.IsPathValid && !string.IsNullOrEmpty(this.SelectedPath)
@@ -526,7 +551,7 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ OS picker helpers ]=========================================
-        private async System.Threading.Tasks.Task<string> PickFileAsync (IntPtr hwnd)
+        private async System.Threading.Tasks.Task<string> PickFileAsync(IntPtr hwnd)
         {
             if (this.FileDialogType == eFileDialogType.OpenFile)
             {
@@ -548,7 +573,7 @@ namespace AJut.UX.Controls
             }
         }
 
-        private async System.Threading.Tasks.Task<string> PickFolderAsync (IntPtr hwnd)
+        private async System.Threading.Tasks.Task<string> PickFolderAsync(IntPtr hwnd)
         {
             var picker = new FolderPicker();
             WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
@@ -558,7 +583,7 @@ namespace AJut.UX.Controls
             return folder?.Path;
         }
 
-        private nint GetWindowHandle ()
+        private nint GetWindowHandle()
         {
             var env = this.XamlRoot?.ContentIslandEnvironment;
             if (env == null)
@@ -570,7 +595,7 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ Path helpers ]=============================================
-        private bool TryToApplyPathShorteningIfAny (ref string target)
+        private bool TryToApplyPathShorteningIfAny(ref string target)
         {
             if (this.FixedRootPath?.Length > 0
                 && this.ShortenPathToFixedRoot
@@ -584,7 +609,7 @@ namespace AJut.UX.Controls
             return false;
         }
 
-        private static bool DoesFileMatchFilter (string path, string filter)
+        private static bool DoesFileMatchFilter(string path, string filter)
         {
             string ext = Path.GetExtension(path)?.ToLowerInvariant() ?? "";
 
@@ -605,7 +630,7 @@ namespace AJut.UX.Controls
             return false;
         }
 
-        private static void ApplyFileTypeFilterToList (
+        private static void ApplyFileTypeFilterToList(
             IList<string> target,
             string filter)
         {
@@ -638,7 +663,7 @@ namespace AJut.UX.Controls
             }
         }
 
-        private static void ApplyFileTypeFilterToDictionary (
+        private static void ApplyFileTypeFilterToDictionary(
             IDictionary<string, IList<string>> target,
             string filter)
         {

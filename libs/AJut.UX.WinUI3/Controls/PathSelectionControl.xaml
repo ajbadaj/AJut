@@ -15,6 +15,10 @@
         <Setter Property="Background" Value="{ThemeResource TextControlBackground}"/>
         <Setter Property="BorderBrush" Value="{ThemeResource TextControlBorderBrush}"/>
         <Setter Property="BorderThickness" Value="1,1,1,2"/>
+        <Setter Property="Padding" Value="2"/>
+        <Setter Property="TextBoxPadding" Value="2"/>
+        <Setter Property="FontFamily" Value="Consolas"/>
+        <Setter Property="TextBoxHeight" Value="22"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:PathSelectionControl">
@@ -23,7 +27,7 @@
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="0,3,3,0"
-                            ToolTipService.ToolTip="{TemplateBinding SelectedPath}">
+                            ToolTipService.ToolTip="{TemplateBinding CurrentToolTip}">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition/>
@@ -33,17 +37,56 @@
                             </Grid.ColumnDefinitions>
 
                             <!-- Path entry TextBox -->
-                            <TextBox x:Name="PART_PathTextBox"
-                                     Grid.Column="0"
-                                     PlaceholderText="{TemplateBinding UnsetTextPrompt}"
-                                     FontFamily="Consolas"
-                                     TextWrapping="NoWrap"
-                                     BorderThickness="0"
-                                     Background="Transparent"
-                                     CornerRadius="0"
-                                     Padding="6,4"
-                                     VerticalAlignment="Stretch"
-                                     VerticalContentAlignment="Center"/>
+                            <Border x:Name="RimLighting_Bright" Grid.Column="0" BorderBrush="Transparent" BorderThickness="0,0,1,1" Margin="3">
+                                <Border x:Name="RimLighting_Dark" BorderBrush="Transparent" BorderThickness="1.4,1.4,0,0">
+                                    <TextBox x:Name="PART_PathTextBox"
+                                             Header="{TemplateBinding TextBoxHeader}"
+                                             Height="{TemplateBinding TextBoxHeight}"
+                                             PlaceholderText="{TemplateBinding UnsetTextPrompt}"
+                                             FontFamily="{TemplateBinding FontFamily}"
+                                             TextWrapping="NoWrap"
+                                             BorderThickness="0"
+                                             Background="Transparent"
+                                             CornerRadius="0"
+                                             Padding="{TemplateBinding TextBoxPadding}"
+                                             Margin="{TemplateBinding Padding}"
+                                             VerticalAlignment="Stretch"
+                                             VerticalContentAlignment="Center">
+                                        <TextBox.Style>
+                                            <Style TargetType="TextBox">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="TextBox">
+                                                            <Grid>
+                                                                <Grid.RowDefinitions>
+                                                                    <RowDefinition Height="Auto" />
+                                                                    <RowDefinition Height="*" />
+                                                                    <RowDefinition Height="Auto" />
+                                                                </Grid.RowDefinitions>
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="*" />
+                                                                    <ColumnDefinition Width="Auto" />
+                                                                </Grid.ColumnDefinitions>
+                                                                <ContentPresenter x:Name="HeaderContentPresenter" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2" Content="{TemplateBinding Header}" ContentTemplate="{TemplateBinding HeaderTemplate}" FontWeight="Normal" Foreground="{ThemeResource TextControlHeaderForeground}" Margin="{ThemeResource TextBoxTopHeaderMargin}" TextWrapping="Wrap" VerticalAlignment="Top" Visibility="Collapsed" x:DeferLoadStrategy="Lazy" />
+                                                                <ScrollViewer x:Name="ContentElement" Grid.Row="1" Grid.Column="0" HorizontalScrollMode="{TemplateBinding ScrollViewer.HorizontalScrollMode}" HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}" VerticalScrollMode="{TemplateBinding ScrollViewer.VerticalScrollMode}" VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}" IsHorizontalRailEnabled="{TemplateBinding ScrollViewer.IsHorizontalRailEnabled}" IsVerticalRailEnabled="{TemplateBinding ScrollViewer.IsVerticalRailEnabled}" IsDeferredScrollingEnabled="{TemplateBinding ScrollViewer.IsDeferredScrollingEnabled}" Margin="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" Foreground="{TemplateBinding Foreground}" IsTabStop="False" AutomationProperties.AccessibilityView="Raw" ZoomMode="Disabled" />
+                                                                <TextBlock x:Name="PlaceholderTextContentPresenter" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Foreground="{Binding PlaceholderForeground, RelativeSource={RelativeSource TemplatedParent}, TargetNullValue={ThemeResource TextControlPlaceholderForeground}}" Margin="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" Text="{TemplateBinding PlaceholderText}" TextAlignment="{TemplateBinding TextAlignment}" TextWrapping="{TemplateBinding TextWrapping}" IsHitTestVisible="False" />
+                                                                <ContentPresenter x:Name="DescriptionPresenter"
+                                                                                  Grid.Row="2"
+                                                                                  Grid.Column="0"
+                                                                                  Grid.ColumnSpan="2"
+                                                                                  Content="{TemplateBinding Description}"
+                                                                                  Foreground="{ThemeResource SystemControlDescriptionTextForegroundBrush}"
+                                                                                  AutomationProperties.AccessibilityView="Raw"
+                                                                                  x:Load="False"/>
+                                                            </Grid>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </TextBox.Style>
+                                    </TextBox>
+                                </Border>
+                            </Border>
 
                             <!-- Warning icon: visible when path is invalid and non-empty -->
                             <Border x:Name="PART_WarningDisplay"
@@ -63,7 +106,7 @@
                                     Grid.Column="2"
                                     Visibility="Collapsed"
                                     Padding="10,6"
-                                    BorderThickness="1,0,0,0"
+                                    BorderThickness="0"
                                     BorderBrush="{ThemeResource AJut_PathSelectionControl_ButtonBorderBrush}"
                                     Background="Transparent"
                                     ToolTipService.ToolTip="Show in Explorer">
@@ -77,7 +120,8 @@
                             <Button x:Name="PART_BrowseButton"
                                     Grid.Column="3"
                                     Padding="10,6"
-                                    BorderThickness="1,0,0,0"
+                                    BorderThickness="0,0,0,0"
+                                    Margin="0,0,3,0"
                                     BorderBrush="{ThemeResource AJut_PathSelectionControl_ButtonBorderBrush}"
                                     Background="Transparent"
                                     ToolTipService.ToolTip="{TemplateBinding BrowsePrompt}">
@@ -100,8 +144,10 @@
                                 </VisualState>
                                 <VisualState x:Name="Focused">
                                     <VisualState.Setters>
-                                        <Setter Target="PART_Root.BorderBrush"
-                                                Value="{ThemeResource AJut_PathSelectionControl_FocusedBorderBrush}"/>
+                                        <Setter Target="PART_Root.BorderBrush" Value="{ThemeResource AJut_PathSelectionControl_FocusedBorderBrush}"/>
+                                        <Setter Target="RimLighting_Bright.BorderBrush" Value="#5FFF"/>
+                                        <Setter Target="RimLighting_Dark.BorderBrush" Value="#8000"/>
+                                        <Setter Target="RimLighting_Dark.Background" Value="{ThemeResource AJut_PathSelectionControl_FocusedTextBoxBackgroundBrush}"/>
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="PathInvalid">
@@ -120,8 +166,7 @@
                                 </VisualState>
                                 <VisualState x:Name="WarningShown">
                                     <VisualState.Setters>
-                                        <Setter Target="PART_WarningDisplay.Visibility"
-                                                Value="Visible"/>
+                                        <Setter Target="PART_WarningDisplay.Visibility" Value="Visible"/>
                                     </VisualState.Setters>
                                 </VisualState>
                             </VisualStateGroup>

@@ -127,12 +127,42 @@ namespace AJut.UX.Controls
             set => this.SetValue(LabelContentTemplateProperty, value);
         }
 
+        public static readonly DependencyProperty TextBoxHeaderProperty = DPUtils.Register(_ => _.TextBoxHeader);
+        public string TextBoxHeader
+        {
+            get => (string)this.GetValue(TextBoxHeaderProperty);
+            set => this.SetValue(TextBoxHeaderProperty, value);
+        }
+
+        public static readonly DependencyProperty TextBoxHeightProperty = DPUtils.Register(_ => _.TextBoxHeight);
+        public double TextBoxHeight
+        {
+            get => (double)this.GetValue(TextBoxHeightProperty);
+            set => this.SetValue(TextBoxHeightProperty, value);
+        }
+
+        public static readonly DependencyProperty TextBoxPaddingProperty = DPUtils.Register(_ => _.TextBoxPadding);
+        public Thickness TextBoxPadding
+        {
+            get => (Thickness)this.GetValue(TextBoxPaddingProperty);
+            set => this.SetValue(TextBoxPaddingProperty, value);
+        }
+
         public static readonly DependencyProperty TextBoxBackgroundProperty = DPUtils.Register(_ => _.TextBoxBackground);
         public Brush TextBoxBackground
         {
             get => (Brush)this.GetValue(TextBoxBackgroundProperty);
             set => this.SetValue(TextBoxBackgroundProperty, value);
         }
+
+
+        public static readonly DependencyProperty TextAlignmentProperty = DPUtils.Register(_ => _.TextAlignment, TextAlignment.Left);
+        public TextAlignment TextAlignment
+        {
+            get => (TextAlignment)this.GetValue(TextAlignmentProperty);
+            set => this.SetValue(TextAlignmentProperty, value);
+        }
+
 
         // ===========[ Template application ]=====================================
         protected override void OnApplyTemplate ()
