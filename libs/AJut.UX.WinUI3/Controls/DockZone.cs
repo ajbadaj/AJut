@@ -53,6 +53,13 @@ namespace AJut.UX.Controls
         private Point m_headerDragScreenPressPt;
         private DockZone m_headerDragZone;   // zone to pass to InitiateDrag
 
+        // Tab strip state — valid during BuildTabNavContent lifetime
+        private StackPanel m_tabPanel;
+        private ScrollViewer m_tabScrollViewer;
+        private DockTabScrollButton m_tabLeftScrollBtn;
+        private DockTabScrollButton m_tabRightScrollBtn;
+        private int m_tabReorderTargetIdx = -1;
+
         // ===========[ Construction ]=========================================
         static DockZone()
         {
@@ -285,14 +292,11 @@ namespace AJut.UX.Controls
                 var headerCloseBtn = new DockCloseButton
                 {
                     Padding = new Thickness(6, 3, 6, 3),
-                    Margin = new Thickness(2,2,2,2),
+                    Margin = new Thickness(2, 2, 2, 2),
                     VerticalAlignment = VerticalAlignment.Stretch,
+                    Tag = selectedAdapter,
                 };
-                var capturedAdapter = selectedAdapter;
-                headerCloseBtn.Click += (s, e) =>
-                {
-                    capturedAdapter.Location?.RequestCloseAndRemoveDockedContent(capturedAdapter);
-                };
+                headerCloseBtn.Click += this.OnHeaderPanelCloseBtnClicked;
 
                 var hGrid = new Grid();
                 hGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -348,55 +352,20 @@ namespace AJut.UX.Controls
         // Returns the tab-navigation Grid (left scroll btn + ScrollViewer + right scroll btn).
         // The outer wrapper Border (background, top border, padding) lives in DockLeafLayout's
         // this.PART_TabStripWrapper template part — only the inner content is built here.
+        //
+        // All per-tab drag logic lives in DockTabItem (events surfaced as high-level named
+        // handlers). No anonymous closures — fields m_tab* hold the current strip objects
+        // so named handlers can reference them without captures.
         private FrameworkElement BuildTabNavContent(DockingContentAdapterModel selectedAdapter)
         {
-            var tabPanel = new StackPanel { Orientation = Orientation.Horizontal };
+            m_tabPanel = new StackPanel { Orientation = Orientation.Horizontal };
+            m_tabReorderTargetIdx = -1;
             var dockingManager = m_manager as DockingManager;
 
             for (int i = 0; i < this.ViewModel.DockedContent.Count; i++)
             {
                 var adapter = this.ViewModel.DockedContent[i];
-                int capturedIndex = i;
                 bool isSelected = adapter == selectedAdapter;
-
-                // Foreground inherits from DockLeafLayout.Foreground through the visual tree.
-                var tabLabel = new TextBlock
-                {
-                    Text = adapter.TitleContent?.ToString() ?? $"Tab {i + 1}",
-                    VerticalAlignment = VerticalAlignment.Center,
-                    Padding = new Thickness(6, 3, 6, 3),
-                };
-
-                UIElement tabContent;
-                if (dockingManager?.ShowTabHeaderClose == true)
-                {
-                    var tabCloseBtn = new DockCloseButton
-                    {
-                        Padding = new Thickness(3, 1, 3, 1),
-                        VerticalAlignment = VerticalAlignment.Center,
-                        FontSize = 10,
-                        Margin = new Thickness(2),
-                    };
-                    tabCloseBtn.Click += (s, e) =>
-                    {
-                        adapter.Location?.RequestCloseAndRemoveDockedContent(adapter);
-                    };
-                    // Stop PointerPressed from bubbling to tabItem so the drag-start
-                    // handler ignores clicks that land on the close button.
-                    tabCloseBtn.AddHandler(
-                        UIElement.PointerPressedEvent,
-                        (PointerEventHandler)((s2, e2) => e2.Handled = true),
-                        handledEventsToo: false);
-
-                    var tabInner = new StackPanel { Orientation = Orientation.Horizontal };
-                    tabInner.Children.Add(tabLabel);
-                    tabInner.Children.Add(tabCloseBtn);
-                    tabContent = tabInner;
-                }
-                else
-                {
-                    tabContent = tabLabel;
-                }
 
                 // Tab border logic:
                 //   Left  : first tab and selected tab get a left border (outer edge + selected outline)
@@ -409,216 +378,263 @@ namespace AJut.UX.Controls
                 int leftBorder = (i == 0 || isSelected) ? 1 : 0;
                 int rightBorder = nextIsSelected ? 0 : 1;
 
-                // DockTabItem owns the IsSelected/hover VSM states so no opacity or
-                // PointerEntered/PointerExited closures are needed here.
-                // Background and BorderBrush come from DockTabItem's Style (no code override).
-                // BorderThickness is index-aware so it stays in code.
                 var tabItem = new DockTabItem
                 {
+                    Index = i,
                     IsSelected = isSelected,
                     BorderThickness = new Thickness(leftBorder, 0, rightBorder, 1),
-                    Content = tabContent,
+                    Content = this.BuildTabContent(adapter, i, dockingManager),
+                    DragThresholdPixels = dockingManager?.DragThresholdPixels ?? DockTabItem.kDefaultDragThresholdPixels,
                 };
 
-                // Per-tab drag state - closures capture these per-iteration
-                bool isPressedForDrag = false;
-                bool isDragModeDecided = false;
-                bool isReorderDrag = false;
-                int reorderTargetIdx = capturedIndex;
-                Point dragStartPt = default;
-                Point screenPressPt = default;
+                tabItem.TabSelectionRequested        += this.OnTabSelectionRequested;
+                tabItem.TabMiddleClickCloseRequested += this.OnTabMiddleClickCloseRequested;
+                tabItem.TabTearoffDragInitiated      += this.OnTabTearoffDragInitiated;
+                tabItem.TabReorderDragMoved          += this.OnTabReorderDragMoved;
+                tabItem.TabReorderDropped            += this.OnTabReorderDropped;
+                tabItem.TabDragCancelled             += this.OnTabDragCancelled;
 
-                tabItem.PointerPressed += (s, e) =>
-                {
-                    // Middle-click closes the panel
-                    if (dockingManager?.AllowMiddleMouseClose == true
-                        && e.GetCurrentPoint(tabItem).Properties.IsMiddleButtonPressed)
-                    {
-                        e.Handled = true;
-                        adapter.Location?.RequestCloseAndRemoveDockedContent(adapter);
-                        return;
-                    }
-
-                    tabItem.CapturePointer(e.Pointer);
-                    dragStartPt = e.GetCurrentPoint(tabItem).Position;
-                    dockingManager?.TryGetCursorScreenPos(out screenPressPt);
-                    isPressedForDrag = true;
-                    isDragModeDecided = false;
-                    isReorderDrag = false;
-                    reorderTargetIdx = capturedIndex;
-                };
-
-                tabItem.PointerMoved += (s, e) =>
-                {
-                    if (!isPressedForDrag)
-                    {
-                        return;
-                    }
-
-                    var curPt = e.GetCurrentPoint(tabItem).Position;
-                    double dx = curPt.X - dragStartPt.X;
-                    double dy = curPt.Y - dragStartPt.Y;
-
-                    var mgr = m_manager as DockingManager;
-                    double threshold = mgr?.DragThresholdPixels ?? 8.0;
-
-                    if (!isDragModeDecided)
-                    {
-                        if (dx * dx + dy * dy < threshold * threshold)
-                        {
-                            return;  // Below threshold - not yet decided
-                        }
-
-                        // Decide mode based on dominant direction.
-                        isDragModeDecided = true;
-                        isReorderDrag = Math.Abs(dx) > Math.Abs(dy);
-
-                        if (!isReorderDrag)
-                        {
-                            // Vertical -> tearoff mode: initiate immediately
-                            isPressedForDrag = false;
-                            isDragModeDecided = false;
-                            tabItem.ReleasePointerCapture(e.Pointer);
-                            e.Handled = true;
-
-                            if (mgr != null && adapter.Display != null)
-                            {
-                                _ = mgr.InitiateDragForContent(adapter.Display, screenPressPt);
-                            }
-
-                            return;
-                        }
-                    }
-
-                    // Reorder mode: track which slot the cursor is over
-                    if (isReorderDrag)
-                    {
-                        double cursorInPanel = e.GetCurrentPoint(tabPanel).Position.X;
-                        reorderTargetIdx = FindTabIndexAtX(tabPanel, cursorInPanel);
-                    }
-                };
-
-                tabItem.PointerReleased += (s, e) =>
-                {
-                    if (isPressedForDrag)
-                    {
-                        if (isDragModeDecided && isReorderDrag
-                            && reorderTargetIdx != capturedIndex
-                            && reorderTargetIdx >= 0
-                            && reorderTargetIdx < this.ViewModel.DockedContent.Count)
-                        {
-                            // Execute reorder - triggers RebuildLayout which clears all tab items.
-                            // Update SelectedIndex to track the dragged tab to its new position so
-                            // the reordered tab remains selected after the rebuild.
-                            this.ViewModel.SwapDockedContentOrder(capturedIndex, reorderTargetIdx);
-                            this.ViewModel.SelectedIndex = reorderTargetIdx;
-                        }
-                        else if (!isDragModeDecided)
-                        {
-                            // Quick click without threshold -> switch tab
-                            this.ViewModel.SelectedIndex = capturedIndex;
-                        }
-                    }
-
-                    isPressedForDrag = false;
-                    isDragModeDecided = false;
-                    isReorderDrag = false;
-                };
-
-                tabItem.PointerCaptureLost += (s, e) =>
-                {
-                    isPressedForDrag = false;
-                    isDragModeDecided = false;
-                    isReorderDrag = false;
-                };
-
-                tabPanel.Children.Add(tabItem);
+                m_tabPanel.Children.Add(tabItem);
             }
 
             // Trailing spacer: when fully scrolled right, the right scroll button disappears.
-            // Without a spacer the button collapses over the last tab's X button, and the
-            // user's click-in-progress can accidentally close that tab. The spacer adds
-            // dead empty space at the end so there is nothing clickable under the vanishing
-            // right button.
-            tabPanel.Children.Add(new Border { Width = 32 });
+            // Without a spacer the cursor lands on the last tab's X button. The spacer adds
+            // dead empty space so there is nothing clickable under the vanishing right button.
+            m_tabPanel.Children.Add(new Border { Width = 32 });
 
-            // Issue 4: wrap tab panel in a ScrollViewer with left/right nav buttons.
-            // Buttons appear only when the tabs overflow the available width, and are
-            // individually hidden when already at the start or end of the scroll range.
-            var scrollViewer = new ScrollViewer
+            m_tabScrollViewer = new ScrollViewer
             {
                 HorizontalScrollMode = ScrollMode.Enabled,
                 VerticalScrollMode = ScrollMode.Disabled,
                 HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden,
                 VerticalScrollBarVisibility = ScrollBarVisibility.Disabled,
-                Content = tabPanel,
+                Content = m_tabPanel,
             };
 
-            var leftScrollBtn = new DockTabScrollButton
+            m_tabLeftScrollBtn = new DockTabScrollButton
             {
                 Content = "◂",
                 Visibility = Visibility.Collapsed,
                 VerticalAlignment = VerticalAlignment.Stretch,
             };
-            leftScrollBtn.Click += (s, e) =>
-                scrollViewer.ChangeView(scrollViewer.HorizontalOffset - 80, null, null);
+            m_tabLeftScrollBtn.Click += this.OnTabScrollLeft;
 
-            var rightScrollBtn = new DockTabScrollButton
+            m_tabRightScrollBtn = new DockTabScrollButton
             {
                 Content = "▸",
                 Visibility = Visibility.Collapsed,
                 VerticalAlignment = VerticalAlignment.Stretch,
             };
-            rightScrollBtn.Click += (s, e) =>
-                scrollViewer.ChangeView(scrollViewer.HorizontalOffset + 80, null, null);
+            m_tabRightScrollBtn.Click += this.OnTabScrollRight;
 
-            void UpdateScrollButtons(double offset)
-            {
-                bool needsScroll = tabPanel.ActualWidth > scrollViewer.ActualWidth;
-                leftScrollBtn.Visibility = needsScroll && offset > 0
-                    ? Visibility.Visible : Visibility.Collapsed;
-                rightScrollBtn.Visibility = needsScroll && offset < scrollViewer.ScrollableWidth
-                    ? Visibility.Visible : Visibility.Collapsed;
-            }
-
-            scrollViewer.ViewChanged += (s, e) => UpdateScrollButtons(scrollViewer.HorizontalOffset);
-            tabPanel.SizeChanged += (s, e) => UpdateScrollButtons(scrollViewer.HorizontalOffset);
-            scrollViewer.SizeChanged += (s, e) => UpdateScrollButtons(scrollViewer.HorizontalOffset);
+            m_tabScrollViewer.ViewChanged   += this.OnTabScrollViewerViewChanged;
+            m_tabPanel.SizeChanged          += this.OnTabPanelSizeChanged;
+            m_tabScrollViewer.SizeChanged   += this.OnTabScrollViewerSizeChanged;
 
             var navGrid = new Grid();
             navGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             navGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             navGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            Grid.SetColumn(leftScrollBtn, 0);
-            Grid.SetColumn(scrollViewer, 1);
-            Grid.SetColumn(rightScrollBtn, 2);
-            navGrid.Children.Add(leftScrollBtn);
-            navGrid.Children.Add(scrollViewer);
-            navGrid.Children.Add(rightScrollBtn);
+            Grid.SetColumn(m_tabLeftScrollBtn, 0);
+            Grid.SetColumn(m_tabScrollViewer, 1);
+            Grid.SetColumn(m_tabRightScrollBtn, 2);
+            navGrid.Children.Add(m_tabLeftScrollBtn);
+            navGrid.Children.Add(m_tabScrollViewer);
+            navGrid.Children.Add(m_tabRightScrollBtn);
 
             // Return only the inner nav grid. The outer wrapper (background, top border, padding)
             // is this.PART_TabStripWrapper in DockLeafLayout's ControlTemplate — see DockLeafLayout.xaml.
             return navGrid;
         }
 
+        // Builds the content UIElement for a single tab (label + optional close button).
+        private UIElement BuildTabContent(DockingContentAdapterModel adapter, int index, DockingManager dockingManager)
+        {
+            var tabLabel = new TextBlock
+            {
+                Text = adapter.TitleContent?.ToString() ?? $"Tab {index + 1}",
+                VerticalAlignment = VerticalAlignment.Center,
+                Padding = new Thickness(6, 3, 6, 3),
+            };
+
+            if (dockingManager?.ShowTabHeaderClose != true)
+            {
+                return tabLabel;
+            }
+
+            var tabCloseBtn = new DockCloseButton
+            {
+                Padding = new Thickness(3, 1, 3, 1),
+                VerticalAlignment = VerticalAlignment.Center,
+                FontSize = 10,
+                Margin = new Thickness(2),
+                Tag = adapter,
+            };
+
+            // Stop PointerPressed from bubbling to DockTabItem's OnPointerPressed so the
+            // drag-start handler is not triggered when clicking the close button.
+            tabCloseBtn.AddHandler(
+                UIElement.PointerPressedEvent,
+                (PointerEventHandler)SuppressPointerPressed,
+                handledEventsToo: false
+            );
+            tabCloseBtn.Click += this.OnTabCloseBtnClicked;
+
+            var tabInner = new StackPanel { Orientation = Orientation.Horizontal };
+            tabInner.Children.Add(tabLabel);
+            tabInner.Children.Add(tabCloseBtn);
+            return tabInner;
+        }
+
         // Returns the index of the tab whose x-range contains cursorX within the panel.
+        // Only counts DockTabItem children; the trailing spacer Border is skipped.
         private static int FindTabIndexAtX(StackPanel panel, double cursorX)
         {
             double accum = 0;
+            int realIndex = 0;
             for (int i = 0; i < panel.Children.Count; i++)
             {
-                if (panel.Children[i] is FrameworkElement child)
+                if (panel.Children[i] is not DockTabItem child)
                 {
-                    accum += child.ActualWidth;
+                    continue;
                 }
+
+                accum += child.ActualWidth;
+                ++realIndex;
 
                 if (cursorX < accum)
                 {
-                    return i;
+                    return realIndex - 1;
                 }
             }
 
-            return Math.Max(0, panel.Children.Count - 1);
+            return Math.Max(0, realIndex - 1);
+        }
+
+        // ===========[ Tab Strip Event Handlers ]================================
+
+        private void OnTabSelectionRequested(object sender, int tabIndex)
+        {
+            if (this.ViewModel != null
+                && tabIndex >= 0
+                && tabIndex < this.ViewModel.DockedContent.Count)
+            {
+                this.ViewModel.SelectedIndex = tabIndex;
+            }
+        }
+
+        private void OnTabMiddleClickCloseRequested(object sender, int tabIndex)
+        {
+            if ((m_manager as DockingManager)?.AllowMiddleMouseClose != true)
+            {
+                return;
+            }
+
+            var adapter = this.ViewModel?.DockedContent.ElementAtOrDefault(tabIndex);
+            adapter?.Location?.RequestCloseAndRemoveDockedContent(adapter);
+        }
+
+        private async void OnTabTearoffDragInitiated(object sender, EventArgs e)
+        {
+            var tabItem = (DockTabItem)sender;
+            var adapter = this.ViewModel?.DockedContent.ElementAtOrDefault(tabItem.Index);
+            var mgr = m_manager as DockingManager;
+            if (mgr != null && adapter?.Display != null)
+            {
+                await mgr.InitiateDragForContent(adapter.Display);
+            }
+        }
+
+        private void OnTabReorderDragMoved(object sender, PointerRoutedEventArgs e)
+        {
+            if (m_tabPanel == null)
+            {
+                return;
+            }
+
+            double cursorX = e.GetCurrentPoint(m_tabPanel).Position.X;
+            m_tabReorderTargetIdx = FindTabIndexAtX(m_tabPanel, cursorX);
+        }
+
+        private void OnTabReorderDropped(object sender, int sourceIndex)
+        {
+            int targetIdx = m_tabReorderTargetIdx;
+            m_tabReorderTargetIdx = -1;
+
+            if (targetIdx >= 0
+                && targetIdx != sourceIndex
+                && targetIdx < this.ViewModel?.DockedContent.Count)
+            {
+                this.ViewModel.SwapDockedContentOrder(sourceIndex, targetIdx);
+                this.ViewModel.SelectedIndex = targetIdx;
+            }
+        }
+
+        private void OnTabDragCancelled(object sender, EventArgs e)
+        {
+            m_tabReorderTargetIdx = -1;
+        }
+
+        private void OnTabCloseBtnClicked(object sender, RoutedEventArgs e)
+        {
+            if (sender is DockCloseButton btn && btn.Tag is DockingContentAdapterModel adapter)
+            {
+                adapter.Location?.RequestCloseAndRemoveDockedContent(adapter);
+            }
+        }
+
+        private void OnHeaderPanelCloseBtnClicked(object sender, RoutedEventArgs e)
+        {
+            if (sender is DockCloseButton btn && btn.Tag is DockingContentAdapterModel adapter)
+            {
+                adapter.Location?.RequestCloseAndRemoveDockedContent(adapter);
+            }
+        }
+
+        private static void SuppressPointerPressed(object sender, PointerRoutedEventArgs e)
+        {
+            e.Handled = true;
+        }
+
+        private void OnTabScrollLeft(object sender, RoutedEventArgs e)
+        {
+            m_tabScrollViewer?.ChangeView(m_tabScrollViewer.HorizontalOffset - 80, null, null);
+        }
+
+        private void OnTabScrollRight(object sender, RoutedEventArgs e)
+        {
+            m_tabScrollViewer?.ChangeView(m_tabScrollViewer.HorizontalOffset + 80, null, null);
+        }
+
+        private void OnTabScrollViewerViewChanged(object sender, ScrollViewerViewChangedEventArgs e)
+        {
+            this.UpdateTabScrollButtons();
+        }
+
+        private void OnTabPanelSizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            this.UpdateTabScrollButtons();
+        }
+
+        private void OnTabScrollViewerSizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            this.UpdateTabScrollButtons();
+        }
+
+        private void UpdateTabScrollButtons()
+        {
+            if (m_tabPanel == null || m_tabScrollViewer == null
+                || m_tabLeftScrollBtn == null || m_tabRightScrollBtn == null)
+            {
+                return;
+            }
+
+            double offset = m_tabScrollViewer.HorizontalOffset;
+            bool needsScroll = m_tabPanel.ActualWidth > m_tabScrollViewer.ActualWidth;
+            m_tabLeftScrollBtn.Visibility = (needsScroll && offset > 0)
+                ? Visibility.Visible : Visibility.Collapsed;
+            m_tabRightScrollBtn.Visibility = (needsScroll && offset < m_tabScrollViewer.ScrollableWidth)
+                ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void BuildSplitLayout()
@@ -935,14 +951,23 @@ namespace AJut.UX.Controls
             }
 
             // Empty zones can only accept content to fill them; they can't be split.
-            // All other orientations support directional splits as well as tab-insertion.
-            bool canSplit = this.ViewModel?.Orientation != eDockOrientation.Empty;
+            // Leaf zones (Single/Tabbed) support both directional splits and tab-insertion.
+            // Split zones (Horizontal/Vertical) support only directional splits — they cannot
+            // accept direct tab content alongside their child zones.
+            // The center "+" stays visible for all orientations but is disabled (50% opacity)
+            // for split zones so users can see it exists without being able to misuse it.
+            var orientation = this.ViewModel?.Orientation ?? eDockOrientation.Empty;
+            bool canSplit      = orientation != eDockOrientation.Empty;
+            bool isLeaf        = orientation == eDockOrientation.Single || orientation == eDockOrientation.Tabbed;
+            bool centerEnabled = !canSplit || isLeaf;
             var splitVis = canSplit ? Visibility.Visible : Visibility.Collapsed;
-            m_overlayLeft.Visibility = splitVis;
-            m_overlayTop.Visibility = splitVis;
-            m_overlayRight.Visibility = splitVis;
+            m_overlayLeft.Visibility   = splitVis;
+            m_overlayTop.Visibility    = splitVis;
+            m_overlayRight.Visibility  = splitVis;
             m_overlayBottom.Visibility = splitVis;
             m_overlayCenter.Visibility = Visibility.Visible;
+            m_overlayCenter.IsEnabled  = centerEnabled;
+            m_overlayCenter.Opacity    = centerEnabled ? 1.0 : 0.5;
 
             m_dropOverlay.Visibility = Visibility.Visible;
         }
@@ -973,8 +998,14 @@ namespace AJut.UX.Controls
                     return;
                 }
 
-                // Non-root panel in a tearoff - dragging moves the whole tearoff window.
-                m_headerDragZone = rootZone;
+                // Non-root panel in a tearoff. If the tearoff root is a split zone
+                // (Horizontal/Vertical) this zone can be torn off independently — the
+                // remaining sibling(s) keep the root non-empty, which is required.
+                // If the root is a leaf (Single/Tabbed), tearing off would empty it,
+                // which is not allowed; drag the whole tearoff window instead.
+                bool rootIsSplit = rootZone?.ViewModel?.Orientation
+                    .IsFlagInGroup(eDockOrientation.AnySplitOrientation) == true;
+                m_headerDragZone = rootIsSplit ? this : rootZone;
             }
             else
             {

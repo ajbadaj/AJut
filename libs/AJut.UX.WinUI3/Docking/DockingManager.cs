@@ -140,6 +140,13 @@ namespace AJut.UX.Docking
         /// </summary>
         public double DragThresholdPixels { get; set; } = 8.0;
 
+        /// <summary>
+        /// Title text displayed in the title bar of every tearoff window.
+        /// Applied to DockTearoffContainerPanel.Title when the tearoff window is created.
+        /// Empty string by default (title bar shows only the icon and decorative lines).
+        /// </summary>
+        public string FixedTearoffWindowTitle { get; set; } = string.Empty;
+
         // ===========[ IDockingManager ]======================================
 
         IDockableDisplayElement IDockingManager.BuildNewDisplayElement(Type elementType)
@@ -557,13 +564,43 @@ namespace AJut.UX.Docking
             DockZone lastDropTarget = null;
             DockDropInsertionDriverWidget lastInsertionWidget = null;
 
-            // Apply semi-transparency to the tearoff while dragging (Win32 layered window)
+            // Layered-window style on the drag source manages its opacity dynamically.
+            // Starts at full opacity; dims to kTearoffDragOpacity only when the cursor is
+            // over a valid drop-target window so the user can see through the ghost.
             nint hwnd = WinRT.Interop.WindowNative.GetWindowHandle(dragSourceWindow);
             nint originalExStyle = User32WindowFuncs.GetWindowLongPtr(hwnd, User32WindowFuncs.kGwlExStyle);
             User32WindowFuncs.SetWindowLongPtr(hwnd, User32WindowFuncs.kGwlExStyle, originalExStyle | User32WindowFuncs.kWsExLayered);
-            User32WindowFuncs.SetLayeredWindowAttributes(hwnd, 0, (byte)(255 * kTearoffDragOpacity), User32WindowFuncs.kLwaAlpha);
+            User32WindowFuncs.SetLayeredWindowAttributes(hwnd, 0, 255, User32WindowFuncs.kLwaAlpha); // start fully opaque
 
             var sourceAppWindow = dragSourceWindow.AppWindow;
+
+            // Drag-source dynamic-opacity state: true = kTearoffDragOpacity, false = full
+            bool isSemiTransparent = false;
+
+            // Hover-to-bring-forward: cursor dwelling on a non-source window for ≥0.75 s starts
+            // a flash; at ≥1.5 s the window is raised to the top of the Z-order.
+            Window hoverTargetWindow = null;
+            int    hoverFrameCount   = 0;
+            bool   isHoverArming     = false;
+            nint   hoverHwnd         = 0;
+            nint   hoverOrigExStyle  = 0;
+
+            // Snapshot WindowManager activation order once. Index 0 = most recently activated
+            // (frontmost); higher index = further back. Only windows behind the drag source
+            // (higher index) are eligible for hover-bring-forward — windows already in front
+            // need no assistance. If the drag source isn't tracked, all windows are eligible.
+            var windowManagerOrder = m_windowManager.ToList();
+            int dragSourceOrderIdx = windowManagerOrder.IndexOf(dragSourceWindow);
+
+            // Pre-compute the windowManagerOrder index of the globally frontmost non-drag dock
+            // window (the minimum index > dragSourceOrderIdx). Hovering over this window should
+            // never trigger bring-forward — it is already the topmost accessible window.
+            int frontmostNonDragIdx = m_dockZoneMapping.Keys
+                .Where(w => w != dragSourceWindow)
+                .Select(w => windowManagerOrder.IndexOf(w))
+                .Where(i => i > dragSourceOrderIdx)
+                .DefaultIfEmpty(int.MaxValue)
+                .Min();
 
             // Resolve the cursor-in-window offset once; fall back to centre-top default.
             double resolvedOffsetX = cursorWindowOffset.HasValue ? cursorWindowOffset.Value.X : -1;
@@ -600,12 +637,24 @@ namespace AJut.UX.Docking
                     DockZone currentDropTarget = null;
                     DockDropInsertionDriverWidget currentInsertionWidget = null;
 
-                    foreach (var (window, zones) in m_dockZoneMapping)
+                    // Hover-candidate tracking: find the FRONTMOST (minimum-index) non-drag
+                    // window whose client rect contains the cursor. Cannot take first-found
+                    // because m_dockZoneMapping iterates in arbitrary dict order — A might be
+                    // visited before B even when B is in front of A at the cursor position.
+                    Window hoverCandidateWindow = null;
+                    int    hoverCandidateIdx    = int.MaxValue;
+
+                    // Iterate non-drag windows frontmost-first (ascending windowManagerOrder index)
+                    // so both the drop hit-test and hover-candidate tracking always pick the
+                    // topmost visible window at the cursor — not whichever window happens to
+                    // be first in the dictionary. The drop hit-test breaks on the first hit, so
+                    // iterating frontmost-first ensures a foreground window's zones are preferred
+                    // over background zones that overlap the same screen coordinates.
+                    foreach (var window in m_dockZoneMapping.Keys
+                        .Where(w => w != dragSourceWindow)
+                        .OrderBy(w => { int i = windowManagerOrder.IndexOf(w); return i >= 0 ? i : int.MaxValue; }))
                     {
-                        if (window == dragSourceWindow)
-                        {
-                            continue;
-                        }
+                        var zones = m_dockZoneMapping[window];
 
                         // Convert screen cursor position to window client coordinates via Win32
                         // (handles title-bar chrome offset automatically), then divide by the
@@ -618,6 +667,19 @@ namespace AJut.UX.Docking
                             continue;
                         }
 
+                        // Track the frontmost (minimum-index) non-drag window whose client rect
+                        // contains the cursor. Evaluated for every non-skipped window so dict
+                        // iteration order does not bias the result toward a background window.
+                        int windowOrderIdx = windowManagerOrder.IndexOf(window);
+                        var winSize        = window.AppWindow.Size;
+                        if (windowOrderIdx > dragSourceOrderIdx
+                            && screenPt.X < winSize.Width && screenPt.Y < winSize.Height
+                            && windowOrderIdx < hoverCandidateIdx)
+                        {
+                            hoverCandidateWindow = window;
+                            hoverCandidateIdx    = windowOrderIdx;
+                        }
+
                         double dpiScale = (window.Content as Microsoft.UI.Xaml.FrameworkElement)
                             ?.XamlRoot?.RasterizationScale ?? 1.0;
 
@@ -627,8 +689,9 @@ namespace AJut.UX.Docking
                             var hits = Microsoft.UI.Xaml.Media.VisualTreeHelper
                                 .FindElementsInHostCoordinates(localPt, rootZone);
 
-                            // Check insertion widget first - takes priority over zone hit
-                            var hitWidget = hits.OfType<DockDropInsertionDriverWidget>().FirstOrDefault();
+                            // Check insertion widget first - takes priority over zone hit.
+                            // Skip disabled widgets (e.g. the center "+" on split zones).
+                            var hitWidget = hits.OfType<DockDropInsertionDriverWidget>().FirstOrDefault(w => w.IsEnabled);
                             if (hitWidget != null)
                             {
                                 currentInsertionWidget = hitWidget;
@@ -650,6 +713,14 @@ namespace AJut.UX.Docking
                             break;
                         }
                     }
+
+                    // Derive currentHoverWindow from the candidates collected above.
+                    // Only elevate if the candidate is NOT the globally frontmost non-drag dock
+                    // window — that window is already accessible and needs no bring-forward.
+                    // Hovering over it (or over a background window it occludes) should be silent.
+                    Window currentHoverWindow = (hoverCandidateIdx > frontmostNonDragIdx)
+                        ? hoverCandidateWindow
+                        : null;
 
                     // Update insertion widget engagement state
                     if (currentInsertionWidget != lastInsertionWidget)
@@ -682,11 +753,100 @@ namespace AJut.UX.Docking
                             lastDropTarget.IsDirectDropTarget = true;
                         }
                     }
+
+                    // Dim the drag source when it is over a drop-target window so the user can
+                    // see through the ghost to the target zone beneath; restore full opacity when
+                    // hovering over empty space where there is no drop candidate.
+                    bool shouldBeSemiTransparent = currentDropTarget != null;
+                    if (shouldBeSemiTransparent != isSemiTransparent)
+                    {
+                        byte alpha = shouldBeSemiTransparent ? (byte)(255 * kTearoffDragOpacity) : (byte)255;
+                        User32WindowFuncs.SetLayeredWindowAttributes(hwnd, 0, alpha, User32WindowFuncs.kLwaAlpha);
+                        isSemiTransparent = shouldBeSemiTransparent;
+                    }
+
+                    // Hover-to-bring-forward: track how long the cursor dwells on each non-source
+                    // window. After 0.75 s it starts flashing (opacity pulse) to warn; after 1.5 s
+                    // the window is raised to the top of the Z-order and the counter resets.
+                    if (currentHoverWindow != hoverTargetWindow)
+                    {
+                        // Cursor moved to a different window — cancel any active arming
+                        if (isHoverArming)
+                        {
+                            User32WindowFuncs.SetLayeredWindowAttributes(hoverHwnd, 0, 255, User32WindowFuncs.kLwaAlpha);
+                            User32WindowFuncs.SetWindowLongPtr(hoverHwnd, User32WindowFuncs.kGwlExStyle, hoverOrigExStyle);
+                            isHoverArming    = false;
+                            hoverHwnd        = 0;
+                        }
+                        hoverTargetWindow = currentHoverWindow;
+                        hoverFrameCount   = 0;
+                    }
+                    else if (hoverTargetWindow != null)
+                    {
+                        hoverFrameCount++;
+
+                        const int kArmingStartFrames  = 47; // ≈0.75 s at 16 ms/frame
+                        const int kBringForwardFrames = 94; // ≈1.5 s at 16 ms/frame
+                        const int kFlashPeriodFrames  = 15; // ≈0.25 s per flash phase (≈4 pulses)
+
+                        // 0.75 s mark: attach WS_EX_LAYERED to the hovered window and begin flashing
+                        if (hoverFrameCount == kArmingStartFrames)
+                        {
+                            isHoverArming    = true;
+                            hoverHwnd        = WinRT.Interop.WindowNative.GetWindowHandle(hoverTargetWindow);
+                            hoverOrigExStyle = User32WindowFuncs.GetWindowLongPtr(hoverHwnd, User32WindowFuncs.kGwlExStyle);
+                            User32WindowFuncs.SetWindowLongPtr(hoverHwnd, User32WindowFuncs.kGwlExStyle, hoverOrigExStyle | User32WindowFuncs.kWsExLayered);
+                        }
+
+                        // Pulse opacity while arming: dim/bright toggle every kFlashPeriodFrames
+                        if (isHoverArming && hoverFrameCount < kBringForwardFrames)
+                        {
+                            int  armFrame   = hoverFrameCount - kArmingStartFrames;
+                            byte flashAlpha = ((armFrame / kFlashPeriodFrames) % 2 == 0)
+                                ? (byte)(255 * 0.70) // dim phase
+                                : (byte)255;          // bright phase
+                            User32WindowFuncs.SetLayeredWindowAttributes(hoverHwnd, 0, flashAlpha, User32WindowFuncs.kLwaAlpha);
+                        }
+
+                        // 1.5 s mark: restore opacity and raise the window
+                        if (hoverFrameCount >= kBringForwardFrames)
+                        {
+                            if (isHoverArming)
+                            {
+                                User32WindowFuncs.SetLayeredWindowAttributes(hoverHwnd, 0, 255, User32WindowFuncs.kLwaAlpha);
+                                User32WindowFuncs.SetWindowLongPtr(hoverHwnd, User32WindowFuncs.kGwlExStyle, hoverOrigExStyle);
+                                isHoverArming = false;
+                                hoverHwnd     = 0;
+                            }
+                            hoverTargetWindow.AppWindow.MoveInZOrderAtTop();
+                            dragSourceWindow.AppWindow.MoveInZOrderAtTop(); // keep drag source above the raised window
+                            hoverFrameCount = 0; // reset so a continued hover doesn't re-trigger immediately
+
+                            // MoveInZOrderAtTop does not fire WindowManager activation events, so
+                            // the snapshot stays stale and would re-qualify the raised window as a
+                            // bring-forward candidate the moment the cursor returns to it.
+                            // Manually move it to right behind the drag source in our local list,
+                            // making it the new frontmostNonDragIdx so it is treated as already-on-top.
+                            windowManagerOrder.Remove(hoverTargetWindow);
+                            windowManagerOrder.Insert(dragSourceOrderIdx + 1, hoverTargetWindow);
+                            frontmostNonDragIdx = m_dockZoneMapping.Keys
+                                .Where(w => w != dragSourceWindow)
+                                .Select(w => windowManagerOrder.IndexOf(w))
+                                .Where(i => i > dragSourceOrderIdx)
+                                .DefaultIfEmpty(int.MaxValue)
+                                .Min();
+                        }
+                    }
                 }
 
                 // Execute drop if a widget was engaged when button was released
                 if (lastInsertionWidget?.InsertionZone?.ViewModel != null)
                 {
+                    // Capture the target window NOW, before the drop restructures the zone
+                    // tree and before CloseTearoffWindow removes the drag source from
+                    // m_dockZoneMapping. GetWindowForZone is reliable at this point.
+                    var dropTargetWindow = this.GetWindowForZone(lastInsertionWidget.InsertionZone);
+
                     lastInsertionWidget.InsertionZone.ViewModel.DropAddSiblingIntoDock(
                         sourceDockZone.ViewModel,
                         lastInsertionWidget.Direction
@@ -697,6 +857,11 @@ namespace AJut.UX.Docking
                     // transplanted into the root hierarchy so DockedContent stays non-empty -
                     // but the tearoff window is no longer needed in either case.
                     this.CloseTearoffWindow(dragSourceWindow);
+
+                    // When the drag source closes, the OS activates whichever window it
+                    // considers "next" — often the root window, not the drop target.
+                    // Explicitly activate the target window so it stays in front.
+                    dropTargetWindow?.Activate();
                 }
                 // No widget → tearoff stays at its current position as a detached window
             }
@@ -708,6 +873,13 @@ namespace AJut.UX.Docking
                 // window these Win32 calls are harmless no-ops on the stale HWND.
                 User32WindowFuncs.SetLayeredWindowAttributes(hwnd, 0, 255, User32WindowFuncs.kLwaAlpha);
                 User32WindowFuncs.SetWindowLongPtr(hwnd, User32WindowFuncs.kGwlExStyle, originalExStyle);
+
+                // Restore hovered-window opacity if arming was still active when drag ended
+                if (isHoverArming && hoverHwnd != 0)
+                {
+                    User32WindowFuncs.SetLayeredWindowAttributes(hoverHwnd, 0, 255, User32WindowFuncs.kLwaAlpha);
+                    User32WindowFuncs.SetWindowLongPtr(hoverHwnd, User32WindowFuncs.kGwlExStyle, hoverOrigExStyle);
+                }
 
                 if (lastInsertionWidget != null)
                 {
@@ -873,6 +1045,7 @@ namespace AJut.UX.Docking
                 {
                     DockZoneContent = newDockZone,
                     DragThresholdPixels = this.DragThresholdPixels,
+                    Title = this.FixedTearoffWindowTitle,
                 };
 
                 panel.TitleBarDragInitiated += this.OnTearoffPanelDragInitiated;
@@ -889,6 +1062,7 @@ namespace AJut.UX.Docking
                 }
 
                 window.Content = panel;
+                panel.SetupForWindow(window); // wire activation tracking + maximize-glyph updates
                 m_windowManager.ApplyTheme(window); // belt-and-suspenders for any later theme change
 
                 var appWindow = window.AppWindow;
@@ -959,6 +1133,33 @@ namespace AJut.UX.Docking
         private async void OnTearoffPanelDragInitiated(object sender, Point localPressPt)
         {
             var panel = (DockTearoffContainerPanel)sender;
+            var sourceWindow = this.GetWindowForZone(panel.DockZoneContent);
+
+            // If the tearoff is currently maximized, restore it before the drag begins.
+            // DoGroupTearoff returns the existing window as-is (no size/position change),
+            // so RunDragSearch would attempt to move a maximized window, which the OS ignores.
+            // Restoring first lets AppWindow.Move work correctly.
+            if (sourceWindow?.AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter ovPresenter
+                && ovPresenter.State == Microsoft.UI.Windowing.OverlappedPresenterState.Maximized)
+            {
+                ovPresenter.Restore();
+
+                // Place the restored window so the cursor appears near the left of the title bar.
+                // localPressPt.X was captured in maximized (full-screen) coordinates and is likely
+                // wider than the restored window, so use a fixed modest offset instead.
+                const double kRestoredOffsetX = 40.0;
+                if (User32WindowFuncs.GetCursorPos(out var cursorPt))
+                {
+                    sourceWindow.AppWindow.Move(new Windows.Graphics.PointInt32(
+                        (int)(cursorPt.X - kRestoredOffsetX),
+                        (int)(cursorPt.Y - localPressPt.Y)));
+                }
+
+                await this.RunDragSearch(sourceWindow, panel.DockZoneContent,
+                    new Point(kRestoredOffsetX, localPressPt.Y));
+                return;
+            }
+
             await this.InitiateDrag(panel.DockZoneContent, cursorWindowOffset: localPressPt);
         }
 

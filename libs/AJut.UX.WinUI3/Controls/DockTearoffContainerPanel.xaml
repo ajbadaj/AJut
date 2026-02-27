@@ -4,7 +4,8 @@
 
     <!-- ===========[ DockTearoffContainerPanel: Default Style ]================ -->
     <!-- Window content for DockingManager tearoff windows. Two-row layout:
-         row 0 = custom title bar (drag handle + close button),
+         row 0 = custom title bar (stacked-windows icon + title + decorative lines +
+                 maximize/restore button + close button),
          row 1 = the DockZone.
 
          All visual brush properties reference flat ThemeResource keys defined in
@@ -13,19 +14,24 @@
          with AJut-themed values when the theme is loaded.
 
          PART_TitleBarArea is the drag-sensitive region; pointer events on it are
-         handled in code-behind.  PART_CloseButton sits inside that region and
-         captures pointer events first so clicks on it never start a drag.
+         handled in code-behind. PART_MaximizeRestoreButton and PART_CloseButton sit in
+         their own columns and capture pointer events before they bubble to the Grid,
+         preventing accidental drag initiation on button clicks.
 
-         Note on the close button's VSM template: Background is NOT TemplateBinding'd
-         on the inner Border — the same TemplateBinding+VSM conflict applies here as in
-         DockDropInsertionDriverWidget. VSM Setters own the background entirely. -->
+         PART_CloseButton uses an inline ControlTemplate that mirrors TitleBarCaptionButton's
+         default template with PointerOver changed to the red chrome-close hover brush.
+         VSM Setters own Background/Foreground; no TemplateBinding conflicts.
+
+         PART_TitleText.Text is pushed from code-behind (ApplyTitle) in both OnApplyTemplate
+         (data-before-template) and the Title DP change handler (template-before-data),
+         working around WinUI3 TemplateBinding backfill limitations. -->
 
     <Style TargetType="local:DockTearoffContainerPanel">
         <Setter Property="HorizontalAlignment"   Value="Stretch"/>
         <Setter Property="VerticalAlignment"     Value="Stretch"/>
         <Setter Property="IsTabStop"             Value="False"/>
         <Setter Property="UseSystemFocusVisuals" Value="False"/>
-        <Setter Property="TitleBarHeight"        Value="30"/>
+        <Setter Property="TitleBarHeight"        Value="32"/>
         <Setter Property="TitleBarBackground"    Value="{ThemeResource AJut_DockTearoffContainerPanel_TitleBarBackground}"/>
         <Setter Property="TitleBarForeground"    Value="{ThemeResource AJut_DockTearoffContainerPanel_TitleBarForeground}"/>
 
@@ -45,64 +51,151 @@
                         </Grid.RowDefinitions>
 
                         <!-- Row 0: Title bar.
-                             The entire Grid is PART_TitleBarArea and receives pointer
-                             events for drag detection.  PART_CloseButton lives in
-                             column 1 and naturally handles its own pointer events
-                             before they bubble to the Grid, preventing accidental
-                             drag initiation on a close-button click. -->
+                             The outer Grid is PART_TitleBarArea and receives drag pointer events
+                             in code-behind. Caption buttons capture pointer events in columns 2
+                             and 3 before they bubble to the Grid, so button clicks never start
+                             a drag. The title bar has four columns:
+                               0 = stacked-windows icon (Viewbox + Path)
+                               1 = title TextBlock flanked by semi-transparent decorative lines
+                               2 = PART_MaximizeRestoreButton (TitleBarCaptionButton, default style)
+                               3 = PART_CloseButton (TitleBarCaptionButton, red hover) -->
                         <Grid x:Name="PART_TitleBarArea"
                               Grid.Row="0"
                               Height="{TemplateBinding TitleBarHeight}"
                               Background="{TemplateBinding TitleBarBackground}">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>   <!-- icon -->
+                                <ColumnDefinition Width="*"/>      <!-- title + decorative lines -->
+                                <ColumnDefinition Width="Auto"/>   <!-- maximize/restore -->
+                                <ColumnDefinition Width="Auto"/>   <!-- close -->
                             </Grid.ColumnDefinitions>
 
-                            <Button x:Name="PART_CloseButton"
-                                    Grid.Column="1"
-                                    Content="&#x2715;"
-                                    VerticalAlignment="Stretch"
-                                    Foreground="{TemplateBinding TitleBarForeground}"
-                                    Padding="10,4"
-                                    BorderThickness="0">
-                                <Button.Style>
-                                    <Style TargetType="Button">
+                            <!-- Column 0: Stacked-windows icon (two overlapping rectangles).
+                                 Path data: bottom rect (0,4)→(12,4)→(12,12)→(0,12), top rect
+                                 (4,0)→(16,0)→(16,8)→(4,8). Viewbox scales to 14×14 logical px. -->
+                            <Viewbox Grid.Column="0"
+                                     Width="14" Height="14"
+                                     Margin="8,0,4,0"
+                                     HorizontalAlignment="Center"
+                                     VerticalAlignment="Center">
+                                <Path Data="M 0,4 H 12 V 12 H 0 Z M 4,0 H 16 V 8 H 4 Z"
+                                      Stroke="{TemplateBinding TitleBarForeground}"
+                                      StrokeThickness="1.5"
+                                      Fill="Transparent"/>
+                            </Viewbox>
+
+                            <!-- Column 1: Title text flanked by three stacked decorative lines on each side.
+                                 Three sub-columns: [lines * | PART_TitleText Auto | lines *].
+                                 Each side is a vertical StackPanel of 3 thin Rectangles (Spacing=3)
+                                 at Opacity="0.3" to appear as subtle separators.
+                                 PART_TitleText.Text is set by code-behind (ApplyTitle). -->
+                            <Grid Grid.Column="1" VerticalAlignment="Center" Margin="5,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0"
+                                            VerticalAlignment="Center"
+                                            HorizontalAlignment="Stretch"
+                                            Spacing="3">
+                                    <Rectangle Height="1" HorizontalAlignment="Stretch"
+                                               Fill="{TemplateBinding TitleBarForeground}" Opacity="0.3"/>
+                                    <Rectangle Height="1" HorizontalAlignment="Stretch"
+                                               Fill="{TemplateBinding TitleBarForeground}" Opacity="0.3"/>
+                                    <Rectangle Height="1" HorizontalAlignment="Stretch"
+                                               Fill="{TemplateBinding TitleBarForeground}" Opacity="0.3"/>
+                                </StackPanel>
+                                <TextBlock x:Name="PART_TitleText"
+                                           Grid.Column="1"
+                                           Foreground="{TemplateBinding TitleBarForeground}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           FontSize="12"
+                                           Margin="8,0"/>
+                                <StackPanel Grid.Column="2"
+                                            VerticalAlignment="Center"
+                                            HorizontalAlignment="Stretch"
+                                            Spacing="3">
+                                    <Rectangle Height="1" HorizontalAlignment="Stretch"
+                                               Fill="{TemplateBinding TitleBarForeground}" Opacity="0.3"/>
+                                    <Rectangle Height="1" HorizontalAlignment="Stretch"
+                                               Fill="{TemplateBinding TitleBarForeground}" Opacity="0.3"/>
+                                    <Rectangle Height="1" HorizontalAlignment="Stretch"
+                                               Fill="{TemplateBinding TitleBarForeground}" Opacity="0.3"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Column 2: Maximize/Restore button.
+                                 Content (maximize or restore glyph) is set by code-behind via
+                                 UpdateMaximizeRestoreGlyph. SetupForWindow wires window-activation
+                                 tracking. FontSize="10" overrides the default Style Setter (16) so
+                                 the glyph matches the close button size. -->
+                            <local:TitleBarCaptionButton x:Name="PART_MaximizeRestoreButton"
+                                                         Grid.Column="2"
+                                                         FontSize="10"/>
+
+                            <!-- Column 3: Close button with red chrome-close hover.
+                                 Inline ControlTemplate mirrors TitleBarCaptionButton's default
+                                 template with PointerOver changed to the red hover brush.
+                                 Content (ChromeClose glyph E8BB) is fixed in XAML.
+                                 SetupForWindow wires window-activation tracking. -->
+                            <local:TitleBarCaptionButton x:Name="PART_CloseButton"
+                                                         Grid.Column="3"
+                                                         Content="&#xE8BB;">
+                                <local:TitleBarCaptionButton.Style>
+                                    <Style TargetType="local:TitleBarCaptionButton">
+                                        <Setter Property="BorderBrush"       Value="Transparent"/>
+                                        <Setter Property="BorderThickness"   Value="0"/>
+                                        <Setter Property="Padding"           Value="0"/>
+                                        <Setter Property="Width"             Value="48"/>
+                                        <Setter Property="Height"            Value="32"/>
+                                        <Setter Property="FontSize"          Value="10"/>
+                                        <Setter Property="FontWeight"        Value="Normal"/>
+                                        <Setter Property="CornerRadius"      Value="0"/>
                                         <Setter Property="Template">
                                             <Setter.Value>
-                                                <ControlTemplate TargetType="Button">
-                                                    <!-- Background NOT TemplateBinding'd — VSM owns it.
-                                                         TemplateBinding + VSM targeting the same property
-                                                         causes the binding to overwrite VSM-applied values. -->
-                                                    <Border x:Name="Root"
-                                                            Padding="{TemplateBinding Padding}">
+                                                <ControlTemplate TargetType="local:TitleBarCaptionButton">
+                                                    <Grid x:Name="RootGrid">
                                                         <VisualStateManager.VisualStateGroups>
                                                             <VisualStateGroup x:Name="CommonStates">
-                                                                <VisualState x:Name="Normal"/>
+                                                                <VisualState x:Name="Normal">
+                                                                    <VisualState.Setters>
+                                                                        <Setter Target="RootGrid.Background" Value="{ThemeResource WindowCaptionBackground}"/>
+                                                                        <Setter Target="Presenter.Foreground" Value="{ThemeResource WindowCaptionForeground}"/>
+                                                                    </VisualState.Setters>
+                                                                </VisualState>
                                                                 <VisualState x:Name="PointerOver">
                                                                     <VisualState.Setters>
-                                                                        <Setter Target="Root.Background" Value="{ThemeResource AJut_DockTearoffContainerPanel_CloseButtonHoverBackground}"/>
+                                                                        <Setter Target="RootGrid.Background" Value="{ThemeResource AJut_DockTearoffContainerPanel_CloseButtonHoverBackground}"/>
+                                                                        <Setter Target="Presenter.Foreground" Value="{ThemeResource WindowCaptionForeground}"/>
                                                                     </VisualState.Setters>
                                                                 </VisualState>
                                                                 <VisualState x:Name="Pressed">
                                                                     <VisualState.Setters>
-                                                                        <Setter Target="Root.Background" Value="{ThemeResource AJut_DockTearoffContainerPanel_CloseButtonPressedBackground}"/>
+                                                                        <Setter Target="RootGrid.Background" Value="{ThemeResource AJut_DockTearoffContainerPanel_CloseButtonPressedBackground}"/>
+                                                                        <Setter Target="Presenter.Foreground" Value="{ThemeResource WindowCaptionButtonStrokePressed}"/>
                                                                     </VisualState.Setters>
                                                                 </VisualState>
-                                                                <VisualState x:Name="Disabled"/>
+                                                                <VisualState x:Name="Inactive">
+                                                                    <VisualState.Setters>
+                                                                        <Setter Target="Presenter.Foreground" Value="{ThemeResource TitleBarCaptionButtonInactiveForegroundColor}"/>
+                                                                    </VisualState.Setters>
+                                                                </VisualState>
                                                             </VisualStateGroup>
                                                         </VisualStateManager.VisualStateGroups>
-                                                        <ContentPresenter Content="{TemplateBinding Content}"
-                                                                          Foreground="{TemplateBinding Foreground}"
+                                                        <ContentPresenter x:Name="Presenter"
                                                                           HorizontalAlignment="Center"
-                                                                          VerticalAlignment="Center"/>
-                                                    </Border>
+                                                                          VerticalAlignment="Center"
+                                                                          Content="{TemplateBinding Content}"
+                                                                          FontFamily="Segoe MDL2 Assets"/>
+                                                    </Grid>
                                                 </ControlTemplate>
                                             </Setter.Value>
                                         </Setter>
                                     </Style>
-                                </Button.Style>
-                            </Button>
+                                </local:TitleBarCaptionButton.Style>
+                            </local:TitleBarCaptionButton>
                         </Grid>
 
                         <!-- Row 1: DockZone presenter.
