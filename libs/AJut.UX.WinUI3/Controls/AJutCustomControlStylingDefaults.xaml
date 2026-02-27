@@ -36,6 +36,12 @@
     <!-- ===========[ PropertyGridItemRow ]================================== -->
     <!-- Property label foreground (default: muted gray matching WinUI3 secondary text) -->
     <SolidColorBrush x:Key="AJut_PropertyGridItemRow_LabelForeground" Color="#CCCCCC"/>
+    <!-- Selection border brush: 4px left nub + 1px top/right/bottom outline. Default: bright accent blue. -->
+    <SolidColorBrush x:Key="AJut_PropertyGridItemRow_SelectionBorderBrush" Color="#FF2196F3"/>
+    <!-- Hover background: very low-opacity tint shown when pointer is over a row. -->
+    <SolidColorBrush x:Key="AJut_PropertyGridItemRow_HoverBackground" Color="#1A2196F3"/>
+    <!-- Hover border: 1px outline around the full row on hover. Default: subtle gray. -->
+    <SolidColorBrush x:Key="AJut_PropertyGridItemRow_HoverBorderBrush" Color="#888888"/>
 
     <!-- ===========[ PopupMenuButton ]====================================== -->
     <!-- Dropdown chevron glyph foreground (default: light gray, readable on most backgrounds) -->
@@ -52,6 +58,8 @@
     <SolidColorBrush x:Key="AJut_PathSelectionControl_ButtonBorderBrush"   Color="#888888"/>
     <!-- Button icon glyph foreground -->
     <SolidColorBrush x:Key="AJut_PathSelectionControl_ButtonIconForeground" Color="#DDDDDD"/>
+    <!-- Focused background (of the textbox) -->
+    <SolidColorBrush x:Key="AJut_PathSelectionControl_FocusedTextBoxBackgroundBrush" Color="#888"/>
 
     <!-- ===========[ FlatTreeItemRow ]====================================== -->
     <!-- Expander ToggleButton interaction brushes -->
@@ -66,21 +74,24 @@
     <StaticResource x:Key="AJut_FlatTree_HoverBackground"        ResourceKey="SystemControlHighlightListLowBrush"/>
     <StaticResource x:Key="AJut_FlatTree_HoverBorderBrush"       ResourceKey="ControlStrokeColorDefaultBrush"/>
 
-    <!-- ===========[ ToggleStrip ]========================================== -->
-    <!-- "Depressed button" checked-state gradients — dark overlays fading lighter toward bottom.
-         These are the defaults used when no AJut theme is loaded.
-         AJutThemeMapAliasing.xaml provides themed variants using AJut palette colors. -->
-    <LinearGradientBrush x:Key="AJut_ToggleStrip_BackgroundChecked" StartPoint="0,0" EndPoint="0,1">
+    <!-- ===========[ ToggleStripButton ]===================================== -->
+    <!-- Unchecked interaction backgrounds — alpha overlays that work on any background.
+         Normal state uses a literal #01000000 in the XAML VSM Setter (no key needed here). -->
+    <SolidColorBrush x:Key="AJut_ToggleStripButton_PointerOverBackground" Color="#20FFFFFF"/>
+    <SolidColorBrush x:Key="AJut_ToggleStripButton_PressedBackground"     Color="#40000000"/>
+    <!-- Checked backgrounds — dark overlay gradients, default for no-AJut-theme usage.
+         AJutThemeMapAliasing.xaml provides AJut-tinted (cool teal) variants. -->
+    <LinearGradientBrush x:Key="AJut_ToggleStripButton_CheckedBackground" StartPoint="0,0" EndPoint="0,1">
         <GradientStop Offset="0.00" Color="#CC000000"/>
         <GradientStop Offset="0.20" Color="#80000000"/>
         <GradientStop Offset="1.00" Color="#33000000"/>
     </LinearGradientBrush>
-    <LinearGradientBrush x:Key="AJut_ToggleStrip_BackgroundCheckedPointerOver" StartPoint="0,0" EndPoint="0,1">
+    <LinearGradientBrush x:Key="AJut_ToggleStripButton_CheckedPointerOverBackground" StartPoint="0,0" EndPoint="0,1">
         <GradientStop Offset="0.00" Color="#CC000000"/>
         <GradientStop Offset="0.20" Color="#99000000"/>
         <GradientStop Offset="1.00" Color="#55000000"/>
     </LinearGradientBrush>
-    <LinearGradientBrush x:Key="AJut_ToggleStrip_BackgroundCheckedPressed" StartPoint="0,0" EndPoint="0,1">
+    <LinearGradientBrush x:Key="AJut_ToggleStripButton_CheckedPressedBackground" StartPoint="0,0" EndPoint="0,1">
         <GradientStop Offset="0.00" Color="#EE000000"/>
         <GradientStop Offset="0.20" Color="#AA000000"/>
         <GradientStop Offset="1.00" Color="#66000000"/>

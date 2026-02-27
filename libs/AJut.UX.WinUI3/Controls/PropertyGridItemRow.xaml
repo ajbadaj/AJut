@@ -1,45 +1,115 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:local="using:AJut.UX.Controls">
+                    xmlns:local="using:AJut.UX.Controls"
+                    xmlns:conv="using:AJut.UX.Converters">
 
     <!-- ===[ PropertyGridItemRow ]=== -->
     <!-- Per-property row presenter for PropertyGrid.
-         DataContext = PropertyEditTarget, set by ListView.
-         EditorTemplateSelector is pushed from PropertyGrid via ContainerContentChanging,
-         then forwarded to ContentControl.ContentTemplateSelector via TemplateBinding.
-         This is the WinUI3 workaround for WPF's RelativeSource AncestorType binding
-         (unavailable in WinUI3 DataTemplate contexts). -->
+         DataContext = FlatTreeItem (set by ListView/FlatTreeListControl).
+         Binds to FlatTreeItem.Source.* for property display name, editor target, etc.
+         PART_LabelBorder width is set in code based on LabelColumnWidth and IndentWidth.
+
+         Selection visual: a 4px left nub + 1px top/right/bottom outline on PART_LabelBorder.
+         Only the BorderBrush changes (BorderThickness is always 4,1,1,1), no layout jitter.
+         Hover visual: a subtle full-row tint via PART_HoverBorder (separate VSM group,
+         does not conflict with the label-only selection indicator). -->
+
+    <conv:BooleanToVisibilityConverter x:Key="PGItemRow_BoolToVis"
+                                       TrueValue="Visible"
+                                       FalseValue="Collapsed"/>
+
     <Style TargetType="local:PropertyGridItemRow">
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
         <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Padding" Value="3"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:PropertyGridItemRow">
-                    <Grid HorizontalAlignment="Stretch"
-                          Background="{TemplateBinding Background}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" MinWidth="80"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
+                    <Grid x:Name="PART_Root"
+                          HorizontalAlignment="Stretch">
 
-                        <TextBlock Grid.Column="0"
-                                   Text="{Binding DisplayName}"
-                                   VerticalAlignment="Center"
-                                   Margin="0,0,8,0"
-                                   FontStyle="Italic"
-                                   Opacity="0.8"
-                                   TextTrimming="CharacterEllipsis"
-                                   ToolTipService.ToolTip="{Binding DisplayName}"
-                                   Foreground="{ThemeResource AJut_PropertyGridItemRow_LabelForeground}"/>
+                        <!-- Full-row hover tint. Background + BorderBrush driven by HoverStates VSM group.
+                             Selection is indicated on PART_LabelBorder only (label column).
+                             BorderThickness="1" is permanent so the reserved space never causes
+                             layout jitter when the border appears/disappears. -->
+                        <Border x:Name="PART_HoverBorder"
+                                Background="Transparent"
+                                BorderBrush="Transparent"
+                                BorderThickness="1"
+                                IsHitTestVisible="False"/>
 
-                        <!-- Content = PropertyEditTarget; selector picks editor template
-                             based on PropertyEditTarget.Editor (type name or [PGEditor]). -->
-                        <ContentControl Grid.Column="1"
-                                        HorizontalAlignment="Stretch"
-                                        HorizontalContentAlignment="Stretch"
-                                        VerticalAlignment="Center"
-                                        Content="{Binding}"
-                                        ContentTemplateSelector="{TemplateBinding EditorTemplateSelector}"/>
+                        <!-- Content (label + editor) inset by Padding (set from PropertyGrid.ElementPadding). -->
+                        <Grid x:Name="PART_ContentGrid"
+                              Margin="{TemplateBinding Padding}">
+                            <Grid.ColumnDefinitions>
+                                <!-- Column 0: label — width managed in code via PART_LabelBorder.Width -->
+                                <ColumnDefinition Width="Auto"/>
+                                <!-- Column 1: editor fills the rest -->
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Label area: width set in code via ApplyLabelColumnWidth().
+                                 BorderThickness="4,1,1,1" permanently reserves space for the
+                                 4px left nub + 1px outline so content never shifts; only
+                                 BorderBrush changes via VSM (Transparent ↔ SelectionBrush).
+                                 Selection stays confined to the label column. -->
+                            <Border x:Name="PART_LabelBorder"
+                                    Grid.Column="0"
+                                    MinWidth="80"
+                                    Margin="0,0,3,0"
+                                    BorderBrush="Transparent"
+                                    BorderThickness="4,1,1,1"
+                                    Background="Transparent">
+                                <TextBlock Text="{Binding Source.DisplayName}"
+                                           VerticalAlignment="Center"
+                                           Margin="6,3,8,3"
+                                           Opacity="0.8"
+                                           TextTrimming="CharacterEllipsis"
+                                           ToolTipService.ToolTip="{Binding Source.DisplayName}"
+                                           Foreground="{ThemeResource AJut_PropertyGridItemRow_LabelForeground}"/>
+                            </Border>
+
+                            <!-- Editor: Content=EffectiveEditorTarget so elevation is transparent.
+                                 Hidden when IsExpandable=true with no elevation (no inline editor). -->
+                            <ContentControl Grid.Column="1"
+                                            HorizontalAlignment="Stretch"
+                                            HorizontalContentAlignment="Stretch"
+                                            VerticalAlignment="Center"
+                                            Content="{Binding Source.EffectiveEditorTarget}"
+                                            Visibility="{Binding Source.HasInlineEditor, Converter={StaticResource PGItemRow_BoolToVis}}"
+                                            ContentTemplateSelector="{TemplateBinding EditorTemplateSelector}"/>
+                        </Grid>
+
+                        <VisualStateManager.VisualStateGroups>
+                            <!-- HoverStates: full-row background tint + border, independent of selection. -->
+                            <VisualStateGroup x:Name="HoverStates">
+                                <VisualState x:Name="NotHovered"/>
+                                <VisualState x:Name="Hovered">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_HoverBorder.Background"
+                                                Value="{ThemeResource AJut_PropertyGridItemRow_HoverBackground}"/>
+                                        <Setter Target="PART_HoverBorder.BorderBrush"
+                                                Value="{ThemeResource AJut_PropertyGridItemRow_HoverBorderBrush}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+
+                            <!-- SelectionStates: bright nub + outline on label border only.
+                                 Only BorderBrush changes — BorderThickness is always 4,1,1,1. -->
+                            <VisualStateGroup x:Name="SelectionStates">
+                                <VisualState x:Name="Normal">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_LabelBorder.BorderBrush" Value="Transparent"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Selected">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_LabelBorder.BorderBrush"
+                                                Value="{ThemeResource AJut_PropertyGridItemRow_SelectionBorderBrush}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>

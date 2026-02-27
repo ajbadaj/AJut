@@ -514,7 +514,10 @@
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
                                 <TextBlock Grid.Row="0" Text="PropertyGrid - reflects properties with per-type editor templates" FontStyle="Italic" Margin="0,0,0,8"/>
-                                <ajut:PropertyGrid Grid.Row="1" SingleItemSource="{x:Bind TestObj}">
+                                <ajut:PropertyGrid Grid.Row="1" SingleItemSource="{x:Bind TestObj}"
+                                                   RowSpacing="5"
+                                                   FixedRowHeight="28"
+                                                   LabelColumnWidth="180">
                                     <ajut:PropertyGrid.ItemTemplateSelector>
                                         <ajut:PropertyGridTemplateSelector>
                                             <ajut:PropertyGridTemplateSelector.Default>
@@ -524,10 +527,10 @@
                                             </ajut:PropertyGridTemplateSelector.Default>
                                             <ajut:PropertyGridTemplateSelector.RegisteredTemplates>
                                                 <DataTemplate x:Key="Single">
-                                                    <ajut:NumericEditor Value="{Binding EditValue}"/>
+                                                    <ajut:NumericEditor Value="{Binding EditValue}" TextBoxHeight="20"/>
                                                 </DataTemplate>
                                                 <DataTemplate x:Key="ColorPick">
-                                                    <ajut:ColorEditIngressControl EditColor="{Binding EditValue}"/>
+                                                    <ajut:ColorEditIngressControl EditColor="{Binding EditValue}" VerticalAlignment="Stretch" MaxWidth="150" HorizontalAlignment="Left"/>
                                                 </DataTemplate>
                                             </ajut:PropertyGridTemplateSelector.RegisteredTemplates>
                                         </ajut:PropertyGridTemplateSelector>

@@ -18,9 +18,18 @@
     <SolidColorBrush x:Key="AJut_DockTearoffContainerPanel_CloseButtonHoverBackground"   Color="{ThemeResource AJut_Color_ChromeCloseButtonHoverBackground}"/>
     <SolidColorBrush x:Key="AJut_DockTearoffContainerPanel_CloseButtonPressedBackground" Color="{ThemeResource AJut_Color_ChromeCloseButtonPressedBackground}"/>
 
-    <!-- ===========[ PropertyGridItemRow ]================================ -->
+    <!-- ===========[ PropertyGridItemRow ]================================
+         SelectionBorderBrush → ListSelection (solid accent, same as FlatTree nub/strip).
+         HoverBackground      → ListSelectionBackground (10% opacity fill, same as FlatTree hover fill).
+         HoverBorderBrush     → BorderCommon (neutral 1px outline, same as FlatTree hover border). -->
     <StaticResource x:Key="AJut_PropertyGridItemRow_LabelForeground"
                     ResourceKey="AJut_Brush_NormalText"/>
+    <StaticResource x:Key="AJut_PropertyGridItemRow_SelectionBorderBrush"
+                    ResourceKey="AJut_Brush_ListSelection"/>
+    <StaticResource x:Key="AJut_PropertyGridItemRow_HoverBackground"
+                    ResourceKey="AJut_Brush_ListSelectionBackground"/>
+    <StaticResource x:Key="AJut_PropertyGridItemRow_HoverBorderBrush"
+                    ResourceKey="AJut_Brush_BorderCommon"/>
 
     <!-- ===========[ PopupMenuButton ]===================================== -->
     <StaticResource x:Key="AJut_PopupMenuButton_ChevronForeground"
@@ -32,6 +41,7 @@
     <StaticResource x:Key="AJut_PathSelectionControl_WarningIconForeground"  ResourceKey="AJut_Brush_NormalText"/>
     <StaticResource x:Key="AJut_PathSelectionControl_ButtonBorderBrush"      ResourceKey="AJut_Brush_BorderCommon"/>
     <StaticResource x:Key="AJut_PathSelectionControl_ButtonIconForeground"   ResourceKey="AJut_Brush_SymbolForeground"/>
+    <StaticResource x:Key="AJut_PathSelectionControl_FocusedTextBoxBackgroundBrush" ResourceKey="AJut_Brush_TextBoxBackground"/>
 
     <!-- ===========[ FlatTreeItemRow ]===================================== -->
     <StaticResource x:Key="AJut_FlatTreeItemRow_ExpanderPointerOverBackground"
@@ -41,11 +51,13 @@
 
     <!-- ===========[ FlatTree ListViewItem ]=============================== -->
     <!-- Redirects selection/hover to AJut palette brushes.
-         The AJut_FlatTree_ListViewItemStyle template now lives only in FlatTreeListControl.xaml. -->
+         The AJut_FlatTree_ListViewItemStyle template now lives only in FlatTreeListControl.xaml.
+         HoverBackground → ListSelectionBackground (10% opacity fill): gives the "opacity'd out fill"
+         without the solid fill that AJut_Brush_ListItemHover (fully opaque) produced. -->
     <StaticResource x:Key="AJut_FlatTree_SelectionBrush"          ResourceKey="AJut_Brush_ListSelection"/>
     <StaticResource x:Key="AJut_FlatTree_SelectionBackground"     ResourceKey="AJut_Brush_ListSelectionBackground"/>
     <StaticResource x:Key="AJut_FlatTree_SelectionBrushUnfocused" ResourceKey="AJut_Brush_PrimaryHighlightDesat"/>
-    <StaticResource x:Key="AJut_FlatTree_HoverBackground"         ResourceKey="AJut_Brush_ListItemHover"/>
+    <StaticResource x:Key="AJut_FlatTree_HoverBackground"         ResourceKey="AJut_Brush_ListSelectionBackground"/>
     <StaticResource x:Key="AJut_FlatTree_HoverBorderBrush"        ResourceKey="AJut_Brush_BorderCommon"/>
 
     <!-- ===========[ ColorEditIngressControl ]============================= -->
@@ -63,11 +75,32 @@
     <StaticResource x:Key="AJut_DockTabScrollButton_PressedBackground" ResourceKey="AJut_Brush_PrimaryHighlightDark"/>
 
     <!-- ===========[ NumericEditor ]======================================= -->
-    <StaticResource x:Key="AJut_NumericEditor_IncreasePointerOverBackground" ResourceKey="AJut_Brush_MouseInteractionHighlight"/>
-    <StaticResource x:Key="AJut_NumericEditor_DecreasePointerOverBackground" ResourceKey="AJut_Brush_MouseInteractionHighlight"/>
+    <StaticResource x:Key="AJut_NumericEditor_IncreasePointerOverBackground" ResourceKey="AJut_Brush_PrimaryHighlightBright"/>
+    <StaticResource x:Key="AJut_NumericEditor_DecreasePointerOverBackground" ResourceKey="AJut_Brush_PrimaryHighlightBright"/>
     <!-- Pressed backgrounds intentionally absent: shadowy gradient in AJutCustomControlStylingDefaults.xaml
          is theme-agnostic and is referenced with {StaticResource} in NumericEditor.xaml, so no alias needed. -->
     <StaticResource x:Key="AJut_NumericEditor_FocusBorderBrush" ResourceKey="AJut_Brush_PrimaryHighlight"/>
     <StaticResource x:Key="AJut_NumericEditor_NormalBorderBrush" ResourceKey="AJut_Brush_BorderCommon"/>
+
+    <!-- ===========[ ToggleStripButton ]==================================== -->
+    <!-- Unchecked hover/press: standard AJut interaction brushes -->
+    <StaticResource x:Key="AJut_ToggleStripButton_PointerOverBackground" ResourceKey="AJut_Brush_PrimaryHighlightBright"/>
+    <StaticResource x:Key="AJut_ToggleStripButton_PressedBackground"     ResourceKey="AJut_Brush_PrimaryHighlightDark"/>
+    <!-- Checked: AJut cool-dark gradients with teal tint (#1090A0) to distinguish active state -->
+    <LinearGradientBrush x:Key="AJut_ToggleStripButton_CheckedBackground" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0.00" Color="#CC000000"/>
+        <GradientStop Offset="0.20" Color="#801090A0"/>
+        <GradientStop Offset="1.00" Color="#331090A0"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="AJut_ToggleStripButton_CheckedPointerOverBackground" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0.00" Color="#CC000000"/>
+        <GradientStop Offset="0.20" Color="#991090A0"/>
+        <GradientStop Offset="1.00" Color="#551090A0"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="AJut_ToggleStripButton_CheckedPressedBackground" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0.00" Color="#EE000000"/>
+        <GradientStop Offset="0.20" Color="#AA1090A0"/>
+        <GradientStop Offset="1.00" Color="#661090A0"/>
+    </LinearGradientBrush>
 
 </ResourceDictionary>

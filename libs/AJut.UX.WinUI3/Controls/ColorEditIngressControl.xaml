@@ -11,7 +11,7 @@
          On open:   border swaps to EditingOpen state via VSM (EditingStates group). -->
     <Style TargetType="local:ColorEditIngressControl">
         <Setter Property="MinWidth" Value="60"/>
-        <Setter Property="MinHeight" Value="40"/>
+        <Setter Property="MinHeight" Value="18"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="BorderBrush" Value="{ThemeResource AJut_ColorEditIngressControl_NormalBorderBrush}"/>
         <Setter Property="CornerRadius" Value="2"/>
@@ -79,22 +79,28 @@
                                 <Grid.Background>
                                     <SolidColorBrush Color="#60000000"/>
                                 </Grid.Background>
-                                <!-- Dog-ear triangle at bottom-right corner.
-                                     Fill is a solid gray so the white pencil glyph is readable. -->
-                                <Path Data="M 0,22 L 22,22 L 22,0 Z"
-                                      Fill="#90505050"
-                                      HorizontalAlignment="Right"
-                                      VerticalAlignment="Bottom"
-                                      IsHitTestVisible="False"/>
-                                <!-- Pencil edit glyph — anchored to bottom-right, centered in triangle -->
-                                <FontIcon Glyph="&#xE70F;"
-                                          FontFamily="Segoe Fluent Icons"
-                                          FontSize="14"
-                                          Foreground="White"
-                                          HorizontalAlignment="Right"
-                                          VerticalAlignment="Bottom"
-                                          Margin="0,0,2,2"
-                                          IsHitTestVisible="False"/>
+                                <!-- Dog-ear triangle + pencil icon in a Viewbox so it scales
+                                     proportionally with the control, capped at 20×20.
+                                     Margin="2" keeps it 2px from the bottom-right corner. -->
+                                <Viewbox HorizontalAlignment="Right"
+                                         VerticalAlignment="Bottom"
+                                         MaxWidth="20"
+                                         MaxHeight="20"
+                                         Margin="2"
+                                         Stretch="Uniform"
+                                         IsHitTestVisible="False">
+                                    <Grid Width="22" Height="22">
+                                        <Path Data="M 0,22 L 22,22 L 22,0 Z"
+                                              Fill="#90505050"/>
+                                        <FontIcon Glyph="&#xE70F;"
+                                                  FontFamily="Segoe Fluent Icons"
+                                                  FontSize="14"
+                                                  Foreground="White"
+                                                  HorizontalAlignment="Right"
+                                                  VerticalAlignment="Bottom"
+                                                  Margin="0,0,2,2"/>
+                                    </Grid>
+                                </Viewbox>
                             </Grid>
                         </Grid>
                     </Border>

@@ -68,7 +68,7 @@ namespace AJut.UX.Controls
             m_store.IncludeRoot = this.IncludeRoot;
             m_store.RootNode = newRoot == null
                 ? null
-                : FlatTreeItem.CreateRoot(newRoot, this.TabbingSize, this.StartItemsExpanded);
+                : FlatTreeItem.CreateRoot(newRoot, this.TreeDepthIndentSize, this.StartItemsExpanded);
         }
 
         public static readonly DependencyProperty RootItemsSourceProperty = DPUtils.Register(_ => _.RootItemsSource, (d, e) => d.OnRootItemsSourceChanged(e.OldValue, e.NewValue));
@@ -81,7 +81,7 @@ namespace AJut.UX.Controls
         {
             m_store.IncludeRoot = false;
             m_store.RootNode = FlatTreeItem.CreateUberRoot(
-                newValue ?? Enumerable.Empty<IObservableTreeNode>(), this.TabbingSize);
+                newValue ?? Enumerable.Empty<IObservableTreeNode>(), this.TreeDepthIndentSize);
 
             if (oldValue is INotifyCollectionChanged oldObservable)
             {
@@ -100,23 +100,83 @@ namespace AJut.UX.Controls
             set => this.SetValue(IncludeRootProperty, value);
         }
 
-        public static readonly DependencyProperty TabbingSizeProperty = DPUtils.Register(_ => _.TabbingSize, 16.0, (d, e) => d.OnTabbingSizeChanged());
-        public double TabbingSize
+        public static readonly DependencyProperty TreeDepthIndentSizeProperty = DPUtils.Register(_ => _.TreeDepthIndentSize, 16.0, (d, e) => d.OnTreeDepthIndentSizeChanged());
+        public double TreeDepthIndentSize
         {
-            get => (double)this.GetValue(TabbingSizeProperty);
-            set => this.SetValue(TabbingSizeProperty, value);
+            get => (double)this.GetValue(TreeDepthIndentSizeProperty);
+            set => this.SetValue(TreeDepthIndentSizeProperty, value);
         }
-        private void OnTabbingSizeChanged ()
+        private void OnTreeDepthIndentSizeChanged ()
         {
             if (m_store.RootNode == null)
             {
                 return;
             }
 
-            double size = this.TabbingSize;
+            double size = this.TreeDepthIndentSize;
             foreach (FlatTreeItem item in TreeTraversal<FlatTreeItem>.All(m_store.RootNode))
             {
-                item.TabbingSize = size;
+                item.TreeDepthIndentSize = size;
+            }
+        }
+
+        public static readonly DependencyProperty RowSpacingProperty = DPUtils.Register(_ => _.RowSpacing, 2.0, (d, e) => d.OnRowSpacingChanged());
+        public double RowSpacing
+        {
+            get => (double)this.GetValue(RowSpacingProperty);
+            set => this.SetValue(RowSpacingProperty, value);
+        }
+        private void OnRowSpacingChanged ()
+        {
+            if (this.PART_ListView == null)
+            {
+                return;
+            }
+
+            double spacing = this.RowSpacing;
+            for (int i = 0; i < this.PART_ListView.Items.Count; ++i)
+            {
+                if (this.PART_ListView.ContainerFromIndex(i) is ListViewItem container)
+                {
+                    container.Margin = new Thickness(0, 0, 0, spacing);
+                }
+            }
+        }
+
+        public static readonly DependencyProperty FixedRowHeightProperty = DPUtils.Register(_ => _.FixedRowHeight, double.NaN, (d, e) => d.OnFixedRowHeightChanged());
+        public double FixedRowHeight
+        {
+            get => (double)this.GetValue(FixedRowHeightProperty);
+            set => this.SetValue(FixedRowHeightProperty, value);
+        }
+        private void OnFixedRowHeightChanged ()
+        {
+            if (this.PART_ListView == null)
+            {
+                return;
+            }
+
+            double height = this.FixedRowHeight;
+            for (int i = 0; i < this.PART_ListView.Items.Count; ++i)
+            {
+                if (this.PART_ListView.ContainerFromIndex(i) is ListViewItem container)
+                {
+                    container.Height = double.IsNaN(height) ? double.NaN : height;
+                }
+            }
+        }
+
+        public static readonly DependencyProperty ListViewItemContainerStyleProperty = DPUtils.Register(_ => _.ListViewItemContainerStyle, (d, e) => d.OnListViewItemContainerStyleChanged(e.NewValue));
+        public Style ListViewItemContainerStyle
+        {
+            get => (Style)this.GetValue(ListViewItemContainerStyleProperty);
+            set => this.SetValue(ListViewItemContainerStyleProperty, value);
+        }
+        private void OnListViewItemContainerStyleChanged (Style newStyle)
+        {
+            if (this.PART_ListView != null)
+            {
+                this.PART_ListView.ItemContainerStyle = newStyle;
             }
         }
 
@@ -197,6 +257,11 @@ namespace AJut.UX.Controls
             this.PART_ListView.DoubleTapped += this.ListView_OnDoubleTapped;
             this.PART_ListView.KeyUp += this.ListView_OnKeyUp;
             this.PART_ListView.ContainerContentChanging += this.ListView_OnContainerContentChanging;
+
+            if (this.ListViewItemContainerStyle != null)
+            {
+                this.PART_ListView.ItemContainerStyle = this.ListViewItemContainerStyle;
+            }
 
             this.ApplySelectionMode();
             this.PART_ListView.ItemsSource = m_store;
@@ -320,6 +385,15 @@ namespace AJut.UX.Controls
                 row.ExpanderGlyphForeground = this.ExpanderGlyphForeground;
             }
 
+            if (e.ItemContainer != null)
+            {
+                e.ItemContainer.Margin = new Thickness(0, 0, 0, this.RowSpacing);
+                if (!double.IsNaN(this.FixedRowHeight))
+                {
+                    e.ItemContainer.Height = this.FixedRowHeight;
+                }
+            }
+
             // Fire passthrough so consumers (e.g. PropertyGrid) can push additional state.
             this.ContainerContentChanging?.Invoke(sender, e);
         }
@@ -390,7 +464,7 @@ namespace AJut.UX.Controls
             // so InsertChild/RemoveChild on the uber root fires events no one hears. Rebuild from the
             // current full state of RootItemsSource on every change instead.
             m_store.RootNode = FlatTreeItem.CreateUberRoot(
-                this.RootItemsSource ?? Enumerable.Empty<IObservableTreeNode>(), this.TabbingSize);
+                this.RootItemsSource ?? Enumerable.Empty<IObservableTreeNode>(), this.TreeDepthIndentSize);
         }
 
         // ===========[ Apply helpers ]============================================

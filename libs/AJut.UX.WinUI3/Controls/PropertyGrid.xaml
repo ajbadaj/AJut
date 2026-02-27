@@ -2,31 +2,48 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="using:AJut.UX.Controls">
 
+    <!-- ===[ PropertyGrid: no-chrome ListViewItem style ]=== -->
+    <!-- Minimal ListViewItem for PropertyGrid rows: suppresses full-row selection
+         highlight so PropertyGridItemRow's own SelectionStates VSM (label-only highlight)
+         is the only visual selection indicator. -->
+    <Style x:Key="PropertyGrid_ListViewItemStyle" TargetType="ListViewItem">
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="MinHeight" Value="0"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="UseSystemFocusVisuals" Value="False"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListViewItem">
+                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ===[ PropertyGrid style ]=== -->
     <!-- Uses FlatTreeListControl so that complex reference-type properties can be
          expanded to show their sub-properties as indented child rows.
          RootItemsSource is pushed in code (OnApplyTemplate / RebuildEditTargets) rather
          than via TemplateBinding because WinUI3 TemplateBinding does not read the source
-         DP's current value at binding-establishment time - so if RebuildEditTargets ran
-         before the tab/page containing the PropertyGrid was first shown, the binding would
-         always see null. PropertyGrid.cs handles both orderings explicitly.
-         RowTemplate DataTemplate: DataContext is FlatTreeItem, but we set
-         PropertyGridItemRow.DataContext = {Binding Source} so its bindings
-         ({Binding DisplayName}, etc.) see PropertyEditTarget directly.
-         EditorTemplateSelector is resolved by PropertyGridItemRow.Loaded walking
-         up the visual tree to find the enclosing PropertyGrid. -->
+         DP's current value at binding-establishment time.
+         RowTemplate DataContext is FlatTreeItem (from FlatTreeListControl). PropertyGridItemRow
+         accesses FlatTreeItem properties directly (IndentWidth for label width, IsSelected
+         for selection VSM) and uses Source.* for property display. -->
     <Style TargetType="local:PropertyGrid">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <!-- Default container style: suppresses full-row chrome so PropertyGridItemRow's
+             own label-only SelectionStates VSM is the only selection indicator. -->
+        <Setter Property="ListViewItemContainerStyle" Value="{StaticResource PropertyGrid_ListViewItemStyle}"/>
         <Setter Property="RowTemplate">
             <Setter.Value>
                 <DataTemplate>
-                    <!-- DataContext = FlatTreeItem (from FlatTreeListControl).
-                         Set DataContext on PropertyGridItemRow to FlatTreeItem.Source
-                         so its template sees PropertyEditTarget. -->
-                    <local:PropertyGridItemRow DataContext="{Binding Source}"
-                                               HorizontalAlignment="Stretch"/>
+                    <!-- DataContext = FlatTreeItem. PropertyGridItemRow accesses both
+                         FlatTreeItem (for IndentWidth/IsSelected) and Source (PropertyEditTarget). -->
+                    <local:PropertyGridItemRow HorizontalAlignment="Stretch"/>
                 </DataTemplate>
             </Setter.Value>
         </Setter>
@@ -38,6 +55,10 @@
                             BorderThickness="{TemplateBinding BorderThickness}">
                         <local:FlatTreeListControl x:Name="PART_TreeList"
                                                    ItemTemplate="{TemplateBinding RowTemplate}"
+                                                   ListViewItemContainerStyle="{TemplateBinding ListViewItemContainerStyle}"
+                                                   TreeDepthIndentSize="{TemplateBinding TreeDepthIndentSize}"
+                                                   RowSpacing="{TemplateBinding RowSpacing}"
+                                                   FixedRowHeight="{TemplateBinding FixedRowHeight}"
                                                    Background="Transparent"
                                                    BorderThickness="0"
                                                    HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"/>

@@ -388,6 +388,7 @@
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         <Setter Property="ExpanderGlyphForeground" Value="{ThemeResource TextFillColorSecondaryBrush}"/>
+        <Setter Property="ListViewItemContainerStyle" Value="{StaticResource AJut_FlatTree_ListViewItemStyle}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:FlatTreeListControl">
@@ -399,7 +400,7 @@
                                   BorderThickness="0"
                                   SelectionMode="Single"
                                   ItemTemplate="{StaticResource FlatTree_RowDataTemplate}"
-                                  ItemContainerStyle="{ThemeResource AJut_FlatTree_ListViewItemStyle}"
+                                  ItemContainerStyle="{TemplateBinding ListViewItemContainerStyle}"
                                   HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
                                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                   ScrollViewer.VerticalScrollBarVisibility="Auto">

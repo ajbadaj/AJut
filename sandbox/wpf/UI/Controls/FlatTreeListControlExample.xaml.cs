@@ -59,7 +59,7 @@
         private void PopupCodeExample_OnClick (object sender, RoutedEventArgs e)
         {
             this.Navigator.ShowPopover(new BasicCodeDisplayPopover(
-@"<ajut:FlatTreeListControl Root=""{Binding ElementName=Self, Path=Root}"" TabbingSize=""10"" Margin=""10"">
+@"<ajut:FlatTreeListControl Root=""{Binding ElementName=Self, Path=Root}"" TreeDepthIndentSize=""10"" Margin=""10"">
     <ajut:FlatTreeListControl.Resources>
         <DataTemplate DataType=""{x:Type local:TestTreeItem}"">
             <DockPanel>

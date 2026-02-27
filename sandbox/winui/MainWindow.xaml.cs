@@ -279,6 +279,9 @@ namespace AJutShowRoomWinUI
         public Color ColorValue { get; set; } = new Color { A = 255, B = 255 };
         public string Name { get; set; } = "AJut Is Cool";
         public ShowRoomSubObject SubObj { get; set; } = new ShowRoomSubObject();
+
+        [PGElevateChildProperty(nameof(ShowRoomSubObject.SubObjValue))]
+        public ShowRoomSubObject SubObjWithElevation { get; set; } = new ShowRoomSubObject();
     }
 
     public class ShowRoomSubObject

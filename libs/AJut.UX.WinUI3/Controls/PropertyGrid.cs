@@ -88,6 +88,84 @@ namespace AJut.UX.Controls
             set => this.SetValue(IsReadOnlyProperty, value);
         }
 
+        public static readonly DependencyProperty TreeDepthIndentSizeProperty = DPUtils.Register(_ => _.TreeDepthIndentSize, 16.0, (d, e) => d.OnTreeDepthIndentSizeChanged(e.NewValue));
+        public double TreeDepthIndentSize
+        {
+            get => (double)this.GetValue(TreeDepthIndentSizeProperty);
+            set => this.SetValue(TreeDepthIndentSizeProperty, value);
+        }
+        private void OnTreeDepthIndentSizeChanged (double newValue)
+        {
+            if (this.PART_TreeList != null)
+            {
+                this.PART_TreeList.TreeDepthIndentSize = newValue;
+            }
+        }
+
+        public static readonly DependencyProperty RowSpacingProperty = DPUtils.Register(_ => _.RowSpacing, 2.0, (d, e) => d.OnRowSpacingChanged(e.NewValue));
+        public double RowSpacing
+        {
+            get => (double)this.GetValue(RowSpacingProperty);
+            set => this.SetValue(RowSpacingProperty, value);
+        }
+        private void OnRowSpacingChanged (double newValue)
+        {
+            if (this.PART_TreeList != null)
+            {
+                this.PART_TreeList.RowSpacing = newValue;
+            }
+        }
+
+        public static readonly DependencyProperty FixedRowHeightProperty = DPUtils.Register(_ => _.FixedRowHeight, double.NaN, (d, e) => d.OnFixedRowHeightChanged(e.NewValue));
+        public double FixedRowHeight
+        {
+            get => (double)this.GetValue(FixedRowHeightProperty);
+            set => this.SetValue(FixedRowHeightProperty, value);
+        }
+        private void OnFixedRowHeightChanged (double newValue)
+        {
+            if (this.PART_TreeList != null)
+            {
+                this.PART_TreeList.FixedRowHeight = newValue;
+            }
+        }
+
+        public static readonly DependencyProperty LabelColumnWidthProperty = DPUtils.Register(_ => _.LabelColumnWidth, double.NaN);
+        public double LabelColumnWidth
+        {
+            get => (double)this.GetValue(LabelColumnWidthProperty);
+            set => this.SetValue(LabelColumnWidthProperty, value);
+        }
+
+        // Padding applied to each PropertyGridItemRow (insets label + editor from the row edges).
+        // Read by PropertyGridItemRow.OnLoaded and applied as Padding so the template's
+        // {TemplateBinding Padding} drives the inner content grid's Margin.
+        public static readonly DependencyProperty ElementPaddingProperty = DPUtils.Register(_ => _.ElementPadding, new Thickness(3, 2, 3, 2));
+        public Thickness ElementPadding
+        {
+            get => (Thickness)this.GetValue(ElementPaddingProperty);
+            set => this.SetValue(ElementPaddingProperty, value);
+        }
+
+        // Container style for each ListView row inside the inner FlatTreeListControl.
+        // Defaults (via Style Setter) to PropertyGrid_ListViewItemStyle — a minimal no-chrome
+        // template that suppresses full-row selection highlight so PropertyGridItemRow's own
+        // label-only selection indicator is the only visual. Override to customise container
+        // padding or add hover/press visuals without touching the PropertyGrid template.
+        public static readonly DependencyProperty ListViewItemContainerStyleProperty = DPUtils.Register(_ => _.ListViewItemContainerStyle, (d, e) => d.OnListViewItemContainerStyleChanged(e.NewValue));
+        public Style ListViewItemContainerStyle
+        {
+            get => (Style)this.GetValue(ListViewItemContainerStyleProperty);
+            set => this.SetValue(ListViewItemContainerStyleProperty, value);
+        }
+        private void OnListViewItemContainerStyleChanged (Style newValue)
+        {
+            if (this.PART_TreeList != null)
+            {
+                this.PART_TreeList.ListViewItemContainerStyle = newValue;
+            }
+        }
+
         /// <summary>
         /// The top-level PropertyEditTarget items (children of the hidden $root node).
         /// Updated whenever RebuildEditTargets runs. Pushed to PART_TreeList.RootItemsSource
@@ -112,6 +190,10 @@ namespace AJut.UX.Controls
                 // RebuildEditTargets() commonly runs before the template is applied (e.g. when
                 // the PropertyGrid lives in a tab that isn't yet selected), so push manually.
                 this.PART_TreeList.RootItemsSource = this.PropertyTreeItems;
+                this.PART_TreeList.TreeDepthIndentSize = this.TreeDepthIndentSize;
+                this.PART_TreeList.RowSpacing = this.RowSpacing;
+                this.PART_TreeList.FixedRowHeight = this.FixedRowHeight;
+                this.PART_TreeList.ListViewItemContainerStyle = this.ListViewItemContainerStyle;
             }
 
             this.ApplyRowTemplate();

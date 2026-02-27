@@ -83,7 +83,8 @@
                              ap:BorderXTA.CornerRadius="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=(ap:BorderXTA.CornerRadius)}">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <Grid>
+                                <Grid Margin="{Binding RelativeSource={RelativeSource AncestorType=local:FlatTreeListControl}, Path=RowSpacingThickness}"
+                                      Height="{Binding RelativeSource={RelativeSource AncestorType=local:FlatTreeListControl}, Path=FixedRowHeight}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto"/>
                                         <ColumnDefinition Width="14"/>
@@ -93,7 +94,7 @@
                                         <Grid.Width>
                                             <MultiBinding Converter="{conv:ArithmeticConverter Operation=Multiply}">
                                                 <Binding Path="TreeDepth" Mode="OneWay"/>
-                                                <Binding RelativeSource="{RelativeSource AncestorType=local:FlatTreeListControl}" Path="TabbingSize"/>
+                                                <Binding RelativeSource="{RelativeSource AncestorType=local:FlatTreeListControl}" Path="TreeDepthIndentSize"/>
                                             </MultiBinding>
                                         </Grid.Width>
                                     </Grid>
