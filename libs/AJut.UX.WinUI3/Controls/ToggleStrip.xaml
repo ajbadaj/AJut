@@ -11,6 +11,7 @@
         <Setter Property="Background" Value="{ThemeResource ControlFillColorDefaultBrush}"/>
         <Setter Property="BorderBrush" Value="{ThemeResource ControlStrokeColorDefaultBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="ItemPadding" Value="8,4"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:ToggleStrip">

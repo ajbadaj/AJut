@@ -1,0 +1,117 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="using:AJut.UX.Controls">
+
+    <!-- ===========[ DockTearoffContainerPanel: Default Style ]================ -->
+    <!-- Window content for DockingManager tearoff windows. Two-row layout:
+         row 0 = custom title bar (drag handle + close button),
+         row 1 = the DockZone.
+
+         All visual brush properties reference flat ThemeResource keys defined in
+         AJutCustomControlStylingDefaults.xaml (Generic.xaml). AJutThemeMapAliasing.xaml
+         (merged flat into AllControlThemeOverrides.xaml / App.Resources) overrides them
+         with AJut-themed values when the theme is loaded.
+
+         PART_TitleBarArea is the drag-sensitive region; pointer events on it are
+         handled in code-behind.  PART_CloseButton sits inside that region and
+         captures pointer events first so clicks on it never start a drag.
+
+         Note on the close button's VSM template: Background is NOT TemplateBinding'd
+         on the inner Border — the same TemplateBinding+VSM conflict applies here as in
+         DockDropInsertionDriverWidget. VSM Setters own the background entirely. -->
+
+    <Style TargetType="local:DockTearoffContainerPanel">
+        <Setter Property="HorizontalAlignment"   Value="Stretch"/>
+        <Setter Property="VerticalAlignment"     Value="Stretch"/>
+        <Setter Property="IsTabStop"             Value="False"/>
+        <Setter Property="UseSystemFocusVisuals" Value="False"/>
+        <Setter Property="TitleBarHeight"        Value="30"/>
+        <Setter Property="TitleBarBackground"    Value="{ThemeResource AJut_DockTearoffContainerPanel_TitleBarBackground}"/>
+        <Setter Property="TitleBarForeground"    Value="{ThemeResource AJut_DockTearoffContainerPanel_TitleBarForeground}"/>
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:DockTearoffContainerPanel">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Row 0: Title bar.
+                             The entire Grid is PART_TitleBarArea and receives pointer
+                             events for drag detection.  PART_CloseButton lives in
+                             column 1 and naturally handles its own pointer events
+                             before they bubble to the Grid, preventing accidental
+                             drag initiation on a close-button click. -->
+                        <Grid x:Name="PART_TitleBarArea"
+                              Grid.Row="0"
+                              Height="{TemplateBinding TitleBarHeight}"
+                              Background="{TemplateBinding TitleBarBackground}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Button x:Name="PART_CloseButton"
+                                    Grid.Column="1"
+                                    Content="&#x2715;"
+                                    VerticalAlignment="Stretch"
+                                    Foreground="{TemplateBinding TitleBarForeground}"
+                                    Padding="10,4"
+                                    BorderThickness="0">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="Button">
+                                                    <!-- Background NOT TemplateBinding'd — VSM owns it.
+                                                         TemplateBinding + VSM targeting the same property
+                                                         causes the binding to overwrite VSM-applied values. -->
+                                                    <Border x:Name="Root"
+                                                            Padding="{TemplateBinding Padding}">
+                                                        <VisualStateManager.VisualStateGroups>
+                                                            <VisualStateGroup x:Name="CommonStates">
+                                                                <VisualState x:Name="Normal"/>
+                                                                <VisualState x:Name="PointerOver">
+                                                                    <VisualState.Setters>
+                                                                        <Setter Target="Root.Background" Value="{ThemeResource AJut_DockTearoffContainerPanel_CloseButtonHoverBackground}"/>
+                                                                    </VisualState.Setters>
+                                                                </VisualState>
+                                                                <VisualState x:Name="Pressed">
+                                                                    <VisualState.Setters>
+                                                                        <Setter Target="Root.Background" Value="{ThemeResource AJut_DockTearoffContainerPanel_CloseButtonPressedBackground}"/>
+                                                                    </VisualState.Setters>
+                                                                </VisualState>
+                                                                <VisualState x:Name="Disabled"/>
+                                                            </VisualStateGroup>
+                                                        </VisualStateManager.VisualStateGroups>
+                                                        <ContentPresenter Content="{TemplateBinding Content}"
+                                                                          Foreground="{TemplateBinding Foreground}"
+                                                                          HorizontalAlignment="Center"
+                                                                          VerticalAlignment="Center"/>
+                                                    </Border>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                        </Grid>
+
+                        <!-- Row 1: DockZone presenter.
+                             Content is pushed from code-behind in both OnApplyTemplate
+                             (data-before-template) and the DockZoneContent DP handler
+                             (template-before-data), working around WinUI3 TemplateBinding
+                             backfill limitations. -->
+                        <ContentPresenter x:Name="PART_ZonePresenter"
+                                          Grid.Row="1"
+                                          HorizontalAlignment="Stretch"
+                                          VerticalAlignment="Stretch"/>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

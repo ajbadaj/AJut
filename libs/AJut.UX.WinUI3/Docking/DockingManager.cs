@@ -35,33 +35,7 @@ namespace AJut.UX.Docking
 
     public class DockingManager : NotifyPropertyChanged, IDockingManager
     {
-        // ===========[ P/Invoke - cursor + key state ]========================
-        [DllImport("user32.dll")]
-        private static extern bool GetCursorPos (out POINT lpPoint);
-
-        [DllImport("user32.dll")]
-        private static extern short GetAsyncKeyState (int vKey);
-
-        [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
-        private static extern nint GetWindowLongPtr (nint hWnd, int nIndex);
-
-        [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
-        private static extern nint SetWindowLongPtr (nint hWnd, int nIndex, nint dwNewLong);
-
-        [DllImport("user32.dll")]
-        private static extern bool SetLayeredWindowAttributes (nint hwnd, uint crKey, byte bAlpha, uint dwFlags);
-
-        [DllImport("user32.dll")]
-        private static extern bool ScreenToClient (nint hWnd, ref POINT lpPoint);
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct POINT { public int X; public int Y; }
-
         // ===========[ Constants ]============================================
-        private const int kGwlExStyle = -20;
-        private const int kWsExLayered = 0x80000;
-        private const uint kLwaAlpha = 0x2;
-        private const int kVkLButton = 0x01;
         private const double kTearoffDragOpacity = 0.65;
 
         // ===========[ Fields ]===============================================
@@ -76,7 +50,7 @@ namespace AJut.UX.Docking
         private bool m_isReadyToTrackAutoSave;
 
         // ===========[ Construction ]=========================================
-        public DockingManager (
+        public DockingManager(
             Window rootWindow,
             string uniqueId,
             string persistentStorageFilePath = null,
@@ -148,12 +122,12 @@ namespace AJut.UX.Docking
 
         // ===========[ IDockingManager ]======================================
 
-        IDockableDisplayElement IDockingManager.BuildNewDisplayElement (Type elementType)
+        IDockableDisplayElement IDockingManager.BuildNewDisplayElement(Type elementType)
             => this.BuildNewDisplayElement(elementType);
 
         // ===========[ Factory Registration ]=================================
 
-        public void RegisterDisplayFactory<T> (Func<T> customFactory = null, bool singleInstanceOnly = false)
+        public void RegisterDisplayFactory<T>(Func<T> customFactory = null, bool singleInstanceOnly = false)
             where T : IDockableDisplayElement
         {
             m_factory[typeof(T)] = new DisplayBuilder
@@ -167,10 +141,10 @@ namespace AJut.UX.Docking
 
         // ===========[ Zone Registration ]====================================
 
-        public void RegisterRootDockZones (params DockZone[] dockZones)
+        public void RegisterRootDockZones(params DockZone[] dockZones)
             => this.RegisterRootDockZones(this.RootWindow, dockZones);
 
-        public void RegisterRootDockZones (Window window, params DockZone[] dockZones)
+        public void RegisterRootDockZones(Window window, params DockZone[] dockZones)
         {
             foreach (var zone in dockZones)
             {
@@ -208,7 +182,7 @@ namespace AJut.UX.Docking
             }
         }
 
-        public void DeRegisterRootDockZones (params DockZone[] dockZones)
+        public void DeRegisterRootDockZones(params DockZone[] dockZones)
         {
             foreach (var zone in dockZones)
             {
@@ -223,10 +197,10 @@ namespace AJut.UX.Docking
 
         // ===========[ Display Building ]=====================================
 
-        public T BuildNewDisplayElement<T> () where T : IDockableDisplayElement
+        public T BuildNewDisplayElement<T>() where T : IDockableDisplayElement
             => (T)this.BuildNewDisplayElement(typeof(T));
 
-        public IDockableDisplayElement BuildNewDisplayElement (Type elementType)
+        public IDockableDisplayElement BuildNewDisplayElement(Type elementType)
         {
             var displayElement = m_factory.TryGetValue(elementType, out var b)
                 ? b.Builder()
@@ -236,7 +210,7 @@ namespace AJut.UX.Docking
 
         // ===========[ Layout Control ]=======================================
 
-        public bool CloseAll (bool force = false)
+        public bool CloseAll(bool force = false)
         {
             if (!force)
             {
@@ -270,7 +244,7 @@ namespace AJut.UX.Docking
             return true;
         }
 
-        public void CleanZoneLayoutHierarchies ()
+        public void CleanZoneLayoutHierarchies()
         {
             var toVisit = new Queue<DockZoneViewModel>();
             foreach (var zone in m_rootDockZones.Select(z => z.ViewModel))
@@ -309,7 +283,7 @@ namespace AJut.UX.Docking
             }
         }
 
-        public DockZoneViewModel FindFirstAvailableDockZone ()
+        public DockZoneViewModel FindFirstAvailableDockZone()
         {
             foreach (DockZoneViewModel zone in m_rootDockZones
                 .SelectMany(z => TreeTraversal<DockZone>.All(z))
@@ -327,13 +301,13 @@ namespace AJut.UX.Docking
 
         // ===========[ Tearoff Window Ops ]===================================
 
-        public Result<Window> DoTearoff (IDockableDisplayElement element, Point newWindowOrigin)
+        public Result<Window> DoTearoff(IDockableDisplayElement element, Point newWindowOrigin)
         {
             DockZoneSize dockSize = element.DockingAdapter.Location?.UI?.RenderSize ?? DockZoneSize.Empty;
             return this.DoTearoff(element, newWindowOrigin, new Size(dockSize.Width, dockSize.Height));
         }
 
-        public Result<Window> DoTearoff (IDockableDisplayElement element, Point newWindowOrigin, Size newWindowSize)
+        public Result<Window> DoTearoff(IDockableDisplayElement element, Point newWindowOrigin, Size newWindowSize)
         {
             try
             {
@@ -360,13 +334,13 @@ namespace AJut.UX.Docking
             }
         }
 
-        public Result<Window> DoGroupTearoff (DockZoneViewModel sourceZone, Point newWindowOrigin)
+        public Result<Window> DoGroupTearoff(DockZoneViewModel sourceZone, Point newWindowOrigin)
         {
             var size = sourceZone.UI?.RenderSize ?? DockZoneSize.Empty;
             return this.DoGroupTearoff(sourceZone, newWindowOrigin, new Size(size.Width, size.Height));
         }
 
-        public Result<Window> DoGroupTearoff (DockZoneViewModel sourceZone, Point newWindowOrigin, Size newTearoffWindowSize)
+        public Result<Window> DoGroupTearoff(DockZoneViewModel sourceZone, Point newWindowOrigin, Size newTearoffWindowSize)
         {
             try
             {
@@ -410,16 +384,16 @@ namespace AJut.UX.Docking
         // cursorWindowOffset: where the cursor should appear within the tearoff window
         //                    (i.e. the window is placed so this offset lands under the cursor).
         //                    If null, defaults to (windowWidth/2, 15).
-        internal async Task InitiateDrag (DockZone zone, Point? pressScreenPos = null, Point? cursorWindowOffset = null)
+        internal async Task InitiateDrag(DockZone zone, Point? pressScreenPos = null, Point? cursorWindowOffset = null)
         {
-            if (!GetCursorPos(out POINT pt))
+            if (!User32WindowFuncs.GetCursorPos(out var pt))
             {
                 return;
             }
 
             var renderSize = ((IDockZoneUI)zone).RenderSize;
-            int windowWidth  = (int)Math.Max(renderSize.Width,  200);
-            int windowHeight = (int)Math.Max(renderSize.Height,  50);
+            int windowWidth = (int)Math.Max(renderSize.Width, 200);
+            int windowHeight = (int)Math.Max(renderSize.Height, 50);
 
             // Resolve anchor and cursor-in-window offset
             double anchorX = pressScreenPos.HasValue ? pressScreenPos.Value.X : pt.X;
@@ -459,21 +433,21 @@ namespace AJut.UX.Docking
         // Initiates a drag for a single content element: tears only that element off into
         // its own window, then starts RunDragSearch. Called from tab-button drag threshold.
         // pressScreenPos / cursorWindowOffset: same semantics as InitiateDrag.
-        internal async Task InitiateDragForContent (IDockableDisplayElement element, Point? pressScreenPos = null, Point? cursorWindowOffset = null)
+        internal async Task InitiateDragForContent(IDockableDisplayElement element, Point? pressScreenPos = null, Point? cursorWindowOffset = null)
         {
             if (element?.DockingAdapter == null)
             {
                 return;
             }
 
-            if (!GetCursorPos(out POINT pt))
+            if (!User32WindowFuncs.GetCursorPos(out var pt))
             {
                 return;
             }
 
             var locationSize = element.DockingAdapter.Location?.UI?.RenderSize ?? new DockZoneSize(400, 300);
-            int windowWidth  = (int)Math.Max(locationSize.Width,  200);
-            int windowHeight = (int)Math.Max(locationSize.Height,  50);
+            int windowWidth = (int)Math.Max(locationSize.Width, 200);
+            int windowHeight = (int)Math.Max(locationSize.Height, 50);
 
             double anchorX = pressScreenPos.HasValue ? pressScreenPos.Value.X : pt.X;
             double anchorY = pressScreenPos.HasValue ? pressScreenPos.Value.Y : pt.Y;
@@ -521,16 +495,16 @@ namespace AJut.UX.Docking
         //
         // cursorWindowOffset: where the cursor appears within the dragged window.
         // Defaults to (windowWidth/2, 15) when not supplied.
-        public async Task RunDragSearch (Window dragSourceWindow, DockZone sourceDockZone, Point? cursorWindowOffset = null)
+        public async Task RunDragSearch(Window dragSourceWindow, DockZone sourceDockZone, Point? cursorWindowOffset = null)
         {
             DockZone lastDropTarget = null;
             DockDropInsertionDriverWidget lastInsertionWidget = null;
 
             // Apply semi-transparency to the tearoff while dragging (Win32 layered window)
             nint hwnd = WinRT.Interop.WindowNative.GetWindowHandle(dragSourceWindow);
-            nint originalExStyle = GetWindowLongPtr(hwnd, kGwlExStyle);
-            SetWindowLongPtr(hwnd, kGwlExStyle, originalExStyle | kWsExLayered);
-            SetLayeredWindowAttributes(hwnd, 0, (byte)(255 * kTearoffDragOpacity), kLwaAlpha);
+            nint originalExStyle = User32WindowFuncs.GetWindowLongPtr(hwnd, User32WindowFuncs.kGwlExStyle);
+            User32WindowFuncs.SetWindowLongPtr(hwnd, User32WindowFuncs.kGwlExStyle, originalExStyle | User32WindowFuncs.kWsExLayered);
+            User32WindowFuncs.SetLayeredWindowAttributes(hwnd, 0, (byte)(255 * kTearoffDragOpacity), User32WindowFuncs.kLwaAlpha);
 
             var sourceAppWindow = dragSourceWindow.AppWindow;
 
@@ -547,12 +521,12 @@ namespace AJut.UX.Docking
                     await Task.Delay(16);
 
                     // Exit when left mouse button is released
-                    if ((GetAsyncKeyState(kVkLButton) & 0x8000) == 0)
+                    if ((User32WindowFuncs.GetAsyncKeyState(User32WindowFuncs.kVkLButton) & 0x8000) == 0)
                     {
                         break;
                     }
 
-                    if (!GetCursorPos(out POINT pt))
+                    if (!User32WindowFuncs.GetCursorPos(out var pt))
                     {
                         break;
                     }
@@ -581,8 +555,8 @@ namespace AJut.UX.Docking
                         // XAML DPI scale to get device-independent pixel coordinates that
                         // FindElementsInHostCoordinates expects.
                         nint winHwnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
-                        POINT screenPt = new POINT { X = pt.X, Y = pt.Y };
-                        if (!ScreenToClient(winHwnd, ref screenPt) || screenPt.X < 0 || screenPt.Y < 0)
+                        var screenPt = new User32WindowFuncs.POINT { X = pt.X, Y = pt.Y };
+                        if (!User32WindowFuncs.ScreenToClient(winHwnd, ref screenPt) || screenPt.X < 0 || screenPt.Y < 0)
                         {
                             continue;
                         }
@@ -675,8 +649,8 @@ namespace AJut.UX.Docking
 
                 // Restore tearoff opacity. If CloseSourceTearoffIfEmpty already closed the
                 // window these Win32 calls are harmless no-ops on the stale HWND.
-                SetLayeredWindowAttributes(hwnd, 0, 255, kLwaAlpha);
-                SetWindowLongPtr(hwnd, kGwlExStyle, originalExStyle);
+                User32WindowFuncs.SetLayeredWindowAttributes(hwnd, 0, 255, User32WindowFuncs.kLwaAlpha);
+                User32WindowFuncs.SetWindowLongPtr(hwnd, User32WindowFuncs.kGwlExStyle, originalExStyle);
 
                 if (lastInsertionWidget != null)
                 {
@@ -692,7 +666,7 @@ namespace AJut.UX.Docking
 
         // ===========[ Serialization ]========================================
 
-        public bool SetupDefaultAndFallbackTo (string fallbackLayoutFilePath)
+        public bool SetupDefaultAndFallbackTo(string fallbackLayoutFilePath)
         {
             if (this.ReloadDockLayoutFromPersistentStorage())
             {
@@ -709,7 +683,7 @@ namespace AJut.UX.Docking
             return false;
         }
 
-        public bool ReloadDockLayoutFromPersistentStorage ()
+        public bool ReloadDockLayoutFromPersistentStorage()
         {
             try
             {
@@ -722,27 +696,27 @@ namespace AJut.UX.Docking
             }
         }
 
-        public bool LoadDockLayoutFromFile (string filePath)
+        public bool LoadDockLayoutFromFile(string filePath)
             => DockingSerialization.ResetFromState(filePath, this);
 
-        public bool SaveDockLayoutToPersistentStorage ()
+        public bool SaveDockLayoutToPersistentStorage()
             => this.SaveDockLayoutToFile(this.DockLayoutPersistentStorageFile);
 
-        public bool SaveDockLayoutToFile (string filePath = null)
+        public bool SaveDockLayoutToFile(string filePath = null)
             => DockingSerialization.SerializeStateTo(filePath, this);
 
-        public string GenerateDefaultStateStorageAutoSaveTempPath ()
+        public string GenerateDefaultStateStorageAutoSaveTempPath()
             => this.DockLayoutPersistentStorageFile + "~";
 
         // ===========[ Internal - used by DockingSerialization ]==============
 
-        internal DockZoneViewModel GetFallbackRootZone ()
+        internal DockZoneViewModel GetFallbackRootZone()
             => m_rootDockZones.FirstOrDefault()?.ViewModel;
 
-        internal DockZoneViewModel GetRootZone (string groupId)
+        internal DockZoneViewModel GetRootZone(string groupId)
             => m_rootDockZones.FirstOrDefault(z => DockZone.GetGroupId(z) == groupId)?.ViewModel;
 
-        internal void ClearForLoadingFromState ()
+        internal void ClearForLoadingFromState()
         {
             var tearoffs = m_dockZoneMapping.Keys.Where(w => w != this.RootWindow).ToList();
             m_windowsToCloseSilently.AddRange(tearoffs);
@@ -763,7 +737,7 @@ namespace AJut.UX.Docking
             }
         }
 
-        internal DockingSerialization.CoreStorageData BuildSerializationInfoForRoot ()
+        internal DockingSerialization.CoreStorageData BuildSerializationInfoForRoot()
         {
             var storage = new DockingSerialization.CoreStorageData();
 
@@ -782,7 +756,7 @@ namespace AJut.UX.Docking
             return storage;
         }
 
-        internal IEnumerable<DockingSerialization.WindowStorageData> BuildSerializationInfoForAncillaryWindows ()
+        internal IEnumerable<DockingSerialization.WindowStorageData> BuildSerializationInfoForAncillaryWindows()
         {
             // Snapshot the mapping so we iterate a stable list. Skip the root window and any
             // entry whose AppWindow is null (window already closed / in teardown).
@@ -820,7 +794,7 @@ namespace AJut.UX.Docking
             }
         }
 
-        internal Result<Window> CreateAndStockTearoffWindow (
+        internal Result<Window> CreateAndStockTearoffWindow(
             DockZoneViewModel rootZone,
             Point origin,
             Size size)
@@ -831,115 +805,22 @@ namespace AJut.UX.Docking
                 window = this.CreateNewTearoffWindowHandler();
 
                 // Tool-window presenter: keep the resize border so the user can resize
-                // the tearoff, but remove the OS title bar (and with it the system
-                // caption buttons). Our custom header row provides all chrome.
+                // the tearoff, but remove the OS title bar. DockTearoffContainerPanel
+                // provides a custom title bar with drag handle and close button.
                 var overlappedPresenter = Microsoft.UI.Windowing.OverlappedPresenter.Create();
                 overlappedPresenter.SetBorderAndTitleBar(hasBorder: true, hasTitleBar: false);
                 window.AppWindow.SetPresenter(overlappedPresenter);
 
                 var newDockZone = new DockZone { ViewModel = rootZone };
-
-                // ---- Custom chrome -----------------------------------------------
-                // Replaces the system title bar with a minimal header:
-                //   [         drag area         ] [✕ close]
-                // PointerPressed on the drag area (the star-width region) calls
-                // InitiateDrag: the tearoff window follows the cursor and drop-target
-                // overlays appear on other zones. The close Button captures pointer
-                // first so clicking it never triggers the drag handler.
-                var fgBrush = new SolidColorBrush(Windows.UI.Color.FromArgb(0xFF, 0xF0, 0xF0, 0xF0));
-
-                var closeButton = new Button
+                var panel = new DockTearoffContainerPanel
                 {
-                    Content           = "✕",
-                    Padding           = new Thickness(8, 4, 8, 4),
-                    VerticalAlignment = VerticalAlignment.Stretch,
-                    BorderThickness   = new Thickness(0),
-                    Background        = new SolidColorBrush(Windows.UI.Color.FromArgb(0, 0, 0, 0)),
-                    Foreground        = fgBrush,
-                };
-                closeButton.Click += (s, e) => window.Close();
-
-                var titleBarGrid = new Grid
-                {
-                    Height     = 30,
-                    Background = new SolidColorBrush(Windows.UI.Color.FromArgb(0xFF, 0x1A, 0x1A, 0x1A)),
-                };
-                titleBarGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                titleBarGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-                Grid.SetColumn(closeButton, 1);
-                titleBarGrid.Children.Add(closeButton);
-
-                // Root layout: title bar row + dock zone row
-                var rootGrid = new Grid();
-                rootGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-                rootGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-                Grid.SetRow(titleBarGrid, 0);
-                Grid.SetRow(newDockZone,  1);
-                rootGrid.Children.Add(titleBarGrid);
-                rootGrid.Children.Add(newDockZone);
-
-                window.Content = rootGrid;
-
-                // Pressing on the title bar (not the close button) starts a dock-drag.
-                // We wait for DragThresholdPixels of movement before initiating so a
-                // simple click on the title bar doesn't accidentally tear off the window.
-                // The press-point is passed through so the window stays under the cursor.
-                bool titleBarDragPending = false;
-                Windows.Foundation.Point titleBarLocalPressPt  = default;
-                Windows.Foundation.Point titleBarScreenPressPt = default;
-
-                titleBarGrid.PointerPressed += (s, e) =>
-                {
-                    e.Handled = true;
-                    titleBarDragPending = true;
-                    titleBarLocalPressPt = e.GetCurrentPoint(titleBarGrid).Position;
-                    if (GetCursorPos(out POINT sp))
-                    {
-                        titleBarScreenPressPt = new Windows.Foundation.Point(sp.X, sp.Y);
-                    }
-
-                    titleBarGrid.CapturePointer(e.Pointer);
+                    DockZoneContent = newDockZone,
+                    DragThresholdPixels = this.DragThresholdPixels,
                 };
 
-                titleBarGrid.PointerMoved += (s, e) =>
-                {
-                    if (!titleBarDragPending)
-                    {
-                        return;
-                    }
-
-                    var cur = e.GetCurrentPoint(titleBarGrid).Position;
-                    double dx = cur.X - titleBarLocalPressPt.X;
-                    double dy = cur.Y - titleBarLocalPressPt.Y;
-                    double threshold = this.DragThresholdPixels;
-
-                    if (dx * dx + dy * dy > threshold * threshold)
-                    {
-                        titleBarDragPending = false;
-                        titleBarGrid.ReleasePointerCapture(e.Pointer);
-                        e.Handled = true;
-
-                        // cursorWindowOffset = local press point within the title bar,
-                        // which IS the top row of the window (Y offset = 0 extra).
-                        var winOffset = new Windows.Foundation.Point(
-                            titleBarLocalPressPt.X,
-                            titleBarLocalPressPt.Y);
-
-                        _ = this.InitiateDrag(newDockZone, titleBarScreenPressPt, winOffset);
-                    }
-                };
-
-                titleBarGrid.PointerReleased += (s, e) =>
-                {
-                    titleBarDragPending = false;
-                    titleBarGrid.ReleasePointerCapture(e.Pointer);
-                };
-
-                titleBarGrid.PointerCaptureLost += (s, e) =>
-                {
-                    titleBarDragPending = false;
-                };
-                // -----------------------------------------------------------------
+                panel.TitleBarDragInitiated += this.OnTearoffPanelDragInitiated;
+                panel.CloseRequested += this.OnTearoffPanelCloseRequested;
+                window.Content = panel;
 
                 var appWindow = window.AppWindow;
                 appWindow.Resize(new Windows.Graphics.SizeInt32((int)size.Width, (int)size.Height));
@@ -967,7 +848,7 @@ namespace AJut.UX.Docking
 
         // Called by DockZone.OnHeaderPointerPressed to resolve the host Window.
         // Traverses m_dockZoneMapping; falls back to RootWindow if not found.
-        internal Window GetWindowForZone (DockZone zone)
+        internal Window GetWindowForZone(DockZone zone)
         {
             foreach (var (window, zones) in m_dockZoneMapping)
             {
@@ -988,13 +869,13 @@ namespace AJut.UX.Docking
         // the window is not in m_dockZoneMapping. Used by OnHeaderPointerPressed
         // so that dragging a panel header inside a tearoff moves the whole tearoff
         // rather than tearing the panel out into yet another window.
-        internal DockZone GetRootDockZoneForWindow (Window window)
+        internal DockZone GetRootDockZoneForWindow(Window window)
             => m_dockZoneMapping.TryGetValue(window, out var zones) ? zones.FirstOrDefault() : null;
 
         // Exposes Win32 GetCursorPos to DockZone without duplicating the P/Invoke.
-        internal bool TryGetCursorScreenPos (out Point pt)
+        internal bool TryGetCursorScreenPos(out Point pt)
         {
-            if (GetCursorPos(out POINT raw))
+            if (User32WindowFuncs.GetCursorPos(out var raw))
             {
                 pt = new Point(raw.X, raw.Y);
                 return true;
@@ -1006,8 +887,20 @@ namespace AJut.UX.Docking
 
         // ===========[ Private Helpers ]======================================
 
+        private async void OnTearoffPanelDragInitiated(object sender, Point localPressPt)
+        {
+            var panel = (DockTearoffContainerPanel)sender;
+            await this.InitiateDrag(panel.DockZoneContent, cursorWindowOffset: localPressPt);
+        }
+
+        private void OnTearoffPanelCloseRequested(object sender, EventArgs e)
+        {
+            var panel = (DockTearoffContainerPanel)sender;
+            this.GetWindowForZone(panel.DockZoneContent)?.Close();
+        }
+
         // Unconditionally close and deregister a tearoff window (e.g. after a successful drop).
-        private void CloseTearoffWindow (Window sourceWindow)
+        private void CloseTearoffWindow(Window sourceWindow)
         {
             if (!m_windowManager.Contains(sourceWindow) || sourceWindow == this.RootWindow)
             {
@@ -1030,7 +923,7 @@ namespace AJut.UX.Docking
 
         // Conditionally close a tearoff window only when all docked content has been removed.
         // Kept for callers that need the empty-check (e.g. if we re-introduce partial drops).
-        private void CloseSourceTearoffIfEmpty (Window sourceWindow, DockZone sourceDockZone)
+        private void CloseSourceTearoffIfEmpty(Window sourceWindow, DockZone sourceDockZone)
         {
             bool hasContent = TreeTraversal<DockZone>.All(sourceDockZone)
                 .Any(z => z.ViewModel?.DockedContent.Count > 0);
@@ -1041,7 +934,7 @@ namespace AJut.UX.Docking
             }
         }
 
-        private void OnTearoffWindowClosing (Window window, Microsoft.UI.Windowing.AppWindowClosingEventArgs e)
+        private void OnTearoffWindowClosing(Window window, Microsoft.UI.Windowing.AppWindowClosingEventArgs e)
         {
             if (m_windowsToCloseSilently.Contains(window) || m_currentlyClosingWindows.Contains(window))
             {
@@ -1084,7 +977,7 @@ namespace AJut.UX.Docking
         // Removing from m_dockZoneMapping here would erase live tearoff entries on
         // every activation reorder. Cleanup is handled exclusively by
         // OnTearoffWindowClosing (AppWindow.Closing), CloseAll, and OnRootWindowClosed.
-        private void OnWindowManagerCollectionChanged (object sender, NotifyCollectionChangedEventArgs e)
+        private void OnWindowManagerCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             // Intentional no-op - see comment above.
         }
@@ -1093,7 +986,7 @@ namespace AJut.UX.Docking
         // orphaned tool windows linger after the app exits. We bypass the normal
         // CanClose veto path by adding windows to m_windowsToCloseSilently first,
         // which causes OnTearoffWindowClosing to exit early without cancelling.
-        private void OnRootWindowClosed (object sender, WindowEventArgs e)
+        private void OnRootWindowClosed(object sender, WindowEventArgs e)
         {
             var tearoffs = m_dockZoneMapping.Keys.Where(w => w != this.RootWindow).ToList();
             m_windowsToCloseSilently.AddRange(tearoffs);
@@ -1114,7 +1007,7 @@ namespace AJut.UX.Docking
         // Windows are brought back-to-front (least-recently-activated first) so the
         // most-recently-activated tearoff ends up closest to the root; root is raised
         // last to stay on top of all tearoffs.
-        private void OnRootWindowActivated (object sender, WindowActivatedEventArgs e)
+        private void OnRootWindowActivated(object sender, WindowActivatedEventArgs e)
         {
             if (e.WindowActivationState == WindowActivationState.Deactivated)
             {
@@ -1139,7 +1032,7 @@ namespace AJut.UX.Docking
             catch { }
         }
 
-        private void TriggerLayoutAutoSave ()
+        private void TriggerLayoutAutoSave()
         {
             if (this.IsLoadingFromLayout || !m_isReadyToTrackAutoSave)
             {
@@ -1156,7 +1049,7 @@ namespace AJut.UX.Docking
             }
         }
 
-        private IDockableDisplayElement SetupAndReturnNew (IDockableDisplayElement displayElement)
+        private IDockableDisplayElement SetupAndReturnNew(IDockableDisplayElement displayElement)
         {
             if (displayElement == null)
             {
@@ -1170,7 +1063,7 @@ namespace AJut.UX.Docking
             return displayElement;
         }
 
-        private static IDockableDisplayElement BuildDefaultDisplayFor (Type elementType)
+        private static IDockableDisplayElement BuildDefaultDisplayFor(Type elementType)
             => AJutActivator.CreateInstanceOf(elementType) as IDockableDisplayElement;
 
         // ===========[ Sub-classes ]===========================================
@@ -1179,6 +1072,37 @@ namespace AJut.UX.Docking
         {
             public bool IsSingleInstanceOnly { get; init; }
             public Func<IDockableDisplayElement> Builder { get; init; }
+        }
+
+        // All user32.dll P/Invokes and their associated constants live here so
+        // they are self-contained and not scattered throughout DockingManager.
+        private static class User32WindowFuncs
+        {
+            internal const int kGwlExStyle = -20;
+            internal const int kWsExLayered = 0x80000;
+            internal const uint kLwaAlpha = 0x2;
+            internal const int kVkLButton = 0x01;
+
+            [DllImport("user32.dll")]
+            internal static extern bool GetCursorPos(out POINT lpPoint);
+
+            [DllImport("user32.dll")]
+            internal static extern short GetAsyncKeyState(int vKey);
+
+            [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
+            internal static extern nint GetWindowLongPtr(nint hWnd, int nIndex);
+
+            [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
+            internal static extern nint SetWindowLongPtr(nint hWnd, int nIndex, nint dwNewLong);
+
+            [DllImport("user32.dll")]
+            internal static extern bool SetLayeredWindowAttributes(nint hwnd, uint crKey, byte bAlpha, uint dwFlags);
+
+            [DllImport("user32.dll")]
+            internal static extern bool ScreenToClient(nint hWnd, ref POINT lpPoint);
+
+            [StructLayout(LayoutKind.Sequential)]
+            internal struct POINT { public int X; public int Y; }
         }
     }
 }

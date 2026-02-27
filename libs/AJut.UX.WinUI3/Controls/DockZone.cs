@@ -22,8 +22,8 @@ namespace AJut.UX.Controls
     // the layout: Empty / Single / Tabbed / Horizontal-split / Vertical-split.
     //
     // Implements IDockZoneUI so DockZoneViewModel can be platform-agnostic:
-    //   RenderSize       → ActualWidth / ActualHeight
-    //   SetTargetSizeAsync → schedules SetTargetSize on the DispatcherQueue
+    //   RenderSize       -> ActualWidth / ActualHeight
+    //   SetTargetSizeAsync -> schedules SetTargetSize on the DispatcherQueue
     //
     // The template contains only PART_Root (a Grid). All structural children
     // (DockLeafLayout, child DockZones, DockZoneSplitters) are built in code-behind
@@ -43,7 +43,6 @@ namespace AJut.UX.Controls
     public sealed class DockZone : Control, IDockZoneUI
     {
         // ===========[ Fields ]===============================================
-        private Grid PART_Root;
         private Grid m_dropOverlay;
         private DockDropInsertionDriverWidget m_overlayLeft, m_overlayTop, m_overlayRight, m_overlayBottom, m_overlayCenter;
         private readonly ObservableCollection<DockZone> m_childZones = new();
@@ -94,10 +93,11 @@ namespace AJut.UX.Controls
         protected override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
-            PART_Root = this.GetTemplateChild(nameof(PART_Root)) as Grid;
+            this.PART_Root = this.GetTemplateChild(nameof(this.PART_Root)) as Grid;
             this.BuildDropOverlay();
             this.RebuildLayout();
         }
+        public Grid PART_Root { get; private set; }
 
         // ===========[ Dependency Properties - ViewModel / Manager ]=========
 
@@ -181,14 +181,14 @@ namespace AJut.UX.Controls
 
         private void RebuildLayout()
         {
-            if (PART_Root == null)
+            if (this.PART_Root == null)
             {
                 return;
             }
 
-            PART_Root.Children.Clear();
-            PART_Root.RowDefinitions.Clear();
-            PART_Root.ColumnDefinitions.Clear();
+            this.PART_Root.Children.Clear();
+            this.PART_Root.RowDefinitions.Clear();
+            this.PART_Root.ColumnDefinitions.Clear();
 
             if (this.ViewModel == null)
             {
@@ -218,7 +218,7 @@ namespace AJut.UX.Controls
             // Always re-add drop overlay last so it renders above all content
             if (m_dropOverlay != null)
             {
-                PART_Root.Children.Add(m_dropOverlay);
+                this.PART_Root.Children.Add(m_dropOverlay);
             }
         }
 
@@ -233,7 +233,7 @@ namespace AJut.UX.Controls
                 FontSize = 18,
                 Opacity = 0.25,
             };
-            PART_Root.Children.Add(placeholder);
+            this.PART_Root.Children.Add(placeholder);
         }
 
         private void BuildLeafLayout(bool tabbed)
@@ -325,19 +325,19 @@ namespace AJut.UX.Controls
             }
 
             // Forward header pointer events to this DockZone's handlers.
-            // DockLeafLayout passes PART_HeaderBar (a Border) as the event sender,
+            // DockLeafLayout passes this.PART_HeaderBar (a Border) as the event sender,
             // so existing handler casts — (Border)sender — remain valid.
             leaf.HeaderPointerPressed += this.OnHeaderPointerPressed;
             leaf.HeaderPointerMoved += this.OnHeaderPointerMoved;
             leaf.HeaderPointerReleased += this.OnHeaderPointerReleased;
             leaf.HeaderPointerCaptureLost += this.OnHeaderPointerCaptureLost;
 
-            PART_Root.Children.Add(leaf);
+            this.PART_Root.Children.Add(leaf);
         }
 
         // Returns the tab-navigation Grid (left scroll btn + ScrollViewer + right scroll btn).
         // The outer wrapper Border (background, top border, padding) lives in DockLeafLayout's
-        // PART_TabStripWrapper template part — only the inner content is built here.
+        // this.PART_TabStripWrapper template part — only the inner content is built here.
         private FrameworkElement BuildTabNavContent(DockingContentAdapterModel selectedAdapter)
         {
             var tabPanel = new StackPanel { Orientation = Orientation.Horizontal };
@@ -467,7 +467,7 @@ namespace AJut.UX.Controls
 
                         if (!isReorderDrag)
                         {
-                            // Vertical → tearoff mode: initiate immediately
+                            // Vertical -> tearoff mode: initiate immediately
                             isPressedForDrag = false;
                             isDragModeDecided = false;
                             tabItem.ReleasePointerCapture(e.Pointer);
@@ -504,7 +504,7 @@ namespace AJut.UX.Controls
                         }
                         else if (!isDragModeDecided)
                         {
-                            // Quick click without threshold → switch tab
+                            // Quick click without threshold -> switch tab
                             this.ViewModel.SelectedIndex = capturedIndex;
                         }
                     }
@@ -585,7 +585,7 @@ namespace AJut.UX.Controls
             navGrid.Children.Add(rightScrollBtn);
 
             // Return only the inner nav grid. The outer wrapper (background, top border, padding)
-            // is PART_TabStripWrapper in DockLeafLayout's ControlTemplate — see DockLeafLayout.xaml.
+            // is this.PART_TabStripWrapper in DockLeafLayout's ControlTemplate — see DockLeafLayout.xaml.
             return navGrid;
         }
 
@@ -620,32 +620,32 @@ namespace AJut.UX.Controls
 
                 if (isHorizontal)
                 {
-                    PART_Root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                    this.PART_Root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
                     Grid.SetColumn(child, i * 2);
-                    PART_Root.Children.Add(child);
+                    this.PART_Root.Children.Add(child);
 
                     if (i < m_childZones.Count - 1)
                     {
-                        PART_Root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(separationSize) });
+                        this.PART_Root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(separationSize) });
                         var splitter = new DockZoneSplitter();
-                        splitter.Setup(PART_Root, i, eDockOrientation.Horizontal);
+                        splitter.Setup(this.PART_Root, i, eDockOrientation.Horizontal);
                         Grid.SetColumn(splitter, i * 2 + 1);
-                        PART_Root.Children.Add(splitter);
+                        this.PART_Root.Children.Add(splitter);
                     }
                 }
                 else // Vertical
                 {
-                    PART_Root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+                    this.PART_Root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
                     Grid.SetRow(child, i * 2);
-                    PART_Root.Children.Add(child);
+                    this.PART_Root.Children.Add(child);
 
                     if (i < m_childZones.Count - 1)
                     {
-                        PART_Root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(separationSize) });
+                        this.PART_Root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(separationSize) });
                         var splitter = new DockZoneSplitter();
-                        splitter.Setup(PART_Root, i, eDockOrientation.Vertical);
+                        splitter.Setup(this.PART_Root, i, eDockOrientation.Vertical);
                         Grid.SetRow(splitter, i * 2 + 1);
-                        PART_Root.Children.Add(splitter);
+                        this.PART_Root.Children.Add(splitter);
                     }
                 }
             }
@@ -660,7 +660,7 @@ namespace AJut.UX.Controls
 
         private void HandleNewChildZonesAdded(IEnumerable<DockZone> added)
         {
-            if (added == null || !added.Any() || PART_Root == null || this.ViewModel == null)
+            if (added == null || !added.Any() || this.PART_Root == null || this.ViewModel == null)
             {
                 return;
             }
@@ -703,7 +703,7 @@ namespace AJut.UX.Controls
 
         internal void SetTargetSize(List<double> sizes)
         {
-            if (PART_Root == null || this.ViewModel == null)
+            if (this.PART_Root == null || this.ViewModel == null)
             {
                 return;
             }
@@ -714,13 +714,13 @@ namespace AJut.UX.Controls
             for (int i = 0; i < count; i++)
             {
                 int defIndex = i * 2;
-                if (isHorizontal && defIndex < PART_Root.ColumnDefinitions.Count)
+                if (isHorizontal && defIndex < this.PART_Root.ColumnDefinitions.Count)
                 {
-                    PART_Root.ColumnDefinitions[defIndex].Width = new GridLength(sizes[i], GridUnitType.Star);
+                    this.PART_Root.ColumnDefinitions[defIndex].Width = new GridLength(sizes[i], GridUnitType.Star);
                 }
-                else if (!isHorizontal && defIndex < PART_Root.RowDefinitions.Count)
+                else if (!isHorizontal && defIndex < this.PART_Root.RowDefinitions.Count)
                 {
-                    PART_Root.RowDefinitions[defIndex].Height = new GridLength(sizes[i], GridUnitType.Star);
+                    this.PART_Root.RowDefinitions[defIndex].Height = new GridLength(sizes[i], GridUnitType.Star);
                 }
             }
         }
@@ -829,18 +829,18 @@ namespace AJut.UX.Controls
         private void OnChildZonesCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             // When split-layout children change at runtime, rebuild the split structure.
-            if (PART_Root != null && this.ViewModel != null
+            if (this.PART_Root != null && this.ViewModel != null
                 && (this.ViewModel.Orientation & eDockOrientation.AnySplitOrientation) != 0)
             {
-                PART_Root.Children.Clear();
-                PART_Root.RowDefinitions.Clear();
-                PART_Root.ColumnDefinitions.Clear();
+                this.PART_Root.Children.Clear();
+                this.PART_Root.RowDefinitions.Clear();
+                this.PART_Root.ColumnDefinitions.Clear();
                 this.BuildSplitLayout();
 
                 // Re-add overlay above all split content
                 if (m_dropOverlay != null)
                 {
-                    PART_Root.Children.Add(m_dropOverlay);
+                    this.PART_Root.Children.Add(m_dropOverlay);
                 }
             }
         }

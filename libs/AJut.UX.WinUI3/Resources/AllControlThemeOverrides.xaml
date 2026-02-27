@@ -20,6 +20,7 @@
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Resources/Microsoft.UI.Xaml_Overrides.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Resources/AJut.UX_Overrides.xaml"/>
+        <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Resources/AJutThemeMapAliasing.xaml"/>
     </ResourceDictionary.MergedDictionaries>
 
     <!-- Re-declare shared resources so this file is self-contained when used as an implicit-style
@@ -699,6 +700,7 @@
         <Setter Property="Background" Value="{ThemeResource AJut_Brush_PopOutControlBackground}"/>
         <Setter Property="BorderBrush" Value="{ThemeResource AJut_Brush_BorderCommon}"/>
         <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="ItemPadding" Value="8,4"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:ToggleStrip">

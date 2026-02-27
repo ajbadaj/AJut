@@ -3,17 +3,55 @@
                     xmlns:local="using:AJut.UX.Controls">
 
     <!-- ===========[ DockDropInsertionDriverWidget: Default Style ]=========== -->
-    <!-- Visual is entirely code-built in OnApplyTemplate.
-         PART_Root (Border) receives its background, border, and child TextBlock
-         from the code-behind based on Direction and IsEngaged state. -->
+    <!-- Drop-target arrow widget shown in DockZone drag overlay.
+         PART_Glyph text is set from the Direction DP in code; all visual styling
+         lives here in XAML via the EngagementStates VSM group.
 
+         Brush resources (AJut_DockDropInsertionDriverWidget_*) are defined as flat
+         resources in AJutCustomControlStylingDefaults.xaml (merged first in Generic.xaml).
+         App-level AllControlThemeOverrides.xaml overrides them via a flat merge of
+         AJutThemeMapAliasing.xaml; App.Resources flat > Generic.xaml flat in the
+         {ThemeResource} fallback lookup, so the override wins cleanly. -->
     <Style TargetType="local:DockDropInsertionDriverWidget">
         <Setter Property="IsTabStop" Value="False"/>
         <Setter Property="Padding" Value="2"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:DockDropInsertionDriverWidget">
-                    <Border x:Name="PART_Root"/>
+                    <!-- Background/BorderBrush/Foreground are NOT TemplateBinding'd here.
+                         TemplateBinding those same properties while VSM also targets them
+                         causes the binding to overwrite VSM-applied values on re-evaluation.
+                         VSM owns these entirely; initial appearance is set by GoToState("Idle")
+                         in OnApplyTemplate. -->
+                    <Border x:Name="PART_Root" BorderThickness="1">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="EngagementStates">
+                                <!-- Idle: resting state when not hovered by a drag -->
+                                <VisualState x:Name="Idle">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_Root.Background"  Value="{ThemeResource AJut_DockDropInsertionDriverWidget_BackgroundIdleBrush}"/>
+                                        <Setter Target="PART_Root.BorderBrush" Value="{ThemeResource AJut_DockDropInsertionDriverWidget_BorderIdleBrush}"/>
+                                        <Setter Target="PART_Glyph.Foreground" Value="{ThemeResource AJut_DockDropInsertionDriverWidget_GlyphIdleBrush}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <!-- Engaged: highlighted when active drop target under the dragged item -->
+                                <VisualState x:Name="Engaged">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_Root.Background"  Value="{ThemeResource AJut_DockDropInsertionDriverWidget_BackgroundEngagedBrush}"/>
+                                        <Setter Target="PART_Root.BorderBrush" Value="{ThemeResource AJut_DockDropInsertionDriverWidget_BorderEngagedBrush}"/>
+                                        <Setter Target="PART_Glyph.Foreground" Value="{ThemeResource AJut_DockDropInsertionDriverWidget_GlyphEngagedBrush}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+
+                        <TextBlock x:Name="PART_Glyph"
+                                   FontFamily="Segoe Fluent Icons"
+                                   FontSize="14"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   Padding="2"/>
+                    </Border>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

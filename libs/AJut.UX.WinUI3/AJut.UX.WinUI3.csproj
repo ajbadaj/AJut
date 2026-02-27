@@ -93,6 +93,9 @@
     <Compile Update="Controls\DockLeafLayout.cs">
       <DependentUpon>DockLeafLayout.xaml</DependentUpon>
     </Compile>
+    <Compile Update="Controls\DockTearoffContainerPanel.cs">
+      <DependentUpon>DockTearoffContainerPanel.xaml</DependentUpon>
+    </Compile>
     <Compile Update="Controls\DockZone.cs">
       <DependentUpon>DockZone.xaml</DependentUpon>
     </Compile>
@@ -102,6 +105,12 @@
       <PackagePath>\</PackagePath>
       <Pack>True</Pack>
     </None>
+    <Page Update="Controls\AJutCustomControlStylingDefaults.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Update="Resources\AJutThemeMapAliasing.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <None Include="..\..\license.txt" Link="license.txt">
       <PackagePath>
       </PackagePath>

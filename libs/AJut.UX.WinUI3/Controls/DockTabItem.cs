@@ -22,9 +22,9 @@ namespace AJut.UX.Controls
     //   Selected            - selected              (opacity 1.00, -2px top margin bleeds into content)
     //   SelectedPointerOver - selected + hovered    (same as Selected — hover keeps the overlap)
 
-    [TemplateVisualState(Name = "Normal",              GroupName = "SelectionStates")]
-    [TemplateVisualState(Name = "PointerOver",         GroupName = "SelectionStates")]
-    [TemplateVisualState(Name = "Selected",            GroupName = "SelectionStates")]
+    [TemplateVisualState(Name = "Normal", GroupName = "SelectionStates")]
+    [TemplateVisualState(Name = "PointerOver", GroupName = "SelectionStates")]
+    [TemplateVisualState(Name = "Selected", GroupName = "SelectionStates")]
     [TemplateVisualState(Name = "SelectedPointerOver", GroupName = "SelectionStates")]
     public sealed class DockTabItem : ContentControl
     {
@@ -34,17 +34,17 @@ namespace AJut.UX.Controls
         private Border m_innerBorder;
 
         // ===========[ Construction ]==========================================
-        public DockTabItem ()
+        public DockTabItem()
         {
-            this.DefaultStyleKey    = typeof(DockTabItem);
+            this.DefaultStyleKey = typeof(DockTabItem);
             this.UseSystemFocusVisuals = false;
         }
 
-        protected override void OnApplyTemplate ()
+        protected override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
 
-            m_rootBorder  = this.GetTemplateChild("Root")        as Border;
+            m_rootBorder = this.GetTemplateChild("Root") as Border;
             m_innerBorder = this.GetTemplateChild("InnerBorder") as Border;
 
             // Push visual DPs to template parts. BorderThickness is a local value set by
@@ -54,7 +54,7 @@ namespace AJut.UX.Controls
             if (m_rootBorder != null)
             {
                 m_rootBorder.BorderThickness = this.BorderThickness;
-                m_rootBorder.BorderBrush     = this.BorderBrush;
+                m_rootBorder.BorderBrush = this.BorderBrush;
             }
             if (m_innerBorder != null)
             {
@@ -66,9 +66,7 @@ namespace AJut.UX.Controls
 
         // ===========[ Dependency Properties ]=================================
 
-        public static readonly DependencyProperty IsSelectedProperty = DPUtils.Register(
-            _ => _.IsSelected,
-            (d, e) => d.UpdateVisualState());
+        public static readonly DependencyProperty IsSelectedProperty = DPUtils.Register(_ => _.IsSelected, (d, e) => d.UpdateVisualState());
         public bool IsSelected
         {
             get => (bool)this.GetValue(IsSelectedProperty);
@@ -77,14 +75,14 @@ namespace AJut.UX.Controls
 
         // ===========[ Pointer event overrides ]===============================
 
-        protected override void OnPointerEntered (PointerRoutedEventArgs e)
+        protected override void OnPointerEntered(PointerRoutedEventArgs e)
         {
             base.OnPointerEntered(e);
             m_isPointerOver = true;
             this.UpdateVisualState();
         }
 
-        protected override void OnPointerExited (PointerRoutedEventArgs e)
+        protected override void OnPointerExited(PointerRoutedEventArgs e)
         {
             base.OnPointerExited(e);
             m_isPointerOver = false;
@@ -93,7 +91,7 @@ namespace AJut.UX.Controls
 
         // ===========[ Visual state management ]===============================
 
-        private void UpdateVisualState ()
+        private void UpdateVisualState()
         {
             if (this.IsSelected)
             {

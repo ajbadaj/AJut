@@ -4,92 +4,69 @@ namespace AJut.UX.Controls
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
     using Microsoft.UI.Xaml.Media;
-    using Windows.UI;
+    using System;
     using DPUtils = AJut.UX.DPUtils<DockDropInsertionDriverWidget>;
 
     // ===========[ DockDropInsertionDriverWidget ]===========================
     // WinUI3-specific: no WPF equivalent.
     // Directional drop-target arrow shown as part of the DockZone drop overlay.
-    // Five of these are arranged in a 3×3 grid (Left/Top/Right/Bottom/Center)
+    // Five of these are arranged in a 3x3 grid (Left/Top/Right/Bottom/Center)
     // centered over a DockZone when DockZone.IsDirectDropTarget = true during
     // a drag operation.
     //
-    // Visual is code-built in OnApplyTemplate:
-    //   PART_Root (Border) - background/border react to IsEngaged
-    //   Child TextBlock    - Segoe Fluent Icons glyph keyed to Direction
+    // Template parts:
+    //   PART_Root  - Border; Background and BorderBrush driven by EngagementStates VSM
+    //   PART_Glyph - Segoe Fluent Icons TextBlock; Text set from Direction DP in code
     //
-    // Template part:
-    //   PART_Root - Border whose Background/BorderBrush change on IsEngaged
+    // VSM groups:
+    //   EngagementStates — Idle / Engaged
 
     [TemplatePart(Name = nameof(PART_Root), Type = typeof(Border))]
+    [TemplatePart(Name = nameof(PART_Glyph), Type = typeof(TextBlock))]
+    [TemplateVisualState(Name = "Idle", GroupName = "EngagementStates")]
+    [TemplateVisualState(Name = "Engaged", GroupName = "EngagementStates")]
     public class DockDropInsertionDriverWidget : Control
     {
-        // ===========[ Constants ]============================================
-        private static readonly SolidColorBrush kNormalBackground  = new SolidColorBrush(Color.FromArgb(0xFF, 0xDD, 0xDD, 0xDD));
-        private static readonly SolidColorBrush kNormalBorder       = new SolidColorBrush(Color.FromArgb(0xFF, 0x33, 0x33, 0x33));
-        private static readonly SolidColorBrush kEngagedBackground  = new SolidColorBrush(Color.FromArgb(0xFF, 0x33, 0x99, 0xE4));
-        private static readonly SolidColorBrush kEngagedBorder      = new SolidColorBrush(Color.FromArgb(0xFF, 0x13, 0x39, 0x54));
-        private static readonly SolidColorBrush kNormalGlyph        = new SolidColorBrush(Color.FromArgb(0xFF, 0x00, 0x00, 0x00));
-        private static readonly SolidColorBrush kEngagedGlyph       = new SolidColorBrush(Color.FromArgb(0xFF, 0x13, 0x39, 0x54));
-
         // ===========[ Fields ]===============================================
         private Border PART_Root;
-        private TextBlock m_glyphBlock;
+        private TextBlock PART_Glyph;
 
-        // ===========[ Construction ]=========================================
-        public DockDropInsertionDriverWidget ()
+        // ===========[ Setup/Construction/Teardown ]===========================
+        public DockDropInsertionDriverWidget()
         {
             this.DefaultStyleKey = typeof(DockDropInsertionDriverWidget);
         }
 
-        // ===========[ Template ]=============================================
-        protected override void OnApplyTemplate ()
+        protected override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
-            PART_Root = this.GetTemplateChild(nameof(PART_Root)) as Border;
-            if (PART_Root == null)
-            {
-                return;
-            }
+            this.PART_Root = this.GetTemplateChild(nameof(PART_Root)) as Border;
+            this.PART_Glyph = this.GetTemplateChild(nameof(PART_Glyph)) as TextBlock;
 
-            m_glyphBlock = new TextBlock
-            {
-                FontFamily = new FontFamily("Segoe Fluent Icons"),
-                FontSize = 14,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center,
-                Padding = new Thickness(2),
-            };
-
-            PART_Root.BorderThickness = new Thickness(1);
-            PART_Root.Child = m_glyphBlock;
-
-            // Apply initial state from current DP values
-            this.ApplyEngagedVisual(this.IsEngaged);
-            this.ApplyDirectionVisual(this.Direction);
+            this.ApplyDirectionGlyph(this.Direction);
+            VisualStateManager.GoToState(this, this.IsEngaged ? "Engaged" : "Idle", false);
         }
 
         // ===========[ Dependency Properties ]================================
 
-        public static readonly DependencyProperty DirectionProperty = DPUtils.Register(
-            _ => _.Direction,
-            (d, e) => d.ApplyDirectionVisual(e.NewValue)
-        );
+        public static readonly DependencyProperty DirectionProperty = DPUtils.Register(_ => _.Direction, (d, e) => d.ApplyDirectionGlyph(e.NewValue));
         public eDockInsertionDirection Direction
         {
             get => (eDockInsertionDirection)this.GetValue(DirectionProperty);
             set => this.SetValue(DirectionProperty, value);
         }
 
-        public static readonly DependencyProperty IsEngagedProperty = DPUtils.Register(
-            _ => _.IsEngaged,
-            (d, e) => d.ApplyEngagedVisual(e.NewValue)
-        );
+        public static readonly DependencyProperty IsEngagedProperty = DPUtils.Register(_ => _.IsEngaged, (d, e) => d.OnIsEngagedChanged(e));
         public bool IsEngaged
         {
             get => (bool)this.GetValue(IsEngagedProperty);
             set => this.SetValue(IsEngagedProperty, value);
         }
+        private void OnIsEngagedChanged(DependencyPropertyChangedEventArgs<bool> e)
+        {
+            VisualStateManager.GoToState(this, (bool)e.NewValue ? "Engaged" : "Idle", true);
+        }
+
 
         public static readonly DependencyProperty InsertionZoneProperty = DPUtils.Register(_ => _.InsertionZone);
         public DockZone InsertionZone
@@ -98,40 +75,45 @@ namespace AJut.UX.Controls
             set => this.SetValue(InsertionZoneProperty, value);
         }
 
+        //public static readonly DependencyProperty BorderHighlightedBrushProperty = DPUtils.Register(_ => _.BorderHighlightedBrush);
+        //public Brush BorderHighlightedBrush
+        //{
+        //    get => (Brush)this.GetValue(BorderHighlightedBrushProperty);
+        //    set => this.SetValue(BorderHighlightedBrushProperty, value);
+        //}
+
+        //public static readonly DependencyProperty BackgroundHighlightedBrushProperty = DPUtils.Register(_ => _.BackgroundHighlightedBrush);
+        //public Brush BackgroundHighlightedBrush
+        //{
+        //    get => (Brush)this.GetValue(BackgroundHighlightedBrushProperty);
+        //    set => this.SetValue(BackgroundHighlightedBrushProperty, value);
+        //}
+
+        //public static readonly DependencyProperty GlyphHighlightedBrushProperty = DPUtils.Register(_ => _.GlyphHighlightedBrush);
+        //public Brush GlyphHighlightedBrush
+        //{
+        //    get => (Brush)this.GetValue(GlyphHighlightedBrushProperty);
+        //    set => this.SetValue(GlyphHighlightedBrushProperty, value);
+        //}
+
         // ===========[ Private Helpers ]======================================
 
-        private void ApplyDirectionVisual (eDockInsertionDirection direction)
+        private void ApplyDirectionGlyph(eDockInsertionDirection direction)
         {
-            if (m_glyphBlock == null)
+            if (PART_Glyph == null)
             {
                 return;
             }
 
-            m_glyphBlock.Text = direction switch
+            this.PART_Glyph.Text = direction switch
             {
-                eDockInsertionDirection.Left              => "\uE76B", // ChevronLeft
-                eDockInsertionDirection.Top               => "\uE70E", // ChevronUp
-                eDockInsertionDirection.Right             => "\uE76C", // ChevronRight
-                eDockInsertionDirection.Bottom            => "\uE70D", // ChevronDown
+                eDockInsertionDirection.Left => "\uE76B", // ChevronLeft
+                eDockInsertionDirection.Top => "\uE70E", // ChevronUp
+                eDockInsertionDirection.Right => "\uE76C", // ChevronRight
+                eDockInsertionDirection.Bottom => "\uE70D", // ChevronDown
                 eDockInsertionDirection.AddToTabbedDisplay => "\uE710", // Add / plus
                 _ => "\uE76C",
             };
-        }
-
-        private void ApplyEngagedVisual (bool engaged)
-        {
-            if (PART_Root == null)
-            {
-                return;
-            }
-
-            PART_Root.Background  = engaged ? kEngagedBackground : kNormalBackground;
-            PART_Root.BorderBrush = engaged ? kEngagedBorder     : kNormalBorder;
-
-            if (m_glyphBlock != null)
-            {
-                m_glyphBlock.Foreground = engaged ? kEngagedGlyph : kNormalGlyph;
-            }
         }
     }
 }

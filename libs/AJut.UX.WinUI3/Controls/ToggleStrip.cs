@@ -27,7 +27,8 @@ namespace AJut.UX.Controls
     // code (CreateItemButton) because they are index-aware — the first and last buttons
     // receive rounded corners matching the strip's CornerRadius DP, while interior
     // buttons receive squared corners. These are structural, not stylistic, assignments.
-    // Callers can override button appearance via ToggleButtonItemStyle.
+    // Button Padding comes from the ItemPadding DP (default 8,4); callers can override
+    // via that DP or via ToggleButtonItemStyle.
 
     [TemplatePart(Name = nameof(PART_ItemsPanel), Type = typeof(StackPanel))]
     public class ToggleStrip : Control
@@ -153,8 +154,8 @@ namespace AJut.UX.Controls
 
         // ToggleButtonItemStyle: optional Style applied to each generated ToggleButton.
         // Use this to customize button appearance (font, colors, etc.) without subclassing.
-        // Note: code still sets CornerRadius, BorderThickness, and Padding after applying
-        // this style because those values are index-aware (first/last button differ).
+        // Note: code still sets CornerRadius, BorderThickness, and Padding (via ItemPadding)
+        // after applying this style because those values are index-aware or DP-driven.
         public static readonly DependencyProperty ToggleButtonItemStyleProperty = DPUtils.Register(
             _ => _.ToggleButtonItemStyle,
             (d, e) => d.RebuildItems());
@@ -162,6 +163,17 @@ namespace AJut.UX.Controls
         {
             get => (Style)this.GetValue(ToggleButtonItemStyleProperty);
             set => this.SetValue(ToggleButtonItemStyleProperty, value);
+        }
+
+        // ItemPadding: applied to each generated ToggleButton as a local value.
+        // Default set in XAML style; override via this DP to adjust without replacing ToggleButtonItemStyle.
+        public static readonly DependencyProperty ItemPaddingProperty = DPUtils.Register(
+            _ => _.ItemPadding, new Thickness(8, 4, 8, 4),
+            (d, e) => d.RebuildItems());
+        public Thickness ItemPadding
+        {
+            get => (Thickness)this.GetValue(ItemPaddingProperty);
+            set => this.SetValue(ItemPaddingProperty, value);
         }
 
         // ===========[ Template application ]=====================================
@@ -346,14 +358,14 @@ namespace AJut.UX.Controls
         {
             var btn = new ToggleButton();
 
-            // Apply caller-provided style first so structural overrides below (CornerRadius,
-            // BorderThickness, Padding) are set as local values and take precedence.
+            // Apply caller-provided style first so structural overrides below
+            // (CornerRadius, BorderThickness, Padding) are set as local values and take precedence.
             if (this.ToggleButtonItemStyle != null)
             {
                 btn.Style = this.ToggleButtonItemStyle;
             }
 
-            btn.Padding = new Thickness(8, 4, 8, 4);
+            btn.Padding = this.ItemPadding;
 
             // 1. Left-edge separator border: first button has no border; others show a
             //    1px left-only divider using the strip's BorderBrush.

@@ -6,5 +6,4 @@
         <Setter Property="InactiveTitlebarBackground" Value="{ThemeResource AJut_Brush_TitleBarBackgroundInactive}"/>
         <Setter Property="CloseHoverBackground" Value="{ThemeResource AJut_Brush_ChromeCloseButtonComplement}"/>
     </Style>
-
 </ResourceDictionary>

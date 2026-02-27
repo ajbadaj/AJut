@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+
+    <StaticResource x:Key="AJut_DockDropInsertionDriverWidget_BorderIdleBrush" ResourceKey="AJut_Brush_PrimaryHighlight" />
+    <StaticResource x:Key="AJut_DockDropInsertionDriverWidget_BackgroundIdleBrush" ResourceKey="AJut_Brush_PrimaryHighlight" />
+    <StaticResource x:Key="AJut_DockDropInsertionDriverWidget_GlyphIdleBrush" ResourceKey="AJut_Brush_PrimaryHighlight" />
+
+    <StaticResource x:Key="AJut_DockDropInsertionDriverWidget_BorderEngagedBrush" ResourceKey="AJut_Brush_SecondaryHighlight" />
+    <StaticResource x:Key="AJut_DockDropInsertionDriverWidget_BackgroundEngagedBrush" ResourceKey="AJut_Brush_SecondaryHighlight" />
+    <StaticResource x:Key="AJut_DockDropInsertionDriverWidget_GlyphEngagedBrush" ResourceKey="AJut_Brush_SecondaryHighlight" />
+
+    <!-- ===========[ DockTearoffContainerPanel ]========================== -->
+    <StaticResource x:Key="AJut_DockTearoffContainerPanel_TitleBarBackground" ResourceKey="AJut_Brush_TitleBarBackground"/>
+    <StaticResource x:Key="AJut_DockTearoffContainerPanel_TitleBarForeground" ResourceKey="AJut_Brush_TitleBarForeground"/>
+    <!-- No existing brush for chrome close button states — construct from the theme color keys -->
+    <SolidColorBrush x:Key="AJut_DockTearoffContainerPanel_CloseButtonHoverBackground"   Color="{ThemeResource AJut_Color_ChromeCloseButtonHoverBackground}"/>
+    <SolidColorBrush x:Key="AJut_DockTearoffContainerPanel_CloseButtonPressedBackground" Color="{ThemeResource AJut_Color_ChromeCloseButtonPressedBackground}"/>
+
+</ResourceDictionary>
