@@ -872,11 +872,13 @@
 
         private static PropertyInfo[] GetPropertiesFrom(Type targetType, bool requiresGet, bool requiresSet)
         {
-            return targetType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                                                .Where(prop => (!requiresGet || prop.GetGetMethod() != null)
-                                                            && (!requiresSet || prop.GetSetMethod() != null)
-                                                            && !prop.IsTaggedWithAttribute<JsonIgnoreAttribute>())
-                                                    .ToArray();
+            return TypeMetadataExtensionRegistrar
+                .GetOrderedProperties(targetType, BindingFlags.Public | BindingFlags.Instance)
+                .Where(prop => (!requiresGet || prop.GetGetMethod() != null)
+                            && (!requiresSet || prop.GetSetMethod() != null)
+                            && !TypeMetadataExtensionRegistrar.IsHidden(prop)
+                            && !TypeMetadataExtensionRegistrar.HasAttribute<JsonIgnoreAttribute>(prop))
+                .ToArray();
         }
 
         internal class IndexTrackingHelper

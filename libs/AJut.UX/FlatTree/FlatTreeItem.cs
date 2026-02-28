@@ -58,6 +58,12 @@ namespace AJut.UX
             m_treeDepthIndentSize = treeDepthIndentSize;
             m_isExpandable = source.CanHaveChildren;
 
+            // If the source tracks its own expansion state, honour it over the caller's startExpanded.
+            if (source is IExpandableNode expandableSource)
+            {
+                startExpanded = expandableSource.IsExpanded;
+            }
+
             source.CanHaveChildrenChanged += (s, e) => this.IsExpandable = e.Value;
             source.ChildInserted += this.Source_ChildInserted;
             source.ChildRemoved += this.Source_ChildRemoved;
@@ -187,6 +193,12 @@ namespace AJut.UX
             {
                 if (this.SetAndRaiseIfChanged(ref m_isExpanded, value))
                 {
+                    // Sync back to source so expansion survives tree rebuilds.
+                    if (m_source is IExpandableNode expandableSource)
+                    {
+                        expandableSource.IsExpanded = value;
+                    }
+
                     if (value)
                     {
                         // Expanding: move hidden children back into base.Children (fires ChildInserted).

@@ -269,7 +269,7 @@ namespace AJut.UX.Controls
             }
 
             // Expandable parent nodes (complex reference-type sub-objects) always use the
-            // default-value template — their "value" is the object reference which is never
+            // default-value template - their "value" is the object reference which is never
             // meaningfully compared against a default, and the bold/modified look is misleading.
             bool isAtDefault = (m_editTarget?.IsAtDefaultValue ?? true) || (m_editTarget?.IsExpandable == true);
             this.PART_LabelContent.ContentTemplate = isAtDefault

@@ -296,6 +296,8 @@ namespace AJutShowRoomWinUI
         public Color ColorValue { get; set; } = new Color { A = 255, B = 255 };
         [PGTypeAlias(typeof(ColorToStringConverter))]
         public Color ColorAsString { get; set; } = new Color { A = 255, R = 255 };
+
+        [MemberOrder(-1)] // force it to be first
         public string Name { get; set; } = "AJut Is Cool";
         public float? OptionalValue { get; set; }
         public ShowRoomSubObject SubObj { get; set; } = new ShowRoomSubObject();
