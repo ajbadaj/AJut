@@ -212,7 +212,7 @@ namespace AJut.TypeManagement
 
         private static int _GetTierOrder (Type tier, int depthIndex, int chainLength)
         {
-            // 1. Registry registration (highest priority — unaffected by DefaultMemberOrdering)
+            // 1. Registry registration (highest priority - unaffected by DefaultMemberOrdering)
             if (g_extensions.TryGetValue(tier, out TypeMetadataExtension ext)
                 && ext.TryGetTierOrder(out int registeredOrder))
             {

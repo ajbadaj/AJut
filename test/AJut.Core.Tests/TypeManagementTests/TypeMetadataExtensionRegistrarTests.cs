@@ -302,7 +302,7 @@ namespace AJut.Core.UnitTests.TypeManagement
             [MemberOrder(int.MaxValue)]
             public int Explicit2 { get; set; }
 
-            // These three have no [MemberOrder] — they must always follow the explicit ones.
+            // These three have no [MemberOrder] - they must always follow the explicit ones.
             public int Unordered1 { get; set; }
             public int Unordered2 { get; set; }
             public int Unordered3 { get; set; }
@@ -413,7 +413,7 @@ namespace AJut.Core.UnitTests.TypeManagement
             // Pin Base to tier 99 (explicit) so it appears last regardless of global default.
             TypeMetadataExtensionRegistrar.For<Base>().SetTierOrder(99);
 
-            // Switch global default to BaseToConcrete — should NOT override the explicit registration.
+            // Switch global default to BaseToConcrete - should NOT override the explicit registration.
             TypeMetadataExtensionRegistrar.DefaultMemberOrdering = eMemberInheritanceOrdering.BaseFirst;
 
             string[] names = TypeMetadataExtensionRegistrar
@@ -437,7 +437,7 @@ namespace AJut.Core.UnitTests.TypeManagement
                 .Select(p => p.Name)
                 .ToArray();
 
-            // Switch default — should invalidate the cache and flip the order.
+            // Switch default - should invalidate the cache and flip the order.
             TypeMetadataExtensionRegistrar.DefaultMemberOrdering = eMemberInheritanceOrdering.DerivedFirst;
 
             string[] concreteToBases = TypeMetadataExtensionRegistrar
