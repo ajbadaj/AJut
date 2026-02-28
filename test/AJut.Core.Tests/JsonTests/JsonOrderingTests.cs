@@ -57,12 +57,9 @@ namespace AJut.Core.UnitTests.AJson
             int baseAIdx    = System.Array.IndexOf(keys, nameof(BaseModel.BaseA));
             int baseBIdx    = System.Array.IndexOf(keys, nameof(BaseModel.BaseB));
 
-            Assert.IsTrue(derivedXIdx < baseAIdx,
-                $"DerivedX (idx {derivedXIdx}) should appear before BaseA (idx {baseAIdx})");
-            Assert.IsTrue(derivedYIdx < baseAIdx,
-                $"DerivedY (idx {derivedYIdx}) should appear before BaseA (idx {baseAIdx})");
-            Assert.IsTrue(baseAIdx < baseBIdx,
-                $"BaseA (idx {baseAIdx}) should appear before BaseB (idx {baseBIdx})");
+            Assert.IsTrue(baseAIdx < derivedXIdx, $"BaseA (idx {baseAIdx}) should appear before DerivedX (idx {derivedXIdx})");
+            Assert.IsTrue(baseAIdx < derivedYIdx, $"BaseA (idx {baseAIdx}) should appear before DerivedY (idx {derivedYIdx})");
+            Assert.IsTrue(baseAIdx < baseBIdx, $"BaseA (idx {baseAIdx}) should appear before BaseB (idx {baseBIdx})");
         }
 
         [TestMethod]

@@ -302,5 +302,101 @@ namespace AJut.Core.UnitTests.TypeManagement
             Assert.AreEqual(nameof(Base.BaseThird), afterRegistration[0],
                 "Cache should be invalidated when a new registration is made");
         }
+
+        // ===========[ DefaultMemberOrdering ]==========================================
+
+        [TestMethod]
+        public void TypeMetadataExtensionRegistrar_DefaultOrdering_IsConcreteToBase ()
+        {
+            Assert.AreEqual(eDefaultMemberOrdering.ConcreteToBase, TypeMetadataExtensionRegistrar.DefaultMemberOrdering,
+                "Default should be ConcreteToBase out of the box");
+        }
+
+        [TestMethod]
+        public void TypeMetadataExtensionRegistrar_DefaultOrdering_BaseToConcrete_BaseBeforeDerived ()
+        {
+            TypeMetadataExtensionRegistrar.DefaultMemberOrdering = eDefaultMemberOrdering.BaseToConcrete;
+
+            string[] names = TypeMetadataExtensionRegistrar
+                .GetOrderedProperties(typeof(Derived))
+                .Select(p => p.Name)
+                .ToArray();
+
+            int derivedFirstIdx = System.Array.IndexOf(names, nameof(Derived.DerivedFirst));
+            int baseFirstIdx    = System.Array.IndexOf(names, nameof(Base.BaseFirst));
+
+            Assert.IsTrue(baseFirstIdx < derivedFirstIdx,
+                "BaseToConcrete: Base properties should appear before Derived properties");
+        }
+
+        [TestMethod]
+        public void TypeMetadataExtensionRegistrar_DefaultOrdering_BaseToConcrete_ThreeTiers ()
+        {
+            TypeMetadataExtensionRegistrar.DefaultMemberOrdering = eDefaultMemberOrdering.BaseToConcrete;
+
+            string[] names = TypeMetadataExtensionRegistrar
+                .GetOrderedProperties(typeof(DeepDerived))
+                .Select(p => p.Name)
+                .ToArray();
+
+            int deepIdx    = System.Array.IndexOf(names, nameof(DeepDerived.DeepFirst));
+            int derivedIdx = System.Array.IndexOf(names, nameof(Derived.DerivedFirst));
+            int baseIdx    = System.Array.IndexOf(names, nameof(Base.BaseFirst));
+
+            Assert.IsTrue(baseIdx < derivedIdx,   "BaseToConcrete: Base before Derived");
+            Assert.IsTrue(derivedIdx < deepIdx,   "BaseToConcrete: Derived before DeepDerived");
+        }
+
+        [TestMethod]
+        public void TypeMetadataExtensionRegistrar_DefaultOrdering_ExplicitTierOrder_UnaffectedByGlobalDefault ()
+        {
+            // Pin Base to tier 99 (explicit) so it appears last regardless of global default.
+            TypeMetadataExtensionRegistrar.For<Base>().SetTierOrder(99);
+
+            // Switch global default to BaseToConcrete — should NOT override the explicit registration.
+            TypeMetadataExtensionRegistrar.DefaultMemberOrdering = eDefaultMemberOrdering.BaseToConcrete;
+
+            string[] names = TypeMetadataExtensionRegistrar
+                .GetOrderedProperties(typeof(Derived))
+                .Select(p => p.Name)
+                .ToArray();
+
+            int derivedFirstIdx = System.Array.IndexOf(names, nameof(Derived.DerivedFirst));
+            int baseFirstIdx    = System.Array.IndexOf(names, nameof(Base.BaseFirst));
+
+            Assert.IsTrue(derivedFirstIdx < baseFirstIdx,
+                "Explicit SetTierOrder(99) on Base should keep Base after Derived even with BaseToConcrete default");
+        }
+
+        [TestMethod]
+        public void TypeMetadataExtensionRegistrar_DefaultOrdering_ChangingDefaultInvalidatesCache ()
+        {
+            // Populate the cache with ConcreteToBase order.
+            string[] concreteToBases = TypeMetadataExtensionRegistrar
+                .GetOrderedProperties(typeof(Derived))
+                .Select(p => p.Name)
+                .ToArray();
+
+            // Switch default — should invalidate the cache.
+            TypeMetadataExtensionRegistrar.DefaultMemberOrdering = eDefaultMemberOrdering.BaseToConcrete;
+
+            string[] baseToConcrete = TypeMetadataExtensionRegistrar
+                .GetOrderedProperties(typeof(Derived))
+                .Select(p => p.Name)
+                .ToArray();
+
+            Assert.AreNotEqual(concreteToBases[0], baseToConcrete[0],
+                "Changing DefaultMemberOrdering should invalidate the cache and produce different first property");
+        }
+
+        [TestMethod]
+        public void TypeMetadataExtensionRegistrar_ClearAll_ResetsDefaultMemberOrdering ()
+        {
+            TypeMetadataExtensionRegistrar.DefaultMemberOrdering = eDefaultMemberOrdering.BaseToConcrete;
+            TypeMetadataExtensionRegistrar.ClearAll();
+
+            Assert.AreEqual(eDefaultMemberOrdering.ConcreteToBase, TypeMetadataExtensionRegistrar.DefaultMemberOrdering,
+                "ClearAll should reset DefaultMemberOrdering to ConcreteToBase");
+        }
     }
 }

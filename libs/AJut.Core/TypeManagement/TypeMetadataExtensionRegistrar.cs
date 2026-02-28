@@ -25,6 +25,30 @@ namespace AJut.TypeManagement
         // ===========[ Static fields ]==========================================
         private static readonly Dictionary<Type, TypeMetadataExtension> g_extensions = new();
         private static readonly Dictionary<(Type, BindingFlags), PropertyInfo[]> g_orderCache = new();
+        private static eDefaultMemberOrdering g_defaultMemberOrdering = eDefaultMemberOrdering.BaseToConcrete;
+
+        // ===========[ Global ordering default ]==========================================
+
+        /// <summary>
+        /// Controls the default tier ordering when no explicit tier order is registered or attributed.
+        /// Defaults to <see cref="eDefaultMemberOrdering.ConcreteToBase"/> (derived-class members first).
+        /// Changing this clears the entire ordering cache so all subsequent <see cref="GetOrderedProperties"/>
+        /// calls reflect the new default, including types whose ordering was already cached.
+        /// Explicit <see cref="TypeMetadataExtension.SetTierOrder"/> registrations and
+        /// <see cref="TypeTierOrderAttribute"/> annotations are never affected by this setting.
+        /// </summary>
+        public static eDefaultMemberOrdering DefaultMemberOrdering
+        {
+            get => g_defaultMemberOrdering;
+            set
+            {
+                if (g_defaultMemberOrdering != value)
+                {
+                    g_defaultMemberOrdering = value;
+                    g_orderCache.Clear();
+                }
+            }
+        }
 
         // ===========[ Registration ]==========================================
 
@@ -54,11 +78,13 @@ namespace AJut.TypeManagement
             InvalidateOrderCacheFor(type);
         }
 
-        /// <summary>Removes all registered metadata extensions and clears all ordering caches.</summary>
+        /// <summary>Removes all registered metadata extensions, clears all ordering caches,
+        /// and resets <see cref="DefaultMemberOrdering"/> to its default value.</summary>
         public static void ClearAll ()
         {
             g_extensions.Clear();
             g_orderCache.Clear();
+            g_defaultMemberOrdering = eDefaultMemberOrdering.ConcreteToBase;
         }
 
         // ===========[ Ordering ]==========================================
@@ -94,8 +120,9 @@ namespace AJut.TypeManagement
             }
 
             // 3. Sort the tiers by their priority
+            int chainLength = chain.Count;
             var tiersWithOrder = chain
-                .Select((tier, depth) => (tier, order: _GetTierOrder(tier, depth)))
+                .Select((tier, depth) => (tier, order: _GetTierOrder(tier, depth, chainLength)))
                 .OrderBy(x => x.order);
 
             // 4. Within each tier, collect and sort its own properties
@@ -176,24 +203,28 @@ namespace AJut.TypeManagement
 
         // ===========[ Private helpers ]==========================================
 
-        private static int _GetTierOrder (Type tier, int depthIndex)
+        private static int _GetTierOrder (Type tier, int depthIndex, int chainLength)
         {
-            // 1. Registry registration (highest priority)
+            // 1. Registry registration (highest priority — unaffected by DefaultMemberOrdering)
             if (g_extensions.TryGetValue(tier, out TypeMetadataExtension ext)
                 && ext.TryGetTierOrder(out int registeredOrder))
             {
                 return registeredOrder;
             }
 
-            // 2. [TypeTierOrder] attribute
+            // 2. [TypeTierOrder] attribute (unaffected by DefaultMemberOrdering)
             var attr = tier.GetCustomAttribute<TypeTierOrderAttribute>(inherit: false);
             if (attr != null)
             {
                 return attr.Order;
             }
 
-            // 3. Default: inheritance depth (0 = most derived)
-            return depthIndex;
+            // 3. Default: governed by DefaultMemberOrdering.
+            //    ConcreteToBase: depthIndex directly (0 = most derived = appears first).
+            //    BaseToConcrete: flip so the deepest base (chainLength-1) maps to 0 (appears first).
+            return g_defaultMemberOrdering == eDefaultMemberOrdering.ConcreteToBase
+                ? depthIndex
+                : (chainLength - 1 - depthIndex);
         }
 
         private static int _GetMemberOrder (Type declaringTier, PropertyInfo prop)
