@@ -6,12 +6,12 @@ namespace AJut.TypeManagement
     /// <see cref="TypeTierOrderAttribute"/>. Only affects tiers without explicit ordering; explicit
     /// registrations and attributes are always honored regardless of this setting.
     /// </summary>
-    public enum eDefaultMemberOrdering
+    public enum eMemberInheritanceOrdering
     {
-        /// <summary>Most-derived class properties appear first, base class properties appear last.</summary>
-        ConcreteToBase,
-
         /// <summary>Base class properties appear first, most-derived class properties appear last.</summary>
-        BaseToConcrete,
+        BaseFirst,
+
+        /// <summary>Most-derived class properties appear first, base class properties appear last.</summary>
+        DerivedFirst,
     }
 }

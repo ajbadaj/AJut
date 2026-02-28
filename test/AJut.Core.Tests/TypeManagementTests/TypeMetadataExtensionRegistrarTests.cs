@@ -53,12 +53,20 @@ namespace AJut.Core.UnitTests.TypeManagement
             public int Z { get; set; }
         }
 
-        // ===========[ Cleanup between tests ]==========================================
+        // ===========[ Setup / Cleanup between tests ]==========================================
+
+        [TestInitialize]
+        public void Setup ()
+        {
+            // Ensure every test starts from a known-clean state regardless of
+            // what a previous test (or default field init) may have left behind.
+            TypeMetadataExtensionRegistrar.ClearAll();
+            TypeMetadataExtensionRegistrar.DefaultMemberOrdering = eMemberInheritanceOrdering.BaseFirst;
+        }
 
         [TestCleanup]
         public void Cleanup ()
         {
-            // Reset all registrations so tests don't bleed into each other.
             TypeMetadataExtensionRegistrar.ClearAll();
         }
 
@@ -67,6 +75,8 @@ namespace AJut.Core.UnitTests.TypeManagement
         [TestMethod]
         public void TypeMetadataExtensionRegistrar_DefaultOrdering_DerivedBeforeBase ()
         {
+            TypeMetadataExtensionRegistrar.DefaultMemberOrdering = eMemberInheritanceOrdering.DerivedFirst;
+
             string[] names = TypeMetadataExtensionRegistrar
                 .GetOrderedProperties(typeof(Derived))
                 .Select(p => p.Name)
@@ -84,6 +94,8 @@ namespace AJut.Core.UnitTests.TypeManagement
         [TestMethod]
         public void TypeMetadataExtensionRegistrar_DefaultOrdering_ThreeTiersDerivedFirst ()
         {
+            TypeMetadataExtensionRegistrar.DefaultMemberOrdering = eMemberInheritanceOrdering.DerivedFirst;
+
             string[] names = TypeMetadataExtensionRegistrar
                 .GetOrderedProperties(typeof(DeepDerived))
                 .Select(p => p.Name)
@@ -278,6 +290,54 @@ namespace AJut.Core.UnitTests.TypeManagement
             Assert.IsNull(TypeMetadataExtensionRegistrar.GetAttribute<DisplayNameAttribute>(externalProp));
         }
 
+        // ===========[ Explicit vs unattributed ordering boundary ]==========================================
+
+        // Class with 5 explicitly ordered properties followed by 5 unattributed ones.
+        // The explicit orders use very large values to exercise the two-key sort boundary.
+        private class PartialOrderModel
+        {
+            [MemberOrder(int.MaxValue - 1)]
+            public int Explicit1 { get; set; }
+
+            [MemberOrder(int.MaxValue)]
+            public int Explicit2 { get; set; }
+
+            // These three have no [MemberOrder] — they must always follow the explicit ones.
+            public int Unordered1 { get; set; }
+            public int Unordered2 { get; set; }
+            public int Unordered3 { get; set; }
+        }
+
+        [TestMethod]
+        public void TypeMetadataExtensionRegistrar_ExplicitOrderedAlwaysBeforeUnattributed_EvenWithLargeValues ()
+        {
+            string[] names = TypeMetadataExtensionRegistrar
+                .GetOrderedProperties(typeof(PartialOrderModel))
+                .Select(p => p.Name)
+                .ToArray();
+
+            int explicit1Idx   = System.Array.IndexOf(names, nameof(PartialOrderModel.Explicit1));
+            int explicit2Idx   = System.Array.IndexOf(names, nameof(PartialOrderModel.Explicit2));
+            int unordered1Idx  = System.Array.IndexOf(names, nameof(PartialOrderModel.Unordered1));
+            int unordered2Idx  = System.Array.IndexOf(names, nameof(PartialOrderModel.Unordered2));
+            int unordered3Idx  = System.Array.IndexOf(names, nameof(PartialOrderModel.Unordered3));
+
+            // All explicitly ordered properties must come before all unattributed ones,
+            // even though the explicit orders are int.MaxValue-1 and int.MaxValue.
+            Assert.IsTrue(explicit1Idx < unordered1Idx,
+                "Explicit1 (int.MaxValue-1) must precede Unordered1 despite large order value");
+            Assert.IsTrue(explicit2Idx < unordered1Idx,
+                "Explicit2 (int.MaxValue) must precede Unordered1 despite large order value");
+
+            // Within the explicit group: order by the explicit value.
+            Assert.IsTrue(explicit1Idx < explicit2Idx,
+                "Explicit1 (int.MaxValue-1) should precede Explicit2 (int.MaxValue)");
+
+            // Within the unattributed group: declaration order (MetadataToken).
+            Assert.IsTrue(unordered1Idx < unordered2Idx, "Unordered1 declared before Unordered2");
+            Assert.IsTrue(unordered2Idx < unordered3Idx, "Unordered2 declared before Unordered3");
+        }
+
         // ===========[ Cache invalidation ]==========================================
 
         [TestMethod]
@@ -306,16 +366,16 @@ namespace AJut.Core.UnitTests.TypeManagement
         // ===========[ DefaultMemberOrdering ]==========================================
 
         [TestMethod]
-        public void TypeMetadataExtensionRegistrar_DefaultOrdering_IsConcreteToBase ()
+        public void TypeMetadataExtensionRegistrar_DefaultOrdering_IsBaseToConcrete ()
         {
-            Assert.AreEqual(eDefaultMemberOrdering.ConcreteToBase, TypeMetadataExtensionRegistrar.DefaultMemberOrdering,
-                "Default should be ConcreteToBase out of the box");
+            Assert.AreEqual(eMemberInheritanceOrdering.BaseFirst, TypeMetadataExtensionRegistrar.DefaultMemberOrdering,
+                "Default should be BaseToConcrete");
         }
 
         [TestMethod]
         public void TypeMetadataExtensionRegistrar_DefaultOrdering_BaseToConcrete_BaseBeforeDerived ()
         {
-            TypeMetadataExtensionRegistrar.DefaultMemberOrdering = eDefaultMemberOrdering.BaseToConcrete;
+            TypeMetadataExtensionRegistrar.DefaultMemberOrdering = eMemberInheritanceOrdering.BaseFirst;
 
             string[] names = TypeMetadataExtensionRegistrar
                 .GetOrderedProperties(typeof(Derived))
@@ -332,7 +392,7 @@ namespace AJut.Core.UnitTests.TypeManagement
         [TestMethod]
         public void TypeMetadataExtensionRegistrar_DefaultOrdering_BaseToConcrete_ThreeTiers ()
         {
-            TypeMetadataExtensionRegistrar.DefaultMemberOrdering = eDefaultMemberOrdering.BaseToConcrete;
+            TypeMetadataExtensionRegistrar.DefaultMemberOrdering = eMemberInheritanceOrdering.BaseFirst;
 
             string[] names = TypeMetadataExtensionRegistrar
                 .GetOrderedProperties(typeof(DeepDerived))
@@ -354,7 +414,7 @@ namespace AJut.Core.UnitTests.TypeManagement
             TypeMetadataExtensionRegistrar.For<Base>().SetTierOrder(99);
 
             // Switch global default to BaseToConcrete — should NOT override the explicit registration.
-            TypeMetadataExtensionRegistrar.DefaultMemberOrdering = eDefaultMemberOrdering.BaseToConcrete;
+            TypeMetadataExtensionRegistrar.DefaultMemberOrdering = eMemberInheritanceOrdering.BaseFirst;
 
             string[] names = TypeMetadataExtensionRegistrar
                 .GetOrderedProperties(typeof(Derived))
@@ -371,32 +431,32 @@ namespace AJut.Core.UnitTests.TypeManagement
         [TestMethod]
         public void TypeMetadataExtensionRegistrar_DefaultOrdering_ChangingDefaultInvalidatesCache ()
         {
-            // Populate the cache with ConcreteToBase order.
-            string[] concreteToBases = TypeMetadataExtensionRegistrar
-                .GetOrderedProperties(typeof(Derived))
-                .Select(p => p.Name)
-                .ToArray();
-
-            // Switch default — should invalidate the cache.
-            TypeMetadataExtensionRegistrar.DefaultMemberOrdering = eDefaultMemberOrdering.BaseToConcrete;
-
+            // Populate the cache with BaseToConcrete order (base properties first).
             string[] baseToConcrete = TypeMetadataExtensionRegistrar
                 .GetOrderedProperties(typeof(Derived))
                 .Select(p => p.Name)
                 .ToArray();
 
-            Assert.AreNotEqual(concreteToBases[0], baseToConcrete[0],
+            // Switch default — should invalidate the cache and flip the order.
+            TypeMetadataExtensionRegistrar.DefaultMemberOrdering = eMemberInheritanceOrdering.DerivedFirst;
+
+            string[] concreteToBases = TypeMetadataExtensionRegistrar
+                .GetOrderedProperties(typeof(Derived))
+                .Select(p => p.Name)
+                .ToArray();
+
+            Assert.AreNotEqual(baseToConcrete[0], concreteToBases[0],
                 "Changing DefaultMemberOrdering should invalidate the cache and produce different first property");
         }
 
         [TestMethod]
-        public void TypeMetadataExtensionRegistrar_ClearAll_ResetsDefaultMemberOrdering ()
+        public void TypeMetadataExtensionRegistrar_ClearAll_DoesNotResetDefaultMemberOrdering ()
         {
-            TypeMetadataExtensionRegistrar.DefaultMemberOrdering = eDefaultMemberOrdering.BaseToConcrete;
+            TypeMetadataExtensionRegistrar.DefaultMemberOrdering = eMemberInheritanceOrdering.DerivedFirst;
             TypeMetadataExtensionRegistrar.ClearAll();
 
-            Assert.AreEqual(eDefaultMemberOrdering.ConcreteToBase, TypeMetadataExtensionRegistrar.DefaultMemberOrdering,
-                "ClearAll should reset DefaultMemberOrdering to ConcreteToBase");
+            Assert.AreEqual(eMemberInheritanceOrdering.DerivedFirst, TypeMetadataExtensionRegistrar.DefaultMemberOrdering,
+                "ClearAll is a registration-level reset and must not change the program-level DefaultMemberOrdering preference");
         }
     }
 }

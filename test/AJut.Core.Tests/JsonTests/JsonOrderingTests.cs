@@ -29,7 +29,14 @@ namespace AJut.Core.UnitTests.AJson
             public int Second { get; set; } = 2;
         }
 
-        // ===========[ Cleanup ]==========================================
+        // ===========[ Setup / Cleanup ]==========================================
+
+        [TestInitialize]
+        public void Setup ()
+        {
+            TypeMetadataExtensionRegistrar.ClearAll();
+            TypeMetadataExtensionRegistrar.DefaultMemberOrdering = eMemberInheritanceOrdering.BaseFirst;
+        }
 
         [TestCleanup]
         public void Cleanup ()
