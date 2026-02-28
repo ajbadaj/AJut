@@ -8,6 +8,7 @@ namespace AJut.UX.Controls
     using System.Linq;
     using System.Windows;
     using System.Windows.Controls;
+    using System.Windows.Input;
     using AJut;
     using AJut.UX.PropertyInteraction;
     using AJut.Storage;
@@ -17,6 +18,17 @@ namespace AJut.UX.Controls
     {
         private readonly PropertyGridManager m_manager;
 
+        // ===========[ Commands ]=================================================
+        /// <summary>
+        /// Resets the target PropertyEditTarget (passed as CommandParameter) to its default value.
+        /// Sourced from the label ContextMenu in the control template.
+        /// </summary>
+        public static readonly RoutedUICommand SetPropertyToDefaultCommand = new RoutedUICommand(
+            "Set to Default",
+            nameof(SetPropertyToDefaultCommand),
+            typeof(PropertyGrid)
+        );
+
         static PropertyGrid ()
         {
             DefaultStyleKeyProperty.OverrideMetadata(typeof(PropertyGrid), new FrameworkPropertyMetadata(typeof(PropertyGrid)));
@@ -25,6 +37,11 @@ namespace AJut.UX.Controls
         public PropertyGrid ()
         {
             m_manager = new PropertyGridManager(this);
+            this.CommandBindings.Add(new CommandBinding(
+                SetPropertyToDefaultCommand,
+                this.OnSetPropertyToDefaultExecuted,
+                this.OnSetPropertyToDefaultCanExecute
+            ));
         }
 
         public void Dispose ()
@@ -103,6 +120,28 @@ namespace AJut.UX.Controls
         {
             get => (double)this.GetValue(LabelColumnWidthProperty);
             set => this.SetValue(LabelColumnWidthProperty, value);
+        }
+
+        /// <summary>
+        /// DataTemplate for the property label when the value equals the default.
+        /// DataContext is the PropertyEditTarget. Defaults to a plain TextBlock showing DisplayName.
+        /// </summary>
+        public static readonly DependencyProperty DefaultValueLabelDataTemplateProperty = DPUtils.Register(_ => _.DefaultValueLabelDataTemplate);
+        public DataTemplate DefaultValueLabelDataTemplate
+        {
+            get => (DataTemplate)this.GetValue(DefaultValueLabelDataTemplateProperty);
+            set => this.SetValue(DefaultValueLabelDataTemplateProperty, value);
+        }
+
+        /// <summary>
+        /// DataTemplate for the property label when the value differs from the default.
+        /// DataContext is the PropertyEditTarget. Defaults to a bold TextBlock showing DisplayName.
+        /// </summary>
+        public static readonly DependencyProperty ModifiedValueLabelDataTemplateProperty = DPUtils.Register(_ => _.ModifiedValueLabelDataTemplate);
+        public DataTemplate ModifiedValueLabelDataTemplate
+        {
+            get => (DataTemplate)this.GetValue(ModifiedValueLabelDataTemplateProperty);
+            set => this.SetValue(ModifiedValueLabelDataTemplateProperty, value);
         }
 
         private void OnSingleItemSourceChanged (DependencyPropertyChangedEventArgs<object> e)
@@ -187,12 +226,77 @@ namespace AJut.UX.Controls
             this.RebuildEditTargets();
         }
 
+        /// <summary>
+        /// Fires whenever any property in the displayed tree is edited via the property grid.
+        /// Subscribe to detect any change and refresh displays that mirror the source object.
+        /// </summary>
+        public event EventHandler PropertyTreeChanged;
+
         private void RebuildEditTargets ()
         {
+            // Unsubscribe from old tree before rebuild clears it.
+            if (m_manager.RootNode != null)
+            {
+                foreach (var target in _WalkAllTargets(m_manager.RootNode))
+                {
+                    target.PropertyChanged -= this.OnAnyTargetPropertyChanged;
+                }
+            }
+
             m_manager.RebuildEditTargets();
             this.PropertyTreeItems = m_manager.RootNode != null
                 ? ((IObservableTreeNode)m_manager.RootNode).Children
                 : null;
+
+            // Subscribe to all new targets for PropertyTreeChanged notification.
+            if (m_manager.RootNode != null)
+            {
+                foreach (var target in _WalkAllTargets(m_manager.RootNode))
+                {
+                    target.PropertyChanged += this.OnAnyTargetPropertyChanged;
+                }
+            }
+        }
+
+        private void OnAnyTargetPropertyChanged (object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == PropertyEditTarget.SourceCommittedPropertyName)
+            {
+                this.PropertyTreeChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
+        private static IEnumerable<PropertyEditTarget> _WalkAllTargets (IObservableTreeNode node)
+        {
+            foreach (var child in node.Children)
+            {
+                if (child is PropertyEditTarget target)
+                {
+                    yield return target;
+                    if (target.ElevatedChildTarget != null)
+                    {
+                        yield return target.ElevatedChildTarget;
+                    }
+
+                    foreach (var descendant in _WalkAllTargets(target))
+                    {
+                        yield return descendant;
+                    }
+                }
+            }
+        }
+
+        private void OnSetPropertyToDefaultExecuted (object sender, ExecutedRoutedEventArgs e)
+        {
+            if (e.Parameter is PropertyEditTarget target)
+            {
+                target.ResetToDefault();
+            }
+        }
+
+        private void OnSetPropertyToDefaultCanExecute (object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = e.Parameter is PropertyEditTarget target && target.HasDefaultValue && !target.IsExpandable;
         }
     }
 }

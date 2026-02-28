@@ -22,6 +22,22 @@
         </Setter>
     </Style>
 
+    <!-- ===[ Default label templates ]=== -->
+    <!-- DefaultValueLabelDataTemplate: normal label (value equals default). DataContext = PropertyEditTarget. -->
+    <DataTemplate x:Key="PropertyGrid_DefaultLabelTemplate" DataType="{x:Type prop:PropertyEditTarget}">
+        <TextBlock Text="{Binding DisplayName}"
+                   VerticalAlignment="Center"
+                   Margin="5,3,7,3"/>
+    </DataTemplate>
+
+    <!-- ModifiedValueLabelDataTemplate: bold label (value differs from default). DataContext = PropertyEditTarget. -->
+    <DataTemplate x:Key="PropertyGrid_ModifiedLabelTemplate" DataType="{x:Type prop:PropertyEditTarget}">
+        <TextBlock Text="{Binding DisplayName}"
+                   FontWeight="Bold"
+                   VerticalAlignment="Center"
+                   Margin="5,3,7,3"/>
+    </DataTemplate>
+
     <Style TargetType="{x:Type local:PropertyGrid}">
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         <Setter Property="TextLabelStyle">
@@ -32,6 +48,8 @@
                 </Style>
             </Setter.Value>
         </Setter>
+        <Setter Property="DefaultValueLabelDataTemplate" Value="{StaticResource PropertyGrid_DefaultLabelTemplate}"/>
+        <Setter Property="ModifiedValueLabelDataTemplate" Value="{StaticResource PropertyGrid_ModifiedLabelTemplate}"/>
         <Setter Property="BorderBrush" Value="Gray"/>
         <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
         <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
@@ -77,11 +95,10 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <!-- Label with selection highlight.
-                                         ListBoxItem.IsSelected is still tracked even though the
-                                         ListBoxItem template has no selection chrome.
-                                         NOTE: No Background attribute here - local value would
-                                         override the DataTrigger (WPF DP precedence). -->
+                                    <!-- Label with selection highlight and right-click context menu.
+                                         ContentPresenter switches between DefaultValueLabelDataTemplate and
+                                         ModifiedValueLabelDataTemplate based on PropertyEditTarget.IsAtDefaultValue.
+                                         DataContext for both templates is the PropertyEditTarget. -->
                                     <Border Grid.Column="0" Margin="0,0,3,0">
                                         <Border.Style>
                                             <Style TargetType="{x:Type Border}">
@@ -94,10 +111,39 @@
                                                 </Style.Triggers>
                                             </Style>
                                         </Border.Style>
-                                        <TextBlock Text="{Binding Path=DisplayName, Mode=OneWay}"
-                                                   VerticalAlignment="Center"
-                                                   Margin="5,3,7,3"
-                                                   Style="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PropertyGrid}}, Path=TextLabelStyle}"/>
+                                        <Border.ContextMenu>
+                                            <!-- DataContext bound via PlacementTarget so {Binding} reaches PropertyEditTarget. -->
+                                            <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+                                                <MenuItem Header="Set to default"
+                                                          Command="{x:Static local:PropertyGrid.SetPropertyToDefaultCommand}"
+                                                          CommandParameter="{Binding}"/>
+                                            </ContextMenu>
+                                        </Border.ContextMenu>
+
+                                        <!-- Label content: switches template based on IsAtDefaultValue.
+                                             Content={Binding} passes PropertyEditTarget as the template's DataContext. -->
+                                        <ContentPresenter Content="{Binding}">
+                                            <ContentPresenter.Style>
+                                                <Style TargetType="{x:Type ContentPresenter}">
+                                                    <!-- Default: ModifiedValueLabelDataTemplate (value changed from default) -->
+                                                    <Setter Property="ContentTemplate"
+                                                            Value="{Binding RelativeSource={RelativeSource AncestorType=local:PropertyGrid}, Path=ModifiedValueLabelDataTemplate}"/>
+                                                    <Style.Triggers>
+                                                        <!-- Switch to DefaultValueLabelDataTemplate when at default -->
+                                                        <DataTrigger Binding="{Binding IsAtDefaultValue}" Value="True">
+                                                            <Setter Property="ContentTemplate"
+                                                                    Value="{Binding RelativeSource={RelativeSource AncestorType=local:PropertyGrid}, Path=DefaultValueLabelDataTemplate}"/>
+                                                        </DataTrigger>
+                                                        <!-- Expandable parent nodes always use the default-value template —
+                                                             their object reference is never meaningfully compared to a default. -->
+                                                        <DataTrigger Binding="{Binding IsExpandable}" Value="True">
+                                                            <Setter Property="ContentTemplate"
+                                                                    Value="{Binding RelativeSource={RelativeSource AncestorType=local:PropertyGrid}, Path=DefaultValueLabelDataTemplate}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </ContentPresenter.Style>
+                                        </ContentPresenter>
                                     </Border>
 
                                     <!-- Editor: uses EffectiveEditorTarget so elevation is transparent.

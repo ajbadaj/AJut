@@ -1,17 +1,66 @@
 namespace AJut.UX.Controls
 {
+    using Microsoft.UI.Xaml;
+    using Microsoft.UI.Xaml.Markup;
+    using AJut;
     using AJut.UX.PropertyInteraction;
 
     // ===========[ PropertyGridTemplateSelector ]===============================
     // DataTemplateSelector for PropertyGrid rows. Routes each PropertyEditTarget
     // to a DataTemplate keyed by PropertyEditTarget.Editor (a type-name string).
-    // Consumers (e.g. CallFamiliar) register templates against editor names:
+    // Consumers register templates against editor names:
     //   selector.RegisteredTemplates["string"]  = myStringEditorTemplate;
     //   selector.RegisteredTemplates["Single"]  = myFloatEditorTemplate;
+    //
+    // "Nullable" editor key is handled automatically with a built-in NullableEditor
+    // template unless the consumer overrides it via RegisteredTemplates["Nullable"].
 
     public class PropertyGridTemplateSelector : SwitchDataTemplateSelector
     {
+        private static DataTemplate s_builtInNullableTemplate;
+
         protected override object GetKeyForItem (object item)
             => ((PropertyEditTarget)item).Editor ?? "__Invalid";
+
+        protected override DataTemplate SelectTemplateCore (object item)
+        {
+            if (item is PropertyEditTarget { Editor: "Nullable" }
+                && !this.RegisteredTemplates.ContainsKey("Nullable"))
+            {
+                return GetOrCreateBuiltInNullableTemplate();
+            }
+
+            return base.SelectTemplateCore(item);
+        }
+
+        protected override DataTemplate SelectTemplateCore (object item, DependencyObject container)
+        {
+            return this.SelectTemplateCore(item);
+        }
+
+        private static DataTemplate GetOrCreateBuiltInNullableTemplate ()
+        {
+            if (s_builtInNullableTemplate != null)
+            {
+                return s_builtInNullableTemplate;
+            }
+
+            try
+            {
+                s_builtInNullableTemplate = (DataTemplate)XamlReader.Load(
+                    "<DataTemplate xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\" " +
+                    "xmlns:local=\"using:AJut.UX.Controls\">" +
+                    "<local:NullableEditor/>" +
+                    "</DataTemplate>"
+                );
+            }
+            catch (System.Exception ex)
+            {
+                Logger.LogError("[WARNING] NullableEditor built-in template could not be created via XamlReader. " +
+                    "Register selector.RegisteredTemplates[\"Nullable\"] manually.", ex);
+            }
+
+            return s_builtInNullableTemplate;
+        }
     }
 }

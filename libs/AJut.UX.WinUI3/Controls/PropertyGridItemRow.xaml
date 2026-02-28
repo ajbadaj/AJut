@@ -12,7 +12,12 @@
          Selection visual: a 4px left nub + 1px top/right/bottom outline on PART_LabelBorder.
          Only the BorderBrush changes (BorderThickness is always 4,1,1,1), no layout jitter.
          Hover visual: a subtle full-row tint via PART_HoverBorder (separate VSM group,
-         does not conflict with the label-only selection indicator). -->
+         does not conflict with the label-only selection indicator).
+
+         Label template: PART_LabelContent.ContentTemplate switches between
+         DefaultValueLabelDataTemplate (value at default) and ModifiedValueLabelDataTemplate
+         (value changed) based on PropertyEditTarget.IsAtDefaultValue, managed in code.
+         Right-tapping PART_LabelBorder shows a context menu with "Set to default". -->
 
     <conv:BooleanToVisibilityConverter x:Key="PGItemRow_BoolToVis"
                                        TrueValue="Visible"
@@ -51,8 +56,9 @@
                             <!-- Label area: width set in code via ApplyLabelColumnWidth().
                                  BorderThickness="4,1,1,1" permanently reserves space for the
                                  4px left nub + 1px outline so content never shifts; only
-                                 BorderBrush changes via VSM (Transparent ↔ SelectionBrush).
-                                 Selection stays confined to the label column. -->
+                                 BorderBrush changes via VSM (Transparent <-> SelectionBrush).
+                                 Selection stays confined to the label column.
+                                 Right-tapping this border triggers the "Set to default" context menu. -->
                             <Border x:Name="PART_LabelBorder"
                                     Grid.Column="0"
                                     MinWidth="80"
@@ -60,13 +66,15 @@
                                     BorderBrush="Transparent"
                                     BorderThickness="4,1,1,1"
                                     Background="Transparent">
-                                <TextBlock Text="{Binding Source.DisplayName}"
-                                           VerticalAlignment="Center"
-                                           Margin="6,3,8,3"
-                                           Opacity="0.8"
-                                           TextTrimming="CharacterEllipsis"
-                                           ToolTipService.ToolTip="{Binding Source.DisplayName}"
-                                           Foreground="{ThemeResource AJut_PropertyGridItemRow_LabelForeground}"/>
+                                <!-- PART_LabelContent: ContentTemplate switches between
+                                     DefaultValueLabelDataTemplate and ModifiedValueLabelDataTemplate
+                                     based on PropertyEditTarget.IsAtDefaultValue (set in code).
+                                     Content = PropertyEditTarget (FlatTreeItem.Source). -->
+                                <ContentControl x:Name="PART_LabelContent"
+                                                HorizontalAlignment="Stretch"
+                                                HorizontalContentAlignment="Stretch"
+                                                VerticalAlignment="Center"
+                                                Content="{Binding Source}"/>
                             </Border>
 
                             <!-- Editor: Content=EffectiveEditorTarget so elevation is transparent.

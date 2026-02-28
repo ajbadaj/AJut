@@ -10,11 +10,13 @@ namespace AJut.UX.PropertyInteraction
 
     public class PropertyEditTarget : ObservableTreeNode
     {
-        public delegate object GetValue ();
-        public delegate void SetValue (object value);
+        public delegate object? GetValue ();
+        public delegate void SetValue (object? value);
 
         private readonly GetValue m_getValue;
         private readonly SetValue? m_setValue;
+        private object m_defaultValue;
+        private bool m_hasDefaultValue;
 
         public PropertyEditTarget (string propertyPathTarget, GetValue getValue, SetValue? setValue = null)
         {
@@ -69,6 +71,14 @@ namespace AJut.UX.PropertyInteraction
             set => this.SetAndRaiseIfChanged(ref m_displayName, value);
         }
 
+        /// <summary>
+        /// Raised (as a PropertyChanged notification) after m_setValue commits the new value to the
+        /// backing source object. Distinct from "EditValue" which fires inside SetAndRaiseIfChanged
+        /// BEFORE m_setValue runs. PropertyGrid subscribes to this name to fire PropertyTreeChanged
+        /// only after the source is in sync, preventing the "always one behind" symptom.
+        /// </summary>
+        public const string SourceCommittedPropertyName = "SourceCommitted";
+
         private object m_editValue;
         public object EditValue
         {
@@ -78,15 +88,43 @@ namespace AJut.UX.PropertyInteraction
                 if (!this.IsReadOnly && this.SetAndRaiseIfChanged(ref m_editValue, value))
                 {
                     m_setValue(value);
+                    this.UpdateIsAtDefaultValue();
+                    this.RaisePropertyChanged(SourceCommittedPropertyName);
                 }
             }
         }
 
-        private object m_editContext;
-        public object EditContext
+        private object? m_editContext;
+        public object? EditContext
         {
             get => m_editContext;
             set => this.SetAndRaiseIfChanged(ref m_editContext, value);
+        }
+
+        /// <summary>The default value for this property (CLR default or [PGOverrideDefault]).</summary>
+        public object DefaultValue => m_defaultValue;
+
+        /// <summary>True when a meaningful default has been established for this property.</summary>
+        public bool HasDefaultValue => m_hasDefaultValue;
+
+        private bool m_isAtDefaultValue;
+        /// <summary>
+        /// True when EditValue equals DefaultValue. Drives the DefaultValueLabelDataTemplate /
+        /// ModifiedValueLabelDataTemplate switch on the PropertyGrid label.
+        /// </summary>
+        public bool IsAtDefaultValue
+        {
+            get => m_isAtDefaultValue;
+            private set => this.SetAndRaiseIfChanged(ref m_isAtDefaultValue, value);
+        }
+
+        /// <summary>Resets EditValue to DefaultValue (no-op if HasDefaultValue is false).</summary>
+        public void ResetToDefault ()
+        {
+            if (m_hasDefaultValue)
+            {
+                this.EditValue = m_defaultValue;
+            }
         }
 
         public void RecacheEditValue ()
@@ -94,9 +132,28 @@ namespace AJut.UX.PropertyInteraction
             this.SetEditValue(m_getValue());
         }
 
+        /// <summary>
+        /// Unconditionally re-reads the source value and raises PropertyChanged("EditValue")
+        /// even if the cached value hasn't changed. Used by NullableEditor to force the inner
+        /// editor to refresh when the outer nullable target transitions between null and non-null
+        /// states (null→0 and 0→0 would both appear as "no change" to SetAndRaiseIfChanged).
+        /// </summary>
+        public void ForceRaiseEditValueChanged ()
+        {
+            m_editValue = m_getValue?.Invoke();
+            this.RaisePropertyChanged(nameof(EditValue));
+            this.UpdateIsAtDefaultValue();
+        }
+
         public bool SetEditValue (object editValue)
         {
-            return this.SetAndRaiseIfChanged(ref m_editValue, editValue, nameof(EditValue));
+            bool changed = this.SetAndRaiseIfChanged(ref m_editValue, editValue, nameof(EditValue));
+            if (changed)
+            {
+                this.UpdateIsAtDefaultValue();
+            }
+
+            return changed;
         }
 
         public bool ShouldEvaluateFor (string propertyPath)
@@ -114,6 +171,7 @@ namespace AJut.UX.PropertyInteraction
         /// Generates PropertyEditTarget nodes for every public, settable property on <paramref name="sourceItem"/>.
         /// For complex reference-type properties whose current value is non-null, child targets are recursively
         /// generated and attached so the property tree can be expanded in a FlatTreeListControl.
+        /// Nullable&lt;T&gt; properties get Editor="Nullable" and EditContext=NullableEditorContext.
         /// </summary>
         public static IEnumerable<PropertyEditTarget> GenerateForPropertiesOf (object sourceItem)
         {
@@ -128,25 +186,64 @@ namespace AJut.UX.PropertyInteraction
                 string displayName = prop.GetAttributes<DisplayNameAttribute>().FirstOrDefault()?.DisplayName;
                 string[] aliases = prop.GetAttributes<PGAltPropertyAliasAttribute>().FirstOrDefault()?.AltPropertyAliases;
 
-                var target = new PropertyEditTarget(prop.Name, () => prop.GetValue(sourceItem), (v) => prop.SetValue(sourceItem, v))
+                // 1. Detect Nullable<T> and route to the "Nullable" editor
+                Type underlyingNullable = Nullable.GetUnderlyingType(prop.PropertyType);
+                bool isNullable = underlyingNullable != null;
+
+                // 2. Detect [PGTypeAlias] for type-converting editors (e.g. SKColor → Windows.UI.Color).
+                //    Ignored when [PGEditor] or Nullable unwrapping already applies.
+                var aliasAttr = prop.GetAttributes<PGTypeAliasAttribute>().FirstOrDefault();
+                IPropertyGridTypeAliasing? aliasing = (aliasAttr != null && !isNullable && editorAttr == null)
+                    ? (IPropertyGridTypeAliasing)Activator.CreateInstance(aliasAttr.AliasingType)
+                    : null;
+
+                string editorKey;
+                object editContext = null;
+                if (isNullable && editorAttr == null)
+                {
+                    editorKey = "Nullable";
+                    editContext = new NullableEditorContext(underlyingNullable.Name, underlyingNullable);
+                }
+                else if (aliasing != null)
+                {
+                    editorKey = aliasing.AliasType.Name;
+                }
+                else
+                {
+                    editorKey = editorAttr?.Editor ?? prop.PropertyType.Name;
+                }
+
+                GetValue getter = aliasing != null
+                    ? () => aliasing.ConvertToAlias(prop.GetValue(sourceItem))
+                    : () => prop.GetValue(sourceItem);
+
+                SetValue setter = aliasing != null
+                    ? v => prop.SetValue(sourceItem, aliasing.ConvertFromAlias(v))
+                    : v => prop.SetValue(sourceItem, v);
+
+                var target = new PropertyEditTarget(prop.Name, getter, setter)
                 {
                     DisplayName = displayName ?? prop.Name.ConvertToFriendlyEn(),
-                    Editor = editorAttr?.Editor ?? prop.PropertyType.Name,
+                    Editor = editorKey,
+                    EditContext = editContext,
                     AdditionalEvalTargets = aliases,
                 };
 
-                // Recurse into complex reference types (non-string, non-enum, non-value-type) that
-                // have a non-null value and editable sub-properties. Cap recursion at depth 5.
-                if (editorAttr == null && depth < 5 && _IsComplexObjectType(prop.PropertyType))
+                // 3. Compute default value
+                _ApplyDefault(target, prop, sourceItem);
+
+                // 4. Recurse into complex reference types (non-nullable, non-aliased, non-string, non-enum,
+                // non-value-type) that have a non-null value and editable sub-properties. Cap recursion at depth 5.
+                if (!isNullable && aliasing == null && editorAttr == null && depth < 5 && _IsComplexObjectType(prop.PropertyType))
                 {
-                    object subValue = prop.GetValue(sourceItem);
+                    object? subValue = prop.GetValue(sourceItem);
                     if (subValue != null && _GetRelevantProperties(subValue).Any())
                     {
-                        // 1. Check for [PGElevateChildProperty("X")] on the property itself.
+                        // Check for [PGElevateChildProperty("X")] on the property itself.
                         var elevateChildAttr = prop.GetAttributes<PGElevateChildPropertyAttribute>().FirstOrDefault();
                         if (elevateChildAttr != null)
                         {
-                            PropertyInfo childProp = prop.PropertyType.GetProperty(elevateChildAttr.ChildPropertyName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty);
+                            PropertyInfo? childProp = prop.PropertyType.GetProperty(elevateChildAttr.ChildPropertyName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty);
                             if (childProp != null)
                             {
                                 var childTarget = new PropertyEditTarget(
@@ -158,6 +255,7 @@ namespace AJut.UX.PropertyInteraction
                                     DisplayName = childProp.GetAttributes<DisplayNameAttribute>().FirstOrDefault()?.DisplayName ?? childProp.Name.ConvertToFriendlyEn(),
                                     Editor = childProp.GetAttributes<PGEditorAttribute>().FirstOrDefault()?.Editor ?? childProp.PropertyType.Name,
                                 };
+                                _ApplyDefault(childTarget, childProp, subValue);
                                 childTarget.Setup();
                                 target.ElevatedChildTarget = childTarget;
                                 target.IsExpandable = false;
@@ -165,8 +263,8 @@ namespace AJut.UX.PropertyInteraction
                         }
                         else
                         {
-                            // 2. Check if any property of the sub-type has [PGElevateAsParent].
-                            PropertyInfo elevatedProp = prop.PropertyType
+                            // Check if any property of the sub-type has [PGElevateAsParent].
+                            PropertyInfo? elevatedProp = prop.PropertyType
                                 .GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty)
                                 .FirstOrDefault(p => p.IsTaggedWithAttribute<PGElevateAsParentAttribute>());
                             if (elevatedProp != null)
@@ -180,13 +278,14 @@ namespace AJut.UX.PropertyInteraction
                                     DisplayName = elevatedProp.GetAttributes<DisplayNameAttribute>().FirstOrDefault()?.DisplayName ?? elevatedProp.Name.ConvertToFriendlyEn(),
                                     Editor = elevatedProp.GetAttributes<PGEditorAttribute>().FirstOrDefault()?.Editor ?? elevatedProp.PropertyType.Name,
                                 };
+                                _ApplyDefault(childTarget, elevatedProp, subValue);
                                 childTarget.Setup();
                                 target.ElevatedChildTarget = childTarget;
                                 target.IsExpandable = false;
                             }
                             else
                             {
-                                // 3. Normal expandable sub-object.
+                                // Normal expandable sub-object.
                                 target.IsExpandable = true;
                                 foreach (PropertyEditTarget child in GenerateForPropertiesOf(subValue, depth + 1))
                                 {
@@ -223,6 +322,53 @@ namespace AJut.UX.PropertyInteraction
             }
         }
 
+        private static void _ApplyDefault (PropertyEditTarget target, PropertyInfo prop, object sourceItem)
+        {
+            var overrideAttr = prop.GetAttributes<PGOverrideDefaultAttribute>().FirstOrDefault();
+            if (overrideAttr != null)
+            {
+                if (overrideAttr.IsMethodBased)
+                {
+                    // Locate the method (public or non-public, instance or static, zero parameters).
+                    MethodInfo method = sourceItem?.GetType().GetMethod(
+                        overrideAttr.MethodName,
+                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static,
+                        null,
+                        Type.EmptyTypes,
+                        null
+                    );
+
+                    if (method != null)
+                    {
+                        try
+                        {
+                            target.m_defaultValue = method.Invoke(method.IsStatic ? null : sourceItem, null);
+                            target.m_hasDefaultValue = true;
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.LogError($"[WARNING] PGOverrideDefault method '{overrideAttr.MethodName}' threw during default value resolution", ex);
+                        }
+                    }
+                    else
+                    {
+                        Logger.LogError($"[WARNING] PGOverrideDefault: method '{overrideAttr.MethodName}' not found on type '{sourceItem?.GetType().Name}'");
+                    }
+                }
+                else
+                {
+                    target.m_defaultValue = overrideAttr.FixedDefaultValue;
+                    target.m_hasDefaultValue = true;
+                }
+            }
+            else
+            {
+                // Natural CLR default: null for reference/nullable types, default(T) for value types.
+                target.m_defaultValue = prop.PropertyType.IsValueType ? Activator.CreateInstance(prop.PropertyType) : null;
+                target.m_hasDefaultValue = true;
+            }
+        }
+
         private static bool _IsComplexObjectType (Type type)
         {
             return !type.IsValueType
@@ -232,12 +378,12 @@ namespace AJut.UX.PropertyInteraction
                 && !typeof(System.Collections.IEnumerable).IsAssignableFrom(type);
         }
 
-        internal void TakeOn (PropertyEditTarget target)
+        public void TakeOn (PropertyEditTarget target)
         {
             // Intentionally empty - merging of duplicate targets not yet implemented.
         }
 
-        internal void Setup ()
+        public void Setup ()
         {
             if (this.DisplayName.IsNullOrEmpty())
             {
@@ -248,6 +394,13 @@ namespace AJut.UX.PropertyInteraction
             {
                 m_editValue = m_getValue?.Invoke();
             }
+
+            this.UpdateIsAtDefaultValue();
+        }
+
+        private void UpdateIsAtDefaultValue ()
+        {
+            this.IsAtDefaultValue = m_hasDefaultValue && object.Equals(m_editValue, m_defaultValue);
         }
     }
 }

@@ -64,6 +64,9 @@
     <Compile Update="Controls\MessageBoxPopover.cs">
       <DependentUpon>MessageBoxPopover.xaml</DependentUpon>
     </Compile>
+    <Compile Update="Controls\NullableEditor.cs">
+      <DependentUpon>NullableEditor.xaml</DependentUpon>
+    </Compile>
     <Compile Update="Controls\NumericEditor.cs">
       <DependentUpon>NumericEditor.xaml</DependentUpon>
     </Compile>
