@@ -20,7 +20,7 @@
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <EnableMsixTooling>true</EnableMsixTooling>
     <WindowsPackageType>None</WindowsPackageType>
-    <Version>1.0.1.100</Version>
+    <Version>1.0.1.101</Version>
     <!-- =========[ NuGet packaging - ensure XBF + PRI resources are included ]======== -->
     <DisableEmbeddedXbf>false</DisableEmbeddedXbf>
     <GenerateLibraryLayout>true</GenerateLibraryLayout>
@@ -65,6 +65,9 @@
     </Compile>
     <Compile Update="Controls\PropertyGridItemRow.cs">
       <DependentUpon>PropertyGridItemRow.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\NullableEditor.cs">
+      <DependentUpon>NullableEditor.xaml</DependentUpon>
     </Compile>
     <Compile Update="Controls\NumericEditor.cs">
       <DependentUpon>NumericEditor.xaml</DependentUpon>

@@ -137,6 +137,28 @@ namespace AJut.UX.Controls
             set => this.SetValue(LabelColumnWidthProperty, value);
         }
 
+        /// <summary>
+        /// DataTemplate for the property label when the value equals the default.
+        /// DataContext is the PropertyEditTarget. Defaults to a plain TextBlock showing DisplayName.
+        /// </summary>
+        public static readonly DependencyProperty DefaultValueLabelDataTemplateProperty = DPUtils.Register(_ => _.DefaultValueLabelDataTemplate);
+        public DataTemplate DefaultValueLabelDataTemplate
+        {
+            get => (DataTemplate)this.GetValue(DefaultValueLabelDataTemplateProperty);
+            set => this.SetValue(DefaultValueLabelDataTemplateProperty, value);
+        }
+
+        /// <summary>
+        /// DataTemplate for the property label when the value differs from the default.
+        /// DataContext is the PropertyEditTarget. Defaults to a bold TextBlock showing DisplayName.
+        /// </summary>
+        public static readonly DependencyProperty ModifiedValueLabelDataTemplateProperty = DPUtils.Register(_ => _.ModifiedValueLabelDataTemplate);
+        public DataTemplate ModifiedValueLabelDataTemplate
+        {
+            get => (DataTemplate)this.GetValue(ModifiedValueLabelDataTemplateProperty);
+            set => this.SetValue(ModifiedValueLabelDataTemplateProperty, value);
+        }
+
         // Padding applied to each PropertyGridItemRow (insets label + editor from the row edges).
         // Read by PropertyGridItemRow.OnLoaded and applied as Padding so the template's
         // {TemplateBinding Padding} drives the inner content grid's Margin.
@@ -177,6 +199,13 @@ namespace AJut.UX.Controls
             get => (IReadOnlyList<IObservableTreeNode>)this.GetValue(PropertyTreeItemsProperty);
             private set => this.SetValue(PropertyTreeItemsProperty, value);
         }
+
+        // ===========[ Events ]===================================================
+        /// <summary>
+        /// Fires whenever any property in the displayed tree is edited via the property grid.
+        /// Subscribe to detect any change and refresh displays that mirror the source object.
+        /// </summary>
+        public event EventHandler PropertyTreeChanged;
 
         // ===========[ Template application ]====================================
         protected override void OnApplyTemplate ()
@@ -274,7 +303,17 @@ namespace AJut.UX.Controls
 
         private void RebuildEditTargets ()
         {
+            // Unsubscribe from old tree before rebuild clears it.
+            if (m_manager.RootNode != null)
+            {
+                foreach (var target in _WalkAllTargets(m_manager.RootNode))
+                {
+                    target.PropertyChanged -= this.OnAnyTargetPropertyChanged;
+                }
+            }
+
             m_manager.RebuildEditTargets();
+
             // Pass the root's children (not the root itself) as RootItemsSource so that
             // FlatTreeListControl.CreateUberRoot wraps each top-level property in a FlatTreeItem
             // with the uber root always expanded - making all top-level rows visible immediately
@@ -289,6 +328,43 @@ namespace AJut.UX.Controls
             if (this.PART_TreeList != null)
             {
                 this.PART_TreeList.RootItemsSource = this.PropertyTreeItems;
+            }
+
+            // Subscribe to all new targets for PropertyTreeChanged notification.
+            if (m_manager.RootNode != null)
+            {
+                foreach (var target in _WalkAllTargets(m_manager.RootNode))
+                {
+                    target.PropertyChanged += this.OnAnyTargetPropertyChanged;
+                }
+            }
+        }
+
+        private void OnAnyTargetPropertyChanged (object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == PropertyEditTarget.SourceCommittedPropertyName)
+            {
+                this.PropertyTreeChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
+        private static IEnumerable<PropertyEditTarget> _WalkAllTargets (IObservableTreeNode node)
+        {
+            foreach (var child in node.Children)
+            {
+                if (child is PropertyEditTarget target)
+                {
+                    yield return target;
+                    if (target.ElevatedChildTarget != null)
+                    {
+                        yield return target.ElevatedChildTarget;
+                    }
+
+                    foreach (var descendant in _WalkAllTargets(target))
+                    {
+                        yield return descendant;
+                    }
+                }
             }
         }
 

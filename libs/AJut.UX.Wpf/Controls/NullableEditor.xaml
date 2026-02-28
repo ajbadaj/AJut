@@ -1,0 +1,99 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:AJut.UX.Controls">
+
+    <Style TargetType="{x:Type local:NullableEditor}">
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:NullableEditor}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <!-- Editor column: fills remaining space -->
+                            <ColumnDefinition Width="*"/>
+                            <!-- [Unset] button column: auto-sized, only visible when HasValue -->
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Inner editor: always present. Opacity driven by NullableStates VSM.
+                             ProxyTarget unwraps the nullable value so the inner editor always
+                             receives a non-null T (defaulting to default(T) when outer is null). -->
+                        <ContentPresenter x:Name="PART_InnerContent"
+                                          Grid.Column="0"
+                                          Content="{TemplateBinding ProxyTarget}"
+                                          ContentTemplateSelector="{TemplateBinding InnerEditorTemplateSelector}"
+                                          HorizontalAlignment="Stretch"/>
+
+                        <!-- Null overlay: shown when EditValue is null.
+                             Sits on top of the inner editor (same grid cell).
+                             The darkening Border + "Not set" label + [Set] button together
+                             prevent interaction with the editor beneath. -->
+                        <Grid x:Name="PART_NullOverlay" Grid.Column="0" IsHitTestVisible="True">
+                            <Border Background="#3000"/>
+                            <StackPanel Orientation="Horizontal"
+                                        HorizontalAlignment="Left"
+                                        VerticalAlignment="Center">
+                                <TextBlock Text="Not set"
+                                           VerticalAlignment="Center"
+                                           Margin="6,0,6,0"
+                                           Opacity="0.9"/>
+                                <Button x:Name="PART_SetButton"
+                                        Content="[Set]"
+                                        Padding="6,2"
+                                        Margin="2,0"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- [Unset] button: shown when EditValue is non-null. -->
+                        <Button x:Name="PART_UnsetButton"
+                                Grid.Column="1"
+                                Content="[Unset]"
+                                Padding="6,2"
+                                Margin="3,0,0,0"
+                                Visibility="Collapsed"/>
+
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="NullableStates">
+                                <!-- IsNull: overlay visible, editor dimmed, unset button hidden -->
+                                <VisualState x:Name="IsNull">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_NullOverlay"
+                                                                       Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{x:Static Visibility.Visible}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <DoubleAnimation Storyboard.TargetName="PART_InnerContent"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="0.4" Duration="0"/>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_UnsetButton"
+                                                                       Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{x:Static Visibility.Collapsed}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+
+                                <!-- HasValue: overlay hidden, editor at full opacity, unset button shown -->
+                                <VisualState x:Name="HasValue">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_NullOverlay"
+                                                                       Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{x:Static Visibility.Collapsed}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <DoubleAnimation Storyboard.TargetName="PART_InnerContent"
+                                                         Storyboard.TargetProperty="Opacity"
+                                                         To="1.0" Duration="0"/>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PART_UnsetButton"
+                                                                       Storyboard.TargetProperty="Visibility">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{x:Static Visibility.Visible}"/>
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

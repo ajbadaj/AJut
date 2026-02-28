@@ -346,14 +346,34 @@ namespace AJut.UX.Controls
 
         private void ListView_OnDoubleTapped (object sender, DoubleTappedRoutedEventArgs e)
         {
-            if (this.PART_ListView.SelectedItem is FlatTreeItem item)
+            // Determine the actual tapped FlatTreeItem by walking up from OriginalSource
+            // to find the ListViewItem container. Using SelectedItem instead would cause
+            // double-tapping any interactive editor (TextBox, Button, etc.) inside a row
+            // to toggle whichever item happens to be selected, not the actually-tapped row.
+            FlatTreeItem tappedItem = null;
+            if (e.OriginalSource is DependencyObject source)
             {
-                if (this.ShouldToggleExpansionOnDoubleClick && item.IsExpandable)
+                DependencyObject current = source;
+                while (current != null)
                 {
-                    item.IsExpanded = !item.IsExpanded;
+                    if (current is ListViewItem lvi && this.PART_ListView.ItemFromContainer(lvi) is FlatTreeItem flatItem)
+                    {
+                        tappedItem = flatItem;
+                        break;
+                    }
+
+                    current = VisualTreeHelper.GetParent(current);
+                }
+            }
+
+            if (tappedItem != null)
+            {
+                if (this.ShouldToggleExpansionOnDoubleClick && tappedItem.IsExpandable)
+                {
+                    tappedItem.IsExpanded = !tappedItem.IsExpanded;
                 }
 
-                this.ItemDoubleClicked?.Invoke(this, item);
+                this.ItemDoubleClicked?.Invoke(this, tappedItem);
             }
         }
 

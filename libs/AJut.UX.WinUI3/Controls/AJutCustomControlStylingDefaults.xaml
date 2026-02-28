@@ -126,6 +126,12 @@
     <SolidColorBrush x:Key="AJut_DockTabScrollButton_HoverBackground"   Color="#25FFFFFF"/>
     <SolidColorBrush x:Key="AJut_DockTabScrollButton_PressedBackground" Color="#45FFFFFF"/>
 
+    <!-- ===========[ NullableEditor ]======================================= -->
+    <!-- Overlay background: slight darkening tint over the dimmed inner editor. -->
+    <SolidColorBrush x:Key="AJut_NullableEditor_OverlayBackground"  Color="#8000"/>
+    <!-- "Not set" foreground: readable over the darkened overlay. -->
+    <SolidColorBrush x:Key="AJut_NullableEditor_NotSetForeground"    Color="#DDDDDD"/>
+
     <!-- ===========[ NumericEditor ]======================================== -->
     <!-- Increase button hover/pressed (blue-tinted gradient, top-to-bottom) -->
     <LinearGradientBrush x:Key="AJut_NumericEditor_IncreasePointerOverBackground"

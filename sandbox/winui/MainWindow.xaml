@@ -513,29 +513,62 @@
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
-                                <TextBlock Grid.Row="0" Text="PropertyGrid - reflects properties with per-type editor templates" FontStyle="Italic" Margin="0,0,0,8"/>
-                                <ajut:PropertyGrid Grid.Row="1" SingleItemSource="{x:Bind TestObj}"
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="300"/>
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="PropertyGrid - reflects properties with per-type editor templates" FontStyle="Italic" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="0" Grid.Column="2" Text="Live source object (JSON)" FontStyle="Italic" Margin="0,0,0,8"/>
+
+                                <ajut:PropertyGrid x:Name="TestPropertyGrid"
+                                                   Grid.Row="1" Grid.Column="0"
+                                                   SingleItemSource="{x:Bind TestObj}"
                                                    RowSpacing="5"
-                                                   FixedRowHeight="28"
+                                                   FixedRowHeight="40"
                                                    LabelColumnWidth="180">
                                     <ajut:PropertyGrid.ItemTemplateSelector>
                                         <ajut:PropertyGridTemplateSelector>
                                             <ajut:PropertyGridTemplateSelector.Default>
                                                 <DataTemplate>
-                                                    <TextBlock Text="{Binding EditValue}" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding Path=EditValue}" VerticalAlignment="Center"/>
                                                 </DataTemplate>
                                             </ajut:PropertyGridTemplateSelector.Default>
                                             <ajut:PropertyGridTemplateSelector.RegisteredTemplates>
                                                 <DataTemplate x:Key="Single">
-                                                    <ajut:NumericEditor Value="{Binding EditValue}" TextBoxHeight="20"/>
+                                                    <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}" TextBoxHeight="20"/>
+                                                </DataTemplate>
+                                                <DataTemplate x:Key="Double">
+                                                    <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}" TextBoxHeight="20"/>
+                                                </DataTemplate>
+                                                <DataTemplate x:Key="Int32">
+                                                    <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}" TextBoxHeight="20"/>
                                                 </DataTemplate>
                                                 <DataTemplate x:Key="ColorPick">
-                                                    <ajut:ColorEditIngressControl EditColor="{Binding EditValue}" VerticalAlignment="Stretch" MaxWidth="150" HorizontalAlignment="Left"/>
+                                                    <ajut:ColorEditIngressControl EditColor="{Binding Path=EditValue, Mode=TwoWay}" VerticalAlignment="Stretch" MaxWidth="150" HorizontalAlignment="Left"/>
+                                                </DataTemplate>
+                                                <DataTemplate x:Key="String">
+                                                    <TextBox Text="{Binding Path=EditValue, Mode=TwoWay}"/>
                                                 </DataTemplate>
                                             </ajut:PropertyGridTemplateSelector.RegisteredTemplates>
                                         </ajut:PropertyGridTemplateSelector>
                                     </ajut:PropertyGrid.ItemTemplateSelector>
                                 </ajut:PropertyGrid>
+
+                                <!-- JSON display: live mirror of TestObj, updated on every PropertyTreeChanged -->
+                                <Border Grid.Row="1" Grid.Column="2"
+                                        BorderBrush="{ThemeResource SystemControlForegroundBaseMediumLowBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="4">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                        <TextBlock x:Name="PropertyGridJsonDisplay"
+                                                   FontFamily="Consolas"
+                                                   FontSize="11"
+                                                   Margin="6"
+                                                   TextWrapping="Wrap"/>
+                                    </ScrollViewer>
+                                </Border>
                             </Grid>
                         </TabViewItem.Content>
                     </TabViewItem>

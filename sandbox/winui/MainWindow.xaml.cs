@@ -7,6 +7,7 @@ namespace AJutShowRoomWinUI
     using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Linq;
+    using AJut.Text.AJson;
     using System.Threading.Tasks;
     using AJut;
     using AJut.Storage;
@@ -40,6 +41,8 @@ namespace AJutShowRoomWinUI
             this.AppWindow.SetIcon("Assets/app.ico");
             this.InitializeComponent();
             this.Root.SetupFor(this);
+            this.TestPropertyGrid.PropertyTreeChanged += this.TestPropertyGrid_OnPropertyTreeChanged;
+            this.TestPropertyGrid_OnPropertyTreeChanged(this, EventArgs.Empty);
 
             // ToggleStrip demo items
             this.ToggleStripSingle.ItemsSource = new[] { "Option A", "Option B", "Option C" };
@@ -169,6 +172,19 @@ namespace AJutShowRoomWinUI
         public ShowRoomTreeNode TreeRoot { get; } = ShowRoomTreeNode.Build();
         public ShowRoomTester TestObj { get; } = new ShowRoomTester();
 
+        private void TestPropertyGrid_OnPropertyTreeChanged (object sender, EventArgs e)
+        {
+            try
+            {
+                Json json = JsonHelper.BuildJsonForObject(this.TestObj);
+                this.PropertyGridJsonDisplay.Text = json.HasErrors ? json.GetErrorReport() : json.ToString();
+            }
+            catch (Exception ex)
+            {
+                this.PropertyGridJsonDisplay.Text = $"[Serialization error]\n{ex.Message}";
+            }
+        }
+
         // ===========[ Dock Zone tab ]====================================================
 
         private void DockZoneTab_OnLoaded(object sender, RoutedEventArgs e)
@@ -274,14 +290,38 @@ namespace AJutShowRoomWinUI
     public class ShowRoomTester
     {
         [PGEditor("Single")]
+        [PGOverrideDefault(9001.0)]
         public double Value { get; set; } = 3.14;
         [PGEditor("ColorPick")]
         public Color ColorValue { get; set; } = new Color { A = 255, B = 255 };
+        [PGTypeAlias(typeof(ColorToStringConverter))]
+        public Color ColorAsString { get; set; } = new Color { A = 255, R = 255 };
         public string Name { get; set; } = "AJut Is Cool";
+        public float? OptionalValue { get; set; }
         public ShowRoomSubObject SubObj { get; set; } = new ShowRoomSubObject();
 
         [PGElevateChildProperty(nameof(ShowRoomSubObject.SubObjValue))]
         public ShowRoomSubObject SubObjWithElevation { get; set; } = new ShowRoomSubObject();
+
+        private class ColorToStringConverter : PropertyGridTypeAliasing<Color, string>
+        {
+            public override Type AliasType => typeof(string);
+
+            public override Color ConvertFromAlias(string aliasValue)
+            {
+                if (ColorHelper.TryGetColorFromHex(aliasValue, out Color color))
+                {
+                    return color;
+                }
+
+                return default;
+            }
+
+            public override string ConvertToAlias(Color sourceValue)
+            {
+                return ColorHelper.GetSmallestHexString(sourceValue);
+            }
+        }
     }
 
     public class ShowRoomSubObject

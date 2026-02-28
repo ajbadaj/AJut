@@ -79,6 +79,12 @@
     <SolidColorBrush x:Key="AJut_DockTabScrollButton_HoverBackground"   Color="{ThemeResource AJut_Color_MouseInteractionHighlight}"/>
     <SolidColorBrush x:Key="AJut_DockTabScrollButton_PressedBackground" Color="{ThemeResource AJut_Color_PrimaryHighlightDark}"/>
 
+    <!-- ===========[ NullableEditor ]====================================== -->
+    <!-- OverlayBackground is intentionally not aliased: it's a semi-transparent dark overlay
+         (#30000000) that works on any theme. The Generic.xaml default is used as-is. -->
+    <SolidColorBrush x:Key="AJut_NullableEditor_NotSetForeground" Color="{ThemeResource AJut_Color_NormalText}"/>
+    <SolidColorBrush x:Key="AJut_NullableEditor_OverlayBackground"  Color="#8000"/>
+
     <!-- ===========[ NumericEditor ]======================================= -->
     <SolidColorBrush x:Key="AJut_NumericEditor_IncreasePointerOverBackground" Color="{ThemeResource AJut_Color_PrimaryHighlightBright}"/>
     <SolidColorBrush x:Key="AJut_NumericEditor_DecreasePointerOverBackground" Color="{ThemeResource AJut_Color_PrimaryHighlightBright}"/>
