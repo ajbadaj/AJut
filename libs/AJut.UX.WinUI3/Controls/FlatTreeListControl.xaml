@@ -20,7 +20,7 @@
     <!-- Uses WinUI3 system brush keys only. AllControlThemeOverrides.xaml overrides
          this key with AJut-colored brushes when the AJut theme is loaded.
 
-         WinUI3 ListView calls states from a single CommonStates group on its items —
+         WinUI3 ListView calls states from a single CommonStates group on its items -
          including combined states like PointerOverSelected and PressedSelected. Using
          two separate groups (SelectionStates + CommonStates) caused the deselection
          storyboard never to fire because WinUI3 calls "Normal" to reset, not "Unselected".
@@ -35,7 +35,7 @@
             <Setter.Value>
                 <ControlTemplate TargetType="ListViewItem">
                     <Grid x:Name="ContentBorder" Background="Transparent">
-                        <!-- Left-edge selection strip — 4px, system accent color when selected -->
+                        <!-- Left-edge selection strip - 4px, system accent color when selected -->
                         <Rectangle x:Name="SelectionStrip"
                                    Width="4"
                                    HorizontalAlignment="Left"
@@ -57,7 +57,7 @@
                                 BorderThickness="1"
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Stretch"/>
-                        <!-- Row content — left margin leaves room for the strip -->
+                        <!-- Row content - left margin leaves room for the strip -->
                         <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                           VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
                                           Margin="6,0,0,0"/>
@@ -374,7 +374,7 @@
                                           HorizontalAlignment="Stretch"
                                           VerticalAlignment="Center"
                                           Margin="2,0"
-                                          Content="{Binding .}"
+                                          Content="{Binding}"
                                           ContentTemplate="{TemplateBinding ContentTemplate}"/>
                     </Grid>
                 </ControlTemplate>

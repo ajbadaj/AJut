@@ -5,7 +5,7 @@
     <!-- ===[ PopupMenuButton ]=== -->
     <!-- Default style: system resources only, no AJut_ keys.
          A ToggleButton (PART_Button) shows the button content + dropdown arrow glyph.
-         The ToggleButton's Checked/Unchecked visual state reflects the flyout open state —
+         The ToggleButton's Checked/Unchecked visual state reflects the flyout open state -
          when the flyout is open the button appears "pressed/checked" (accent background).
          AllControlThemeOverrides.xaml can override Background/BorderBrush via a Style setter
          without needing to duplicate the template. -->

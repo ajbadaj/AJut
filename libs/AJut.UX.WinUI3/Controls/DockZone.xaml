@@ -5,11 +5,11 @@
     <!-- ===========[ DockZone: Default Style ]================================ -->
     <!-- The template exposes only PART_Root (a Grid). RebuildLayout() in code-behind
          populates it with one of:
-           • DockLeafLayout  (Single/Tabbed) — a proper Control whose ControlTemplate
+           • DockLeafLayout  (Single/Tabbed) - a proper Control whose ControlTemplate
              in DockLeafLayout.xaml owns the header/content/tab-strip visual structure
            • child DockZones + DockZoneSplitters  (Horizontal/Vertical splits)
          Visual appearance is entirely owned by DockLeafLayout and DockTabItem styles.
-         DockZone itself has no visual DPs — only structural/layout setters here. -->
+         DockZone itself has no visual DPs - only structural/layout setters here. -->
 
     <Style TargetType="local:DockZone">
         <Setter Property="MinHeight" Value="30"/>

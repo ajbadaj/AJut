@@ -58,7 +58,7 @@ namespace AJut.UX.Controls
             set => this.SetValue(LabelColumnWidthProperty, value);
         }
 
-        // ===========[ Pointer overrides — drive HoverStates VSM group ]=========
+        // ===========[ Pointer overrides - drive HoverStates VSM group ]=========
         protected override void OnPointerEntered (PointerRoutedEventArgs e)
         {
             base.OnPointerEntered(e);

@@ -53,7 +53,7 @@ namespace AJut.UX.Controls
         private Point m_headerDragScreenPressPt;
         private DockZone m_headerDragZone;   // zone to pass to InitiateDrag
 
-        // Tab strip state — valid during BuildTabNavContent lifetime
+        // Tab strip state - valid during BuildTabNavContent lifetime
         private StackPanel m_tabPanel;
         private ScrollViewer m_tabScrollViewer;
         private DockTabScrollButton m_tabLeftScrollBtn;
@@ -266,7 +266,7 @@ namespace AJut.UX.Controls
                 : this.ViewModel.DockedContent.FirstOrDefault();
 
             // Header content UIElement: title text + optional close button.
-            // Foreground is NOT set here — it inherits from DockLeafLayout.Foreground (set via Style).
+            // Foreground is NOT set here - it inherits from DockLeafLayout.Foreground (set via Style).
             var headerText = new TextBlock
             {
                 Text = selectedAdapter?.TitleContent?.ToString() ?? string.Empty,
@@ -325,7 +325,7 @@ namespace AJut.UX.Controls
             }
 
             // DockLeafLayout owns the 3-row visual structure (header / content / tab strip).
-            // All visual DPs are pushed directly — WinUI3 TemplateBinding does not backfill.
+            // All visual DPs are pushed directly - WinUI3 TemplateBinding does not backfill.
             var leaf = new DockLeafLayout
             {
                 IsTabbed = tabbed,
@@ -340,7 +340,7 @@ namespace AJut.UX.Controls
 
             // Forward header pointer events to this DockZone's handlers.
             // DockLeafLayout passes this.PART_HeaderBar (a Border) as the event sender,
-            // so existing handler casts — (Border)sender — remain valid.
+            // so existing handler casts - (Border)sender - remain valid.
             leaf.HeaderPointerPressed += this.OnHeaderPointerPressed;
             leaf.HeaderPointerMoved += this.OnHeaderPointerMoved;
             leaf.HeaderPointerReleased += this.OnHeaderPointerReleased;
@@ -351,10 +351,10 @@ namespace AJut.UX.Controls
 
         // Returns the tab-navigation Grid (left scroll btn + ScrollViewer + right scroll btn).
         // The outer wrapper Border (background, top border, padding) lives in DockLeafLayout's
-        // this.PART_TabStripWrapper template part — only the inner content is built here.
+        // this.PART_TabStripWrapper template part - only the inner content is built here.
         //
         // All per-tab drag logic lives in DockTabItem (events surfaced as high-level named
-        // handlers). No anonymous closures — fields m_tab* hold the current strip objects
+        // handlers). No anonymous closures - fields m_tab* hold the current strip objects
         // so named handlers can reference them without captures.
         private FrameworkElement BuildTabNavContent(DockingContentAdapterModel selectedAdapter)
         {
@@ -369,9 +369,9 @@ namespace AJut.UX.Controls
 
                 // Tab border logic:
                 //   Left  : first tab and selected tab get a left border (outer edge + selected outline)
-                //   Top   : never — the open top visually connects to the content panel above
+                //   Top   : never - the open top visually connects to the content panel above
                 //   Right : every tab except those immediately left of a selected tab (selected provides its own left)
-                //   Bottom: always — visible outline at the bottom of the tab strip
+                //   Bottom: always - visible outline at the bottom of the tab strip
                 bool nextIsSelected = (i + 1 < this.ViewModel.DockedContent.Count)
                     && (this.ViewModel.DockedContent[i + 1] == selectedAdapter);
 
@@ -443,7 +443,7 @@ namespace AJut.UX.Controls
             navGrid.Children.Add(m_tabRightScrollBtn);
 
             // Return only the inner nav grid. The outer wrapper (background, top border, padding)
-            // is this.PART_TabStripWrapper in DockLeafLayout's ControlTemplate — see DockLeafLayout.xaml.
+            // is this.PART_TabStripWrapper in DockLeafLayout's ControlTemplate - see DockLeafLayout.xaml.
             return navGrid;
         }
 
@@ -952,7 +952,7 @@ namespace AJut.UX.Controls
 
             // Empty zones can only accept content to fill them; they can't be split.
             // Leaf zones (Single/Tabbed) support both directional splits and tab-insertion.
-            // Split zones (Horizontal/Vertical) support only directional splits — they cannot
+            // Split zones (Horizontal/Vertical) support only directional splits - they cannot
             // accept direct tab content alongside their child zones.
             // The center "+" stays visible for all orientations but is disabled (50% opacity)
             // for split zones so users can see it exists without being able to misuse it.
@@ -999,7 +999,7 @@ namespace AJut.UX.Controls
                 }
 
                 // Non-root panel in a tearoff. If the tearoff root is a split zone
-                // (Horizontal/Vertical) this zone can be torn off independently — the
+                // (Horizontal/Vertical) this zone can be torn off independently - the
                 // remaining sibling(s) keep the root non-empty, which is required.
                 // If the root is a leaf (Single/Tabbed), tearing off would empty it,
                 // which is not allowed; drag the whole tearoff window instead.

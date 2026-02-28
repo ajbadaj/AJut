@@ -587,14 +587,14 @@ namespace AJut.UX.Docking
 
             // Snapshot WindowManager activation order once. Index 0 = most recently activated
             // (frontmost); higher index = further back. Only windows behind the drag source
-            // (higher index) are eligible for hover-bring-forward — windows already in front
+            // (higher index) are eligible for hover-bring-forward - windows already in front
             // need no assistance. If the drag source isn't tracked, all windows are eligible.
             var windowManagerOrder = m_windowManager.ToList();
             int dragSourceOrderIdx = windowManagerOrder.IndexOf(dragSourceWindow);
 
             // Pre-compute the windowManagerOrder index of the globally frontmost non-drag dock
             // window (the minimum index > dragSourceOrderIdx). Hovering over this window should
-            // never trigger bring-forward — it is already the topmost accessible window.
+            // never trigger bring-forward - it is already the topmost accessible window.
             int frontmostNonDragIdx = m_dockZoneMapping.Keys
                 .Where(w => w != dragSourceWindow)
                 .Select(w => windowManagerOrder.IndexOf(w))
@@ -639,14 +639,14 @@ namespace AJut.UX.Docking
 
                     // Hover-candidate tracking: find the FRONTMOST (minimum-index) non-drag
                     // window whose client rect contains the cursor. Cannot take first-found
-                    // because m_dockZoneMapping iterates in arbitrary dict order — A might be
+                    // because m_dockZoneMapping iterates in arbitrary dict order - A might be
                     // visited before B even when B is in front of A at the cursor position.
                     Window hoverCandidateWindow = null;
                     int    hoverCandidateIdx    = int.MaxValue;
 
                     // Iterate non-drag windows frontmost-first (ascending windowManagerOrder index)
                     // so both the drop hit-test and hover-candidate tracking always pick the
-                    // topmost visible window at the cursor — not whichever window happens to
+                    // topmost visible window at the cursor - not whichever window happens to
                     // be first in the dictionary. The drop hit-test breaks on the first hit, so
                     // iterating frontmost-first ensures a foreground window's zones are preferred
                     // over background zones that overlap the same screen coordinates.
@@ -716,7 +716,7 @@ namespace AJut.UX.Docking
 
                     // Derive currentHoverWindow from the candidates collected above.
                     // Only elevate if the candidate is NOT the globally frontmost non-drag dock
-                    // window — that window is already accessible and needs no bring-forward.
+                    // window - that window is already accessible and needs no bring-forward.
                     // Hovering over it (or over a background window it occludes) should be silent.
                     Window currentHoverWindow = (hoverCandidateIdx > frontmostNonDragIdx)
                         ? hoverCandidateWindow
@@ -770,7 +770,7 @@ namespace AJut.UX.Docking
                     // the window is raised to the top of the Z-order and the counter resets.
                     if (currentHoverWindow != hoverTargetWindow)
                     {
-                        // Cursor moved to a different window — cancel any active arming
+                        // Cursor moved to a different window - cancel any active arming
                         if (isHoverArming)
                         {
                             User32WindowFuncs.SetLayeredWindowAttributes(hoverHwnd, 0, 255, User32WindowFuncs.kLwaAlpha);
@@ -859,7 +859,7 @@ namespace AJut.UX.Docking
                     this.CloseTearoffWindow(dragSourceWindow);
 
                     // When the drag source closes, the OS activates whichever window it
-                    // considers "next" — often the root window, not the drop target.
+                    // considers "next" - often the root window, not the drop target.
                     // Explicitly activate the target window so it stays in front.
                     dropTargetWindow?.Activate();
                 }

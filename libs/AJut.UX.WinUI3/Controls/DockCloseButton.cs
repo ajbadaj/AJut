@@ -7,7 +7,7 @@ namespace AJut.UX.Controls
     // Minimal Button subclass for DockZone close buttons (panel header and
     // tab strip). DefaultStyleKey points to the style in DockCloseButton.xaml
     // (merged into Generic.xaml), which provides a ControlTemplate with
-    // CommonStates VSM — Normal / PointerOver / Pressed.
+    // CommonStates VSM - Normal / PointerOver / Pressed.
     //
     // ButtonBase drives CommonStates automatically, so no pointer event
     // handlers are needed in code-behind.  Hover and pressed backgrounds use

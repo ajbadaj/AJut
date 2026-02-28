@@ -139,7 +139,7 @@
     <SolidColorBrush x:Key="ComboBoxItemForegroundSelected" Color="{ThemeResource AJut_Color_ImportantText}"/>
 
     <!-- ===[ NumberBox (backing NumericEditor) ]=== -->
-    <!-- NumberBoxBackground intentionally NOT overridden here — NumericEditor handles it via TemplateBinding -->
+    <!-- NumberBoxBackground intentionally NOT overridden here - NumericEditor handles it via TemplateBinding -->
     <StaticResource x:Key="NumberBoxForeground" ResourceKey="AJut_Brush_NormalText"/>
     <StaticResource x:Key="NumberBoxBorderBrush" ResourceKey="AJut_Brush_TextBoxBorder"/>
     <StaticResource x:Key="NumberBoxBorderBrushFocused" ResourceKey="AJut_Brush_PrimaryHighlight"/>
@@ -234,7 +234,7 @@
     <StaticResource x:Key="RadioButtonCheckGlyphFill" ResourceKey="AJut_Brush_ImportantText"/>
 
     <!-- ===[ ScrollViewer / ScrollBar ]=== -->
-    <!-- NOTE: These keys must be Color type (not Brush) — WinUI3's ScrollBar template uses them   -->
+    <!-- NOTE: These keys must be Color type (not Brush) - WinUI3's ScrollBar template uses them   -->
     <!-- as Color="{ThemeResource ScrollBarThumb*}" inside its own SolidColorBrush declarations.   -->
     <!-- Overriding them as SolidColorBrush causes: SolidColorBrush.Color ← SolidColorBrush crash. -->
     <StaticResource x:Key="ScrollBarThumbBackgroundColor" ResourceKey="AJut_Color_BorderCommon"/>

@@ -5,7 +5,7 @@
     <!-- ===========[ DockTabScrollButton: Default Style ]==================== -->
     <!-- Minimal scroll-arrow button for DockZone's tab navigation strip.
          Transparent background at rest; subtle highlight on hover/pressed.
-         Background NOT TemplateBinding'd on Root — VSM owns it so hover/pressed
+         Background NOT TemplateBinding'd on Root - VSM owns it so hover/pressed
          Setters don't fight a TemplateBinding restoration. -->
 
     <Style TargetType="local:DockTabScrollButton">

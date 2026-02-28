@@ -23,7 +23,7 @@ namespace AJut.UX.Controls
     //   PART_ItemsPanel  - StackPanel that holds the generated toggle buttons
     //
     // Note: CornerRadius distribution and BorderThickness are intentionally set in
-    // code (CreateItemButton) because they are index-aware — the first and last buttons
+    // code (CreateItemButton) because they are index-aware - the first and last buttons
     // receive rounded corners matching the strip's CornerRadius DP, while interior
     // buttons receive squared corners. These are structural, not stylistic, assignments.
     // Button Padding comes from the ItemPadding DP (default 8,4); callers can override
@@ -470,7 +470,7 @@ namespace AJut.UX.Controls
                 {
                     if (!value && !this.Owner.Items.CanBeDeselected())
                     {
-                        // Deselect rejected — raise PropertyChanged to revert the ToggleButton's IsChecked
+                        // Deselect rejected - raise PropertyChanged to revert the ToggleButton's IsChecked
                         this.RaisePropertyChanged(nameof(IsSelected));
                         return;
                     }

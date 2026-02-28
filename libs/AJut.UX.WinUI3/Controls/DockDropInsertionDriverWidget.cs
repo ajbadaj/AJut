@@ -19,7 +19,7 @@ namespace AJut.UX.Controls
     //   PART_Glyph - Segoe Fluent Icons TextBlock; Text set from Direction DP in code
     //
     // VSM groups:
-    //   EngagementStates — Idle / Engaged
+    //   EngagementStates - Idle / Engaged
 
     [TemplatePart(Name = nameof(PART_Root), Type = typeof(Border))]
     [TemplatePart(Name = nameof(PART_Glyph), Type = typeof(TextBlock))]

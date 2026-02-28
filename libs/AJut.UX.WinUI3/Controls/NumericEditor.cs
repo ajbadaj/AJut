@@ -23,8 +23,8 @@ namespace AJut.UX.Controls
     //   PART_LabelArea       - ContentControl showing custom LabelContent
     //
     // VSM groups:
-    //   FocusStates (on PART_Root)           — Focused / Unfocused
-    //   CommonStates (on each RepeatButton)  — Normal / PointerOver / Pressed
+    //   FocusStates (on PART_Root)           - Focused / Unfocused
+    //   CommonStates (on each RepeatButton)  - Normal / PointerOver / Pressed
     //     (ButtonBase drives RepeatButton's CommonStates automatically)
 
     [TemplatePart(Name = nameof(PART_Root), Type = typeof(Border))]
@@ -193,7 +193,7 @@ namespace AJut.UX.Controls
             this.PART_DefaultLabel = this.GetTemplateChild(nameof(PART_DefaultLabel)) as FrameworkElement;
             this.PART_LabelArea = this.GetTemplateChild(nameof(PART_LabelArea)) as ContentControl;
 
-            // 3. Seed VSM — Unfocused is the initial state (no TemplateBinding on BorderBrush)
+            // 3. Seed VSM - Unfocused is the initial state (no TemplateBinding on BorderBrush)
             VisualStateManager.GoToState(this, "Unfocused", false);
 
             // 4. Wire new parts

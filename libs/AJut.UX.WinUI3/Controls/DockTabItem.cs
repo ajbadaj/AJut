@@ -35,7 +35,7 @@ namespace AJut.UX.Controls
         private bool m_isPointerOver;
         private Border m_rootBorder;
 
-        // Per-tab drag state — owned here rather than in DockZone anonymous closures
+        // Per-tab drag state - owned here rather than in DockZone anonymous closures
         private bool m_isPressedForDrag;
         private bool m_isDragModeDecided;
         private bool m_isReorderDrag;
@@ -66,13 +66,13 @@ namespace AJut.UX.Controls
 
         // ===========[ Events ]===============================================
 
-        // Raised on a quick left-click (no drag threshold crossed) — switch to this tab.
+        // Raised on a quick left-click (no drag threshold crossed) - switch to this tab.
         public event EventHandler<int> TabSelectionRequested;
 
         // Raised on middle-click. DockZone checks AllowMiddleMouseClose before acting.
         public event EventHandler<int> TabMiddleClickCloseRequested;
 
-        // Raised when a vertical drag crosses DragThresholdPixels — initiate tearoff.
+        // Raised when a vertical drag crosses DragThresholdPixels - initiate tearoff.
         public event EventHandler TabTearoffDragInitiated;
 
         // Raised continuously during a horizontal reorder drag. The PointerRoutedEventArgs
@@ -194,7 +194,7 @@ namespace AJut.UX.Controls
                 }
                 else if (!m_isDragModeDecided)
                 {
-                    // Quick click without threshold — select this tab
+                    // Quick click without threshold - select this tab
                     this.TabSelectionRequested?.Invoke(this, this.Index);
                 }
             }

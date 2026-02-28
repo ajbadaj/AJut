@@ -29,8 +29,8 @@ namespace AJut.UX.Controls
     //   PART_Swatch  - inner Border whose Background is kept in sync with EditColor
     //
     // VSM groups:
-    //   CommonStates  — Normal (gloss visible) / PointerOver (gloss hidden, edit overlay shown)
-    //   EditingStates — EditingClosed (normal border) / EditingOpen (highlight border)
+    //   CommonStates  - Normal (gloss visible) / PointerOver (gloss hidden, edit overlay shown)
+    //   EditingStates - EditingClosed (normal border) / EditingOpen (highlight border)
 
     [TemplatePart(Name = nameof(PART_Root), Type = typeof(Border))]
     [TemplatePart(Name = nameof(PART_Swatch), Type = typeof(Border))]

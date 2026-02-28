@@ -42,7 +42,7 @@
                         <Grid x:Name="PART_ContentGrid"
                               Margin="{TemplateBinding Padding}">
                             <Grid.ColumnDefinitions>
-                                <!-- Column 0: label — width managed in code via PART_LabelBorder.Width -->
+                                <!-- Column 0: label - width managed in code via PART_LabelBorder.Width -->
                                 <ColumnDefinition Width="Auto"/>
                                 <!-- Column 1: editor fills the rest -->
                                 <ColumnDefinition Width="*"/>
@@ -95,7 +95,7 @@
                             </VisualStateGroup>
 
                             <!-- SelectionStates: bright nub + outline on label border only.
-                                 Only BorderBrush changes — BorderThickness is always 4,1,1,1. -->
+                                 Only BorderBrush changes - BorderThickness is always 4,1,1,1. -->
                             <VisualStateGroup x:Name="SelectionStates">
                                 <VisualState x:Name="Normal">
                                     <VisualState.Setters>

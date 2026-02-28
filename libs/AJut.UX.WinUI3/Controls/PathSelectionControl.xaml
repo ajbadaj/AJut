@@ -135,7 +135,7 @@
 
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="BorderStates">
-                                <!-- Normal: explicit revert — WinUI3 Setters do not auto-revert on state exit -->
+                                <!-- Normal: explicit revert - WinUI3 Setters do not auto-revert on state exit -->
                                 <VisualState x:Name="Normal">
                                     <VisualState.Setters>
                                         <Setter Target="PART_Root.BorderBrush"
@@ -158,7 +158,7 @@
                                 </VisualState>
                             </VisualStateGroup>
                             <VisualStateGroup x:Name="WarningDisplayStates">
-                                <!-- WarningHidden: explicit revert — WinUI3 Setters do not auto-revert on state exit -->
+                                <!-- WarningHidden: explicit revert - WinUI3 Setters do not auto-revert on state exit -->
                                 <VisualState x:Name="WarningHidden">
                                     <VisualState.Setters>
                                         <Setter Target="PART_WarningDisplay.Visibility" Value="Collapsed"/>

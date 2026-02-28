@@ -518,7 +518,7 @@ namespace AJut.UX.Controls
         }
 
         // Returns true if the click source is inside a ButtonBase or TextBoxBase before
-        // reaching a ListBoxItem — used to prevent double-click expand/collapse from firing
+        // reaching a ListBoxItem - used to prevent double-click expand/collapse from firing
         // when the user rapidly clicks inside an editor (NumericEditor buttons, TextBox, etc.).
         private static bool IsDoubleClickFromInteractiveControl (DependencyObject source)
         {
