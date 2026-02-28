@@ -7,8 +7,10 @@ namespace AJut.UX.PropertyInteraction
     using System.Reflection;
     using AJut;
     using AJut.Storage;
+    using AJut.TypeManagement;
+    using AJut.UX;
 
-    public class PropertyEditTarget : ObservableTreeNode
+    public class PropertyEditTarget : ObservableTreeNode, IExpandableNode
     {
         public delegate object? GetValue ();
         public delegate void SetValue (object? value);
@@ -55,6 +57,19 @@ namespace AJut.UX.PropertyInteraction
                     this.CanHaveChildren = value;
                 }
             }
+        }
+
+        private bool m_isExpanded;
+
+        /// <summary>
+        /// Tracks whether this node is expanded in the property tree. Persisted across
+        /// <see cref="PropertyGridManager.RebuildEditTargets"/> calls via <see cref="IExpandableNode"/>
+        /// integration with <see cref="FlatTreeItem"/>.
+        /// </summary>
+        public bool IsExpanded
+        {
+            get => m_isExpanded;
+            set => this.SetAndRaiseIfChanged(ref m_isExpanded, value);
         }
 
         private string m_editor;
@@ -182,17 +197,17 @@ namespace AJut.UX.PropertyInteraction
         {
             foreach (PropertyInfo prop in _GetRelevantProperties(sourceItem))
             {
-                var editorAttr = prop.GetAttributes<PGEditorAttribute>().FirstOrDefault();
-                string displayName = prop.GetAttributes<DisplayNameAttribute>().FirstOrDefault()?.DisplayName;
-                string[] aliases = prop.GetAttributes<PGAltPropertyAliasAttribute>().FirstOrDefault()?.AltPropertyAliases;
+                var editorAttr = TypeMetadataExtensionRegistrar.GetAttribute<PGEditorAttribute>(prop);
+                string displayName = TypeMetadataExtensionRegistrar.GetAttribute<DisplayNameAttribute>(prop)?.DisplayName;
+                string[] aliases = TypeMetadataExtensionRegistrar.GetAttribute<PGAltPropertyAliasAttribute>(prop)?.AltPropertyAliases;
 
                 // 1. Detect Nullable<T> and route to the "Nullable" editor
                 Type underlyingNullable = Nullable.GetUnderlyingType(prop.PropertyType);
                 bool isNullable = underlyingNullable != null;
 
-                // 2. Detect [PGTypeAlias] for type-converting editors (e.g. SKColor → Windows.UI.Color).
+                // 2. Detect [PGTypeAlias] for type-converting editors (e.g. a type alias to a different editor).
                 //    Ignored when [PGEditor] or Nullable unwrapping already applies.
-                var aliasAttr = prop.GetAttributes<PGTypeAliasAttribute>().FirstOrDefault();
+                var aliasAttr = TypeMetadataExtensionRegistrar.GetAttribute<PGTypeAliasAttribute>(prop);
                 IPropertyGridTypeAliasing? aliasing = (aliasAttr != null && !isNullable && editorAttr == null)
                     ? (IPropertyGridTypeAliasing)Activator.CreateInstance(aliasAttr.AliasingType)
                     : null;
@@ -240,7 +255,7 @@ namespace AJut.UX.PropertyInteraction
                     if (subValue != null && _GetRelevantProperties(subValue).Any())
                     {
                         // Check for [PGElevateChildProperty("X")] on the property itself.
-                        var elevateChildAttr = prop.GetAttributes<PGElevateChildPropertyAttribute>().FirstOrDefault();
+                        var elevateChildAttr = TypeMetadataExtensionRegistrar.GetAttribute<PGElevateChildPropertyAttribute>(prop);
                         if (elevateChildAttr != null)
                         {
                             PropertyInfo? childProp = prop.PropertyType.GetProperty(elevateChildAttr.ChildPropertyName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty);
@@ -252,8 +267,8 @@ namespace AJut.UX.PropertyInteraction
                                     childProp.SetMethod != null ? v => childProp.SetValue(prop.GetValue(sourceItem), v) : (SetValue?)null
                                 )
                                 {
-                                    DisplayName = childProp.GetAttributes<DisplayNameAttribute>().FirstOrDefault()?.DisplayName ?? childProp.Name.ConvertToFriendlyEn(),
-                                    Editor = childProp.GetAttributes<PGEditorAttribute>().FirstOrDefault()?.Editor ?? childProp.PropertyType.Name,
+                                    DisplayName = TypeMetadataExtensionRegistrar.GetAttribute<DisplayNameAttribute>(childProp)?.DisplayName ?? childProp.Name.ConvertToFriendlyEn(),
+                                    Editor = TypeMetadataExtensionRegistrar.GetAttribute<PGEditorAttribute>(childProp)?.Editor ?? childProp.PropertyType.Name,
                                 };
                                 _ApplyDefault(childTarget, childProp, subValue);
                                 childTarget.Setup();
@@ -266,7 +281,7 @@ namespace AJut.UX.PropertyInteraction
                             // Check if any property of the sub-type has [PGElevateAsParent].
                             PropertyInfo? elevatedProp = prop.PropertyType
                                 .GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty)
-                                .FirstOrDefault(p => p.IsTaggedWithAttribute<PGElevateAsParentAttribute>());
+                                .FirstOrDefault(p => TypeMetadataExtensionRegistrar.HasAttribute<PGElevateAsParentAttribute>(p));
                             if (elevatedProp != null)
                             {
                                 var childTarget = new PropertyEditTarget(
@@ -275,8 +290,8 @@ namespace AJut.UX.PropertyInteraction
                                     elevatedProp.SetMethod != null ? v => elevatedProp.SetValue(prop.GetValue(sourceItem), v) : (SetValue?)null
                                 )
                                 {
-                                    DisplayName = elevatedProp.GetAttributes<DisplayNameAttribute>().FirstOrDefault()?.DisplayName ?? elevatedProp.Name.ConvertToFriendlyEn(),
-                                    Editor = elevatedProp.GetAttributes<PGEditorAttribute>().FirstOrDefault()?.Editor ?? elevatedProp.PropertyType.Name,
+                                    DisplayName = TypeMetadataExtensionRegistrar.GetAttribute<DisplayNameAttribute>(elevatedProp)?.DisplayName ?? elevatedProp.Name.ConvertToFriendlyEn(),
+                                    Editor = TypeMetadataExtensionRegistrar.GetAttribute<PGEditorAttribute>(elevatedProp)?.Editor ?? elevatedProp.PropertyType.Name,
                                 };
                                 _ApplyDefault(childTarget, elevatedProp, subValue);
                                 childTarget.Setup();
@@ -303,11 +318,16 @@ namespace AJut.UX.PropertyInteraction
             IEnumerable<PropertyInfo> _GetRelevantProperties (object _item)
             {
                 bool showReadOnly = _item.GetType().IsTaggedWithAttribute<PGShowReadonlyAttribute>();
-                return _item.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty).Where(_Filter);
+                return TypeMetadataExtensionRegistrar.GetOrderedProperties(
+                    _item.GetType(),
+                    BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty
+                ).Where(_Filter);
 
                 bool _Filter (PropertyInfo _prop)
                 {
-                    if (_prop.IsTaggedWithAttribute<PGHiddenAttribute>())
+                    // Global registry hide takes priority, then [PGHidden] attribute.
+                    if (TypeMetadataExtensionRegistrar.IsHidden(_prop)
+                        || TypeMetadataExtensionRegistrar.HasAttribute<PGHiddenAttribute>(_prop))
                     {
                         return false;
                     }
@@ -317,14 +337,15 @@ namespace AJut.UX.PropertyInteraction
                         return true;
                     }
 
-                    return _prop.SetMethod != null || _prop.IsTaggedWithAttribute<PGShowReadonlyAttribute>();
+                    return _prop.SetMethod != null
+                        || TypeMetadataExtensionRegistrar.HasAttribute<PGShowReadonlyAttribute>(_prop);
                 }
             }
         }
 
         private static void _ApplyDefault (PropertyEditTarget target, PropertyInfo prop, object sourceItem)
         {
-            var overrideAttr = prop.GetAttributes<PGOverrideDefaultAttribute>().FirstOrDefault();
+            var overrideAttr = TypeMetadataExtensionRegistrar.GetAttribute<PGOverrideDefaultAttribute>(prop);
             if (overrideAttr != null)
             {
                 if (overrideAttr.IsMethodBased)

@@ -134,7 +134,7 @@
                                                             <Setter Property="ContentTemplate"
                                                                     Value="{Binding RelativeSource={RelativeSource AncestorType=local:PropertyGrid}, Path=DefaultValueLabelDataTemplate}"/>
                                                         </DataTrigger>
-                                                        <!-- Expandable parent nodes always use the default-value template —
+                                                        <!-- Expandable parent nodes always use the default-value template -
                                                              their object reference is never meaningfully compared to a default. -->
                                                         <DataTrigger Binding="{Binding IsExpandable}" Value="True">
                                                             <Setter Property="ContentTemplate"
