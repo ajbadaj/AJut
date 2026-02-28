@@ -5,9 +5,9 @@
     <!-- ===[ DockCloseButton ]=== -->
     <!-- Close button used in DockZone panel headers and tab strips.
          CommonStates VSM (Normal / PointerOver / Pressed) is driven
-         automatically by ButtonBase — no pointer event handlers needed.
+         automatically by ButtonBase - no pointer event handlers needed.
 
-         Background is NOT TemplateBinding'd on Root — VSM owns that property.
+         Background is NOT TemplateBinding'd on Root - VSM owns that property.
          TemplateBinding + VSM targeting the same property causes the binding
          to overwrite VSM-applied values.
 

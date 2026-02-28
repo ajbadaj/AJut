@@ -80,8 +80,9 @@
     <SolidColorBrush x:Key="AJut_Brush_BorderCommonPress" Color="#AAA"/>
     <SolidColorBrush x:Key="AJut_Brush_BorderShadow" Color="{ThemeResource AJut_Color_Shadow}"/>
 
+    <Color x:Key="AJut_Color_PanelBackground">#18181D</Color>
     <SolidColorBrush x:Key="AJut_Brush_RootPanelBackground" Color="#2C2C30"/>
-    <SolidColorBrush x:Key="AJut_Brush_PanelBackground" Color="#18181D"/>
+    <SolidColorBrush x:Key="AJut_Brush_PanelBackground" Color="{ThemeResource AJut_Color_PanelBackground}"/>
 
     <Color x:Key="AJut_Color_InnerPanelBackground">#252528</Color>
     <Color x:Key="AJut_Color_InnerPanelBackgroundHover">#2B2B3C</Color>
@@ -99,8 +100,10 @@
     </LinearGradientBrush>
     <SolidColorBrush x:Key="AJut_Brush_ControlBackgroundHover" Color="#222225"/>
     <SolidColorBrush x:Key="AJut_Brush_ButtonBackgroundPressed" Color="#050510"/>
-    <SolidColorBrush x:Key="AJut_Brush_TextBoxBackground" Color="#444"/>
-    <SolidColorBrush x:Key="AJut_Brush_TextBoxBorder" Color="#222"/>
+    <Color x:Key="AJut_Color_TextBoxBackground">#444444</Color>
+    <Color x:Key="AJut_Color_TextBoxBorder">#222222</Color>
+    <SolidColorBrush x:Key="AJut_Brush_TextBoxBackground" Color="{ThemeResource AJut_Color_TextBoxBackground}"/>
+    <SolidColorBrush x:Key="AJut_Brush_TextBoxBorder" Color="{ThemeResource AJut_Color_TextBoxBorder}"/>
 
     <SolidColorBrush x:Key="AJut_Brush_SimpleHighContrastRootBackground" Color="#131317"/>
 
@@ -139,7 +142,8 @@
     <SolidColorBrush x:Key="AJut_Brush_TitleBarBackground" Color="{ThemeResource AJut_Color_TitleBarBackground}"/>
     <SolidColorBrush x:Key="AJut_Brush_TitleBarBackgroundInactive" Color="{ThemeResource AJut_Color_TitleBarBackgroundInactive}"/>
     
-    <SolidColorBrush x:Key="AJut_Brush_TitleBarForeground" Color="#CCC" />
+    <Color x:Key="AJut_Color_TitleBarForeground">#CCCCCC</Color>
+    <SolidColorBrush x:Key="AJut_Brush_TitleBarForeground" Color="{ThemeResource AJut_Color_TitleBarForeground}" />
     <SolidColorBrush x:Key="AJut_Brush_TitleBarForegroundDesat" Color="#AAA" />
     <SolidColorBrush x:Key="AJut_Brush_TitleBarForegroundImportant" Color="#FFF" />
     <SolidColorBrush x:Key="AJut_Brush_TitleBarGlyphHighlight" Color="#CCC" />

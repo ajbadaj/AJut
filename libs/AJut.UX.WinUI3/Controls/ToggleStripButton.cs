@@ -8,7 +8,7 @@ namespace AJut.UX.Controls
     // ===========[ ToggleStripButton ]===========================================
     // A single selectable button within a ToggleStrip. Manages CommonStates VSM
     // transitions via IsSelected DP and pointer event overrides. All background
-    // visuals are XAML-driven through ThemeResource keys — no visual properties
+    // visuals are XAML-driven through ThemeResource keys - no visual properties
     // are set in code.
     //
     // BorderThickness and CornerRadius are set by ToggleStrip code (index-aware,

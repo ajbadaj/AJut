@@ -10,16 +10,16 @@ namespace AJut.UX.Controls
     // ===========[ DockLeafLayout ]=============================================
     // WinUI3-specific: no WPF equivalent.
     // Leaf layout for DockZone (Single and Tabbed orientations). Defines the
-    // 3-row structure — header bar / content panel / tab strip — entirely in
+    // 3-row structure - header bar / content panel / tab strip - entirely in
     // XAML so that all visual properties (backgrounds, borders, corner radius,
     // padding) live in the template rather than in DockZone code-behind.
     //
     // Template parts:
-    //   PART_HeaderBar        — Border hosting the panel title / close button
-    //   PART_ContentBorder    — Border framing the docked content presenter
-    //   PART_ContentPresenter — ContentPresenter for PanelContent
-    //   PART_TabStripWrapper  — Border hosting the tab navigation row
-    //   PART_TabNavPresenter  — ContentPresenter for TabNavContent
+    //   PART_HeaderBar        - Border hosting the panel title / close button
+    //   PART_ContentBorder    - Border framing the docked content presenter
+    //   PART_ContentPresenter - ContentPresenter for PanelContent
+    //   PART_TabStripWrapper  - Border hosting the tab navigation row
+    //   PART_TabNavPresenter  - ContentPresenter for TabNavContent
     //
     // TemplateBinding handles PanelBackground, PanelBorderBrush,
     // PanelBorderThickness and TabStripBackground reactively after template
@@ -57,9 +57,9 @@ namespace AJut.UX.Controls
         public Border PART_TabStripWrapper { get; private set; }
         public ContentPresenter PART_TabNavPresenter { get; private set; }
 
-        // ===========[ Dependency Properties — Styling ]======================
+        // ===========[ Dependency Properties - Styling ]======================
         // PanelBackground / PanelBorderBrush / PanelBorderThickness / TabStripBackground:
-        // no DP change callbacks — TemplateBinding in DockLeafLayout.xaml keeps
+        // no DP change callbacks - TemplateBinding in DockLeafLayout.xaml keeps
         // the template parts in sync after template application.
 
         public static readonly DependencyProperty PanelBackgroundProperty = DPUtils.Register(_ => _.PanelBackground);
@@ -83,7 +83,7 @@ namespace AJut.UX.Controls
             set => this.SetValue(PanelBorderThicknessProperty, value);
         }
 
-        // PanelCornerRadius: pushed from code — no TemplateBinding path to the
+        // PanelCornerRadius: pushed from code - no TemplateBinding path to the
         // nested PART_ContentBorder's CornerRadius in WinUI3.
         public static readonly DependencyProperty PanelCornerRadiusProperty = DPUtils.Register(_ => _.PanelCornerRadius, (d, e) => d.OnPanelCornerRadiusChanged(e));
         public CornerRadius PanelCornerRadius
@@ -106,7 +106,7 @@ namespace AJut.UX.Controls
             set => this.SetValue(TabStripBackgroundProperty, value);
         }
 
-        // ===========[ Dependency Properties — Content ]======================
+        // ===========[ Dependency Properties - Content ]======================
 
         public static readonly DependencyProperty HeaderContentProperty = DPUtils.Register(_ => _.HeaderContent, (d, e) => d.OnHeaderContentChanged(e));
         public UIElement HeaderContent
@@ -152,7 +152,7 @@ namespace AJut.UX.Controls
         }
 
 
-        // ===========[ Dependency Properties — State ]========================
+        // ===========[ Dependency Properties - State ]========================
 
         public static readonly DependencyProperty IsTabbedProperty = DPUtils.Register(_ => _.IsTabbed, (d, e) => d.ApplyTabbedState());
         public bool IsTabbed

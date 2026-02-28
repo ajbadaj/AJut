@@ -148,7 +148,7 @@ namespace AJut.UX.Controls
         }
 
         // Container style for each ListView row inside the inner FlatTreeListControl.
-        // Defaults (via Style Setter) to PropertyGrid_ListViewItemStyle — a minimal no-chrome
+        // Defaults (via Style Setter) to PropertyGrid_ListViewItemStyle - a minimal no-chrome
         // template that suppresses full-row selection highlight so PropertyGridItemRow's own
         // label-only selection indicator is the only visual. Override to customise container
         // padding or add hover/press visuals without touching the PropertyGrid template.

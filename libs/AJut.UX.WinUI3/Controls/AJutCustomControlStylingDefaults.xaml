@@ -2,17 +2,30 @@
 <!--
     AJutCustomControlStylingDefaults.xaml
     ======================================
-    Flat (non-ThemeDictionaries) default brush resources for AJut custom controls.
-    Merged as the FIRST dictionary in Generic.xaml so these act as the library-level
-    fallback for {ThemeResource} lookups from within control templates.
+    Default brush resources for AJut custom controls.
 
-    App.Resources flat resources (from AllControlThemeOverrides.xaml) have higher
-    priority than these Generic.xaml flat resources in the {ThemeResource} fallback
-    lookup chain, which is what allows AJutThemeMapAliasing.xaml to override them
-    when the AJut theme is loaded.
+    IMPORTANT - THIS FILE MUST BE IN App.Resources, NOT ONLY IN Generic.xaml:
+    WinUI3's {ThemeResource} lookups triggered at runtime via VisualStateManager.GoToState
+    (the C# code path, e.g. in OnApplyTemplate) only search App.Resources. They do NOT
+    fall back to Generic.xaml ThemeDictionaries["Default"] at runtime - Generic.xaml is
+    only consulted at XAML parse time, not during GoToState-triggered VSM state changes.
+    A [Line: 0 Position: 0] MissingKeyException means the failure is C#-triggered, not
+    XAML-parse-triggered.
 
-    Do NOT use ThemeDictionaries here — keeping these flat is intentional and is
-    what makes the App.Resources override work correctly.
+    This file is placed in Generic.xaml ThemeDictionaries["Default"] so parse-time
+    {ThemeResource} lookups (e.g. Style Setters applied when the control is instantiated)
+    CAN find these keys. But for GoToState runtime lookups to also find them, consumers
+    must ensure this file is ALSO in App.Resources, either by:
+
+      (a) Using AJutControlsResources (recommended for unthemed / partial-theme usage):
+              <ajut:AJutControlsResources xmlns:ajut="using:AJut.UX.Controls"/>
+
+      (b) Loading the full AJut theme (DarkThemeColorsBase.xaml + AllControlThemeOverrides.xaml),
+          which provides all AJut_* keys via AJutThemeMapAliasing.xaml - no extra step needed.
+
+    When AllControlThemeOverrides.xaml is merged into App.Resources, AJutThemeMapAliasing.xaml
+    defines the same keys at higher priority, allowing the theme to override these defaults
+    without touching control templates.
 -->
 <ResourceDictionary
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -75,11 +88,11 @@
     <StaticResource x:Key="AJut_FlatTree_HoverBorderBrush"       ResourceKey="ControlStrokeColorDefaultBrush"/>
 
     <!-- ===========[ ToggleStripButton ]===================================== -->
-    <!-- Unchecked interaction backgrounds — alpha overlays that work on any background.
+    <!-- Unchecked interaction backgrounds - alpha overlays that work on any background.
          Normal state uses a literal #01000000 in the XAML VSM Setter (no key needed here). -->
     <SolidColorBrush x:Key="AJut_ToggleStripButton_PointerOverBackground" Color="#20FFFFFF"/>
     <SolidColorBrush x:Key="AJut_ToggleStripButton_PressedBackground"     Color="#40000000"/>
-    <!-- Checked backgrounds — dark overlay gradients, default for no-AJut-theme usage.
+    <!-- Checked backgrounds - dark overlay gradients, default for no-AJut-theme usage.
          AJutThemeMapAliasing.xaml provides AJut-tinted (cool teal) variants. -->
     <LinearGradientBrush x:Key="AJut_ToggleStripButton_CheckedBackground" StartPoint="0,0" EndPoint="0,1">
         <GradientStop Offset="0.00" Color="#CC000000"/>
@@ -104,7 +117,7 @@
     <SolidColorBrush x:Key="AJut_ColorEditIngressControl_NormalBorderBrush"    Color="#888888"/>
 
     <!-- ===========[ DockCloseButton ]====================================== -->
-    <!-- Warm reddish hover/press — conventionally recognisable as "close" -->
+    <!-- Warm reddish hover/press - conventionally recognisable as "close" -->
     <SolidColorBrush x:Key="AJut_DockCloseButton_HoverBackground"   Color="#40FF5050"/>
     <SolidColorBrush x:Key="AJut_DockCloseButton_PressedBackground" Color="#80CC2020"/>
 

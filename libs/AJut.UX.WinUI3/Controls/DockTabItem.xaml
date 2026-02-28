@@ -18,7 +18,7 @@
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         <Setter Property="VerticalContentAlignment" Value="Stretch"/>
 
-        <!-- Default colors — override in a theme Style (no template redefinition needed) -->
+        <!-- Default colors - override in a theme Style (no template redefinition needed) -->
         <Setter Property="Background">
             <Setter.Value>
                 <SolidColorBrush Color="#FF2B2B2B"/>

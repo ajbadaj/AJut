@@ -80,7 +80,7 @@
                                     <!-- Label with selection highlight.
                                          ListBoxItem.IsSelected is still tracked even though the
                                          ListBoxItem template has no selection chrome.
-                                         NOTE: No Background attribute here — local value would
+                                         NOTE: No Background attribute here - local value would
                                          override the DataTrigger (WPF DP precedence). -->
                                     <Border Grid.Column="0" Margin="0,0,3,0">
                                         <Border.Style>

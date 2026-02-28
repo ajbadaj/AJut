@@ -194,14 +194,14 @@
 
                                     <!-- Navigation / Expander -->
                                     <TextBlock Text="Expander" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-                                    <Expander Header="Section A — click to expand" HorizontalAlignment="Left" MinWidth="340">
+                                    <Expander Header="Section A - click to expand" HorizontalAlignment="Left" MinWidth="340">
                                         <StackPanel Padding="8" Spacing="4">
                                             <TextBlock Text="This is the AJut-themed Expander content area."/>
                                             <TextBlock Text="Background uses AJut_Brush_PanelBackground."/>
                                             <Button Content="A button inside the expander"/>
                                         </StackPanel>
                                     </Expander>
-                                    <Expander Header="Section B — starts open" IsExpanded="True" HorizontalAlignment="Left" MinWidth="340">
+                                    <Expander Header="Section B - starts open" IsExpanded="True" HorizontalAlignment="Left" MinWidth="340">
                                         <TextBlock Text="Content visible on load." Padding="8"/>
                                     </Expander>
 
@@ -438,7 +438,7 @@
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
-                                <TextBlock Grid.Row="0" Text="FlatTreeListControl — expand/collapse tree nodes, multi-level nesting" FontStyle="Italic" Margin="0,0,0,4"/>
+                                <TextBlock Grid.Row="0" Text="FlatTreeListControl - expand/collapse tree nodes, multi-level nesting" FontStyle="Italic" Margin="0,0,0,4"/>
                                 <TextBlock Grid.Row="1" Text="Selection indicator: 4px colored strip on the left edge (AJut signature selection style). Row background receives only a subtle tint." TextWrapping="Wrap" Opacity="0.7" Margin="0,0,0,8"/>
                                 <ajut:FlatTreeListControl Grid.Row="2"
                                                           Root="{x:Bind TreeRoot}"

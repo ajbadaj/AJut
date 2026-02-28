@@ -668,7 +668,7 @@ namespace AJut.UX.Controls
             string filter)
         {
             // FileSavePicker.FileTypeChoices does not support "*" (unlike FileOpenPicker).
-            // When no filter is set, leave the dictionary empty — WinRT will throw a clear
+            // When no filter is set, leave the dictionary empty - WinRT will throw a clear
             // error that gets logged, telling the caller to set a FileFilter for SaveFile mode.
             if (string.IsNullOrEmpty(filter) || filter == "*.*" || filter == "*")
             {

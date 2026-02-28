@@ -6,7 +6,7 @@
     <!-- Default style: WinUI3 system resources only, no AJut_ brush keys.
          AllControlThemeOverrides.xaml provides the AJut-branded variant.
          PART_ItemsPanel is a StackPanel; code populates it with ToggleStripButton items.
-         ToggleStripButton controls own all button-level visual state — no Border.Resources
+         ToggleStripButton controls own all button-level visual state - no Border.Resources
          overrides are needed here. -->
     <Style TargetType="local:ToggleStrip">
         <Setter Property="HorizontalAlignment" Value="Left"/>

@@ -8,7 +8,7 @@ namespace AJut.UX.Controls
     // DockZone's tab navigation strip.  DefaultStyleKey points to the style in
     // DockTabScrollButton.xaml (merged via Generic.xaml), which provides a
     // transparent template with CommonStates VSM hover/pressed highlight.
-    // ButtonBase drives CommonStates automatically — no pointer event handlers needed.
+    // ButtonBase drives CommonStates automatically - no pointer event handlers needed.
     public sealed class DockTabScrollButton : Button
     {
         public DockTabScrollButton()

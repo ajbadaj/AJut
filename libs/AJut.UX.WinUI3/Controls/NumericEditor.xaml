@@ -50,7 +50,7 @@
             <Setter.Value>
                 <ControlTemplate TargetType="local:NumericEditor">
                     <!-- PART_Root: outer border; BorderBrush driven by FocusStates VSM group.
-                         TemplateBinding removed from BorderBrush — VSM owns that property. -->
+                         TemplateBinding removed from BorderBrush - VSM owns that property. -->
                     <Border x:Name="PART_Root"
                             Background="{TemplateBinding Background}"
                             BorderThickness="{TemplateBinding BorderThickness}"

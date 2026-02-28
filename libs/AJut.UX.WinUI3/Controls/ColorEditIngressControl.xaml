@@ -13,7 +13,6 @@
         <Setter Property="MinWidth" Value="60"/>
         <Setter Property="MinHeight" Value="18"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="BorderBrush" Value="{ThemeResource AJut_ColorEditIngressControl_NormalBorderBrush}"/>
         <Setter Property="CornerRadius" Value="2"/>
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
         <Setter Property="Template">
