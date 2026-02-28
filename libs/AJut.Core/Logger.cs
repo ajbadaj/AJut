@@ -12,10 +12,16 @@
         private static Logger g_LoggerInstance = new Logger();
         private static readonly LogType kInfoType = new InfoLogType();
         private static readonly LogType kErrorType = new ErrorLogType();
+        private static volatile Action<string> g_singleOverrideLogTarget;
 
         private string m_logFilePath;
+        private string m_logFileBasePath;
+        private string m_logFileExtension;
+        private int m_currentSplitIndex;
         private StreamWriter m_logFileWriter;
         private FileStream m_logFileStream;
+
+        private readonly LogVerbosityManager m_verbosityManager = new LogVerbosityManager();
 
         private volatile bool m_shouldLogToConsole;
         private volatile bool m_shouldLogToTrace;
@@ -50,6 +56,26 @@
         /// Unlike -ALL- other properties, this will not change an actively running log file session, so set this before <see cref="CreateAndStartWritingToLogFileIn"/> is called.
         /// </remarks>
         public static string LogFilenameFormat { get; set; } = "log-{0:MM.dd.yyyy-hh.mm.ss}.txt";
+
+        /// <summary>
+        /// The maximum file size in bytes before the logger splits to a new file. Set to 0 to disable splitting. Default is 5 MB.
+        /// </summary>
+        public static long LogFileSplitSizeBytes { get; set; } = 5L * 1024L * 1024L;
+
+        /// <summary>
+        /// Sets a single override log target that supersedes all other outputs (console, trace, debug, file).
+        /// When set, the formatted output string is passed to this action and no other target receives it.
+        /// Pass null to clear the override and restore normal output routing.
+        /// </summary>
+        public static void SetSingleOverrideLogTarget (Action<string> target)
+        {
+            g_singleOverrideLogTarget = target;
+        }
+
+        /// <summary>
+        /// The verbosity manager that controls what gets logged and supports dynamic scenario-based verbosity raising.
+        /// </summary>
+        public static LogVerbosityManager VerbosityManager => g_LoggerInstance.m_verbosityManager;
 
         /// <summary>
         /// Indicates if calls to <see cref="Logger"/> should additionally direct to <see cref="Console"/> (default to true in debug, false otherwise)
@@ -119,8 +145,17 @@
         {
             if (newLogFilePath != null)
             {
+                m_logFileExtension = Path.GetExtension(newLogFilePath);
+                m_logFileBasePath = newLogFilePath.Substring(0, newLogFilePath.Length - m_logFileExtension.Length);
+                m_currentSplitIndex = 0;
                 m_logFilePath = newLogFilePath;
             }
+            else if (m_currentSplitIndex > 0)
+            {
+                // Split files use base + dash + index (index 0 = original file, no suffix)
+                m_logFilePath = $"{m_logFileBasePath}-{m_currentSplitIndex}{m_logFileExtension}";
+            }
+            // else: m_currentSplitIndex == 0, m_logFilePath is already the original path
 
             m_logFileStream = File.Open(m_logFilePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
             m_logFileWriter = new StreamWriter(m_logFileStream);
@@ -179,10 +214,10 @@
         public static void CreateAndStartWritingToLogFileIn (string directoryPath)
         {
             g_LoggerInstance.TearDownLogFileStream();
+            g_LoggerInstance = new Logger();
+
             if (directoryPath != null)
             {
-                g_LoggerInstance = new Logger();
-
                 Directory.CreateDirectory(directoryPath);
                 string logFileName = AJut.IO.PathHelpers.SanitizeFileName(String.Format(LogFilenameFormat, DateTime.Now));
                 g_LoggerInstance.BuildAndSetupLogFileStream(Path.Combine(directoryPath, logFileName));
@@ -212,26 +247,24 @@
         /// Log information
         /// </summary>
         /// <param name="message">The message to log</param>
+        /// <param name="verbosity">The minimum manager verbosity required for this message to appear. Defaults to Normal.</param>
         /// <remarks>
         /// The <see cref="Logger"/> only differentiates between error, and not error - this is to log something that is not an error.
         /// </remarks>
-        public static void LogInfo (string message)
-        {
-            DoLog(kInfoType, message);
-        }
+        public static void LogInfo (string message, eLogVerbosity verbosity = eLogVerbosity.Normal)
+            => DoLog(kInfoType, message, verbosity);
 
         /// <summary>
         /// Log information - but only if the target compilation is Debug.
         /// </summary>
         /// <param name="message">The message to log</param>
+        /// <param name="verbosity">The minimum manager verbosity required for this message to appear. Defaults to Normal.</param>
         /// <remarks>
         /// The <see cref="Logger"/> only differentiates between error, and not error - this is to log something that is not an error.
         /// </remarks>
         [Conditional("DEBUG")]
-        public static void LogDebugInfo (string message)
-        {
-            DoLog(kInfoType, message);
-        }
+        public static void LogDebugInfo (string message, eLogVerbosity verbosity = eLogVerbosity.Normal)
+            => DoLog(kInfoType, message, verbosity);
 
         /// <summary>
         /// Log error
@@ -270,14 +303,34 @@
             DoLog(kErrorType, $"{message}\nException Encountered: {exc}");
         }
 
-        private static void DoLog (LogType logType, string message)
+        private static void DoLog (LogType logType, string message, eLogVerbosity verbosity = eLogVerbosity.Normal)
         {
             if (g_LoggerInstance == null || g_LoggerInstance.m_isEnabled == false)
             {
                 return;
             }
 
+            // Scenarios evaluate BEFORE the gate check so a message that would be suppressed can still trigger
+            // a scenario which raises EffectiveVerbosity, causing that same message to be logged at the new level.
+            g_LoggerInstance.m_verbosityManager.ProcessLogLine(message, logType.IsError);
+
+            var setting = g_LoggerInstance.m_verbosityManager.EffectiveVerbosity;
+            if (setting == eLogVerbositySetting.None)
+            {
+                return;
+            }
+            if (!logType.IsError && (int)verbosity > (int)setting)
+            {
+                return;
+            }
+
             string output = logType.GenerateOutputText(message);
+
+            if (g_singleOverrideLogTarget != null)
+            {
+                g_singleOverrideLogTarget(output);
+                return;
+            }
 
             if (ShouldLogToConsole)
             {
@@ -323,6 +376,15 @@
                 if (g_LoggerInstance.m_flushToFileAfterEach)
                 {
                     ForceFlushToFile();
+                }
+
+                if (LogFileSplitSizeBytes > 0
+                    && g_LoggerInstance.m_logFileStream != null
+                    && g_LoggerInstance.m_logFileStream.Position >= LogFileSplitSizeBytes)
+                {
+                    ++g_LoggerInstance.m_currentSplitIndex;
+                    g_LoggerInstance.TearDownLogFileStream();
+                    g_LoggerInstance.BuildAndSetupLogFileStream();
                 }
             }
         }
