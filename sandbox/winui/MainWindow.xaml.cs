@@ -42,7 +42,7 @@ namespace AJutShowRoomWinUI
             this.InitializeComponent();
             this.Root.SetupFor(this);
             this.TestPropertyGrid.PropertyTreeChanged += this.TestPropertyGrid_OnPropertyTreeChanged;
-            this.TestPropertyGrid_OnPropertyTreeChanged(this, EventArgs.Empty);
+            this.SetPGSource(m_alphaObj);
 
             // ToggleStrip demo items
             this.ToggleStripSingle.ItemsSource = new[] { "Option A", "Option B", "Option C" };
@@ -170,13 +170,37 @@ namespace AJutShowRoomWinUI
         // ===========[ Flat Tree / Property Grid properties ]============================
 
         public ShowRoomTreeNode TreeRoot { get; } = ShowRoomTreeNode.Build();
-        public ShowRoomTester TestObj { get; } = new ShowRoomTester();
+
+        // Source swap test objects.
+        // ShowRoomAlpha (5 props) → ShowRoomBeta (2 props) replicates the CF Image→Particles scenario:
+        //   - same float property names (X, Y) but very different values so mismatch is obvious
+        //   - count difference (5→2) forces WinUI3 container recycling
+        //   - Alpha has String+Bool rows that vanish in Beta; if they persist, the bug is present
+        private readonly ShowRoomAlpha m_alphaObj = new ShowRoomAlpha();
+        private readonly ShowRoomBeta m_betaObj = new ShowRoomBeta();
+        private readonly ShowRoomTester m_complexObj = new ShowRoomTester();
+        private object m_currentPGTestObj;
+
+        private void SetPGSource (object obj)
+        {
+            m_currentPGTestObj = obj;
+            this.TestPropertyGrid.SingleItemSource = obj;
+        }
+
+        private void PGSource_OnAlphaClicked (object sender, RoutedEventArgs e) => this.SetPGSource(m_alphaObj);
+        private void PGSource_OnBetaClicked (object sender, RoutedEventArgs e) => this.SetPGSource(m_betaObj);
+        private void PGSource_OnComplexClicked (object sender, RoutedEventArgs e) => this.SetPGSource(m_complexObj);
 
         private void TestPropertyGrid_OnPropertyTreeChanged (object sender, EventArgs e)
         {
+            if (m_currentPGTestObj == null)
+            {
+                return;
+            }
+
             try
             {
-                Json json = JsonHelper.BuildJsonForObject(this.TestObj);
+                Json json = JsonHelper.BuildJsonForObject(m_currentPGTestObj);
                 this.PropertyGridJsonDisplay.Text = json.HasErrors ? json.GetErrorReport() : json.ToString();
             }
             catch (Exception ex)
@@ -329,6 +353,28 @@ namespace AJutShowRoomWinUI
     public class ShowRoomSubObject
     {
         public int SubObjValue { get; set; } = 9001;
+    }
+
+    // ===========[ ShowRoomAlpha - 5 properties (mirrors CF "Image" with many fields) ]=======
+    // X=111, Y=222, Z=333 are very distinct from Beta so visual mismatch is immediately obvious.
+    // Label (String) and IsActive (Bool) appear in Alpha but not Beta; if they persist after
+    // switching to Beta the stale-display bug is confirmed.
+    public class ShowRoomAlpha
+    {
+        public string Label { get; set; } = "Alpha Object";
+        public float X { get; set; } = 111f;
+        public float Y { get; set; } = 222f;
+        public float Z { get; set; } = 333f;
+        public bool IsActive { get; set; } = true;
+    }
+
+    // ===========[ ShowRoomBeta - 2 properties (mirrors CF "Particles" with fewer fields) ]=====
+    // Switching Alpha→Beta: 5 rows → 2 rows, container count mismatch triggers WinUI3 recycling.
+    // After switch the grid must show X=777, Y=888 - NOT Alpha's 111/222.
+    public class ShowRoomBeta
+    {
+        public float X { get; set; } = 777f;
+        public float Y { get; set; } = 888f;
     }
 
     // ===========[ ShowRoomPanelState - DockZone save/load state bag ]===============

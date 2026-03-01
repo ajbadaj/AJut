@@ -46,6 +46,7 @@ namespace AJut.UX
         private bool m_isSelected;
         private bool m_isSelectable = true;
         private double m_treeDepthIndentSize = 16.0;
+        private EventHandler<EventArgs<bool>> m_canHaveChildrenChangedHandler;
 
         // ===========[ Construction ]=============================================
         // Private - use factory methods.
@@ -64,7 +65,8 @@ namespace AJut.UX
                 startExpanded = expandableSource.IsExpanded;
             }
 
-            source.CanHaveChildrenChanged += (s, e) => this.IsExpandable = e.Value;
+            m_canHaveChildrenChangedHandler = (s, e) => this.IsExpandable = e.Value;
+            source.CanHaveChildrenChanged += m_canHaveChildrenChangedHandler;
             source.ChildInserted += this.Source_ChildInserted;
             source.ChildRemoved += this.Source_ChildRemoved;
 
@@ -298,6 +300,25 @@ namespace AJut.UX
             if (toRemove != null)
             {
                 this.RemoveChild(toRemove);
+            }
+        }
+
+        // ===========[ Disposal ]================================================
+        // Unsubscribes from all source node events, recursively, so that old
+        // FlatTreeItem hierarchies (replaced via Root reassignment) do not ghost-
+        // subscribe and silently duplicate children in the replacement hierarchy.
+        public void DisposeTree ()
+        {
+            if (m_source != null)
+            {
+                m_source.CanHaveChildrenChanged -= m_canHaveChildrenChangedHandler;
+                m_source.ChildInserted -= this.Source_ChildInserted;
+                m_source.ChildRemoved -= this.Source_ChildRemoved;
+            }
+
+            foreach (FlatTreeItem child in this.AllChildren.ToList())
+            {
+                child.DisposeTree();
             }
         }
     }

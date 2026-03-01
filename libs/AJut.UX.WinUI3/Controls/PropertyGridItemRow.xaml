@@ -77,13 +77,19 @@
                                                 Content="{Binding Source}"/>
                             </Border>
 
-                            <!-- Editor: Content=EffectiveEditorTarget so elevation is transparent.
+                            <!-- Editor: Content is set from code (PropertyGridItemRow.ApplyEditorContent)
+                                 rather than via a XAML binding. A binding on Content fights the
+                                 DataContext-propagation timing: when the row's DataContext switches
+                                 to a new FlatTreeItem the binding re-evaluates against the stale
+                                 FlatTreeItem and overrides any programmatic Content set we do in
+                                 OnDataContextChanged. By owning Content in code we guarantee the
+                                 editor always shows the correct PropertyEditTarget.
                                  Hidden when IsExpandable=true with no elevation (no inline editor). -->
-                            <ContentControl Grid.Column="1"
+                            <ContentControl x:Name="PART_EditorContent"
+                                            Grid.Column="1"
                                             HorizontalAlignment="Stretch"
                                             HorizontalContentAlignment="Stretch"
                                             VerticalAlignment="Center"
-                                            Content="{Binding Source.EffectiveEditorTarget}"
                                             Visibility="{Binding Source.HasInlineEditor, Converter={StaticResource PGItemRow_BoolToVis}}"
                                             ContentTemplateSelector="{TemplateBinding EditorTemplateSelector}"/>
                         </Grid>

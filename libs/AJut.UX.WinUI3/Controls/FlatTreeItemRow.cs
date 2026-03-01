@@ -13,6 +13,12 @@ namespace AJut.UX.Controls
     // ContentTemplate is set from outside (by FlatTreeListControl) to apply the
     // user-provided row content template. The ControlTemplate forwards it via
     // TemplateBinding to the inner ContentPresenter.
+    //
+    // FlatTreeListControl uses a plain StackPanel ItemsPanel (not VirtualizingStackPanel)
+    // so ContainerContentChanging does not fire on first item display. ContentTemplate is
+    // therefore also set in the Loaded handler by walking up to the enclosing
+    // FlatTreeListControl. For the VirtualizingStackPanel case (if ever re-enabled),
+    // the ContainerContentChanging null-reset in FlatTreeListControl handles recycling.
 
     public class FlatTreeItemRow : Control
     {
@@ -20,6 +26,7 @@ namespace AJut.UX.Controls
         public FlatTreeItemRow ()
         {
             this.DefaultStyleKey = typeof(FlatTreeItemRow);
+            this.Loaded += this.OnLoaded;
         }
 
         // ===========[ Dependency Properties ]====================================
@@ -40,6 +47,32 @@ namespace AJut.UX.Controls
         {
             get => (Brush)this.GetValue(ExpanderGlyphForegroundProperty);
             set => this.SetValue(ExpanderGlyphForegroundProperty, value);
+        }
+
+        // ===========[ Events ]====================================================
+        private void OnLoaded (object sender, RoutedEventArgs e)
+        {
+            // ContainerContentChanging does not fire when using a non-virtualizing
+            // StackPanel ItemsPanel. Walk up to the enclosing FlatTreeListControl and
+            // copy its ItemTemplate and ExpanderGlyphForeground so the inner
+            // ContentPresenter gets the correct template on first display.
+            if (this.ContentTemplate != null)
+            {
+                return; // Already set (e.g. by CC handler or OnItemTemplateChanged).
+            }
+
+            DependencyObject current = VisualTreeHelper.GetParent(this);
+            while (current != null)
+            {
+                if (current is FlatTreeListControl ftlc)
+                {
+                    this.ContentTemplate = ftlc.ItemTemplate;
+                    this.ExpanderGlyphForeground = ftlc.ExpanderGlyphForeground;
+                    return;
+                }
+
+                current = VisualTreeHelper.GetParent(current);
+            }
         }
     }
 }

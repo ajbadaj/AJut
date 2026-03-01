@@ -48,6 +48,8 @@ namespace AJut.UX.Controls
             this.ItemsSource = null;
         }
 
+        public PropertyGridManager Manager => m_manager;
+
         // ===========[ IPropertyGrid ]===========================================
         IEnumerable IPropertyGrid.ItemsSource => this.ItemsSource;
         object IPropertyGrid.SingleItemSource => this.SingleItemSource;

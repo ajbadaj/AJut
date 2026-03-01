@@ -65,6 +65,7 @@ namespace AJut.UX.Controls
         }
         private void OnRootChanged (IObservableTreeNode newRoot)
         {
+            m_store.RootNode?.DisposeTree();
             m_store.IncludeRoot = this.IncludeRoot;
             m_store.RootNode = newRoot == null
                 ? null
@@ -79,6 +80,7 @@ namespace AJut.UX.Controls
         }
         private void OnRootItemsSourceChanged (IEnumerable<IObservableTreeNode> oldValue, IEnumerable<IObservableTreeNode> newValue)
         {
+            m_store.RootNode?.DisposeTree();
             m_store.IncludeRoot = false;
             m_store.RootNode = FlatTreeItem.CreateUberRoot(
                 newValue ?? Enumerable.Empty<IObservableTreeNode>(), this.TreeDepthIndentSize);
@@ -401,6 +403,12 @@ namespace AJut.UX.Controls
         {
             if (e.ItemContainer?.ContentTemplateRoot is FlatTreeItemRow row)
             {
+                // WinUI3 ContentPresenter does not update the content tree's DataContext when Content
+                // changes but ContentTemplate stays the same object. Null-reset forces a real template
+                // change (null -> template) so the presenter re-inflates with the new item's DataContext.
+                // Note: with StackPanel ItemsPanel (no virtualization) this path is never hit on first
+                // load - FlatTreeItemRow.OnLoaded handles that case instead.
+                row.ContentTemplate = null;
                 row.ContentTemplate = this.ItemTemplate;
                 row.ExpanderGlyphForeground = this.ExpanderGlyphForeground;
             }
@@ -483,6 +491,7 @@ namespace AJut.UX.Controls
             // ObservableFlatTreeStore does not observe (subscribe to) the uber root when IncludeRoot=false,
             // so InsertChild/RemoveChild on the uber root fires events no one hears. Rebuild from the
             // current full state of RootItemsSource on every change instead.
+            m_store.RootNode?.DisposeTree();
             m_store.RootNode = FlatTreeItem.CreateUberRoot(
                 this.RootItemsSource ?? Enumerable.Empty<IObservableTreeNode>(), this.TreeDepthIndentSize);
         }
