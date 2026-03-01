@@ -314,14 +314,18 @@
             // a scenario which raises EffectiveVerbosity, causing that same message to be logged at the new level.
             g_LoggerInstance.m_verbosityManager.ProcessLogLine(message, logType.IsError);
 
-            var setting = g_LoggerInstance.m_verbosityManager.EffectiveVerbosity;
-            if (setting == eLogVerbositySetting.None)
+            // Force verbosity bypasses all filtering (None gate and verbosity level gate).
+            if (verbosity != eLogVerbosity.Force)
             {
-                return;
-            }
-            if (!logType.IsError && (int)verbosity > (int)setting)
-            {
-                return;
+                var setting = g_LoggerInstance.m_verbosityManager.EffectiveVerbosity;
+                if (setting == eLogVerbositySetting.None)
+                {
+                    return;
+                }
+                if (!logType.IsError && (int)verbosity > (int)setting)
+                {
+                    return;
+                }
             }
 
             string output = logType.GenerateOutputText(message);
