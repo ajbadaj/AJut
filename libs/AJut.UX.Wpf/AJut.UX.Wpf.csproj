@@ -16,7 +16,7 @@
     <PackageTags>c#;dotnet;wpf;theming;controls;converters;app;utilities</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <Version>1.4.0.86</Version>
+    <Version>1.4.0.88</Version>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.Drawing.Common" Version="8.0.8" />

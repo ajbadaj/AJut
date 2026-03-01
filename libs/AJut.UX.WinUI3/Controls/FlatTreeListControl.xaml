@@ -419,6 +419,22 @@
                                 <SolidColorBrush x:Key="ListViewItemBackgroundPointerOver" Color="Transparent"/>
                                 <SolidColorBrush x:Key="ListViewItemBackgroundPressed" Color="Transparent"/>
                             </ListView.Resources>
+                            <!-- *** DO NOT REMOVE OR REPLACE WITH VirtualizingStackPanel ***
+                                 WinUI3's VirtualizingStackPanel recycles containers and fires
+                                 ContainerContentChanging BEFORE the container's DataContext has
+                                 propagated to the new item. When PropertyGridItemRow ran in that
+                                 recycled container it would see the stale (old element's)
+                                 FlatTreeItem and PropertyEditTarget, causing the wrong property
+                                 editors to display after switching the PropertyGrid source.
+                                 Plain StackPanel eliminates recycling entirely: each item gets a
+                                 permanent container whose DataContext is set once and correctly.
+                                 See AJut-FutureTasks/ajut-virtualization-investigation.md for
+                                 the full investigation and guidance on restoring virtualization. -->
+                            <ListView.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel/>
+                                </ItemsPanelTemplate>
+                            </ListView.ItemsPanel>
                         </ListView>
                     </Border>
                 </ControlTemplate>

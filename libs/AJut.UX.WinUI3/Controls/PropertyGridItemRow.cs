@@ -14,9 +14,10 @@ namespace AJut.UX.Controls
     // Per-property row presenter used internally by PropertyGrid.
     //
     // DataContext is FlatTreeItem (set by FlatTreeListControl's ListView).
-    // The row template binds to FlatTreeItem properties directly, and the
-    // editor ContentControl uses Source.EffectiveEditorTarget so it always
-    // receives a PropertyEditTarget regardless of elevation.
+    // The row template binds to FlatTreeItem properties directly for the label.
+    // PART_EditorContent.Content is set from code (not via a XAML binding) so
+    // that the stale DataContext-propagation timing in WinUI3 cannot override
+    // our programmatic assignment with old data.
     //
     // EditorTemplateSelector is resolved on Loaded by walking up the visual
     // tree to find the enclosing PropertyGrid.
@@ -34,6 +35,7 @@ namespace AJut.UX.Controls
 
     [TemplatePart(Name = nameof(PART_LabelBorder), Type = typeof(Border))]
     [TemplatePart(Name = nameof(PART_LabelContent), Type = typeof(ContentControl))]
+    [TemplatePart(Name = nameof(PART_EditorContent), Type = typeof(ContentControl))]
     public class PropertyGridItemRow : Control
     {
         // ===========[ Statics ]==========================================
@@ -54,6 +56,7 @@ namespace AJut.UX.Controls
         // ===========[ Template parts ]==========================================
         private Border PART_LabelBorder { get; set; }
         private ContentControl PART_LabelContent { get; set; }
+        private ContentControl PART_EditorContent { get; set; }
 
         // ===========[ Dependency Properties ]====================================
         public static readonly DependencyProperty EditorTemplateSelectorProperty = DPUtils.Register(_ => _.EditorTemplateSelector);
@@ -109,6 +112,7 @@ namespace AJut.UX.Controls
 
             this.PART_LabelBorder = this.GetTemplateChild(nameof(PART_LabelBorder)) as Border;
             this.PART_LabelContent = this.GetTemplateChild(nameof(PART_LabelContent)) as ContentControl;
+            this.PART_EditorContent = this.GetTemplateChild(nameof(PART_EditorContent)) as ContentControl;
 
             if (this.PART_LabelBorder != null)
             {
@@ -199,6 +203,21 @@ namespace AJut.UX.Controls
                 m_editTarget.PropertyChanged += this.OnEditTargetPropertyChanged;
             }
 
+            // Defer to the next dispatcher frame so that:
+            // (a) OnApplyTemplate has fired and PART_EditorContent is available, and
+            // (b) OnLoaded has fired and EditorTemplateSelector has been resolved from
+            //     the enclosing PropertyGrid.
+            // Without deferral, DataContextChanged fires before template application on
+            // newly created rows, making PART_EditorContent null at call time.
+            var capturedTarget = m_editTarget;
+            this.DispatcherQueue.TryEnqueue(() =>
+            {
+                if (m_editTarget == capturedTarget)
+                {
+                    this.ApplyEditorContent();
+                }
+            });
+
             this.ApplyLabelTemplate();
         }
 
@@ -244,6 +263,23 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ Private helpers ]===========================================
+        private void ApplyEditorContent ()
+        {
+            if (this.PART_EditorContent == null)
+            {
+                return;
+            }
+
+            // Force a full Content cycle: null → target guarantees ContentControl destroys
+            // and recreates the visual tree, so WinUI3 calls SelectTemplate with the new
+            // PropertyEditTarget even when switching between same-type properties (where
+            // the selector returns the same DataTemplate object and WinUI3 would otherwise
+            // reuse the old visual tree with a stale DataContext).
+            var target = m_editTarget?.EffectiveEditorTarget;
+            this.PART_EditorContent.Content = null;
+            this.PART_EditorContent.Content = target;
+        }
+
         private void ApplyLabelColumnWidth ()
         {
             if (this.PART_LabelBorder == null)

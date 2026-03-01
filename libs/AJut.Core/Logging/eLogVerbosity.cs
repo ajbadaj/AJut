@@ -6,6 +6,8 @@ namespace AJut
     /// </summary>
     public enum eLogVerbosity
     {
+        /// <summary>Bypasses ALL verbosity filtering, including the None gate. Always logged.</summary>
+        Force    = 0,
         Normal   = 2,
         Detailed = 3,
         Verbose  = 4,
