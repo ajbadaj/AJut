@@ -1,5 +1,6 @@
 ﻿namespace AJut.UX.Controls
 {
+    using AJut.UX.Helpers;
     using System;
     using System.Windows;
     using System.Windows.Controls;
@@ -129,7 +130,7 @@
             try
             {
                 m_isDoingUpdate = true;
-                this.SetCurrentValue(HexProperty, ColorHelper.GetSmallestHexString(this.EditColor));
+                this.SetCurrentValue(HexProperty, CoerceUtils.GetSmallestHexString(this.EditColor));
                 this.SetCurrentValue(AProperty, this.EditColor.A);
                 this.SetCurrentValue(RProperty, this.EditColor.R);
                 this.SetCurrentValue(GProperty, this.EditColor.G);
@@ -150,7 +151,7 @@
             try
             {
                 m_isDoingUpdate = true;
-                if (ColorHelper.TryGetColorFromHex(this.Hex, out Color newColor))
+                if (CoerceUtils.TryGetColorFromString(this.Hex, out Color newColor))
                 {
                     this.SetCurrentValue(EditColorProperty, newColor);
                     this.SetCurrentValue(AProperty, this.EditColor.A);
@@ -177,7 +178,7 @@
             {
                 m_isDoingUpdate = true;
                 this.SetCurrentValue(EditColorProperty, Color.FromArgb(this.A, this.R, this.G, this.B));
-                this.SetCurrentValue(HexProperty, ColorHelper.GetSmallestHexString(this.EditColor));
+                this.SetCurrentValue(HexProperty, CoerceUtils.GetSmallestHexString(this.EditColor));
             }
             finally
             {

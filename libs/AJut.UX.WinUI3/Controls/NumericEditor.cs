@@ -86,13 +86,13 @@ namespace AJut.UX.Controls
             set => this.SetValue(MaximumProperty, value);
         }
 
-        // SmallChange: default (normal) increment/decrement step for the RepeatButtons.
-        // Hold CTRL to use BigNudge, hold SHIFT to use SmallNudge.
-        public static readonly DependencyProperty SmallChangeProperty = DPUtils.Register(_ => _.SmallChange, 1.0);
-        public double SmallChange
+        // The normal nudge (default) increment/decrement step for the RepeatButtons.
+        //  > Hold CTRL to use BigNudge, hold SHIFT to use SmallNudge.
+        public static readonly DependencyProperty NudgeProperty = DPUtils.Register(_ => _.Nudge, 1.0);
+        public double Nudge
         {
-            get => (double)this.GetValue(SmallChangeProperty);
-            set => this.SetValue(SmallChangeProperty, value);
+            get => (double)this.GetValue(NudgeProperty);
+            set => this.SetValue(NudgeProperty, value);
         }
 
         // BigNudge: large increment/decrement step applied when CTRL is held (default 5).
@@ -234,8 +234,8 @@ namespace AJut.UX.Controls
             VisualStateManager.GoToState(this, "Unfocused", true);
         }
 
-        private void IncreaseButton_OnClick (object sender, RoutedEventArgs e) => this.Nudge(positive: true);
-        private void DecreaseButton_OnClick (object sender, RoutedEventArgs e) => this.Nudge(positive: false);
+        private void IncreaseButton_OnClick (object sender, RoutedEventArgs e) => this.DoNudge(positive: true);
+        private void DecreaseButton_OnClick (object sender, RoutedEventArgs e) => this.DoNudge(positive: false);
 
         private void TextBox_OnTextChanged (object sender, TextChangedEventArgs e)
         {
@@ -280,7 +280,7 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ Helpers ]=================================================
-        private void Nudge (bool positive)
+        private void DoNudge (bool positive)
         {
             if (m_vm == null)
             {
@@ -299,7 +299,7 @@ namespace AJut.UX.Controls
             }
             else
             {
-                amount = this.SmallChange;
+                amount = this.Nudge;
             }
 
             m_vm.Nudge(positive, amount);
