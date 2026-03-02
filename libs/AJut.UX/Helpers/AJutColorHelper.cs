@@ -2,9 +2,11 @@ namespace AJut.UX.Helpers
 {
     using System;
     using System.Collections.Generic;
+    using System.Drawing;
     using System.Globalization;
+    using System.Net;
 
-    public static class ColorHelpers
+    public static class AJutColorHelper
     {
         /// <summary>Supports #RGB (converts to #RRGGBB), #RRGGBB, and #AARRGGBB. Defaults to ARGB byte order.</summary>
         public static bool TryGetColorFromHex(string hex, out byte[] argb)
@@ -172,7 +174,7 @@ namespace AJut.UX.Helpers
             {
                 var parts = new List<string>();
                 int depth = 0, start = 0;
-                for (int i = 0; i < s.Length; i++)
+                for (int i = 0; i < s.Length; ++i)
                 {
                     char c = s[i];
                     if (c == '(')
@@ -294,7 +296,7 @@ namespace AJut.UX.Helpers
             // Find " at " as a word boundary within a radial config string
             static int _FindAtKeyword(string s)
             {
-                for (int i = 0; i < s.Length - 3; i++)
+                for (int i = 0; i < s.Length - 3; ++i)
                 {
                     if (s[i] == ' ' &&
                         i + 3 < s.Length &&
@@ -421,7 +423,7 @@ namespace AJut.UX.Helpers
                 }
 
                 var raw = new List<(byte[] argb, float? offset)>(args.Count - startIdx);
-                for (int i = startIdx; i < args.Count; i++)
+                for (int i = startIdx; i < args.Count; ++i)
                 {
                     if (!_TryParseStop(args[i], colorOrder, out byte[] argb, out float? offset))
                     {
@@ -438,7 +440,7 @@ namespace AJut.UX.Helpers
                 _DistributeOffsets(raw);
 
                 var result = new GradientStopBuilder[raw.Count];
-                for (int i = 0; i < raw.Count; i++)
+                for (int i = 0; i < raw.Count; ++i)
                 {
                     result[i] = new GradientStopBuilder(raw[i].offset!.Value, raw[i].argb);
                 }
@@ -532,7 +534,7 @@ namespace AJut.UX.Helpers
                     }
                     else
                     {
-                        i++;
+                        ++i;
                     }
                 }
             }
@@ -702,15 +704,26 @@ namespace AJut.UX.Helpers
 
     public interface IGradientBuilderParams { }
 
-    /// <summary>
-    /// Angle for a CSS linear-gradient using CSS convention:
-    /// 0 degrees = to-top, 90 = to-right, 180 = to-bottom (default when omitted), 270 = to-left.
-    /// To derive WPF / WinUI3 normalized StartPoint and EndPoint (MappingMode=RelativeToBoundingBox):
-    ///   double r = AngleDegrees * Math.PI / 180.0;
-    ///   StartPoint = new Point(0.5 - Math.Sin(r) * 0.5,  0.5 + Math.Cos(r) * 0.5);
-    ///   EndPoint   = new Point(0.5 + Math.Sin(r) * 0.5,  0.5 - Math.Cos(r) * 0.5);
-    /// </summary>
-    public record struct LinearGradientParams(float AngleDegrees) : IGradientBuilderParams;
+    public struct LinearGradientParams : IGradientBuilderParams
+    {
+        public LinearGradientParams(float angleDegrees)
+        {
+            this.AngleDegrees = angleDegrees;
+        }
+
+        public float AngleDegrees { get; }
+
+
+        public void CalculateStartEnd(out double startPointX, out double startPointY, out double endPointX, out double endPointY)
+        {
+            double r = this.AngleDegrees * Math.PI / 180.0;
+            startPointX = 0.5 - Math.Sin(r) * 0.5;
+            startPointY = 0.5 + Math.Cos(r) * 0.5;
+
+            endPointX = 0.5 + Math.Sin(r) * 0.5;
+            endPointY = 0.5 - Math.Cos(r) * 0.5;
+        }
+    }
 
     /// <summary>
     /// Radial gradient geometry, all values normalized to [0, 1] relative to the element
@@ -724,7 +737,7 @@ namespace AJut.UX.Helpers
     public record struct GradientStopBuilder(float Offset, byte[] ARGB);
 
     /// <summary>
-    /// Platform-agnostic gradient descriptor produced by <see cref="ColorHelpers.TryGetGradientFromString"/>.
+    /// Platform-agnostic gradient descriptor produced by <see cref="AJutColorHelper.TryGetGradientFromString"/>.
     /// </summary>
     public record struct GradientBuilder
     {

@@ -293,12 +293,22 @@
                             <ScrollViewer VerticalAlignment="Stretch" Padding="12">
                                 <StackPanel Spacing="20" HorizontalAlignment="Left">
 
-                                    <TextBlock Text="Gradient Background"/>
+                                    <TextBlock Text="String to Brush Example" TextWrapping="WrapWholeWords"/>
                                     <TextBox x:Name="BackgroundMaker" PlaceholderText="Color - like #FFF or linear-gradient(#F00, #00F)"/>
+                                    <RichTextBlock IsTextSelectionEnabled="True">
+                                        <Paragraph>
+                                            <Run Text="Setting the text below to a color like " Foreground="{ThemeResource AJut_Brush_NormalText}"/>
+                                            <Run Text="#F0F" FontFamily="Consolas" Foreground="#A22"/>
+                                            <Run Text=" will set the swatch below. Try more advanced things like: " Foreground="{ThemeResource AJut_Brush_NormalText}"/>
+                                            <Run Text="radial-gradient(circle at 25% 90%, #FF0000, #0000FF)" FontFamily="Consolas" Foreground="#A22"/>
+                                            <Run Text=" or "/>
+                                            <Run Text="linear-gradient(76deg, #A22, #0000FF)" FontFamily="Consolas" Foreground="#A22"/>
+                                        </Paragraph>
+                                    </RichTextBlock>
                                     <!-- The swatch that shows the background made -->
                                     <Grid Width="200" Height="200" 
                                           Background="{Binding ElementName=BackgroundMaker, Path=Text, Converter={ajut_conv:ColorStringToBrushConverter}}"/>
-
+                                    
 
 
                                     <TextBlock Text="Theme Switcher" Style="{ThemeResource SubtitleTextBlockStyle}"/>

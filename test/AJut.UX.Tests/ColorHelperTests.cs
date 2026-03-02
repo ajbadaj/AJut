@@ -18,7 +18,7 @@ namespace AJut.UX.Tests
 
             static void _DoAssert(string color, params byte[] expectedBytes)
             {
-                Assert.IsTrue(ColorHelpers.TryGetColorFromHex(color, out byte[] argb));
+                Assert.IsTrue(AJutColorHelper.TryGetColorFromHex(color, out byte[] argb));
                 Assert.IsNotNull(argb);
                 Assert.AreEqual(4, argb.Length);
                 Assert.AreEqual(expectedBytes[0], argb[0]);
@@ -37,7 +37,7 @@ namespace AJut.UX.Tests
 
             static void _DoAssert(string colorExpected, params byte[] inputBytes)
             {
-                string hex = ColorHelpers.GetSmallestHexString(inputBytes[0], inputBytes[1], inputBytes[2], inputBytes[3]);
+                string hex = AJutColorHelper.GetSmallestHexString(inputBytes[0], inputBytes[1], inputBytes[2], inputBytes[3]);
                 Assert.IsNotNull(hex);
                 Assert.AreEqual(colorExpected, hex, ignoreCase: true);
             }
@@ -125,7 +125,7 @@ namespace AJut.UX.Tests
 
             static void _DoAssert(string gradientStr, eBrushGradientType expectedType, float? expectedAngle, params StopTST[] expectedStops)
             {
-                Assert.IsTrue(ColorHelpers.TryGetGradientFromString(gradientStr, out GradientBuilder builder), $"Parse failed for: {gradientStr}");
+                Assert.IsTrue(AJutColorHelper.TryGetGradientFromString(gradientStr, out GradientBuilder builder), $"Parse failed for: {gradientStr}");
                 Assert.AreEqual(expectedType, builder.Type);
                 Assert.IsNotNull(builder.Stops);
                 Assert.AreEqual(expectedStops.Length, builder.Stops.Length, $"Stop count mismatch for: {gradientStr}");
@@ -136,7 +136,7 @@ namespace AJut.UX.Tests
                         $"Angle mismatch for '{gradientStr}': expected {expectedAngle.Value}° got {builder.LinearParams.AngleDegrees}°");
                 }
 
-                for (int i = 0; i < expectedStops.Length; i++)
+                for (int i = 0; i < expectedStops.Length; ++i)
                 {
                     Assert.IsTrue(Math.Abs(expectedStops[i].Offset - builder.Stops[i].Offset) < 0.001f,
                         $"Stop {i} offset mismatch for '{gradientStr}': expected {expectedStops[i].Offset} got {builder.Stops[i].Offset}");
@@ -174,7 +174,7 @@ namespace AJut.UX.Tests
 
             static void _DoAssertRadial(string gradientStr, float expCx, float expCy, float expRx, float expRy)
             {
-                Assert.IsTrue(ColorHelpers.TryGetGradientFromString(gradientStr, out GradientBuilder builder), $"Parse failed for: {gradientStr}");
+                Assert.IsTrue(AJutColorHelper.TryGetGradientFromString(gradientStr, out GradientBuilder builder), $"Parse failed for: {gradientStr}");
                 Assert.AreEqual(eBrushGradientType.Radial, builder.Type);
                 float delta = 0.001f;
                 Assert.IsTrue(Math.Abs(expCx - builder.RadialParams.CenterX) < delta, $"CenterX mismatch for '{gradientStr}': expected {expCx} got {builder.RadialParams.CenterX}");
@@ -194,7 +194,7 @@ namespace AJut.UX.Tests
                     this.ColorARGB = [0, 0, 0, 0];
                 else
                 {
-                    Assert.IsTrue(ColorHelpers.TryGetColorFromHex(color, out byte[] argb), $"Invalid color in test: {color}");
+                    Assert.IsTrue(AJutColorHelper.TryGetColorFromHex(color, out byte[] argb), $"Invalid color in test: {color}");
                     this.ColorARGB = argb;
                 }
             }

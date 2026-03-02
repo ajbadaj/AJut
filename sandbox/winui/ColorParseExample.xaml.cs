@@ -18,7 +18,7 @@ namespace AJutShowRoomWinUI
         {
             this.InitializeComponent();
             this.ParsedColor = Color.FromArgb(255, 12, 34, 56);
-            this.ParsedColorText = ColorHelpers.GetSmallestHexString(this.ParsedColor.A, this.ParsedColor.R, this.ParsedColor.G, this.ParsedColor.B);
+            this.ParsedColorText = AJutColorHelper.GetSmallestHexString(this.ParsedColor.A, this.ParsedColor.R, this.ParsedColor.G, this.ParsedColor.B);
         }
 
         public static readonly DependencyProperty ParsedColorProperty = DPUtils.Register(_ => _.ParsedColor);

@@ -1,5 +1,6 @@
 ﻿namespace AJut.UX
 {
+    using AJut.UX.Helpers;
     using System;
     using System.Collections.Generic;
     using System.Reflection;
@@ -214,8 +215,9 @@
         public static bool TryGetColorFromString (string value, out Color color)
         {
             value = value.Trim();
-            if (ColorHelper.TryGetColorFromHex(!value.StartsWith("#") ? "#" + value : value, out color))
+            if (AJutColorHelper.TryGetColorFromHex(!value.StartsWith("#") ? "#" + value : value, out byte[] argb))
             {
+                color = new Color { A = argb[0], R = argb[1], G = argb[2], B = argb[3] };
                 return true;
             }
 
@@ -225,6 +227,11 @@
             }
 
             return false;
+        }
+
+        public static string GetSmallestHexString(this Color color)
+        {
+            return AJutColorHelper.GetSmallestHexString(color.A, color.R, color.G, color.B);
         }
 
         /// <summary>
@@ -249,7 +256,50 @@
             }
             else if (originalValue is string strValue)
             {
-                return new SolidColorBrush(CoerceColorFrom(strValue));
+                if (strValue.StartsWith("#"))
+                {
+                    return new SolidColorBrush(CoerceColorFrom(strValue));
+                }
+                else if (AJutColorHelper.TryGetGradientFromString(strValue, out GradientBuilder gradientInfo))
+                {
+                    if (gradientInfo.Type == eBrushGradientType.Linear)
+                    {
+                        gradientInfo.LinearParams.CalculateStartEnd(out double startX, out double startY, out double endX, out double endY);
+                        var brush = new LinearGradientBrush
+                        {
+                            StartPoint = new Point(startX, startY),
+                            EndPoint = new Point(endX, endY)
+                        };
+
+                        foreach (var stop in gradientInfo.Stops)
+                        {
+                            brush.GradientStops.Add(new GradientStop
+                            {
+                                Offset = stop.Offset,
+                                Color = new Color { A = stop.ARGB[0], R = stop.ARGB[1], G = stop.ARGB[2], B = stop.ARGB[3] }
+                            });
+                        }
+
+                        return brush;
+                    }
+                    else
+                    {
+                        var gradient = new RadialGradientBrush();
+                        foreach (var stop in gradientInfo.Stops)
+                        {
+                            gradient.GradientStops.Add(new GradientStop
+                            {
+                                Offset = stop.Offset,
+                                Color = new Color { A = stop.ARGB[0], R = stop.ARGB[1], G = stop.ARGB[2], B = stop.ARGB[3] }
+                            });
+                        }
+
+                        gradient.GradientOrigin = new Point(gradientInfo.RadialParams.CenterX, gradientInfo.RadialParams.CenterY);
+                        gradient.RadiusX = gradientInfo.RadialParams.RadiusX;
+                        gradient.RadiusY = gradientInfo.RadialParams.RadiusY;
+                        return gradient;
+                    }
+                }
             }
 
             return Brushes.Black;

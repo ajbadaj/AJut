@@ -9,6 +9,7 @@
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Media;
     using Microsoft.UI.Xaml.Media.Imaging;
+    using Windows.Foundation;
     using Windows.UI;
 
     /// <summary>
@@ -196,7 +197,7 @@
         public static bool TryGetColorFromString (string value, out Color color)
         {
             value = value.Trim();
-            if (ColorHelpers.TryGetColorFromHex(value, out byte[] colorARGB))
+            if (AJutColorHelper.TryGetColorFromHex(value, out byte[] colorARGB))
             {
                 color = new Color { A = colorARGB[0], R = colorARGB[1], G = colorARGB[2], B = colorARGB[3] };
                 return true;
@@ -210,9 +211,9 @@
             return false;
         }
 
-        public static string GetSmallestHexString(Color color)
+        public static string GetSmallestHexString(this Color color)
         {
-            return ColorHelpers.GetSmallestHexString(color.A, color.R, color.G, color.B);
+            return AJutColorHelper.GetSmallestHexString(color.A, color.R, color.G, color.B);
         }
 
         /// <summary>
@@ -241,15 +242,15 @@
                 {
                     return new SolidColorBrush(CoerceColorFrom(strValue));
                 }
-                else if (ColorHelpers.TryGetGradientFromString(strValue, out GradientBuilder gradientInfo))
+                else if (AJutColorHelper.TryGetGradientFromString(strValue, out GradientBuilder gradientInfo))
                 {
                     if (gradientInfo.Type == eBrushGradientType.Linear)
                     {
-                        double r = gradientInfo.LinearParams.AngleDegrees * Math.PI / 180.0;
+                        gradientInfo.LinearParams.CalculateStartEnd(out double startX, out double startY, out double endX, out double endY);
                         var brush = new LinearGradientBrush
                         {
-                            StartPoint = new Windows.Foundation.Point(0.5 - Math.Sin(r) * 0.5, 0.5 + Math.Cos(r) * 0.5),
-                            EndPoint = new Windows.Foundation.Point(0.5 + Math.Sin(r) * 0.5, 0.5 - Math.Cos(r) * 0.5)
+                            StartPoint = new Point(startX, startY),
+                            EndPoint = new Point(endX, endY)
                         };
 
                         foreach (var stop in gradientInfo.Stops)
