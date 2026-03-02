@@ -389,6 +389,7 @@
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         <Setter Property="ExpanderGlyphForeground" Value="{ThemeResource TextFillColorSecondaryBrush}"/>
         <Setter Property="ListViewItemContainerStyle" Value="{StaticResource AJut_FlatTree_ListViewItemStyle}"/>
+        <Setter Property="Padding" Value="0"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:FlatTreeListControl">
@@ -403,7 +404,8 @@
                                   ItemContainerStyle="{TemplateBinding ListViewItemContainerStyle}"
                                   HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
                                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                  ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                  Padding="{TemplateBinding Padding}">
                             <ListView.Resources>
                                 <!-- Suppress WinUI3 ListView host-level selection chrome (drawn at panel
                                      level, independent of the item ControlTemplate). Without this, WinUI3
