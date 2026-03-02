@@ -293,6 +293,14 @@
                             <ScrollViewer VerticalAlignment="Stretch" Padding="12">
                                 <StackPanel Spacing="20" HorizontalAlignment="Left">
 
+                                    <TextBlock Text="Gradient Background"/>
+                                    <TextBox x:Name="BackgroundMaker" PlaceholderText="Color - like #FFF or linear-gradient(#F00, #00F)"/>
+                                    <!-- The swatch that shows the background made -->
+                                    <Grid Width="200" Height="200" 
+                                          Background="{Binding ElementName=BackgroundMaker, Path=Text, Converter={ajut_conv:ColorStringToBrushConverter}}"/>
+
+
+
                                     <TextBlock Text="Theme Switcher" Style="{ThemeResource SubtitleTextBlockStyle}"/>
                                     <ajut:EnumComboBox SelectedItem="{x:Bind Path=Application.ThemeManager.ThemeConfiguration, Mode=TwoWay}"/>
                                     <TextBlock Text="Using theme management + EnumComboBox" FontStyle="Italic" Opacity="0.7"/>
@@ -400,21 +408,21 @@
                                         <ajut:NumericEditor Grid.Row="3" Grid.Column="1" Value="50" Minimum="0" Maximum="100" Margin="0,4"/>
 
                                         <TextBlock Grid.Row="4" Grid.Column="0" Text="Step by 0.5" VerticalAlignment="Center" Margin="0,4"/>
-                                        <ajut:NumericEditor Grid.Row="4" Grid.Column="1" Value="1.5" SmallChange="0.5" Margin="0,4"/>
+                                        <ajut:NumericEditor Grid.Row="4" Grid.Column="1" Value="1.5" Nudge="0.5" Margin="0,4"/>
 
                                         <TextBlock Grid.Row="5" Grid.Column="0" Text="Override Labels" VerticalAlignment="Top" Margin="0,4"/>
                                         <StackPanel Grid.Row="5" Grid.Column="1">
-                                            <ajut:NumericEditor Value="1.5" SmallChange="0.5" Margin="0,4">
+                                            <ajut:NumericEditor Value="1.5" Nudge="0.5" Margin="0,4">
                                                 <ajut:NumericEditor.LabelContent>
                                                     <TextBlock Text="X" Foreground="Red" FontWeight="Bold" Margin="5,0" VerticalAlignment="Center" FontSize="20" FontFamily="Segoe UI"/>
                                                 </ajut:NumericEditor.LabelContent>
                                             </ajut:NumericEditor>
-                                            <ajut:NumericEditor Value="1.5" SmallChange="0.5" Margin="0,4">
+                                            <ajut:NumericEditor Value="1.5" Nudge="0.5" Margin="0,4">
                                                 <ajut:NumericEditor.LabelContent>
                                                     <TextBlock Text="Y" Foreground="#5C3" FontWeight="Bold" Margin="5,0" VerticalAlignment="Center" FontSize="20" FontFamily="Segoe UI"/>
                                                 </ajut:NumericEditor.LabelContent>
                                             </ajut:NumericEditor>
-                                            <ajut:NumericEditor Value="1.5" SmallChange="0.5" Margin="0,4">
+                                            <ajut:NumericEditor Value="1.5" Nudge="0.5" Margin="0,4">
                                                 <ajut:NumericEditor.LabelContent>
                                                     <TextBlock Text="Z" Foreground="#38F" FontWeight="Bold" Margin="5,0" VerticalAlignment="Center" FontSize="20" FontFamily="Segoe UI"/>
                                                 </ajut:NumericEditor.LabelContent>

@@ -3,6 +3,8 @@
     using System;
     using System.Collections.Generic;
     using System.Reflection;
+    using System.Runtime.CompilerServices;
+    using AJut.UX.Helpers;
     using Microsoft.UI;
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Media;
@@ -194,8 +196,9 @@
         public static bool TryGetColorFromString (string value, out Color color)
         {
             value = value.Trim();
-            if (ColorHelper.TryGetColorFromHex(!value.StartsWith("#") ? "#" + value : value, out color))
+            if (ColorHelpers.TryGetColorFromHex(value, out byte[] colorARGB))
             {
+                color = new Color { A = colorARGB[0], R = colorARGB[1], G = colorARGB[2], B = colorARGB[3] };
                 return true;
             }
 
@@ -205,6 +208,11 @@
             }
 
             return false;
+        }
+
+        public static string GetSmallestHexString(Color color)
+        {
+            return ColorHelpers.GetSmallestHexString(color.A, color.R, color.G, color.B);
         }
 
         /// <summary>
@@ -229,7 +237,50 @@
             }
             else if (originalValue is string strValue)
             {
-                return new SolidColorBrush(CoerceColorFrom(strValue));
+                if (strValue.StartsWith("#"))
+                {
+                    return new SolidColorBrush(CoerceColorFrom(strValue));
+                }
+                else if (ColorHelpers.TryGetGradientFromString(strValue, out GradientBuilder gradientInfo))
+                {
+                    if (gradientInfo.Type == eBrushGradientType.Linear)
+                    {
+                        double r = gradientInfo.LinearParams.AngleDegrees * Math.PI / 180.0;
+                        var brush = new LinearGradientBrush
+                        {
+                            StartPoint = new Windows.Foundation.Point(0.5 - Math.Sin(r) * 0.5, 0.5 + Math.Cos(r) * 0.5),
+                            EndPoint = new Windows.Foundation.Point(0.5 + Math.Sin(r) * 0.5, 0.5 - Math.Cos(r) * 0.5)
+                        };
+
+                        foreach (var stop in gradientInfo.Stops)
+                        {
+                            brush.GradientStops.Add(new GradientStop
+                            {
+                                Offset = stop.Offset,
+                                Color = new Color { A = stop.ARGB[0], R = stop.ARGB[1], G = stop.ARGB[2], B = stop.ARGB[3] }
+                            });
+                        }
+
+                        return brush;
+                    }
+                    else
+                    {
+                        var gradient = new RadialGradientBrush();
+                        foreach (var stop in gradientInfo.Stops)
+                        {
+                            gradient.GradientStops.Add(new GradientStop
+                            {
+                                Offset = stop.Offset,
+                                Color = new Color { A = stop.ARGB[0], R = stop.ARGB[1], G = stop.ARGB[2], B = stop.ARGB[3] }
+                            });
+                        }
+
+                        gradient.GradientOrigin = new Windows.Foundation.Point(gradientInfo.RadialParams.CenterX, gradientInfo.RadialParams.CenterY);
+                        gradient.RadiusX = gradientInfo.RadialParams.RadiusX;
+                        gradient.RadiusY = gradientInfo.RadialParams.RadiusY;
+                        return gradient;
+                    }
+                }
             }
 
             return new SolidColorBrush(Colors.Black);

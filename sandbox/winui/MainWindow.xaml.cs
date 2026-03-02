@@ -119,12 +119,12 @@ namespace AJutShowRoomWinUI
                     string value;
                     if (obj is SolidColorBrush scb)
                     {
-                        value = ColorHelper.GetSmallestHexString(scb.Color);
+                        value = CoerceUtils.GetSmallestHexString(scb.Color);
                         this.ColorPicker.Color = scb.Color;
                     }
                     else if (obj is Color color)
                     {
-                        value = ColorHelper.GetSmallestHexString(color);
+                        value = CoerceUtils.GetSmallestHexString(color);
                         this.ColorPicker.Color = color;
                     }
                     else
@@ -335,7 +335,7 @@ namespace AJutShowRoomWinUI
 
             public override Color ConvertFromAlias(string aliasValue)
             {
-                if (ColorHelper.TryGetColorFromHex(aliasValue, out Color color))
+                if (CoerceUtils.TryGetColorFromString(aliasValue, out Color color))
                 {
                     return color;
                 }
@@ -345,7 +345,7 @@ namespace AJutShowRoomWinUI
 
             public override string ConvertToAlias(Color sourceValue)
             {
-                return ColorHelper.GetSmallestHexString(sourceValue);
+                return CoerceUtils.GetSmallestHexString(sourceValue);
             }
         }
     }
