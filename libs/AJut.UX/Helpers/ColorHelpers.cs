@@ -6,8 +6,16 @@ namespace AJut.UX.Helpers
 
     public static class ColorHelpers
     {
-        /// <summary>Supports #RGB (converts to #RRGGBB), #RRGGBB, and #AARRGGBB</summary>
+        /// <summary>Supports #RGB (converts to #RRGGBB), #RRGGBB, and #AARRGGBB. Defaults to ARGB byte order.</summary>
         public static bool TryGetColorFromHex(string hex, out byte[] argb)
+            => TryGetColorFromHex(hex, eColorByteOrder.ARGB, out argb);
+
+        /// <summary>
+        /// Supports #RGB / #RRGGBB (no alpha), and 4-channel hex whose byte order depends on colorOrder:
+        /// ARGB = #ARGB / #AARRGGBB (WPF/WinUI convention), RGBA = #RGBA / #RRGGBBAA (CSS4 convention).
+        /// Output byte array is always [A, R, G, B].
+        /// </summary>
+        public static bool TryGetColorFromHex(string hex, eColorByteOrder colorOrder, out byte[] argb)
         {
             if (hex.StartsWith("#"))
             {
@@ -19,31 +27,33 @@ namespace AJut.UX.Helpers
 
                 switch (hex.Length)
                 {
-                    // #RGB -> #RRGGBB
+                    // #RGB -> #RRGGBB (no alpha, not affected by colorOrder)
                     case 4:
                         {
                             argb = _ReadHexBytes(3, nibbleCount: 1);
                             return true;
                         }
 
-                    // #ARGB -> #AARRGGBB
+                    // #ARGB (WPF) or #RGBA (CSS4)
                     case 5:
                         {
                             argb = _ReadHexBytes(4, nibbleCount: 1);
+                            if (colorOrder == eColorByteOrder.RGBA) { _ShiftAlphaToFront(argb); }
                             return true;
                         }
 
-                    // #RRGGBB
+                    // #RRGGBB (no alpha, not affected by colorOrder)
                     case 7:
                         {
                             argb = _ReadHexBytes(3, nibbleCount: 2);
                             return true;
                         }
 
-                    // #AARRGGBB
+                    // #AARRGGBB (WPF) or #RRGGBBAA (CSS4)
                     case 9:
                         {
                             argb = _ReadHexBytes(4, nibbleCount: 2);
+                            if (colorOrder == eColorByteOrder.RGBA) { _ShiftAlphaToFront(argb); }
                             return true;
                         }
                 }
@@ -51,6 +61,16 @@ namespace AJut.UX.Helpers
 
             argb = [0, 255, 0, 255];
             return false;
+
+            // Input was read as [R,G,B,A] but output must be [A,R,G,B]
+            static void _ShiftAlphaToFront(byte[] bytes)
+            {
+                byte a = bytes[3];
+                bytes[3] = bytes[2];
+                bytes[2] = bytes[1];
+                bytes[1] = bytes[0];
+                bytes[0] = a;
+            }
 
             byte[] _ReadHexBytes(int byteCount, int nibbleCount = 2)
             {
@@ -101,10 +121,19 @@ namespace AJut.UX.Helpers
 
         /// <summary>
         /// Parses a CSS gradient string into a platform-agnostic <see cref="GradientBuilder"/>.
-        /// Supports linear-gradient and radial-gradient.
+        /// Supports linear-gradient and radial-gradient. Defaults to ARGB hex byte order.
         /// Stop color formats: hex (#RGB / #RRGGBB / #AARRGGBB), rgb(r,g,b), rgba(r,g,b,a), transparent.
         /// </summary>
         public static bool TryGetGradientFromString(string gradientStr, out GradientBuilder gradientInfo)
+            => TryGetGradientFromString(gradientStr, eColorByteOrder.ARGB, out gradientInfo);
+
+        /// <summary>
+        /// Parses a CSS gradient string into a platform-agnostic <see cref="GradientBuilder"/>.
+        /// Supports linear-gradient and radial-gradient.
+        /// Stop color formats: hex (#RGB / #RRGGBB and 4-channel per colorOrder), rgb(r,g,b), rgba(r,g,b,a), transparent.
+        /// Note: rgb()/rgba() function syntax is always R,G,B,A order per CSS spec regardless of colorOrder.
+        /// </summary>
+        public static bool TryGetGradientFromString(string gradientStr, eColorByteOrder colorOrder, out GradientBuilder gradientInfo)
         {
             gradientInfo = default;
             if (string.IsNullOrWhiteSpace(gradientStr))
@@ -134,7 +163,9 @@ namespace AJut.UX.Helpers
                 return false;
             }
 
-            return isLinear ? _TryParseLinear(args, out gradientInfo) : _TryParseRadial(args, out gradientInfo);
+            return isLinear
+                ? _TryParseLinear(args, colorOrder, out gradientInfo)
+                : _TryParseRadial(args, colorOrder, out gradientInfo);
 
             // Split on top-level commas only - ignores commas inside rgb(...)/rgba(...)
             static List<string> _SplitTopLevelCommas(string s)
@@ -146,11 +177,11 @@ namespace AJut.UX.Helpers
                     char c = s[i];
                     if (c == '(')
                     {
-                        ++depth; 
+                        ++depth;
                     }
                     else if (c == ')')
                     {
-                        --depth; 
+                        --depth;
                     }
                     else if (c == ',' && depth == 0)
                     {
@@ -162,7 +193,7 @@ namespace AJut.UX.Helpers
                 return parts;
             }
 
-            static bool _TryParseLinear(List<string> args, out GradientBuilder gradient)
+            static bool _TryParseLinear(List<string> args, eColorByteOrder colorOrder, out GradientBuilder gradient)
             {
                 gradient = default;
                 int stopStart = 0;
@@ -180,7 +211,7 @@ namespace AJut.UX.Helpers
                     stopStart = 1;
                 }
 
-                var stops = _ParseColorStops(args, stopStart);
+                var stops = _ParseColorStops(args, stopStart, colorOrder);
                 if (stops == null)
                 {
                     return false;
@@ -190,7 +221,7 @@ namespace AJut.UX.Helpers
                 return true;
             }
 
-            static bool _TryParseRadial(List<string> args, out GradientBuilder gradient)
+            static bool _TryParseRadial(List<string> args, eColorByteOrder colorOrder, out GradientBuilder gradient)
             {
                 gradient = default;
                 int stopStart = 0;
@@ -250,7 +281,7 @@ namespace AJut.UX.Helpers
                     }
                 }
 
-                var stops = _ParseColorStops(args, stopStart);
+                var stops = _ParseColorStops(args, stopStart, colorOrder);
                 if (stops == null)
                 {
                     return false;
@@ -382,7 +413,7 @@ namespace AJut.UX.Helpers
                        s.StartsWith("transparent", StringComparison.OrdinalIgnoreCase);
             }
 
-            static GradientStopBuilder[] _ParseColorStops(List<string> args, int startIdx)
+            static GradientStopBuilder[] _ParseColorStops(List<string> args, int startIdx, eColorByteOrder colorOrder)
             {
                 if (startIdx >= args.Count)
                 {
@@ -392,7 +423,7 @@ namespace AJut.UX.Helpers
                 var raw = new List<(byte[] argb, float? offset)>(args.Count - startIdx);
                 for (int i = startIdx; i < args.Count; i++)
                 {
-                    if (!_TryParseStop(args[i], out byte[] argb, out float? offset))
+                    if (!_TryParseStop(args[i], colorOrder, out byte[] argb, out float? offset))
                     {
                         return null;
                     }
@@ -414,7 +445,7 @@ namespace AJut.UX.Helpers
                 return result;
             }
 
-            static bool _TryParseStop(string stopStr, out byte[] argb, out float? offset)
+            static bool _TryParseStop(string stopStr, eColorByteOrder colorOrder, out byte[] argb, out float? offset)
             {
                 argb = null;
                 offset = null;
@@ -443,7 +474,7 @@ namespace AJut.UX.Helpers
                 {
                     int space = stopStr.IndexOf(' ');
                     string hex = space < 0 ? stopStr : stopStr.Substring(0, space);
-                    if (!TryGetColorFromHex(hex, out argb)) { return false; }
+                    if (!TryGetColorFromHex(hex, colorOrder, out argb)) { return false; }
                     if (space >= 0)
                     {
                         string rem = stopStr.Substring(space + 1).Trim();
@@ -604,6 +635,17 @@ namespace AJut.UX.Helpers
         }
     }
 
+    /// <summary>
+    /// Controls how the alpha channel is positioned when parsing 4-channel hex color strings.
+    /// Does NOT affect rgb()/rgba() function syntax, which always uses R,G,B,A parameter order per CSS spec.
+    /// </summary>
+    public enum eColorByteOrder
+    {
+        /// <summary>#AARRGGBB / #ARGB - alpha first. WPF/WinUI convention.</summary>
+        ARGB,
+        /// <summary>#RRGGBBAA / #RGBA - alpha last. CSS4 convention.</summary>
+        RGBA,
+    }
 
     #region ===[ CSS Gradient parser - WPF/WinUI3 cross-platform gap documentation ]===
 
@@ -626,10 +668,9 @@ namespace AJut.UX.Helpers
     //   - CSS radial size keywords (closest-side, farthest-corner, etc.)
     //       Same reason as above. When present, RadiusX/RadiusY default to 0.5.
     //
-    //   - CSS #RRGGBBAA hex notation (alpha last)
-    //       TryGetColorFromHex uses the #AARRGGBB byte order (ARGB convention).
-    //       If a consumer passes a CSS-convention #RRGGBBAA string, the A and R
-    //       bytes will be swapped. Keep this in mind when authoring gradient strings.
+    //   - CSS4 #RRGGBBAA / #RGBA hex notation (alpha last)
+    //       Pass eColorByteOrder.RGBA to TryGetColorFromHex or TryGetGradientFromString
+    //       to correctly handle CSS4 alpha-last hex. The default (ARGB) expects #AARRGGBB.
     //
     //   - Named CSS colors (e.g. red, cornflowerblue)
     //       Only the keyword "transparent" is recognized. (There are like 100-200 named
