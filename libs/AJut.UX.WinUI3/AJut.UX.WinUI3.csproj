@@ -8,8 +8,6 @@
     <Description>C# / dotnet 8 / WinUI3 controls &amp; utility library, created by AJ Badarni</Description>
     <Authors>AJ Badarni</Authors>
     <Company />
-    <VersionPrefix>1.0.0</VersionPrefix>
-    <VersionSuffix>beta</VersionSuffix>
     <PackageProjectUrl>https://www.ajut.dev/</PackageProjectUrl>
     <PackageIcon>ajut-logo-128.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -20,7 +18,7 @@
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <EnableMsixTooling>true</EnableMsixTooling>
     <WindowsPackageType>None</WindowsPackageType>
-    <Version>1.0.1.110</Version>
+    <Version>1.0.1.111</Version>
     <!-- =========[ NuGet packaging - ensure XBF + PRI resources are included ]======== -->
     <DisableEmbeddedXbf>false</DisableEmbeddedXbf>
     <GenerateLibraryLayout>true</GenerateLibraryLayout>
