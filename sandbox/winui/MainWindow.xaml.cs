@@ -364,8 +364,23 @@ namespace AJutShowRoomWinUI
         public string Label { get; set; } = "Alpha Object";
         public float X { get; set; } = 111f;
         public float Y { get; set; } = 222f;
+
+        [PGEditContextBuilder("PG-Limits", "{ Min: 0.0, Max: 180.0, Step: 1 }")]
         public float Z { get; set; } = 333f;
+
+        [PGLabel("Active?", "Shows if it's active")]
         public bool IsActive { get; set; } = true;
+    }
+
+    [TypeId("PG-Limits")]
+    public class Limits
+    {
+        public float Min { get; set; } = float.NegativeInfinity;
+        public float Max { get; set; } = float.PositiveInfinity;
+        public float Step { get; set; } = 1.0f;
+        public float BigStep => this.Step * 5.0f;
+        public float SmallStep => this.Step / 5.0f;
+
     }
 
     // ===========[ ShowRoomBeta - 2 properties (mirrors CF "Particles" with fewer fields) ]=====

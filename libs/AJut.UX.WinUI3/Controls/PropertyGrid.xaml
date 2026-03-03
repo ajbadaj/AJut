@@ -49,6 +49,16 @@
                    Foreground="{ThemeResource AJut_PropertyGridItemRow_LabelForeground}"/>
     </DataTemplate>
 
+    <!-- ===[ Default subtitle style ]=== -->
+    <Style x:Key="PropertyGrid_DefaultSubtitleStyle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="10"/>
+        <Setter Property="FontStyle" Value="Italic"/>
+        <Setter Property="Opacity" Value="0.85"/>
+        <Setter Property="Margin" Value="6,0,8,2"/>
+        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        <Setter Property="Foreground" Value="{ThemeResource AJut_PropertyGridItemRow_LabelForeground}"/>
+    </Style>
+
     <!-- ===[ PropertyGrid style ]=== -->
     <!-- Uses FlatTreeListControl so that complex reference-type properties can be
          expanded to show their sub-properties as indented child rows.
@@ -68,6 +78,8 @@
         <!-- Default container style: suppresses full-row chrome so PropertyGridItemRow's
              own label-only SelectionStates VSM is the only selection indicator. -->
         <Setter Property="ListViewItemContainerStyle" Value="{StaticResource PropertyGrid_ListViewItemStyle}"/>
+        <!-- Default subtitle style: smaller, italic, 0.85 opacity. -->
+        <Setter Property="LabelSubtitleStyle" Value="{StaticResource PropertyGrid_DefaultSubtitleStyle}"/>
         <Setter Property="RowTemplate">
             <Setter.Value>
                 <DataTemplate>

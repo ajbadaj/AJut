@@ -1,6 +1,7 @@
 ﻿namespace AJutShowRoomWinUI
 {
     using AJut;
+    using AJut.TypeManagement;
     using AJut.UX;
     using AJut.UX.Theming;
     using Microsoft.UI.Xaml;
@@ -48,6 +49,8 @@
             Logger.LogInfo("Starting up AJut Show Room for WinUI");
             Logger.LogInfo($"Using AJut.Core version #{this.AJut_Core_Version}");
             Logger.LogInfo($"Using AJut.UX.WinUI version #{this.AJut_UX_WinUI_Version}");
+
+            TypeIdRegistrar.RegisterAllTypeIds(this.GetType().Assembly);
 
             m_window = new MainWindow(m_windowManager, this.ThemeManager);
             m_window.Activate();

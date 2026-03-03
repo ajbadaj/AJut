@@ -8,6 +8,7 @@
     xmlns:ajut="using:AJut.UX.Controls"
     xmlns:ajut_conv="using:AJut.UX.Converters"
     xmlns:local="using:AJutShowRoomWinUI"
+    xmlns:ajut_pg="using:AJut.UX.PropertyInteraction"
     mc:Ignorable="d"
     Title="AJut Showroom for WinUI"
     x:Name="Self">
@@ -569,8 +570,13 @@
                                                 </DataTemplate>
                                             </ajut:PropertyGridTemplateSelector.Default>
                                             <ajut:PropertyGridTemplateSelector.RegisteredTemplates>
-                                                <DataTemplate x:Key="Single">
-                                                    <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}" TextBoxHeight="20"/>
+                                                <DataTemplate x:Key="Single" x:DataType="ajut_pg:PropertyEditTarget">
+                                                    <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}" TextBoxHeight="20"
+                                                                        Minimum="{Binding Path=EditContext.Min, Mode=TwoWay, FallbackValue=-10000}"
+                                                                        Maximum="{Binding Path=EditContext.Max, Mode=TwoWay, FallbackValue=10000}"
+                                                                        BigNudge="{Binding Path=EditContext.BigStep, Mode=OneWay, FallbackValue=5}"
+                                                                        Nudge="{Binding Path=EditContext.Step, Mode=OneWay, FallbackValue=1}"
+                                                                        SmallNudge="{Binding Path=EditContext.SmallStep, Mode=OneWay, FallbackValue=0.1}"/>
                                                 </DataTemplate>
                                                 <DataTemplate x:Key="Double">
                                                     <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}" TextBoxHeight="20"/>
