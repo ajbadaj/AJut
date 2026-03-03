@@ -22,20 +22,44 @@
         </Setter>
     </Style>
 
+    <!-- ===[ Default subtitle style ]=== -->
+    <Style x:Key="PropertyGrid_DefaultSubtitleStyle" TargetType="{x:Type TextBlock}">
+        <Setter Property="FontSize" Value="10"/>
+        <Setter Property="FontStyle" Value="Italic"/>
+        <Setter Property="Opacity" Value="0.85"/>
+        <Setter Property="Margin" Value="5,0,7,2"/>
+        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+    </Style>
+
+    <!-- Converter: collapses the subtitle when it is null or empty. Note: the property names
+         in IsTextNullOrEmptyToVisibilityConverter are inverted relative to the condition, so
+         WhenHasText=Collapsed means "when text IS null/empty, collapse". -->
+    <conv:IsTextNullOrEmptyToVisibilityConverter x:Key="PG_SubtitleVisConverter"
+                                                  WhenHasText="Collapsed"
+                                                  WhenNullOrEmpty="Visible"/>
+
     <!-- ===[ Default label templates ]=== -->
     <!-- DefaultValueLabelDataTemplate: normal label (value equals default). DataContext = PropertyEditTarget. -->
     <DataTemplate x:Key="PropertyGrid_DefaultLabelTemplate" DataType="{x:Type prop:PropertyEditTarget}">
-        <TextBlock Text="{Binding DisplayName}"
-                   VerticalAlignment="Center"
-                   Margin="5,3,7,3"/>
+        <StackPanel VerticalAlignment="Center">
+            <TextBlock Text="{Binding DisplayName}"
+                       Margin="5,3,7,0"/>
+            <TextBlock Text="{Binding Subtitle}"
+                       Visibility="{Binding Subtitle, Converter={StaticResource PG_SubtitleVisConverter}}"
+                       Style="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PropertyGrid}}, Path=LabelSubtitleStyle}"/>
+        </StackPanel>
     </DataTemplate>
 
     <!-- ModifiedValueLabelDataTemplate: bold label (value differs from default). DataContext = PropertyEditTarget. -->
     <DataTemplate x:Key="PropertyGrid_ModifiedLabelTemplate" DataType="{x:Type prop:PropertyEditTarget}">
-        <TextBlock Text="{Binding DisplayName}"
-                   FontWeight="Bold"
-                   VerticalAlignment="Center"
-                   Margin="5,3,7,3"/>
+        <StackPanel VerticalAlignment="Center">
+            <TextBlock Text="{Binding DisplayName}"
+                       FontWeight="Bold"
+                       Margin="5,3,7,0"/>
+            <TextBlock Text="{Binding Subtitle}"
+                       Visibility="{Binding Subtitle, Converter={StaticResource PG_SubtitleVisConverter}}"
+                       Style="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PropertyGrid}}, Path=LabelSubtitleStyle}"/>
+        </StackPanel>
     </DataTemplate>
 
     <Style TargetType="{x:Type local:PropertyGrid}">
@@ -50,6 +74,7 @@
         </Setter>
         <Setter Property="DefaultValueLabelDataTemplate" Value="{StaticResource PropertyGrid_DefaultLabelTemplate}"/>
         <Setter Property="ModifiedValueLabelDataTemplate" Value="{StaticResource PropertyGrid_ModifiedLabelTemplate}"/>
+        <Setter Property="LabelSubtitleStyle" Value="{StaticResource PropertyGrid_DefaultSubtitleStyle}"/>
         <Setter Property="BorderBrush" Value="Gray"/>
         <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
         <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>

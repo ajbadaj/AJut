@@ -161,6 +161,17 @@ namespace AJut.UX.Controls
             set => this.SetValue(ModifiedValueLabelDataTemplateProperty, value);
         }
 
+        /// <summary>
+        /// Style applied to the subtitle TextBlock in each property row. TargetType must be TextBlock.
+        /// Defaults to smaller, italic, 0.85 opacity text.
+        /// </summary>
+        public static readonly DependencyProperty LabelSubtitleStyleProperty = DPUtils.Register(_ => _.LabelSubtitleStyle);
+        public Style LabelSubtitleStyle
+        {
+            get => (Style)this.GetValue(LabelSubtitleStyleProperty);
+            set => this.SetValue(LabelSubtitleStyleProperty, value);
+        }
+
         // Padding applied to each PropertyGridItemRow (insets label + editor from the row edges).
         // Read by PropertyGridItemRow.OnLoaded and applied as Padding so the template's
         // {TemplateBinding Padding} drives the inner content grid's Margin.

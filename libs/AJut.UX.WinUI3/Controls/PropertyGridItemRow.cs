@@ -35,6 +35,7 @@ namespace AJut.UX.Controls
 
     [TemplatePart(Name = nameof(PART_LabelBorder), Type = typeof(Border))]
     [TemplatePart(Name = nameof(PART_LabelContent), Type = typeof(ContentControl))]
+    [TemplatePart(Name = nameof(PART_SubtitleText), Type = typeof(TextBlock))]
     [TemplatePart(Name = nameof(PART_EditorContent), Type = typeof(ContentControl))]
     public class PropertyGridItemRow : Control
     {
@@ -56,6 +57,7 @@ namespace AJut.UX.Controls
         // ===========[ Template parts ]==========================================
         private Border PART_LabelBorder { get; set; }
         private ContentControl PART_LabelContent { get; set; }
+        private TextBlock PART_SubtitleText { get; set; }
         private ContentControl PART_EditorContent { get; set; }
 
         // ===========[ Dependency Properties ]====================================
@@ -87,6 +89,13 @@ namespace AJut.UX.Controls
             set => this.SetValue(ModifiedValueLabelDataTemplateProperty, value);
         }
 
+        public static readonly DependencyProperty LabelSubtitleStyleProperty = DPUtils.Register(_ => _.LabelSubtitleStyle, (d, e) => d.ApplySubtitle());
+        public Style LabelSubtitleStyle
+        {
+            get => (Style)this.GetValue(LabelSubtitleStyleProperty);
+            set => this.SetValue(LabelSubtitleStyleProperty, value);
+        }
+
         // ===========[ Pointer overrides - drive HoverStates VSM group ]=========
         protected override void OnPointerEntered (PointerRoutedEventArgs e)
         {
@@ -112,6 +121,7 @@ namespace AJut.UX.Controls
 
             this.PART_LabelBorder = this.GetTemplateChild(nameof(PART_LabelBorder)) as Border;
             this.PART_LabelContent = this.GetTemplateChild(nameof(PART_LabelContent)) as ContentControl;
+            this.PART_SubtitleText = this.GetTemplateChild(nameof(PART_SubtitleText)) as TextBlock;
             this.PART_EditorContent = this.GetTemplateChild(nameof(PART_EditorContent)) as ContentControl;
 
             if (this.PART_LabelBorder != null)
@@ -121,6 +131,7 @@ namespace AJut.UX.Controls
 
             this.ApplyLabelColumnWidth();
             this.ApplyLabelTemplate();
+            this.ApplySubtitle();
 
             if (m_flatTreeItem != null)
             {
@@ -155,6 +166,11 @@ namespace AJut.UX.Controls
                     if (this.ModifiedValueLabelDataTemplate == null)
                     {
                         this.ModifiedValueLabelDataTemplate = pg.ModifiedValueLabelDataTemplate;
+                    }
+
+                    if (this.LabelSubtitleStyle == null)
+                    {
+                        this.LabelSubtitleStyle = pg.LabelSubtitleStyle;
                     }
 
                     // Apply ElementPadding from PropertyGrid as this row's Padding so the
@@ -219,6 +235,7 @@ namespace AJut.UX.Controls
             });
 
             this.ApplyLabelTemplate();
+            this.ApplySubtitle();
         }
 
         private void OnIsSelectedChanged (object sender, System.EventArgs e)
@@ -295,6 +312,24 @@ namespace AJut.UX.Controls
 
             double available = this.LabelColumnWidth - m_flatTreeItem.IndentWidth - kExpanderColumnWidth;
             this.PART_LabelBorder.Width = available > 0 ? available : 0;
+        }
+
+        private void ApplySubtitle ()
+        {
+            if (this.PART_SubtitleText == null)
+            {
+                return;
+            }
+
+            string subtitle = m_editTarget?.Subtitle;
+            bool hasSubtitle = !string.IsNullOrEmpty(subtitle);
+            this.PART_SubtitleText.Text = subtitle ?? string.Empty;
+            this.PART_SubtitleText.Visibility = hasSubtitle ? Visibility.Visible : Visibility.Collapsed;
+
+            if (this.LabelSubtitleStyle != null)
+            {
+                this.PART_SubtitleText.Style = this.LabelSubtitleStyle;
+            }
         }
 
         private void ApplyLabelTemplate ()

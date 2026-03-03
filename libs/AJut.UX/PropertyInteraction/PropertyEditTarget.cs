@@ -7,6 +7,7 @@ namespace AJut.UX.PropertyInteraction
     using System.Reflection;
     using AJut;
     using AJut.Storage;
+    using AJut.Text.AJson;
     using AJut.TypeManagement;
     using AJut.UX;
 
@@ -84,6 +85,13 @@ namespace AJut.UX.PropertyInteraction
         {
             get => m_displayName;
             set => this.SetAndRaiseIfChanged(ref m_displayName, value);
+        }
+
+        private string m_subtitle;
+        public string Subtitle
+        {
+            get => m_subtitle;
+            set => this.SetAndRaiseIfChanged(ref m_subtitle, value);
         }
 
         /// <summary>
@@ -198,7 +206,10 @@ namespace AJut.UX.PropertyInteraction
             foreach (PropertyInfo prop in _GetRelevantProperties(sourceItem))
             {
                 var editorAttr = TypeMetadataExtensionRegistrar.GetAttribute<PGEditorAttribute>(prop);
-                string displayName = TypeMetadataExtensionRegistrar.GetAttribute<DisplayNameAttribute>(prop)?.DisplayName;
+                var labelAttr = TypeMetadataExtensionRegistrar.GetAttribute<PGLabelAttribute>(prop);
+                string displayName = labelAttr?.Label
+                    ?? TypeMetadataExtensionRegistrar.GetAttribute<DisplayNameAttribute>(prop)?.DisplayName;
+                string subtitle = labelAttr?.Subtitle;
                 string[] aliases = TypeMetadataExtensionRegistrar.GetAttribute<PGAltPropertyAliasAttribute>(prop)?.AltPropertyAliases;
 
                 // 1. Detect Nullable<T> and route to the "Nullable" editor
@@ -236,18 +247,29 @@ namespace AJut.UX.PropertyInteraction
                     ? v => prop.SetValue(sourceItem, aliasing.ConvertFromAlias(v))
                     : v => prop.SetValue(sourceItem, v);
 
+                // 3. Build EditContext from [PGEditContextBuilder] if present and no context was set above
+                if (editContext == null)
+                {
+                    var ctxBuilderAttr = TypeMetadataExtensionRegistrar.GetAttribute<PGEditContextBuilderAttribute>(prop);
+                    if (ctxBuilderAttr != null)
+                    {
+                        editContext = _BuildEditContext(ctxBuilderAttr);
+                    }
+                }
+
                 var target = new PropertyEditTarget(prop.Name, getter, setter)
                 {
                     DisplayName = displayName ?? prop.Name.ConvertToFriendlyEn(),
+                    Subtitle = subtitle,
                     Editor = editorKey,
                     EditContext = editContext,
                     AdditionalEvalTargets = aliases,
                 };
 
-                // 3. Compute default value
+                // 4. Compute default value
                 _ApplyDefault(target, prop, sourceItem);
 
-                // 4. Recurse into complex reference types (non-nullable, non-aliased, non-string, non-enum,
+                // 5. Recurse into complex reference types (non-nullable, non-aliased, non-string, non-enum,
                 // non-value-type) that have a non-null value and editable sub-properties. Cap recursion at depth 5.
                 if (!isNullable && aliasing == null && editorAttr == null && depth < 5 && _IsComplexObjectType(prop.PropertyType))
                 {
@@ -397,6 +419,32 @@ namespace AJut.UX.PropertyInteraction
                 && !type.IsEnum
                 && !type.IsArray
                 && !typeof(System.Collections.IEnumerable).IsAssignableFrom(type);
+        }
+
+        private static object _BuildEditContext (PGEditContextBuilderAttribute attr)
+        {
+            if (!TypeIdRegistrar.TryGetType(attr.TypeId, out Type contextType))
+            {
+                Logger.LogError($"PGEditContextBuilder: TypeId '{attr.TypeId}' not found in TypeIdRegistrar. Ensure the assembly containing this type has been registered.");
+                return null;
+            }
+
+            try
+            {
+                Json parsed = JsonHelper.ParseText(attr.Json);
+                if (parsed.HasErrors)
+                {
+                    Logger.LogError($"PGEditContextBuilder: Failed to parse JSON for TypeId '{attr.TypeId}': {parsed.GetErrorReport()}");
+                    return null;
+                }
+
+                return JsonHelper.BuildObjectForJson(contextType, parsed);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"PGEditContextBuilder: Failed to deserialize JSON for TypeId '{attr.TypeId}'", ex);
+                return null;
+            }
         }
 
         public void TakeOn (PropertyEditTarget target)

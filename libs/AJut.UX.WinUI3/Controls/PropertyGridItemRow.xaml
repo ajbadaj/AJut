@@ -66,15 +66,20 @@
                                     BorderBrush="Transparent"
                                     BorderThickness="4,1,1,1"
                                     Background="Transparent">
-                                <!-- PART_LabelContent: ContentTemplate switches between
-                                     DefaultValueLabelDataTemplate and ModifiedValueLabelDataTemplate
-                                     based on PropertyEditTarget.IsAtDefaultValue (set in code).
-                                     Content = PropertyEditTarget (FlatTreeItem.Source). -->
-                                <ContentControl x:Name="PART_LabelContent"
-                                                HorizontalAlignment="Stretch"
-                                                HorizontalContentAlignment="Stretch"
-                                                VerticalAlignment="Center"
-                                                Content="{Binding Source}"/>
+                                <StackPanel VerticalAlignment="Center">
+                                    <!-- PART_LabelContent: ContentTemplate switches between
+                                         DefaultValueLabelDataTemplate and ModifiedValueLabelDataTemplate
+                                         based on PropertyEditTarget.IsAtDefaultValue (set in code).
+                                         Content = PropertyEditTarget (FlatTreeItem.Source). -->
+                                    <ContentControl x:Name="PART_LabelContent"
+                                                    HorizontalAlignment="Stretch"
+                                                    HorizontalContentAlignment="Stretch"
+                                                    Content="{Binding Source}"/>
+                                    <!-- PART_SubtitleText: shown below the label when PropertyEditTarget.Subtitle
+                                         is set. Text, Visibility, and Style are applied in code. -->
+                                    <TextBlock x:Name="PART_SubtitleText"
+                                               Visibility="Collapsed"/>
+                                </StackPanel>
                             </Border>
 
                             <!-- Editor: Content is set from code (PropertyGridItemRow.ApplyEditorContent)
