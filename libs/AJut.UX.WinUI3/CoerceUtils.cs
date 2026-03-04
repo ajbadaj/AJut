@@ -129,7 +129,7 @@
                 return newUri;
             }
 
-            if (Uri.TryCreate($"ms-appx:///{strValue.TrimStart('/')}", UriKind.Relative, out newUri))
+            if (Uri.TryCreate($"ms-appx:///{strValue.TrimStart('/')}", UriKind.Absolute, out newUri))
             {
                 return newUri;
             }
