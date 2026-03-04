@@ -94,6 +94,22 @@ namespace AJut.UX.PropertyInteraction
             set => this.SetAndRaiseIfChanged(ref m_subtitle, value);
         }
 
+        private string m_iconSource;
+        public string IconSource
+        {
+            get => m_iconSource;
+            set => this.SetAndRaiseIfChanged(ref m_iconSource, value);
+        }
+
+        private float m_iconMargin;
+        public float IconMargin
+        {
+            get => m_iconMargin;
+            set => this.SetAndRaiseIfChanged(ref m_iconMargin, value);
+        }
+
+        public string GroupId { get; set; }
+
         /// <summary>
         /// Raised (as a PropertyChanged notification) after m_setValue commits the new value to the
         /// backing source object. Distinct from "EditValue" which fires inside SetAndRaiseIfChanged
@@ -257,10 +273,15 @@ namespace AJut.UX.PropertyInteraction
                     }
                 }
 
+                var groupAttr = TypeMetadataExtensionRegistrar.GetAttribute<PGGroupAttribute>(prop);
+
                 var target = new PropertyEditTarget(prop.Name, getter, setter)
                 {
                     DisplayName = displayName ?? prop.Name.ConvertToFriendlyEn(),
                     Subtitle = subtitle,
+                    IconSource = labelAttr?.IconSource,
+                    IconMargin = labelAttr?.IconMargin ?? 0f,
+                    GroupId = groupAttr?.GroupId,
                     Editor = editorKey,
                     EditContext = editContext,
                     AdditionalEvalTargets = aliases,

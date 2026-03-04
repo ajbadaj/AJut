@@ -22,5 +22,7 @@ namespace AJut.UX.PropertyInteraction
 
         public string Label { get; set; }
         public string Subtitle { get; set; }
+        public string IconSource { get; set; }
+        public float IconMargin { get; set; }
     }
 }

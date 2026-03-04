@@ -48,6 +48,7 @@
     {
         private string m_dogsName = string.Empty;
         [PGEditor("Text")]
+        [PGLabel("Name", IconSource = "Images/PenguinExample.png", IconMargin = 4)]
         public string DogsName
         {
             get => m_dogsName;
@@ -56,6 +57,7 @@
 
         private int m_dogsAge;
         [PGEditor("Number")]
+        [PGGroup("Stats")]
         public int DogsAge
         {
             get => m_dogsAge;
@@ -63,6 +65,7 @@
         }
 
         /// <summary>Non-null sub-object - should appear as expandable in the PropertyGrid tree.</summary>
+        [PGGroup("Stats")]
         public DogOwner Owner { get; set; } = new DogOwner();
 
         private string m_dogSaveFileLocation = string.Empty;

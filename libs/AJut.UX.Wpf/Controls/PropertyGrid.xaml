@@ -38,12 +38,26 @@
                                                   WhenHasText="Collapsed"
                                                   WhenNullOrEmpty="Visible"/>
 
+    <!-- Label icon converters -->
+    <conv:StringToImageSourceConverter x:Key="PG_StringToImageSource"/>
+    <conv:IsTextNullOrEmptyToVisibilityConverter x:Key="PG_IconVisConverter"
+                                                  WhenHasText="Collapsed"
+                                                  WhenNullOrEmpty="Visible"/>
+    <conv:ThicknessFromNumberConverter x:Key="PG_IconMarginConverter" MultiplyMask="1,1,1,1"/>
+
     <!-- ===[ Default label templates ]=== -->
     <!-- DefaultValueLabelDataTemplate: normal label (value equals default). DataContext = PropertyEditTarget. -->
     <DataTemplate x:Key="PropertyGrid_DefaultLabelTemplate" DataType="{x:Type prop:PropertyEditTarget}">
         <StackPanel VerticalAlignment="Center">
-            <TextBlock Text="{Binding DisplayName}"
-                       Margin="5,3,7,0"/>
+            <StackPanel Orientation="Horizontal">
+                <Image Source="{Binding IconSource, Converter={StaticResource PG_StringToImageSource}}"
+                       Visibility="{Binding IconSource, Converter={StaticResource PG_IconVisConverter}}"
+                       Margin="{Binding IconMargin, Converter={StaticResource PG_IconMarginConverter}}"
+                       MaxHeight="20"
+                       VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding DisplayName}"
+                           Margin="5,3,7,0"/>
+            </StackPanel>
             <TextBlock Text="{Binding Subtitle}"
                        Visibility="{Binding Subtitle, Converter={StaticResource PG_SubtitleVisConverter}}"
                        Style="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PropertyGrid}}, Path=LabelSubtitleStyle}"/>
@@ -53,9 +67,16 @@
     <!-- ModifiedValueLabelDataTemplate: bold label (value differs from default). DataContext = PropertyEditTarget. -->
     <DataTemplate x:Key="PropertyGrid_ModifiedLabelTemplate" DataType="{x:Type prop:PropertyEditTarget}">
         <StackPanel VerticalAlignment="Center">
-            <TextBlock Text="{Binding DisplayName}"
-                       FontWeight="Bold"
-                       Margin="5,3,7,0"/>
+            <StackPanel Orientation="Horizontal">
+                <Image Source="{Binding IconSource, Converter={StaticResource PG_StringToImageSource}}"
+                       Visibility="{Binding IconSource, Converter={StaticResource PG_IconVisConverter}}"
+                       Margin="{Binding IconMargin, Converter={StaticResource PG_IconMarginConverter}}"
+                       MaxHeight="20"
+                       VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding DisplayName}"
+                           FontWeight="Bold"
+                           Margin="5,3,7,0"/>
+            </StackPanel>
             <TextBlock Text="{Binding Subtitle}"
                        Visibility="{Binding Subtitle, Converter={StaticResource PG_SubtitleVisConverter}}"
                        Style="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PropertyGrid}}, Path=LabelSubtitleStyle}"/>

@@ -101,8 +101,52 @@ namespace AJut.UX.PropertyInteraction
                 }
             }
 
-            foreach (PropertyEditTarget target in editTargets.Values)
+            // ------ Group post-processing: collect targets with matching GroupId
+            var orderedTargets = new List<PropertyEditTarget>(editTargets.Values);
+            var groupHeaders = new Dictionary<string, PropertyEditTarget>();
+            var groupedIndices = new HashSet<int>();
+
+            for (int i = 0; i < orderedTargets.Count; ++i)
             {
+                string groupId = orderedTargets[i].GroupId;
+                if (string.IsNullOrEmpty(groupId))
+                {
+                    continue;
+                }
+
+                if (!groupHeaders.TryGetValue(groupId, out PropertyEditTarget groupHeader))
+                {
+                    // Create synthetic group header at the position of the first member
+                    groupHeader = new PropertyEditTarget($"$group_{groupId}", () => null, null)
+                    {
+                        DisplayName = groupId,
+                        IsExpandable = true,
+                    };
+                    groupHeaders[groupId] = groupHeader;
+
+                    // Replace the first member's slot with the group header
+                    orderedTargets[i].Setup();
+                    groupHeader.InsertChild(groupHeader.Children.Count, orderedTargets[i]);
+                    orderedTargets[i] = groupHeader;
+                }
+                else
+                {
+                    // Subsequent members: attach as children and mark index for removal
+                    orderedTargets[i].Setup();
+                    groupHeader.InsertChild(groupHeader.Children.Count, orderedTargets[i]);
+                    groupedIndices.Add(i);
+                }
+            }
+
+            // Add all non-removed targets to root
+            for (int i = 0; i < orderedTargets.Count; ++i)
+            {
+                if (groupedIndices.Contains(i))
+                {
+                    continue;
+                }
+
+                PropertyEditTarget target = orderedTargets[i];
                 target.Setup();
                 root.InsertChild(root.Children.Count, target);
             }

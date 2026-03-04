@@ -1,6 +1,7 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="using:AJut.UX.Controls"
+                    xmlns:conv="using:AJut.UX.Converters"
                     xmlns:prop="using:AJut.UX.PropertyInteraction">
 
     <!-- ===[ PropertyGrid: no-chrome ListViewItem style ]=== -->
@@ -23,30 +24,51 @@
         </Setter>
     </Style>
 
+    <!-- ===[ Label icon converters ]=== -->
+    <conv:StringToImageSourceConverter x:Key="PG_StringToImageSource"/>
+    <conv:IsTextNullOrEmptyToVisibilityConverter x:Key="PG_IconVisConverter"
+                                                  WhenHasText="Collapsed"
+                                                  WhenNullOrEmpty="Visible"/>
+    <conv:ThicknessFromNumberConverter x:Key="PG_IconMarginConverter" MultiplyMask="1,1,1,1"/>
+
     <!-- ===[ Default label DataTemplates ]=== -->
     <!-- DataContext for both is PropertyEditTarget (passed via PropertyGridItemRow.PART_LabelContent.Content). -->
 
     <!-- DefaultValueLabelDataTemplate: plain label - value is at its default. -->
     <DataTemplate x:Key="PropertyGrid_DefaultLabelTemplate">
-        <TextBlock Text="{Binding DisplayName}"
-                   VerticalAlignment="Center"
-                   Margin="6,3,8,3"
-                   Opacity="0.8"
-                   TextTrimming="CharacterEllipsis"
-                   ToolTipService.ToolTip="{Binding DisplayName}"
-                   Foreground="{ThemeResource AJut_PropertyGridItemRow_LabelForeground}"/>
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <Image Source="{Binding IconSource, Converter={StaticResource PG_StringToImageSource}}"
+                   Visibility="{Binding IconSource, Converter={StaticResource PG_IconVisConverter}}"
+                   Margin="{Binding IconMargin, Converter={StaticResource PG_IconMarginConverter}}"
+                   MaxHeight="20"
+                   VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding DisplayName}"
+                       VerticalAlignment="Center"
+                       Margin="6,3,8,3"
+                       Opacity="0.8"
+                       TextTrimming="CharacterEllipsis"
+                       ToolTipService.ToolTip="{Binding DisplayName}"
+                       Foreground="{ThemeResource AJut_PropertyGridItemRow_LabelForeground}"/>
+        </StackPanel>
     </DataTemplate>
 
     <!-- ModifiedValueLabelDataTemplate: bold label - value has been changed from its default. -->
     <DataTemplate x:Key="PropertyGrid_ModifiedLabelTemplate">
-        <TextBlock Text="{Binding DisplayName}"
-                   FontWeight="Bold"
-                   VerticalAlignment="Center"
-                   Margin="6,3,8,3"
-                   Opacity="0.8"
-                   TextTrimming="CharacterEllipsis"
-                   ToolTipService.ToolTip="{Binding DisplayName}"
-                   Foreground="{ThemeResource AJut_PropertyGridItemRow_LabelForeground}"/>
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <Image Source="{Binding IconSource, Converter={StaticResource PG_StringToImageSource}}"
+                   Visibility="{Binding IconSource, Converter={StaticResource PG_IconVisConverter}}"
+                   Margin="{Binding IconMargin, Converter={StaticResource PG_IconMarginConverter}}"
+                   MaxHeight="20"
+                   VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding DisplayName}"
+                       FontWeight="Bold"
+                       VerticalAlignment="Center"
+                       Margin="6,3,8,3"
+                       Opacity="0.8"
+                       TextTrimming="CharacterEllipsis"
+                       ToolTipService.ToolTip="{Binding DisplayName}"
+                       Foreground="{ThemeResource AJut_PropertyGridItemRow_LabelForeground}"/>
+        </StackPanel>
     </DataTemplate>
 
     <!-- ===[ Default subtitle style ]=== -->

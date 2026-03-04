@@ -315,18 +315,23 @@ namespace AJutShowRoomWinUI
     {
         [PGEditor("Single")]
         [PGOverrideDefault(9001.0)]
+        [PGGroup("Transform")]
         public double Value { get; set; } = 3.14;
         [PGEditor("ColorPick")]
+        [PGGroup("Appearance")]
         public Color ColorValue { get; set; } = new Color { A = 255, B = 255 };
         [PGTypeAlias(typeof(ColorToStringConverter))]
+        [PGGroup("Appearance")]
         public Color ColorAsString { get; set; } = new Color { A = 255, R = 255 };
 
         [MemberOrder(-1)] // force it to be first
+        [PGLabel("Name", IconSource = "Assets/PenguinExample.png", IconMargin = 4)]
         public string Name { get; set; } = "AJut Is Cool";
         public float? OptionalValue { get; set; }
         public ShowRoomSubObject SubObj { get; set; } = new ShowRoomSubObject();
 
         [PGElevateChildProperty(nameof(ShowRoomSubObject.SubObjValue))]
+        [PGGroup("Transform")]
         public ShowRoomSubObject SubObjWithElevation { get; set; } = new ShowRoomSubObject();
 
         private class ColorToStringConverter : PropertyGridTypeAliasing<Color, string>
