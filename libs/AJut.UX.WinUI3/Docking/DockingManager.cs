@@ -523,10 +523,10 @@ namespace AJut.UX.Docking
             return new HiddenPanelPlatformState
             {
                 WasInTearoff = true,
-                TearoffX = appWindow.Position.X,
-                TearoffY = appWindow.Position.Y,
-                TearoffWidth = appWindow.Size.Width,
-                TearoffHeight = appWindow.Size.Height,
+                NextDisplayLocationX = appWindow.Position.X,
+                NextDisplayLocationY = appWindow.Position.Y,
+                NextDisplayWidth = appWindow.Size.Width,
+                NextDisplayHeight = appWindow.Size.Height,
                 TearoffWindowRef = hostWindow,
             };
         }

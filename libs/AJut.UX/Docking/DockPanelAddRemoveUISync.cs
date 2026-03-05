@@ -243,10 +243,10 @@ namespace AJut.UX.Docking
             // Look for last remembered location/size
             if (hidden?.PlatformHideState is HiddenPanelPlatformState platformState && platformState.WasInTearoff)
             {
-                x = platformState.TearoffX;
-                y = platformState.TearoffY;
-                widgth = platformState.TearoffWidth;
-                height = platformState.TearoffHeight;
+                x = platformState.NextDisplayLocationX;
+                y = platformState.NextDisplayLocationY;
+                widgth = platformState.NextDisplayWidth;
+                height = platformState.NextDisplayHeight;
             }
             // No last remembered, consult the rules
             else if (m_manager.GetPanelRules(panelType) is DockPanelRegistrationRules maybeRules)
@@ -268,8 +268,8 @@ namespace AJut.UX.Docking
         /// The final toggle state
         /// </returns>
         public bool RequestSetToggleState (Type panelType)
-        {
-            if (m_manager.EnumerateAdapters().FirstOrDefault(adapter => adapter.Display.GetType() == panelType) is DockingContentAdapterModel adapterToClose)
+        { 
+            if (m_manager.EnumerateAdapters().FirstOrDefault(adapter => adapter.Display?.GetType() == panelType) is DockingContentAdapterModel adapterToClose)
             {
                 this.CloseOrHidePanel(adapterToClose);
                 return false;
@@ -466,10 +466,10 @@ namespace AJut.UX.Docking
     public class HiddenPanelPlatformState
     {
         public bool WasInTearoff { get; init; }
-        public double TearoffX { get; init; }
-        public double TearoffY { get; init; }
-        public double TearoffWidth { get; init; }
-        public double TearoffHeight { get; init; }
+        public double NextDisplayLocationX { get; init; }
+        public double NextDisplayLocationY { get; init; }
+        public double NextDisplayWidth { get; init; }
+        public double NextDisplayHeight { get; init; }
 
         /// <summary>Platform-specific tearoff window reference.</summary>
         public object TearoffWindowRef { get; init; }

@@ -349,6 +349,14 @@ namespace AJut.UX.Docking
 
         public bool RequestCloseAndRemoveDockedContent (DockingContentAdapterModel panelAdapter)
         {
+            // HideDontClose panels must go through the manager's CloseOrHidePanel so they
+            // get properly hidden (not destroyed) and the UISyncVM toggle state stays correct.
+            if (panelAdapter.HideDontClose && m_manager != null)
+            {
+                m_manager.RemoveOrHidePanel(panelAdapter);
+                return true;
+            }
+
             if (m_dockedContent.Contains(panelAdapter) && panelAdapter.Close())
             {
                 return this.DoRemoveContent(panelAdapter);
@@ -442,6 +450,9 @@ namespace AJut.UX.Docking
                         addedAnything = true;
                         this.AddDockedContent(content);
                     }
+
+                    // Clear the source so adapters don't linger in both zones
+                    newSibling.InternalClearAllSilently();
 
                     if (addedAnything)
                     {

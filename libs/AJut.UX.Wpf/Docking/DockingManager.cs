@@ -477,6 +477,11 @@
                                 m_windowsToCloseSilently.Add(dragSourceWindow);
                                 try
                                 {
+                                    // Deregister tearoff root zones so GetAllRoots/EnumerateAdapters
+                                    // won't traverse the stale tearoff root after content was moved
+                                    var tearoffRoots = dragSourceWindow.GetVisualChildren().OfType<DockZone>().ToArray();
+                                    this.DeRegisterRootDockZones(tearoffRoots);
+
                                     dragSourceWindow.Close();
                                     m_dockZoneMapping.RemoveAllFor(dragSourceWindow);
                                 }
@@ -761,16 +766,23 @@
 
             if (!wasInTearoff)
             {
-                return null;
+                return new HiddenPanelPlatformState
+                {
+                    WasInTearoff = true,
+                    NextDisplayLocationX = -1,
+                    NextDisplayLocationY = -1,
+                    NextDisplayWidth = dockZoneUI.ActualWidth,
+                    NextDisplayHeight = dockZoneUI.ActualHeight,
+                };
             }
 
             return new HiddenPanelPlatformState
             {
                 WasInTearoff = true,
-                TearoffX = hostWindow.Left,
-                TearoffY = hostWindow.Top,
-                TearoffWidth = hostWindow.Width,
-                TearoffHeight = hostWindow.Height,
+                NextDisplayLocationX = hostWindow.Left,
+                NextDisplayLocationY = hostWindow.Top,
+                NextDisplayWidth = hostWindow.Width,
+                NextDisplayHeight = hostWindow.Height,
                 TearoffWindowRef = hostWindow,
             };
         }
