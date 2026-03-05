@@ -261,6 +261,11 @@
             return this.SetupAndReturnNew(displayElement);
         }
 
+        public IEnumerable<DockZoneViewModel> GetAllRoots()
+        {
+            return m_rootDockZones.Select(z => z.ViewModel);
+        }
+
         /// <summary>
         /// Close all zones out, going through the effort first of asking them if that's ok prior to closing them
         /// </summary>

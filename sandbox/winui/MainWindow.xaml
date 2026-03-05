@@ -627,6 +627,7 @@
                                     <Button Content="Add Panel"   Click="DockZone_OnAddPanelClicked"/>
                                     <Button Content="Save Layout" Click="DockZone_OnSaveLayoutClicked"/>
                                     <Button Content="Load Layout" Click="DockZone_OnLoadLayoutClicked"/>
+                                    <Button Content="Set All Values (test)" Click="DockZone_OnSetAllValuesTestClicked"/>
                                 </StackPanel>
                                 <ajut:DockZone x:Name="TestDockZone" Grid.Row="1"/>
                             </Grid>

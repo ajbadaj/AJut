@@ -272,6 +272,19 @@ namespace AJutShowRoomWinUI
         {
             m_dockingManager?.ReloadDockLayoutFromPersistentStorage();
         }
+
+        private void DockZone_OnSetAllValuesTestClicked(object sender, RoutedEventArgs e)
+        {
+            Random rng = new Random(DateTime.Now.Second);
+            double newValue = rng.NextDouble();
+            foreach (var display in m_dockingManager.EnumerateDisplays())
+            {
+                if (display is ShowRoomPanel panel)
+                {
+                    panel.Value = newValue;
+                }
+            }
+        }
     }
 
     // ===========[ ShowRoomTreeNode - FlatTreeListControl smoke-test source ]=========

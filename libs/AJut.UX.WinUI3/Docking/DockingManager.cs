@@ -147,10 +147,16 @@ namespace AJut.UX.Docking
         /// </summary>
         public string FixedTearoffWindowTitle { get; set; } = string.Empty;
 
+
         // ===========[ IDockingManager ]======================================
 
         IDockableDisplayElement IDockingManager.BuildNewDisplayElement(Type elementType)
             => this.BuildNewDisplayElement(elementType);
+
+        public IEnumerable<DockZoneViewModel> GetAllRoots()
+        {
+            return m_rootDockZones.Select(z => z.ViewModel);
+        }
 
         // ===========[ Factory Registration ]=================================
 
