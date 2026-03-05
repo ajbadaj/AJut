@@ -10,6 +10,9 @@
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/DockingElements/DockZone.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/DockingElements/DockZoneTabHeadersControl.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/DockingElements/DockZoneSelectedHeaderControl.xaml"/>
+        <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/DockingElements/DockPanelAddRemoveToolbar.xaml"/>
+        <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/DockingElements/DockPanelShowHideToggleButton.xaml"/>
+        <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/DockingElements/DockPanelAddButton.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/EditableTextBlock.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/EnumComboBox.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/FlatTreeListControl.xaml"/>

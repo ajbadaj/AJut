@@ -132,6 +132,37 @@
     <!-- "Not set" foreground: readable over the darkened overlay. -->
     <SolidColorBrush x:Key="AJut_NullableEditor_NotSetForeground"    Color="#DDDDDD"/>
 
+    <!-- ===========[ DockPanelShowHideToggleButton ]========================= -->
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_NormalBackground"               Color="#FF2A2A2A"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_NormalBorderBrush"              Color="#FF4A4A4A"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_NormalForeground"               Color="#FFCCCCCC"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_PointerOverBackground"          Color="#FF3A3A3A"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_PressedBackground"              Color="#FF505050"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_CheckedBackground"              Color="#FF0078D4"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_CheckedBorderBrush"             Color="#FF0078D4"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_CheckedPointerOverBackground"   Color="#FF1A8FE0"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_CheckedPointerOverBorderBrush"  Color="#FF1A8FE0"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_CheckedPressedBackground"       Color="#FF006BBD"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_CheckedPressedBorderBrush"      Color="#FF006BBD"/>
+
+    <!-- ===========[ DockPanelAddButton ]================================== -->
+    <SolidColorBrush x:Key="AJut_DockPanelAddButton_NormalBackground"       Color="#FF2A2A2A"/>
+    <SolidColorBrush x:Key="AJut_DockPanelAddButton_NormalBorderBrush"      Color="#FF4A4A4A"/>
+    <SolidColorBrush x:Key="AJut_DockPanelAddButton_NormalForeground"       Color="#FFCCCCCC"/>
+    <SolidColorBrush x:Key="AJut_DockPanelAddButton_PointerOverBackground"  Color="#FF3A3A3A"/>
+    <SolidColorBrush x:Key="AJut_DockPanelAddButton_PressedBackground"      Color="#FF505050"/>
+    <SolidColorBrush x:Key="AJut_DockPanelAddButton_PlusOverlayForeground"  Color="#FF80C0FF"/>
+
+    <!-- ===========[ DockPanelAddRemoveToolbar ]============================ -->
+    <SolidColorBrush x:Key="AJut_DockPanelToolbar_NormalBackground"         Color="#FF1E1E1E"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToolbar_NormalBorderBrush"        Color="#FF3A3A3A"/>
+
+    <!-- ===========[ DockZone ]============================================ -->
+    <SolidColorBrush x:Key="AJut_DockZone_EmptyBackground"      Color="#FF2B2B2B"/>
+    <SolidColorBrush x:Key="AJut_DockZone_EmptyBorderBrush"     Color="#FF4A4A4A"/>
+    <SolidColorBrush x:Key="AJut_DockZone_EmptyForeground"      Color="#FFCCCCCC"/>
+    <SolidColorBrush x:Key="AJut_DockZone_DragInsertLineBrush"  Color="#FF0078D4"/>
+
     <!-- ===========[ NumericEditor ]======================================== -->
     <!-- Increase button hover/pressed (blue-tinted gradient, top-to-bottom) -->
     <LinearGradientBrush x:Key="AJut_NumericEditor_IncreasePointerOverBackground"

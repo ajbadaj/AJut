@@ -1,6 +1,7 @@
 namespace AJut.UX.Docking
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.Specialized;
 
     public class DockingContentAdapterModel : NotifyPropertyChanged, IDisposable
@@ -12,6 +13,9 @@ namespace AJut.UX.Docking
         private object m_titleTemplate;
         private object m_tooltipContent;
         private object m_tooltipTemplate;
+        private bool m_isClosable = true;
+        private bool m_hideDontClose;
+        private bool m_canTearoff = true;
 
         // ===========[ Construction ]===================================
         public DockingContentAdapterModel (IDockingManager dockingOwner)
@@ -92,9 +96,51 @@ namespace AJut.UX.Docking
 
         public IDockableDisplayElement Display { get; set; }
 
+        /// <summary>
+        /// When false, the close button is hidden and <see cref="Close"/> is blocked.
+        /// Set by the panel in its <see cref="IDockableDisplayElement.Setup"/> method. Default: true.
+        /// </summary>
+        public bool IsClosable
+        {
+            get => m_isClosable;
+            set => this.SetAndRaiseIfChanged(ref m_isClosable, value);
+        }
+
+        /// <summary>
+        /// When true, closing the panel hides it instead of disposing it. The manager stores
+        /// the display and adapter for later re-show. Default: false.
+        /// </summary>
+        public bool HideDontClose
+        {
+            get => m_hideDontClose;
+            set => this.SetAndRaiseIfChanged(ref m_hideDontClose, value);
+        }
+
+        /// <summary>
+        /// When false, prevents this panel from being torn off into a separate window.
+        /// Default: true.
+        /// </summary>
+        public bool CanTearoff
+        {
+            get => m_canTearoff;
+            set => this.SetAndRaiseIfChanged(ref m_canTearoff, value);
+        }
+
+        /// <summary>
+        /// Custom context menu entries shown on the panel's header right-click menu,
+        /// in addition to the standard "Tear Off" and "Close" items.
+        /// Set by the panel in its <see cref="IDockableDisplayElement.Setup"/> method.
+        /// </summary>
+        public List<DockPanelMenuOption> AdditionalContextMenuItems { get; set; }
+
         // ===========[ Public Interface ]===================================
         public bool CheckCanClose ()
         {
+            if (!this.IsClosable)
+            {
+                return false;
+            }
+
             var readyToClose = new IsReadyToCloseEventArgs();
             this.CanClose?.Invoke(this, readyToClose);
             return readyToClose.IsReadyToClose;

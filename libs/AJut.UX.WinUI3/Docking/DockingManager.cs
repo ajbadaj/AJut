@@ -13,6 +13,7 @@ namespace AJut.UX.Docking
     using AJut.TypeManagement;
     using AJut.UX;
     using AJut.UX.Controls;
+    using Microsoft.UI.Windowing;
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
     using Microsoft.UI.Xaml.Media;
@@ -62,6 +63,8 @@ namespace AJut.UX.Docking
                 ?? DockingSerialization.CreateApplicationPath(uniqueId);
             this.AutoSaveMethod = autoSaveMethod;
 
+            this.UISyncVM = new DockPanelAddRemoveUISync();
+            this.UISyncVM.SetManager(this);
             this.CreateNewTearoffWindowHandler = () => new Window();
             this.ShowTearoffWindowHandler = w => w.Activate();
 
@@ -125,6 +128,9 @@ namespace AJut.UX.Docking
             private set => this.SetAndRaiseIfChanged(ref m_isZoneDragDropUnderway, value);
         }
 
+        /// <summary>Minimum pixel dimension for dock zone panels during size recalculation. Default: 50.</summary>
+        public double MinPanelDimension { get; set; } = 50.0;
+
         /// <summary>When true, each panel header shows an X close button. Default: true.</summary>
         public bool ShowPanelClose { get; set; } = true;
 
@@ -147,6 +153,7 @@ namespace AJut.UX.Docking
         /// </summary>
         public string FixedTearoffWindowTitle { get; set; } = string.Empty;
 
+        public DockPanelAddRemoveUISync UISyncVM { get; }
 
         // ===========[ IDockingManager ]======================================
 
@@ -163,13 +170,101 @@ namespace AJut.UX.Docking
         public void RegisterDisplayFactory<T>(Func<T> customFactory = null, bool singleInstanceOnly = false)
             where T : IDockableDisplayElement
         {
+            this.RegisterDisplayFactory<T>(
+                new DockPanelRegistrationRules { SingleInstanceOnly = singleInstanceOnly },
+                customFactory
+            );
+        }
+
+        public void RegisterDisplayFactory<T>(DockPanelRegistrationRules rules, Func<T> customFactory = null)
+            where T : IDockableDisplayElement
+        {
             m_factory[typeof(T)] = new DisplayBuilder
             {
-                IsSingleInstanceOnly = singleInstanceOnly,
+                Rules = rules,
                 Builder = customFactory != null
                     ? () => customFactory() as IDockableDisplayElement
                     : () => BuildDefaultDisplayFor(typeof(T))
             };
+
+            this.UISyncVM.AddEntry(typeof(T), rules);
+        }
+
+        // ===========[ Menu Management ]======================================
+
+        /// <summary>
+        /// Populate a <see cref="MenuBarItem"/> with toggle/add entries for each registered
+        /// panel type. The menu stays synchronized with panel state - checked items indicate
+        /// visible panels; clicking a toggle item shows/hides the panel.
+        /// </summary>
+        public void ManageMenu (MenuBarItem menuBarItem)
+        {
+            this.RebuildMenuItems(menuBarItem);
+            this.UISyncVM.PanelStateChanged += (s, e) => this.UpdateMenuCheckedStates(menuBarItem);
+            ((System.Collections.Specialized.INotifyCollectionChanged)this.UISyncVM.PanelTypeEntries)
+                .CollectionChanged += (s, e) => this.RebuildMenuItems(menuBarItem);
+        }
+
+        private void RebuildMenuItems (MenuBarItem menuBarItem)
+        {
+            menuBarItem.Items.Clear();
+            foreach (var desc in this.UISyncVM.GenerateMenuDescriptors())
+            {
+                if (desc.IsToggle)
+                {
+                    var toggle = new ToggleMenuFlyoutItem
+                    {
+                        Text = desc.DisplayName,
+                        Tag = desc.PanelType,
+                        IsChecked = desc.IsChecked,
+                    };
+
+                    toggle.Click += this.OnManagedToggleMenuItemClicked;
+                    menuBarItem.Items.Add(toggle);
+                }
+                else
+                {
+                    var item = new MenuFlyoutItem
+                    {
+                        Text = $"Add {desc.DisplayName}",
+                        Tag = desc.PanelType,
+                    };
+
+                    item.Click += this.OnManagedAddMenuItemClicked;
+                    menuBarItem.Items.Add(item);
+                }
+            }
+        }
+
+        private void UpdateMenuCheckedStates (MenuBarItem menuBarItem)
+        {
+            foreach (var item in menuBarItem.Items)
+            {
+                if (item is ToggleMenuFlyoutItem toggle && toggle.Tag is Type panelType)
+                {
+                    DockPanelTypeEntry entry = this.UISyncVM.FindEntry(panelType);
+                    if (entry != null)
+                    {
+                        toggle.IsChecked = entry.HasActiveInstance;
+                    }
+                }
+            }
+        }
+
+        private void OnManagedToggleMenuItemClicked (object sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleMenuFlyoutItem toggle && toggle.Tag is Type panelType)
+            {
+                this.UISyncVM.RequestSetToggleState(panelType);
+            }
+        }
+
+        private void OnManagedAddMenuItemClicked (object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuFlyoutItem item && item.Tag is Type panelType)
+            {
+                this.UISyncVM.RequestAdd(panelType);
+            }
         }
 
         // ===========[ Zone Registration ]====================================
@@ -369,6 +464,168 @@ namespace AJut.UX.Docking
             return null;
         }
 
+        /// <summary>
+        /// Find the first available leaf dock zone matching the given group id.
+        /// Falls back to <see cref="FindFirstAvailableDockZone"/> if no match is found.
+        /// </summary>
+        public DockZoneViewModel FindFirstAvailableDockZoneForGroup(string groupId)
+        {
+            if (groupId.IsNotNullOrEmpty())
+            {
+                foreach (DockZone rootZone in m_rootDockZones)
+                {
+                    if (DockZone.GetGroupId(rootZone) == groupId)
+                    {
+                        foreach (DockZoneViewModel zone in TreeTraversal<DockZoneViewModel>.All(rootZone.ViewModel))
+                        {
+                            if (zone.Orientation.IsFlagInGroup(eDockOrientation.AnyLeafDisplay))
+                            {
+                                return zone;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return this.FindFirstAvailableDockZone();
+        }
+
+        // ===========[ Panel Add/Toggle/Hide — delegates to shared UISync logic ]====
+
+        public void AddPanel(Type panelType) => this.UISyncVM.AddPanel(panelType);
+        public void TogglePanel(Type panelType) => this.UISyncVM.ShowPanel(panelType);
+        public void RemoveOrHidePanel(DockingContentAdapterModel adapter) => this.UISyncVM.CloseOrHidePanel(adapter);
+
+        // ===========[ IDockingManager Platform Hooks ]========================
+
+        public DockPanelRegistrationRules? GetPanelRules(Type panelType)
+        {
+            return m_factory.TryGetValue(panelType, out DisplayBuilder builder) ? builder.Rules : null;
+        }
+
+        public DockZoneViewModel FindTargetZoneForGroup(string groupId)
+        {
+            return this.FindFirstAvailableDockZoneForGroup(groupId);
+        }
+
+        public HiddenPanelPlatformState CaptureHideState(DockingContentAdapterModel adapter)
+        {
+            DockZone dockZoneUI = adapter.Location?.UI as DockZone;
+            Window hostWindow = dockZoneUI != null ? this.GetWindowForZone(dockZoneUI) : null;
+            bool wasInTearoff = hostWindow != null && hostWindow != this.RootWindow;
+
+            if (!wasInTearoff)
+            {
+                return null;
+            }
+
+            var appWindow = hostWindow.AppWindow;
+            return new HiddenPanelPlatformState
+            {
+                WasInTearoff = true,
+                TearoffX = appWindow.Position.X,
+                TearoffY = appWindow.Position.Y,
+                TearoffWidth = appWindow.Size.Width,
+                TearoffHeight = appWindow.Size.Height,
+                TearoffWindowRef = hostWindow,
+            };
+        }
+
+        public bool TryRestoreFromHideState(object hideState, DockingContentAdapterModel adapter)
+        {
+            if (hideState is not HiddenPanelPlatformState state || !state.WasInTearoff)
+            {
+                return false;
+            }
+
+            // Check if the same tearoff window is still alive
+            if (state.TearoffWindowRef is Window window && m_dockZoneMapping.ContainsKey(window))
+            {
+                if (m_tearoffRootZones.TryGetValue(window, out DockZoneViewModel tearoffRoot))
+                {
+                    tearoffRoot.AddDockedContent(adapter);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public void AfterPanelHidden(object hideState)
+        {
+            if (hideState is not HiddenPanelPlatformState state || !state.WasInTearoff)
+            {
+                return;
+            }
+
+            if (state.TearoffWindowRef is Window hostWindow)
+            {
+                DockZone rootZoneUI = this.GetRootDockZoneForWindow(hostWindow);
+                if (rootZoneUI != null)
+                {
+                    this.CloseSourceTearoffIfEmpty(hostWindow, rootZoneUI);
+                }
+            }
+        }
+
+        public bool CreateTearoffForPanel(DockingContentAdapterModel adapter, double x, double y, double width, double height)
+        {
+            if (x < 0)
+            {
+                x = m_windowManager.Root.AppWindow.Position.X;
+            }
+            if (y < 0)
+            {
+                y = m_windowManager.Root.AppWindow.Position.Y;
+            }
+
+            var newZone = new DockZoneViewModel(this);
+            var windowResult = this.CreateAndStockTearoffWindow(
+                newZone, new Point(x, y), new Size(width, height)
+            );
+
+            if (windowResult)
+            {
+                newZone.AddDockedContent(adapter);
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool IsTearoffRootThatWouldOrphan(DockZoneViewModel zone)
+        {
+            if (zone == null)
+            {
+                return false;
+            }
+
+            foreach (var (window, rootZone) in m_tearoffRootZones)
+            {
+                if (rootZone == zone)
+                {
+                    // It's a tearoff root — check if removing the last content would leave it empty
+                    bool hasOnlyOneContent = zone.DockedContent.Count <= 1
+                        && zone.Children.Count == 0;
+                    return hasOnlyOneContent;
+                }
+            }
+
+            return false;
+        }
+
+        public void CloseTearoffForRootZone(DockZoneViewModel rootZone)
+        {
+            foreach (var (window, rz) in m_tearoffRootZones)
+            {
+                if (rz == rootZone)
+                {
+                    this.SilentlyForceCloseTearoffWindow(window);
+                    return;
+                }
+            }
+        }
+
         // ===========[ Tearoff Window Ops ]===================================
 
         public Result<Window> DoTearoff(IDockableDisplayElement element, Point newWindowOrigin)
@@ -381,7 +638,10 @@ namespace AJut.UX.Docking
         {
             try
             {
-                if (!element.DockingAdapter.Location.RemoveDockedContent(element.DockingAdapter))
+                // Check if tearing off will orphan the source tearoff window
+                DockZoneViewModel sourceLocation = element.DockingAdapter.Location;
+
+                if (!sourceLocation.RemoveDockedContent(element.DockingAdapter))
                 {
                     var result = Result<Window>.Error("DockingManager: Tear off failed - could not remove content from zone");
                     Logger.LogError(result.GetErrorReport());
@@ -862,7 +1122,7 @@ namespace AJut.UX.Docking
                     // source zone is emptied; for directional splits the source ViewModel is
                     // transplanted into the root hierarchy so DockedContent stays non-empty -
                     // but the tearoff window is no longer needed in either case.
-                    this.CloseTearoffWindow(dragSourceWindow);
+                    this.SilentlyForceCloseTearoffWindow(dragSourceWindow);
 
                     // When the drag source closes, the OS activates whichever window it
                     // considers "next" - often the root window, not the drop target.
@@ -905,16 +1165,19 @@ namespace AJut.UX.Docking
         {
             if (this.ReloadDockLayoutFromPersistentStorage())
             {
+                this.UISyncVM.EnforceGuaranteedOnStart();
                 m_isReadyToTrackAutoSave = true;
                 return true;
             }
             else if (fallbackLayoutFilePath != null && this.LoadDockLayoutFromFile(fallbackLayoutFilePath))
             {
+                this.UISyncVM.EnforceGuaranteedOnStart();
                 this.SaveDockLayoutToPersistentStorage();
                 m_isReadyToTrackAutoSave = true;
                 return true;
             }
 
+            this.UISyncVM.EnforceGuaranteedOnStart();
             return false;
         }
 
@@ -1074,7 +1337,7 @@ namespace AJut.UX.Docking
                 var appWindow = window.AppWindow;
                 appWindow.Resize(new Windows.Graphics.SizeInt32((int)size.Width, (int)size.Height));
                 appWindow.Move(new Windows.Graphics.PointInt32((int)origin.X, (int)origin.Y));
-                appWindow.Closing += (s, e) => this.OnTearoffWindowClosing(window, e);
+                appWindow.Closing += this.TearoffWindowAppWindow_EXTERNAL_OnClosing;
 
                 m_tearoffRootZones[window] = rootZone;
                 this.ShowTearoffWindowHandler(window);
@@ -1090,6 +1353,19 @@ namespace AJut.UX.Docking
                 window?.Close();
                 Logger.LogError("Window tearoff creation failed!", exc);
                 return Result<Window>.Error("DockingManager: Window tearoff failed");
+            }
+        }
+        
+        /// <summary>
+        /// This WILL NOT WORK for programatically called Close() it will only work if the user creates
+        /// a windows event routed here
+        /// </summary>
+        private void TearoffWindowAppWindow_EXTERNAL_OnClosing(AppWindow sender, AppWindowClosingEventArgs e)
+        {
+            Window window = m_windowManager.FirstOrDefault(w => w.AppWindow == sender);
+            if (!this.DoTearoffWindowClose(window))
+            {
+                e.Cancel = true;
             }
         }
 
@@ -1172,11 +1448,14 @@ namespace AJut.UX.Docking
         private void OnTearoffPanelCloseRequested(object sender, EventArgs e)
         {
             var panel = (DockTearoffContainerPanel)sender;
-            this.GetWindowForZone(panel.DockZoneContent)?.Close();
+            if (this.GetWindowForZone(panel.DockZoneContent) is Window window)
+            {
+                this.DoTearoffWindowClose(window);
+            }
         }
 
         // Unconditionally close and deregister a tearoff window (e.g. after a successful drop).
-        private void CloseTearoffWindow(Window sourceWindow)
+        private void SilentlyForceCloseTearoffWindow(Window sourceWindow)
         {
             if (!m_windowManager.Contains(sourceWindow) || sourceWindow == this.RootWindow)
             {
@@ -1206,15 +1485,15 @@ namespace AJut.UX.Docking
 
             if (!hasContent)
             {
-                this.CloseTearoffWindow(sourceWindow);
+                this.SilentlyForceCloseTearoffWindow(sourceWindow);
             }
         }
 
-        private void OnTearoffWindowClosing(Window window, Microsoft.UI.Windowing.AppWindowClosingEventArgs e)
+        private bool DoTearoffWindowClose(Window window)
         {
             if (m_windowsToCloseSilently.Contains(window) || m_currentlyClosingWindows.Contains(window))
             {
-                return;
+                return false;
             }
 
             m_currentlyClosingWindows.Add(window);
@@ -1222,29 +1501,46 @@ namespace AJut.UX.Docking
             {
                 if (!m_tearoffRootZones.TryGetValue(window, out DockZoneViewModel root))
                 {
-                    return;
+                    return false;
                 }
 
                 if (root.IsActivelyAttemptingClose)
                 {
-                    return;
+                    return false;
                 }
 
+                // Route HideDontClose panels through RemoveOrHidePanel so they become
+                // hidden (not destroyed) and the UISyncVM toggle state stays correct.
+                // Mark this window as closing-silently first so AfterPanelHidden won't
+                // try to re-close it when the last hideable panel is removed.
+                m_windowsToCloseSilently.Add(window);
+
+                var allAdapters = TreeTraversal<DockZoneViewModel>.All(root)
+                    .SelectMany(z => z.DockedContent).ToList();
+                var hideable = allAdapters.Where(a => a.HideDontClose).ToList();
+                foreach (var adapter in hideable)
+                {
+                    this.UISyncVM.CloseOrHidePanel(adapter);
+                }
+
+                // Close remaining (non-hideable) panels normally
                 var closeResult = root.RequestCloseAllAndClear();
                 if (closeResult.HasErrors)
                 {
-                    e.Cancel = true;
-                    return;
+                    return false;
                 }
 
                 m_tearoffRootZones.Remove(window);
                 m_dockZoneMapping.Remove(window);
                 m_windowManager.StopTracking(window);
                 this.RootWindow?.Activate();
+
+                return true;
             }
             finally
             {
                 m_currentlyClosingWindows.Remove(window);
+                m_windowsToCloseSilently.Remove(window);
             }
         }
 
@@ -1346,7 +1642,8 @@ namespace AJut.UX.Docking
 
         private class DisplayBuilder
         {
-            public bool IsSingleInstanceOnly { get; init; }
+            public DockPanelRegistrationRules Rules { get; init; }
+            public bool IsSingleInstanceOnly => this.Rules.SingleInstanceOnly;
             public Func<IDockableDisplayElement> Builder { get; init; }
         }
 

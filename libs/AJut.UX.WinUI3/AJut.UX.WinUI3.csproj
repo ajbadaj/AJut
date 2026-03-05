@@ -106,6 +106,15 @@
     <Compile Update="Controls\DockZone.cs">
       <DependentUpon>DockZone.xaml</DependentUpon>
     </Compile>
+    <Compile Update="Controls\DockPanelAddRemoveToolbar.cs">
+      <DependentUpon>DockPanelAddRemoveToolbar.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\DockPanelShowHideToggleButton.cs">
+      <DependentUpon>DockPanelShowHideToggleButton.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\DockPanelAddButton.cs">
+      <DependentUpon>DockPanelAddButton.xaml</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Update="README.md">

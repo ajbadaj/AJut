@@ -5,6 +5,7 @@ namespace AJut.UX.Controls
     using Microsoft.UI.Xaml.Input;
     using Microsoft.UI.Xaml.Media;
     using System;
+    using Windows.Foundation;
     using DPUtils = AJut.UX.DPUtils<DockLeafLayout>;
 
     // ===========[ DockLeafLayout ]=============================================
@@ -49,6 +50,7 @@ namespace AJut.UX.Controls
         public event PointerEventHandler HeaderPointerMoved;
         public event PointerEventHandler HeaderPointerReleased;
         public event PointerEventHandler HeaderPointerCaptureLost;
+        public event EventHandler<RightTappedRoutedEventArgs> HeaderRightTapped;
 
         // ===========[ Template Properties ]===================================
         public Border PART_HeaderBar { get; private set; }
@@ -164,6 +166,16 @@ namespace AJut.UX.Controls
         // ===========[ Template application ]=================================
         protected override void OnApplyTemplate ()
         {
+            // Unhook old header bar events
+            if (this.PART_HeaderBar != null)
+            {
+                this.PART_HeaderBar.PointerPressed -= this.OnHeaderBarPointerPressed;
+                this.PART_HeaderBar.PointerMoved -= this.OnHeaderBarPointerMoved;
+                this.PART_HeaderBar.PointerReleased -= this.OnHeaderBarPointerReleased;
+                this.PART_HeaderBar.PointerCaptureLost -= this.OnHeaderBarPointerCaptureLost;
+                this.PART_HeaderBar.RightTapped -= this.OnHeaderBarRightTapped;
+            }
+
             base.OnApplyTemplate();
 
             this.PART_HeaderBar = (Border)this.GetTemplateChild(nameof(this.PART_HeaderBar));
@@ -172,14 +184,15 @@ namespace AJut.UX.Controls
             this.PART_TabStripWrapper = (Border)this.GetTemplateChild(nameof(this.PART_TabStripWrapper));
             this.PART_TabNavPresenter = (ContentPresenter)this.GetTemplateChild(nameof(this.PART_TabNavPresenter));
 
+            // Forward pointer events so DockZone can wire header-drag without
+            // depending on the internal template structure.
             if (this.PART_HeaderBar != null)
             {
-                // Forward pointer events so DockZone can wire header-drag without
-                // depending on the internal template structure.
-                this.PART_HeaderBar.PointerPressed += (s, e) => this.HeaderPointerPressed?.Invoke(s, e);
-                this.PART_HeaderBar.PointerMoved += (s, e) => this.HeaderPointerMoved?.Invoke(s, e);
-                this.PART_HeaderBar.PointerReleased += (s, e) => this.HeaderPointerReleased?.Invoke(s, e);
-                this.PART_HeaderBar.PointerCaptureLost += (s, e) => this.HeaderPointerCaptureLost?.Invoke(s, e);
+                this.PART_HeaderBar.PointerPressed += this.OnHeaderBarPointerPressed;
+                this.PART_HeaderBar.PointerMoved += this.OnHeaderBarPointerMoved;
+                this.PART_HeaderBar.PointerReleased += this.OnHeaderBarPointerReleased;
+                this.PART_HeaderBar.PointerCaptureLost += this.OnHeaderBarPointerCaptureLost;
+                this.PART_HeaderBar.RightTapped += this.OnHeaderBarRightTapped;
             }
 
             // Push current DP values that can't be covered by TemplateBinding.
@@ -228,6 +241,35 @@ namespace AJut.UX.Controls
                     ? Visibility.Visible
                     : Visibility.Collapsed;
             }
+        }
+
+        // ===========[ Header Bar Event Forwarding ]============================
+        // Named handlers forwarding pointer events from PART_HeaderBar to the
+        // public events so DockZone can subscribe without coupling to the Border.
+
+        private void OnHeaderBarPointerPressed (object sender, PointerRoutedEventArgs e)
+        {
+            this.HeaderPointerPressed?.Invoke(sender, e);
+        }
+
+        private void OnHeaderBarPointerMoved (object sender, PointerRoutedEventArgs e)
+        {
+            this.HeaderPointerMoved?.Invoke(sender, e);
+        }
+
+        private void OnHeaderBarPointerReleased (object sender, PointerRoutedEventArgs e)
+        {
+            this.HeaderPointerReleased?.Invoke(sender, e);
+        }
+
+        private void OnHeaderBarPointerCaptureLost (object sender, PointerRoutedEventArgs e)
+        {
+            this.HeaderPointerCaptureLost?.Invoke(sender, e);
+        }
+
+        private void OnHeaderBarRightTapped (object sender, RightTappedRoutedEventArgs e)
+        {
+            this.HeaderRightTapped?.Invoke(sender, e);
         }
     }
 }

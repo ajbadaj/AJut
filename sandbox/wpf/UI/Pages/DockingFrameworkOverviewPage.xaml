@@ -10,5 +10,22 @@
     <UserControl.CommandBindings>
         <CommandBinding Command="{x:Static local:DockingFrameworkOverviewPage.ShowPopupCommand}" Executed="ShowPopup_OnExecuted"/>
     </UserControl.CommandBindings>
-    <ajut:DockZone x:Name="RootZone" Margin="20"/>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal">
+            <ajut:DockPanelAddRemoveToolbar x:Name="DockToolbar" Grid.Row="0" Margin="20,20,20,0"
+                                            VerticalAlignment="Bottom"/>
+            <Menu VerticalAlignment="Bottom">
+                <MenuItem Header="File">
+                    <MenuItem Header="Open"/>
+                    <MenuItem Header="Save"/>
+                </MenuItem>
+                <MenuItem x:Name="PanelsMenu" Header="Panels"/>
+            </Menu>
+        </StackPanel>
+        <ajut:DockZone x:Name="RootZone" Grid.Row="1" Margin="20"/>
+    </Grid>
 </UserControl>

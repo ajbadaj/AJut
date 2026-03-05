@@ -41,5 +41,8 @@
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/DockLeafLayout.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/DockTearoffContainerPanel.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/DockZone.xaml"/>
+        <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/DockPanelShowHideToggleButton.xaml"/>
+        <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/DockPanelAddButton.xaml"/>
+        <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/DockPanelAddRemoveToolbar.xaml"/>
     </ResourceDictionary.MergedDictionaries>
 </ResourceDictionary>

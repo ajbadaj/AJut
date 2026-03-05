@@ -1,0 +1,75 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="using:AJut.UX.Controls">
+
+    <Style TargetType="local:DockPanelShowHideToggleButton">
+        <Setter Property="MinWidth" Value="28"/>
+        <Setter Property="MinHeight" Value="28"/>
+        <Setter Property="Padding" Value="4,2,4,2"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="3"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:DockPanelShowHideToggleButton">
+                    <Border x:Name="Root"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter x:Name="ContentArea"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{ThemeResource AJut_DockPanelToggleButton_NormalBackground}"/>
+                                        <Setter Target="Root.BorderBrush" Value="{ThemeResource AJut_DockPanelToggleButton_NormalBorderBrush}"/>
+                                        <Setter Target="ContentArea.Foreground" Value="{ThemeResource AJut_DockPanelToggleButton_NormalForeground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{ThemeResource AJut_DockPanelToggleButton_PointerOverBackground}"/>
+                                        <Setter Target="Root.BorderBrush" Value="{ThemeResource AJut_DockPanelToggleButton_NormalBorderBrush}"/>
+                                        <Setter Target="ContentArea.Foreground" Value="{ThemeResource AJut_DockPanelToggleButton_NormalForeground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{ThemeResource AJut_DockPanelToggleButton_PressedBackground}"/>
+                                        <Setter Target="Root.BorderBrush" Value="{ThemeResource AJut_DockPanelToggleButton_NormalBorderBrush}"/>
+                                        <Setter Target="ContentArea.Foreground" Value="{ThemeResource AJut_DockPanelToggleButton_NormalForeground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Checked">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{ThemeResource AJut_DockPanelToggleButton_CheckedBackground}"/>
+                                        <Setter Target="Root.BorderBrush" Value="{ThemeResource AJut_DockPanelToggleButton_CheckedBorderBrush}"/>
+                                        <Setter Target="ContentArea.Foreground" Value="{ThemeResource AJut_DockPanelToggleButton_NormalForeground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="CheckedPointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{ThemeResource AJut_DockPanelToggleButton_CheckedPointerOverBackground}"/>
+                                        <Setter Target="Root.BorderBrush" Value="{ThemeResource AJut_DockPanelToggleButton_CheckedPointerOverBorderBrush}"/>
+                                        <Setter Target="ContentArea.Foreground" Value="{ThemeResource AJut_DockPanelToggleButton_NormalForeground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="CheckedPressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{ThemeResource AJut_DockPanelToggleButton_CheckedPressedBackground}"/>
+                                        <Setter Target="Root.BorderBrush" Value="{ThemeResource AJut_DockPanelToggleButton_CheckedPressedBorderBrush}"/>
+                                        <Setter Target="ContentArea.Foreground" Value="{ThemeResource AJut_DockPanelToggleButton_NormalForeground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

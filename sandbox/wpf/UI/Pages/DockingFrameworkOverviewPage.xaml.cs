@@ -24,7 +24,9 @@
             this.Docking.RegisterRootDockZones(this.RootZone);
 
             this.Docking.RegisterDisplayFactory(()=>new DockExampleControls.ColorController(this));
-            this.Docking.RegisterDisplayFactory(() => new DockExampleControls.CommandSender());
+            this.Docking.RegisterDisplayFactory(new() { SingleInstanceOnly = true }, () => new DockExampleControls.CommandSender());
+            this.DockToolbar.DockingManager = this.Docking;
+            this.Docking.ManageMenu(this.PanelsMenu);
         }
 
         public void Setup (StackNavAdapter adapter)

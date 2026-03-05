@@ -621,15 +621,19 @@
                             <Grid Loaded="DockZoneTab_OnLoaded">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
                                 <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="4,4,4,4">
-                                    <Button Content="Add Panel"   Click="DockZone_OnAddPanelClicked"/>
                                     <Button Content="Save Layout" Click="DockZone_OnSaveLayoutClicked"/>
                                     <Button Content="Load Layout" Click="DockZone_OnLoadLayoutClicked"/>
                                     <Button Content="Set All Values (test)" Click="DockZone_OnSetAllValuesTestClicked"/>
+                                    <MenuBar>
+                                        <MenuBarItem x:Name="ViewMenu" Title="View" />
+                                    </MenuBar>
                                 </StackPanel>
-                                <ajut:DockZone x:Name="TestDockZone" Grid.Row="1"/>
+                                <ajut:DockPanelAddRemoveToolbar x:Name="DockToolbar" Grid.Row="1"/>
+                                <ajut:DockZone x:Name="TestDockZone" Grid.Row="2" Margin="5"/>
                             </Grid>
                         </TabViewItem.Content>
                     </TabViewItem>

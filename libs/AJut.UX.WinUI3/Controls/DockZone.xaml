@@ -3,11 +3,11 @@
                     xmlns:local="using:AJut.UX.Controls">
 
     <!-- ===========[ DockZone: Default Style ]================================ -->
-    <!-- The template exposes only PART_Root (a Grid). RebuildLayout() in code-behind
-         populates it with one of:
-           • DockLeafLayout  (Single/Tabbed) - a proper Control whose ControlTemplate
-             in DockLeafLayout.xaml owns the header/content/tab-strip visual structure
-           • child DockZones + DockZoneSplitters  (Horizontal/Vertical splits)
+    <!-- The template exposes PART_Root (a Grid) plus overlay elements for empty
+         state, drag ghost, and drag insertion line. RebuildLayout() in code-behind
+         populates PART_Root with one of:
+           * DockLeafLayout  (Single/Tabbed)
+           * child DockZones + DockZoneSplitters  (Horizontal/Vertical splits)
          Visual appearance is entirely owned by DockLeafLayout and DockTabItem styles.
          DockZone itself has no visual DPs - only structural/layout setters here. -->
 
@@ -20,10 +20,72 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:DockZone">
-                    <Grid x:Name="PART_Root"
-                          Background="Transparent"
+                    <Grid Background="Transparent"
                           HorizontalAlignment="Stretch"
-                          VerticalAlignment="Stretch"/>
+                          VerticalAlignment="Stretch">
+
+                        <!-- Main content grid populated by code-behind -->
+                        <Grid x:Name="PART_Root"
+                              HorizontalAlignment="Stretch"
+                              VerticalAlignment="Stretch"/>
+
+                        <!-- Empty zone placeholder: shown when Orientation == Empty -->
+                        <Border x:Name="PART_EmptyPlaceholder"
+                                Background="{ThemeResource AJut_DockZone_EmptyBackground}"
+                                BorderBrush="{ThemeResource AJut_DockZone_EmptyBorderBrush}"
+                                BorderThickness="1"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
+                                Visibility="Collapsed">
+                            <TextBlock x:Name="PART_EmptyLabel"
+                                       Text="Empty"
+                                       Foreground="{ThemeResource AJut_DockZone_EmptyForeground}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Bottom"
+                                       Margin="20"
+                                       FontSize="18"
+                                       FontStyle="Italic"
+                                       Opacity="0.25"
+                                       Visibility="Collapsed"/>
+                        </Border>
+
+                        <!-- Tab reorder drag ghost: floats above content during tab reorder.
+                             Background/BorderBrush match DockTabItem defaults so the ghost
+                             looks like a tab without code setting brush properties. -->
+                        <Border x:Name="PART_DragGhost"
+                                IsHitTestVisible="False"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Top"
+                                Opacity="0.85"
+                                Padding="6,3,6,3"
+                                BorderThickness="1"
+                                Visibility="Collapsed">
+                            <Border.Background>
+                                <SolidColorBrush Color="#FF2B2B2B"/>
+                            </Border.Background>
+                            <Border.BorderBrush>
+                                <SolidColorBrush Color="#FF4A4A4A"/>
+                            </Border.BorderBrush>
+                            <Border.RenderTransform>
+                                <TranslateTransform/>
+                            </Border.RenderTransform>
+                            <TextBlock x:Name="PART_DragGhostLabel"
+                                       VerticalAlignment="Center"/>
+                        </Border>
+
+                        <!-- Tab reorder insertion line: shows drop target position -->
+                        <Border x:Name="PART_DragInsertLine"
+                                Width="2"
+                                IsHitTestVisible="False"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Top"
+                                Background="{ThemeResource AJut_DockZone_DragInsertLineBrush}"
+                                Visibility="Collapsed">
+                            <Border.RenderTransform>
+                                <TranslateTransform/>
+                            </Border.RenderTransform>
+                        </Border>
+                    </Grid>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

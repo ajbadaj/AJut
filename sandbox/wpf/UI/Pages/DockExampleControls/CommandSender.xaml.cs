@@ -19,6 +19,7 @@
         {
             this.DockingAdapter = adapter;
             this.DockingAdapter.TitleContent = "Command Route Example";
+            this.DockingAdapter.HideDontClose = true;
         }
 
         private void SaveLayout_OnClick(object sender, RoutedEventArgs e)

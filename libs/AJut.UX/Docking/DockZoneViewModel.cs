@@ -331,9 +331,17 @@ namespace AJut.UX.Docking
 
         public bool RemoveDockedContent (DockingContentAdapterModel contentAdapter)
         {
+            bool orphanedAfter = m_manager.IsTearoffRootThatWouldOrphan(this);
+
             if (m_dockedContent.Contains(contentAdapter))
             {
-                return this.DoRemoveContent(contentAdapter);
+                bool removeSuccess = this.DoRemoveContent(contentAdapter);
+                if (removeSuccess && orphanedAfter)
+                {
+                    m_manager.CloseTearoffForRootZone(this);
+                }
+
+                return removeSuccess;
             }
 
             return false;
@@ -408,16 +416,19 @@ namespace AJut.UX.Docking
                     if (eDockOrientation.AnySplitOrientation.HasFlag(this.Orientation))
                     {
                         DockZoneSize rootSize = this.UI?.RenderSize ?? DockZoneSize.Empty;
+                        double minDim = this.Manager?.MinPanelDimension ?? 50.0;
                         if (this.Orientation == eDockOrientation.Horizontal)
                         {
                             double fullHorizontal = sizes.Sum(s => s.Width);
                             List<double> horizontalSizes = sizes.Select(s => rootSize.Width * (s.Width / fullHorizontal)).ToList();
+                            EnforceMinPanelDimensions(horizontalSizes, rootSize.Width, minDim);
                             this.UI?.SetTargetSizeAsync(horizontalSizes);
                         }
                         else
                         {
                             double fullVertical = sizes.Sum(s => s.Height);
                             List<double> verticalSizes = sizes.Select(s => rootSize.Height * (s.Height / fullVertical)).ToList();
+                            EnforceMinPanelDimensions(verticalSizes, rootSize.Height, minDim);
                             this.UI?.SetTargetSizeAsync(verticalSizes);
                         }
                     }
@@ -633,6 +644,49 @@ namespace AJut.UX.Docking
             m_dockedContent.Clear();
             m_children.Clear();
             this.Orientation = eDockOrientation.Empty;
+        }
+
+        /// <summary>
+        /// Ensures no entry in <paramref name="pixelSizes"/> is smaller than <paramref name="min"/>.
+        /// Panels below the minimum are raised to it; the excess is taken proportionally from panels above it.
+        /// </summary>
+        public static void EnforceMinPanelDimensions (List<double> pixelSizes, double totalAvailable, double min)
+        {
+            if (pixelSizes.Count <= 1 || min <= 0)
+            {
+                return;
+            }
+
+            double effectiveMin = Math.Min(min, totalAvailable / pixelSizes.Count);
+
+            double deficit = 0;
+            double surplusPool = 0;
+
+            for (int i = 0; i < pixelSizes.Count; i++)
+            {
+                if (pixelSizes[i] < effectiveMin)
+                {
+                    deficit += effectiveMin - pixelSizes[i];
+                    pixelSizes[i] = effectiveMin;
+                }
+                else
+                {
+                    surplusPool += pixelSizes[i] - effectiveMin;
+                }
+            }
+
+            if (deficit > 0 && surplusPool > 0)
+            {
+                double ratio = deficit / surplusPool;
+                for (int i = 0; i < pixelSizes.Count; i++)
+                {
+                    double surplus = pixelSizes[i] - effectiveMin;
+                    if (surplus > 0)
+                    {
+                        pixelSizes[i] -= surplus * ratio;
+                    }
+                }
+            }
         }
 
         private bool DoRemoveContent (DockingContentAdapterModel dockedContent)

@@ -26,6 +26,8 @@ namespace AJut.UX.Controls
     [TemplateVisualState(Name = "PointerOver",         GroupName = "SelectionStates")]
     [TemplateVisualState(Name = "Selected",            GroupName = "SelectionStates")]
     [TemplateVisualState(Name = "SelectedPointerOver", GroupName = "SelectionStates")]
+    [TemplateVisualState(Name = "NotDragging",         GroupName = "DraggingStates")]
+    [TemplateVisualState(Name = "Dragging",            GroupName = "DraggingStates")]
     public sealed class DockTabItem : ContentControl
     {
         // ===========[ Constants ]============================================
@@ -62,6 +64,7 @@ namespace AJut.UX.Controls
             }
 
             this.UpdateVisualState();
+            this.UpdateDraggingState();
         }
 
         // ===========[ Events ]===============================================
@@ -88,6 +91,9 @@ namespace AJut.UX.Controls
         // Raised when pointer capture is lost mid-drag (e.g. window loses focus).
         public event EventHandler TabDragCancelled;
 
+        // Raised on right-tap (context menu). DockZone uses this to show the header context menu.
+        public event EventHandler<RightTappedRoutedEventArgs> TabRightTapped;
+
         // ===========[ Dependency Properties ]=================================
 
         public static readonly DependencyProperty IsSelectedProperty = DPUtils.Register(_ => _.IsSelected, (d, e) => d.UpdateVisualState());
@@ -95,6 +101,13 @@ namespace AJut.UX.Controls
         {
             get => (bool)this.GetValue(IsSelectedProperty);
             set => this.SetValue(IsSelectedProperty, value);
+        }
+
+        public static readonly DependencyProperty IsDraggingProperty = DPUtils.Register(_ => _.IsDragging, (d, e) => d.OnIsDraggingChanged());
+        public bool IsDragging
+        {
+            get => (bool)this.GetValue(IsDraggingProperty);
+            set => this.SetValue(IsDraggingProperty, value);
         }
 
         // ===========[ Properties ]============================================
@@ -214,6 +227,12 @@ namespace AJut.UX.Controls
             this.ResetDragState();
         }
 
+        protected override void OnRightTapped(RightTappedRoutedEventArgs e)
+        {
+            base.OnRightTapped(e);
+            this.TabRightTapped?.Invoke(this, e);
+        }
+
         // ===========[ Visual state management ]===============================
 
         private void UpdateVisualState()
@@ -226,6 +245,16 @@ namespace AJut.UX.Controls
             {
                 VisualStateManager.GoToState(this, m_isPointerOver ? "PointerOver" : "Normal", false);
             }
+        }
+
+        private void UpdateDraggingState()
+        {
+            VisualStateManager.GoToState(this, this.IsDragging ? "Dragging" : "NotDragging", false);
+        }
+
+        private void OnIsDraggingChanged()
+        {
+            this.UpdateDraggingState();
         }
 
         private void ResetDragState()

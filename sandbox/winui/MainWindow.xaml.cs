@@ -30,7 +30,6 @@ namespace AJutShowRoomWinUI
 
         // ===========[ Dock Zone test state ]============================================
         private DockingManager m_dockingManager;
-        private int m_panelCounter = 3; // A=1, B=2 created at startup; C onward via button
         private bool m_dockZoneInitialized = false;
 
         public MainWindow (WindowManager manager, AppThemeManager themeManager)
@@ -220,14 +219,22 @@ namespace AJutShowRoomWinUI
 
             m_dockZoneInitialized = true;
 
-            TypeIdRegistrar.RegisterTypeId<ShowRoomPanel>("ShowRoomPanel");
-            TypeIdRegistrar.RegisterTypeId<ShowRoomPanelState>("ShowRoomPanelState");
-
             m_dockingManager = new DockingManager(this, "ShowRoomDock");
             m_dockingManager.FixedTearoffWindowTitle = "Show Room";
             m_dockingManager.RegisterMainWindowRootDockZones(this.TestDockZone);
             m_dockingManager.RegisterDisplayFactory<ShowRoomPanel>();
-            
+            m_dockingManager.RegisterDisplayFactory<SingleInstanceShowRoomPanel>(new DockPanelRegistrationRules {
+                SingleInstanceOnly = true,
+                GuaranteedOnStart = true,
+                SpawnWidth = 200,
+                SpawnHeight = 500,
+            });
+
+            m_dockingManager.UISyncVM.RegisterPanelDisplayOverride<SingleInstanceShowRoomPanel>("Single Inst", "Assets/PenguinExample.png");
+            this.DockToolbar.DockingManager = m_dockingManager;
+            m_dockingManager.ManageMenu(this.ViewMenu);
+
+
 
             var zone = m_dockingManager.FindFirstAvailableDockZone();
             if (zone != null)
@@ -242,25 +249,6 @@ namespace AJutShowRoomWinUI
                 panelB.DockingAdapter.TitleContent = "Panel B";
                 zone.AddDockedContent(panelB);
             }
-        }
-
-        private void DockZone_OnAddPanelClicked(object sender, RoutedEventArgs e)
-        {
-            var zone = m_dockingManager?.FindFirstAvailableDockZone();
-            if (zone == null)
-            {
-                return;
-            }
-
-            string name = m_panelCounter <= 26
-                ? $"Panel {(char)('A' + m_panelCounter - 1)}"
-                : $"Panel #{m_panelCounter}";
-            ++m_panelCounter;
-
-            var panel = (ShowRoomPanel)m_dockingManager.BuildNewDisplayElement(typeof(ShowRoomPanel));
-            panel.Label = name;
-            panel.DockingAdapter.TitleContent = name;
-            zone.AddDockedContent(panel);
         }
 
         private void DockZone_OnSaveLayoutClicked(object sender, RoutedEventArgs e)
@@ -420,7 +408,7 @@ namespace AJutShowRoomWinUI
 
     // ===========[ ShowRoomPanel - DockZone smoke-test display element ]=============
     [TypeId("ShowRoomPanel")]
-    public sealed class ShowRoomPanel : ContentControl, IDockableDisplayElement
+    public class ShowRoomPanel : ContentControl, IDockableDisplayElement
     {
         // ===========[ Fields ]===================================================
         private string m_label = "Panel";
@@ -471,7 +459,7 @@ namespace AJutShowRoomWinUI
 
         // ===========[ IDockableDisplayElement ]===================================
 
-        public void Setup(DockingContentAdapterModel adapter)
+        public virtual void Setup(DockingContentAdapterModel adapter)
         {
             this.DockingAdapter = adapter;
             adapter.CanClose += (s, e) =>
@@ -553,6 +541,16 @@ namespace AJutShowRoomWinUI
             panel.Children.Add(m_valueBox);
             panel.Children.Add(m_blockCloseCheckBox);
             this.Content = panel;
+        }
+    }
+
+    [TypeId("ShowRoomPanel-single-inst")]
+    public class SingleInstanceShowRoomPanel : ShowRoomPanel
+    {
+        public override void Setup(DockingContentAdapterModel adapter)
+        {
+            base.Setup(adapter);
+            adapter.HideDontClose = true;
         }
     }
 }
