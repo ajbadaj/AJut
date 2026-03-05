@@ -1,6 +1,6 @@
 namespace AJut.UX.Docking
 {
-    public readonly struct DockZoneSize
+    public struct DockZoneSize
     {
         public static readonly DockZoneSize Empty = default;
 
@@ -10,8 +10,8 @@ namespace AJut.UX.Docking
             this.Height = height;
         }
 
-        public double Width { get; }
-        public double Height { get; }
+        public double Width { get; set; }
+        public double Height { get; set; }
         public bool IsEmpty => this.Width == 0.0 && this.Height == 0.0;
     }
 }

@@ -51,6 +51,15 @@
     <Compile Update="Controls\DockingElements\DockZoneTabHeadersControl.cs">
       <DependentUpon>DockZoneTabHeadersControl.xaml</DependentUpon>
     </Compile>
+    <Compile Update="Controls\DockingElements\DockPanelAddRemoveToolbar.cs">
+      <DependentUpon>DockPanelAddRemoveToolbar.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\DockingElements\DockPanelShowHideToggleButton.cs">
+      <DependentUpon>DockPanelShowHideToggleButton.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\DockingElements\DockPanelAddButton.cs">
+      <DependentUpon>DockPanelAddButton.xaml</DependentUpon>
+    </Compile>
     <Compile Update="Controls\EditableTextBlock.cs">
       <DependentUpon>EditableTextBlock.xaml</DependentUpon>
     </Compile>

@@ -10,5 +10,7 @@
     <StackPanel>
         <TextBlock Text="This button will send a command from here"/>
         <Button Command="{x:Static pages:DockingFrameworkOverviewPage.ShowPopupCommand}" Content="Click to show popup"/>
+        <Button Content="Save Layout" Click="SaveLayout_OnClick"/>
+        <Button Content="Load Layout" Click="LoadLayout_OnClick"/>
     </StackPanel>
 </UserControl>

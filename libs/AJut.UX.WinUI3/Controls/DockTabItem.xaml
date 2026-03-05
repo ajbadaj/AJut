@@ -84,6 +84,19 @@
                                     </VisualState.Setters>
                                 </VisualState>
                             </VisualStateGroup>
+                            <VisualStateGroup x:Name="DraggingStates">
+                                <VisualState x:Name="NotDragging">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.(Canvas.ZIndex)" Value="0"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Dragging">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Opacity" Value="0.90"/>
+                                        <Setter Target="Root.(Canvas.ZIndex)" Value="10"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
                         </VisualStateManager.VisualStateGroups>
                     </Border>
                 </ControlTemplate>

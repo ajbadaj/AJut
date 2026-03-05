@@ -134,6 +134,8 @@ namespace AJut.UX.Docking
             return false;
         }
 
+        public bool HasPassAlongUISize => m_internalStorageOfPassAlongUISize != null;
+
         public void ClearPassAlongUISize ()
         {
             m_internalStorageOfPassAlongUISize = null;
@@ -329,9 +331,17 @@ namespace AJut.UX.Docking
 
         public bool RemoveDockedContent (DockingContentAdapterModel contentAdapter)
         {
+            bool orphanedAfter = m_manager.IsTearoffRootThatWouldOrphan(this);
+
             if (m_dockedContent.Contains(contentAdapter))
             {
-                return this.DoRemoveContent(contentAdapter);
+                bool removeSuccess = this.DoRemoveContent(contentAdapter);
+                if (removeSuccess && orphanedAfter)
+                {
+                    m_manager.CloseTearoffForRootZone(this);
+                }
+
+                return removeSuccess;
             }
 
             return false;
@@ -339,6 +349,14 @@ namespace AJut.UX.Docking
 
         public bool RequestCloseAndRemoveDockedContent (DockingContentAdapterModel panelAdapter)
         {
+            // HideDontClose panels must go through the manager's CloseOrHidePanel so they
+            // get properly hidden (not destroyed) and the UISyncVM toggle state stays correct.
+            if (panelAdapter.HideDontClose && m_manager != null)
+            {
+                m_manager.RemoveOrHidePanel(panelAdapter);
+                return true;
+            }
+
             if (m_dockedContent.Contains(panelAdapter) && panelAdapter.Close())
             {
                 return this.DoRemoveContent(panelAdapter);
@@ -406,16 +424,19 @@ namespace AJut.UX.Docking
                     if (eDockOrientation.AnySplitOrientation.HasFlag(this.Orientation))
                     {
                         DockZoneSize rootSize = this.UI?.RenderSize ?? DockZoneSize.Empty;
+                        double minDim = this.Manager?.MinPanelDimension ?? 50.0;
                         if (this.Orientation == eDockOrientation.Horizontal)
                         {
                             double fullHorizontal = sizes.Sum(s => s.Width);
                             List<double> horizontalSizes = sizes.Select(s => rootSize.Width * (s.Width / fullHorizontal)).ToList();
+                            EnforceMinPanelDimensions(horizontalSizes, rootSize.Width, minDim);
                             this.UI?.SetTargetSizeAsync(horizontalSizes);
                         }
                         else
                         {
                             double fullVertical = sizes.Sum(s => s.Height);
                             List<double> verticalSizes = sizes.Select(s => rootSize.Height * (s.Height / fullVertical)).ToList();
+                            EnforceMinPanelDimensions(verticalSizes, rootSize.Height, minDim);
                             this.UI?.SetTargetSizeAsync(verticalSizes);
                         }
                     }
@@ -429,6 +450,9 @@ namespace AJut.UX.Docking
                         addedAnything = true;
                         this.AddDockedContent(content);
                     }
+
+                    // Clear the source so adapters don't linger in both zones
+                    newSibling.InternalClearAllSilently();
 
                     if (addedAnything)
                     {
@@ -452,6 +476,9 @@ namespace AJut.UX.Docking
                     return false;
                 }
 
+                // Capture existing siblings' render sizes so the UI can redistribute proportionally
+                _StorePassAlongSizesForExistingSiblings(this.Parent, orientation, newSibling);
+
                 insertIndex += indexOffset;
                 this.Parent.InsertChild(insertIndex, newSibling);
             }
@@ -459,6 +486,14 @@ namespace AJut.UX.Docking
             // ==== Scenario 3: Clone this zone and insert both as siblings =====
             else
             {
+                // Ensure newSibling has a pass-along size so the proportional redistribution
+                // gives it a reasonable share rather than an equal split with the existing content
+                if (!newSibling.HasPassAlongUISize)
+                {
+                    DockZoneSize currentSize = this.UI?.RenderSize ?? DockZoneSize.Empty;
+                    newSibling.StorePassAlongUISize(currentSize);
+                }
+
                 var dupe = this.DuplicateAndClear();
                 this.Orientation = orientation;
                 this.InsertChild(0, dupe);
@@ -578,6 +613,36 @@ namespace AJut.UX.Docking
 
         // ===========[ Private Helpers ]===================================
 
+        private static void _StorePassAlongSizesForExistingSiblings (DockZoneViewModel parent, eDockOrientation orientation, DockZoneViewModel newSibling)
+        {
+            // 1. Snapshot every existing child's current render size
+            foreach (DockZoneViewModel sibling in parent.Children)
+            {
+                sibling.StorePassAlongUISize(sibling.UI?.RenderSize ?? DockZoneSize.Empty);
+            }
+
+            // 2. If the new sibling has no size hint (e.g. programmatic add), give it
+            //    an equal share so the proportional formula treats it fairly
+            if (!newSibling.HasPassAlongUISize)
+            {
+                bool isHorizontal = orientation == eDockOrientation.Horizontal;
+                double totalExisting = parent.Children.Sum(c =>
+                    isHorizontal
+                        ? (c.UI?.RenderSize.Width ?? 0)
+                        : (c.UI?.RenderSize.Height ?? 0)
+                );
+
+                double average = parent.Children.Count > 0
+                    ? totalExisting / parent.Children.Count
+                    : 0;
+
+                newSibling.StorePassAlongUISize(isHorizontal
+                    ? new DockZoneSize(average, parent.UI?.RenderSize.Height ?? 0)
+                    : new DockZoneSize(parent.UI?.RenderSize.Width ?? 0, average)
+                );
+            }
+        }
+
         private void InternallyReparentAndCleanup (DockZoneViewModel newParent)
         {
             this.DestroyUIReference();
@@ -590,6 +655,49 @@ namespace AJut.UX.Docking
             m_dockedContent.Clear();
             m_children.Clear();
             this.Orientation = eDockOrientation.Empty;
+        }
+
+        /// <summary>
+        /// Ensures no entry in <paramref name="pixelSizes"/> is smaller than <paramref name="min"/>.
+        /// Panels below the minimum are raised to it; the excess is taken proportionally from panels above it.
+        /// </summary>
+        public static void EnforceMinPanelDimensions (List<double> pixelSizes, double totalAvailable, double min)
+        {
+            if (pixelSizes.Count <= 1 || min <= 0)
+            {
+                return;
+            }
+
+            double effectiveMin = Math.Min(min, totalAvailable / pixelSizes.Count);
+
+            double deficit = 0;
+            double surplusPool = 0;
+
+            for (int i = 0; i < pixelSizes.Count; i++)
+            {
+                if (pixelSizes[i] < effectiveMin)
+                {
+                    deficit += effectiveMin - pixelSizes[i];
+                    pixelSizes[i] = effectiveMin;
+                }
+                else
+                {
+                    surplusPool += pixelSizes[i] - effectiveMin;
+                }
+            }
+
+            if (deficit > 0 && surplusPool > 0)
+            {
+                double ratio = deficit / surplusPool;
+                for (int i = 0; i < pixelSizes.Count; i++)
+                {
+                    double surplus = pixelSizes[i] - effectiveMin;
+                    if (surplus > 0)
+                    {
+                        pixelSizes[i] -= surplus * ratio;
+                    }
+                }
+            }
         }
 
         private bool DoRemoveContent (DockingContentAdapterModel dockedContent)

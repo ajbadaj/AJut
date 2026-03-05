@@ -18,6 +18,33 @@
         public DockZoneSelectedHeaderControl ()
         {
             this.CommandBindings.Add(new CommandBinding(DragDropElement.DragInitiatedCommand, OnTearoffRequested));
+            this.PreviewMouseRightButtonUp += this.OnPreviewMouseRightButtonUp;
+        }
+
+        private void OnPreviewMouseRightButtonUp (object sender, MouseButtonEventArgs e)
+        {
+            if (this.Target == null)
+            {
+                return;
+            }
+
+            DependencyObject current = this;
+            while (current != null)
+            {
+                if (current is DockZone parentZone)
+                {
+                    var menu = parentZone.BuildHeaderContextMenu(this.Target);
+                    if (menu != null)
+                    {
+                        menu.IsOpen = true;
+                        e.Handled = true;
+                    }
+
+                    return;
+                }
+
+                current = VisualTreeHelper.GetParent(current);
+            }
         }
 
         private void OnTearoffRequested (object sender, ExecutedRoutedEventArgs e)

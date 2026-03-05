@@ -40,6 +40,11 @@ namespace AJut.UX.Controls
     //   PART_Root - Grid populated by code-behind
 
     [TemplatePart(Name = nameof(PART_Root), Type = typeof(Grid))]
+    [TemplatePart(Name = nameof(PART_EmptyPlaceholder), Type = typeof(Border))]
+    [TemplatePart(Name = nameof(PART_EmptyLabel), Type = typeof(TextBlock))]
+    [TemplatePart(Name = nameof(PART_DragGhost), Type = typeof(Border))]
+    [TemplatePart(Name = nameof(PART_DragGhostLabel), Type = typeof(TextBlock))]
+    [TemplatePart(Name = nameof(PART_DragInsertLine), Type = typeof(Border))]
     public sealed class DockZone : Control, IDockZoneUI
     {
         // ===========[ Fields ]===============================================
@@ -58,6 +63,8 @@ namespace AJut.UX.Controls
         private ScrollViewer m_tabScrollViewer;
         private DockTabScrollButton m_tabLeftScrollBtn;
         private DockTabScrollButton m_tabRightScrollBtn;
+        private DockTabItem m_tabReorderDragItem;
+        private int m_tabReorderSourceIdx = -1;
         private int m_tabReorderTargetIdx = -1;
 
         // ===========[ Construction ]=========================================
@@ -99,12 +106,37 @@ namespace AJut.UX.Controls
         // ===========[ Template ]=============================================
         protected override void OnApplyTemplate()
         {
+            // Unsubscribe old empty placeholder events
+            if (this.PART_EmptyPlaceholder != null)
+            {
+                this.PART_EmptyPlaceholder.PointerEntered -= this.OnEmptyPlaceholderPointerEntered;
+                this.PART_EmptyPlaceholder.PointerExited -= this.OnEmptyPlaceholderPointerExited;
+            }
+
             base.OnApplyTemplate();
             this.PART_Root = this.GetTemplateChild(nameof(this.PART_Root)) as Grid;
+            this.PART_EmptyPlaceholder = this.GetTemplateChild(nameof(this.PART_EmptyPlaceholder)) as Border;
+            this.PART_EmptyLabel = this.GetTemplateChild(nameof(this.PART_EmptyLabel)) as TextBlock;
+            this.PART_DragGhost = this.GetTemplateChild(nameof(this.PART_DragGhost)) as Border;
+            this.PART_DragGhostLabel = this.GetTemplateChild(nameof(this.PART_DragGhostLabel)) as TextBlock;
+            this.PART_DragInsertLine = this.GetTemplateChild(nameof(this.PART_DragInsertLine)) as Border;
+
+            // Subscribe empty placeholder pointer events
+            if (this.PART_EmptyPlaceholder != null)
+            {
+                this.PART_EmptyPlaceholder.PointerEntered += this.OnEmptyPlaceholderPointerEntered;
+                this.PART_EmptyPlaceholder.PointerExited += this.OnEmptyPlaceholderPointerExited;
+            }
+
             this.BuildDropOverlay();
             this.RebuildLayout();
         }
         public Grid PART_Root { get; private set; }
+        private Border PART_EmptyPlaceholder { get; set; }
+        private TextBlock PART_EmptyLabel { get; set; }
+        private Border PART_DragGhost { get; set; }
+        private TextBlock PART_DragGhostLabel { get; set; }
+        private Border PART_DragInsertLine { get; set; }
 
         // ===========[ Dependency Properties - ViewModel / Manager ]=========
 
@@ -208,6 +240,7 @@ namespace AJut.UX.Controls
             this.PART_Root.Children.Clear();
             this.PART_Root.RowDefinitions.Clear();
             this.PART_Root.ColumnDefinitions.Clear();
+            this.HideEmptyPlaceholder();
 
             if (this.ViewModel == null)
             {
@@ -243,16 +276,39 @@ namespace AJut.UX.Controls
 
         private void BuildEmptyLayout()
         {
-            var placeholder = new TextBlock
+            if (this.PART_EmptyPlaceholder != null)
             {
-                Text = "Empty",
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Bottom,
-                Margin = new Thickness(20),
-                FontSize = 18,
-                Opacity = 0.25,
-            };
-            this.PART_Root.Children.Add(placeholder);
+                this.PART_EmptyPlaceholder.Visibility = Visibility.Visible;
+            }
+
+            if (this.PART_EmptyLabel != null)
+            {
+                this.PART_EmptyLabel.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void HideEmptyPlaceholder()
+        {
+            if (this.PART_EmptyPlaceholder != null)
+            {
+                this.PART_EmptyPlaceholder.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void OnEmptyPlaceholderPointerEntered(object sender, PointerRoutedEventArgs e)
+        {
+            if (this.PART_EmptyLabel != null)
+            {
+                this.PART_EmptyLabel.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void OnEmptyPlaceholderPointerExited(object sender, PointerRoutedEventArgs e)
+        {
+            if (this.PART_EmptyLabel != null)
+            {
+                this.PART_EmptyLabel.Visibility = Visibility.Collapsed;
+            }
         }
 
         private void BuildLeafLayout(bool tabbed)
@@ -277,17 +333,17 @@ namespace AJut.UX.Controls
             var dockingManager = m_manager as DockingManager;
             var hostWindow = dockingManager?.GetWindowForZone(this);
 
-            // Show the panel-level close button only when this zone is a non-root panel
-            // inside a tearoff window. On the root window the OS chrome handles closure.
-            // On the root zone of a tearoff the title bar's X button handles closure;
-            // adding another X here would be confusing and redundant.
-            bool isNonRootInTearoff = dockingManager != null
+            // Show the panel-level close button when the docking manager allows it and the
+            // adapter is closable. Hide only when this is the last panel in the root zone
+            // of a tearoff window (can't leave an empty root zone).
+            bool isLastPanelInTearoffRoot = dockingManager != null
                 && hostWindow != null
                 && hostWindow != dockingManager.RootWindow
-                && dockingManager.GetRootDockZoneForWindow(hostWindow) != this;
+                && dockingManager.GetRootDockZoneForWindow(hostWindow) == this
+                && this.ViewModel.DockedContent.Count <= 1;
 
             UIElement headerContent;
-            if (isNonRootInTearoff && dockingManager?.ShowPanelClose == true && selectedAdapter != null)
+            if (!isLastPanelInTearoffRoot && dockingManager?.ShowPanelClose == true && selectedAdapter != null && selectedAdapter.IsClosable)
             {
                 var headerCloseBtn = new DockCloseButton
                 {
@@ -345,6 +401,7 @@ namespace AJut.UX.Controls
             leaf.HeaderPointerMoved += this.OnHeaderPointerMoved;
             leaf.HeaderPointerReleased += this.OnHeaderPointerReleased;
             leaf.HeaderPointerCaptureLost += this.OnHeaderPointerCaptureLost;
+            leaf.HeaderRightTapped += this.OnHeaderRightTapped;
 
             this.PART_Root.Children.Add(leaf);
         }
@@ -393,6 +450,7 @@ namespace AJut.UX.Controls
                 tabItem.TabReorderDragMoved          += this.OnTabReorderDragMoved;
                 tabItem.TabReorderDropped            += this.OnTabReorderDropped;
                 tabItem.TabDragCancelled             += this.OnTabDragCancelled;
+                tabItem.TabRightTapped               += this.OnTabRightTapped;
 
                 m_tabPanel.Children.Add(tabItem);
             }
@@ -457,7 +515,7 @@ namespace AJut.UX.Controls
                 Padding = new Thickness(6, 3, 6, 3),
             };
 
-            if (dockingManager?.ShowTabHeaderClose != true)
+            if (dockingManager?.ShowTabHeaderClose != true || !adapter.IsClosable)
             {
                 return tabLabel;
             }
@@ -547,31 +605,130 @@ namespace AJut.UX.Controls
 
         private void OnTabReorderDragMoved(object sender, PointerRoutedEventArgs e)
         {
-            if (m_tabPanel == null)
+            if (m_tabPanel == null || this.PART_Root == null
+                || this.PART_DragGhost == null || this.PART_DragInsertLine == null)
             {
                 return;
             }
 
-            double cursorX = e.GetCurrentPoint(m_tabPanel).Position.X;
-            m_tabReorderTargetIdx = FindTabIndexAtX(m_tabPanel, cursorX);
+            var tabItem = (DockTabItem)sender;
+
+            // First move: configure ghost and insertion indicator from template parts
+            if (m_tabReorderDragItem == null)
+            {
+                m_tabReorderDragItem = tabItem;
+                m_tabReorderDragItem.IsDragging = true;
+                m_tabReorderSourceIdx = tabItem.Index;
+                m_tabReorderTargetIdx = tabItem.Index;
+
+                var adapter = this.ViewModel?.DockedContent.ElementAtOrDefault(tabItem.Index);
+                string title = adapter?.TitleContent?.ToString() ?? $"Tab {tabItem.Index + 1}";
+
+                // Configure ghost sizing from source tab (structural, not visual)
+                // Background/BorderBrush/BorderThickness come from the XAML template
+                this.PART_DragGhost.Height = tabItem.ActualHeight;
+                this.PART_DragGhost.MinWidth = tabItem.ActualWidth;
+                this.PART_DragGhost.Visibility = Visibility.Visible;
+                Canvas.SetZIndex(this.PART_DragGhost, 1000);
+
+                if (this.PART_DragGhostLabel != null)
+                {
+                    this.PART_DragGhostLabel.Text = title;
+                }
+
+                // Configure insertion line
+                this.PART_DragInsertLine.Height = tabItem.ActualHeight;
+                Canvas.SetZIndex(this.PART_DragInsertLine, 999);
+            }
+
+            // Position ghost at cursor
+            double cursorXInPanel = e.GetCurrentPoint(m_tabPanel).Position.X;
+            var panelToRoot = m_tabPanel.TransformToVisual(this.PART_DragGhost.Parent as UIElement ?? this.PART_Root);
+            Point panelOrigin = panelToRoot.TransformPoint(new Point(0, 0));
+
+            var ghostTransform = (TranslateTransform)this.PART_DragGhost.RenderTransform;
+            ghostTransform.X = panelOrigin.X + cursorXInPanel - this.PART_DragGhost.MinWidth / 2.0;
+            ghostTransform.Y = panelOrigin.Y;
+
+            // Find target index and position insertion indicator
+            int targetIdx = FindTabIndexAtX(m_tabPanel, cursorXInPanel);
+            m_tabReorderTargetIdx = targetIdx;
+
+            if (targetIdx == m_tabReorderSourceIdx)
+            {
+                this.PART_DragInsertLine.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                // Position the line at the left edge of the target tab
+                double lineX = 0;
+                int tabCount = 0;
+                for (int i = 0; i < m_tabPanel.Children.Count; i++)
+                {
+                    if (m_tabPanel.Children[i] is DockTabItem t)
+                    {
+                        if (tabCount == targetIdx)
+                        {
+                            // If target is after source, show line at right edge instead
+                            if (targetIdx > m_tabReorderSourceIdx)
+                            {
+                                lineX += t.ActualWidth;
+                            }
+
+                            break;
+                        }
+
+                        lineX += t.ActualWidth;
+                        tabCount++;
+                    }
+                }
+
+                var lineTransform = (TranslateTransform)this.PART_DragInsertLine.RenderTransform;
+                lineTransform.X = panelOrigin.X + lineX - 1;
+                lineTransform.Y = panelOrigin.Y;
+                this.PART_DragInsertLine.Visibility = Visibility.Visible;
+            }
         }
 
         private void OnTabReorderDropped(object sender, int sourceIndex)
         {
             int targetIdx = m_tabReorderTargetIdx;
-            m_tabReorderTargetIdx = -1;
+            int sourceIdx = m_tabReorderSourceIdx;
+            this.ClearTabReorderDragState();
 
             if (targetIdx >= 0
-                && targetIdx != sourceIndex
+                && targetIdx != sourceIdx
                 && targetIdx < this.ViewModel?.DockedContent.Count)
             {
-                this.ViewModel.SwapDockedContentOrder(sourceIndex, targetIdx);
+                this.ViewModel.SwapDockedContentOrder(sourceIdx, targetIdx);
                 this.ViewModel.SelectedIndex = targetIdx;
             }
         }
 
         private void OnTabDragCancelled(object sender, EventArgs e)
         {
+            this.ClearTabReorderDragState();
+        }
+
+        private void ClearTabReorderDragState()
+        {
+            if (m_tabReorderDragItem != null)
+            {
+                m_tabReorderDragItem.IsDragging = false;
+                m_tabReorderDragItem = null;
+            }
+
+            if (this.PART_DragGhost != null)
+            {
+                this.PART_DragGhost.Visibility = Visibility.Collapsed;
+            }
+
+            if (this.PART_DragInsertLine != null)
+            {
+                this.PART_DragInsertLine.Visibility = Visibility.Collapsed;
+            }
+
+            m_tabReorderSourceIdx = -1;
             m_tabReorderTargetIdx = -1;
         }
 
@@ -594,6 +751,128 @@ namespace AJut.UX.Controls
         private static void SuppressPointerPressed(object sender, PointerRoutedEventArgs e)
         {
             e.Handled = true;
+        }
+
+        // ===========[ Context Menu ]=========================================
+
+        private void OnHeaderRightTapped(object sender, RightTappedRoutedEventArgs e)
+        {
+            // Header bar right-click applies to the selected adapter
+            DockingContentAdapterModel adapter = this.ViewModel?.SelectedIndex >= 0
+                ? this.ViewModel.DockedContent.ElementAtOrDefault(this.ViewModel.SelectedIndex)
+                : null;
+            if (adapter != null)
+            {
+                this.ShowHeaderContextMenu(sender as FrameworkElement, e.GetPosition(sender as UIElement), adapter);
+                e.Handled = true;
+            }
+        }
+
+        private void OnTabRightTapped(object sender, RightTappedRoutedEventArgs e)
+        {
+            var tabItem = (DockTabItem)sender;
+            DockingContentAdapterModel adapter = this.ViewModel?.DockedContent.ElementAtOrDefault(tabItem.Index);
+            if (adapter != null)
+            {
+                this.ShowHeaderContextMenu(tabItem, e.GetPosition(tabItem), adapter);
+                e.Handled = true;
+            }
+        }
+
+        private void ShowHeaderContextMenu(FrameworkElement anchor, Point position, DockingContentAdapterModel adapter)
+        {
+            var menu = new MenuFlyout();
+            var mgr = m_manager as DockingManager;
+
+            // 1. Custom items from the adapter
+            if (adapter.AdditionalContextMenuItems != null)
+            {
+                foreach (DockPanelMenuOption option in adapter.AdditionalContextMenuItems)
+                {
+                    if (option.IsSeparator)
+                    {
+                        menu.Items.Add(new MenuFlyoutSeparator());
+                    }
+                    else
+                    {
+                        var item = new MenuFlyoutItem { Text = option.Title };
+                        var capturedAction = option.Action;
+                        var capturedAdapter = adapter;
+                        item.Click += this.CreateContextMenuClickHandler(capturedAction, capturedAdapter);
+                        menu.Items.Add(item);
+                    }
+                }
+
+                if (adapter.AdditionalContextMenuItems.Count > 0)
+                {
+                    menu.Items.Add(new MenuFlyoutSeparator());
+                }
+            }
+
+            // 2. Tear Off (if allowed)
+            if (adapter.CanTearoff)
+            {
+                var tearoffItem = new MenuFlyoutItem { Text = "Tear Off Panel" };
+                tearoffItem.Click += this.OnContextMenuTearoffClicked;
+                tearoffItem.Tag = adapter;
+                menu.Items.Add(tearoffItem);
+            }
+
+            // 3. Close / Hide
+            if (adapter.IsClosable)
+            {
+                string closeText = adapter.HideDontClose ? "Hide Panel" : "Close Panel";
+                var closeItem = new MenuFlyoutItem { Text = closeText };
+                closeItem.Tag = adapter;
+                closeItem.Click += this.OnContextMenuCloseClicked;
+                menu.Items.Add(closeItem);
+            }
+
+            if (menu.Items.Count > 0 && anchor != null)
+            {
+                menu.ShowAt(anchor, position);
+            }
+        }
+
+        private RoutedEventHandler CreateContextMenuClickHandler(Action<DockingContentAdapterModel> action, DockingContentAdapterModel adapter)
+        {
+            void Handler(object sender, RoutedEventArgs e)
+            {
+                action?.Invoke(adapter);
+            }
+
+            return Handler;
+        }
+
+        private async void OnContextMenuTearoffClicked(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuFlyoutItem item
+                && item.Tag is DockingContentAdapterModel adapter
+                && adapter.Display != null)
+            {
+                var mgr = m_manager as DockingManager;
+                if (mgr != null)
+                {
+                    await mgr.InitiateDragForContent(adapter.Display);
+                }
+            }
+        }
+
+        private void OnContextMenuCloseClicked(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuFlyoutItem item
+                && item.Tag is DockingContentAdapterModel adapter)
+            {
+                var mgr = m_manager as DockingManager;
+                if (mgr != null)
+                {
+                    mgr.RemoveOrHidePanel(adapter);
+                }
+                else
+                {
+                    adapter.Location?.RequestCloseAndRemoveDockedContent(adapter);
+                }
+            }
         }
 
         private void OnTabScrollLeft(object sender, RoutedEventArgs e)
@@ -693,13 +972,31 @@ namespace AJut.UX.Controls
                 return;
             }
 
-            // Only applies when zones have stored pass-along sizes from serialization.
-            // If no sizes are stored and the root has no actual dimensions yet, skip.
             DockZoneSize rootSize = ((IDockZoneUI)this).RenderSize;
 
-            var sizes = this.ChildZones
-                .Select(z => z.ViewModel.TakePassAlongUISize(out DockZoneSize stored) ? stored : ((IDockZoneUI)z).RenderSize)
-                .ToList();
+            bool anyPassAlongTaken = false;
+            var sizes = new List<DockZoneSize>();
+            foreach (DockZone z in this.ChildZones)
+            {
+                if (z.ViewModel.TakePassAlongUISize(out DockZoneSize stored))
+                {
+                    anyPassAlongTaken = true;
+                    sizes.Add(stored);
+                }
+                else
+                {
+                    sizes.Add(((IDockZoneUI)z).RenderSize);
+                }
+            }
+
+            // If no child had a stored pass-along size, skip - a previous dispatch already
+            // handled this batch or no proportional sizing was requested
+            if (!anyPassAlongTaken)
+            {
+                return;
+            }
+
+            double minDim = (m_manager as DockingManager)?.MinPanelDimension ?? 50.0;
 
             if (this.ViewModel.Orientation == eDockOrientation.Horizontal)
             {
@@ -707,6 +1004,7 @@ namespace AJut.UX.Controls
                 if (full > 0 && rootSize.Width > 0)
                 {
                     var pixelSizes = sizes.Select(s => rootSize.Width * (s.Width / full)).ToList();
+                    DockZoneViewModel.EnforceMinPanelDimensions(pixelSizes, rootSize.Width, minDim);
                     this.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
                     {
                         if (this.XamlRoot == null) { return; }
@@ -720,6 +1018,7 @@ namespace AJut.UX.Controls
                 if (full > 0 && rootSize.Height > 0)
                 {
                     var pixelSizes = sizes.Select(s => rootSize.Height * (s.Height / full)).ToList();
+                    DockZoneViewModel.EnforceMinPanelDimensions(pixelSizes, rootSize.Height, minDim);
                     this.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
                     {
                         if (this.XamlRoot == null) { return; }

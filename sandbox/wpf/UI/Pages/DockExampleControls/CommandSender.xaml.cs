@@ -1,21 +1,11 @@
 ﻿namespace TheAJutShowRoom.UI.Pages.DockExampleControls
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
+    using AJut.TypeManagement;
+    using AJut.UX.Docking;
     using System.Windows;
     using System.Windows.Controls;
-    using System.Windows.Data;
-    using System.Windows.Documents;
-    using System.Windows.Input;
-    using System.Windows.Media;
-    using System.Windows.Media.Imaging;
-    using System.Windows.Navigation;
-    using System.Windows.Shapes;
-    using AJut.UX.Docking;
 
+    [TypeId("CommandSender")]
     public partial class CommandSender : UserControl, IDockableDisplayElement
     {
         public CommandSender()
@@ -29,6 +19,17 @@
         {
             this.DockingAdapter = adapter;
             this.DockingAdapter.TitleContent = "Command Route Example";
+            this.DockingAdapter.HideDontClose = true;
+        }
+
+        private void SaveLayout_OnClick(object sender, RoutedEventArgs e)
+        {
+            this.DockingAdapter.DockingOwner.SaveDockLayoutToPersistentStorage();
+        }
+
+        private void LoadLayout_OnClick(object sender, RoutedEventArgs e)
+        {
+            this.DockingAdapter.DockingOwner.ReloadDockLayoutFromPersistentStorage();
         }
     }
 }

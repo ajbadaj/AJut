@@ -30,6 +30,54 @@
             this.CommandBindings.Add(new CommandBinding(SelectItemCommand, OnSelectedItem, OnCanSelectItem));
             this.CommandBindings.Add(new CommandBinding(DragDropElement.HorizontalDragInitiatedCommand, OnInitiateElementReorder, CanInitiateElementReorder));
             this.CommandBindings.Add(new CommandBinding(DragDropElement.VerticalDragInitiatedCommand, OnInitiateTearOff, CanInitiateTearoff));
+            this.PreviewMouseRightButtonUp += this.OnPreviewMouseRightButtonUp;
+        }
+
+        private void OnPreviewMouseRightButtonUp (object sender, MouseButtonEventArgs e)
+        {
+            // Walk up from the click source to find the HeaderItem data context
+            var source = e.OriginalSource as FrameworkElement;
+            HeaderItem headerItem = null;
+            while (source != null && headerItem == null)
+            {
+                headerItem = source.DataContext as HeaderItem;
+                source = VisualTreeHelper.GetParent(source) as FrameworkElement;
+            }
+
+            if (headerItem == null)
+            {
+                return;
+            }
+
+            // Find the parent DockZone to build the context menu
+            DockZone parentZone = this.FindVisualParent<DockZone>();
+            if (parentZone == null)
+            {
+                return;
+            }
+
+            var menu = parentZone.BuildHeaderContextMenu(headerItem.Adapter);
+            if (menu != null)
+            {
+                menu.IsOpen = true;
+                e.Handled = true;
+            }
+        }
+
+        private T FindVisualParent<T> () where T : DependencyObject
+        {
+            DependencyObject current = this;
+            while (current != null)
+            {
+                if (current is T found)
+                {
+                    return found;
+                }
+
+                current = VisualTreeHelper.GetParent(current);
+            }
+
+            return null;
         }
 
         public static readonly DependencyProperty HeaderBorderProperty = DPUtils.Register(_ => _.HeaderBorder);

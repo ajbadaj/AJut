@@ -91,6 +91,37 @@
     <SolidColorBrush x:Key="AJut_NumericEditor_FocusBorderBrush"              Color="{ThemeResource AJut_Color_PrimaryHighlight}"/>
     <SolidColorBrush x:Key="AJut_NumericEditor_NormalBorderBrush"             Color="{ThemeResource AJut_Color_BorderCommon}"/>
 
+    <!-- ===========[ DockPanelShowHideToggleButton ]========================= -->
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_NormalBackground"               Color="{ThemeResource AJut_Color_InnerPanelBackground}"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_NormalBorderBrush"              Color="{ThemeResource AJut_Color_BorderCommon}"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_NormalForeground"               Color="{ThemeResource AJut_Color_NormalText}"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_PointerOverBackground"          Color="{ThemeResource AJut_Color_MouseInteractionHighlight}"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_PressedBackground"              Color="{ThemeResource AJut_Color_PrimaryHighlightDark}"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_CheckedBackground"              Color="{ThemeResource AJut_Color_PrimaryHighlight}"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_CheckedBorderBrush"             Color="{ThemeResource AJut_Color_PrimaryHighlight}"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_CheckedPointerOverBackground"   Color="{ThemeResource AJut_Color_PrimaryHighlightBright}"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_CheckedPointerOverBorderBrush"  Color="{ThemeResource AJut_Color_PrimaryHighlightBright}"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_CheckedPressedBackground"       Color="{ThemeResource AJut_Color_PrimaryHighlightDark}"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_CheckedPressedBorderBrush"      Color="{ThemeResource AJut_Color_PrimaryHighlightDark}"/>
+
+    <!-- ===========[ DockPanelAddButton ]================================== -->
+    <SolidColorBrush x:Key="AJut_DockPanelAddButton_NormalBackground"       Color="{ThemeResource AJut_Color_InnerPanelBackground}"/>
+    <SolidColorBrush x:Key="AJut_DockPanelAddButton_NormalBorderBrush"      Color="{ThemeResource AJut_Color_BorderCommon}"/>
+    <SolidColorBrush x:Key="AJut_DockPanelAddButton_NormalForeground"       Color="{ThemeResource AJut_Color_NormalText}"/>
+    <SolidColorBrush x:Key="AJut_DockPanelAddButton_PointerOverBackground"  Color="{ThemeResource AJut_Color_MouseInteractionHighlight}"/>
+    <SolidColorBrush x:Key="AJut_DockPanelAddButton_PressedBackground"      Color="{ThemeResource AJut_Color_PrimaryHighlightDark}"/>
+    <SolidColorBrush x:Key="AJut_DockPanelAddButton_PlusOverlayForeground"  Color="{ThemeResource AJut_Color_PrimaryHighlightBright}"/>
+
+    <!-- ===========[ DockPanelAddRemoveToolbar ]============================ -->
+    <SolidColorBrush x:Key="AJut_DockPanelToolbar_NormalBackground"         Color="{ThemeResource AJut_Color_PanelBackground}"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToolbar_NormalBorderBrush"        Color="{ThemeResource AJut_Color_BorderCommon}"/>
+
+    <!-- ===========[ DockZone ]============================================ -->
+    <SolidColorBrush x:Key="AJut_DockZone_EmptyBackground"      Color="{ThemeResource AJut_Color_PanelBackground}"/>
+    <SolidColorBrush x:Key="AJut_DockZone_EmptyBorderBrush"     Color="{ThemeResource AJut_Color_BorderCommon}"/>
+    <SolidColorBrush x:Key="AJut_DockZone_EmptyForeground"      Color="{ThemeResource AJut_Color_NormalText}"/>
+    <SolidColorBrush x:Key="AJut_DockZone_DragInsertLineBrush"  Color="{ThemeResource AJut_Color_PrimaryHighlight}"/>
+
     <!-- ===========[ ToggleStripButton ]==================================== -->
     <!-- Unchecked hover/press: map to AJut highlight colors -->
     <SolidColorBrush x:Key="AJut_ToggleStripButton_PointerOverBackground" Color="{ThemeResource AJut_Color_PrimaryHighlightBright}"/>

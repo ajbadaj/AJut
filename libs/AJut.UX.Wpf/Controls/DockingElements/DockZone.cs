@@ -1,5 +1,6 @@
 namespace AJut.UX.Controls
 {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
@@ -73,13 +74,16 @@ namespace AJut.UX.Controls
                 return;
             }
 
+            // Dispatch at Loaded priority (6) so the AutoGrid from the template exists.
+            // The ContentPresenter DataTrigger swaps templates at Render priority (7),
+            // and Normal (9) runs before that - meaning the AutoGrid wouldn't exist yet.
             this.Dispatcher.InvokeAsync(() =>
             {
                 if (e.NewItems != null)
                 {
                     this.HandleNewChildZonesAdded(e.NewItems.OfType<DockZone>());
                 }
-            });
+            }, DispatcherPriority.Loaded);
         }
 
         private void HandleNewChildZonesAdded (IEnumerable<DockZone> added)
@@ -95,21 +99,42 @@ namespace AJut.UX.Controls
                 return;
             }
 
-            List<DockZoneSize> sizes = this.ChildZones
-                .Select(z => z.ViewModel.TakePassAlongUISize(out DockZoneSize dockSize) ? dockSize : ((IDockZoneUI)z).RenderSize)
-                .ToList();
+            bool anyPassAlongTaken = false;
+            var sizes = new List<DockZoneSize>();
+            foreach (DockZone z in this.ChildZones)
+            {
+                if (z.ViewModel.TakePassAlongUISize(out DockZoneSize dockSize))
+                {
+                    anyPassAlongTaken = true;
+                    sizes.Add(dockSize);
+                }
+                else
+                {
+                    sizes.Add(((IDockZoneUI)z).RenderSize);
+                }
+            }
+
+            // If no child had a stored pass-along size, skip - a previous dispatch already
+            // handled this batch or no proportional sizing was requested
+            if (!anyPassAlongTaken)
+            {
+                return;
+            }
 
             DockZoneSize rootSize = ((IDockZoneUI)this).RenderSize;
+            double minDim = m_manager?.MinPanelDimension ?? 50.0;
             if (this.ViewModel.Orientation == eDockOrientation.Horizontal)
             {
                 double fullHorizontal = sizes.Sum(s => s.Width);
                 List<double> horizontalSizes = sizes.Select(s => rootSize.Width * (s.Width / fullHorizontal)).ToList();
+                DockZoneViewModel.EnforceMinPanelDimensions(horizontalSizes, rootSize.Width, minDim);
                 this.Dispatcher.InvokeAsync(() => this.SetTargetSize(horizontalSizes), DispatcherPriority.Input);
             }
             else
             {
                 double fullVertical = sizes.Sum(s => s.Height);
                 List<double> verticalSizes = sizes.Select(s => rootSize.Height * (s.Height / fullVertical)).ToList();
+                DockZoneViewModel.EnforceMinPanelDimensions(verticalSizes, rootSize.Height, minDim);
                 this.Dispatcher.InvokeAsync(() => this.SetTargetSize(verticalSizes), DispatcherPriority.Input);
             }
         }
@@ -235,6 +260,102 @@ namespace AJut.UX.Controls
         private void OnCloseDockedContent (object sender, ExecutedRoutedEventArgs e)
         {
             this.ViewModel.RequestCloseAndRemoveDockedContent((DockingContentAdapterModel)e.Parameter);
+        }
+
+        /// <summary>
+        /// Build and return a context menu for a docked panel header (tab or selected header).
+        /// </summary>
+        internal ContextMenu BuildHeaderContextMenu (DockingContentAdapterModel adapter)
+        {
+            if (adapter == null)
+            {
+                return null;
+            }
+
+            var menu = new ContextMenu();
+
+            // 1. Custom items
+            if (adapter.AdditionalContextMenuItems != null)
+            {
+                foreach (DockPanelMenuOption option in adapter.AdditionalContextMenuItems)
+                {
+                    if (option.IsSeparator)
+                    {
+                        menu.Items.Add(new Separator());
+                    }
+                    else
+                    {
+                        var item = new MenuItem { Header = option.Title };
+                        var capturedAction = option.Action;
+                        var capturedAdapter = adapter;
+                        item.Click += this.CreateContextMenuClickHandler(capturedAction, capturedAdapter);
+                        menu.Items.Add(item);
+                    }
+                }
+
+                if (adapter.AdditionalContextMenuItems.Count > 0)
+                {
+                    menu.Items.Add(new Separator());
+                }
+            }
+
+            // 2. Tear Off
+            if (adapter.CanTearoff)
+            {
+                var tearoffItem = new MenuItem { Header = "Tear Off Panel" };
+                tearoffItem.Tag = adapter;
+                tearoffItem.Click += this.OnContextMenuTearoffClicked;
+                menu.Items.Add(tearoffItem);
+            }
+
+            // 3. Close / Hide
+            if (adapter.IsClosable)
+            {
+                string closeText = adapter.HideDontClose ? "Hide Panel" : "Close Panel";
+                var closeItem = new MenuItem { Header = closeText };
+                closeItem.Tag = adapter;
+                closeItem.Click += this.OnContextMenuCloseClicked;
+                menu.Items.Add(closeItem);
+            }
+
+            return menu.Items.Count > 0 ? menu : null;
+        }
+
+        private RoutedEventHandler CreateContextMenuClickHandler (Action<DockingContentAdapterModel> action, DockingContentAdapterModel adapter)
+        {
+            void Handler (object sender, RoutedEventArgs e)
+            {
+                action?.Invoke(adapter);
+            }
+
+            return Handler;
+        }
+
+        private void OnContextMenuTearoffClicked (object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem item
+                && item.Tag is DockingContentAdapterModel adapter
+                && adapter.Display != null
+                && this.Manager != null)
+            {
+                this.Manager.DoTearoff(adapter.Display, Mouse.GetPosition(this));
+            }
+        }
+
+        private void OnContextMenuCloseClicked (object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem item
+                && item.Tag is DockingContentAdapterModel adapter)
+            {
+                if (this.Manager != null)
+                {
+                    this.Manager.RemoveOrHidePanel(adapter);
+                }
+                else
+                {
+                    adapter.Location?.RequestCloseAndRemoveDockedContent(adapter);
+                }
+            }
         }
 
         private void OnViewModelChanged (DependencyPropertyChangedEventArgs<DockZoneViewModel> e)

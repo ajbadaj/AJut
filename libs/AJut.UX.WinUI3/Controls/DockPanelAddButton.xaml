@@ -1,0 +1,68 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="using:AJut.UX.Controls">
+
+    <Style TargetType="local:DockPanelAddButton">
+        <Setter Property="MinWidth" Value="28"/>
+        <Setter Property="MinHeight" Value="28"/>
+        <Setter Property="Padding" Value="4,2,4,2"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="3"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:DockPanelAddButton">
+                    <Grid>
+                        <Border x:Name="Root"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="{TemplateBinding CornerRadius}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter x:Name="ContentArea"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Border>
+                        <!-- Plus overlay in bottom-right corner -->
+                        <TextBlock x:Name="PlusOverlay"
+                                   Text="+"
+                                   FontSize="10"
+                                   FontWeight="Bold"
+                                   HorizontalAlignment="Right"
+                                   VerticalAlignment="Bottom"
+                                   Margin="0,0,2,0"
+                                   IsHitTestVisible="False"/>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{ThemeResource AJut_DockPanelAddButton_NormalBackground}"/>
+                                        <Setter Target="Root.BorderBrush" Value="{ThemeResource AJut_DockPanelAddButton_NormalBorderBrush}"/>
+                                        <Setter Target="ContentArea.Foreground" Value="{ThemeResource AJut_DockPanelAddButton_NormalForeground}"/>
+                                        <Setter Target="PlusOverlay.Foreground" Value="{ThemeResource AJut_DockPanelAddButton_PlusOverlayForeground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{ThemeResource AJut_DockPanelAddButton_PointerOverBackground}"/>
+                                        <Setter Target="Root.BorderBrush" Value="{ThemeResource AJut_DockPanelAddButton_NormalBorderBrush}"/>
+                                        <Setter Target="ContentArea.Foreground" Value="{ThemeResource AJut_DockPanelAddButton_NormalForeground}"/>
+                                        <Setter Target="PlusOverlay.Foreground" Value="{ThemeResource AJut_DockPanelAddButton_PlusOverlayForeground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Background" Value="{ThemeResource AJut_DockPanelAddButton_PressedBackground}"/>
+                                        <Setter Target="Root.BorderBrush" Value="{ThemeResource AJut_DockPanelAddButton_NormalBorderBrush}"/>
+                                        <Setter Target="ContentArea.Foreground" Value="{ThemeResource AJut_DockPanelAddButton_NormalForeground}"/>
+                                        <Setter Target="PlusOverlay.Foreground" Value="{ThemeResource AJut_DockPanelAddButton_PlusOverlayForeground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>
