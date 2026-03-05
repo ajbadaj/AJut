@@ -14,7 +14,7 @@ namespace AJut.UX.Docking
         private object m_tooltipTemplate;
 
         // ===========[ Construction ]===================================
-        public DockingContentAdapterModel (object dockingOwner)
+        public DockingContentAdapterModel (IDockingManager dockingOwner)
         {
             this.DockingOwner = dockingOwner;
         }
@@ -88,7 +88,7 @@ namespace AJut.UX.Docking
         /// The owning DockingManager - typed as <c>object</c> to keep this class platform-agnostic.
         /// Cast to the concrete manager type when platform-specific operations are needed.
         /// </summary>
-        public object DockingOwner { get; }
+        public IDockingManager DockingOwner { get; }
 
         public IDockableDisplayElement Display { get; set; }
 

@@ -134,6 +134,8 @@ namespace AJut.UX.Docking
             return false;
         }
 
+        public bool HasPassAlongUISize => m_internalStorageOfPassAlongUISize != null;
+
         public void ClearPassAlongUISize ()
         {
             m_internalStorageOfPassAlongUISize = null;
@@ -452,6 +454,9 @@ namespace AJut.UX.Docking
                     return false;
                 }
 
+                // Capture existing siblings' render sizes so the UI can redistribute proportionally
+                _StorePassAlongSizesForExistingSiblings(this.Parent, orientation, newSibling);
+
                 insertIndex += indexOffset;
                 this.Parent.InsertChild(insertIndex, newSibling);
             }
@@ -459,6 +464,14 @@ namespace AJut.UX.Docking
             // ==== Scenario 3: Clone this zone and insert both as siblings =====
             else
             {
+                // Ensure newSibling has a pass-along size so the proportional redistribution
+                // gives it a reasonable share rather than an equal split with the existing content
+                if (!newSibling.HasPassAlongUISize)
+                {
+                    DockZoneSize currentSize = this.UI?.RenderSize ?? DockZoneSize.Empty;
+                    newSibling.StorePassAlongUISize(currentSize);
+                }
+
                 var dupe = this.DuplicateAndClear();
                 this.Orientation = orientation;
                 this.InsertChild(0, dupe);
@@ -577,6 +590,36 @@ namespace AJut.UX.Docking
         }
 
         // ===========[ Private Helpers ]===================================
+
+        private static void _StorePassAlongSizesForExistingSiblings (DockZoneViewModel parent, eDockOrientation orientation, DockZoneViewModel newSibling)
+        {
+            // 1. Snapshot every existing child's current render size
+            foreach (DockZoneViewModel sibling in parent.Children)
+            {
+                sibling.StorePassAlongUISize(sibling.UI?.RenderSize ?? DockZoneSize.Empty);
+            }
+
+            // 2. If the new sibling has no size hint (e.g. programmatic add), give it
+            //    an equal share so the proportional formula treats it fairly
+            if (!newSibling.HasPassAlongUISize)
+            {
+                bool isHorizontal = orientation == eDockOrientation.Horizontal;
+                double totalExisting = parent.Children.Sum(c =>
+                    isHorizontal
+                        ? (c.UI?.RenderSize.Width ?? 0)
+                        : (c.UI?.RenderSize.Height ?? 0)
+                );
+
+                double average = parent.Children.Count > 0
+                    ? totalExisting / parent.Children.Count
+                    : 0;
+
+                newSibling.StorePassAlongUISize(isHorizontal
+                    ? new DockZoneSize(average, parent.UI?.RenderSize.Height ?? 0)
+                    : new DockZoneSize(parent.UI?.RenderSize.Width ?? 0, average)
+                );
+            }
+        }
 
         private void InternallyReparentAndCleanup (DockZoneViewModel newParent)
         {

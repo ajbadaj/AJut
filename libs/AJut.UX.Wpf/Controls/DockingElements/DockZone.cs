@@ -73,13 +73,16 @@ namespace AJut.UX.Controls
                 return;
             }
 
+            // Dispatch at Loaded priority (6) so the AutoGrid from the template exists.
+            // The ContentPresenter DataTrigger swaps templates at Render priority (7),
+            // and Normal (9) runs before that - meaning the AutoGrid wouldn't exist yet.
             this.Dispatcher.InvokeAsync(() =>
             {
                 if (e.NewItems != null)
                 {
                     this.HandleNewChildZonesAdded(e.NewItems.OfType<DockZone>());
                 }
-            });
+            }, DispatcherPriority.Loaded);
         }
 
         private void HandleNewChildZonesAdded (IEnumerable<DockZone> added)
@@ -95,9 +98,27 @@ namespace AJut.UX.Controls
                 return;
             }
 
-            List<DockZoneSize> sizes = this.ChildZones
-                .Select(z => z.ViewModel.TakePassAlongUISize(out DockZoneSize dockSize) ? dockSize : ((IDockZoneUI)z).RenderSize)
-                .ToList();
+            bool anyPassAlongTaken = false;
+            var sizes = new List<DockZoneSize>();
+            foreach (DockZone z in this.ChildZones)
+            {
+                if (z.ViewModel.TakePassAlongUISize(out DockZoneSize dockSize))
+                {
+                    anyPassAlongTaken = true;
+                    sizes.Add(dockSize);
+                }
+                else
+                {
+                    sizes.Add(((IDockZoneUI)z).RenderSize);
+                }
+            }
+
+            // If no child had a stored pass-along size, skip - a previous dispatch already
+            // handled this batch or no proportional sizing was requested
+            if (!anyPassAlongTaken)
+            {
+                return;
+            }
 
             DockZoneSize rootSize = ((IDockZoneUI)this).RenderSize;
             if (this.ViewModel.Orientation == eDockOrientation.Horizontal)

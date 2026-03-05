@@ -693,13 +693,29 @@ namespace AJut.UX.Controls
                 return;
             }
 
-            // Only applies when zones have stored pass-along sizes from serialization.
-            // If no sizes are stored and the root has no actual dimensions yet, skip.
             DockZoneSize rootSize = ((IDockZoneUI)this).RenderSize;
 
-            var sizes = this.ChildZones
-                .Select(z => z.ViewModel.TakePassAlongUISize(out DockZoneSize stored) ? stored : ((IDockZoneUI)z).RenderSize)
-                .ToList();
+            bool anyPassAlongTaken = false;
+            var sizes = new List<DockZoneSize>();
+            foreach (DockZone z in this.ChildZones)
+            {
+                if (z.ViewModel.TakePassAlongUISize(out DockZoneSize stored))
+                {
+                    anyPassAlongTaken = true;
+                    sizes.Add(stored);
+                }
+                else
+                {
+                    sizes.Add(((IDockZoneUI)z).RenderSize);
+                }
+            }
+
+            // If no child had a stored pass-along size, skip - a previous dispatch already
+            // handled this batch or no proportional sizing was requested
+            if (!anyPassAlongTaken)
+            {
+                return;
+            }
 
             if (this.ViewModel.Orientation == eDockOrientation.Horizontal)
             {

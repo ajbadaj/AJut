@@ -3,10 +3,12 @@
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Media;
+    using AJut.TypeManagement;
     using AJut.UX.Docking;
 
     using DPUtils = AJut.UX.DPUtils<ColorController>;
 
+    [TypeId("ColorController")]
     public partial class ColorController : UserControl, IDockableDisplayElement
     {
         public ColorController (DockingFrameworkOverviewPage owner)

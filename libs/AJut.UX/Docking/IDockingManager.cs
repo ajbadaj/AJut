@@ -11,6 +11,12 @@ namespace AJut.UX.Docking
     {
         IDockableDisplayElement BuildNewDisplayElement (Type elementType);
         IEnumerable<DockZoneViewModel> GetAllRoots();
+
+        bool LoadDockLayoutFromFile(string filePath);
+        bool SaveDockLayoutToFile(string filePath = null);
+
+        bool SaveDockLayoutToPersistentStorage();
+        bool ReloadDockLayoutFromPersistentStorage();
     }
 
     public static class DockingManagerXT
