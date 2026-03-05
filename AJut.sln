@@ -50,8 +50,6 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Workflows", "Workflows", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 	ProjectSection(SolutionItems) = preProject
 		.github\workflows\BasicBuildAndTest.yml = .github\workflows\BasicBuildAndTest.yml
-		.github\workflows\PublishToNuget.yml = .github\workflows\PublishToNuget.yml
-		.github\workflows\SetLatestVersions.yml = .github\workflows\SetLatestVersions.yml
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AJut.UX.Tests", "test\AJut.UX.Tests\AJut.UX.Tests.csproj", "{2C353BEF-FDE9-4F48-8CAE-879EB0BD1ABD}"
