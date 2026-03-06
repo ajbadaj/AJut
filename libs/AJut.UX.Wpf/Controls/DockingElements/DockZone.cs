@@ -381,6 +381,7 @@ namespace AJut.UX.Controls
 
                 e.NewValue.PropertyChanged -= _OnViewModelPropertyChanged;
                 e.NewValue.PropertyChanged += _OnViewModelPropertyChanged;
+                _OnViewModelPropertyChanged(e.NewValue, new System.ComponentModel.PropertyChangedEventArgs(null));
 
                 _InsertEach(0, e.NewValue.Children);
             }
