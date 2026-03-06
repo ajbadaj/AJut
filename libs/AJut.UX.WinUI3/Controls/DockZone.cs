@@ -129,6 +129,14 @@ namespace AJut.UX.Controls
             }
 
             this.BuildDropOverlay();
+
+            // Add the drop overlay to the outer template Grid (PART_Root's parent) so it
+            // renders above PART_EmptyPlaceholder and other template siblings.
+            if (m_dropOverlay != null && this.PART_Root?.Parent is Grid outerGrid)
+            {
+                outerGrid.Children.Add(m_dropOverlay);
+            }
+
             this.RebuildLayout();
         }
         public Grid PART_Root { get; private set; }
@@ -267,11 +275,6 @@ namespace AJut.UX.Controls
                     break;
             }
 
-            // Always re-add drop overlay last so it renders above all content
-            if (m_dropOverlay != null)
-            {
-                this.PART_Root.Children.Add(m_dropOverlay);
-            }
         }
 
         private void BuildEmptyLayout()
@@ -1219,12 +1222,6 @@ namespace AJut.UX.Controls
                 this.PART_Root.RowDefinitions.Clear();
                 this.PART_Root.ColumnDefinitions.Clear();
                 this.BuildSplitLayout();
-
-                // Re-add overlay above all split content
-                if (m_dropOverlay != null)
-                {
-                    this.PART_Root.Children.Add(m_dropOverlay);
-                }
             }
         }
 
@@ -1304,6 +1301,8 @@ namespace AJut.UX.Controls
                 m_dropOverlay.Visibility = Visibility.Collapsed;
                 return;
             }
+
+            m_dropOverlay.Visibility = Visibility.Visible;
 
             // Empty zones can only accept content to fill them; they can't be split.
             // Leaf zones (Single/Tabbed) support both directional splits and tab-insertion.

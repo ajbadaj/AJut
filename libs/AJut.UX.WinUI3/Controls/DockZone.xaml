@@ -29,11 +29,14 @@
                               HorizontalAlignment="Stretch"
                               VerticalAlignment="Stretch"/>
 
-                        <!-- Empty zone placeholder: shown when Orientation == Empty -->
+                        <!-- Empty zone placeholder: shown when Orientation == Empty.
+                             IsHitTestVisible=False so the drop overlay in PART_Root
+                             remains reachable during drag-drop. -->
                         <Border x:Name="PART_EmptyPlaceholder"
                                 Background="{ThemeResource AJut_DockZone_EmptyBackground}"
                                 BorderBrush="{ThemeResource AJut_DockZone_EmptyBorderBrush}"
                                 BorderThickness="1"
+                                IsHitTestVisible="False"
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Stretch"
                                 Visibility="Collapsed">
