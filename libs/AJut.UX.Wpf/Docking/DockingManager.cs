@@ -740,7 +740,7 @@
             return this.FindFirstAvailableDockZone();
         }
 
-        // ===========[ Panel Add/Toggle/Hide — delegates to shared UISync logic ]====
+        // ===========[ Panel Add/Toggle/Hide - delegates to shared UISync logic ]====
 
         public void AddPanel (Type panelType) => this.UISyncVM.AddPanel(panelType);
         public void TogglePanel (Type panelType) => this.UISyncVM.ShowPanel(panelType);

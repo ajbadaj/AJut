@@ -958,6 +958,7 @@ namespace AJut.UX.Controls
             }
 
             // After a layout pass, apply stored pass-along sizes (e.g. from serialization).
+            Logger.LogInfo($"[DOCK-SIZE] BuildSplitLayout on [{this.ViewModel?.DebugZoneId()}]: enqueueing HandleNewChildZonesAdded for {m_childZones.Count} children", eLogVerbosity.Verbose);
             this.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
             {
                 if (this.XamlRoot == null) { return; }
@@ -973,6 +974,7 @@ namespace AJut.UX.Controls
             }
 
             DockZoneSize rootSize = ((IDockZoneUI)this).RenderSize;
+            Logger.LogInfo($"[DOCK-SIZE] HandleNewChildZonesAdded on [{this.ViewModel.DebugZoneId()}] orientation={this.ViewModel.Orientation}, rootSize={rootSize.Width:F0}x{rootSize.Height:F0}, childCount={this.ChildZones.Count}", eLogVerbosity.Verbose);
 
             bool anyPassAlongTaken = false;
             var sizes = new List<DockZoneSize>();
@@ -982,10 +984,13 @@ namespace AJut.UX.Controls
                 {
                     anyPassAlongTaken = true;
                     sizes.Add(stored);
+                    Logger.LogInfo($"[DOCK-SIZE]   child [{z.ViewModel.DebugZoneId()}]: TOOK pass-along {stored.Width:F0}x{stored.Height:F0}", eLogVerbosity.Verbose);
                 }
                 else
                 {
-                    sizes.Add(((IDockZoneUI)z).RenderSize);
+                    var rs = ((IDockZoneUI)z).RenderSize;
+                    sizes.Add(rs);
+                    Logger.LogInfo($"[DOCK-SIZE]   child [{z.ViewModel.DebugZoneId()}]: fallback RenderSize {rs.Width:F0}x{rs.Height:F0}", eLogVerbosity.Verbose);
                 }
             }
 
@@ -993,6 +998,7 @@ namespace AJut.UX.Controls
             // handled this batch or no proportional sizing was requested
             if (!anyPassAlongTaken)
             {
+                Logger.LogInfo($"[DOCK-SIZE]   => NO pass-along taken, skipping", eLogVerbosity.Verbose);
                 return;
             }
 
@@ -1004,10 +1010,13 @@ namespace AJut.UX.Controls
                 if (full > 0 && rootSize.Width > 0)
                 {
                     var pixelSizes = sizes.Select(s => rootSize.Width * (s.Width / full)).ToList();
+                    Logger.LogInfo($"[DOCK-SIZE]   => Horizontal: full={full:F0}, pixelSizes=[{string.Join(", ", pixelSizes.Select(p => p.ToString("F0")))}]", eLogVerbosity.Detailed);
                     DockZoneViewModel.EnforceMinPanelDimensions(pixelSizes, rootSize.Width, minDim);
+                    Logger.LogInfo($"[DOCK-SIZE]   => After enforce: [{string.Join(", ", pixelSizes.Select(p => p.ToString("F0")))}]", eLogVerbosity.Detailed);
                     this.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
                     {
                         if (this.XamlRoot == null) { return; }
+                        Logger.LogInfo($"[DOCK-SIZE]   => SetTargetSize (H): [{string.Join(", ", pixelSizes.Select(p => p.ToString("F0")))}]", eLogVerbosity.Verbose);
                         this.SetTargetSize(pixelSizes);
                     });
                 }
@@ -1018,10 +1027,13 @@ namespace AJut.UX.Controls
                 if (full > 0 && rootSize.Height > 0)
                 {
                     var pixelSizes = sizes.Select(s => rootSize.Height * (s.Height / full)).ToList();
+                    Logger.LogInfo($"[DOCK-SIZE]   => Vertical: full={full:F0}, pixelSizes=[{string.Join(", ", pixelSizes.Select(p => p.ToString("F0")))}]", eLogVerbosity.Detailed);
                     DockZoneViewModel.EnforceMinPanelDimensions(pixelSizes, rootSize.Height, minDim);
+                    Logger.LogInfo($"[DOCK-SIZE]   => After enforce: [{string.Join(", ", pixelSizes.Select(p => p.ToString("F0")))}]", eLogVerbosity.Detailed);
                     this.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
                     {
                         if (this.XamlRoot == null) { return; }
+                        Logger.LogInfo($"[DOCK-SIZE]   => SetTargetSize (V): [{string.Join(", ", pixelSizes.Select(p => p.ToString("F0")))}]", eLogVerbosity.Verbose);
                         this.SetTargetSize(pixelSizes);
                     });
                 }
@@ -1092,7 +1104,8 @@ namespace AJut.UX.Controls
                 int idx = 0;
                 foreach (DockZoneViewModel child in e.NewValue.Children)
                 {
-                    m_childZones.Insert(idx++, new DockZone { ViewModel = child });
+                    var newDZ = new DockZone { ViewModel = child };
+                    m_childZones.Insert(idx++, newDZ);
                 }
             }
             else
@@ -1107,6 +1120,14 @@ namespace AJut.UX.Controls
 
         private void OnViewModelChildrenChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
+            // Multiple DockZone instances can exist for the same ViewModel (created by
+            // parent DockZone OnViewModelChanged + OnViewModelChildrenChanged cascades).
+            // Only the "active" instance (the one the VM references as UI) should react.
+            if (this.ViewModel?.UI != (IDockZoneUI)this)
+            {
+                return;
+            }
+
             if (e.OldItems != null)
             {
                 var toRemove = m_childZones.Where(c => e.OldItems.Contains(c.ViewModel)).ToList();
@@ -1132,18 +1153,29 @@ namespace AJut.UX.Controls
                 int index = e.NewStartingIndex;
                 foreach (DockZoneViewModel child in e.NewItems)
                 {
-                    m_childZones.Insert(index++, new DockZone { ViewModel = child });
+                    var newDZ = new DockZone { ViewModel = child };
+                    m_childZones.Insert(index++, newDZ);
                 }
             }
         }
 
         private void OnViewModelDockedContentChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
+            if (this.ViewModel?.UI != (IDockZoneUI)this)
+            {
+                return;
+            }
+
             this.RebuildLayout();
         }
 
         private void OnViewModelPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
+            if (this.ViewModel?.UI != (IDockZoneUI)this)
+            {
+                return;
+            }
+
             this.IsEmpty = this.ViewModel == null || this.ViewModel.Orientation == eDockOrientation.Empty;
 
             if (e.PropertyName == nameof(DockZoneViewModel.Orientation)
@@ -1155,10 +1187,34 @@ namespace AJut.UX.Controls
 
         private void OnChildZonesCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
+            if (this.ViewModel?.UI != (IDockZoneUI)this)
+            {
+                return;
+            }
+
             // When split-layout children change at runtime, rebuild the split structure.
             if (this.PART_Root != null && this.ViewModel != null
                 && (this.ViewModel.Orientation & eDockOrientation.AnySplitOrientation) != 0)
             {
+                Logger.LogInfo($"[DOCK-SIZE] OnChildZonesCC on [{this.ViewModel.DebugZoneId()}] action={e.Action}, childCount={m_childZones.Count}", eLogVerbosity.Verbose);
+
+                // Snapshot remaining children's current sizes before clearing the grid.
+                // This allows HandleNewChildZonesAdded to preserve proportional sizing
+                // when zones are added or removed (e.g. after tearoff or panel close).
+                foreach (DockZone child in m_childZones)
+                {
+                    if (child.ViewModel != null && !child.ViewModel.HasPassAlongUISize)
+                    {
+                        var rs = ((IDockZoneUI)child).RenderSize;
+                        Logger.LogInfo($"[DOCK-SIZE]   snapshot [{child.ViewModel.DebugZoneId()}]: {rs.Width:F0}x{rs.Height:F0}", eLogVerbosity.Verbose);
+                        child.ViewModel.StorePassAlongUISize(rs);
+                    }
+                    else if (child.ViewModel != null)
+                    {
+                        Logger.LogInfo($"[DOCK-SIZE]   skip [{child.ViewModel.DebugZoneId()}]: already has pass-along", eLogVerbosity.Verbose);
+                    }
+                }
+
                 this.PART_Root.Children.Clear();
                 this.PART_Root.RowDefinitions.Clear();
                 this.PART_Root.ColumnDefinitions.Clear();

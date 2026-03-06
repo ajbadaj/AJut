@@ -47,6 +47,19 @@ namespace AJut.UX.Docking
 
         public override string ToString () => m_debugTrackingMoniker ?? base.ToString();
 
+        public string DebugZoneId ()
+        {
+            if (m_debugTrackingMoniker != null)
+            {
+                return m_debugTrackingMoniker;
+            }
+
+            string content = m_dockedContent.Count > 0
+                ? string.Join(",", m_dockedContent.Select(c => c.TitleContent ?? "?"))
+                : $"{this.Orientation}({m_children.Count}ch)";
+            return content;
+        }
+
         // ===========[ Properties ]===================================
 
         /// <summary>
@@ -115,6 +128,7 @@ namespace AJut.UX.Docking
         /// </summary>
         public void StorePassAlongUISize (DockZoneSize size)
         {
+            Logger.LogInfo($"[DOCK-SIZE] StorePassAlong on [{this.DebugZoneId()}]: {size.Width:F0}x{size.Height:F0}", eLogVerbosity.Verbose);
             m_internalStorageOfPassAlongUISize = size;
         }
 
@@ -127,10 +141,12 @@ namespace AJut.UX.Docking
             {
                 size = m_internalStorageOfPassAlongUISize.Value;
                 m_internalStorageOfPassAlongUISize = null;
+                Logger.LogInfo($"[DOCK-SIZE] TakePassAlong on [{this.DebugZoneId()}]: {size.Width:F0}x{size.Height:F0}", eLogVerbosity.Verbose);
                 return true;
             }
 
             size = DockZoneSize.Empty;
+            Logger.LogInfo($"[DOCK-SIZE] TakePassAlong on [{this.DebugZoneId()}]: NONE", eLogVerbosity.Verbose);
             return false;
         }
 
@@ -297,10 +313,12 @@ namespace AJut.UX.Docking
 
         public bool RemoveChild (DockZoneViewModel child)
         {
+            Logger.LogInfo($"[DOCK-SIZE] RemoveChild [{child.DebugZoneId()}] from [{this.DebugZoneId()}] (orientation={this.Orientation}, childCount={m_children.Count})", eLogVerbosity.Detailed);
             bool result = this.RunChildZoneRemoval(child);
             if (result && m_children.Count == 1)
             {
                 var lastRemainingChild = m_children[0];
+                Logger.LogInfo($"[DOCK-SIZE] COLLAPSE: [{this.DebugZoneId()}] has 1 child [{lastRemainingChild.DebugZoneId()}], parent={this.Parent != null}", eLogVerbosity.Detailed);
                 if (this.Parent != null)
                 {
                     this.Parent.InsertChild(this.Parent.Children.IndexOf(this), lastRemainingChild);
@@ -323,7 +341,16 @@ namespace AJut.UX.Docking
             {
                 if (zone.UI != null)
                 {
-                    zone.StorePassAlongUISize(zone.UI.RenderSize);
+                    if (!zone.HasPassAlongUISize)
+                    {
+                        Logger.LogInfo($"[DOCK-SIZE] DestroyUIRef [{zone.DebugZoneId()}]: storing UI.RenderSize {zone.UI.RenderSize.Width:F0}x{zone.UI.RenderSize.Height:F0}", eLogVerbosity.Verbose);
+                        zone.StorePassAlongUISize(zone.UI.RenderSize);
+                    }
+                    else
+                    {
+                        Logger.LogInfo($"[DOCK-SIZE] DestroyUIRef [{zone.DebugZoneId()}]: SKIPPED (already has pass-along)", eLogVerbosity.Verbose);
+                    }
+
                     zone.UI = null;
                 }
             }

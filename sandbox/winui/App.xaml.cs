@@ -23,7 +23,7 @@
             this.UnhandledException += (sender, e) =>
             {
                 e.Handled = true;   // prevents the crash
-                System.Diagnostics.Debug.WriteLine(e.Exception.ToString());
+                Debug.WriteLine(e.Exception.ToString());
             };
 
             Instance = this;
@@ -49,6 +49,23 @@
             Logger.LogInfo("Starting up AJut Show Room for WinUI");
             Logger.LogInfo($"Using AJut.Core version #{this.AJut_Core_Version}");
             Logger.LogInfo($"Using AJut.UX.WinUI version #{this.AJut_UX_WinUI_Version}");
+
+#if false // Example of verbostiy, very useful in debug scenarios!
+            Logger.VerbosityManager.BaseVerbosity = eLogVerbositySetting.None;
+            Logger.VerbosityManager.Scenarios.Add(new LogVerbosityScenario
+            {
+                RaiseToLevel = eLogVerbositySetting.Normal,
+                EnterCriteria = new LogTextMatchCriteria
+                {
+                    SearchText = "[DOCK-SIZE]",
+                },
+                // Don't log anything until we see our test, then allow the next 10 things
+                ExitCriteria = new LogCountCriteria
+                {
+                    CountThreshold = 10,
+                }
+            });
+#endif
 
             TypeIdRegistrar.RegisterAllTypeIds(this.GetType().Assembly);
 

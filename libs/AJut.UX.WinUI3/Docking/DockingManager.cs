@@ -490,7 +490,7 @@ namespace AJut.UX.Docking
             return this.FindFirstAvailableDockZone();
         }
 
-        // ===========[ Panel Add/Toggle/Hide — delegates to shared UISync logic ]====
+        // ===========[ Panel Add/Toggle/Hide - delegates to shared UISync logic ]====
 
         public void AddPanel(Type panelType) => this.UISyncVM.AddPanel(panelType);
         public void TogglePanel(Type panelType) => this.UISyncVM.ShowPanel(panelType);
@@ -604,7 +604,7 @@ namespace AJut.UX.Docking
             {
                 if (rootZone == zone)
                 {
-                    // It's a tearoff root — check if removing the last content would leave it empty
+                    // It's a tearoff root - check if removing the last content would leave it empty
                     bool hasOnlyOneContent = zone.DockedContent.Count <= 1
                         && zone.Children.Count == 0;
                     return hasOnlyOneContent;
@@ -1335,7 +1335,15 @@ namespace AJut.UX.Docking
                 m_windowManager.ApplyTheme(window); // belt-and-suspenders for any later theme change
 
                 var appWindow = window.AppWindow;
-                appWindow.Resize(new Windows.Graphics.SizeInt32((int)size.Width, (int)size.Height));
+
+                // RenderSize (the source of size) is in effective/logical pixels, but
+                // AppWindow.Resize operates in raw/physical pixels. Scale by DPI.
+                double dpiScale = (this.RootWindow.Content as FrameworkElement)
+                    ?.XamlRoot?.RasterizationScale ?? 1.0;
+
+                appWindow.Resize(new Windows.Graphics.SizeInt32(
+                    (int)(size.Width * dpiScale),
+                    (int)(size.Height * dpiScale)));
                 appWindow.Move(new Windows.Graphics.PointInt32((int)origin.X, (int)origin.Y));
                 appWindow.Closing += this.TearoffWindowAppWindow_EXTERNAL_OnClosing;
 
@@ -1450,7 +1458,22 @@ namespace AJut.UX.Docking
             var panel = (DockTearoffContainerPanel)sender;
             if (this.GetWindowForZone(panel.DockZoneContent) is Window window)
             {
-                this.DoTearoffWindowClose(window);
+                if (this.DoTearoffWindowClose(window))
+                {
+                    // DoTearoffWindowClose cleans up tracking but doesn't close the
+                    // window itself (it's designed for the AppWindow.Closing path where
+                    // the OS handles the close). Mark as silent so the Closing handler
+                    // won't re-enter and cancel, then close.
+                    m_windowsToCloseSilently.Add(window);
+                    try
+                    {
+                        window.Close();
+                    }
+                    finally
+                    {
+                        m_windowsToCloseSilently.Remove(window);
+                    }
+                }
             }
         }
 
