@@ -20,6 +20,7 @@ namespace AJut.UX.PropertyInteraction
         private readonly SetValue? m_setValue;
         private object m_defaultValue;
         private bool m_hasDefaultValue;
+        private PropertyEditTarget m_elevatedChildTarget;
 
         public PropertyEditTarget (string propertyPathTarget, GetValue getValue, SetValue? setValue = null)
         {
@@ -36,8 +37,26 @@ namespace AJut.UX.PropertyInteraction
         /// <summary>
         /// Set when either elevation attribute is found on this or a child property.
         /// Non-null means this row is non-expandable; the elevated child's editor shows inline.
+        /// Default-value tracking and reset are delegated to the child when this is set.
         /// </summary>
-        public PropertyEditTarget ElevatedChildTarget { get; private set; }
+        public PropertyEditTarget ElevatedChildTarget
+        {
+            get => m_elevatedChildTarget;
+            private set
+            {
+                if (m_elevatedChildTarget != null)
+                {
+                    m_elevatedChildTarget.PropertyChanged -= this.OnElevatedChildPropertyChanged;
+                }
+
+                m_elevatedChildTarget = value;
+
+                if (m_elevatedChildTarget != null)
+                {
+                    m_elevatedChildTarget.PropertyChanged += this.OnElevatedChildPropertyChanged;
+                }
+            }
+        }
 
         /// <summary>True when this row should show an inline editor.</summary>
         public bool HasInlineEditor => !this.IsExpandable || this.ElevatedChildTarget != null;
@@ -157,9 +176,16 @@ namespace AJut.UX.PropertyInteraction
             private set => this.SetAndRaiseIfChanged(ref m_isAtDefaultValue, value);
         }
 
-        /// <summary>Resets EditValue to DefaultValue (no-op if HasDefaultValue is false).</summary>
+        /// <summary>Resets EditValue to DefaultValue (no-op if HasDefaultValue is false).
+        /// When an elevated child target is present, delegates to that child instead.</summary>
         public void ResetToDefault ()
         {
+            if (m_elevatedChildTarget != null)
+            {
+                m_elevatedChildTarget.ResetToDefault();
+                return;
+            }
+
             if (m_hasDefaultValue)
             {
                 this.EditValue = m_defaultValue;
@@ -292,7 +318,7 @@ namespace AJut.UX.PropertyInteraction
 
                 // 5. Recurse into complex reference types (non-nullable, non-aliased, non-string, non-enum,
                 // non-value-type) that have a non-null value and editable sub-properties. Cap recursion at depth 5.
-                if (!isNullable && aliasing == null && editorAttr == null && depth < 5 && _IsComplexObjectType(prop.PropertyType))
+                if (!isNullable && aliasing == null && depth < 5 && _IsComplexObjectType(prop.PropertyType))
                 {
                     object? subValue = prop.GetValue(sourceItem);
                     if (subValue != null && _GetRelevantProperties(subValue).Any())
@@ -310,8 +336,8 @@ namespace AJut.UX.PropertyInteraction
                                     childProp.SetMethod != null ? v => childProp.SetValue(prop.GetValue(sourceItem), v) : (SetValue?)null
                                 )
                                 {
-                                    DisplayName = TypeMetadataExtensionRegistrar.GetAttribute<DisplayNameAttribute>(childProp)?.DisplayName ?? childProp.Name.ConvertToFriendlyEn(),
-                                    Editor = TypeMetadataExtensionRegistrar.GetAttribute<PGEditorAttribute>(childProp)?.Editor ?? childProp.PropertyType.Name,
+                                    DisplayName = _GetDisplayName(childProp, prop.Name.ConvertToFriendlyEn()),
+                                    Editor = _GetEditorKey(childProp, childProp.PropertyType.Name),
                                 };
                                 _ApplyDefault(childTarget, childProp, subValue);
                                 childTarget.Setup();
@@ -327,14 +353,16 @@ namespace AJut.UX.PropertyInteraction
                                 .FirstOrDefault(p => TypeMetadataExtensionRegistrar.HasAttribute<PGElevateAsParentAttribute>(p));
                             if (elevatedProp != null)
                             {
+                                var elevateToParentAttr = TypeMetadataExtensionRegistrar.GetAttribute<PGElevateAsParentAttribute>(elevatedProp);
+                                PropertyInfo attributeSourceProperty = elevateToParentAttr.DeferPGAttributesToParent ? prop : elevatedProp;
                                 var childTarget = new PropertyEditTarget(
                                     elevatedProp.Name,
                                     () => elevatedProp.GetValue(prop.GetValue(sourceItem)),
                                     elevatedProp.SetMethod != null ? v => elevatedProp.SetValue(prop.GetValue(sourceItem), v) : (SetValue?)null
                                 )
                                 {
-                                    DisplayName = TypeMetadataExtensionRegistrar.GetAttribute<DisplayNameAttribute>(elevatedProp)?.DisplayName ?? elevatedProp.Name.ConvertToFriendlyEn(),
-                                    Editor = TypeMetadataExtensionRegistrar.GetAttribute<PGEditorAttribute>(elevatedProp)?.Editor ?? elevatedProp.PropertyType.Name,
+                                    DisplayName = _GetDisplayName(attributeSourceProperty, $"{prop.Name.ConvertToFriendlyEn()}+{elevatedProp.Name.ConvertToFriendlyEn()}"),
+                                    Editor = _GetEditorKey(attributeSourceProperty, elevatedProp.PropertyType.Name),
                                 };
                                 _ApplyDefault(childTarget, elevatedProp, subValue);
                                 childTarget.Setup();
@@ -356,6 +384,16 @@ namespace AJut.UX.PropertyInteraction
                 }
 
                 yield return target;
+            }
+
+            string _GetDisplayName(PropertyInfo prop, string fallback)
+            {
+                return TypeMetadataExtensionRegistrar.GetAttribute<DisplayNameAttribute>(prop)?.DisplayName ?? fallback;
+            }
+
+            string _GetEditorKey(PropertyInfo prop, string fallback)
+            {
+                return TypeMetadataExtensionRegistrar.GetAttribute<PGEditorAttribute>(prop)?.Editor ?? fallback;
             }
 
             IEnumerable<PropertyInfo> _GetRelevantProperties (object _item)
@@ -490,7 +528,21 @@ namespace AJut.UX.PropertyInteraction
 
         private void UpdateIsAtDefaultValue ()
         {
+            if (m_elevatedChildTarget != null)
+            {
+                this.IsAtDefaultValue = m_elevatedChildTarget.IsAtDefaultValue;
+                return;
+            }
+
             this.IsAtDefaultValue = m_hasDefaultValue && object.Equals(m_editValue, m_defaultValue);
+        }
+
+        private void OnElevatedChildPropertyChanged (object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(IsAtDefaultValue))
+            {
+                this.IsAtDefaultValue = m_elevatedChildTarget.IsAtDefaultValue;
+            }
         }
     }
 }

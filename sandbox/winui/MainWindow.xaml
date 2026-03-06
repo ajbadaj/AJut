@@ -590,6 +590,12 @@
                                                 <DataTemplate x:Key="String">
                                                     <TextBox Text="{Binding Path=EditValue, Mode=TwoWay}"/>
                                                 </DataTemplate>
+                                                <DataTemplate x:Key="SpecialString">
+                                                    <Border CornerRadius="8" Padding="3" Background="Yellow"
+                                                            ToolTipService.ToolTip="This shows usage of elevate as parent, where property attributes were deffered back to parent">
+                                                        <TextBox Text="{Binding Path=EditValue, Mode=TwoWay}"/>
+                                                    </Border>
+                                                </DataTemplate>
                                             </ajut:PropertyGridTemplateSelector.RegisteredTemplates>
                                         </ajut:PropertyGridTemplateSelector>
                                     </ajut:PropertyGrid.ItemTemplateSelector>

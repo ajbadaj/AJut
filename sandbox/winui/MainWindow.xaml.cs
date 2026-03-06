@@ -335,6 +335,11 @@ namespace AJutShowRoomWinUI
         [PGGroup("Transform")]
         public ShowRoomSubObject SubObjWithElevation { get; set; } = new ShowRoomSubObject();
 
+        [PGEditor("SpecialString")]
+        public TemplateSubType<string> SpecialStringEditor { get; set; } = new TemplateSubType<string>();
+
+        public TemplateSubType<string> NormalStringEditor { get; set; } = new TemplateSubType<string>();
+
         private class ColorToStringConverter : PropertyGridTypeAliasing<Color, string>
         {
             public override Type AliasType => typeof(string);
@@ -360,6 +365,13 @@ namespace AJutShowRoomWinUI
     {
         public int SubObjValue { get; set; } = 9001;
     }
+
+    public class TemplateSubType<T>
+    {
+        [PGElevateAsParent(deferPGAttributesToParent: true)]
+        public T Value { get; set; }
+    }
+
 
     // ===========[ ShowRoomAlpha - 5 properties (mirrors CF "Image" with many fields) ]=======
     // X=111, Y=222, Z=333 are very distinct from Beta so visual mismatch is immediately obvious.

@@ -114,6 +114,20 @@ namespace AJut.UX.Tests
         public ElevatedInnerObject Settings { get; set; } = new ElevatedInnerObject();
     }
 
+    /// <summary>Typed wrapper used to test elevation default delegation with DeferPGAttributesToParent.</summary>
+    public class TypedWrapper<T>
+    {
+        [PGElevateAsParent(deferPGAttributesToParent: true)]
+        public T Value { get; set; }
+    }
+
+    /// <summary>Model with a typed-wrapper property to test that ResetToDefault delegates to the inner value.</summary>
+    public class WrapperElevationModel
+    {
+        [PGEditor("Int32")]
+        public TypedWrapper<int> Number { get; set; } = new TypedWrapper<int>();
+    }
+
     /// <summary>Sub-object for [PGElevateChildProperty].</summary>
     public class ChildElevationTarget
     {
@@ -483,6 +497,48 @@ namespace AJut.UX.Tests
             Assert.IsNotNull(position.ElevatedChildTarget);
             Assert.AreEqual("X", position.ElevatedChildTarget.PropertyPathTarget);
             Assert.AreEqual("Int32", position.ElevatedChildTarget.Editor);
+        }
+
+        [TestMethod]
+        public void PET_ElevateAsParent_IsAtDefaultValue_DelegatesFromChild ()
+        {
+            var model = new WrapperElevationModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+            SetupAll(targets);
+
+            var number = Find(targets, "Number");
+            Assert.IsNotNull(number.ElevatedChildTarget);
+
+            // Child int starts at 0 which is default(int) - both should be at default
+            Assert.IsTrue(number.ElevatedChildTarget.IsAtDefaultValue, "Child should start at default (0)");
+            Assert.IsTrue(number.IsAtDefaultValue, "Parent should reflect child's IsAtDefaultValue");
+
+            // Modify the child value away from default
+            number.ElevatedChildTarget.EditValue = 42;
+            Assert.IsFalse(number.ElevatedChildTarget.IsAtDefaultValue, "Child should not be at default after edit");
+            Assert.IsFalse(number.IsAtDefaultValue, "Parent should sync when child leaves default");
+        }
+
+        [TestMethod]
+        public void PET_ElevateAsParent_ResetToDefault_ResetsChildNotWrapper ()
+        {
+            var model = new WrapperElevationModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+            SetupAll(targets);
+
+            var number = Find(targets, "Number");
+            Assert.IsNotNull(number.ElevatedChildTarget);
+
+            // Move child away from default, then reset via parent
+            number.ElevatedChildTarget.EditValue = 99;
+            Assert.IsFalse(number.IsAtDefaultValue);
+
+            number.ResetToDefault();
+
+            // Wrapper object must still exist - only the inner value was reset
+            Assert.IsNotNull(model.Number, "Wrapper object must not be nulled out by ResetToDefault");
+            Assert.AreEqual(0, model.Number.Value, "Inner value should be reset to default(int)");
+            Assert.IsTrue(number.IsAtDefaultValue, "Parent IsAtDefaultValue should be true after reset");
         }
 
         // ===[ AltPropertyAlias tests ]===
