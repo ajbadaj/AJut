@@ -76,6 +76,51 @@
             set => this.SetAndRaiseIfChanged(ref m_dogSaveFileLocation, value);
         }
 
+        // ------ ShowIf demo: show full stats only when ShowDetails is checked ------
+        public bool ShowDetails { get; set; } = true;
+
+        private int m_dogsWeight = 50;
+
+        [PGShowIf(nameof(ShowDetails))]
+        [PGEditor("Number")]
+        [PGGroup("Stats")]
+        public int DogsWeight
+        {
+            get => m_dogsWeight;
+            set => this.SetAndRaiseIfChanged(ref m_dogsWeight, value);
+        }
+
+
+        // ------ PGCoerce demo: age clamped to 0-30 ------
+        private int m_coercedAge = 5;
+
+        [PGCoerce(nameof(CoerceAge))]
+        [PGEditor("Number")]
+        [PGGroup("Stats")]
+        public int CoercedAge
+        {
+            get => m_coercedAge;
+            set => this.SetAndRaiseIfChanged(ref m_coercedAge, value);
+        }
+
+        private object CoerceAge (object value)
+        {
+            if (value is int i)
+            {
+                return System.Math.Clamp(i, 0, 30);
+            }
+
+            return value;
+        }
+
+        // ------ PGButton demo ------
+        [PGButton("Randomize Age")]
+        public void RandomizeAge ()
+        {
+            this.DogsAge = App.kRNG.Next(1, 18);
+            this.RaisePropertyChanged(nameof(DogsAge));
+        }
+
         public IEnumerable<PropertyEditTarget> GenerateEditTargets ()
         {
             foreach (var p in PropertyEditTarget.GenerateForPropertiesOf(this))

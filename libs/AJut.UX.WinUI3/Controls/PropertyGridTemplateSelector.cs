@@ -18,16 +18,24 @@ namespace AJut.UX.Controls
     public class PropertyGridTemplateSelector : SwitchDataTemplateSelector
     {
         private static DataTemplate s_builtInNullableTemplate;
+        private static DataTemplate s_builtInButtonTemplate;
 
         protected override object GetKeyForItem (object item)
             => ((PropertyEditTarget)item).Editor ?? "__Invalid";
 
         protected override DataTemplate SelectTemplateCore (object item)
         {
-            if (item is PropertyEditTarget { Editor: "Nullable" }
-                && !this.RegisteredTemplates.ContainsKey("Nullable"))
+            if (item is PropertyEditTarget target)
             {
-                return GetOrCreateBuiltInNullableTemplate();
+                if (target.Editor == "Nullable" && !this.RegisteredTemplates.ContainsKey("Nullable"))
+                {
+                    return GetOrCreateBuiltInNullableTemplate();
+                }
+
+                if (target.Editor == "Button" && !this.RegisteredTemplates.ContainsKey("Button"))
+                {
+                    return GetOrCreateBuiltInButtonTemplate();
+                }
             }
 
             return base.SelectTemplateCore(item);
@@ -61,6 +69,31 @@ namespace AJut.UX.Controls
             }
 
             return s_builtInNullableTemplate;
+        }
+
+        private static DataTemplate GetOrCreateBuiltInButtonTemplate ()
+        {
+            if (s_builtInButtonTemplate != null)
+            {
+                return s_builtInButtonTemplate;
+            }
+
+            try
+            {
+                s_builtInButtonTemplate = (DataTemplate)XamlReader.Load(
+                    "<DataTemplate xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\">" +
+                    "<Button Content=\"{Binding EditValue}\" Command=\"{Binding EditContext}\" " +
+                    "HorizontalAlignment=\"Stretch\" VerticalAlignment=\"Center\"/>" +
+                    "</DataTemplate>"
+                );
+            }
+            catch (System.Exception ex)
+            {
+                Logger.LogError("[WARNING] Button built-in template could not be created via XamlReader. " +
+                    "Register selector.RegisteredTemplates[\"Button\"] manually.", ex);
+            }
+
+            return s_builtInButtonTemplate;
         }
     }
 }

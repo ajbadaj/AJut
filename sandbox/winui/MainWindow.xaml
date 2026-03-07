@@ -587,8 +587,14 @@
                                                 <DataTemplate x:Key="ColorPick">
                                                     <ajut:ColorEditIngressControl EditColor="{Binding Path=EditValue, Mode=TwoWay}" VerticalAlignment="Stretch" MaxWidth="150" HorizontalAlignment="Left"/>
                                                 </DataTemplate>
+                                                <DataTemplate x:Key="Boolean">
+                                                    <CheckBox IsChecked="{Binding Path=EditValue, Mode=TwoWay}" VerticalAlignment="Center"/>
+                                                </DataTemplate>
                                                 <DataTemplate x:Key="String">
                                                     <TextBox Text="{Binding Path=EditValue, Mode=TwoWay}"/>
+                                                </DataTemplate>
+                                                <DataTemplate x:Key="eEditorMode">
+                                                    <ajut:EnumComboBox SelectedItem="{Binding Path=EditValue, Mode=TwoWay}" VerticalAlignment="Center"/>
                                                 </DataTemplate>
                                                 <DataTemplate x:Key="SpecialString">
                                                     <Border CornerRadius="8" Padding="3" Background="Yellow"
