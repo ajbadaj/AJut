@@ -287,7 +287,7 @@ namespace AJut.UX.PropertyInteraction
 
                 SetValue setter = aliasing != null
                     ? v => prop.SetValue(sourceItem, aliasing.ConvertFromAlias(v))
-                    : v => prop.SetValue(sourceItem, v);
+                    : v => prop.SetValue(sourceItem, _CoerceValueType(v, prop.PropertyType));
 
                 // 3. Build EditContext from [PGEditContextBuilder] if present and no context was set above
                 if (editContext == null)
@@ -336,7 +336,7 @@ namespace AJut.UX.PropertyInteraction
                                 var childTarget = new PropertyEditTarget(
                                     childProp.Name,
                                     () => childProp.GetValue(prop.GetValue(sourceItem)),
-                                    childProp.SetMethod != null ? v => childProp.SetValue(prop.GetValue(sourceItem), v) : (SetValue?)null
+                                    childProp.SetMethod != null ? v => childProp.SetValue(prop.GetValue(sourceItem), _CoerceValueType(v, childProp.PropertyType)) : (SetValue?)null
                                 )
                                 {
                                     DisplayName = _GetDisplayName(childProp, prop.Name.ConvertToFriendlyEn()),
@@ -377,7 +377,7 @@ namespace AJut.UX.PropertyInteraction
                                 var childTarget = new PropertyEditTarget(
                                     elevatedProp.Name,
                                     () => elevatedProp.GetValue(prop.GetValue(sourceItem)),
-                                    elevatedProp.SetMethod != null ? v => elevatedProp.SetValue(prop.GetValue(sourceItem), v) : (SetValue?)null
+                                    elevatedProp.SetMethod != null ? v => elevatedProp.SetValue(prop.GetValue(sourceItem), _CoerceValueType(v, elevatedProp.PropertyType)) : (SetValue?)null
                                 )
                                 {
                                     DisplayName = _GetDisplayName(attributeSourceProperty, $"{prop.Name.ConvertToFriendlyEn()}+{elevatedProp.Name.ConvertToFriendlyEn()}"),
@@ -488,6 +488,23 @@ namespace AJut.UX.PropertyInteraction
                 // Natural CLR default: null for reference/nullable types, default(T) for value types.
                 target.m_defaultValue = prop.PropertyType.IsValueType ? Activator.CreateInstance(prop.PropertyType) : null;
                 target.m_hasDefaultValue = true;
+            }
+        }
+
+        private static object _CoerceValueType (object value, Type targetType)
+        {
+            if (value == null || targetType.IsInstanceOfType(value))
+            {
+                return value;
+            }
+
+            try
+            {
+                return Convert.ChangeType(value, targetType);
+            }
+            catch
+            {
+                return value;
             }
         }
 
