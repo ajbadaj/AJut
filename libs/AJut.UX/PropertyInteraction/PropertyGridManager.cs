@@ -255,7 +255,7 @@ namespace AJut.UX.PropertyInteraction
             // Walk up the parent chain to construct a full dotted path, excluding the hidden root.
             var parts = new List<string>();
             PropertyEditTarget current = target;
-            while (current != null && !current.PropertyPathTarget.StartsWith("$"))
+            while (current != null && current.PropertyPathTarget != "$_root_")
             {
                 parts.Insert(0, current.PropertyPathTarget);
                 current = current.Parent as PropertyEditTarget;
