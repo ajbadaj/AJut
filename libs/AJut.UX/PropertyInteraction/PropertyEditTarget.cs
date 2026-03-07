@@ -330,6 +330,9 @@ namespace AJut.UX.PropertyInteraction
                             PropertyInfo? childProp = prop.PropertyType.GetProperty(elevateChildAttr.ChildPropertyName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty);
                             if (childProp != null)
                             {
+                                var childCtxAttr = TypeMetadataExtensionRegistrar.GetAttribute<PGEditContextBuilderAttribute>(childProp);
+                                object childEditContext = childCtxAttr != null ? _BuildEditContext(childCtxAttr) : null;
+
                                 var childTarget = new PropertyEditTarget(
                                     childProp.Name,
                                     () => childProp.GetValue(prop.GetValue(sourceItem)),
@@ -338,6 +341,7 @@ namespace AJut.UX.PropertyInteraction
                                 {
                                     DisplayName = _GetDisplayName(childProp, prop.Name.ConvertToFriendlyEn()),
                                     Editor = _GetEditorKey(childProp, childProp.PropertyType.Name),
+                                    EditContext = childEditContext,
                                 };
                                 _ApplyDefault(childTarget, childProp, subValue);
                                 childTarget.Setup();
@@ -355,6 +359,21 @@ namespace AJut.UX.PropertyInteraction
                             {
                                 var elevateToParentAttr = TypeMetadataExtensionRegistrar.GetAttribute<PGElevateAsParentAttribute>(elevatedProp);
                                 PropertyInfo attributeSourceProperty = elevateToParentAttr.DeferPGAttributesToParent ? prop : elevatedProp;
+
+                                // Resolve EditContext for the elevated target: when deferring to
+                                // the parent property, reuse the already-built context; otherwise
+                                // check the elevated property for its own PGEditContextBuilder.
+                                object elevatedEditContext;
+                                if (elevateToParentAttr.DeferPGAttributesToParent)
+                                {
+                                    elevatedEditContext = editContext;
+                                }
+                                else
+                                {
+                                    var elevCtxAttr = TypeMetadataExtensionRegistrar.GetAttribute<PGEditContextBuilderAttribute>(elevatedProp);
+                                    elevatedEditContext = elevCtxAttr != null ? _BuildEditContext(elevCtxAttr) : null;
+                                }
+
                                 var childTarget = new PropertyEditTarget(
                                     elevatedProp.Name,
                                     () => elevatedProp.GetValue(prop.GetValue(sourceItem)),
@@ -363,6 +382,7 @@ namespace AJut.UX.PropertyInteraction
                                 {
                                     DisplayName = _GetDisplayName(attributeSourceProperty, $"{prop.Name.ConvertToFriendlyEn()}+{elevatedProp.Name.ConvertToFriendlyEn()}"),
                                     Editor = _GetEditorKey(attributeSourceProperty, elevatedProp.PropertyType.Name),
+                                    EditContext = elevatedEditContext,
                                 };
                                 _ApplyDefault(childTarget, elevatedProp, subValue);
                                 childTarget.Setup();

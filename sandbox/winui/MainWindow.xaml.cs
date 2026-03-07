@@ -340,6 +340,13 @@ namespace AJutShowRoomWinUI
 
         public TemplateSubType<string> NormalStringEditor { get; set; } = new TemplateSubType<string>();
 
+        // Exercises PGElevateAsParent + deferPGAttributesToParent + PGEditContextBuilder.
+        // Before the fix, NumericEditor would show fallback Min/Max; after, it uses 0-100 / Step 0.5.
+        [PGEditor("Single")]
+        [PGEditContextBuilder("PG-Limits", "{ Min: 0.0, Max: 100.0, Step: 0.5 }")]
+        [PGGroup("Transform")]
+        public TemplateSubType<float> WrappedFloat { get; set; } = new TemplateSubType<float> { Value = 42.0f };
+
         private class ColorToStringConverter : PropertyGridTypeAliasing<Color, string>
         {
             public override Type AliasType => typeof(string);
