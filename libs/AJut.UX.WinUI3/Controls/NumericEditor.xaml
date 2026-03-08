@@ -161,7 +161,7 @@
                                 <!-- Increase RepeatButton: VSM-driven hover/pressed backgrounds.
                                      RepeatButton (ButtonBase) calls GoToState("Normal"/"PointerOver"/"Pressed")
                                      automatically when the ControlTemplate has a CommonStates group. -->
-                                <prim:RepeatButton x:Name="PART_IncreaseButton" Grid.Row="0" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Opacity="0.7">
+                                <prim:RepeatButton x:Name="PART_IncreaseButton" Grid.Row="0" IsTabStop="False" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Opacity="0.7">
                                     <prim:RepeatButton.Style>
                                         <Style TargetType="prim:RepeatButton">
                                             <Setter Property="Background" Value="#01000000"/>
@@ -203,7 +203,7 @@
                                 </prim:RepeatButton>
 
                                 <!-- Decrease RepeatButton: same pattern as increase, with inverted gradients. -->
-                                <prim:RepeatButton x:Name="PART_DecreaseButton" Grid.Row="1"  VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Opacity="0.7">
+                                <prim:RepeatButton x:Name="PART_DecreaseButton" Grid.Row="1" IsTabStop="False" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Opacity="0.7">
                                     <prim:RepeatButton.Style>
                                         <Style TargetType="prim:RepeatButton">
                                             <Setter Property="Background" Value="#01000000"/>

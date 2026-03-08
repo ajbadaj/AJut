@@ -440,7 +440,7 @@ namespace AJutShowRoomWinUI
     }
 
 
-    // ===========[ ShowRoomAlpha - 5 properties (mirrors CF "Image" with many fields) ]=======
+    // ===========[ ShowRoomAlpha - 5 properties ]=======
     // X=111, Y=222, Z=333 are very distinct from Beta so visual mismatch is immediately obvious.
     // Label (String) and IsActive (Bool) appear in Alpha but not Beta; if they persist after
     // switching to Beta the stale-display bug is confirmed.

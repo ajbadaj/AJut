@@ -52,6 +52,7 @@ namespace AJut.UX.Controls
             this.DefaultStyleKey = typeof(NumericEditor);
             this.GotFocus += this.OnGotFocus;
             this.LostFocus += this.OnLostFocus;
+            this.IsTabStop = false;
         }
 
         // ===========[ INumericEditorSettings ]===================================
@@ -183,6 +184,7 @@ namespace AJut.UX.Controls
             if (this.PART_TextBox != null)
             {
                 this.PART_TextBox.TextChanged -= this.TextBox_OnTextChanged;
+                this.PART_TextBox.KeyDown -= this.TextBox_OnKeyDown;
             }
 
             // 2. Acquire new parts
@@ -210,6 +212,7 @@ namespace AJut.UX.Controls
             if (this.PART_TextBox != null)
             {
                 this.PART_TextBox.TextChanged += this.TextBox_OnTextChanged;
+                this.PART_TextBox.KeyDown += this.TextBox_OnKeyDown;
 
                 // Push current value into the text box (template-before-data case).
                 if (m_vm != null)
@@ -227,6 +230,15 @@ namespace AJut.UX.Controls
         private void OnGotFocus (object sender, RoutedEventArgs e)
         {
             VisualStateManager.GoToState(this, "Focused", true);
+
+            // Forward focus to the inner TextBox when the NumericEditor itself receives
+            // focus (e.g. programmatic Focus() call). When a child already has focus
+            // (e.g. PART_TextBox via Tab), OriginalSource != this so we skip forwarding.
+            if (ReferenceEquals(e.OriginalSource, this) && this.PART_TextBox != null)
+            {
+                this.PART_TextBox.Focus(FocusState.Programmatic);
+                this.PART_TextBox.SelectAll();
+            }
         }
 
         private void OnLostFocus (object sender, RoutedEventArgs e)
@@ -236,6 +248,26 @@ namespace AJut.UX.Controls
 
         private void IncreaseButton_OnClick (object sender, RoutedEventArgs e) => this.DoNudge(positive: true);
         private void DecreaseButton_OnClick (object sender, RoutedEventArgs e) => this.DoNudge(positive: false);
+
+        private void TextBox_OnKeyDown (object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+        {
+            if (e.Key == VirtualKey.Up)
+            {
+                this.DoNudge(positive: true);
+                e.Handled = true;
+            }
+            else if (e.Key == VirtualKey.Down)
+            {
+                this.DoNudge(positive: false);
+                e.Handled = true;
+            }
+            else if (e.Key == VirtualKey.Enter)
+            {
+                // Commit text - TextBox_OnTextChanged already synced the value;
+                // marking handled prevents the Enter from bubbling further.
+                e.Handled = true;
+            }
+        }
 
         private void TextBox_OnTextChanged (object sender, TextChangedEventArgs e)
         {

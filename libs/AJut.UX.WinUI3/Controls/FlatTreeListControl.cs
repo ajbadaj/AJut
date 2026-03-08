@@ -381,11 +381,30 @@ namespace AJut.UX.Controls
 
         private void ListView_OnKeyUp (object sender, KeyRoutedEventArgs e)
         {
+            // Don't intercept arrow keys when focus is inside an editor (TextBox, etc.)
+            // - those keys belong to the editor for cursor movement or value nudging.
+            var focused = FocusManager.GetFocusedElement(this.XamlRoot);
+            if (focused is TextBox || focused is PasswordBox || focused is RichEditBox)
+            {
+                return;
+            }
+
             if (e.Key == Windows.System.VirtualKey.Left)
             {
                 foreach (FlatTreeItem item in this.SelectedItems.ToList())
                 {
-                    item.IsExpanded = false;
+                    if (item.IsExpanded)
+                    {
+                        // Collapse expanded node
+                        item.IsExpanded = false;
+                    }
+                    else if (item.Parent != null && m_store.Contains(item.Parent))
+                    {
+                        // Navigate to parent when already collapsed
+                        this.SelectedItem = item.Parent;
+                        this.PART_ListView.SelectedItem = item.Parent;
+                        this.PART_ListView.ScrollIntoView(item.Parent);
+                    }
                 }
                 e.Handled = true;
             }
@@ -393,7 +412,19 @@ namespace AJut.UX.Controls
             {
                 foreach (FlatTreeItem item in this.SelectedItems.ToList())
                 {
-                    item.IsExpanded = true;
+                    if (item.IsExpandable && !item.IsExpanded)
+                    {
+                        // Expand collapsed node
+                        item.IsExpanded = true;
+                    }
+                    else if (item.IsExpanded && item.Children.Count > 0)
+                    {
+                        // Navigate to first child when already expanded
+                        var firstChild = (FlatTreeItem)item.Children[0];
+                        this.SelectedItem = firstChild;
+                        this.PART_ListView.SelectedItem = firstChild;
+                        this.PART_ListView.ScrollIntoView(firstChild);
+                    }
                 }
                 e.Handled = true;
             }
