@@ -79,6 +79,11 @@
     <SolidColorBrush x:Key="AJut_FlatTreeItemRow_ExpanderPointerOverBackground" Color="#20FFFFFF"/>
     <SolidColorBrush x:Key="AJut_FlatTreeItemRow_ExpanderPressedBackground"     Color="#FF074470"/>
 
+    <!-- Drag/drop visual brushes -->
+    <SolidColorBrush x:Key="AJut_FlatTree_DragInsertionLine"           Color="#2196F3"/>
+    <SolidColorBrush x:Key="AJut_FlatTree_DragParentConnector"         Color="#2196F3" Opacity="0.5"/>
+    <SolidColorBrush x:Key="AJut_FlatTree_DragTargetHighlight"         Color="#2196F3"/>
+
     <!-- ===========[ FlatTree ListViewItem ]================================ -->
     <!-- Default: point at WinUI3 system brushes; AJutThemeMapAliasing.xaml redirects to AJut palette -->
     <StaticResource x:Key="AJut_FlatTree_SelectionBrush"         ResourceKey="SystemControlHighlightListAccentHighBrush"/>

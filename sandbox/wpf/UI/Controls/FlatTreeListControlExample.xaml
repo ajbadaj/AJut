@@ -34,7 +34,8 @@
                 </TextBlock.Inlines>
             </TextBlock>
         </StackPanel>
-        <ajut:FlatTreeListControl Grid.Row="1" Root="{Binding ElementName=Self, Path=Root}" TreeDepthIndentSize="10" Margin="10" BorderThickness="1">
+        <ajut:FlatTreeListControl Grid.Row="1" Root="{Binding ElementName=Self, Path=Root}" TreeDepthIndentSize="10" Margin="10" BorderThickness="1"
+                                     IsDragDropReorderEnabled="True" StartItemsExpanded="True" SelectionMode="Extended">
             <ajut:FlatTreeListControl.Resources>
                 <DataTemplate DataType="{x:Type local:TestTreeItem}">
                     <DockPanel>
