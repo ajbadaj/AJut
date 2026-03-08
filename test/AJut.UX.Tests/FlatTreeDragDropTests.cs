@@ -202,6 +202,22 @@ namespace AJut.UX.Tests
             Assert.AreEqual(1, target.TargetDepth);
         }
 
+        [TestMethod]
+        public void DropTarget_BetweenSiblings_CursorFarLeft_TargetsParentLevel ()
+        {
+            var t = BuildTestTree();
+            var above = FindFlatItem(t.Store, t.GcA1);
+            var below = FindFlatItem(t.Store, t.GcA2);
+
+            // Between two depth-2 siblings, cursor far left (depth 1 range)
+            var target = FlatTreeDragDropManager.ComputeDropTargetForGap(above, below, 16.0, kIndentSize);
+
+            Assert.IsTrue(target.IsValid);
+            Assert.AreEqual(t.Root, target.TargetParent); // walks up from GcA1 to ChildA (depth 1), inserts after ChildA in Root
+            Assert.AreEqual(1, target.InsertIndex); // after Child A (index 0)
+            Assert.AreEqual(1, target.TargetDepth);
+        }
+
         // ===========[ Validation Tests ]==========================================
 
         [TestMethod]

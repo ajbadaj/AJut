@@ -171,14 +171,11 @@ namespace AJut.UX
                 maxDepth = above.TreeDepth + 1;
             }
 
-            int minDepth = below?.TreeDepth ?? 1;
-
-            // If below is null (end of list), minimum depth is 1 (never root level)
-            if (below == null)
-            {
-                // Walk up from 'above' - the minimum depth is 1 (can't place at root level)
-                minDepth = 1;
-            }
+            // Minimum depth is always 1 (children-of-root level). Depth 0 returns
+            // Invalid naturally since root.Parent is null. This allows cursor X to
+            // target shallower depths even between siblings deep in the tree —
+            // ComputeParentAndIndex walks up from 'above' to find the correct ancestor.
+            int minDepth = 1;
 
             // Ensure valid range
             if (minDepth > maxDepth)
