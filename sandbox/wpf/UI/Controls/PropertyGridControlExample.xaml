@@ -54,6 +54,8 @@
                             </TextBlock.Inlines>
                         </TextBlock>
                         <Button Content="Set age" Click="SetDogAge_OnClick"/>
+                        <Button Content="Set speed" Click="SetElevatedTopSpeed_OnClick"
+                                ToolTip="Sets elevated TopSpeed externally - tests RecacheEditValue cascade"/>
                     </StackPanel>
                 </DataTemplate>
             </ListBox.ItemTemplate>

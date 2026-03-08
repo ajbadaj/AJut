@@ -23,6 +23,7 @@ namespace AJut.UX.PropertyInteraction
         private object m_defaultValue;
         private bool m_hasDefaultValue;
         private PropertyEditTarget m_elevatedChildTarget;
+        private INotifyPropertyChanged m_elevatedSubObject;
 
         public PropertyEditTarget(string propertyPathTarget, GetValue getValue, SetValue? setValue = null)
         {
@@ -426,6 +427,7 @@ namespace AJut.UX.PropertyInteraction
                                 childTarget.Setup();
                                 target.ElevatedChildTarget = childTarget;
                                 target.IsExpandable = false;
+                                target.WireUpElevatedSubObjectINPC(subValue);
                             }
                         }
                         else
@@ -467,6 +469,7 @@ namespace AJut.UX.PropertyInteraction
                                 childTarget.Setup();
                                 target.ElevatedChildTarget = childTarget;
                                 target.IsExpandable = false;
+                                target.WireUpElevatedSubObjectINPC(subValue);
                             }
                             else
                             {
@@ -820,6 +823,47 @@ namespace AJut.UX.PropertyInteraction
             if (e.PropertyName == nameof(IsAtDefaultValue))
             {
                 this.IsAtDefaultValue = m_elevatedChildTarget.IsAtDefaultValue;
+            }
+        }
+
+        /// <summary>
+        /// When the sub-object behind an elevated child implements INotifyPropertyChanged,
+        /// subscribe so that external changes to the elevated property automatically recache
+        /// without requiring the top-level source to fire PropertyChanged.
+        /// </summary>
+        internal void WireUpElevatedSubObjectINPC (object subObject)
+        {
+            if (m_elevatedSubObject != null)
+            {
+                m_elevatedSubObject.PropertyChanged -= this.OnElevatedSubObjectPropertyChanged;
+            }
+
+            m_elevatedSubObject = subObject as INotifyPropertyChanged;
+            if (m_elevatedSubObject != null)
+            {
+                m_elevatedSubObject.PropertyChanged += this.OnElevatedSubObjectPropertyChanged;
+            }
+        }
+
+        private void OnElevatedSubObjectPropertyChanged (object sender, PropertyChangedEventArgs e)
+        {
+            if (m_elevatedChildTarget != null && m_elevatedChildTarget.ShouldEvaluateFor(e.PropertyName))
+            {
+                m_elevatedChildTarget.RecacheEditValue();
+                this.UpdateIsAtDefaultValue();
+            }
+        }
+
+        /// <summary>
+        /// Cleans up event subscriptions when this target is being discarded (e.g. during
+        /// PropertyGridManager.RebuildEditTargets). Call on every target before clearing the tree.
+        /// </summary>
+        public void Teardown ()
+        {
+            if (m_elevatedSubObject != null)
+            {
+                m_elevatedSubObject.PropertyChanged -= this.OnElevatedSubObjectPropertyChanged;
+                m_elevatedSubObject = null;
             }
         }
     }
