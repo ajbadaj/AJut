@@ -312,6 +312,8 @@ namespace AJutShowRoomWinUI
     }
 
     // ===========[ ShowRoomTester - PropertyGrid smoke-test source ]==================
+    public enum eEditorMode { Text, Number, Color }
+
     public class ShowRoomTester
     {
         [PGEditor("Single")]
@@ -347,6 +349,64 @@ namespace AJutShowRoomWinUI
         [PGGroup("Transform")]
         public TemplateSubType<float> WrappedFloat { get; set; } = new TemplateSubType<float> { Value = 42.0f };
 
+        // ------ ShowIf / HideIf demo ------
+        // Change EditorMode to show/hide the matching editor row
+        [PGGroup("Conditional")]
+        public eEditorMode EditorMode { get; set; } = eEditorMode.Text;
+
+        [PGShowIf(nameof(IsTextMode))]
+        [PGGroup("Conditional")]
+        public string TextModeValue { get; set; } = "Hello world";
+
+        [PGShowIf(nameof(IsNumberMode))]
+        [PGEditor("Single")]
+        [PGGroup("Conditional")]
+        public float NumberModeValue { get; set; } = 42.0f;
+
+        [PGShowIf(nameof(IsColorMode))]
+        [PGEditor("ColorPick")]
+        [PGGroup("Conditional")]
+        public Color ColorModeValue { get; set; } = new Color { A = 255, R = 128, G = 200, B = 255 };
+
+        [PGHidden]
+        public bool IsTextMode => this.EditorMode == eEditorMode.Text;
+        [PGHidden]
+        public bool IsNumberMode => this.EditorMode == eEditorMode.Number;
+        [PGHidden]
+        public bool IsColorMode => this.EditorMode == eEditorMode.Color;
+
+        // ------ PGCoerce demo ------
+        // Value is clamped to 0-100 via custom coercion
+        [PGCoerce(nameof(CoerceClampedValue))]
+        [PGEditor("Single")]
+        [PGGroup("Transform")]
+        public float ClampedValue { get; set; } = 50.0f;
+
+        private object CoerceClampedValue (object value)
+        {
+            if (value is double d)
+            {
+                return (float)Math.Clamp(d, 0.0, 100.0);
+            }
+
+            if (value is float f)
+            {
+                return Math.Clamp(f, 0.0f, 100.0f);
+            }
+
+            return value;
+        }
+
+        // ------ PGButton demo ------
+        [PGButton("Reset Conditional Values")]
+        [PGGroup("Conditional")]
+        public void ResetConditionalValues ()
+        {
+            this.TextModeValue = "Hello world";
+            this.NumberModeValue = 42.0f;
+            this.ColorModeValue = new Color { A = 255, R = 128, G = 200, B = 255 };
+        }
+
         private class ColorToStringConverter : PropertyGridTypeAliasing<Color, string>
         {
             public override Type AliasType => typeof(string);
@@ -380,7 +440,7 @@ namespace AJutShowRoomWinUI
     }
 
 
-    // ===========[ ShowRoomAlpha - 5 properties (mirrors CF "Image" with many fields) ]=======
+    // ===========[ ShowRoomAlpha - 5 properties ]=======
     // X=111, Y=222, Z=333 are very distinct from Beta so visual mismatch is immediately obvious.
     // Label (String) and IsActive (Bool) appear in Alpha but not Beta; if they persist after
     // switching to Beta the stale-display bug is confirmed.

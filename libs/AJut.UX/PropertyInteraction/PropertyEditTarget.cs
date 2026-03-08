@@ -5,6 +5,8 @@ namespace AJut.UX.PropertyInteraction
     using System.ComponentModel;
     using System.Linq;
     using System.Reflection;
+    using System.Threading;
+    using System.Windows.Input;
     using AJut;
     using AJut.Storage;
     using AJut.Text.AJson;
@@ -18,6 +20,7 @@ namespace AJut.UX.PropertyInteraction
 
         private readonly GetValue m_getValue;
         private readonly SetValue? m_setValue;
+        private Func<object, object> m_coerceValue;
         private object m_defaultValue;
         private bool m_hasDefaultValue;
         private PropertyEditTarget m_elevatedChildTarget;
@@ -143,11 +146,28 @@ namespace AJut.UX.PropertyInteraction
             get => m_editValue;
             set
             {
-                if (!this.IsReadOnly && this.SetAndRaiseIfChanged(ref m_editValue, value))
+                if (this.IsReadOnly)
                 {
-                    m_setValue(value);
+                    return;
+                }
+
+                // Apply attributed coercion (PGCoerce) before caching so the UI
+                // displays the coerced value, not the raw editor output.
+                object coerced = m_coerceValue != null ? m_coerceValue(value) : value;
+                bool wasCoerced = m_coerceValue != null && !Equals(coerced, value);
+                if (this.SetAndRaiseIfChanged(ref m_editValue, coerced))
+                {
+                    m_setValue(coerced);
                     this.UpdateIsAtDefaultValue();
                     this.RaisePropertyChanged(SourceCommittedPropertyName);
+                }
+
+                // When coercion changed the value, the binding framework suppresses
+                // the synchronous PropertyChanged to avoid re-entrancy. Post a deferred
+                // notification so the UI control picks up the coerced value.
+                if (wasCoerced)
+                {
+                    SynchronizationContext.Current?.Post(_ => this.RaisePropertyChanged(nameof(EditValue)), null);
                 }
             }
         }
@@ -198,6 +218,15 @@ namespace AJut.UX.PropertyInteraction
         }
 
         /// <summary>
+        /// Forces a SourceCommitted notification without going through the EditValue setter.
+        /// Used by button targets to signal that sibling property values may have changed.
+        /// </summary>
+        public void ForceRaiseSourceCommitted ()
+        {
+            this.RaisePropertyChanged(SourceCommittedPropertyName);
+        }
+
+        /// <summary>
         /// Unconditionally re-reads the source value and raises PropertyChanged("EditValue")
         /// even if the cached value hasn't changed. Used by NullableEditor to force the inner
         /// editor to refresh when the outer nullable target transitions between null and non-null
@@ -245,6 +274,7 @@ namespace AJut.UX.PropertyInteraction
 
         private static IEnumerable<PropertyEditTarget> GenerateForPropertiesOf (object sourceItem, int depth)
         {
+            PropertyEditTarget[] _pendingCoerceHolder = null;
             foreach (PropertyInfo prop in _GetRelevantProperties(sourceItem))
             {
                 var editorAttr = TypeMetadataExtensionRegistrar.GetAttribute<PGEditorAttribute>(prop);
@@ -285,9 +315,50 @@ namespace AJut.UX.PropertyInteraction
                     ? () => aliasing.ConvertToAlias(prop.GetValue(sourceItem))
                     : () => prop.GetValue(sourceItem);
 
-                SetValue setter = aliasing != null
-                    ? v => prop.SetValue(sourceItem, aliasing.ConvertFromAlias(v))
-                    : v => prop.SetValue(sourceItem, v);
+                // 2b. Build setter and optional [PGCoerce] delegate
+                SetValue setter;
+                Func<object, object> coerceDelegate = null;
+                if (aliasing != null)
+                {
+                    setter = v => prop.SetValue(sourceItem, aliasing.ConvertFromAlias(v));
+                }
+                else
+                {
+                    var coerceAttr = TypeMetadataExtensionRegistrar.GetAttribute<PGCoerceAttribute>(prop);
+                    MethodInfo coerceMethod = coerceAttr != null
+                        ? _ResolveCoerceMethod(sourceItem.GetType(), coerceAttr.MemberName)
+                        : null;
+
+                    if (coerceMethod != null)
+                    {
+                        // Mutable holder for the PropertyEditTarget reference (set after construction)
+                        var targetHolder = new PropertyEditTarget[1];
+                        var coerceParams = coerceMethod.GetParameters();
+                        if (coerceParams.Length == 2 && coerceParams[1].ParameterType == typeof(PropertyEditTarget))
+                        {
+                            coerceDelegate = v => coerceMethod.Invoke(
+                                coerceMethod.IsStatic ? null : sourceItem,
+                                new object[] { v, targetHolder[0] }
+                            );
+                        }
+                        else
+                        {
+                            coerceDelegate = v => coerceMethod.Invoke(
+                                coerceMethod.IsStatic ? null : sourceItem,
+                                new object[] { v }
+                            );
+                        }
+
+                        // Setter is plain - coercion is applied in EditValue before this runs
+                        setter = v => prop.SetValue(sourceItem, v);
+                        _pendingCoerceHolder = targetHolder;
+                    }
+                    else
+                    {
+                        _pendingCoerceHolder = null;
+                        setter = v => prop.SetValue(sourceItem, _CoerceValueType(v, prop.PropertyType));
+                    }
+                }
 
                 // 3. Build EditContext from [PGEditContextBuilder] if present and no context was set above
                 if (editContext == null)
@@ -313,6 +384,14 @@ namespace AJut.UX.PropertyInteraction
                     AdditionalEvalTargets = aliases,
                 };
 
+                // 3b. Complete deferred coerce holder and coercion delegate assignment
+                if (_pendingCoerceHolder != null)
+                {
+                    _pendingCoerceHolder[0] = target;
+                    _pendingCoerceHolder = null;
+                    target.m_coerceValue = coerceDelegate;
+                }
+
                 // 4. Compute default value
                 _ApplyDefault(target, prop, sourceItem);
 
@@ -336,7 +415,7 @@ namespace AJut.UX.PropertyInteraction
                                 var childTarget = new PropertyEditTarget(
                                     childProp.Name,
                                     () => childProp.GetValue(prop.GetValue(sourceItem)),
-                                    childProp.SetMethod != null ? v => childProp.SetValue(prop.GetValue(sourceItem), v) : (SetValue?)null
+                                    childProp.SetMethod != null ? v => childProp.SetValue(prop.GetValue(sourceItem), _CoerceValueType(v, childProp.PropertyType)) : (SetValue?)null
                                 )
                                 {
                                     DisplayName = _GetDisplayName(childProp, prop.Name.ConvertToFriendlyEn()),
@@ -377,7 +456,7 @@ namespace AJut.UX.PropertyInteraction
                                 var childTarget = new PropertyEditTarget(
                                     elevatedProp.Name,
                                     () => elevatedProp.GetValue(prop.GetValue(sourceItem)),
-                                    elevatedProp.SetMethod != null ? v => elevatedProp.SetValue(prop.GetValue(sourceItem), v) : (SetValue?)null
+                                    elevatedProp.SetMethod != null ? v => elevatedProp.SetValue(prop.GetValue(sourceItem), _CoerceValueType(v, elevatedProp.PropertyType)) : (SetValue?)null
                                 )
                                 {
                                     DisplayName = _GetDisplayName(attributeSourceProperty, $"{prop.Name.ConvertToFriendlyEn()}+{elevatedProp.Name.ConvertToFriendlyEn()}"),
@@ -433,6 +512,10 @@ namespace AJut.UX.PropertyInteraction
                         return false;
                     }
 
+                    // ShowIf/HideIf filtering is handled by PropertyGridManager after
+                    // tree construction - targets are always generated so they can be
+                    // toggled in/out without a full rebuild.
+
                     if (showReadOnly)
                     {
                         return true;
@@ -442,6 +525,164 @@ namespace AJut.UX.PropertyInteraction
                         || TypeMetadataExtensionRegistrar.HasAttribute<PGShowReadonlyAttribute>(_prop);
                 }
             }
+        }
+
+        /// <summary>
+        /// Evaluates a boolean member (property or method) on the source item.
+        /// Methods may optionally take a single <see cref="PropertyEditTarget"/> parameter.
+        /// Returns false if the member is not found or does not return a boolean.
+        /// </summary>
+        internal static bool EvaluateBoolMember (object sourceItem, string memberName, PropertyEditTarget target = null)
+        {
+            Type type = sourceItem.GetType();
+
+            // 1. Try property
+            PropertyInfo prop = type.GetProperty(
+                memberName,
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static
+            );
+            if (prop != null)
+            {
+                object instance = (prop.GetGetMethod(true)?.IsStatic == true) ? null : sourceItem;
+                return prop.GetValue(instance) is bool b && b;
+            }
+
+            // 2. Try zero-parameter method
+            MethodInfo method = type.GetMethod(
+                memberName,
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static,
+                null, Type.EmptyTypes, null
+            );
+
+            // 3. Try one-parameter method (PropertyEditTarget)
+            if (method == null)
+            {
+                method = type.GetMethod(
+                    memberName,
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static,
+                    null, new[] { typeof(PropertyEditTarget) }, null
+                );
+            }
+
+            if (method != null)
+            {
+                object instance = method.IsStatic ? null : sourceItem;
+                var parameters = method.GetParameters();
+                object result;
+                if (parameters.Length == 1 && parameters[0].ParameterType == typeof(PropertyEditTarget))
+                {
+                    result = method.Invoke(instance, new object[] { target });
+                }
+                else
+                {
+                    result = method.Invoke(instance, null);
+                }
+
+                return result is bool bResult && bResult;
+            }
+
+            Logger.LogError($"PGShowIf/PGHideIf: member '{memberName}' not found on '{type.Name}'");
+            return false;
+        }
+
+        /// <summary>
+        /// Scans the source item's methods for [PGButton] and generates a PropertyEditTarget
+        /// for each. The target's Editor is "Button", EditValue is the button label, and
+        /// EditContext is an <see cref="ActionCommand"/> that invokes the method.
+        /// </summary>
+        internal static IEnumerable<PropertyEditTarget> GenerateButtonsForMethodsOf (object sourceItem)
+        {
+            Type type = sourceItem.GetType();
+            foreach (MethodInfo method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
+            {
+                var buttonAttr = method.GetCustomAttribute<PGButtonAttribute>();
+                if (buttonAttr == null)
+                {
+                    continue;
+                }
+
+                // ShowIf/HideIf filtering is handled by PropertyGridManager after
+                // tree construction - button targets are always generated so they can
+                // be toggled in/out without a full rebuild.
+
+                string buttonName = !string.IsNullOrEmpty(buttonAttr.ButtonName)
+                    ? buttonAttr.ButtonName
+                    : method.Name.ConvertToFriendlyEn();
+
+                var capturedMethod = method;
+                var capturedItem = sourceItem;
+
+                var groupAttr = method.GetCustomAttribute<PGGroupAttribute>();
+                var target = new PropertyEditTarget(method.Name, () => buttonName, null)
+                {
+                    DisplayName = buttonName,
+                    Editor = "Button",
+                    GroupId = groupAttr?.GroupId,
+                };
+
+                // Capture target so the action can signal SourceCommitted after running
+                var capturedTarget = target;
+                Action action = () =>
+                {
+                    capturedMethod.Invoke(capturedMethod.IsStatic ? null : capturedItem, null);
+                    capturedTarget.ForceRaiseSourceCommitted();
+                };
+                target.EditContext = new ActionCommand(action);
+
+                yield return target;
+            }
+        }
+
+        /// <summary>
+        /// Returns true if the source type has any properties with [PGShowIf], [PGHideIf],
+        /// or methods with [PGButton] + visibility attributes. Used by PropertyGridManager
+        /// to decide whether to re-evaluate visibility on property changes.
+        /// </summary>
+        internal static bool HasConditionalVisibility (object sourceItem)
+        {
+            Type type = sourceItem.GetType();
+
+            foreach (PropertyInfo prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                if (TypeMetadataExtensionRegistrar.HasAttribute<PGShowIfAttribute>(prop)
+                    || TypeMetadataExtensionRegistrar.HasAttribute<PGHideIfAttribute>(prop))
+                {
+                    return true;
+                }
+            }
+
+            foreach (MethodInfo method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
+            {
+                if (method.GetCustomAttribute<PGButtonAttribute>() != null
+                    && (method.GetCustomAttribute<PGShowIfAttribute>() != null
+                        || method.GetCustomAttribute<PGHideIfAttribute>() != null))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static MethodInfo _ResolveCoerceMethod (Type type, string memberName)
+        {
+            foreach (MethodInfo m in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
+            {
+                if (m.Name != memberName)
+                {
+                    continue;
+                }
+
+                var parameters = m.GetParameters();
+                if (parameters.Length == 1
+                    || (parameters.Length == 2 && parameters[1].ParameterType == typeof(PropertyEditTarget)))
+                {
+                    return m;
+                }
+            }
+
+            Logger.LogError($"PGCoerce: method '{memberName}' with signature (object) or (object, PropertyEditTarget) not found on '{type.Name}'");
+            return null;
         }
 
         private static void _ApplyDefault (PropertyEditTarget target, PropertyInfo prop, object sourceItem)
@@ -488,6 +729,23 @@ namespace AJut.UX.PropertyInteraction
                 // Natural CLR default: null for reference/nullable types, default(T) for value types.
                 target.m_defaultValue = prop.PropertyType.IsValueType ? Activator.CreateInstance(prop.PropertyType) : null;
                 target.m_hasDefaultValue = true;
+            }
+        }
+
+        private static object _CoerceValueType (object value, Type targetType)
+        {
+            if (value == null || targetType.IsInstanceOfType(value))
+            {
+                return value;
+            }
+
+            try
+            {
+                return Convert.ChangeType(value, targetType);
+            }
+            catch
+            {
+                return value;
             }
         }
 

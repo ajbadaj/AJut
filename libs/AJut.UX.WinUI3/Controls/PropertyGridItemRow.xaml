@@ -24,6 +24,7 @@
                                        FalseValue="Collapsed"/>
 
     <Style TargetType="local:PropertyGridItemRow">
+        <Setter Property="IsTabStop" Value="False"/>
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Padding" Value="3"/>
@@ -72,6 +73,7 @@
                                          based on PropertyEditTarget.IsAtDefaultValue (set in code).
                                          Content = PropertyEditTarget (FlatTreeItem.Source). -->
                                     <ContentControl x:Name="PART_LabelContent"
+                                                    IsTabStop="False"
                                                     HorizontalAlignment="Stretch"
                                                     HorizontalContentAlignment="Stretch"
                                                     Content="{Binding Source}"/>
@@ -92,6 +94,7 @@
                                  Hidden when IsExpandable=true with no elevation (no inline editor). -->
                             <ContentControl x:Name="PART_EditorContent"
                                             Grid.Column="1"
+                                            IsTabStop="False"
                                             HorizontalAlignment="Stretch"
                                             HorizontalContentAlignment="Stretch"
                                             VerticalAlignment="Center"

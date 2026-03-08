@@ -6,7 +6,7 @@ namespace AJut.UX.PropertyInteraction
     /// <see cref="PropertyGrid"/> attr: Groups properties with the same group ID under a shared
     /// expandable header node. The group appears at the position of the first member.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
     public class PGGroupAttribute : Attribute
     {
         public PGGroupAttribute (string groupId)

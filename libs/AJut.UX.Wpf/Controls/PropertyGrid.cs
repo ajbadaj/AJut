@@ -220,6 +220,9 @@ namespace AJut.UX.Controls
             {
                 item.RecacheEditValue();
             }
+
+            // External INPC changes may affect ShowIf/HideIf conditions
+            m_manager.UpdateConditionalVisibility();
         }
 
         private void NotifyCollectionChangedItemsSource_OnCollectionChanged (object sender, NotifyCollectionChangedEventArgs e)
@@ -245,10 +248,15 @@ namespace AJut.UX.Controls
 
         private void RebuildEditTargets ()
         {
-            // Unsubscribe from old tree before rebuild clears it.
+            // Unsubscribe from old tree (and hidden conditional targets) before rebuild.
             if (m_manager.RootNode != null)
             {
                 foreach (var target in _WalkAllTargets(m_manager.RootNode))
+                {
+                    target.PropertyChanged -= this.OnAnyTargetPropertyChanged;
+                }
+
+                foreach (var target in m_manager.HiddenConditionalTargets)
                 {
                     target.PropertyChanged -= this.OnAnyTargetPropertyChanged;
                 }
@@ -259,10 +267,16 @@ namespace AJut.UX.Controls
                 ? ((IObservableTreeNode)m_manager.RootNode).Children
                 : null;
 
-            // Subscribe to all new targets for PropertyTreeChanged notification.
+            // Subscribe to all new targets for PropertyTreeChanged notification,
+            // including conditionally-hidden targets so they fire events when shown.
             if (m_manager.RootNode != null)
             {
                 foreach (var target in _WalkAllTargets(m_manager.RootNode))
+                {
+                    target.PropertyChanged += this.OnAnyTargetPropertyChanged;
+                }
+
+                foreach (var target in m_manager.HiddenConditionalTargets)
                 {
                     target.PropertyChanged += this.OnAnyTargetPropertyChanged;
                 }
@@ -274,6 +288,22 @@ namespace AJut.UX.Controls
             if (e.PropertyName == PropertyEditTarget.SourceCommittedPropertyName)
             {
                 this.PropertyTreeChanged?.Invoke(this, EventArgs.Empty);
+
+                // Button actions may change source properties without INPC - recache all targets
+                if (sender is PropertyEditTarget { Editor: "Button" } && m_manager.RootNode != null)
+                {
+                    foreach (var target in _WalkAllTargets(m_manager.RootNode))
+                    {
+                        if (target.Editor != "Button")
+                        {
+                            target.RecacheEditValue();
+                        }
+                    }
+                }
+
+                // A property edit may change a ShowIf/HideIf condition - toggle
+                // affected targets in/out without a full rebuild.
+                m_manager.UpdateConditionalVisibility();
             }
         }
 
