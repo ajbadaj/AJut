@@ -1,22 +1,21 @@
 namespace AJut.UX.PropertyInteraction
 {
+    using AJut;
+    using AJut.Storage;
+    using AJut.Text.AJson;
+    using AJut.TypeManagement;
+    using AJut.UX;
     using System;
     using System.Collections.Generic;
     using System.ComponentModel;
     using System.Linq;
     using System.Reflection;
     using System.Threading;
-    using System.Windows.Input;
-    using AJut;
-    using AJut.Storage;
-    using AJut.Text.AJson;
-    using AJut.TypeManagement;
-    using AJut.UX;
 
     public class PropertyEditTarget : ObservableTreeNode, IExpandableNode
     {
-        public delegate object? GetValue ();
-        public delegate void SetValue (object? value);
+        public delegate object? GetValue();
+        public delegate void SetValue(object? value);
 
         private readonly GetValue m_getValue;
         private readonly SetValue? m_setValue;
@@ -25,7 +24,7 @@ namespace AJut.UX.PropertyInteraction
         private bool m_hasDefaultValue;
         private PropertyEditTarget m_elevatedChildTarget;
 
-        public PropertyEditTarget (string propertyPathTarget, GetValue getValue, SetValue? setValue = null)
+        public PropertyEditTarget(string propertyPathTarget, GetValue getValue, SetValue? setValue = null)
         {
             this.PropertyPathTarget = propertyPathTarget;
             m_getValue = getValue;
@@ -198,7 +197,7 @@ namespace AJut.UX.PropertyInteraction
 
         /// <summary>Resets EditValue to DefaultValue (no-op if HasDefaultValue is false).
         /// When an elevated child target is present, delegates to that child instead.</summary>
-        public void ResetToDefault ()
+        public void ResetToDefault()
         {
             if (m_elevatedChildTarget != null)
             {
@@ -212,16 +211,17 @@ namespace AJut.UX.PropertyInteraction
             }
         }
 
-        public void RecacheEditValue ()
+        public void RecacheEditValue()
         {
             this.SetEditValue(m_getValue());
+            m_elevatedChildTarget?.RecacheEditValue();
         }
 
         /// <summary>
         /// Forces a SourceCommitted notification without going through the EditValue setter.
         /// Used by button targets to signal that sibling property values may have changed.
         /// </summary>
-        public void ForceRaiseSourceCommitted ()
+        public void ForceRaiseSourceCommitted()
         {
             this.RaisePropertyChanged(SourceCommittedPropertyName);
         }
@@ -232,14 +232,14 @@ namespace AJut.UX.PropertyInteraction
         /// editor to refresh when the outer nullable target transitions between null and non-null
         /// states (null→0 and 0→0 would both appear as "no change" to SetAndRaiseIfChanged).
         /// </summary>
-        public void ForceRaiseEditValueChanged ()
+        public void ForceRaiseEditValueChanged()
         {
             m_editValue = m_getValue?.Invoke();
             this.RaisePropertyChanged(nameof(EditValue));
             this.UpdateIsAtDefaultValue();
         }
 
-        public bool SetEditValue (object editValue)
+        public bool SetEditValue(object editValue)
         {
             bool changed = this.SetAndRaiseIfChanged(ref m_editValue, editValue, nameof(EditValue));
             if (changed)
@@ -250,13 +250,13 @@ namespace AJut.UX.PropertyInteraction
             return changed;
         }
 
-        public bool ShouldEvaluateFor (string propertyPath)
+        public bool ShouldEvaluateFor(string propertyPath)
         {
             return this.PropertyPathTarget == propertyPath
                 || (this.AdditionalEvalTargets?.Contains(propertyPath) ?? true);
         }
 
-        public override int GetHashCode ()
+        public override int GetHashCode()
         {
             return this.PropertyPathTarget.GetHashCode();
         }
@@ -267,12 +267,12 @@ namespace AJut.UX.PropertyInteraction
         /// generated and attached so the property tree can be expanded in a FlatTreeListControl.
         /// Nullable&lt;T&gt; properties get Editor="Nullable" and EditContext=NullableEditorContext.
         /// </summary>
-        public static IEnumerable<PropertyEditTarget> GenerateForPropertiesOf (object sourceItem)
+        public static IEnumerable<PropertyEditTarget> GenerateForPropertiesOf(object sourceItem)
         {
             return GenerateForPropertiesOf(sourceItem, depth: 0);
         }
 
-        private static IEnumerable<PropertyEditTarget> GenerateForPropertiesOf (object sourceItem, int depth)
+        private static IEnumerable<PropertyEditTarget> GenerateForPropertiesOf(object sourceItem, int depth)
         {
             PropertyEditTarget[] _pendingCoerceHolder = null;
             foreach (PropertyInfo prop in _GetRelevantProperties(sourceItem))
@@ -495,7 +495,7 @@ namespace AJut.UX.PropertyInteraction
                 return TypeMetadataExtensionRegistrar.GetAttribute<PGEditorAttribute>(prop)?.Editor ?? fallback;
             }
 
-            IEnumerable<PropertyInfo> _GetRelevantProperties (object _item)
+            IEnumerable<PropertyInfo> _GetRelevantProperties(object _item)
             {
                 bool showReadOnly = _item.GetType().IsTaggedWithAttribute<PGShowReadonlyAttribute>();
                 return TypeMetadataExtensionRegistrar.GetOrderedProperties(
@@ -503,7 +503,7 @@ namespace AJut.UX.PropertyInteraction
                     BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty
                 ).Where(_Filter);
 
-                bool _Filter (PropertyInfo _prop)
+                bool _Filter(PropertyInfo _prop)
                 {
                     // Global registry hide takes priority, then [PGHidden] attribute.
                     if (TypeMetadataExtensionRegistrar.IsHidden(_prop)
@@ -532,7 +532,7 @@ namespace AJut.UX.PropertyInteraction
         /// Methods may optionally take a single <see cref="PropertyEditTarget"/> parameter.
         /// Returns false if the member is not found or does not return a boolean.
         /// </summary>
-        internal static bool EvaluateBoolMember (object sourceItem, string memberName, PropertyEditTarget target = null)
+        internal static bool EvaluateBoolMember(object sourceItem, string memberName, PropertyEditTarget target = null)
         {
             Type type = sourceItem.GetType();
 
@@ -590,7 +590,7 @@ namespace AJut.UX.PropertyInteraction
         /// for each. The target's Editor is "Button", EditValue is the button label, and
         /// EditContext is an <see cref="ActionCommand"/> that invokes the method.
         /// </summary>
-        internal static IEnumerable<PropertyEditTarget> GenerateButtonsForMethodsOf (object sourceItem)
+        internal static IEnumerable<PropertyEditTarget> GenerateButtonsForMethodsOf(object sourceItem)
         {
             Type type = sourceItem.GetType();
             foreach (MethodInfo method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
@@ -638,7 +638,7 @@ namespace AJut.UX.PropertyInteraction
         /// or methods with [PGButton] + visibility attributes. Used by PropertyGridManager
         /// to decide whether to re-evaluate visibility on property changes.
         /// </summary>
-        internal static bool HasConditionalVisibility (object sourceItem)
+        internal static bool HasConditionalVisibility(object sourceItem)
         {
             Type type = sourceItem.GetType();
 
@@ -664,7 +664,7 @@ namespace AJut.UX.PropertyInteraction
             return false;
         }
 
-        private static MethodInfo _ResolveCoerceMethod (Type type, string memberName)
+        private static MethodInfo _ResolveCoerceMethod(Type type, string memberName)
         {
             foreach (MethodInfo m in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
             {
@@ -685,7 +685,7 @@ namespace AJut.UX.PropertyInteraction
             return null;
         }
 
-        private static void _ApplyDefault (PropertyEditTarget target, PropertyInfo prop, object sourceItem)
+        private static void _ApplyDefault(PropertyEditTarget target, PropertyInfo prop, object sourceItem)
         {
             var overrideAttr = TypeMetadataExtensionRegistrar.GetAttribute<PGOverrideDefaultAttribute>(prop);
             if (overrideAttr != null)
@@ -732,7 +732,7 @@ namespace AJut.UX.PropertyInteraction
             }
         }
 
-        private static object _CoerceValueType (object value, Type targetType)
+        private static object _CoerceValueType(object value, Type targetType)
         {
             if (value == null || targetType.IsInstanceOfType(value))
             {
@@ -749,7 +749,7 @@ namespace AJut.UX.PropertyInteraction
             }
         }
 
-        private static bool _IsComplexObjectType (Type type)
+        private static bool _IsComplexObjectType(Type type)
         {
             return !type.IsValueType
                 && type != typeof(string)
@@ -758,7 +758,7 @@ namespace AJut.UX.PropertyInteraction
                 && !typeof(System.Collections.IEnumerable).IsAssignableFrom(type);
         }
 
-        private static object _BuildEditContext (PGEditContextBuilderAttribute attr)
+        private static object _BuildEditContext(PGEditContextBuilderAttribute attr)
         {
             if (!TypeIdRegistrar.TryGetType(attr.TypeId, out Type contextType))
             {
@@ -784,12 +784,12 @@ namespace AJut.UX.PropertyInteraction
             }
         }
 
-        public void TakeOn (PropertyEditTarget target)
+        public void TakeOn(PropertyEditTarget target)
         {
             // Intentionally empty - merging of duplicate targets not yet implemented.
         }
 
-        public void Setup ()
+        public void Setup()
         {
             if (this.DisplayName.IsNullOrEmpty())
             {
@@ -804,7 +804,7 @@ namespace AJut.UX.PropertyInteraction
             this.UpdateIsAtDefaultValue();
         }
 
-        private void UpdateIsAtDefaultValue ()
+        private void UpdateIsAtDefaultValue()
         {
             if (m_elevatedChildTarget != null)
             {
@@ -815,7 +815,7 @@ namespace AJut.UX.PropertyInteraction
             this.IsAtDefaultValue = m_hasDefaultValue && object.Equals(m_editValue, m_defaultValue);
         }
 
-        private void OnElevatedChildPropertyChanged (object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        private void OnElevatedChildPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(IsAtDefaultValue))
             {
