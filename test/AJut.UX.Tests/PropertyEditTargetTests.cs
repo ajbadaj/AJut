@@ -4,6 +4,7 @@ namespace AJut.UX.Tests
     using System.Collections.Generic;
     using System.ComponentModel;
     using System.Linq;
+    using AJut;
     using AJut.TypeManagement;
     using AJut.UX.PropertyInteraction;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -140,6 +141,26 @@ namespace AJut.UX.Tests
     {
         [PGElevateChildProperty("X")]
         public ChildElevationTarget Position { get; set; } = new ChildElevationTarget();
+    }
+
+    /// <summary>INPC sub-object for testing automatic recache when the sub-object fires PropertyChanged.</summary>
+    public class INPCChildElevationTarget : NotifyPropertyChanged
+    {
+        private int m_x = 10;
+        public int X
+        {
+            get => m_x;
+            set => this.SetAndRaiseIfChanged(ref m_x, value);
+        }
+
+        public int Y { get; set; } = 20;
+    }
+
+    /// <summary>Model with an INPC sub-object elevated via [PGElevateChildProperty].</summary>
+    public class ElevateChildINPCModel
+    {
+        [PGElevateChildProperty("X")]
+        public INPCChildElevationTarget Position { get; set; } = new INPCChildElevationTarget();
     }
 
     /// <summary>Model with [PGAltPropertyAlias].</summary>
@@ -666,6 +687,137 @@ namespace AJut.UX.Tests
 
             name.RecacheEditValue();
             Assert.AreEqual("Changed", name.EditValue, "After recache, EditValue should reflect source");
+        }
+
+        [TestMethod]
+        public void PET_RecacheEditValue_ElevateChildProperty_CascadesToChild ()
+        {
+            var model = new ElevateChildModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+            SetupAll(targets);
+
+            var position = Find(targets, "Position");
+            Assert.IsNotNull(position.ElevatedChildTarget);
+            Assert.AreEqual(10, position.ElevatedChildTarget.EditValue, "Initial elevated child value should be 10");
+
+            // Change the source directly (external to PropertyGrid)
+            model.Position.X = 99;
+
+            // Before fix: elevated child would remain stale at 10
+            position.RecacheEditValue();
+            Assert.AreEqual(99, position.ElevatedChildTarget.EditValue,
+                "RecacheEditValue must cascade to elevated child target (PGElevateChildProperty)");
+        }
+
+        [TestMethod]
+        public void PET_RecacheEditValue_ElevateAsParent_CascadesToChild ()
+        {
+            var model = new ElevateAsParentModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+            SetupAll(targets);
+
+            var settings = Find(targets, "Settings");
+            Assert.IsNotNull(settings.ElevatedChildTarget);
+            Assert.AreEqual("elevated", settings.ElevatedChildTarget.EditValue, "Initial elevated child value");
+
+            // Change the source directly (external to PropertyGrid)
+            model.Settings.MainValue = "externally changed";
+
+            // Before fix: elevated child would remain stale
+            settings.RecacheEditValue();
+            Assert.AreEqual("externally changed", settings.ElevatedChildTarget.EditValue,
+                "RecacheEditValue must cascade to elevated child target (PGElevateAsParent)");
+        }
+
+        [TestMethod]
+        public void PET_RecacheEditValue_WrapperElevation_CascadesToChild ()
+        {
+            var model = new WrapperElevationModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+            SetupAll(targets);
+
+            var number = Find(targets, "Number");
+            Assert.IsNotNull(number.ElevatedChildTarget);
+            Assert.AreEqual(0, number.ElevatedChildTarget.EditValue, "Initial wrapped value should be default(int)");
+
+            // Change the source directly (external to PropertyGrid)
+            model.Number.Value = 77;
+
+            // Before fix: elevated child would remain stale at 0
+            number.RecacheEditValue();
+            Assert.AreEqual(77, number.ElevatedChildTarget.EditValue,
+                "RecacheEditValue must cascade to elevated child target (wrapper with PGElevateAsParent)");
+        }
+
+        [TestMethod]
+        public void PET_RecacheEditValue_ElevatedChild_UpdatesIsAtDefaultValue ()
+        {
+            var model = new WrapperElevationModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+            SetupAll(targets);
+
+            var number = Find(targets, "Number");
+            Assert.IsTrue(number.IsAtDefaultValue, "Should start at default (0)");
+
+            // Change source directly away from default
+            model.Number.Value = 55;
+            number.RecacheEditValue();
+
+            Assert.IsFalse(number.ElevatedChildTarget.IsAtDefaultValue,
+                "After recache, elevated child should not be at default");
+            Assert.IsFalse(number.IsAtDefaultValue,
+                "After recache, parent should reflect child's non-default state");
+
+            // Change source directly back to default
+            model.Number.Value = 0;
+            number.RecacheEditValue();
+
+            Assert.IsTrue(number.ElevatedChildTarget.IsAtDefaultValue,
+                "After recache back to default, elevated child should be at default");
+            Assert.IsTrue(number.IsAtDefaultValue,
+                "After recache back to default, parent should reflect child's default state");
+        }
+
+        // ===[ INPC sub-object auto-recache tests ]===
+
+        [TestMethod]
+        public void PET_ElevatedSubObject_INPC_AutoRecachesChild ()
+        {
+            var model = new ElevateChildINPCModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+            SetupAll(targets);
+
+            var position = Find(targets, "Position");
+            Assert.IsNotNull(position.ElevatedChildTarget);
+            Assert.AreEqual(10, position.ElevatedChildTarget.EditValue, "Initial elevated child value");
+
+            // Change the sub-object property directly - no manual RecacheEditValue call.
+            // The sub-object is INPC, so PropertyEditTarget should auto-recache.
+            model.Position.X = 42;
+            Assert.AreEqual(42, position.ElevatedChildTarget.EditValue,
+                "INPC sub-object change should automatically recache the elevated child target");
+        }
+
+        [TestMethod]
+        public void PET_ElevatedSubObject_INPC_Teardown_StopsAutoRecache ()
+        {
+            var model = new ElevateChildINPCModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+            SetupAll(targets);
+
+            var position = Find(targets, "Position");
+
+            // Verify auto-recache works before teardown
+            model.Position.X = 42;
+            Assert.AreEqual(42, position.ElevatedChildTarget.EditValue);
+
+            // Teardown should unsubscribe from INPC
+            position.Teardown();
+
+            // Now changes should NOT auto-recache
+            model.Position.X = 99;
+            Assert.AreEqual(42, position.ElevatedChildTarget.EditValue,
+                "After Teardown, INPC changes should not auto-recache");
         }
 
         // ===[ Helpers ]==========================================================

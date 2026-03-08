@@ -254,11 +254,13 @@ namespace AJut.UX.Controls
                 foreach (var target in _WalkAllTargets(m_manager.RootNode))
                 {
                     target.PropertyChanged -= this.OnAnyTargetPropertyChanged;
+                    target.Teardown();
                 }
 
                 foreach (var target in m_manager.HiddenConditionalTargets)
                 {
                     target.PropertyChanged -= this.OnAnyTargetPropertyChanged;
+                    target.Teardown();
                 }
             }
 

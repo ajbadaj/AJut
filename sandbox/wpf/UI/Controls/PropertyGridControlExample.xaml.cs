@@ -34,6 +34,11 @@
         {
             ((SelfAwarePropertyGridSource)((FrameworkElement)e.OriginalSource).DataContext).DogsAge = App.kRNG.Next(1, 18);
         }
+
+        private void SetElevatedTopSpeed_OnClick (object sender, RoutedEventArgs e)
+        {
+            ((SelfAwarePropertyGridSource)((FrameworkElement)e.OriginalSource).DataContext).Stats.TopSpeed = App.kRNG.Next(5, 60);
+        }
     }
 
     /// <summary>Sub-object with its own editable properties - shows up as an expandable node.</summary>
@@ -42,6 +47,26 @@
         public string? OwnerName { get; set; } = "Unknown Owner";
         [PGEditor("Number")]
         public int OwnerAge { get; set; } = 30;
+    }
+
+    /// <summary>Sub-object for testing elevated child property recache.</summary>
+    public class DogStats : NotifyPropertyChanged
+    {
+        private int m_topSpeed = 25;
+
+        [PGEditor("Number")]
+        public int TopSpeed
+        {
+            get => m_topSpeed;
+            set => this.SetAndRaiseIfChanged(ref m_topSpeed, value);
+        }
+
+        private string m_favoriteToy = "Ball";
+        public string FavoriteToy
+        {
+            get => m_favoriteToy;
+            set => this.SetAndRaiseIfChanged(ref m_favoriteToy, value);
+        }
     }
 
     public class SelfAwarePropertyGridSource : NotifyPropertyChanged, IPropertyEditManager
@@ -75,6 +100,11 @@
             get => m_dogSaveFileLocation;
             set => this.SetAndRaiseIfChanged(ref m_dogSaveFileLocation, value);
         }
+
+        /// <summary>Elevated child property - inline editor for TopSpeed. Tests RecacheEditValue cascade.</summary>
+        [PGElevateChildProperty(nameof(DogStats.TopSpeed))]
+        [PGGroup("Stats")]
+        public DogStats Stats { get; set; } = new DogStats();
 
         // ------ ShowIf demo: show full stats only when ShowDetails is checked ------
         public bool ShowDetails { get; set; } = true;

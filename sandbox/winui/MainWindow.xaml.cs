@@ -185,13 +185,30 @@ namespace AJutShowRoomWinUI
         {
             m_currentPGTestObj = obj;
             this.TestPropertyGrid.SingleItemSource = obj;
+            this.ResetJsonDisplay();
         }
 
         private void PGSource_OnAlphaClicked (object sender, RoutedEventArgs e) => this.SetPGSource(m_alphaObj);
         private void PGSource_OnBetaClicked (object sender, RoutedEventArgs e) => this.SetPGSource(m_betaObj);
         private void PGSource_OnComplexClicked (object sender, RoutedEventArgs e) => this.SetPGSource(m_complexObj);
 
-        private void TestPropertyGrid_OnPropertyTreeChanged (object sender, EventArgs e)
+        private void PGSource_OnSetElevatedClicked (object sender, RoutedEventArgs e)
+        {
+            // Externally change elevated property values on the complex object,
+            // then re-set the source to trigger RecacheEditValue cascade.
+            // Before the fix, the elevated child editors would show stale values.
+            Random rng = new Random();
+            m_complexObj.Value = rng.Next(1, 555);
+            m_complexObj.SubObjWithElevation.SubObjValue = rng.Next(1, 9999);
+            m_complexObj.WrappedFloat.Value = (float)Math.Round(rng.NextDouble() * 100.0, 1);
+            this.SetPGSource(m_complexObj);
+        }
+
+        private void TestPropertyGrid_OnPropertyTreeChanged(object sender, EventArgs e)
+        {
+            this.ResetJsonDisplay();
+        }
+        private void ResetJsonDisplay()
         {
             if (m_currentPGTestObj == null)
             {
@@ -341,12 +358,21 @@ namespace AJutShowRoomWinUI
     // ===========[ ShowRoomTester - PropertyGrid smoke-test source ]==================
     public enum eEditorMode { Text, Number, Color }
 
-    public class ShowRoomTester
+    public class ShowRoomTester : NotifyPropertyChanged
     {
+
+        private double m_value = 3.14;
+        
         [PGEditor("Single")]
         [PGOverrideDefault(9001.0)]
         [PGGroup("Transform")]
-        public double Value { get; set; } = 3.14;
+        public double Value
+        {
+            get => m_value;
+            set => this.SetAndRaiseIfChanged(ref m_value, value);
+        }
+
+
         [PGEditor("ColorPick")]
         [PGGroup("Appearance")]
         public Color ColorValue { get; set; } = new Color { A = 255, B = 255 };
@@ -455,15 +481,26 @@ namespace AJutShowRoomWinUI
         }
     }
 
-    public class ShowRoomSubObject
+    public class ShowRoomSubObject : NotifyPropertyChanged
     {
-        public int SubObjValue { get; set; } = 9001;
+        private int m_subObjValue = 9001;
+        public int SubObjValue
+        {
+            get => m_subObjValue;
+            set => this.SetAndRaiseIfChanged(ref m_subObjValue, value);
+        }
     }
 
-    public class TemplateSubType<T>
+    public class TemplateSubType<T> : NotifyPropertyChanged
     {
+        private T m_value;
+
         [PGElevateAsParent(deferPGAttributesToParent: true)]
-        public T Value { get; set; }
+        public T Value
+        {
+            get => m_value;
+            set => this.SetAndRaiseIfChanged(ref m_value, value);
+        }
     }
 
 
