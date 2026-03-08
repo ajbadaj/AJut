@@ -453,15 +453,15 @@
                             IsHitTestVisible="False"
                             HorizontalAlignment="Stretch"
                             VerticalAlignment="Stretch">
-                        <!-- Dashed parent connector line (vertical) -->
-                        <Line x:Name="PART_ParentConnectorLine"
-                              Visibility="Collapsed"
-                              Opacity="0.8"
-                              Margin="6,4,0,0"
-                              X1="0" Y1="0" X2="0"
-                              StrokeDashArray="4,3"
-                              Stroke="{TemplateBinding ParentConnectorBrush}"
-                              StrokeThickness="2"/>
+                        <!-- Dashed parent connector L-shape (vertical down, then horizontal to insertion line) -->
+                        <Polyline x:Name="PART_ParentConnectorLine"
+                                  Visibility="Collapsed"
+                                  Opacity="0.8"
+                                  StrokeDashArray="4,3"
+                                  Stroke="{TemplateBinding ParentConnectorBrush}"
+                                  StrokeThickness="2"
+                                  Fill="Transparent"
+                                  StrokeLineJoin="Round"/>
                         <!-- Thick insertion line (horizontal) -->
                         <Rectangle x:Name="PART_InsertionLine"
                                    Visibility="Collapsed"

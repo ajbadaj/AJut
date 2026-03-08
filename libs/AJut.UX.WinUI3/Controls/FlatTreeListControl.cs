@@ -35,7 +35,7 @@ namespace AJut.UX.Controls
     [TemplatePart(Name = nameof(PART_ListView), Type = typeof(ListView))]
     [TemplatePart(Name = nameof(PART_DragOverlay), Type = typeof(Canvas))]
     [TemplatePart(Name = nameof(PART_InsertionLine), Type = typeof(Rectangle))]
-    [TemplatePart(Name = nameof(PART_ParentConnectorLine), Type = typeof(Line))]
+    [TemplatePart(Name = nameof(PART_ParentConnectorLine), Type = typeof(Polyline))]
     [TemplatePart(Name = nameof(PART_DragGhost), Type = typeof(Border))]
     public class FlatTreeListControl : Control
     {
@@ -49,7 +49,7 @@ namespace AJut.UX.Controls
         private ListView PART_ListView;
         private Canvas PART_DragOverlay;
         private Rectangle PART_InsertionLine;
-        private Line PART_ParentConnectorLine;
+        private Polyline PART_ParentConnectorLine;
         private Border PART_DragGhost;
 
         private readonly ObservableFlatTreeStore<FlatTreeItem> m_store;
@@ -327,7 +327,7 @@ namespace AJut.UX.Controls
             this.PART_ListView = (ListView)this.GetTemplateChild(nameof(PART_ListView));
             this.PART_DragOverlay = this.GetTemplateChild(nameof(PART_DragOverlay)) as Canvas;
             this.PART_InsertionLine = this.GetTemplateChild(nameof(PART_InsertionLine)) as Rectangle;
-            this.PART_ParentConnectorLine = this.GetTemplateChild(nameof(PART_ParentConnectorLine)) as Line;
+            this.PART_ParentConnectorLine = this.GetTemplateChild(nameof(PART_ParentConnectorLine)) as Polyline;
             this.PART_DragGhost = this.GetTemplateChild(nameof(PART_DragGhost)) as Border;
 
             if (this.PART_ListView == null)
@@ -859,41 +859,33 @@ namespace AJut.UX.Controls
 
             m_currentDropTarget = dropTarget;
 
-            // Position the insertion line
+            // Compute shared line Y (gap between rows) and insertion line X (content column start)
+            double lineY = cursorYFraction < 0.5 ? rowTopInOverlay : rowTopInOverlay + rowHeight;
+            const double kExpanderColumnWidth = 18.0;
+            double lineX = dropTarget.TargetDepth * indentSize + kExpanderColumnWidth + 6.0;
+
+            // Position the insertion line at the content column start for the target depth
             if (this.PART_InsertionLine != null)
             {
-                // The line goes at the gap: if cursorYFraction < 0.5 -> top of row, else bottom
-                double lineY;
-                if (cursorYFraction < 0.5)
-                {
-                    lineY = rowTopInOverlay;
-                }
-                else
-                {
-                    lineY = rowTopInOverlay + rowHeight;
-                }
-
-                double lineX = (dropTarget.TargetDepth * indentSize) + 10.0;
                 Canvas.SetLeft(this.PART_InsertionLine, lineX);
                 Canvas.SetTop(this.PART_InsertionLine, lineY - kInsertionLineHeight / 2.0);
                 this.PART_InsertionLine.Width = Math.Max(0, this.PART_DragOverlay.ActualWidth - lineX - 4.0);
                 this.PART_InsertionLine.Height = kInsertionLineHeight;
                 this.PART_InsertionLine.Visibility = Visibility.Visible;
 
-                // Apply brush
                 if (this.InsertionLineBrush != null)
                 {
                     this.PART_InsertionLine.Fill = this.InsertionLineBrush;
                 }
             }
 
-            // Position the parent connector line and highlight the parent's chevron
+            // Position the parent connector L-shape and highlight the parent's chevron
             this.ClearParentHighlight();
 
             int parentStoreIndex = FlatTreeDragDropManager.FindParentStoreIndex(m_store, dropTarget);
             if (parentStoreIndex >= 0 && this.PART_ListView.ContainerFromIndex(parentStoreIndex) is ListViewItem parentContainer)
             {
-                // Find the FlatTreeItemRow inside the parent container for chevron highlighting
+                // Highlight the parent's chevron
                 FlatTreeItemRow parentRow = FindDescendant<FlatTreeItemRow>(parentContainer);
                 if (parentRow != null)
                 {
@@ -906,42 +898,29 @@ namespace AJut.UX.Controls
                     }
                 }
 
+                // Draw an L-shape: vertical from parent's chevron down, then horizontal to insertion line
                 if (this.PART_ParentConnectorLine != null)
                 {
                     var parentTransform = parentContainer.TransformToVisual(this.PART_DragOverlay);
-                    Point parentOrigin = parentTransform.TransformPoint(new Point(0, 0));
-                    double parentCenterY = parentOrigin.Y + parentContainer.ActualHeight / 2.0;
+                    double parentCenterY = parentTransform.TransformPoint(new Point(0, 0)).Y
+                                         + parentContainer.ActualHeight / 2.0;
 
-                    double lineY;
-                    if (cursorYFraction < 0.5)
-                    {
-                        lineY = rowTopInOverlay;
-                    }
-                    else
-                    {
-                        lineY = rowTopInOverlay + rowHeight;
-                    }
-
-                    // Position at the center of the parent's expander column (col 1 is 18px wide)
+                    // Chevron center X in overlay space
                     int parentDepth = dropTarget.TargetDepth - 1;
-                    double connectorXInRow = parentDepth * indentSize + 9;
-                    connectorXInRow = Math.Max(4, connectorXInRow);
+                    double chevronXInRow = Math.Max(4, parentDepth * indentSize + 15.0);
+                    double chevronX = parentTransform.TransformPoint(new Point(chevronXInRow, 0)).X;
 
-                    double connectorTop = parentCenterY;
-                    double connectorHeight = lineY - parentCenterY;
-                    if (connectorHeight < 0)
+                    // L-shape: top of vertical, corner, end of horizontal
+                    double topY = Math.Min(parentCenterY, lineY) + 5.0;
+                    double bottomY = Math.Max(parentCenterY, lineY);
+
+                    var points = new PointCollection
                     {
-                        connectorTop = lineY;
-                        connectorHeight = -connectorHeight;
-                    }
-
-                    // Convert to overlay space
-                    double connectorXInOverlay = parentTransform.TransformPoint(new Point(connectorXInRow, 0)).X;
-
-                    this.PART_ParentConnectorLine.X1 = connectorXInOverlay;
-                    this.PART_ParentConnectorLine.Y1 = connectorTop;
-                    this.PART_ParentConnectorLine.X2 = connectorXInOverlay;
-                    this.PART_ParentConnectorLine.Y2 = connectorTop + Math.Max(1, connectorHeight) - 6.0;
+                        new Point(chevronX, topY),
+                        new Point(chevronX, bottomY),
+                        new Point(lineX, bottomY),
+                    };
+                    this.PART_ParentConnectorLine.Points = points;
                     this.PART_ParentConnectorLine.Visibility = Visibility.Visible;
 
                     if (this.ParentConnectorBrush != null)
@@ -952,7 +931,6 @@ namespace AJut.UX.Controls
             }
             else
             {
-                // Parent not visible (e.g. root) - hide connector
                 if (this.PART_ParentConnectorLine != null)
                 {
                     this.PART_ParentConnectorLine.Visibility = Visibility.Collapsed;
