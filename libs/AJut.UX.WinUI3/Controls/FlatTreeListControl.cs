@@ -661,7 +661,7 @@ namespace AJut.UX.Controls
             m_isDragPending = true;
             m_dragStartPoint = e.GetCurrentPoint(this.PART_ListView).Position;
             m_dragPointer = e.Pointer;
-            // Don't capture yet — let the ListView handle selection normally.
+            // Don't capture yet - let the ListView handle selection normally.
             // We'll capture once the drag threshold is exceeded in PointerMoved.
         }
 
@@ -792,7 +792,7 @@ namespace AJut.UX.Controls
                 var transform = this.PART_ListView.TransformToVisual(this.PART_DragOverlay);
                 Point cursorInOverlay = transform.TransformPoint(cursorInListView);
                 Canvas.SetLeft(this.PART_DragGhost, cursorInOverlay.X + 12);
-                Canvas.SetTop(this.PART_DragGhost, cursorInOverlay.Y - 8);
+                Canvas.SetTop(this.PART_DragGhost, cursorInOverlay.Y + 17);
             }
 
             // Determine which row the cursor is over and compute the drop target

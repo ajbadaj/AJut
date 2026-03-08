@@ -173,7 +173,7 @@ namespace AJut.UX
 
             // Minimum depth is always 1 (children-of-root level). Depth 0 returns
             // Invalid naturally since root.Parent is null. This allows cursor X to
-            // target shallower depths even between siblings deep in the tree —
+            // target shallower depths even between siblings deep in the tree -
             // ComputeParentAndIndex walks up from 'above' to find the correct ancestor.
             int minDepth = 1;
 
