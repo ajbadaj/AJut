@@ -58,6 +58,11 @@
     <SolidColorBrush x:Key="AJut_FlatTreeItemRow_ExpanderPointerOverBackground" Color="{ThemeResource AJut_Color_MouseInteractionHighlight}"/>
     <SolidColorBrush x:Key="AJut_FlatTreeItemRow_ExpanderPressedBackground"     Color="{ThemeResource AJut_Color_PrimaryHighlightDark}"/>
 
+    <!-- Drag/drop visual brushes -->
+    <SolidColorBrush x:Key="AJut_FlatTree_DragInsertionLine"      Color="{ThemeResource AJut_Color_PrimaryHighlight}"/>
+    <SolidColorBrush x:Key="AJut_FlatTree_DragParentConnector"    Color="{ThemeResource AJut_Color_PrimaryHighlight}" Opacity="0.5"/>
+    <SolidColorBrush x:Key="AJut_FlatTree_DragTargetHighlight"    Color="{ThemeResource AJut_Color_PrimaryHighlight}"/>
+
     <!-- ===========[ FlatTree ListViewItem ]=============================== -->
     <!-- Redirects selection/hover to AJut palette colors.
          HoverBackground → ListSelectionBackground (10% opacity tint, matches PropertyGrid row hover). -->

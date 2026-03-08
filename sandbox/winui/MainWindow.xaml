@@ -475,6 +475,36 @@
                         </TabViewItem.Content>
                     </TabViewItem>
 
+                    <!-- ===[ FlatTree Drag/Drop ]=================================================== -->
+                    <TabViewItem Header="FlatTree Drag/Drop" IsClosable="False">
+                        <TabViewItem.IconSource>
+                            <SymbolIconSource Symbol="MoveToFolder"/>
+                        </TabViewItem.IconSource>
+                        <TabViewItem.Content>
+                            <Grid Margin="8">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Text="FlatTreeListControl - Drag and Drop Reordering" FontStyle="Italic" Margin="0,0,0,4"/>
+                                <TextBlock Grid.Row="1" Text="Drag items to reorder. X position determines target depth. Blue insertion line shows where item will land; dotted connector shows target parent." TextWrapping="Wrap" Opacity="0.7" Margin="0,0,0,8"/>
+                                <ajut:FlatTreeListControl Grid.Row="2"
+                                                          Root="{x:Bind DragDropTreeRoot}"
+                                                          IncludeRoot="True"
+                                                          StartItemsExpanded="True"
+                                                          IsDragDropReorderEnabled="True"
+                                                          SelectionMode="Extended">
+                                    <ajut:FlatTreeListControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Source.NodeName}" VerticalAlignment="Center"/>
+                                        </DataTemplate>
+                                    </ajut:FlatTreeListControl.ItemTemplate>
+                                </ajut:FlatTreeListControl>
+                            </Grid>
+                        </TabViewItem.Content>
+                    </TabViewItem>
+
                     <!-- ===[ PopupMenuButton ]===================================================== -->
                     <TabViewItem Header="PopupMenuButton" IsClosable="False">
                         <TabViewItem.IconSource>

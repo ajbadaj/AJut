@@ -1,10 +1,5 @@
 namespace AJut.UX.Controls
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Collections.Specialized;
-    using System.Linq;
     using AJut.Storage;
     using AJut.Tree;
     using AJut.UX;
@@ -12,6 +7,13 @@ namespace AJut.UX.Controls
     using Microsoft.UI.Xaml.Controls;
     using Microsoft.UI.Xaml.Input;
     using Microsoft.UI.Xaml.Media;
+    using Microsoft.UI.Xaml.Shapes;
+    using System;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Collections.Specialized;
+    using System.Linq;
+    using Windows.Foundation;
     using DPUtils = AJut.UX.DPUtils<FlatTreeListControl>;
 
     // ===========[ FlatTreeListControl ]=======================================
@@ -31,13 +33,38 @@ namespace AJut.UX.Controls
     //   PART_ListView  - the inner ListView that does the actual rendering
 
     [TemplatePart(Name = nameof(PART_ListView), Type = typeof(ListView))]
+    [TemplatePart(Name = nameof(PART_DragOverlay), Type = typeof(Canvas))]
+    [TemplatePart(Name = nameof(PART_InsertionLine), Type = typeof(Rectangle))]
+    [TemplatePart(Name = nameof(PART_ParentConnectorLine), Type = typeof(Polyline))]
+    [TemplatePart(Name = nameof(PART_DragGhost), Type = typeof(Border))]
     public class FlatTreeListControl : Control
     {
+        // ===========[ Constants ]================================================
+        private const double kDragThresholdPx = 6.0;
+        private const double kInsertionLineHeight = 3.0;
+        private const double kParentConnectorWidth = 2.0;
+        private const double kGhostOpacity = 0.65;
+
         // ===========[ Instance fields ]==========================================
         private ListView PART_ListView;
+        private Canvas PART_DragOverlay;
+        private Rectangle PART_InsertionLine;
+        private Polyline PART_ParentConnectorLine;
+        private Border PART_DragGhost;
+
         private readonly ObservableFlatTreeStore<FlatTreeItem> m_store;
         private readonly ObservableCollection<FlatTreeItem> m_selectedItems = new ObservableCollection<FlatTreeItem>();
         private bool m_blockingReentrancy;
+
+        // Drag state
+        private bool m_isDragPending;
+        private bool m_isDragging;
+        private Point m_dragStartPoint;
+        private Pointer m_dragPointer;
+        private FlatTreeItem[] m_dragItems;
+        private FlatTreeDropTarget m_currentDropTarget;
+        private FlatTreeItemRow m_highlightedParentRow;
+        private Brush m_highlightedParentOriginalBrush;
 
         // ===========[ Construction ]=============================================
         public FlatTreeListControl ()
@@ -49,6 +76,13 @@ namespace AJut.UX.Controls
         // ===========[ Events ]===================================================
         public event EventHandler<SelectionChange<FlatTreeItem>> SelectionChanged;
         public event EventHandler<FlatTreeItem> ItemDoubleClicked;
+
+        /// Fires before a drag/drop reorder is executed. Set Cancel=true to prevent
+        /// the default reorder (e.g. to wrap in undo/redo instead).
+        public event EventHandler<FlatTreeReorderEventArgs> DragDropReorderRequested;
+
+        /// Fires when an external item is dropped onto the tree (stretch goal hook).
+        public event EventHandler<FlatTreeExternalDropEventArgs> ExternalItemDropped;
 
         /// <summary>
         /// Fires after FlatTreeListControl's own ContainerContentChanging handling (ItemTemplate push).
@@ -232,6 +266,43 @@ namespace AJut.UX.Controls
             set => this.SetValue(ExpanderGlyphForegroundProperty, value);
         }
 
+        // ---- Drag/Drop Reorder DPs ----
+
+        public static readonly DependencyProperty IsDragDropReorderEnabledProperty = DPUtils.Register(_ => _.IsDragDropReorderEnabled);
+        public bool IsDragDropReorderEnabled
+        {
+            get => (bool)this.GetValue(IsDragDropReorderEnabledProperty);
+            set => this.SetValue(IsDragDropReorderEnabledProperty, value);
+        }
+
+        public static readonly DependencyProperty CanDropItemProperty = DPUtils.Register(_ => _.CanDropItem);
+        public Func<IObservableTreeNode, IObservableTreeNode, bool> CanDropItem
+        {
+            get => (Func<IObservableTreeNode, IObservableTreeNode, bool>)this.GetValue(CanDropItemProperty);
+            set => this.SetValue(CanDropItemProperty, value);
+        }
+
+        public static readonly DependencyProperty InsertionLineBrushProperty = DPUtils.Register(_ => _.InsertionLineBrush);
+        public Brush InsertionLineBrush
+        {
+            get => (Brush)this.GetValue(InsertionLineBrushProperty);
+            set => this.SetValue(InsertionLineBrushProperty, value);
+        }
+
+        public static readonly DependencyProperty ParentConnectorBrushProperty = DPUtils.Register(_ => _.ParentConnectorBrush);
+        public Brush ParentConnectorBrush
+        {
+            get => (Brush)this.GetValue(ParentConnectorBrushProperty);
+            set => this.SetValue(ParentConnectorBrushProperty, value);
+        }
+
+        public static readonly DependencyProperty DragTargetHighlightBrushProperty = DPUtils.Register(_ => _.DragTargetHighlightBrush);
+        public Brush DragTargetHighlightBrush
+        {
+            get => (Brush)this.GetValue(DragTargetHighlightBrushProperty);
+            set => this.SetValue(DragTargetHighlightBrushProperty, value);
+        }
+
         // ===========[ Other Properties ]====================================
 
         public ObservableFlatTreeStore<FlatTreeItem> Items => m_store;
@@ -247,9 +318,18 @@ namespace AJut.UX.Controls
                 this.PART_ListView.DoubleTapped -= this.ListView_OnDoubleTapped;
                 this.PART_ListView.KeyUp -= this.ListView_OnKeyUp;
                 this.PART_ListView.ContainerContentChanging -= this.ListView_OnContainerContentChanging;
+                this.PART_ListView.RemoveHandler(PointerPressedEvent, (PointerEventHandler)this.ListView_OnPointerPressed);
+                this.PART_ListView.RemoveHandler(PointerMovedEvent, (PointerEventHandler)this.ListView_OnPointerMoved);
+                this.PART_ListView.RemoveHandler(PointerReleasedEvent, (PointerEventHandler)this.ListView_OnPointerReleased);
+                this.PART_ListView.PointerCaptureLost -= this.ListView_OnPointerCaptureLost;
             }
 
             this.PART_ListView = (ListView)this.GetTemplateChild(nameof(PART_ListView));
+            this.PART_DragOverlay = this.GetTemplateChild(nameof(PART_DragOverlay)) as Canvas;
+            this.PART_InsertionLine = this.GetTemplateChild(nameof(PART_InsertionLine)) as Rectangle;
+            this.PART_ParentConnectorLine = this.GetTemplateChild(nameof(PART_ParentConnectorLine)) as Polyline;
+            this.PART_DragGhost = this.GetTemplateChild(nameof(PART_DragGhost)) as Border;
+
             if (this.PART_ListView == null)
             {
                 return;
@@ -259,6 +339,12 @@ namespace AJut.UX.Controls
             this.PART_ListView.DoubleTapped += this.ListView_OnDoubleTapped;
             this.PART_ListView.KeyUp += this.ListView_OnKeyUp;
             this.PART_ListView.ContainerContentChanging += this.ListView_OnContainerContentChanging;
+            // Use AddHandler with handledEventsToo so we receive pointer events even
+            // after the ListView marks them Handled for its own selection/scroll logic.
+            this.PART_ListView.AddHandler(PointerPressedEvent, (PointerEventHandler)this.ListView_OnPointerPressed, true);
+            this.PART_ListView.AddHandler(PointerMovedEvent, (PointerEventHandler)this.ListView_OnPointerMoved, true);
+            this.PART_ListView.AddHandler(PointerReleasedEvent, (PointerEventHandler)this.ListView_OnPointerReleased, true);
+            this.PART_ListView.PointerCaptureLost += this.ListView_OnPointerCaptureLost;
 
             if (this.ListViewItemContainerStyle != null)
             {
@@ -548,6 +634,432 @@ namespace AJut.UX.Controls
         {
             bool isClear = this.SelectedItems.Count == 0;
             this.SelectionChanged?.Invoke(this, new SelectionChange<FlatTreeItem>(added, removed, isClear));
+        }
+
+        // ===========[ Drag/Drop Pointer Handlers ]================================
+
+        private void ListView_OnPointerPressed (object sender, PointerRoutedEventArgs e)
+        {
+            if (!this.IsDragDropReorderEnabled || m_isDragging)
+            {
+                return;
+            }
+
+            // Only start drag from left button
+            if (!e.GetCurrentPoint(this.PART_ListView).Properties.IsLeftButtonPressed)
+            {
+                return;
+            }
+
+            // Find the FlatTreeItem under the pointer
+            FlatTreeItem pressedItem = this.FindFlatTreeItemAtPoint(e.GetCurrentPoint(this.PART_ListView).Position);
+            if (pressedItem == null || pressedItem.TreeDepth <= 0 || pressedItem.IsFalseRoot)
+            {
+                return;
+            }
+
+            m_isDragPending = true;
+            m_dragStartPoint = e.GetCurrentPoint(this.PART_ListView).Position;
+            m_dragPointer = e.Pointer;
+            // Don't capture yet - let the ListView handle selection normally.
+            // We'll capture once the drag threshold is exceeded in PointerMoved.
+        }
+
+        private void ListView_OnPointerMoved (object sender, PointerRoutedEventArgs e)
+        {
+            if (!this.IsDragDropReorderEnabled)
+            {
+                return;
+            }
+
+            Point currentPoint = e.GetCurrentPoint(this.PART_ListView).Position;
+
+            if (m_isDragPending && !m_isDragging)
+            {
+                // Check if we've moved past the drag threshold
+                double dx = currentPoint.X - m_dragStartPoint.X;
+                double dy = currentPoint.Y - m_dragStartPoint.Y;
+                if (Math.Sqrt(dx * dx + dy * dy) >= kDragThresholdPx)
+                {
+                    this.BeginDrag();
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            if (!m_isDragging)
+            {
+                return;
+            }
+
+            // Update drag visuals
+            this.UpdateDragVisuals(currentPoint);
+            e.Handled = true;
+        }
+
+        private void ListView_OnPointerReleased (object sender, PointerRoutedEventArgs e)
+        {
+            if (m_isDragging)
+            {
+                this.CompleteDrag();
+                e.Handled = true;
+            }
+
+            this.CancelDragPending(e.Pointer);
+        }
+
+        private void ListView_OnPointerCaptureLost (object sender, PointerRoutedEventArgs e)
+        {
+            if (m_isDragging)
+            {
+                this.CancelDrag();
+            }
+
+            m_isDragPending = false;
+        }
+
+        // ===========[ Drag/Drop Logic ]==========================================
+
+        private void BeginDrag ()
+        {
+            // Collect items to drag: selected items, or the item under the cursor
+            if (m_selectedItems.Count > 0)
+            {
+                // Filter out non-draggable items (root, false root)
+                m_dragItems = m_selectedItems
+                    .Where(i => i.TreeDepth > 0 && !i.IsFalseRoot)
+                    .ToArray();
+            }
+
+            if (m_dragItems == null || m_dragItems.Length == 0)
+            {
+                // Try the item at the press point
+                FlatTreeItem pressedItem = this.FindFlatTreeItemAtPoint(m_dragStartPoint);
+                if (pressedItem == null || pressedItem.TreeDepth <= 0 || pressedItem.IsFalseRoot)
+                {
+                    m_isDragPending = false;
+                    return;
+                }
+
+                m_dragItems = new[] { pressedItem };
+            }
+
+            m_isDragging = true;
+            m_isDragPending = false;
+
+            // Now capture the pointer so we receive all subsequent move/release events
+            if (m_dragPointer != null)
+            {
+                this.PART_ListView.CapturePointer(m_dragPointer);
+            }
+
+            // Show the overlay
+            if (this.PART_DragOverlay != null)
+            {
+                this.PART_DragOverlay.Visibility = Visibility.Visible;
+            }
+
+            // Setup ghost label
+            if (this.PART_DragGhost != null)
+            {
+                string label = m_dragItems.Length == 1
+                    ? (m_dragItems[0].Source?.ToString() ?? "Item")
+                    : $"{m_dragItems.Length} items";
+
+                // Find the TextBlock inside the ghost border
+                if (this.PART_DragGhost.Child is TextBlock tb)
+                {
+                    tb.Text = label;
+                }
+
+                this.PART_DragGhost.Visibility = Visibility.Visible;
+            }
+        }
+
+        private void UpdateDragVisuals (Point cursorInListView)
+        {
+            if (m_dragItems == null || this.PART_DragOverlay == null)
+            {
+                return;
+            }
+
+            // Position the ghost at the cursor
+            if (this.PART_DragGhost != null)
+            {
+                // Convert cursor from ListView space to overlay space
+                var transform = this.PART_ListView.TransformToVisual(this.PART_DragOverlay);
+                Point cursorInOverlay = transform.TransformPoint(cursorInListView);
+                Canvas.SetLeft(this.PART_DragGhost, cursorInOverlay.X + 12);
+                Canvas.SetTop(this.PART_DragGhost, cursorInOverlay.Y + 17);
+            }
+
+            // Determine which row the cursor is over and compute the drop target
+            int hoverIndex = -1;
+            double cursorYFraction = 0.5;
+            double rowTopInOverlay = 0;
+            double rowHeight = 0;
+
+            for (int i = 0; i < this.PART_ListView.Items.Count; ++i)
+            {
+                if (this.PART_ListView.ContainerFromIndex(i) is ListViewItem container)
+                {
+                    var containerTransform = container.TransformToVisual(this.PART_ListView);
+                    Point containerOrigin = containerTransform.TransformPoint(new Point(0, 0));
+                    double containerBottom = containerOrigin.Y + container.ActualHeight;
+
+                    if (cursorInListView.Y >= containerOrigin.Y && cursorInListView.Y < containerBottom)
+                    {
+                        hoverIndex = i;
+                        cursorYFraction = (cursorInListView.Y - containerOrigin.Y) / container.ActualHeight;
+                        rowHeight = container.ActualHeight;
+
+                        // Convert container position to overlay space
+                        var overlayTransform = container.TransformToVisual(this.PART_DragOverlay);
+                        rowTopInOverlay = overlayTransform.TransformPoint(new Point(0, 0)).Y;
+                        break;
+                    }
+                }
+            }
+
+            // If cursor is below all items, treat as end-of-list
+            if (hoverIndex < 0 && m_store.Count > 0)
+            {
+                hoverIndex = m_store.Count - 1;
+                cursorYFraction = 1.0;
+                if (this.PART_ListView.ContainerFromIndex(hoverIndex) is ListViewItem lastContainer)
+                {
+                    rowHeight = lastContainer.ActualHeight;
+                    var overlayTransform = lastContainer.TransformToVisual(this.PART_DragOverlay);
+                    rowTopInOverlay = overlayTransform.TransformPoint(new Point(0, 0)).Y;
+                }
+            }
+
+            if (hoverIndex < 0)
+            {
+                this.HideDragIndicators();
+                return;
+            }
+
+            // Compute drop target
+            double indentSize = this.TreeDepthIndentSize;
+            var dropTarget = FlatTreeDragDropManager.ComputeDropTarget(
+                m_store, m_dragItems, hoverIndex, cursorYFraction, cursorInListView.X, indentSize
+            );
+
+            // Validate
+            if (dropTarget == null
+                || !FlatTreeDragDropManager.ValidateDropTarget(m_dragItems, dropTarget, this.CanDropItem))
+            {
+                this.HideDragIndicators();
+                m_currentDropTarget = null;
+                return;
+            }
+
+            m_currentDropTarget = dropTarget;
+
+            // Compute shared line Y (gap between rows) and insertion line X (content column start)
+            double lineY = cursorYFraction < 0.5 ? rowTopInOverlay : rowTopInOverlay + rowHeight;
+            const double kExpanderColumnWidth = 18.0;
+            double lineX = dropTarget.TargetDepth * indentSize + kExpanderColumnWidth + 6.0;
+
+            // Position the insertion line at the content column start for the target depth
+            if (this.PART_InsertionLine != null)
+            {
+                Canvas.SetLeft(this.PART_InsertionLine, lineX);
+                Canvas.SetTop(this.PART_InsertionLine, lineY - kInsertionLineHeight / 2.0);
+                this.PART_InsertionLine.Width = Math.Max(0, this.PART_DragOverlay.ActualWidth - lineX - 4.0);
+                this.PART_InsertionLine.Height = kInsertionLineHeight;
+                this.PART_InsertionLine.Visibility = Visibility.Visible;
+
+                if (this.InsertionLineBrush != null)
+                {
+                    this.PART_InsertionLine.Fill = this.InsertionLineBrush;
+                }
+            }
+
+            // Position the parent connector L-shape and highlight the parent's chevron
+            this.ClearParentHighlight();
+
+            int parentStoreIndex = FlatTreeDragDropManager.FindParentStoreIndex(m_store, dropTarget);
+            if (parentStoreIndex >= 0 && this.PART_ListView.ContainerFromIndex(parentStoreIndex) is ListViewItem parentContainer)
+            {
+                // Highlight the parent's chevron
+                FlatTreeItemRow parentRow = FindDescendant<FlatTreeItemRow>(parentContainer);
+                if (parentRow != null)
+                {
+                    m_highlightedParentOriginalBrush = parentRow.ExpanderGlyphForeground;
+                    m_highlightedParentRow = parentRow;
+                    Brush highlightBrush = this.DragTargetHighlightBrush ?? this.InsertionLineBrush;
+                    if (highlightBrush != null)
+                    {
+                        parentRow.ExpanderGlyphForeground = highlightBrush;
+                    }
+                }
+
+                // Draw an L-shape: vertical from parent's chevron down, then horizontal to insertion line
+                if (this.PART_ParentConnectorLine != null)
+                {
+                    var parentTransform = parentContainer.TransformToVisual(this.PART_DragOverlay);
+                    double parentCenterY = parentTransform.TransformPoint(new Point(0, 0)).Y
+                                         + parentContainer.ActualHeight / 2.0;
+
+                    // Chevron center X in overlay space
+                    int parentDepth = dropTarget.TargetDepth - 1;
+                    double chevronXInRow = Math.Max(4, parentDepth * indentSize + 15.0);
+                    double chevronX = parentTransform.TransformPoint(new Point(chevronXInRow, 0)).X;
+
+                    // L-shape: top of vertical, corner, end of horizontal
+                    double topY = Math.Min(parentCenterY, lineY) + 5.0;
+                    double bottomY = Math.Max(parentCenterY, lineY);
+
+                    var points = new PointCollection
+                    {
+                        new Point(chevronX, topY),
+                        new Point(chevronX, bottomY),
+                        new Point(lineX, bottomY),
+                    };
+                    this.PART_ParentConnectorLine.Points = points;
+                    this.PART_ParentConnectorLine.Visibility = Visibility.Visible;
+
+                    if (this.ParentConnectorBrush != null)
+                    {
+                        this.PART_ParentConnectorLine.Stroke = this.ParentConnectorBrush;
+                    }
+                }
+            }
+            else
+            {
+                if (this.PART_ParentConnectorLine != null)
+                {
+                    this.PART_ParentConnectorLine.Visibility = Visibility.Collapsed;
+                }
+            }
+        }
+
+        private void CompleteDrag ()
+        {
+            if (m_dragItems != null && m_currentDropTarget != null && m_currentDropTarget.IsValid)
+            {
+                IObservableTreeNode[] sourceNodes = m_dragItems.Select(i => i.Source).ToArray();
+
+                // Fire the event so consumers can cancel or handle it themselves
+                var args = new FlatTreeReorderEventArgs(sourceNodes, m_currentDropTarget.TargetParent, m_currentDropTarget.InsertIndex);
+                this.DragDropReorderRequested?.Invoke(this, args);
+
+                if (!args.Cancel)
+                {
+                    FlatTreeDragDropManager.ExecuteReorder(sourceNodes, m_currentDropTarget);
+                }
+            }
+
+            this.CancelDrag();
+        }
+
+        private void CancelDrag ()
+        {
+            m_isDragging = false;
+            m_isDragPending = false;
+            m_dragItems = null;
+            m_currentDropTarget = null;
+
+            // Release pointer capture
+            if (m_dragPointer != null && this.PART_ListView != null)
+            {
+                this.PART_ListView.ReleasePointerCapture(m_dragPointer);
+                m_dragPointer = null;
+            }
+
+            this.HideDragIndicators();
+
+            if (this.PART_DragOverlay != null)
+            {
+                this.PART_DragOverlay.Visibility = Visibility.Collapsed;
+            }
+
+            if (this.PART_DragGhost != null)
+            {
+                this.PART_DragGhost.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void CancelDragPending (Pointer pointer)
+        {
+            if (m_isDragPending)
+            {
+                m_isDragPending = false;
+            }
+        }
+
+        private void HideDragIndicators ()
+        {
+            if (this.PART_InsertionLine != null)
+            {
+                this.PART_InsertionLine.Visibility = Visibility.Collapsed;
+            }
+
+            if (this.PART_ParentConnectorLine != null)
+            {
+                this.PART_ParentConnectorLine.Visibility = Visibility.Collapsed;
+            }
+
+            this.ClearParentHighlight();
+        }
+
+        private void ClearParentHighlight ()
+        {
+            if (m_highlightedParentRow != null)
+            {
+                m_highlightedParentRow.ExpanderGlyphForeground = m_highlightedParentOriginalBrush;
+                m_highlightedParentRow = null;
+                m_highlightedParentOriginalBrush = null;
+            }
+        }
+
+        private static T FindDescendant<T> (DependencyObject parent) where T : DependencyObject
+        {
+            int count = VisualTreeHelper.GetChildrenCount(parent);
+            for (int i = 0; i < count; ++i)
+            {
+                DependencyObject child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T match)
+                {
+                    return match;
+                }
+
+                T descendant = FindDescendant<T>(child);
+                if (descendant != null)
+                {
+                    return descendant;
+                }
+            }
+
+            return null;
+        }
+
+        private FlatTreeItem FindFlatTreeItemAtPoint (Point pointInListView)
+        {
+            if (this.PART_ListView == null)
+            {
+                return null;
+            }
+
+            for (int i = 0; i < this.PART_ListView.Items.Count; ++i)
+            {
+                if (this.PART_ListView.ContainerFromIndex(i) is ListViewItem container)
+                {
+                    var transform = container.TransformToVisual(this.PART_ListView);
+                    Point origin = transform.TransformPoint(new Point(0, 0));
+                    if (pointInListView.Y >= origin.Y
+                        && pointInListView.Y < origin.Y + container.ActualHeight)
+                    {
+                        return this.PART_ListView.ItemFromContainer(container) as FlatTreeItem;
+                    }
+                }
+            }
+
+            return null;
         }
     }
 

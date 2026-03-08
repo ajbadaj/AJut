@@ -169,6 +169,7 @@ namespace AJutShowRoomWinUI
         // ===========[ Flat Tree / Property Grid properties ]============================
 
         public ShowRoomTreeNode TreeRoot { get; } = ShowRoomTreeNode.Build();
+        public ShowRoomTreeNode DragDropTreeRoot { get; } = ShowRoomTreeNode.BuildDragDropDemo();
 
         // Source swap test objects.
         // ShowRoomAlpha (5 props) → ShowRoomBeta (2 props) replicates the CF Image→Particles scenario:
@@ -307,6 +308,32 @@ namespace AJutShowRoomWinUI
             childB.AddItem("Grandchild B2");
 
             root.AddItem("Child C");
+            return root;
+        }
+
+        public static ShowRoomTreeNode BuildDragDropDemo()
+        {
+            var root = new ShowRoomTreeNode("Project");
+            root.CanHaveChildren = true;
+
+            var scenes = root.AddItem("Scenes");
+            var scene1 = scenes.AddItem("MainScene");
+            scene1.AddItem("Camera");
+            scene1.AddItem("Light");
+            var player = scene1.AddItem("Player");
+            player.CanHaveChildren = true; // group-like: can accept children
+            scenes.AddItem("MenuScene");
+
+            var assets = root.AddItem("Assets");
+            var textures = assets.AddItem("Textures");
+            textures.CanHaveChildren = true; // group-like
+            assets.AddItem("Models");
+            assets.AddItem("Audio");
+
+            var scripts = root.AddItem("Scripts");
+            scripts.AddItem("PlayerController");
+            scripts.AddItem("GameManager");
+
             return root;
         }
     }

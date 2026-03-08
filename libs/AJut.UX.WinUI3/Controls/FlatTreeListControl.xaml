@@ -391,10 +391,14 @@
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         <Setter Property="ExpanderGlyphForeground" Value="{ThemeResource TextFillColorSecondaryBrush}"/>
         <Setter Property="ListViewItemContainerStyle" Value="{StaticResource AJut_FlatTree_ListViewItemStyle}"/>
+        <Setter Property="InsertionLineBrush" Value="{ThemeResource AJut_FlatTree_DragInsertionLine}"/>
+        <Setter Property="ParentConnectorBrush" Value="{ThemeResource AJut_FlatTree_DragParentConnector}"/>
+        <Setter Property="DragTargetHighlightBrush" Value="{ThemeResource AJut_FlatTree_DragTargetHighlight}"/>
         <Setter Property="Padding" Value="0"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:FlatTreeListControl">
+                    <Grid>
                     <Border Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}">
@@ -441,6 +445,42 @@
                             </ListView.ItemsPanel>
                         </ListView>
                     </Border>
+                    <!-- Drag/drop overlay - rendered on top of the ListView.
+                         Contains the insertion line, parent connector, and ghost element.
+                         Collapsed by default, shown only during an active drag. -->
+                    <Canvas x:Name="PART_DragOverlay"
+                            Visibility="Collapsed"
+                            IsHitTestVisible="False"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch">
+                        <!-- Dashed parent connector L-shape (vertical down, then horizontal to insertion line) -->
+                        <Polyline x:Name="PART_ParentConnectorLine"
+                                  Visibility="Collapsed"
+                                  Opacity="0.8"
+                                  StrokeDashArray="4,3"
+                                  Stroke="{TemplateBinding ParentConnectorBrush}"
+                                  StrokeThickness="2"
+                                  Fill="Transparent"
+                                  StrokeLineJoin="Round"/>
+                        <!-- Thick insertion line (horizontal) -->
+                        <Rectangle x:Name="PART_InsertionLine"
+                                   Visibility="Collapsed"
+                                   Fill="{TemplateBinding InsertionLineBrush}"
+                                   Height="3"
+                                   RadiusX="1.5" RadiusY="1.5"/>
+                        <!-- Ghost element showing what is being dragged -->
+                        <Border x:Name="PART_DragGhost"
+                                Visibility="Collapsed"
+                                Opacity="0.65"
+                                Background="#E0404040"
+                                CornerRadius="4"
+                                Padding="8,4"
+                                BorderBrush="#80FFFFFF"
+                                BorderThickness="1">
+                            <TextBlock Text="" Foreground="White" FontSize="11"/>
+                        </Border>
+                    </Canvas>
+                    </Grid>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

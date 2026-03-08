@@ -33,8 +33,13 @@
                     <Run Text="the flat tree list defaults to giving you the most choice! As you can see below, controls are not forced to be left justified - take up the whole horizontal space if you want!"/>
                 </TextBlock.Inlines>
             </TextBlock>
+            <StackPanel Orientation="Horizontal" Margin="3,10">
+                <TextBlock Text="Enable Drag Drop"/>
+                <ajut:ToggleSwitchButton x:Name="EnableDragDrop" InsetLabelTrue="On" InsetLabelFalse="Off" HorizontalAlignment="Left"/>
+            </StackPanel>
         </StackPanel>
-        <ajut:FlatTreeListControl Grid.Row="1" Root="{Binding ElementName=Self, Path=Root}" TreeDepthIndentSize="10" Margin="10" BorderThickness="1">
+        <ajut:FlatTreeListControl Grid.Row="1" Root="{Binding ElementName=Self, Path=Root}" TreeDepthIndentSize="10" Margin="10" BorderThickness="1"
+                                  IsDragDropReorderEnabled="{Binding ElementName=EnableDragDrop, Path=IsChecked}" StartItemsExpanded="True" SelectionMode="Extended">
             <ajut:FlatTreeListControl.Resources>
                 <DataTemplate DataType="{x:Type local:TestTreeItem}">
                     <DockPanel>
