@@ -1,0 +1,40 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="using:AJut.UX.Controls">
+
+    <!-- ===[ PropertyGridListEditor ]=== -->
+    <!-- Inline editor for list/array/collection properties in the PropertyGrid.
+         Shows an element count text (e.g. "Elements (3)") and an add button (+).
+         DataContext is a PropertyEditTarget with EditContext = PropertyGridListContext. -->
+
+    <Style TargetType="local:PropertyGridListEditor">
+        <Setter Property="IsTabStop" Value="False"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:PropertyGridListEditor">
+                    <StackPanel Orientation="Horizontal"
+                                VerticalAlignment="Center"
+                                Spacing="6">
+                        <TextBlock x:Name="PART_CountText"
+                                   Text="Elements (0)"
+                                   VerticalAlignment="Center"
+                                   Opacity="0.7"
+                                   FontSize="12"/>
+                        <Button x:Name="PART_AddButton"
+                                VerticalAlignment="Center"
+                                Padding="4,2"
+                                MinWidth="24"
+                                MinHeight="24"
+                                FontFamily="Segoe MDL2 Assets"
+                                Content="&#xE710;"
+                                FontSize="10"
+                                ToolTipService.ToolTip="Add element"/>
+                    </StackPanel>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

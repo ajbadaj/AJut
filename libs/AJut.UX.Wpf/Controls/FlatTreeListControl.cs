@@ -317,6 +317,13 @@ namespace AJut.UX.Controls
             set => this.SetValue(CanDropItemProperty, value);
         }
 
+        public static readonly DependencyProperty CanDragItemProperty = DPUtils.Register(_ => _.CanDragItem);
+        public Func<IObservableTreeNode, bool> CanDragItem
+        {
+            get => (Func<IObservableTreeNode, bool>)this.GetValue(CanDragItemProperty);
+            set => this.SetValue(CanDragItemProperty, value);
+        }
+
         public static readonly DependencyProperty InsertionLineBrushProperty = DPUtils.Register(_ => _.InsertionLineBrush);
         public Brush InsertionLineBrush
         {
@@ -752,6 +759,17 @@ namespace AJut.UX.Controls
                 }
 
                 m_dragItems = new[] { pressedItem };
+            }
+
+            // Apply CanDragItem filter
+            if (this.CanDragItem != null)
+            {
+                m_dragItems = m_dragItems.Where(i => this.CanDragItem(i.Source)).ToArray();
+                if (m_dragItems.Length == 0)
+                {
+                    m_isDragPending = false;
+                    return;
+                }
             }
 
             m_isDragging = true;

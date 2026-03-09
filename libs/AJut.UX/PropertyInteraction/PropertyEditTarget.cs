@@ -61,8 +61,20 @@ namespace AJut.UX.PropertyInteraction
             }
         }
 
+        /// <summary>True when this target represents a list/array/collection parent with [PGList].</summary>
+        public bool IsListEditor { get; set; }
+
+        /// <summary>True when this target is a child element of a list property.</summary>
+        public bool IsListElement => this.EditContext is PropertyGridListElementContext;
+
+        /// <summary>True when this is a removable list element (non-null only when IsListElement and CanRemove).</summary>
+        public bool CanRemoveFromList => this.EditContext is PropertyGridListElementContext { CanRemove: true };
+
+        /// <summary>The remove command for list elements (null when not a removable list element).</summary>
+        public System.Windows.Input.ICommand ListElementRemoveCommand => (this.EditContext as PropertyGridListElementContext)?.RemoveCommand;
+
         /// <summary>True when this row should show an inline editor.</summary>
-        public bool HasInlineEditor => !this.IsExpandable || this.ElevatedChildTarget != null;
+        public bool HasInlineEditor => !this.IsExpandable || this.ElevatedChildTarget != null || this.IsListEditor;
 
         /// <summary>Returns ElevatedChildTarget if set, otherwise self. Used as ContentControl.Content.</summary>
         public PropertyEditTarget EffectiveEditorTarget => this.ElevatedChildTarget ?? this;
@@ -395,6 +407,39 @@ namespace AJut.UX.PropertyInteraction
 
                 // 4. Compute default value
                 _ApplyDefault(target, prop, sourceItem);
+
+                // 4b. Detect [PGList] on list/array/collection properties and generate
+                //     an expandable parent with inline editor + element children.
+                var listAttr = TypeMetadataExtensionRegistrar.GetAttribute<PGListAttribute>(prop);
+                if (listAttr != null && _IsListType(prop.PropertyType, out Type listElementType))
+                {
+                    target.Editor = "List";
+                    target.IsListEditor = true;
+                    target.IsExpandable = true;
+
+                    // Capture for lambda closures
+                    var capturedTarget = target;
+                    var capturedProp = prop;
+                    var capturedSourceItem = sourceItem;
+                    var capturedElementType = listElementType;
+                    var capturedListAttr = listAttr;
+
+                    var listContext = new PropertyGridListContext(
+                        capturedSourceItem,
+                        capturedProp,
+                        capturedElementType,
+                        capturedListAttr,
+                        () => RebuildListChildren(capturedTarget, capturedSourceItem, capturedProp, capturedElementType, capturedListAttr)
+                    );
+
+                    target.EditContext = listContext;
+
+                    // Generate initial children for existing elements
+                    _BuildListChildren(target, sourceItem, prop, listElementType, listAttr);
+
+                    yield return target;
+                    continue;
+                }
 
                 // 5. Recurse into complex reference types (non-nullable, non-aliased, non-string, non-enum,
                 // non-value-type) that have a non-null value and editable sub-properties. Cap recursion at depth 5.
@@ -759,6 +804,196 @@ namespace AJut.UX.PropertyInteraction
                 && !type.IsEnum
                 && !type.IsArray
                 && !typeof(System.Collections.IEnumerable).IsAssignableFrom(type);
+        }
+
+        /// <summary>
+        /// Returns true if the type is a supported list/array/collection type for [PGList],
+        /// and outputs the element type.
+        /// </summary>
+        private static bool _IsListType (Type type, out Type elementType)
+        {
+            // T[]
+            if (type.IsArray)
+            {
+                elementType = type.GetElementType();
+                return elementType != null;
+            }
+
+            // IList<T>, List<T>, ICollection<T>, IEnumerable<T>
+            foreach (Type iface in type.GetInterfaces())
+            {
+                if (iface.IsGenericType)
+                {
+                    Type def = iface.GetGenericTypeDefinition();
+                    if (def == typeof(IList<>) || def == typeof(ICollection<>) || def == typeof(IEnumerable<>))
+                    {
+                        elementType = iface.GetGenericArguments()[0];
+                        return true;
+                    }
+                }
+            }
+
+            // Check the type itself (e.g. List<T> directly)
+            if (type.IsGenericType)
+            {
+                Type def = type.GetGenericTypeDefinition();
+                if (def == typeof(List<>) || def == typeof(IList<>) || def == typeof(ICollection<>))
+                {
+                    elementType = type.GetGenericArguments()[0];
+                    return true;
+                }
+            }
+
+            // Non-generic IList (ArrayList, etc.)
+            if (typeof(System.Collections.IList).IsAssignableFrom(type))
+            {
+                elementType = typeof(object);
+                return true;
+            }
+
+            elementType = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Builds child PropertyEditTarget nodes for each element in a list property.
+        /// Called during initial generation and on rebuild after add/remove.
+        /// </summary>
+        private static void _BuildListChildren (
+            PropertyEditTarget listParent,
+            object sourceItem,
+            PropertyInfo prop,
+            Type elementType,
+            PGListAttribute listAttr)
+        {
+            object collection = prop.GetValue(sourceItem);
+            if (collection == null)
+            {
+                return;
+            }
+
+            var listContext = listParent.EditContext as PropertyGridListContext;
+            bool isSimpleType = elementType.IsValueType || elementType == typeof(string) || elementType.IsEnum;
+
+            int index = 0;
+            foreach (object element in (System.Collections.IEnumerable)collection)
+            {
+                int capturedIndex = index;
+                var capturedProp = prop;
+                var capturedSource = sourceItem;
+
+                string elementEditor;
+                if (isSimpleType)
+                {
+                    elementEditor = elementType.Name;
+                }
+                else
+                {
+                    // Complex element types use the default template (expandable)
+                    elementEditor = elementType.Name;
+                }
+
+                // For IList types, getter/setter work by index
+                GetValue elemGetter;
+                SetValue elemSetter = null;
+                if (collection is System.Collections.IList)
+                {
+                    elemGetter = () =>
+                    {
+                        var list = capturedProp.GetValue(capturedSource) as System.Collections.IList;
+                        return (list != null && capturedIndex < list.Count) ? list[capturedIndex] : null;
+                    };
+
+                    elemSetter = v =>
+                    {
+                        var list = capturedProp.GetValue(capturedSource) as System.Collections.IList;
+                        if (list != null && capturedIndex < list.Count)
+                        {
+                            list[capturedIndex] = _CoerceValueType(v, elementType);
+                        }
+                    };
+                }
+                else if (prop.PropertyType.IsArray)
+                {
+                    elemGetter = () =>
+                    {
+                        var arr = capturedProp.GetValue(capturedSource) as Array;
+                        return (arr != null && capturedIndex < arr.Length) ? arr.GetValue(capturedIndex) : null;
+                    };
+
+                    elemSetter = v =>
+                    {
+                        var arr = capturedProp.GetValue(capturedSource) as Array;
+                        if (arr != null && capturedIndex < arr.Length)
+                        {
+                            arr.SetValue(_CoerceValueType(v, elementType), capturedIndex);
+                        }
+                    };
+                }
+                else
+                {
+                    // Non-indexed collection - read-only display of element value
+                    object capturedElement = element;
+                    elemGetter = () => capturedElement;
+                }
+
+                string childPath = $"{prop.Name}[{capturedIndex}]";
+                var childTarget = new PropertyEditTarget(childPath, elemGetter, elemSetter)
+                {
+                    DisplayName = $"[{capturedIndex}]",
+                    Editor = elementEditor,
+                    EditContext = new PropertyGridListElementContext(listContext, capturedIndex),
+                };
+
+                // For complex element types, recurse into sub-properties
+                if (!isSimpleType && element != null && _IsComplexObjectType(elementType))
+                {
+                    var subProps = TypeMetadataExtensionRegistrar.GetOrderedProperties(
+                        elementType,
+                        BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty
+                    ).Where(p => p.SetMethod != null || p.GetCustomAttribute<PGShowReadonlyAttribute>() != null);
+
+                    if (subProps.Any())
+                    {
+                        childTarget.IsExpandable = true;
+                        foreach (PropertyEditTarget subChild in GenerateForPropertiesOf(element, depth: 3))
+                        {
+                            subChild.Setup();
+                            childTarget.InsertChild(childTarget.Children.Count, subChild);
+                        }
+                    }
+                }
+
+                childTarget.Setup();
+                listParent.InsertChild(listParent.Children.Count, childTarget);
+                ++index;
+            }
+        }
+
+        /// <summary>
+        /// Rebuilds the child targets of a list parent after an add/remove/reorder.
+        /// Clears existing children and regenerates from the current collection state.
+        /// </summary>
+        internal static void RebuildListChildren (
+            PropertyEditTarget listParent,
+            object sourceItem,
+            PropertyInfo prop,
+            Type elementType,
+            PGListAttribute listAttr)
+        {
+            // Teardown and remove existing children
+            var existingChildren = listParent.Children.OfType<PropertyEditTarget>().ToList();
+            foreach (var child in existingChildren)
+            {
+                child.Teardown();
+                listParent.RemoveChild(child);
+            }
+
+            // Rebuild
+            _BuildListChildren(listParent, sourceItem, prop, elementType, listAttr);
+
+            // Signal that the source has been modified
+            listParent.ForceRaiseSourceCommitted();
         }
 
         private static object _BuildEditContext(PGEditContextBuilderAttribute attr)

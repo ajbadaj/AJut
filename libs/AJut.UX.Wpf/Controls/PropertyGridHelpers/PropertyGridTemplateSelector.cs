@@ -11,6 +11,7 @@ namespace AJut.UX.Controls
         // editor key is encountered and no consumer-registered template is present.
         private static DataTemplate s_builtInNullableTemplate;
         private static DataTemplate s_builtInButtonTemplate;
+        private static DataTemplate s_builtInListTemplate;
 
         protected override object GetKeyForItem (object item) => ((PropertyEditTarget)item).Editor ?? "__Invalid";
 
@@ -26,6 +27,11 @@ namespace AJut.UX.Controls
                 if (target.Editor == "Button" && !this.RegisteredTemplates.ContainsKey("Button"))
                 {
                     return GetOrCreateBuiltInButtonTemplate();
+                }
+
+                if (target.Editor == "List" && !this.RegisteredTemplates.ContainsKey("List"))
+                {
+                    return GetOrCreateBuiltInListTemplate();
                 }
             }
 
@@ -65,6 +71,21 @@ namespace AJut.UX.Controls
             }
 
             return s_builtInButtonTemplate;
+        }
+
+        private static DataTemplate GetOrCreateBuiltInListTemplate ()
+        {
+            if (s_builtInListTemplate == null)
+            {
+                var dt = new DataTemplate { DataType = typeof(PropertyEditTarget) };
+#pragma warning disable CS0618
+                dt.VisualTree = new FrameworkElementFactory(typeof(PropertyGridListEditor));
+#pragma warning restore CS0618
+                dt.Seal();
+                s_builtInListTemplate = dt;
+            }
+
+            return s_builtInListTemplate;
         }
     }
 }

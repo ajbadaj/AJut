@@ -4,6 +4,7 @@
 namespace AJutShowRoomWinUI
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Linq;
@@ -458,6 +459,33 @@ namespace AJutShowRoomWinUI
             this.TextModeValue = "Hello world";
             this.NumberModeValue = 42.0f;
             this.ColorModeValue = new Color { A = 255, R = 128, G = 200, B = 255 };
+        }
+
+        // ------ PGList demos ------
+
+        [PGList]
+        [PGGroup("Lists")]
+        public List<string> Tags { get; set; } = new List<string> { "alpha", "beta", "gamma" };
+
+        [PGList]
+        [PGGroup("Lists")]
+        public float[] Weights { get; set; } = new float[] { 1.0f, 2.5f, 0.8f };
+
+        [PGList(AddMethodName = nameof(AddCustomItem), RemoveMethodName = nameof(RemoveCustomItem))]
+        [PGGroup("Lists")]
+        public List<string> CustomListMethods { get; set; } = new List<string> { "custom-a", "custom-b" };
+
+        private void AddCustomItem ()
+        {
+            this.CustomListMethods.Add($"custom-{this.CustomListMethods.Count}");
+        }
+
+        private void RemoveCustomItem (int index)
+        {
+            if (index >= 0 && index < this.CustomListMethods.Count)
+            {
+                this.CustomListMethods.RemoveAt(index);
+            }
         }
 
         private class ColorToStringConverter : PropertyGridTypeAliasing<Color, string>

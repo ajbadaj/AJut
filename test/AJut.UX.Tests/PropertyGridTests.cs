@@ -638,4 +638,386 @@ namespace AJut.UX.Tests
             return results;
         }
     }
+
+    // ===========[ List editing test source types ]==========================================
+
+    public class ListTestSource : NotifyPropertyChanged
+    {
+        [PGList]
+        public List<string> Tags { get; set; } = new List<string> { "alpha", "beta", "gamma" };
+
+        [PGList]
+        public int[] Numbers { get; set; } = new int[] { 10, 20, 30 };
+
+        public string Name { get; set; } = "Test";
+    }
+
+    public class ListWithCustomMethodsSource : NotifyPropertyChanged
+    {
+        [PGList(AddMethodName = nameof(AddTag), RemoveMethodName = nameof(RemoveTag))]
+        public List<string> Tags { get; set; } = new List<string> { "one", "two" };
+
+        public int AddCallCount { get; private set; }
+        public int RemoveCallCount { get; private set; }
+
+        public void AddTag ()
+        {
+            this.Tags.Add($"tag_{this.Tags.Count}");
+            ++this.AddCallCount;
+        }
+
+        public void RemoveTag (int index)
+        {
+            if (index >= 0 && index < this.Tags.Count)
+            {
+                this.Tags.RemoveAt(index);
+                ++this.RemoveCallCount;
+            }
+        }
+    }
+
+    public class ListNoReorderSource
+    {
+        [PGList(CanReorder = false)]
+        public List<int> Items { get; set; } = new List<int> { 1, 2, 3 };
+    }
+
+    public class ListNoAddRemoveSource
+    {
+        [PGList(CanAdd = false, CanRemove = false)]
+        public List<int> Items { get; set; } = new List<int> { 1, 2 };
+    }
+
+    public class EmptyListSource
+    {
+        [PGList]
+        public List<string> Items { get; set; } = new List<string>();
+    }
+
+    public class ComplexListElementSource
+    {
+        [PGList]
+        public List<SubItem> Items { get; set; } = new List<SubItem>
+        {
+            new SubItem { Name = "First", Value = 1 },
+            new SubItem { Name = "Second", Value = 2 },
+        };
+    }
+
+    public class SubItem
+    {
+        public string Name { get; set; }
+        public int Value { get; set; }
+    }
+
+    // ===========[ PGList tests ]==========================================
+
+    [TestClass]
+    public class PGListTests
+    {
+        // ------ Generation ------
+
+        [TestMethod]
+        public void List_GeneratesListTarget ()
+        {
+            var source = new ListTestSource();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(source).ToList();
+
+            var listTarget = targets.FirstOrDefault(t => t.PropertyPathTarget == nameof(ListTestSource.Tags));
+            Assert.IsNotNull(listTarget, "Tags list target should be generated");
+            Assert.AreEqual("List", listTarget.Editor);
+            Assert.IsTrue(listTarget.IsListEditor);
+            Assert.IsTrue(listTarget.IsExpandable);
+            Assert.IsTrue(listTarget.HasInlineEditor, "List editors should have inline editor AND be expandable");
+        }
+
+        [TestMethod]
+        public void List_GeneratesChildrenForElements ()
+        {
+            var source = new ListTestSource();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(source).ToList();
+            var listTarget = targets.First(t => t.PropertyPathTarget == nameof(ListTestSource.Tags));
+
+            Assert.AreEqual(3, listTarget.Children.Count, "Should have 3 children for 3 list elements");
+
+            var child0 = listTarget.Children[0] as PropertyEditTarget;
+            Assert.IsNotNull(child0);
+            Assert.AreEqual("Tags[0]", child0.PropertyPathTarget);
+            Assert.AreEqual("[0]", child0.DisplayName);
+        }
+
+        [TestMethod]
+        public void List_ElementEditValueMatchesListContent ()
+        {
+            var source = new ListTestSource();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(source).ToList();
+            var listTarget = targets.First(t => t.PropertyPathTarget == nameof(ListTestSource.Tags));
+
+            var child0 = listTarget.Children[0] as PropertyEditTarget;
+            child0.Setup();
+            Assert.AreEqual("alpha", child0.EditValue);
+
+            var child1 = listTarget.Children[1] as PropertyEditTarget;
+            child1.Setup();
+            Assert.AreEqual("beta", child1.EditValue);
+        }
+
+        [TestMethod]
+        public void List_ArrayGeneratesListTarget ()
+        {
+            var source = new ListTestSource();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(source).ToList();
+
+            var arrayTarget = targets.FirstOrDefault(t => t.PropertyPathTarget == nameof(ListTestSource.Numbers));
+            Assert.IsNotNull(arrayTarget, "Numbers array target should be generated");
+            Assert.AreEqual("List", arrayTarget.Editor);
+            Assert.IsTrue(arrayTarget.IsListEditor);
+            Assert.AreEqual(3, arrayTarget.Children.Count);
+        }
+
+        [TestMethod]
+        public void List_ContextHasCorrectCount ()
+        {
+            var source = new ListTestSource();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(source).ToList();
+            var listTarget = targets.First(t => t.PropertyPathTarget == nameof(ListTestSource.Tags));
+
+            var context = listTarget.EditContext as PropertyGridListContext;
+            Assert.IsNotNull(context);
+            Assert.AreEqual(3, context.ElementCount);
+            Assert.IsTrue(context.CanAdd);
+            Assert.IsTrue(context.CanRemove);
+            Assert.IsTrue(context.CanReorder);
+        }
+
+        [TestMethod]
+        public void List_EmptyListHasNoChildren ()
+        {
+            var source = new EmptyListSource();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(source).ToList();
+            var listTarget = targets.First(t => t.PropertyPathTarget == nameof(EmptyListSource.Items));
+
+            Assert.AreEqual(0, listTarget.Children.Count);
+
+            var context = listTarget.EditContext as PropertyGridListContext;
+            Assert.AreEqual(0, context.ElementCount);
+        }
+
+        // ------ Add ------
+
+        [TestMethod]
+        public void List_AddElementIncreasesCount ()
+        {
+            var source = new ListTestSource();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(source).ToList();
+            var listTarget = targets.First(t => t.PropertyPathTarget == nameof(ListTestSource.Tags));
+            var context = listTarget.EditContext as PropertyGridListContext;
+
+            context.AddElement();
+
+            Assert.AreEqual(4, source.Tags.Count);
+            Assert.AreEqual(4, context.ElementCount);
+            Assert.AreEqual(4, listTarget.Children.Count);
+        }
+
+        [TestMethod]
+        public void List_AddToArrayCreatesNewArray ()
+        {
+            var source = new ListTestSource();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(source).ToList();
+            var arrayTarget = targets.First(t => t.PropertyPathTarget == nameof(ListTestSource.Numbers));
+            var context = arrayTarget.EditContext as PropertyGridListContext;
+
+            int[] originalArray = source.Numbers;
+            context.AddElement();
+
+            Assert.AreEqual(4, source.Numbers.Length);
+            Assert.AreNotSame(originalArray, source.Numbers, "Should create new array");
+            Assert.AreEqual(10, source.Numbers[0]);
+            Assert.AreEqual(20, source.Numbers[1]);
+            Assert.AreEqual(30, source.Numbers[2]);
+        }
+
+        [TestMethod]
+        public void List_CustomAddMethodCalled ()
+        {
+            var source = new ListWithCustomMethodsSource();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(source).ToList();
+            var listTarget = targets.First(t => t.PropertyPathTarget == nameof(ListWithCustomMethodsSource.Tags));
+            var context = listTarget.EditContext as PropertyGridListContext;
+
+            context.AddElement();
+
+            Assert.AreEqual(1, source.AddCallCount);
+            Assert.AreEqual(3, source.Tags.Count);
+            Assert.AreEqual("tag_2", source.Tags[2]);
+        }
+
+        // ------ Remove ------
+
+        [TestMethod]
+        public void List_RemoveElementDecreasesCount ()
+        {
+            var source = new ListTestSource();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(source).ToList();
+            var listTarget = targets.First(t => t.PropertyPathTarget == nameof(ListTestSource.Tags));
+            var context = listTarget.EditContext as PropertyGridListContext;
+
+            context.RemoveElementAt(1);
+
+            Assert.AreEqual(2, source.Tags.Count);
+            Assert.AreEqual("alpha", source.Tags[0]);
+            Assert.AreEqual("gamma", source.Tags[1]);
+            Assert.AreEqual(2, context.ElementCount);
+            Assert.AreEqual(2, listTarget.Children.Count);
+        }
+
+        [TestMethod]
+        public void List_RemoveFromArrayCreatesNewArray ()
+        {
+            var source = new ListTestSource();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(source).ToList();
+            var arrayTarget = targets.First(t => t.PropertyPathTarget == nameof(ListTestSource.Numbers));
+            var context = arrayTarget.EditContext as PropertyGridListContext;
+
+            context.RemoveElementAt(0);
+
+            Assert.AreEqual(2, source.Numbers.Length);
+            Assert.AreEqual(20, source.Numbers[0]);
+            Assert.AreEqual(30, source.Numbers[1]);
+        }
+
+        [TestMethod]
+        public void List_CustomRemoveMethodCalled ()
+        {
+            var source = new ListWithCustomMethodsSource();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(source).ToList();
+            var listTarget = targets.First(t => t.PropertyPathTarget == nameof(ListWithCustomMethodsSource.Tags));
+            var context = listTarget.EditContext as PropertyGridListContext;
+
+            context.RemoveElementAt(0);
+
+            Assert.AreEqual(1, source.RemoveCallCount);
+            Assert.AreEqual(1, source.Tags.Count);
+            Assert.AreEqual("two", source.Tags[0]);
+        }
+
+        // ------ Reorder ------
+
+        [TestMethod]
+        public void List_MoveElement ()
+        {
+            var source = new ListTestSource();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(source).ToList();
+            var listTarget = targets.First(t => t.PropertyPathTarget == nameof(ListTestSource.Tags));
+            var context = listTarget.EditContext as PropertyGridListContext;
+
+            context.MoveElement(0, 2);
+
+            Assert.AreEqual("beta", source.Tags[0]);
+            Assert.AreEqual("gamma", source.Tags[1]);
+            Assert.AreEqual("alpha", source.Tags[2]);
+        }
+
+        [TestMethod]
+        public void List_MoveElementInArray ()
+        {
+            var source = new ListTestSource();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(source).ToList();
+            var arrayTarget = targets.First(t => t.PropertyPathTarget == nameof(ListTestSource.Numbers));
+            var context = arrayTarget.EditContext as PropertyGridListContext;
+
+            context.MoveElement(2, 0);
+
+            Assert.AreEqual(30, source.Numbers[0]);
+            Assert.AreEqual(10, source.Numbers[1]);
+            Assert.AreEqual(20, source.Numbers[2]);
+        }
+
+        // ------ Capability flags ------
+
+        [TestMethod]
+        public void List_NoReorderFlagDisablesReorder ()
+        {
+            var source = new ListNoReorderSource();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(source).ToList();
+            var listTarget = targets.First(t => t.PropertyPathTarget == nameof(ListNoReorderSource.Items));
+            var context = listTarget.EditContext as PropertyGridListContext;
+
+            Assert.IsFalse(context.CanReorder);
+        }
+
+        [TestMethod]
+        public void List_NoAddRemoveFlagsDisableOperations ()
+        {
+            var source = new ListNoAddRemoveSource();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(source).ToList();
+            var listTarget = targets.First(t => t.PropertyPathTarget == nameof(ListNoAddRemoveSource.Items));
+            var context = listTarget.EditContext as PropertyGridListContext;
+
+            Assert.IsFalse(context.CanAdd);
+            Assert.IsFalse(context.CanRemove);
+        }
+
+        // ------ Element context ------
+
+        [TestMethod]
+        public void List_ChildrenHaveElementContext ()
+        {
+            var source = new ListTestSource();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(source).ToList();
+            var listTarget = targets.First(t => t.PropertyPathTarget == nameof(ListTestSource.Tags));
+
+            var child0 = listTarget.Children[0] as PropertyEditTarget;
+            var elemCtx = child0.EditContext as PropertyGridListElementContext;
+            Assert.IsNotNull(elemCtx);
+            Assert.AreEqual(0, elemCtx.Index);
+            Assert.IsTrue(elemCtx.CanRemove);
+            Assert.IsNotNull(elemCtx.RemoveCommand);
+        }
+
+        // ------ Manager integration ------
+
+        [TestMethod]
+        public void List_ManagerBuildsListTargets ()
+        {
+            var source = new ListTestSource();
+            var pg = new SimpleTestPropertyGrid { SingleItemSource = source };
+            var manager = new PropertyGridManager(pg);
+
+            manager.RebuildEditTargets();
+
+            var allTargets = _GetAllTargets(manager.RootNode);
+            Assert.IsTrue(allTargets.Any(t => t.PropertyPathTarget == nameof(ListTestSource.Tags)));
+            Assert.IsTrue(allTargets.Any(t => t.PropertyPathTarget == nameof(ListTestSource.Numbers)));
+        }
+
+        [TestMethod]
+        public void List_NonListPropertiesUnaffected ()
+        {
+            var source = new ListTestSource();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(source).ToList();
+
+            // The Name property should be a normal target, not a list
+            var nameTarget = targets.First(t => t.PropertyPathTarget == nameof(ListTestSource.Name));
+            Assert.IsFalse(nameTarget.IsListEditor);
+            Assert.AreEqual("String", nameTarget.Editor);
+        }
+
+        // ------ Helper ------
+
+        private static List<PropertyEditTarget> _GetAllTargets (PropertyEditTarget root)
+        {
+            var results = new List<PropertyEditTarget>();
+            foreach (var node in TreeTraversal<IObservableTreeNode>.All(root).OfType<PropertyEditTarget>())
+            {
+                if (node != root)
+                {
+                    results.Add(node);
+                }
+            }
+
+            return results;
+        }
+    }
 }
