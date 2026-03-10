@@ -64,6 +64,9 @@
     <Compile Update="Controls\PropertyGridItemRow.cs">
       <DependentUpon>PropertyGridItemRow.xaml</DependentUpon>
     </Compile>
+    <Compile Update="Controls\PropertyGridListEditor.cs">
+      <DependentUpon>PropertyGridListEditor.xaml</DependentUpon>
+    </Compile>
     <Compile Update="Controls\NullableEditor.cs">
       <DependentUpon>NullableEditor.xaml</DependentUpon>
     </Compile>

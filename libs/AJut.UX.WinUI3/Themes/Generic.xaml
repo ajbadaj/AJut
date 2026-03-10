@@ -25,6 +25,7 @@
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/ThemedWindowRootControl.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/FlatTreeListControl.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/PropertyGridItemRow.xaml"/>
+        <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/PropertyGridListEditor.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/PropertyGrid.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/NullableEditor.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/NumericEditor.xaml"/>

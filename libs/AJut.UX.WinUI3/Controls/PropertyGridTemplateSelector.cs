@@ -19,6 +19,7 @@ namespace AJut.UX.Controls
     {
         private static DataTemplate s_builtInNullableTemplate;
         private static DataTemplate s_builtInButtonTemplate;
+        private static DataTemplate s_builtInListTemplate;
 
         protected override object GetKeyForItem (object item)
             => ((PropertyEditTarget)item).Editor ?? "__Invalid";
@@ -35,6 +36,11 @@ namespace AJut.UX.Controls
                 if (target.Editor == "Button" && !this.RegisteredTemplates.ContainsKey("Button"))
                 {
                     return GetOrCreateBuiltInButtonTemplate();
+                }
+
+                if (target.Editor == "List" && !this.RegisteredTemplates.ContainsKey("List"))
+                {
+                    return GetOrCreateBuiltInListTemplate();
                 }
             }
 
@@ -94,6 +100,31 @@ namespace AJut.UX.Controls
             }
 
             return s_builtInButtonTemplate;
+        }
+
+        private static DataTemplate GetOrCreateBuiltInListTemplate ()
+        {
+            if (s_builtInListTemplate != null)
+            {
+                return s_builtInListTemplate;
+            }
+
+            try
+            {
+                s_builtInListTemplate = (DataTemplate)XamlReader.Load(
+                    "<DataTemplate xmlns=\"http://schemas.microsoft.com/winfx/2006/xaml/presentation\" " +
+                    "xmlns:local=\"using:AJut.UX.Controls\">" +
+                    "<local:PropertyGridListEditor/>" +
+                    "</DataTemplate>"
+                );
+            }
+            catch (System.Exception ex)
+            {
+                Logger.LogError("[WARNING] PropertyGridListEditor built-in template could not be created via XamlReader. " +
+                    "Register selector.RegisteredTemplates[\"List\"] manually.", ex);
+            }
+
+            return s_builtInListTemplate;
         }
     }
 }

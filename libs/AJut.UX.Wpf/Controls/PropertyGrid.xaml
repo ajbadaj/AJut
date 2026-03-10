@@ -111,7 +111,8 @@
                         (set by the inner ContentPresenter via Content="{Binding Source}"). To access
                         IndentWidth we walk to the ListBoxItem (DataContext = FlatTreeItem).
                     -->
-                    <local:FlatTreeListControl RootItemsSource="{ajut:TemplateBinding PropertyTreeItems}"
+                    <local:FlatTreeListControl x:Name="PART_TreeList"
+                                               RootItemsSource="{ajut:TemplateBinding PropertyTreeItems}"
                                                Background="{TemplateBinding Background}"
                                                BorderThickness="{TemplateBinding BorderThickness}"
                                                BorderBrush="{TemplateBinding BorderBrush}"
@@ -127,9 +128,7 @@
                             <DataTemplate DataType="{x:Type prop:PropertyEditTarget}">
                                 <Grid Margin="3">
                                     <Grid.ColumnDefinitions>
-                                        <!-- Label column: fixed when LabelColumnWidth is set (accounts for
-                                             indent), Auto (SharedSizeGroup) otherwise. IndentWidth is on the
-                                             FlatTreeItem, accessed through the ListBoxItem.DataContext. -->
+                                        <!-- Column 0: label - width managed via LabelWidthAfterIndentConverter -->
                                         <ColumnDefinition SharedSizeGroup="Header">
                                             <ColumnDefinition.Width>
                                                 <MultiBinding Converter="{conv:LabelWidthAfterIndentConverter}">
@@ -138,13 +137,13 @@
                                                 </MultiBinding>
                                             </ColumnDefinition.Width>
                                         </ColumnDefinition>
+                                        <!-- Column 1: editor fills the rest -->
                                         <ColumnDefinition Width="*"/>
+                                        <!-- Column 2: delete button (Auto = hidden when collapsed) -->
+                                        <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <!-- Label with selection highlight and right-click context menu.
-                                         ContentPresenter switches between DefaultValueLabelDataTemplate and
-                                         ModifiedValueLabelDataTemplate based on PropertyEditTarget.IsAtDefaultValue.
-                                         DataContext for both templates is the PropertyEditTarget. -->
+                                    <!-- Label with selection highlight and right-click context menu. -->
                                     <Border Grid.Column="0" Margin="0,0,3,0">
                                         <Border.Style>
                                             <Style TargetType="{x:Type Border}">
@@ -158,7 +157,6 @@
                                             </Style>
                                         </Border.Style>
                                         <Border.ContextMenu>
-                                            <!-- DataContext bound via PlacementTarget so {Binding} reaches PropertyEditTarget. -->
                                             <ContextMenu DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
                                                 <MenuItem Header="Set to default"
                                                           Command="{x:Static local:PropertyGrid.SetPropertyToDefaultCommand}"
@@ -166,22 +164,17 @@
                                             </ContextMenu>
                                         </Border.ContextMenu>
 
-                                        <!-- Label content: switches template based on IsAtDefaultValue.
-                                             Content={Binding} passes PropertyEditTarget as the template's DataContext. -->
+                                        <!-- Label content: switches template based on IsAtDefaultValue. -->
                                         <ContentPresenter Content="{Binding}">
                                             <ContentPresenter.Style>
                                                 <Style TargetType="{x:Type ContentPresenter}">
-                                                    <!-- Default: ModifiedValueLabelDataTemplate (value changed from default) -->
                                                     <Setter Property="ContentTemplate"
                                                             Value="{Binding RelativeSource={RelativeSource AncestorType=local:PropertyGrid}, Path=ModifiedValueLabelDataTemplate}"/>
                                                     <Style.Triggers>
-                                                        <!-- Switch to DefaultValueLabelDataTemplate when at default -->
                                                         <DataTrigger Binding="{Binding IsAtDefaultValue}" Value="True">
                                                             <Setter Property="ContentTemplate"
                                                                     Value="{Binding RelativeSource={RelativeSource AncestorType=local:PropertyGrid}, Path=DefaultValueLabelDataTemplate}"/>
                                                         </DataTrigger>
-                                                        <!-- Expandable parent nodes always use the default-value template -
-                                                             their object reference is never meaningfully compared to a default. -->
                                                         <DataTrigger Binding="{Binding IsExpandable}" Value="True">
                                                             <Setter Property="ContentTemplate"
                                                                     Value="{Binding RelativeSource={RelativeSource AncestorType=local:PropertyGrid}, Path=DefaultValueLabelDataTemplate}"/>
@@ -209,6 +202,31 @@
                                             </Style>
                                         </ContentPresenter.Style>
                                     </ContentPresenter>
+
+                                    <!-- Delete button for list elements. Only visible when CanRemoveFromList. -->
+                                    <Button Grid.Column="2"
+                                            VerticalAlignment="Center"
+                                            Padding="4,2"
+                                            MinWidth="20"
+                                            MinHeight="20"
+                                            FontFamily="Segoe MDL2 Assets"
+                                            Content="&#xE711;"
+                                            FontSize="9"
+                                            Opacity="0.7"
+                                            Margin="4,0,0,0"
+                                            ToolTip="Remove element"
+                                            Command="{Binding ListElementRemoveCommand}">
+                                        <Button.Style>
+                                            <Style TargetType="{x:Type Button}">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding CanRemoveFromList}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
                                 </Grid>
                             </DataTemplate>
                         </local:FlatTreeListControl.ItemTemplate>

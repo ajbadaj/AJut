@@ -10,6 +10,7 @@ namespace AJut.UX.Controls
     using System.Windows.Controls;
     using System.Windows.Input;
     using AJut;
+    using AJut.Tree;
     using AJut.UX.PropertyInteraction;
     using AJut.Storage;
     using DPUtils = DPUtils<PropertyGrid>;
@@ -17,6 +18,7 @@ namespace AJut.UX.Controls
     public class PropertyGrid : Control, IDisposable, IPropertyGrid
     {
         private readonly PropertyGridManager m_manager;
+        private FlatTreeListControl PART_TreeList;
 
         // ===========[ Commands ]=================================================
         /// <summary>
@@ -49,6 +51,27 @@ namespace AJut.UX.Controls
             m_manager.Dispose();
             this.ItemsSource = null;
             this.SingleItemSource = null;
+        }
+
+        public override void OnApplyTemplate ()
+        {
+            base.OnApplyTemplate();
+
+            if (this.PART_TreeList != null)
+            {
+                this.PART_TreeList.DragDropReorderRequested -= this.OnDragDropReorderRequested;
+            }
+
+            this.PART_TreeList = this.GetTemplateChild(nameof(PART_TreeList)) as FlatTreeListControl;
+            if (this.PART_TreeList != null)
+            {
+                this.PART_TreeList.IsDragDropReorderEnabled = true;
+                this.PART_TreeList.CanDragItem = _CanDragPropertyItem;
+                this.PART_TreeList.CanDropItem = _CanDropPropertyItem;
+                this.PART_TreeList.DragDropReorderRequested += this.OnDragDropReorderRequested;
+
+                this.PART_TreeList.DragGhostTemplate = this.DragGhostTemplate;
+            }
         }
 
         public static readonly DependencyProperty ItemsSourceProperty = DPUtils.Register(_ => _.ItemsSource, (d, e) => d.OnItemsSourceChanged(e));
@@ -123,6 +146,17 @@ namespace AJut.UX.Controls
         }
 
         /// <summary>
+        /// Format string for the element count display in list editors.
+        /// {0} is replaced with the element count. Default: "Elements ({0})".
+        /// </summary>
+        public static readonly DependencyProperty ListElementCountFormatProperty = DPUtils.Register(_ => _.ListElementCountFormat, "Elements ({0})");
+        public string ListElementCountFormat
+        {
+            get => (string)this.GetValue(ListElementCountFormatProperty);
+            set => this.SetValue(ListElementCountFormatProperty, value);
+        }
+
+        /// <summary>
         /// DataTemplate for the property label when the value equals the default.
         /// DataContext is the PropertyEditTarget. Defaults to a plain TextBlock showing DisplayName.
         /// </summary>
@@ -153,6 +187,20 @@ namespace AJut.UX.Controls
         {
             get => (Style)this.GetValue(LabelSubtitleStyleProperty);
             set => this.SetValue(LabelSubtitleStyleProperty, value);
+        }
+
+        public static readonly DependencyProperty DragGhostTemplateProperty = DPUtils.Register(_ => _.DragGhostTemplate, (d, e) => d.OnDragGhostTemplateChanged(e));
+        public DataTemplate DragGhostTemplate
+        {
+            get => (DataTemplate)this.GetValue(DragGhostTemplateProperty);
+            set => this.SetValue(DragGhostTemplateProperty, value);
+        }
+        private void OnDragGhostTemplateChanged (DependencyPropertyChangedEventArgs<DataTemplate> e)
+        {
+            if (this.PART_TreeList != null)
+            {
+                this.PART_TreeList.DragGhostTemplate = e.NewValue;
+            }
         }
 
         private void OnSingleItemSourceChanged (DependencyPropertyChangedEventArgs<object> e)
@@ -291,6 +339,18 @@ namespace AJut.UX.Controls
             {
                 this.PropertyTreeChanged?.Invoke(this, EventArgs.Empty);
 
+                // List operations (add/remove/reorder) rebuild children via RebuildListChildren,
+                // creating new PropertyEditTarget objects that aren't subscribed yet. Re-subscribe
+                // all descendants of the list parent so future edits fire PropertyTreeChanged.
+                if (sender is PropertyEditTarget { IsListEditor: true } listTarget)
+                {
+                    foreach (var child in _WalkAllTargets(listTarget))
+                    {
+                        child.PropertyChanged -= this.OnAnyTargetPropertyChanged;
+                        child.PropertyChanged += this.OnAnyTargetPropertyChanged;
+                    }
+                }
+
                 // Button actions may change source properties without INPC - recache all targets
                 if (sender is PropertyEditTarget { Editor: "Button" } && m_manager.RootNode != null)
                 {
@@ -340,6 +400,46 @@ namespace AJut.UX.Controls
         private void OnSetPropertyToDefaultCanExecute (object sender, CanExecuteRoutedEventArgs e)
         {
             e.CanExecute = e.Parameter is PropertyEditTarget target && target.HasDefaultValue && !target.IsExpandable;
+        }
+
+        // ===========[ Drag/Drop for list element reordering ]====================
+
+        private static bool _CanDragPropertyItem (IObservableTreeNode node)
+        {
+            return node is PropertyEditTarget target
+                && target.IsListElement
+                && (target.EditContext as PropertyGridListElementContext)?.ParentListContext?.CanReorder == true;
+        }
+
+        private static bool _CanDropPropertyItem (IObservableTreeNode draggedNode, IObservableTreeNode targetParent)
+        {
+            if (draggedNode is PropertyEditTarget draggedTarget && draggedTarget.IsListElement
+                && targetParent is PropertyEditTarget parentTarget && parentTarget.IsListEditor)
+            {
+                var draggedListCtx = (draggedTarget.EditContext as PropertyGridListElementContext)?.ParentListContext;
+                var parentListCtx = parentTarget.EditContext as PropertyGridListContext;
+                return draggedListCtx != null && draggedListCtx == parentListCtx;
+            }
+
+            return false;
+        }
+
+        private void OnDragDropReorderRequested (object sender, FlatTreeReorderEventArgs e)
+        {
+            if (e.Items.Length == 1 && e.Items[0] is PropertyEditTarget draggedTarget && draggedTarget.IsListElement)
+            {
+                var elementCtx = draggedTarget.EditContext as PropertyGridListElementContext;
+                if (elementCtx?.ParentListContext != null)
+                {
+                    e.Cancel = true;
+                    int fromIndex = elementCtx.Index;
+                    int toIndex = e.InsertIndex > fromIndex ? e.InsertIndex - 1 : e.InsertIndex;
+                    if (fromIndex != toIndex)
+                    {
+                        elementCtx.ParentListContext.MoveElement(fromIndex, toIndex);
+                    }
+                }
+            }
         }
     }
 }

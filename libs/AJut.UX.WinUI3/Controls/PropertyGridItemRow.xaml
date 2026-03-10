@@ -44,7 +44,7 @@
                                 BorderThickness="1"
                                 IsHitTestVisible="False"/>
 
-                        <!-- Content (label + editor) inset by Padding (set from PropertyGrid.ElementPadding). -->
+                        <!-- Content (label + editor + delete) inset by Padding (set from PropertyGrid.ElementPadding). -->
                         <Grid x:Name="PART_ContentGrid"
                               Margin="{TemplateBinding Padding}">
                             <Grid.ColumnDefinitions>
@@ -52,6 +52,8 @@
                                 <ColumnDefinition Width="Auto"/>
                                 <!-- Column 1: editor fills the rest -->
                                 <ColumnDefinition Width="*"/>
+                                <!-- Column 2: delete button (Auto = hidden when collapsed) -->
+                                <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
                             <!-- Label area: width set in code via ApplyLabelColumnWidth().
@@ -100,6 +102,22 @@
                                             VerticalAlignment="Center"
                                             Visibility="{Binding Source.HasInlineEditor, Converter={StaticResource PGItemRow_BoolToVis}}"
                                             ContentTemplateSelector="{TemplateBinding EditorTemplateSelector}"/>
+
+                            <!-- Delete button for list elements. Visibility and Command managed in code.
+                                 Only shown when the target is a list element with CanRemove. -->
+                            <Button x:Name="PART_DeleteButton"
+                                    Grid.Column="2"
+                                    VerticalAlignment="Center"
+                                    Padding="4,2"
+                                    MinWidth="20"
+                                    MinHeight="20"
+                                    FontFamily="Segoe MDL2 Assets"
+                                    Content="&#xE711;"
+                                    FontSize="9"
+                                    Opacity="0.7"
+                                    Margin="4,0,0,0"
+                                    ToolTipService.ToolTip="Remove element"
+                                    Visibility="Collapsed"/>
                         </Grid>
 
                         <VisualStateManager.VisualStateGroups>

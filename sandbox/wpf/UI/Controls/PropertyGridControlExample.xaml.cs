@@ -1,5 +1,6 @@
 ﻿namespace TheAJutShowRoom.UI.Controls
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Windows;
@@ -149,6 +150,33 @@
         {
             this.DogsAge = App.kRNG.Next(1, 18);
             this.RaisePropertyChanged(nameof(DogsAge));
+        }
+
+        // ------ PGList demos ------
+
+        [PGList]
+        [PGGroup("Lists")]
+        public List<string> Tags { get; set; } = new List<string> { "alpha", "beta", "gamma" };
+
+        [PGList]
+        [PGGroup("Lists")]
+        public float[] Weights { get; set; } = new float[] { 1.0f, 2.5f, 0.8f };
+
+        [PGList(AddMethodName = nameof(AddCustomItem), RemoveMethodName = nameof(RemoveCustomItem))]
+        [PGGroup("Lists")]
+        public List<string> CustomListMethods { get; set; } = new List<string> { "custom-a", "custom-b" };
+
+        private void AddCustomItem ()
+        {
+            this.CustomListMethods.Add($"custom-{this.CustomListMethods.Count}");
+        }
+
+        private void RemoveCustomItem (int index)
+        {
+            if (index >= 0 && index < this.CustomListMethods.Count)
+            {
+                this.CustomListMethods.RemoveAt(index);
+            }
         }
 
         public IEnumerable<PropertyEditTarget> GenerateEditTargets ()

@@ -27,6 +27,7 @@ namespace AJut.UX.Controls
     [TemplatePart(Name = nameof(PART_InsertionLine), Type = typeof(Rectangle))]
     [TemplatePart(Name = nameof(PART_ParentConnectorLine), Type = typeof(Polyline))]
     [TemplatePart(Name = nameof(PART_DragGhost), Type = typeof(Border))]
+    [TemplatePart(Name = nameof(PART_DragGhostContent), Type = typeof(ContentPresenter))]
     public class FlatTreeListControl : Control
     {
         // ===========[ Constants ]================================================
@@ -39,6 +40,7 @@ namespace AJut.UX.Controls
         private Rectangle PART_InsertionLine;
         private Polyline PART_ParentConnectorLine;
         private Border PART_DragGhost;
+        private ContentPresenter PART_DragGhostContent;
         private bool m_blockingForSelectionChangeReentrancy;
 
         // Drag state
@@ -46,6 +48,7 @@ namespace AJut.UX.Controls
         private bool m_isDragging;
         private Point m_dragStartPoint;
         private FlatTreeItem[] m_dragItems;
+        private double m_rowXInOverlay = double.NaN;
         private FlatTreeDropTarget m_currentDropTarget;
         private ToggleButton m_highlightedExpander;
         private Brush m_highlightedExpanderOriginalBrush;
@@ -317,6 +320,13 @@ namespace AJut.UX.Controls
             set => this.SetValue(CanDropItemProperty, value);
         }
 
+        public static readonly DependencyProperty CanDragItemProperty = DPUtils.Register(_ => _.CanDragItem);
+        public Func<IObservableTreeNode, bool> CanDragItem
+        {
+            get => (Func<IObservableTreeNode, bool>)this.GetValue(CanDragItemProperty);
+            set => this.SetValue(CanDragItemProperty, value);
+        }
+
         public static readonly DependencyProperty InsertionLineBrushProperty = DPUtils.Register(_ => _.InsertionLineBrush);
         public Brush InsertionLineBrush
         {
@@ -338,6 +348,30 @@ namespace AJut.UX.Controls
             set => this.SetValue(DragTargetHighlightBrushProperty, value);
         }
 
+        /// <summary>
+        /// DataTemplate for the drag ghost element shown during drag-drop.
+        /// DataContext is the source item (IObservableTreeNode). When null,
+        /// falls back to Source.ToString(). For multi-item drag shows "N items".
+        /// </summary>
+        public static readonly DependencyProperty DragGhostTemplateProperty = DPUtils.Register(_ => _.DragGhostTemplate);
+        public DataTemplate DragGhostTemplate
+        {
+            get => (DataTemplate)this.GetValue(DragGhostTemplateProperty);
+            set => this.SetValue(DragGhostTemplateProperty, value);
+        }
+
+        /// <summary>
+        /// Extra horizontal offset (px) added to the drag insertion line X position.
+        /// The base formula aligns to the default ListBoxItem layout. Override in consumers
+        /// (e.g. PropertyGrid) if a different item container style shifts row content.
+        /// </summary>
+        public static readonly DependencyProperty InsertionLineXOffsetProperty = DPUtils.Register(_ => _.InsertionLineXOffset, 0.0);
+        public double InsertionLineXOffset
+        {
+            get => (double)this.GetValue(InsertionLineXOffsetProperty);
+            set => this.SetValue(InsertionLineXOffsetProperty, value);
+        }
+
         // ============================[Methods]================================
         public override void OnApplyTemplate ()
         {
@@ -357,6 +391,7 @@ namespace AJut.UX.Controls
             this.PART_InsertionLine = this.GetTemplateChild(nameof(PART_InsertionLine)) as Rectangle;
             this.PART_ParentConnectorLine = this.GetTemplateChild(nameof(PART_ParentConnectorLine)) as Polyline;
             this.PART_DragGhost = this.GetTemplateChild(nameof(PART_DragGhost)) as Border;
+            this.PART_DragGhostContent = this.GetTemplateChild(nameof(PART_DragGhostContent)) as ContentPresenter;
 
             if (this.PART_ListBoxDisplay != null)
             {
@@ -733,25 +768,43 @@ namespace AJut.UX.Controls
 
         private void BeginDragDropItemMove ()
         {
-            // Collect items to drag
-            if (this.SelectedItems.Count > 0)
+            // Reset measured row position (will be lazily computed in UpdateDragDropItemMove)
+            m_rowXInOverlay = double.NaN;
+
+            // Find the item directly under the press point
+            FlatTreeItem pressedItem = this.FindFlatTreeItemAtPoint_Wpf(m_dragStartPoint);
+
+            if (pressedItem != null && pressedItem.IsSelected && this.SelectedItems.Count > 0)
             {
+                // Pressed item is part of the current selection - drag all selected items
+                // (supports multi-select drag where you select several, then drag one)
                 m_dragItems = this.SelectedItems
                     .Select(this.StorageItemForNode)
                     .Where(i => i != null && i.TreeDepth > 0 && !i.IsFalseRoot)
                     .ToArray();
             }
+            else if (pressedItem != null && pressedItem.TreeDepth > 0 && !pressedItem.IsFalseRoot)
+            {
+                // Pressed item is NOT selected - drag just this single item.
+                // Allows click-hold-drag without requiring prior selection.
+                m_dragItems = new[] { pressedItem };
+            }
 
             if (m_dragItems == null || m_dragItems.Length == 0)
             {
-                FlatTreeItem pressedItem = this.FindFlatTreeItemAtPoint_Wpf(m_dragStartPoint);
-                if (pressedItem == null || pressedItem.TreeDepth <= 0 || pressedItem.IsFalseRoot)
+                m_isDragPending = false;
+                return;
+            }
+
+            // Apply CanDragItem filter
+            if (this.CanDragItem != null)
+            {
+                m_dragItems = m_dragItems.Where(i => this.CanDragItem(i.Source)).ToArray();
+                if (m_dragItems.Length == 0)
                 {
                     m_isDragPending = false;
                     return;
                 }
-
-                m_dragItems = new[] { pressedItem };
             }
 
             m_isDragging = true;
@@ -766,15 +819,23 @@ namespace AJut.UX.Controls
                 this.PART_DragOverlay.Background = Brushes.Transparent;
             }
 
-            if (this.PART_DragGhost != null)
+            // Setup ghost content
+            if (this.PART_DragGhostContent != null)
             {
-                string label = m_dragItems.Length == 1
-                    ? (m_dragItems[0].Source?.ToString() ?? "Item")
-                    : $"{m_dragItems.Length} items";
-
-                if (this.PART_DragGhost.Child is TextBlock tb)
+                if (m_dragItems.Length == 1 && this.DragGhostTemplate != null)
                 {
-                    tb.Text = label;
+                    // Use the template with the source item as DataContext
+                    this.PART_DragGhostContent.ContentTemplate = this.DragGhostTemplate;
+                    this.PART_DragGhostContent.Content = m_dragItems[0].Source;
+                }
+                else
+                {
+                    // Fallback: plain text label
+                    string label = m_dragItems.Length == 1
+                        ? (m_dragItems[0].Source?.ToString() ?? "Item")
+                        : $"{m_dragItems.Length} items";
+                    this.PART_DragGhostContent.ContentTemplate = null;
+                    this.PART_DragGhostContent.Content = new TextBlock { Text = label, Foreground = Brushes.White, FontSize = 11 };
                 }
 
                 this.PART_DragGhost.Visibility = Visibility.Visible;
@@ -854,10 +915,45 @@ namespace AJut.UX.Controls
 
             m_currentDropTarget = dropTarget;
 
+            // Lazily measure the row base X offset in overlay coords. We prefer measuring
+            // a visible ToggleButton (the expander) since its actual visual position captures
+            // ALL chrome layers (ListBox template border/padding, themed ScrollViewer chrome,
+            // ListBoxItem padding) without hardcoded constants. Back-calculate the row base
+            // from the expander center: rowBase = expanderCenter - depth * indent - 7.
+            if (double.IsNaN(m_rowXInOverlay))
+            {
+                if (this.PART_ListBoxDisplay.ItemContainerGenerator.ContainerFromIndex(hoverIndex) is ListBoxItem measureContainer)
+                {
+                    ToggleButton tb = FindVisualDescendant<ToggleButton>(measureContainer);
+                    if (tb != null && tb.Visibility == Visibility.Visible && tb.ActualWidth > 0)
+                    {
+                        double tbCenterX = tb.TranslatePoint(
+                            new Point(tb.ActualWidth / 2.0, 0), this.PART_DragOverlay
+                        ).X;
+                        int itemDepth = this.Items[hoverIndex] is FlatTreeItem fti ? fti.TreeDepth : 0;
+                        m_rowXInOverlay = tbCenterX - itemDepth * indentSize - 7.0;
+                    }
+                    else
+                    {
+                        // Fallback for leaf items (expander collapsed): measure the row Grid
+                        Grid rowGrid = FindVisualDescendant<Grid>(measureContainer);
+                        if (rowGrid != null)
+                        {
+                            m_rowXInOverlay = rowGrid.TranslatePoint(new Point(0, 0), this.PART_DragOverlay).X;
+                        }
+                    }
+                }
+
+                if (double.IsNaN(m_rowXInOverlay))
+                {
+                    m_rowXInOverlay = 2.0;
+                }
+            }
+
             // Compute shared line Y and insertion line X (content column start, after 14px expander)
             double lineY = cursorYFraction < 0.5 ? rowTopInOverlay : rowTopInOverlay + rowHeight;
             const double kExpanderColumnWidth = 14.0;
-            double lineX = dropTarget.TargetDepth * indentSize + kExpanderColumnWidth + 15.0;
+            double lineX = m_rowXInOverlay + dropTarget.TargetDepth * indentSize + kExpanderColumnWidth + this.InsertionLineXOffset;
 
             // Position insertion line at the content column start for the target depth
             if (this.PART_InsertionLine != null)
@@ -900,9 +996,20 @@ namespace AJut.UX.Controls
                     Point parentOrigin = parentContainer.TranslatePoint(new Point(0, 0), this.PART_DragOverlay);
                     double parentCenterY = parentOrigin.Y + parentContainer.ActualHeight / 2.0;
 
-                    // Chevron center X: parent depth indent + half of 14px expander column
+                    // Directly measure the expander center X for the most accurate position.
+                    // Falls back to the cached m_rowXInOverlay formula if the expander isn't visible.
                     int parentDepth = dropTarget.TargetDepth - 1;
-                    double chevronX = parentOrigin.X + Math.Max(4, parentDepth * indentSize + 7) + 15.0;
+                    double chevronX;
+                    if (expander != null && expander.Visibility == Visibility.Visible && expander.ActualWidth > 0)
+                    {
+                        chevronX = expander.TranslatePoint(
+                            new Point(expander.ActualWidth / 2.0, 0), this.PART_DragOverlay
+                        ).X;
+                    }
+                    else
+                    {
+                        chevronX = m_rowXInOverlay + parentDepth * indentSize + 7.0;
+                    }
 
                     double topY = Math.Min(parentCenterY, lineY) + 5.0;
                     double bottomY = Math.Max(parentCenterY, lineY);

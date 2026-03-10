@@ -37,6 +37,7 @@ namespace AJut.UX.Controls
     [TemplatePart(Name = nameof(PART_LabelContent), Type = typeof(ContentControl))]
     [TemplatePart(Name = nameof(PART_SubtitleText), Type = typeof(TextBlock))]
     [TemplatePart(Name = nameof(PART_EditorContent), Type = typeof(ContentControl))]
+    [TemplatePart(Name = nameof(PART_DeleteButton), Type = typeof(Button))]
     public class PropertyGridItemRow : Control
     {
         // ===========[ Statics ]==========================================
@@ -59,6 +60,7 @@ namespace AJut.UX.Controls
         private ContentControl PART_LabelContent { get; set; }
         private TextBlock PART_SubtitleText { get; set; }
         private ContentControl PART_EditorContent { get; set; }
+        private Button PART_DeleteButton { get; set; }
 
         // ===========[ Dependency Properties ]====================================
         public static readonly DependencyProperty EditorTemplateSelectorProperty = DPUtils.Register(_ => _.EditorTemplateSelector);
@@ -119,19 +121,31 @@ namespace AJut.UX.Controls
                 this.PART_LabelBorder.RightTapped -= this.OnLabelBorderRightTapped;
             }
 
+            if (this.PART_DeleteButton != null)
+            {
+                this.PART_DeleteButton.Click -= this.OnDeleteButtonClick;
+            }
+
             this.PART_LabelBorder = this.GetTemplateChild(nameof(PART_LabelBorder)) as Border;
             this.PART_LabelContent = this.GetTemplateChild(nameof(PART_LabelContent)) as ContentControl;
             this.PART_SubtitleText = this.GetTemplateChild(nameof(PART_SubtitleText)) as TextBlock;
             this.PART_EditorContent = this.GetTemplateChild(nameof(PART_EditorContent)) as ContentControl;
+            this.PART_DeleteButton = this.GetTemplateChild(nameof(PART_DeleteButton)) as Button;
 
             if (this.PART_LabelBorder != null)
             {
                 this.PART_LabelBorder.RightTapped += this.OnLabelBorderRightTapped;
             }
 
+            if (this.PART_DeleteButton != null)
+            {
+                this.PART_DeleteButton.Click += this.OnDeleteButtonClick;
+            }
+
             this.ApplyLabelColumnWidth();
             this.ApplyLabelTemplate();
             this.ApplySubtitle();
+            this.ApplyDeleteButton();
 
             if (m_flatTreeItem != null)
             {
@@ -236,6 +250,7 @@ namespace AJut.UX.Controls
 
             this.ApplyLabelTemplate();
             this.ApplySubtitle();
+            this.ApplyDeleteButton();
         }
 
         private void OnIsSelectedChanged (object sender, System.EventArgs e)
@@ -277,6 +292,11 @@ namespace AJut.UX.Controls
         private void OnSetToDefaultClicked (object sender, RoutedEventArgs e)
         {
             m_editTarget?.ResetToDefault();
+        }
+
+        private void OnDeleteButtonClick (object sender, RoutedEventArgs e)
+        {
+            m_editTarget?.ListElementRemoveCommand?.Execute(null);
         }
 
         // ===========[ Private helpers ]===========================================
@@ -331,6 +351,19 @@ namespace AJut.UX.Controls
                 this.PART_SubtitleText.Style = this.LabelSubtitleStyle;
             }
         }
+
+        private void ApplyDeleteButton ()
+        {
+            if (this.PART_DeleteButton == null)
+            {
+                return;
+            }
+
+            this.PART_DeleteButton.Visibility = (m_editTarget?.CanRemoveFromList == true)
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
+
 
         private void ApplyLabelTemplate ()
         {
