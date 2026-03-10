@@ -69,6 +69,8 @@ namespace AJut.UX.Controls
                 this.PART_TreeList.CanDragItem = _CanDragPropertyItem;
                 this.PART_TreeList.CanDropItem = _CanDropPropertyItem;
                 this.PART_TreeList.DragDropReorderRequested += this.OnDragDropReorderRequested;
+
+                this.PART_TreeList.DragGhostTemplate = this.DragGhostTemplate;
             }
         }
 
@@ -185,6 +187,20 @@ namespace AJut.UX.Controls
         {
             get => (Style)this.GetValue(LabelSubtitleStyleProperty);
             set => this.SetValue(LabelSubtitleStyleProperty, value);
+        }
+
+        public static readonly DependencyProperty DragGhostTemplateProperty = DPUtils.Register(_ => _.DragGhostTemplate, (d, e) => d.OnDragGhostTemplateChanged(e));
+        public DataTemplate DragGhostTemplate
+        {
+            get => (DataTemplate)this.GetValue(DragGhostTemplateProperty);
+            set => this.SetValue(DragGhostTemplateProperty, value);
+        }
+        private void OnDragGhostTemplateChanged (DependencyPropertyChangedEventArgs<DataTemplate> e)
+        {
+            if (this.PART_TreeList != null)
+            {
+                this.PART_TreeList.DragGhostTemplate = e.NewValue;
+            }
         }
 
         private void OnSingleItemSourceChanged (DependencyPropertyChangedEventArgs<object> e)

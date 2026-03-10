@@ -23,6 +23,7 @@ namespace AJutShowRoomWinUI
     using Microsoft.UI.Xaml.Media;
     using Windows.Storage;
     using Windows.UI;
+    using System.ComponentModel;
 
     public sealed partial class MainWindow : Window
     {
@@ -311,6 +312,8 @@ namespace AJutShowRoomWinUI
             this.InsertChild(this.Children.Count, child);
             return child;
         }
+
+        public override string ToString() => this.NodeName;
 
         public static ShowRoomTreeNode Build()
         {

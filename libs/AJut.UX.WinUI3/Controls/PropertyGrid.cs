@@ -1,16 +1,15 @@
 namespace AJut.UX.Controls
 {
+    using AJut.Storage;
+    using AJut.UX.PropertyInteraction;
+    using Microsoft.UI.Xaml;
+    using Microsoft.UI.Xaml.Controls;
     using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.ComponentModel;
     using System.Linq;
-    using Microsoft.UI.Xaml;
-    using Microsoft.UI.Xaml.Controls;
-    using AJut.Storage;
-    using AJut.Tree;
-    using AJut.UX.PropertyInteraction;
     using DPUtils = AJut.UX.DPUtils<PropertyGrid>;
 
     // ===========[ PropertyGrid ]===============================================
@@ -173,6 +172,13 @@ namespace AJut.UX.Controls
             set => this.SetValue(LabelSubtitleStyleProperty, value);
         }
 
+        public static readonly DependencyProperty InsertionLineXOffsetProperty = DPUtils.Register(_ => _.InsertionLineXOffset, 0.0);
+        public double InsertionLineXOffset
+        {
+            get => (double)this.GetValue(InsertionLineXOffsetProperty);
+            set => this.SetValue(InsertionLineXOffsetProperty, value);
+        }
+
         // Padding applied to each PropertyGridItemRow (insets label + editor from the row edges).
         // Read by PropertyGridItemRow.OnLoaded and applied as Padding so the template's
         // {TemplateBinding Padding} drives the inner content grid's Margin.
@@ -181,6 +187,13 @@ namespace AJut.UX.Controls
         {
             get => (Thickness)this.GetValue(ElementPaddingProperty);
             set => this.SetValue(ElementPaddingProperty, value);
+        }
+
+        public static readonly DependencyProperty DragGhostTemplateProperty = DPUtils.Register(_ => _.DragGhostTemplate, (d, e) => d.OnDragGhostTemplateChanged(e.NewValue));
+        public DataTemplate DragGhostTemplate
+        {
+            get => (DataTemplate)this.GetValue(DragGhostTemplateProperty);
+            set => this.SetValue(DragGhostTemplateProperty, value);
         }
 
         // Container style for each ListView row inside the inner FlatTreeListControl.
@@ -199,6 +212,13 @@ namespace AJut.UX.Controls
             if (this.PART_TreeList != null)
             {
                 this.PART_TreeList.ListViewItemContainerStyle = newValue;
+            }
+        }
+        private void OnDragGhostTemplateChanged (DataTemplate newValue)
+        {
+            if (this.PART_TreeList != null)
+            {
+                this.PART_TreeList.DragGhostTemplate = newValue;
             }
         }
 
@@ -263,6 +283,9 @@ namespace AJut.UX.Controls
 
                 // Suppress list add/remove/reorder animations in the PropertyGrid
                 this.PART_TreeList.SuppressItemTransitions = true;
+
+                // Forward drag ghost template (push manually - WinUI3 TemplateBinding doesn't backfill)
+                this.PART_TreeList.DragGhostTemplate = this.DragGhostTemplate;
             }
 
             this.ApplyRowTemplate();

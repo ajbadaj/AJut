@@ -224,6 +224,8 @@ namespace AJut.UX.PropertyInteraction
             }
         }
 
+        public override string ToString () => this.DisplayName ?? base.ToString();
+
         public void RecacheEditValue()
         {
             this.SetEditValue(m_getValue());

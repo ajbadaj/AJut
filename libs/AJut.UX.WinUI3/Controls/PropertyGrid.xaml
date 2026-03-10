@@ -124,6 +124,7 @@
                                                    TreeDepthIndentSize="{TemplateBinding TreeDepthIndentSize}"
                                                    RowSpacing="{TemplateBinding RowSpacing}"
                                                    FixedRowHeight="{TemplateBinding FixedRowHeight}"
+                                                   InsertionLineXOffset="{TemplateBinding InsertionLineXOffset}"
                                                    Background="Transparent"
                                                    BorderThickness="0"
                                                    Padding="{TemplateBinding Padding}"

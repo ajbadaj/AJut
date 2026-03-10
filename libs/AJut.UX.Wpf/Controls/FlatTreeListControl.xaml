@@ -204,7 +204,7 @@
                                 Padding="8,4"
                                 BorderBrush="#80FFFFFF"
                                 BorderThickness="1">
-                            <TextBlock Text="" Foreground="White" FontSize="11"/>
+                            <ContentPresenter x:Name="PART_DragGhostContent"/>
                         </Border>
                     </Canvas>
                     </Grid>
