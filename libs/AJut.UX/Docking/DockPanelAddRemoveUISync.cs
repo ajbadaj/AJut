@@ -84,12 +84,6 @@ namespace AJut.UX.Docking
                 return;
             }
 
-            // Single-instance panels are always hidden (not closed) so the toggle can re-show them
-            if (rules.SingleInstanceOnly)
-            {
-                display.DockingAdapter.HideDontClose = true;
-            }
-
             DockZoneViewModel targetZone = m_manager.FindTargetZoneForGroup(rules.DefaultGroupId);
             if (targetZone != null)
             {
@@ -99,32 +93,12 @@ namespace AJut.UX.Docking
         }
 
         /// <summary>
-        /// For single-instance types: show if hidden, hide if visible.
-        /// For multi-instance types: equivalent to <see cref="AddPanel"/>.
+        /// Show a panel. For single-instance types: re-shows if hidden, creates new if none exists.
+        /// For multi-instance types: always creates a new instance.
         /// </summary>
         public void ShowPanel (Type panelType)
         {
-            if (m_manager == null)
-            {
-                return;
-            }
-
-            DockPanelRegistrationRules? maybeRules = m_manager.GetPanelRules(panelType);
-            if (maybeRules == null)
-            {
-                Logger.LogError($"DockPanelAddRemoveUISync.ShowPanel: no factory registered for {panelType.Name}");
-                return;
-            }
-
-            if (!maybeRules.Value.SingleInstanceOnly)
-            {
-                // Multi-instance types: toggle is just add
-                this.AddPanel(panelType);
-                return;
-            }
-
-            // Single-instance: if hidden, re-show; if visible, hide/remove
-            this.ShowHiddenPanel(panelType);
+            this.AddPanel(panelType);
         }
 
         /// <summary>
@@ -201,7 +175,8 @@ namespace AJut.UX.Docking
                 }
 
                 Type panelType = entry.PanelType;
-                bool exists = m_manager.EnumerateAdapters().Any(a => a.Display?.GetType() == panelType);
+                bool exists = m_manager.EnumerateAdapters().Any(a => a.Display?.GetType() == panelType)
+                              || m_hiddenPanels.Any(h => h.PanelType == panelType);
                 if (!exists)
                 {
                     this.AddPanel(panelType);
@@ -234,7 +209,21 @@ namespace AJut.UX.Docking
                 return;
             }
 
+            // 2. If panel can't tearoff, dock into a zone instead
+            if (!adapter.CanTearoff)
+            {
+                DockPanelRegistrationRules? fallbackRules = m_manager.GetPanelRules(panelType);
+                DockZoneViewModel targetZone = m_manager.FindTargetZoneForGroup(fallbackRules?.DefaultGroupId);
+                if (targetZone != null)
+                {
+                    targetZone.AddDockedContent(adapter);
+                    this.NotifyInstanceAdded(panelType, adapter);
+                }
 
+                return;
+            }
+
+            // 3. Create a tearoff window
             double x = -1;
             double y = -1;
             double widgth = 500;
@@ -306,7 +295,7 @@ namespace AJut.UX.Docking
             var result = new List<PanelMenuDescriptor>();
             foreach (DockPanelTypeEntry entry in m_entries)
             {
-                if (entry.IsHiddenFromUI)
+                if (entry.IsHiddenFromMenu)
                 {
                     continue;
                 }
@@ -356,6 +345,7 @@ namespace AJut.UX.Docking
             if (entry != null)
             {
                 entry.IsHiddenFromUI = true;
+                this.PanelStateChanged?.Invoke(this, new PanelStateChangedEventArgs(typeof(T), entry, isStructuralChange: true));
             }
         }
 
@@ -410,27 +400,31 @@ namespace AJut.UX.Docking
             this.PanelStateChanged?.Invoke(this, new PanelStateChangedEventArgs(panelType, entry));
         }
 
-        /// <summary>Reset all counts (e.g. before a layout reload).</summary>
+        /// <summary>Reset all counts and clear hidden panel records (e.g. before a layout reload).</summary>
         public void ResetAllCounts ()
         {
             foreach (DockPanelTypeEntry entry in m_entries)
             {
                 entry.ActiveInstanceCount = 0;
             }
+
+            m_hiddenPanels.Clear();
         }
 
         // ===========[ Sub-classes ]===================================
 
         public class PanelStateChangedEventArgs : EventArgs
         {
-            public PanelStateChangedEventArgs (Type panelType, DockPanelTypeEntry entry)
+            public PanelStateChangedEventArgs (Type panelType, DockPanelTypeEntry entry, bool isStructuralChange = false)
             {
                 this.PanelType = panelType;
                 this.Entry = entry;
+                this.IsStructuralChange = isStructuralChange;
             }
 
             public Type PanelType { get; }
             public DockPanelTypeEntry Entry { get; }
+            public bool IsStructuralChange { get; }
         }
 
         /// <summary>

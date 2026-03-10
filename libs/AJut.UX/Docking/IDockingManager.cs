@@ -9,6 +9,13 @@ namespace AJut.UX.Docking
     /// </summary>
     public interface IDockingManager
     {
+        /// <summary>
+        /// Allows you to create a new panel you can dock (used mostly internally). This will use
+        /// factory methods, and go through the system as expected with the caveat that it just
+        /// creates, and does not add. For a convenient create + add, use <see cref="DockingManagerXT.DockNewPanel"/>.
+        /// </summary>
+        /// <param name="elementType">The panel type</param>
+        /// <returns>The factory created display element</returns>
         IDockableDisplayElement BuildNewDisplayElement (Type elementType);
         IEnumerable<DockZoneViewModel> GetAllRoots();
 
@@ -116,6 +123,31 @@ namespace AJut.UX.Docking
             {
                 yield return adapter.Display;
             }
+        }
+
+        /// <summary>
+        /// Build a new panel, dock it into the given zone, and notify <see cref="IDockingManager.UISyncVM"/>
+        /// so toolbar and menu state stays correct. Use this instead of <see cref="IDockingManager.BuildNewDisplayElement"/>
+        /// + <c>zone.AddDockedContent</c> to avoid bypassing instance tracking.
+        /// </summary>
+        public static T DockNewPanel<T> (this IDockingManager dockingManager, DockZoneViewModel zone) where T : IDockableDisplayElement
+            => (T)dockingManager.DockNewPanel(typeof(T), zone);
+
+        /// <summary>
+        /// Build a new panel, dock it into the given zone, and notify <see cref="IDockingManager.UISyncVM"/>
+        /// so toolbar and menu state stays correct. Use this instead of <see cref="IDockingManager.BuildNewDisplayElement"/>
+        /// + <c>zone.AddDockedContent</c> to avoid bypassing instance tracking.
+        /// </summary>
+        public static IDockableDisplayElement DockNewPanel (this IDockingManager dockingManager, Type panelType, DockZoneViewModel zone)
+        {
+            IDockableDisplayElement display = dockingManager.BuildNewDisplayElement(panelType);
+            if (display != null && zone != null)
+            {
+                zone.AddDockedContent(display.DockingAdapter);
+                dockingManager.UISyncVM.NotifyInstanceAdded(panelType, display.DockingAdapter);
+            }
+
+            return display;
         }
     }
 }
