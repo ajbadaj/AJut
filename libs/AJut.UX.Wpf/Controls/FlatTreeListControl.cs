@@ -915,17 +915,32 @@ namespace AJut.UX.Controls
 
             m_currentDropTarget = dropTarget;
 
-            // Lazily measure the row content X position in overlay coords. This captures
-            // the ListBoxItem container's Border padding and any ListBox internal chrome,
-            // so all line positions are calculated correctly regardless of container style.
+            // Lazily measure the row base X offset in overlay coords. We prefer measuring
+            // a visible ToggleButton (the expander) since its actual visual position captures
+            // ALL chrome layers (ListBox template border/padding, themed ScrollViewer chrome,
+            // ListBoxItem padding) without hardcoded constants. Back-calculate the row base
+            // from the expander center: rowBase = expanderCenter - depth * indent - 7.
             if (double.IsNaN(m_rowXInOverlay))
             {
                 if (this.PART_ListBoxDisplay.ItemContainerGenerator.ContainerFromIndex(hoverIndex) is ListBoxItem measureContainer)
                 {
-                    Grid rowGrid = FindVisualDescendant<Grid>(measureContainer);
-                    if (rowGrid != null)
+                    ToggleButton tb = FindVisualDescendant<ToggleButton>(measureContainer);
+                    if (tb != null && tb.Visibility == Visibility.Visible && tb.ActualWidth > 0)
                     {
-                        m_rowXInOverlay = rowGrid.TranslatePoint(new Point(0, 0), this.PART_DragOverlay).X;
+                        double tbCenterX = tb.TranslatePoint(
+                            new Point(tb.ActualWidth / 2.0, 0), this.PART_DragOverlay
+                        ).X;
+                        int itemDepth = this.Items[hoverIndex] is FlatTreeItem fti ? fti.TreeDepth : 0;
+                        m_rowXInOverlay = tbCenterX - itemDepth * indentSize - 7.0;
+                    }
+                    else
+                    {
+                        // Fallback for leaf items (expander collapsed): measure the row Grid
+                        Grid rowGrid = FindVisualDescendant<Grid>(measureContainer);
+                        if (rowGrid != null)
+                        {
+                            m_rowXInOverlay = rowGrid.TranslatePoint(new Point(0, 0), this.PART_DragOverlay).X;
+                        }
                     }
                 }
 
@@ -981,9 +996,20 @@ namespace AJut.UX.Controls
                     Point parentOrigin = parentContainer.TranslatePoint(new Point(0, 0), this.PART_DragOverlay);
                     double parentCenterY = parentOrigin.Y + parentContainer.ActualHeight / 2.0;
 
-                    // Chevron center X in overlay space (7 = half of 14px expander column)
+                    // Directly measure the expander center X for the most accurate position.
+                    // Falls back to the cached m_rowXInOverlay formula if the expander isn't visible.
                     int parentDepth = dropTarget.TargetDepth - 1;
-                    double chevronX = m_rowXInOverlay + parentDepth * indentSize + 7.0;
+                    double chevronX;
+                    if (expander != null && expander.Visibility == Visibility.Visible && expander.ActualWidth > 0)
+                    {
+                        chevronX = expander.TranslatePoint(
+                            new Point(expander.ActualWidth / 2.0, 0), this.PART_DragOverlay
+                        ).X;
+                    }
+                    else
+                    {
+                        chevronX = m_rowXInOverlay + parentDepth * indentSize + 7.0;
+                    }
 
                     double topY = Math.Min(parentCenterY, lineY) + 5.0;
                     double bottomY = Math.Max(parentCenterY, lineY);
