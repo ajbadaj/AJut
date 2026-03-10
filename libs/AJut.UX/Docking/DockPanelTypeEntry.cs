@@ -17,6 +17,8 @@ namespace AJut.UX.Docking
             this.PanelType = panelType;
             this.Rules = rules;
             this.DisplayName = StringXT.ConvertToFriendlyEn(panelType.Name);
+            this.IsHiddenFromToolbar = rules.IsHiddenFromToolbar;
+            this.IsHiddenFromMenu = rules.IsHiddenFromMenu;
         }
 
         // ===========[ Properties ]===================================
@@ -33,8 +35,22 @@ namespace AJut.UX.Docking
         /// <summary>Path to an icon resource (e.g. "Assets/Icons/MyPanel.png"). Null means no icon.</summary>
         public string IconPath { get; set; }
 
-        /// <summary>When true, this panel type is excluded from toolbar and menu UI entirely.</summary>
-        public bool IsHiddenFromUI { get; set; }
+        /// <summary>When true, this panel type is excluded from the <see cref="AJut.UX.Controls.DockPanelAddRemoveToolbar"/>.</summary>
+        public bool IsHiddenFromToolbar { get; set; }
+
+        /// <summary>When true, this panel type is excluded from menus managed by <c>DockingManager.ManageMenu</c>.</summary>
+        public bool IsHiddenFromMenu { get; set; }
+
+        /// <summary>Convenience: when read, returns true if hidden from both toolbar and menu. When set, applies to both.</summary>
+        public bool IsHiddenFromUI
+        {
+            get => this.IsHiddenFromToolbar && this.IsHiddenFromMenu;
+            set
+            {
+                this.IsHiddenFromToolbar = value;
+                this.IsHiddenFromMenu = value;
+            }
+        }
 
         /// <summary>Number of currently active (docked or visible) instances of this panel type.</summary>
         public int ActiveInstanceCount

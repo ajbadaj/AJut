@@ -83,7 +83,14 @@ namespace AJut.UX.Controls
 
         private void OnPanelStateChanged (object sender, DockPanelAddRemoveUISync.PanelStateChangedEventArgs e)
         {
-            this.UpdateButtonStates();
+            if (e.IsStructuralChange)
+            {
+                this.RebuildButtons();
+            }
+            else
+            {
+                this.UpdateButtonStates();
+            }
         }
 
         private void RebuildButtons ()
@@ -102,7 +109,7 @@ namespace AJut.UX.Controls
 
             foreach (DockPanelTypeEntry entry in m_subscribedSync.PanelTypeEntries)
             {
-                if (entry.IsHiddenFromUI)
+                if (entry.IsHiddenFromToolbar)
                 {
                     continue;
                 }

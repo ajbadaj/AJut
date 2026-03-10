@@ -33,5 +33,29 @@ namespace AJut.UX.Docking
         /// Zero or negative means no preference (platform will use a default).
         /// </summary>
         public double SpawnHeight { get; init; }
+
+        /// <summary>When true, this panel type will not appear in the <see cref="DockPanelAddRemoveToolbar"/>.</summary>
+        public bool IsHiddenFromToolbar { get; init; }
+
+        /// <summary>When true, this panel type will not appear in menus managed by <c>DockingManager.ManageMenu</c>.</summary>
+        public bool IsHiddenFromMenu { get; init; }
+
+        /// <summary>
+        /// Factory default for <see cref="DockingContentAdapterModel.IsClosable"/>. Applied before
+        /// the panel's <c>Setup()</c> runs, so Setup can still override. Null means no factory opinion.
+        /// </summary>
+        public bool? DefaultIsClosable { get; init; }
+
+        /// <summary>
+        /// Factory default for <see cref="DockingContentAdapterModel.HideDontClose"/>. Applied before
+        /// the panel's <c>Setup()</c> runs, so Setup can still override. Null means no factory opinion.
+        /// </summary>
+        public bool? DefaultHideDontClose { get; init; }
+
+        /// <summary>
+        /// Factory default for <see cref="DockingContentAdapterModel.CanTearoff"/>. Applied before
+        /// the panel's <c>Setup()</c> runs, so Setup can still override. Null means no factory opinion.
+        /// </summary>
+        public bool? DefaultCanTearoff { get; init; }
     }
 }

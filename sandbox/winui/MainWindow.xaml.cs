@@ -249,25 +249,29 @@ namespace AJutShowRoomWinUI
                 SpawnWidth = 200,
                 SpawnHeight = 500,
             });
+            m_dockingManager.RegisterDisplayFactory<HiddenInfraShowRoomPanel>(new DockPanelRegistrationRules {
+                SingleInstanceOnly = true,
+                IsHiddenFromToolbar = true,
+                IsHiddenFromMenu = true,
+            });
 
             m_dockingManager.UISyncVM.RegisterPanelDisplayOverride<SingleInstanceShowRoomPanel>("Single Inst", "Assets/PenguinExample.png");
             this.DockToolbar.DockingManager = m_dockingManager;
             m_dockingManager.ManageMenu(this.ViewMenu);
 
-
-
             var zone = m_dockingManager.FindFirstAvailableDockZone();
             if (zone != null)
             {
-                var panelA = (ShowRoomPanel)m_dockingManager.BuildNewDisplayElement(typeof(ShowRoomPanel));
+                var panelA = m_dockingManager.DockNewPanel<ShowRoomPanel>(zone);
                 panelA.Label = "Panel A";
                 panelA.DockingAdapter.TitleContent = "Panel A";
-                zone.AddDockedContent(panelA);
 
-                var panelB = (ShowRoomPanel)m_dockingManager.BuildNewDisplayElement(typeof(ShowRoomPanel));
+                var panelB = m_dockingManager.DockNewPanel<ShowRoomPanel>(zone);
                 panelB.Label = "Panel B";
                 panelB.DockingAdapter.TitleContent = "Panel B";
-                zone.AddDockedContent(panelB);
+
+                // Hidden infra panel - always present in layout, never in menu/toolbar
+                m_dockingManager.DockNewPanel<HiddenInfraShowRoomPanel>(zone);
             }
         }
 
@@ -725,6 +729,23 @@ namespace AJutShowRoomWinUI
         {
             base.Setup(adapter);
             adapter.HideDontClose = true;
+        }
+    }
+
+    /// <summary>
+    /// A single-instance panel that is hidden from the toolbar and menu UI.
+    /// Mirrors the Call Familiar pattern where infrastructure panels (outliner,
+    /// aspect root) are always present in the layout but should not appear in
+    /// the "View" menu or the DockPanelAddRemoveToolbar.
+    /// </summary>
+    [TypeId("ShowRoomPanel-hidden-infra")]
+    public class HiddenInfraShowRoomPanel : ShowRoomPanel
+    {
+        public override void Setup (DockingContentAdapterModel adapter)
+        {
+            base.Setup(adapter);
+            this.Label = "Hidden Infra";
+            adapter.TitleContent = "Hidden Infra";
         }
     }
 }

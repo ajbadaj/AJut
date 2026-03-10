@@ -119,7 +119,17 @@
         public void ManageMenu (System.Windows.Controls.MenuItem menuItem)
         {
             this.RebuildMenuItems(menuItem);
-            this.UISyncVM.PanelStateChanged += (s, e) => this.UpdateMenuCheckedStates(menuItem);
+            this.UISyncVM.PanelStateChanged += (s, e) =>
+            {
+                if (e.IsStructuralChange)
+                {
+                    this.RebuildMenuItems(menuItem);
+                }
+                else
+                {
+                    this.UpdateMenuCheckedStates(menuItem);
+                }
+            };
             ((System.Collections.Specialized.INotifyCollectionChanged)this.UISyncVM.PanelTypeEntries)
                 .CollectionChanged += (s, e) => this.RebuildMenuItems(menuItem);
         }
@@ -338,11 +348,21 @@
         /// <typeparam name="T">The type of display (an implenetation of <see cref="IDockableDisplayElement"/>)</typeparam>
         public IDockableDisplayElement BuildNewDisplayElement (Type elementType)
         {
-            var displayElement = m_factory.TryGetValue(elementType, out var b)
-                                    ? b.Builder()
-                                    : BuildDefaultDisplayFor(elementType);
-            return this.SetupAndReturnNew(displayElement);
+            DockPanelRegistrationRules rules = default;
+            IDockableDisplayElement displayElement;
+            if (m_factory.TryGetValue(elementType, out var b))
+            {
+                displayElement = b.Builder();
+                rules = b.Rules;
+            }
+            else
+            {
+                displayElement = BuildDefaultDisplayFor(elementType);
+            }
+
+            return this.SetupAndReturnNew(displayElement, rules);
         }
+
 
         public IEnumerable<DockZoneViewModel> GetAllRoots()
         {
@@ -934,7 +954,7 @@
                     : this.SetupAndReturnNew(AJutActivator.CreateInstanceOf(typeId) as IDockableDisplayElement);
         }
 
-        private IDockableDisplayElement SetupAndReturnNew (IDockableDisplayElement displayElement)
+        private IDockableDisplayElement SetupAndReturnNew (IDockableDisplayElement displayElement, DockPanelRegistrationRules rules = default)
         {
             if (displayElement == null)
             {
@@ -943,6 +963,23 @@
 
             var adapter = new DockingContentAdapterModel(this);
             adapter.TitleContent = StringXT.ConvertToFriendlyEn(displayElement.GetType().Name);
+
+            // Apply factory defaults before panel Setup so Setup can override
+            if (rules.DefaultIsClosable.HasValue)
+            {
+                adapter.IsClosable = rules.DefaultIsClosable.Value;
+            }
+
+            if (rules.DefaultHideDontClose.HasValue)
+            {
+                adapter.HideDontClose = rules.DefaultHideDontClose.Value;
+            }
+
+            if (rules.DefaultCanTearoff.HasValue)
+            {
+                adapter.CanTearoff = rules.DefaultCanTearoff.Value;
+            }
+
             displayElement.Setup(adapter);
             displayElement.DockingAdapter.Display = displayElement;
             return displayElement;

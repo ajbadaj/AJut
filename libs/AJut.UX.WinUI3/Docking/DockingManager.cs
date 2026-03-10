@@ -200,14 +200,28 @@ namespace AJut.UX.Docking
         public void ManageMenu (MenuBarItem menuBarItem)
         {
             this.RebuildMenuItems(menuBarItem);
-            this.UISyncVM.PanelStateChanged += (s, e) => this.UpdateMenuCheckedStates(menuBarItem);
+            this.UISyncVM.PanelStateChanged += (s, e) =>
+            {
+                if (e.IsStructuralChange)
+                {
+                    this.RebuildMenuItems(menuBarItem);
+                }
+                else
+                {
+                    this.UpdateMenuCheckedStates(menuBarItem);
+                }
+            };
             ((System.Collections.Specialized.INotifyCollectionChanged)this.UISyncVM.PanelTypeEntries)
                 .CollectionChanged += (s, e) => this.RebuildMenuItems(menuBarItem);
         }
 
         private void RebuildMenuItems (MenuBarItem menuBarItem)
         {
-            menuBarItem.Items.Clear();
+            for (int i = menuBarItem.Items.Count - 1; i >= 0; --i)
+            {
+                menuBarItem.Items.RemoveAt(i);
+            }
+
             foreach (var desc in this.UISyncVM.GenerateMenuDescriptors())
             {
                 if (desc.IsToggle)
@@ -351,11 +365,21 @@ namespace AJut.UX.Docking
 
         public IDockableDisplayElement BuildNewDisplayElement(Type elementType)
         {
-            var displayElement = m_factory.TryGetValue(elementType, out var b)
-                ? b.Builder()
-                : BuildDefaultDisplayFor(elementType);
-            return this.SetupAndReturnNew(displayElement);
+            DockPanelRegistrationRules rules = default;
+            IDockableDisplayElement displayElement;
+            if (m_factory.TryGetValue(elementType, out var b))
+            {
+                displayElement = b.Builder();
+                rules = b.Rules;
+            }
+            else
+            {
+                displayElement = BuildDefaultDisplayFor(elementType);
+            }
+
+            return this.SetupAndReturnNew(displayElement, rules);
         }
+
 
         // ===========[ Layout Control ]=======================================
 
@@ -1644,7 +1668,7 @@ namespace AJut.UX.Docking
             }
         }
 
-        private IDockableDisplayElement SetupAndReturnNew(IDockableDisplayElement displayElement)
+        private IDockableDisplayElement SetupAndReturnNew(IDockableDisplayElement displayElement, DockPanelRegistrationRules rules = default)
         {
             if (displayElement == null)
             {
@@ -1653,6 +1677,23 @@ namespace AJut.UX.Docking
 
             var adapter = new DockingContentAdapterModel(this);
             adapter.TitleContent = StringXT.ConvertToFriendlyEn(displayElement.GetType().Name);
+
+            // Apply factory defaults before panel Setup so Setup can override
+            if (rules.DefaultIsClosable.HasValue)
+            {
+                adapter.IsClosable = rules.DefaultIsClosable.Value;
+            }
+
+            if (rules.DefaultHideDontClose.HasValue)
+            {
+                adapter.HideDontClose = rules.DefaultHideDontClose.Value;
+            }
+
+            if (rules.DefaultCanTearoff.HasValue)
+            {
+                adapter.CanTearoff = rules.DefaultCanTearoff.Value;
+            }
+
             displayElement.Setup(adapter);
             displayElement.DockingAdapter.Display = displayElement;
             return displayElement;
