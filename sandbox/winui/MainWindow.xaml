@@ -634,6 +634,14 @@
                                                         <TextBox Text="{Binding Path=EditValue, Mode=TwoWay}"/>
                                                     </Border>
                                                 </DataTemplate>
+                                                <DataTemplate x:Key="WidgetEditor">
+                                                    <Border>
+                                                        <StackPanel>
+                                                            <TextBlock Text="Widget Editor:"/>
+                                                            <ajut:NumericEditor Value="{Binding Path=EditValue.SubObjValue, Mode=TwoWay}"/>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
                                             </ajut:PropertyGridTemplateSelector.RegisteredTemplates>
                                         </ajut:PropertyGridTemplateSelector>
                                     </ajut:PropertyGrid.ItemTemplateSelector>

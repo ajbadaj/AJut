@@ -90,6 +90,13 @@ namespace AJut.UX.Controls
             set => this.SetValue(IsReadOnlyProperty, value);
         }
 
+        public static readonly DependencyProperty MaxRecursionDepthProperty = DPUtils.Register(_ => _.MaxRecursionDepth, 5, (d, e) => d.m_manager.MaxRecursionDepth = (int)e.NewValue);
+        public int MaxRecursionDepth
+        {
+            get => (int)this.GetValue(MaxRecursionDepthProperty);
+            set => this.SetValue(MaxRecursionDepthProperty, value);
+        }
+
         public static readonly DependencyProperty TreeDepthIndentSizeProperty = DPUtils.Register(_ => _.TreeDepthIndentSize, 16.0, (d, e) => d.OnTreeDepthIndentSizeChanged(e.NewValue));
         public double TreeDepthIndentSize
         {

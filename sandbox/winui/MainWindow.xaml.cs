@@ -495,6 +495,28 @@ namespace AJutShowRoomWinUI
             }
         }
 
+        // ------ PGList with custom editor cascade demo ------
+
+        [PGList]
+        [PGEditor("WidgetEditor")]
+        [PGGroup("Lists")]
+        public List<ShowRoomSubObject> ListWithEditor { get; set; } = new List<ShowRoomSubObject>
+        {
+            new ShowRoomSubObject { SubObjValue = 100 },
+            new ShowRoomSubObject { SubObjValue = 200 },
+        };
+
+        // ------ PGList with elevation cascade demo ------
+
+        [PGList]
+        [PGElevateChildProperty(nameof(ShowRoomSubObject.SubObjValue))]
+        [PGGroup("Lists")]
+        public List<ShowRoomSubObject> ListWithElevation { get; set; } = new List<ShowRoomSubObject>
+        {
+            new ShowRoomSubObject { SubObjValue = 42 },
+            new ShowRoomSubObject { SubObjValue = 99 },
+        };
+
         private class ColorToStringConverter : PropertyGridTypeAliasing<Color, string>
         {
             public override Type AliasType => typeof(string);

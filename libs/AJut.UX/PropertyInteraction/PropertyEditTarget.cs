@@ -24,6 +24,7 @@ namespace AJut.UX.PropertyInteraction
         private bool m_hasDefaultValue;
         private PropertyEditTarget m_elevatedChildTarget;
         private INotifyPropertyChanged m_elevatedSubObject;
+        private INotifyPropertyChanged m_editValueINPC;
 
         public PropertyEditTarget(string propertyPathTarget, GetValue getValue, SetValue? setValue = null)
         {
@@ -282,12 +283,12 @@ namespace AJut.UX.PropertyInteraction
         /// generated and attached so the property tree can be expanded in a FlatTreeListControl.
         /// Nullable&lt;T&gt; properties get Editor="Nullable" and EditContext=NullableEditorContext.
         /// </summary>
-        public static IEnumerable<PropertyEditTarget> GenerateForPropertiesOf(object sourceItem)
+        public static IEnumerable<PropertyEditTarget> GenerateForPropertiesOf(object sourceItem, int maxDepth = 5)
         {
-            return GenerateForPropertiesOf(sourceItem, depth: 0);
+            return GenerateForPropertiesOf(sourceItem, depth: 0, maxDepth: maxDepth);
         }
 
-        private static IEnumerable<PropertyEditTarget> GenerateForPropertiesOf(object sourceItem, int depth)
+        private static IEnumerable<PropertyEditTarget> GenerateForPropertiesOf(object sourceItem, int depth, int maxDepth)
         {
             PropertyEditTarget[] _pendingCoerceHolder = null;
             foreach (PropertyInfo prop in _GetRelevantProperties(sourceItem))
@@ -425,27 +426,30 @@ namespace AJut.UX.PropertyInteraction
                     var capturedSourceItem = sourceItem;
                     var capturedElementType = listElementType;
                     var capturedListAttr = listAttr;
+                    int capturedDepth = depth;
+                    int capturedMaxDepth = maxDepth;
 
                     var listContext = new PropertyGridListContext(
                         capturedSourceItem,
                         capturedProp,
                         capturedElementType,
                         capturedListAttr,
-                        () => RebuildListChildren(capturedTarget, capturedSourceItem, capturedProp, capturedElementType, capturedListAttr)
+                        () => RebuildListChildren(capturedTarget, capturedSourceItem, capturedProp, capturedElementType, capturedListAttr, capturedDepth, capturedMaxDepth)
                     );
 
                     target.EditContext = listContext;
 
                     // Generate initial children for existing elements
-                    _BuildListChildren(target, sourceItem, prop, listElementType, listAttr);
+                    _BuildListChildren(target, sourceItem, prop, listElementType, listAttr, depth, maxDepth);
 
                     yield return target;
                     continue;
                 }
 
-                // 5. Recurse into complex reference types (non-nullable, non-aliased, non-string, non-enum,
-                // non-value-type) that have a non-null value and editable sub-properties. Cap recursion at depth 5.
-                if (!isNullable && aliasing == null && depth < 5 && _IsComplexObjectType(prop.PropertyType))
+                // 5. For complex reference types, check for elevation attributes (which work even with
+                // [PGEditor]), and fall back to normal sub-property recursion when no elevation is found
+                // and no [PGEditor] overrides the type.
+                if (!isNullable && aliasing == null && depth < maxDepth && _IsComplexObjectType(prop.PropertyType))
                 {
                     object? subValue = prop.GetValue(sourceItem);
                     if (subValue != null && _GetRelevantProperties(subValue).Any())
@@ -518,15 +522,22 @@ namespace AJut.UX.PropertyInteraction
                                 target.IsExpandable = false;
                                 target.WireUpElevatedSubObjectINPC(subValue);
                             }
-                            else
+                            else if (editorAttr == null)
                             {
-                                // Normal expandable sub-object.
+                                // Normal expandable sub-object - only when no [PGEditor] overrides the type.
                                 target.IsExpandable = true;
-                                foreach (PropertyEditTarget child in GenerateForPropertiesOf(subValue, depth + 1))
+                                foreach (PropertyEditTarget child in GenerateForPropertiesOf(subValue, depth + 1, maxDepth))
                                 {
                                     child.Setup();
                                     target.InsertChild(target.Children.Count, child);
                                 }
+                            }
+                            else if (subValue is INotifyPropertyChanged)
+                            {
+                                // [PGEditor] with no elevation: the template binds into
+                                // sub-properties of EditValue. Wire up INPC so those writes
+                                // raise SourceCommitted.
+                                target.WireUpEditValueINPC(subValue);
                             }
                         }
                     }
@@ -860,13 +871,17 @@ namespace AJut.UX.PropertyInteraction
         /// <summary>
         /// Builds child PropertyEditTarget nodes for each element in a list property.
         /// Called during initial generation and on rebuild after add/remove.
+        /// Cascades [PGEditor], [PGElevateChildProperty], and respects [PGElevateAsParent]
+        /// on the element type so list children behave like normal complex-property rows.
         /// </summary>
         private static void _BuildListChildren (
             PropertyEditTarget listParent,
             object sourceItem,
             PropertyInfo prop,
             Type elementType,
-            PGListAttribute listAttr)
+            PGListAttribute listAttr,
+            int depth,
+            int maxDepth)
         {
             object collection = prop.GetValue(sourceItem);
             if (collection == null)
@@ -877,6 +892,26 @@ namespace AJut.UX.PropertyInteraction
             var listContext = listParent.EditContext as PropertyGridListContext;
             bool isSimpleType = elementType.IsValueType || elementType == typeof(string) || elementType.IsEnum;
 
+            // ------ Read cascading attributes from the list property ------
+
+            // [PGEditor] on the list: each element uses that editor, no recursion.
+            var listEditorAttr = TypeMetadataExtensionRegistrar.GetAttribute<PGEditorAttribute>(prop);
+            string overrideEditor = listEditorAttr?.Editor;
+
+            // [PGElevateChildProperty] on the list: elevate a named child of each element inline.
+            var elevateChildAttr = (overrideEditor == null)
+                ? TypeMetadataExtensionRegistrar.GetAttribute<PGElevateChildPropertyAttribute>(prop)
+                : null;
+
+            // [PGElevateAsParent] on the element type: discover once, apply to every element.
+            PropertyInfo elevateAsParentProp = null;
+            if (overrideEditor == null && elevateChildAttr == null && !isSimpleType && _IsComplexObjectType(elementType))
+            {
+                elevateAsParentProp = elementType
+                    .GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty)
+                    .FirstOrDefault(p => TypeMetadataExtensionRegistrar.HasAttribute<PGElevateAsParentAttribute>(p));
+            }
+
             int index = 0;
             foreach (object element in (System.Collections.IEnumerable)collection)
             {
@@ -884,16 +919,7 @@ namespace AJut.UX.PropertyInteraction
                 var capturedProp = prop;
                 var capturedSource = sourceItem;
 
-                string elementEditor;
-                if (isSimpleType)
-                {
-                    elementEditor = elementType.Name;
-                }
-                else
-                {
-                    // Complex element types use the default template (expandable)
-                    elementEditor = elementType.Name;
-                }
+                string elementEditor = overrideEditor ?? elementType.Name;
 
                 // For IList types, getter/setter work by index
                 GetValue elemGetter;
@@ -947,9 +973,37 @@ namespace AJut.UX.PropertyInteraction
                     EditContext = new PropertyGridListElementContext(listContext, capturedIndex),
                 };
 
-                // For complex element types, recurse into sub-properties
-                if (!isSimpleType && element != null && _IsComplexObjectType(elementType))
+                // ------ Apply attribute cascading / elevation ------
+                if (overrideEditor != null)
                 {
+                    // [PGEditor] override: custom editor handles the whole object, no recursion.
+                    // Wire up INPC so sub-property edits via the template raise SourceCommitted.
+                    if (element is INotifyPropertyChanged)
+                    {
+                        childTarget.WireUpEditValueINPC(element);
+                    }
+                }
+                else if (elevateChildAttr != null && element != null)
+                {
+                    // [PGElevateChildProperty("X")] on the list property
+                    PropertyInfo childProp = elementType.GetProperty(
+                        elevateChildAttr.ChildPropertyName,
+                        BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty
+                    );
+
+                    if (childProp != null)
+                    {
+                        _ElevatePropertyForListElement(childTarget, element, elementType, childProp, elemGetter, capturedProp, capturedSource, capturedIndex);
+                    }
+                }
+                else if (elevateAsParentProp != null && element != null)
+                {
+                    // Element type has [PGElevateAsParent] on one of its properties
+                    _ElevatePropertyForListElement(childTarget, element, elementType, elevateAsParentProp, elemGetter, capturedProp, capturedSource, capturedIndex);
+                }
+                else if (!isSimpleType && element != null && _IsComplexObjectType(elementType))
+                {
+                    // Normal complex type: recurse into sub-properties
                     var subProps = TypeMetadataExtensionRegistrar.GetOrderedProperties(
                         elementType,
                         BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty
@@ -958,7 +1012,7 @@ namespace AJut.UX.PropertyInteraction
                     if (subProps.Any())
                     {
                         childTarget.IsExpandable = true;
-                        foreach (PropertyEditTarget subChild in GenerateForPropertiesOf(element, depth: 3))
+                        foreach (PropertyEditTarget subChild in GenerateForPropertiesOf(element, depth + 1, maxDepth))
                         {
                             subChild.Setup();
                             childTarget.InsertChild(childTarget.Children.Count, subChild);
@@ -973,6 +1027,87 @@ namespace AJut.UX.PropertyInteraction
         }
 
         /// <summary>
+        /// Creates an elevated child target for a list element, making the element row non-expandable
+        /// with the elevated property's editor shown inline. Handles struct write-back through the
+        /// list when the element type is a value type.
+        /// </summary>
+        private static void _ElevatePropertyForListElement (
+            PropertyEditTarget elementTarget,
+            object element,
+            Type elementType,
+            PropertyInfo elevatedProp,
+            GetValue elemGetter,
+            PropertyInfo listProp,
+            object sourceItem,
+            int elementIndex)
+        {
+            var capturedProp = elevatedProp;
+            var capturedElemGetter = elemGetter;
+            var capturedListProp = listProp;
+            var capturedSource = sourceItem;
+            int capturedIndex = elementIndex;
+
+            GetValue elevatedGetter = () =>
+            {
+                object elem = capturedElemGetter();
+                return elem != null ? capturedProp.GetValue(elem) : null;
+            };
+
+            SetValue elevatedSetter = null;
+            if (capturedProp.SetMethod != null)
+            {
+                if (elementType.IsValueType)
+                {
+                    // Struct: read from list, modify property, write back
+                    elevatedSetter = v =>
+                    {
+                        object collection = capturedListProp.GetValue(capturedSource);
+                        if (collection is System.Collections.IList list && capturedIndex < list.Count)
+                        {
+                            object elem = list[capturedIndex];
+                            capturedProp.SetValue(elem, _CoerceValueType(v, capturedProp.PropertyType));
+                            list[capturedIndex] = elem;
+                        }
+                    };
+                }
+                else
+                {
+                    elevatedSetter = v =>
+                    {
+                        object elem = capturedElemGetter();
+                        if (elem != null)
+                        {
+                            capturedProp.SetValue(elem, _CoerceValueType(v, capturedProp.PropertyType));
+                        }
+                    };
+                }
+            }
+
+            string elevatedEditor = TypeMetadataExtensionRegistrar.GetAttribute<PGEditorAttribute>(capturedProp)?.Editor
+                ?? capturedProp.PropertyType.Name;
+
+            var ctxBuilderAttr = TypeMetadataExtensionRegistrar.GetAttribute<PGEditContextBuilderAttribute>(capturedProp);
+            object elevatedEditContext = ctxBuilderAttr != null ? _BuildEditContext(ctxBuilderAttr) : null;
+
+            var elevatedTarget = new PropertyEditTarget(capturedProp.Name, elevatedGetter, elevatedSetter)
+            {
+                DisplayName = capturedProp.Name.ConvertToFriendlyEn(),
+                Editor = elevatedEditor,
+                EditContext = elevatedEditContext,
+            };
+
+            _ApplyDefault(elevatedTarget, capturedProp, element);
+            elevatedTarget.Setup();
+            elementTarget.ElevatedChildTarget = elevatedTarget;
+            elementTarget.IsExpandable = false;
+
+            if (element is INotifyPropertyChanged)
+            {
+                elementTarget.WireUpElevatedSubObjectINPC(element);
+            }
+        }
+
+        /// <summary>
         /// Rebuilds the child targets of a list parent after an add/remove/reorder.
         /// Clears existing children and regenerates from the current collection state.
         /// </summary>
@@ -981,7 +1116,9 @@ namespace AJut.UX.PropertyInteraction
             object sourceItem,
             PropertyInfo prop,
             Type elementType,
-            PGListAttribute listAttr)
+            PGListAttribute listAttr,
+            int depth,
+            int maxDepth)
         {
             // Teardown and remove existing children
             var existingChildren = listParent.Children.OfType<PropertyEditTarget>().ToList();
@@ -992,7 +1129,7 @@ namespace AJut.UX.PropertyInteraction
             }
 
             // Rebuild
-            _BuildListChildren(listParent, sourceItem, prop, elementType, listAttr);
+            _BuildListChildren(listParent, sourceItem, prop, elementType, listAttr, depth, maxDepth);
 
             // Signal that the source has been modified
             listParent.ForceRaiseSourceCommitted();
@@ -1092,6 +1229,30 @@ namespace AJut.UX.PropertyInteraction
         }
 
         /// <summary>
+        /// When a [PGEditor] overrides a complex object, the editor template binds into
+        /// sub-properties of EditValue directly. Subscribe to the object's INPC so that
+        /// sub-property writes raise SourceCommitted and the PropertyGrid knows something changed.
+        /// </summary>
+        internal void WireUpEditValueINPC (object editValue)
+        {
+            if (m_editValueINPC != null)
+            {
+                m_editValueINPC.PropertyChanged -= this.OnEditValueSubPropertyChanged;
+            }
+
+            m_editValueINPC = editValue as INotifyPropertyChanged;
+            if (m_editValueINPC != null)
+            {
+                m_editValueINPC.PropertyChanged += this.OnEditValueSubPropertyChanged;
+            }
+        }
+
+        private void OnEditValueSubPropertyChanged (object sender, PropertyChangedEventArgs e)
+        {
+            this.RaisePropertyChanged(SourceCommittedPropertyName);
+        }
+
+        /// <summary>
         /// Cleans up event subscriptions when this target is being discarded (e.g. during
         /// PropertyGridManager.RebuildEditTargets). Call on every target before clearing the tree.
         /// </summary>
@@ -1101,6 +1262,12 @@ namespace AJut.UX.PropertyInteraction
             {
                 m_elevatedSubObject.PropertyChanged -= this.OnElevatedSubObjectPropertyChanged;
                 m_elevatedSubObject = null;
+            }
+
+            if (m_editValueINPC != null)
+            {
+                m_editValueINPC.PropertyChanged -= this.OnEditValueSubPropertyChanged;
+                m_editValueINPC = null;
             }
         }
     }

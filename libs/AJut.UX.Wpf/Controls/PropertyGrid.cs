@@ -117,6 +117,13 @@ namespace AJut.UX.Controls
             set => this.SetValue(TextLabelStyleProperty, value);
         }
 
+        public static readonly DependencyProperty MaxRecursionDepthProperty = DPUtils.Register(_ => _.MaxRecursionDepth, 5, (d, e) => d.m_manager.MaxRecursionDepth = e.NewValue);
+        public int MaxRecursionDepth
+        {
+            get => (int)this.GetValue(MaxRecursionDepthProperty);
+            set => this.SetValue(MaxRecursionDepthProperty, value);
+        }
+
         public static readonly DependencyProperty TreeDepthIndentSizeProperty = DPUtils.Register(_ => _.TreeDepthIndentSize, 8.0);
         public double TreeDepthIndentSize
         {

@@ -20,6 +20,7 @@ namespace AJut.UX.PropertyInteraction
     {
         // ===========[ Instance fields ]==========================================
         private readonly IPropertyGrid m_propertyGrid;
+        private int m_maxRecursionDepth = 5;
 
         // Keyed by full property path (e.g. "Address.City") within the current source type.
         // Preserved across RebuildEditTargets calls so expanded nodes stay expanded.
@@ -37,6 +38,16 @@ namespace AJut.UX.PropertyInteraction
         }
 
         // ===========[ Properties ]==========================================
+
+        /// <summary>
+        /// Maximum recursion depth for expanding complex sub-object properties.
+        /// Defaults to 5. Set via the PropertyGrid control's MaxRecursionDepth DP.
+        /// </summary>
+        public int MaxRecursionDepth
+        {
+            get => m_maxRecursionDepth;
+            set => m_maxRecursionDepth = Math.Max(0, value);
+        }
 
         /// <summary>
         /// The hidden root node whose children are the top-level property edit targets.
@@ -113,7 +124,7 @@ namespace AJut.UX.PropertyInteraction
                 }
                 else
                 {
-                    targets = PropertyEditTarget.GenerateForPropertiesOf(item);
+                    targets = PropertyEditTarget.GenerateForPropertiesOf(item, m_maxRecursionDepth);
                 }
 
                 foreach (PropertyEditTarget target in targets)
