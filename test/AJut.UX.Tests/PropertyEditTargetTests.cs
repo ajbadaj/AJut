@@ -223,6 +223,107 @@ namespace AJut.UX.Tests
         public string ReadOnly2 { get; } = "ro2";
     }
 
+    // ===========[ Complex object with PGEditor (no recursion) ]===============
+
+    /// <summary>Complex inner object used to verify PGEditor prevents recursion.</summary>
+    public class WidgetConfig
+    {
+        public string Mode { get; set; } = "default";
+        public int Priority { get; set; } = 5;
+    }
+
+    /// <summary>Model where a complex property has [PGEditor] - should NOT recurse.</summary>
+    public class ComplexEditorModel
+    {
+        [PGEditor("WidgetEditor")]
+        public WidgetConfig Config { get; set; } = new WidgetConfig();
+
+        public WidgetConfig NormalConfig { get; set; } = new WidgetConfig();
+    }
+
+    // ===========[ List with PGEditor cascade ]================================
+
+    /// <summary>Model with [PGList] + [PGEditor] - each element uses the custom editor.</summary>
+    public class ListWithEditorModel
+    {
+        [PGList]
+        [PGEditor("WidgetEditor")]
+        public List<WidgetConfig> Widgets { get; set; } = new List<WidgetConfig>
+        {
+            new WidgetConfig { Mode = "fast", Priority = 1 },
+            new WidgetConfig { Mode = "slow", Priority = 10 },
+        };
+    }
+
+    // ===========[ List with PGElevateChildProperty cascade ]==================
+
+    /// <summary>Model with [PGList] + [PGElevateChildProperty] - each element elevates "Mode" inline.</summary>
+    public class ListWithElevateChildModel
+    {
+        [PGList]
+        [PGElevateChildProperty(nameof(WidgetConfig.Mode))]
+        public List<WidgetConfig> Widgets { get; set; } = new List<WidgetConfig>
+        {
+            new WidgetConfig { Mode = "alpha", Priority = 1 },
+            new WidgetConfig { Mode = "beta", Priority = 2 },
+        };
+    }
+
+    // ===========[ List with PGElevateAsParent on element type ]================
+
+    /// <summary>Inner object where MainValue elevates as parent.</summary>
+    public class ElevatedListElement
+    {
+        [PGElevateAsParent]
+        public string MainValue { get; set; } = "default";
+
+        public int Extra { get; set; } = 42;
+    }
+
+    /// <summary>Model with [PGList] on a type whose properties include [PGElevateAsParent].</summary>
+    public class ListWithElevateAsParentModel
+    {
+        [PGList]
+        public List<ElevatedListElement> Items { get; set; } = new List<ElevatedListElement>
+        {
+            new ElevatedListElement { MainValue = "first" },
+            new ElevatedListElement { MainValue = "second" },
+        };
+    }
+
+    // ===========[ List with struct elements + PGElevateChildProperty ]=========
+
+    /// <summary>A simple struct to test elevation with value types in lists.</summary>
+    public struct PointStruct
+    {
+        public float X { get; set; }
+        public float Y { get; set; }
+    }
+
+    /// <summary>Model with [PGList] + [PGElevateChildProperty] on struct elements.</summary>
+    public class ListWithStructElevationModel
+    {
+        [PGList]
+        [PGElevateChildProperty(nameof(PointStruct.X))]
+        public List<PointStruct> Points { get; set; } = new List<PointStruct>
+        {
+            new PointStruct { X = 1.0f, Y = 2.0f },
+            new PointStruct { X = 3.0f, Y = 4.0f },
+        };
+    }
+
+    // ===========[ Max recursion depth models ]================================
+
+    /// <summary>Deeply nested object chain for testing max recursion depth.</summary>
+    public class DeepA { public DeepB Inner { get; set; } = new DeepB(); }
+    public class DeepB { public DeepC Inner { get; set; } = new DeepC(); }
+    public class DeepC { public string Leaf { get; set; } = "deep"; }
+
+    public class DeepModel
+    {
+        public DeepA Root { get; set; } = new DeepA();
+    }
+
     // ===========[ Tests ]=====================================================
 
     [TestClass]
@@ -818,6 +919,194 @@ namespace AJut.UX.Tests
             model.Position.X = 99;
             Assert.AreEqual(42, position.ElevatedChildTarget.EditValue,
                 "After Teardown, INPC changes should not auto-recache");
+        }
+
+        // ===[ PGEditor on complex object prevents recursion ]===
+
+        [TestMethod]
+        public void PET_PGEditor_ComplexObject_DoesNotRecurse ()
+        {
+            var model = new ComplexEditorModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+            SetupAll(targets);
+
+            var config = Find(targets, "Config");
+            Assert.AreEqual("WidgetEditor", config.Editor);
+            Assert.IsFalse(config.IsExpandable, "[PGEditor] on complex type should prevent recursion");
+            Assert.AreEqual(0, config.Children.Count, "No children when [PGEditor] overrides complex type");
+
+            // The EditValue should be the WidgetConfig object itself
+            Assert.AreSame(model.Config, config.EditValue, "EditValue should be the whole object");
+        }
+
+        [TestMethod]
+        public void PET_PGEditor_ComplexObject_NormalStillRecurses ()
+        {
+            var model = new ComplexEditorModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+            SetupAll(targets);
+
+            var normal = Find(targets, "NormalConfig");
+            Assert.IsTrue(normal.IsExpandable, "Complex type without [PGEditor] should still recurse");
+            Assert.IsTrue(normal.Children.Count > 0, "Should have children from recursion");
+        }
+
+        // ===[ List with PGEditor cascade ]===
+
+        [TestMethod]
+        public void PET_PGList_WithPGEditor_ElementsUseCustomEditor ()
+        {
+            var model = new ListWithEditorModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+            SetupAll(targets);
+
+            var list = Find(targets, "Widgets");
+            Assert.IsTrue(list.IsListEditor);
+            Assert.AreEqual(2, list.Children.Count);
+
+            var elem0 = list.Children.OfType<PropertyEditTarget>().First();
+            Assert.AreEqual("WidgetEditor", elem0.Editor, "Element should use [PGEditor] from list property");
+            Assert.IsFalse(elem0.IsExpandable, "Element should not be expandable with [PGEditor] override");
+            Assert.AreEqual(0, elem0.Children.Count, "No child recursion with [PGEditor] override");
+            Assert.AreSame(model.Widgets[0], elem0.EditValue, "EditValue should be the whole element object");
+        }
+
+        // ===[ List with PGElevateChildProperty cascade ]===
+
+        [TestMethod]
+        public void PET_PGList_WithElevateChild_ElementsElevateNamedProperty ()
+        {
+            var model = new ListWithElevateChildModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+            SetupAll(targets);
+
+            var list = Find(targets, "Widgets");
+            Assert.AreEqual(2, list.Children.Count);
+
+            var elem0 = list.Children.OfType<PropertyEditTarget>().First();
+            Assert.IsFalse(elem0.IsExpandable, "Element with elevation should not be expandable");
+            Assert.IsNotNull(elem0.ElevatedChildTarget, "Element should have an elevated child target");
+            Assert.AreEqual("Mode", elem0.ElevatedChildTarget.PropertyPathTarget);
+            Assert.AreEqual("String", elem0.ElevatedChildTarget.Editor);
+
+            // Verify the elevated value is correct
+            elem0.ElevatedChildTarget.Setup();
+            Assert.AreEqual("alpha", elem0.ElevatedChildTarget.EditValue);
+
+            // Verify write-through works
+            elem0.ElevatedChildTarget.EditValue = "changed";
+            Assert.AreEqual("changed", model.Widgets[0].Mode, "Write should push through to source");
+        }
+
+        // ===[ List with PGElevateAsParent on element type ]===
+
+        [TestMethod]
+        public void PET_PGList_ElevateAsParent_RespectedOnElementType ()
+        {
+            var model = new ListWithElevateAsParentModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+            SetupAll(targets);
+
+            var list = Find(targets, "Items");
+            Assert.AreEqual(2, list.Children.Count);
+
+            var elem0 = list.Children.OfType<PropertyEditTarget>().First();
+            Assert.IsFalse(elem0.IsExpandable, "Element with [PGElevateAsParent] should not be expandable");
+            Assert.IsNotNull(elem0.ElevatedChildTarget, "Element should have elevated child target");
+            Assert.AreEqual("MainValue", elem0.ElevatedChildTarget.PropertyPathTarget);
+            Assert.AreEqual("String", elem0.ElevatedChildTarget.Editor);
+
+            elem0.ElevatedChildTarget.Setup();
+            Assert.AreEqual("first", elem0.ElevatedChildTarget.EditValue);
+
+            // Write-through
+            elem0.ElevatedChildTarget.EditValue = "modified";
+            Assert.AreEqual("modified", model.Items[0].MainValue);
+        }
+
+        // ===[ List with struct elevation ]===
+
+        [TestMethod]
+        public void PET_PGList_StructElements_ElevateChildWithWriteBack ()
+        {
+            var model = new ListWithStructElevationModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+            SetupAll(targets);
+
+            var list = Find(targets, "Points");
+            Assert.AreEqual(2, list.Children.Count);
+
+            var elem0 = list.Children.OfType<PropertyEditTarget>().First();
+            Assert.IsFalse(elem0.IsExpandable);
+            Assert.IsNotNull(elem0.ElevatedChildTarget);
+            Assert.AreEqual("X", elem0.ElevatedChildTarget.PropertyPathTarget);
+
+            elem0.ElevatedChildTarget.Setup();
+            Assert.AreEqual(1.0f, elem0.ElevatedChildTarget.EditValue);
+
+            // Struct write-back: setting the elevated child should modify the struct in the list
+            elem0.ElevatedChildTarget.EditValue = 99.0f;
+            Assert.AreEqual(99.0f, model.Points[0].X, "Struct elevation write-back should update the list element");
+
+            // Y should remain untouched
+            Assert.AreEqual(2.0f, model.Points[0].Y, "Other struct fields should be unaffected");
+        }
+
+        // ===[ Max recursion depth ]===
+
+        [TestMethod]
+        public void PET_MaxRecursionDepth_DefaultFive_AllowsDeepRecursion ()
+        {
+            var model = new DeepModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+            SetupAll(targets);
+
+            // Root (depth 0) -> DeepA.Inner (depth 1) -> DeepB.Inner (depth 2) -> DeepC.Leaf (depth 3)
+            var root = Find(targets, "Root");
+            Assert.IsTrue(root.IsExpandable, "Depth 0 should be expandable");
+
+            var deepA = root.Children.OfType<PropertyEditTarget>().FirstOrDefault(t => t.PropertyPathTarget == "Inner");
+            Assert.IsNotNull(deepA);
+            Assert.IsTrue(deepA.IsExpandable, "Depth 1 should be expandable");
+
+            var deepB = deepA.Children.OfType<PropertyEditTarget>().FirstOrDefault(t => t.PropertyPathTarget == "Inner");
+            Assert.IsNotNull(deepB);
+            Assert.IsTrue(deepB.IsExpandable, "Depth 2 should be expandable");
+
+            var leaf = deepB.Children.OfType<PropertyEditTarget>().FirstOrDefault(t => t.PropertyPathTarget == "Leaf");
+            Assert.IsNotNull(leaf, "Depth 3 leaf property should exist");
+        }
+
+        [TestMethod]
+        public void PET_MaxRecursionDepth_Two_StopsEarly ()
+        {
+            var model = new DeepModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model, maxDepth: 2).ToList();
+            SetupAll(targets);
+
+            // Root (depth 0) -> DeepA.Inner (depth 1) - should be expandable
+            var root = Find(targets, "Root");
+            Assert.IsTrue(root.IsExpandable);
+
+            var deepA = root.Children.OfType<PropertyEditTarget>().FirstOrDefault(t => t.PropertyPathTarget == "Inner");
+            Assert.IsNotNull(deepA);
+            Assert.IsTrue(deepA.IsExpandable, "Depth 1 should still be expandable");
+
+            // DeepB.Inner (depth 2) would need depth 3 to expand - should NOT recurse
+            var deepB = deepA.Children.OfType<PropertyEditTarget>().FirstOrDefault(t => t.PropertyPathTarget == "Inner");
+            Assert.IsNotNull(deepB);
+            Assert.IsFalse(deepB.IsExpandable, "Depth 2 should NOT be expandable when maxDepth=2");
+        }
+
+        [TestMethod]
+        public void PET_MaxRecursionDepth_Zero_NoRecursion ()
+        {
+            var model = new DeepModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model, maxDepth: 0).ToList();
+            SetupAll(targets);
+
+            var root = Find(targets, "Root");
+            Assert.IsFalse(root.IsExpandable, "MaxDepth 0 should prevent all recursion");
         }
 
         // ===[ Helpers ]==========================================================
