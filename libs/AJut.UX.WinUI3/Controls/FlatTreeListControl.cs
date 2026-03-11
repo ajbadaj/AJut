@@ -461,10 +461,26 @@ namespace AJut.UX.Controls
                 FlatTreeItem[] added = e.AddedItems.OfType<FlatTreeItem>().ToArray();
                 FlatTreeItem[] removed = e.RemovedItems.OfType<FlatTreeItem>().ToArray();
 
-                foreach (FlatTreeItem item in removed)
+                if (this.SelectionMode == eFlatTreeSelectionMode.Single)
                 {
-                    item.IsSelected = false;
-                    this.SelectedItems.Remove(item);
+                    // In Single mode, always fully replace selection. After tree restructures
+                    // (e.g. reparenting via drag-drop), items can become orphaned in SelectedItems
+                    // because the ListView silently drops them without firing SelectionChanged.
+                    // A full clear prevents stale multi-selection.
+                    foreach (FlatTreeItem item in m_selectedItems)
+                    {
+                        item.IsSelected = false;
+                    }
+
+                    m_selectedItems.Clear();
+                }
+                else
+                {
+                    foreach (FlatTreeItem item in removed)
+                    {
+                        item.IsSelected = false;
+                        this.SelectedItems.Remove(item);
+                    }
                 }
 
                 foreach (FlatTreeItem item in added)
@@ -957,8 +973,18 @@ namespace AJut.UX.Controls
                 }
             }
 
-            // Compute shared line Y (gap between rows) and insertion line X (content column start)
-            double lineY = cursorYFraction < 0.5 ? rowTopInOverlay : rowTopInOverlay + rowHeight;
+            // Compute shared line Y (gap between rows) and insertion line X (content column start).
+            // When hovering in the top half of the first row, clamp to the bottom edge so the
+            // insertion indicator never appears above the root of the tree.
+            double lineY;
+            if (hoverIndex == 0 && cursorYFraction < 0.5)
+            {
+                lineY = rowTopInOverlay + rowHeight;
+            }
+            else
+            {
+                lineY = cursorYFraction < 0.5 ? rowTopInOverlay : rowTopInOverlay + rowHeight;
+            }
             const double kExpanderColumnWidth = 18.0;
             double lineX = m_rowXInOverlay + dropTarget.TargetDepth * indentSize + kExpanderColumnWidth + this.InsertionLineXOffset;
 
