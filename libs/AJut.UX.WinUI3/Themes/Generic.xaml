@@ -34,7 +34,7 @@
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/ToggleStripButton.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/PopupMenuButton.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/PathSelectionControl.xaml"/>
-        <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/DockZoneSplitter.xaml"/>
+        <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/GridSplitter.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/DockDropInsertionDriverWidget.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/DockTabItem.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/DockCloseButton.xaml"/>

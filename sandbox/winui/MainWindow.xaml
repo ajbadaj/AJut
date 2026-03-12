@@ -294,23 +294,39 @@
                             <ScrollViewer VerticalAlignment="Stretch" Padding="12">
                                 <StackPanel Spacing="20" HorizontalAlignment="Left">
 
-                                    <TextBlock Text="String to Brush Example" TextWrapping="WrapWholeWords"/>
-                                    <TextBox x:Name="BackgroundMaker" PlaceholderText="Color - like #FFF or linear-gradient(#F00, #00F)"/>
-                                    <RichTextBlock IsTextSelectionEnabled="True">
-                                        <Paragraph>
-                                            <Run Text="Setting the text below to a color like " Foreground="{ThemeResource AJut_Brush_NormalText}"/>
-                                            <Run Text="#F0F" FontFamily="Consolas" Foreground="#A22"/>
-                                            <Run Text=" will set the swatch below. Try more advanced things like: " Foreground="{ThemeResource AJut_Brush_NormalText}"/>
-                                            <Run Text="radial-gradient(circle at 25% 90%, #FF0000, #0000FF)" FontFamily="Consolas" Foreground="#A22"/>
-                                            <Run Text=" or "/>
-                                            <Run Text="linear-gradient(76deg, #A22, #0000FF)" FontFamily="Consolas" Foreground="#A22"/>
-                                        </Paragraph>
-                                    </RichTextBlock>
-                                    <!-- The swatch that shows the background made -->
-                                    <Grid Width="200" Height="200" 
-                                          Background="{Binding ElementName=BackgroundMaker, Path=Text, Converter={ajut_conv:ColorStringToBrushConverter}}"/>
-                                    
-
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition />
+                                            <ColumnDefinition />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Margin="0,0,3,0">
+                                            <TextBlock Text="String to Brush Example" TextWrapping="WrapWholeWords"/>
+                                            <TextBox x:Name="BackgroundMaker" PlaceholderText="Color - like #FFF or linear-gradient(#F00, #00F)"/>
+                                            <RichTextBlock IsTextSelectionEnabled="True">
+                                                <Paragraph>
+                                                    <Run Text="Setting the text below to a color like " Foreground="{ThemeResource AJut_Brush_NormalText}"/>
+                                                    <Run Text="#F0F" FontFamily="Consolas" Foreground="#A22"/>
+                                                    <Run Text=" will set the swatch below. Try more advanced things like: " Foreground="{ThemeResource AJut_Brush_NormalText}"/>
+                                                    <Run Text="radial-gradient(circle at 25% 90%, #FF0000, #0000FF)" FontFamily="Consolas" Foreground="#A22"/>
+                                                    <Run Text=" or "/>
+                                                    <Run Text="linear-gradient(76deg, #A22, #0000FF)" FontFamily="Consolas" Foreground="#A22"/>
+                                                </Paragraph>
+                                            </RichTextBlock>
+                                            <!-- The swatch that shows the background made -->
+                                            <Grid Width="200" Height="200"
+                                                  Background="{Binding ElementName=BackgroundMaker, Path=Text, Converter={ajut_conv:ColorStringToBrushConverter}}"/>
+                                        </StackPanel>
+                                        <ajut:GridSplitter HorizontalAlignment="Right" VerticalAlignment="Stretch" Margin="1"/>
+                                        <Grid Grid.Column="1" Margin="3,0">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition />
+                                                <RowDefinition />
+                                            </Grid.RowDefinitions>
+                                            <TextBlock Margin="3,0" TextWrapping="WrapWholeWords" Text="This is the right side, and it shows the testing of a Grid Splitter (which WINUI doesn't have by default for some reason?)"/>
+                                            <ajut:GridSplitter Thickness="5" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" />
+                                            <TextBlock Grid.Row="1" Margin="3,0" TextWrapping="WrapWholeWords" Text="This is the right side, but the 'Bottom split'"/>
+                                        </Grid>
+                                    </Grid>
 
                                     <TextBlock Text="Theme Switcher" Style="{ThemeResource SubtitleTextBlockStyle}"/>
                                     <ajut:EnumComboBox SelectedItem="{x:Bind Path=Application.ThemeManager.ThemeConfiguration, Mode=TwoWay}"/>

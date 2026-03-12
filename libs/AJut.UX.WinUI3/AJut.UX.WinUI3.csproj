@@ -91,9 +91,10 @@
     <Compile Update="Controls\DockCloseButton.cs">
       <DependentUpon>DockCloseButton.xaml</DependentUpon>
     </Compile>
-    <Compile Update="Controls\DockZoneSplitter.cs">
-      <DependentUpon>DockZoneSplitter.xaml</DependentUpon>
+    <Compile Update="Controls\GridSplitter.cs">
+      <DependentUpon>GridSplitter.xaml</DependentUpon>
     </Compile>
+
     <Compile Update="Controls\DockDropInsertionDriverWidget.cs">
       <DependentUpon>DockDropInsertionDriverWidget.xaml</DependentUpon>
     </Compile>

@@ -26,7 +26,7 @@ namespace AJut.UX.Controls
     //   SetTargetSizeAsync -> schedules SetTargetSize on the DispatcherQueue
     //
     // The template contains only PART_Root (a Grid). All structural children
-    // (DockLeafLayout, child DockZones, DockZoneSplitters) are built in code-behind
+    // (DockLeafLayout, child DockZones, GridSplitters) are built in code-behind
     // via RebuildLayout() whenever the ViewModel's Orientation or DockedContent changes.
     //
     // Leaf layout (Single / Tabbed orientations) is delegated to DockLeafLayout, a
@@ -216,7 +216,7 @@ namespace AJut.UX.Controls
             internal set => this.SetValue(IsDirectDropTargetProperty, value);
         }
 
-        // SeparationSize: pixel width/height of the DockZoneSplitter columns/rows.
+        // SeparationSize: pixel width/height of the GridSplitter columns/rows.
         public static readonly DependencyProperty SeparationSizeProperty = DPUtils.Register(_ => _.SeparationSize, 4.0);
         public double SeparationSize
         {
@@ -937,10 +937,10 @@ namespace AJut.UX.Controls
                     if (i < m_childZones.Count - 1)
                     {
                         this.PART_Root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(separationSize) });
-                        var splitter = new DockZoneSplitter();
-                        splitter.Setup(this.PART_Root, i, eDockOrientation.Horizontal);
+                        var splitter = new GridSplitter { Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent) };
                         Grid.SetColumn(splitter, i * 2 + 1);
                         this.PART_Root.Children.Add(splitter);
+                        splitter.DetectAndApply(eGridSplitterOrientation.Columns);
                     }
                 }
                 else // Vertical
@@ -952,10 +952,10 @@ namespace AJut.UX.Controls
                     if (i < m_childZones.Count - 1)
                     {
                         this.PART_Root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(separationSize) });
-                        var splitter = new DockZoneSplitter();
-                        splitter.Setup(this.PART_Root, i, eDockOrientation.Vertical);
+                        var splitter = new GridSplitter { Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent) };
                         Grid.SetRow(splitter, i * 2 + 1);
                         this.PART_Root.Children.Add(splitter);
+                        splitter.DetectAndApply(eGridSplitterOrientation.Rows);
                     }
                 }
             }

@@ -38,6 +38,15 @@
     </ResourceDictionary.MergedDictionaries>
 
     <!--
+    ===[ GridSplitter - AJut-themed override ]===
+    Background drives the 1px stripe via TemplateBinding. Transparent consumers
+    (e.g. DockZone) set Background directly in code.
+    -->
+    <Style TargetType="local:GridSplitter">
+        <Setter Property="Background" Value="{ThemeResource AJut_Brush_BorderCommon}"/>
+    </Style>
+
+    <!--
     ===[ FlatTreeListControl - AJut-themed override ]===
     Applies AJut list background/border. No template duplication needed.
     AJut_FlatTree_ListViewItemStyle template lives only in FlatTreeListControl.xaml;
