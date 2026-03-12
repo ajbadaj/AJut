@@ -312,6 +312,26 @@ namespace AJut.UX.Tests
         };
     }
 
+    // ===========[ Property filter models ]====================================
+
+    /// <summary>Model with several properties to exercise limitToTheseProperties filtering.</summary>
+    public class FilterModel
+    {
+        public string Alpha { get; set; } = "a";
+        public string Bravo { get; set; } = "b";
+        public string Charlie { get; set; } = "c";
+        public int DeltaOne { get; set; } = 1;
+        public int DeltaTwo { get; set; } = 2;
+        public double Echo { get; set; } = 3.0;
+    }
+
+    /// <summary>Model with a sub-object for testing that filters propagate into recursive expansion.</summary>
+    public class FilterParentModel
+    {
+        public string TopName { get; set; } = "top";
+        public FilterModel Child { get; set; } = new FilterModel();
+    }
+
     // ===========[ Max recursion depth models ]================================
 
     /// <summary>Deeply nested object chain for testing max recursion depth.</summary>
@@ -1107,6 +1127,196 @@ namespace AJut.UX.Tests
 
             var root = Find(targets, "Root");
             Assert.IsFalse(root.IsExpandable, "MaxDepth 0 should prevent all recursion");
+        }
+
+        // ===[ Property filter tests ]=============================================
+
+        [TestMethod]
+        public void PET_NoFilter_ReturnsAllProperties ()
+        {
+            var model = new FilterModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+            SetupAll(targets);
+
+            Assert.AreEqual(6, targets.Count, "No filter should return all 6 settable properties");
+        }
+
+        [TestMethod]
+        public void PET_FilterExactName_ReturnsSingleProperty ()
+        {
+            var model = new FilterModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model, limtToTheseProperties: new[] { "Alpha" }).ToList();
+            SetupAll(targets);
+
+            Assert.AreEqual(1, targets.Count);
+            Assert.IsNotNull(Find(targets, "Alpha"));
+        }
+
+        [TestMethod]
+        public void PET_FilterMultipleExactNames_ReturnsOnlyThose ()
+        {
+            var model = new FilterModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model, limtToTheseProperties: new[] { "Alpha", "Charlie", "Echo" }).ToList();
+            SetupAll(targets);
+
+            Assert.AreEqual(3, targets.Count);
+            Assert.IsNotNull(Find(targets, "Alpha"));
+            Assert.IsNotNull(Find(targets, "Charlie"));
+            Assert.IsNotNull(Find(targets, "Echo"));
+            Assert.IsNull(Find(targets, "Bravo"));
+            Assert.IsNull(Find(targets, "DeltaOne"));
+            Assert.IsNull(Find(targets, "DeltaTwo"));
+        }
+
+        [TestMethod]
+        public void PET_FilterNonexistentName_ReturnsEmpty ()
+        {
+            var model = new FilterModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model, limtToTheseProperties: new[] { "DoesNotExist" }).ToList();
+
+            Assert.AreEqual(0, targets.Count);
+        }
+
+        [TestMethod]
+        public void PET_FilterRegex_MatchesMultipleProperties ()
+        {
+            var model = new FilterModel();
+
+            // "Delta.*" contains non-letter chars so PropertyMatcher should treat it as regex
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model, limtToTheseProperties: new[] { "Delta.*" }).ToList();
+            SetupAll(targets);
+
+            Assert.AreEqual(2, targets.Count, "Regex 'Delta.*' should match DeltaOne and DeltaTwo");
+            Assert.IsNotNull(Find(targets, "DeltaOne"));
+            Assert.IsNotNull(Find(targets, "DeltaTwo"));
+        }
+
+        [TestMethod]
+        public void PET_FilterRegexAnchoredPrefix_MatchesCorrectly ()
+        {
+            var model = new FilterModel();
+
+            // "^D" should match DeltaOne and DeltaTwo only
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model, limtToTheseProperties: new[] { "^D" }).ToList();
+            SetupAll(targets);
+
+            Assert.AreEqual(2, targets.Count, "Regex '^D' should match DeltaOne and DeltaTwo");
+            Assert.IsNotNull(Find(targets, "DeltaOne"));
+            Assert.IsNotNull(Find(targets, "DeltaTwo"));
+        }
+
+        [TestMethod]
+        public void PET_FilterRegexEndAnchor_MatchesCorrectly ()
+        {
+            var model = new FilterModel();
+
+            // "o$" should match Bravo, Echo, and DeltaTwo (all end in 'o')
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model, limtToTheseProperties: new[] { "o$" }).ToList();
+            SetupAll(targets);
+
+            Assert.AreEqual(3, targets.Count, "Regex 'o$' should match Bravo, Echo, and DeltaTwo");
+            Assert.IsNotNull(Find(targets, "Bravo"));
+            Assert.IsNotNull(Find(targets, "Echo"));
+            Assert.IsNotNull(Find(targets, "DeltaTwo"));
+        }
+
+        [TestMethod]
+        public void PET_FilterMixedExactAndRegex_CombinesResults ()
+        {
+            var model = new FilterModel();
+
+            // "Alpha" is exact (letters only), "Delta.*" is regex
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model, limtToTheseProperties: new[] { "Alpha", "Delta.*" }).ToList();
+            SetupAll(targets);
+
+            Assert.AreEqual(3, targets.Count, "Should get Alpha + DeltaOne + DeltaTwo");
+            Assert.IsNotNull(Find(targets, "Alpha"));
+            Assert.IsNotNull(Find(targets, "DeltaOne"));
+            Assert.IsNotNull(Find(targets, "DeltaTwo"));
+        }
+
+        [TestMethod]
+        public void PET_FilterExactName_IsCaseSensitive ()
+        {
+            var model = new FilterModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model, limtToTheseProperties: new[] { "alpha" }).ToList();
+
+            Assert.AreEqual(0, targets.Count, "Exact match should be case-sensitive");
+        }
+
+        [TestMethod]
+        public void PET_FilterPropagatesIntoSubObjects ()
+        {
+            var model = new FilterParentModel();
+
+            // The filter propagates into sub-objects. When we filter for "TopName" and "Child",
+            // Child's sub-properties (Alpha, Bravo, etc.) don't match the filter either,
+            // so Child won't be expandable - it has no visible children.
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model, limtToTheseProperties: new[] { "TopName", "Child" }).ToList();
+            SetupAll(targets);
+
+            Assert.AreEqual(2, targets.Count, "Should get TopName and Child");
+            Assert.IsNotNull(Find(targets, "TopName"));
+
+            var child = Find(targets, "Child");
+            Assert.IsNotNull(child);
+            Assert.IsFalse(child.IsExpandable, "Child's sub-properties don't match the filter so it should not be expandable");
+        }
+
+        [TestMethod]
+        public void PET_FilterPropagatesIntoSubObjects_MatchingChildProps ()
+        {
+            var model = new FilterParentModel();
+
+            // Filter includes "Child" (top-level) and "Alpha" (a sub-property of FilterModel).
+            // Child should be expandable because Alpha passes the filter in the recursive call.
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model, limtToTheseProperties: new[] { "Child", "Alpha" }).ToList();
+            SetupAll(targets);
+
+            var child = Find(targets, "Child");
+            Assert.IsNotNull(child);
+            Assert.IsTrue(child.IsExpandable, "Child should be expandable because Alpha matches the filter in the sub-object");
+            Assert.AreEqual(1, child.Children.Count, "Only Alpha should appear as a child");
+        }
+
+        [TestMethod]
+        public void PET_FilterWithHiddenProperty_HiddenStillExcluded ()
+        {
+            var model = new VisibilityModel();
+
+            // Even when the filter names the hidden property, [PGHidden] should still win
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model, limtToTheseProperties: new[] { "Shown", "Hidden" }).ToList();
+            SetupAll(targets);
+
+            Assert.AreEqual(1, targets.Count);
+            Assert.IsNotNull(Find(targets, "Shown"));
+            Assert.IsNull(Find(targets, "Hidden"));
+        }
+
+        [TestMethod]
+        public void PET_FilterRegexPartialMatch_MatchesSubstring ()
+        {
+            var model = new FilterModel();
+
+            // "l" is letters-only so it's treated as exact match, not regex - should match nothing
+            var exactTargets = PropertyEditTarget.GenerateForPropertiesOf(model, limtToTheseProperties: new[] { "l" }).ToList();
+            Assert.AreEqual(0, exactTargets.Count, "Single letter exact match should find no property named 'l'");
+
+            // ".*l.*" has non-letter chars, so it's treated as regex - should match Alpha, Charlie, DeltaOne, DeltaTwo
+            var regexTargets = PropertyEditTarget.GenerateForPropertiesOf(model, limtToTheseProperties: new[] { ".*l.*" }).ToList();
+            Assert.IsTrue(regexTargets.Count > 0, "Regex '.*l.*' should match properties containing 'l'");
+        }
+
+        [TestMethod]
+        public void PET_FilterWithMaxDepth_BothApply ()
+        {
+            var model = new BasicModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model, maxDepth: 0, limtToTheseProperties: new[] { "Name", "Count" }).ToList();
+            SetupAll(targets);
+
+            Assert.AreEqual(2, targets.Count, "Filter + maxDepth should both apply");
+            Assert.IsNotNull(Find(targets, "Name"));
+            Assert.IsNotNull(Find(targets, "Count"));
         }
 
         // ===[ Helpers ]==========================================================

@@ -10,6 +10,7 @@ namespace AJut.UX.PropertyInteraction
     using System.ComponentModel;
     using System.Linq;
     using System.Reflection;
+    using System.Text.RegularExpressions;
     using System.Threading;
 
     public class PropertyEditTarget : ObservableTreeNode, IExpandableNode
@@ -283,12 +284,12 @@ namespace AJut.UX.PropertyInteraction
         /// generated and attached so the property tree can be expanded in a FlatTreeListControl.
         /// Nullable&lt;T&gt; properties get Editor="Nullable" and EditContext=NullableEditorContext.
         /// </summary>
-        public static IEnumerable<PropertyEditTarget> GenerateForPropertiesOf(object sourceItem, int maxDepth = 5)
+        public static IEnumerable<PropertyEditTarget> GenerateForPropertiesOf(object sourceItem, int maxDepth = 5, params string[] limtToTheseProperties)
         {
-            return GenerateForPropertiesOf(sourceItem, depth: 0, maxDepth: maxDepth);
+            return GenerateForPropertiesOf(sourceItem, depth: 0, maxDepth: maxDepth, limtToTheseProperties.Select(s => new PropertyMatcher(s)).ToArray());
         }
 
-        private static IEnumerable<PropertyEditTarget> GenerateForPropertiesOf(object sourceItem, int depth, int maxDepth)
+        private static IEnumerable<PropertyEditTarget> GenerateForPropertiesOf(object sourceItem, int depth, int maxDepth, PropertyMatcher[] limitToTheseProperties)
         {
             PropertyEditTarget[] _pendingCoerceHolder = null;
             foreach (PropertyInfo prop in _GetRelevantProperties(sourceItem))
@@ -342,7 +343,7 @@ namespace AJut.UX.PropertyInteraction
                 {
                     var coerceAttr = TypeMetadataExtensionRegistrar.GetAttribute<PGCoerceAttribute>(prop);
                     MethodInfo coerceMethod = coerceAttr != null
-                        ? _ResolveCoerceMethod(sourceItem.GetType(), coerceAttr.MemberName)
+                        ? ResolveCoerceMethod(sourceItem.GetType(), coerceAttr.MemberName)
                         : null;
 
                     if (coerceMethod != null)
@@ -372,7 +373,7 @@ namespace AJut.UX.PropertyInteraction
                     else
                     {
                         _pendingCoerceHolder = null;
-                        setter = v => prop.SetValue(sourceItem, _CoerceValueType(v, prop.PropertyType));
+                        setter = v => prop.SetValue(sourceItem, CoerceValueType(v, prop.PropertyType));
                     }
                 }
 
@@ -409,12 +410,12 @@ namespace AJut.UX.PropertyInteraction
                 }
 
                 // 4. Compute default value
-                _ApplyDefault(target, prop, sourceItem);
+                ApplyDefault(target, prop, sourceItem);
 
                 // 4b. Detect [PGList] on list/array/collection properties and generate
                 //     an expandable parent with inline editor + element children.
                 var listAttr = TypeMetadataExtensionRegistrar.GetAttribute<PGListAttribute>(prop);
-                if (listAttr != null && _IsListType(prop.PropertyType, out Type listElementType))
+                if (listAttr != null && IsListType(prop.PropertyType, out Type listElementType))
                 {
                     target.Editor = "List";
                     target.IsListEditor = true;
@@ -434,13 +435,13 @@ namespace AJut.UX.PropertyInteraction
                         capturedProp,
                         capturedElementType,
                         capturedListAttr,
-                        () => RebuildListChildren(capturedTarget, capturedSourceItem, capturedProp, capturedElementType, capturedListAttr, capturedDepth, capturedMaxDepth)
+                        () => RebuildListChildren(capturedTarget, capturedSourceItem, capturedProp, capturedElementType, capturedListAttr, capturedDepth, capturedMaxDepth, limitToTheseProperties)
                     );
 
                     target.EditContext = listContext;
 
                     // Generate initial children for existing elements
-                    _BuildListChildren(target, sourceItem, prop, listElementType, listAttr, depth, maxDepth);
+                    BuildListChildren(target, sourceItem, prop, listElementType, listAttr, depth, maxDepth, limitToTheseProperties);
 
                     yield return target;
                     continue;
@@ -449,7 +450,7 @@ namespace AJut.UX.PropertyInteraction
                 // 5. For complex reference types, check for elevation attributes (which work even with
                 // [PGEditor]), and fall back to normal sub-property recursion when no elevation is found
                 // and no [PGEditor] overrides the type.
-                if (!isNullable && aliasing == null && depth < maxDepth && _IsComplexObjectType(prop.PropertyType))
+                if (!isNullable && aliasing == null && depth < maxDepth && IsComplexObjectType(prop.PropertyType))
                 {
                     object? subValue = prop.GetValue(sourceItem);
                     if (subValue != null && _GetRelevantProperties(subValue).Any())
@@ -467,14 +468,14 @@ namespace AJut.UX.PropertyInteraction
                                 var childTarget = new PropertyEditTarget(
                                     childProp.Name,
                                     () => childProp.GetValue(prop.GetValue(sourceItem)),
-                                    childProp.SetMethod != null ? v => childProp.SetValue(prop.GetValue(sourceItem), _CoerceValueType(v, childProp.PropertyType)) : (SetValue?)null
+                                    childProp.SetMethod != null ? v => childProp.SetValue(prop.GetValue(sourceItem), CoerceValueType(v, childProp.PropertyType)) : (SetValue?)null
                                 )
                                 {
                                     DisplayName = _GetDisplayName(childProp, prop.Name.ConvertToFriendlyEn()),
                                     Editor = _GetEditorKey(childProp, childProp.PropertyType.Name),
                                     EditContext = childEditContext,
                                 };
-                                _ApplyDefault(childTarget, childProp, subValue);
+                                ApplyDefault(childTarget, childProp, subValue);
                                 childTarget.Setup();
                                 target.ElevatedChildTarget = childTarget;
                                 target.IsExpandable = false;
@@ -509,14 +510,14 @@ namespace AJut.UX.PropertyInteraction
                                 var childTarget = new PropertyEditTarget(
                                     elevatedProp.Name,
                                     () => elevatedProp.GetValue(prop.GetValue(sourceItem)),
-                                    elevatedProp.SetMethod != null ? v => elevatedProp.SetValue(prop.GetValue(sourceItem), _CoerceValueType(v, elevatedProp.PropertyType)) : (SetValue?)null
+                                    elevatedProp.SetMethod != null ? v => elevatedProp.SetValue(prop.GetValue(sourceItem), CoerceValueType(v, elevatedProp.PropertyType)) : (SetValue?)null
                                 )
                                 {
                                     DisplayName = _GetDisplayName(attributeSourceProperty, $"{prop.Name.ConvertToFriendlyEn()}+{elevatedProp.Name.ConvertToFriendlyEn()}"),
                                     Editor = _GetEditorKey(attributeSourceProperty, elevatedProp.PropertyType.Name),
                                     EditContext = elevatedEditContext,
                                 };
-                                _ApplyDefault(childTarget, elevatedProp, subValue);
+                                ApplyDefault(childTarget, elevatedProp, subValue);
                                 childTarget.Setup();
                                 target.ElevatedChildTarget = childTarget;
                                 target.IsExpandable = false;
@@ -526,7 +527,7 @@ namespace AJut.UX.PropertyInteraction
                             {
                                 // Normal expandable sub-object - only when no [PGEditor] overrides the type.
                                 target.IsExpandable = true;
-                                foreach (PropertyEditTarget child in GenerateForPropertiesOf(subValue, depth + 1, maxDepth))
+                                foreach (PropertyEditTarget child in GenerateForPropertiesOf(subValue, depth + 1, maxDepth, limitToTheseProperties))
                                 {
                                     child.Setup();
                                     target.InsertChild(target.Children.Count, child);
@@ -566,6 +567,11 @@ namespace AJut.UX.PropertyInteraction
 
                 bool _Filter(PropertyInfo _prop)
                 {
+                    if (limitToTheseProperties.Length > 0 && !limitToTheseProperties.Any(tester => tester.IsMatch(_prop)))
+                    {
+                        return false;
+                    }
+
                     // Global registry hide takes priority, then [PGHidden] attribute.
                     if (TypeMetadataExtensionRegistrar.IsHidden(_prop)
                         || TypeMetadataExtensionRegistrar.HasAttribute<PGHiddenAttribute>(_prop))
@@ -725,7 +731,7 @@ namespace AJut.UX.PropertyInteraction
             return false;
         }
 
-        private static MethodInfo _ResolveCoerceMethod(Type type, string memberName)
+        private static MethodInfo ResolveCoerceMethod(Type type, string memberName)
         {
             foreach (MethodInfo m in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
             {
@@ -746,7 +752,7 @@ namespace AJut.UX.PropertyInteraction
             return null;
         }
 
-        private static void _ApplyDefault(PropertyEditTarget target, PropertyInfo prop, object sourceItem)
+        private static void ApplyDefault(PropertyEditTarget target, PropertyInfo prop, object sourceItem)
         {
             var overrideAttr = TypeMetadataExtensionRegistrar.GetAttribute<PGOverrideDefaultAttribute>(prop);
             if (overrideAttr != null)
@@ -793,7 +799,7 @@ namespace AJut.UX.PropertyInteraction
             }
         }
 
-        private static object _CoerceValueType(object value, Type targetType)
+        private static object CoerceValueType(object value, Type targetType)
         {
             if (value == null || targetType.IsInstanceOfType(value))
             {
@@ -810,7 +816,7 @@ namespace AJut.UX.PropertyInteraction
             }
         }
 
-        private static bool _IsComplexObjectType(Type type)
+        private static bool IsComplexObjectType(Type type)
         {
             return !type.IsValueType
                 && type != typeof(string)
@@ -823,7 +829,7 @@ namespace AJut.UX.PropertyInteraction
         /// Returns true if the type is a supported list/array/collection type for [PGList],
         /// and outputs the element type.
         /// </summary>
-        private static bool _IsListType (Type type, out Type elementType)
+        private static bool IsListType (Type type, out Type elementType)
         {
             // T[]
             if (type.IsArray)
@@ -874,14 +880,15 @@ namespace AJut.UX.PropertyInteraction
         /// Cascades [PGEditor], [PGElevateChildProperty], and respects [PGElevateAsParent]
         /// on the element type so list children behave like normal complex-property rows.
         /// </summary>
-        private static void _BuildListChildren (
+        private static void BuildListChildren (
             PropertyEditTarget listParent,
             object sourceItem,
             PropertyInfo prop,
             Type elementType,
             PGListAttribute listAttr,
             int depth,
-            int maxDepth)
+            int maxDepth,
+            PropertyMatcher[] limitToTheseProperties)
         {
             object collection = prop.GetValue(sourceItem);
             if (collection == null)
@@ -905,7 +912,7 @@ namespace AJut.UX.PropertyInteraction
 
             // [PGElevateAsParent] on the element type: discover once, apply to every element.
             PropertyInfo elevateAsParentProp = null;
-            if (overrideEditor == null && elevateChildAttr == null && !isSimpleType && _IsComplexObjectType(elementType))
+            if (overrideEditor == null && elevateChildAttr == null && !isSimpleType && IsComplexObjectType(elementType))
             {
                 elevateAsParentProp = elementType
                     .GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty)
@@ -937,7 +944,7 @@ namespace AJut.UX.PropertyInteraction
                         var list = capturedProp.GetValue(capturedSource) as System.Collections.IList;
                         if (list != null && capturedIndex < list.Count)
                         {
-                            list[capturedIndex] = _CoerceValueType(v, elementType);
+                            list[capturedIndex] = CoerceValueType(v, elementType);
                         }
                     };
                 }
@@ -954,7 +961,7 @@ namespace AJut.UX.PropertyInteraction
                         var arr = capturedProp.GetValue(capturedSource) as Array;
                         if (arr != null && capturedIndex < arr.Length)
                         {
-                            arr.SetValue(_CoerceValueType(v, elementType), capturedIndex);
+                            arr.SetValue(CoerceValueType(v, elementType), capturedIndex);
                         }
                     };
                 }
@@ -1001,7 +1008,7 @@ namespace AJut.UX.PropertyInteraction
                     // Element type has [PGElevateAsParent] on one of its properties
                     _ElevatePropertyForListElement(childTarget, element, elementType, elevateAsParentProp, elemGetter, capturedProp, capturedSource, capturedIndex);
                 }
-                else if (!isSimpleType && element != null && _IsComplexObjectType(elementType))
+                else if (!isSimpleType && element != null && IsComplexObjectType(elementType))
                 {
                     // Normal complex type: recurse into sub-properties
                     var subProps = TypeMetadataExtensionRegistrar.GetOrderedProperties(
@@ -1012,7 +1019,7 @@ namespace AJut.UX.PropertyInteraction
                     if (subProps.Any())
                     {
                         childTarget.IsExpandable = true;
-                        foreach (PropertyEditTarget subChild in GenerateForPropertiesOf(element, depth + 1, maxDepth))
+                        foreach (PropertyEditTarget subChild in GenerateForPropertiesOf(element, depth + 1, maxDepth, limitToTheseProperties))
                         {
                             subChild.Setup();
                             childTarget.InsertChild(childTarget.Children.Count, subChild);
@@ -1065,7 +1072,7 @@ namespace AJut.UX.PropertyInteraction
                         if (collection is System.Collections.IList list && capturedIndex < list.Count)
                         {
                             object elem = list[capturedIndex];
-                            capturedProp.SetValue(elem, _CoerceValueType(v, capturedProp.PropertyType));
+                            capturedProp.SetValue(elem, CoerceValueType(v, capturedProp.PropertyType));
                             list[capturedIndex] = elem;
                         }
                     };
@@ -1077,7 +1084,7 @@ namespace AJut.UX.PropertyInteraction
                         object elem = capturedElemGetter();
                         if (elem != null)
                         {
-                            capturedProp.SetValue(elem, _CoerceValueType(v, capturedProp.PropertyType));
+                            capturedProp.SetValue(elem, CoerceValueType(v, capturedProp.PropertyType));
                         }
                     };
                 }
@@ -1096,7 +1103,7 @@ namespace AJut.UX.PropertyInteraction
                 EditContext = elevatedEditContext,
             };
 
-            _ApplyDefault(elevatedTarget, capturedProp, element);
+            ApplyDefault(elevatedTarget, capturedProp, element);
             elevatedTarget.Setup();
             elementTarget.ElevatedChildTarget = elevatedTarget;
             elementTarget.IsExpandable = false;
@@ -1118,7 +1125,8 @@ namespace AJut.UX.PropertyInteraction
             Type elementType,
             PGListAttribute listAttr,
             int depth,
-            int maxDepth)
+            int maxDepth,
+            PropertyMatcher[] limitToTheseProperties)
         {
             // Teardown and remove existing children
             var existingChildren = listParent.Children.OfType<PropertyEditTarget>().ToList();
@@ -1129,7 +1137,7 @@ namespace AJut.UX.PropertyInteraction
             }
 
             // Rebuild
-            _BuildListChildren(listParent, sourceItem, prop, elementType, listAttr, depth, maxDepth);
+            BuildListChildren(listParent, sourceItem, prop, elementType, listAttr, depth, maxDepth, limitToTheseProperties);
 
             // Signal that the source has been modified
             listParent.ForceRaiseSourceCommitted();
@@ -1270,5 +1278,36 @@ namespace AJut.UX.PropertyInteraction
                 m_editValueINPC = null;
             }
         }
+
+
+        // ======================[ SubClasses ]========================================================
+
+        internal struct PropertyMatcher
+        {
+            private static Regex kIsRegex = new Regex(@"[^\p{L}]");
+            private Regex? m_regexMatch;
+            private string? m_basicStringSearch; 
+            public PropertyMatcher(string propertySearch)
+            {
+                if (kIsRegex.IsMatch(propertySearch))
+                {
+                    m_regexMatch = new Regex(propertySearch);
+                }
+                else
+                {
+                    m_basicStringSearch = propertySearch;
+                }
+            }
+
+            public bool IsMatch(PropertyInfo property)
+            {
+                if (m_regexMatch != null)
+                {
+                    return m_regexMatch.IsMatch(property.Name);
+                }
+                return property.Name.Equals(m_basicStringSearch!);
+            }
+        }
+
     }
 }
