@@ -4,11 +4,9 @@ namespace AJut.UX.PropertyInteraction
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Reflection;
     using AJut.Storage;
     using AJut.Text.AJson;
     using AJut.Tree;
-    using AJut.TypeManagement;
 
     public interface IPropertyGrid
     {
@@ -308,68 +306,25 @@ namespace AJut.UX.PropertyInteraction
 
         private void _BuildAndApplyVisibilityConditions (List<object> sourceItems, PropertyEditTarget root)
         {
-            // 1. Build lookup from PropertyPathTarget -> target in the built tree
-            var targetLookup = new Dictionary<string, PropertyEditTarget>();
+            // 1. Collect all targets (top-level + group children) and link any that
+            //    carry PendingShowIf / PendingHideIf (attached during GenerateForPropertiesOf
+            //    or GenerateButtonsForMethodsOf). This works regardless of whether the
+            //    PropertyGrid source is the object itself or an IPropertyEditManager that
+            //    delegates to a different object.
             foreach (PropertyEditTarget topChild in root.Children.OfType<PropertyEditTarget>())
             {
-                targetLookup[topChild.PropertyPathTarget] = topChild;
+                _TryLinkTarget(topChild);
 
-                // Children of group headers
                 if (topChild.PropertyPathTarget.StartsWith("$group_"))
                 {
                     foreach (PropertyEditTarget groupChild in topChild.Children.OfType<PropertyEditTarget>())
                     {
-                        targetLookup[groupChild.PropertyPathTarget] = groupChild;
+                        _TryLinkTarget(groupChild);
                     }
                 }
             }
 
-            // 2. For each source item, scan members for ShowIf/HideIf and link to targets
-            foreach (object item in sourceItems)
-            {
-                Type type = item.GetType();
-
-                foreach (PropertyInfo prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
-                {
-                    PGShowIfAttribute showIf = TypeMetadataExtensionRegistrar.GetAttribute<PGShowIfAttribute>(prop);
-                    PGHideIfAttribute hideIf = TypeMetadataExtensionRegistrar.GetAttribute<PGHideIfAttribute>(prop);
-                    if (showIf == null && hideIf == null)
-                    {
-                        continue;
-                    }
-
-                    if (!targetLookup.TryGetValue(prop.Name, out PropertyEditTarget target))
-                    {
-                        continue;
-                    }
-
-                    _AddLinkedCondition(item, target, showIf, hideIf);
-                }
-
-                foreach (MethodInfo method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
-                {
-                    if (method.GetCustomAttribute<PGButtonAttribute>() == null)
-                    {
-                        continue;
-                    }
-
-                    PGShowIfAttribute showIf = method.GetCustomAttribute<PGShowIfAttribute>();
-                    PGHideIfAttribute hideIf = method.GetCustomAttribute<PGHideIfAttribute>();
-                    if (showIf == null && hideIf == null)
-                    {
-                        continue;
-                    }
-
-                    if (!targetLookup.TryGetValue(method.Name, out PropertyEditTarget target))
-                    {
-                        continue;
-                    }
-
-                    _AddLinkedCondition(item, target, showIf, hideIf);
-                }
-            }
-
-            // 3. Snapshot the natural child order for parents that have conditional children
+            // 2. Snapshot the natural child order for parents that have conditional children
             foreach (var cond in m_visibilityConditions)
             {
                 if (!m_naturalChildOrder.ContainsKey(cond.Parent))
@@ -378,7 +333,7 @@ namespace AJut.UX.PropertyInteraction
                 }
             }
 
-            // 4. Evaluate initial visibility and remove hidden targets
+            // 3. Evaluate initial visibility and remove hidden targets
             foreach (var cond in m_visibilityConditions)
             {
                 cond.LastResult = cond.IsVisible();
@@ -386,6 +341,16 @@ namespace AJut.UX.PropertyInteraction
                 {
                     cond.Parent.RemoveChild(cond.Target);
                 }
+            }
+
+            void _TryLinkTarget (PropertyEditTarget target)
+            {
+                if (target.PendingShowIf == null && target.PendingHideIf == null)
+                {
+                    return;
+                }
+
+                _AddLinkedCondition(target.ConditionSourceItem, target, target.PendingShowIf, target.PendingHideIf);
             }
         }
 

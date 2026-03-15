@@ -147,6 +147,20 @@ namespace AJut.UX.PropertyInteraction
         public string GroupId { get; set; }
 
         /// <summary>
+        /// The object on which ShowIf/HideIf condition members are evaluated.
+        /// Set during GenerateForPropertiesOf / GenerateButtonsForMethodsOf so that
+        /// PropertyGridManager can link conditions even when the PropertyGrid source
+        /// is an IPropertyEditManager that delegates to a different object.
+        /// </summary>
+        internal object ConditionSourceItem { get; set; }
+
+        /// <summary>Attached during target generation so PropertyGridManager can link conditions from the target itself.</summary>
+        internal PGShowIfAttribute PendingShowIf { get; set; }
+
+        /// <summary>Attached during target generation so PropertyGridManager can link conditions from the target itself.</summary>
+        internal PGHideIfAttribute PendingHideIf { get; set; }
+
+        /// <summary>
         /// Raised (as a PropertyChanged notification) after m_setValue commits the new value to the
         /// backing source object. Distinct from "EditValue" which fires inside SetAndRaiseIfChanged
         /// BEFORE m_setValue runs. PropertyGrid subscribes to this name to fire PropertyTreeChanged
@@ -409,6 +423,18 @@ namespace AJut.UX.PropertyInteraction
                     target.m_coerceValue = coerceDelegate;
                 }
 
+                // 3c. Attach ShowIf/HideIf condition info so PropertyGridManager can
+                //     link conditions from the target itself (required when the PropertyGrid
+                //     source is an IPropertyEditManager that delegates to a different object).
+                var showIfAttr = TypeMetadataExtensionRegistrar.GetAttribute<PGShowIfAttribute>(prop);
+                var hideIfAttr = TypeMetadataExtensionRegistrar.GetAttribute<PGHideIfAttribute>(prop);
+                if (showIfAttr != null || hideIfAttr != null)
+                {
+                    target.PendingShowIf = showIfAttr;
+                    target.PendingHideIf = hideIfAttr;
+                    target.ConditionSourceItem = sourceItem;
+                }
+
                 // 4. Compute default value
                 ApplyDefault(target, prop, sourceItem);
 
@@ -603,7 +629,7 @@ namespace AJut.UX.PropertyInteraction
         {
             Type type = sourceItem.GetType();
 
-            // 1. Try property
+            // 1. Try property (walks hierarchy via GetProperty with NonPublic)
             PropertyInfo prop = type.GetProperty(
                 memberName,
                 BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static
@@ -614,21 +640,13 @@ namespace AJut.UX.PropertyInteraction
                 return prop.GetValue(instance) is bool b && b;
             }
 
-            // 2. Try zero-parameter method
-            MethodInfo method = type.GetMethod(
-                memberName,
-                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static,
-                null, Type.EmptyTypes, null
-            );
+            // 2. Try zero-parameter method, walking base types for private methods
+            MethodInfo method = _FindMethod(type, memberName, Type.EmptyTypes);
 
             // 3. Try one-parameter method (PropertyEditTarget)
             if (method == null)
             {
-                method = type.GetMethod(
-                    memberName,
-                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static,
-                    null, new[] { typeof(PropertyEditTarget) }, null
-                );
+                method = _FindMethod(type, memberName, new[] { typeof(PropertyEditTarget) });
             }
 
             if (method != null)
@@ -650,6 +668,28 @@ namespace AJut.UX.PropertyInteraction
 
             Logger.LogError($"PGShowIf/PGHideIf: member '{memberName}' not found on '{type.Name}'");
             return false;
+        }
+
+        /// <summary>
+        /// Walks the type hierarchy to find a method, including private methods on base classes
+        /// which Type.GetMethod with NonPublic does not return for derived types.
+        /// </summary>
+        private static MethodInfo _FindMethod (Type type, string name, Type[] parameterTypes)
+        {
+            const BindingFlags kFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+            Type current = type;
+            while (current != null && current != typeof(object))
+            {
+                MethodInfo method = current.GetMethod(name, kFlags | BindingFlags.DeclaredOnly, null, parameterTypes, null);
+                if (method != null)
+                {
+                    return method;
+                }
+
+                current = current.BaseType;
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -686,6 +726,16 @@ namespace AJut.UX.PropertyInteraction
                     Editor = "Button",
                     GroupId = groupAttr?.GroupId,
                 };
+
+                // Attach ShowIf/HideIf condition info for PropertyGridManager
+                var buttonShowIf = method.GetCustomAttribute<PGShowIfAttribute>();
+                var buttonHideIf = method.GetCustomAttribute<PGHideIfAttribute>();
+                if (buttonShowIf != null || buttonHideIf != null)
+                {
+                    target.PendingShowIf = buttonShowIf;
+                    target.PendingHideIf = buttonHideIf;
+                    target.ConditionSourceItem = sourceItem;
+                }
 
                 // Capture target so the action can signal SourceCommitted after running
                 var capturedTarget = target;

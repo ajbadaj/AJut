@@ -429,12 +429,22 @@ namespace AJutShowRoomWinUI
         [PGGroup("Conditional")]
         public Color ColorModeValue { get; set; } = new Color { A = 255, R = 128, G = 200, B = 255 };
 
+        // Exercises PGShowIf + PGElevateAsParent(deferPGAttributesToParent: true)
+        // with a method-based condition (matches the reported bug scenario).
+        // When EditorMode is Number, this should appear alongside NumberModeValue.
+        [PGShowIf(nameof(ShouldShowConditionalWrapped))]
+        [PGEditor("Single")]
+        [PGGroup("Conditional")]
+        public TemplateSubType<float> ConditionalWrapped { get; set; } = new TemplateSubType<float> { Value = 77.0f };
+
         [PGHidden]
         public bool IsTextMode => this.EditorMode == eEditorMode.Text;
         [PGHidden]
         public bool IsNumberMode => this.EditorMode == eEditorMode.Number;
         [PGHidden]
         public bool IsColorMode => this.EditorMode == eEditorMode.Color;
+
+        private bool ShouldShowConditionalWrapped () => this.EditorMode == eEditorMode.Number;
 
         // ------ PGCoerce demo ------
         // Value is clamped to 0-100 via custom coercion

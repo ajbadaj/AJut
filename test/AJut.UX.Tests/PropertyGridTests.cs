@@ -165,6 +165,126 @@ namespace AJut.UX.Tests
         }
     }
 
+    // ===========[ IPropertyEditManager + ShowIf test types ]==========================================
+
+    /// <summary>
+    /// Simulates the pattern: IPropertyEditManager wraps a different object and
+    /// delegates target generation to GenerateForPropertiesOf on that inner object.
+    /// ShowIf/HideIf attributes are on the inner object's properties, not the manager's.
+    /// </summary>
+    public class EditManagerShowIfSource : NotifyPropertyChanged
+    {
+        private bool m_showConditional;
+        public bool ShowConditional
+        {
+            get => m_showConditional;
+            set => this.SetAndRaiseIfChanged(ref m_showConditional, value);
+        }
+
+        [PGEditor("Text")]
+        public string AlwaysVisible { get; set; } = "Always";
+
+        [PGShowIf(nameof(ShouldShowConditional))]
+        [PGEditor("Int32")]
+        public int ConditionalValue { get; set; } = 42;
+
+        private bool ShouldShowConditional () => m_showConditional;
+    }
+
+    public class TestEditManager : IPropertyEditManager
+    {
+        private readonly EditManagerShowIfSource m_inner;
+
+        public TestEditManager (EditManagerShowIfSource inner)
+        {
+            m_inner = inner;
+        }
+
+        public EditManagerShowIfSource Inner => m_inner;
+
+        public IEnumerable<PropertyEditTarget> GenerateEditTargets ()
+        {
+            return PropertyEditTarget.GenerateForPropertiesOf(m_inner);
+        }
+    }
+
+    // ===========[ ElevateAsParent + ShowIf test types ]==========================================
+
+    public class TestWrapper<T> : NotifyPropertyChanged
+    {
+        private T m_value;
+
+        [PGElevateAsParent(deferPGAttributesToParent: true)]
+        public T Value
+        {
+            get => m_value;
+            set => this.SetAndRaiseIfChanged(ref m_value, value);
+        }
+    }
+
+    public class ElevateShowIfMethodTestSource : NotifyPropertyChanged
+    {
+        private bool m_showWrapped;
+        public bool ShowWrapped
+        {
+            get => m_showWrapped;
+            set => this.SetAndRaiseIfChanged(ref m_showWrapped, value);
+        }
+
+        [PGEditor("Text")]
+        public string AlwaysVisible { get; set; } = "Always";
+
+        [PGShowIf(nameof(ShouldShowWrapped))]
+        [PGEditor("Int32")]
+        public TestWrapper<int> ConditionalWrapped { get; set; } = new TestWrapper<int> { Value = 42 };
+
+        private bool ShouldShowWrapped () => m_showWrapped;
+    }
+
+    public class ElevateShowIfPropertyTestSource : NotifyPropertyChanged
+    {
+        private bool m_showWrapped;
+        public bool ShowWrapped
+        {
+            get => m_showWrapped;
+            set => this.SetAndRaiseIfChanged(ref m_showWrapped, value);
+        }
+
+        [PGEditor("Text")]
+        public string AlwaysVisible { get; set; } = "Always";
+
+        [PGShowIf(nameof(ShowWrapped))]
+        [PGEditor("Int32")]
+        public TestWrapper<int> ConditionalWrapped { get; set; } = new TestWrapper<int> { Value = 99 };
+    }
+
+    // ===========[ ShowIf with private method on base class ]==========================================
+
+    public class ElevateShowIfBaseClass : NotifyPropertyChanged
+    {
+        private bool m_showWrapped;
+        public bool ShowWrapped
+        {
+            get => m_showWrapped;
+            set => this.SetAndRaiseIfChanged(ref m_showWrapped, value);
+        }
+
+        [PGEditor("Text")]
+        public string AlwaysVisible { get; set; } = "Always";
+
+        [PGShowIf(nameof(ShouldShowWrapped))]
+        [PGEditor("Int32")]
+        public TestWrapper<int> ConditionalWrapped { get; set; } = new TestWrapper<int> { Value = 42 };
+
+        private bool ShouldShowWrapped () => m_showWrapped;
+    }
+
+    public class ElevateShowIfDerivedClass : ElevateShowIfBaseClass
+    {
+        [PGEditor("Text")]
+        public string ExtraProp { get; set; } = "Derived";
+    }
+
     // ===========[ Coercion tests ]==========================================
 
     [TestClass]
@@ -593,6 +713,225 @@ namespace AJut.UX.Tests
             source.ShowButton = true;
             manager.UpdateConditionalVisibility();
             Assert.IsTrue(_GetAllTargets(manager.RootNode).Any(t => t.Editor == "Button"));
+        }
+
+        // ------ ShowIf via IPropertyEditManager (delegates to inner object) ------
+
+        [TestMethod]
+        public void ShowIf_ViaEditManager_HiddenWhenConditionFalse ()
+        {
+            // The IPropertyEditManager generates targets from an inner object,
+            // but the PropertyGrid source is the manager itself. ShowIf attributes
+            // live on the inner object's type, not the manager's type.
+            var inner = new EditManagerShowIfSource { ShowConditional = false };
+            var manager = new TestEditManager(inner);
+            var pg = new SimpleTestPropertyGrid { SingleItemSource = manager };
+            var pgManager = new PropertyGridManager(pg);
+
+            pgManager.RebuildEditTargets();
+
+            var allTargets = _GetAllTargets(pgManager.RootNode);
+            Assert.IsFalse(
+                allTargets.Any(t => t.PropertyPathTarget == nameof(EditManagerShowIfSource.ConditionalValue)),
+                "ConditionalValue should be hidden when ShouldShowConditional() returns false"
+            );
+        }
+
+        [TestMethod]
+        public void ShowIf_ViaEditManager_ShownWhenConditionTrue ()
+        {
+            var inner = new EditManagerShowIfSource { ShowConditional = true };
+            var manager = new TestEditManager(inner);
+            var pg = new SimpleTestPropertyGrid { SingleItemSource = manager };
+            var pgManager = new PropertyGridManager(pg);
+
+            pgManager.RebuildEditTargets();
+
+            var allTargets = _GetAllTargets(pgManager.RootNode);
+            Assert.IsTrue(
+                allTargets.Any(t => t.PropertyPathTarget == nameof(EditManagerShowIfSource.ConditionalValue)),
+                "ConditionalValue should be visible when ShouldShowConditional() returns true"
+            );
+        }
+
+        [TestMethod]
+        public void ShowIf_ViaEditManager_TogglesCorrectly ()
+        {
+            var inner = new EditManagerShowIfSource { ShowConditional = false };
+            var manager = new TestEditManager(inner);
+            var pg = new SimpleTestPropertyGrid { SingleItemSource = manager };
+            var pgManager = new PropertyGridManager(pg);
+
+            pgManager.RebuildEditTargets();
+
+            // Initially hidden
+            Assert.IsFalse(
+                _GetAllTargets(pgManager.RootNode).Any(t => t.PropertyPathTarget == nameof(EditManagerShowIfSource.ConditionalValue)),
+                "Should be hidden initially"
+            );
+
+            // Toggle on
+            inner.ShowConditional = true;
+            bool changed = pgManager.UpdateConditionalVisibility();
+            Assert.IsTrue(changed, "Should report change");
+            Assert.IsTrue(
+                _GetAllTargets(pgManager.RootNode).Any(t => t.PropertyPathTarget == nameof(EditManagerShowIfSource.ConditionalValue)),
+                "ConditionalValue should appear after toggle on"
+            );
+
+            // Toggle off
+            inner.ShowConditional = false;
+            changed = pgManager.UpdateConditionalVisibility();
+            Assert.IsTrue(changed);
+            Assert.IsFalse(
+                _GetAllTargets(pgManager.RootNode).Any(t => t.PropertyPathTarget == nameof(EditManagerShowIfSource.ConditionalValue)),
+                "ConditionalValue should disappear after toggle off"
+            );
+        }
+
+        // ------ ShowIf + PGElevateAsParent ------
+
+        [TestMethod]
+        public void ShowIf_ElevateAsParent_HiddenWhenMethodReturnsFalse ()
+        {
+            var source = new ElevateShowIfMethodTestSource { ShowWrapped = false };
+            var pg = new SimpleTestPropertyGrid { SingleItemSource = source };
+            var manager = new PropertyGridManager(pg);
+
+            manager.RebuildEditTargets();
+
+            var allTargets = _GetAllTargets(manager.RootNode);
+            Assert.IsFalse(
+                allTargets.Any(t => t.PropertyPathTarget == nameof(ElevateShowIfMethodTestSource.ConditionalWrapped)),
+                "ConditionalWrapped should be hidden when ShouldShowWrapped() returns false"
+            );
+        }
+
+        [TestMethod]
+        public void ShowIf_ElevateAsParent_ShownWhenMethodReturnsTrue ()
+        {
+            var source = new ElevateShowIfMethodTestSource { ShowWrapped = true };
+            var pg = new SimpleTestPropertyGrid { SingleItemSource = source };
+            var manager = new PropertyGridManager(pg);
+
+            manager.RebuildEditTargets();
+
+            var allTargets = _GetAllTargets(manager.RootNode);
+            Assert.IsTrue(
+                allTargets.Any(t => t.PropertyPathTarget == nameof(ElevateShowIfMethodTestSource.ConditionalWrapped)),
+                "ConditionalWrapped should be visible when ShouldShowWrapped() returns true"
+            );
+        }
+
+        [TestMethod]
+        public void ShowIf_ElevateAsParent_TogglesCorrectly ()
+        {
+            var source = new ElevateShowIfMethodTestSource { ShowWrapped = false };
+            var pg = new SimpleTestPropertyGrid { SingleItemSource = source };
+            var manager = new PropertyGridManager(pg);
+
+            manager.RebuildEditTargets();
+
+            // Initially hidden
+            Assert.IsFalse(_GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(ElevateShowIfMethodTestSource.ConditionalWrapped)));
+
+            // Show
+            source.ShowWrapped = true;
+            bool changed = manager.UpdateConditionalVisibility();
+            Assert.IsTrue(changed, "Should report change");
+            Assert.IsTrue(
+                _GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(ElevateShowIfMethodTestSource.ConditionalWrapped)),
+                "ConditionalWrapped should appear after toggle on"
+            );
+
+            // Hide again
+            source.ShowWrapped = false;
+            changed = manager.UpdateConditionalVisibility();
+            Assert.IsTrue(changed);
+            Assert.IsFalse(
+                _GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(ElevateShowIfMethodTestSource.ConditionalWrapped)),
+                "ConditionalWrapped should disappear after toggle off"
+            );
+        }
+
+        [TestMethod]
+        public void ShowIf_ElevateAsParent_PropertyBased_TogglesCorrectly ()
+        {
+            var source = new ElevateShowIfPropertyTestSource { ShowWrapped = false };
+            var pg = new SimpleTestPropertyGrid { SingleItemSource = source };
+            var manager = new PropertyGridManager(pg);
+
+            manager.RebuildEditTargets();
+
+            // Initially hidden
+            Assert.IsFalse(_GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(ElevateShowIfPropertyTestSource.ConditionalWrapped)));
+
+            // Show
+            source.ShowWrapped = true;
+            manager.UpdateConditionalVisibility();
+            Assert.IsTrue(
+                _GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(ElevateShowIfPropertyTestSource.ConditionalWrapped)),
+                "ConditionalWrapped should appear after property-based toggle on"
+            );
+        }
+
+        // ------ ShowIf + PGElevateAsParent with derived class ------
+
+        [TestMethod]
+        public void ShowIf_ElevateAsParent_DerivedClass_HiddenWhenFalse ()
+        {
+            // The private ShouldShowWrapped() method is on the BASE class.
+            // When the runtime type is the derived class, GetMethod with NonPublic
+            // may not find private members from the base class.
+            var source = new ElevateShowIfDerivedClass { ShowWrapped = false };
+            var pg = new SimpleTestPropertyGrid { SingleItemSource = source };
+            var manager = new PropertyGridManager(pg);
+
+            manager.RebuildEditTargets();
+
+            var allTargets = _GetAllTargets(manager.RootNode);
+            Assert.IsFalse(
+                allTargets.Any(t => t.PropertyPathTarget == nameof(ElevateShowIfBaseClass.ConditionalWrapped)),
+                "ConditionalWrapped should be hidden when ShouldShowWrapped() on base returns false"
+            );
+        }
+
+        [TestMethod]
+        public void ShowIf_ElevateAsParent_DerivedClass_ShownWhenTrue ()
+        {
+            var source = new ElevateShowIfDerivedClass { ShowWrapped = true };
+            var pg = new SimpleTestPropertyGrid { SingleItemSource = source };
+            var manager = new PropertyGridManager(pg);
+
+            manager.RebuildEditTargets();
+
+            var allTargets = _GetAllTargets(manager.RootNode);
+            Assert.IsTrue(
+                allTargets.Any(t => t.PropertyPathTarget == nameof(ElevateShowIfBaseClass.ConditionalWrapped)),
+                "ConditionalWrapped should be visible when ShouldShowWrapped() on base returns true"
+            );
+        }
+
+        [TestMethod]
+        public void ShowIf_ElevateAsParent_DerivedClass_TogglesCorrectly ()
+        {
+            var source = new ElevateShowIfDerivedClass { ShowWrapped = false };
+            var pg = new SimpleTestPropertyGrid { SingleItemSource = source };
+            var manager = new PropertyGridManager(pg);
+
+            manager.RebuildEditTargets();
+
+            // Initially hidden
+            Assert.IsFalse(_GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(ElevateShowIfBaseClass.ConditionalWrapped)));
+
+            // Toggle on
+            source.ShowWrapped = true;
+            bool changed = manager.UpdateConditionalVisibility();
+            Assert.IsTrue(changed);
+            Assert.IsTrue(
+                _GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(ElevateShowIfBaseClass.ConditionalWrapped)),
+                "ConditionalWrapped should appear after toggle on via derived instance"
+            );
         }
 
         // ------ Expansion state persistence ------
