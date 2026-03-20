@@ -51,6 +51,9 @@ namespace AJutShowRoomWinUI
             this.ToggleStripFreeform.ItemsSource = new[] { "First", "Second", "Third" };
             this.ToggleStripCustom.ItemsSource = new[] { "Red", "Green", "Blue" };
 
+            // ToggleStrip enum bug repro
+            this.ToggleStripEnumBugRepro.ItemsSource = Enum.GetValues<eEditorMode>();
+
             this.AppWindow.Resize(new Windows.Graphics.SizeInt32(800, 1000));
 
             ApplicationDataContainer localSettings = ApplicationData.Current.LocalSettings;
@@ -78,6 +81,30 @@ namespace AJutShowRoomWinUI
 
 
         public App Application { get; }
+
+        // ===========[ ToggleStrip enum bug repro ]================================
+        public eEditorMode SelectedEditorMode { get; set; } = eEditorMode.Text;
+
+        private void EnumBugRepro_OnSetNumber (object sender, RoutedEventArgs e)
+        {
+            this.SelectedEditorMode = eEditorMode.Number;
+            this.ToggleStripEnumBugRepro.SelectedItem = eEditorMode.Number;
+            this.EnumBugReproStatus.Text = $"Set to Number. SelectedItem = {this.ToggleStripEnumBugRepro.SelectedItem}";
+        }
+
+        private void EnumBugRepro_OnSetColor (object sender, RoutedEventArgs e)
+        {
+            this.SelectedEditorMode = eEditorMode.Color;
+            this.ToggleStripEnumBugRepro.SelectedItem = eEditorMode.Color;
+            this.EnumBugReproStatus.Text = $"Set to Color. SelectedItem = {this.ToggleStripEnumBugRepro.SelectedItem}";
+        }
+
+        private void EnumBugRepro_OnSetText (object sender, RoutedEventArgs e)
+        {
+            this.SelectedEditorMode = eEditorMode.Text;
+            this.ToggleStripEnumBugRepro.SelectedItem = eEditorMode.Text;
+            this.EnumBugReproStatus.Text = $"Set to Text. SelectedItem = {this.ToggleStripEnumBugRepro.SelectedItem}";
+        }
 
         private void AddThemeColor(string themeColor)
         {

@@ -170,6 +170,11 @@ namespace AJut.UX.Controls
 
         private void OnItemsSourceChanged (DependencyPropertyChangedEventArgs<IEnumerable> e)
         {
+            // 1. Remember the current selection so we can restore it if the new
+            //    items contain the same value (uses Equals, not reference equality,
+            //    so boxed value types survive the round-trip).
+            object previousSelectedItem = this.SelectedItem;
+
             this.SelectedItem = null;
             if (this.SelectedItems is INotifyCollectionChanged)
             {
@@ -180,6 +185,7 @@ namespace AJut.UX.Controls
                 this.SelectedItems = new List<object>();
             }
 
+            // 2. Swap collection-changed subscriptions
             if (e.OldValue is INotifyCollectionChanged oldSource)
             {
                 oldSource.CollectionChanged -= this.ItemsSource_OnCollectionChanged;
@@ -190,6 +196,7 @@ namespace AJut.UX.Controls
                 newSource.CollectionChanged += this.ItemsSource_OnCollectionChanged;
             }
 
+            // 3. Rebuild the ToggleItem collection
             if (e.NewValue == null)
             {
                 this.Items.Clear();
@@ -201,8 +208,21 @@ namespace AJut.UX.Controls
                     e.NewValue.OfType<object>().Select(i => new ToggleItem(this, i, index++, this.DisplayPropertyPath))
                 );
 
-                // Select the first item by default if not allowing empty selection
-                if (this.Items.Count > 0 && (this.SelectedItems == null || this.SelectedItems.Count == 0) && !this.AllowNoSelection)
+                // 4. Try to restore the previous selection (value-based match)
+                if (previousSelectedItem != null)
+                {
+                    ToggleItem match = this.Items.FirstOrDefault(ti => Equals(ti.Data, previousSelectedItem));
+                    if (match != null)
+                    {
+                        match.IsSelected = true;
+                        return;
+                    }
+                }
+
+                // 5. Fall back: select the first item if not allowing empty selection
+                if (this.Items.Count > 0
+                    && (this.SelectedItems == null || this.SelectedItems.Count == 0)
+                    && !this.AllowNoSelection)
                 {
                     this.Items[0].IsSelected = true;
                 }
@@ -251,7 +271,7 @@ namespace AJut.UX.Controls
                 return;
             }
 
-            ToggleItem newlySelected = this.Items.FirstOrDefault(ti => ti.Data == e.NewValue);
+            ToggleItem newlySelected = this.Items.FirstOrDefault(ti => Equals(ti.Data, e.NewValue));
             if (newlySelected != null)
             {
                 newlySelected.IsSelected = true;
@@ -604,7 +624,7 @@ namespace AJut.UX.Controls
                 if (m_owner.SelectedItems is INotifyCollectionChanged)
                 {
                     m_owner.SelectedItems.Remove(toggleItem.Data);
-                    if (m_owner.SelectedItem == toggleItem.Data)
+                    if (Equals(m_owner.SelectedItem, toggleItem.Data))
                     {
                         m_owner.SelectedItem = m_owner.SelectedItems.OfType<object>().LastOrDefault();
                     }
@@ -612,7 +632,7 @@ namespace AJut.UX.Controls
                 else if (m_owner.SelectedItems != null)
                 {
                     m_owner.SelectedItems = m_owner.SelectedItems.OfType<object>()
-                        .Where(i => i != toggleItem.Data)
+                        .Where(i => !Equals(i, toggleItem.Data))
                         .ToList<object>();
                 }
             }
