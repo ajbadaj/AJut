@@ -534,6 +534,49 @@ namespace AJutShowRoomWinUI
 
         // ------ PGList with custom editor cascade demo ------
 
+        // ------ External array replacement test ------
+        // Models a real-life usage scenario where I noticed things broke.
+        // Click "Swap List Externally" to replace the array.
+        [PGList(AddMethodName = nameof(AddExternalItem))]
+        [PGGroup("Lists")]
+        public string[] ExternallyReplacedList
+        {
+            get => m_externalList;
+            set
+            {
+                m_externalList = value;
+                this.RaisePropertyChanged(nameof(ExternallyReplacedList));
+            }
+        }
+
+        private string[] m_externalList = ["initial-a", "initial-b", "initial-c"];
+
+        private void AddExternalItem ()
+        {
+            this.ExternallyReplacedList = [.. this.ExternallyReplacedList, $"added-{this.ExternallyReplacedList.Length}"];
+        }
+
+        [PGButton("Swap to 2 items")]
+        [PGGroup("Lists")]
+        public void SwapExternalListToTwo ()
+        {
+            this.ExternallyReplacedList = ["swapped-x", "swapped-y"];
+        }
+
+        [PGButton("Swap to empty")]
+        [PGGroup("Lists")]
+        public void SwapExternalListToEmpty ()
+        {
+            this.ExternallyReplacedList = [];
+        }
+
+        [PGButton("Swap to 5 items")]
+        [PGGroup("Lists")]
+        public void SwapExternalListToFive ()
+        {
+            this.ExternallyReplacedList = ["a", "b", "c", "d", "e"];
+        }
+
         [PGList]
         [PGEditor("WidgetEditor")]
         [PGGroup("Lists")]
@@ -626,7 +669,7 @@ namespace AJutShowRoomWinUI
 
     }
 
-    // ===========[ ShowRoomBeta - 2 properties (mirrors CF "Particles" with fewer fields) ]=====
+    // ===========[ ShowRoomBeta - 2 properties ]=====
     // Switching Alpha→Beta: 5 rows → 2 rows, container count mismatch triggers WinUI3 recycling.
     // After switch the grid must show X=777, Y=888 - NOT Alpha's 111/222.
     public class ShowRoomBeta

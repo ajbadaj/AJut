@@ -271,7 +271,10 @@ namespace AJut.UX.Controls
 
         private void OnSourceItemPropertyChanged (object sender, PropertyChangedEventArgs e)
         {
-            foreach (var item in m_manager.Items.Where(i => i.ShouldEvaluateFor(e.PropertyName)))
+            // Snapshot: RecacheEditValue on list targets may rebuild children,
+            // which modifies the Items collection during enumeration.
+            var items = m_manager.Items.Where(i => i.ShouldEvaluateFor(e.PropertyName)).ToArray();
+            foreach (var item in items)
             {
                 item.RecacheEditValue();
             }
