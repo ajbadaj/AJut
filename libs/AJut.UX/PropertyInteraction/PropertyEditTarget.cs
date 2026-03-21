@@ -244,7 +244,12 @@ namespace AJut.UX.PropertyInteraction
 
         public void RecacheEditValue()
         {
-            this.SetEditValue(m_getValue());
+            bool changed = this.SetEditValue(m_getValue());
+            if (changed && this.IsListEditor && this.EditContext is PropertyGridListContext listContext)
+            {
+                listContext.OnExternalCollectionReplaced();
+            }
+
             m_elevatedChildTarget?.RecacheEditValue();
         }
 

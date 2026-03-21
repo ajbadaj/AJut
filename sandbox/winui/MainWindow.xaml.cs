@@ -534,6 +534,49 @@ namespace AJutShowRoomWinUI
 
         // ------ PGList with custom editor cascade demo ------
 
+        // ------ External array replacement test ------
+        // Simulates the CF pattern: VM property backed by scene data that gets
+        // swapped out externally. Click "Swap List Externally" to replace the array.
+        [PGList(AddMethodName = nameof(AddExternalItem))]
+        [PGGroup("Lists")]
+        public string[] ExternallyReplacedList
+        {
+            get => m_externalList;
+            set
+            {
+                m_externalList = value;
+                this.RaisePropertyChanged(nameof(ExternallyReplacedList));
+            }
+        }
+
+        private string[] m_externalList = ["initial-a", "initial-b", "initial-c"];
+
+        private void AddExternalItem ()
+        {
+            this.ExternallyReplacedList = [.. this.ExternallyReplacedList, $"added-{this.ExternallyReplacedList.Length}"];
+        }
+
+        [PGButton("Swap to 2 items")]
+        [PGGroup("Lists")]
+        public void SwapExternalListToTwo ()
+        {
+            this.ExternallyReplacedList = ["swapped-x", "swapped-y"];
+        }
+
+        [PGButton("Swap to empty")]
+        [PGGroup("Lists")]
+        public void SwapExternalListToEmpty ()
+        {
+            this.ExternallyReplacedList = [];
+        }
+
+        [PGButton("Swap to 5 items")]
+        [PGGroup("Lists")]
+        public void SwapExternalListToFive ()
+        {
+            this.ExternallyReplacedList = ["a", "b", "c", "d", "e"];
+        }
+
         [PGList]
         [PGEditor("WidgetEditor")]
         [PGGroup("Lists")]

@@ -1049,6 +1049,25 @@ namespace AJut.UX.Tests
         public int Value { get; set; }
     }
 
+    /// Source type for testing external array replacement on a [PGList] property.
+    /// Simulates the pattern in Call Familiar where AspectEditorViewModel.AspectAnimationTimelines
+    /// returns a different array when the underlying scene data changes, and raises PropertyChanged.
+    public class ExternalArrayReplaceSource : NotifyPropertyChanged
+    {
+        private string[] m_items = ["alpha", "beta", "gamma"];
+
+        [PGList]
+        public string[] Items
+        {
+            get => m_items;
+            set
+            {
+                m_items = value;
+                this.RaisePropertyChanged(nameof(Items));
+            }
+        }
+    }
+
     // ===========[ PGList tests ]==========================================
 
     [TestClass]
@@ -1341,6 +1360,78 @@ namespace AJut.UX.Tests
             var nameTarget = targets.First(t => t.PropertyPathTarget == nameof(ListTestSource.Name));
             Assert.IsFalse(nameTarget.IsListEditor);
             Assert.AreEqual("String", nameTarget.Editor);
+        }
+
+        // ------ External array replacement ------
+        // These tests simulate the pattern where a VM property returns a different
+        // array after its backing data changes, and raises PropertyChanged. The PG
+        // should rebuild list children to reflect the new array contents.
+
+        [TestMethod]
+        public void List_ExternalArrayReplace_ChildrenRebuild ()
+        {
+            // 1. Build targets from initial 3-element array
+            var source = new ExternalArrayReplaceSource();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(source).ToList();
+
+            var listTarget = targets.First(t => t.PropertyPathTarget == nameof(ExternalArrayReplaceSource.Items));
+            var context = listTarget.EditContext as PropertyGridListContext;
+
+            Assert.AreEqual(3, listTarget.Children.Count, "Initial: should have 3 children");
+            Assert.AreEqual(3, context.ElementCount, "Initial: context should show 3");
+
+            // 2. Externally replace the array (simulates scene data swap)
+            source.Items = ["one", "two"];
+
+            // 3. Simulate what PropertyGrid.OnSourceItemPropertyChanged does:
+            //    it calls RecacheEditValue on the matching target.
+            listTarget.RecacheEditValue();
+
+            // 4. Verify children rebuilt to match new array.
+            Assert.AreEqual(2, listTarget.Children.Count, "After replace: should have 2 children");
+            Assert.AreEqual(2, context.ElementCount, "After replace: context should show 2");
+
+            var child0 = listTarget.Children[0] as PropertyEditTarget;
+            child0.Setup();
+            Assert.AreEqual("one", child0.EditValue, "First child should be 'one'");
+        }
+
+        [TestMethod]
+        public void List_ExternalArrayReplace_EmptyArrayClearsChildren ()
+        {
+            var source = new ExternalArrayReplaceSource();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(source).ToList();
+
+            var listTarget = targets.First(t => t.PropertyPathTarget == nameof(ExternalArrayReplaceSource.Items));
+            var context = listTarget.EditContext as PropertyGridListContext;
+
+            Assert.AreEqual(3, listTarget.Children.Count, "Initial: should have 3 children");
+
+            // Replace with empty array, then simulate PG recache
+            source.Items = [];
+            listTarget.RecacheEditValue();
+
+            Assert.AreEqual(0, listTarget.Children.Count, "After empty replace: should have 0 children");
+            Assert.AreEqual(0, context.ElementCount, "After empty replace: context should show 0");
+        }
+
+        [TestMethod]
+        public void List_ExternalArrayReplace_FromEmptyToPopulated ()
+        {
+            // Start with empty array
+            var source = new ExternalArrayReplaceSource();
+            source.Items = [];
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(source).ToList();
+
+            var listTarget = targets.First(t => t.PropertyPathTarget == nameof(ExternalArrayReplaceSource.Items));
+
+            Assert.AreEqual(0, listTarget.Children.Count, "Initial: should have 0 children");
+
+            // Externally populate, then simulate PG recache
+            source.Items = ["x", "y", "z", "w"];
+            listTarget.RecacheEditValue();
+
+            Assert.AreEqual(4, listTarget.Children.Count, "After populate: should have 4 children");
         }
 
         // ------ Helper ------

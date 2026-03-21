@@ -223,6 +223,14 @@ namespace AJut.UX.PropertyInteraction
 
         public object GetCollection () => m_property.GetValue(m_sourceItem);
 
+        /// Called when the backing collection is replaced externally (not through
+        /// Add/Remove/Reorder). Re-reads the collection from the source property
+        /// and rebuilds the child targets to match.
+        public void OnExternalCollectionReplaced ()
+        {
+            this.OnCollectionModified();
+        }
+
         // ===========[ Private helpers ]==========================================
 
         private void OnCollectionModified ()
