@@ -535,8 +535,8 @@ namespace AJutShowRoomWinUI
         // ------ PGList with custom editor cascade demo ------
 
         // ------ External array replacement test ------
-        // Simulates the CF pattern: VM property backed by scene data that gets
-        // swapped out externally. Click "Swap List Externally" to replace the array.
+        // Models a real-life usage scenario where I noticed things broke.
+        // Click "Swap List Externally" to replace the array.
         [PGList(AddMethodName = nameof(AddExternalItem))]
         [PGGroup("Lists")]
         public string[] ExternallyReplacedList
@@ -669,7 +669,7 @@ namespace AJutShowRoomWinUI
 
     }
 
-    // ===========[ ShowRoomBeta - 2 properties (mirrors CF "Particles" with fewer fields) ]=====
+    // ===========[ ShowRoomBeta - 2 properties ]=====
     // Switching Alpha→Beta: 5 rows → 2 rows, container count mismatch triggers WinUI3 recycling.
     // After switch the grid must show X=777, Y=888 - NOT Alpha's 111/222.
     public class ShowRoomBeta
