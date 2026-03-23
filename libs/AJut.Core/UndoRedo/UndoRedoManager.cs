@@ -4,7 +4,6 @@
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
-    using AJut.Storage;
 
     /// <summary>
     /// Storage and management of <see cref="IUndoableAction"/> actions
@@ -37,7 +36,39 @@
         public ReadOnlyObservableCollection<IUndoableAction> RedoStack { get; }
 
         // ============== [Methods] ================
-        
+
+        public void Clear()
+        {
+            this.ClearUndos();
+            this.ClearRedos();
+        }
+
+        public void ClearUndos()
+        {
+            bool anyUndos = this.AnyRedos;
+            m_undoStack.Clear();
+
+            // AnyRedos will change if there used to be any (adding actions kills the redo stack, 
+            //  because now we've changed the future)
+            if (anyUndos)
+            {
+                this.RaisePropertiesChanged(nameof(AnyUndos));
+            }
+        }
+
+        public void ClearRedos()
+        {
+            bool anyRedos = this.AnyRedos;
+            m_redoStack.Clear();
+
+            // AnyRedos will change if there used to be any (adding actions kills the redo stack, 
+            //  because now we've changed the future)
+            if (anyRedos)
+            {
+                this.RaisePropertiesChanged(nameof(AnyRedos));
+            }
+        }
+
         /// <summary>
         /// Creates a substack, substacks executes, can undo, redo, everything. They can be 
         /// commited back to the mainstack, though when that is done they are not interleaved,
@@ -187,22 +218,14 @@
             }
 
             stack.m_undoStack.Insert(0, action);
-            stack.m_redoStack.Clear();
+            stack.ClearRedos();
 
             // AnyUndos will change if we're adding the first one
             bool anyUndosChange = stack.m_undoStack.Count == 1;
 
-            // AnyRedos will change if there used to be any (adding actions kills the redo stack, 
-            //  because now we've changed the future)
-            bool anyRedosChange = stack.AnyRedos;
-
             if (anyUndosChange)
             {
                 stack.RaisePropertiesChanged(nameof(AnyUndos));
-            }
-            if (anyRedosChange)
-            {
-                stack.RaisePropertiesChanged(nameof(AnyRedos));
             }
         }
 
