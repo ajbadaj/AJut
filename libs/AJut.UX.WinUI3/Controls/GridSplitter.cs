@@ -49,8 +49,9 @@ namespace AJut.UX.Controls
         private bool m_resizesColumns;
         private bool m_isDragging;
         private double m_dragStart;
-        private double m_beforeSize;
-        private double m_afterSize;
+        private double m_beforePixels;
+        private double m_afterPixels;
+        private double m_totalStar;
 
         // ===========[ Construction ]=========================================
         public GridSplitter()
@@ -115,14 +116,18 @@ namespace AJut.UX.Controls
             if (m_resizesColumns)
             {
                 m_dragStart = pt.Position.X;
-                m_beforeSize = m_parentGrid.ColumnDefinitions[m_anteriorDefinitionIndex].ActualWidth;
-                m_afterSize = m_parentGrid.ColumnDefinitions[m_posteriorDefinitionIndex].ActualWidth;
+                m_beforePixels = m_parentGrid.ColumnDefinitions[m_anteriorDefinitionIndex].ActualWidth;
+                m_afterPixels = m_parentGrid.ColumnDefinitions[m_posteriorDefinitionIndex].ActualWidth;
+                m_totalStar = m_parentGrid.ColumnDefinitions[m_anteriorDefinitionIndex].Width.Value
+                            + m_parentGrid.ColumnDefinitions[m_posteriorDefinitionIndex].Width.Value;
             }
             else
             {
                 m_dragStart = pt.Position.Y;
-                m_beforeSize = m_parentGrid.RowDefinitions[m_anteriorDefinitionIndex].ActualHeight;
-                m_afterSize = m_parentGrid.RowDefinitions[m_posteriorDefinitionIndex].ActualHeight;
+                m_beforePixels = m_parentGrid.RowDefinitions[m_anteriorDefinitionIndex].ActualHeight;
+                m_afterPixels = m_parentGrid.RowDefinitions[m_posteriorDefinitionIndex].ActualHeight;
+                m_totalStar = m_parentGrid.RowDefinitions[m_anteriorDefinitionIndex].Height.Value
+                            + m_parentGrid.RowDefinitions[m_posteriorDefinitionIndex].Height.Value;
             }
 
             e.Handled = true;
@@ -142,18 +147,22 @@ namespace AJut.UX.Controls
             if (m_resizesColumns)
             {
                 double delta = pt.Position.X - m_dragStart;
-                double newBefore = Math.Max(minSize, m_beforeSize + delta);
-                double newAfter = Math.Max(minSize, m_afterSize - delta);
-                m_parentGrid.ColumnDefinitions[m_anteriorDefinitionIndex].Width = new GridLength(newBefore, GridUnitType.Star);
-                m_parentGrid.ColumnDefinitions[m_posteriorDefinitionIndex].Width = new GridLength(newAfter, GridUnitType.Star);
+                double desiredBefore = Math.Max(minSize, m_beforePixels + delta);
+                double desiredAfter = Math.Max(minSize, m_afterPixels - delta);
+                double desiredTotal = desiredBefore + desiredAfter;
+                double ratio = desiredBefore / desiredTotal;
+                m_parentGrid.ColumnDefinitions[m_anteriorDefinitionIndex].Width = new GridLength(m_totalStar * ratio, GridUnitType.Star);
+                m_parentGrid.ColumnDefinitions[m_posteriorDefinitionIndex].Width = new GridLength(m_totalStar * (1.0 - ratio), GridUnitType.Star);
             }
             else
             {
                 double delta = pt.Position.Y - m_dragStart;
-                double newBefore = Math.Max(minSize, m_beforeSize + delta);
-                double newAfter = Math.Max(minSize, m_afterSize - delta);
-                m_parentGrid.RowDefinitions[m_anteriorDefinitionIndex].Height = new GridLength(newBefore, GridUnitType.Star);
-                m_parentGrid.RowDefinitions[m_posteriorDefinitionIndex].Height = new GridLength(newAfter, GridUnitType.Star);
+                double desiredBefore = Math.Max(minSize, m_beforePixels + delta);
+                double desiredAfter = Math.Max(minSize, m_afterPixels - delta);
+                double desiredTotal = desiredBefore + desiredAfter;
+                double ratio = desiredBefore / desiredTotal;
+                m_parentGrid.RowDefinitions[m_anteriorDefinitionIndex].Height = new GridLength(m_totalStar * ratio, GridUnitType.Star);
+                m_parentGrid.RowDefinitions[m_posteriorDefinitionIndex].Height = new GridLength(m_totalStar * (1.0 - ratio), GridUnitType.Star);
             }
 
             e.Handled = true;
