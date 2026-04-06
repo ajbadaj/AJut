@@ -57,6 +57,10 @@
     public sealed class BooleanInverseConverter : BooleanConverter<bool>
     {
         public BooleanInverseConverter () : base(false, true) { }
+        protected override bool ConvertBack(bool convertedValue)
+        {
+            return !convertedValue;
+        }
     }
 
     public sealed class BooleanToDoubleConverter : BooleanConverter<double>
