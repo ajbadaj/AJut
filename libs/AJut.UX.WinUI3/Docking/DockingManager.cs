@@ -88,13 +88,20 @@ namespace AJut.UX.Docking
         {
             this.CloseAll(force: true);
 
+            // Unsubscribe from root window events to break the reference chain
+            // that keeps this DockingManager (and everything it references) alive
+            // as long as the root window exists.
+            this.RootWindow.Closed -= this.OnRootWindowClosed;
+            this.RootWindow.Activated -= this.OnRootWindowActivated;
+            ((INotifyCollectionChanged)m_windowManager).CollectionChanged -= this.OnWindowManagerCollectionChanged;
+
             this.CreateNewTearoffWindowHandler = null;
             this.ShowTearoffWindowHandler = null;
 
             foreach (DockZone zone in m_rootDockZones)
             {
-                zone.Loaded += this.MainWindowDockZone_Loaded;
-                zone.Unloaded += this.MainWindowDockZone_Unloaded;
+                zone.Loaded -= this.MainWindowDockZone_Loaded;
+                zone.Unloaded -= this.MainWindowDockZone_Unloaded;
             }
 
             m_rootDockZones.Clear();
