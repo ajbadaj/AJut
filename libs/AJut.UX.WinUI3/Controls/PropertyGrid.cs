@@ -320,6 +320,15 @@ namespace AJut.UX.Controls
             {
                 m_manager.Dispose();
                 this.PropertyTreeItems = null;
+
+                // PropertyTreeItems is not TemplateBind'd to the inner FlatTreeListControl -
+                // RebuildEditTargets is what normally pushes it. When the source transitions
+                // to null we must push the clear through by hand, otherwise the inner list
+                // keeps rendering its prior rows.
+                if (this.PART_TreeList != null)
+                {
+                    this.PART_TreeList.RootItemsSource = null;
+                }
             }
         }
 
@@ -352,6 +361,11 @@ namespace AJut.UX.Controls
             {
                 m_manager.Dispose();
                 this.PropertyTreeItems = null;
+
+                if (this.PART_TreeList != null)
+                {
+                    this.PART_TreeList.RootItemsSource = null;
+                }
             }
         }
 

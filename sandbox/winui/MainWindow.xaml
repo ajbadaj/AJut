@@ -613,6 +613,8 @@
                                             Click="PGSource_OnComplexClicked"/>
                                     <Button Content="Set Elevated Values" Click="PGSource_OnSetElevatedClicked"
                                             ToolTipService.ToolTip="Sets elevated property values externally - tests RecacheEditValue cascade"/>
+                                    <Button x:Name="PG_NoneButton" Content="None (Empty)"
+                                            Click="PGSource_OnNoneClicked"/>
                                 </StackPanel>
 
                                 <TextBlock Grid.Row="1" Grid.Column="0" Text="PropertyGrid - switch sources above to test live refresh" FontStyle="Italic" Margin="0,0,0,8"/>

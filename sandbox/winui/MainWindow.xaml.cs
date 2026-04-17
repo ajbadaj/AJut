@@ -233,6 +233,11 @@ namespace AJutShowRoomWinUI
             this.SetPGSource(m_complexObj);
         }
 
+
+        private void PGSource_OnNoneClicked(object sender, RoutedEventArgs e)
+        {
+            this.SetPGSource(null);
+        }
         private void TestPropertyGrid_OnPropertyTreeChanged(object sender, EventArgs e)
         {
             this.ResetJsonDisplay();
