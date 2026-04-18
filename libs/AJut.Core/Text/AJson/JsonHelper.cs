@@ -311,8 +311,21 @@
                 {
                     outputInstance = AJutActivator.CreateInstanceOf(type);
 
+                    // Backward-compat: if the json is still the old non-elevated shape (a doc that
+                    //  contains the elevated property as an entry), pull that entry's value. Otherwise
+                    //  treat the whole json value as the elevated value (the new, elevated shape).
+                    JsonValue elevatedSource = sourceJsonValue;
+                    if (sourceJsonValue is JsonDocument sourceDoc)
+                    {
+                        JsonValue match = sourceDoc.ValueFor(elevatedPropertyName);
+                        if (match != null)
+                        {
+                            elevatedSource = match;
+                        }
+                    }
+
                     // Basically forward the json value onto building the child, and set value of that to the output instance
-                    object childInstance = BuildObjectForJson(targetProp.PropertyType, sourceJsonValue, settings);
+                    object childInstance = BuildObjectForJson(targetProp.PropertyType, elevatedSource, settings);
                     targetProp.SetValue(outputInstance, childInstance);
 
                     return outputInstance;
@@ -680,6 +693,14 @@
 
                 object _sourceValue = _propInfo.GetValue(_propSource);
 
+                // Skip properties marked to omit on default -- read path ignores the attribute,
+                //  so older files that still include the property value round-trip correctly.
+                if (_propInfo.GetCustomAttribute<JsonOmitIfDefaultAttribute>() != null
+                    && _IsDefaultForType(_propInfo.PropertyType, _sourceValue))
+                {
+                    return;
+                }
+
                 if (_sourceValue != null)
                 {
                     var runtimeTypeEval = _propInfo.GetAttributes<JsonRuntimeTypeEvalAttribute>()?.FirstOrDefault();
@@ -700,6 +721,24 @@
                         FillOutJsonBuilderForObject(_sourceValue, propertyBuilder);
                     }
                 }
+            }
+
+            bool _IsDefaultForType (Type _type, object _value)
+            {
+                if (_value == null)
+                {
+                    return true;
+                }
+
+                // For value types, compare against the type's default instance (structs boxed once).
+                //  For reference types, null is already handled above, so any other value is non-default.
+                if (_type.IsValueType)
+                {
+                    object _defaultInstance = Activator.CreateInstance(_type);
+                    return _value.Equals(_defaultInstance);
+                }
+
+                return false;
             }
 
             bool _CheckForSettingsRegisteredSimpleValue (Type _type, object _instance, out bool _isUsuallyQuoted, out string simplifiedStringValue)

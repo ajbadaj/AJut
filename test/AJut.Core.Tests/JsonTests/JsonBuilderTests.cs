@@ -242,6 +242,119 @@
         }
 
         [TestMethod]
+        public void AJson_JsonBuilding_JsonPropertyAsSelf_ReadsLegacyWrappedShape_SimpleInner ()
+        {
+            // Legacy / hand-written files may still carry the pre-elevation shape where the
+            //  elevated property is written as a named entry. The reader should unwrap it.
+            Json legacyJson = JsonHelper.ParseText("{ SuperAwesomeInt: { Value: 7 } }");
+            Assert.IsFalse(legacyJson.HasErrors, legacyJson.GetErrorReport());
+
+            var result = JsonHelper.BuildObjectForJson<ThingThatHoldsElevator>(legacyJson);
+            Assert.IsNotNull(result);
+            Assert.IsNotNull(result.SuperAwesomeInt);
+            Assert.AreEqual(7, result.SuperAwesomeInt.Value);
+        }
+
+        [TestMethod]
+        public void AJson_JsonBuilding_JsonPropertyAsSelf_RoundTrip_ComplexInner ()
+        {
+            // The elevated inner is a full document (not a simple type) so the written shape
+            //  is the inner's own document flattened in place of the outer property.
+            var thing = new HolderOfComplexElevator
+            {
+                Payload = new ElevatedComplex { Inner = new Inner { A = 11, B = "eleven" } }
+            };
+
+            Json json = JsonHelper.BuildJsonForObject(thing);
+            Assert.IsFalse(json.HasErrors, json.GetErrorReport());
+
+            string text = json.Data.ToString();
+            // "Payload" is the outer holder's property and still has to be present, but "Inner"
+            //  should be elevated away - what lives under Payload should be Inner's own shape.
+            Assert.IsTrue(text.Contains("Payload"), "Outer holder's property key should still be present.");
+            Assert.IsFalse(text.Contains("Inner"), "Inner should be elevated, not present as a key inside Payload.");
+
+            var roundTripped = JsonHelper.BuildObjectForJson<HolderOfComplexElevator>(json);
+            Assert.IsNotNull(roundTripped.Payload);
+            Assert.IsNotNull(roundTripped.Payload.Inner);
+            Assert.AreEqual(11, roundTripped.Payload.Inner.A);
+            Assert.AreEqual("eleven", roundTripped.Payload.Inner.B);
+        }
+
+        [TestMethod]
+        public void AJson_JsonBuilding_OmitIfDefault_DefaultValuesAreSkipped ()
+        {
+            var thing = new ThingWithOmittable();
+            Json json = JsonHelper.BuildJsonForObject(thing);
+            Assert.IsFalse(json.HasErrors, json.GetErrorReport());
+
+            Assert.IsTrue(json.Data.IsDocument);
+            var doc = (JsonDocument)json.Data;
+
+            // All three properties are at their type default, so all three should be omitted.
+            Assert.IsNull(doc.ValueFor(nameof(ThingWithOmittable.Number)), "Default int should be omitted.");
+            Assert.IsNull(doc.ValueFor(nameof(ThingWithOmittable.Flag)), "Default bool should be omitted.");
+            Assert.IsNull(doc.ValueFor(nameof(ThingWithOmittable.Label)), "Null string should be omitted.");
+
+            // Always-written prop should still be there to prove we didn't strip everything.
+            Assert.IsNotNull(doc.ValueFor(nameof(ThingWithOmittable.AlwaysWritten)));
+        }
+
+        [TestMethod]
+        public void AJson_JsonBuilding_OmitIfDefault_NonDefaultValuesArePresent ()
+        {
+            var thing = new ThingWithOmittable
+            {
+                Number = 42,
+                Flag = true,
+                Label = "hi",
+            };
+            Json json = JsonHelper.BuildJsonForObject(thing);
+            Assert.IsFalse(json.HasErrors, json.GetErrorReport());
+
+            var doc = (JsonDocument)json.Data;
+            Assert.AreEqual("42", doc.ValueFor(nameof(ThingWithOmittable.Number)).StringValue);
+            Assert.AreEqual("true", doc.ValueFor(nameof(ThingWithOmittable.Flag)).StringValue);
+            Assert.AreEqual("hi", doc.ValueFor(nameof(ThingWithOmittable.Label)).StringValue);
+        }
+
+        [TestMethod]
+        public void AJson_JsonBuilding_OmitIfDefault_ReadStillAcceptsExplicitDefaults ()
+        {
+            // The read path should be unchanged - files that still carry the default value
+            //  must round-trip to the same default, not fail or be skipped on read.
+            Json json = JsonHelper.ParseText("{ Number: 0, Flag: false, AlwaysWritten: 5 }");
+            Assert.IsFalse(json.HasErrors, json.GetErrorReport());
+
+            var result = JsonHelper.BuildObjectForJson<ThingWithOmittable>(json);
+            Assert.IsNotNull(result);
+            Assert.AreEqual(0, result.Number);
+            Assert.AreEqual(false, result.Flag);
+            Assert.AreEqual(5, result.AlwaysWritten);
+        }
+
+        [TestMethod]
+        public void AJson_JsonBuilding_OmitIfDefault_RoundTrip_MixedDefaults ()
+        {
+            var original = new ThingWithOmittable
+            {
+                Number = 0,          // default, will be omitted
+                Flag = true,         // non-default, will be present
+                Label = null,        // default, will be omitted
+                AlwaysWritten = 99,
+            };
+
+            Json json = JsonHelper.BuildJsonForObject(original);
+            Assert.IsFalse(json.HasErrors, json.GetErrorReport());
+
+            var rebuilt = JsonHelper.BuildObjectForJson<ThingWithOmittable>(json);
+            Assert.AreEqual(0, rebuilt.Number);
+            Assert.AreEqual(true, rebuilt.Flag);
+            Assert.IsNull(rebuilt.Label);
+            Assert.AreEqual(99, rebuilt.AlwaysWritten);
+        }
+
+        [TestMethod]
         public void AJson_JsonBuilding_CanBuildListFromArrays ()
         {
             Json json = JsonHelper.ParseText("[ { StringThing: \"Foo\", IntThing: 1}, { StringThing: \"Bar\", IntThing: 2}]");
@@ -462,6 +575,37 @@
             public OnlyCareAboutValue () { }
             public OnlyCareAboutValue (T value) { this.Value = value; }
             public T Value { get; set; }
+        }
+
+        public class HolderOfComplexElevator
+        {
+            public ElevatedComplex Payload { get; set; }
+        }
+
+        [JsonPropertyAsSelf("Inner")]
+        public class ElevatedComplex
+        {
+            public Inner Inner { get; set; } = new Inner();
+        }
+
+        public class Inner
+        {
+            public int A { get; set; }
+            public string B { get; set; }
+        }
+
+        public class ThingWithOmittable
+        {
+            [JsonOmitIfDefault]
+            public int Number { get; set; }
+
+            [JsonOmitIfDefault]
+            public bool Flag { get; set; }
+
+            [JsonOmitIfDefault]
+            public string Label { get; set; }
+
+            public int AlwaysWritten { get; set; }
         }
 
         public class ThingWithDerived
