@@ -85,6 +85,11 @@ namespace AJutShowRoomWinUI
         // ===========[ ToggleStrip enum bug repro ]================================
         public eEditorMode SelectedEditorMode { get; set; } = eEditorMode.Text;
 
+        // ===========[ EnumToggleStrip showcase ]====================================
+        public eDisplayMode DisplayMode { get; set; } = eDisplayMode.Standard;
+        public eToppings Toppings { get; set; } = eToppings.Cheese | eToppings.Pepperoni;
+        public eExclusionDemo ExclusionPick { get; set; } = eExclusionDemo.Visible1;
+
         private void EnumBugRepro_OnSetNumber (object sender, RoutedEventArgs e)
         {
             this.SelectedEditorMode = eEditorMode.Number;
@@ -200,6 +205,48 @@ namespace AJutShowRoomWinUI
         public ShowRoomTreeNode TreeRoot { get; } = ShowRoomTreeNode.Build();
         public ShowRoomTreeNode DragDropTreeRoot { get; } = ShowRoomTreeNode.BuildDragDropDemo();
 
+        // ===========[ SetSelection sandbox scenario ]===========================
+        // Exercises FlatTreeListControl.SetSelection on an Extended-mode tree.
+        // Expected: all requested rows highlight (4px accent strip), and
+        // SelectedItems.Count matches the requested set.
+        private void SetSelectionScattered_OnClick (object sender, RoutedEventArgs e)
+        {
+            var items = this.DragDropTree.Items
+                .Where(i => i.Source is ShowRoomTreeNode node
+                    && (node.NodeName == "Camera" || node.NodeName == "Textures" || node.NodeName == "GameManager"))
+                .ToArray();
+            this.DragDropTree.SetSelection(items);
+        }
+
+        private void SetSelectionScenesDescendants_OnClick (object sender, RoutedEventArgs e)
+        {
+            // Select every descendant of the "Scenes" node - expected to be several rows.
+            var scenes = this.DragDropTree.Items
+                .FirstOrDefault(i => i.Source is ShowRoomTreeNode node && node.NodeName == "Scenes");
+            if (scenes == null)
+            {
+                return;
+            }
+
+            var toSelect = this.DragDropTree.Items
+                .Where(i => i.Parent == scenes || (i.Parent != null && i.Parent.Parent == scenes))
+                .ToArray();
+            this.DragDropTree.SetSelection(toSelect);
+        }
+
+        private void SetSelectionEmpty_OnClick (object sender, RoutedEventArgs e)
+        {
+            this.DragDropTree.SetSelection(Array.Empty<FlatTreeItem>());
+        }
+
+        private void DragDropTree_OnSelectionChanged (object sender, SelectionChange<FlatTreeItem> e)
+        {
+            if (this.SetSelectionStatus != null)
+            {
+                this.SetSelectionStatus.Text = $"SelectedItems.Count = {this.DragDropTree.SelectedItems.Count}";
+            }
+        }
+
         // Source swap test objects.
         // ShowRoomAlpha (5 props) → ShowRoomBeta (2 props) replicates an external scenario:
         //   - same float property names (X, Y) but very different values so mismatch is obvious
@@ -208,6 +255,7 @@ namespace AJutShowRoomWinUI
         private readonly ShowRoomAlpha m_alphaObj = new ShowRoomAlpha();
         private readonly ShowRoomBeta m_betaObj = new ShowRoomBeta();
         private readonly ShowRoomTester m_complexObj = new ShowRoomTester();
+        private readonly WrappedModeMatrixSource m_wrappedMatrixObj = new WrappedModeMatrixSource();
         private object m_currentPGTestObj;
 
         private void SetPGSource (object obj)
@@ -220,6 +268,83 @@ namespace AJutShowRoomWinUI
         private void PGSource_OnAlphaClicked (object sender, RoutedEventArgs e) => this.SetPGSource(m_alphaObj);
         private void PGSource_OnBetaClicked (object sender, RoutedEventArgs e) => this.SetPGSource(m_betaObj);
         private void PGSource_OnComplexClicked (object sender, RoutedEventArgs e) => this.SetPGSource(m_complexObj);
+        private void PGSource_OnWrappedMatrixClicked (object sender, RoutedEventArgs e)
+        {
+            this.SetPGSource(m_wrappedMatrixObj);
+            this.AttachMatrixDiagnostics();
+        }
+
+        // Directly poke the wrapper's Value - simulates the consumer scenario where an
+        // enum-behind-a-wrapper changes without the outer object's INPC firing, and
+        // several PGShowIf-gated rows have to re-evaluate in response.
+        private void PGMatrix_SetModeA (object sender, RoutedEventArgs e) => this.CycleMatrixMode(eMatrixMode.A);
+        private void PGMatrix_SetModeB (object sender, RoutedEventArgs e) => this.CycleMatrixMode(eMatrixMode.B);
+        private void PGMatrix_SetModeC (object sender, RoutedEventArgs e) => this.CycleMatrixMode(eMatrixMode.C);
+
+        // Used only by the matrix-mode diagnostic counters below so we can see whether
+        // the chain wrapper -> OnElevatedSubObjectPropertyChanged -> SourceCommitted ->
+        // PropertyGrid.OnAnyTargetPropertyChanged -> UpdateConditionalVisibility actually fires.
+        private int m_matrixWrapperInpcCount;
+        private int m_matrixTreeChangedCount;
+        private bool m_matrixDiagnosticsAttached;
+
+        private void AttachMatrixDiagnostics ()
+        {
+            if (m_matrixDiagnosticsAttached)
+            {
+                return;
+            }
+
+            m_matrixDiagnosticsAttached = true;
+            m_wrappedMatrixObj.Mode.PropertyChanged += this.MatrixWrapper_OnPropertyChanged;
+            // PropertyTreeChanged fires from PropertyGrid.OnAnyTargetPropertyChanged on any
+            // SourceCommitted. If clicks increment the wrapper counter but not this one,
+            // the wrapper INPC is reaching the wrapper but the elevated-subobject-to-
+            // SourceCommitted bridge isn't firing or isn't being heard.
+            this.TestPropertyGrid.PropertyTreeChanged += this.MatrixDiag_OnPropertyTreeChanged;
+        }
+
+        private void MatrixWrapper_OnPropertyChanged (object sender, PropertyChangedEventArgs e)
+        {
+            ++m_matrixWrapperInpcCount;
+            this.UpdateMatrixDiagnosticLabel();
+        }
+
+        private void MatrixDiag_OnPropertyTreeChanged (object sender, EventArgs e)
+        {
+            ++m_matrixTreeChangedCount;
+            this.UpdateMatrixDiagnosticLabel();
+        }
+
+        private void CycleMatrixMode (eMatrixMode mode)
+        {
+            m_wrappedMatrixObj.Mode.Value = mode;
+            this.UpdateMatrixDiagnosticLabel();
+        }
+
+        private void UpdateMatrixDiagnosticLabel ()
+        {
+            if (this.PGMatrixDiagnostic == null)
+            {
+                return;
+            }
+
+            string liveChildren = "(null)";
+            var root = this.TestPropertyGrid?.Manager?.RootNode;
+            if (root != null)
+            {
+                liveChildren = string.Join(", ",
+                    root.Children.OfType<PropertyEditTarget>().Select(t => t.PropertyPathTarget));
+            }
+
+            this.PGMatrixDiagnostic.Text = string.Format(
+                "Mode.Value={0}  INPC={1}  TreeChanged={2}  root.Children=[{3}]",
+                m_wrappedMatrixObj.Mode.Value,
+                m_matrixWrapperInpcCount,
+                m_matrixTreeChangedCount,
+                liveChildren
+            );
+        }
 
         private void PGSource_OnSetElevatedClicked (object sender, RoutedEventArgs e)
         {
@@ -397,6 +522,37 @@ namespace AJutShowRoomWinUI
 
     // ===========[ ShowRoomTester - PropertyGrid smoke-test source ]==================
     public enum eEditorMode { Text, Number, Color }
+
+    // ===========[ EnumToggleStrip showcase enums ]====================================
+    public enum eDisplayMode
+    {
+        Compact,
+        Standard,
+        Comfortable,
+        Wide,
+    }
+
+    [Flags]
+    public enum eToppings
+    {
+        None      = 0,
+        Cheese    = 1 << 0,
+        Mushrooms = 1 << 1,
+        Olives    = 1 << 2,
+        Pepperoni = 1 << 3,
+        Pineapple = 1 << 4,
+    }
+
+    public enum eExclusionDemo
+    {
+        Visible1,
+        [Browsable(false)]
+        HiddenViaBrowsable,
+        Visible2,
+        [ExcludeFromSelection]
+        HiddenViaAjutAttr,
+        Visible3,
+    }
 
     public class ShowRoomTester : NotifyPropertyChanged
     {
@@ -854,5 +1010,55 @@ namespace AJutShowRoomWinUI
             this.Label = "Hidden Infra";
             adapter.TitleContent = "Hidden Infra";
         }
+    }
+
+    // ===========[ Wrapped-Mode matrix source for PGShowIf repro ]=====================
+    // Reproduces the shape where an enum-like property lives behind a wrapper that
+    // raises INPC on its Value (the outer source never fires), several PGShowIf
+    // predicates read Mode.Value, and the rows must re-evaluate visibility without
+    // rebuilding the grid.
+
+    public enum eMatrixMode { A, B, C }
+
+    public class WrappedModeValue<T> : NotifyPropertyChanged
+    {
+        private T m_value;
+
+        [PGElevateAsParent(deferPGAttributesToParent: true)]
+        public T Value
+        {
+            get => m_value;
+            set => this.SetAndRaiseIfChanged(ref m_value, value);
+        }
+
+        public WrappedModeValue () { }
+        public WrappedModeValue (T value) { m_value = value; }
+    }
+
+    public class WrappedModeMatrixSource
+    {
+        public WrappedModeValue<eMatrixMode> Mode { get; set; } = new WrappedModeValue<eMatrixMode>(eMatrixMode.A);
+
+        [PGGroup("GroupA")]
+        [PGShowIf(nameof(IsModeA))]
+        public WrappedModeValue<string> A_GroupedColor { get; set; } = new WrappedModeValue<string>("#FF0000");
+
+        [PGShowIf(nameof(IsModeB))]
+        public WrappedModeValue<string> B_UngroupedColor { get; set; } = new WrappedModeValue<string>("#00FF00");
+
+        [PGEditor("Single")]
+        [PGEditContextBuilder("PG-Limits", "{ Min: 0.0, Max: 1.0, Step: 0.05 }")]
+        [PGShowIf(nameof(IsModeB))]
+        public WrappedModeValue<float> B_WithEditCtx { get; set; } = new WrappedModeValue<float>(0.5f);
+
+        [PGShowIf(nameof(IsModeC))]
+        public WrappedModeValue<string> C_First { get; set; } = new WrappedModeValue<string>("#0000FF");
+
+        [PGShowIf(nameof(IsModeC))]
+        public WrappedModeValue<string> C_Second { get; set; } = new WrappedModeValue<string>("#FFFF00");
+
+        private bool IsModeA () => this.Mode.Value == eMatrixMode.A;
+        private bool IsModeB () => this.Mode.Value == eMatrixMode.B;
+        private bool IsModeC () => this.Mode.Value == eMatrixMode.C;
     }
 }

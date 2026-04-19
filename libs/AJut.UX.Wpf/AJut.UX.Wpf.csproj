@@ -66,6 +66,9 @@
     <Compile Update="Controls\EnumComboBox.cs">
       <DependentUpon>EnumComboBox.xaml</DependentUpon>
     </Compile>
+    <Compile Update="Controls\EnumToggleStrip.cs">
+      <DependentUpon>EnumToggleStrip.xaml</DependentUpon>
+    </Compile>
     <Compile Update="Controls\FlatTreeListControl.cs">
       <DependentUpon>FlatTreeListControl.xaml</DependentUpon>
     </Compile>

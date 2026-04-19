@@ -181,6 +181,9 @@
         <TabItem Header="ToggleStrip">
             <ctrls:ToggleStripExampleDisplay Margin="10"/>
         </TabItem>
+        <TabItem Header="EnumToggleStrip">
+            <ctrls:EnumToggleStripExampleDisplay Margin="10"/>
+        </TabItem>
         <TabItem Header="WindowChromeButtonStrip">
             <ctrls:WindowChromeButtonStripExample />
         </TabItem>

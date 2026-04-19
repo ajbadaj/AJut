@@ -492,6 +492,12 @@ namespace AJut.UX.Controls
                         m_selectedItems.Add(item);
                         primary ??= item;
                     }
+
+                    // Do NOT set PART_ListView.SelectedItem in Multi/Extended - in Extended mode
+                    // the setter clears SelectedItems and sets just that one, and in Multiple mode
+                    // the setter toggles. Either way it collapses the multi-selection we just built.
+                    // The items are already anchored by being in SelectedItems; the getter returns
+                    // the first of those for keyboard/context-menu behaviour.
                 }
                 else
                 {
@@ -500,12 +506,10 @@ namespace AJut.UX.Controls
                     {
                         primary.IsSelected = true;
                         m_selectedItems.Add(primary);
+                        this.PART_ListView.SelectedItem = primary;
                     }
                 }
 
-                // PART_ListView.SelectedItem anchors keyboard/context-menu behaviour
-                // at the first item. Harmless when primary is null.
-                this.PART_ListView.SelectedItem = primary;
                 this.SelectedItem = primary;
             }
             finally

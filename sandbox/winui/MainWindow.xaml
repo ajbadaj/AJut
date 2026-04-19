@@ -294,6 +294,24 @@
                                         </StackPanel>
                                     </StackPanel>
 
+                                    <TextBlock Text="EnumToggleStrip" Style="{ThemeResource SubtitleTextBlockStyle}" Margin="0,12,0,0"/>
+                                    <TextBlock Text="Auto-builds option list from the bound enum's type. Multi-select with [Flags] OR's into SelectedItem; otherwise SelectedItem is the most recent toggle." FontStyle="Italic" Opacity="0.7" TextWrapping="Wrap"/>
+                                    <StackPanel Spacing="12">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="Single-select (eDisplayMode)" FontSize="11" Opacity="0.7"/>
+                                            <ajut:EnumToggleStrip SelectedItem="{x:Bind DisplayMode, Mode=TwoWay}"/>
+                                        </StackPanel>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="Multi-select on a [Flags] enum (eToppings, default = Cheese | Pepperoni)" FontSize="11" Opacity="0.7"/>
+                                            <ajut:EnumToggleStrip AllowMultiSelect="True" AllowNoSelection="True"
+                                                                  SelectedItem="{x:Bind Toppings, Mode=TwoWay}"/>
+                                        </StackPanel>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="Exclusions: Visible1/2/3 only - HiddenViaBrowsable hidden by [Browsable(false)], HiddenViaAjutAttr hidden by [ExcludeFromSelection]" FontSize="11" Opacity="0.7" TextWrapping="Wrap"/>
+                                            <ajut:EnumToggleStrip SelectedItem="{x:Bind ExclusionPick, Mode=TwoWay}"/>
+                                        </StackPanel>
+                                    </StackPanel>
+
                                 </StackPanel>
                             </ScrollViewer>
                         </TabViewItem.Content>
@@ -515,16 +533,25 @@
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
-                                <TextBlock Grid.Row="0" Text="FlatTreeListControl - Drag and Drop Reordering" FontStyle="Italic" Margin="0,0,0,4"/>
+                                <TextBlock Grid.Row="0" Text="FlatTreeListControl - Drag and Drop Reordering + SetSelection test" FontStyle="Italic" Margin="0,0,0,4"/>
                                 <TextBlock Grid.Row="1" Text="Drag items to reorder. X position determines target depth. Blue insertion line shows where item will land; dotted connector shows target parent." TextWrapping="Wrap" Opacity="0.7" Margin="0,0,0,8"/>
-                                <ajut:FlatTreeListControl Grid.Row="2"
+                                <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="6" Margin="0,0,0,8">
+                                    <Button Content="SetSelection: 3 scattered items" Click="SetSelectionScattered_OnClick"/>
+                                    <Button Content="SetSelection: all descendants of Scenes" Click="SetSelectionScenesDescendants_OnClick"/>
+                                    <Button Content="SetSelection: empty" Click="SetSelectionEmpty_OnClick"/>
+                                    <TextBlock x:Name="SetSelectionStatus" VerticalAlignment="Center" Opacity="0.8"/>
+                                </StackPanel>
+                                <ajut:FlatTreeListControl Grid.Row="3"
+                                                          x:Name="DragDropTree"
                                                           Root="{x:Bind DragDropTreeRoot}"
                                                           IncludeRoot="True"
                                                           StartItemsExpanded="True"
                                                           IsDragDropReorderEnabled="True"
-                                                          SelectionMode="Extended">
+                                                          SelectionMode="Extended"
+                                                          SelectionChanged="DragDropTree_OnSelectionChanged">
                                     <ajut:FlatTreeListControl.ItemTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding Source.NodeName}" VerticalAlignment="Center"/>
@@ -593,6 +620,7 @@
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
                                 <Grid.ColumnDefinitions>
@@ -613,16 +641,32 @@
                                             Click="PGSource_OnComplexClicked"/>
                                     <Button Content="Set Elevated Values" Click="PGSource_OnSetElevatedClicked"
                                             ToolTipService.ToolTip="Sets elevated property values externally - tests RecacheEditValue cascade"/>
+                                    <Button x:Name="PG_WrappedMatrixButton" Content="Wrapped Mode Matrix (PGShowIf repro)"
+                                            Click="PGSource_OnWrappedMatrixClicked"
+                                            ToolTipService.ToolTip="Source whose Mode is behind a wrapper; rows A/B/C conditional on Mode.Value"/>
                                     <Button x:Name="PG_NoneButton" Content="None (Empty)"
                                             Click="PGSource_OnNoneClicked"/>
                                 </StackPanel>
 
-                                <TextBlock Grid.Row="1" Grid.Column="0" Text="PropertyGrid - switch sources above to test live refresh" FontStyle="Italic" Margin="0,0,0,8"/>
-                                <TextBlock Grid.Row="1" Grid.Column="2" Text="Live source object (JSON)" FontStyle="Italic" Margin="0,0,0,8"/>
+                                <!-- Mode cycler for the Wrapped Mode Matrix source. Directly mutates
+                                     the wrapper's Value so the only signal is the wrapper's INPC. -->
+                                <StackPanel Grid.Row="1" Grid.Column="0"
+                                            Orientation="Horizontal" Spacing="6" Margin="0,0,0,8">
+                                    <TextBlock Text="Matrix Mode:" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                    <Button Content="Mode -> A" Click="PGMatrix_SetModeA"/>
+                                    <Button Content="Mode -> B" Click="PGMatrix_SetModeB"/>
+                                    <Button Content="Mode -> C" Click="PGMatrix_SetModeC"/>
+                                    <TextBlock x:Name="PGMatrixDiagnostic"
+                                               VerticalAlignment="Center" FontFamily="Consolas" FontSize="11"
+                                               Text="(diagnostics will appear here after clicking a Mode button)"/>
+                                </StackPanel>
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="PropertyGrid - switch sources above to test live refresh" FontStyle="Italic" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="2" Grid.Column="2" Text="Live source object (JSON)" FontStyle="Italic" Margin="0,0,0,8"/>
 
                                 <!-- SingleItemSource set in code-behind so we can swap it via the buttons above -->
                                 <ajut:PropertyGrid x:Name="TestPropertyGrid"
-                                                   Grid.Row="2" Grid.Column="0"
+                                                   Grid.Row="3" Grid.Column="0"
                                                    RowSpacing="5"
                                                    FixedRowHeight="40"
                                                    LabelColumnWidth="180">
@@ -680,7 +724,7 @@
                                 </ajut:PropertyGrid>
 
                                 <!-- JSON display: live mirror of current source, updated on every PropertyTreeChanged -->
-                                <Border Grid.Row="2" Grid.Column="2"
+                                <Border Grid.Row="3" Grid.Column="2"
                                         BorderBrush="{ThemeResource SystemControlForegroundBaseMediumLowBrush}"
                                         BorderThickness="1"
                                         CornerRadius="4">
