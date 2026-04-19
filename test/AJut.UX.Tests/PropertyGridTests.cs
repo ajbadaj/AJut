@@ -3,6 +3,7 @@ namespace AJut.UX.Tests
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.Specialized;
     using System.ComponentModel;
     using System.Linq;
     using System.Windows.Input;
@@ -205,6 +206,47 @@ namespace AJut.UX.Tests
         {
             return PropertyEditTarget.GenerateForPropertiesOf(m_inner);
         }
+    }
+
+    public enum eThreeModeTest { A, B, C }
+
+    // Three-way mode-driven visibility matrix. Isolates several hypotheses about
+    // what might be stopping PGShowIf from re-evaluating after a wrapper-INPC
+    // source change:
+    //   - A_GroupedColor: in a group, single predicate user
+    //   - B_UngroupedColor: ungrouped, plain predicate
+    //   - B_WithEditCtx: ungrouped, PGEditContextBuilder attached
+    //   - C_First / C_Second: ungrouped, two siblings share one predicate
+    public class ThreeModeVisibilityMatrixSource
+    {
+        [PGEditor("AutoEnum")]
+        public TestValueWrapper<eThreeModeTest> Mode { get; set; } = new TestValueWrapper<eThreeModeTest>(eThreeModeTest.A);
+
+        [PGEditor("Text")]
+        [PGGroup("GroupA")]
+        [PGShowIf(nameof(IsModeA))]
+        public TestValueWrapper<string> A_GroupedColor { get; set; } = new TestValueWrapper<string>("#FF0000");
+
+        [PGEditor("Text")]
+        [PGShowIf(nameof(IsModeB))]
+        public TestValueWrapper<string> B_UngroupedColor { get; set; } = new TestValueWrapper<string>("#00FF00");
+
+        [PGEditor("Number")]
+        [PGEditContextBuilder("pg-ctx-number", "{ Min: 0, Max: 1 }")]
+        [PGShowIf(nameof(IsModeB))]
+        public TestValueWrapper<float> B_WithEditCtx { get; set; } = new TestValueWrapper<float>(0.5f);
+
+        [PGEditor("Text")]
+        [PGShowIf(nameof(IsModeC))]
+        public TestValueWrapper<string> C_First { get; set; } = new TestValueWrapper<string>("#0000FF");
+
+        [PGEditor("Text")]
+        [PGShowIf(nameof(IsModeC))]
+        public TestValueWrapper<string> C_Second { get; set; } = new TestValueWrapper<string>("#FFFF00");
+
+        private bool IsModeA () => this.Mode.Value == eThreeModeTest.A;
+        private bool IsModeB () => this.Mode.Value == eThreeModeTest.B;
+        private bool IsModeC () => this.Mode.Value == eThreeModeTest.C;
     }
 
     // Enum behind a wrapper whose Value INPC is the only signal the PG ever sees.
@@ -1002,6 +1044,116 @@ namespace AJut.UX.Tests
                 _GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(WrappedMutuallyExclusiveShowIfTestSource.Intensity)),
                 "Via edit manager, LightMask->Dec: Intensity should disappear"
             );
+        }
+
+        [TestMethod]
+        public void RootChildrenCollection_FiresINotifyCollectionChangedOnMutation ()
+        {
+            // FlatTreeListControl subscribes to INotifyCollectionChanged on whatever
+            // collection is fed to RootItemsSource - that is root.Children from the
+            // PropertyGridManager. If that collection does not raise CollectionChanged
+            // when InsertChild / RemoveChild run during UpdateConditionalVisibility,
+            // the visible tree goes stale and PGShowIf rows never appear / disappear.
+            // This asserts the contract the visual layer depends on.
+            var source = new ThreeModeVisibilityMatrixSource();
+            var pg = new SimpleTestPropertyGrid { SingleItemSource = source };
+            var manager = new PropertyGridManager(pg);
+
+            manager.RebuildEditTargets();
+
+            var root = manager.RootNode;
+            Assert.IsNotNull(root);
+
+            var childrenAsOfRebuild = ((IObservableTreeNode)root).Children;
+            Assert.IsInstanceOfType(
+                childrenAsOfRebuild,
+                typeof(INotifyCollectionChanged),
+                "root.Children must implement INotifyCollectionChanged - FlatTreeListControl relies on it to refresh when PGShowIf toggles rows in/out"
+            );
+
+            // Now drive the same mutation UpdateConditionalVisibility causes and confirm
+            // the listener actually hears it.
+            int notifications = 0;
+            ((INotifyCollectionChanged)childrenAsOfRebuild).CollectionChanged += (s, e) => ++notifications;
+
+            source.Mode.Value = eThreeModeTest.B;
+            void _OnAny (object sender, PropertyChangedEventArgs e)
+            {
+                if (e.PropertyName == PropertyEditTarget.SourceCommittedPropertyName)
+                {
+                    manager.UpdateConditionalVisibility();
+                }
+            }
+            foreach (var t in _GetAllTargets(manager.RootNode))
+            {
+                t.PropertyChanged += _OnAny;
+            }
+            foreach (var t in manager.HiddenConditionalTargets)
+            {
+                t.PropertyChanged += _OnAny;
+            }
+
+            source.Mode.Value = eThreeModeTest.C;
+
+            Assert.IsTrue(
+                notifications > 0,
+                "Expected at least one CollectionChanged notification after UpdateConditionalVisibility mutated root.Children"
+            );
+        }
+
+        [TestMethod]
+        public void ThreeModeVisibilityMatrix_CyclesCorrectly ()
+        {
+            // Stress the PGShowIf update path against several attribute combinations at
+            // once: grouped, ungrouped, ungrouped+EditContextBuilder, and two siblings
+            // sharing one predicate. The wrapper's Value INPC is the only signal, so
+            // this runs the same chain the live property grid uses.
+            var source = new ThreeModeVisibilityMatrixSource();
+            var pg = new SimpleTestPropertyGrid { SingleItemSource = source };
+            var manager = new PropertyGridManager(pg);
+
+            manager.RebuildEditTargets();
+
+            void _OnAny (object sender, PropertyChangedEventArgs e)
+            {
+                if (e.PropertyName == PropertyEditTarget.SourceCommittedPropertyName)
+                {
+                    manager.UpdateConditionalVisibility();
+                }
+            }
+            foreach (var t in _GetAllTargets(manager.RootNode))
+            {
+                t.PropertyChanged += _OnAny;
+            }
+            foreach (var t in manager.HiddenConditionalTargets)
+            {
+                t.PropertyChanged += _OnAny;
+            }
+
+            bool _Visible (string name) => _GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == name);
+            void _AssertMatrix (string stage, bool a, bool b1, bool b2, bool c1, bool c2)
+            {
+                Assert.AreEqual(a,  _Visible(nameof(ThreeModeVisibilityMatrixSource.A_GroupedColor)),   $"{stage}: A_GroupedColor");
+                Assert.AreEqual(b1, _Visible(nameof(ThreeModeVisibilityMatrixSource.B_UngroupedColor)), $"{stage}: B_UngroupedColor");
+                Assert.AreEqual(b2, _Visible(nameof(ThreeModeVisibilityMatrixSource.B_WithEditCtx)),    $"{stage}: B_WithEditCtx");
+                Assert.AreEqual(c1, _Visible(nameof(ThreeModeVisibilityMatrixSource.C_First)),          $"{stage}: C_First");
+                Assert.AreEqual(c2, _Visible(nameof(ThreeModeVisibilityMatrixSource.C_Second)),         $"{stage}: C_Second");
+            }
+
+            // Initial: Mode=A -> only A_GroupedColor visible.
+            _AssertMatrix("Initial (A)", a: true, b1: false, b2: false, c1: false, c2: false);
+
+            // A -> B -> only B_UngroupedColor and B_WithEditCtx visible.
+            source.Mode.Value = eThreeModeTest.B;
+            _AssertMatrix("After A->B", a: false, b1: true, b2: true, c1: false, c2: false);
+
+            // B -> C -> only C_First and C_Second visible (exercises shared predicate).
+            source.Mode.Value = eThreeModeTest.C;
+            _AssertMatrix("After B->C", a: false, b1: false, b2: false, c1: true, c2: true);
+
+            // C -> A -> back to only A_GroupedColor.
+            source.Mode.Value = eThreeModeTest.A;
+            _AssertMatrix("After C->A", a: true, b1: false, b2: false, c1: false, c2: false);
         }
 
         // ------ Button targets ------

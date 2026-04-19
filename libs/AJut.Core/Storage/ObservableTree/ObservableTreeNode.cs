@@ -2,17 +2,23 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using AJut.Tree;
 
     /// <summary>
-    /// An implementation of <see cref="IObservableTreeNode"/>. This could be used as a base class, a fully realized <see cref="IObservableTreeNode"/>, or just 
+    /// An implementation of <see cref="IObservableTreeNode"/>. This could be used as a base class, a fully realized <see cref="IObservableTreeNode"/>, or just
     /// as an example on how to implement <see cref="IObservableTreeNode"/>
     /// </summary>
     public class ObservableTreeNode<TNode> : NotifyPropertyChanged, IObservableTreeNode
         where TNode : class, IObservableTreeNode
     {
-        private readonly List<TNode> m_children = new List<TNode>();
-        private readonly IReadOnlyList<TNode> m_readOnlyChildren;
+        // Backing store has to fire INotifyCollectionChanged so consumers that
+        // subscribe to the public Children property (eg. FlatTreeListControl's
+        // RootItemsSource path) refresh when InsertChild / RemoveChild run.
+        // ReadOnlyObservableCollection is the read-only surface that still
+        // forwards the collection events.
+        private readonly ObservableCollection<TNode> m_children = new ObservableCollection<TNode>();
+        private readonly ReadOnlyObservableCollection<TNode> m_readOnlyChildren;
         private bool m_canHaveChildren;
         private TNode m_parent;
 
@@ -22,7 +28,7 @@
         }
         public ObservableTreeNode ()
         {
-            m_readOnlyChildren = m_children.AsReadOnly();
+            m_readOnlyChildren = new ReadOnlyObservableCollection<TNode>(m_children);
         }
 
         // ===============[Events]================

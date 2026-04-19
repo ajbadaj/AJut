@@ -250,6 +250,7 @@ namespace AJutShowRoomWinUI
         private readonly ShowRoomAlpha m_alphaObj = new ShowRoomAlpha();
         private readonly ShowRoomBeta m_betaObj = new ShowRoomBeta();
         private readonly ShowRoomTester m_complexObj = new ShowRoomTester();
+        private readonly WrappedModeMatrixSource m_wrappedMatrixObj = new WrappedModeMatrixSource();
         private object m_currentPGTestObj;
 
         private void SetPGSource (object obj)
@@ -262,6 +263,83 @@ namespace AJutShowRoomWinUI
         private void PGSource_OnAlphaClicked (object sender, RoutedEventArgs e) => this.SetPGSource(m_alphaObj);
         private void PGSource_OnBetaClicked (object sender, RoutedEventArgs e) => this.SetPGSource(m_betaObj);
         private void PGSource_OnComplexClicked (object sender, RoutedEventArgs e) => this.SetPGSource(m_complexObj);
+        private void PGSource_OnWrappedMatrixClicked (object sender, RoutedEventArgs e)
+        {
+            this.SetPGSource(m_wrappedMatrixObj);
+            this.AttachMatrixDiagnostics();
+        }
+
+        // Directly poke the wrapper's Value - simulates the consumer scenario where an
+        // enum-behind-a-wrapper changes without the outer object's INPC firing, and
+        // several PGShowIf-gated rows have to re-evaluate in response.
+        private void PGMatrix_SetModeA (object sender, RoutedEventArgs e) => this.CycleMatrixMode(eMatrixMode.A);
+        private void PGMatrix_SetModeB (object sender, RoutedEventArgs e) => this.CycleMatrixMode(eMatrixMode.B);
+        private void PGMatrix_SetModeC (object sender, RoutedEventArgs e) => this.CycleMatrixMode(eMatrixMode.C);
+
+        // Used only by the matrix-mode diagnostic counters below so we can see whether
+        // the chain wrapper -> OnElevatedSubObjectPropertyChanged -> SourceCommitted ->
+        // PropertyGrid.OnAnyTargetPropertyChanged -> UpdateConditionalVisibility actually fires.
+        private int m_matrixWrapperInpcCount;
+        private int m_matrixTreeChangedCount;
+        private bool m_matrixDiagnosticsAttached;
+
+        private void AttachMatrixDiagnostics ()
+        {
+            if (m_matrixDiagnosticsAttached)
+            {
+                return;
+            }
+
+            m_matrixDiagnosticsAttached = true;
+            m_wrappedMatrixObj.Mode.PropertyChanged += this.MatrixWrapper_OnPropertyChanged;
+            // PropertyTreeChanged fires from PropertyGrid.OnAnyTargetPropertyChanged on any
+            // SourceCommitted. If clicks increment the wrapper counter but not this one,
+            // the wrapper INPC is reaching the wrapper but the elevated-subobject-to-
+            // SourceCommitted bridge isn't firing or isn't being heard.
+            this.TestPropertyGrid.PropertyTreeChanged += this.MatrixDiag_OnPropertyTreeChanged;
+        }
+
+        private void MatrixWrapper_OnPropertyChanged (object sender, PropertyChangedEventArgs e)
+        {
+            ++m_matrixWrapperInpcCount;
+            this.UpdateMatrixDiagnosticLabel();
+        }
+
+        private void MatrixDiag_OnPropertyTreeChanged (object sender, EventArgs e)
+        {
+            ++m_matrixTreeChangedCount;
+            this.UpdateMatrixDiagnosticLabel();
+        }
+
+        private void CycleMatrixMode (eMatrixMode mode)
+        {
+            m_wrappedMatrixObj.Mode.Value = mode;
+            this.UpdateMatrixDiagnosticLabel();
+        }
+
+        private void UpdateMatrixDiagnosticLabel ()
+        {
+            if (this.PGMatrixDiagnostic == null)
+            {
+                return;
+            }
+
+            string liveChildren = "(null)";
+            var root = this.TestPropertyGrid?.Manager?.RootNode;
+            if (root != null)
+            {
+                liveChildren = string.Join(", ",
+                    root.Children.OfType<PropertyEditTarget>().Select(t => t.PropertyPathTarget));
+            }
+
+            this.PGMatrixDiagnostic.Text = string.Format(
+                "Mode.Value={0}  INPC={1}  TreeChanged={2}  root.Children=[{3}]",
+                m_wrappedMatrixObj.Mode.Value,
+                m_matrixWrapperInpcCount,
+                m_matrixTreeChangedCount,
+                liveChildren
+            );
+        }
 
         private void PGSource_OnSetElevatedClicked (object sender, RoutedEventArgs e)
         {
@@ -896,5 +974,55 @@ namespace AJutShowRoomWinUI
             this.Label = "Hidden Infra";
             adapter.TitleContent = "Hidden Infra";
         }
+    }
+
+    // ===========[ Wrapped-Mode matrix source for PGShowIf repro ]=====================
+    // Reproduces the shape where an enum-like property lives behind a wrapper that
+    // raises INPC on its Value (the outer source never fires), several PGShowIf
+    // predicates read Mode.Value, and the rows must re-evaluate visibility without
+    // rebuilding the grid.
+
+    public enum eMatrixMode { A, B, C }
+
+    public class WrappedModeValue<T> : NotifyPropertyChanged
+    {
+        private T m_value;
+
+        [PGElevateAsParent(deferPGAttributesToParent: true)]
+        public T Value
+        {
+            get => m_value;
+            set => this.SetAndRaiseIfChanged(ref m_value, value);
+        }
+
+        public WrappedModeValue () { }
+        public WrappedModeValue (T value) { m_value = value; }
+    }
+
+    public class WrappedModeMatrixSource
+    {
+        public WrappedModeValue<eMatrixMode> Mode { get; set; } = new WrappedModeValue<eMatrixMode>(eMatrixMode.A);
+
+        [PGGroup("GroupA")]
+        [PGShowIf(nameof(IsModeA))]
+        public WrappedModeValue<string> A_GroupedColor { get; set; } = new WrappedModeValue<string>("#FF0000");
+
+        [PGShowIf(nameof(IsModeB))]
+        public WrappedModeValue<string> B_UngroupedColor { get; set; } = new WrappedModeValue<string>("#00FF00");
+
+        [PGEditor("Single")]
+        [PGEditContextBuilder("PG-Limits", "{ Min: 0.0, Max: 1.0, Step: 0.05 }")]
+        [PGShowIf(nameof(IsModeB))]
+        public WrappedModeValue<float> B_WithEditCtx { get; set; } = new WrappedModeValue<float>(0.5f);
+
+        [PGShowIf(nameof(IsModeC))]
+        public WrappedModeValue<string> C_First { get; set; } = new WrappedModeValue<string>("#0000FF");
+
+        [PGShowIf(nameof(IsModeC))]
+        public WrappedModeValue<string> C_Second { get; set; } = new WrappedModeValue<string>("#FFFF00");
+
+        private bool IsModeA () => this.Mode.Value == eMatrixMode.A;
+        private bool IsModeB () => this.Mode.Value == eMatrixMode.B;
+        private bool IsModeC () => this.Mode.Value == eMatrixMode.C;
     }
 }

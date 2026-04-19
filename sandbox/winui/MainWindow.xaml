@@ -602,6 +602,7 @@
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
                                 <Grid.ColumnDefinitions>
@@ -622,16 +623,32 @@
                                             Click="PGSource_OnComplexClicked"/>
                                     <Button Content="Set Elevated Values" Click="PGSource_OnSetElevatedClicked"
                                             ToolTipService.ToolTip="Sets elevated property values externally - tests RecacheEditValue cascade"/>
+                                    <Button x:Name="PG_WrappedMatrixButton" Content="Wrapped Mode Matrix (PGShowIf repro)"
+                                            Click="PGSource_OnWrappedMatrixClicked"
+                                            ToolTipService.ToolTip="Source whose Mode is behind a wrapper; rows A/B/C conditional on Mode.Value"/>
                                     <Button x:Name="PG_NoneButton" Content="None (Empty)"
                                             Click="PGSource_OnNoneClicked"/>
                                 </StackPanel>
 
-                                <TextBlock Grid.Row="1" Grid.Column="0" Text="PropertyGrid - switch sources above to test live refresh" FontStyle="Italic" Margin="0,0,0,8"/>
-                                <TextBlock Grid.Row="1" Grid.Column="2" Text="Live source object (JSON)" FontStyle="Italic" Margin="0,0,0,8"/>
+                                <!-- Mode cycler for the Wrapped Mode Matrix source. Directly mutates
+                                     the wrapper's Value so the only signal is the wrapper's INPC. -->
+                                <StackPanel Grid.Row="1" Grid.Column="0"
+                                            Orientation="Horizontal" Spacing="6" Margin="0,0,0,8">
+                                    <TextBlock Text="Matrix Mode:" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                    <Button Content="Mode -> A" Click="PGMatrix_SetModeA"/>
+                                    <Button Content="Mode -> B" Click="PGMatrix_SetModeB"/>
+                                    <Button Content="Mode -> C" Click="PGMatrix_SetModeC"/>
+                                    <TextBlock x:Name="PGMatrixDiagnostic"
+                                               VerticalAlignment="Center" FontFamily="Consolas" FontSize="11"
+                                               Text="(diagnostics will appear here after clicking a Mode button)"/>
+                                </StackPanel>
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="PropertyGrid - switch sources above to test live refresh" FontStyle="Italic" Margin="0,0,0,8"/>
+                                <TextBlock Grid.Row="2" Grid.Column="2" Text="Live source object (JSON)" FontStyle="Italic" Margin="0,0,0,8"/>
 
                                 <!-- SingleItemSource set in code-behind so we can swap it via the buttons above -->
                                 <ajut:PropertyGrid x:Name="TestPropertyGrid"
-                                                   Grid.Row="2" Grid.Column="0"
+                                                   Grid.Row="3" Grid.Column="0"
                                                    RowSpacing="5"
                                                    FixedRowHeight="40"
                                                    LabelColumnWidth="180">
@@ -689,7 +706,7 @@
                                 </ajut:PropertyGrid>
 
                                 <!-- JSON display: live mirror of current source, updated on every PropertyTreeChanged -->
-                                <Border Grid.Row="2" Grid.Column="2"
+                                <Border Grid.Row="3" Grid.Column="2"
                                         BorderBrush="{ThemeResource SystemControlForegroundBaseMediumLowBrush}"
                                         BorderThickness="1"
                                         CornerRadius="4">
