@@ -116,6 +116,121 @@ namespace AJut.UX.Tests
         public int Weight { get; set; } = 75;
     }
 
+    // All members of the "Style" group are conditional on the same flag, so the
+    // entire group is effectively empty when the flag is false.
+    public class AllConditionalGroupTestSource : NotifyPropertyChanged
+    {
+        private bool m_showStyle;
+        public bool ShowStyle
+        {
+            get => m_showStyle;
+            set => this.SetAndRaiseIfChanged(ref m_showStyle, value);
+        }
+
+        [PGEditor("Text")]
+        public string Name { get; set; } = "Test";
+
+        [PGEditor("Text")]
+        [PGGroup("Style")]
+        [PGShowIf(nameof(ShowStyle))]
+        public string FillColor { get; set; } = "#FFFFFF";
+    }
+
+    public enum eMutexTestMode
+    {
+        Decoration,
+        LightMask,
+    }
+
+    // One source enum drives two mutually exclusive sets of conditional properties,
+    // one of which lives in a group.
+    public class MutuallyExclusiveShowIfTestSource : NotifyPropertyChanged
+    {
+        private eMutexTestMode m_mode = eMutexTestMode.Decoration;
+        public eMutexTestMode Mode
+        {
+            get => m_mode;
+            set => this.SetAndRaiseIfChanged(ref m_mode, value);
+        }
+
+        [PGEditor("Text")]
+        [PGGroup("Style")]
+        [PGShowIf(nameof(IsDecorationUse))]
+        public string FillColor { get; set; } = "#FFFFFF";
+
+        [PGEditor("Number")]
+        [PGShowIf(nameof(IsLightMaskUse))]
+        public float Intensity { get; set; } = 1f;
+
+        [PGEditor("Text")]
+        [PGShowIf(nameof(IsLightMaskUse))]
+        public string Tint { get; set; } = "#FFFFFFFF";
+
+        private bool IsDecorationUse () => m_mode == eMutexTestMode.Decoration;
+        private bool IsLightMaskUse () => m_mode == eMutexTestMode.LightMask;
+    }
+
+    // Wrapper type whose inner Value raises INPC but whose owning property's INPC
+    // never fires. The Value is tagged with PGElevateAsParent so the PG treats the
+    // wrapper as transparent and forwards attributes through to the parent row.
+    public class TestValueWrapper<T> : NotifyPropertyChanged
+    {
+        private T m_value;
+
+        [PGElevateAsParent(deferPGAttributesToParent: true)]
+        public T Value
+        {
+            get => m_value;
+            set => this.SetAndRaiseIfChanged(ref m_value, value);
+        }
+
+        public TestValueWrapper () { }
+        public TestValueWrapper (T value) { m_value = value; }
+
+        public static implicit operator TestValueWrapper<T> (T value) => new TestValueWrapper<T>(value);
+    }
+
+    public class WrappedMutuallyExclusiveEditManager : IPropertyEditManager
+    {
+        private readonly WrappedMutuallyExclusiveShowIfTestSource m_inner;
+
+        public WrappedMutuallyExclusiveEditManager (WrappedMutuallyExclusiveShowIfTestSource inner)
+        {
+            m_inner = inner;
+        }
+
+        public WrappedMutuallyExclusiveShowIfTestSource Inner => m_inner;
+
+        public IEnumerable<PropertyEditTarget> GenerateEditTargets ()
+        {
+            return PropertyEditTarget.GenerateForPropertiesOf(m_inner);
+        }
+    }
+
+    // Enum behind a wrapper whose Value INPC is the only signal the PG ever sees.
+    // Conditionals mix grouped + ungrouped and exercise the mutually-exclusive pattern.
+    public class WrappedMutuallyExclusiveShowIfTestSource
+    {
+        [PGEditor("AutoEnum")]
+        public TestValueWrapper<eMutexTestMode> Use { get; set; } = new TestValueWrapper<eMutexTestMode>(eMutexTestMode.Decoration);
+
+        [PGEditor("Text")]
+        [PGGroup("Style")]
+        [PGShowIf(nameof(IsDecorationUse))]
+        public TestValueWrapper<string> FillColor { get; set; } = new TestValueWrapper<string>("#FFFFFF");
+
+        [PGEditor("Number")]
+        [PGShowIf(nameof(IsLightMaskUse))]
+        public TestValueWrapper<float> Intensity { get; set; } = new TestValueWrapper<float>(1f);
+
+        [PGEditor("Text")]
+        [PGShowIf(nameof(IsLightMaskUse))]
+        public TestValueWrapper<string> Tint { get; set; } = new TestValueWrapper<string>("#FFFFFFFF");
+
+        private bool IsDecorationUse () => this.Use.Value == eMutexTestMode.Decoration;
+        private bool IsLightMaskUse () => this.Use.Value == eMutexTestMode.LightMask;
+    }
+
     public class ShowIfMethodTestSource
     {
         [PGEditor("Text")]
@@ -624,6 +739,271 @@ namespace AJut.UX.Tests
             );
         }
 
+        // ------ Empty groups ------
+
+        [TestMethod]
+        public void EmptyGroup_HeaderHiddenWhenAllChildrenConditionallyHidden ()
+        {
+            // All members of the "Style" group are conditional on ShowStyle, which starts
+            // false. The header should not appear when it has no live children.
+            var source = new AllConditionalGroupTestSource { ShowStyle = false };
+            var pg = new SimpleTestPropertyGrid { SingleItemSource = source };
+            var manager = new PropertyGridManager(pg);
+
+            manager.RebuildEditTargets();
+
+            var styleGroup = manager.RootNode.Children
+                .OfType<PropertyEditTarget>()
+                .FirstOrDefault(t => t.PropertyPathTarget == "$group_Style");
+
+            Assert.IsNull(styleGroup, "Empty group header should not appear in the tree when every child is hidden");
+        }
+
+        [TestMethod]
+        public void EmptyGroup_HeaderReappearsWhenChildBecomesVisible ()
+        {
+            var source = new AllConditionalGroupTestSource { ShowStyle = false };
+            var pg = new SimpleTestPropertyGrid { SingleItemSource = source };
+            var manager = new PropertyGridManager(pg);
+
+            manager.RebuildEditTargets();
+            Assert.IsNull(
+                manager.RootNode.Children.OfType<PropertyEditTarget>().FirstOrDefault(t => t.PropertyPathTarget == "$group_Style"),
+                "Precondition: group header absent while hidden"
+            );
+
+            source.ShowStyle = true;
+            manager.UpdateConditionalVisibility();
+
+            var styleGroup = manager.RootNode.Children
+                .OfType<PropertyEditTarget>()
+                .FirstOrDefault(t => t.PropertyPathTarget == "$group_Style");
+
+            Assert.IsNotNull(styleGroup, "Group header should reappear when a child becomes visible");
+            Assert.IsTrue(
+                styleGroup.Children.OfType<PropertyEditTarget>()
+                    .Any(t => t.PropertyPathTarget == nameof(AllConditionalGroupTestSource.FillColor)),
+                "FillColor should be the live child of the reattached group header"
+            );
+        }
+
+        [TestMethod]
+        public void EmptyGroup_HeaderDisappearsAfterLastChildHides ()
+        {
+            var source = new AllConditionalGroupTestSource { ShowStyle = true };
+            var pg = new SimpleTestPropertyGrid { SingleItemSource = source };
+            var manager = new PropertyGridManager(pg);
+
+            manager.RebuildEditTargets();
+            Assert.IsNotNull(
+                manager.RootNode.Children.OfType<PropertyEditTarget>().FirstOrDefault(t => t.PropertyPathTarget == "$group_Style"),
+                "Precondition: group header visible while a child is visible"
+            );
+
+            source.ShowStyle = false;
+            manager.UpdateConditionalVisibility();
+
+            Assert.IsNull(
+                manager.RootNode.Children.OfType<PropertyEditTarget>().FirstOrDefault(t => t.PropertyPathTarget == "$group_Style"),
+                "Group header should disappear once its last child hides"
+            );
+        }
+
+        // ------ Mutually exclusive conditions ------
+
+        [TestMethod]
+        public void MutuallyExclusiveShowIf_TogglesBothDirections ()
+        {
+            // FillColor is in a group and visible when Mode=Decoration; Intensity and
+            // Tint are top-level and visible when Mode=LightMask. Every toggle of Mode
+            // must swap visibility for all three.
+            var source = new MutuallyExclusiveShowIfTestSource { Mode = eMutexTestMode.Decoration };
+            var pg = new SimpleTestPropertyGrid { SingleItemSource = source };
+            var manager = new PropertyGridManager(pg);
+
+            manager.RebuildEditTargets();
+
+            // Initial state: FillColor visible (inside Style group), Intensity/Tint hidden.
+            Assert.IsTrue(
+                _GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(MutuallyExclusiveShowIfTestSource.FillColor)),
+                "Initial: FillColor should be visible in Decoration mode"
+            );
+            Assert.IsFalse(
+                _GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(MutuallyExclusiveShowIfTestSource.Intensity)),
+                "Initial: Intensity should be hidden in Decoration mode"
+            );
+            Assert.IsFalse(
+                _GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(MutuallyExclusiveShowIfTestSource.Tint)),
+                "Initial: Tint should be hidden in Decoration mode"
+            );
+
+            // Flip Decoration -> LightMask: FillColor must hide, Intensity + Tint must appear.
+            source.Mode = eMutexTestMode.LightMask;
+            manager.UpdateConditionalVisibility();
+
+            Assert.IsFalse(
+                _GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(MutuallyExclusiveShowIfTestSource.FillColor)),
+                "After Decoration->LightMask: FillColor should disappear"
+            );
+            Assert.IsTrue(
+                _GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(MutuallyExclusiveShowIfTestSource.Intensity)),
+                "After Decoration->LightMask: Intensity should appear"
+            );
+            Assert.IsTrue(
+                _GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(MutuallyExclusiveShowIfTestSource.Tint)),
+                "After Decoration->LightMask: Tint should appear"
+            );
+
+            // Flip LightMask -> Decoration: FillColor must reappear, Intensity + Tint must hide.
+            source.Mode = eMutexTestMode.Decoration;
+            manager.UpdateConditionalVisibility();
+
+            Assert.IsTrue(
+                _GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(MutuallyExclusiveShowIfTestSource.FillColor)),
+                "After LightMask->Decoration: FillColor should reappear"
+            );
+            Assert.IsFalse(
+                _GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(MutuallyExclusiveShowIfTestSource.Intensity)),
+                "After LightMask->Decoration: Intensity should disappear"
+            );
+            Assert.IsFalse(
+                _GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(MutuallyExclusiveShowIfTestSource.Tint)),
+                "After LightMask->Decoration: Tint should disappear"
+            );
+        }
+
+        // ------ Wrapped source: SourceCommitted-driven visibility ------
+
+        [TestMethod]
+        public void WrappedMutuallyExclusiveShowIf_TogglesBothDirections ()
+        {
+            // The real-world flow does NOT fire the source object's INPC when Use.Value
+            // changes - only the wrapper's "Value" INPC fires. PropertyGrid relays that
+            // through WireUpEditValueINPC into SourceCommitted on the Use target, and its
+            // OnAnyTargetPropertyChanged handler is what then drives UpdateConditionalVisibility.
+            // Mirror that chain here by subscribing to every target's PropertyChanged and
+            // calling UpdateConditionalVisibility on SourceCommitted, then flip Use.Value
+            // and assert that BOTH directions update visibility correctly.
+            var source = new WrappedMutuallyExclusiveShowIfTestSource();
+            var pg = new SimpleTestPropertyGrid { SingleItemSource = source };
+            var manager = new PropertyGridManager(pg);
+
+            manager.RebuildEditTargets();
+
+            // Wire the same contract the PropertyGrid control uses in production.
+            void _OnAny (object sender, PropertyChangedEventArgs e)
+            {
+                if (e.PropertyName == PropertyEditTarget.SourceCommittedPropertyName)
+                {
+                    manager.UpdateConditionalVisibility();
+                }
+            }
+            foreach (var t in _GetAllTargets(manager.RootNode))
+            {
+                t.PropertyChanged += _OnAny;
+            }
+            foreach (var t in manager.HiddenConditionalTargets)
+            {
+                t.PropertyChanged += _OnAny;
+            }
+
+            // Precondition: Decoration mode -> FillColor visible, Intensity/Tint hidden.
+            Assert.IsTrue(
+                _GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(WrappedMutuallyExclusiveShowIfTestSource.FillColor)),
+                "Initial: FillColor visible in Decoration mode"
+            );
+            Assert.IsFalse(
+                _GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(WrappedMutuallyExclusiveShowIfTestSource.Intensity)),
+                "Initial: Intensity hidden in Decoration mode"
+            );
+
+            // Decoration -> LightMask: the only INPC fired is Use.Value on the wrapper.
+            source.Use.Value = eMutexTestMode.LightMask;
+
+            Assert.IsFalse(
+                _GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(WrappedMutuallyExclusiveShowIfTestSource.FillColor)),
+                "After Decoration->LightMask: FillColor should disappear"
+            );
+            Assert.IsTrue(
+                _GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(WrappedMutuallyExclusiveShowIfTestSource.Intensity)),
+                "After Decoration->LightMask: Intensity should appear"
+            );
+            Assert.IsTrue(
+                _GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(WrappedMutuallyExclusiveShowIfTestSource.Tint)),
+                "After Decoration->LightMask: Tint should appear"
+            );
+
+            // LightMask -> Decoration: flip back.
+            source.Use.Value = eMutexTestMode.Decoration;
+
+            Assert.IsTrue(
+                _GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(WrappedMutuallyExclusiveShowIfTestSource.FillColor)),
+                "After LightMask->Decoration: FillColor should reappear"
+            );
+            Assert.IsFalse(
+                _GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(WrappedMutuallyExclusiveShowIfTestSource.Intensity)),
+                "After LightMask->Decoration: Intensity should disappear"
+            );
+        }
+
+        [TestMethod]
+        public void WrappedMutuallyExclusiveShowIf_ViaEditManager_TogglesBothDirections ()
+        {
+            // IPropertyEditManager delegates to an inner object - conditionals live on
+            // the inner, and the outer source's INPC is never fired for inner changes.
+            // This exercises that chain.
+            var inner = new WrappedMutuallyExclusiveShowIfTestSource();
+            var outerManager = new WrappedMutuallyExclusiveEditManager(inner);
+            var pg = new SimpleTestPropertyGrid { SingleItemSource = outerManager };
+            var manager = new PropertyGridManager(pg);
+
+            manager.RebuildEditTargets();
+
+            void _OnAny (object sender, PropertyChangedEventArgs e)
+            {
+                if (e.PropertyName == PropertyEditTarget.SourceCommittedPropertyName)
+                {
+                    manager.UpdateConditionalVisibility();
+                }
+            }
+            foreach (var t in _GetAllTargets(manager.RootNode))
+            {
+                t.PropertyChanged += _OnAny;
+            }
+            foreach (var t in manager.HiddenConditionalTargets)
+            {
+                t.PropertyChanged += _OnAny;
+            }
+
+            // Dec -> LightMask
+            inner.Use.Value = eMutexTestMode.LightMask;
+
+            Assert.IsFalse(
+                _GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(WrappedMutuallyExclusiveShowIfTestSource.FillColor)),
+                "Via edit manager, Dec->LightMask: FillColor should hide"
+            );
+            Assert.IsTrue(
+                _GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(WrappedMutuallyExclusiveShowIfTestSource.Intensity)),
+                "Via edit manager, Dec->LightMask: Intensity should appear"
+            );
+            Assert.IsTrue(
+                _GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(WrappedMutuallyExclusiveShowIfTestSource.Tint)),
+                "Via edit manager, Dec->LightMask: Tint should appear"
+            );
+
+            // LightMask -> Decoration
+            inner.Use.Value = eMutexTestMode.Decoration;
+
+            Assert.IsTrue(
+                _GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(WrappedMutuallyExclusiveShowIfTestSource.FillColor)),
+                "Via edit manager, LightMask->Dec: FillColor should reappear"
+            );
+            Assert.IsFalse(
+                _GetAllTargets(manager.RootNode).Any(t => t.PropertyPathTarget == nameof(WrappedMutuallyExclusiveShowIfTestSource.Intensity)),
+                "Via edit manager, LightMask->Dec: Intensity should disappear"
+            );
+        }
+
         // ------ Button targets ------
 
         [TestMethod]
@@ -1050,8 +1430,8 @@ namespace AJut.UX.Tests
     }
 
     /// Source type for testing external array replacement on a [PGList] property.
-    /// Simulates the pattern in Call Familiar where AspectEditorViewModel.AspectAnimationTimelines
-    /// returns a different array when the underlying scene data changes, and raises PropertyChanged.
+    /// Simulates a VM whose list-typed property returns a different array when the
+    /// backing data is swapped, and raises PropertyChanged to signal the change.
     public class ExternalArrayReplaceSource : NotifyPropertyChanged
     {
         private string[] m_items = ["alpha", "beta", "gamma"];

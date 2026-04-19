@@ -447,6 +447,83 @@ namespace AJut.UX.Controls
             }
         }
 
+        /// <summary>
+        /// Replaces the current selection with the given items in one operation.
+        /// Needed for Extended/Multi modes since Add-ing to SelectedItems does not
+        /// flow back to the inner ListView, and setting SelectedItem in multi modes
+        /// collapses selection to a single item. Fires SelectionChanged once with
+        /// the computed add/remove delta.
+        /// </summary>
+        public void SetSelection (IEnumerable<FlatTreeItem> items)
+        {
+            if (this.PART_ListView == null)
+            {
+                return;
+            }
+
+            List<FlatTreeItem> desired = items == null
+                ? new List<FlatTreeItem>()
+                : items.Where(i => i != null).ToList();
+
+            FlatTreeItem[] previous = m_selectedItems.ToArray();
+
+            m_blockingReentrancy = true;
+            try
+            {
+                this.PART_ListView.SelectedItems.Clear();
+
+                foreach (FlatTreeItem stale in previous)
+                {
+                    stale.IsSelected = false;
+                }
+                m_selectedItems.Clear();
+
+                // In Single/None modes only the first requested item is honored.
+                bool isMulti = (this.SelectionMode != eFlatTreeSelectionMode.Single
+                                && this.SelectionMode != eFlatTreeSelectionMode.None);
+
+                FlatTreeItem primary = null;
+                if (isMulti)
+                {
+                    foreach (FlatTreeItem item in desired)
+                    {
+                        this.PART_ListView.SelectedItems.Add(item);
+                        item.IsSelected = true;
+                        m_selectedItems.Add(item);
+                        primary ??= item;
+                    }
+                }
+                else
+                {
+                    primary = desired.FirstOrDefault();
+                    if (primary != null)
+                    {
+                        primary.IsSelected = true;
+                        m_selectedItems.Add(primary);
+                    }
+                }
+
+                // PART_ListView.SelectedItem anchors keyboard/context-menu behaviour
+                // at the first item. Harmless when primary is null.
+                this.PART_ListView.SelectedItem = primary;
+                this.SelectedItem = primary;
+            }
+            finally
+            {
+                m_blockingReentrancy = false;
+            }
+
+            // Compute delta against previous selection and fire once.
+            var previousSet = new HashSet<FlatTreeItem>(previous);
+            var currentSet = new HashSet<FlatTreeItem>(m_selectedItems);
+            FlatTreeItem[] added = m_selectedItems.Where(i => !previousSet.Contains(i)).ToArray();
+            FlatTreeItem[] removed = previous.Where(i => !currentSet.Contains(i)).ToArray();
+            if (added.Length > 0 || removed.Length > 0)
+            {
+                this.FireSelectionChanged(added, removed);
+            }
+        }
+
         // ===========[ ListView event handlers ]==================================
         private void ListView_OnSelectionChanged (object sender, SelectionChangedEventArgs e)
         {

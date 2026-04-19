@@ -27,6 +27,7 @@ namespace AJut.UX.PropertyInteraction
         // Visibility condition tracking for ShowIf/HideIf toggle-in-place
         private readonly List<VisibilityCondition> m_visibilityConditions = new();
         private readonly Dictionary<PropertyEditTarget, List<PropertyEditTarget>> m_naturalChildOrder = new();
+        private readonly List<GroupHeaderInfo> m_groupHeaders = new();
         private bool m_hasConditionalVisibility;
 
         // ===========[ Construction ]==========================================
@@ -84,6 +85,7 @@ namespace AJut.UX.PropertyInteraction
             this.RootNode = null;
             m_visibilityConditions.Clear();
             m_naturalChildOrder.Clear();
+            m_groupHeaders.Clear();
             m_hasConditionalVisibility = false;
 
             if (m_propertyGrid.ItemsSource == null && m_propertyGrid.SingleItemSource == null)
@@ -187,6 +189,23 @@ namespace AJut.UX.PropertyInteraction
                 root.InsertChild(root.Children.Count, target);
             }
 
+            // Track synthetic group headers so they can be hidden when their
+            // live children list empties out and re-inserted when any child
+            // becomes visible again.
+            foreach (PropertyEditTarget header in groupHeaders.Values)
+            {
+                int naturalIndex = root.Children.OfType<PropertyEditTarget>().ToList().IndexOf(header);
+                if (naturalIndex >= 0)
+                {
+                    m_groupHeaders.Add(new GroupHeaderInfo
+                    {
+                        Header = header,
+                        Parent = root,
+                        NaturalIndex = naturalIndex,
+                    });
+                }
+            }
+
             // 2. Restore previously-snapshotted expansion states into the new targets.
             _RestoreExpandedStates(root);
 
@@ -255,6 +274,10 @@ namespace AJut.UX.PropertyInteraction
                 int insertAt = _ComputeInsertionIndex(cond);
                 cond.Parent.InsertChild(insertAt, cond.Target);
             }
+
+            // 3. Sync group header visibility - hide headers that lost all children
+            //    and re-insert headers that gained a visible child.
+            _AdjustGroupHeaderVisibility();
 
             return anyChanged;
         }
@@ -333,6 +356,16 @@ namespace AJut.UX.PropertyInteraction
                 }
             }
 
+            // Also snapshot parents of tracked group headers so _AdjustGroupHeaderVisibility
+            // can find the natural insertion slot when re-adding a previously hidden header.
+            foreach (var groupInfo in m_groupHeaders)
+            {
+                if (!m_naturalChildOrder.ContainsKey(groupInfo.Parent))
+                {
+                    m_naturalChildOrder[groupInfo.Parent] = groupInfo.Parent.Children.OfType<PropertyEditTarget>().ToList();
+                }
+            }
+
             // 3. Evaluate initial visibility and remove hidden targets
             foreach (var cond in m_visibilityConditions)
             {
@@ -342,6 +375,9 @@ namespace AJut.UX.PropertyInteraction
                     cond.Parent.RemoveChild(cond.Target);
                 }
             }
+
+            // 4. Remove any group header whose children all evaluated hidden.
+            _AdjustGroupHeaderVisibility();
 
             void _TryLinkTarget (PropertyEditTarget target)
             {
@@ -427,6 +463,54 @@ namespace AJut.UX.PropertyInteraction
             return insertAt;
         }
 
+        // Synthetic $group_* headers only make sense when they actually contain
+        // visible rows. When every member of a group is conditional and all
+        // predicates are currently false, the header would otherwise render as a
+        // label with no content underneath it. Pull the header out in that case
+        // and re-insert it at its natural slot as soon as a child returns.
+        private void _AdjustGroupHeaderVisibility ()
+        {
+            foreach (GroupHeaderInfo info in m_groupHeaders)
+            {
+                bool hasVisibleChildren = info.Header.Children.Count > 0;
+                bool isInParent = info.Parent.Children.Any(c => c == info.Header);
+
+                if (hasVisibleChildren && !isInParent)
+                {
+                    int insertAt = _ComputeGroupHeaderInsertionIndex(info);
+                    info.Parent.InsertChild(insertAt, info.Header);
+                }
+                else if (!hasVisibleChildren && isInParent)
+                {
+                    info.Parent.RemoveChild(info.Header);
+                }
+            }
+        }
+
+        private int _ComputeGroupHeaderInsertionIndex (GroupHeaderInfo info)
+        {
+            if (!m_naturalChildOrder.TryGetValue(info.Parent, out List<PropertyEditTarget> order))
+            {
+                return Math.Min(info.NaturalIndex, info.Parent.Children.Count);
+            }
+
+            int insertAt = 0;
+            foreach (PropertyEditTarget child in order)
+            {
+                if (child == info.Header)
+                {
+                    break;
+                }
+
+                if (info.Parent.Children.Any(c => c == child))
+                {
+                    ++insertAt;
+                }
+            }
+
+            return insertAt;
+        }
+
         private void _SnapshotExpandedStates ()
         {
             if (this.RootNode == null)
@@ -484,6 +568,13 @@ namespace AJut.UX.PropertyInteraction
             public int NaturalIndex;
             public Func<bool> IsVisible;
             public bool LastResult;
+        }
+
+        private class GroupHeaderInfo
+        {
+            public PropertyEditTarget Header;
+            public PropertyEditTarget Parent;
+            public int NaturalIndex;
         }
     }
 }

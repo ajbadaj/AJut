@@ -282,6 +282,46 @@
         }
 
         [TestMethod]
+        public void AJson_JsonBuilding_JsonPropertyAsSelf_ElevatedString_StaysQuoted ()
+        {
+            // An elevated property whose inner value is a string must still be emitted with
+            //  quotes - it's the same string the caller would see if the property weren't
+            //  elevated. Without quote-flag propagation through the recursion into
+            //  FillOutJsonBuilderForObject, the output goes out bare and the file won't reparse
+            //  as a string.
+            var thing = new ThingThatHoldsStringElevator { Greeting = new OnlyCareAboutValue<string>("hello") };
+            Json json = JsonHelper.BuildJsonForObject(thing);
+            Assert.IsFalse(json.HasErrors, json.GetErrorReport());
+
+            string text = json.Data.ToString();
+            Assert.IsTrue(
+                text.Contains("\"hello\""),
+                $"Elevated string value should be emitted with quotes; got: {text}"
+            );
+
+            // And the output must reparse + round-trip back to the same string.
+            Json reparsed = JsonHelper.ParseText(text);
+            Assert.IsFalse(reparsed.HasErrors, reparsed.GetErrorReport());
+
+            var roundTripped = JsonHelper.BuildObjectForJson<ThingThatHoldsStringElevator>(reparsed);
+            Assert.IsNotNull(roundTripped.Greeting);
+            Assert.AreEqual("hello", roundTripped.Greeting.Value);
+        }
+
+        [TestMethod]
+        public void AJson_JsonBuilding_JsonPropertyAsSelf_NullElevatedValue_DoesNotThrow ()
+        {
+            // The outer wrapper is non-null but its elevated inner property is null. The
+            //  writer shouldn't NRE when it reaches the elevation step - the property should
+            //  either be omitted or round-trip as null, but in no case should it crash.
+            var thing = new ThingThatHoldsStringElevator { Greeting = new OnlyCareAboutValue<string>() };
+
+            Json json = JsonHelper.BuildJsonForObject(thing);
+
+            Assert.IsFalse(json.HasErrors, json.GetErrorReport());
+        }
+
+        [TestMethod]
         public void AJson_JsonBuilding_OmitIfDefault_DefaultValuesAreSkipped ()
         {
             var thing = new ThingWithOmittable();
@@ -567,6 +607,11 @@
         public class ThingThatHoldsElevator
         {
             public OnlyCareAboutValue<int> SuperAwesomeInt { get; set; }
+        }
+
+        public class ThingThatHoldsStringElevator
+        {
+            public OnlyCareAboutValue<string> Greeting { get; set; }
         }
 
         [JsonPropertyAsSelf("Value")]
