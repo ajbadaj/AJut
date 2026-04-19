@@ -201,7 +201,7 @@ namespace AJutShowRoomWinUI
         public ShowRoomTreeNode DragDropTreeRoot { get; } = ShowRoomTreeNode.BuildDragDropDemo();
 
         // Source swap test objects.
-        // ShowRoomAlpha (5 props) → ShowRoomBeta (2 props) replicates the CF Image→Particles scenario:
+        // ShowRoomAlpha (5 props) → ShowRoomBeta (2 props) replicates an external scenario:
         //   - same float property names (X, Y) but very different values so mismatch is obvious
         //   - count difference (5→2) forces WinUI3 container recycling
         //   - Alpha has String+Bool rows that vanish in Beta; if they persist, the bug is present

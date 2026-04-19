@@ -1288,6 +1288,12 @@ namespace AJut.UX.PropertyInteraction
             {
                 m_elevatedChildTarget.RecacheEditValue();
                 this.UpdateIsAtDefaultValue();
+
+                // Mirror the WireUpEditValueINPC handler: external writes to the
+                // elevated sub-object must raise SourceCommitted so PropertyGrid
+                // re-runs UpdateConditionalVisibility for PGShowIf/PGHideIf predicates
+                // that depend on this value.
+                this.RaisePropertyChanged(SourceCommittedPropertyName);
             }
         }
 
