@@ -543,6 +543,14 @@
                 if (targetProp != null)
                 {
                     source = targetProp.GetValue(source);
+                    if (source == null)
+                    {
+                        // Elevated value is null -- leave the property builder without a value
+                        //  so output-time skips it (matches the null-values-are-omitted behavior
+                        //  the outer property handler applies before recursing in).
+                        return;
+                    }
+
                     sourceType = source.GetType();
                 }
             }
@@ -783,7 +791,15 @@
                 }
                 else
                 {
+                    // Propagate the quote flag onto the child value builder -- BuildOutputValue
+                    //  reads IsValueUsualQuoteTarget from whichever builder actually holds the
+                    //  value (the DocumentKVPValue), not from the parent property builder. Missing
+                    //  this produces unquoted strings/enums in the output, e.g. `"Label" : foo,`
+                    //  instead of `"Label" : "foo",`. Shows up for any type routed through
+                    //  FillOutJsonBuilderForObject (elevation via JsonPropertyAsSelf, boxed
+                    //  object properties, etc) rather than AddProperty which already propagates.
                     target.DocumentKVPValue = new JsonBuilder(target);
+                    target.DocumentKVPValue.IsValueUsualQuoteTarget = target.IsValueUsualQuoteTarget;
                     target.DocumentKVPValue.Value = _value;
                 }
             }
