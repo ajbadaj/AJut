@@ -515,16 +515,25 @@
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
-                                <TextBlock Grid.Row="0" Text="FlatTreeListControl - Drag and Drop Reordering" FontStyle="Italic" Margin="0,0,0,4"/>
+                                <TextBlock Grid.Row="0" Text="FlatTreeListControl - Drag and Drop Reordering + SetSelection test" FontStyle="Italic" Margin="0,0,0,4"/>
                                 <TextBlock Grid.Row="1" Text="Drag items to reorder. X position determines target depth. Blue insertion line shows where item will land; dotted connector shows target parent." TextWrapping="Wrap" Opacity="0.7" Margin="0,0,0,8"/>
-                                <ajut:FlatTreeListControl Grid.Row="2"
+                                <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="6" Margin="0,0,0,8">
+                                    <Button Content="SetSelection: 3 scattered items" Click="SetSelectionScattered_OnClick"/>
+                                    <Button Content="SetSelection: all descendants of Scenes" Click="SetSelectionScenesDescendants_OnClick"/>
+                                    <Button Content="SetSelection: empty" Click="SetSelectionEmpty_OnClick"/>
+                                    <TextBlock x:Name="SetSelectionStatus" VerticalAlignment="Center" Opacity="0.8"/>
+                                </StackPanel>
+                                <ajut:FlatTreeListControl Grid.Row="3"
+                                                          x:Name="DragDropTree"
                                                           Root="{x:Bind DragDropTreeRoot}"
                                                           IncludeRoot="True"
                                                           StartItemsExpanded="True"
                                                           IsDragDropReorderEnabled="True"
-                                                          SelectionMode="Extended">
+                                                          SelectionMode="Extended"
+                                                          SelectionChanged="DragDropTree_OnSelectionChanged">
                                     <ajut:FlatTreeListControl.ItemTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding Source.NodeName}" VerticalAlignment="Center"/>

@@ -200,6 +200,48 @@ namespace AJutShowRoomWinUI
         public ShowRoomTreeNode TreeRoot { get; } = ShowRoomTreeNode.Build();
         public ShowRoomTreeNode DragDropTreeRoot { get; } = ShowRoomTreeNode.BuildDragDropDemo();
 
+        // ===========[ SetSelection sandbox scenario ]===========================
+        // Exercises FlatTreeListControl.SetSelection on an Extended-mode tree.
+        // Expected: all requested rows highlight (4px accent strip), and
+        // SelectedItems.Count matches the requested set.
+        private void SetSelectionScattered_OnClick (object sender, RoutedEventArgs e)
+        {
+            var items = this.DragDropTree.Items
+                .Where(i => i.Source is ShowRoomTreeNode node
+                    && (node.NodeName == "Camera" || node.NodeName == "Textures" || node.NodeName == "GameManager"))
+                .ToArray();
+            this.DragDropTree.SetSelection(items);
+        }
+
+        private void SetSelectionScenesDescendants_OnClick (object sender, RoutedEventArgs e)
+        {
+            // Select every descendant of the "Scenes" node - expected to be several rows.
+            var scenes = this.DragDropTree.Items
+                .FirstOrDefault(i => i.Source is ShowRoomTreeNode node && node.NodeName == "Scenes");
+            if (scenes == null)
+            {
+                return;
+            }
+
+            var toSelect = this.DragDropTree.Items
+                .Where(i => i.Parent == scenes || (i.Parent != null && i.Parent.Parent == scenes))
+                .ToArray();
+            this.DragDropTree.SetSelection(toSelect);
+        }
+
+        private void SetSelectionEmpty_OnClick (object sender, RoutedEventArgs e)
+        {
+            this.DragDropTree.SetSelection(Array.Empty<FlatTreeItem>());
+        }
+
+        private void DragDropTree_OnSelectionChanged (object sender, SelectionChange<FlatTreeItem> e)
+        {
+            if (this.SetSelectionStatus != null)
+            {
+                this.SetSelectionStatus.Text = $"SelectedItems.Count = {this.DragDropTree.SelectedItems.Count}";
+            }
+        }
+
         // Source swap test objects.
         // ShowRoomAlpha (5 props) → ShowRoomBeta (2 props) replicates an external scenario:
         //   - same float property names (X, Y) but very different values so mismatch is obvious
