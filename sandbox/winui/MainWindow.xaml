@@ -294,6 +294,24 @@
                                         </StackPanel>
                                     </StackPanel>
 
+                                    <TextBlock Text="EnumToggleStrip" Style="{ThemeResource SubtitleTextBlockStyle}" Margin="0,12,0,0"/>
+                                    <TextBlock Text="Auto-builds option list from the bound enum's type. Multi-select with [Flags] OR's into SelectedItem; otherwise SelectedItem is the most recent toggle." FontStyle="Italic" Opacity="0.7" TextWrapping="Wrap"/>
+                                    <StackPanel Spacing="12">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="Single-select (eDisplayMode)" FontSize="11" Opacity="0.7"/>
+                                            <ajut:EnumToggleStrip SelectedItem="{x:Bind DisplayMode, Mode=TwoWay}"/>
+                                        </StackPanel>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="Multi-select on a [Flags] enum (eToppings, default = Cheese | Pepperoni)" FontSize="11" Opacity="0.7"/>
+                                            <ajut:EnumToggleStrip AllowMultiSelect="True" AllowNoSelection="True"
+                                                                  SelectedItem="{x:Bind Toppings, Mode=TwoWay}"/>
+                                        </StackPanel>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="Exclusions: Visible1/2/3 only - HiddenViaBrowsable hidden by [Browsable(false)], HiddenViaAjutAttr hidden by [ExcludeFromSelection]" FontSize="11" Opacity="0.7" TextWrapping="Wrap"/>
+                                            <ajut:EnumToggleStrip SelectedItem="{x:Bind ExclusionPick, Mode=TwoWay}"/>
+                                        </StackPanel>
+                                    </StackPanel>
+
                                 </StackPanel>
                             </ScrollViewer>
                         </TabViewItem.Content>

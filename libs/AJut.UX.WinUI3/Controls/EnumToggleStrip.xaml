@@ -1,0 +1,44 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="using:AJut.UX.Controls">
+
+    <Style TargetType="local:EnumToggleStrip">
+        <!-- Mirror ToggleStrip's default Setters so an unstyled EnumToggleStrip looks identical to a default ToggleStrip.
+             TemplateBinding wins over the inner ToggleStrip's own Style Setters, so we have to seed our own defaults here. -->
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+        <Setter Property="Background" Value="{ThemeResource ControlFillColorDefaultBrush}"/>
+        <Setter Property="BorderBrush" Value="{ThemeResource ControlStrokeColorDefaultBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="2"/>
+        <Setter Property="ItemTemplate">
+            <Setter.Value>
+                <DataTemplate>
+                    <TextBlock Text="{Binding}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </DataTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:EnumToggleStrip">
+                    <local:ToggleStrip x:Name="PART_ToggleStrip"
+                                       Background="{TemplateBinding Background}"
+                                       BorderBrush="{TemplateBinding BorderBrush}"
+                                       BorderThickness="{TemplateBinding BorderThickness}"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       FontSize="{TemplateBinding FontSize}"
+                                       FontFamily="{TemplateBinding FontFamily}"
+                                       FontWeight="{TemplateBinding FontWeight}"
+                                       FontStyle="{TemplateBinding FontStyle}"
+                                       HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                       Padding="{TemplateBinding Padding}"
+                                       CornerRadius="{TemplateBinding CornerRadius}"
+                                       SeparatorThickness="{TemplateBinding SeparatorThickness}"
+                                       ItemPadding="{TemplateBinding ItemPadding}"
+                                       ItemTemplate="{TemplateBinding ItemTemplate}"
+                                       ToggleButtonItemStyle="{TemplateBinding ToggleButtonItemStyle}"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

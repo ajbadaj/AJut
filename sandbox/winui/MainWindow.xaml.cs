@@ -85,6 +85,11 @@ namespace AJutShowRoomWinUI
         // ===========[ ToggleStrip enum bug repro ]================================
         public eEditorMode SelectedEditorMode { get; set; } = eEditorMode.Text;
 
+        // ===========[ EnumToggleStrip showcase ]====================================
+        public eDisplayMode DisplayMode { get; set; } = eDisplayMode.Standard;
+        public eToppings Toppings { get; set; } = eToppings.Cheese | eToppings.Pepperoni;
+        public eExclusionDemo ExclusionPick { get; set; } = eExclusionDemo.Visible1;
+
         private void EnumBugRepro_OnSetNumber (object sender, RoutedEventArgs e)
         {
             this.SelectedEditorMode = eEditorMode.Number;
@@ -517,6 +522,37 @@ namespace AJutShowRoomWinUI
 
     // ===========[ ShowRoomTester - PropertyGrid smoke-test source ]==================
     public enum eEditorMode { Text, Number, Color }
+
+    // ===========[ EnumToggleStrip showcase enums ]====================================
+    public enum eDisplayMode
+    {
+        Compact,
+        Standard,
+        Comfortable,
+        Wide,
+    }
+
+    [Flags]
+    public enum eToppings
+    {
+        None      = 0,
+        Cheese    = 1 << 0,
+        Mushrooms = 1 << 1,
+        Olives    = 1 << 2,
+        Pepperoni = 1 << 3,
+        Pineapple = 1 << 4,
+    }
+
+    public enum eExclusionDemo
+    {
+        Visible1,
+        [Browsable(false)]
+        HiddenViaBrowsable,
+        Visible2,
+        [ExcludeFromSelection]
+        HiddenViaAjutAttr,
+        Visible3,
+    }
 
     public class ShowRoomTester : NotifyPropertyChanged
     {

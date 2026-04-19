@@ -1,0 +1,72 @@
+<UserControl x:Class="TheAJutShowRoom.UI.Controls.EnumToggleStripExampleDisplay"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:TheAJutShowRoom.UI.Controls"
+             xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
+             mc:Ignorable="d"
+             d:DesignHeight="450" d:DesignWidth="800"
+             x:Name="Self">
+    <Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="10">
+                <TextBlock TextWrapping="WrapWithOverflow">
+                    <Run Text="The"/>
+                    <Run Text="EnumToggleStrip" FontWeight="Bold"/>
+                    <Run Text="auto-discovers an enum type's values from the bound SelectedItem - same idea as EnumComboBox but for ToggleStrip. Multi-select pulls the per-bit values out of a [Flags] enum and combines them on writeback."/>
+                </TextBlock>
+
+                <!-- ======[ Single select ]====== -->
+                <GroupBox Header="Single-select (non-Flags enum)" Margin="0,15,0,0" Padding="10">
+                    <StackPanel>
+                        <ajut:EnumToggleStrip SelectedItem="{Binding ElementName=Self, Path=DisplayMode, Mode=TwoWay}" HorizontalAlignment="Left"/>
+                        <TextBlock Margin="0,8,0,0">
+                            <Run Text="SelectedItem:" FontWeight="Bold"/>
+                            <Run Text="{Binding ElementName=Self, Path=DisplayMode, Mode=OneWay}"/>
+                        </TextBlock>
+                        <TextBlock FontStyle="Italic" Opacity="0.8" Margin="0,5,0,0" TextWrapping="WrapWithOverflow">
+                            <Run Text="Bound to a non-Flags eDisplayMode. SelectedItem is the chosen value."/>
+                        </TextBlock>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- ======[ Multi select with [Flags] ]====== -->
+                <GroupBox Header="Multi-select on a [Flags] enum" Margin="0,15,0,0" Padding="10">
+                    <StackPanel>
+                        <ajut:EnumToggleStrip AllowMultiSelect="True" AllowNoSelection="True"
+                                              SelectedItem="{Binding ElementName=Self, Path=Toppings, Mode=TwoWay}"
+                                              HorizontalAlignment="Left"/>
+                        <TextBlock Margin="0,8,0,0">
+                            <Run Text="SelectedItem (OR'd):" FontWeight="Bold"/>
+                            <Run Text="{Binding ElementName=Self, Path=Toppings, Mode=OneWay}"/>
+                        </TextBlock>
+                        <TextBlock FontStyle="Italic" Opacity="0.8" Margin="0,5,0,0" TextWrapping="WrapWithOverflow">
+                            <Run Text="The strip is wired to a [Flags] eToppings. SelectedItem is the OR'd combined value; the per-bit list is also available via SelectedItems."/>
+                        </TextBlock>
+                    </StackPanel>
+                </GroupBox>
+
+                <!-- ======[ Exclusion ]====== -->
+                <GroupBox Header="Exclusions" Margin="0,15,0,0" Padding="10">
+                    <StackPanel>
+                        <TextBlock TextWrapping="WrapWithOverflow" Margin="0,0,0,8">
+                            <Run Text="Two ways to hide values:"/>
+                            <LineBreak/>
+                            <Run Text="  - [Browsable(false)] - the standard System.ComponentModel attribute (eExclusionDemo.HiddenViaBrowsable)"/>
+                            <LineBreak/>
+                            <Run Text="  - [ExcludeFromSelection] - AJut's attribute for selection-UI specifically (eExclusionDemo.HiddenViaAjutAttr)"/>
+                        </TextBlock>
+                        <ajut:EnumToggleStrip SelectedItem="{Binding ElementName=Self, Path=ExclusionPick, Mode=TwoWay}"
+                                              HorizontalAlignment="Left"/>
+                        <TextBlock Margin="0,8,0,0">
+                            <Run Text="SelectedItem:" FontWeight="Bold"/>
+                            <Run Text="{Binding ElementName=Self, Path=ExclusionPick, Mode=OneWay}"/>
+                        </TextBlock>
+                    </StackPanel>
+                </GroupBox>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>
