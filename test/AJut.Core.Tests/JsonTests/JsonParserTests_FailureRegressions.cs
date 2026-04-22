@@ -1,12 +1,13 @@
 ﻿namespace AJut.Core.UnitTests.AJson
 {
+    using AJut.IO;
+    using AJut.MathUtilities;
+    using AJut.Text.AJson;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Numerics;
-    using AJut.IO;
-    using AJut.Text.AJson;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class JsonParserTests_FailureRegressions
@@ -45,7 +46,7 @@
             Json json = JsonForEmbeddedResource("_TestData/Failure_2-17-20.json");
             Assert.IsFalse(json.HasErrors, String.Join("\n >", json.Errors));
         }
-        
+
         [TestMethod]
         public void AJson_ExternalFailure_5_26_20()
         {
@@ -82,11 +83,11 @@
         }
 
         public class ThingWithVector2
-        { 
+        {
             public string Name { get; set; }
             public Vector2 Value { get; set; }
         }
-        
+
 
         private static Json JsonForEmbeddedResource(string resourcePath)
         {
@@ -356,7 +357,7 @@
         }
 
         [TestMethod]
-        public void AJson_NullableProperty_June_19_2024 ()
+        public void AJson_NullableProperty_June_19_2024()
         {
             Guid value = Guid.NewGuid();
             var json = JsonHelper.ParseText($"{{ Value: \"{value}\"}}");
@@ -368,9 +369,29 @@
             Assert.AreEqual(value, testOutput.Value);
         }
 
+        [TestMethod]
+        public void AJson_NullableProperty_Apr_22_2026()
+        {
+            NullableGuidPropertyTest input = new NullableGuidPropertyTest();
+            input.VecValue = new Vector2 { X = 0.5f, Y = 3.14f };
+            var jsonOut = JsonHelper.BuildJsonForObject(input);
+            Assert.IsNotNull(jsonOut);
+            Assert.IsTrue(jsonOut, jsonOut.GetErrorReport());
+            string jsonOutText = jsonOut.ToString();
+            var json = JsonHelper.ParseText(jsonOutText);
+            Assert.IsTrue(json, "Failed to do basic json parsing, we're in trouble!");
+
+            NullableGuidPropertyTest testOutput = JsonHelper.BuildObjectForJson<NullableGuidPropertyTest>(json);
+            Assert.IsNotNull(testOutput);
+            Assert.IsNotNull(testOutput.VecValue);
+            Assert.IsTrue(input.VecValue.Value.X.IsApproximatelyEqualTo(testOutput.VecValue.Value.X));
+            Assert.IsTrue(input.VecValue.Value.Y.IsApproximatelyEqualTo(testOutput.VecValue.Value.Y));
+        }
+
         public class NullableGuidPropertyTest
         {
             public Guid? Value { get; set; }
+            public Vector2? VecValue { get; set; }
         }
     }
 }
