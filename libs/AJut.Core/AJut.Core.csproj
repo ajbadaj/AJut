@@ -4,7 +4,6 @@
     <RootNamespace>AJut</RootNamespace>
     <Authors>AJ Badarni</Authors>
     <Company />
-    <VersionPrefix>1.4.1</VersionPrefix>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <DocumentationFile>..\..\bin\drip\ajut-core.xml</DocumentationFile>
     <Copyright>AJ Badarni</Copyright>
@@ -17,7 +16,7 @@
     <Description>C# / dotnet 8 utility library, created by AJ Badarni. Logger, Json parsing/building, extensions, undo/redo, math, tree logic, and more.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-    <Version>1.4.4.115</Version>
+    <Version>1.4.5.116</Version>
   </PropertyGroup>
   <ItemGroup>
     <None Include="..\..\.editorconfig" Link=".editorconfig" />
