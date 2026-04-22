@@ -296,6 +296,14 @@
                 return sourceJsonValue;
             }
 
+            // Nullable<T> needs to dispatch on T so custom constructors (Vector2, DateTime, etc.)
+            //  and the rest of the type resolution pipeline see the underlying type. Reflection's
+            //  SetValue auto-wraps the returned T back into the Nullable<T> property.
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+            {
+                return BuildObjectForJson(type.GenericTypeArguments[0], sourceJsonValue, settings);
+            }
+
             settings = settings ?? JsonInterpretterSettings.Default;
             object outputInstance = null;
 
