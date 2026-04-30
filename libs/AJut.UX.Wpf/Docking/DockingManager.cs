@@ -1,8 +1,14 @@
 ﻿namespace AJut.UX.Docking
 {
+    using AJut.Storage;
+    using AJut.Tree;
+    using AJut.TypeManagement;
+    using AJut.UX.AttachedProperties;
+    using AJut.UX.Controls;
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Collections.Specialized;
     using System.ComponentModel;
     using System.Linq;
     using System.Threading.Tasks;
@@ -11,11 +17,6 @@
     using System.Windows.Input;
     using System.Windows.Media;
     using System.Windows.Media.Imaging;
-    using AJut.Storage;
-    using AJut.Tree;
-    using AJut.TypeManagement;
-    using AJut.UX.AttachedProperties;
-    using AJut.UX.Controls;
 
     /* TODO: Auto save
      * Notes...
@@ -27,17 +28,19 @@
     /// <summary>
     /// The centralized manager for a single docking experience
     /// </summary>
-    public class DockingManager : NotifyPropertyChanged, IDockingManager
+    public class DockingManager : NotifyPropertyChanged, IDockingManager, IDisposable
     {
         private readonly Dictionary<Type, DisplayBuilder> m_factory = new Dictionary<Type, DisplayBuilder>();
         private readonly ObservableCollection<DockZone> m_rootDockZones = new ObservableCollection<DockZone>();
         private readonly MultiMap<Window, DockZone> m_dockZoneMapping = new MultiMap<Window, DockZone>();
         private bool m_isZoneDragDropUnderway;
         private bool m_isReadyToTrackAutoSave = false;
+        private bool m_isDisposed;
 
         private readonly List<Window> m_currentlyClosingWindows = new List<Window>();
         private readonly List<Window> m_windowsToCloseSilently = new List<Window>();
         private readonly List<UIElement> m_commandSources = new List<UIElement>();
+        private MenuItem m_managedMenuItem;
 
         /// <summary>
         /// Construct a new <see cref="DockingManager"/> instance.
@@ -56,6 +59,65 @@
             this.UniqueId = uniqueId;
             this.DockLayoutPersistentStorageFile = persistentStorageFilePath ?? DockingSerialization.CreateApplicationPath(this.UniqueId);
             this.AutoSaveMethod = autoSaveMethod;
+        }
+
+        public void Dispose ()
+        {
+            if (m_isDisposed)
+            {
+                return;
+            }
+
+            m_isDisposed = true;
+
+            // Force-close all tearoff windows before pulling subs out. The close paths
+            // already call DetachTearoffSubscriptions per window.
+            this.CloseAll(force: true);
+
+            // Drop the menu bar subs (if any) - they capture the MenuItem which lives on
+            // the root window, so they outlive everything else if not unhooked.
+            if (m_managedMenuItem != null)
+            {
+                this.UISyncVM.PanelStateChanged -= this.OnUISyncVMPanelStateChanged;
+                if (this.UISyncVM.PanelTypeEntries is INotifyCollectionChanged ncc)
+                {
+                    ncc.CollectionChanged -= this.OnUISyncVMPanelTypeEntriesChanged;
+                }
+
+                m_managedMenuItem = null;
+            }
+
+            // Symmetric -= for every TrackSizingChanges. Walks every reachable zone -
+            // root zones plus every descendant - so split / tabbed hierarchies are covered.
+            foreach (var rootZone in m_rootDockZones.ToList())
+            {
+                foreach (var zone in TreeTraversal<DockZone>.All(rootZone))
+                {
+                    if (zone != null)
+                    {
+                        this.StopTrackingSizingChanges(zone);
+                    }
+                }
+            }
+
+            // Without this Dispose call the window manager's subs to root window events
+            // (StateChanged / Activated / Closed) keep RootWindow → WindowManager →
+            // DockingManager pinned for the life of the application.
+            this.Windows?.Dispose();
+
+            this.CreateNewTearoffWindowHandler = null;
+            this.ShowTearoffWindowHandler = null;
+
+            m_rootDockZones.Clear();
+            foreach (var kv in m_dockZoneMapping.ToList())
+            {
+                m_dockZoneMapping.RemoveAllFor(kv.Key);
+            }
+
+            m_windowsToCloseSilently.Clear();
+            m_currentlyClosingWindows.Clear();
+            m_commandSources.Clear();
+            m_factory.Clear();
         }
 
         // ======================[ Properties ]=======================
@@ -118,20 +180,50 @@
         /// </summary>
         public void ManageMenu (System.Windows.Controls.MenuItem menuItem)
         {
-            this.RebuildMenuItems(menuItem);
-            this.UISyncVM.PanelStateChanged += (s, e) =>
+            // Drop prior subs if the caller hands us a different menu so the old one isn't
+            // held captive and we don't accumulate stale handlers.
+            if (m_managedMenuItem != null && m_managedMenuItem != menuItem)
             {
-                if (e.IsStructuralChange)
-                {
-                    this.RebuildMenuItems(menuItem);
-                }
-                else
-                {
-                    this.UpdateMenuCheckedStates(menuItem);
-                }
-            };
-            ((System.Collections.Specialized.INotifyCollectionChanged)this.UISyncVM.PanelTypeEntries)
-                .CollectionChanged += (s, e) => this.RebuildMenuItems(menuItem);
+                this.UISyncVM.PanelStateChanged -= this.OnUISyncVMPanelStateChanged;
+                ((System.Collections.Specialized.INotifyCollectionChanged)this.UISyncVM.PanelTypeEntries)
+                    .CollectionChanged -= this.OnUISyncVMPanelTypeEntriesChanged;
+            }
+
+            m_managedMenuItem = menuItem;
+            this.RebuildMenuItems(menuItem);
+
+            // Defensive -= before += so re-entry into ManageMenu cannot double-subscribe.
+            this.UISyncVM.PanelStateChanged -= this.OnUISyncVMPanelStateChanged;
+            this.UISyncVM.PanelStateChanged += this.OnUISyncVMPanelStateChanged;
+
+            var entries = (System.Collections.Specialized.INotifyCollectionChanged)this.UISyncVM.PanelTypeEntries;
+            entries.CollectionChanged -= this.OnUISyncVMPanelTypeEntriesChanged;
+            entries.CollectionChanged += this.OnUISyncVMPanelTypeEntriesChanged;
+        }
+
+        private void OnUISyncVMPanelStateChanged (object sender, DockPanelAddRemoveUISync.PanelStateChangedEventArgs e)
+        {
+            if (m_managedMenuItem == null)
+            {
+                return;
+            }
+
+            if (e.IsStructuralChange)
+            {
+                this.RebuildMenuItems(m_managedMenuItem);
+            }
+            else
+            {
+                this.UpdateMenuCheckedStates(m_managedMenuItem);
+            }
+        }
+
+        private void OnUISyncVMPanelTypeEntriesChanged (object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            if (m_managedMenuItem != null)
+            {
+                this.RebuildMenuItems(m_managedMenuItem);
+            }
         }
 
         private void RebuildMenuItems (System.Windows.Controls.MenuItem menuItem)
@@ -502,6 +594,7 @@
                                     var tearoffRoots = dragSourceWindow.GetVisualChildren().OfType<DockZone>().ToArray();
                                     this.DeRegisterRootDockZones(tearoffRoots);
 
+                                    this.DetachTearoffSubscriptions(dragSourceWindow);
                                     dragSourceWindow.Close();
                                     m_dockZoneMapping.RemoveAllFor(dragSourceWindow);
                                 }
@@ -932,6 +1025,7 @@
                     m_windowsToCloseSilently.Add(window);
                     try
                     {
+                        this.DetachTearoffSubscriptions(window);
                         window.Close();
                         m_dockZoneMapping.RemoveAllFor(window);
                     }
@@ -1001,6 +1095,7 @@
             foreach (var tearoff in allTearoffs)
             {
                 m_windowsToCloseSilently.Add(tearoff);
+                this.DetachTearoffSubscriptions(tearoff);
                 tearoff.Close();
                 m_dockZoneMapping.RemoveAllFor(tearoff);
                 m_rootDockZones.RemoveAll(allTearoffRoots.Contains);
@@ -1138,6 +1233,11 @@
                     return;
                 }
 
+                // Close is going through. Drop our Closing sub now so the window's invocation
+                // list isn't holding a strong ref to this manager while the OS finalizes the
+                // window object. Safe to -= from inside the handler - the current invocation
+                // completes regardless.
+                this.DetachTearoffSubscriptions(window);
                 this.Windows.Root.Focus();
             }
             finally
@@ -1158,6 +1258,18 @@
             dockZone.SizeChanged -= this.DockZone_OnSizeChanged;
         }
 
+        // Drops the Window.Closing sub DockingManager owns on a tearoff. Without this, the
+        // window's invocation list keeps a strong ref to DockingManager until the window
+        // object itself is collected - which is non-deterministic and pins everything for
+        // the duration. Always call this just before window.Close() on every tearoff path.
+        private void DetachTearoffSubscriptions (Window window)
+        {
+            if (window != null)
+            {
+                window.Closing -= this.OnDockTearoffWindowClosing;
+            }
+        }
+
         internal void FindAndCloseTearoffWindowByDockRoot (DockZoneViewModel dockZoneViewModel, bool closeSilently)
         {
             var window = this.Windows.FirstOrDefault(w => DockWindowConfig.GetDockingTearoffWindowRootZone(w) == dockZoneViewModel);
@@ -1170,6 +1282,7 @@
 
                 try
                 {
+                    this.DetachTearoffSubscriptions(window);
                     window.Close();
                 }
                 finally

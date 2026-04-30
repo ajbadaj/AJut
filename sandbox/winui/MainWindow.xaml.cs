@@ -454,6 +454,90 @@ namespace AJutShowRoomWinUI
                 }
             }
         }
+
+        // ===========[ Leak Probe ]======================================================
+
+        private void LeakProbe_OnDockingManagerClicked (object sender, RoutedEventArgs e)
+        {
+            this.LeakProbe_DockingManagerStatus.Text = "running...";
+            bool collected = LeakProbe_BuildAndDisposeDockingManager(this);
+            this.LeakProbe_DockingManagerStatus.Text = collected
+                ? "PASS - DockingManager was collected after Dispose"
+                : "FAIL - DockingManager survived Dispose + GC (something is still pinning it)";
+        }
+
+        private void LeakProbe_OnWindowManagerClicked (object sender, RoutedEventArgs e)
+        {
+            this.LeakProbe_WindowManagerStatus.Text = "running...";
+            bool collected = LeakProbe_BuildAndDisposeWindowManager(this);
+            this.LeakProbe_WindowManagerStatus.Text = collected
+                ? "PASS - WindowManager was collected after Dispose"
+                : "FAIL - WindowManager survived Dispose + GC (something is still pinning it)";
+        }
+
+        private void LeakProbe_OnCycleClicked (object sender, RoutedEventArgs e)
+        {
+            this.LeakProbe_CycleStatus.Text = "running...";
+            int passes = 0;
+            for (int i = 0; i < 5; ++i)
+            {
+                if (LeakProbe_BuildAndDisposeDockingManager(this))
+                {
+                    ++passes;
+                }
+            }
+
+            this.LeakProbe_CycleStatus.Text = passes == 5
+                ? "PASS - all 5 cycles collected cleanly"
+                : $"FAIL - only {passes}/5 cycles collected (later iterations should still pass if the first one does)";
+        }
+
+        // Build a real DockingManager against the live root window, dispose it, drop the
+        // strong ref, and check the WeakReference. Static so the local `manager` variable
+        // is the only place a strong ref lives - the JIT sometimes keeps locals from the
+        // enclosing instance method alive longer than expected.
+        private static bool LeakProbe_BuildAndDisposeDockingManager (Window root)
+        {
+            WeakReference weak = LeakProbe_BuildAndDisposeDockingManager_Inner(root);
+            return LeakProbe_ConfirmCollected(weak);
+        }
+
+        private static WeakReference LeakProbe_BuildAndDisposeDockingManager_Inner (Window root)
+        {
+            var manager = new DockingManager(root, "leak-probe-" + Guid.NewGuid().ToString("N"));
+            var weak = new WeakReference(manager);
+            manager.Dispose();
+            return weak;
+        }
+
+        private static bool LeakProbe_BuildAndDisposeWindowManager (Window root)
+        {
+            WeakReference weak = LeakProbe_BuildAndDisposeWindowManager_Inner(root);
+            return LeakProbe_ConfirmCollected(weak);
+        }
+
+        private static WeakReference LeakProbe_BuildAndDisposeWindowManager_Inner (Window root)
+        {
+            var manager = new WindowManager();
+            manager.Setup(root);
+            var weak = new WeakReference(manager);
+            manager.Dispose();
+            return weak;
+        }
+
+        private static bool LeakProbe_ConfirmCollected (WeakReference weak)
+        {
+            // Two pass GC + finalizer wait. Single pass usually does it but second pass
+            // catches anything that pulled itself off the finalizer queue on the way out.
+            for (int i = 0; i < 2; ++i)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+            }
+
+            return !weak.IsAlive;
+        }
     }
 
     // ===========[ ShowRoomTreeNode - FlatTreeListControl smoke-test source ]=========

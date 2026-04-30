@@ -240,10 +240,12 @@ namespace AJut.UX.Controls
             // throws a WinRT COM exception. Null out PanelContent on all outgoing leaf
             // layouts BEFORE the Children.Clear() so the display element is detached from
             // its old ContentPresenter while the layout is still properly in the visual tree.
-            foreach (var oldLeaf in this.PART_Root.Children.OfType<DockLeafLayout>().ToList())
-            {
-                oldLeaf.PanelContent = null;
-            }
+            //
+            // Same pass also unhooks the events DockZone subscribed against each old leaf,
+            // tab item, scroll button, scroll viewer, and tab panel. The transient targets
+            // would normally be garbage on their own, but rebuilds run hot - leaving stale
+            // subs around makes every cycle do more work and slows things down over time.
+            this.DetachLayoutSubscriptions();
 
             this.PART_Root.Children.Clear();
             this.PART_Root.RowDefinitions.Clear();
@@ -275,6 +277,63 @@ namespace AJut.UX.Controls
                     break;
             }
 
+        }
+
+        // Walks the existing layout from the previous build and unhooks every event this
+        // DockZone subscribed against transient children (leaf, tab items, scroll buttons,
+        // scroll viewer, tab panel, per-tab close button, header close button). Called at
+        // the top of RebuildLayout before Children.Clear so the symmetric -= happens while
+        // the references are still in hand.
+        private void DetachLayoutSubscriptions()
+        {
+            if (this.PART_Root == null)
+            {
+                return;
+            }
+
+            foreach (var oldLeaf in this.PART_Root.Children.OfType<DockLeafLayout>().ToList())
+            {
+                oldLeaf.HeaderPointerPressed -= this.OnHeaderPointerPressed;
+                oldLeaf.HeaderPointerMoved -= this.OnHeaderPointerMoved;
+                oldLeaf.HeaderPointerReleased -= this.OnHeaderPointerReleased;
+                oldLeaf.HeaderPointerCaptureLost -= this.OnHeaderPointerCaptureLost;
+                oldLeaf.HeaderRightTapped -= this.OnHeaderRightTapped;
+
+                // Detach the display element from its ContentPresenter before any reparenting -
+                // see the comment in RebuildLayout for why this matters in WinUI3.
+                oldLeaf.PanelContent = null;
+            }
+
+            if (m_tabPanel != null)
+            {
+                m_tabPanel.SizeChanged -= this.OnTabPanelSizeChanged;
+                foreach (var oldTab in m_tabPanel.Children.OfType<DockTabItem>().ToList())
+                {
+                    oldTab.TabSelectionRequested        -= this.OnTabSelectionRequested;
+                    oldTab.TabMiddleClickCloseRequested -= this.OnTabMiddleClickCloseRequested;
+                    oldTab.TabTearoffDragInitiated      -= this.OnTabTearoffDragInitiated;
+                    oldTab.TabReorderDragMoved          -= this.OnTabReorderDragMoved;
+                    oldTab.TabReorderDropped            -= this.OnTabReorderDropped;
+                    oldTab.TabDragCancelled             -= this.OnTabDragCancelled;
+                    oldTab.TabRightTapped               -= this.OnTabRightTapped;
+                }
+            }
+
+            if (m_tabScrollViewer != null)
+            {
+                m_tabScrollViewer.ViewChanged -= this.OnTabScrollViewerViewChanged;
+                m_tabScrollViewer.SizeChanged -= this.OnTabScrollViewerSizeChanged;
+            }
+
+            if (m_tabLeftScrollBtn != null)
+            {
+                m_tabLeftScrollBtn.Click -= this.OnTabScrollLeft;
+            }
+
+            if (m_tabRightScrollBtn != null)
+            {
+                m_tabRightScrollBtn.Click -= this.OnTabScrollRight;
+            }
         }
 
         private void BuildEmptyLayout()
