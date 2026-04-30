@@ -79,10 +79,7 @@
             if (m_managedMenuItem != null)
             {
                 this.UISyncVM.PanelStateChanged -= this.OnUISyncVMPanelStateChanged;
-                if (this.UISyncVM.PanelTypeEntries is INotifyCollectionChanged ncc)
-                {
-                    ncc.CollectionChanged -= this.OnUISyncVMPanelTypeEntriesChanged;
-                }
+                ((INotifyCollectionChanged)this.UISyncVM.PanelTypeEntries).CollectionChanged -= this.OnUISyncVMPanelTypeEntriesChanged;
 
                 m_managedMenuItem = null;
             }
