@@ -55,6 +55,11 @@
 
             TypeXT.RegisterSpecialDouble<GridLength>(gl => gl.Value);
 
+            // Static-event subs below are intentionally app-lifetime. The g_isSetup guard
+            // prevents re-entry, and these handlers exist precisely to outlive everything
+            // else so an unhandled exception or process exit can still log. No -= path is
+            // appropriate here - if you find yourself wanting one, add a real shutdown
+            // method instead of unhooking these piecemeal.
             if (onExceptionRecieved != null)
             {
                 AppDomain.CurrentDomain.UnhandledException += _OnHandleException;

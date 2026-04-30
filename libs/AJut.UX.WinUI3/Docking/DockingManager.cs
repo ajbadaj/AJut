@@ -47,6 +47,7 @@ namespace AJut.UX.Docking
         private readonly WindowManager m_windowManager = new();
         private readonly List<Window> m_windowsToCloseSilently = new();
         private readonly List<Window> m_currentlyClosingWindows = new();
+        private MenuBarItem m_managedMenuBarItem;
         private bool m_isZoneDragDropUnderway;
         private bool m_isReadyToTrackAutoSave;
 
@@ -88,12 +89,27 @@ namespace AJut.UX.Docking
         {
             this.CloseAll(force: true);
 
+            // Drop the menu bar subscriptions before everything else - if the menu was
+            // wired up via ManageMenu, those subs are the loudest stragglers because
+            // they capture the MenuBarItem (which lives on RootWindow).
+            if (m_managedMenuBarItem != null)
+            {
+                this.UISyncVM.PanelStateChanged -= this.OnUISyncVMPanelStateChanged;
+                ((INotifyCollectionChanged)this.UISyncVM.PanelTypeEntries).CollectionChanged -= this.OnUISyncVMPanelTypeEntriesChanged;
+                m_managedMenuBarItem = null;
+            }
+
             // Unsubscribe from root window events to break the reference chain
             // that keeps this DockingManager (and everything it references) alive
             // as long as the root window exists.
             this.RootWindow.Closed -= this.OnRootWindowClosed;
             this.RootWindow.Activated -= this.OnRootWindowActivated;
             ((INotifyCollectionChanged)m_windowManager).CollectionChanged -= this.OnWindowManagerCollectionChanged;
+
+            // The window manager itself subscribes to RootWindow events during Setup.
+            // Without this Dispose call its subs would keep RootWindow → WindowManager →
+            // DockingManager pinned for the life of the application.
+            m_windowManager.Dispose();
 
             this.CreateNewTearoffWindowHandler = null;
             this.ShowTearoffWindowHandler = null;
@@ -206,20 +222,49 @@ namespace AJut.UX.Docking
         /// </summary>
         public void ManageMenu (MenuBarItem menuBarItem)
         {
-            this.RebuildMenuItems(menuBarItem);
-            this.UISyncVM.PanelStateChanged += (s, e) =>
+            // If the caller hands us a different bar than last time, drop the prior subs
+            // first so the old bar isn't held hostage and we don't end up double-firing.
+            if (m_managedMenuBarItem != null && m_managedMenuBarItem != menuBarItem)
             {
-                if (e.IsStructuralChange)
-                {
-                    this.RebuildMenuItems(menuBarItem);
-                }
-                else
-                {
-                    this.UpdateMenuCheckedStates(menuBarItem);
-                }
-            };
-            ((System.Collections.Specialized.INotifyCollectionChanged)this.UISyncVM.PanelTypeEntries)
-                .CollectionChanged += (s, e) => this.RebuildMenuItems(menuBarItem);
+                this.UISyncVM.PanelStateChanged -= this.OnUISyncVMPanelStateChanged;
+                ((INotifyCollectionChanged)this.UISyncVM.PanelTypeEntries).CollectionChanged -= this.OnUISyncVMPanelTypeEntriesChanged;
+            }
+
+            m_managedMenuBarItem = menuBarItem;
+            this.RebuildMenuItems(menuBarItem);
+
+            // Defensive -= before += so re-entry into ManageMenu (same bar) cannot double-subscribe.
+            this.UISyncVM.PanelStateChanged -= this.OnUISyncVMPanelStateChanged;
+            this.UISyncVM.PanelStateChanged += this.OnUISyncVMPanelStateChanged;
+
+            var entries = (INotifyCollectionChanged)this.UISyncVM.PanelTypeEntries;
+            entries.CollectionChanged -= this.OnUISyncVMPanelTypeEntriesChanged;
+            entries.CollectionChanged += this.OnUISyncVMPanelTypeEntriesChanged;
+        }
+
+        private void OnUISyncVMPanelStateChanged (object sender, DockPanelAddRemoveUISync.PanelStateChangedEventArgs e)
+        {
+            if (m_managedMenuBarItem == null)
+            {
+                return;
+            }
+
+            if (e.IsStructuralChange)
+            {
+                this.RebuildMenuItems(m_managedMenuBarItem);
+            }
+            else
+            {
+                this.UpdateMenuCheckedStates(m_managedMenuBarItem);
+            }
+        }
+
+        private void OnUISyncVMPanelTypeEntriesChanged (object sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (m_managedMenuBarItem != null)
+            {
+                this.RebuildMenuItems(m_managedMenuBarItem);
+            }
         }
 
         private void RebuildMenuItems (MenuBarItem menuBarItem)
@@ -433,6 +478,7 @@ namespace AJut.UX.Docking
                 m_tearoffRootZones.Remove(window);
                 m_dockZoneMapping.Remove(window);
                 m_windowManager.StopTracking(window);
+                this.DetachTearoffSubscriptions(window);
                 window.Close();
             }
 
@@ -1255,6 +1301,7 @@ namespace AJut.UX.Docking
                 m_tearoffRootZones.Remove(w);
                 m_dockZoneMapping.Remove(w);
                 m_windowManager.StopTracking(w);
+                this.DetachTearoffSubscriptions(w);
                 w.Close();
             }
 
@@ -1389,12 +1436,17 @@ namespace AJut.UX.Docking
             }
             catch (Exception exc)
             {
-                window?.Close();
+                if (window != null)
+                {
+                    this.DetachTearoffSubscriptions(window);
+                    window.Close();
+                }
+
                 Logger.LogError("Window tearoff creation failed!", exc);
                 return Result<Window>.Error("DockingManager: Window tearoff failed");
             }
         }
-        
+
         /// <summary>
         /// This WILL NOT WORK for programatically called Close() it will only work if the user creates
         /// a windows event routed here
@@ -1498,6 +1550,7 @@ namespace AJut.UX.Docking
                     m_windowsToCloseSilently.Add(window);
                     try
                     {
+                        this.DetachTearoffSubscriptions(window);
                         window.Close();
                     }
                     finally
@@ -1522,11 +1575,41 @@ namespace AJut.UX.Docking
                 m_tearoffRootZones.Remove(sourceWindow);
                 m_dockZoneMapping.Remove(sourceWindow);
                 m_windowManager.StopTracking(sourceWindow);  // unregisters Window.Closed so auto-cleanup won't double-fire
+                this.DetachTearoffSubscriptions(sourceWindow);
                 sourceWindow.Close();
             }
             finally
             {
                 m_windowsToCloseSilently.Remove(sourceWindow);
+            }
+        }
+
+        // Drops the three subs DockingManager owns on a tearoff (AppWindow.Closing plus the
+        // two panel-level events). Without this, the AppWindow's invocation list keeps a
+        // strong ref to DockingManager until the OS finalizes the window object - which is
+        // never deterministic and pins everything for the duration. Always call this just
+        // before the window.Close() (or before the panel/window is otherwise abandoned).
+        private void DetachTearoffSubscriptions(Window window)
+        {
+            if (window == null)
+            {
+                return;
+            }
+
+            // AppWindow can be null late in teardown; guard so this is safe to call from
+            // any of the close paths.
+            AppWindow appWindow = null;
+            try { appWindow = window.AppWindow; }
+            catch { /* window already destroyed */ }
+            if (appWindow != null)
+            {
+                appWindow.Closing -= this.TearoffWindowAppWindow_EXTERNAL_OnClosing;
+            }
+
+            if (window.Content is DockTearoffContainerPanel panel)
+            {
+                panel.TitleBarDragInitiated -= this.OnTearoffPanelDragInitiated;
+                panel.CloseRequested -= this.OnTearoffPanelCloseRequested;
             }
         }
 
@@ -1587,6 +1670,7 @@ namespace AJut.UX.Docking
                 m_tearoffRootZones.Remove(window);
                 m_dockZoneMapping.Remove(window);
                 m_windowManager.StopTracking(window);
+                this.DetachTearoffSubscriptions(window);
                 this.RootWindow?.Activate();
 
                 return true;
@@ -1621,6 +1705,7 @@ namespace AJut.UX.Docking
                 m_tearoffRootZones.Remove(w);
                 m_dockZoneMapping.Remove(w);
                 m_windowManager.StopTracking(w);
+                this.DetachTearoffSubscriptions(w);
                 w.Close();
             }
 

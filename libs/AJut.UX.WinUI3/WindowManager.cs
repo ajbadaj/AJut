@@ -1,13 +1,12 @@
 namespace AJut.UX
 {
+    using Microsoft.UI.Xaml;
+    using Microsoft.UI.Xaml.Input;
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.ComponentModel;
     using System.Linq;
-    using Microsoft.UI.Xaml;
-    using Microsoft.UI.Xaml.Input;
-    using Windows.Gaming.Input;
 
     /// <summary>
     /// How child window showing/hiding is coordinated for all windows in a <see cref="WindowManager"/>
@@ -85,6 +84,7 @@ namespace AJut.UX
             if (this.Root != null)
             {
                 this.DoStandaradWindowTrackingRemoval(this.Root);
+                this.Root.VisibilityChanged -= this.OnRootVisibilityChanged;
                 this.Root.Activated -= this.OnRootActivated;
                 this.Root.Closed -= this.OnRootClosed;
                 this.Root = null;
@@ -92,7 +92,8 @@ namespace AJut.UX
 
             if (m_rootElement != null)
             {
-                m_rootElement.ActualThemeChanged -= OnRootThemeChanged;
+                m_rootElement.ActualThemeChanged -= this.OnRootThemeChanged;
+                m_rootElement = null;
             }
         }
 

@@ -740,6 +740,48 @@
                         </TabViewItem.Content>
                     </TabViewItem>
 
+                    <!-- ===[ Leak Probe ]========================================================== -->
+                    <!-- Spot-check panel for catching memory leak regressions in DockingManager /
+                         WindowManager. Each button builds the target type, disposes it, drops the
+                         strong ref, runs GC, and reports whether the WeakReference came back null.
+                         Not a CI test - meant to be clicked when something feels off. -->
+                    <TabViewItem Header="Leak Probe" IsClosable="False">
+                        <TabViewItem.IconSource>
+                            <SymbolIconSource Symbol="Find"/>
+                        </TabViewItem.IconSource>
+                        <TabViewItem.Content>
+                            <ScrollViewer VerticalScrollMode="Enabled" Padding="12">
+                                <StackPanel Spacing="16" MaxWidth="700" HorizontalAlignment="Left">
+                                    <TextBlock Text="Memory Leak Probes" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                                    <TextBlock TextWrapping="Wrap" Opacity="0.75"
+                                               Text="Each probe builds a fresh instance against this window, disposes it, drops the strong ref, then forces GC and checks that the WeakReference is dead. PASS means the instance got collected. FAIL means something is still pinning it (likely an event subscription that didn't get unhooked in Dispose)."/>
+
+                                    <StackPanel Spacing="6">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <Button Content="Probe DockingManager" Click="LeakProbe_OnDockingManagerClicked" MinWidth="220"/>
+                                            <TextBlock x:Name="LeakProbe_DockingManagerStatus" VerticalAlignment="Center" FontFamily="Consolas" Opacity="0.85"
+                                                       Text="(not run yet)"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <Button Content="Probe WindowManager" Click="LeakProbe_OnWindowManagerClicked" MinWidth="220"/>
+                                            <TextBlock x:Name="LeakProbe_WindowManagerStatus" VerticalAlignment="Center" FontFamily="Consolas" Opacity="0.85"
+                                                       Text="(not run yet)"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <Button Content="Probe x5 (open/close cycles)" Click="LeakProbe_OnCycleClicked" MinWidth="220"/>
+                                            <TextBlock x:Name="LeakProbe_CycleStatus" VerticalAlignment="Center" FontFamily="Consolas" Opacity="0.85"
+                                                       Text="(not run yet)"/>
+                                        </StackPanel>
+                                    </StackPanel>
+
+                                    <TextBlock Text="Notes" Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,0"/>
+                                    <TextBlock TextWrapping="Wrap" Opacity="0.7" FontSize="12"
+                                               Text="A FAIL here is real - it means a subscription survived Dispose. A PASS does not prove the absence of all leaks (some subs may only manifest after specific operations like opening a tearoff). For deeper coverage, exercise the docking experience (open tabs, tear off, dock back) and re-run the cycle probe."/>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </TabViewItem.Content>
+                    </TabViewItem>
+
                     <!-- ===[ Dock Zone ]=========================================================== -->
                     <TabViewItem Header="Dock Zone" IsClosable="False" VerticalContentAlignment="Stretch">
                         <TabViewItem.IconSource>

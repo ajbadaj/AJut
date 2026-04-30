@@ -13,6 +13,7 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <StackPanel Orientation="Horizontal">
@@ -26,6 +27,30 @@
                 <MenuItem x:Name="PanelsMenu" Header="Panels"/>
             </Menu>
         </StackPanel>
-        <ajut:DockZone x:Name="RootZone" Grid.Row="1" Margin="20"/>
+        <!-- Leak probe row. Each button builds the target type, disposes it, drops the
+             strong ref, runs GC and reports whether the WeakReference is dead. PASS = the
+             instance got collected. FAIL = something is pinning it past Dispose. -->
+        <Border Grid.Row="1" Margin="20,8,20,0" Padding="8" BorderThickness="1"
+                BorderBrush="{DynamicResource AJut_Brush_BorderCommon}"
+                Background="{DynamicResource AJut_Brush_PanelBackground}">
+            <StackPanel>
+                <TextBlock Text="Leak Probes" FontWeight="Bold"/>
+                <TextBlock Opacity="0.7" TextWrapping="Wrap" Margin="0,2,0,8"
+                           Text="Each probe builds a fresh instance against the root window, disposes it, and checks the WeakReference after GC. PASS = collected, FAIL = pinned (likely a missing -=)."/>
+                <StackPanel Orientation="Horizontal" Margin="0,2">
+                    <Button Content="Probe DockingManager" Click="LeakProbe_OnDockingManagerClicked" MinWidth="220" Padding="8,3"/>
+                    <TextBlock x:Name="LeakProbeDockingManagerStatus" VerticalAlignment="Center" Margin="8,0" FontFamily="Consolas" Text="(not run yet)"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,2">
+                    <Button Content="Probe WindowManager" Click="LeakProbe_OnWindowManagerClicked" MinWidth="220" Padding="8,3"/>
+                    <TextBlock x:Name="LeakProbeWindowManagerStatus" VerticalAlignment="Center" Margin="8,0" FontFamily="Consolas" Text="(not run yet)"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,2">
+                    <Button Content="Probe x5 (open/close cycles)" Click="LeakProbe_OnCycleClicked" MinWidth="220" Padding="8,3"/>
+                    <TextBlock x:Name="LeakProbeCycleStatus" VerticalAlignment="Center" Margin="8,0" FontFamily="Consolas" Text="(not run yet)"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+        <ajut:DockZone x:Name="RootZone" Grid.Row="2" Margin="20"/>
     </Grid>
 </UserControl>
