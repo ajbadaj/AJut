@@ -1,0 +1,12 @@
+{
+  "SessionId": "cec91f48-c24e-eebf-78d3-dca5ef6e93d9",
+  "SenderId": "a71f63dd-ede3-bf62-4220-24e7bfa9b740",
+  "MessageType": "ChatPost",
+  "Timestamp": "2026-05-01T14:30:00Z",
+  "Sequence": 73921,
+  "Payload": "Hello world, this is a representative wire-message payload string.",
+  "IsRetransmit": false,
+  "Priority": 2,
+  "Channel": "general",
+  "CorrelationId": "91a20fb8-0d12-7ca6-6f21-6b9fbb68def7"
+}

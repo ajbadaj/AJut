@@ -1,0 +1,290 @@
+{
+  "ZoneId": "zone-D099A",
+  "Orientation": 0,
+  "SplitRatio": 0.8751,
+  "Children": [
+    {
+      "ZoneId": "zone-9AA24",
+      "Orientation": 1,
+      "SplitRatio": 0.5874,
+      "Children": [
+        {
+          "ZoneId": "zone-7AC15",
+          "Orientation": 0,
+          "SplitRatio": 0.8001,
+          "Children": [
+            {
+              "ZoneId": "zone-3C8C9",
+              "Orientation": 0,
+              "SplitRatio": 0.0325,
+              "Children": [],
+              "Tabs": [
+                {
+                  "Title": "Tab 0",
+                  "ContentTypeId": "ContentType.Sample.41",
+                  "IsActive": true,
+                  "Properties": {
+                    "prop_0": "value_5663",
+                    "prop_1": "value_9111",
+                    "prop_2": "value_9578"
+                  }
+                },
+                {
+                  "Title": "Tab 1",
+                  "ContentTypeId": "ContentType.Sample.22",
+                  "IsActive": false,
+                  "Properties": {
+                    "prop_0": "value_569",
+                    "prop_1": "value_645",
+                    "prop_2": "value_2423",
+                    "prop_3": "value_4164",
+                    "prop_4": "value_2391"
+                  }
+                },
+                {
+                  "Title": "Tab 2",
+                  "ContentTypeId": "ContentType.Sample.41",
+                  "IsActive": false,
+                  "Properties": {
+                    "prop_0": "value_3381",
+                    "prop_1": "value_8584"
+                  }
+                }
+              ]
+            },
+            {
+              "ZoneId": "zone-932CE",
+              "Orientation": 1,
+              "SplitRatio": 0.299,
+              "Children": [],
+              "Tabs": [
+                {
+                  "Title": "Tab 0",
+                  "ContentTypeId": "ContentType.Sample.28",
+                  "IsActive": true,
+                  "Properties": {
+                    "prop_0": "value_2446",
+                    "prop_1": "value_1652"
+                  }
+                },
+                {
+                  "Title": "Tab 1",
+                  "ContentTypeId": "ContentType.Sample.15",
+                  "IsActive": false,
+                  "Properties": {
+                    "prop_0": "value_4693",
+                    "prop_1": "value_5560",
+                    "prop_2": "value_9119"
+                  }
+                },
+                {
+                  "Title": "Tab 2",
+                  "ContentTypeId": "ContentType.Sample.28",
+                  "IsActive": false,
+                  "Properties": {
+                    "prop_0": "value_2429",
+                    "prop_1": "value_5900",
+                    "prop_2": "value_5252",
+                    "prop_3": "value_6975",
+                    "prop_4": "value_5691"
+                  }
+                },
+                {
+                  "Title": "Tab 3",
+                  "ContentTypeId": "ContentType.Sample.14",
+                  "IsActive": false,
+                  "Properties": {
+                    "prop_0": "value_9172",
+                    "prop_1": "value_5428",
+                    "prop_2": "value_4999",
+                    "prop_3": "value_5763"
+                  }
+                }
+              ]
+            }
+          ],
+          "Tabs": []
+        },
+        {
+          "ZoneId": "zone-79920",
+          "Orientation": 0,
+          "SplitRatio": 0.3673,
+          "Children": [],
+          "Tabs": [
+            {
+              "Title": "Tab 0",
+              "ContentTypeId": "ContentType.Sample.7",
+              "IsActive": true,
+              "Properties": {
+                "prop_0": "value_5339",
+                "prop_1": "value_6599",
+                "prop_2": "value_3598"
+              }
+            },
+            {
+              "Title": "Tab 1",
+              "ContentTypeId": "ContentType.Sample.36",
+              "IsActive": false,
+              "Properties": {
+                "prop_0": "value_9316",
+                "prop_1": "value_7663"
+              }
+            },
+            {
+              "Title": "Tab 2",
+              "ContentTypeId": "ContentType.Sample.10",
+              "IsActive": false,
+              "Properties": {
+                "prop_0": "value_5960",
+                "prop_1": "value_5157",
+                "prop_2": "value_9708"
+              }
+            }
+          ]
+        },
+        {
+          "ZoneId": "zone-56129",
+          "Orientation": 0,
+          "SplitRatio": 0.501,
+          "Children": [
+            {
+              "ZoneId": "zone-9E75B",
+              "Orientation": 0,
+              "SplitRatio": 0.4095,
+              "Children": [],
+              "Tabs": [
+                {
+                  "Title": "Tab 0",
+                  "ContentTypeId": "ContentType.Sample.28",
+                  "IsActive": true,
+                  "Properties": {
+                    "prop_0": "value_9709",
+                    "prop_1": "value_7560"
+                  }
+                },
+                {
+                  "Title": "Tab 1",
+                  "ContentTypeId": "ContentType.Sample.14",
+                  "IsActive": false,
+                  "Properties": {
+                    "prop_0": "value_5733",
+                    "prop_1": "value_8996"
+                  }
+                },
+                {
+                  "Title": "Tab 2",
+                  "ContentTypeId": "ContentType.Sample.39",
+                  "IsActive": false,
+                  "Properties": {
+                    "prop_0": "value_7643",
+                    "prop_1": "value_3184"
+                  }
+                },
+                {
+                  "Title": "Tab 3",
+                  "ContentTypeId": "ContentType.Sample.4",
+                  "IsActive": false,
+                  "Properties": {
+                    "prop_0": "value_9035",
+                    "prop_1": "value_5239",
+                    "prop_2": "value_5163"
+                  }
+                }
+              ]
+            },
+            {
+              "ZoneId": "zone-55C44",
+              "Orientation": 1,
+              "SplitRatio": 0.9312,
+              "Children": [],
+              "Tabs": [
+                {
+                  "Title": "Tab 0",
+                  "ContentTypeId": "ContentType.Sample.44",
+                  "IsActive": true,
+                  "Properties": {
+                    "prop_0": "value_4015",
+                    "prop_1": "value_5720",
+                    "prop_2": "value_1473",
+                    "prop_3": "value_4313",
+                    "prop_4": "value_9969"
+                  }
+                },
+                {
+                  "Title": "Tab 1",
+                  "ContentTypeId": "ContentType.Sample.49",
+                  "IsActive": false,
+                  "Properties": {
+                    "prop_0": "value_6277",
+                    "prop_1": "value_3779"
+                  }
+                }
+              ]
+            }
+          ],
+          "Tabs": []
+        }
+      ],
+      "Tabs": []
+    },
+    {
+      "ZoneId": "zone-B5044",
+      "Orientation": 1,
+      "SplitRatio": 0.9636,
+      "Children": [
+        {
+          "ZoneId": "zone-ECEDB",
+          "Orientation": 1,
+          "SplitRatio": 0.9299,
+          "Children": [],
+          "Tabs": [
+            {
+              "Title": "Tab 0",
+              "ContentTypeId": "ContentType.Sample.30",
+              "IsActive": true,
+              "Properties": {
+                "prop_0": "value_7513",
+                "prop_1": "value_6523",
+                "prop_2": "value_2584",
+                "prop_3": "value_7670"
+              }
+            },
+            {
+              "Title": "Tab 1",
+              "ContentTypeId": "ContentType.Sample.29",
+              "IsActive": false,
+              "Properties": {
+                "prop_0": "value_6571",
+                "prop_1": "value_2977",
+                "prop_2": "value_7061",
+                "prop_3": "value_4783",
+                "prop_4": "value_4088"
+              }
+            }
+          ]
+        },
+        {
+          "ZoneId": "zone-A6D11",
+          "Orientation": 0,
+          "SplitRatio": 0.5694,
+          "Children": [],
+          "Tabs": [
+            {
+              "Title": "Tab 0",
+              "ContentTypeId": "ContentType.Sample.28",
+              "IsActive": true,
+              "Properties": {
+                "prop_0": "value_9131",
+                "prop_1": "value_6042",
+                "prop_2": "value_4106",
+                "prop_3": "value_3864"
+              }
+            }
+          ]
+        }
+      ],
+      "Tabs": []
+    }
+  ],
+  "Tabs": []
+}

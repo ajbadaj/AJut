@@ -29,9 +29,13 @@
 !*.ps1
 !*.targets
 
+# Bench sample payloads (deterministic, committed for inspection)
+!test/AJut.Bench/Payloads/*.json
+
 # ============[ And finally nix these ]=========================
 *Settings.Designer.cs
 **/_ignore
 **/obj
 **/Debug
 **/Release
+**/BenchmarkDotNet.Artifacts
