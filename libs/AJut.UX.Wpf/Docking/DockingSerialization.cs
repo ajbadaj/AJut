@@ -6,7 +6,7 @@ namespace AJut.UX.Docking
     using System.Linq;
     using System.Windows;
     using AJut.IO;
-    using AJut.Text.AJson;
+    using AJut.Text.AJson.Legacy;
     using AJut.TypeManagement;
     using AJut.UX.AttachedProperties;
 

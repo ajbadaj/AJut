@@ -1,4 +1,4 @@
-﻿namespace AJut.Text.AJson
+namespace AJut.Text.AJson.Legacy
 {
     using System;
     using System.Collections;
@@ -10,7 +10,6 @@
     using AJut;
     using AJut.IO;
     using AJut.Text;
-    using AJut.Text.AJson.Attributes;
     using AJut.TypeManagement;
 
     /// <summary>

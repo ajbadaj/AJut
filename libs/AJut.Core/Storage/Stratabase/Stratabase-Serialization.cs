@@ -1,9 +1,9 @@
-﻿namespace AJut.Storage
+namespace AJut.Storage
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using AJut.Text.AJson;
+    using AJut.Text.AJson.Legacy;
 
     public sealed partial class Stratabase
     {

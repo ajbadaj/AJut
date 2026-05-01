@@ -1,7 +1,7 @@
 namespace AJut.UX.Docking
 {
     using System.Collections.Generic;
-    using AJut.Text.AJson;
+    using AJut.Text.AJson.Legacy;
 
     /// <summary>Platform-agnostic serialization state for a <see cref="DockZoneViewModel"/> and its subtree.</summary>
     public class DockZoneSerializationData

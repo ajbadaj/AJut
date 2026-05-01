@@ -1,7 +1,7 @@
-﻿namespace AJut.Core.UnitTests
+namespace AJut.Core.UnitTests
 {
     using System;
-    using AJut.Text.AJson;
+    using AJut.Text.AJson.Legacy;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]

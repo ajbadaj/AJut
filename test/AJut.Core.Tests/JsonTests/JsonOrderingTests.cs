@@ -1,7 +1,7 @@
 namespace AJut.Core.UnitTests.AJson
 {
     using System.Linq;
-    using AJut.Text.AJson;
+    using AJut.Text.AJson.Legacy;
     using AJut.TypeManagement;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 

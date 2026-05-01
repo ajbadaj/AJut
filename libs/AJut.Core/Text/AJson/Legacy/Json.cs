@@ -1,4 +1,4 @@
-﻿namespace AJut.Text.AJson
+namespace AJut.Text.AJson.Legacy
 {
     using AJut.Storage;
     using AJut.Tree;

@@ -1,4 +1,4 @@
-﻿namespace AJut.Core.UnitTests
+namespace AJut.Core.UnitTests
 {
     using System;
     using System.Collections.Generic;
@@ -6,7 +6,7 @@
     using System.Linq;
     using AJut.OS.Windows;
     using AJut.Storage;
-    using AJut.Text.AJson;
+    using AJut.Text.AJson.Legacy;
     using AJut.TypeManagement;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -1246,7 +1246,7 @@
             _AssertStrsMatch();
 
             // Setting override layer #1 from layer #0
-            ints.ResetLayerByCopyingElements(0, /* ---→ */ 1);
+            ints.ResetLayerByCopyingElements(0, /* ---? */ 1);
             Assert.AreEqual(1, ints.ActiveLayerIndex);
             Assert.AreEqual(4, ints.Elements.Count);
             Assert.AreEqual(555, ints.Elements[0]);

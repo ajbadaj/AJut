@@ -1,4 +1,4 @@
-﻿namespace TheAJutShowRoom
+namespace TheAJutShowRoom
 {
     using System;
     using System.ComponentModel;
@@ -7,7 +7,7 @@
     using System.Windows;
     using System.Windows.Controls.Primitives;
     using AJut;
-    using AJut.Text.AJson;
+    using AJut.Text.AJson.Legacy;
     using AJut.TypeManagement;
     using AJut.UX;
     using AJut.UX.Controls;

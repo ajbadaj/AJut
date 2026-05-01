@@ -1,4 +1,4 @@
-﻿namespace AJut.Text.AJson.Attributes
+namespace AJut.Text.AJson.Legacy
 {
     using System;
 
