@@ -23,6 +23,12 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\libs\AJut.Core\AJut.Core.csproj" />
+    <!-- Hook the source generator directly so JsonSourceGenTests' [OptimizeAJson] types get -->
+    <!-- compiled with their generated serializers. Mirrors how a NuGet consumer picks the    -->
+    <!-- analyzer up via AJut.Core's nupkg, but in-repo we go ProjectReference-as-Analyzer.   -->
+    <ProjectReference Include="..\..\libs\AJut.Core.SourceGenerators\AJut.Core.SourceGenerators.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>

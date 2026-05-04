@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <!-- Nullable left disabled - Roslyn's symbol APIs return nullable types that we assume
+         non-null in well-defined cases (e.g. AttributeData.AttributeClass on an attribute we just
+         filtered to a known type). Annotating every site bloats the analyzer code without
+         changing runtime behavior, and this assembly has no public-facing nullability contract. -->
+    <Nullable>disable</Nullable>
+    <RootNamespace>AJut.Text.AJson.SourceGenerators</RootNamespace>
+    <AssemblyName>AJut.Core.SourceGenerators</AssemblyName>
+    <Authors>AJ Badarni</Authors>
+    <Copyright>AJ Badarni</Copyright>
+    <Description>Roslyn source generator for AJut.Core AJson - emits compile-time serialization helpers for types marked [OptimizeAJson].</Description>
+
+    <!-- Analyzer/generator rules: no compile-time output to consumers, never expose this assembly as a normal reference. -->
+    <IsPackable>false</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- Analyzer release tracking - keeps the RS2008 warning quiet by listing each diagnostic ID  -->
+  <!-- in a known location. Update Unshipped.md whenever a new AJSON* diagnostic is introduced.  -->
+  <ItemGroup>
+    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+  </ItemGroup>
+</Project>

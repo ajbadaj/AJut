@@ -205,6 +205,9 @@ namespace AJut.Text.AJson
                 }
             }
 
+            // Resolve the concrete target type up front - the dispatch check needs the runtime
+            //  type, which comes from the doc's __type indicator when present.
+            Type concreteType = type;
             if (sourceJsonValue.IsDocument)
             {
                 JsonDocument docVersion = (JsonDocument)sourceJsonValue;
@@ -213,13 +216,25 @@ namespace AJut.Text.AJson
                 {
                     if (TryGetTypeForTypeId(typeIndicator, out Type targetType))
                     {
-                        outputInstance = AJutActivator.CreateInstanceOf(targetType);
+                        concreteType = targetType;
                     }
                     else
                     {
                         owner?.AddError($"Target type provided '{typeIndicator}' could not be translated, skipping");
                     }
                 }
+            }
+
+            // Source-gen fast path. If a generated reader is registered for the concrete type, it
+            //  handles construction and population in one call - we are done.
+            if (AJsonGeneratedDispatch.TryGet(concreteType, out AJsonGeneratedSerializer generated))
+            {
+                return generated.Reader(sourceJsonValue, settings, owner);
+            }
+
+            if (sourceJsonValue.IsDocument && concreteType != type)
+            {
+                outputInstance = AJutActivator.CreateInstanceOf(concreteType);
             }
             else if (sourceJsonValue.IsArray)
             {
@@ -377,6 +392,15 @@ namespace AJut.Text.AJson
             }
 
             Type sourceType = source.GetType();
+
+            // Source-gen fast path. The generated writer handles document-startup, type-id header,
+            //  and per-property writes in a single explicit call - no reflection on the property
+            //  loop, direct primitive append (no boxing) for value-typed properties.
+            if (AJsonGeneratedDispatch.TryGet(sourceType, out AJsonGeneratedSerializer generated))
+            {
+                generated.Writer(source, target);
+                return;
+            }
 
             // Class-level [JsonPropertyAsSelf] elevation - swap the source for the named property's
             //  value and continue down the normal path. Null elevated value falls out as a no-op
@@ -641,7 +665,7 @@ namespace AJut.Text.AJson
         }
 
         // ===============================[ Type Id Helpers ]===========================
-        internal static bool TryGetTypeIdForType (eTypeIdInfo typeWriteSettings, Type type, out string foundTypeId)
+        public static bool TryGetTypeIdForType (eTypeIdInfo typeWriteSettings, Type type, out string foundTypeId)
         {
             if (type == null)
             {
@@ -676,7 +700,7 @@ namespace AJut.Text.AJson
             return false;
         }
 
-        internal static bool TryGetTypeForTypeId (string typeIndicator, out Type foundType)
+        public static bool TryGetTypeForTypeId (string typeIndicator, out Type foundType)
         {
             if (typeIndicator == null)
             {
