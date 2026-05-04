@@ -177,6 +177,34 @@ namespace AJut.Text.AJson
                 return null;
             }
 
+            // Class-level [JsonPropertyAsSelf] elevation - the json data we have is the inner
+            //  property's content rather than a doc with a named entry. Build an instance of the
+            //  outer type, build the inner value via the property type, set, return. Backward-compat
+            //  read of the legacy non-elevated shape (a doc that still carries the inner as a named
+            //  entry) routes through the same path by pulling that entry's value first.
+            JsonPropertyAsSelfAttribute elevatedAttr = type.GetCustomAttribute<JsonPropertyAsSelfAttribute>(inherit: true);
+            if (elevatedAttr != null)
+            {
+                PropertyInfo elevatedProp = type.GetProperty(elevatedAttr.PropertyName, BindingFlags.Public | BindingFlags.Instance);
+                if (elevatedProp != null)
+                {
+                    JsonValue elevatedSource = sourceJsonValue;
+                    if (sourceJsonValue is JsonDocument legacyDoc)
+                    {
+                        JsonValue legacyMatch = legacyDoc.ValueFor(elevatedAttr.PropertyName);
+                        if (legacyMatch != null)
+                        {
+                            elevatedSource = legacyMatch;
+                        }
+                    }
+
+                    object outerInstance = AJutActivator.CreateInstanceOf(type);
+                    object innerValue = BuildObjectForJson(elevatedProp.PropertyType, elevatedSource, settings, owner);
+                    elevatedProp.SetValue(outerInstance, innerValue);
+                    return outerInstance;
+                }
+            }
+
             if (sourceJsonValue.IsDocument)
             {
                 JsonDocument docVersion = (JsonDocument)sourceJsonValue;
@@ -308,11 +336,34 @@ namespace AJut.Text.AJson
                     }
 
                     PropertyInfo propToSet = FindPropertyForKey(allProperties, kvp.Key);
-                    if (propToSet != null)
+                    if (propToSet == null)
                     {
-                        object newPropValue = BuildObjectForJson(propToSet.PropertyType, kvp.Value, settings, owner);
-                        propToSet.SetValue(targetItem, newPropValue);
+                        continue;
                     }
+
+                    object newPropValue = null;
+
+                    // [JsonRuntimeTypeEval] read path: the value side is a small doc carrying the
+                    //  payload's runtime type id and the actual content. Resolve the type, build
+                    //  against that concrete type, then set.
+                    JsonRuntimeTypeEvalAttribute runtimeTypeEval = propToSet.GetCustomAttribute<JsonRuntimeTypeEvalAttribute>(inherit: false);
+                    if (runtimeTypeEval != null && kvp.Value.IsDocument)
+                    {
+                        JsonDocument runtimeDoc = (JsonDocument)kvp.Value;
+                        if (runtimeDoc.TryGetValue(JsonDocument.kTypeIndicator, out string runtimeTypeId)
+                            && runtimeDoc.ValueFor(JsonDocument.kRuntimeTypeEvalValue) is JsonValue wrappedValue
+                            && TryGetTypeForTypeId(runtimeTypeId, out Type runtimeType))
+                        {
+                            newPropValue = BuildObjectForJson(runtimeType, wrappedValue, settings, owner);
+                        }
+                    }
+
+                    if (newPropValue == null)
+                    {
+                        newPropValue = BuildObjectForJson(propToSet.PropertyType, kvp.Value, settings, owner);
+                    }
+
+                    propToSet.SetValue(targetItem, newPropValue);
                 }
             }
         }
@@ -326,6 +377,24 @@ namespace AJut.Text.AJson
             }
 
             Type sourceType = source.GetType();
+
+            // Class-level [JsonPropertyAsSelf] elevation - swap the source for the named property's
+            //  value and continue down the normal path. Null elevated value falls out as a no-op
+            //  (matches the null-property omit policy the outer property handler applies).
+            JsonPropertyAsSelfAttribute elevatedAttr = sourceType.GetCustomAttribute<JsonPropertyAsSelfAttribute>(inherit: true);
+            if (elevatedAttr != null)
+            {
+                PropertyInfo elevatedProp = sourceType.GetProperty(elevatedAttr.PropertyName, BindingFlags.Public | BindingFlags.Instance);
+                if (elevatedProp != null)
+                {
+                    source = elevatedProp.GetValue(source);
+                    if (source == null)
+                    {
+                        return;
+                    }
+                    sourceType = source.GetType();
+                }
+            }
 
             // Simple value path.
             if (TryGetSimpleStringValue(target.BuilderSettings, sourceType, source, out bool isUsuallyQuoted, out string value))
@@ -447,11 +516,33 @@ namespace AJut.Text.AJson
         // ===============================[ Internal Helpers ]===========================
         private static void ApplyDocumentProperty (JsonBuilder target, object propSource, PropertyInfo propInfo)
         {
-            string key = propInfo.Name;
+            string key = KeyForProperty(propInfo);
             object sourceValue = propInfo.GetValue(propSource);
 
             if (sourceValue == null)
             {
+                return;
+            }
+
+            // [JsonOmitIfDefault] - skip the property if the value matches a default. Three sources
+            //  in priority order: per-attribute explicit, settings-registered equivalent, then the
+            //  type's zero value.
+            JsonOmitIfDefaultAttribute omitAttr = propInfo.GetCustomAttribute<JsonOmitIfDefaultAttribute>(inherit: true);
+            if (omitAttr != null && IsConsideredDefault(target.BuilderSettings, propInfo.PropertyType, sourceValue, omitAttr))
+            {
+                return;
+            }
+
+            // [JsonRuntimeTypeEval] - wrap the value in a type-id-bearing doc so the read path can
+            //  recover the concrete runtime type for the property (typically an object/interface).
+            JsonRuntimeTypeEvalAttribute runtimeTypeEval = propInfo.GetCustomAttribute<JsonRuntimeTypeEvalAttribute>(inherit: false);
+            if (runtimeTypeEval != null
+                && TryGetTypeIdForType(runtimeTypeEval.TypeWriteTarget, sourceValue.GetType(), out string runtimeTypeId))
+            {
+                JsonBuilder wrapperDoc = target.StartProperty(key).StartDocument();
+                wrapperDoc.AddProperty(JsonDocument.kTypeIndicator, runtimeTypeId);
+                JsonBuilder valueBuilder = wrapperDoc.StartProperty(JsonDocument.kRuntimeTypeEvalValue);
+                FillOutJsonBuilderForObject(sourceValue, valueBuilder);
                 return;
             }
 
@@ -464,6 +555,43 @@ namespace AJut.Text.AJson
                 JsonBuilder propertyBuilder = target.StartProperty(key);
                 FillOutJsonBuilderForObject(sourceValue, propertyBuilder);
             }
+        }
+
+        private static bool IsConsideredDefault (JsonBuilderSettings settings, Type propertyType, object value, JsonOmitIfDefaultAttribute attr)
+        {
+            if (value == null)
+            {
+                return true;
+            }
+
+            // Per-attribute explicit default. Attribute arguments for enum values get stored as
+            //  the underlying integer, so coerce both sides through the property type before
+            //  comparing - otherwise an `eFoo.Center` argument never equals the boxed enum value.
+            if (attr.HasExplicitDefault)
+            {
+                object attrDefault = attr.ExplicitDefault;
+                if (attrDefault != null && propertyType.IsEnum && attrDefault.GetType() != propertyType)
+                {
+                    attrDefault = Enum.ToObject(propertyType, attrDefault);
+                }
+                return Equals(value, attrDefault);
+            }
+
+            // Settings-level explicit default - lets non-const-expressible types (Vector2, Guid, etc.)
+            //  participate by registering an instance to compare against.
+            if (settings.TryGetDefaultEquivalent(propertyType, out object registeredDefault))
+            {
+                return Equals(value, registeredDefault);
+            }
+
+            // Zero-value default for value types. Reference types reach here only when value is
+            //  non-null (already returned true above) so they are non-default by definition.
+            if (propertyType.IsValueType)
+            {
+                return Equals(value, Activator.CreateInstance(propertyType));
+            }
+
+            return false;
         }
 
         private static bool TryGetSimpleStringValue (JsonBuilderSettings settings, Type type, object instance, out bool isUsuallyQuoted, out string stringValue)
@@ -583,7 +711,8 @@ namespace AJut.Text.AJson
                 .GetOrderedProperties(targetType, BindingFlags.Public | BindingFlags.Instance)
                 .Where(prop => (!requiresGet || prop.GetGetMethod() != null)
                             && (!requiresSet || prop.GetSetMethod() != null)
-                            && !TypeMetadataExtensionRegistrar.IsHidden(prop))
+                            && !TypeMetadataExtensionRegistrar.IsHidden(prop)
+                            && prop.GetCustomAttribute<JsonIgnoreAttribute>(inherit: true) == null)
                 .ToArray();
         }
 
@@ -591,12 +720,18 @@ namespace AJut.Text.AJson
         {
             for (int i = 0; i < props.Length; ++i)
             {
-                if (props[i].Name == key)
+                if (KeyForProperty(props[i]) == key)
                 {
                     return props[i];
                 }
             }
             return null;
+        }
+
+        private static string KeyForProperty (PropertyInfo prop)
+        {
+            JsonPropertyAliasAttribute alias = prop.GetCustomAttribute<JsonPropertyAliasAttribute>(inherit: true);
+            return alias?.PropertyName ?? prop.Name;
         }
     }
 }

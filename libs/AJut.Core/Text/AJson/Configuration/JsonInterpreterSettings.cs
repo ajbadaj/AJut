@@ -21,7 +21,6 @@ namespace AJut.Text.AJson
     public class JsonInterpreterSettings
     {
         private readonly Dictionary<Type, JsonToObjectConstructor> m_customConstructors = new Dictionary<Type, JsonToObjectConstructor>();
-        private readonly Dictionary<Type, object> m_defaultEquivalents = new Dictionary<Type, object>();
 
         // ===========================[ Construction ]===============================
         public JsonInterpreterSettings (StringParser stringParser = null)
@@ -144,18 +143,14 @@ namespace AJut.Text.AJson
         }
 
         /// <summary>
-        /// Registers an explicit "this counts as default" instance for a specific type. Used by the
-        /// JsonOmitIfDefault override hook (Phase C) - if the writer is comparing a value of this type,
-        /// match against the registered instance first, then fall back to Activator.CreateInstance.
+        /// Register a strongly-typed factory for a target type that does not have a parameterless
+        /// constructor (or otherwise needs custom translation from a json value to an instance).
+        /// The factory is consulted before the parameterless-constructor + property-assignment
+        /// path runs.
         /// </summary>
-        public void RegisterDefaultEquivalent<T> (T value)
+        public void RegisterCustomConstructor<T> (Func<JsonValue, T> ctor)
         {
-            m_defaultEquivalents[typeof(T)] = value;
-        }
-
-        public bool TryGetDefaultEquivalent (Type type, out object value)
-        {
-            return m_defaultEquivalents.TryGetValue(type, out value);
+            m_customConstructors[typeof(T)] = (fullTarget, json, settings, owner) => ctor(json);
         }
 
         /// <summary>

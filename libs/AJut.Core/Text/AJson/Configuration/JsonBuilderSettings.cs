@@ -60,6 +60,7 @@ namespace AJut.Text.AJson
     public class JsonBuilderSettings
     {
         private readonly Dictionary<Type, JsonStringMaker> m_customJsonConstructor = new Dictionary<Type, JsonStringMaker>();
+        private readonly Dictionary<Type, object> m_defaultEquivalents = new Dictionary<Type, object>();
 
         public JsonBuilderSettings ()
         {
@@ -143,6 +144,23 @@ namespace AJut.Text.AJson
         public void SetCustomJsonManager (Type forType, JsonStringMaker creator)
         {
             m_customJsonConstructor[forType] = creator;
+        }
+
+        /// <summary>
+        /// Register an explicit "this counts as default" instance for a specific type. The
+        /// JsonOmitIfDefault writer check consults this map after the per-attribute explicit
+        /// default and before the Activator.CreateInstance fallback. Use this when the
+        /// "default" for a type cannot be expressed as an attribute argument (e.g. Vector2,
+        /// Guid - non-const-expressible types).
+        /// </summary>
+        public void RegisterDefaultEquivalent<T> (T value)
+        {
+            m_defaultEquivalents[typeof(T)] = value;
+        }
+
+        public bool TryGetDefaultEquivalent (Type type, out object value)
+        {
+            return m_defaultEquivalents.TryGetValue(type, out value);
         }
 
         public JsonStringMaker TryGetJsonValueStringMakerFor (Type instanceType)
