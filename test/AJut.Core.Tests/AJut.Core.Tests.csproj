@@ -3,6 +3,11 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <IsPackable>false</IsPackable>
     <Platforms>AnyCPU;x64</Platforms>
+
+    <!-- Test fixture covers both V1 (Legacy, [Obsolete]) and V2. Suppress CS0618 so the    -->
+    <!-- intentional Legacy references in JsonTests/* and adjacent helpers do not drown the -->
+    <!-- build. V2 tests are scoped to JsonTests/V2/. Remove once Legacy is deleted.        -->
+    <NoWarn>$(NoWarn);CS0618</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)'=='AnyCPU'">
     <PlatformTarget>x86</PlatformTarget>

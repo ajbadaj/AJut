@@ -2,6 +2,7 @@ namespace AJut.Text.AJson
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Numerics;
     using AJut;
@@ -48,6 +49,13 @@ namespace AJut.Text.AJson
                 return TimeSpan.TryParse(json.StringValue, out TimeSpan found) ? found : TimeSpan.Zero;
             }
 
+            // KVP construction goes through Type.GetConstructor on a generic KeyValuePair<,> the
+            // trimmer can't statically verify; KeyValuePair<,> is a closed system shape and the
+            // ctor is always present, so the suppression is safe in practice.
+            [UnconditionalSuppressMessage("Trimming", "IL2075",
+                Justification = "KeyValuePair<,> ctor is intrinsic and always preserved; the FindBaseTypeOrInterface return is a constructed KeyValuePair<,> by definition of the call site.")]
+            [UnconditionalSuppressMessage("Trimming", "IL2067",
+                Justification = "KVP element types come from generic arguments of the KeyValuePair<,> the consumer requested - keeping members of those is the consumer's responsibility per AJson reflection-path contract.")]
             object _CreateKeyValuePairFor (Type fullTarget, JsonValue json, JsonInterpreterSettings settings, Json owner)
             {
                 Type kvpType = fullTarget.FindBaseTypeOrInterface(typeof(KeyValuePair<,>));
@@ -125,7 +133,7 @@ namespace AJut.Text.AJson
                 return Vector2.Zero;
             }
 
-            static object _DefaultFor (Type t) => t.IsValueType ? Activator.CreateInstance(t) : null;
+            static object _DefaultFor ([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type t) => t.IsValueType ? Activator.CreateInstance(t) : null;
         }
 
         // ===========================[ Properties ]===============================
@@ -157,7 +165,7 @@ namespace AJut.Text.AJson
         /// Construct an instance of the given type from the passed in json. Owner Json (if any)
         /// receives error reports from delegate constructors instead of throwing.
         /// </summary>
-        public object ConstructInstanceFor (Type type, JsonValue jsonValue, Json owner = null)
+        public object ConstructInstanceFor ([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type, JsonValue jsonValue, Json owner = null)
         {
             foreach (KeyValuePair<Type, JsonToObjectConstructor> kvp in m_customConstructors)
             {

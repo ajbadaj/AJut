@@ -8,6 +8,7 @@ namespace AJut.Text.AJson.Legacy
     using AJut.Text;
     using AJut.Tree;
 
+    [Obsolete("AJson V1 is moved to AJut.Text.AJson.Legacy and will be removed in a future release. Migrate to AJut.Text.AJson (V2). See AJut README for migration notes.")]
     public class JsonDocument : JsonValue, IEnumerable<KeyValuePair<TrackedString, JsonValue>>
     {
         internal const string kTypeIndicator = "__type";

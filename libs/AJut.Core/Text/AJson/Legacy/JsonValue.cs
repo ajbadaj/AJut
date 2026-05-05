@@ -1,11 +1,13 @@
 namespace AJut.Text.AJson.Legacy
 {
+    using System;
     using AJut.Text;
     using AJut.Tree;
 
     /// <summary>
     /// A simple string value - or the basis of the other two json storage types (<see cref="JsonDocument"/> and <see cref="JsonArray"/>)
     /// </summary>
+    [Obsolete("AJson V1 is moved to AJut.Text.AJson.Legacy and will be removed in a future release. Migrate to AJut.Text.AJson (V2). See AJut README for migration notes.")]
     public class JsonValue : TrackedString
     {
         // ===============================[ Construction ]===========================

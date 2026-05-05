@@ -6,6 +6,11 @@
     <IsPackable>false</IsPackable>
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+
+    <!-- The bench project deliberately references AJut.Text.AJson.Legacy (V1) so the V1-vs-V2 -->
+    <!-- comparison numbers stay measurable. Suppress CS0618 so the Obsolete-marker noise does -->
+    <!-- not drown the build output. Remove this once the bench is migrated entirely to V2.    -->
+    <NoWarn>$(NoWarn);CS0618</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,6 +21,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\libs\AJut.Core\AJut.Core.csproj" />
+    <!-- Wire the source generator in directly (it does not propagate via project reference     -->
+    <!-- through AJut.Core - the analyzer attribute on AJut.Core's ProjectReference scopes it   -->
+    <!-- to AJut.Core itself). Without this, the [OptimizeAJson]-decorated bench models would   -->
+    <!-- silently fall through to reflection and the V2 source-gen rows would be misleading.    -->
+    <ProjectReference Include="..\..\libs\AJut.Core.SourceGenerators\AJut.Core.SourceGenerators.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>

@@ -9,5 +9,6 @@ namespace AJut.Text.AJson.Legacy
     /// correctly -- the attribute only trims noise from the write side.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
+    [Obsolete("AJson V1 is moved to AJut.Text.AJson.Legacy and will be removed in a future release. Migrate to AJut.Text.AJson (V2). See AJut README for migration notes.")]
     public class JsonOmitIfDefaultAttribute : Attribute { }
 }

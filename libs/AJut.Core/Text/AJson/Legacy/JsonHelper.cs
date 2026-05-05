@@ -15,6 +15,7 @@ namespace AJut.Text.AJson.Legacy
     /// <summary>
     /// Utility class that acts as a starting point for parsing and building json, and other related utilities
     /// </summary>
+    [Obsolete("AJson V1 is moved to AJut.Text.AJson.Legacy and will be removed in a future release. Migrate to AJut.Text.AJson (V2). See AJut README for migration notes.")]
     public static class JsonHelper
     {
         // For specialized trim

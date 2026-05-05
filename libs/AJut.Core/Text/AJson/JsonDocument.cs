@@ -2,6 +2,7 @@ namespace AJut.Text.AJson
 {
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using AJut.Tree;
 
@@ -116,7 +117,7 @@ namespace AJut.Text.AJson
         public string KeyFor (JsonValue value)
             => m_memberStorage.Where(kvp => kvp.Value == value).Select(kvp => kvp.Key).FirstOrDefault();
 
-        public bool TryGetValue<T> (string key, out T foundValue)
+        public bool TryGetValue<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T> (string key, out T foundValue)
         {
             JsonValue value = this.ValueFor(key);
             if (value == null)

@@ -7,7 +7,7 @@ namespace TheAJutShowRoom
     using System.Windows;
     using System.Windows.Controls.Primitives;
     using AJut;
-    using AJut.Text.AJson.Legacy;
+    using AJut.Text.AJson;
     using AJut.TypeManagement;
     using AJut.UX;
     using AJut.UX.Controls;
@@ -190,6 +190,7 @@ namespace TheAJutShowRoom
             }
         }
 
+        [OptimizeAJson]
         private class AJutShowroomAppConfig
         {
             public eAppThemeConfiguration Theme { get; set; }

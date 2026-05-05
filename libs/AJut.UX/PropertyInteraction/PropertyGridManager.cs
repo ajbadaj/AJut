@@ -5,7 +5,7 @@ namespace AJut.UX.PropertyInteraction
     using System.Collections.Generic;
     using System.Linq;
     using AJut.Storage;
-    using AJut.Text.AJson.Legacy;
+    using AJut.Text.AJson;
     using AJut.Tree;
 
     public interface IPropertyGrid

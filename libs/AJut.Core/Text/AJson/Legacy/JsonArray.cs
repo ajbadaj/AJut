@@ -7,6 +7,7 @@ namespace AJut.Text.AJson.Legacy
     /// <summary>
     /// An array of json values, values can be simple strings, JsonDocument or even child arrays.
     /// </summary>
+    [Obsolete("AJson V1 is moved to AJut.Text.AJson.Legacy and will be removed in a future release. Migrate to AJut.Text.AJson (V2). See AJut README for migration notes.")]
     public class JsonArray : JsonValue, IEnumerable<JsonValue>
     {
         private List<JsonValue> m_values = new List<JsonValue>();

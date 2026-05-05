@@ -5,6 +5,7 @@ namespace AJut.Text.AJson.Legacy
     using System.ComponentModel;
     using System.Numerics;
 
+    [Obsolete("AJson V1 is moved to AJut.Text.AJson.Legacy and will be removed in a future release. Migrate to AJut.Text.AJson (V2). See AJut README for migration notes.")]
     public enum ePropertyValueQuoting
     {
         /// <summary>
@@ -24,6 +25,7 @@ namespace AJut.Text.AJson.Legacy
     }
 
     [Flags]
+    [Obsolete("AJson V1 is moved to AJut.Text.AJson.Legacy and will be removed in a future release. Migrate to AJut.Text.AJson (V2). See AJut README for migration notes.")]
     public enum eTypeIdInfo
     {
         /// <summary>
@@ -52,6 +54,7 @@ namespace AJut.Text.AJson.Legacy
         Any = TypeIdAttributed | FullyQualifiedSystemType,
     }
     
+    [Obsolete("AJson V1 is moved to AJut.Text.AJson.Legacy and will be removed in a future release. Migrate to AJut.Text.AJson (V2). See AJut README for migration notes.")]
     public delegate string JsonStringMaker (object instance);
 
     public sealed partial class JsonBuilder

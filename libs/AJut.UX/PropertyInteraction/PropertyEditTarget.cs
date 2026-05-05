@@ -2,7 +2,7 @@ namespace AJut.UX.PropertyInteraction
 {
     using AJut;
     using AJut.Storage;
-    using AJut.Text.AJson.Legacy;
+    using AJut.Text.AJson;
     using AJut.TypeManagement;
     using AJut.UX;
     using System;

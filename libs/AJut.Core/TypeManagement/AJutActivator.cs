@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// Similar to the normal <see cref="Activator"/>, but with some specialty handlers to include the <see cref="TypeIdRegistrar"/> - as well as to avoid common pitfalls
@@ -14,7 +15,7 @@
         /// Create an instance of the given type, avoiding common <see cref="Activator.CreateInstance"/> issues, and
         /// including the custom type factories registered.
         /// </summary>
-        public static object CreateInstanceOf (Type type)
+        public static object CreateInstanceOf ([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
         {
             if (g_typeFactories.TryGetValue(type, out var factoryFunc))
             {
@@ -38,7 +39,7 @@
         /// Create an instance of the given type, avoiding common <see cref="Activator.CreateInstance"/> issues, and
         /// including the custom type factories registered.
         /// </summary>
-        public static object CreateInstanceOfArray(Type arrayType, int arrayCount)
+        public static object CreateInstanceOfArray ([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type arrayType, int arrayCount)
         {
             if (arrayType.IsArray)
             {

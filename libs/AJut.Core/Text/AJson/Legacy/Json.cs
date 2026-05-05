@@ -1,13 +1,16 @@
 namespace AJut.Text.AJson.Legacy
 {
+    using System;
     using AJut.Storage;
     using AJut.Tree;
 
+    [Obsolete("AJson V1 is moved to AJut.Text.AJson.Legacy and will be removed in a future release. Migrate to AJut.Text.AJson (V2). See AJut README for migration notes.")]
     public delegate string Formatter (string input);
 
     /// <summary>
     /// Stores parsed json data and tracking information
     /// </summary>
+    [Obsolete("AJson V1 is moved to AJut.Text.AJson.Legacy and will be removed in a future release. Migrate to AJut.Text.AJson (V2). See AJut README for migration notes.")]
     public class Json : Result
     {
         private JsonValue m_data;

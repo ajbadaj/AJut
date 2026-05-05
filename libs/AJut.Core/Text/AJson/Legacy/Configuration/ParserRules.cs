@@ -6,6 +6,7 @@ namespace AJut.Text.AJson.Legacy
     /// <summary>
     /// Rules that dictate any special rules for parsing json text
     /// </summary>
+    [Obsolete("AJson V1 is moved to AJut.Text.AJson.Legacy and will be removed in a future release. Migrate to AJut.Text.AJson (V2). See AJut README for migration notes.")]
     public class ParserRules
     {
         /// <summary>

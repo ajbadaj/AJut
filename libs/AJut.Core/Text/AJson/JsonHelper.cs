@@ -5,12 +5,20 @@ namespace AJut.Text.AJson
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
     using System.Reflection;
     using AJut;
     using AJut.IO;
     using AJut.TypeManagement;
+
+    // The reflection path uses Type.GetProperties / Activator.CreateInstance / Type.GetProperty
+    // throughout. Each Type-taking entry point carries a DynamicallyAccessedMembers annotation
+    // so the IL trimmer keeps the relevant members. The kAJsonReflectionRequirements constant
+    // (PublicProperties + PublicParameterlessConstructor) is the minimum set the reflection path
+    // needs - properties to walk, parameterless ctor to construct. Source-generator-handled types
+    // do not need these; they pre-emit explicit code referencing each property by name.
 
     /// <summary>
     /// Public entry point for V2 AJson - parsing, building, and POCO conversion.
@@ -103,17 +111,20 @@ namespace AJut.Text.AJson
         }
 
         // ===============================[ Object-from-Json Entry Points ]===========================
-        public static T BuildObjectForJson<T> (Json sourceJson, JsonInterpreterSettings settings = null)
+        private const DynamicallyAccessedMemberTypes kReflectionRequirements
+            = DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;
+
+        public static T BuildObjectForJson<[DynamicallyAccessedMembers(kReflectionRequirements)] T> (Json sourceJson, JsonInterpreterSettings settings = null)
         {
             return (T)BuildObjectForJson(typeof(T), sourceJson, settings);
         }
 
-        public static T BuildObjectForJson<T> (JsonValue sourceJsonValue, JsonInterpreterSettings settings = null)
+        public static T BuildObjectForJson<[DynamicallyAccessedMembers(kReflectionRequirements)] T> (JsonValue sourceJsonValue, JsonInterpreterSettings settings = null)
         {
             return (T)BuildObjectForJson(typeof(T), sourceJsonValue, settings);
         }
 
-        public static List<T> BuildObjectListForJson<T> (JsonArray sourceJsonArray, JsonInterpreterSettings settings = null)
+        public static List<T> BuildObjectListForJson<[DynamicallyAccessedMembers(kReflectionRequirements)] T> (JsonArray sourceJsonArray, JsonInterpreterSettings settings = null)
         {
             List<T> list = new List<T>(sourceJsonArray.Count);
             foreach (JsonValue value in sourceJsonArray)
@@ -141,7 +152,7 @@ namespace AJut.Text.AJson
             return null;
         }
 
-        public static object BuildObjectForJson (Type type, Json sourceJson, JsonInterpreterSettings settings = null)
+        public static object BuildObjectForJson ([DynamicallyAccessedMembers(kReflectionRequirements)] Type type, Json sourceJson, JsonInterpreterSettings settings = null)
         {
             if (sourceJson.HasErrors)
             {
@@ -151,13 +162,13 @@ namespace AJut.Text.AJson
             return BuildObjectForJson(type, sourceJson.Data, settings, sourceJson);
         }
 
-        public static object BuildObjectForJson (Type type, JsonValue sourceJsonValue, JsonInterpreterSettings settings = null)
+        public static object BuildObjectForJson ([DynamicallyAccessedMembers(kReflectionRequirements)] Type type, JsonValue sourceJsonValue, JsonInterpreterSettings settings = null)
         {
             return BuildObjectForJson(type, sourceJsonValue, settings, owner: null);
         }
 
         // ===============================[ Object-from-Json Implementation ]===========================
-        private static object BuildObjectForJson (Type type, JsonValue sourceJsonValue, JsonInterpreterSettings settings, Json owner)
+        private static object BuildObjectForJson ([DynamicallyAccessedMembers(kReflectionRequirements)] Type type, JsonValue sourceJsonValue, JsonInterpreterSettings settings, Json owner)
         {
             if (typeof(JsonValue).IsAssignableFrom(type))
             {
@@ -254,12 +265,12 @@ namespace AJut.Text.AJson
             return outputInstance;
         }
 
-        public static void FillOutObjectWithJson (ref object targetItem, Type targetType, JsonValue sourceJsonValue, JsonInterpreterSettings settings = null)
+        public static void FillOutObjectWithJson (ref object targetItem, [DynamicallyAccessedMembers(kReflectionRequirements)] Type targetType, JsonValue sourceJsonValue, JsonInterpreterSettings settings = null)
         {
             FillOutObjectWithJson(ref targetItem, targetType, sourceJsonValue, settings, owner: null);
         }
 
-        private static void FillOutObjectWithJson (ref object targetItem, Type targetType, JsonValue sourceJsonValue, JsonInterpreterSettings settings, Json owner)
+        private static void FillOutObjectWithJson (ref object targetItem, [DynamicallyAccessedMembers(kReflectionRequirements)] Type targetType, JsonValue sourceJsonValue, JsonInterpreterSettings settings, Json owner)
         {
             if (targetItem != null)
             {
@@ -384,6 +395,14 @@ namespace AJut.Text.AJson
         }
 
         // ===============================[ Object-to-Json Implementation ]===========================
+        // The reflection branch reads property metadata off source.GetType(). The trimmer cannot
+        // statically verify which members of the runtime type are needed - that depends on what
+        // the caller actually passes in. Consumers that want trim safety should opt their types
+        // into [OptimizeAJson] (the source-gen path short-circuits to generated code before any
+        // reflection runs) or annotate their consumer-side type holder with
+        // [DynamicallyAccessedMembers].
+        [UnconditionalSuppressMessage("Trimming", "IL2075",
+            Justification = "Reflection-path serializer; trim-safe path is [OptimizeAJson] on the consumer type or DynamicallyAccessedMembers on the holder.")]
         public static void FillOutJsonBuilderForObject (object source, JsonBuilder target)
         {
             if (source == null)
@@ -581,7 +600,7 @@ namespace AJut.Text.AJson
             }
         }
 
-        private static bool IsConsideredDefault (JsonBuilderSettings settings, Type propertyType, object value, JsonOmitIfDefaultAttribute attr)
+        private static bool IsConsideredDefault (JsonBuilderSettings settings, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type propertyType, object value, JsonOmitIfDefaultAttribute attr)
         {
             if (value == null)
             {
@@ -700,6 +719,13 @@ namespace AJut.Text.AJson
             return false;
         }
 
+        // The Type.GetType(string) call is inherently dynamic and the trimmer cannot statically
+        // verify the target. Consumers that rely on this fallback (rather than registering with
+        // TypeIdRegistrar up front) need to ensure their target types are kept by the trimmer
+        // via DynamicDependency or DynamicallyAccessedMembers - a runtime concern, not solvable
+        // here.
+        [UnconditionalSuppressMessage("Trimming", "IL2057",
+            Justification = "Fallback for type ids not registered with TypeIdRegistrar - consumers using this path must keep target types alive themselves.")]
         public static bool TryGetTypeForTypeId (string typeIndicator, out Type foundType)
         {
             if (typeIndicator == null)

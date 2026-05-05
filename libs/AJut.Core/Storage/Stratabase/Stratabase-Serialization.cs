@@ -3,7 +3,7 @@ namespace AJut.Storage
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using AJut.Text.AJson.Legacy;
+    using AJut.Text.AJson;
 
     public sealed partial class Stratabase
     {
@@ -44,7 +44,7 @@ namespace AJut.Storage
 
         private class StratabaseDataModel
         {
-            public static JsonBuilder.Settings kJsonSettings = new JsonBuilder.Settings
+            public static JsonBuilderSettings kJsonSettings = new JsonBuilderSettings
             {
                 KeyValuePairValueTypeIdToWrite = eTypeIdInfo.Any
             };

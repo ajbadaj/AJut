@@ -431,7 +431,7 @@ namespace AJut.Core.UnitTests
             Assert.AreEqual(foo, fooAccess.GetValue());
 
             var json = sb.SerializeToJson();
-            Assert.IsFalse(json.HasErrors, json.BuildJsonErrorReport());
+            Assert.IsFalse(json.HasErrors, json.GetErrorReport());
 
             Stratabase sb2 = Stratabase.DeserializeFromJson(json);
             Assert.AreEqual(3, sb2.OverrideLayerCount);
@@ -494,7 +494,7 @@ namespace AJut.Core.UnitTests
             Assert.AreEqual(foo, fooAccess.GetValue());
 
             var json = sb.SerializeToJson(includeBaseline: true);
-            Assert.IsFalse(json.HasErrors, json.BuildJsonErrorReport());
+            Assert.IsFalse(json.HasErrors, json.GetErrorReport());
 
             Stratabase sb2 = Stratabase.DeserializeFromJson(json);
             Assert.AreEqual(3, sb2.OverrideLayerCount);

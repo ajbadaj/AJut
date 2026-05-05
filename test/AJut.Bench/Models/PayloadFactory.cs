@@ -29,6 +29,24 @@ namespace AJut.Bench.Models
             };
         }
 
+        public static TinyMessageReflection BuildTinyReflection ()
+        {
+            var rand = new Random(kSeed);
+            return new TinyMessageReflection
+            {
+                SessionId = NewGuid(rand),
+                SenderId = NewGuid(rand),
+                MessageType = "ChatPost",
+                Timestamp = new DateTime(2026, 5, 1, 14, 30, 0, DateTimeKind.Utc),
+                Sequence = 73921,
+                Payload = "Hello world, this is a representative wire-message payload string.",
+                IsRetransmit = false,
+                Priority = 2,
+                Channel = "general",
+                CorrelationId = NewGuid(rand),
+            };
+        }
+
         public static DockZoneLayout BuildMedium ()
         {
             var rand = new Random(kSeed);

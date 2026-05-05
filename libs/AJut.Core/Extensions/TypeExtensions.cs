@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
 
     [Flags]
@@ -80,7 +81,7 @@
         /// you may have something derived from something, derived from something, that implements IDictionary that you want generic args for, where you couldn't do
         /// that directly on your v.GetyType.GetGenericArguments() would not work.
         /// </summary>
-        public static Type FindBaseTypeOrInterface (this Type source, Type target)
+        public static Type FindBaseTypeOrInterface ([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] this Type source, Type target)
         {
             if (source.TargetsSameTypeAs(target))
             {

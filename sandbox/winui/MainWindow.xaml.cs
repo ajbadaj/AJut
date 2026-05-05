@@ -8,7 +8,7 @@ namespace AJutShowRoomWinUI
     using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Linq;
-    using AJut.Text.AJson.Legacy;
+    using AJut.Text.AJson;
     using System.Threading.Tasks;
     using AJut;
     using AJut.Storage;
