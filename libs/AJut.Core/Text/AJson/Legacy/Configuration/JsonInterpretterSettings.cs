@@ -1,4 +1,4 @@
-﻿namespace AJut.Text.AJson
+namespace AJut.Text.AJson.Legacy
 {
     using AJut.TypeManagement;
     using System;
@@ -9,11 +9,13 @@
     /// <summary>
     /// A delegate used to construct an instance from a json value (given interpretter settings)
     /// </summary>
+    [Obsolete("AJson V1 is moved to AJut.Text.AJson.Legacy and will be removed in a future release. Migrate to AJut.Text.AJson (V2). See AJut README for migration notes.")]
     public delegate object JsonToObjectConstructor (Type fullTarget, JsonValue value, JsonInterpretterSettings settings);
 
     /// <summary>
     /// Settings used to determine how to interpret json and create object instances
     /// </summary>
+    [Obsolete("AJson V1 is moved to AJut.Text.AJson.Legacy and will be removed in a future release. Migrate to AJut.Text.AJson (V2). See AJut README for migration notes.")]
     public class JsonInterpretterSettings
     {
         private readonly Dictionary<Type, JsonToObjectConstructor> m_customConstructors = new Dictionary<Type, JsonToObjectConstructor>();

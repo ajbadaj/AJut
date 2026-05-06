@@ -1,4 +1,4 @@
-﻿namespace AJut.Text.AJson
+namespace AJut.Text.AJson
 {
     using AJut.Storage;
     using AJut.Tree;
@@ -6,20 +6,20 @@
     public delegate string Formatter (string input);
 
     /// <summary>
-    /// Stores parsed json data and tracking information
+    /// Top-level wrapper returned by parse and build APIs. Carries the parsed root value plus
+    /// any errors encountered. Always non-null - consumers check <see cref="Result.HasErrors"/>
+    /// before trusting <see cref="Data"/>.
     /// </summary>
     public class Json : Result
     {
         private JsonValue m_data;
 
-        internal Json(TrackedStringManager tracker)
+        // ===============================[ Construction ]===========================
+        public Json ()
         {
-            this.TextTracking = tracker;
         }
 
-        /// <summary>
-        /// The parsed json data
-        /// </summary>
+        // ===============================[ Properties ]===========================
         public JsonValue Data
         {
             get => m_data;
@@ -28,46 +28,27 @@
                 m_data = value;
                 if (m_data != null)
                 {
-                    Traverser = new TreeTraverser<JsonValue>(m_data);
+                    this.Traverser = new TreeTraverser<JsonValue>(m_data);
                 }
             }
         }
 
-        /// <summary>
-        /// Build a generic json failure. Uers of Json api expect Json to always be non-null, if you have a scenario
-        /// where you may make json or not and are returning json, you might want a way to create a generic failure
-        /// which is what this is for.
-        /// </summary>
+        public TreeTraverser<JsonValue> Traverser { get; private set; }
+
+        // ===============================[ Public Interface Methods ]===========================
         public static Json Failure (string error = null)
         {
-            var json = new Json(null);
+            Json json = new Json();
             json.AddError(error ?? "Error creating json");
             return json;
         }
 
         /// <summary>
-        /// The text tracking source
+        /// Returns the serialized form of the json data, or a placeholder string if no data was parsed.
         /// </summary>
-        public TrackedStringManager TextTracking { get; private set; }
-
-        /// <summary>
-        /// A pre-made tree traverser for easier tree searches of this Json
-        /// </summary>
-        public TreeTraverser<JsonValue> Traverser { get; private set; }
-
-        /// <summary>
-        /// The json data as a string
-        /// </summary>
-        public override string ToString()
+        public override string ToString ()
         {
-            if (this.Data != null)
-            {
-                return this.Data.StringValue;
-            }
-            else
-            {
-                return "<Invalid Source Text>";
-            }
+            return this.Data != null ? JsonWriter.Write(this.Data) : "<Invalid Source Text>";
         }
 
         public void FormatAllKeys (Formatter keyStringFormatter)

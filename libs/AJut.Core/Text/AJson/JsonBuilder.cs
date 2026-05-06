@@ -1,21 +1,23 @@
-﻿namespace AJut.Text.AJson
+namespace AJut.Text.AJson
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
 
     /// <summary>
-    /// Utility class for building json programatically (without parsing text)
+    /// V2 builder for constructing json programmatically (no parsing involved). Walks an
+    /// in-memory tree of builder nodes and emits a JsonValue tree at <see cref="Finalize"/>
+    /// time. No text coherence machinery - serialization happens via <see cref="JsonWriter"/>
+    /// when something asks for ToString.
     /// </summary>
-    public sealed partial class JsonBuilder
+    public sealed class JsonBuilder
     {
         private string m_value;
 
-        // ==========================[ Construction ]===================================
-        internal JsonBuilder (Settings settings)
+        // ===============================[ Construction ]===========================
+        internal JsonBuilder (JsonBuilderSettings settings)
         {
             this.Key = String.Empty;
-            this.BuilderSettings = settings ?? new Settings();
+            this.BuilderSettings = settings ?? new JsonBuilderSettings();
             this.Children = new List<JsonBuilder>();
             this.ArrayIndex = -1;
         }
@@ -26,71 +28,39 @@
         }
 
         /// <summary>
-        /// Root value builder constructor
+        /// Root value builder constructor - converts the provided instance into a builder tree.
         /// </summary>
-        internal JsonBuilder (Settings settings, object value) : this(settings)
+        internal JsonBuilder (JsonBuilderSettings settings, object value) : this(settings)
         {
             this.IsValue = true;
             JsonHelper.FillOutJsonBuilderForObject(value, this);
         }
 
-        // ==========================[ Properties ]===================================
-        public Settings BuilderSettings
-        {
-            get; set;
-        }
+        // ===============================[ Properties ]===========================
+        public JsonBuilderSettings BuilderSettings { get; set; }
 
-        public JsonBuilder Parent
-        {
-            get; private set;
-        }
+        public JsonBuilder Parent { get; private set; }
 
-        public List<JsonBuilder> Children
-        {
-            get; private set;
-        }
+        public List<JsonBuilder> Children { get; private set; }
 
-        public int ArrayIndex
-        {
-            get; private set;
-        }
+        public int ArrayIndex { get; private set; }
 
         /// <summary>
-        /// This will *only* be set if this builder represents a document kvp
+        /// Set if this builder represents a document key/value pair entry.
         /// </summary>
-        public string Key
-        {
-            get; set;
-        }
+        public string Key { get; set; }
 
         /// <summary>
-        /// This will *only* be set if this builder represents a document kvp
+        /// Set if this builder represents a document key/value pair entry - the value side of the pair.
         /// </summary>
-        public JsonBuilder DocumentKVPValue
-        {
-            get; internal set;
-        }
+        public JsonBuilder DocumentKVPValue { get; internal set; }
 
-        public bool IsUnset
-        {
-            get { return !IsDocument && !IsArray && !IsValue; }
-        }
-        public bool IsDocument
-        {
-            get; private set;
-        }
-        public bool IsArray
-        {
-            get; private set;
-        }
-
-        public bool IsValue
-        {
-            get; private set;
-        }
+        public bool IsUnset => !this.IsDocument && !this.IsArray && !this.IsValue;
+        public bool IsDocument { get; private set; }
+        public bool IsArray { get; private set; }
+        public bool IsValue { get; private set; }
 
         public bool IsDocumentKVP => this.Key != String.Empty;
-
         public bool IsArrayItem => this.ArrayIndex != -1;
 
         public string Value
@@ -106,21 +76,17 @@
             }
         }
 
-        public bool IsValueUsualQuoteTarget
-        {
-            get; set;
-        }
+        public bool IsValueUsualQuoteTarget { get; set; }
 
-        // ==========================[ Interface Methods ]===================================
-
-        public JsonBuilder StartProperty(string propertyName)
+        // ===============================[ Public Interface Methods ]===========================
+        public JsonBuilder StartProperty (string propertyName)
         {
-            if(this.IsUnset)
+            if (this.IsUnset)
             {
                 this.IsDocument = true;
             }
 
-            if(this.IsDocument)
+            if (this.IsDocument)
             {
                 JsonBuilder child = new JsonBuilder(this);
                 child.Key = propertyName;
@@ -128,13 +94,12 @@
                 return child;
             }
 
-            throw new InvalidOperationException("You can only call StartProperty on a document!");
+            throw new InvalidOperationException("StartProperty can only be called on a document builder");
         }
 
-        public JsonBuilder StartDocument()
+        public JsonBuilder StartDocument ()
         {
-            // If we're in an array, then this means start a document child item
-            if(this.IsArray)
+            if (this.IsArray)
             {
                 JsonBuilder arrayItem = new JsonBuilder(this);
                 arrayItem.ArrayIndex = this.Children.Count;
@@ -142,30 +107,28 @@
                 this.Children.Add(arrayItem);
                 return arrayItem;
             }
-            if(this.IsDocument)
+            if (this.IsDocument)
             {
                 throw new InvalidOperationException("Tried to start a document inside a document, did you mean to use AddProperty?");
             }
             if (this.IsValue)
             {
-                throw new InvalidOperationException("Tried to start a document inside a value.");
+                throw new InvalidOperationException("Tried to start a document inside a value");
             }
 
-            if(this.IsDocumentKVP)
+            if (this.IsDocumentKVP)
             {
                 this.DocumentKVPValue = new JsonBuilder(this);
                 this.DocumentKVPValue.IsDocument = true;
                 return this.DocumentKVPValue;
             }
 
-            // otherwise it's unset, and we can do whatever we want with it.
             this.IsDocument = true;
             return this;
         }
 
-        public JsonBuilder StartArray()
+        public JsonBuilder StartArray ()
         {
-            // If we're in an array, then this means start a array child item
             if (this.IsArray)
             {
                 JsonBuilder arrayItem = new JsonBuilder(this);
@@ -180,7 +143,7 @@
             }
             if (this.IsValue)
             {
-                throw new InvalidOperationException("Tried to start an array inside a value.");
+                throw new InvalidOperationException("Tried to start an array inside a value");
             }
 
             if (this.IsDocumentKVP)
@@ -190,12 +153,11 @@
                 return this.DocumentKVPValue;
             }
 
-            // otherwise it's unset, and we can do whatever we want with it.
             this.IsArray = true;
             return this;
         }
 
-        public JsonBuilder AddProperty(string propertyName, object propertyValue, bool isUsuallyQuoted = true)
+        public JsonBuilder AddProperty (string propertyName, object propertyValue, bool isUsuallyQuoted = true)
         {
             if (this.IsDocument)
             {
@@ -213,10 +175,10 @@
                 return this;
             }
 
-            throw new InvalidOperationException("You can only call AddProperty on documents.");
+            throw new InvalidOperationException("AddProperty can only be called on documents");
         }
 
-        public JsonBuilder AddArrayItem(object arrayValue)
+        public JsonBuilder AddArrayItem (object arrayValue)
         {
             if (this.IsArray)
             {
@@ -228,10 +190,10 @@
                 return this;
             }
 
-            throw new InvalidOperationException("You can only call AddArrayItem on an array.");
+            throw new InvalidOperationException("AddArrayItem can only be called on an array");
         }
 
-        public JsonBuilder GetParent()
+        public JsonBuilder GetParent ()
         {
             JsonBuilder target = this.Parent;
             if (target == null)
@@ -242,214 +204,73 @@
             {
                 target = target.Parent;
             }
-
             return target;
         }
 
+        public JsonBuilder End () => this.GetParent() ?? this;
 
-        public JsonBuilder End()
-        {
-            return GetParent() ?? this;
-        }
-
-        public JsonBuilder FindRoot()
+        public JsonBuilder FindRoot ()
         {
             JsonBuilder target = this.GetParent() ?? this;
             while (true)
             {
-                var next = target.GetParent();
+                JsonBuilder next = target.GetParent();
                 if (next == null)
                 {
                     break;
                 }
-
                 target = next;
             }
-
             return target;
         }
 
-        public Json Finalize()
+        public Json Finalize ()
         {
             JsonBuilder root = this.FindRoot();
+            JsonValue data = root.BuildJsonValue();
 
-            IndexTrackingStringBuilder textTracker = new IndexTrackingStringBuilder();
-            TrackedStringManager placeholderTracker = new TrackedStringManager(textTracker);
-            JsonValue data = root.BuildOutputValue(textTracker, placeholderTracker, 0, true);
-
-            placeholderTracker.PlaceholderSetupComplete();
-            var output = new Json(placeholderTracker);
+            Json output = new Json();
             output.Data = data;
-            placeholderTracker.HasChanges = false;
-
             return output;
         }
 
-        // ==========================[ Utility Methods ]===================================
-
-        internal JsonValue BuildJsonValue(TrackedStringManager manager, IndexTrackingStringBuilder builder, int startTabbing)
+        // ===============================[ Helper Methods ]===========================
+        internal JsonValue BuildJsonValue ()
         {
-            return BuildOutputValue(builder, manager, startTabbing, true);
-        }
-
-
-        private JsonValue BuildOutputValue(IndexTrackingStringBuilder jsonTextAssembler, TrackedStringManager placeholderSource, int currentTabbing, bool isFirstiteration = false)
-        {
-            if (!isFirstiteration && !this.IsValue)
-            {
-                MakeNewline(jsonTextAssembler, currentTabbing);
-            }
-
             if (this.IsDocument)
             {
-                int docStart = jsonTextAssembler.NextWriteIndex;
-                jsonTextAssembler.Write("{");
-
-                ++currentTabbing;
-                MakeNewline(jsonTextAssembler, currentTabbing);
-
-                JsonDocument doc = new JsonDocument(placeholderSource, docStart);
-
-                JsonBuilder last = this.Children.LastOrDefault();
-                foreach(JsonBuilder child in this.Children)
+                JsonDocument doc = new JsonDocument(this.Children.Count);
+                foreach (JsonBuilder child in this.Children)
                 {
-                    if(child.DocumentKVPValue == null)
+                    if (child.DocumentKVPValue == null)
                     {
                         continue;
                     }
-                    int headingStart;
-                    WritePropertyHeading(jsonTextAssembler, child.Key, out headingStart);
-                    TrackedString key = placeholderSource.Track(headingStart, child.Key.Length);
 
-                    JsonValue value = child.DocumentKVPValue.BuildOutputValue(jsonTextAssembler, placeholderSource, currentTabbing);
-                    doc.Add(key, value);
-
-                    if (child != last)
-                    {
-                        jsonTextAssembler.Write(",");
-                        MakeNewline(jsonTextAssembler, currentTabbing);
-                    }
+                    JsonValue childValue = child.DocumentKVPValue.BuildJsonValue();
+                    doc.Add(child.Key, childValue);
                 }
-
-                --currentTabbing;
-                MakeNewline(jsonTextAssembler, currentTabbing);
-
-                int docEndIndex = jsonTextAssembler.NextWriteIndex;
-                jsonTextAssembler.Write("}");
-
-                placeholderSource.TrackForPlaceholder(doc, docEndIndex);
                 return doc;
             }
-            if(this.IsArray)
+
+            if (this.IsArray)
             {
-                int startIndex = jsonTextAssembler.NextWriteIndex;
-                jsonTextAssembler.Write("[");
-
-                ++currentTabbing;
-
-                JsonArray arr = new JsonArray(placeholderSource, startIndex);
-
-                JsonBuilder last = this.Children.LastOrDefault();
+                JsonArray arr = new JsonArray(this.Children.Count);
                 foreach (JsonBuilder child in this.Children)
                 {
-                    if (child.IsValue)
-                    {
-                        MakeNewline(jsonTextAssembler, currentTabbing);
-                    }
-
-                    JsonValue value = child.BuildOutputValue(jsonTextAssembler, placeholderSource, currentTabbing);
-                    arr.Add(value);
-
-                    if(child != last)
-                    {
-                        jsonTextAssembler.Write(",");
-                    }
+                    JsonValue childValue = child.BuildJsonValue();
+                    arr.Add(childValue);
                 }
-
-                --currentTabbing;
-                MakeNewline(jsonTextAssembler, currentTabbing);
-
-                int endIndex = jsonTextAssembler.NextWriteIndex;
-                jsonTextAssembler.Write("]");
-
-                placeholderSource.TrackForPlaceholder(arr, endIndex);
                 return arr;
             }
+
             if (this.IsValue)
             {
-                WritePropertyValue(jsonTextAssembler, this.Value, out int propStart, out int propEnd);
-
-                var value = new JsonValue(placeholderSource, propStart, this.Value);
-                placeholderSource.TrackForPlaceholder(value, propEnd);
-                return value;
+                return new JsonValue(this.Value, isQuoted: this.IsValueUsualQuoteTarget);
             }
 
-            throw new Exception("Can't build output values, value came in that is neither Document, array, nor value. Possibly still unset?");
-        }
-
-        private void MakeNewline(IndexTrackingStringBuilder textTracker, int currentTabbing)
-        {
-            MakeNewline(textTracker, currentTabbing, this.BuilderSettings);
-        }
-
-        private void WritePropertyHeading(IndexTrackingStringBuilder textTracker, string propName, out int headingTextStart)
-        {
-            WritePropertyHeading(textTracker, propName, out headingTextStart, this.BuilderSettings);
-        }
-
-        private void WritePropertyValue(IndexTrackingStringBuilder jsonTextAssembler, string propValue, out int propStart, out int propEnd)
-        {
-            WritePropertyValue(jsonTextAssembler, propValue, this.IsValueUsualQuoteTarget, out propStart, out propEnd, this.BuilderSettings);
-        }
-
-        internal static void MakeNewline(IndexTrackingStringBuilder textTracker, int currentTabbing, Settings settings)
-        {
-            textTracker.Write(settings.Newline);
-
-            while (currentTabbing-- > 0)
-            {
-                textTracker.Write(settings.Tabbing);
-            }
-        }
-
-        internal static void WritePropertyHeading(IndexTrackingStringBuilder textTracker, string propName, out int headingTextStart, Settings settings)
-        {
-            if (settings.QuotePropertyNames)
-            {
-                headingTextStart = textTracker.NextWriteIndex + 1;
-                textTracker.Write($"{settings.PropertyNameQuoteChars}{propName}{settings.PropertyNameQuoteChars}{settings.SpacingAroundPropertyIndicators}:{settings.SpacingAroundPropertyIndicators}");
-            }
-            else
-            {
-                headingTextStart = textTracker.NextWriteIndex;
-                textTracker.Write($"{propName}{settings.SpacingAroundPropertyIndicators}:{settings.SpacingAroundPropertyIndicators}");
-            }
-        }
-
-        internal static void WritePropertyValue(IndexTrackingStringBuilder jsonTextAssembler, string propValue, bool isUsuallyQuoted, out int propStart, out int propEnd, Settings settings)
-        {
-            if(propValue == null)
-            {
-                propStart = propEnd = jsonTextAssembler.NextWriteIndex;
-                return;
-            }
-
-            if (settings.PropertyValueQuoting == ePropertyValueQuoting.QuoteAll
-                                    || (settings.PropertyValueQuoting == ePropertyValueQuoting.QuoteAnyUsuallyQuotedItem && isUsuallyQuoted))
-            {
-                propStart = jsonTextAssembler.NextWriteIndex + 1;
-                jsonTextAssembler.Write("{1}{0}{1}", propValue, settings.PropertyValueQuoteChars);
-                // The next write index would be one after the end usually, but we want to track where the value
-                //  inside the qutoes are, so instead it's -2
-                propEnd = jsonTextAssembler.NextWriteIndex - 2;
-            }
-            else
-            {
-                propStart = jsonTextAssembler.NextWriteIndex;
-                jsonTextAssembler.Write(propValue);
-                // The next write index would be one after the end, so nextWritIndex - 1
-                propEnd = jsonTextAssembler.NextWriteIndex - 1;
-            }
+            // Empty / unset builder - represent as an empty value rather than throwing.
+            return new JsonValue(String.Empty, isQuoted: false);
         }
     }
 }

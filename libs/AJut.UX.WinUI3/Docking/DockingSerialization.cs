@@ -233,11 +233,13 @@ namespace AJut.UX.Docking
 
         // ===========[ Data Types ]============================================
 
+        [OptimizeAJson]
         public class CoreStorageData
         {
             public Dictionary<string, DockZoneSerializationData> ZoneInfoByRoot { get; set; } = new();
         }
 
+        [OptimizeAJson]
         public class WindowStorageData
         {
             public int WindowX { get; set; }
@@ -249,6 +251,7 @@ namespace AJut.UX.Docking
             public DockZoneSerializationData State { get; set; }
         }
 
+        [OptimizeAJson]
         public class SerializationInfo
         {
             public CoreStorageData Core { get; set; }

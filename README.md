@@ -23,6 +23,46 @@ This software uses an MIT License, see [LICENSE](/LICENSE) - terms and condition
 ## Thanks
 As a matter of attribution, several of these utilities I have refined some with a friend, [Ian Good](https://github.com/IGood). Thanks Ian!
 
+## AJson V2
+
+`AJut.Core` ships AJson V2 in `AJut.Text.AJson`. V2 keeps the same shape and entry points as V1 but drops the editing-tracker overhead, replaces per-call heap allocations with pooled buffers, and adds a Roslyn source generator for trimming-friendly compile-time-emitted serialization helpers.
+
+V1 lives in `AJut.Text.AJson.Legacy`, `[Obsolete]` for one release cycle. To migrate: change `using AJut.Text.AJson.Legacy;` -> `using AJut.Text.AJson;`. The fix the typo on the way: `JsonInterpretterSettings` (V1) -> `JsonInterpreterSettings` (V2). API shape is otherwise the same.
+
+### Source generator (`[OptimizeAJson]`)
+
+For a faster, trim-safe path on a type, decorate it with `[OptimizeAJson]`:
+
+```cs
+[OptimizeAJson]
+public class WireMessage
+{
+    public string Kind { get; set; }
+    public int SequenceNumber { get; set; }
+    public byte[] Payload { get; set; }
+}
+```
+
+The Roslyn generator (bundled with `AJut.Core`'s nupkg, no separate package) emits a compile-time serialization helper per opted-in type and registers it into a dispatch table at module init. `JsonHelper.BuildJsonForObject<T>` and `BuildObjectForJson<T>` route opted-in types through the generated path; unannotated types fall back to reflection.
+
+For a referenced library full of pure-data types you do not control, opt in the whole assembly:
+
+```cs
+[assembly: OptimizeAJson(typeof(SomeMarkerTypeFromTheTargetLibrary))]
+```
+
+The marker is just a compile-time pointer at the assembly to walk. Generator emits one helper per public type in that assembly.
+
+### Trimming
+
+Source-generated types survive `<TrimMode>full</TrimMode>` cleanly because the emitted code references each property by name (the trimmer keeps them).
+
+Reflection-only types under aggressive trim need either:
+- `[OptimizeAJson]` (recommended), or
+- `[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]` on the holder so the trimmer keeps the relevant members.
+
+The reflection path's public entry points (`JsonHelper.BuildObjectForJson<T>`, `BuildObjectForJson(Type, ...)`) carry the necessary `DynamicallyAccessedMembers` annotations so consumer-side type holders propagate trim safety automatically when annotated.
+
 ## Final Message
 I hope you are able to find AJut useful!
 

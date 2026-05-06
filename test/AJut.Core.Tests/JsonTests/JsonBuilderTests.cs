@@ -1,12 +1,11 @@
-﻿namespace AJut.Core.UnitTests.AJson
+namespace AJut.Core.UnitTests.AJson
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Net.NetworkInformation;
-    using AJut.Text.AJson;
-    using AJut.Text.AJson.Attributes;
-    using AJut.TypeManagement;
+    using AJut.Text.AJson.Legacy;
+        using AJut.TypeManagement;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]

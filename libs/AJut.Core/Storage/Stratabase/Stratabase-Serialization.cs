@@ -1,4 +1,4 @@
-﻿namespace AJut.Storage
+namespace AJut.Storage
 {
     using System;
     using System.Collections.Generic;
@@ -44,7 +44,7 @@
 
         private class StratabaseDataModel
         {
-            public static JsonBuilder.Settings kJsonSettings = new JsonBuilder.Settings
+            public static JsonBuilderSettings kJsonSettings = new JsonBuilderSettings
             {
                 KeyValuePairValueTypeIdToWrite = eTypeIdInfo.Any
             };

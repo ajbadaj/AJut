@@ -200,11 +200,13 @@ namespace AJut.UX.Docking
 
         // ===========[ Serialization Data Classes (WPF-specific window state) ]===================================
 
+        [OptimizeAJson]
         public class CoreStorageData
         {
             public Dictionary<string, DockZoneSerializationData> ZoneInfoByRoot { get; set; } = new();
         }
 
+        [OptimizeAJson]
         public class WindowStorageData
         {
             public Size WindowSize { get; set; }
@@ -214,6 +216,7 @@ namespace AJut.UX.Docking
             public bool WindowIsFullscreened { get; set; }
         }
 
+        [OptimizeAJson]
         public class SerializationInfo
         {
             public CoreStorageData Core { get; set; }

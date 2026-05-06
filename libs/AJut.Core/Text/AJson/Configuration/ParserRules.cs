@@ -1,29 +1,44 @@
-﻿namespace AJut.Text.AJson
+namespace AJut.Text.AJson
 {
     using System;
     using System.Collections.Generic;
 
     /// <summary>
-    /// Rules that dictate any special rules for parsing json text
+    /// Rules that dictate any special rules for parsing json text.
     /// </summary>
     public class ParserRules
     {
         /// <summary>
-        /// TODO: The intent with this was to allow customization of what counts as a separator, in practice the actual
-        /// parsing routine is not customizable yet so this goes relatively unused at the moment.
+        /// Extra characters that should be treated as structural separators by the
+        /// indexer pass. The actual parsing routine is not yet customizable.
         /// </summary>
         public List<char> AdditionalSeparatorChars { get; } = new List<char>();
 
         /// <summary>
-        /// Special markup for comments in your json - TECHNICALLY this is not supported (see http://www.json.com for spec info), but I choose to support it anyway.
+        /// Comment markers the parser will strip during the indexer pass. JSON proper
+        /// does not allow comments - AJut supports them anyway by request.
         /// </summary>
         /// <example>
-        /// An example might be...
-        /// ParserRules rules = new ParserRules();
-        /// rules.CommentIndicators.Add(new Tuple("//", "\n")); A line comment style, ie // comment there
-        /// rules.CommentIndicators.Add(new Tuple("/*", "*/")); A block style comment, ie /* some comment */
+        /// rules.CommentIndicators.Add(new Tuple&lt;string,string&gt;("//", "\n")); // line comment
+        /// rules.CommentIndicators.Add(new Tuple&lt;string,string&gt;("/*", "*/")); // block comment
         /// </example>
         public List<Tuple<string, string>> CommentIndicators { get; } = new List<Tuple<string, string>>();
-    }
 
+        /// <summary>
+        /// When true, the parser only accepts strict JSON - quoted keys, no comments, no
+        /// trailing commas, no unquoted string values. Default false matches V1 lenient behavior.
+        /// </summary>
+        public bool StrictMode { get; set; } = false;
+
+        /// <summary>
+        /// Returns a default ParserRules with C-style line and block comments enabled.
+        /// </summary>
+        public static ParserRules WithDefaultComments ()
+        {
+            ParserRules rules = new ParserRules();
+            rules.CommentIndicators.Add(new Tuple<string, string>("//", "\n"));
+            rules.CommentIndicators.Add(new Tuple<string, string>("/*", "*/"));
+            return rules;
+        }
+    }
 }

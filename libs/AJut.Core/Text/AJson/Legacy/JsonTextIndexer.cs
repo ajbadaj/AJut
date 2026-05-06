@@ -1,4 +1,4 @@
-﻿namespace AJut.Text.AJson
+namespace AJut.Text.AJson.Legacy
 {
     using System;
     using System.Buffers;
@@ -10,6 +10,7 @@
     /// Reduce the iteration time of json indexing, by looping through the whole string once and marking separators, 
     /// and then dealing directly with separators during json parsing.
     /// </summary>
+    [Obsolete("AJson V1 is moved to AJut.Text.AJson.Legacy and will be removed in a future release. Migrate to AJut.Text.AJson (V2). See AJut README for migration notes.")]
     public class JsonTextIndexer
     {
         private const char kQuoteChar = '"';

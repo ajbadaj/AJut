@@ -1,4 +1,4 @@
-﻿namespace TheAJutShowRoom
+namespace TheAJutShowRoom
 {
     using System;
     using System.ComponentModel;
@@ -190,6 +190,7 @@
             }
         }
 
+        [OptimizeAJson]
         private class AJutShowroomAppConfig
         {
             public eAppThemeConfiguration Theme { get; set; }

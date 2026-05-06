@@ -1,10 +1,10 @@
-﻿namespace AJut.Text.AJson
+namespace AJut.Text.AJson
 {
     using System;
 
     /// <summary>
-    /// Use this attribute to indicate you do not want a property to be serialized
+    /// Marks a property to be skipped entirely by AJson - not written on serialize, not consumed on deserialize.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Property, AllowMultiple=false, Inherited=true)]
+    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
     public class JsonIgnoreAttribute : Attribute { }
 }

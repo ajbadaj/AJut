@@ -1,8 +1,8 @@
-﻿namespace AJut.Core.UnitTests.AJson
+namespace AJut.Core.UnitTests.AJson
 {
     using AJut.IO;
     using AJut.MathUtilities;
-    using AJut.Text.AJson;
+    using AJut.Text.AJson.Legacy;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System;
     using System.Collections.Generic;
@@ -197,7 +197,7 @@
         public void AJson_Failure_7_13_18__from_string()
         {
             string jsonText = "{ \"Text\": \"   \"}";
-            //                               ↑↑↑ <- Three spaces
+            //                               ??? <- Three spaces
 
             Json result = JsonHelper.ParseText(jsonText);
             Assert.IsNotNull(result);
@@ -209,7 +209,7 @@
 
             Assert.AreEqual("Text", jsonDoc.KeyAt(0).StringValue);
             Assert.AreEqual("   ", jsonDoc.ValueAt(0).StringValue);
-            //               ↑↑↑ <- Three spaces
+            //               ??? <- Three spaces
         }
 
         [TestMethod]
@@ -218,7 +218,7 @@
             Json json = JsonHelper.MakeRootBuilder()
                             .StartDocument()
                                 .AddProperty("Text", "   ")
-            //                                        ↑↑↑ <- Three spaces
+            //                                        ??? <- Three spaces
                             .Finalize();
 
             Assert.IsNotNull(json);

@@ -1,18 +1,17 @@
-﻿namespace AJut.Text.AJson
+namespace AJut.Text.AJson
 {
-    using AJut.Text;
     using AJut.Tree;
 
     /// <summary>
-    /// A simple string value - or the basis of the other two json storage types (<see cref="JsonDocument"/> and <see cref="JsonArray"/>)
+    /// A simple string value - or the basis of the other two json storage types
+    /// (<see cref="JsonDocument"/> and <see cref="JsonArray"/>).
     /// </summary>
-    public class JsonValue : TrackedString
+    public class JsonValue
     {
         // ===============================[ Construction ]===========================
         static JsonValue ()
         {
             JsonValue[] emptyEnumerable = new JsonValue[0];
-            // Setup tree traversal
             TreeTraversal<JsonValue>.SetupDefaults(
                 jv =>
                 {
@@ -29,81 +28,42 @@
                 }, jv => jv.Parent);
         }
 
-        /// <summary>
-        /// Base class constructor
-        /// </summary>
-        internal JsonValue (TrackedStringManager source) : base(source)
+        public JsonValue ()
         {
-            // Track value types manually with our source. This is done because values aren't parsed, 
-            //  they're created in documents or arrays and so don't have a chance to know if they need
-            //  to be tracked or not (done at the end of parse in document and array).
-            //
-            // If we are in placeholder mode, then we are *not* adding it yet as we don't know the whole 
-            //  range of the json value until we're done building our placeholders, but we need to allocate 
-            //  it in order to process it.
-            if (this.IsValue && !this.Source.IsInPlaceholderMode)
-            {
-                this.Source.Track(this);
-            }
+            this.IsQuoted = true;
         }
 
-        /// <summary>
-        /// Constructor (for parsing)
-        /// </summary>
-        internal JsonValue (TrackedStringManager source, int start, int end, bool isInsideQuote) : this(source)
+        public JsonValue (string stringValue, bool isQuoted = true)
         {
-            this.ResetStringValue(start, end, isInsideQuote);
-        }
-
-        /// <summary>
-        /// Constructor (for building)
-        /// </summary>
-        internal JsonValue (TrackedStringManager source, int start, string value) : this(source)
-        {
-            this.SetValueInternal(value);
-            this.OffsetInSource = start;
+            this.StringValue = stringValue;
+            this.IsQuoted = isQuoted;
         }
 
         // ===============================[ Properties ]===========================
+        /// <summary>
+        /// Raw string contents for value-kind json. For JsonDocument and JsonArray this
+        /// stays null until something explicitly populates it - serialization goes through
+        /// <see cref="ToString"/> on the document/array overrides instead.
+        /// </summary>
+        public virtual string StringValue { get; set; }
+
+        /// <summary>
+        /// Whether this value was originally quoted (or, for object-built values, whether the
+        /// type would normally serialize quoted - strings, chars, enums, dates, guids, etc).
+        /// Documents and arrays ignore this. Numeric / bool / null values use false.
+        /// </summary>
+        public bool IsQuoted { get; set; }
+
         public virtual bool IsArray => false;
         public virtual bool IsDocument => false;
         public virtual bool IsValue => true;
 
-        public JsonValue Parent { get; internal protected set; }
+        public JsonValue Parent { get; internal set; }
 
-        // ===============================[ Methods ]===========================
-        public override string ToString()
+        // ===============================[ Public Interface Methods ]===========================
+        public override string ToString ()
         {
             return this.StringValue;
-        }
-
-        protected internal void ResetStringValue (int startIndex, int endIndex, bool isInsideQuote = false)
-        {
-            string str;
-            if (endIndex == -1)
-            {
-                str = this.Source.Text.Substring(startIndex);
-            }
-            else
-            {
-                str = this.Source.Text.SubstringWithIndices(startIndex, endIndex);
-            }
-
-            // If we're not inside quotes, then we are going to assume whitespace needs to be removed, to understand why
-            //  imagine a json document like this: { thing:  4 }. We know to start tracking the value after ":" and to end
-            //  tracking it at "}". The result is "  4 ", when clearly we want "4". However, if there were qutoes that would
-            //  be much different: {thing: "  4 "} - in that case "  4 " is clearly what we want the value to be.
-            if (this.IsValue && !isInsideQuote)
-            {
-                str = JsonHelper.TrimUnquotedValue(str, out int offsetFromStart);
-                this.OffsetInSource = startIndex + offsetFromStart;
-            }
-            else
-            {
-                this.OffsetInSource = startIndex;
-            }
-
-            this.SetValueInternal(str);
         }
     }
 }

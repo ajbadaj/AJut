@@ -1,44 +1,41 @@
-﻿namespace AJut.Text.AJson
+namespace AJut.Text.AJson
 {
     using System;
     using System.Collections;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
     using System.Reflection;
     using AJut;
     using AJut.IO;
-    using AJut.Text;
-    using AJut.Text.AJson.Attributes;
     using AJut.TypeManagement;
 
+    // The reflection path uses Type.GetProperties / Activator.CreateInstance / Type.GetProperty
+    // throughout. Each Type-taking entry point carries a DynamicallyAccessedMembers annotation
+    // so the IL trimmer keeps the relevant members. The kAJsonReflectionRequirements constant
+    // (PublicProperties + PublicParameterlessConstructor) is the minimum set the reflection path
+    // needs - properties to walk, parameterless ctor to construct. Source-generator-handled types
+    // do not need these; they pre-emit explicit code referencing each property by name.
+
     /// <summary>
-    /// Utility class that acts as a starting point for parsing and building json, and other related utilities
+    /// Public entry point for V2 AJson - parsing, building, and POCO conversion.
     /// </summary>
     public static class JsonHelper
     {
-        // For specialized trim
-        private static readonly char[] kWhitespace = new[] { ' ', '\r', '\n', '\t' };
+        private static JsonBuilderSettings g_defaultBuilderSettings = new JsonBuilderSettings();
 
-        private static JsonBuilder.Settings DefaultSettings { get; set; }
+        // Per-type reflection cache. Bounded by Type identity (assembly-bounded), no leak risk.
+        // ConcurrentDictionary chosen for thread-safety in case AJson is called concurrently
+        // (Call Familiar wire-message hot path may serialize on multiple threads).
+        private static readonly ConcurrentDictionary<Type, PropertyInfo[]> g_propertyCacheReadable
+            = new ConcurrentDictionary<Type, PropertyInfo[]>();
+        private static readonly ConcurrentDictionary<Type, PropertyInfo[]> g_propertyCacheWritable
+            = new ConcurrentDictionary<Type, PropertyInfo[]>();
 
-        static JsonHelper ()
-        {
-            DefaultSettings = new JsonBuilder.Settings();
-        }
-
-        /// <summary>
-        /// Register all <see cref="JsonTypeIdAttribute"/> type ids from the given assembly
-        /// </summary>
-        /// <param name="assembly">The assembly to search</param>
-        /// <param name="forceSearch">Whether or not to search again if the assembly has already been searched (cached by name)</param>
-        [Obsolete("JsonTypeId is being deprecated in favor of the more generic TypeId, please use TypeIdRegistrar.RegisterAllTypeIds instead")]
-        public static void RegisterAllTypeIds (Assembly assembly, bool forceSearch = false)
-        {
-            TypeIdRegistrar.RegisterAllTypeIds(assembly, forceSearch);
-        }
-
+        // ===============================[ Type ID Registration ]===========================
         public static void RegisterTypeId<T> (string id)
         {
             TypeIdRegistrar.RegisterTypeId<T>(id);
@@ -49,210 +46,100 @@
             TypeIdRegistrar.RegisterTypeId(id, type);
         }
 
-        // TODO: Should add support to force commas or not, then just use newline as a text separator
+        // ===============================[ Parse Entry Points ]===========================
+        public static Json ParseText (string jsonText, ParserRules rules = null)
+        {
+            if (jsonText == null)
+            {
+                Json failed = new Json();
+                failed.AddError("Null source text provided");
+                return failed;
+            }
+            return JsonReader.Parse(jsonText.AsSpan(), rules);
+        }
 
-        /// <summary>
-        /// Parses the passed in file at the given file path, and returns a non-<c>null</c> <see cref="Json"/> instance.
-        /// </summary>
-        /// <param name="filePath">Path of the file to parse</param>
-        /// <param name="rules">Parser rules</param>
-        /// <returns>A <see cref="Json"/> which is guranteed to be non-<c>null</c></returns>
+        public static Json ParseText (ReadOnlySpan<char> jsonText, ParserRules rules = null)
+        {
+            return JsonReader.Parse(jsonText, rules);
+        }
+
         public static Json ParseFile (string filePath, ParserRules rules = null)
         {
             if (PathHelpers.IsValidAsPath(filePath) && File.Exists(filePath))
             {
                 return ParseText(File.ReadAllText(filePath), rules);
             }
-            else
-            {
-                Json jsonOutput = new Json(null);
-                jsonOutput.AddError($"File path '{filePath ?? "<null>"}' does not exist on disk, or is an invalid path!");
-                return jsonOutput;
-            }
+
+            Json failed = new Json();
+            failed.AddError($"File path '{filePath ?? "<null>"}' does not exist on disk, or is an invalid path");
+            return failed;
         }
 
-        /// <summary>
-        /// Parse a stream for a file - note: performs read to end and parses text result
-        /// </summary>
-        /// <param name="jsonFileStream">The stream to read (performs read to end)</param>
-        /// <param name="rules">The rules (optional) to apply. Default is <c>null</c> which will result in the default rule set.</param>
-        /// <returns>A <see cref="Json"/> which is guranteed to be non-<c>null</c></returns>
         public static Json ParseFile (Stream jsonFileStream, ParserRules rules = null)
         {
-            StreamReader reader = new StreamReader(jsonFileStream);
-            return ParseText(reader.ReadToEnd(), rules);
-        }
-
-        /// <summary>
-        /// Parses the text from an existing <see cref="FileTextTracker"/> file, and returns a non-<c>null</c> <see cref="Json"/> instance.
-        /// </summary>
-        /// <param name="file">A pre-made <see cref="FileTextTracker"/> to parse the contents of. Note: Will act as the returned <see cref="Json"/> instnace's TextTracking.</param>
-        /// <param name="rules">Parser rules</param>
-        /// <returns>A non-<c>null</c> <see cref="Json"/> instance</returns>
-        public static Json ParseFile (FileTextTracker file, ParserRules rules = null)
-        {
-            return RunParse(file, rules);
-        }
-
-        /// <summary>
-        /// Parses the passed in text, and returns a non-<c>null</c> <see cref="Json"/> instance.
-        /// </summary>
-        /// <param name="jsonText">Some json text.</param>
-        /// <param name="rules">Parser rules</param>
-        /// <returns>A non-<c>null</c> <see cref="Json"/> instance</returns>
-        public static Json ParseText (string jsonText, ParserRules rules = null)
-        {
-            return RunParse(new TrackedStringManager(jsonText), rules);
-        }
-
-        /// <summary>
-        /// Parses the text from the passed in <see cref="TrackedStringManager"/>, and returns a non-<c>null</c> <see cref="Json"/> instance.
-        /// </summary>
-        /// <param name="rules">Parser rules</param>
-        /// <returns>A non-<c>null</c> <see cref="Json"/> instance</returns>
-        public static Json ParseText (TrackedStringManager source, ParserRules rules = null)
-        {
-            return RunParse(source, rules);
-        }
-
-        private static Json RunParse (TrackedStringManager tracker, ParserRules rules)
-        {
-            Json output = new Json(tracker);
-            try
+            // leaveOpen=true - the caller still owns the stream after we're done reading.
+            using (StreamReader reader = new StreamReader(jsonFileStream, System.Text.Encoding.UTF8, true, 1024, leaveOpen: true))
             {
-                if (tracker.Text == null)
-                {
-                    output.AddError("Null source text provided!");
-                    tracker.HasChanges = false;
-                    return output;
-                }
-
-                JsonTextIndexer indexer = new JsonTextIndexer(tracker.Text, rules);
-                // TODO: Handle case where root is document without braces( ie "item : value, item2 : value2")
-
-                int indexOfFirstOpenBracket = indexer.NextAny(0, '{', '[');
-
-                // ============ No Brackets ===========
-                if (indexOfFirstOpenBracket == -1)
-                {
-                    output.Data = new JsonValue(output.TextTracking, 0, indexer.NextAny(0, '}', ']'), false);
-                    tracker.HasChanges = false;
-                    return output;
-                }
-
-                // ============ Has Brackets ===========
-                char nextBracket = output.TextTracking.Text[indexOfFirstOpenBracket];
-                if (nextBracket == '{')
-                {
-                    output.Data = new JsonDocument(indexer, output.TextTracking, indexOfFirstOpenBracket, out int endIndex);
-                    tracker.HasChanges = false;
-                    return output;
-                }
-                else // if(nextBracket == '[')
-                {
-                    output.Data = new JsonArray(indexer, output.TextTracking, indexOfFirstOpenBracket, out int endIndex);
-                    tracker.HasChanges = false;
-                    return output;
-                }
+                return ParseText(reader.ReadToEnd(), rules);
             }
-            catch (Exception exc)
-            {
-                output.AddError(exc.ToString());
-            }
-
-            return output;
         }
 
-        /// <summary>
-        /// Starting point if you are building AJson via a builder.
-        /// </summary>
-        /// <example>
-        /// <see cref="JsonHelper"/>.MakeRootBuilder().StartDocument().AddProperty("test", 2).Finalize(); 
-        /// would give you an Json object with a JsonDocument structured like this: { "test": 2 }
-        /// </example>
-        /// <param name="settings">The builder settings to use while constructing the <see cref="Json"/> (optional, null will give you the default settings)</param>
-        /// <returns>A <see cref="JsonBuilder"/> for you to chain construction commands to in order to form <see cref="Json"/>.</returns>
-        public static JsonBuilder MakeRootBuilder (JsonBuilder.Settings settings = null)
+        // ===============================[ Build Entry Points ]===========================
+        public static JsonBuilder MakeRootBuilder (JsonBuilderSettings settings = null)
         {
-            return new JsonBuilder(settings ?? DefaultSettings);
+            return new JsonBuilder(settings ?? g_defaultBuilderSettings);
         }
 
-        internal static JsonBuilder MakeValueBuilder (object value, JsonBuilder.Settings settings = null)
+        internal static JsonBuilder MakeValueBuilder (object value, JsonBuilderSettings settings = null)
         {
             return new JsonBuilder(settings, value);
         }
 
-        /// <summary>
-        /// Makes a <see cref="JsonBuilder"/> for the given object
-        /// </summary>
-        /// <param name="instance">The instance to build the <see cref="JsonBuilder"/> from</param>
-        /// <param name="settings">The builder settings to use while constructing the <see cref="Json"/> (optional, null will give you the default settings)</param>
-        /// <returns>A <see cref="JsonBuilder"/> for you to chain construction commands to in order to form <see cref="Json"/>.</returns>
-        public static Json BuildJsonForObject (object instance, JsonBuilder.Settings settings = null)
+        public static Json BuildJsonForObject (object instance, JsonBuilderSettings settings = null)
         {
             JsonBuilder output = MakeRootBuilder(settings);
             if (instance != null)
             {
                 FillOutJsonBuilderForObject(instance, output);
             }
-
             return output.Finalize();
         }
 
-        /// <summary>
-        /// Builds an object from the provided <see cref="Json"/>.
-        /// </summary>
-        /// <typeparam name="T">The type of object to build</typeparam>
-        /// <param name="sourceJson">The <see cref="Json"/> used</param>
-        /// <param name="settings">Special interpretter settings</param>
-        /// <returns>The object built from the <see cref="Json"/></returns>
-        public static T BuildObjectForJson<T> (Json sourceJson, JsonInterpretterSettings settings = null)
+        public static Json BuildJsonForObject<T> (T instance, JsonBuilderSettings settings = null)
+        {
+            return BuildJsonForObject((object)instance, settings);
+        }
+
+        // ===============================[ Object-from-Json Entry Points ]===========================
+        private const DynamicallyAccessedMemberTypes kReflectionRequirements
+            = DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;
+
+        public static T BuildObjectForJson<[DynamicallyAccessedMembers(kReflectionRequirements)] T> (Json sourceJson, JsonInterpreterSettings settings = null)
         {
             return (T)BuildObjectForJson(typeof(T), sourceJson, settings);
         }
 
-        /// <summary>
-        /// Builds an object from the provided <see cref="Json"/>.
-        /// </summary>
-        /// <typeparam name="T">The type of object to build</typeparam>
-        /// <param name="sourceJsonValue">The <see cref="JsonValue"/> used</param>
-        /// <param name="settings">Special interpretter settings</param>
-        /// <returns>The object built from the <see cref="JsonValue"/></returns>
-        public static T BuildObjectForJson<T> (JsonValue sourceJsonValue, JsonInterpretterSettings settings = null)
+        public static T BuildObjectForJson<[DynamicallyAccessedMembers(kReflectionRequirements)] T> (JsonValue sourceJsonValue, JsonInterpreterSettings settings = null)
         {
             return (T)BuildObjectForJson(typeof(T), sourceJsonValue, settings);
         }
 
-        /// <summary>
-        /// Builds a list of objects from the <see cref="JsonArray"/>
-        /// </summary>
-        /// <typeparam name="T">The type of object to build</typeparam>
-        /// <param name="sourceJsonArray">The <see cref="JsonValue"/> being evaluated</param>
-        /// <param name="settings">Special interpretter settings</param>
-        /// <returns>A list built with objects parsed from the array</returns>
-        public static List<T> BuildObjectListForJson<T> (JsonArray sourceJsonArray, JsonInterpretterSettings settings = null)
+        public static List<T> BuildObjectListForJson<[DynamicallyAccessedMembers(kReflectionRequirements)] T> (JsonArray sourceJsonArray, JsonInterpreterSettings settings = null)
         {
-            var list = new List<T>();
+            List<T> list = new List<T>(sourceJsonArray.Count);
             foreach (JsonValue value in sourceJsonArray)
             {
                 list.Add(BuildObjectForJson<T>(value, settings));
             }
-
             return list;
         }
 
-        /// <summary>
-        /// Build an object for json that has been typed (using the built in <see cref="JsonDocument.kTypeIndicator"/> property)
-        /// </summary>
-        public static object BuildObjectForTypedJson (Json sourceJson, JsonInterpretterSettings settings = null)
+        public static object BuildObjectForTypedJson (Json sourceJson, JsonInterpreterSettings settings = null)
         {
             return sourceJson.HasErrors ? null : BuildObjectForTypedJson(sourceJson.Data, settings);
         }
 
-        /// <summary>
-        /// Build an object for json that has been typed (using the built in <see cref="JsonDocument.kTypeIndicator"/> property)
-        /// </summary>
-        public static object BuildObjectForTypedJson (JsonValue sourceJson, JsonInterpretterSettings settings = null)
+        public static object BuildObjectForTypedJson (JsonValue sourceJson, JsonInterpreterSettings settings = null)
         {
             if (sourceJson is JsonDocument doc
                 && doc.ValueFor(JsonDocument.kTypeIndicator) is JsonValue typeValue
@@ -265,81 +152,73 @@
             return null;
         }
 
-        /// <summary>
-        /// Builds an object from the provided <see cref="Json"/>.
-        /// </summary>
-        /// <param name="type">The type of object to build</param>
-        /// <param name="sourceJson">The <see cref="Json"/> used</param>
-        /// <param name="settings">Special interpretter settings</param>
-        /// <returns>The object built from the <see cref="Json"/></returns>
-        public static object BuildObjectForJson (Type type, Json sourceJson, JsonInterpretterSettings settings = null)
+        public static object BuildObjectForJson ([DynamicallyAccessedMembers(kReflectionRequirements)] Type type, Json sourceJson, JsonInterpreterSettings settings = null)
         {
             if (sourceJson.HasErrors)
             {
                 return null;
             }
 
-            return BuildObjectForJson(type, sourceJson.Data, settings);
+            return BuildObjectForJson(type, sourceJson.Data, settings, sourceJson);
         }
 
-        /// <summary>
-        /// Builds an object from the provided <see cref="Json"/>.
-        /// </summary>
-        /// <param name="type">The type of object to build</param>
-        /// <param name="sourceJsonValue">The <see cref="JsonValue"/> used</param>
-        /// <param name="settings">Special interpretter settings</param>
-        /// <returns>The object built from the <see cref="JsonValue"/></returns>
-        public static object BuildObjectForJson (Type type, JsonValue sourceJsonValue, JsonInterpretterSettings settings = null)
+        public static object BuildObjectForJson ([DynamicallyAccessedMembers(kReflectionRequirements)] Type type, JsonValue sourceJsonValue, JsonInterpreterSettings settings = null)
+        {
+            return BuildObjectForJson(type, sourceJsonValue, settings, owner: null);
+        }
+
+        // ===============================[ Object-from-Json Implementation ]===========================
+        private static object BuildObjectForJson ([DynamicallyAccessedMembers(kReflectionRequirements)] Type type, JsonValue sourceJsonValue, JsonInterpreterSettings settings, Json owner)
         {
             if (typeof(JsonValue).IsAssignableFrom(type))
             {
                 return sourceJsonValue;
             }
 
-            // Nullable<T> needs to dispatch on T so custom constructors (Vector2, DateTime, etc.)
-            //  and the rest of the type resolution pipeline see the underlying type. Reflection's
-            //  SetValue auto-wraps the returned T back into the Nullable<T> property.
             if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
-                return BuildObjectForJson(type.GenericTypeArguments[0], sourceJsonValue, settings);
+                return BuildObjectForJson(type.GenericTypeArguments[0], sourceJsonValue, settings, owner);
             }
 
-            settings = settings ?? JsonInterpretterSettings.Default;
+            settings = settings ?? JsonInterpreterSettings.Default;
             object outputInstance = null;
 
-            // If we're elevating one of the properties of this thing, as itself, then we need to
-            //  alter the type we're operating on
-            string elevatedPropertyName = type.GetAttributes<JsonPropertyAsSelfAttribute>()?.FirstOrDefault()?.PropertyName;
-            if (elevatedPropertyName != null)
+            if (sourceJsonValue == null)
             {
-                // If we're doing elevation, then we are dealing with an object at this point
-                //  we'll need to create the instance, and set the value on the property indicated
-                PropertyInfo targetProp = type.GetProperty(elevatedPropertyName, BindingFlags.Public | BindingFlags.Instance);
-                if (targetProp != null)
-                {
-                    outputInstance = AJutActivator.CreateInstanceOf(type);
+                return null;
+            }
 
-                    // Backward-compat: if the json is still the old non-elevated shape (a doc that
-                    //  contains the elevated property as an entry), pull that entry's value. Otherwise
-                    //  treat the whole json value as the elevated value (the new, elevated shape).
+            // Class-level [JsonPropertyAsSelf] elevation - the json data we have is the inner
+            //  property's content rather than a doc with a named entry. Build an instance of the
+            //  outer type, build the inner value via the property type, set, return. Backward-compat
+            //  read of the legacy non-elevated shape (a doc that still carries the inner as a named
+            //  entry) routes through the same path by pulling that entry's value first.
+            JsonPropertyAsSelfAttribute elevatedAttr = type.GetCustomAttribute<JsonPropertyAsSelfAttribute>(inherit: true);
+            if (elevatedAttr != null)
+            {
+                PropertyInfo elevatedProp = type.GetProperty(elevatedAttr.PropertyName, BindingFlags.Public | BindingFlags.Instance);
+                if (elevatedProp != null)
+                {
                     JsonValue elevatedSource = sourceJsonValue;
-                    if (sourceJsonValue is JsonDocument sourceDoc)
+                    if (sourceJsonValue is JsonDocument legacyDoc)
                     {
-                        JsonValue match = sourceDoc.ValueFor(elevatedPropertyName);
-                        if (match != null)
+                        JsonValue legacyMatch = legacyDoc.ValueFor(elevatedAttr.PropertyName);
+                        if (legacyMatch != null)
                         {
-                            elevatedSource = match;
+                            elevatedSource = legacyMatch;
                         }
                     }
 
-                    // Basically forward the json value onto building the child, and set value of that to the output instance
-                    object childInstance = BuildObjectForJson(targetProp.PropertyType, elevatedSource, settings);
-                    targetProp.SetValue(outputInstance, childInstance);
-
-                    return outputInstance;
+                    object outerInstance = AJutActivator.CreateInstanceOf(type);
+                    object innerValue = BuildObjectForJson(elevatedProp.PropertyType, elevatedSource, settings, owner);
+                    elevatedProp.SetValue(outerInstance, innerValue);
+                    return outerInstance;
                 }
             }
 
+            // Resolve the concrete target type up front - the dispatch check needs the runtime
+            //  type, which comes from the doc's __type indicator when present.
+            Type concreteType = type;
             if (sourceJsonValue.IsDocument)
             {
                 JsonDocument docVersion = (JsonDocument)sourceJsonValue;
@@ -348,19 +227,29 @@
                 {
                     if (TryGetTypeForTypeId(typeIndicator, out Type targetType))
                     {
-                        outputInstance = AJutActivator.CreateInstanceOf(targetType);
+                        concreteType = targetType;
                     }
                     else
                     {
-                        Logger.LogError($"Target type provided {typeIndicator ?? "-null-"} could not be translated, skipping");
+                        owner?.AddError($"Target type provided '{typeIndicator}' could not be translated, skipping");
                     }
                 }
             }
+
+            // Source-gen fast path. If a generated reader is registered for the concrete type, it
+            //  handles construction and population in one call - we are done.
+            if (AJsonGeneratedDispatch.TryGet(concreteType, out AJsonGeneratedSerializer generated))
+            {
+                return generated.Reader(sourceJsonValue, settings, owner);
+            }
+
+            if (sourceJsonValue.IsDocument && concreteType != type)
+            {
+                outputInstance = AJutActivator.CreateInstanceOf(concreteType);
+            }
             else if (sourceJsonValue.IsArray)
             {
-                var array = (JsonArray)sourceJsonValue;
-
-                // You have to create arrays with an argument
+                JsonArray array = (JsonArray)sourceJsonValue;
                 if (type.IsArray)
                 {
                     outputInstance = AJutActivator.CreateInstanceOfArray(type, array.Count);
@@ -369,39 +258,39 @@
 
             if (outputInstance == null)
             {
-                outputInstance = settings.ConstructInstanceFor(type, sourceJsonValue);
+                outputInstance = settings.ConstructInstanceFor(type, sourceJsonValue, owner);
             }
 
-            FillOutObjectWithJson(ref outputInstance, type, sourceJsonValue, settings);
+            FillOutObjectWithJson(ref outputInstance, type, sourceJsonValue, settings, owner);
             return outputInstance;
         }
 
-        /// <summary>
-        /// Fills out an existing instance with <see cref="JsonValue"/>.
-        /// </summary>
-        /// <param name="targetItem">The instance to fill out</param>
-        /// <param name="sourceJsonValue">The <see cref="JsonValue"/> used</param>
-        /// <param name="settings">Special interpretter settings</param>
-        public static void FillOutObjectWithJson (ref object targetItem, Type targetType, JsonValue sourceJsonValue, JsonInterpretterSettings settings = null)
+        public static void FillOutObjectWithJson (ref object targetItem, [DynamicallyAccessedMembers(kReflectionRequirements)] Type targetType, JsonValue sourceJsonValue, JsonInterpreterSettings settings = null)
         {
-            // Favor the object's type info as it may be more derived
+            FillOutObjectWithJson(ref targetItem, targetType, sourceJsonValue, settings, owner: null);
+        }
+
+        private static void FillOutObjectWithJson (ref object targetItem, [DynamicallyAccessedMembers(kReflectionRequirements)] Type targetType, JsonValue sourceJsonValue, JsonInterpreterSettings settings, Json owner)
+        {
             if (targetItem != null)
             {
                 targetType = targetItem.GetType();
             }
 
-            settings = settings ?? JsonInterpretterSettings.Default;
+            settings = settings ?? JsonInterpreterSettings.Default;
 
             if (sourceJsonValue.IsValue)
             {
                 Type nullableElementType = targetType.TargetsSameTypeAs(typeof(Nullable<>)) ? targetType.GenericTypeArguments[0] : null;
-                if (settings.StringParser.CanConvert(nullableElementType ?? targetType))
+                Type effectiveType = nullableElementType ?? targetType;
+
+                if (settings.StringParser.CanConvert(effectiveType))
                 {
-                    object parsedValue = settings.StringParser.Convert(sourceJsonValue.StringValue, nullableElementType ?? targetType);
+                    object parsedValue = settings.StringParser.Convert(sourceJsonValue.StringValue, effectiveType);
                     if (nullableElementType != null)
                     {
-                        var nullableConstructor = typeof(Nullable<>).MakeGenericType(nullableElementType).GetConstructor(new[] { nullableElementType });
-                        targetItem = nullableConstructor.Invoke(new[] { parsedValue });
+                        ConstructorInfo nullableCtor = typeof(Nullable<>).MakeGenericType(nullableElementType).GetConstructor(new[] { nullableElementType });
+                        targetItem = nullableCtor.Invoke(new[] { parsedValue });
                     }
                     else
                     {
@@ -411,11 +300,13 @@
 
                 return;
             }
+
             if (sourceJsonValue.IsArray)
             {
                 bool isArray = false, isList = false, isDictionary = false;
                 Type elementType = null;
                 MethodInfo dictionaryAdd = null;
+
                 if (targetType.IsArray)
                 {
                     isArray = true;
@@ -429,10 +320,10 @@
                 else if (targetType.FindBaseTypeOrInterface(typeof(IDictionary<,>)) is Type dictionaryType)
                 {
                     isDictionary = true;
-                    var generics = dictionaryType.GetGenericArguments();
+                    Type[] generics = dictionaryType.GetGenericArguments();
                     elementType = typeof(KeyValuePair<,>).MakeGenericType(generics[0], generics[1]);
 
-                    var collectionType = typeof(ICollection<>).MakeGenericType(elementType);
+                    Type collectionType = typeof(ICollection<>).MakeGenericType(elementType);
                     dictionaryAdd = collectionType.GetMethod("Add", new[] { elementType });
                     Debug.Assert(dictionaryAdd != null, $"Could not find add method for dictionary of type {targetType}");
                 }
@@ -440,193 +331,167 @@
                 JsonArray sourceCasted = (JsonArray)sourceJsonValue;
                 for (int index = 0; index < sourceCasted.Count; ++index)
                 {
-                    JsonValue value = sourceCasted[index];
-                    object element = BuildObjectForJson(elementType, value, settings);
+                    JsonValue element = sourceCasted[index];
+                    object built = BuildObjectForJson(elementType, element, settings, owner);
 
-                    // If it's an array, then we've preallocated it the correct length already
                     if (isArray)
                     {
-                        ((IList)targetItem)[index] = element;
+                        ((IList)targetItem)[index] = built;
                     }
                     else if (isList)
                     {
-                        ((IList)targetItem).Insert(index, element);
+                        ((IList)targetItem).Insert(index, built);
                     }
                     else if (isDictionary)
                     {
-                        dictionaryAdd.Invoke(targetItem, new object[] { element });
+                        dictionaryAdd.Invoke(targetItem, new object[] { built });
                     }
                 }
             }
+
             if (sourceJsonValue.IsDocument)
             {
                 JsonDocument sourceCasted = (JsonDocument)sourceJsonValue;
-                PropertyInfo[] allProperties = GetPropertiesFrom(targetType, false, true);
+                PropertyInfo[] allProperties = GetCachedWritableProperties(targetType);
 
-                foreach (var kvp in sourceCasted)
+                foreach (KeyValuePair<string, JsonValue> kvp in sourceCasted)
                 {
                     if (kvp.Key == JsonDocument.kTypeIndicator)
                     {
                         continue;
                     }
 
-                    PropertyInfo propToSet = allProperties.FirstOrDefault(prop => _KeyForProperty(prop) == kvp.Key);
-                    if (propToSet != null)
+                    PropertyInfo propToSet = FindPropertyForKey(allProperties, kvp.Key);
+                    if (propToSet == null)
                     {
-                        object newPropValue = null;
-
-                        // Resolve runtime type evaluation
-                        var runtimeTypeEval = propToSet.GetAttributes<JsonRuntimeTypeEvalAttribute>()?.FirstOrDefault();
-                        if (runtimeTypeEval != null && kvp.Value.IsDocument)
-                        {
-                            JsonDocument valueDocCasted = (JsonDocument)kvp.Value;
-                            if (valueDocCasted.TryGetValue(JsonDocument.kTypeIndicator, out string typeIdForValue)
-                                && valueDocCasted.ValueFor(JsonDocument.kRuntimeTypeEvalValue) is JsonValue foundRuntimeValueIndicator
-                                && JsonHelper.TryGetTypeForTypeId(typeIdForValue, out Type foundType))
-                            {
-                                newPropValue = BuildObjectForJson(foundType, foundRuntimeValueIndicator, settings);
-                            }
-                        }
-
-                        // If we're not dealing with runtime type evaluation, use the property type
-                        if (newPropValue == null)
-                        {
-                            newPropValue = BuildObjectForJson(propToSet.PropertyType, kvp.Value, settings);
-                        }
-
-                        propToSet.SetValue(targetItem, newPropValue);
-                    }
-                }
-            }
-
-            string _KeyForProperty (PropertyInfo _prop)
-            {
-                return _prop.GetCustomAttribute<JsonPropertyAliasAttribute>()?.PropertyName is string _overrideKey
-                        ? _overrideKey
-                        : _prop.Name;
-
-            }
-        }
-
-        private static void SetValueOnObject (object target, Type targetType, PropertyInfo prop, JsonValue sourceValue)
-        {
-            if (sourceValue.IsDocument)
-            {
-                foreach (KeyValuePair<TrackedString, JsonValue> item in (JsonDocument)sourceValue)
-                {
-                    try
-                    {
-                        PropertyInfo childProp = targetType.GetProperty(item.Key.StringValue);
-                        if (prop != null)
-                        {
-                            SetValueOnObject(target, targetType, childProp, item.Value);
-                        }
-
-                    }
-                    catch (Exception exc)
-                    {
-                        Logger.LogError(exc);
+                        continue;
                     }
 
+                    object newPropValue = null;
+
+                    // [JsonRuntimeTypeEval] read path: the value side is a small doc carrying the
+                    //  payload's runtime type id and the actual content. Resolve the type, build
+                    //  against that concrete type, then set.
+                    JsonRuntimeTypeEvalAttribute runtimeTypeEval = propToSet.GetCustomAttribute<JsonRuntimeTypeEvalAttribute>(inherit: false);
+                    if (runtimeTypeEval != null && kvp.Value.IsDocument)
+                    {
+                        JsonDocument runtimeDoc = (JsonDocument)kvp.Value;
+                        if (runtimeDoc.TryGetValue(JsonDocument.kTypeIndicator, out string runtimeTypeId)
+                            && runtimeDoc.ValueFor(JsonDocument.kRuntimeTypeEvalValue) is JsonValue wrappedValue
+                            && TryGetTypeForTypeId(runtimeTypeId, out Type runtimeType))
+                        {
+                            newPropValue = BuildObjectForJson(runtimeType, wrappedValue, settings, owner);
+                        }
+                    }
+
+                    if (newPropValue == null)
+                    {
+                        newPropValue = BuildObjectForJson(propToSet.PropertyType, kvp.Value, settings, owner);
+                    }
+
+                    propToSet.SetValue(targetItem, newPropValue);
                 }
             }
         }
 
-        /// <summary>
-        /// The recursive utility that fills out a <see cref="JsonBuilder"/> based off of the passed in source
-        /// </summary>
-        /// <param name="source">The object to pull data from</param>
-        /// <param name="target">The builder to fill out</param>
+        // ===============================[ Object-to-Json Implementation ]===========================
+        // The reflection branch reads property metadata off source.GetType(). The trimmer cannot
+        // statically verify which members of the runtime type are needed - that depends on what
+        // the caller actually passes in. Consumers that want trim safety should opt their types
+        // into [OptimizeAJson] (the source-gen path short-circuits to generated code before any
+        // reflection runs) or annotate their consumer-side type holder with
+        // [DynamicallyAccessedMembers].
+        [UnconditionalSuppressMessage("Trimming", "IL2075",
+            Justification = "Reflection-path serializer; trim-safe path is [OptimizeAJson] on the consumer type or DynamicallyAccessedMembers on the holder.")]
         public static void FillOutJsonBuilderForObject (object source, JsonBuilder target)
         {
-            Type sourceType = source.GetType();
-            bool isUsuallyQuoted;
-
-            // If we're elevating one of the properties of this thing, as itself, then we need to
-            //  alter the type we're operating on
-            string elevatedPropertyName = sourceType.GetAttributes<JsonPropertyAsSelfAttribute>()?.FirstOrDefault()?.PropertyName;
-            if (elevatedPropertyName != null)
+            if (source == null)
             {
-                PropertyInfo targetProp = sourceType.GetProperty(elevatedPropertyName, BindingFlags.Public | BindingFlags.Instance);
-                if (targetProp != null)
+                return;
+            }
+
+            Type sourceType = source.GetType();
+
+            // Source-gen fast path. The generated writer handles document-startup, type-id header,
+            //  and per-property writes in a single explicit call - no reflection on the property
+            //  loop, direct primitive append (no boxing) for value-typed properties.
+            if (AJsonGeneratedDispatch.TryGet(sourceType, out AJsonGeneratedSerializer generated))
+            {
+                generated.Writer(source, target);
+                return;
+            }
+
+            // Class-level [JsonPropertyAsSelf] elevation - swap the source for the named property's
+            //  value and continue down the normal path. Null elevated value falls out as a no-op
+            //  (matches the null-property omit policy the outer property handler applies).
+            JsonPropertyAsSelfAttribute elevatedAttr = sourceType.GetCustomAttribute<JsonPropertyAsSelfAttribute>(inherit: true);
+            if (elevatedAttr != null)
+            {
+                PropertyInfo elevatedProp = sourceType.GetProperty(elevatedAttr.PropertyName, BindingFlags.Public | BindingFlags.Instance);
+                if (elevatedProp != null)
                 {
-                    source = targetProp.GetValue(source);
+                    source = elevatedProp.GetValue(source);
                     if (source == null)
                     {
-                        // Elevated value is null -- leave the property builder without a value
-                        //  so output-time skips it (matches the null-values-are-omitted behavior
-                        //  the outer property handler applies before recursing in).
                         return;
                     }
-
                     sourceType = source.GetType();
                 }
             }
 
-            // ----------- Handle Simple Values ------------
-            if (_CheckForSettingsRegisteredSimpleValue(sourceType, source, out isUsuallyQuoted, out string value))
+            // Simple value path.
+            if (TryGetSimpleStringValue(target.BuilderSettings, sourceType, source, out bool isUsuallyQuoted, out string value))
             {
                 target.IsValueUsualQuoteTarget = isUsuallyQuoted;
-                _SetValue(value);
+                ApplySimpleValue(target, value);
                 return;
             }
 
-            // ----------- Handle Array ------------
+            // Array / IEnumerable path.
             if (typeof(IEnumerable).IsAssignableFrom(sourceType))
             {
                 JsonBuilder array = target.StartArray();
                 IEnumerable enumerableValue = (IEnumerable)source;
-                if (enumerableValue != null)
+                foreach (object arrayItemObj in enumerableValue)
                 {
-                    foreach (object arrayItemObj in enumerableValue)
+                    if (arrayItemObj == null)
                     {
-                        // =================[ Null Array Item ]===================
-                        if (arrayItemObj == null)
+                        if (sourceType.IsArray)
                         {
-                            // We've got a null element, but bad news it's an array that means we
-                            //  *MUST* preserver element order and add an empty element. If it's
-                            //  not an array, order doesn't matter, so we'll just skip it.
-                            if (sourceType.IsArray)
+                            // Preserve element order on arrays - emit a stand-in for the null slot.
+                            Type elementType = sourceType.GetElementType();
+                            if (typeof(IEnumerable).IsAssignableFrom(elementType))
                             {
-                                Type elementType = sourceType.GetElementType();
-                                if (typeof(IEnumerable).IsAssignableFrom(elementType))
-                                {
-                                    var emptyChildArr = array.StartArray();
-                                    emptyChildArr.End();
-                                }
-                                else if (elementType.IsSimpleType() || target.BuilderSettings.TryGetJsonValueStringMakerFor(elementType) != null)
-                                {
-                                    var item = array.AddArrayItem(String.Empty);
-                                    item.IsValueUsualQuoteTarget = true;
-                                }
-                                else
-                                {
-                                    var document = array.StartDocument();
-                                    document.End();
-                                }
+                                JsonBuilder emptyChildArr = array.StartArray();
+                                emptyChildArr.End();
                             }
+                            else if (elementType.IsSimpleType() || target.BuilderSettings.TryGetJsonValueStringMakerFor(elementType) != null)
+                            {
+                                JsonBuilder item = array.AddArrayItem(String.Empty);
+                                item.IsValueUsualQuoteTarget = true;
+                            }
+                            else
+                            {
+                                JsonBuilder document = array.StartDocument();
+                                document.End();
+                            }
+                        }
+                        continue;
+                    }
 
-                            continue;
-                        }
-
-                        // =================[ Normal Array Item ]===================
-                        // Simple array item
-                        if (_CheckForSettingsRegisteredSimpleValue(arrayItemObj.GetType(), arrayItemObj, out isUsuallyQuoted, out string stringValue))
-                        {
-                            var item = array.AddArrayItem(stringValue);
-                            item.IsValueUsualQuoteTarget = isUsuallyQuoted;
-                        }
-                        // Array of array item
-                        else if (arrayItemObj is IEnumerable)
-                        {
-                            FillOutJsonBuilderForObject(arrayItemObj, array);
-                        }
-                        // Document array item
-                        else
-                        {
-                            JsonBuilder arrayItem = array.StartDocument();
-                            FillOutJsonBuilderForObject(arrayItemObj, arrayItem);
-                        }
+                    if (TryGetSimpleStringValue(target.BuilderSettings, arrayItemObj.GetType(), arrayItemObj, out bool itemIsQuoted, out string itemString))
+                    {
+                        JsonBuilder item = array.AddArrayItem(itemString);
+                        item.IsValueUsualQuoteTarget = itemIsQuoted;
+                    }
+                    else if (arrayItemObj is IEnumerable)
+                    {
+                        FillOutJsonBuilderForObject(arrayItemObj, array);
+                    }
+                    else
+                    {
+                        JsonBuilder arrayItem = array.StartDocument();
+                        FillOutJsonBuilderForObject(arrayItemObj, arrayItem);
                     }
                 }
 
@@ -634,12 +499,11 @@
                 return;
             }
 
-            // ----------- Handle KeyValuePair special case -----------
+            // KeyValuePair special case (only kicks in when KVP type-id flags are set in settings).
             if (target.BuilderSettings.HasAnyKVPTypeIdWriteInstructions
-                && sourceType.IsGenericType 
+                && sourceType.IsGenericType
                 && typeof(KeyValuePair<,>) == sourceType.GetGenericTypeDefinition())
             {
-                // [Special Case] Array item documents get started when they're added
                 if (!target.IsArrayItem)
                 {
                     target = target.StartDocument();
@@ -659,16 +523,15 @@
                     target.AddProperty(JsonDocument.kKVPValueTypeIndicator, valueTypeId);
                 }
 
-                _HandleApplyProperty(source, keyProp);
-                _HandleApplyProperty(source, valueProp);
+                ApplyDocumentProperty(target, source, keyProp);
+                ApplyDocumentProperty(target, source, valueProp);
                 return;
             }
 
-            // ----------- Handle Document ------------
-            PropertyInfo[] allProperties = GetPropertiesFrom(
-                source.GetType(),
-                true, 
-                source.GetType().IsSimpleType() || !target.BuilderSettings.UseReadonlyObjectProperties
+            // Document path.
+            PropertyInfo[] allProperties = GetCachedReadableProperties(
+                sourceType,
+                requiresSet: source.GetType().IsSimpleType() || !target.BuilderSettings.UseReadonlyObjectProperties
             );
 
             if (allProperties.Length == 0 && target.Parent != null)
@@ -677,13 +540,11 @@
                 return;
             }
 
-            // [Special Case] Array item documents get started when they're added
             if (!target.IsArrayItem)
             {
                 target = target.StartDocument();
             }
 
-            // Make sure to write out the type for the instance if requested
             if (TryGetTypeIdForType(target.BuilderSettings.TypeIdToWrite, sourceType, out string typeId))
             {
                 target.AddProperty(JsonDocument.kTypeIndicator, typeId);
@@ -691,129 +552,139 @@
 
             foreach (PropertyInfo prop in allProperties)
             {
-                _HandleApplyProperty(source, prop);
-            }
-
-            // ----------- Handle Value (Simple Type) ------------
-            void _HandleApplyProperty (object _propSource, PropertyInfo _propInfo)
-            {
-                string _key;
-                if (_propInfo.GetCustomAttribute<JsonPropertyAliasAttribute>()?.PropertyName is string _overrideKey)
-                {
-                    _key = _overrideKey;
-                }
-                else
-                {
-                    _key = _propInfo.Name;
-                }
-
-                object _sourceValue = _propInfo.GetValue(_propSource);
-
-                // Skip properties marked to omit on default -- read path ignores the attribute,
-                //  so older files that still include the property value round-trip correctly.
-                if (_propInfo.GetCustomAttribute<JsonOmitIfDefaultAttribute>() != null
-                    && _IsDefaultForType(_propInfo.PropertyType, _sourceValue))
-                {
-                    return;
-                }
-
-                if (_sourceValue != null)
-                {
-                    var runtimeTypeEval = _propInfo.GetAttributes<JsonRuntimeTypeEvalAttribute>()?.FirstOrDefault();
-                    if (runtimeTypeEval != null && JsonHelper.TryGetTypeIdForType(runtimeTypeEval.TypeWriteTarget, _sourceValue?.GetType(), out string _foundTypeId))
-                    {
-                        JsonBuilder propertyObjectBuilder = target.StartProperty(_key).StartDocument();
-                        propertyObjectBuilder.AddProperty(JsonDocument.kTypeIndicator, _foundTypeId);
-                        JsonBuilder typedValueObjectBuilder = propertyObjectBuilder.StartProperty(JsonDocument.kRuntimeTypeEvalValue);
-                        FillOutJsonBuilderForObject(_sourceValue, typedValueObjectBuilder);
-                    }
-                    else if (_CheckForSettingsRegisteredSimpleValue(_propInfo.PropertyType, _sourceValue, out isUsuallyQuoted, out string simpleStringValue))
-                    {
-                        var created = target.AddProperty(_key, _sourceValue, isUsuallyQuoted);
-                    }
-                    else
-                    {
-                        JsonBuilder propertyBuilder = target.StartProperty(_key);
-                        FillOutJsonBuilderForObject(_sourceValue, propertyBuilder);
-                    }
-                }
-            }
-
-            bool _IsDefaultForType (Type _type, object _value)
-            {
-                if (_value == null)
-                {
-                    return true;
-                }
-
-                // For value types, compare against the type's default instance (structs boxed once).
-                //  For reference types, null is already handled above, so any other value is non-default.
-                if (_type.IsValueType)
-                {
-                    object _defaultInstance = Activator.CreateInstance(_type);
-                    return _value.Equals(_defaultInstance);
-                }
-
-                return false;
-            }
-
-            bool _CheckForSettingsRegisteredSimpleValue (Type _type, object _instance, out bool _isUsuallyQuoted, out string simplifiedStringValue)
-            {
-                _isUsuallyQuoted = false;
-                var valueBuilder = target.BuilderSettings.TryGetJsonValueStringMakerFor(_type);
-                if (valueBuilder != null)
-                {
-                    simplifiedStringValue = valueBuilder(_instance);
-                    if (_type == typeof(string) 
-                        || _type == typeof(char)
-                        || _type.IsEnum)
-                    {
-                        _isUsuallyQuoted = true;
-                    }
-                    else if (_type.IsNumericType())
-                    {
-                        _isUsuallyQuoted = false;
-                    }
-                    else if (_type == typeof(bool))
-                    {
-                        _isUsuallyQuoted = false;
-                    }
-                    else
-                    {
-                        _isUsuallyQuoted = true;
-                    }
-
-                    return true;
-                }
-
-                simplifiedStringValue = null;
-                return false;
-            }
-
-            void _SetValue (string _value)
-            {
-                _value = _value.Replace("\"", "\\\"");
-                if (target.IsValue)
-                {
-                    target.Value = _value;
-                }
-                else
-                {
-                    // Propagate the quote flag onto the child value builder -- BuildOutputValue
-                    //  reads IsValueUsualQuoteTarget from whichever builder actually holds the
-                    //  value (the DocumentKVPValue), not from the parent property builder. Missing
-                    //  this produces unquoted strings/enums in the output, e.g. `"Label" : foo,`
-                    //  instead of `"Label" : "foo",`. Shows up for any type routed through
-                    //  FillOutJsonBuilderForObject (elevation via JsonPropertyAsSelf, boxed
-                    //  object properties, etc) rather than AddProperty which already propagates.
-                    target.DocumentKVPValue = new JsonBuilder(target);
-                    target.DocumentKVPValue.IsValueUsualQuoteTarget = target.IsValueUsualQuoteTarget;
-                    target.DocumentKVPValue.Value = _value;
-                }
+                ApplyDocumentProperty(target, source, prop);
             }
         }
 
-        internal static bool TryGetTypeIdForType (eTypeIdInfo typeWriteSettings, Type type, out string foundTypeId)
+        // ===============================[ Internal Helpers ]===========================
+        private static void ApplyDocumentProperty (JsonBuilder target, object propSource, PropertyInfo propInfo)
+        {
+            string key = KeyForProperty(propInfo);
+            object sourceValue = propInfo.GetValue(propSource);
+
+            if (sourceValue == null)
+            {
+                return;
+            }
+
+            // [JsonOmitIfDefault] - skip the property if the value matches a default. Three sources
+            //  in priority order: per-attribute explicit, settings-registered equivalent, then the
+            //  type's zero value.
+            JsonOmitIfDefaultAttribute omitAttr = propInfo.GetCustomAttribute<JsonOmitIfDefaultAttribute>(inherit: true);
+            if (omitAttr != null && IsConsideredDefault(target.BuilderSettings, propInfo.PropertyType, sourceValue, omitAttr))
+            {
+                return;
+            }
+
+            // [JsonRuntimeTypeEval] - wrap the value in a type-id-bearing doc so the read path can
+            //  recover the concrete runtime type for the property (typically an object/interface).
+            JsonRuntimeTypeEvalAttribute runtimeTypeEval = propInfo.GetCustomAttribute<JsonRuntimeTypeEvalAttribute>(inherit: false);
+            if (runtimeTypeEval != null
+                && TryGetTypeIdForType(runtimeTypeEval.TypeWriteTarget, sourceValue.GetType(), out string runtimeTypeId))
+            {
+                JsonBuilder wrapperDoc = target.StartProperty(key).StartDocument();
+                wrapperDoc.AddProperty(JsonDocument.kTypeIndicator, runtimeTypeId);
+                JsonBuilder valueBuilder = wrapperDoc.StartProperty(JsonDocument.kRuntimeTypeEvalValue);
+                FillOutJsonBuilderForObject(sourceValue, valueBuilder);
+                return;
+            }
+
+            if (TryGetSimpleStringValue(target.BuilderSettings, propInfo.PropertyType, sourceValue, out bool isUsuallyQuoted, out string simpleStringValue))
+            {
+                target.AddProperty(key, sourceValue, isUsuallyQuoted);
+            }
+            else
+            {
+                JsonBuilder propertyBuilder = target.StartProperty(key);
+                FillOutJsonBuilderForObject(sourceValue, propertyBuilder);
+            }
+        }
+
+        private static bool IsConsideredDefault (JsonBuilderSettings settings, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type propertyType, object value, JsonOmitIfDefaultAttribute attr)
+        {
+            if (value == null)
+            {
+                return true;
+            }
+
+            // Per-attribute explicit default. Attribute arguments for enum values get stored as
+            //  the underlying integer, so coerce both sides through the property type before
+            //  comparing - otherwise an `eFoo.Center` argument never equals the boxed enum value.
+            if (attr.HasExplicitDefault)
+            {
+                object attrDefault = attr.ExplicitDefault;
+                if (attrDefault != null && propertyType.IsEnum && attrDefault.GetType() != propertyType)
+                {
+                    attrDefault = Enum.ToObject(propertyType, attrDefault);
+                }
+                return Equals(value, attrDefault);
+            }
+
+            // Settings-level explicit default - lets non-const-expressible types (Vector2, Guid, etc.)
+            //  participate by registering an instance to compare against.
+            if (settings.TryGetDefaultEquivalent(propertyType, out object registeredDefault))
+            {
+                return Equals(value, registeredDefault);
+            }
+
+            // Zero-value default for value types. Reference types reach here only when value is
+            //  non-null (already returned true above) so they are non-default by definition.
+            if (propertyType.IsValueType)
+            {
+                return Equals(value, Activator.CreateInstance(propertyType));
+            }
+
+            return false;
+        }
+
+        private static bool TryGetSimpleStringValue (JsonBuilderSettings settings, Type type, object instance, out bool isUsuallyQuoted, out string stringValue)
+        {
+            isUsuallyQuoted = false;
+            JsonStringMaker maker = settings.TryGetJsonValueStringMakerFor(type);
+            if (maker != null)
+            {
+                stringValue = maker(instance);
+                if (type == typeof(string) || type == typeof(char) || type.IsEnum)
+                {
+                    isUsuallyQuoted = true;
+                }
+                else if (type.IsNumericType())
+                {
+                    isUsuallyQuoted = false;
+                }
+                else if (type == typeof(bool))
+                {
+                    isUsuallyQuoted = false;
+                }
+                else
+                {
+                    isUsuallyQuoted = true;
+                }
+
+                return true;
+            }
+
+            stringValue = null;
+            return false;
+        }
+
+        private static void ApplySimpleValue (JsonBuilder target, string rawValue)
+        {
+            string escaped = rawValue == null ? null : rawValue.Replace("\"", "\\\"");
+            if (target.IsValue)
+            {
+                target.Value = escaped;
+            }
+            else
+            {
+                target.DocumentKVPValue = new JsonBuilder(target);
+                target.DocumentKVPValue.IsValueUsualQuoteTarget = target.IsValueUsualQuoteTarget;
+                target.DocumentKVPValue.Value = escaped;
+            }
+        }
+
+        // ===============================[ Type Id Helpers ]===========================
+        public static bool TryGetTypeIdForType (eTypeIdInfo typeWriteSettings, Type type, out string foundTypeId)
         {
             if (type == null)
             {
@@ -848,7 +719,14 @@
             return false;
         }
 
-        internal static bool TryGetTypeForTypeId (string typeIndicator, out Type foundType)
+        // The Type.GetType(string) call is inherently dynamic and the trimmer cannot statically
+        // verify the target. Consumers that rely on this fallback (rather than registering with
+        // TypeIdRegistrar up front) need to ensure their target types are kept by the trimmer
+        // via DynamicDependency or DynamicallyAccessedMembers - a runtime concern, not solvable
+        // here.
+        [UnconditionalSuppressMessage("Trimming", "IL2057",
+            Justification = "Fallback for type ids not registered with TypeIdRegistrar - consumers using this path must keep target types alive themselves.")]
+        public static bool TryGetTypeForTypeId (string typeIndicator, out Type foundType)
         {
             if (typeIndicator == null)
             {
@@ -865,124 +743,45 @@
             return foundType != null;
         }
 
-        internal static void FindInsertStart(string sourceText, ref int targetStart)
+        // ===============================[ Reflection Cache ]===========================
+        private static PropertyInfo[] GetCachedReadableProperties (Type type, bool requiresSet)
         {
-            while (kWhitespace.Contains(sourceText[targetStart - 1]))
-            {
-                --targetStart;
-            }
+            ConcurrentDictionary<Type, PropertyInfo[]> cache = requiresSet ? g_propertyCacheWritable : g_propertyCacheReadable;
+            return cache.GetOrAdd(type, t => ComputeProperties(t, requiresGet: true, requiresSet: requiresSet));
         }
 
-        internal static int EvaluteBegginningTabOffset(JsonValue source, JsonBuilder.Settings settings)
+        private static PropertyInfo[] GetCachedWritableProperties (Type type)
         {
-            var capture = RegexHelper.Match(source.StringValue, (source.IsDocument ? "{" : @"\[") + @" *(\s*)").GetMostSpecificCapture();
-            if (capture == null)
-            {
-                Logger.LogInfo("Unable to determine current tabbing due to weirdly formatted start. If the document is formatted unexpectedly, that may lead to serious failures. Also, as a result of this error, tabbing may look funny.");
-            }
-            else
-            {
-                // Figure out the current tabbing
-                string tabText = capture.Value;
-
-                if (tabText == String.Empty)
-                {
-                    return 0;
-                }
-                // If the document seems to use the same tabbing as the settings asked for, then use that
-                else if (tabText.Contains(settings.Tabbing))
-                {
-                    return tabText.NumberOfTimesContained(settings.Tabbing);
-                }
-                // Otherwise we'll figure out a best guess for tabbing
-                else
-                {
-                    // If the tabbing seems to use tabs, then number of tabs will do
-                    if (tabText[0] == '\t')
-                    {
-                        return tabText.Length;
-                    }
-                    // If tabbing seems to use some othe sequence, then we'll say every 4
-                    //  count as one tab.
-                    else
-                    {
-                        return tabText.Length / 4;
-                    }
-                }
-            }
-
-            // If we couldn't figure anything out anywhere, default to 1
-            return 1;
+            return g_propertyCacheWritable.GetOrAdd(type, t => ComputeProperties(t, requiresGet: false, requiresSet: true));
         }
 
-        internal static string TrimUnquotedValue(string jsonText, out int startOffset)
-        {
-            startOffset = 0;
-            if (String.IsNullOrEmpty(jsonText))
-            {
-                return String.Empty;
-            }
-
-            string trimmed = jsonText.TrimStart(kWhitespace);
-
-            // Store the offset as how much was trimmed off
-            startOffset = jsonText.Length - trimmed.Length;
-
-            // Note: It's ok to trim end without worrying because the only thing recorded is the start index.
-            //          End index is found by using start index + string's length.
-            return trimmed.TrimEnd(kWhitespace);
-        }
-
-        private static PropertyInfo[] GetPropertiesFrom(Type targetType, bool requiresGet, bool requiresSet)
+        private static PropertyInfo[] ComputeProperties (Type targetType, bool requiresGet, bool requiresSet)
         {
             return TypeMetadataExtensionRegistrar
                 .GetOrderedProperties(targetType, BindingFlags.Public | BindingFlags.Instance)
                 .Where(prop => (!requiresGet || prop.GetGetMethod() != null)
                             && (!requiresSet || prop.GetSetMethod() != null)
                             && !TypeMetadataExtensionRegistrar.IsHidden(prop)
-                            && !TypeMetadataExtensionRegistrar.HasAttribute<JsonIgnoreAttribute>(prop))
+                            && prop.GetCustomAttribute<JsonIgnoreAttribute>(inherit: true) == null)
                 .ToArray();
         }
 
-        internal class IndexTrackingHelper
+        private static PropertyInfo FindPropertyForKey (PropertyInfo[] props, string key)
         {
-            public int StartIndex { get; set; }
-            public int EndIndex { get; set; }
-            public bool IsInsideQuotes { get; set; }
-
-            public bool IsValid
+            for (int i = 0; i < props.Length; ++i)
             {
-                get
+                if (KeyForProperty(props[i]) == key)
                 {
-                    return this.StartIndex != -1 && this.EndIndex != -1 && this.EndIndex >= this.StartIndex;
+                    return props[i];
                 }
             }
+            return null;
+        }
 
-            public static implicit operator bool (IndexTrackingHelper h)
-            {
-                return h.IsValid;
-            }
-
-            public void Reset()
-            {
-                this.StartIndex = -1;
-                this.EndIndex = -1;
-                this.IsInsideQuotes = false;
-            }
-
-            public TrackedString CreateTS(TrackedStringManager tracker)
-            {
-                string target = tracker.Text.SubstringWithIndices(this.StartIndex, this.EndIndex);
-                int startOffset = 0;
-
-                // If it's unquoted text, then we need to trim
-                if (!this.IsInsideQuotes)
-                {
-                    target = JsonHelper.TrimUnquotedValue(target, out startOffset);
-                }
-
-                return tracker.Track(this.StartIndex + startOffset, target.Length);
-            }
+        private static string KeyForProperty (PropertyInfo prop)
+        {
+            JsonPropertyAliasAttribute alias = prop.GetCustomAttribute<JsonPropertyAliasAttribute>(inherit: true);
+            return alias?.PropertyName ?? prop.Name;
         }
     }
 }

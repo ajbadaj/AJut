@@ -1,314 +1,129 @@
-﻿namespace AJut.Text.AJson
+namespace AJut.Text.AJson
 {
-    using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
-    using AJut;
-    using AJut.Text;
     using AJut.Tree;
 
-    public class JsonDocument : JsonValue, IEnumerable<KeyValuePair<TrackedString, JsonValue>>
+    public class JsonDocument : JsonValue, IEnumerable<KeyValuePair<string, JsonValue>>
     {
-        internal const string kTypeIndicator = "__type";
-        internal const string kKVPKeyTypeIndicator = "__key-type";
-        internal const string kKVPValueTypeIndicator = "__value-type";
-        internal const string kRuntimeTypeEvalValue = "__value";
+        public const string kTypeIndicator = "__type";
+        public const string kKVPKeyTypeIndicator = "__key-type";
+        public const string kKVPValueTypeIndicator = "__value-type";
+        public const string kRuntimeTypeEvalValue = "__value";
 
-        List<KeyValuePair<TrackedString, JsonValue>> m_memberStorage = new List<KeyValuePair<TrackedString, JsonValue>>();
+        private List<KeyValuePair<string, JsonValue>> m_memberStorage;
 
-        // =========================[ Constructor & Parsing ]===============================
-        /// <summary>
-        /// Constructor for parsing
-        /// </summary>
-        internal JsonDocument (JsonTextIndexer textIndexer, TrackedStringManager source, int startIndex, out int endIndex) : base(source)
+        // ===============================[ Construction ]===========================
+        public JsonDocument ()
         {
-            endIndex = -1;
-
-            int nextEval = textIndexer.NextAny(startIndex + 1);
-            JsonHelper.IndexTrackingHelper keyIndexTracker = new JsonHelper.IndexTrackingHelper();
-            int lastStart = startIndex + 1;
-            int insideQuoteStart = -1;
-            bool lastWasUseful;
-            while (nextEval != -1)
-            {
-                lastWasUseful = true;
-                switch (source.Text[nextEval])
-                {
-                    case '}':
-                        if (insideQuoteStart != -1)
-                        {
-                            break;
-                        }
-
-                        if (keyIndexTracker)
-                        {
-                            this.Add(keyIndexTracker.CreateTS(source), new JsonValue(source, lastStart, nextEval - 1, false));
-                        }
-                        endIndex = nextEval;
-                        break;
-
-                    case '{':
-                        {
-                            if (insideQuoteStart != -1)
-                            {
-                                break;
-                            }
-
-                            int endOfDoc;
-
-                            if (!keyIndexTracker)
-                            {
-                                throw new FormatException("Can't read json format - error found around  offset: " + nextEval.ToString());
-                            }
-
-                            this.Add(keyIndexTracker.CreateTS(source),
-                                    new JsonDocument(textIndexer, source, nextEval, out endOfDoc));
-                            if (endOfDoc == -1)
-                            {
-                                throw new FormatException($"Invalid json format provided, issue starts with document that begins at text index {nextEval}");
-                            }
-
-                            nextEval = endOfDoc;
-                            keyIndexTracker.Reset();
-                        }
-                        break;
-
-                    case '[':
-                        {
-                            if (insideQuoteStart != -1)
-                            {
-                                break;
-                            }
-
-                            if (!keyIndexTracker)
-                            {
-                                throw new FormatException("Can't read json format - attempted to add empty string key");
-                            }
-
-                            this.Add(keyIndexTracker.CreateTS(source),
-                                    new JsonArray(textIndexer, source, nextEval, out int endOfArr));
-                            if (endOfArr == -1)
-                            {
-                                throw new FormatException($"Invalid json format provided, issue starts with array that begins at text index {nextEval}");
-                            }
-
-                            nextEval = endOfArr;
-                            keyIndexTracker.Reset();
-                        }
-                        break;
-
-                    case ':':
-                        if (insideQuoteStart != -1)
-                        {
-                            break;
-                        }
-
-                        keyIndexTracker.StartIndex = lastStart;
-                        keyIndexTracker.EndIndex = nextEval - 1;
-                        break;
-
-                    case '\"':
-                        // Start quote
-                        if (insideQuoteStart == -1)
-                        {
-                            insideQuoteStart = nextEval + 1;
-                        }
-                        // End quote
-                        else
-                        {
-                            // Peek ahead so we can decide if it's a key or a value
-                            // If the next thing is a colon, then it's a key, otherwise it's a value
-                            int peekAheadInd = textIndexer.NextAny(nextEval + 1);
-                            if (peekAheadInd != -1 && source.Text[peekAheadInd] == ':')
-                            {
-                                keyIndexTracker.StartIndex = insideQuoteStart;
-                                keyIndexTracker.EndIndex = nextEval - 1; // One before the quote that was just found
-                                keyIndexTracker.IsInsideQuotes = true;
-                                nextEval = peekAheadInd;
-                            }
-                            else
-                            {
-                                if (!keyIndexTracker)
-                                {
-                                    string quote = source.Text.SubstringByInd(insideQuoteStart, nextEval - 1);
-                                    throw new FormatException("Json parsing failed due to incorrect string formatting around string: " + quote);
-                                }
-
-                                this.Add(keyIndexTracker.CreateTS(source), new JsonValue(source, insideQuoteStart, nextEval - 1, true));
-                                keyIndexTracker.Reset();
-                            }
-
-                            insideQuoteStart = -1;
-                        }
-
-                        break;
-
-                    case ',':
-                        if (insideQuoteStart != -1)
-                        {
-                            break;
-                        }
-
-                        if (keyIndexTracker)
-                        {
-                            var endValue = new JsonValue(source, lastStart, nextEval - 1, false);
-                            if (endValue.StringValue.Length != 0)
-                            {
-                                this.Add(keyIndexTracker.CreateTS(source), endValue);
-                                keyIndexTracker.Reset();
-                            }
-                        }
-                        break;
-                    default:
-                        lastWasUseful = false;
-                        break;
-                }
-
-                if (endIndex != -1)
-                {
-                    break;
-                }
-
-                if (lastWasUseful)
-                {
-                    lastStart = nextEval + 1;
-                }
-                nextEval = textIndexer.NextAny(nextEval + 1);
-            }
-
-            if (nextEval == -1)
-            {
-                throw new FormatException("Json was improperly formatted");
-            }
-
-            this.ResetStringValue(startIndex, endIndex);
-            this.Source.Track(this);
+            m_memberStorage = new List<KeyValuePair<string, JsonValue>>();
         }
 
-        /// <summary>
-        /// Constructor for building
-        /// </summary>
-        internal JsonDocument (TrackedStringManager source, int startIndex) : base(source)
+        internal JsonDocument (int initialCapacity)
         {
-            this.OffsetInSource = startIndex;
+            m_memberStorage = new List<KeyValuePair<string, JsonValue>>(initialCapacity);
         }
 
-        // =========================[ Properties ]===============================
-        public override bool IsDocument { get { return true; } }
-        public override bool IsValue { get { return false; } }
-        
+        // ===============================[ Properties ]===========================
+        public override bool IsDocument => true;
+        public override bool IsValue => false;
+
         public int Count => m_memberStorage.Count;
 
-        // =========================[ Interface Methods ]===============================
-
-        public TrackedString KeyAt (int index)
+        public override string StringValue
         {
-            return m_memberStorage[index].Key;
+            get => JsonWriter.Write(this);
+            set { /* documents serialize on demand; no-op set keeps the base contract */ }
         }
 
-        public JsonValue ValueAt (int index)
-        {
-            return m_memberStorage[index].Value;
-        }
+        // ===============================[ Public Interface Methods ]===========================
+        public string KeyAt (int index) => m_memberStorage[index].Key;
+        public JsonValue ValueAt (int index) => m_memberStorage[index].Value;
+        public KeyValuePair<string, JsonValue> KeyAndValueAt (int index) => m_memberStorage[index];
 
-        public void Add (TrackedString key, JsonValue value)
+        public void Add (string key, JsonValue value)
         {
             value.Parent = this;
-            m_memberStorage.Add(new KeyValuePair<TrackedString, JsonValue>(key, value));
-        }
-
-        public JsonValue AppendNew(string key, JsonBuilder valueBuilder)
-        {
-            int currTabbing = JsonHelper.EvaluteBegginningTabOffset(this, valueBuilder.BuilderSettings);
-
-            int startIndex = this.OffsetInSource + this.StringValue.Length - 1;
-            JsonHelper.FindInsertStart(this.Source.Text, ref startIndex);
-            
-            var trackerBuilder = new IndexTrackingStringBuilder(startIndex);
-
-            if (this.Count > 0)
-            {
-                trackerBuilder.Write(",");
-            }
-
-            JsonBuilder.MakeNewline(trackerBuilder, currTabbing, valueBuilder.BuilderSettings);
-
-            // Add the key part. This will actually be invalid until the PlaceholderSetupComplete happens
-            JsonBuilder.WritePropertyHeading(trackerBuilder, key, out int keyStart, valueBuilder.BuilderSettings);
-
-            if (!valueBuilder.IsValue)
-            {
-                JsonBuilder.MakeNewline(trackerBuilder, currTabbing, valueBuilder.BuilderSettings);
-            }
-
-
-            this.Source.BeginPlaceholderMode(trackerBuilder);
-            TrackedString trackedKey = new TrackedString(this.Source, keyStart, key);
-
-            JsonValue value = valueBuilder.BuildJsonValue(this.Source, trackerBuilder, currTabbing);
-
-            this.Add(trackedKey, value);
-            this.Source.PlaceholderSetupComplete();
-
-            return value;
-        }
-
-        public JsonValue AppendNew(string key, object value, JsonBuilder.Settings settings = null)
-        {
-            return AppendNew(key, JsonHelper.MakeValueBuilder(value, settings));
-        }
-
-        public KeyValuePair<TrackedString, JsonValue> KeyAndValueAt(int index)
-        {
-            return m_memberStorage[index];
-        }
-
-        public bool ContainsKey(string key)
-        {
-            return m_memberStorage.Any(kvp => kvp.Key == key);
-        }
-
-        public JsonValue[] AllValuesForKey(string key)
-        {
-            return m_memberStorage.Where(kvp => kvp.Key == key).Select(kvp => kvp.Value).ToArray();
-        }
-
-        public IEnumerable<JsonValue> AllValues()
-        {
-            return m_memberStorage.Select(_ => _.Value);
+            m_memberStorage.Add(new KeyValuePair<string, JsonValue>(key, value));
         }
 
         /// <summary>
-        /// Gets the value for whatever child (non-recursively) is assigned to the passed in key
+        /// Append a new property by building its value via the JsonBuilder pipeline. V2 in-memory
+        /// mutation - the consumer re-serializes via ToString to get the updated text.
         /// </summary>
-        public JsonValue ValueFor(string key)
+        public JsonValue AppendNew (string key, object value, JsonBuilderSettings settings = null)
         {
-            return m_memberStorage.Where(kvp => kvp.Key.StringValue == key).Select(kvp => kvp.Value).FirstOrDefault();
+            JsonValue built = JsonHelper.MakeValueBuilder(value, settings).BuildJsonValue();
+            this.Add(key, built);
+            return built;
         }
 
-        public JsonValue ValueFor(TrackedString key)
+        public JsonValue AppendNew (string key, JsonBuilder valueBuilder)
         {
-            return m_memberStorage.Where(kvp => kvp.Key == key).Select(kvp => kvp.Value).FirstOrDefault();
+            JsonValue built = valueBuilder.BuildJsonValue();
+            this.Add(key, built);
+            return built;
         }
 
-        public TrackedString KeyFor(JsonValue value)
+        /// <summary>
+        /// Upsert - replaces the value if the key already exists, appends otherwise. New in V2.
+        /// </summary>
+        public JsonValue Set (string key, object value, JsonBuilderSettings settings = null)
         {
-            return m_memberStorage.Where(kvp => kvp.Value == value).Select(kvp => kvp.Key).FirstOrDefault();
+            JsonValue built = JsonHelper.MakeValueBuilder(value, settings).BuildJsonValue();
+            built.Parent = this;
+            for (int i = 0; i < m_memberStorage.Count; ++i)
+            {
+                if (m_memberStorage[i].Key == key)
+                {
+                    m_memberStorage[i] = new KeyValuePair<string, JsonValue>(key, built);
+                    return built;
+                }
+            }
+
+            m_memberStorage.Add(new KeyValuePair<string, JsonValue>(key, built));
+            return built;
         }
 
-        public TrackedString KeyFor(string value)
+        public bool Remove (string key)
         {
-            return m_memberStorage.Where(kvp => kvp.Value.StringValue == value).Select(kvp => kvp.Key).FirstOrDefault();
+            for (int i = 0; i < m_memberStorage.Count; ++i)
+            {
+                if (m_memberStorage[i].Key == key)
+                {
+                    m_memberStorage.RemoveAt(i);
+                    return true;
+                }
+            }
+            return false;
         }
 
-        public bool TryGetValue<T> (string key, out T foundValue)
+        public bool ContainsKey (string key) => m_memberStorage.Any(kvp => kvp.Key == key);
+
+        public JsonValue[] AllValuesForKey (string key)
+            => m_memberStorage.Where(kvp => kvp.Key == key).Select(kvp => kvp.Value).ToArray();
+
+        public IEnumerable<JsonValue> AllValues ()
+            => m_memberStorage.Select(kvp => kvp.Value);
+
+        public IEnumerable<string> AllKeys ()
+            => m_memberStorage.Select(kvp => kvp.Key);
+
+        public JsonValue ValueFor (string key)
+            => m_memberStorage.Where(kvp => kvp.Key == key).Select(kvp => kvp.Value).FirstOrDefault();
+
+        public string KeyFor (JsonValue value)
+            => m_memberStorage.Where(kvp => kvp.Value == value).Select(kvp => kvp.Key).FirstOrDefault();
+
+        public bool TryGetValue<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T> (string key, out T foundValue)
         {
             JsonValue value = this.ValueFor(key);
             if (value == null)
             {
                 foundValue = default;
-                return true;
+                return false;
             }
 
             foundValue = JsonHelper.BuildObjectForJson<T>(value);
@@ -316,45 +131,36 @@
         }
 
         /// <summary>
-        /// Breadth First search of the document tree
+        /// Tree search for a child document holding the given key, returning that key's value.
         /// </summary>
-        public JsonValue FindValueByKey(string key, eTraversalStrategy strategy = eTraversalStrategy.BreadthFirst, eTraversalFlowDirection direction = eTraversalFlowDirection.ThroughChildren)
+        public JsonValue FindValueByKey (string key, eTraversalStrategy strategy = eTraversalStrategy.BreadthFirst, eTraversalFlowDirection direction = eTraversalFlowDirection.ThroughChildren)
         {
             JsonValue found = TreeTraversal<JsonValue>.GetFirstChildWhichPasses(this, _TestIsDocumentWithKey, direction, strategy);
-            if (found != null)
-            {
-                return ((JsonDocument)found).ValueFor(key);
-            }
+            return found is JsonDocument doc ? doc.ValueFor(key) : null;
 
-            return null;
-            
             bool _TestIsDocumentWithKey (JsonValue value)
             {
                 return value.IsDocument && ((JsonDocument)value).ContainsKey(key);
             }
         }
 
-        public IEnumerator<KeyValuePair<TrackedString, JsonValue>> GetEnumerator()
-        {
-            return m_memberStorage.GetEnumerator();
-        }
+        public IEnumerator<KeyValuePair<string, JsonValue>> GetEnumerator () => m_memberStorage.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator () => m_memberStorage.GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return m_memberStorage.GetEnumerator();
-        }
+        // ---------- Format helpers (plain in-memory mutation, no edit tracker in V2) ----------
 
         public void FormatAllKeys (Formatter keyStringFormatter)
         {
-            foreach(var kvp in m_memberStorage)
+            for (int i = 0; i < m_memberStorage.Count; ++i)
             {
-                kvp.Key.StringValue = keyStringFormatter(kvp.Key);
+                KeyValuePair<string, JsonValue> kvp = m_memberStorage[i];
+                m_memberStorage[i] = new KeyValuePair<string, JsonValue>(keyStringFormatter(kvp.Key), kvp.Value);
             }
         }
 
         public void FormatAllValues (Formatter valueStringFormatter)
         {
-            foreach (JsonValue value in TreeTraversal<JsonValue>.All(this, includeSelf:false))
+            foreach (JsonValue value in TreeTraversal<JsonValue>.All(this, includeSelf: false))
             {
                 if (value.IsValue)
                 {

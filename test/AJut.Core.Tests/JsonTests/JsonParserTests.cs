@@ -1,9 +1,9 @@
-﻿namespace AJut.Core.UnitTests.AJson
+namespace AJut.Core.UnitTests.AJson
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using AJut.Text.AJson;
+    using AJut.Text.AJson.Legacy;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -518,7 +518,7 @@
         public void AJson_JsonParsing_ParseValueWithQuote ()
         {
             const string key = "key";
-            const string value = "value with a quote → \\\" ← there";
+            const string value = "value with a quote ? \\\" ? there";
             string jsonText = $"{{\"{key}\": \"{value}\"}}";
             Json json = JsonHelper.ParseText(jsonText);
             Assert.IsTrue(json, json.GetErrorReport());

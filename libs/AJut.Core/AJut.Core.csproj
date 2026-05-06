@@ -16,7 +16,7 @@
     <Description>C# / dotnet 8 utility library, created by AJ Badarni. Logger, Json parsing/building, extensions, undo/redo, math, tree logic, and more.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-    <Version>1.4.5.116</Version>
+    <Version>1.5.0.118</Version>
   </PropertyGroup>
   <ItemGroup>
     <None Include="..\..\.editorconfig" Link=".editorconfig" />
@@ -30,5 +30,22 @@
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
+  </ItemGroup>
+
+  <!-- Source generator wiring. The generator builds alongside AJut.Core, but is not exposed as a -->
+  <!-- normal reference - PrivateAssets=all keeps it out of consumers' compile graphs. The output -->
+  <!-- DLL gets manually packed under analyzers/dotnet/cs/ so consumers of the nupkg pick it up   -->
+  <!-- automatically as a Roslyn analyzer.                                                        -->
+  <ItemGroup>
+    <ProjectReference Include="..\AJut.Core.SourceGenerators\AJut.Core.SourceGenerators.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\AJut.Core.SourceGenerators\bin\$(Configuration)\netstandard2.0\AJut.Core.SourceGenerators.dll"
+          Pack="true"
+          PackagePath="analyzers/dotnet/cs"
+          Visible="false" />
   </ItemGroup>
 </Project>

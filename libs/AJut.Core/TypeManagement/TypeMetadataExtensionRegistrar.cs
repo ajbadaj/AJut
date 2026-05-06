@@ -2,6 +2,7 @@ namespace AJut.TypeManagement
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Reflection;
 
@@ -101,7 +102,7 @@ namespace AJut.TypeManagement
         /// change for the type.
         /// </summary>
         public static IEnumerable<PropertyInfo> GetOrderedProperties (
-            Type type,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] Type type,
             BindingFlags flags = kDefaultPropertyFlags)
         {
             if (g_orderCache.TryGetValue((type, flags), out PropertyInfo[] cached))
