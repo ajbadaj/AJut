@@ -16,7 +16,7 @@
     <Description>C# / dotnet 8 utility library, created by AJ Badarni. Logger, Json parsing/building, extensions, undo/redo, math, tree logic, and more.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
-    <Version>1.5.0.116</Version>
+    <Version>1.5.0.118</Version>
   </PropertyGroup>
   <ItemGroup>
     <None Include="..\..\.editorconfig" Link=".editorconfig" />
