@@ -96,6 +96,11 @@ namespace AJut.UX.Docking
             {
                 this.UISyncVM.PanelStateChanged -= this.OnUISyncVMPanelStateChanged;
                 ((INotifyCollectionChanged)this.UISyncVM.PanelTypeEntries).CollectionChanged -= this.OnUISyncVMPanelTypeEntriesChanged;
+
+                // The MenuFlyoutItem / ToggleMenuFlyoutItem children added by RebuildMenuItems
+                // each have a Click handler whose target is this manager. Drop them now or
+                // they will pin this manager for as long as the MenuBarItem stays alive.
+                this.DetachAndRemoveManagedMenuItems(m_managedMenuBarItem);
                 m_managedMenuBarItem = null;
             }
 
@@ -125,6 +130,18 @@ namespace AJut.UX.Docking
             m_windowsToCloseSilently.Clear();
             m_currentlyClosingWindows.Clear();
             m_factory.Clear();
+
+            // CloseAll deliberately preserves the RootWindow entry so callers can
+            // close tearoffs without killing the host. Dispose has no such caller -
+            // clear what remains so the manager's strong refs to root DockZones drop
+            // and any CWT-attached docking values keyed off those zones can release.
+            // Defensive: also empty each inner List in case any caller is still
+            // holding a reference to one of the per-window zone lists.
+            foreach (var zoneList in m_dockZoneMapping.Values)
+            {
+                zoneList.Clear();
+            }
+            m_dockZoneMapping.Clear();
         }
 
         // ===========[ Properties ]===========================================
@@ -228,6 +245,7 @@ namespace AJut.UX.Docking
             {
                 this.UISyncVM.PanelStateChanged -= this.OnUISyncVMPanelStateChanged;
                 ((INotifyCollectionChanged)this.UISyncVM.PanelTypeEntries).CollectionChanged -= this.OnUISyncVMPanelTypeEntriesChanged;
+                this.DetachAndRemoveManagedMenuItems(m_managedMenuBarItem);
             }
 
             m_managedMenuBarItem = menuBarItem;
@@ -267,12 +285,31 @@ namespace AJut.UX.Docking
             }
         }
 
-        private void RebuildMenuItems (MenuBarItem menuBarItem)
+        // Drops every menu item that RebuildMenuItems added, unsubscribing each Click
+        // handler before removing the item. Without the -= step, the removed items
+        // would still hold strong refs back to this manager via their handler targets
+        // until GC collected them. Used by Dispose, ManageMenu (when re-targeting to
+        // a different bar), and RebuildMenuItems (which wipes before rebuilding).
+        private void DetachAndRemoveManagedMenuItems (MenuBarItem menuBarItem)
         {
             for (int i = menuBarItem.Items.Count - 1; i >= 0; --i)
             {
+                var item = menuBarItem.Items[i];
+                if (item is ToggleMenuFlyoutItem toggle)
+                {
+                    toggle.Click -= this.OnManagedToggleMenuItemClicked;
+                }
+                else if (item is MenuFlyoutItem flyout)
+                {
+                    flyout.Click -= this.OnManagedAddMenuItemClicked;
+                }
                 menuBarItem.Items.RemoveAt(i);
             }
+        }
+
+        private void RebuildMenuItems (MenuBarItem menuBarItem)
+        {
+            this.DetachAndRemoveManagedMenuItems(menuBarItem);
 
             foreach (var desc in this.UISyncVM.GenerateMenuDescriptors())
             {
