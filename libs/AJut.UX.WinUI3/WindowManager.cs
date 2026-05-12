@@ -81,6 +81,15 @@ namespace AJut.UX
 
         public void Dispose ()
         {
+            // Defensive: callers normally StopTracking each tearoff before disposing
+            // the manager, but if any window is still tracked when we get here we want
+            // to clear the activation / closed subs on it so it does not hold a strong
+            // ref back through this manager's invocation lists.
+            foreach (Window window in this.Items.Where(w => w != this.Root).ToList())
+            {
+                this.StopTracking(window);
+            }
+
             if (this.Root != null)
             {
                 this.DoStandaradWindowTrackingRemoval(this.Root);
