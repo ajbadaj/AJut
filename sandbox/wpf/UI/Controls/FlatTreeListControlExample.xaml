@@ -17,6 +17,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <StackPanel>
             <TextBlock TextWrapping="WrapWithOverflow">
@@ -50,5 +51,73 @@
             </ajut:FlatTreeListControl.Resources>
         </ajut:FlatTreeListControl>
         <Button Grid.Row="2" Content="Code Example ↑" HorizontalAlignment="Center" Click="PopupCodeExample_OnClick" Margin="0,0,0,10"/>
+
+        <!-- Sibling Order demo: same source shape rendered Forward (left) and Reversed (right).
+             Drag-drop log proves InsertIndex stays source-space regardless of visual order. -->
+        <Expander Grid.Row="3" Header="SiblingDisplayOrder demo (layers-panel style)" Margin="0,0,0,10">
+            <Grid Margin="0,8,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="220"/>
+                    <RowDefinition Height="100"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="8"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.ColumnSpan="3"
+                           Text="Two trees over the same source. Left renders Forward, right renders Reversed - every parent iterates highest-source-index-first. Drag items in either tree and check the log: TargetParent + InsertIndex are source-space, identical regardless of visual order."
+                           TextWrapping="Wrap" Margin="0,0,0,6"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Forward" FontWeight="Bold" Margin="0,0,0,4"/>
+                <TextBlock Grid.Row="1" Grid.Column="2" Text="Reversed (layers-panel)" FontWeight="Bold" Margin="0,0,0,4"/>
+
+                <ajut:FlatTreeListControl Grid.Row="2" Grid.Column="0"
+                                          x:Name="SiblingOrderForwardTree"
+                                          Root="{Binding ElementName=Self, Path=SiblingOrderForwardRoot}"
+                                          TreeDepthIndentSize="10" BorderThickness="1"
+                                          StartItemsExpanded="True"
+                                          IsDragDropReorderEnabled="True"
+                                          SelectionMode="Extended"
+                                          SiblingDisplayOrder="Forward"
+                                          DragDropReorderRequested="SiblingOrderTree_OnReorder">
+                    <ajut:FlatTreeListControl.Resources>
+                        <DataTemplate DataType="{x:Type local:TestTreeItem}">
+                            <TextBlock Text="{Binding Title}"/>
+                        </DataTemplate>
+                    </ajut:FlatTreeListControl.Resources>
+                </ajut:FlatTreeListControl>
+
+                <ajut:FlatTreeListControl Grid.Row="2" Grid.Column="2"
+                                          x:Name="SiblingOrderReversedTree"
+                                          Root="{Binding ElementName=Self, Path=SiblingOrderReversedRoot}"
+                                          TreeDepthIndentSize="10" BorderThickness="1"
+                                          StartItemsExpanded="True"
+                                          IsDragDropReorderEnabled="True"
+                                          SelectionMode="Extended"
+                                          SiblingDisplayOrder="Reversed"
+                                          DragDropReorderRequested="SiblingOrderTree_OnReorder">
+                    <ajut:FlatTreeListControl.Resources>
+                        <DataTemplate DataType="{x:Type local:TestTreeItem}">
+                            <TextBlock Text="{Binding Title}"/>
+                        </DataTemplate>
+                    </ajut:FlatTreeListControl.Resources>
+                </ajut:FlatTreeListControl>
+
+                <TextBox Grid.Row="3" Grid.Column="0"
+                         x:Name="SiblingOrderForwardLog"
+                         IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                         FontFamily="Consolas" FontSize="11" Margin="0,4,0,0"
+                         VerticalScrollBarVisibility="Auto"/>
+                <TextBox Grid.Row="3" Grid.Column="2"
+                         x:Name="SiblingOrderReversedLog"
+                         IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                         FontFamily="Consolas" FontSize="11" Margin="0,4,0,0"
+                         VerticalScrollBarVisibility="Auto"/>
+            </Grid>
+        </Expander>
     </Grid>
 </UserControl>

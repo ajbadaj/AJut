@@ -1,6 +1,8 @@
 ﻿namespace TheAJutShowRoom.UI.Controls
 {
+    using System;
     using System.Diagnostics;
+    using System.Linq;
     using System.Windows;
     using System.Windows.Controls;
     using AJut.Storage;
@@ -26,6 +28,12 @@
                     var m = _SetExpanded(c.Add());
                         var n = m.Add();
             this.Root = a;
+
+            // Independent source trees for the SiblingDisplayOrder side-by-side demo. Names track
+            // source order so the Reversed pane visually lists them highest-index-first per level.
+            this.SiblingOrderForwardRoot = BuildSiblingOrderDemoRoot();
+            this.SiblingOrderReversedRoot = BuildSiblingOrderDemoRoot();
+
             this.InitializeComponent();
 
             TestTreeItem _SetExpanded (TestTreeItem item)
@@ -54,6 +62,55 @@
         {
             get => (TestTreeItem)this.GetValue(RootProperty);
             set => this.SetValue(RootProperty, value);
+        }
+
+        public static readonly DependencyProperty SiblingOrderForwardRootProperty = DPUtils.Register(_ => _.SiblingOrderForwardRoot);
+        public TestTreeItem SiblingOrderForwardRoot
+        {
+            get => (TestTreeItem)this.GetValue(SiblingOrderForwardRootProperty);
+            set => this.SetValue(SiblingOrderForwardRootProperty, value);
+        }
+
+        public static readonly DependencyProperty SiblingOrderReversedRootProperty = DPUtils.Register(_ => _.SiblingOrderReversedRoot);
+        public TestTreeItem SiblingOrderReversedRoot
+        {
+            get => (TestTreeItem)this.GetValue(SiblingOrderReversedRootProperty);
+            set => this.SetValue(SiblingOrderReversedRootProperty, value);
+        }
+
+        private static TestTreeItem BuildSiblingOrderDemoRoot ()
+        {
+            // Root with three children A/B/C; A and C each have their own children.
+            // Same shape that drives the WinUI3 demo so behavior is directly comparable.
+            var root = new TestTreeItem { Title = "Root" };
+
+            var a = root.Add();
+            a.Title = "A";
+            a.Add().Title = "A0";
+            a.Add().Title = "A1";
+            a.Add().Title = "A2";
+
+            var b = root.Add();
+            b.Title = "B";
+
+            var c = root.Add();
+            c.Title = "C";
+            c.Add().Title = "C0";
+            c.Add().Title = "C1";
+
+            return root;
+        }
+
+        private void SiblingOrderTree_OnReorder (object sender, FlatTreeReorderEventArgs e)
+        {
+            string parentName = e.TargetParent is TestTreeItem parent ? parent.Title : "(null)";
+            string items = string.Join(", ", e.Items.OfType<TestTreeItem>().Select(n => n.Title));
+            string line = $"[{DateTime.Now:HH:mm:ss}] -> '{parentName}' InsertIndex={e.InsertIndex} (source) | items=[{items}]" + Environment.NewLine;
+
+            TextBox log = ReferenceEquals(sender, this.SiblingOrderReversedTree)
+                ? this.SiblingOrderReversedLog
+                : this.SiblingOrderForwardLog;
+            log.Text = line + log.Text;
         }
 
         private void PopupCodeExample_OnClick (object sender, RoutedEventArgs e)
