@@ -430,8 +430,39 @@
                 return;
             }
 
+            IEnumerable<TTreeNode> childSource = m_traversalParameters.GetChildrenMethod(this.Target);
+
+            // Reversed sibling iteration walks the same children backwards. Node-path indices stay
+            // forward (source-space) so paths remain compatible with NodeAt and friends.
+            if (m_traversalParameters.SiblingOrder == eSiblingOrder.Reversed)
+            {
+                IList<TTreeNode> childList = childSource as IList<TTreeNode> ?? childSource.ToList();
+                for (int sourceIndex = childList.Count - 1; sourceIndex >= 0; --sourceIndex)
+                {
+                    TTreeNode child = childList[sourceIndex];
+                    if (child == null || (targetChildStartIndex != -1 && sourceIndex < targetChildStartIndex))
+                    {
+                        continue;
+                    }
+
+                    if (this.IsUniqueInIteration(child))
+                    {
+                        if (targetChildStartIndex != -1)
+                        {
+                            nextEvals.Add(new TreeEvalItem<TTreeNode>(child, new TreeNodePath(this.TargetPath)));
+                        }
+                        else
+                        {
+                            var newNodePath = this.TargetPath.CopyAndAddToPath(sourceIndex);
+                            nextEvals.Add(new TreeEvalItem<TTreeNode>(child, newNodePath));
+                        }
+                    }
+                }
+                return;
+            }
+
             int childIndex = 0;
-            foreach (TTreeNode child in m_traversalParameters.GetChildrenMethod(this.Target))
+            foreach (TTreeNode child in childSource)
             {
                 int currentChildIndex = childIndex++;
                 if (child == null || (targetChildStartIndex != -1 && currentChildIndex < targetChildStartIndex))

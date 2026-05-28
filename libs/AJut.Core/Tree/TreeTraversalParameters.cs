@@ -23,6 +23,14 @@
         public eTraversalStrategy ChildTraversalStrategy { get; set; }
 
         /// <summary>
+        /// Order siblings are iterated at each level when traversing through children. Default is Forward
+        /// (source order). Reversed iterates highest-source-index-first at every level, with node paths
+        /// still pointing at forward source indices. Ignored for ThroughParents and ReversedThroughChildren
+        /// flow directions.
+        /// </summary>
+        public eSiblingOrder SiblingOrder { get; set; }
+
+        /// <summary>
         /// What type matching should be done? Used in "FirstChildOfType" type of evaluations.
         /// </summary>
         public TypeEval TypeMatching { get; set; }
@@ -106,6 +114,7 @@
             this.Root = root;
             this.FlowDirection = flowDirection;
             this.ChildTraversalStrategy = strategy;
+            this.SiblingOrder = eSiblingOrder.Forward;
             this.TypeMatching = null;
             this.Predicate = null;
             this.PruneAfterFirstFind = false;

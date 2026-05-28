@@ -97,13 +97,16 @@ namespace AJut.UX
         /// <param name="cursorYFraction">0.0 = top of row, 1.0 = bottom of row.</param>
         /// <param name="cursorX">Horizontal pixel position of the cursor within the list area.</param>
         /// <param name="indentSize">Pixels per tree depth level (TreeDepthIndentSize).</param>
+        /// <param name="siblingOrder">Visual sibling order of the tree. Reversed makes the returned
+        /// InsertIndex still source-space, so consumers do not need to be reverse-aware.</param>
         public static FlatTreeDropTarget ComputeDropTarget (
             ObservableFlatTreeStore<FlatTreeItem> store,
             FlatTreeItem[] draggedItems,
             int hoverStoreIndex,
             double cursorYFraction,
             double cursorX,
-            double indentSize)
+            double indentSize,
+            eSiblingOrder siblingOrder = eSiblingOrder.Forward)
         {
             if (store == null || store.Count == 0 || draggedItems == null || draggedItems.Length == 0)
             {
@@ -141,7 +144,7 @@ namespace AJut.UX
                 return FlatTreeDropTarget.Invalid;
             }
 
-            return ComputeDropTargetForGap(above, below, cursorX, indentSize);
+            return ComputeDropTargetForGap(above, below, cursorX, indentSize, siblingOrder);
         }
 
         /// <summary>
@@ -152,7 +155,8 @@ namespace AJut.UX
             FlatTreeItem above,
             FlatTreeItem below,
             double cursorX,
-            double indentSize)
+            double indentSize,
+            eSiblingOrder siblingOrder = eSiblingOrder.Forward)
         {
             if (above == null)
             {
@@ -190,7 +194,7 @@ namespace AJut.UX
             int targetDepth = Math.Clamp(depthFromCursor, minDepth, maxDepth);
 
             // 4. Compute the actual parent and insert index for this depth
-            return ComputeParentAndIndex(above, targetDepth);
+            return ComputeParentAndIndex(above, targetDepth, siblingOrder);
         }
 
         // ===========[ Validation ]================================================
@@ -317,12 +321,16 @@ namespace AJut.UX
 
         // ===========[ Private Helpers ]==========================================
 
-        private static FlatTreeDropTarget ComputeParentAndIndex (FlatTreeItem above, int targetDepth)
+        private static FlatTreeDropTarget ComputeParentAndIndex (FlatTreeItem above, int targetDepth, eSiblingOrder siblingOrder)
         {
             if (targetDepth == above.TreeDepth + 1)
             {
-                // Insert as first child of 'above'
-                return new FlatTreeDropTarget(above.Source, 0, targetDepth);
+                // Insert as the visually-first child of 'above'. In Forward that is source index 0,
+                // in Reversed it is the end of the source list (visually-first = source-last).
+                int firstChildInsert = siblingOrder == eSiblingOrder.Reversed
+                    ? above.Source.Children.Count
+                    : 0;
+                return new FlatTreeDropTarget(above.Source, firstChildInsert, targetDepth);
             }
 
             // Walk up from 'above' to find the item at targetDepth
@@ -337,7 +345,9 @@ namespace AJut.UX
                 return FlatTreeDropTarget.Invalid;
             }
 
-            // Insert as next sibling of target
+            // Insert as the visually-next sibling of target. Forward: source idx + 1 (push target up
+            // in source). Reversed: source idx of target (push target later in source so visually it
+            // moves down below the new item).
             IObservableTreeNode sourceNode = target.Source;
             IObservableTreeNode parentNode = sourceNode.Parent;
             int indexInParent = IndexOfChild(parentNode, sourceNode);
@@ -346,7 +356,10 @@ namespace AJut.UX
                 return FlatTreeDropTarget.Invalid;
             }
 
-            return new FlatTreeDropTarget(parentNode, indexInParent + 1, targetDepth);
+            int insertIndex = siblingOrder == eSiblingOrder.Reversed
+                ? indexInParent
+                : indexInParent + 1;
+            return new FlatTreeDropTarget(parentNode, insertIndex, targetDepth);
         }
 
         private static int IndexOfChild (IObservableTreeNode parent, IObservableTreeNode child)

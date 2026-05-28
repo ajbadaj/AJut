@@ -46,17 +46,19 @@ namespace AJut.UX
         private bool m_isSelected;
         private bool m_isSelectable = true;
         private double m_treeDepthIndentSize = 16.0;
+        private eSiblingOrder m_siblingOrder = eSiblingOrder.Forward;
         private EventHandler<EventArgs<bool>> m_canHaveChildrenChangedHandler;
 
         // ===========[ Construction ]=============================================
         // Private - use factory methods.
         private FlatTreeItem () { }
 
-        private FlatTreeItem (IObservableTreeNode source, FlatTreeItem parent, double treeDepthIndentSize, bool startExpanded)
+        private FlatTreeItem (IObservableTreeNode source, FlatTreeItem parent, double treeDepthIndentSize, bool startExpanded, eSiblingOrder siblingOrder)
         {
             m_source = source;
             m_parentItem = parent;
             m_treeDepthIndentSize = treeDepthIndentSize;
+            m_siblingOrder = siblingOrder;
             m_isExpandable = source.CanHaveChildren;
 
             // If the source tracks its own expansion state, honour it over the caller's startExpanded.
@@ -70,11 +72,15 @@ namespace AJut.UX
             source.ChildInserted += this.Source_ChildInserted;
             source.ChildRemoved += this.Source_ChildRemoved;
 
-            // Build the child hierarchy. If startExpanded, put children into
-            // base.Children (visible); otherwise into m_hiddenChildren.
-            foreach (IObservableTreeNode child in source.Children)
+            // Build the child hierarchy. base.Children / m_hiddenChildren are kept in VISUAL order -
+            // so in Reversed mode we iterate the source list backwards and still append at the end.
+            // The whole rest of the control treats base.Children as the visible order.
+            IEnumerable<IObservableTreeNode> sourceChildren = siblingOrder == eSiblingOrder.Reversed
+                ? source.Children.Reverse()
+                : source.Children;
+            foreach (IObservableTreeNode child in sourceChildren)
             {
-                var childItem = new FlatTreeItem(child, this, treeDepthIndentSize, startExpanded);
+                var childItem = new FlatTreeItem(child, this, treeDepthIndentSize, startExpanded, siblingOrder);
                 if (startExpanded)
                 {
                     base.InsertChild(base.Children.Count, childItem);
@@ -95,29 +101,36 @@ namespace AJut.UX
         /// <summary>
         /// Creates a single-root flat tree item hierarchy from the given observable source tree.
         /// </summary>
-        public static FlatTreeItem CreateRoot (IObservableTreeNode source, double treeDepthIndentSize = 16.0, bool startExpanded = false)
+        public static FlatTreeItem CreateRoot (IObservableTreeNode source, double treeDepthIndentSize = 16.0, bool startExpanded = false, eSiblingOrder siblingOrder = eSiblingOrder.Forward)
         {
-            return new FlatTreeItem(source, null, treeDepthIndentSize, startExpanded);
+            return new FlatTreeItem(source, null, treeDepthIndentSize, startExpanded, siblingOrder);
         }
 
         /// <summary>
         /// Creates an invisible false root whose children are the given source roots (multi-root scenario).
         /// The false root itself is never shown; IncludeRoot=false on the store omits it.
         /// </summary>
-        public static FlatTreeItem CreateUberRoot (IEnumerable<IObservableTreeNode> roots, double treeDepthIndentSize = 16.0, bool startExpanded = false)
+        public static FlatTreeItem CreateUberRoot (IEnumerable<IObservableTreeNode> roots, double treeDepthIndentSize = 16.0, bool startExpanded = false, eSiblingOrder siblingOrder = eSiblingOrder.Forward)
         {
             var uber = new FlatTreeItem
             {
                 m_isFalseRoot = true,
                 m_treeDepthIndentSize = treeDepthIndentSize,
+                m_siblingOrder = siblingOrder,
                 m_isExpandable = true,
                 m_isExpanded = true,   // uber root always expanded (its children are the visible roots)
             };
 
+            // Multi-root layout: with Reversed the visually-topmost root is the last in the roots
+            // enumerable. Uber root mirrors the per-level reversal of regular children.
+            IEnumerable<IObservableTreeNode> orderedRoots = siblingOrder == eSiblingOrder.Reversed
+                ? roots.Reverse()
+                : roots;
+
             int index = 0;
-            foreach (IObservableTreeNode root in roots)
+            foreach (IObservableTreeNode root in orderedRoots)
             {
-                var childItem = new FlatTreeItem(root, uber, treeDepthIndentSize, startExpanded);
+                var childItem = new FlatTreeItem(root, uber, treeDepthIndentSize, startExpanded, siblingOrder);
                 // Uber root is always expanded, so children go into base.Children.
                 uber.InsertChild(index++, childItem);
             }
@@ -289,8 +302,18 @@ namespace AJut.UX
         // ===========[ Source event handlers ]====================================
         private void Source_ChildInserted (object sender, TreeNodeInsertedEventArgs e)
         {
-            var child = new FlatTreeItem((IObservableTreeNode)e.Node, this, m_treeDepthIndentSize, false);
-            this.InsertChild(e.InsertIndex, child);
+            var child = new FlatTreeItem((IObservableTreeNode)e.Node, this, m_treeDepthIndentSize, false, m_siblingOrder);
+            int insertIndex = e.InsertIndex;
+            if (m_siblingOrder == eSiblingOrder.Reversed)
+            {
+                // base.Children / m_hiddenChildren is the visible (reversed) list and at this point
+                // hasn't been updated yet. Source-end insert (highest source index) maps to visual 0,
+                // source-start insert maps to visual end - so the formula is preExistingCount - sourceIdx.
+                int visibleCount = m_isExpanded ? base.Children.Count : m_hiddenChildren.Count;
+                insertIndex = visibleCount - e.InsertIndex;
+            }
+
+            this.InsertChild(insertIndex, child);
         }
 
         private void Source_ChildRemoved (object sender, EventArgs<IObservableTreeNode> e)

@@ -159,6 +159,26 @@ namespace AJut.Tree
         }
 
         /// <summary>
+        /// All-nodes traversal taking pre-built <see cref="TreeTraversalParameters{TTreeNode}"/> so callers
+        /// can opt in to options like <see cref="TreeTraversalParameters{TTreeNode}.SiblingOrder"/> without
+        /// the shortcut overloads having to grow another argument.
+        /// </summary>
+        public static IEnumerable<TTreeNode> All (TTreeNode start, TreeTraversalParameters<TTreeNode> traversalParameters, bool includeSelf = true)
+        {
+            TreeIter<TTreeNode> iter = CreateIterator(start, traversalParameters);
+            if (!includeSelf)
+            {
+                ++iter;
+            }
+
+            while (iter != TreeIter<TTreeNode>.End)
+            {
+                yield return iter.Node;
+                ++iter;
+            }
+        }
+
+        /// <summary>
         /// Creates an iterator for iterating over all nodes which pass a predicate
         /// </summary>
         /// <param name="start">The starting point</param>
@@ -389,6 +409,49 @@ namespace AJut.Tree
                 {
                     return _DoFindNextSiblingOrCousin(parent);
                 }
+            }
+        }
+
+        public static TTreeNode FindPreviousSiblingOrCousin (TTreeNode start, GetTreeNodeChildren<TTreeNode> getChildrenMethodOverride = null, GetTreeNodeParent<TTreeNode> getParentMethodOverride = null)
+        {
+            return FindPreviousSiblingOrCousin(null, start, getChildrenMethodOverride, getParentMethodOverride);
+        }
+        public static TTreeNode FindPreviousSiblingOrCousin (TTreeNode root, TTreeNode start, GetTreeNodeChildren<TTreeNode> getChildrenMethodOverride = null, GetTreeNodeParent<TTreeNode> getParentMethodOverride = null)
+        {
+            root ??= FindRoot(start, getParentMethodOverride);
+            var getChildren = getChildrenMethodOverride ?? GetChildrenMethod;
+            var getParent = getParentMethodOverride ?? GetParentMethod;
+            return _DoFindPrev(start);
+
+            TTreeNode _DoFindPrev (TTreeNode eval)
+            {
+                if (eval == root)
+                {
+                    return null;
+                }
+
+                var parent = getParent(eval);
+                if (parent == null)
+                {
+                    return null;
+                }
+
+                TTreeNode prev = null;
+                foreach (var sibling in getChildren(parent))
+                {
+                    if (sibling == eval)
+                    {
+                        break;
+                    }
+                    prev = sibling;
+                }
+
+                if (prev != null)
+                {
+                    return prev;
+                }
+
+                return _DoFindPrev(parent);
             }
         }
 

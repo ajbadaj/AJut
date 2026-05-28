@@ -205,6 +205,24 @@ namespace AJutShowRoomWinUI
         public ShowRoomTreeNode TreeRoot { get; } = ShowRoomTreeNode.Build();
         public ShowRoomTreeNode DragDropTreeRoot { get; } = ShowRoomTreeNode.BuildDragDropDemo();
 
+        // Two independent source trees of the same shape - one rendered Forward, one Reversed -
+        // so we can eyeball the layers-panel ordering and confirm drag-drop InsertIndex stays source-space.
+        public ShowRoomTreeNode SiblingOrderForwardRoot { get; } = ShowRoomTreeNode.BuildSiblingOrderDemo();
+        public ShowRoomTreeNode SiblingOrderReversedRoot { get; } = ShowRoomTreeNode.BuildSiblingOrderDemo();
+
+        private void SiblingOrderTree_OnReorder (object sender, FlatTreeReorderEventArgs e)
+        {
+            var control = sender as AJut.UX.Controls.FlatTreeListControl;
+            string parentName = e.TargetParent is ShowRoomTreeNode parent ? parent.NodeName : "(null)";
+            string items = string.Join(", ", e.Items.OfType<ShowRoomTreeNode>().Select(n => n.NodeName));
+            string line = $"[{DateTime.Now:HH:mm:ss}] -> '{parentName}' InsertIndex={e.InsertIndex} (source) | items=[{items}]" + Environment.NewLine;
+
+            TextBox log = control == this.SiblingOrderReversedTree
+                ? this.SiblingOrderReversedLog
+                : this.SiblingOrderForwardLog;
+            log.Text = line + log.Text;
+        }
+
         // ===========[ SetSelection sandbox scenario ]===========================
         // Exercises FlatTreeListControl.SetSelection on an Extended-mode tree.
         // Expected: all requested rows highlight (4px accent strip), and
@@ -574,6 +592,27 @@ namespace AJutShowRoomWinUI
             childB.AddItem("Grandchild B2");
 
             root.AddItem("Child C");
+            return root;
+        }
+
+        // Side-by-side Forward/Reversed comparison source. Names track source order (A0, A1, ...)
+        // so that the Reversed pane visually lists them highest-index-first at every level.
+        public static ShowRoomTreeNode BuildSiblingOrderDemo()
+        {
+            var root = new ShowRoomTreeNode("Root");
+            root.CanHaveChildren = true;
+
+            var a = root.AddItem("A");
+            a.AddItem("A0");
+            a.AddItem("A1");
+            a.AddItem("A2");
+
+            root.AddItem("B");
+
+            var c = root.AddItem("C");
+            c.AddItem("C0");
+            c.AddItem("C1");
+
             return root;
         }
 

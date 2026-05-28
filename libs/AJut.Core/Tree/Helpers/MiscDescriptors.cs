@@ -25,6 +25,18 @@
     }
 
     /// <summary>
+    /// Orthogonal to <see cref="eTraversalFlowDirection"/> - controls only the order siblings are
+    /// visited at each level when traversing through children. Forward is the normal source order;
+    /// Reversed walks siblings highest-source-index-first at every level (a layers-panel view).
+    /// Node paths still address forward source indices.
+    /// </summary>
+    public enum eSiblingOrder
+    {
+        Forward,
+        Reversed,
+    }
+
+    /// <summary>
     /// The strategy used to traverse the tree.
     /// Default is ThroughChildrenBreadthFirst
     /// All the options after ThroughParents/ThroughChildren are modifiers for ThroughChildren, and will be ignored for ThroughParents
