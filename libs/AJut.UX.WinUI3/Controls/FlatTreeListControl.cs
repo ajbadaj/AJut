@@ -104,9 +104,12 @@ namespace AJut.UX.Controls
         {
             m_store.RootNode?.DisposeTree();
             m_store.IncludeRoot = this.IncludeRoot;
+            // The store stays Forward even when SiblingDisplayOrder=Reversed - FlatTreeItem
+            // absorbs reversal in its own base.Children, so the store sees the visible (reversed)
+            // children directly and forward math is correct.
             m_store.RootNode = newRoot == null
                 ? null
-                : FlatTreeItem.CreateRoot(newRoot, this.TreeDepthIndentSize, this.StartItemsExpanded);
+                : FlatTreeItem.CreateRoot(newRoot, this.TreeDepthIndentSize, this.StartItemsExpanded, this.SiblingDisplayOrder);
         }
 
         public static readonly DependencyProperty RootItemsSourceProperty = DPUtils.Register(_ => _.RootItemsSource, (d, e) => d.OnRootItemsSourceChanged(e.OldValue, e.NewValue));
@@ -120,7 +123,7 @@ namespace AJut.UX.Controls
             m_store.RootNode?.DisposeTree();
             m_store.IncludeRoot = false;
             m_store.RootNode = FlatTreeItem.CreateUberRoot(
-                newValue ?? Enumerable.Empty<IObservableTreeNode>(), this.TreeDepthIndentSize);
+                newValue ?? Enumerable.Empty<IObservableTreeNode>(), this.TreeDepthIndentSize, startExpanded: false, this.SiblingDisplayOrder);
 
             if (oldValue is INotifyCollectionChanged oldObservable)
             {
@@ -224,6 +227,18 @@ namespace AJut.UX.Controls
         {
             get => (bool)this.GetValue(StartItemsExpandedProperty);
             set => this.SetValue(StartItemsExpandedProperty, value);
+        }
+
+        // Per-level sibling iteration order for the visible flat list. Forward is the default - source
+        // order top-to-bottom. Reversed makes every parent's children iterate highest-source-index-first
+        // (a layers-panel feel). Drag-drop still surfaces source-space InsertIndex values, so consumers
+        // don't have to be reverse-aware.
+        // Setting this re-creates the store from the current root if one exists.
+        public static readonly DependencyProperty SiblingDisplayOrderProperty = DPUtils.Register(_ => _.SiblingDisplayOrder, eSiblingOrder.Forward, (d, e) => d.RebuildStoreFromCurrentRoot());
+        public eSiblingOrder SiblingDisplayOrder
+        {
+            get => (eSiblingOrder)this.GetValue(SiblingDisplayOrderProperty);
+            set => this.SetValue(SiblingDisplayOrderProperty, value);
         }
 
         public static readonly DependencyProperty ItemTemplateProperty = DPUtils.Register(_ => _.ItemTemplate, (d, e) => d.OnItemTemplateChanged());
@@ -760,7 +775,24 @@ namespace AJut.UX.Controls
             // current full state of RootItemsSource on every change instead.
             m_store.RootNode?.DisposeTree();
             m_store.RootNode = FlatTreeItem.CreateUberRoot(
-                this.RootItemsSource ?? Enumerable.Empty<IObservableTreeNode>(), this.TreeDepthIndentSize);
+                this.RootItemsSource ?? Enumerable.Empty<IObservableTreeNode>(), this.TreeDepthIndentSize, startExpanded: false, this.SiblingDisplayOrder);
+        }
+
+        private void RebuildStoreFromCurrentRoot ()
+        {
+            // SiblingDisplayOrder is captured into FlatTreeItem at construction; the only safe response
+            // to a live change is a full rebuild of the current root (or uber root) so the new mode
+            // applies consistently.
+            if (this.RootItemsSource != null)
+            {
+                this.OnRootItemsSourceChanged(this.RootItemsSource, this.RootItemsSource);
+                return;
+            }
+
+            if (this.Root != null)
+            {
+                this.OnRootChanged(this.Root);
+            }
         }
 
         // ===========[ Apply helpers ]============================================
@@ -1014,10 +1046,12 @@ namespace AJut.UX.Controls
                 return;
             }
 
-            // Compute drop target
+            // Compute drop target. Sibling order is threaded in so the returned InsertIndex stays
+            // source-space even when the visual list is reversed.
             double indentSize = this.TreeDepthIndentSize;
             var dropTarget = FlatTreeDragDropManager.ComputeDropTarget(
-                m_store, m_dragItems, hoverIndex, cursorYFraction, cursorInListView.X, indentSize
+                m_store, m_dragItems, hoverIndex, cursorYFraction, cursorInListView.X, indentSize,
+                this.SiblingDisplayOrder
             );
 
             // Validate

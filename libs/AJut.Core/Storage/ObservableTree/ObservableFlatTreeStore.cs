@@ -19,6 +19,7 @@
         private delegate int IndexGenerator (TNode parent, int childIndexOnParent);
         private TNode m_rootNode;
         private bool m_includeRoot = true;
+        private eSiblingOrder m_siblingOrder = eSiblingOrder.Forward;
         private IndexGenerator m_indexGenerator;
 
         static ObservableFlatTreeStore ()
@@ -62,6 +63,24 @@
                     this.Items.Add(this.Observe(child));
                 }
             }
+        }
+
+        /// <summary>
+        /// Sibling iteration order applied while building the flat list from the source tree.
+        /// MUST be set BEFORE assigning <see cref="RootNode"/> - the property is captured into the
+        /// initial flat-build traversal and is not honored if changed after.
+        /// <para>
+        /// Note: this is wired into the initial-build and subtree-insertion traversals only. When the
+        /// store is fed nodes that have already absorbed sibling reversal at a higher layer (e.g.
+        /// AJut.UX.FlatTreeItem wrapping IObservableTreeNode sources), leave this at <see cref="eSiblingOrder.Forward"/>
+        /// to avoid double-reversal. <see cref="DetermineInsertIndex"/> still expects the visual
+        /// (already-reversed) index from the source ChildInserted event.
+        /// </para>
+        /// </summary>
+        public eSiblingOrder SiblingOrder
+        {
+            get => m_siblingOrder;
+            set => m_siblingOrder = value;
         }
 
         public bool IncludeRoot
@@ -132,7 +151,14 @@
                 return Enumerable.Empty<TNode>();
             }
 
-            return TreeTraversal<IObservableTreeNode>.All(m_rootNode, includeSelf: this.IncludeRoot, strategy: eTraversalStrategy.DepthFirst).OfType<TNode>();
+            var traversalParameters = new TreeTraversalParameters<IObservableTreeNode>(
+                m_rootNode,
+                eTraversalFlowDirection.ThroughChildren,
+                eTraversalStrategy.DepthFirst)
+            {
+                SiblingOrder = m_siblingOrder,
+            };
+            return TreeTraversal<IObservableTreeNode>.All(m_rootNode, traversalParameters, includeSelf: this.IncludeRoot).OfType<TNode>();
         }
 
         protected TNode Observe (TNode node)
@@ -245,7 +271,7 @@
             Debug.Assert(index >= 0 && index <= this.Items.Count, $"Index {index} is out of range for {nameof(ObservableFlatTreeStore)} with item count of {this.Items.Count}");
 
             List<TNode> addedNodes = new List<TNode>();
-            foreach (TNode child in TreeTraversal<IObservableTreeNode>.All(node).OfType<TNode>())
+            foreach (TNode child in this.EnumerateSubtreeForFlatList(node))
             {
                 this.Items.Insert(index++, this.Observe(child));
             }
@@ -257,13 +283,25 @@
         {
             List<TNode> removedNodes = new List<TNode>();
 
-            foreach (TNode toRemove in TreeTraversal<IObservableTreeNode>.All(node).OfType<TNode>())
+            foreach (TNode toRemove in this.EnumerateSubtreeForFlatList(node))
             {
                 this.Items.Remove(this.Disregard(toRemove));
                 removedNodes.Add(toRemove);
             }
 
             this.NodesRemoved?.Invoke(this, new EventArgs<List<TNode>>(removedNodes));
+        }
+
+        private IEnumerable<TNode> EnumerateSubtreeForFlatList (TNode node)
+        {
+            var traversalParameters = new TreeTraversalParameters<IObservableTreeNode>(
+                node,
+                eTraversalFlowDirection.ThroughChildren,
+                eTraversalStrategy.DepthFirst)
+            {
+                SiblingOrder = m_siblingOrder,
+            };
+            return TreeTraversal<IObservableTreeNode>.All(node, traversalParameters).OfType<TNode>();
         }
 
         private void Node_ChildInserted (object sender, TreeNodeInsertedEventArgs e)

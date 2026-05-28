@@ -238,6 +238,42 @@
             }
         }
 
+        // Per-level reversed sibling iteration: forward DFS through children, but at every parent
+        // we iterate siblings highest-source-index-first. Orthogonal to flow direction.
+        private static readonly string[] kReversedSiblingDFS_Order =
+        {
+            "root", "c", "c.a", "c.a.b", "c.a.a", "b", "a", "a.c", "a.b", "a.b.c", "a.b.b", "a.b.a", "a.a",
+        };
+
+        [TestMethod]
+        public void TreeTraversal_SiblingOrderReversed_DFS_WalksHighestIndexFirstAtEachLevel()
+        {
+            var parameters = new TreeTraversalParameters<TestTreePart>(
+                root,
+                eTraversalFlowDirection.ThroughChildren,
+                eTraversalStrategy.DepthFirst)
+            {
+                SiblingOrder = eSiblingOrder.Reversed,
+            };
+
+            string[] visited = TreeTraversal<TestTreePart>.All(root, parameters).Select(n => n.Value).ToArray();
+            CollectionAssert.AreEqual(kReversedSiblingDFS_Order, visited);
+        }
+
+        [TestMethod]
+        public void TreeTraversal_SiblingOrderForward_DefaultMatchesExistingDFS()
+        {
+            // Make sure passing parameters with default SiblingOrder doesn't regress the existing
+            // forward-DFS sequence (kDFS_Order).
+            var parameters = new TreeTraversalParameters<TestTreePart>(
+                root,
+                eTraversalFlowDirection.ThroughChildren,
+                eTraversalStrategy.DepthFirst);
+
+            string[] visited = TreeTraversal<TestTreePart>.All(root, parameters).Select(n => n.Value).ToArray();
+            CollectionAssert.AreEqual(kDFS_Order, visited);
+        }
+
         [TestMethod]
         public void TreeTraversal_ReverseIteration_DFS_Works()
         {
