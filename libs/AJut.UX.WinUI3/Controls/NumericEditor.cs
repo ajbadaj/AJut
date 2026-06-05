@@ -244,6 +244,7 @@ namespace AJut.UX.Controls
         private void OnLostFocus (object sender, RoutedEventArgs e)
         {
             VisualStateManager.GoToState(this, "Unfocused", true);
+            this.CommitEditedText();
         }
 
         private void IncreaseButton_OnClick (object sender, RoutedEventArgs e) => this.DoNudge(positive: true);
@@ -263,8 +264,9 @@ namespace AJut.UX.Controls
             }
             else if (e.Key == VirtualKey.Enter)
             {
-                // Commit text - TextBox_OnTextChanged already synced the value;
-                // marking handled prevents the Enter from bubbling further.
+                // Commit the edit - reconcile the displayed text with the capped value, then
+                // mark handled so the Enter does not bubble further.
+                this.CommitEditedText();
                 e.Handled = true;
             }
         }
@@ -312,6 +314,30 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ Helpers ]=================================================
+        private void CommitEditedText ()
+        {
+            if (m_vm == null || this.PART_TextBox == null)
+            {
+                return;
+            }
+
+            // The source value is already capped as text is typed, but the textbox can still be showing
+            // an out of range entry (e.g. 5500 against a max of 10). On commit, snap the text back to the
+            // real clamped value so what is shown matches what is stored.
+            m_vm.ResyncTextToSourceValue();
+
+            m_blockReentrancy = true;
+            try
+            {
+                this.PART_TextBox.Text = m_vm.Text;
+                this.Value = m_vm.SourceValue;
+            }
+            finally
+            {
+                m_blockReentrancy = false;
+            }
+        }
+
         private void DoNudge (bool positive)
         {
             if (m_vm == null)

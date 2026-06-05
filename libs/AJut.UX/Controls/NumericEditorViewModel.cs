@@ -182,6 +182,17 @@ namespace AJut.UX.Controls
             this.SourceValue = this.SourceValue;
         }
 
+        /// <summary>
+        /// Pushes the committed (already capped) source value back into the display text. Call when an
+        /// edit session ends (lost focus, Enter) so an out of range entry - e.g. typing 5500 against a
+        /// max of 10 - snaps to the clamped value instead of lingering as text that no longer matches
+        /// the real value. The source value is capped as text is entered; this only reconciles the text.
+        /// </summary>
+        public void ResyncTextToSourceValue ()
+        {
+            this.SetTextOneWay();
+        }
+
         public void ForceType (Type newValue)
         {
             m_valueType = newValue;
