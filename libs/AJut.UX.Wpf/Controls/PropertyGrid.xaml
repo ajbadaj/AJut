@@ -143,8 +143,12 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <!-- Label with selection highlight and right-click context menu. -->
-                                    <Border Grid.Column="0" Margin="0,0,3,0">
+                                    <!-- Label with selection highlight and right-click context menu.
+                                         ToolTip shows the property name (or "$Name: $ToolTip") when the
+                                         grid's PropertyToolTipPlacement includes the name. -->
+                                    <Border Grid.Column="0" Margin="0,0,3,0"
+                                            ToolTip="{Binding EffectiveToolTip}"
+                                            ToolTipService.IsEnabled="{Binding RelativeSource={RelativeSource AncestorType=local:PropertyGrid}, Path=PropertyToolTipPlacement, Converter={conv:PropertyToolTipPlacementToBoolConverter}, ConverterParameter=Name}">
                                         <Border.Style>
                                             <Style TargetType="{x:Type Border}">
                                                 <Setter Property="Background" Value="Transparent"/>
@@ -191,7 +195,9 @@
                                                       VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PropertyGrid}}, Path=VerticalContentAlignment}"
                                                       HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PropertyGrid}}, Path=HorizontalContentAlignment}"
                                                       ContentTemplateSelector="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PropertyGrid}}, Path=ItemTemplateSelector}"
-                                                      Content="{Binding EffectiveEditorTarget}">
+                                                      Content="{Binding EffectiveEditorTarget}"
+                                                      ToolTip="{Binding EffectiveToolTip}"
+                                                      ToolTipService.IsEnabled="{Binding RelativeSource={RelativeSource AncestorType=local:PropertyGrid}, Path=PropertyToolTipPlacement, Converter={conv:PropertyToolTipPlacementToBoolConverter}, ConverterParameter=Value}">
                                         <ContentPresenter.Style>
                                             <Style TargetType="{x:Type ContentPresenter}">
                                                 <Style.Triggers>

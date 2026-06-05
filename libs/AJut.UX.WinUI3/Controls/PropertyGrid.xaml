@@ -47,7 +47,6 @@
                        Margin="6,3,8,3"
                        Opacity="0.8"
                        TextTrimming="CharacterEllipsis"
-                       ToolTipService.ToolTip="{Binding DisplayName}"
                        Foreground="{ThemeResource AJut_PropertyGridItemRow_LabelForeground}"/>
         </StackPanel>
     </DataTemplate>
@@ -66,7 +65,6 @@
                        Margin="6,3,8,3"
                        Opacity="0.8"
                        TextTrimming="CharacterEllipsis"
-                       ToolTipService.ToolTip="{Binding DisplayName}"
                        Foreground="{ThemeResource AJut_PropertyGridItemRow_LabelForeground}"/>
         </StackPanel>
     </DataTemplate>

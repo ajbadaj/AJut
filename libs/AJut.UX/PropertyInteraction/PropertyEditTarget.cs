@@ -130,6 +130,28 @@ namespace AJut.UX.PropertyInteraction
             set => this.SetAndRaiseIfChanged(ref m_subtitle, value);
         }
 
+        private string m_toolTip;
+
+        /// <summary>
+        /// The tooltip text for this row. Null means "not set" - in that case <see cref="EffectiveToolTip"/>
+        /// falls back to the display name. Settable so hand-built targets can supply a tooltip without
+        /// relying on the [PGToolTip] attribute.
+        /// </summary>
+        public string ToolTip
+        {
+            get => m_toolTip;
+            set
+            {
+                if (this.SetAndRaiseIfChanged(ref m_toolTip, value))
+                {
+                    this.RaisePropertiesChanged(nameof(EffectiveToolTip));
+                }
+            }
+        }
+
+        /// <summary>The tooltip text actually shown: <see cref="ToolTip"/> when set, otherwise the display name.</summary>
+        public string EffectiveToolTip => m_toolTip ?? this.DisplayName;
+
         private string m_iconSource;
         public string IconSource
         {
@@ -320,6 +342,15 @@ namespace AJut.UX.PropertyInteraction
                 string subtitle = labelAttr?.Subtitle;
                 string[] aliases = TypeMetadataExtensionRegistrar.GetAttribute<PGAltPropertyAliasAttribute>(prop)?.AltPropertyAliases;
 
+                // Resolve the tooltip from [PGToolTip]. When ShowName is set the display name prefixes
+                // the tooltip text ("$Name: $ToolTip"); with no attribute we leave ToolTip null so the
+                // target's EffectiveToolTip falls back to the display name.
+                string resolvedDisplayName = displayName ?? prop.Name.ConvertToFriendlyEn();
+                var toolTipAttr = TypeMetadataExtensionRegistrar.GetAttribute<PGToolTipAttribute>(prop);
+                string toolTip = toolTipAttr == null
+                    ? null
+                    : (toolTipAttr.ShowName ? $"{resolvedDisplayName}: {toolTipAttr.ToolTip}" : toolTipAttr.ToolTip);
+
                 // 1. Detect Nullable<T> and route to the "Nullable" editor
                 Type underlyingNullable = Nullable.GetUnderlyingType(prop.PropertyType);
                 bool isNullable = underlyingNullable != null;
@@ -410,8 +441,9 @@ namespace AJut.UX.PropertyInteraction
 
                 var target = new PropertyEditTarget(prop.Name, getter, setter)
                 {
-                    DisplayName = displayName ?? prop.Name.ConvertToFriendlyEn(),
+                    DisplayName = resolvedDisplayName,
                     Subtitle = subtitle,
+                    ToolTip = toolTip,
                     IconSource = labelAttr?.IconSource,
                     IconMargin = labelAttr?.IconMargin ?? 0f,
                     GroupId = groupAttr?.GroupId,

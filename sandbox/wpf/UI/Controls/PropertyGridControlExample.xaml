@@ -15,6 +15,7 @@
         <ajut:PropertyGrid Grid.Column="1" BorderThickness="3" BorderBrush="#202020" Margin="20" Background="#1000" HorizontalContentAlignment="Stretch"
                            SingleItemSource="{Binding ElementName=PropGridSelectionOptions, Path=SelectedItem}"
                            LabelColumnWidth="140"
+                           PropertyToolTipPlacement="PropertyNameAndValue"
                            >
             <ajut:PropertyGrid.ItemTemplateSelector>
                 <ajut:PropertyGridTemplateSelector>

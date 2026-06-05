@@ -75,6 +75,7 @@
         private string m_dogsName = string.Empty;
         [PGEditor("Text")]
         [PGLabel("Name", IconSource = "Images/PenguinExample.png", IconMargin = 4)]
+        [PGToolTip("The dog's call sign")]
         public string DogsName
         {
             get => m_dogsName;
@@ -84,6 +85,7 @@
         private int m_dogsAge;
         [PGEditor("Number")]
         [PGGroup("Stats")]
+        [PGToolTip("In dog years", ShowName = false)]
         public int DogsAge
         {
             get => m_dogsAge;
@@ -186,7 +188,7 @@
                 yield return p;
             }
 
-            yield return new PropertyEditTarget("Name Alias", () => this.DogsName, (v) => this.DogsName = (string)v) { Editor = "Text", AdditionalEvalTargets = new[] { nameof(DogsName) } };
+            yield return new PropertyEditTarget("Name Alias", () => this.DogsName, (v) => this.DogsName = (string)v) { Editor = "Text", ToolTip = "Manually-built target with a hand-set tooltip", AdditionalEvalTargets = new[] { nameof(DogsName) } };
         }
     }
 }

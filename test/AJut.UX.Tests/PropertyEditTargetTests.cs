@@ -70,6 +70,22 @@ namespace AJut.UX.Tests
         public string Foo { get; set; }
     }
 
+    /// <summary>Model that exercises [PGToolTip].</summary>
+    public class ToolTipModel
+    {
+        [PGToolTip("Sets the master volume")]
+        public double Volume { get; set; }
+
+        [PGToolTip("Raw decibel value", ShowName = false)]
+        public double Decibels { get; set; }
+
+        [PGLabel("Display Brightness")]
+        [PGToolTip("0 to 100")]
+        public int Brightness { get; set; }
+
+        public string PlainProperty { get; set; }
+    }
+
     /// <summary>Model with a nullable property.</summary>
     public class NullableModel
     {
@@ -1317,6 +1333,67 @@ namespace AJut.UX.Tests
             Assert.AreEqual(2, targets.Count, "Filter + maxDepth should both apply");
             Assert.IsNotNull(Find(targets, "Name"));
             Assert.IsNotNull(Find(targets, "Count"));
+        }
+
+        // ===[ PGToolTip tests ]===
+
+        [TestMethod]
+        public void PET_PGToolTip_ShowName_PrefixesDisplayName ()
+        {
+            var model = new ToolTipModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+
+            var volume = Find(targets, "Volume");
+            Assert.AreEqual("Volume: Sets the master volume", volume.ToolTip);
+            Assert.AreEqual("Volume: Sets the master volume", volume.EffectiveToolTip);
+        }
+
+        [TestMethod]
+        public void PET_PGToolTip_ShowNameFalse_TextOnly ()
+        {
+            var model = new ToolTipModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+
+            var decibels = Find(targets, "Decibels");
+            Assert.AreEqual("Raw decibel value", decibels.ToolTip);
+            Assert.AreEqual("Raw decibel value", decibels.EffectiveToolTip);
+        }
+
+        [TestMethod]
+        public void PET_PGToolTip_UsesLabelForNamePrefix ()
+        {
+            var model = new ToolTipModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+
+            var brightness = Find(targets, "Brightness");
+            Assert.AreEqual("Display Brightness: 0 to 100", brightness.ToolTip,
+                "Name prefix should use the [PGLabel] display name, not the raw property name");
+        }
+
+        [TestMethod]
+        public void PET_NoToolTipAttribute_EffectiveToolTipFallsBackToDisplayName ()
+        {
+            var model = new ToolTipModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+
+            var plain = Find(targets, "PlainProperty");
+            Assert.IsNull(plain.ToolTip, "No attribute -> raw ToolTip should stay null");
+            Assert.AreEqual(plain.DisplayName, plain.EffectiveToolTip,
+                "EffectiveToolTip should fall back to the display name when no tooltip is set");
+        }
+
+        [TestMethod]
+        public void PET_ManualToolTip_OverridesFallback ()
+        {
+            // Hand-built target (no attributes) should still be able to carry a tooltip.
+            var target = new PropertyEditTarget("Manual", () => "x", v => { })
+            {
+                DisplayName = "Manual",
+                ToolTip = "Hand-built hint",
+            };
+            target.Setup();
+
+            Assert.AreEqual("Hand-built hint", target.EffectiveToolTip);
         }
 
         // ===[ Helpers ]==========================================================

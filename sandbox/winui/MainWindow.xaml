@@ -750,7 +750,8 @@
                                                    Grid.Row="3" Grid.Column="0"
                                                    RowSpacing="5"
                                                    FixedRowHeight="40"
-                                                   LabelColumnWidth="180">
+                                                   LabelColumnWidth="180"
+                                                   PropertyToolTipPlacement="PropertyNameAndValue">
                                     <ajut:PropertyGrid.ItemTemplateSelector>
                                         <ajut:PropertyGridTemplateSelector>
                                             <ajut:PropertyGridTemplateSelector.Default>
