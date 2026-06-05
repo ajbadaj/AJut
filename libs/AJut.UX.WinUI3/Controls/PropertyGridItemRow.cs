@@ -98,6 +98,13 @@ namespace AJut.UX.Controls
             set => this.SetValue(LabelSubtitleStyleProperty, value);
         }
 
+        public static readonly DependencyProperty PropertyToolTipPlacementProperty = DPUtils.Register(_ => _.PropertyToolTipPlacement, ePropertyToolTipPlacement.PropertyNameOnly, (d, e) => d.ApplyToolTips());
+        public ePropertyToolTipPlacement PropertyToolTipPlacement
+        {
+            get => (ePropertyToolTipPlacement)this.GetValue(PropertyToolTipPlacementProperty);
+            set => this.SetValue(PropertyToolTipPlacementProperty, value);
+        }
+
         // ===========[ Pointer overrides - drive HoverStates VSM group ]=========
         protected override void OnPointerEntered (PointerRoutedEventArgs e)
         {
@@ -146,6 +153,7 @@ namespace AJut.UX.Controls
             this.ApplyLabelTemplate();
             this.ApplySubtitle();
             this.ApplyDeleteButton();
+            this.ApplyToolTips();
 
             if (m_flatTreeItem != null)
             {
@@ -186,6 +194,9 @@ namespace AJut.UX.Controls
                     {
                         this.LabelSubtitleStyle = pg.LabelSubtitleStyle;
                     }
+
+                    // Tooltip placement is grid-global - always mirror the enclosing PropertyGrid.
+                    this.PropertyToolTipPlacement = pg.PropertyToolTipPlacement;
 
                     // Apply ElementPadding from PropertyGrid as this row's Padding so the
                     // template's {TemplateBinding Padding} insets the content from the edges.
@@ -251,6 +262,7 @@ namespace AJut.UX.Controls
             this.ApplyLabelTemplate();
             this.ApplySubtitle();
             this.ApplyDeleteButton();
+            this.ApplyToolTips();
         }
 
         private void OnIsSelectedChanged (object sender, System.EventArgs e)
@@ -271,6 +283,11 @@ namespace AJut.UX.Controls
             if (e.PropertyName == nameof(PropertyEditTarget.IsAtDefaultValue))
             {
                 this.ApplyLabelTemplate();
+            }
+            else if (e.PropertyName == nameof(PropertyEditTarget.ToolTip)
+                || e.PropertyName == nameof(PropertyEditTarget.DisplayName))
+            {
+                this.ApplyToolTips();
             }
         }
 
@@ -364,6 +381,26 @@ namespace AJut.UX.Controls
                 : Visibility.Collapsed;
         }
 
+
+        private void ApplyToolTips ()
+        {
+            string text = m_editTarget?.EffectiveToolTip;
+            ePropertyToolTipPlacement placement = this.PropertyToolTipPlacement;
+
+            if (this.PART_LabelContent != null)
+            {
+                bool showOnName = placement == ePropertyToolTipPlacement.PropertyNameOnly
+                    || placement == ePropertyToolTipPlacement.PropertyNameAndValue;
+                ToolTipService.SetToolTip(this.PART_LabelContent, showOnName ? text : null);
+            }
+
+            if (this.PART_EditorContent != null)
+            {
+                bool showOnValue = placement == ePropertyToolTipPlacement.ValueOnly
+                    || placement == ePropertyToolTipPlacement.PropertyNameAndValue;
+                ToolTipService.SetToolTip(this.PART_EditorContent, showOnValue ? text : null);
+            }
+        }
 
         private void ApplyLabelTemplate ()
         {

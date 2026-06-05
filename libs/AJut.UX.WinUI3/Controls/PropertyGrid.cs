@@ -146,6 +146,15 @@ namespace AJut.UX.Controls
             set => this.SetValue(LabelColumnWidthProperty, value);
         }
 
+        // Decides where per-property tooltips render (property name, value, both, or none).
+        // PropertyGridItemRow reads this on load and applies the tooltip text in code.
+        public static readonly DependencyProperty PropertyToolTipPlacementProperty = DPUtils.Register(_ => _.PropertyToolTipPlacement, ePropertyToolTipPlacement.PropertyNameOnly);
+        public ePropertyToolTipPlacement PropertyToolTipPlacement
+        {
+            get => (ePropertyToolTipPlacement)this.GetValue(PropertyToolTipPlacementProperty);
+            set => this.SetValue(PropertyToolTipPlacementProperty, value);
+        }
+
         /// <summary>
         /// DataTemplate for the property label when the value equals the default.
         /// DataContext is the PropertyEditTarget. Defaults to a plain TextBlock showing DisplayName.

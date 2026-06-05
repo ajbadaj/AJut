@@ -152,6 +152,14 @@ namespace AJut.UX.Controls
             set => this.SetValue(LabelColumnWidthProperty, value);
         }
 
+        /// <summary>Decides where per-property tooltips render (property name, value, both, or none).</summary>
+        public static readonly DependencyProperty PropertyToolTipPlacementProperty = DPUtils.Register(_ => _.PropertyToolTipPlacement, ePropertyToolTipPlacement.PropertyNameOnly);
+        public ePropertyToolTipPlacement PropertyToolTipPlacement
+        {
+            get => (ePropertyToolTipPlacement)this.GetValue(PropertyToolTipPlacementProperty);
+            set => this.SetValue(PropertyToolTipPlacementProperty, value);
+        }
+
         /// <summary>
         /// Format string for the element count display in list editors.
         /// {0} is replaced with the element count. Default: "Elements ({0})".

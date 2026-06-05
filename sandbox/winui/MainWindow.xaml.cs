@@ -701,6 +701,7 @@ namespace AJutShowRoomWinUI
 
         [MemberOrder(-1)] // force it to be first
         [PGLabel("Name", IconSource = "Assets/PenguinExample.png", IconMargin = 4)]
+        [PGToolTip("The display name shown everywhere this object appears")]
         public string Name { get; set; } = "AJut Is Cool";
         public float? OptionalValue { get; set; }
         public ShowRoomSubObject SubObj { get; set; } = new ShowRoomSubObject();
@@ -939,6 +940,7 @@ namespace AJutShowRoomWinUI
         public float Z { get; set; } = 333f;
 
         [PGLabel("Active?", "Shows if it's active")]
+        [PGToolTip("Toggle on or off", ShowName = false)]
         public bool IsActive { get; set; } = true;
     }
 
