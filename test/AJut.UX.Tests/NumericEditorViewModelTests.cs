@@ -6,56 +6,94 @@ namespace AJut.UX.Tests
     [TestClass]
     public class NumericEditorViewModelTests
     {
-        // ===[ ResyncTextToSourceValue - clamp reconciliation ]===
+        // ===[ Value is always clamped, regardless of response mode ]===
 
         [TestMethod]
-        public void NEVM_ResyncTextToSourceValue_SnapsAboveMaxTextToClampedValue ()
+        public void NEVM_AboveMaxText_ClampsSourceValueImmediately ()
         {
-            var settings = new TestSettings { Maximum = 10.0 };
-            var vm = new NumericEditorViewModel(settings, 0.0f);
+            var vm = new NumericEditorViewModel(new TestSettings { Maximum = 10.0 }, 0.0f);
 
-            // Typing past the max caps the source value immediately, but the entered text lingers.
             vm.Text = "5500";
             Assert.AreEqual(10.0f, vm.SourceValue, "Source value should be capped to the max as text is entered");
-            Assert.AreEqual("5500", vm.Text, "Entered text lingers until the edit is committed");
-            Assert.IsTrue(vm.IsTextInErrorState, "Out of range text should flag an error before commit");
+            Assert.AreEqual("5500", vm.Text, "The entered text lingers until the edit is committed");
+        }
 
-            vm.ResyncTextToSourceValue();
-            Assert.AreEqual("10", vm.Text, "Commit should snap the text to the clamped value");
+        // ===[ ErrorAndToolTip (default) ]===
+
+        [TestMethod]
+        public void NEVM_ErrorAndToolTip_ShowsErrorAndLeavesTextOnCommit ()
+        {
+            var vm = new NumericEditorViewModel(new TestSettings { Maximum = 10.0, OutOfBoundsResponse = eOutOfBoundsResponse.ErrorAndToolTip }, 0.0f);
+
+            vm.Text = "5500";
+            Assert.IsTrue(vm.IsTextInErrorState);
+            Assert.IsTrue(vm.ShouldShowError, "ErrorAndToolTip should surface the error while out of bounds");
+
+            vm.CommitEdit();
+            Assert.AreEqual("5500", vm.Text, "ErrorAndToolTip must leave the out of bounds text in place on commit");
+            Assert.IsTrue(vm.ShouldShowError, "The error should persist after commit until the user corrects it");
             Assert.AreEqual(10.0f, vm.SourceValue);
-            Assert.IsFalse(vm.IsTextInErrorState, "Error should clear once the text matches the clamped value");
+        }
+
+        // ===[ FixOnCommit ]===
+
+        [TestMethod]
+        public void NEVM_FixOnCommit_SuppressesErrorAndSnapsTextOnCommit ()
+        {
+            var vm = new NumericEditorViewModel(new TestSettings { Maximum = 10.0, OutOfBoundsResponse = eOutOfBoundsResponse.FixOnCommit }, 0.0f);
+
+            vm.Text = "5500";
+            Assert.IsTrue(vm.IsTextInErrorState, "The raw error state is still tracked internally");
+            Assert.IsFalse(vm.ShouldShowError, "FixOnCommit should not surface the error to the user");
+
+            vm.CommitEdit();
+            Assert.AreEqual("10", vm.Text, "FixOnCommit should snap the text to the clamped value on commit");
+            Assert.AreEqual(10.0f, vm.SourceValue);
+            Assert.IsFalse(vm.ShouldShowError);
+            Assert.IsFalse(vm.IsTextInErrorState, "Once the text matches the clamped value the error clears");
         }
 
         [TestMethod]
-        public void NEVM_ResyncTextToSourceValue_SnapsBelowMinTextToClampedValue ()
+        public void NEVM_FixOnCommit_SnapsBelowMinTextOnCommit ()
         {
-            var settings = new TestSettings { Minimum = 5.0 };
-            var vm = new NumericEditorViewModel(settings, 20.0f);
+            var vm = new NumericEditorViewModel(new TestSettings { Minimum = 5.0, OutOfBoundsResponse = eOutOfBoundsResponse.FixOnCommit }, 20.0f);
 
             vm.Text = "2";
-            Assert.AreEqual(5.0f, vm.SourceValue, "Source value should be capped to the min as text is entered");
-            Assert.AreEqual("2", vm.Text);
-            Assert.IsTrue(vm.IsTextInErrorState);
-
-            vm.ResyncTextToSourceValue();
-            Assert.AreEqual("5", vm.Text);
             Assert.AreEqual(5.0f, vm.SourceValue);
+
+            vm.CommitEdit();
+            Assert.AreEqual("5", vm.Text);
             Assert.IsFalse(vm.IsTextInErrorState);
         }
 
+        // ===[ In range entries are untouched in either mode ]===
+
         [TestMethod]
-        public void NEVM_ResyncTextToSourceValue_LeavesInRangeValueUnchanged ()
+        public void NEVM_InRangeValue_NoErrorAndUnchangedOnCommit ()
         {
-            var settings = new TestSettings { Minimum = 0.0, Maximum = 10.0 };
-            var vm = new NumericEditorViewModel(settings, 0.0f);
+            var vm = new NumericEditorViewModel(new TestSettings { Minimum = 0.0, Maximum = 10.0, OutOfBoundsResponse = eOutOfBoundsResponse.FixOnCommit }, 0.0f);
 
             vm.Text = "7";
             Assert.AreEqual(7.0f, vm.SourceValue);
-            Assert.IsFalse(vm.IsTextInErrorState);
+            Assert.IsFalse(vm.ShouldShowError);
 
-            vm.ResyncTextToSourceValue();
+            vm.CommitEdit();
             Assert.AreEqual("7", vm.Text, "An in range value should not be altered by commit");
             Assert.AreEqual(7.0f, vm.SourceValue);
+        }
+
+        // ===[ ResyncTextToSourceValue primitive ]===
+
+        [TestMethod]
+        public void NEVM_ResyncTextToSourceValue_SnapsTextRegardlessOfMode ()
+        {
+            // The primitive always reconciles - the mode only governs whether CommitEdit calls it.
+            var vm = new NumericEditorViewModel(new TestSettings { Maximum = 10.0, OutOfBoundsResponse = eOutOfBoundsResponse.ErrorAndToolTip }, 0.0f);
+
+            vm.Text = "5500";
+            vm.ResyncTextToSourceValue();
+            Assert.AreEqual("10", vm.Text);
+            Assert.IsFalse(vm.IsTextInErrorState);
         }
 
         // ===[ Test settings ]====================================================
@@ -65,6 +103,7 @@ namespace AJut.UX.Tests
             public int DecimalPlacesAllowed { get; set; } = -1;
             public object Minimum { get; set; }
             public object Maximum { get; set; }
+            public eOutOfBoundsResponse OutOfBoundsResponse { get; set; } = eOutOfBoundsResponse.ErrorAndToolTip;
         }
     }
 }

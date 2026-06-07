@@ -153,7 +153,8 @@
     <SolidColorBrush x:Key="AJut_Brush_DrawerForegroundImportant" Color="#000" />
 
     <!-- ===================[ Misc ]========================= -->
-    <SolidColorBrush x:Key="AJut_Brush_BadStuff" Color="#A31B22"/>
+    <Color x:Key="AJut_Color_BadStuff">#A31B22</Color>
+    <SolidColorBrush x:Key="AJut_Brush_BadStuff" Color="{ThemeResource AJut_Color_BadStuff}"/>
     <SolidColorBrush x:Key="AJut_Brush_TrackBackground" Color="#444"/>
     <SolidColorBrush x:Key="AJut_Brush_ToolTipBackground" Color="#202020"/>
     <SolidColorBrush x:Key="AJut_Brush_BannerBackground" Color="#111117"/>

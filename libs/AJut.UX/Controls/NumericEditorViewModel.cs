@@ -22,6 +22,9 @@ namespace AJut.UX.Controls
 
         /// <summary>Maximum bound as a boxed numeric, or null for unconstrained.</summary>
         object Maximum { get; }
+
+        /// <summary>How the editor should respond when entered text is outside the min/max bounds.</summary>
+        eOutOfBoundsResponse OutOfBoundsResponse { get; }
     }
 
     // ===========[ NumericEditorViewModel ]=====================================
@@ -125,10 +128,16 @@ namespace AJut.UX.Controls
         public string TextErrorMessage
         {
             get => m_textErrorMessage;
-            set => this.SetAndRaiseIfChanged(ref m_textErrorMessage, value, nameof(TextErrorMessage), nameof(IsTextInErrorState));
+            set => this.SetAndRaiseIfChanged(ref m_textErrorMessage, value, nameof(TextErrorMessage), nameof(IsTextInErrorState), nameof(ShouldShowError));
         }
 
         public bool IsTextInErrorState => m_textErrorMessage != null;
+
+        /// <summary>
+        /// Whether the error visuals (border, glyph, tooltip) should be shown - true only when the text
+        /// is out of bounds AND the configured response is <see cref="eOutOfBoundsResponse.ErrorAndToolTip"/>.
+        /// </summary>
+        public bool ShouldShowError => this.IsTextInErrorState && m_settings.OutOfBoundsResponse == eOutOfBoundsResponse.ErrorAndToolTip;
 
         public Type ValueType
         {
@@ -183,14 +192,35 @@ namespace AJut.UX.Controls
         }
 
         /// <summary>
-        /// Pushes the committed (already capped) source value back into the display text. Call when an
-        /// edit session ends (lost focus, Enter) so an out of range entry - e.g. typing 5500 against a
-        /// max of 10 - snaps to the clamped value instead of lingering as text that no longer matches
-        /// the real value. The source value is capped as text is entered; this only reconciles the text.
+        /// Pushes the committed (already capped) source value back into the display text so an out of
+        /// range entry - e.g. typing 5500 against a max of 10 - snaps to the clamped value instead of
+        /// lingering as text that no longer matches the real value.
         /// </summary>
         public void ResyncTextToSourceValue ()
         {
             this.SetTextOneWay();
+        }
+
+        /// <summary>
+        /// Finalizes an edit session (lost focus, Enter). When the response is
+        /// <see cref="eOutOfBoundsResponse.FixOnCommit"/> the displayed text is snapped to the clamped
+        /// value; otherwise the out of bounds text is left in place to keep flagging the error.
+        /// </summary>
+        public void CommitEdit ()
+        {
+            if (m_settings.OutOfBoundsResponse == eOutOfBoundsResponse.FixOnCommit)
+            {
+                this.ResyncTextToSourceValue();
+            }
+        }
+
+        /// <summary>
+        /// Re-raises <see cref="ShouldShowError"/> - call when the out of bounds response changes so
+        /// bound error visuals re-evaluate without the text itself changing.
+        /// </summary>
+        public void RefreshErrorDisplay ()
+        {
+            this.RaisePropertyChanged(nameof(ShouldShowError));
         }
 
         public void ForceType (Type newValue)
@@ -236,11 +266,11 @@ namespace AJut.UX.Controls
 
                 if (sourceValue > max)
                 {
-                    this.TextErrorMessage = $"Value is invalid: beyond max ({m_settings.Maximum})";
+                    this.TextErrorMessage = $"Value exceeds the max and was capped to {m_settings.Maximum}";
                 }
                 else if (sourceValue < min)
                 {
-                    this.TextErrorMessage = $"Value is invalid: beyond min ({m_settings.Minimum})";
+                    this.TextErrorMessage = $"Value is below the min and was capped to {m_settings.Minimum}";
                 }
                 else
                 {

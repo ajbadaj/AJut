@@ -68,6 +68,7 @@
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_PopOutControlBackground}" />
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_TextBoxBorder}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_SymbolForeground}"/>
+        <Setter Property="ErrorBrush" Value="{DynamicResource AJut_Brush_BadStuff}"/>
         <Setter Property="Padding" Value="1"/>
         <Setter Property="LabelPadding" Value="4"/>
         <Setter Property="FontFamily" Value="Consolas"/>

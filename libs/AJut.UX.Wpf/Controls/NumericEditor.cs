@@ -17,6 +17,7 @@
         int INumericEditorSettings.DecimalPlacesAllowed => this.DecimalPlacesAllowed;
         object INumericEditorSettings.Minimum => this.Minimum;
         object INumericEditorSettings.Maximum => this.Maximum;
+        eOutOfBoundsResponse INumericEditorSettings.OutOfBoundsResponse => this.OutOfBoundsResponse;
         private TextBox PART_TextArea;
         private bool m_blockValueChangeReentrancy;
         private object m_textEditPreviousData = null;
@@ -102,6 +103,8 @@
                     {
                         _e.Handled = true;
                     }
+
+                    this.DisplayValue.CommitEdit();
                 }
                 if (_e.Key == Key.Up)
                 {
@@ -126,6 +129,8 @@
                 {
                     _e.Handled = true;
                 }
+
+                this.DisplayValue.CommitEdit();
             }
         }
 
@@ -154,6 +159,13 @@
         {
             get => (bool)this.GetValue(IsReadOnlyProperty);
             set => this.SetValue(IsReadOnlyProperty, value);
+        }
+
+        public static readonly DependencyProperty OutOfBoundsResponseProperty = DPUtils.Register(_ => _.OutOfBoundsResponse, eOutOfBoundsResponse.ErrorAndToolTip, (d, e) => d.DisplayValue?.RefreshErrorDisplay());
+        public eOutOfBoundsResponse OutOfBoundsResponse
+        {
+            get => (eOutOfBoundsResponse)this.GetValue(OutOfBoundsResponseProperty);
+            set => this.SetValue(OutOfBoundsResponseProperty, value);
         }
 
         private static readonly DependencyPropertyKey DisplayValuePropertyKey = DPUtils.RegisterReadOnly(_ => _.DisplayValue, (d, e) => d.OnDisplayValueSet(e.OldValue, e.NewValue));
