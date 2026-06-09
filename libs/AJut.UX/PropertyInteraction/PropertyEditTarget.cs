@@ -169,6 +169,13 @@ namespace AJut.UX.PropertyInteraction
         public string GroupId { get; set; }
 
         /// <summary>
+        /// Optional explicit ordering pulled from [PGMemberOrder]. When set, this target sorts ahead
+        /// of untagged targets in the property grid (lowest value first); when null, natural emission
+        /// order is used. Set for both property rows and [PGButton] rows so the two interleave.
+        /// </summary>
+        public int? MemberSortOrder { get; set; }
+
+        /// <summary>
         /// The object on which ShowIf/HideIf condition members are evaluated.
         /// Set during GenerateForPropertiesOf / GenerateButtonsForMethodsOf so that
         /// PropertyGridManager can link conditions even when the PropertyGrid source
@@ -450,6 +457,7 @@ namespace AJut.UX.PropertyInteraction
                     Editor = editorKey,
                     EditContext = editContext,
                     AdditionalEvalTargets = aliases,
+                    MemberSortOrder = TypeMetadataExtensionRegistrar.GetAttribute<PGMemberOrderAttribute>(prop)?.Order,
                 };
 
                 // 3b. Complete deferred coerce holder and coercion delegate assignment
@@ -762,6 +770,7 @@ namespace AJut.UX.PropertyInteraction
                     DisplayName = buttonName,
                     Editor = "Button",
                     GroupId = groupAttr?.GroupId,
+                    MemberSortOrder = method.GetCustomAttribute<PGMemberOrderAttribute>()?.Order,
                 };
 
                 // Attach ShowIf/HideIf condition info for PropertyGridManager

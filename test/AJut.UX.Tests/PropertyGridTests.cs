@@ -95,6 +95,26 @@ namespace AJut.UX.Tests
         }
     }
 
+    // Mixes [PGMemberOrder]-tagged properties and a tagged [PGButton] method together with an
+    // untagged property to prove buttons interleave with properties rather than trailing at the end.
+    public class MemberOrderTestSource
+    {
+        [PGEditor("Text")]
+        public string Untagged { get; set; } = "u";
+
+        [PGMemberOrder(10)]
+        [PGEditor("Text")]
+        public string Last { get; set; } = "z";
+
+        [PGMemberOrder(1)]
+        [PGEditor("Text")]
+        public string First { get; set; } = "a";
+
+        [PGMemberOrder(5)]
+        [PGButton("Middle")]
+        public void MiddleButton () { }
+    }
+
     public class GroupedShowIfTestSource : NotifyPropertyChanged
     {
         private bool m_showStats;
@@ -1245,6 +1265,55 @@ namespace AJut.UX.Tests
             source.ShowButton = true;
             manager.UpdateConditionalVisibility();
             Assert.IsTrue(_GetAllTargets(manager.RootNode).Any(t => t.Editor == "Button"));
+        }
+
+        // ------ PGMemberOrder: properties and buttons ordered together ------
+
+        [TestMethod]
+        public void MemberOrder_InterleavesButtonsAndPropertiesByOrderValue ()
+        {
+            var source = new MemberOrderTestSource();
+            var pg = new SimpleTestPropertyGrid { SingleItemSource = source };
+            var manager = new PropertyGridManager(pg);
+
+            manager.RebuildEditTargets();
+
+            var topLevel = manager.RootNode.Children.OfType<PropertyEditTarget>()
+                .Select(t => t.PropertyPathTarget)
+                .ToList();
+
+            // Tagged members lead in ascending order value (First=1, MiddleButton=5, Last=10),
+            // and the untagged property trails after all tagged members.
+            CollectionAssert.AreEqual(
+                new[]
+                {
+                    nameof(MemberOrderTestSource.First),
+                    nameof(MemberOrderTestSource.MiddleButton),
+                    nameof(MemberOrderTestSource.Last),
+                    nameof(MemberOrderTestSource.Untagged),
+                },
+                topLevel
+            );
+        }
+
+        [TestMethod]
+        public void MemberOrder_PositionsButtonAheadOfUntaggedProperty ()
+        {
+            var source = new MemberOrderTestSource();
+            var pg = new SimpleTestPropertyGrid { SingleItemSource = source };
+            var manager = new PropertyGridManager(pg);
+
+            manager.RebuildEditTargets();
+
+            var topLevel = manager.RootNode.Children.OfType<PropertyEditTarget>().ToList();
+            int buttonIndex = topLevel.FindIndex(t => t.Editor == "Button");
+            int untaggedIndex = topLevel.FindIndex(t => t.PropertyPathTarget == nameof(MemberOrderTestSource.Untagged));
+
+            Assert.IsTrue(buttonIndex >= 0, "The button row should be present");
+            Assert.IsTrue(
+                buttonIndex < untaggedIndex,
+                "A [PGMemberOrder]-tagged button should sort ahead of an untagged property instead of trailing at the end"
+            );
         }
 
         // ------ ShowIf via IPropertyEditManager (delegates to inner object) ------
