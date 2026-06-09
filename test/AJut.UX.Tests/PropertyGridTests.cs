@@ -1617,6 +1617,37 @@ namespace AJut.UX.Tests
             Assert.IsTrue(groupSecond.IsExpanded, "Group expand pathway should carry over to the new same-type instance");
         }
 
+        [TestMethod]
+        public void ExpansionState_SurvivesNullThenSetSourceSwap ()
+        {
+            // Mirrors the real consumer teardown pattern: to force a clean rebuild between selections
+            // the control sets SingleItemSource = null (which disposes the manager) and then assigns
+            // the next object. The expansion pathway must survive that transient null so it restores
+            // onto the next same-type instance instead of collapsing.
+            var first = new NestedExpandableSource();
+            var pg = new SimpleTestPropertyGrid { SingleItemSource = first };
+            var manager = new PropertyGridManager(pg);
+            manager.RebuildEditTargets();
+
+            manager.RootNode.Children.OfType<PropertyEditTarget>()
+                .First(t => t.PropertyPathTarget == nameof(NestedExpandableSource.Child)).IsExpanded = true;
+
+            // Transient null - this is what disposes the manager in the live control.
+            pg.SingleItemSource = null;
+            manager.Dispose();
+
+            // Next same-type selection.
+            pg.SingleItemSource = new NestedExpandableSource();
+            manager.RebuildEditTargets();
+
+            var childSecond = manager.RootNode.Children.OfType<PropertyEditTarget>()
+                .First(t => t.PropertyPathTarget == nameof(NestedExpandableSource.Child));
+            Assert.IsTrue(
+                childSecond.IsExpanded,
+                "Expansion pathway should survive the null-then-set source swap that disposes the manager"
+            );
+        }
+
         // ------ Helper ------
 
         private static List<PropertyEditTarget> _GetAllTargets (PropertyEditTarget root)

@@ -72,6 +72,11 @@ namespace AJut.UX.PropertyInteraction
 
         public void Dispose ()
         {
+            // Capture the live expansion pathway before tearing the tree down. Consumers commonly null
+            // the source (which disposes us) and immediately assign the next object to force a clean
+            // rebuild - snapshotting here lets that next object restore the same expanded pathway
+            // instead of coming up fully collapsed.
+            this.SnapshotExpandedStates();
             this.Items.Clear();
             this.RootNode = null;
         }
@@ -79,7 +84,7 @@ namespace AJut.UX.PropertyInteraction
         public void RebuildEditTargets ()
         {
             // 1. Snapshot current expansion state before clearing the tree.
-            _SnapshotExpandedStates();
+            this.SnapshotExpandedStates();
 
             this.Items.Clear();
             this.RootNode = null;
@@ -218,19 +223,19 @@ namespace AJut.UX.PropertyInteraction
             }
 
             // 2. Restore previously-snapshotted expansion states into the new targets.
-            _RestoreExpandedStates(root);
+            this.RestoreExpandedStates(root);
 
             this.RootNode = root;
             this.Items.IncludeRoot = false;
             this.Items.RootNode = root;
 
             // 3. Build visibility conditions linked to targets and remove hidden ones.
-            _BuildAndApplyVisibilityConditions(sourceList, root);
+            this.BuildAndApplyVisibilityConditions(sourceList, root);
 
             void _Add (PropertyEditTarget _target)
             {
                 int _id = _target.GetHashCode();
-                if (editTargets.TryGetValue(_id, out PropertyEditTarget _found))
+                if (editTargets.TryGetValue(_id, out PropertyEditTarget? _found))
                 {
                     _found.TakeOn(_target);
                     return;
@@ -282,13 +287,13 @@ namespace AJut.UX.PropertyInteraction
                 }
 
                 // Compute insertion index from the natural child order
-                int insertAt = _ComputeInsertionIndex(cond);
+                int insertAt = ComputeInsertionIndex(cond);
                 cond.Parent.InsertChild(insertAt, cond.Target);
             }
 
             // 3. Sync group header visibility - hide headers that lost all children
             //    and re-insert headers that gained a visible child.
-            _AdjustGroupHeaderVisibility();
+            AdjustGroupHeaderVisibility();
 
             return anyChanged;
         }
@@ -301,9 +306,9 @@ namespace AJut.UX.PropertyInteraction
         public string SaveExpandedState ()
         {
             // Merge live tree state into the snapshot dictionary first.
-            _SnapshotExpandedStates();
+            this.SnapshotExpandedStates();
 
-            var expandedPaths = m_expandedStates
+            List<string> expandedPaths = m_expandedStates
                 .Where(kvp => kvp.Value)
                 .Select(kvp => kvp.Key)
                 .ToList();
@@ -338,7 +343,7 @@ namespace AJut.UX.PropertyInteraction
 
         // ===========[ Private helpers ]==========================================
 
-        private void _BuildAndApplyVisibilityConditions (List<object> sourceItems, PropertyEditTarget root)
+        private void BuildAndApplyVisibilityConditions (List<object> sourceItems, PropertyEditTarget root)
         {
             // 1. Collect all targets (top-level + group children) and link any that
             //    carry PendingShowIf / PendingHideIf (attached during GenerateForPropertiesOf
@@ -388,7 +393,7 @@ namespace AJut.UX.PropertyInteraction
             }
 
             // 4. Remove any group header whose children all evaluated hidden.
-            _AdjustGroupHeaderVisibility();
+            AdjustGroupHeaderVisibility();
 
             void _TryLinkTarget (PropertyEditTarget target)
             {
@@ -397,15 +402,15 @@ namespace AJut.UX.PropertyInteraction
                     return;
                 }
 
-                _AddLinkedCondition(target.ConditionSourceItem, target, target.PendingShowIf, target.PendingHideIf);
+                AddLinkedCondition(target.ConditionSourceItem, target, target.PendingShowIf, target.PendingHideIf);
             }
         }
 
-        private void _AddLinkedCondition (object sourceItem, PropertyEditTarget target, PGShowIfAttribute showIf, PGHideIfAttribute hideIf)
+        private void AddLinkedCondition (object sourceItem, PropertyEditTarget target, PGShowIfAttribute showIf, PGHideIfAttribute hideIf)
         {
             m_hasConditionalVisibility = true;
 
-            PropertyEditTarget parent = target.Parent as PropertyEditTarget;
+            PropertyEditTarget? parent = target.Parent as PropertyEditTarget;
             int naturalIndex = 0;
             if (parent != null)
             {
@@ -448,9 +453,9 @@ namespace AJut.UX.PropertyInteraction
             });
         }
 
-        private int _ComputeInsertionIndex (VisibilityCondition cond)
+        private int ComputeInsertionIndex (VisibilityCondition cond)
         {
-            if (!m_naturalChildOrder.TryGetValue(cond.Parent, out List<PropertyEditTarget> order))
+            if (!m_naturalChildOrder.TryGetValue(cond.Parent, out List<PropertyEditTarget>? order))
             {
                 return cond.Parent.Children.Count;
             }
@@ -479,7 +484,7 @@ namespace AJut.UX.PropertyInteraction
         // predicates are currently false, the header would otherwise render as a
         // label with no content underneath it. Pull the header out in that case
         // and re-insert it at its natural slot as soon as a child returns.
-        private void _AdjustGroupHeaderVisibility ()
+        private void AdjustGroupHeaderVisibility ()
         {
             foreach (GroupHeaderInfo info in m_groupHeaders)
             {
@@ -488,7 +493,7 @@ namespace AJut.UX.PropertyInteraction
 
                 if (hasVisibleChildren && !isInParent)
                 {
-                    int insertAt = _ComputeGroupHeaderInsertionIndex(info);
+                    int insertAt = ComputeGroupHeaderInsertionIndex(info);
                     info.Parent.InsertChild(insertAt, info.Header);
                 }
                 else if (!hasVisibleChildren && isInParent)
@@ -498,7 +503,7 @@ namespace AJut.UX.PropertyInteraction
             }
         }
 
-        private int _ComputeGroupHeaderInsertionIndex (GroupHeaderInfo info)
+        private int ComputeGroupHeaderInsertionIndex (GroupHeaderInfo info)
         {
             if (!m_naturalChildOrder.TryGetValue(info.Parent, out List<PropertyEditTarget> order))
             {
@@ -522,7 +527,7 @@ namespace AJut.UX.PropertyInteraction
             return insertAt;
         }
 
-        private void _SnapshotExpandedStates ()
+        private void SnapshotExpandedStates ()
         {
             if (this.RootNode == null)
             {
@@ -531,7 +536,7 @@ namespace AJut.UX.PropertyInteraction
 
             foreach (PropertyEditTarget target in TreeTraversal<IObservableTreeNode>.All(this.RootNode).OfType<PropertyEditTarget>())
             {
-                string path = _BuildPropertyPath(target);
+                string path = BuildPropertyPath(target);
                 if (!string.IsNullOrEmpty(path))
                 {
                     m_expandedStates[path] = target.IsExpanded;
@@ -539,7 +544,7 @@ namespace AJut.UX.PropertyInteraction
             }
         }
 
-        private void _RestoreExpandedStates (PropertyEditTarget root)
+        private void RestoreExpandedStates (PropertyEditTarget root)
         {
             if (m_expandedStates.Count == 0)
             {
@@ -548,7 +553,7 @@ namespace AJut.UX.PropertyInteraction
 
             foreach (PropertyEditTarget target in TreeTraversal<IObservableTreeNode>.All(root).OfType<PropertyEditTarget>())
             {
-                string path = _BuildPropertyPath(target);
+                string path = BuildPropertyPath(target);
                 if (path != null && m_expandedStates.TryGetValue(path, out bool wasExpanded))
                 {
                     target.IsExpanded = wasExpanded;
@@ -556,7 +561,7 @@ namespace AJut.UX.PropertyInteraction
             }
         }
 
-        private static string _BuildPropertyPath (PropertyEditTarget target)
+        private static string BuildPropertyPath (PropertyEditTarget target)
         {
             // Walk up the parent chain to construct a full dotted path, excluding the hidden root.
             var parts = new List<string>();
