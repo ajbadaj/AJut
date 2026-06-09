@@ -85,8 +85,10 @@
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:ToggleStrip}">
+        <Setter Property="OverflowPopupBackground" Value="{DynamicResource AJut_Brush_PopupBackground}"/>
+        <Setter Property="OverflowPopupBorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_OverlayBlockoutBackground}"/>
-        <Setter Property="Background" Value="{DynamicResource AJut_Brush_ListBackground}" />
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_PopOutControlBackground}" />
         <Setter Property="BackgroundPressedColorBase" Value="{DynamicResource AJut_Color_SecondaryHighlightBright}"/>
         <Setter Property="BackgroundHover" Value="{DynamicResource AJut_Brush_SecondaryHighlight}" />
         <Setter Property="BackgroundHoverOverPressed">

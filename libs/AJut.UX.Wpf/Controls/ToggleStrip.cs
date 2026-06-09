@@ -45,6 +45,9 @@
         public static readonly DependencyProperty SeparatorBrushProperty = DPUtils.Register(_ => _.SeparatorBrush);
         public static readonly DependencyProperty SeparatorThicknessProperty = DPUtils.Register(_ => _.SeparatorThickness, 1.0);
 
+        public static readonly DependencyProperty OverflowPopupBackgroundProperty = DPUtils.Register(_ => _.OverflowPopupBackground);
+        public static readonly DependencyProperty OverflowPopupBorderBrushProperty = DPUtils.Register(_ => _.OverflowPopupBorderBrush);
+
         public static readonly DependencyProperty BackgroundPressedColorBaseProperty = DPUtils.Register(_ => _.BackgroundPressedColorBase);
         public static readonly DependencyProperty ForegroundPressedProperty = DPUtils.Register(_ => _.ForegroundPressed);
         public static readonly DependencyProperty BackgroundHoverProperty = DPUtils.Register(_ => _.BackgroundHover);
@@ -259,6 +262,18 @@
         {
             get => (Brush)this.GetValue(ForegroundHoverProperty);
             set => this.SetValue(ForegroundHoverProperty, value);
+        }
+
+        public Brush OverflowPopupBackground
+        {
+            get => (Brush)this.GetValue(OverflowPopupBackgroundProperty);
+            set => this.SetValue(OverflowPopupBackgroundProperty, value);
+        }
+
+        public Brush OverflowPopupBorderBrush
+        {
+            get => (Brush)this.GetValue(OverflowPopupBorderBrushProperty);
+            set => this.SetValue(OverflowPopupBorderBrushProperty, value);
         }
 
         public Color BackgroundPressedColorBase
@@ -765,6 +780,7 @@
         private ToggleStrip m_owner;
         private bool[] m_overflow;
         private double[] m_arrangeWidths;
+        private bool m_stretchFill;
 
         // ===========[ Layout ]===================================================
         protected override Size MeasureOverride (Size availableSize)
@@ -836,16 +852,12 @@
                 }
             }
 
-            // 4. Stretch fill (no overflow): split the available width evenly, matching the old UniformGrid.
+            // 4. Stretch fill (no overflow) splits the row evenly so the items are uniform and fill the
+            //    width (the old UniformGrid behavior). The split is done in ArrangeOverride against the
+            //    real final width - the panel is often measured at infinite width (e.g. inside a
+            //    horizontal stack), where dividing would be meaningless.
             m_arrangeWidths = widths;
-            if (stretch && !uniform && !popup && constrained && count > 0)
-            {
-                double each = availableSize.Width / count;
-                for (int i = 0; i < count; ++i)
-                {
-                    m_arrangeWidths[i] = each;
-                }
-            }
+            m_stretchFill = stretch && !uniform && !popup && count > 0;
 
             // 5. Desired size is the sum of the visible item widths.
             double total = 0.0;
@@ -868,6 +880,26 @@
         protected override Size ArrangeOverride (Size finalSize)
         {
             int count = this.InternalChildren.Count;
+
+            // Stretch fill: every visible item gets an equal share of the real final width (uniform + fills).
+            double stretchEach = 0.0;
+            if (m_stretchFill)
+            {
+                int visible = 0;
+                for (int i = 0; i < count; ++i)
+                {
+                    if (m_overflow == null || i >= m_overflow.Length || !m_overflow[i])
+                    {
+                        ++visible;
+                    }
+                }
+
+                if (visible > 0)
+                {
+                    stretchEach = finalSize.Width / visible;
+                }
+            }
+
             double x = 0.0;
             for (int i = 0; i < count; ++i)
             {
@@ -879,9 +911,9 @@
                     continue;
                 }
 
-                double w = (m_arrangeWidths != null && i < m_arrangeWidths.Length)
-                    ? m_arrangeWidths[i]
-                    : child.DesiredSize.Width;
+                double w = m_stretchFill
+                    ? stretchEach
+                    : ((m_arrangeWidths != null && i < m_arrangeWidths.Length) ? m_arrangeWidths[i] : child.DesiredSize.Width);
                 child.Arrange(new Rect(x, 0, w, finalSize.Height));
                 x += w;
             }

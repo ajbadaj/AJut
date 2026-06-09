@@ -84,6 +84,8 @@
     <Style TargetType="{x:Type local:ToggleStrip}">
         <Setter Property="SeparatorBrush" Value="#08080D"/>
         <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="OverflowPopupBackground" Value="#CCC"/>
+        <Setter Property="OverflowPopupBorderBrush" Value="#222"/>
         <Setter Property="BackgroundPressedColorBase" Value="#2BA2D8"/>
         <Setter Property="BackgroundHover">
             <Setter.Value>
@@ -155,9 +157,10 @@
                                    Placement="Bottom"
                                    StaysOpen="False"
                                    AllowsTransparency="True"
-                                   IsOpen="{Binding ElementName=PART_OverflowToggle, Path=IsChecked, Mode=TwoWay}">
-                                <Border Background="{ajut:TemplateBinding Background}"
-                                        BorderBrush="{ajut:TemplateBinding BorderBrush}"
+                                   IsOpen="{Binding ElementName=PART_OverflowToggle, Path=IsChecked, Mode=TwoWay}"
+                                   ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                <Border Background="{ajut:TemplateBinding OverflowPopupBackground}"
+                                        BorderBrush="{ajut:TemplateBinding OverflowPopupBorderBrush}"
                                         BorderThickness="1"
                                         SnapsToDevicePixels="True">
                                     <ItemsControl ItemsSource="{ajut:TemplateBinding Items}"
@@ -173,13 +176,17 @@
                                 <RepeatButton.Template>
                                     <ControlTemplate TargetType="{x:Type RepeatButton}">
                                         <Border Background="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=Background}">
-                                            <TextBlock Text="&#xE76B;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                            <TextBlock x:Name="Chevron" Opacity="0.55"
+                                                       Text="&#xE76B;" FontFamily="Segoe MDL2 Assets" FontSize="12"
                                                        VerticalAlignment="Center" HorizontalAlignment="Center"
                                                        Foreground="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=Foreground}"/>
                                         </Border>
                                         <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Chevron" Property="Opacity" Value="1.0"/>
+                                            </Trigger>
                                             <Trigger Property="IsEnabled" Value="False">
-                                                <Setter Property="Opacity" Value="0.3"/>
+                                                <Setter TargetName="Chevron" Property="Opacity" Value="0.25"/>
                                             </Trigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
@@ -191,13 +198,17 @@
                                 <RepeatButton.Template>
                                     <ControlTemplate TargetType="{x:Type RepeatButton}">
                                         <Border Background="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=Background}">
-                                            <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                            <TextBlock x:Name="Chevron" Opacity="0.55"
+                                                       Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="12"
                                                        VerticalAlignment="Center" HorizontalAlignment="Center"
                                                        Foreground="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=Foreground}"/>
                                         </Border>
                                         <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Chevron" Property="Opacity" Value="1.0"/>
+                                            </Trigger>
                                             <Trigger Property="IsEnabled" Value="False">
-                                                <Setter Property="Opacity" Value="0.3"/>
+                                                <Setter TargetName="Chevron" Property="Opacity" Value="0.25"/>
                                             </Trigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
