@@ -1,5 +1,6 @@
 ﻿namespace AJut.UX.Controls
 {
+    using System;
     using System.Collections.ObjectModel;
     using System.ComponentModel;
     using System.Windows;
@@ -54,6 +55,15 @@
         {
             get => (Orientation)this.GetValue(OrientationProperty);
             set => this.SetValue(OrientationProperty, value);
+        }
+
+        // ScrollingEnabled: when false the content is simply clipped and no bump buttons appear (lets a
+        // host reuse the BumpStack purely as a clip container in non-scrolling states).
+        public static readonly DependencyProperty ScrollingEnabledProperty = DPUtils.Register(_ => _.ScrollingEnabled, true, (d, e) => d.UpdateScrollVisibilities());
+        public bool ScrollingEnabled
+        {
+            get => (bool)this.GetValue(ScrollingEnabledProperty);
+            set => this.SetValue(ScrollingEnabledProperty, value);
         }
 
         private static readonly DependencyPropertyKey HorizontalScrollBarVisibilityPropertyKey = DPUtils.RegisterReadOnly(_ => _.HorizontalScrollBarVisibility, ScrollBarVisibility.Hidden);
@@ -152,7 +162,11 @@
 
             this.PART_AnteriorBumpButton.SizeChanged -= this.OnAnteriorBumpButtonSizeChanged;
             this.PART_AnteriorBumpButton.SizeChanged += this.OnAnteriorBumpButtonSizeChanged;
-            this.OnRecalculateOffsetPaddings();
+
+            // Initialize the scroll visibilities from ScrollingEnabled + Orientation explicitly rather
+            // than relying on the readonly DP defaults / change-handler timing (also calls
+            // OnRecalculateOffsetPaddings). Default ScrollingEnabled=true keeps the BumpStack scrolling.
+            this.UpdateScrollVisibilities();
         }
 
         public void AddChild (object value)
@@ -194,13 +208,15 @@
                 }
                 while (lineOvers-- > 0)
                 {
+                    // Default (InvertMouseWheel=false): wheel down advances towards the end (right),
+                    // wheel up comes back towards the start (left).
                     if (left)
                     {
-                        this.PART_ScrollItemsContainer.LineLeft();
+                        this.PART_ScrollItemsContainer.LineRight();
                     }
                     else
                     {
-                        this.PART_ScrollItemsContainer.LineRight();
+                        this.PART_ScrollItemsContainer.LineLeft();
                     }
                 }
 
@@ -246,20 +262,49 @@
             base.OnPreviewMouseWheel(e);
         }
 
-        protected virtual void OnOrientationChanged ()
+        protected virtual void OnOrientationChanged () => this.UpdateScrollVisibilities();
+
+        // Scrollbars are always hidden (the bump buttons are the affordance); the active axis is set to
+        // Disabled when ScrollingEnabled is false so the content clips to the viewport instead of scrolling
+        // (which also drops ScrollableWidth/Height to 0, hiding the bump buttons via their visibility trigger).
+        private void UpdateScrollVisibilities ()
         {
+            bool scroll = this.ScrollingEnabled;
             if (this.Orientation == Orientation.Horizontal)
             {
-                this.HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden;
+                this.HorizontalScrollBarVisibility = scroll ? ScrollBarVisibility.Hidden : ScrollBarVisibility.Disabled;
                 this.VerticalScrollBarVisibility = ScrollBarVisibility.Disabled;
             }
             else
             {
                 this.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
-                this.VerticalScrollBarVisibility = ScrollBarVisibility.Hidden;
+                this.VerticalScrollBarVisibility = scroll ? ScrollBarVisibility.Hidden : ScrollBarVisibility.Disabled;
             }
 
             this.OnRecalculateOffsetPaddings();
+        }
+
+        /// <summary>
+        /// Scrolls so the first hosted element matching <paramref name="predicate"/> is brought fully
+        /// into view, kept clear of the bump buttons. Returns true if a match was found.
+        /// </summary>
+        public bool ScrollFirstElementIntoView (Func<FrameworkElement, bool> predicate)
+        {
+            if (this.PART_ScrollItemsContainer == null)
+            {
+                return false;
+            }
+
+            double inset = 0.0;
+            if (this.ScrollingEnabled && this.PART_AnteriorBumpButton != null)
+            {
+                double buttonExtent = this.Orientation == Orientation.Horizontal
+                    ? this.PART_AnteriorBumpButton.ActualWidth
+                    : this.PART_AnteriorBumpButton.ActualHeight;
+                inset = buttonExtent + this.EdgeClearanceOffset;
+            }
+
+            return this.PART_ScrollItemsContainer.ScrollFirstElementIntoView(predicate, inset, inset);
         }
 
         protected virtual void OnRecalculateOffsetPaddings ()

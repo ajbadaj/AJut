@@ -4,87 +4,126 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
-             mc:Ignorable="d" 
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
     <DockPanel>
+        <!-- ===[ Focused parity test ]=== -->
+        <!-- Does the BumpStack host + scroll an ItemsControl (the toggle-strip pattern) at all? This
+             isolates that question from the TemplateBinding issue: ItemsSource is a plain array, no
+             TemplateBinding. If this renders 12 items and scrolls, the BumpStack hosts an ItemsControl
+             fine and the strip's problem was specifically the reparented Items TemplateBinding. -->
+        <TextBlock DockPanel.Dock="Top" Text="Hosting an ItemsControl (toggle-strip parity test)" FontWeight="Bold"/>
+        <ajut:BumpStack DockPanel.Dock="Top" Orientation="Horizontal" Width="300" HorizontalAlignment="Left" BumpInterval="10">
+            <ItemsControl>
+                <ItemsControl.ItemsSource>
+                    <x:Array Type="{x:Type sys:String}">
+                        <sys:String>One</sys:String>
+                        <sys:String>Two</sys:String>
+                        <sys:String>Three</sys:String>
+                        <sys:String>Four</sys:String>
+                        <sys:String>Five</sys:String>
+                        <sys:String>Six</sys:String>
+                        <sys:String>Seven</sys:String>
+                        <sys:String>Eight</sys:String>
+                        <sys:String>Nine</sys:String>
+                        <sys:String>Ten</sys:String>
+                        <sys:String>Eleven</sys:String>
+                        <sys:String>Twelve</sys:String>
+                    </x:Array>
+                </ItemsControl.ItemsSource>
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Margin="0,0,5,0" Background="#5CCC" BorderBrush="Blue" BorderThickness="1">
+                            <TextBlock Text="{Binding}" Margin="10" FontSize="16"/>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ajut:BumpStack>
         <TextBlock DockPanel.Dock="Top" Text="Horizontal"/>
         <ajut:BumpStack DockPanel.Dock="Top" Orientation="Horizontal" BumpInterval="10"
                         InvertMouseWheel="True"
                         ButtonFontSize="22">
-            <Border Margin="0,0,5,0" Background="#CCC" BorderBrush="Green" BorderThickness="1">
+            <Border Margin="0,0,5,0" Background="#5CCC" BorderBrush="Green" BorderThickness="1">
                 <TextBlock Text="Thing" Margin="10" FontSize="18"/>
             </Border>
-            <Border Margin="0,0,5,0" Background="#CCC" BorderBrush="Green" BorderThickness="1">
+            <Border Margin="0,0,5,0" Background="#5CCC" BorderBrush="Green" BorderThickness="1">
                 <TextBlock Text="Thing" Margin="10" FontSize="18"/>
             </Border>
-            <Border Margin="0,0,5,0" Background="#CCC" BorderBrush="Green" BorderThickness="1">
+            <Border Margin="0,0,5,0" Background="#5CCC" BorderBrush="Green" BorderThickness="1">
                 <TextBlock Text="Thing" Margin="10" FontSize="18"/>
             </Border>
-            <Border Margin="0,0,5,0" Background="#CCC" BorderBrush="Green" BorderThickness="1">
+            <Border Margin="0,0,5,0" Background="#5CCC" BorderBrush="Green" BorderThickness="1">
                 <TextBlock Text="Thing" Margin="10" FontSize="18"/>
             </Border>
-            <Border Margin="0,0,5,0" Background="#CCC" BorderBrush="Green" BorderThickness="1">
+            <Border Margin="0,0,5,0" Background="#5CCC" BorderBrush="Green" BorderThickness="1">
                 <TextBlock Text="Thing" Margin="10" FontSize="18"/>
             </Border>
-            <Border Margin="0,0,5,0" Background="#CCC" BorderBrush="Green" BorderThickness="1">
+            <Border Margin="0,0,5,0" Background="#5CCC" BorderBrush="Green" BorderThickness="1">
                 <TextBlock Text="Thing" Margin="10" FontSize="18"/>
             </Border>
-            <Border Margin="0,0,5,0" Background="#CCC" BorderBrush="Green" BorderThickness="1">
+            <Border Margin="0,0,5,0" Background="#5CCC" BorderBrush="Green" BorderThickness="1">
                 <TextBlock Text="Thing" Margin="10" FontSize="18"/>
             </Border>
-            <Border Margin="0,0,5,0" Background="#CCC" BorderBrush="Green" BorderThickness="1">
+            <Border Margin="0,0,5,0" Background="#5CCC" BorderBrush="Green" BorderThickness="1">
                 <TextBlock Text="Thing" Margin="10" FontSize="18"/>
             </Border>
-            <Border Margin="0,0,5,0" Background="#CCC" BorderBrush="Green" BorderThickness="1">
+            <Border Margin="0,0,5,0" Background="#5CCC" BorderBrush="Green" BorderThickness="1">
                 <TextBlock Text="Thing" Margin="10" FontSize="18"/>
             </Border>
-            <Border Margin="0,0,5,0" Background="#CCC" BorderBrush="Green" BorderThickness="1">
+            <Border Margin="0,0,5,0" Background="#5CCC" BorderBrush="Green" BorderThickness="1">
                 <TextBlock Text="Thing" Margin="10" FontSize="18"/>
             </Border>
-            <Border Margin="0,0,5,0" Background="#CCC" BorderBrush="Green" BorderThickness="1">
+            <Border Margin="0,0,5,0" Background="#5CCC" BorderBrush="Green" BorderThickness="1">
                 <TextBlock Text="Thing" Margin="10" FontSize="18"/>
             </Border>
-            <Border Background="#CCC" BorderBrush="Green" BorderThickness="1">
+            <Border Background="#5CCC" BorderBrush="Green" BorderThickness="1">
                 <TextBlock Text="Thing" Margin="10" FontSize="18"/>
             </Border>
         </ajut:BumpStack>
         <TextBlock DockPanel.Dock="Top" Text="Vertical"/>
         <ajut:BumpStack Orientation="Vertical" HorizontalAlignment="Left" Width="100" BumpInterval="18"
                                     ButtonFontSize="32" EdgeClearanceOffset="10">
-            <Border Margin="0,0,0,5" Background="#CCC" BorderBrush="Green" BorderThickness="1">
+            <Border Margin="0,0,0,5" Background="#5CCC" BorderBrush="Green" BorderThickness="1">
                 <TextBlock Text="Thing" Margin="10" FontSize="18"/>
             </Border>
-            <Border Margin="0,0,0,5" Background="#CCC" BorderBrush="Green" BorderThickness="1">
+            <Border Margin="0,0,0,5" Background="#5CCC" BorderBrush="Green" BorderThickness="1">
                 <TextBlock Text="Thing" Margin="10" FontSize="18"/>
             </Border>
-            <Border Margin="0,0,0,5" Background="#CCC" BorderBrush="Green" BorderThickness="1">
+            <Border Margin="0,0,0,5" Background="#5CCC" BorderBrush="Green" BorderThickness="1">
                 <TextBlock Text="Thing" Margin="10" FontSize="18"/>
             </Border>
-            <Border Margin="0,0,0,5" Background="#CCC" BorderBrush="Green" BorderThickness="1">
+            <Border Margin="0,0,0,5" Background="#5CCC" BorderBrush="Green" BorderThickness="1">
                 <TextBlock Text="Thing" Margin="10" FontSize="18"/>
             </Border>
-            <Border Margin="0,0,0,5" Background="#CCC" BorderBrush="Green" BorderThickness="1">
+            <Border Margin="0,0,0,5" Background="#5CCC" BorderBrush="Green" BorderThickness="1">
                 <TextBlock Text="Thing" Margin="10" FontSize="18"/>
             </Border>
-            <Border Margin="0,0,0,5" Background="#CCC" BorderBrush="Green" BorderThickness="1">
+            <Border Margin="0,0,0,5" Background="#5CCC" BorderBrush="Green" BorderThickness="1">
                 <TextBlock Text="Thing" Margin="10" FontSize="18"/>
             </Border>
-            <Border Margin="0,0,0,5" Background="#CCC" BorderBrush="Green" BorderThickness="1">
+            <Border Margin="0,0,0,5" Background="#5CCC" BorderBrush="Green" BorderThickness="1">
                 <TextBlock Text="Thing" Margin="10" FontSize="18"/>
             </Border>
-            <Border Margin="0,0,0,5" Background="#CCC" BorderBrush="Green" BorderThickness="1">
+            <Border Margin="0,0,0,5" Background="#5CCC" BorderBrush="Green" BorderThickness="1">
                 <TextBlock Text="Thing" Margin="10" FontSize="18"/>
             </Border>
-            <Border Margin="0,0,0,5" Background="#CCC" BorderBrush="Green" BorderThickness="1">
+            <Border Margin="0,0,0,5" Background="#5CCC" BorderBrush="Green" BorderThickness="1">
                 <TextBlock Text="Thing" Margin="10" FontSize="18"/>
             </Border>
-            <Border Margin="0,0,0,5" Background="#CCC" BorderBrush="Green" BorderThickness="1">
+            <Border Margin="0,0,0,5" Background="#5CCC" BorderBrush="Green" BorderThickness="1">
                 <TextBlock Text="Thing" Margin="10" FontSize="18"/>
             </Border>
-            <Border Margin="0,0,0,5" Background="#CCC" BorderBrush="Green" BorderThickness="1">
+            <Border Margin="0,0,0,5" Background="#5CCC" BorderBrush="Green" BorderThickness="1">
                 <TextBlock Text="Thing" Margin="10" FontSize="18"/>
             </Border>
-            <Border Margin="0,0,0,0" Background="#CCC" BorderBrush="Green" BorderThickness="1">
+            <Border Margin="0,0,0,0" Background="#5CCC" BorderBrush="Green" BorderThickness="1">
                 <TextBlock Text="Thing" Margin="10" FontSize="18"/>
             </Border>
         </ajut:BumpStack>

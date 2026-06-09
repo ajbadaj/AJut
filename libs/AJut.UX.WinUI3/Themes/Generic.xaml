@@ -31,6 +31,7 @@
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/NullableEditor.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/NumericEditor.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/ColorEditIngressControl.xaml"/>
+        <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/BumpStack.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/ToggleStrip.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/ToggleStripButton.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/PopupMenuButton.xaml"/>

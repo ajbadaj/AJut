@@ -1,0 +1,59 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="using:AJut.UX.Controls"
+                    xmlns:prim="using:Microsoft.UI.Xaml.Controls.Primitives">
+
+    <!-- ===[ BumpStack ]=== -->
+    <!-- A scroll container with a chevron bump button at each end instead of a scrollbar. The chevron
+         content/alignment and the show/hide/enable/clearance behavior are driven from code-behind; the
+         template just lays out the ScrollViewer + the two overlaid bump buttons. -->
+    <Style TargetType="local:BumpStack">
+        <Setter Property="ButtonBackground" Value="{ThemeResource SolidBackgroundFillColorBaseBrush}"/>
+        <Setter Property="ButtonForeground" Value="{ThemeResource TextFillColorSecondaryBrush}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:BumpStack">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}">
+                        <Grid>
+                            <ScrollViewer x:Name="PART_ScrollViewer"
+                                          HorizontalScrollMode="Enabled"
+                                          HorizontalScrollBarVisibility="Hidden"
+                                          VerticalScrollMode="Disabled"
+                                          VerticalScrollBarVisibility="Hidden"
+                                          ZoomMode="Disabled">
+                                <StackPanel x:Name="PART_ContentPanel" Orientation="Horizontal"/>
+                            </ScrollViewer>
+
+                            <prim:RepeatButton x:Name="PART_AnteriorBumpButton"
+                                               HorizontalAlignment="Left"
+                                               VerticalAlignment="Stretch"
+                                               Background="{TemplateBinding ButtonBackground}"
+                                               Foreground="{TemplateBinding ButtonForeground}"
+                                               FontSize="{TemplateBinding ButtonFontSize}"
+                                               Padding="{TemplateBinding ButtonPadding}"
+                                               BorderThickness="0"
+                                               Delay="{TemplateBinding BumpDelay}"
+                                               Interval="{TemplateBinding BumpInterval}"
+                                               Visibility="Collapsed"/>
+                            <prim:RepeatButton x:Name="PART_PosteriorBumpButton"
+                                               HorizontalAlignment="Right"
+                                               VerticalAlignment="Stretch"
+                                               Background="{TemplateBinding ButtonBackground}"
+                                               Foreground="{TemplateBinding ButtonForeground}"
+                                               FontSize="{TemplateBinding ButtonFontSize}"
+                                               Padding="{TemplateBinding ButtonPadding}"
+                                               BorderThickness="0"
+                                               Delay="{TemplateBinding BumpDelay}"
+                                               Interval="{TemplateBinding BumpInterval}"
+                                               Visibility="Collapsed"/>
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

@@ -8,6 +8,7 @@
     using System.Linq;
     using System.Windows;
     using System.Windows.Controls;
+    using System.Windows.Controls.Primitives;
     using System.Windows.Data;
     using System.Windows.Media;
     using AJut.UX.AttachedProperties;
@@ -18,8 +19,17 @@
     {
         // ================== [ Fields ]================================
 
+        // Matches the Scroll-mode bump button Width in ToggleStrip.xaml; used as content clearance and as
+        // the scroll-into-view inset so a selected item lands clear of the bump buttons.
+        private const double kScrollButtonClearance = 24.0;
+        private const double kScrollStep = 48.0;
+
         private bool m_isChangingSelectedItem;
         private bool m_isChangingSelectedItemsList;
+        private ScrollViewer m_scrollHost;
+        private RepeatButton PART_ScrollLeftButton;
+        private RepeatButton PART_ScrollRightButton;
+        private ItemsControl PART_ItemsHost;
 
         // ================== [ Dependency Properties ]================================
 
@@ -49,6 +59,11 @@
         private static readonly DependencyPropertyKey ItemsPropertyKey = DPUtils.RegisterReadOnly(_ => _.Items);
         public static readonly DependencyProperty ItemsProperty = ItemsPropertyKey.DependencyProperty;
 
+        public static readonly DependencyProperty EnsureUniformSizeProperty = DPUtils.Register(_ => _.EnsureUniformSize, false, (d, e) => d.OnLayoutModeChanged());
+        public static readonly DependencyProperty OverflowBehaviorProperty = DPUtils.Register(_ => _.OverflowBehavior, eToggleStripOverflow.Clip, (d, e) => d.OnLayoutModeChanged());
+        private static readonly DependencyPropertyKey HasOverflowPropertyKey = DPUtils.RegisterReadOnly(_ => _.HasOverflow);
+        public static readonly DependencyProperty HasOverflowProperty = HasOverflowPropertyKey.DependencyProperty;
+
         // ================== [ Construction ]================================
 
         static ToggleStrip ()
@@ -69,6 +84,119 @@
                 this.HasItems = this.Items.Count > 0;
                 this.Items.ForEach(i => i.EvaluateOrder());
             }
+        }
+
+        // ================== [ Template ]================================
+
+        public override void OnApplyTemplate ()
+        {
+            base.OnApplyTemplate();
+
+            // Unwire old parts (OnApplyTemplate can run more than once).
+            if (m_scrollHost != null)
+            {
+                m_scrollHost.SizeChanged -= this.OnScrollHostSizeChanged;
+                m_scrollHost.ScrollChanged -= this.OnScrollHostScrollChanged;
+            }
+
+            if (this.PART_ScrollLeftButton != null)
+            {
+                this.PART_ScrollLeftButton.Click -= this.OnScrollLeftClick;
+            }
+
+            if (this.PART_ScrollRightButton != null)
+            {
+                this.PART_ScrollRightButton.Click -= this.OnScrollRightClick;
+            }
+
+            m_scrollHost = this.GetTemplateChild("PART_ScrollHost") as ScrollViewer;
+            this.PART_ScrollLeftButton = this.GetTemplateChild("PART_ScrollLeftButton") as RepeatButton;
+            this.PART_ScrollRightButton = this.GetTemplateChild("PART_ScrollRightButton") as RepeatButton;
+            this.PART_ItemsHost = this.GetTemplateChild("PART_ItemsHost") as ItemsControl;
+
+            if (m_scrollHost != null)
+            {
+                m_scrollHost.SizeChanged += this.OnScrollHostSizeChanged;
+                m_scrollHost.ScrollChanged += this.OnScrollHostScrollChanged;
+            }
+
+            if (this.PART_ScrollLeftButton != null)
+            {
+                this.PART_ScrollLeftButton.Click += this.OnScrollLeftClick;
+            }
+
+            if (this.PART_ScrollRightButton != null)
+            {
+                this.PART_ScrollRightButton.Click += this.OnScrollRightClick;
+            }
+
+            this.ApplyScrollMode();
+        }
+
+        private void OnScrollHostSizeChanged (object sender, SizeChangedEventArgs e)
+        {
+            this.ItemsPanelInstance?.InvalidateMeasure();
+            this.UpdateScrollButtons();
+        }
+
+        private void OnScrollHostScrollChanged (object sender, ScrollChangedEventArgs e) => this.UpdateScrollButtons();
+        private void OnScrollLeftClick (object sender, RoutedEventArgs e) => this.NudgeScroll(-kScrollStep);
+        private void OnScrollRightClick (object sender, RoutedEventArgs e) => this.NudgeScroll(kScrollStep);
+
+        // ================== [ Scroll mode (bump buttons) ]================================
+        // Bump buttons + scroll are driven from code rather than template triggers: FindAncestor bindings
+        // in ControlTemplate.Triggers proved unreliable in this template.
+        private void ApplyScrollMode ()
+        {
+            if (m_scrollHost == null)
+            {
+                return;
+            }
+
+            // Scroll mode hides the scrollbar (Hidden keeps the content scrollable); other modes clip.
+            bool scroll = this.OverflowBehavior == eToggleStripOverflow.Scroll;
+            m_scrollHost.HorizontalScrollBarVisibility = scroll ? ScrollBarVisibility.Hidden : ScrollBarVisibility.Disabled;
+            this.UpdateScrollButtons();
+        }
+
+        private void UpdateScrollButtons ()
+        {
+            if (this.PART_ScrollLeftButton == null || this.PART_ScrollRightButton == null)
+            {
+                return;
+            }
+
+            double scrollable = m_scrollHost?.ScrollableWidth ?? 0.0;
+            bool show = this.OverflowBehavior == eToggleStripOverflow.Scroll && scrollable > 0.5;
+
+            this.PART_ScrollLeftButton.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+            this.PART_ScrollRightButton.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+
+            // Inset the items so scrolling to an end parks a button over empty padding, not an item.
+            if (this.PART_ItemsHost != null)
+            {
+                this.PART_ItemsHost.Margin = show
+                    ? new Thickness(kScrollButtonClearance, 0, kScrollButtonClearance, 0)
+                    : new Thickness(0);
+            }
+
+            if (show)
+            {
+                double offset = m_scrollHost.HorizontalOffset;
+                this.PART_ScrollLeftButton.IsEnabled = offset > 0.5;
+                this.PART_ScrollRightButton.IsEnabled = offset < scrollable - 0.5;
+            }
+        }
+
+        private void NudgeScroll (double delta)
+        {
+            if (m_scrollHost == null)
+            {
+                return;
+            }
+
+            double target = Math.Max(0.0, Math.Min(m_scrollHost.ScrollableWidth, m_scrollHost.HorizontalOffset + delta));
+            m_scrollHost.ScrollToHorizontalOffset(target);
         }
 
         // ================== [ Events ]================================
@@ -181,7 +309,49 @@
             private set => this.SetValue(ItemsPropertyKey, value);
         }
 
+        // EnsureUniformSize: when true every item is widened to the widest item's natural size, so the
+        // buttons read as an even row rather than each hugging its own content.
+        public bool EnsureUniformSize
+        {
+            get => (bool)this.GetValue(EnsureUniformSizeProperty);
+            set => this.SetValue(EnsureUniformSizeProperty, value);
+        }
+
+        // OverflowBehavior: how the strip reacts when its items do not all fit (default Clip). Scroll
+        // and OverflowPopup only do anything when the strip is width constrained
+        // (HorizontalContentAlignment=Stretch or an explicit Width) - a content sized strip never overflows.
+        public eToggleStripOverflow OverflowBehavior
+        {
+            get => (eToggleStripOverflow)this.GetValue(OverflowBehaviorProperty);
+            set => this.SetValue(OverflowBehaviorProperty, value);
+        }
+
+        // HasOverflow: true while one or more items are tucked into the overflow popup.
+        public bool HasOverflow
+        {
+            get => (bool)this.GetValue(HasOverflowProperty);
+            private set => this.SetValue(HasOverflowPropertyKey, value);
+        }
+
+        // Set by ToggleStripPanel when it attaches so layout-affecting changes can re-run the partition.
+        internal ToggleStripPanel ItemsPanelInstance { get; set; }
+
         // ================== [ Private Utility Functions ]================================
+        internal void SetHasOverflow (bool value)
+        {
+            // Guard so writing this during the panel's MeasureOverride does not kick off a redundant
+            // layout invalidation when nothing actually changed.
+            if (this.HasOverflow != value)
+            {
+                this.HasOverflow = value;
+            }
+        }
+
+        private void OnLayoutModeChanged ()
+        {
+            this.ApplyScrollMode();
+            this.ItemsPanelInstance?.InvalidateMeasure();
+        }
         private void OnDisplayPropertyPathChanged (string newPath)
         {
             this.Items.ForEach(_ => _.ResetName(newPath));
@@ -354,6 +524,25 @@
             );
 
             this.SelectionChanged?.Invoke(this, new ToggleStripSelectionChangedEventArgs(previousSelectedItems, newlySelectedItems));
+
+            // Selection changing can pull a selected item back into view (it is kept visible where
+            // possible), so re-run the overflow partition.
+            this.ItemsPanelInstance?.InvalidateMeasure();
+
+            // In Scroll mode bring the (first) selected item fully into view. Deferred to after the
+            // layout pass (we just invalidated measure) so the container positions are current when
+            // the scroll offset is computed.
+            if (this.OverflowBehavior == eToggleStripOverflow.Scroll && m_scrollHost != null)
+            {
+                ToggleItem firstSelected = this.Items.FirstOrDefault(i => i.IsSelected);
+                if (firstSelected != null)
+                {
+                    this.Dispatcher.BeginInvoke(
+                        new Action(() => m_scrollHost.ScrollFirstElementIntoView(fe => fe.DataContext is ToggleItem ti && ReferenceEquals(ti, firstSelected), kScrollButtonClearance, kScrollButtonClearance)),
+                        System.Windows.Threading.DispatcherPriority.Loaded
+                    );
+                }
+            }
         }
 
         // ================== [ Utility Classes ]================================
@@ -367,6 +556,7 @@
 
             private bool m_isFirstItem;
             private bool m_isLastItem;
+            private bool m_isInOverflow;
 
             internal ToggleItem (ToggleStrip owner, object item, int index, string displayPropertyPath)
             {
@@ -437,6 +627,12 @@
             {
                 get => m_isLastItem;
                 private set => this.SetAndRaiseIfChanged(ref m_isLastItem, value);
+            }
+
+            public bool IsInOverflow
+            {
+                get => m_isInOverflow;
+                internal set => this.SetAndRaiseIfChanged(ref m_isInOverflow, value);
             }
 
             internal void EvaluateOrder ()
@@ -551,6 +747,170 @@
 
             public IList PreviousSelection { get; }
             public IList CurrentSelection { get; }
+        }
+    }
+
+    // ===========[ ToggleStripPanel ]===========================================
+    // The items panel for a ToggleStrip's main row. It owns all the width-aware layout: uniform
+    // sizing, stretch-fill (the old UniformGrid behavior), and overflow partitioning. Overflowed
+    // items stay as children (so their natural width stays measurable) but are arranged off to a
+    // zero rect; the strip's overflow popup mirrors them via ToggleItem.IsInOverflow.
+    public class ToggleStripPanel : Panel
+    {
+        // ===========[ Const-like ]===============================================
+        // Kept in sync with the overflow button's Width in ToggleStrip.xaml.
+        private const double kReservedOverflowWidth = 28.0;
+
+        // ===========[ Instance fields ]==========================================
+        private ToggleStrip m_owner;
+        private bool[] m_overflow;
+        private double[] m_arrangeWidths;
+
+        // ===========[ Layout ]===================================================
+        protected override Size MeasureOverride (Size availableSize)
+        {
+            ToggleStrip owner = this.ResolveOwner();
+            int count = this.InternalChildren.Count;
+
+            // 1. Measure every child at natural size.
+            var widths = new double[count];
+            double maxHeight = 0.0;
+            for (int i = 0; i < count; ++i)
+            {
+                UIElement child = this.InternalChildren[i];
+                child.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                widths[i] = child.DesiredSize.Width;
+                maxHeight = Math.Max(maxHeight, child.DesiredSize.Height);
+            }
+
+            bool uniform = owner?.EnsureUniformSize == true;
+            bool popup = owner?.OverflowBehavior == eToggleStripOverflow.OverflowPopup;
+            bool stretch = owner?.HorizontalContentAlignment == HorizontalAlignment.Stretch;
+
+            bool constrained = !double.IsPositiveInfinity(availableSize.Width);
+
+            // 2. Uniform sizing widens every item to the widest natural width.
+            if (uniform)
+            {
+                double uniformWidth = 0.0;
+                foreach (double w in widths)
+                {
+                    uniformWidth = Math.Max(uniformWidth, w);
+                }
+
+                for (int i = 0; i < count; ++i)
+                {
+                    widths[i] = uniformWidth;
+                }
+            }
+
+            // 3. Overflow partition - only when in popup mode with a real width to fit into.
+            m_overflow = new bool[count];
+            bool hasOverflow = false;
+            if (popup && constrained && count > 0)
+            {
+                var selected = new bool[count];
+                for (int i = 0; i < count; ++i)
+                {
+                    selected[i] = this.GetItem(i)?.IsSelected == true;
+                }
+
+                ToggleStripOverflowResult result = ToggleStripOverflowCalculator.Compute(widths, selected, availableSize.Width, kReservedOverflowWidth);
+                foreach (int idx in result.OverflowIndices)
+                {
+                    m_overflow[idx] = true;
+                }
+
+                hasOverflow = result.HasOverflow;
+            }
+
+            owner?.SetHasOverflow(hasOverflow);
+
+            // Mirror the partition onto the items so the overflow popup can show the hidden ones.
+            for (int i = 0; i < count; ++i)
+            {
+                ToggleStrip.ToggleItem item = this.GetItem(i);
+                if (item != null)
+                {
+                    item.IsInOverflow = m_overflow[i];
+                }
+            }
+
+            // 4. Stretch fill (no overflow): split the available width evenly, matching the old UniformGrid.
+            m_arrangeWidths = widths;
+            if (stretch && !uniform && !popup && constrained && count > 0)
+            {
+                double each = availableSize.Width / count;
+                for (int i = 0; i < count; ++i)
+                {
+                    m_arrangeWidths[i] = each;
+                }
+            }
+
+            // 5. Desired size is the sum of the visible item widths.
+            double total = 0.0;
+            for (int i = 0; i < count; ++i)
+            {
+                if (!m_overflow[i])
+                {
+                    total += m_arrangeWidths[i];
+                }
+            }
+
+            // When overflowing, include the chevron reserve in the desired width. Otherwise a content
+            // sized strip (HorizontalContentAlignment=Left) shrinks the Border down to just the visible
+            // items, pulling the right-anchored overflow chevron on top of the last item.
+            double desiredWidth = hasOverflow ? total + kReservedOverflowWidth : total;
+            desiredWidth = constrained ? Math.Min(desiredWidth, availableSize.Width) : desiredWidth;
+            return new Size(desiredWidth, maxHeight);
+        }
+
+        protected override Size ArrangeOverride (Size finalSize)
+        {
+            int count = this.InternalChildren.Count;
+            double x = 0.0;
+            for (int i = 0; i < count; ++i)
+            {
+                UIElement child = this.InternalChildren[i];
+                if (m_overflow != null && i < m_overflow.Length && m_overflow[i])
+                {
+                    // Overflowed - keep it measured but out of the visible row.
+                    child.Arrange(new Rect(0, 0, 0, 0));
+                    continue;
+                }
+
+                double w = (m_arrangeWidths != null && i < m_arrangeWidths.Length)
+                    ? m_arrangeWidths[i]
+                    : child.DesiredSize.Width;
+                child.Arrange(new Rect(x, 0, w, finalSize.Height));
+                x += w;
+            }
+
+            return finalSize;
+        }
+
+        // ===========[ Helpers ]==================================================
+        private ToggleStrip.ToggleItem GetItem (int index)
+            => (this.InternalChildren[index] as FrameworkElement)?.DataContext as ToggleStrip.ToggleItem;
+
+        private ToggleStrip ResolveOwner ()
+        {
+            if (m_owner == null)
+            {
+                DependencyObject d = this;
+                while (d != null && !(d is ToggleStrip))
+                {
+                    d = VisualTreeHelper.GetParent(d);
+                }
+
+                m_owner = d as ToggleStrip;
+                if (m_owner != null)
+                {
+                    m_owner.ItemsPanelInstance = this;
+                }
+            }
+
+            return m_owner;
         }
     }
 

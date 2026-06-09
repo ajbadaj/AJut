@@ -1,9 +1,85 @@
-﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:ajut="clr-namespace:AJut.UX"
                     xmlns:ap="clr-namespace:AJut.UX.AttachedProperties"
                     xmlns:local="clr-namespace:AJut.UX.Controls"
                     xmlns:conv="clr-namespace:AJut.UX.Converters">
+
+    <!-- Shared item button visuals. All bindings are DataContext (ToggleItem) based - not
+         RelativeSource AncestorType ToggleStrip - so the same template works inside the overflow
+         Popup, which lives in a separate visual tree that FindAncestor cannot cross. -->
+    <ControlTemplate x:Key="ToggleStripItemButtonTemplate" TargetType="{x:Type ToggleButton}">
+        <Border x:Name="RootBorder" Background="#01000000"
+                CornerRadius="{Binding Converter={local:ToggleStripCornerRadiusConverter ReductionPercent=0.25}}">
+            <Border x:Name="InnerBorder" Background="#01000000"
+                    BorderBrush="{Binding Path=Owner.SeparatorBrush, Mode=OneWay}"
+                    CornerRadius="{Binding Converter={local:ToggleStripCornerRadiusConverter ReductionPercent=0.3}}"
+                    BorderThickness="{Binding Converter={local:ToggleStripBorderThicknessConverter Inside=True}}">
+                <Grid Margin="{Binding Path=Owner.ItemPadding}">
+                    <!-- A ContentPresenter overrides its own DataContext to its Content (the item Data),
+                         so its ItemTemplate/Visibility bindings must go through the TemplatedParent
+                         (the ToggleButton, whose DataContext is the ToggleItem) rather than the
+                         local DataContext - otherwise they bind against the raw data and fail. -->
+                    <ContentPresenter Content="{Binding Data}"
+                                      ContentTemplate="{Binding Path=DataContext.Owner.ItemTemplate, RelativeSource={RelativeSource TemplatedParent}}"
+                                      Visibility="{Binding Path=DataContext.Owner.ItemTemplate, RelativeSource={RelativeSource TemplatedParent}, Converter={conv:NullnessToVisibilityConverter}}"
+                                      HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" HorizontalAlignment="Center"
+                               Visibility="{Binding Path=Owner.ItemTemplate, Converter={conv:NullnessToVisibilityConverter WhenNull=Visible, WhenNotNull=Collapsed}}"/>
+                </Grid>
+            </Border>
+        </Border>
+        <ControlTemplate.Triggers>
+            <!-- ======[ Item Pressed ]====== -->
+            <Trigger Property="IsChecked" Value="True">
+                <Setter TargetName="RootBorder" Property="Background">
+                    <Setter.Value>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                            <GradientStop Offset="0.00" Color="{Binding Path=Owner.SeparatorBrush, Converter={conv:BrushColorExtractionConverter}, Mode=OneWay, FallbackValue='#2BA2D8', TargetNullValue='#2BA2D8'}" />
+                            <GradientStop Offset="0.20" Color="{Binding Path=Owner.BackgroundPressedColorBase, Converter={local:ToggleStripItemPressedBackgroundColorAlphatizer}, Mode=OneWay, FallbackValue='#2BA2D8', TargetNullValue='#2BA2D8'}" />
+                            <GradientStop Offset="1.00" Color="{Binding Path=Owner.BackgroundPressedColorBase, Converter={local:ToggleStripItemPressedBackgroundColorAlphatizer}, Mode=OneWay, FallbackValue='#2BA2D8', TargetNullValue='#2BA2D8'}" />
+                        </LinearGradientBrush>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="TextElement.Foreground" Value="{Binding Path=Owner.ForegroundPressed}"/>
+            </Trigger>
+            <!-- ======[ Item Hover ]====== -->
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="TextElement.Foreground" Value="{Binding Path=Owner.ForegroundHover}"/>
+            </Trigger>
+            <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsMouseOver}" Value="True"/>
+                    <Condition Binding="{Binding Path=IsSelected}" Value="True"/>
+                </MultiDataTrigger.Conditions>
+                <MultiDataTrigger.Setters>
+                    <Setter TargetName="InnerBorder" Property="Background" Value="{Binding Path=Owner.BackgroundHoverOverPressed}"/>
+                </MultiDataTrigger.Setters>
+            </MultiDataTrigger>
+            <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsMouseOver}" Value="True"/>
+                    <Condition Binding="{Binding Path=IsSelected}" Value="False"/>
+                </MultiDataTrigger.Conditions>
+                <MultiDataTrigger.Setters>
+                    <Setter TargetName="InnerBorder" Property="Background" Value="{Binding Path=Owner.BackgroundHover}"/>
+                </MultiDataTrigger.Setters>
+            </MultiDataTrigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
+    <!-- Strip row item: every item is realized; the panel arranges overflowed ones to a zero rect. -->
+    <DataTemplate x:Key="ToggleStripStripItemTemplate">
+        <ToggleButton IsChecked="{Binding Path=IsSelected, Mode=TwoWay}"
+                      Template="{StaticResource ToggleStripItemButtonTemplate}"/>
+    </DataTemplate>
+
+    <!-- Overflow popup item: only the items currently in overflow are visible. -->
+    <DataTemplate x:Key="ToggleStripOverflowItemTemplate">
+        <ToggleButton IsChecked="{Binding Path=IsSelected, Mode=TwoWay}"
+                      Template="{StaticResource ToggleStripItemButtonTemplate}"
+                      Visibility="{Binding Path=IsInOverflow, Converter={conv:BooleanToVisibilityConverter}}"/>
+    </DataTemplate>
 
     <Style TargetType="{x:Type local:ToggleStrip}">
         <Setter Property="SeparatorBrush" Value="#08080D"/>
@@ -31,94 +107,103 @@
                             CornerRadius="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=(ap:BorderXTA.CornerRadius)}"
                             HorizontalAlignment="{ajut:TemplateBinding HorizontalContentAlignment}"
                             SnapsToDevicePixels="True">
-                        <ItemsControl ItemsSource="{ajut:TemplateBinding Items}">
-                            <ItemsControl.Style>
-                                <Style TargetType="{x:Type ItemsControl}">
-                                    <Setter Property="ItemsPanel">
-                                        <Setter.Value>
-                                            <ItemsPanelTemplate>
-                                                <StackPanel Orientation="Horizontal"/>
-                                            </ItemsPanelTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{ajut:TemplateBinding HorizontalContentAlignment}" Value="Stretch">
-                                            <Setter Property="ItemsPanel">
-                                                <Setter.Value>
-                                                    <ItemsPanelTemplate>
-                                                        <UniformGrid Rows="1"/>
-                                                    </ItemsPanelTemplate>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </ItemsControl.Style>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <ToggleButton IsChecked="{Binding Path=IsSelected, Mode=TwoWay}">
-                                        <Grid>
-                                            <ContentPresenter Content="{Binding Data}"
-                                                              ContentTemplate="{Binding Path=ItemTemplate, RelativeSource={RelativeSource AncestorType={x:Type local:ToggleStrip}}}"
-                                                              Visibility="{Binding Path=ItemTemplate, RelativeSource={RelativeSource AncestorType={x:Type local:ToggleStrip}}, Converter={conv:NullnessToVisibilityConverter}}"/>
-                                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center" HorizontalAlignment="Center"
-                                                       Visibility="{Binding Path=ItemTemplate, RelativeSource={RelativeSource AncestorType={x:Type local:ToggleStrip}}, Converter={conv:NullnessToVisibilityConverter WhenNull=Visible, WhenNotNull=Collapsed}}"/>
-                                        </Grid>
-                                        <ToggleButton.Template>
-                                            <ControlTemplate TargetType="{x:Type ToggleButton}">
-                                                <Border x:Name="RootBorder" Background="#01000000"
-                                                        CornerRadius="{Binding Converter={local:ToggleStripCornerRadiusConverter ReductionPercent=0.25}}">
-                                                    <Border x:Name="InnerBorder" Background="#01000000"
-                                                            BorderBrush="{Binding Path=Owner.SeparatorBrush, Mode=OneWay}"
-                                                            CornerRadius="{Binding Converter={local:ToggleStripCornerRadiusConverter ReductionPercent=0.3}}"
-                                                            BorderThickness="{Binding Converter={local:ToggleStripBorderThicknessConverter Inside=True}}">
-                                                        <ContentPresenter Content="{ajut:TemplateBinding Content}" Margin="{Binding Path=Owner.ItemPadding}" 
-                                                                          HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
-                                                    </Border>
-                                                </Border>
-                                                <ControlTemplate.Triggers>
-                                                    <!-- ======[ Item Pressed ]====== -->
-                                                    <Trigger Property="IsChecked" Value="True">
-                                                        <Setter TargetName="RootBorder" Property="Background">
-                                                            <Setter.Value>
-                                                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                                                                    <GradientStop Offset="0.00" Color="{Binding Path=Owner.SeparatorBrush, Converter={conv:BrushColorExtractionConverter}, Mode=OneWay, FallbackValue='#2BA2D8', TargetNullValue='#2BA2D8'}" />
-                                                                    <GradientStop Offset="0.20" Color="{Binding Path=Owner.BackgroundPressedColorBase, Converter={local:ToggleStripItemPressedBackgroundColorAlphatizer}, Mode=OneWay, FallbackValue='#2BA2D8', TargetNullValue='#2BA2D8'}" />
-                                                                    <GradientStop Offset="1.00" Color="{Binding Path=Owner.BackgroundPressedColorBase, Converter={local:ToggleStripItemPressedBackgroundColorAlphatizer}, Mode=OneWay, FallbackValue='#2BA2D8', TargetNullValue='#2BA2D8'}" />
-                                                                </LinearGradientBrush>
-                                                            </Setter.Value>
-                                                        </Setter>
-                                                        <Setter Property="TextElement.Foreground" Value="{Binding Path=Owner.ForegroundPressed}"/>
-                                                    </Trigger>
-                                                    <!-- ======[ Item Hover ]====== -->
-                                                    <Trigger Property="IsMouseOver" Value="True">
-                                                        <Setter Property="TextElement.Foreground" Value="{Binding Path=Owner.ForegroundHover}"/>
-                                                    </Trigger>
-                                                    <MultiDataTrigger>
-                                                        <MultiDataTrigger.Conditions>
-                                                            <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsMouseOver}" Value="True"/>
-                                                            <Condition Binding="{Binding Path=IsSelected}" Value="True"/>
-                                                        </MultiDataTrigger.Conditions>
-                                                        <MultiDataTrigger.Setters>
-                                                            <Setter TargetName="InnerBorder" Property="Background" Value="{Binding Path=Owner.BackgroundHoverOverPressed}"/>
-                                                        </MultiDataTrigger.Setters>
-                                                    </MultiDataTrigger>
-                                                    <MultiDataTrigger>
-                                                        <MultiDataTrigger.Conditions>
-                                                            <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsMouseOver}" Value="True"/>
-                                                            <Condition Binding="{Binding Path=IsSelected}" Value="False"/>
-                                                        </MultiDataTrigger.Conditions>
-                                                        <MultiDataTrigger.Setters>
-                                                            <Setter TargetName="InnerBorder" Property="Background" Value="{Binding Path=Owner.BackgroundHover}"/>
-                                                        </MultiDataTrigger.Setters>
-                                                    </MultiDataTrigger>
-                                                </ControlTemplate.Triggers>
-                                            </ControlTemplate>
-                                        </ToggleButton.Template>
-                                    </ToggleButton>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                        <!-- Single overlay cell: the ScrollViewer hosts the items and clips (Clip/OverflowPopup)
+                             or scrolls (Scroll); the overflow chevron and the two Scroll-mode bump buttons are
+                             drawn on top at the edges so they never consume layout width. The bump buttons'
+                             scrollbar visibility, show/hide, enable, clearance and scroll are driven from code. -->
+                        <Grid>
+                            <ScrollViewer x:Name="PART_ScrollHost"
+                                          Focusable="False"
+                                          VerticalScrollBarVisibility="Disabled"
+                                          HorizontalScrollBarVisibility="Disabled">
+                                <ItemsControl x:Name="PART_ItemsHost"
+                                              ItemsSource="{ajut:TemplateBinding Items}"
+                                              ItemTemplate="{StaticResource ToggleStripStripItemTemplate}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <local:ToggleStripPanel/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                </ItemsControl>
+                            </ScrollViewer>
+
+                            <!-- Overflow chevron: shown only when items overflow; opens the popup. -->
+                            <ToggleButton x:Name="PART_OverflowToggle"
+                                          HorizontalAlignment="Right"
+                                          VerticalAlignment="Stretch"
+                                          Width="28"
+                                          Focusable="False"
+                                          Visibility="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=HasOverflow, Converter={conv:BooleanToVisibilityConverter}}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                                        <!-- Left divider separates the chevron from the last visible item. -->
+                                        <Border Background="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=Background}"
+                                                BorderBrush="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=SeparatorBrush}"
+                                                BorderThickness="1,0,0,0">
+                                            <TextBlock Text="&#xE76C;"
+                                                       FontFamily="Segoe MDL2 Assets"
+                                                       FontSize="12"
+                                                       VerticalAlignment="Center"
+                                                       HorizontalAlignment="Center"
+                                                       Foreground="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=Foreground}"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+
+                            <Popup PlacementTarget="{Binding ElementName=PART_OverflowToggle}"
+                                   Placement="Bottom"
+                                   StaysOpen="False"
+                                   AllowsTransparency="True"
+                                   IsOpen="{Binding ElementName=PART_OverflowToggle, Path=IsChecked, Mode=TwoWay}">
+                                <Border Background="{ajut:TemplateBinding Background}"
+                                        BorderBrush="{ajut:TemplateBinding BorderBrush}"
+                                        BorderThickness="1"
+                                        SnapsToDevicePixels="True">
+                                    <ItemsControl ItemsSource="{ajut:TemplateBinding Items}"
+                                                  ItemTemplate="{StaticResource ToggleStripOverflowItemTemplate}"/>
+                                </Border>
+                            </Popup>
+
+                            <!-- Scroll-mode bump buttons: overlaid chevrons. Code shows them only in Scroll
+                                 mode when there is something to scroll, enables them per end, and scrolls. -->
+                            <RepeatButton x:Name="PART_ScrollLeftButton"
+                                          HorizontalAlignment="Left" VerticalAlignment="Stretch"
+                                          Width="24" Focusable="False" Visibility="Collapsed">
+                                <RepeatButton.Template>
+                                    <ControlTemplate TargetType="{x:Type RepeatButton}">
+                                        <Border Background="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=Background}">
+                                            <TextBlock Text="&#xE76B;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                                       VerticalAlignment="Center" HorizontalAlignment="Center"
+                                                       Foreground="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=Foreground}"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsEnabled" Value="False">
+                                                <Setter Property="Opacity" Value="0.3"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </RepeatButton.Template>
+                            </RepeatButton>
+                            <RepeatButton x:Name="PART_ScrollRightButton"
+                                          HorizontalAlignment="Right" VerticalAlignment="Stretch"
+                                          Width="24" Focusable="False" Visibility="Collapsed">
+                                <RepeatButton.Template>
+                                    <ControlTemplate TargetType="{x:Type RepeatButton}">
+                                        <Border Background="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=Background}">
+                                            <TextBlock Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                                       VerticalAlignment="Center" HorizontalAlignment="Center"
+                                                       Foreground="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=Foreground}"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsEnabled" Value="False">
+                                                <Setter Property="Opacity" Value="0.3"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </RepeatButton.Template>
+                            </RepeatButton>
+                        </Grid>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>

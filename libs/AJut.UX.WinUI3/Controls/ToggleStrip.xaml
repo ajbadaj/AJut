@@ -22,8 +22,45 @@
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="{TemplateBinding CornerRadius}">
-                        <StackPanel x:Name="PART_ItemsPanel"
-                                    Orientation="Horizontal"/>
+                        <!-- Single overlay cell: the BumpStack hosts the items and (in Scroll mode)
+                             provides the bump-scroll buttons; the overflow chevron is drawn on top at
+                             the trailing edge so it never consumes layout width (which would otherwise
+                             feed back into the overflow calculation). -->
+                        <Grid>
+                            <local:BumpStack x:Name="PART_ScrollHost"
+                                             ScrollingEnabled="False"
+                                             ButtonBackground="{TemplateBinding Background}"
+                                             ButtonForeground="{TemplateBinding Foreground}">
+                                <StackPanel x:Name="PART_ItemsPanel"
+                                            Orientation="Horizontal"/>
+                            </local:BumpStack>
+
+                            <!-- Overflow chevron + popup: code shows this only in OverflowPopup mode
+                                 when items actually overflow, and fills the flyout's panel. -->
+                            <Button x:Name="PART_OverflowButton"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Stretch"
+                                    Padding="6,0"
+                                    Background="{TemplateBinding Background}"
+                                    BorderThickness="0"
+                                    Visibility="Collapsed">
+                                <FontIcon FontFamily="Segoe MDL2 Assets"
+                                          Glyph="&#xE76C;"
+                                          FontSize="12"/>
+                                <Button.Flyout>
+                                    <Flyout Placement="Bottom">
+                                        <Flyout.FlyoutPresenterStyle>
+                                            <Style TargetType="FlyoutPresenter">
+                                                <Setter Property="Padding" Value="0"/>
+                                                <Setter Property="MinWidth" Value="0"/>
+                                            </Style>
+                                        </Flyout.FlyoutPresenterStyle>
+                                        <StackPanel x:Name="PART_OverflowPanel"
+                                                    Orientation="Vertical"/>
+                                    </Flyout>
+                                </Button.Flyout>
+                            </Button>
+                        </Grid>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>
