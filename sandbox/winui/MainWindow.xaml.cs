@@ -50,9 +50,14 @@ namespace AJutShowRoomWinUI
             this.ToggleStripMulti.ItemsSource = new[] { "Bold", "Italic", "Underline", "Strikethrough" };
             this.ToggleStripFreeform.ItemsSource = new[] { "First", "Second", "Third" };
             this.ToggleStripCustom.ItemsSource = new[] { "Red", "Green", "Blue" };
+            this.ToggleStripUniform.ItemsSource = new[] { "S", "Medium", "Extra Large" };
+            this.ToggleStripOverflow.ItemsSource = new[] { "One", "Two", "Three", "Four", "Five", "Six", "Seven" };
+            this.ToggleStripScroll.ItemsSource = new[] { "One", "Two", "Three", "Four", "Five", "Six", "Seven" };
 
             // ToggleStrip enum bug repro
             this.ToggleStripEnumBugRepro.ItemsSource = Enum.GetValues<eEditorMode>();
+
+            this.StockBumpStackDemos();
 
             this.AppWindow.Resize(new Windows.Graphics.SizeInt32(800, 1000));
 
@@ -79,6 +84,40 @@ namespace AJutShowRoomWinUI
             }
         }
 
+
+        private void StockBumpStackDemos ()
+        {
+            string[] words = { "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten" };
+            for (int i = 0; i < words.Length; ++i)
+            {
+                this.BumpStackHorizontal.Children.Add(MakeBumpChip(words[i], i, vertical: false));
+                this.BumpStackClip.Children.Add(MakeBumpChip(words[i], i, vertical: false));
+            }
+
+            for (int i = 0; i < 8; ++i)
+            {
+                this.BumpStackVertical.Children.Add(MakeBumpChip($"Row {i + 1}", i, vertical: true));
+            }
+        }
+
+        private static Border MakeBumpChip (string text, int index, bool vertical)
+        {
+            byte tint = (byte)(70 + ((index * 22) % 150));
+            return new Border
+            {
+                Width = vertical ? 130 : 70,
+                Margin = new Thickness(3),
+                CornerRadius = new CornerRadius(4),
+                Background = new SolidColorBrush(Color.FromArgb(0x55, tint, 0x90, 0xC8)),
+                Child = new TextBlock
+                {
+                    Text = text,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new Thickness(0, 4, 0, 4),
+                },
+            };
+        }
 
         public App Application { get; }
 
@@ -779,6 +818,32 @@ namespace AJutShowRoomWinUI
 
             return value;
         }
+
+        // ------ PGMemberOrder demo ------
+        // Declared out of source order on purpose but tagged with [PGMemberOrder]. They render inside
+        // the "PGMemberOrder Demo" group in order-value sequence (10, the button at 15, then 20),
+        // proving a button interleaves between properties. The labels call out each expected slot.
+        [PGMemberOrder(20)]
+        [PGGroup("PGMemberOrder Demo")]
+        [PGLabel("Third (order=20)")]
+        public string MemberOrderThird { get; set; } = "third";
+
+        [PGMemberOrder(15)]
+        [PGGroup("PGMemberOrder Demo")]
+        [PGButton("Button (order=15)")]
+        public void MemberOrderDemoButton ()
+        {
+            string temp = this.MemberOrderFirst;
+            this.MemberOrderFirst = this.MemberOrderThird;
+            this.MemberOrderThird = temp;
+            this.RaisePropertyChanged(nameof(MemberOrderFirst));
+            this.RaisePropertyChanged(nameof(MemberOrderThird));
+        }
+
+        [PGMemberOrder(10)]
+        [PGGroup("PGMemberOrder Demo")]
+        [PGLabel("First (order=10)")]
+        public string MemberOrderFirst { get; set; } = "first";
 
         // ------ PGButton demo ------
         [PGButton("Reset Conditional Values")]

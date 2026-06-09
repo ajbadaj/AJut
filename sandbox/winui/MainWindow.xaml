@@ -278,6 +278,20 @@
                                             <TextBlock Text="Allow no selection" FontSize="11" Opacity="0.7"/>
                                             <ajut:ToggleStrip x:Name="ToggleStripFreeform" AllowNoSelection="True"/>
                                         </StackPanel>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="EnsureUniformSize (every item as wide as the widest)" FontSize="11" Opacity="0.7"/>
+                                            <ajut:ToggleStrip x:Name="ToggleStripUniform" EnsureUniformSize="True"/>
+                                        </StackPanel>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="OverflowPopup (constrained width - chevron reveals the rest)" FontSize="11" Opacity="0.7"/>
+                                            <ajut:ToggleStrip x:Name="ToggleStripOverflow" Width="220" HorizontalAlignment="Left"
+                                                              OverflowBehavior="OverflowPopup"/>
+                                        </StackPanel>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="Scroll (constrained width - scrolls horizontally)" FontSize="11" Opacity="0.7"/>
+                                            <ajut:ToggleStrip x:Name="ToggleStripScroll" Width="220" HorizontalAlignment="Left"
+                                                              OverflowBehavior="Scroll"/>
+                                        </StackPanel>
 
                                         <!-- Bug repro: programmatic SelectedItem with boxed enum -->
                                         <StackPanel Spacing="4" Margin="0,12,0,0">
@@ -390,6 +404,26 @@
                                     <TextBlock Text="ToggleStrip" Style="{ThemeResource SubtitleTextBlockStyle}"/>
                                     <ajut:ToggleStrip x:Name="ToggleStripCustom"
                                                       CornerRadius="15"/>
+
+                                    <TextBlock Text="BumpStack" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                                    <TextBlock Text="A scroll container with a chevron 'bump' button at each end instead of a scrollbar. The buttons appear only when the content overflows, disable at each end, and the content insets so scrolling all the way parks a button over empty padding. Mouse wheel scrolls a horizontal stack." FontStyle="Italic" Opacity="0.7" TextWrapping="Wrap"/>
+                                    <StackPanel Spacing="12">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="Horizontal (constrained width - chevrons appear, resize narrower to see more)" FontSize="11" Opacity="0.7"/>
+                                            <ajut:BumpStack x:Name="BumpStackHorizontal" Width="320" Height="44" HorizontalAlignment="Left"
+                                                            BorderBrush="#80808080" BorderThickness="1"/>
+                                        </StackPanel>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="Vertical" FontSize="11" Opacity="0.7"/>
+                                            <ajut:BumpStack x:Name="BumpStackVertical" Orientation="Vertical" Width="160" Height="130" HorizontalAlignment="Left"
+                                                            BorderBrush="#80808080" BorderThickness="1"/>
+                                        </StackPanel>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="ScrollingEnabled=False (clip-only - no buttons, content just clips)" FontSize="11" Opacity="0.7"/>
+                                            <ajut:BumpStack x:Name="BumpStackClip" Width="320" Height="44" HorizontalAlignment="Left" ScrollingEnabled="False"
+                                                            BorderBrush="#80808080" BorderThickness="1"/>
+                                        </StackPanel>
+                                    </StackPanel>
 
                                     <TextBlock Text="PathSelectionControl" Style="{ThemeResource SubtitleTextBlockStyle}"/>
                                     <TextBlock Text="Browse button opens OS file/folder picker. Invalid paths show red border + warning icon." FontStyle="Italic" Opacity="0.7" TextWrapping="Wrap"/>
