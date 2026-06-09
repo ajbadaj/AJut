@@ -154,4 +154,28 @@
         <Setter Property="ItemPadding" Value="8,4"/>
     </Style>
 
+    <!--
+    ===[ EnumToggleStrip - AJut-themed override ]===
+    Basically just the same as toggle strip (forwards everything)
+    -->
+    <Style TargetType="local:EnumToggleStrip">
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+        <Setter Property="Background" Value="{ThemeResource AJut_Brush_PopOutControlBackground}"/>
+        <Setter Property="BorderBrush" Value="{ThemeResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="ItemPadding" Value="8,4"/>
+    </Style>
+
+    <!--
+    ===[ BumpStack - AJut-themed override ]===
+    Default style (BumpStack.xaml) uses WinUI system brushes so it looks right unthemed. This
+    reassigns the bump-button surfaces to AJut brushes. The buttons mask content that scrolls under
+    them, so ButtonBackground must stay opaque. A host that sets ButtonBackground/ButtonForeground
+    itself (e.g. ToggleStrip via TemplateBinding) overrides these as a local value.
+    -->
+    <Style TargetType="local:BumpStack">
+        <Setter Property="ButtonBackground" Value="{ThemeResource AJut_Brush_ControlBackground}"/>
+        <Setter Property="ButtonForeground" Value="{ThemeResource AJut_Brush_SymbolForeground}"/>
+    </Style>
+
 </ResourceDictionary>

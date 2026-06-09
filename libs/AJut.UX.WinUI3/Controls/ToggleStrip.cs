@@ -12,6 +12,7 @@ namespace AJut.UX.Controls
     using Microsoft.UI.Xaml.Controls;
     using Microsoft.UI.Xaml.Data;
     using Microsoft.UI.Xaml.Media;
+    using Windows.Foundation;
     using DPUtils = AJut.UX.DPUtils<ToggleStrip>;
 
     // ===========[ ToggleStrip ]================================================
@@ -29,16 +30,29 @@ namespace AJut.UX.Controls
     // Button Padding comes from the ItemPadding DP (default 8,4); callers can override
     // via that DP or via ToggleButtonItemStyle.
 
-    [TemplatePart(Name = nameof(PART_ItemsPanel), Type = typeof(StackPanel))]
+    [TemplatePart(Name = nameof(PART_ScrollHost), Type = typeof(BumpStack))]
+    [TemplatePart(Name = nameof(PART_OverflowButton), Type = typeof(Button))]
     public class ToggleStrip : Control
     {
         // ===========[ Const-like ]===============================================
+        private const double kFallbackOverflowButtonWidth = 28.0;
         private static readonly PropertyPath kIsSelectedPath = new PropertyPath("IsSelected");
         private static readonly PropertyPath kNamePath = new PropertyPath("Name");
         private static readonly PropertyPath kBorderBrushPath = new PropertyPath("BorderBrush");
 
         // ===========[ Instance fields ]==========================================
+        // PART_ScrollHost is a BumpStack that hosts PART_ItemsPanel (its single child) and provides the
+        // Scroll-mode bump buttons. PART_ItemsPanel still holds the per-item buttons across all modes.
+        private BumpStack PART_ScrollHost;
         private StackPanel PART_ItemsPanel;
+        private Button PART_OverflowButton;
+        private StackPanel PART_OverflowPanel;
+
+        private readonly List<ToggleStripButton> m_buttons = new List<ToggleStripButton>();
+        private readonly List<double> m_naturalWidths = new List<double>();
+        private double m_uniformItemWidth;
+        private bool m_isUpdatingOverflow;
+
         private bool m_isChangingSelectedItem;
         private bool m_isChangingSelectedItemsList;
 
@@ -48,6 +62,7 @@ namespace AJut.UX.Controls
             this.DefaultStyleKey = typeof(ToggleStrip);
             this.Items = new ToggleItemsCollection(this);
             this.Items.CollectionChanged += this.Items_OnCollectionChanged;
+            this.SizeChanged += this.OnSizeChanged;
         }
 
         // ===========[ Events ]===================================================
@@ -146,13 +161,49 @@ namespace AJut.UX.Controls
             set => this.SetValue(ItemPaddingProperty, value);
         }
 
+        // EnsureUniformSize: when true every item is widened to the widest item's natural size, so
+        // the buttons read as an even grid rather than each hugging its own content.
+        public static readonly DependencyProperty EnsureUniformSizeProperty = DPUtils.Register(_ => _.EnsureUniformSize, false, (d, e) => d.RebuildItems());
+        public bool EnsureUniformSize
+        {
+            get => (bool)this.GetValue(EnsureUniformSizeProperty);
+            set => this.SetValue(EnsureUniformSizeProperty, value);
+        }
+
+        // OverflowBehavior: how the strip reacts when its items do not all fit (default Clip).
+        // Scroll and OverflowPopup only do anything when the strip is width constrained
+        // (e.g. HorizontalAlignment=Stretch or an explicit Width) - a content sized strip never overflows.
+        public static readonly DependencyProperty OverflowBehaviorProperty = DPUtils.Register(_ => _.OverflowBehavior, eToggleStripOverflow.Clip, (d, e) => d.UpdateOverflowLayout());
+        public eToggleStripOverflow OverflowBehavior
+        {
+            get => (eToggleStripOverflow)this.GetValue(OverflowBehaviorProperty);
+            set => this.SetValue(OverflowBehaviorProperty, value);
+        }
+
         // ===========[ Template application ]=====================================
         protected override void OnApplyTemplate ()
         {
             base.OnApplyTemplate();
 
-            this.PART_ItemsPanel = (StackPanel)this.GetTemplateChild(nameof(PART_ItemsPanel));
+            this.PART_ScrollHost = this.GetTemplateChild(nameof(PART_ScrollHost)) as BumpStack;
+            this.PART_OverflowButton = this.GetTemplateChild(nameof(PART_OverflowButton)) as Button;
+
+            // PART_ItemsPanel is the BumpStack's single child (its content). It is reparented into the
+            // BumpStack's own template, so grab it from the Children collection rather than via
+            // GetTemplateChild. Likewise the overflow popup's panel lives inside the button's Flyout,
+            // which GetTemplateChild can't reach - grab it from the Flyout content.
+            this.PART_ItemsPanel = this.PART_ScrollHost?.Children.Count > 0 ? this.PART_ScrollHost.Children[0] as StackPanel : null;
+            this.PART_OverflowPanel = (this.PART_OverflowButton?.Flyout as Flyout)?.Content as StackPanel;
+
             this.RebuildItems();
+        }
+
+        // ===========[ Events ]===================================================
+        private void OnSizeChanged (object sender, SizeChangedEventArgs e)
+        {
+            // Re-run in every mode: OverflowPopup repartitions, and Clip/Scroll need the pass too -
+            // uniform sizing depends on real measured widths.
+            this.UpdateOverflowLayout();
         }
 
         // ===========[ Private handlers ]=========================================
@@ -322,6 +373,8 @@ namespace AJut.UX.Controls
                 this,
                 new ToggleStripSelectionChangedEventArgs(previousSelectedItems, newlySelectedItems)
             );
+
+            this.RefreshForSelection();
         }
 
         // ===========[ Item building ]============================================
@@ -332,36 +385,46 @@ namespace AJut.UX.Controls
                 return;
             }
 
+            // 1. Detach any existing buttons from both hosts and start fresh.
             this.PART_ItemsPanel.Children.Clear();
+            this.PART_OverflowPanel?.Children.Clear();
+            m_buttons.Clear();
+            m_naturalWidths.Clear();
 
-            int totalItems = this.Items.Count;
-            int index = 0;
+            // 2. Build a button per item and capture a best-effort natural width up front. Widths are
+            //    needed for uniform sizing and overflow math; they are refined from the real layout in
+            //    UpdateOverflowLayout because an off-tree Measure can come back empty before first arrange.
             foreach (ToggleItem item in this.Items)
             {
-                var btn = this.CreateItemButton(item, index, isLast: index == totalItems - 1);
-                this.PART_ItemsPanel.Children.Add(btn);
-                ++index;
+                ToggleStripButton btn = this.CreateItemButton(item);
+                btn.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                m_buttons.Add(btn);
+                m_naturalWidths.Add(btn.DesiredSize.Width);
+            }
+
+            this.UpdateOverflowLayout();
+
+            // The off-tree Measure above can come back empty before the buttons are first arranged. If
+            // so, schedule one more pass after this layout cycle so uniform sizing and overflow can use
+            // the real widths even when nothing triggers a SizeChanged (e.g. toggling a DP at runtime).
+            if (m_buttons.Count > 0 && m_naturalWidths.All(w => w <= 0.0))
+            {
+                this.DispatcherQueue?.TryEnqueue(() => this.UpdateOverflowLayout());
             }
         }
 
-        private ToggleStripButton CreateItemButton (ToggleItem item, int index, bool isLast)
+        private ToggleStripButton CreateItemButton (ToggleItem item)
         {
             var btn = new ToggleStripButton();
 
-            // Apply caller-provided style first so structural overrides below
-            // (CornerRadius, BorderThickness, Padding) are set as local values and take precedence.
+            // Apply caller-provided style first so structural overrides set later (CornerRadius,
+            // BorderThickness, Padding) are local values and take precedence.
             if (this.ToggleButtonItemStyle != null)
             {
                 btn.Style = this.ToggleButtonItemStyle;
             }
 
             btn.Padding = this.ItemPadding;
-
-            // 1. Left-edge separator border: first button has no border; others show a
-            //    1px left-only divider using the strip's BorderBrush.
-            btn.BorderThickness = index == 0
-                ? new Thickness(0)
-                : new Thickness(this.SeparatorThickness, 0, 0, 0);
 
             btn.SetBinding(Control.BorderBrushProperty, new Binding
             {
@@ -370,28 +433,7 @@ namespace AJut.UX.Controls
                 Mode = BindingMode.OneWay,
             });
 
-            // 2. Corner radius: distribute the strip's outer CornerRadius to each button
-            //    so the group reads as one cohesive control with a shared silhouette.
-            bool isFirst = index == 0;
-            CornerRadius cr = this.CornerRadius;
-            if (isFirst && isLast)
-            {
-                btn.CornerRadius = cr;
-            }
-            else if (isFirst)
-            {
-                btn.CornerRadius = new CornerRadius(cr.TopLeft, 0, 0, cr.BottomLeft);
-            }
-            else if (isLast)
-            {
-                btn.CornerRadius = new CornerRadius(0, cr.TopRight, cr.BottomRight, 0);
-            }
-            else
-            {
-                btn.CornerRadius = new CornerRadius(0);
-            }
-
-            // 3. Bind IsSelected ↔ IsSelected (TwoWay so clicking drives selection logic)
+            // IsSelected <-> IsSelected (TwoWay so clicking drives selection logic)
             btn.SetBinding(ToggleStripButton.IsSelectedProperty, new Binding
             {
                 Source = item,
@@ -416,6 +458,226 @@ namespace AJut.UX.Controls
             }
 
             return btn;
+        }
+
+        // ===========[ Overflow layout ]==========================================
+        private void UpdateOverflowLayout ()
+        {
+            if (this.PART_ItemsPanel == null || m_isUpdatingOverflow)
+            {
+                return;
+            }
+
+            m_isUpdatingOverflow = true;
+            try
+            {
+                // Refine natural widths from the real layout if the up-front measure came back empty,
+                // then widen everyone to the widest when uniform sizing is on.
+                this.RefreshNaturalWidthsIfNeeded();
+                m_uniformItemWidth = m_naturalWidths.Count > 0 ? m_naturalWidths.Max() : 0.0;
+                foreach (ToggleStripButton btn in m_buttons)
+                {
+                    btn.MinWidth = this.EnsureUniformSize ? m_uniformItemWidth : 0.0;
+                }
+
+                // A UIElement can only live in one panel, so detach everything before redistributing.
+                this.PART_ItemsPanel.Children.Clear();
+                this.PART_OverflowPanel?.Children.Clear();
+
+                this.ApplyScrollMode();
+
+                // Clip / Scroll: every button stays in the strip; the host either clips or scrolls it.
+                bool canPopup = this.OverflowBehavior == eToggleStripOverflow.OverflowPopup
+                    && this.PART_OverflowPanel != null
+                    && this.PART_OverflowButton != null;
+                if (!canPopup)
+                {
+                    this.PlaceAllInStrip();
+                    return;
+                }
+
+                // OverflowPopup: nothing to lay out against until we have a real viewport width.
+                double available = this.PART_ScrollHost?.ActualWidth ?? this.ActualWidth;
+                if (available <= 0.0)
+                {
+                    this.PlaceAllInStrip();
+                    return;
+                }
+
+                // Partition by available width, keeping selected items visible where possible.
+                double[] widths = new double[m_buttons.Count];
+                bool[] selected = new bool[m_buttons.Count];
+                for (int i = 0; i < m_buttons.Count; ++i)
+                {
+                    widths[i] = this.EnsureUniformSize ? m_uniformItemWidth : m_naturalWidths[i];
+                    selected[i] = i < this.Items.Count && this.Items[i].IsSelected;
+                }
+
+                double reserved = this.MeasureOverflowButtonWidth();
+                ToggleStripOverflowResult result = ToggleStripOverflowCalculator.Compute(widths, selected, available, reserved);
+
+                var visibleButtons = new List<ToggleStripButton>(result.VisibleIndices.Count);
+                foreach (int index in result.VisibleIndices)
+                {
+                    visibleButtons.Add(m_buttons[index]);
+                    this.PART_ItemsPanel.Children.Add(m_buttons[index]);
+                }
+
+                var overflowButtons = new List<ToggleStripButton>(result.OverflowIndices.Count);
+                foreach (int index in result.OverflowIndices)
+                {
+                    overflowButtons.Add(m_buttons[index]);
+                    this.PART_OverflowPanel.Children.Add(m_buttons[index]);
+                }
+
+                // A trailing separator sits between the last visible item and the chevron so the
+                // chevron reads as part of the strip rather than floating.
+                this.ApplyEdgeStyling(visibleButtons, trailingSeparator: result.HasOverflow);
+                this.ApplyFlyoutStyling(overflowButtons);
+                this.PART_OverflowButton.Visibility = result.HasOverflow ? Visibility.Visible : Visibility.Collapsed;
+            }
+            finally
+            {
+                m_isUpdatingOverflow = false;
+            }
+        }
+
+        private void PlaceAllInStrip ()
+        {
+            foreach (ToggleStripButton btn in m_buttons)
+            {
+                btn.HorizontalAlignment = HorizontalAlignment.Left;
+                this.PART_ItemsPanel.Children.Add(btn);
+            }
+
+            this.ApplyEdgeStyling(m_buttons);
+            if (this.PART_OverflowButton != null)
+            {
+                this.PART_OverflowButton.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void ApplyScrollMode ()
+        {
+            if (this.PART_ScrollHost != null)
+            {
+                // The BumpStack scrolls (with its bump buttons) only in Scroll mode; otherwise it clips.
+                this.PART_ScrollHost.ScrollingEnabled = this.OverflowBehavior == eToggleStripOverflow.Scroll;
+            }
+        }
+
+        // Distribute the strip's outer CornerRadius and separator borders across the given ordered,
+        // currently-visible buttons so the group reads as one cohesive control. When trailingSeparator
+        // is set the last item also gets a right divider - used to separate it from the overflow chevron.
+        private void ApplyEdgeStyling (IReadOnlyList<ToggleStripButton> orderedButtons, bool trailingSeparator = false)
+        {
+            CornerRadius cr = this.CornerRadius;
+            int last = orderedButtons.Count - 1;
+            for (int i = 0; i < orderedButtons.Count; ++i)
+            {
+                ToggleStripButton btn = orderedButtons[i];
+                bool isFirst = i == 0;
+                bool isLast = i == last;
+
+                double left = isFirst ? 0.0 : this.SeparatorThickness;
+                double right = (isLast && trailingSeparator) ? this.SeparatorThickness : 0.0;
+
+                btn.HorizontalAlignment = HorizontalAlignment.Left;
+                btn.BorderThickness = new Thickness(left, 0, right, 0);
+
+                // The strip continues into the chevron when there is a trailing separator, so the last
+                // item stays square on the right - the strip's outer border supplies the rounded edge.
+                bool roundLeft = isFirst;
+                bool roundRight = isLast && !trailingSeparator;
+                btn.CornerRadius = new CornerRadius(
+                    roundLeft ? cr.TopLeft : 0,
+                    roundRight ? cr.TopRight : 0,
+                    roundRight ? cr.BottomRight : 0,
+                    roundLeft ? cr.BottomLeft : 0
+                );
+            }
+        }
+
+        // Buttons in the overflow popup are a vertical list - square them off, stack their separators
+        // on top, and stretch them to a shared width.
+        private void ApplyFlyoutStyling (IReadOnlyList<ToggleStripButton> orderedButtons)
+        {
+            for (int i = 0; i < orderedButtons.Count; ++i)
+            {
+                ToggleStripButton btn = orderedButtons[i];
+                btn.HorizontalAlignment = HorizontalAlignment.Stretch;
+                btn.CornerRadius = new CornerRadius(0);
+                btn.BorderThickness = i == 0
+                    ? new Thickness(0)
+                    : new Thickness(0, this.SeparatorThickness, 0, 0);
+            }
+        }
+
+        // The up-front off-tree Measure in RebuildItems can return 0 before the buttons are first
+        // arranged. Once they have a real ActualWidth, capture it as the natural width. We only do
+        // this while widths are still empty so MinWidth-inflated values never overwrite the natural ones.
+        private void RefreshNaturalWidthsIfNeeded ()
+        {
+            for (int i = 0; i < m_naturalWidths.Count; ++i)
+            {
+                if (m_naturalWidths[i] > 0.0)
+                {
+                    return;
+                }
+            }
+
+            for (int i = 0; i < m_buttons.Count; ++i)
+            {
+                double actual = m_buttons[i].ActualWidth;
+                if (actual > 0.0)
+                {
+                    m_naturalWidths[i] = actual;
+                }
+            }
+        }
+
+        private double MeasureOverflowButtonWidth ()
+        {
+            if (this.PART_OverflowButton == null)
+            {
+                return kFallbackOverflowButtonWidth;
+            }
+
+            this.PART_OverflowButton.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            double measured = this.PART_OverflowButton.DesiredSize.Width;
+            return measured > 0.0 ? measured : kFallbackOverflowButtonWidth;
+        }
+
+        private void RefreshForSelection ()
+        {
+            if (this.OverflowBehavior == eToggleStripOverflow.OverflowPopup)
+            {
+                // A selected item is kept visible where possible, so re-partition (and close the popup).
+                this.PART_OverflowButton?.Flyout?.Hide();
+                this.UpdateOverflowLayout();
+            }
+            else if (this.OverflowBehavior == eToggleStripOverflow.Scroll)
+            {
+                // Bring the (first) selected item fully into view past the bump buttons.
+                ToggleStripButton target = this.FirstSelectedButton();
+                if (target != null)
+                {
+                    this.PART_ScrollHost?.ScrollFirstElementIntoView(element => ReferenceEquals(element, target));
+                }
+            }
+        }
+
+        private ToggleStripButton FirstSelectedButton ()
+        {
+            for (int i = 0; i < m_buttons.Count && i < this.Items.Count; ++i)
+            {
+                if (this.Items[i].IsSelected)
+                {
+                    return m_buttons[i];
+                }
+            }
+
+            return null;
         }
 
         // ===========[ Helpers ]==================================================

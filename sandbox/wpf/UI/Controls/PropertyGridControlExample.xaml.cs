@@ -146,6 +146,32 @@
             return value;
         }
 
+        // ------ PGMemberOrder demo ------
+        // Declared out of source order on purpose but tagged with [PGMemberOrder]. They render inside
+        // the "PGMemberOrder Demo" group in order-value sequence (10, the button at 15, then 20),
+        // proving a button interleaves between properties. The labels call out each expected slot.
+        [PGMemberOrder(20)]
+        [PGGroup("PGMemberOrder Demo")]
+        [PGLabel("Third (order=20)")]
+        public string MemberOrderThird { get; set; } = "third";
+
+        [PGMemberOrder(15)]
+        [PGGroup("PGMemberOrder Demo")]
+        [PGButton("Button (order=15)")]
+        public void MemberOrderDemoButton ()
+        {
+            string temp = this.MemberOrderFirst;
+            this.MemberOrderFirst = this.MemberOrderThird;
+            this.MemberOrderThird = temp;
+            this.RaisePropertyChanged(nameof(MemberOrderFirst));
+            this.RaisePropertyChanged(nameof(MemberOrderThird));
+        }
+
+        [PGMemberOrder(10)]
+        [PGGroup("PGMemberOrder Demo")]
+        [PGLabel("First (order=10)")]
+        public string MemberOrderFirst { get; set; } = "first";
+
         // ------ PGButton demo ------
         [PGButton("Randomize Age")]
         public void RandomizeAge ()

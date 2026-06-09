@@ -186,4 +186,8 @@
     <SolidColorBrush x:Key="AJut_NumericEditor_FocusBorderBrush"  Color="#0078D4"/>
     <SolidColorBrush x:Key="AJut_NumericEditor_NormalBorderBrush" Color="#888888"/>
 
+    <!-- Out of bounds error rim + warning glyph (ErrorStates VSM group). Themed builds alias this to
+         AJut_Brush_BadStuff; this default keeps the unthemed look readable on the dark default fill. -->
+    <SolidColorBrush x:Key="AJut_NumericEditor_ErrorBrush" Color="#E0524D"/>
+
 </ResourceDictionary>

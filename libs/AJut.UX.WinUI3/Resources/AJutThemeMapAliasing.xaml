@@ -95,6 +95,7 @@
     <SolidColorBrush x:Key="AJut_NumericEditor_DecreasePointerOverBackground" Color="{ThemeResource AJut_Color_PrimaryHighlightBright}"/>
     <SolidColorBrush x:Key="AJut_NumericEditor_FocusBorderBrush"              Color="{ThemeResource AJut_Color_PrimaryHighlight}"/>
     <SolidColorBrush x:Key="AJut_NumericEditor_NormalBorderBrush"             Color="{ThemeResource AJut_Color_BorderCommon}"/>
+    <SolidColorBrush x:Key="AJut_NumericEditor_ErrorBrush"                    Color="{ThemeResource AJut_Color_BadStuff}"/>
 
     <!-- ===========[ DockPanelShowHideToggleButton ]========================= -->
     <SolidColorBrush x:Key="AJut_DockPanelToggleButton_NormalBackground"               Color="{ThemeResource AJut_Color_InnerPanelBackground}"/>

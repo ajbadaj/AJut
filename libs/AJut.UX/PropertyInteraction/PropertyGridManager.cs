@@ -139,8 +139,19 @@ namespace AJut.UX.PropertyInteraction
                 }
             }
 
+            // ------ Interleave property and button rows by [PGMemberOrder]
+            // Tagged targets (properties or [PGButton] methods) sort ahead of untagged ones by
+            // ascending order value; untagged targets keep their natural emission order (properties
+            // first in their resolved order, then buttons). OrderBy is a stable sort, so with no
+            // [PGMemberOrder] anywhere this is identical to the prior straight emission order.
+            var orderedTargets = editTargets.Values
+                .Select((target, naturalIndex) => (target, naturalIndex))
+                .OrderBy(x => x.target.MemberSortOrder.HasValue ? 0 : 1)
+                .ThenBy(x => x.target.MemberSortOrder ?? x.naturalIndex)
+                .Select(x => x.target)
+                .ToList();
+
             // ------ Group post-processing: collect targets with matching GroupId
-            var orderedTargets = new List<PropertyEditTarget>(editTargets.Values);
             var groupHeaders = new Dictionary<string, PropertyEditTarget>();
             var groupedIndices = new HashSet<int>();
 

@@ -62,6 +62,8 @@ namespace AJut.UX.Controls
 
         object INumericEditorSettings.Maximum => double.IsPositiveInfinity(this.Maximum) ? null : (object)this.Maximum;
 
+        eOutOfBoundsResponse INumericEditorSettings.OutOfBoundsResponse => this.OutOfBoundsResponse;
+
         // ===========[ Dependency Properties ]====================================
 
         // Value: object - TwoWay binding target for PropertyEditTarget.EditValue.
@@ -164,6 +166,22 @@ namespace AJut.UX.Controls
             set => this.SetValue(TextAlignmentProperty, value);
         }
 
+        // How the editor responds to text outside the min/max bounds (default: ErrorAndToolTip).
+        public static readonly DependencyProperty OutOfBoundsResponseProperty = DPUtils.Register(_ => _.OutOfBoundsResponse, eOutOfBoundsResponse.ErrorAndToolTip, (d, e) => d.RefreshErrorState());
+        public eOutOfBoundsResponse OutOfBoundsResponse
+        {
+            get => (eOutOfBoundsResponse)this.GetValue(OutOfBoundsResponseProperty);
+            set => this.SetValue(OutOfBoundsResponseProperty, value);
+        }
+
+        // ErrorMessage: drives the error tooltip; null when there is no displayed error.
+        public static readonly DependencyProperty ErrorMessageProperty = DPUtils.Register(_ => _.ErrorMessage);
+        public string ErrorMessage
+        {
+            get => (string)this.GetValue(ErrorMessageProperty);
+            private set => this.SetValue(ErrorMessageProperty, value);
+        }
+
 
         // ===========[ Template application ]=====================================
         protected override void OnApplyTemplate ()
@@ -195,8 +213,9 @@ namespace AJut.UX.Controls
             this.PART_DefaultLabel = this.GetTemplateChild(nameof(PART_DefaultLabel)) as FrameworkElement;
             this.PART_LabelArea = this.GetTemplateChild(nameof(PART_LabelArea)) as ContentControl;
 
-            // 3. Seed VSM - Unfocused is the initial state (no TemplateBinding on BorderBrush)
+            // 3. Seed VSM - Unfocused + NoError are the initial states (no TemplateBinding on BorderBrush)
             VisualStateManager.GoToState(this, "Unfocused", false);
+            VisualStateManager.GoToState(this, "NoError", false);
 
             // 4. Wire new parts
             if (this.PART_IncreaseButton != null)
@@ -224,6 +243,7 @@ namespace AJut.UX.Controls
             }
 
             this.UpdateLabelVisibility();
+            this.RefreshErrorState();
         }
 
         // ===========[ Events ]===================================================
@@ -244,6 +264,7 @@ namespace AJut.UX.Controls
         private void OnLostFocus (object sender, RoutedEventArgs e)
         {
             VisualStateManager.GoToState(this, "Unfocused", true);
+            this.CommitEditedText();
         }
 
         private void IncreaseButton_OnClick (object sender, RoutedEventArgs e) => this.DoNudge(positive: true);
@@ -263,8 +284,9 @@ namespace AJut.UX.Controls
             }
             else if (e.Key == VirtualKey.Enter)
             {
-                // Commit text - TextBox_OnTextChanged already synced the value;
-                // marking handled prevents the Enter from bubbling further.
+                // Commit the edit - reconcile the displayed text with the capped value, then
+                // mark handled so the Enter does not bubble further.
+                this.CommitEditedText();
                 e.Handled = true;
             }
         }
@@ -288,6 +310,8 @@ namespace AJut.UX.Controls
             m_blockReentrancy = true;
             try { this.Value = m_vm.SourceValue; }
             finally { m_blockReentrancy = false; }
+
+            this.RefreshErrorState();
         }
 
         // ===========[ Property change handlers ]=================================
@@ -309,9 +333,37 @@ namespace AJut.UX.Controls
             m_blockReentrancy = true;
             try { this.PART_TextBox.Text = m_vm.Text; }
             finally { m_blockReentrancy = false; }
+
+            this.RefreshErrorState();
         }
 
         // ===========[ Helpers ]=================================================
+        private void CommitEditedText ()
+        {
+            if (m_vm == null || this.PART_TextBox == null)
+            {
+                return;
+            }
+
+            // The source value is already capped as text is typed. CommitEdit decides what to do with
+            // the out of range text per OutOfBoundsResponse: FixOnCommit snaps it back to the clamped
+            // value (e.g. 5500 against a max of 10 becomes 10); ErrorAndToolTip leaves it flagged.
+            m_vm.CommitEdit();
+
+            m_blockReentrancy = true;
+            try
+            {
+                this.PART_TextBox.Text = m_vm.Text;
+                this.Value = m_vm.SourceValue;
+            }
+            finally
+            {
+                m_blockReentrancy = false;
+            }
+
+            this.RefreshErrorState();
+        }
+
         private void DoNudge (bool positive)
         {
             if (m_vm == null)
@@ -350,6 +402,15 @@ namespace AJut.UX.Controls
             {
                 m_blockReentrancy = false;
             }
+
+            this.RefreshErrorState();
+        }
+
+        private void RefreshErrorState ()
+        {
+            bool showError = m_vm != null && m_vm.ShouldShowError;
+            this.ErrorMessage = showError ? m_vm.TextErrorMessage : null;
+            VisualStateManager.GoToState(this, showError ? "HasError" : "NoError", true);
         }
 
         private static bool IsKeyDown (VirtualKey key)

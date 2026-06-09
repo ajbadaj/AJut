@@ -46,6 +46,13 @@ namespace AJut.UX.Controls
         {
             this.DefaultStyleKey = typeof(ToggleStripButton);
             this.UseSystemFocusVisuals = false;
+
+            // BorderThickness and CornerRadius are index-aware structural values set by ToggleStrip
+            // both before template application and again at runtime (as buttons move between the strip
+            // and the overflow popup). TemplateBinding cannot backfill the pre-template values and the
+            // VSM does not touch these, so push them to PART_Root whenever they change.
+            this.RegisterPropertyChangedCallback(BorderThicknessProperty, this.OnStructuralStyleChanged);
+            this.RegisterPropertyChangedCallback(CornerRadiusProperty, this.OnStructuralStyleChanged);
         }
 
         protected override void OnApplyTemplate ()
@@ -53,16 +60,7 @@ namespace AJut.UX.Controls
             base.OnApplyTemplate();
 
             this.PART_Root = this.GetTemplateChild(nameof(PART_Root)) as Border;
-
-            // BorderThickness and CornerRadius are set by ToggleStrip as local
-            // values before template application. WinUI3 TemplateBinding does not
-            // backfill pre-template local values, so push manually here.
-            if (this.PART_Root != null)
-            {
-                this.PART_Root.BorderThickness = this.BorderThickness;
-                this.PART_Root.CornerRadius = this.CornerRadius;
-            }
-
+            this.PushStructuralStyleToRoot();
             this.UpdateVisualState(false);
         }
 
@@ -115,6 +113,17 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ Private helpers ]=======================================
+        private void OnStructuralStyleChanged (DependencyObject sender, DependencyProperty dp) => this.PushStructuralStyleToRoot();
+
+        private void PushStructuralStyleToRoot ()
+        {
+            if (this.PART_Root != null)
+            {
+                this.PART_Root.BorderThickness = this.BorderThickness;
+                this.PART_Root.CornerRadius = this.CornerRadius;
+            }
+        }
+
         private void UpdateVisualState (bool useTransitions)
         {
             string state;
