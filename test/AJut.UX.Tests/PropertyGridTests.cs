@@ -115,6 +115,27 @@ namespace AJut.UX.Tests
         public void MiddleButton () { }
     }
 
+    // Source with both a grouped member and an expandable sub-object. Used to verify the expansion
+    // pathway carries over when browsing from one instance to another of the SAME type.
+    public class NestedExpandableSource : NotifyPropertyChanged
+    {
+        [PGEditor("Text")]
+        public string Title { get; set; } = "root";
+
+        [PGGroup("Details")]
+        [PGEditor("Number")]
+        public int Count { get; set; } = 3;
+
+        // Non-null complex sub-object -> renders as an expandable node.
+        public NestedExpandableChild Child { get; set; } = new NestedExpandableChild();
+    }
+
+    public class NestedExpandableChild : NotifyPropertyChanged
+    {
+        [PGEditor("Text")]
+        public string Inner { get; set; } = "inner";
+    }
+
     public class GroupedShowIfTestSource : NotifyPropertyChanged
     {
         private bool m_showStats;
@@ -1560,6 +1581,40 @@ namespace AJut.UX.Tests
                 .FirstOrDefault(t => t.PropertyPathTarget == "$group_Stats");
             Assert.IsNotNull(statsGroup);
             Assert.IsTrue(statsGroup.IsExpanded, "Group expansion state should be preserved across rebuild");
+        }
+
+        [TestMethod]
+        public void ExpansionState_CarriesOverWhenBrowsingToAnotherInstanceOfSameType ()
+        {
+            // The ephemeral expansion memory is keyed by property path on the manager, which lives for
+            // the control's lifetime. Browsing from one object to another of the SAME type should
+            // restore the same expand pathway (sub-objects and group headers) so the two can be compared.
+            var first = new NestedExpandableSource();
+            var pg = new SimpleTestPropertyGrid { SingleItemSource = first };
+            var manager = new PropertyGridManager(pg);
+            manager.RebuildEditTargets();
+
+            var childFirst = manager.RootNode.Children.OfType<PropertyEditTarget>()
+                .First(t => t.PropertyPathTarget == nameof(NestedExpandableSource.Child));
+            Assert.IsTrue(childFirst.IsExpandable, "Child sub-object should be expandable");
+            childFirst.IsExpanded = true;
+
+            var groupFirst = manager.RootNode.Children.OfType<PropertyEditTarget>()
+                .First(t => t.PropertyPathTarget == "$group_Details");
+            groupFirst.IsExpanded = true;
+
+            // Browse to a different instance of the same type (simulates the control swapping SingleItemSource).
+            pg.SingleItemSource = new NestedExpandableSource();
+            manager.RebuildEditTargets();
+
+            var childSecond = manager.RootNode.Children.OfType<PropertyEditTarget>()
+                .First(t => t.PropertyPathTarget == nameof(NestedExpandableSource.Child));
+            Assert.AreNotSame(childFirst, childSecond, "Second instance should get freshly generated targets");
+            Assert.IsTrue(childSecond.IsExpanded, "Sub-object expand pathway should carry over to the new same-type instance");
+
+            var groupSecond = manager.RootNode.Children.OfType<PropertyEditTarget>()
+                .First(t => t.PropertyPathTarget == "$group_Details");
+            Assert.IsTrue(groupSecond.IsExpanded, "Group expand pathway should carry over to the new same-type instance");
         }
 
         // ------ Helper ------

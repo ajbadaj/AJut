@@ -752,8 +752,11 @@
                                             Click="PGSource_OnAlphaClicked"/>
                                     <Button x:Name="PG_BetaButton" Content="Beta (2 props, floats only)"
                                             Click="PGSource_OnBetaClicked"/>
-                                    <Button x:Name="PG_ComplexButton" Content="Complex (ShowRoomTester)"
+                                    <Button x:Name="PG_ComplexButton" Content="Complex A (ShowRoomTester)"
                                             Click="PGSource_OnComplexClicked"/>
+                                    <Button x:Name="PG_ComplexBButton" Content="Complex B (same type - expansion memory test)"
+                                            Click="PGSource_OnComplexBClicked"
+                                            ToolTipService.ToolTip="Expand a sub-object or group on Complex A, then switch here - the same tree pathway should stay expanded so you can compare the two objects."/>
                                     <Button Content="Set Elevated Values" Click="PGSource_OnSetElevatedClicked"
                                             ToolTipService.ToolTip="Sets elevated property values externally - tests RecacheEditValue cascade"/>
                                     <Button x:Name="PG_WrappedMatrixButton" Content="Wrapped Mode Matrix (PGShowIf repro)"

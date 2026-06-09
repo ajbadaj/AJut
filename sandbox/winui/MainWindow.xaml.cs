@@ -312,6 +312,10 @@ namespace AJutShowRoomWinUI
         private readonly ShowRoomAlpha m_alphaObj = new ShowRoomAlpha();
         private readonly ShowRoomBeta m_betaObj = new ShowRoomBeta();
         private readonly ShowRoomTester m_complexObj = new ShowRoomTester();
+        // Second instance of the SAME type as m_complexObj. Used to test the property grid's ephemeral
+        // expansion memory: expand a sub-object / group on Complex A, switch to Complex B, and the same
+        // tree pathway should stay expanded so the two objects can be compared.
+        private readonly ShowRoomTester m_complexObj2 = new ShowRoomTester { Name = "Complex B - same type, compare expansion" };
         private readonly WrappedModeMatrixSource m_wrappedMatrixObj = new WrappedModeMatrixSource();
         private object m_currentPGTestObj;
 
@@ -325,6 +329,7 @@ namespace AJutShowRoomWinUI
         private void PGSource_OnAlphaClicked (object sender, RoutedEventArgs e) => this.SetPGSource(m_alphaObj);
         private void PGSource_OnBetaClicked (object sender, RoutedEventArgs e) => this.SetPGSource(m_betaObj);
         private void PGSource_OnComplexClicked (object sender, RoutedEventArgs e) => this.SetPGSource(m_complexObj);
+        private void PGSource_OnComplexBClicked (object sender, RoutedEventArgs e) => this.SetPGSource(m_complexObj2);
         private void PGSource_OnWrappedMatrixClicked (object sender, RoutedEventArgs e)
         {
             this.SetPGSource(m_wrappedMatrixObj);
