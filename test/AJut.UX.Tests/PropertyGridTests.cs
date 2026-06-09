@@ -136,8 +136,8 @@ namespace AJut.UX.Tests
         public string Inner { get; set; } = "inner";
     }
 
-    // Inner data object whose [PGButton] is reached only through a delegating edit manager - mirrors
-    // the real app where element data carries the button but the grid source is a wrapper manager.
+    // Inner data object whose [PGButton] is reachable only through a delegating edit manager that
+    // wraps it - the grid never auto-harvests buttons off a delegated inner object.
     public class ButtonOnInnerObjectSource : NotifyPropertyChanged
     {
         [PGEditor("Text")]
@@ -1321,6 +1321,31 @@ namespace AJut.UX.Tests
 
             (buttonTarget.EditContext as ICommand).Execute(null);
             Assert.AreEqual(1, inner.ClickCount, "Harvested inner button should invoke the inner object's method");
+        }
+
+        [TestMethod]
+        public void CreateButton_BuildsClickableButtonRowForHandAssembledManagers ()
+        {
+            // Hand-constructed managers (no [PGButton] reflection) build buttons via this helper.
+            int clicks = 0;
+            var button = PropertyEditTarget.CreateButton("My Action", () => ++clicks);
+            button.Setup();
+
+            Assert.AreEqual("Button", button.Editor);
+            Assert.AreEqual("My Action", button.DisplayName);
+
+            bool committed = false;
+            button.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == PropertyEditTarget.SourceCommittedPropertyName)
+                {
+                    committed = true;
+                }
+            };
+
+            (button.EditContext as ICommand).Execute(null);
+            Assert.AreEqual(1, clicks, "Clicking the created button should invoke the action");
+            Assert.IsTrue(committed, "Clicking the created button should raise SourceCommitted so the grid refreshes");
         }
 
         // ------ Conditional button targets ------

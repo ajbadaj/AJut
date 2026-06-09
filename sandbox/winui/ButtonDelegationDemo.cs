@@ -1,18 +1,15 @@
 namespace AJutShowRoomWinUI
 {
-    using AJut;
-    using AJut.UX.PropertyInteraction;
     using System.Collections.Generic;
+    using AJut.Storage;
+    using AJut.UX.PropertyInteraction;
 
-    // ===========[ Button delegation repro ]=========================================
-    // Mirrors the Call Familiar shape: the property grid source is a wrapper edit
-    // manager that delegates target generation to a different inner data object. The
-    // grid auto-harvests [PGButton] methods only from the object it is handed (the
-    // wrapper), never from the delegated inner object - so the inner button is invisible
-    // unless the manager surfaces it itself.
-    //
-    // The surfacing code lives in ButtonDelegationDemo.Fix.cs. Stash that file to see the
-    // bug (no button), pop it to see the fix (button appears).
+    // ===========[ Button delegation demo ]==========================================
+    // A property grid source that is a wrapper edit manager delegating target generation
+    // to a different inner data object. The grid auto-harvests [PGButton] methods only
+    // from the object it is handed (the wrapper), never from the delegated inner one - so
+    // a delegating manager has to surface the inner object's buttons itself. This one does,
+    // via GenerateButtonsForMethodsOf.
     // ===============================================================================
 
     // Inner data object whose [PGButton] is reachable only through the manager below.
@@ -37,7 +34,7 @@ namespace AJutShowRoomWinUI
         }
     }
 
-    public partial class ButtonDelegationEditManager : IPropertyEditManager
+    public class ButtonDelegationEditManager : IPropertyEditManager
     {
         private readonly DelegatedButtonInner m_inner = new DelegatedButtonInner();
 
@@ -48,17 +45,11 @@ namespace AJutShowRoomWinUI
                 yield return target;
             }
 
-            // HarvestDelegatedButtons is implemented in ButtonDelegationDemo.Fix.cs. When that file is
-            // stashed the partial method has no body and the compiler elides this call, so the inner
-            // object's [PGButton] never surfaces - reproducing the Call Familiar bug. Pop the file to fix.
-            var delegatedButtons = new List<PropertyEditTarget>();
-            this.HarvestDelegatedButtons(delegatedButtons);
-            foreach (PropertyEditTarget button in delegatedButtons)
+            // The grid won't auto-harvest buttons off the inner object for us, so do it here.
+            foreach (PropertyEditTarget button in PropertyEditTarget.GenerateButtonsForMethodsOf(m_inner))
             {
                 yield return button;
             }
         }
-
-        partial void HarvestDelegatedButtons (List<PropertyEditTarget> into);
     }
 }

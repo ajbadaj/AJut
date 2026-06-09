@@ -316,9 +316,9 @@ namespace AJutShowRoomWinUI
         // expansion memory: expand a sub-object / group on Complex A, switch to Complex B, and the same
         // tree pathway should stay expanded so the two objects can be compared.
         private readonly ShowRoomTester m_complexObj2 = new ShowRoomTester { Name = "Complex B - same type, compare expansion" };
-        // Delegating edit manager (wraps an inner object that carries a [PGButton]) - reproduces the
-        // Call Familiar case where a button on a delegated inner object never surfaces. See
-        // ButtonDelegationDemo.cs / ButtonDelegationDemo.Fix.cs.
+        // Delegating edit manager: wraps an inner object that carries a [PGButton] and surfaces it
+        // itself, since the grid only auto-harvests buttons off the source it's handed. See
+        // ButtonDelegationDemo.cs.
         private readonly ButtonDelegationEditManager m_delegatedButtonsObj = new ButtonDelegationEditManager();
         private readonly WrappedModeMatrixSource m_wrappedMatrixObj = new WrappedModeMatrixSource();
         private object m_currentPGTestObj;
@@ -1196,9 +1196,8 @@ namespace AJutShowRoomWinUI
 
     /// <summary>
     /// A single-instance panel that is hidden from the toolbar and menu UI.
-    /// Mirrors the Call Familiar pattern where infrastructure panels (outliner,
-    /// aspect root) are always present in the layout but should not appear in
-    /// the "View" menu or the DockPanelAddRemoveToolbar.
+    /// Models an infrastructure panel that is always present in the layout but should
+    /// not appear in the "View" menu or the DockPanelAddRemoveToolbar.
     /// </summary>
     [TypeId("ShowRoomPanel-hidden-infra")]
     public class HiddenInfraShowRoomPanel : ShowRoomPanel
