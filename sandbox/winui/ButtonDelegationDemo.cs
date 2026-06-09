@@ -1,8 +1,8 @@
 namespace AJutShowRoomWinUI
 {
-    using System.Collections.Generic;
-    using AJut.Storage;
+    using AJut;
     using AJut.UX.PropertyInteraction;
+    using System.Collections.Generic;
 
     // ===========[ Button delegation demo ]==========================================
     // A property grid source that is a wrapper edit manager delegating target generation
