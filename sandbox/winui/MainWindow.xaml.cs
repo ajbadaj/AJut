@@ -316,6 +316,10 @@ namespace AJutShowRoomWinUI
         // expansion memory: expand a sub-object / group on Complex A, switch to Complex B, and the same
         // tree pathway should stay expanded so the two objects can be compared.
         private readonly ShowRoomTester m_complexObj2 = new ShowRoomTester { Name = "Complex B - same type, compare expansion" };
+        // Delegating edit manager: wraps an inner object that carries a [PGButton] and surfaces it
+        // itself, since the grid only auto-harvests buttons off the source it's handed. See
+        // ButtonDelegationDemo.cs.
+        private readonly ButtonDelegationEditManager m_delegatedButtonsObj = new ButtonDelegationEditManager();
         private readonly WrappedModeMatrixSource m_wrappedMatrixObj = new WrappedModeMatrixSource();
         private object m_currentPGTestObj;
 
@@ -330,6 +334,7 @@ namespace AJutShowRoomWinUI
         private void PGSource_OnBetaClicked (object sender, RoutedEventArgs e) => this.SetPGSource(m_betaObj);
         private void PGSource_OnComplexClicked (object sender, RoutedEventArgs e) => this.SetPGSource(m_complexObj);
         private void PGSource_OnComplexBClicked (object sender, RoutedEventArgs e) => this.SetPGSource(m_complexObj2);
+        private void PGSource_OnDelegatedButtonsClicked (object sender, RoutedEventArgs e) => this.SetPGSource(m_delegatedButtonsObj);
         private void PGSource_OnWrappedMatrixClicked (object sender, RoutedEventArgs e)
         {
             this.SetPGSource(m_wrappedMatrixObj);
@@ -834,7 +839,6 @@ namespace AJutShowRoomWinUI
         public string MemberOrderThird { get; set; } = "third";
 
         [PGMemberOrder(15)]
-        [PGGroup("PGMemberOrder Demo")]
         [PGButton("Button (order=15)")]
         public void MemberOrderDemoButton ()
         {
@@ -1192,9 +1196,8 @@ namespace AJutShowRoomWinUI
 
     /// <summary>
     /// A single-instance panel that is hidden from the toolbar and menu UI.
-    /// Mirrors the Call Familiar pattern where infrastructure panels (outliner,
-    /// aspect root) are always present in the layout but should not appear in
-    /// the "View" menu or the DockPanelAddRemoveToolbar.
+    /// Models an infrastructure panel that is always present in the layout but should
+    /// not appear in the "View" menu or the DockPanelAddRemoveToolbar.
     /// </summary>
     [TypeId("ShowRoomPanel-hidden-infra")]
     public class HiddenInfraShowRoomPanel : ShowRoomPanel

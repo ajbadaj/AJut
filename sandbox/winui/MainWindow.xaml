@@ -757,6 +757,9 @@
                                     <Button x:Name="PG_ComplexBButton" Content="Complex B (same type - expansion memory test)"
                                             Click="PGSource_OnComplexBClicked"
                                             ToolTipService.ToolTip="Expand a sub-object or group on Complex A, then switch here - the same tree pathway should stay expanded so you can compare the two objects."/>
+                                    <Button x:Name="PG_DelegatedButtonsButton" Content="Delegated Buttons (delegating edit manager)"
+                                            Click="PGSource_OnDelegatedButtonsClicked"
+                                            ToolTipService.ToolTip="Source is a delegating edit manager wrapping an inner object that has a [PGButton]. The manager surfaces the inner button itself, so it shows in the grid."/>
                                     <Button Content="Set Elevated Values" Click="PGSource_OnSetElevatedClicked"
                                             ToolTipService.ToolTip="Sets elevated property values externally - tests RecacheEditValue cascade"/>
                                     <Button x:Name="PG_WrappedMatrixButton" Content="Wrapped Mode Matrix (PGShowIf repro)"

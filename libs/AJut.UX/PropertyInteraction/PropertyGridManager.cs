@@ -4,6 +4,7 @@ namespace AJut.UX.PropertyInteraction
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
+    using AJut;
     using AJut.Storage;
     using AJut.Text.AJson;
     using AJut.Tree;
@@ -132,15 +133,37 @@ namespace AJut.UX.PropertyInteraction
                     targets = PropertyEditTarget.GenerateForPropertiesOf(item, m_maxRecursionDepth);
                 }
 
+                int buttonRowCount = 0;
                 foreach (PropertyEditTarget target in targets)
                 {
                     _Add(target);
+                    if (target.Editor == "Button")
+                    {
+                        ++buttonRowCount;
+                    }
                 }
 
-                // Generate button targets from [PGButton] methods
+                // Generate button targets from [PGButton] methods. This only reflects over the source
+                // object itself - an IPropertyEditManager that delegates to a different inner object
+                // must surface that object's buttons itself (see the Detailed diagnostic below).
                 foreach (PropertyEditTarget buttonTarget in PropertyEditTarget.GenerateButtonsForMethodsOf(item))
                 {
                     _Add(buttonTarget);
+                    ++buttonRowCount;
+                }
+
+                // A delegating manager that produced no button rows is the exact shape where an inner
+                // object's [PGButton] silently goes missing. Surface that at Detailed verbosity so a
+                // missing button is findable without a debugger, without spamming normal logs.
+                if (item is IPropertyEditManager && buttonRowCount == 0)
+                {
+                    Logger.LogInfo(
+                        $"PropertyGrid: source '{item.GetType().Name}' is an IPropertyEditManager that produced no "
+                        + "button rows. [PGButton] methods are only auto-harvested from the source object itself - if a "
+                        + "delegated/inner object defines them, surface them via "
+                        + "PropertyEditTarget.GenerateButtonsForMethodsOf(inner) inside GenerateEditTargets.",
+                        eLogVerbosity.Detailed
+                    );
                 }
             }
 

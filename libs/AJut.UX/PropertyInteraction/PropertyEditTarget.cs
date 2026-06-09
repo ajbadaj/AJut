@@ -741,8 +741,14 @@ namespace AJut.UX.PropertyInteraction
         /// Scans the source item's methods for [PGButton] and generates a PropertyEditTarget
         /// for each. The target's Editor is "Button", EditValue is the button label, and
         /// EditContext is an <see cref="ActionCommand"/> that invokes the method.
+        ///
+        /// The PropertyGrid auto-harvests buttons from the source object it is handed. When that
+        /// source is an <see cref="IPropertyEditManager"/> that delegates target generation to a
+        /// different inner object, the inner object's buttons are NOT seen automatically - the
+        /// manager must call this for its inner object(s) and include the results in
+        /// <see cref="IPropertyEditManager.GenerateEditTargets"/>.
         /// </summary>
-        internal static IEnumerable<PropertyEditTarget> GenerateButtonsForMethodsOf(object sourceItem)
+        public static IEnumerable<PropertyEditTarget> GenerateButtonsForMethodsOf(object sourceItem)
         {
             Type type = sourceItem.GetType();
             foreach (MethodInfo method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
@@ -764,14 +770,13 @@ namespace AJut.UX.PropertyInteraction
                 var capturedMethod = method;
                 var capturedItem = sourceItem;
 
-                var groupAttr = method.GetCustomAttribute<PGGroupAttribute>();
-                var target = new PropertyEditTarget(method.Name, () => buttonName, null)
-                {
-                    DisplayName = buttonName,
-                    Editor = "Button",
-                    GroupId = groupAttr?.GroupId,
-                    MemberSortOrder = method.GetCustomAttribute<PGMemberOrderAttribute>()?.Order,
-                };
+                var target = CreateButton(
+                    buttonName,
+                    () => capturedMethod.Invoke(capturedMethod.IsStatic ? null : capturedItem, null),
+                    method.Name
+                );
+                target.GroupId = method.GetCustomAttribute<PGGroupAttribute>()?.GroupId;
+                target.MemberSortOrder = method.GetCustomAttribute<PGMemberOrderAttribute>()?.Order;
 
                 // Attach ShowIf/HideIf condition info for PropertyGridManager
                 var buttonShowIf = method.GetCustomAttribute<PGShowIfAttribute>();
@@ -783,17 +788,35 @@ namespace AJut.UX.PropertyInteraction
                     target.ConditionSourceItem = sourceItem;
                 }
 
-                // Capture target so the action can signal SourceCommitted after running
-                var capturedTarget = target;
-                Action action = () =>
-                {
-                    capturedMethod.Invoke(capturedMethod.IsStatic ? null : capturedItem, null);
-                    capturedTarget.ForceRaiseSourceCommitted();
-                };
-                target.EditContext = new ActionCommand(action);
-
                 yield return target;
             }
+        }
+
+        /// <summary>
+        /// Builds a button row for hand-assembled target lists - i.e. <see cref="IPropertyEditManager"/>
+        /// implementations that construct their own targets instead of reflecting over [PGButton] methods.
+        /// The result behaves exactly like a [PGButton]-generated row: <see cref="Editor"/> is "Button",
+        /// the label is shown, and clicking runs <paramref name="onClick"/> then raises SourceCommitted so
+        /// the grid refreshes dependent rows and fires PropertyTreeChanged.
+        /// </summary>
+        /// <param name="label">Button text, also used as the row display name.</param>
+        /// <param name="onClick">Invoked when the button is clicked.</param>
+        /// <param name="pathTarget">Optional unique key for the row; defaults to <paramref name="label"/>.</param>
+        public static PropertyEditTarget CreateButton (string label, Action onClick, string pathTarget = null)
+        {
+            var target = new PropertyEditTarget(pathTarget ?? label, () => label, null)
+            {
+                DisplayName = label,
+                Editor = "Button",
+            };
+
+            target.EditContext = new ActionCommand(() =>
+            {
+                onClick?.Invoke();
+                target.ForceRaiseSourceCommitted();
+            });
+
+            return target;
         }
 
         /// <summary>
