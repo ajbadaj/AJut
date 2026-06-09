@@ -136,6 +136,43 @@ namespace AJut.UX.Tests
         public string Inner { get; set; } = "inner";
     }
 
+    // Inner data object whose [PGButton] is reached only through a delegating edit manager - mirrors
+    // the real app where element data carries the button but the grid source is a wrapper manager.
+    public class ButtonOnInnerObjectSource : NotifyPropertyChanged
+    {
+        [PGEditor("Text")]
+        public string Name { get; set; } = "inner";
+
+        public int ClickCount { get; private set; }
+
+        [PGButton("Do Inner Thing")]
+        public void DoInnerThing () => ++this.ClickCount;
+    }
+
+    // A manager that delegates target generation to an inner object. It must surface the inner
+    // object's [PGButton] methods itself, because the grid only auto-harvests buttons from the
+    // outer source object (this manager), not the delegated inner one.
+    public class DelegatingButtonEditManager : IPropertyEditManager
+    {
+        private readonly ButtonOnInnerObjectSource m_inner;
+        public DelegatingButtonEditManager (ButtonOnInnerObjectSource inner) => m_inner = inner;
+
+        public ButtonOnInnerObjectSource Inner => m_inner;
+
+        public IEnumerable<PropertyEditTarget> GenerateEditTargets ()
+        {
+            foreach (PropertyEditTarget target in PropertyEditTarget.GenerateForPropertiesOf(m_inner))
+            {
+                yield return target;
+            }
+
+            foreach (PropertyEditTarget button in PropertyEditTarget.GenerateButtonsForMethodsOf(m_inner))
+            {
+                yield return button;
+            }
+        }
+    }
+
     public class GroupedShowIfTestSource : NotifyPropertyChanged
     {
         private bool m_showStats;
@@ -1261,6 +1298,29 @@ namespace AJut.UX.Tests
                     gotSourceCommitted = true;
                 }
             }
+        }
+
+        // ------ Buttons on a delegated inner object ------
+
+        [TestMethod]
+        public void Button_OnInnerObject_SurfacesWhenEditManagerHarvestsThem ()
+        {
+            // The grid only auto-harvests buttons from the outer source object. When that source is a
+            // delegating IPropertyEditManager, the inner object's [PGButton] methods only appear if the
+            // manager includes them via GenerateButtonsForMethodsOf - which is now publicly callable.
+            var inner = new ButtonOnInnerObjectSource();
+            var manager = new DelegatingButtonEditManager(inner);
+            var pg = new SimpleTestPropertyGrid { SingleItemSource = manager };
+            var pgManager = new PropertyGridManager(pg);
+
+            pgManager.RebuildEditTargets();
+
+            var buttonTarget = _GetAllTargets(pgManager.RootNode).FirstOrDefault(t => t.Editor == "Button");
+            Assert.IsNotNull(buttonTarget, "Inner object's [PGButton] should surface when the edit manager harvests it");
+            Assert.AreEqual("Do Inner Thing", buttonTarget.DisplayName);
+
+            (buttonTarget.EditContext as ICommand).Execute(null);
+            Assert.AreEqual(1, inner.ClickCount, "Harvested inner button should invoke the inner object's method");
         }
 
         // ------ Conditional button targets ------

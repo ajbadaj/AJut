@@ -741,8 +741,14 @@ namespace AJut.UX.PropertyInteraction
         /// Scans the source item's methods for [PGButton] and generates a PropertyEditTarget
         /// for each. The target's Editor is "Button", EditValue is the button label, and
         /// EditContext is an <see cref="ActionCommand"/> that invokes the method.
+        ///
+        /// The PropertyGrid auto-harvests buttons from the source object it is handed. When that
+        /// source is an <see cref="IPropertyEditManager"/> that delegates target generation to a
+        /// different inner object, the inner object's buttons are NOT seen automatically - the
+        /// manager must call this for its inner object(s) and include the results in
+        /// <see cref="IPropertyEditManager.GenerateEditTargets"/>.
         /// </summary>
-        internal static IEnumerable<PropertyEditTarget> GenerateButtonsForMethodsOf(object sourceItem)
+        public static IEnumerable<PropertyEditTarget> GenerateButtonsForMethodsOf(object sourceItem)
         {
             Type type = sourceItem.GetType();
             foreach (MethodInfo method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static))
