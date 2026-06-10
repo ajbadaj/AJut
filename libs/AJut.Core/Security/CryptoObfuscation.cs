@@ -23,6 +23,11 @@
     /// </summary>
     public static class CryptoObfuscation
     {
+        // FNV-style hash seed pinned to the x86 baseline of the old String.GetHashCode(). The crypto
+        // seed - and therefore the ciphertext - must not vary by process bitness, so we deliberately
+        // do not use the bitness-dependent GenerateStableHashCode extension to derive it.
+        private const int kFixedHashSeed = 5381;
+
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private static string g_key;
 
@@ -43,7 +48,7 @@
 
         public static string RandomizeAndSalt (string seedString)
         {
-            var rng = new Random(seedString.GenerateStableHashCode());
+            var rng = new Random(GenerateBitnessIndependentHashCode(seedString));
             var charList = seedString.ToList();
             for (int i = 0; i < 20; ++i)
             {
@@ -68,7 +73,7 @@
             int iterations = iterationCountOverride ?? g_defaultIterations;
             HashAlgorithmName hashAlgorithm = hashAlgorithmOverride ?? g_defaultAlgorithm;
 
-            Random rng = new Random(key.GenerateStableHashCode());
+            Random rng = new Random(GenerateBitnessIndependentHashCode(key));
             byte[] crytpoSalt = new byte[rng.Next(8, 16)];
             rng.NextBytes(crytpoSalt);
             return new Rfc2898DeriveBytes(key, crytpoSalt, iterations, hashAlgorithm);
@@ -120,6 +125,30 @@
         public static string Decrypt (ObfuscatedString toDecrypt, string decryptionKey = null, Encoding encodingOverride = null, int? iterationCountOverride = null, HashAlgorithmName? hashAlgorithmOverride = null)
         {
             return CryptoObfuscation.Decrypt(toDecrypt.Active, decryptionKey, encodingOverride, iterationCountOverride, hashAlgorithmOverride);
+        }
+
+        /// <summary>
+        /// A copy of <see cref="StringXT.GenerateStableHashCode(string)"/> with the hash seed pinned to
+        /// the x86 baseline (<see cref="kFixedHashSeed"/>) so the result never depends on process bitness.
+        /// This is what keeps the obfuscated ciphertext identical across x86 and x64 processes.
+        /// </summary>
+        private static int GenerateBitnessIndependentHashCode (string source)
+        {
+            int hash1 = kFixedHashSeed;
+            int hash2 = hash1;
+
+            for (int index = 0; index < source.Length && source[index] != '\0'; index += 2)
+            {
+                hash1 = ((hash1 << 5) + hash1) ^ source[index];
+                if (index == source.Length - 1 || source[index + 1] == '\0')
+                {
+                    break;
+                }
+
+                hash2 = ((hash2 << 5) + hash2) ^ source[index + 1];
+            }
+
+            return hash1 + (hash2 * 1566083941);
         }
     }
 }

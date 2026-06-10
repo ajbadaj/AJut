@@ -1,10 +1,11 @@
-﻿namespace AJut.Security
+namespace AJut.Security
 {
     using System;
     using System.Diagnostics;
 
     /// <summary>
-    /// Storage for encrypted obfuscated strings, stores both the basic string, and the x64 compiled version and provides whichever is active.
+    /// Storage for an encrypted obfuscated string. Obfuscation is bitness-independent now, so a single
+    /// encrypted value is stored and handed back regardless of whether the process is x86 or x64.
     /// </summary>
     [DebuggerDisplay("ObfuscatedString - hidden from the debugger")]
     public class ObfuscatedString
@@ -12,19 +13,21 @@
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private readonly string m_str;
 
-        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private readonly string m_x64Str;
+        public ObfuscatedString (string value)
+        {
+            m_str = value;
+        }
 
+        [Obsolete("Obfuscation is now bitness-independent; the x64 variant is ignored. Use ObfuscatedString(string) instead.")]
         public ObfuscatedString (string str, string x64str)
         {
             m_str = str;
-            m_x64Str = x64str;
         }
 
         /// <summary>
-        /// The architecture target determined, encrypted, string to utilize
+        /// The encrypted string to utilize
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        public string Active => Environment.Is64BitProcess ? m_x64Str : m_str;
+        public string Active => m_str;
     }
 }
