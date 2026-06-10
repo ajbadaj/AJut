@@ -117,6 +117,10 @@ namespace AJut.UX.PropertyInteraction
             var root = new PropertyEditTarget("$_root_", () => null, null);
             var editTargets = new Dictionary<int, PropertyEditTarget>();
 
+            // First-pass declaration counter: every target gets a NaturalOrder as it is collected, so
+            // ordering has one cogent tiebreaker instead of relying on dictionary enumeration order.
+            int naturalOrderCounter = 0;
+
             // Materialize source items so we can iterate twice (targets + conditions)
             var sourceList = new List<object>();
             foreach (object item in sourceItems)
@@ -167,16 +171,14 @@ namespace AJut.UX.PropertyInteraction
                 }
             }
 
-            // ------ Interleave property and button rows by [PGMemberOrder]
-            // Tagged targets (properties or [PGButton] methods) sort ahead of untagged ones by
-            // ascending order value; untagged targets keep their natural emission order (properties
-            // first in their resolved order, then buttons). OrderBy is a stable sort, so with no
-            // [PGMemberOrder] anywhere this is identical to the prior straight emission order.
+            // ------ Interleave rows by order, flexbox-style.
+            // Every row's effective order is its [PGMemberOrder]/[MemberOrder] value, or 0 when it has
+            // none. Rows sort by that value and tie-break on NaturalOrder (declaration order). So an
+            // unordered row sits at the 0 baseline - negative orders pull ahead of it, positive orders
+            // fall behind it - and rows interleave by number instead of "all ordered, then all unordered".
             var orderedTargets = editTargets.Values
-                .Select((target, naturalIndex) => (target, naturalIndex))
-                .OrderBy(x => x.target.MemberSortOrder.HasValue ? 0 : 1)
-                .ThenBy(x => x.target.MemberSortOrder ?? x.naturalIndex)
-                .Select(x => x.target)
+                .OrderBy(t => t.MemberSortOrder ?? 0)
+                .ThenBy(t => t.NaturalOrder)
                 .ToList();
 
             // ------ Group post-processing: collect targets with matching GroupId
@@ -264,6 +266,7 @@ namespace AJut.UX.PropertyInteraction
                     return;
                 }
 
+                _target.NaturalOrder = naturalOrderCounter++;
                 editTargets.Add(_id, _target);
             }
         }

@@ -760,6 +760,12 @@
                                     <Button x:Name="PG_DelegatedButtonsButton" Content="Delegated Buttons (delegating edit manager)"
                                             Click="PGSource_OnDelegatedButtonsClicked"
                                             ToolTipService.ToolTip="Source is a delegating edit manager wrapping an inner object that has a [PGButton]. The manager surfaces the inner button itself, so it shows in the grid."/>
+                                    <Button x:Name="PG_MixedOrderButton" Content="Mixed Order ([MemberOrder] props + [PGMemberOrder] button)"
+                                            Click="PGSource_OnMixedOrderClicked"
+                                            ToolTipService.ToolTip="Properties use core [MemberOrder] (1,10,11,20,21); the button uses [PGMemberOrder(22)]. With the fold, the button slots in after Height instead of floating to the top."/>
+                                    <Button x:Name="PG_ManualMixedOrderButton" Content="Mixed Order (manual PET construction)"
+                                            Click="PGSource_OnManualMixedOrderClicked"
+                                            ToolTipService.ToolTip="Same mix built by hand (no attributes) - the manager positions every row, properties and button, by setting MemberSortOrder directly."/>
                                     <Button Content="Set Elevated Values" Click="PGSource_OnSetElevatedClicked"
                                             ToolTipService.ToolTip="Sets elevated property values externally - tests RecacheEditValue cascade"/>
                                     <Button x:Name="PG_WrappedMatrixButton" Content="Wrapped Mode Matrix (PGShowIf repro)"

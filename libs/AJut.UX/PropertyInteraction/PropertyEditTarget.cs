@@ -169,11 +169,19 @@ namespace AJut.UX.PropertyInteraction
         public string GroupId { get; set; }
 
         /// <summary>
-        /// Optional explicit ordering pulled from [PGMemberOrder]. When set, this target sorts ahead
-        /// of untagged targets in the property grid (lowest value first); when null, natural emission
-        /// order is used. Set for both property rows and [PGButton] rows so the two interleave.
+        /// Optional explicit ordering pulled from [PGMemberOrder] (or core [MemberOrder] as a fallback).
+        /// The grid sorts rows by this value flexbox-style: a row with no value is treated as order 0,
+        /// so negative values pull ahead of unordered rows and positive values fall behind them. Set for
+        /// both property rows and [PGButton] rows so the two interleave on one axis.
         /// </summary>
         public int? MemberSortOrder { get; set; }
+
+        /// <summary>
+        /// The natural (declaration / emission) position of this row, stamped in one pass as targets are
+        /// collected. Used as the ordering tiebreaker so unordered rows (effective order 0) and rows that
+        /// share an order value fall back to declaration order rather than an arbitrary one.
+        /// </summary>
+        public int NaturalOrder { get; set; }
 
         /// <summary>
         /// The object on which ShowIf/HideIf condition members are evaluated.
@@ -457,7 +465,10 @@ namespace AJut.UX.PropertyInteraction
                     Editor = editorKey,
                     EditContext = editContext,
                     AdditionalEvalTargets = aliases,
-                    MemberSortOrder = TypeMetadataExtensionRegistrar.GetAttribute<PGMemberOrderAttribute>(prop)?.Order,
+                    // [PGMemberOrder] wins; fall back to core [MemberOrder] so properties positioned
+                    // with [MemberOrder] share one ordering axis with [PGMemberOrder] buttons.
+                    MemberSortOrder = TypeMetadataExtensionRegistrar.GetAttribute<PGMemberOrderAttribute>(prop)?.Order
+                        ?? TypeMetadataExtensionRegistrar.GetAttribute<MemberOrderAttribute>(prop)?.Order,
                 };
 
                 // 3b. Complete deferred coerce holder and coercion delegate assignment
