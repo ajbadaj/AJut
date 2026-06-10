@@ -9,6 +9,7 @@ namespace AJut.UX.Tests
     using System.Windows.Input;
     using AJut.Storage;
     using AJut.Tree;
+    using AJut.TypeManagement;
     using AJut.UX.PropertyInteraction;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -99,6 +100,10 @@ namespace AJut.UX.Tests
     // untagged property to prove buttons interleave with properties rather than trailing at the end.
     public class MemberOrderTestSource
     {
+        [PGMemberOrder(-5)]
+        [PGEditor("Text")]
+        public string PinnedFirst { get; set; } = "pinned";
+
         [PGEditor("Text")]
         public string Untagged { get; set; } = "u";
 
@@ -171,6 +176,35 @@ namespace AJut.UX.Tests
                 yield return button;
             }
         }
+    }
+
+    // Mixed ordering across a base/derived split: properties positioned with core [MemberOrder] plus
+    // a [PGMemberOrder] button. With [MemberOrder] folded into the grid's sort axis, the button slots
+    // in by value instead of floating to the top.
+    public class MemberOrderFoldBase : NotifyPropertyChanged
+    {
+        [PGEditor("Text")]
+        [MemberOrder(1)]
+        public string Name { get; set; } = "n";
+    }
+
+    public class MemberOrderFoldSource : MemberOrderFoldBase
+    {
+        [PGEditor("Text")]
+        [MemberOrder(10)]
+        public string SourcePath { get; set; } = "p";
+
+        [PGEditor("Single")]
+        [MemberOrder(20)]
+        public float Width { get; set; } = 5f;
+
+        [PGEditor("Single")]
+        [MemberOrder(21)]
+        public float Height { get; set; } = 5f;
+
+        [PGButton("Reset")]
+        [PGMemberOrder(22)]
+        public void Reset () { }
     }
 
     public class GroupedShowIfTestSource : NotifyPropertyChanged
@@ -1388,22 +1422,23 @@ namespace AJut.UX.Tests
                 .Select(t => t.PropertyPathTarget)
                 .ToList();
 
-            // Tagged members lead in ascending order value (First=1, MiddleButton=5, Last=10),
-            // and the untagged property trails after all tagged members.
+            // Flexbox order: the negative-ordered row pulls ahead of the unordered 0 baseline, positive
+            // orders fall behind it, and the button (5) interleaves between First (1) and Last (10).
             CollectionAssert.AreEqual(
                 new[]
                 {
+                    nameof(MemberOrderTestSource.PinnedFirst),
+                    nameof(MemberOrderTestSource.Untagged),
                     nameof(MemberOrderTestSource.First),
                     nameof(MemberOrderTestSource.MiddleButton),
                     nameof(MemberOrderTestSource.Last),
-                    nameof(MemberOrderTestSource.Untagged),
                 },
                 topLevel
             );
         }
 
         [TestMethod]
-        public void MemberOrder_PositionsButtonAheadOfUntaggedProperty ()
+        public void MemberOrder_UnorderedSitsAtZeroBaseline ()
         {
             var source = new MemberOrderTestSource();
             var pg = new SimpleTestPropertyGrid { SingleItemSource = source };
@@ -1412,13 +1447,46 @@ namespace AJut.UX.Tests
             manager.RebuildEditTargets();
 
             var topLevel = manager.RootNode.Children.OfType<PropertyEditTarget>().ToList();
-            int buttonIndex = topLevel.FindIndex(t => t.Editor == "Button");
+            int pinnedIndex = topLevel.FindIndex(t => t.PropertyPathTarget == nameof(MemberOrderTestSource.PinnedFirst));
             int untaggedIndex = topLevel.FindIndex(t => t.PropertyPathTarget == nameof(MemberOrderTestSource.Untagged));
+            int firstIndex = topLevel.FindIndex(t => t.PropertyPathTarget == nameof(MemberOrderTestSource.First));
 
-            Assert.IsTrue(buttonIndex >= 0, "The button row should be present");
             Assert.IsTrue(
-                buttonIndex < untaggedIndex,
-                "A [PGMemberOrder]-tagged button should sort ahead of an untagged property instead of trailing at the end"
+                pinnedIndex < untaggedIndex,
+                "A negative [PGMemberOrder] should pull ahead of an unordered row (which sits at the 0 baseline)"
+            );
+            Assert.IsTrue(
+                untaggedIndex < firstIndex,
+                "An unordered row (effective order 0) should precede a positively-ordered row instead of trailing after it"
+            );
+        }
+
+        [TestMethod]
+        public void MemberOrder_AndPGMemberOrder_ShareOneAxis ()
+        {
+            // [MemberOrder] properties and a [PGMemberOrder] button read as one number sequence
+            // (1, 10, 20, 21, 22). The button should slot in by value, not float to the top; and the
+            // consistent base/derived numbering keeps the base property first.
+            var source = new MemberOrderFoldSource();
+            var pg = new SimpleTestPropertyGrid { SingleItemSource = source };
+            var manager = new PropertyGridManager(pg);
+
+            manager.RebuildEditTargets();
+
+            var topLevel = manager.RootNode.Children.OfType<PropertyEditTarget>()
+                .Select(t => t.PropertyPathTarget)
+                .ToList();
+
+            CollectionAssert.AreEqual(
+                new[]
+                {
+                    nameof(MemberOrderFoldBase.Name),
+                    nameof(MemberOrderFoldSource.SourcePath),
+                    nameof(MemberOrderFoldSource.Width),
+                    nameof(MemberOrderFoldSource.Height),
+                    "Reset",
+                },
+                topLevel
             );
         }
 
