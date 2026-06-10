@@ -320,6 +320,11 @@ namespace AJutShowRoomWinUI
         // itself, since the grid only auto-harvests buttons off the source it's handed. See
         // ButtonDelegationDemo.cs.
         private readonly ButtonDelegationEditManager m_delegatedButtonsObj = new ButtonDelegationEditManager();
+        // Mixed ordering: [MemberOrder] properties + a [PGMemberOrder] button - exposes that the two
+        // attributes don't sort on a shared axis (see MixedOrderButtonSource).
+        private readonly MixedOrderButtonSource m_mixedOrderObj = new MixedOrderButtonSource();
+        // Same mix, but built by hand (manual PETs) - positions every row via MemberSortOrder.
+        private readonly ManualMixedOrderManager m_manualMixedOrderObj = new ManualMixedOrderManager();
         private readonly WrappedModeMatrixSource m_wrappedMatrixObj = new WrappedModeMatrixSource();
         private object m_currentPGTestObj;
 
@@ -335,6 +340,8 @@ namespace AJutShowRoomWinUI
         private void PGSource_OnComplexClicked (object sender, RoutedEventArgs e) => this.SetPGSource(m_complexObj);
         private void PGSource_OnComplexBClicked (object sender, RoutedEventArgs e) => this.SetPGSource(m_complexObj2);
         private void PGSource_OnDelegatedButtonsClicked (object sender, RoutedEventArgs e) => this.SetPGSource(m_delegatedButtonsObj);
+        private void PGSource_OnMixedOrderClicked (object sender, RoutedEventArgs e) => this.SetPGSource(m_mixedOrderObj);
+        private void PGSource_OnManualMixedOrderClicked (object sender, RoutedEventArgs e) => this.SetPGSource(m_manualMixedOrderObj);
         private void PGSource_OnWrappedMatrixClicked (object sender, RoutedEventArgs e)
         {
             this.SetPGSource(m_wrappedMatrixObj);
@@ -832,13 +839,15 @@ namespace AJutShowRoomWinUI
         // ------ PGMemberOrder demo ------
         // Declared out of source order on purpose but tagged with [PGMemberOrder]. They render inside
         // the "PGMemberOrder Demo" group in order-value sequence (10, the button at 15, then 20),
-        // proving a button interleaves between properties. The labels call out each expected slot.
+        // proving a button interleaves between properties. The labels call out each expected slot. The
+        // group's values are all positive, so it sorts after the unordered rows (the 0 baseline).
         [PGMemberOrder(20)]
         [PGGroup("PGMemberOrder Demo")]
         [PGLabel("Third (order=20)")]
         public string MemberOrderThird { get; set; } = "third";
 
         [PGMemberOrder(15)]
+        [PGGroup("PGMemberOrder Demo")]
         [PGButton("Button (order=15)")]
         public void MemberOrderDemoButton ()
         {
@@ -1036,6 +1045,76 @@ namespace AJutShowRoomWinUI
     {
         public float X { get; set; } = 777f;
         public float Y { get; set; } = 888f;
+    }
+
+    // ===========[ MixedOrder - [MemberOrder] props + [PGMemberOrder] button ]=======
+    // Reproduces the element-editing case: properties positioned with core [MemberOrder] across a
+    // base/derived split, plus a button positioned with [PGMemberOrder]. The numbers read as one
+    // sequence (1, 10, 11, 20, 21, 22) and the grid now sorts them on one axis, so the button slots
+    // in after Height(21). Every row here is explicitly ordered, so there is no 0-baseline gap.
+    public class MixedOrderBase : NotifyPropertyChanged
+    {
+        [PGEditor("Text")]
+        [MemberOrder(1)]
+        public string Name { get; set; } = "base name";
+    }
+
+    public class MixedOrderButtonSource : MixedOrderBase
+    {
+        [PGEditor("Text")]
+        [MemberOrder(10)]
+        public string SourcePath { get; set; } = "cfr://example";
+
+        [PGEditor("AutoEnum")]
+        [MemberOrder(11)]
+        public eEditorMode Mode { get; set; } = eEditorMode.Text;
+
+        [PGEditor("Single")]
+        [MemberOrder(20)]
+        public float Width { get; set; } = 5f;
+
+        [PGEditor("Single")]
+        [MemberOrder(21)]
+        public float Height { get; set; } = 5f;
+
+        // Slots in after Height (21), since all rows share one ordering axis.
+        [PGButton("Reset Size From Source")]
+        [PGMemberOrder(22)]
+        public void ResetSize ()
+        {
+            this.Width = 5f;
+            this.Height = 5f;
+        }
+    }
+
+    // Manual-PET equivalent of MixedOrderButtonSource: a hand-assembled edit manager. There are no
+    // attributes to read here, so it positions every row - properties and the button - by setting
+    // MemberSortOrder directly. CreateButton makes the button row; MemberSortOrder slots it after Height.
+    public class ManualMixedOrderManager : IPropertyEditManager
+    {
+        private readonly MixedOrderButtonSource m_data = new MixedOrderButtonSource();
+
+        public IEnumerable<PropertyEditTarget> GenerateEditTargets ()
+        {
+            yield return MakeRow("Name", "Text", () => m_data.Name, v => m_data.Name = v as string ?? "", 1);
+            yield return MakeRow("SourcePath", "Text", () => m_data.SourcePath, v => m_data.SourcePath = v as string ?? "", 10);
+            yield return MakeRow("Width", "Single", () => m_data.Width, v => m_data.Width = System.Convert.ToSingle(v), 20);
+            yield return MakeRow("Height", "Single", () => m_data.Height, v => m_data.Height = System.Convert.ToSingle(v), 21);
+
+            var button = PropertyEditTarget.CreateButton("Reset Size From Source", () => m_data.ResetSize());
+            button.MemberSortOrder = 22;
+            yield return button;
+        }
+
+        private static PropertyEditTarget MakeRow (string path, string editor, PropertyEditTarget.GetValue get, PropertyEditTarget.SetValue set, int order)
+        {
+            return new PropertyEditTarget(path, get, set)
+            {
+                DisplayName = path,
+                Editor = editor,
+                MemberSortOrder = order,
+            };
+        }
     }
 
     // ===========[ ShowRoomPanelState - DockZone save/load state bag ]===============
