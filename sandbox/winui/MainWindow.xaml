@@ -885,22 +885,40 @@
                                                Text="Each probe builds a fresh instance against this window, disposes it, drops the strong ref, then forces GC and checks that the WeakReference is dead. PASS means the instance got collected. FAIL means something is still pinning it (likely an event subscription that didn't get unhooked in Dispose)."/>
 
                                     <StackPanel Spacing="6">
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <Button Content="Probe DockingManager" Click="LeakProbe_OnDockingManagerClicked" MinWidth="220"/>
-                                            <TextBlock x:Name="LeakProbe_DockingManagerStatus" VerticalAlignment="Center" FontFamily="Consolas" Opacity="0.85"
-                                                       Text="(not run yet)"/>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <Button Content="Probe WindowManager" Click="LeakProbe_OnWindowManagerClicked" MinWidth="220"/>
-                                            <TextBlock x:Name="LeakProbe_WindowManagerStatus" VerticalAlignment="Center" FontFamily="Consolas" Opacity="0.85"
-                                                       Text="(not run yet)"/>
-                                        </StackPanel>
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <Button Content="Probe x5 (open/close cycles)" Click="LeakProbe_OnCycleClicked" MinWidth="220"/>
-                                            <TextBlock x:Name="LeakProbe_CycleStatus" VerticalAlignment="Center" FontFamily="Consolas" Opacity="0.85"
-                                                       Text="(not run yet)"/>
-                                        </StackPanel>
+                                        <Button Content="Probe DockingManager" Click="LeakProbe_OnDockingManagerClicked" MinWidth="300" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
+                                        <Button Content="Probe WindowManager" Click="LeakProbe_OnWindowManagerClicked" MinWidth="300" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
+                                        <Button Content="Probe x5 (open/close cycles)" Click="LeakProbe_OnCycleClicked" MinWidth="300" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
+                                        <Button Content="Dock leak - child window" Click="LeakProbe_OnChildWindowDockingClicked" MinWidth="300" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
+                                        <Button Content="Dock leak - main window (control)" Click="LeakProbe_OnMainWindowDockingClicked" MinWidth="300" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
+                                        <Button Content="Probe PropertyGrid" Click="LeakProbe_OnPropertyGridClicked" MinWidth="300" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
                                     </StackPanel>
+
+                                    <!-- Transient host for the main-window-control and PropertyGrid probes. They
+                                         briefly parent a real control here (long-lived main window tree), then
+                                         detach it - mirrors a main-frame-nav editor, which collects cleanly. -->
+                                    <Border x:Name="LeakProbe_MainHostArea" Height="140" Margin="0,4,0,0"/>
+
+                                    <Grid Margin="0,8,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="Output" VerticalAlignment="Center" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                                        <Button Grid.Column="1" Content="Copy to clipboard" Click="LeakProbe_OnCopyOutputClicked" Margin="0,0,8,0"/>
+                                        <Button Grid.Column="2" Content="Clear" Click="LeakProbe_OnClearOutputClicked"/>
+                                    </Grid>
+                                    <TextBox x:Name="LeakProbe_Output"
+                                             IsReadOnly="True"
+                                             AcceptsReturn="True"
+                                             TextWrapping="Wrap"
+                                             IsSpellCheckEnabled="False"
+                                             FontFamily="Consolas"
+                                             FontSize="12"
+                                             Height="240"
+                                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                             ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                             Text=""/>
 
                                     <TextBlock Text="Notes" Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,0"/>
                                     <TextBlock TextWrapping="Wrap" Opacity="0.7" FontSize="12"

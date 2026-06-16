@@ -80,6 +80,14 @@ namespace AJut.UX.PropertyInteraction
             this.SnapshotExpandedStates();
             this.Items.Clear();
             this.RootNode = null;
+
+            // These hold PropertyEditTargets (which reach back to the source object). RebuildEditTargets
+            // clears them on every rebuild; Dispose must too, or a disposed grid keeps the source graph
+            // pinned through them. m_expandedStates is intentionally preserved (snapshot for restore).
+            m_visibilityConditions.Clear();
+            m_naturalChildOrder.Clear();
+            m_groupHeaders.Clear();
+            m_hasConditionalVisibility = false;
         }
 
         public void RebuildEditTargets ()

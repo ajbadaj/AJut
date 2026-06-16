@@ -543,6 +543,71 @@ namespace AJut.UX.Controls
             }
         }
 
+        /// <summary>
+        /// Finds the row (visible or collapsed) that wraps the given source node, or null when no row
+        /// currently represents it. Searches the full tree, not just the realized/expanded rows.
+        /// </summary>
+        public FlatTreeItem FindItemForSource (IObservableTreeNode source)
+        {
+            if (source == null || m_store.RootNode == null)
+            {
+                return null;
+            }
+
+            foreach (FlatTreeItem item in TreeTraversal<FlatTreeItem>.All(m_store.RootNode))
+            {
+                if (item.Source == source)
+                {
+                    return item;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Selects the row wrapping the given source node, expanding any collapsed ancestors first so the
+        /// row is realized, and optionally scrolling it into view. Returns false when no row matches the
+        /// source or the control isn't ready to take a selection yet.
+        /// </summary>
+        public bool TrySelectItemForSource (IObservableTreeNode source, bool scrollIntoView = true)
+        {
+            if (this.PART_ListView == null)
+            {
+                return false;
+            }
+
+            FlatTreeItem item = this.FindItemForSource(source);
+            if (item == null)
+            {
+                return false;
+            }
+
+            // Expand collapsed ancestors top-down so the target row moves out of its parents'
+            // hidden-children lists and into the visible store before we select / scroll to it.
+            var ancestry = new List<FlatTreeItem>();
+            for (FlatTreeItem ancestor = item.Parent; ancestor != null; ancestor = ancestor.Parent)
+            {
+                ancestry.Add(ancestor);
+            }
+
+            for (int i = ancestry.Count - 1; i >= 0; --i)
+            {
+                if (ancestry[i].IsExpandable && !ancestry[i].IsExpanded)
+                {
+                    ancestry[i].IsExpanded = true;
+                }
+            }
+
+            this.SetSelection(new[] { item });
+            if (scrollIntoView)
+            {
+                this.ScrollIntoView(item);
+            }
+
+            return true;
+        }
+
         // ===========[ ListView event handlers ]==================================
         private void ListView_OnSelectionChanged (object sender, SelectionChangedEventArgs e)
         {

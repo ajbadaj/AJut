@@ -48,6 +48,15 @@ namespace AJut.UX.Controls
 
         public void Dispose ()
         {
+            if (this.PART_TreeList != null)
+            {
+                this.PART_TreeList.DragDropReorderRequested -= this.OnDragDropReorderRequested;
+            }
+
+            // Drop the per-target subscriptions and each target's elevated INPC hooks while the
+            // tree is still walkable. m_manager.Dispose() only clears collections; without this a
+            // long-lived source object keeps the disposed grid (and its target tree) alive.
+            this._TeardownTargetSubscriptions();
             m_manager.Dispose();
             this.ItemsSource = null;
             this.SingleItemSource = null;
@@ -237,6 +246,7 @@ namespace AJut.UX.Controls
             }
             else
             {
+                this._TeardownTargetSubscriptions();
                 m_manager.Dispose();
                 this.PropertyTreeItems = null;
             }
@@ -272,6 +282,7 @@ namespace AJut.UX.Controls
             }
             else
             {
+                this._TeardownTargetSubscriptions();
                 m_manager.Dispose();
                 this.PropertyTreeItems = null;
             }
@@ -315,20 +326,7 @@ namespace AJut.UX.Controls
         private void RebuildEditTargets ()
         {
             // Unsubscribe from old tree (and hidden conditional targets) before rebuild.
-            if (m_manager.RootNode != null)
-            {
-                foreach (var target in _WalkAllTargets(m_manager.RootNode))
-                {
-                    target.PropertyChanged -= this.OnAnyTargetPropertyChanged;
-                    target.Teardown();
-                }
-
-                foreach (var target in m_manager.HiddenConditionalTargets)
-                {
-                    target.PropertyChanged -= this.OnAnyTargetPropertyChanged;
-                    target.Teardown();
-                }
-            }
+            this._TeardownTargetSubscriptions();
 
             m_manager.RebuildEditTargets();
             this.PropertyTreeItems = m_manager.RootNode != null
@@ -384,6 +382,30 @@ namespace AJut.UX.Controls
                 // A property edit may change a ShowIf/HideIf condition - toggle
                 // affected targets in/out without a full rebuild.
                 m_manager.UpdateConditionalVisibility();
+            }
+        }
+
+        // Drops every per-target PropertyChanged subscription and tears down each target's elevated
+        // sub-object INPC hooks. Walks the live tree plus the hidden-conditional targets (which are
+        // subscribed even while out of the tree). Called before every rebuild and on dispose / source
+        // clear so a torn-down grid does not leave subscriptions pinning the target/source graph.
+        private void _TeardownTargetSubscriptions ()
+        {
+            if (m_manager.RootNode == null)
+            {
+                return;
+            }
+
+            foreach (var target in _WalkAllTargets(m_manager.RootNode))
+            {
+                target.PropertyChanged -= this.OnAnyTargetPropertyChanged;
+                target.Teardown();
+            }
+
+            foreach (var target in m_manager.HiddenConditionalTargets)
+            {
+                target.PropertyChanged -= this.OnAnyTargetPropertyChanged;
+                target.Teardown();
             }
         }
 

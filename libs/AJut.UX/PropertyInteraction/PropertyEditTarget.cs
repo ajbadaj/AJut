@@ -75,6 +75,15 @@ namespace AJut.UX.PropertyInteraction
         /// <summary>The remove command for list elements (null when not a removable list element).</summary>
         public System.Windows.Input.ICommand ListElementRemoveCommand => (this.EditContext as PropertyGridListElementContext)?.RemoveCommand;
 
+        /// <summary>
+        /// The discrete source object this row stands in for. For a list element row this is the element
+        /// instance currently at the row's index - read live, so it tracks reorders and replacements. For
+        /// every other row it is null, since those rows edit a property value rather than representing an
+        /// object. The PropertyGrid walks up from the selected row to the nearest row with a non-null
+        /// SourceObject to answer "which element owns this row".
+        /// </summary>
+        public object? SourceObject => this.IsListElement ? m_getValue?.Invoke() : null;
+
         /// <summary>True when this row should show an inline editor.</summary>
         public bool HasInlineEditor => !this.IsExpandable || this.ElevatedChildTarget != null || this.IsListEditor;
 
