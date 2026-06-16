@@ -26,6 +26,10 @@ namespace AJut.UX.PropertyInteraction
         private PropertyEditTarget m_elevatedChildTarget;
         private INotifyPropertyChanged m_elevatedSubObject;
         private INotifyPropertyChanged m_editValueINPC;
+        private string m_listElementHeaderText;
+        private Func<string> m_listElementHeaderResolver;
+        private bool m_listElementHeaderShownWhenExpanded = true;
+        private INotifyPropertyChanged m_listElementHeaderSource;
 
         public PropertyEditTarget(string propertyPathTarget, GetValue getValue, SetValue? setValue = null)
         {
@@ -75,6 +79,15 @@ namespace AJut.UX.PropertyInteraction
         /// <summary>The remove command for list elements (null when not a removable list element).</summary>
         public System.Windows.Input.ICommand ListElementRemoveCommand => (this.EditContext as PropertyGridListElementContext)?.RemoveCommand;
 
+        /// <summary>
+        /// The discrete source object this row stands in for. For a list element row this is the element
+        /// instance currently at the row's index - read live, so it tracks reorders and replacements. For
+        /// every other row it is null, since those rows edit a property value rather than representing an
+        /// object. The PropertyGrid walks up from the selected row to the nearest row with a non-null
+        /// SourceObject to answer "which element owns this row".
+        /// </summary>
+        public object? SourceObject => this.IsListElement ? m_getValue?.Invoke() : null;
+
         /// <summary>True when this row should show an inline editor.</summary>
         public bool HasInlineEditor => !this.IsExpandable || this.ElevatedChildTarget != null || this.IsListEditor;
 
@@ -106,7 +119,17 @@ namespace AJut.UX.PropertyInteraction
         public bool IsExpanded
         {
             get => m_isExpanded;
-            set => this.SetAndRaiseIfChanged(ref m_isExpanded, value);
+            set
+            {
+                if (this.SetAndRaiseIfChanged(ref m_isExpanded, value))
+                {
+                    // A collapse can follow an edit made while the row was expanded, so re-resolve the
+                    // element header to pick up the latest value, then refresh its visibility either way
+                    // (a "when collapsed" header toggles in/out as the row expands and collapses).
+                    this.RefreshListElementHeader();
+                    this.RaisePropertyChanged(nameof(IsListElementHeaderVisible));
+                }
+            }
         }
 
         private string m_editor;
@@ -129,6 +152,32 @@ namespace AJut.UX.PropertyInteraction
             get => m_subtitle;
             set => this.SetAndRaiseIfChanged(ref m_subtitle, value);
         }
+
+        /// <summary>
+        /// For a list element row, the text shown in the value column beside the "[index]" label,
+        /// resolved from [PGList]'s ElementDisplayMemberName. Null/empty when no header is configured.
+        /// </summary>
+        public string ListElementHeaderText
+        {
+            get => m_listElementHeaderText;
+            set
+            {
+                if (this.SetAndRaiseIfChanged(ref m_listElementHeaderText, value))
+                {
+                    this.RaisePropertyChanged(nameof(IsListElementHeaderVisible));
+                }
+            }
+        }
+
+        /// <summary>
+        /// True when the element header should currently render: it has text, this row has no inline
+        /// editor occupying the value column, and the configured display mode allows it in the row's
+        /// current expand state. Recomputed live; change is raised from the text and IsExpanded setters.
+        /// </summary>
+        public bool IsListElementHeaderVisible
+            => !string.IsNullOrEmpty(this.ListElementHeaderText)
+                && !this.HasInlineEditor
+                && (m_listElementHeaderShownWhenExpanded || !this.IsExpanded);
 
         private string m_toolTip;
 
@@ -288,6 +337,49 @@ namespace AJut.UX.PropertyInteraction
             }
 
             m_elevatedChildTarget?.RecacheEditValue();
+        }
+
+        /// <summary>
+        /// Wires up the element header for a list element row: stores the resolver and display mode, then
+        /// resolves the initial value. When <paramref name="headerSource"/> implements INotifyPropertyChanged
+        /// (the typical case - the element itself), subscribes so any property change on the element refreshes
+        /// the header live. The subscription is dropped in <see cref="Teardown"/>, which the PropertyGrid
+        /// runs for every target on rebuild and dispose. Non-INPC elements still refresh on rebuild and on
+        /// expand/collapse (see <see cref="IsExpanded"/>).
+        /// </summary>
+        internal void ConfigureListElementHeader (object headerSource, Func<string> resolver, eElementHeaderDisplay visibility)
+        {
+            m_listElementHeaderResolver = resolver;
+            m_listElementHeaderShownWhenExpanded = visibility == eElementHeaderDisplay.Always;
+
+            if (m_listElementHeaderSource != null)
+            {
+                m_listElementHeaderSource.PropertyChanged -= this.OnListElementHeaderSourceChanged;
+            }
+
+            m_listElementHeaderSource = headerSource as INotifyPropertyChanged;
+            if (m_listElementHeaderSource != null)
+            {
+                m_listElementHeaderSource.PropertyChanged += this.OnListElementHeaderSourceChanged;
+            }
+
+            this.RefreshListElementHeader();
+        }
+
+        /// <summary>Re-runs the element header resolver (if one was configured) and updates the text.</summary>
+        public void RefreshListElementHeader ()
+        {
+            if (m_listElementHeaderResolver != null)
+            {
+                this.ListElementHeaderText = m_listElementHeaderResolver();
+            }
+        }
+
+        // Any change on the element refreshes the header - property-name agnostic so it also covers
+        // method- and field-derived headers (e.g. a header built from two of the element's properties).
+        private void OnListElementHeaderSourceChanged (object sender, PropertyChangedEventArgs e)
+        {
+            this.RefreshListElementHeader();
         }
 
         /// <summary>
@@ -674,6 +766,62 @@ namespace AJut.UX.PropertyInteraction
                         || TypeMetadataExtensionRegistrar.HasAttribute<PGShowReadonlyAttribute>(_prop);
                 }
             }
+        }
+
+        /// <summary>
+        /// Resolves a display string from a named member on a list element. The member may be a
+        /// property, a field, or a zero-parameter method - instance or static. Returns the value's
+        /// ToString, or null when the member is missing, the value is null, or an instance member was
+        /// asked for with no element to read from.
+        /// </summary>
+        internal static string ResolveDisplayMember (Type elementType, object element, string memberName)
+        {
+            if (elementType == null || string.IsNullOrEmpty(memberName))
+            {
+                return null;
+            }
+
+            const BindingFlags kFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+
+            // 1. Property
+            PropertyInfo prop = elementType.GetProperty(memberName, kFlags);
+            if (prop != null)
+            {
+                bool isStatic = prop.GetGetMethod(true)?.IsStatic == true;
+                if (!isStatic && element == null)
+                {
+                    return null;
+                }
+
+                return prop.GetValue(isStatic ? null : element)?.ToString();
+            }
+
+            // 2. Field
+            FieldInfo field = elementType.GetField(memberName, kFlags);
+            if (field != null)
+            {
+                if (!field.IsStatic && element == null)
+                {
+                    return null;
+                }
+
+                return field.GetValue(field.IsStatic ? null : element)?.ToString();
+            }
+
+            // 3. Zero-parameter method
+            MethodInfo method = elementType.GetMethod(memberName, kFlags, null, Type.EmptyTypes, null);
+            if (method != null)
+            {
+                if (!method.IsStatic && element == null)
+                {
+                    return null;
+                }
+
+                return method.Invoke(method.IsStatic ? null : element, null)?.ToString();
+            }
+
+            Logger.LogError($"PGList: ElementDisplayMemberName member '{memberName}' not found on '{elementType.Name}'");
+            return null;
         }
 
         /// <summary>
@@ -1157,6 +1305,19 @@ namespace AJut.UX.PropertyInteraction
                     }
                 }
 
+                // ------ Element header: fill the otherwise-blank value column with a member-resolved label ------
+                if (!string.IsNullOrEmpty(listAttr.ElementDisplayMemberName) && element != null)
+                {
+                    object capturedElement = element;
+                    Type capturedHeaderType = elementType;
+                    string capturedMember = listAttr.ElementDisplayMemberName;
+                    childTarget.ConfigureListElementHeader(
+                        capturedElement,
+                        () => ResolveDisplayMember(capturedHeaderType, capturedElement, capturedMember),
+                        listAttr.ElementDisplayMemberVisibility
+                    );
+                }
+
                 childTarget.Setup();
                 listParent.InsertChild(listParent.Children.Count, childTarget);
                 ++index;
@@ -1412,6 +1573,12 @@ namespace AJut.UX.PropertyInteraction
             {
                 m_editValueINPC.PropertyChanged -= this.OnEditValueSubPropertyChanged;
                 m_editValueINPC = null;
+            }
+
+            if (m_listElementHeaderSource != null)
+            {
+                m_listElementHeaderSource.PropertyChanged -= this.OnListElementHeaderSourceChanged;
+                m_listElementHeaderSource = null;
             }
         }
 

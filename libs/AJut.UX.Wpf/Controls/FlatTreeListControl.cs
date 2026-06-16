@@ -442,6 +442,81 @@ namespace AJut.UX.Controls
             this.PART_ListBoxDisplay?.Focus();
         }
 
+        /// <summary>
+        /// Selects the row wrapping the given source node, expanding any collapsed ancestors first so the
+        /// row joins the visible list, and optionally scrolling it into view. Returns false when no row
+        /// matches the source or the control isn't ready to take a selection yet.
+        /// </summary>
+        public bool TrySelectItemForSource (IObservableTreeNode source, bool scrollIntoView = true)
+        {
+            if (this.PART_ListBoxDisplay == null || source == null)
+            {
+                return false;
+            }
+
+            // Walk AllChildren (visible + collapsed) rather than StorageItemForNode's TreeTraversal so the
+            // search reaches rows parked inside collapsed parents - which is exactly what we then expand to.
+            FlatTreeItem item = _FindItemForSource(this.Items?.RootNode, source);
+            if (item == null)
+            {
+                return false;
+            }
+
+            // Expand collapsed ancestors top-down so the target row moves out of its parents'
+            // hidden-children lists and into the visible list before we select / scroll to it.
+            var ancestry = new List<FlatTreeItem>();
+            for (FlatTreeItem ancestor = item.Parent; ancestor != null; ancestor = ancestor.Parent)
+            {
+                ancestry.Add(ancestor);
+            }
+
+            for (int i = ancestry.Count - 1; i >= 0; --i)
+            {
+                if (ancestry[i].IsExpandable && !ancestry[i].IsExpanded)
+                {
+                    ancestry[i].IsExpanded = true;
+                }
+            }
+
+            this.SelectedItem = source;
+
+            if (scrollIntoView)
+            {
+                // Rows revealed by the expansion above aren't laid out yet; defer the scroll to the
+                // dispatcher (background priority) so the ListBox has realized them before we scroll.
+                void ScrollToItem () => this.PART_ListBoxDisplay?.ScrollIntoView(item);
+                this.Dispatcher.BeginInvoke((Action)ScrollToItem, System.Windows.Threading.DispatcherPriority.Background);
+            }
+
+            return true;
+        }
+
+        // Recurse via AllChildren (visible + collapsed) so the search reaches rows parked inside collapsed
+        // parents - which is exactly what programmatic selection must expand to.
+        private static FlatTreeItem _FindItemForSource (FlatTreeItem node, IObservableTreeNode source)
+        {
+            if (node == null)
+            {
+                return null;
+            }
+
+            if (node.Source == source)
+            {
+                return node;
+            }
+
+            foreach (FlatTreeItem child in node.AllChildren)
+            {
+                FlatTreeItem found = _FindItemForSource(child, source);
+                if (found != null)
+                {
+                    return found;
+                }
+            }
+
+            return null;
+        }
+
         protected override void OnKeyUp (KeyEventArgs e)
         {
             if (e.Key == Key.Left)

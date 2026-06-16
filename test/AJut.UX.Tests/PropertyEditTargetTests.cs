@@ -328,6 +328,101 @@ namespace AJut.UX.Tests
         };
     }
 
+    // ===========[ List element header models ]================================
+
+    /// <summary>Element type exercising every member kind ResolveDisplayMember supports.</summary>
+    public class HeaderElement
+    {
+        public static string StaticLabel => "static-label";
+        public static string StaticField = "static-field";
+
+        public string Name { get; set; } = "unnamed";
+        public int Age { get; set; }
+        public string PublicField = "field-value";
+
+        public string DescribeMethod () => $"{this.Name} ({this.Age})";
+    }
+
+    /// <summary>Plain complex-element list whose element rows show the Name header in every state.</summary>
+    public class ListWithHeaderAlwaysModel
+    {
+        [PGList(ElementDisplayMemberName = nameof(HeaderElement.Name))]
+        public List<HeaderElement> Entries { get; set; } = new List<HeaderElement>
+        {
+            new HeaderElement { Name = "Tony", Age = 16 },
+            new HeaderElement { Name = "Jill", Age = 24 },
+        };
+    }
+
+    /// <summary>Plain complex-element list whose element rows show the Name header only while collapsed.</summary>
+    public class ListWithHeaderWhenCollapsedModel
+    {
+        [PGList(ElementDisplayMemberName = nameof(HeaderElement.Name), ElementDisplayMemberVisibility = eElementHeaderDisplay.WhenCollapsed)]
+        public List<HeaderElement> Entries { get; set; } = new List<HeaderElement>
+        {
+            new HeaderElement { Name = "Tony", Age = 16 },
+            new HeaderElement { Name = "Jill", Age = 24 },
+        };
+    }
+
+    /// <summary>One header list per member kind, to exercise property/field/method/static/missing resolution.</summary>
+    public class ListHeaderMemberKindsModel
+    {
+        [PGList(ElementDisplayMemberName = nameof(HeaderElement.Name))]
+        public List<HeaderElement> ByProperty { get; set; } = NewEntries();
+
+        [PGList(ElementDisplayMemberName = nameof(HeaderElement.PublicField))]
+        public List<HeaderElement> ByField { get; set; } = NewEntries();
+
+        [PGList(ElementDisplayMemberName = nameof(HeaderElement.DescribeMethod))]
+        public List<HeaderElement> ByMethod { get; set; } = NewEntries();
+
+        [PGList(ElementDisplayMemberName = nameof(HeaderElement.StaticLabel))]
+        public List<HeaderElement> ByStatic { get; set; } = NewEntries();
+
+        [PGList(ElementDisplayMemberName = nameof(HeaderElement.StaticField))]
+        public List<HeaderElement> ByStaticField { get; set; } = NewEntries();
+
+        [PGList(ElementDisplayMemberName = "NotARealMember")]
+        public List<HeaderElement> ByMissing { get; set; } = NewEntries();
+
+        private static List<HeaderElement> NewEntries () => new List<HeaderElement>
+        {
+            new HeaderElement { Name = "Tony", Age = 16 },
+        };
+    }
+
+    /// <summary>INPC element so the live header refresh (element property change -> refetch) can be exercised.</summary>
+    public class LiveHeaderElement : INotifyPropertyChanged
+    {
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        private string m_name;
+        public string Name
+        {
+            get => m_name;
+            set
+            {
+                if (m_name != value)
+                {
+                    m_name = value;
+                    this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Name)));
+                }
+            }
+        }
+    }
+
+    /// <summary>Plain complex-element list over INPC elements, so header refresh is driven live.</summary>
+    public class ListWithLiveHeaderModel
+    {
+        [PGList(ElementDisplayMemberName = nameof(LiveHeaderElement.Name))]
+        public List<LiveHeaderElement> Entries { get; set; } = new List<LiveHeaderElement>
+        {
+            new LiveHeaderElement { Name = "Tony" },
+            new LiveHeaderElement { Name = "Jill" },
+        };
+    }
+
     // ===========[ Property filter models ]====================================
 
     /// <summary>Model with several properties to exercise limitToTheseProperties filtering.</summary>
@@ -1396,11 +1491,134 @@ namespace AJut.UX.Tests
             Assert.AreEqual("Hand-built hint", target.EffectiveToolTip);
         }
 
+        // ===[ List element header ]==============================================
+
+        [TestMethod]
+        public void PET_PGList_ElementHeader_ResolvesPropertyFieldMethodAndStatic ()
+        {
+            var model = new ListHeaderMemberKindsModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+            SetupAll(targets);
+
+            Assert.AreEqual("Tony", FirstElement(targets, "ByProperty").ListElementHeaderText);
+            Assert.AreEqual("field-value", FirstElement(targets, "ByField").ListElementHeaderText);
+            Assert.AreEqual("Tony (16)", FirstElement(targets, "ByMethod").ListElementHeaderText);
+            Assert.AreEqual("static-label", FirstElement(targets, "ByStatic").ListElementHeaderText);
+            Assert.AreEqual("static-field", FirstElement(targets, "ByStaticField").ListElementHeaderText);
+
+            // A member that does not exist resolves to no header text and stays hidden.
+            var missing = FirstElement(targets, "ByMissing");
+            Assert.IsTrue(string.IsNullOrEmpty(missing.ListElementHeaderText));
+            Assert.IsFalse(missing.IsListElementHeaderVisible);
+        }
+
+        [TestMethod]
+        public void PET_PGList_ElementHeader_Always_FillsValueColumnAndIsVisible ()
+        {
+            var model = new ListWithHeaderAlwaysModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+            SetupAll(targets);
+
+            var list = Find(targets, "Entries");
+            var elements = list.Children.OfType<PropertyEditTarget>().ToList();
+            Assert.AreEqual(2, elements.Count);
+
+            // Expandable complex element rows have no inline editor, so the header occupies the value column.
+            Assert.IsTrue(elements[0].IsExpandable);
+            Assert.IsFalse(elements[0].HasInlineEditor);
+            Assert.AreEqual("Tony", elements[0].ListElementHeaderText);
+            Assert.AreEqual("Jill", elements[1].ListElementHeaderText);
+            Assert.IsTrue(elements[0].IsListElementHeaderVisible, "Header should be visible on a collapsed row");
+        }
+
+        [TestMethod]
+        public void PET_PGList_ElementHeader_Always_StaysVisibleWhenExpanded ()
+        {
+            var model = new ListWithHeaderAlwaysModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+            SetupAll(targets);
+
+            var elem0 = Find(targets, "Entries").Children.OfType<PropertyEditTarget>().First();
+            elem0.IsExpanded = true;
+            Assert.IsTrue(elem0.IsListElementHeaderVisible, "Always mode keeps the header visible while expanded");
+        }
+
+        [TestMethod]
+        public void PET_PGList_ElementHeader_WhenCollapsed_HidesWhileExpanded ()
+        {
+            var model = new ListWithHeaderWhenCollapsedModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+            SetupAll(targets);
+
+            var elem0 = Find(targets, "Entries").Children.OfType<PropertyEditTarget>().First();
+            Assert.IsTrue(elem0.IsListElementHeaderVisible, "Collapsed row should show the header");
+
+            elem0.IsExpanded = true;
+            Assert.IsFalse(elem0.IsListElementHeaderVisible, "Expanded row should hide a when-collapsed header");
+
+            elem0.IsExpanded = false;
+            Assert.IsTrue(elem0.IsListElementHeaderVisible, "Re-collapsing should restore the header");
+        }
+
+        [TestMethod]
+        public void PET_PGList_ElementHeader_ReResolvesOnExpandToggle ()
+        {
+            var model = new ListWithHeaderAlwaysModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+            SetupAll(targets);
+
+            var elem0 = Find(targets, "Entries").Children.OfType<PropertyEditTarget>().First();
+            Assert.AreEqual("Tony", elem0.ListElementHeaderText);
+
+            // An edit made while expanded should reflect once the row's expand state changes - no
+            // event subscription is involved, the header re-resolves from the live element.
+            model.Entries[0].Name = "Anthony";
+            elem0.IsExpanded = true;
+            elem0.IsExpanded = false;
+            Assert.AreEqual("Anthony", elem0.ListElementHeaderText);
+        }
+
+        [TestMethod]
+        public void PET_PGList_ElementHeader_RefreshesLiveWhenElementMemberChanges ()
+        {
+            var model = new ListWithLiveHeaderModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+            SetupAll(targets);
+
+            var elem0 = Find(targets, "Entries").Children.OfType<PropertyEditTarget>().First();
+            Assert.AreEqual("Tony", elem0.ListElementHeaderText);
+
+            // No expand/collapse - an INPC element raises PropertyChanged, so the header refreshes live.
+            model.Entries[0].Name = "Anthony";
+            Assert.AreEqual("Anthony", elem0.ListElementHeaderText);
+        }
+
+        [TestMethod]
+        public void PET_PGList_ElementHeader_TeardownUnsubscribesLiveRefresh ()
+        {
+            var model = new ListWithLiveHeaderModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+            SetupAll(targets);
+
+            var elem0 = Find(targets, "Entries").Children.OfType<PropertyEditTarget>().First();
+            elem0.Teardown();
+
+            // After teardown the element's PropertyChanged is no longer observed - the subscription is gone,
+            // so a later change neither updates the header nor leaves the target pinned to the element.
+            model.Entries[0].Name = "Anthony";
+            Assert.AreEqual("Tony", elem0.ListElementHeaderText, "Header must not update after teardown");
+        }
+
         // ===[ Helpers ]==========================================================
 
         private static PropertyEditTarget Find (List<PropertyEditTarget> targets, string propertyPath)
         {
             return targets.FirstOrDefault(t => t.PropertyPathTarget == propertyPath);
+        }
+
+        private static PropertyEditTarget FirstElement (List<PropertyEditTarget> targets, string listPropertyPath)
+        {
+            return Find(targets, listPropertyPath).Children.OfType<PropertyEditTarget>().First();
         }
 
         private static void SetupAll (List<PropertyEditTarget> targets)

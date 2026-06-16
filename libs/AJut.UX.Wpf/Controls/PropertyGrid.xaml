@@ -209,6 +209,18 @@
                                         </ContentPresenter.Style>
                                     </ContentPresenter>
 
+                                    <!-- List element header: fills the value column for an expandable element row
+                                         (which has no inline editor) with the [PGList] ElementDisplayMemberName value.
+                                         IsListElementHeaderVisible already gates on there being no inline editor, so
+                                         this never collides with the editor above. -->
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding ListElementHeaderText}"
+                                               VerticalAlignment="Center"
+                                               Margin="5,0,0,0"
+                                               Opacity="0.85"
+                                               TextTrimming="CharacterEllipsis"
+                                               Visibility="{Binding IsListElementHeaderVisible, Converter={conv:BooleanToVisibilityConverter TrueValue=Visible, FalseValue=Collapsed}}"/>
+
                                     <!-- Delete button for list elements. Only visible when CanRemoveFromList. -->
                                     <Button Grid.Column="2"
                                             VerticalAlignment="Center"

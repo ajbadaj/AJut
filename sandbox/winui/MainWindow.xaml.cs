@@ -29,6 +29,7 @@ namespace AJutShowRoomWinUI
     {
         private const string kThemeColorsSettingsKey = "_Hidden_theme_colors";
         private readonly ObservableCollection<string> m_themeColorResolver = new ObservableCollection<string>();
+        private int m_selectionChangedReproCount;
 
         // ===========[ Dock Zone test state ]============================================
         private DockingManager m_dockingManager;
@@ -43,6 +44,7 @@ namespace AJutShowRoomWinUI
             this.InitializeComponent();
             this.Root.SetupFor(this);
             this.TestPropertyGrid.PropertyTreeChanged += this.TestPropertyGrid_OnPropertyTreeChanged;
+            this.TestPropertyGrid.SelectedSourceObjectChanged += this.TestPropertyGrid_OnSelectedSourceObjectChanged;
             this.SetPGSource(m_alphaObj);
 
             // ToggleStrip demo items
@@ -56,6 +58,10 @@ namespace AJutShowRoomWinUI
 
             // ToggleStrip enum bug repro
             this.ToggleStripEnumBugRepro.ItemsSource = Enum.GetValues<eEditorMode>();
+
+            // ToggleStrip SelectionChanged deselect repros (multi-select + single-select-with-none, shared counter)
+            this.ToggleStripSelectionChangedRepro.ItemsSource = new[] { "One", "Two", "Three", "Four" };
+            this.ToggleStripSingleSelectNoneRepro.ItemsSource = new[] { "One", "Two", "Three" };
 
             this.StockBumpStackDemos();
 
@@ -148,6 +154,13 @@ namespace AJutShowRoomWinUI
             this.SelectedEditorMode = eEditorMode.Text;
             this.ToggleStripEnumBugRepro.SelectedItem = eEditorMode.Text;
             this.EnumBugReproStatus.Text = $"Set to Text. SelectedItem = {this.ToggleStripEnumBugRepro.SelectedItem}";
+        }
+
+        private void ToggleStripSelectionChangedRepro_OnSelectionChanged (object sender, AJut.UX.Controls.ToggleStrip.ToggleStripSelectionChangedEventArgs e)
+        {
+            ++m_selectionChangedReproCount;
+            string current = string.Join(", ", e.CurrentSelection.OfType<object>());
+            this.ToggleStripSelectionChangedStatus.Text = $"SelectionChanged fired {m_selectionChangedReproCount} times - current: [{current}]";
         }
 
         private void AddThemeColor(string themeColor)
@@ -333,6 +346,9 @@ namespace AJutShowRoomWinUI
             m_currentPGTestObj = obj;
             this.TestPropertyGrid.SingleItemSource = obj;
             this.ResetJsonDisplay();
+
+            // Swapping the source rebuilds the tree and drops any selection - reset the readout to match.
+            this.PGSelectionReadout.Text = "(none)";
         }
 
         private void PGSource_OnAlphaClicked (object sender, RoutedEventArgs e) => this.SetPGSource(m_alphaObj);
@@ -441,6 +457,44 @@ namespace AJutShowRoomWinUI
         {
             this.ResetJsonDisplay();
         }
+
+        // ------ Selection-surface tester wiring ------
+        private void TestPropertyGrid_OnSelectedSourceObjectChanged (object sender, EventArgs e)
+        {
+            this.UpdatePGSelectionReadout();
+        }
+
+        private void UpdatePGSelectionReadout ()
+        {
+            object selected = this.TestPropertyGrid.SelectedSourceObject;
+            this.PGSelectionReadout.Text = selected is ShowRoomSubObject sub
+                ? $"ShowRoomSubObject (SubObjValue={sub.SubObjValue})"
+                : selected?.ToString() ?? "(none)";
+        }
+
+        private void PGSelect_OnRandomElementClicked (object sender, RoutedEventArgs e)
+        {
+            // Complex A/B carry ListWithElevation (complex elements with identity). Selecting one by
+            // reference drives the programmatic selection path - the one that hit the Single-mode
+            // SelectedItems COMException, and (when the list node is collapsed) the expand-then-select path.
+            if (this.TestPropertyGrid.SingleItemSource is ShowRoomTester tester && tester.ListWithElevation.Count > 0)
+            {
+                ShowRoomSubObject element = tester.ListWithElevation[new Random().Next(0, tester.ListWithElevation.Count)];
+                if (!this.TestPropertyGrid.TrySelectSourceObject(element))
+                {
+                    this.PGSelectionReadout.Text = "(could not find a row for that element)";
+                }
+            }
+            else
+            {
+                this.PGSelectionReadout.Text = "(switch to Complex A or B - it has the element list)";
+            }
+        }
+
+        private void PGSelect_OnClearClicked (object sender, RoutedEventArgs e)
+        {
+            this.TestPropertyGrid.SelectedTarget = null;
+        }
         private void ResetJsonDisplay()
         {
             if (m_currentPGTestObj == null)
@@ -533,25 +587,22 @@ namespace AJutShowRoomWinUI
 
         private void LeakProbe_OnDockingManagerClicked (object sender, RoutedEventArgs e)
         {
-            this.LeakProbe_DockingManagerStatus.Text = "running...";
             bool collected = LeakProbe_BuildAndDisposeDockingManager(this);
-            this.LeakProbe_DockingManagerStatus.Text = collected
+            this.LeakProbe_AppendOutput("Probe DockingManager", collected
                 ? "PASS - DockingManager was collected after Dispose"
-                : "FAIL - DockingManager survived Dispose + GC (something is still pinning it)";
+                : "FAIL - DockingManager survived Dispose + GC (something is still pinning it)");
         }
 
         private void LeakProbe_OnWindowManagerClicked (object sender, RoutedEventArgs e)
         {
-            this.LeakProbe_WindowManagerStatus.Text = "running...";
             bool collected = LeakProbe_BuildAndDisposeWindowManager(this);
-            this.LeakProbe_WindowManagerStatus.Text = collected
+            this.LeakProbe_AppendOutput("Probe WindowManager", collected
                 ? "PASS - WindowManager was collected after Dispose"
-                : "FAIL - WindowManager survived Dispose + GC (something is still pinning it)";
+                : "FAIL - WindowManager survived Dispose + GC (something is still pinning it)");
         }
 
         private void LeakProbe_OnCycleClicked (object sender, RoutedEventArgs e)
         {
-            this.LeakProbe_CycleStatus.Text = "running...";
             int passes = 0;
             for (int i = 0; i < 5; ++i)
             {
@@ -561,9 +612,9 @@ namespace AJutShowRoomWinUI
                 }
             }
 
-            this.LeakProbe_CycleStatus.Text = passes == 5
+            this.LeakProbe_AppendOutput("Probe x5 (open/close cycles)", passes == 5
                 ? "PASS - all 5 cycles collected cleanly"
-                : $"FAIL - only {passes}/5 cycles collected (later iterations should still pass if the first one does)";
+                : $"FAIL - only {passes}/5 cycles collected (later iterations should still pass if the first one does)");
         }
 
         // Build a real DockingManager against the live root window, dispose it, drop the
@@ -611,6 +662,494 @@ namespace AJutShowRoomWinUI
             }
 
             return !weak.IsAlive;
+        }
+
+        // ===========[ Leak Probe - Docking host scenario ]==============================
+        // Models the ARC-56 residual: an editor whose layout is a DockingManager lives inside
+        // a transient child Window's Frame, while the manager's RootWindow is the long-lived
+        // main window. After the child window closes and the manager is disposed, the dock
+        // zone, docked panels, and anything bound to the editor page must all collect. The
+        // main-window variant is the control case - hosting the same graph in the main window
+        // tree, which the prior m_dockZoneMapping fix already collects cleanly.
+
+        private async void LeakProbe_OnChildWindowDockingClicked (object sender, RoutedEventArgs e)
+        {
+            const int kCycles = 4;
+            var button = sender as Button;
+            if (button != null) { button.IsEnabled = false; }
+            try
+            {
+                var weaks = new List<DockingLeakProbeWeaks>();
+                for (int i = 0; i < kCycles; ++i)
+                {
+                    var probe = LeakProbe_BuildChildWindowDocking(this);
+
+                    // Wait until the page actually loads so the dock layout realizes (template ->
+                    // drop overlay + DockLeafLayout). Without this we may measure a window that
+                    // closed before it ever built anything - a vacuous pass. builtLeaves in the
+                    // report proves the structure was really there.
+                    await LeakProbe_WaitForLoaded(probe.EditorPage, 3000);
+                    await Task.Delay(200);
+
+                    int leaves = LeakProbe_CountDescendants<AJut.UX.Controls.DockLeafLayout>(probe.RootZone);
+
+                    // Hold a watch handle to the page so we can wait for its real unload after
+                    // teardown nulls every probe-held strong ref.
+                    FrameworkElement pageWatch = probe.EditorPage;
+
+                    var weak = LeakProbe_TeardownDockingProbe(probe);
+                    weak.BuiltLeaves = leaves;
+                    weaks.Add(weak);
+                    probe = null;
+
+                    // Deterministic read: wait for WinUI to actually unload the page (it releases
+                    // native / container refs during the Unloaded pass), then let deferred cleanup
+                    // run, before we collect and measure.
+                    await LeakProbe_WaitForUnloaded(pageWatch, 3000);
+                    pageWatch = null;
+                    await Task.Delay(150);
+                }
+
+                await LeakProbe_SettleAndCollectAsync();
+                this.LeakProbe_AppendOutput("Dock leak - child window", LeakProbe_ReportSurvivors(weaks));
+            }
+            finally
+            {
+                if (button != null) { button.IsEnabled = true; }
+            }
+        }
+
+        private async void LeakProbe_OnMainWindowDockingClicked (object sender, RoutedEventArgs e)
+        {
+            const int kCycles = 4;
+            var button = sender as Button;
+            if (button != null) { button.IsEnabled = false; }
+            try
+            {
+                var weaks = new List<DockingLeakProbeWeaks>();
+                for (int i = 0; i < kCycles; ++i)
+                {
+                    var probe = this.LeakProbe_BuildMainWindowDocking();
+
+                    await LeakProbe_WaitForLoaded(probe.EditorPage, 3000);
+                    await Task.Delay(200);
+
+                    int leaves = LeakProbe_CountDescendants<AJut.UX.Controls.DockLeafLayout>(probe.RootZone);
+
+                    FrameworkElement pageWatch = probe.EditorPage;
+
+                    var weak = LeakProbe_TeardownDockingProbe(probe);
+                    weak.BuiltLeaves = leaves;
+                    weaks.Add(weak);
+                    probe = null;
+
+                    await LeakProbe_WaitForUnloaded(pageWatch, 3000);
+                    pageWatch = null;
+                    await Task.Delay(150);
+                }
+
+                await LeakProbe_SettleAndCollectAsync();
+                this.LeakProbe_AppendOutput("Dock leak - main window (control)", LeakProbe_ReportSurvivors(weaks));
+            }
+            finally
+            {
+                if (button != null) { button.IsEnabled = true; }
+            }
+        }
+
+        // Builds the docking graph inside a fresh child Window (RootWindow stays the main window).
+        private static DockingLeakProbe LeakProbe_BuildChildWindowDocking (Window mainRoot)
+        {
+            var childWindow = new Window();
+            var frame = new Frame();
+            var editorPage = LeakProbe_BuildEditorPageStandin(out var rootZone);
+
+            frame.Content = editorPage;
+            childWindow.Content = frame;
+            childWindow.Activate();
+
+            var probe = LeakProbe_StockDockingGraph(mainRoot, rootZone, editorPage);
+            probe.ChildWindow = childWindow;
+            probe.Frame = frame;
+            probe.EditorPage = editorPage;
+            return probe;
+        }
+
+        // Builds the same docking graph but hosts it in the main window's own visual tree.
+        private DockingLeakProbe LeakProbe_BuildMainWindowDocking ()
+        {
+            var frame = new Frame();
+            var editorPage = LeakProbe_BuildEditorPageStandin(out var rootZone);
+
+            frame.Content = editorPage;
+            this.LeakProbe_MainHostArea.Child = frame;
+
+            var probe = LeakProbe_StockDockingGraph(this, rootZone, editorPage);
+            probe.Frame = frame;
+            probe.EditorPage = editorPage;
+            probe.MainHost = this.LeakProbe_MainHostArea;
+            return probe;
+        }
+
+        // The editor "page" stand-in: a ContentControl whose content is the root DockZone,
+        // mirroring an editor Page whose layout root is an AJut dock zone.
+        private static FrameworkElement LeakProbe_BuildEditorPageStandin (out AJut.UX.Controls.DockZone rootZone)
+        {
+            rootZone = new AJut.UX.Controls.DockZone { Name = "LeakProbeRootZone" };
+            return new ContentControl
+            {
+                HorizontalContentAlignment = HorizontalAlignment.Stretch,
+                VerticalContentAlignment = VerticalAlignment.Stretch,
+                Content = rootZone,
+            };
+        }
+
+        // Stands up a DockingManager against the given root window, registers the zone, docks a
+        // couple of panels, and binds one panel back to the editor page (page as binding Source)
+        // so a surviving panel pins the page exactly the way the real consumer's editor does.
+        private static DockingLeakProbe LeakProbe_StockDockingGraph (Window root, AJut.UX.Controls.DockZone rootZone, FrameworkElement editorPage)
+        {
+            var manager = new DockingManager(root, "dock-leak-" + Guid.NewGuid().ToString("N"));
+            manager.RegisterDisplayFactory<ShowRoomPanel>();
+            manager.RegisterMainWindowRootDockZones(rootZone);
+
+            ShowRoomPanel panelA = null;
+            ShowRoomPanel panelB = null;
+
+            var zone = manager.FindFirstAvailableDockZone();
+            if (zone != null)
+            {
+                panelA = manager.DockNewPanel<ShowRoomPanel>(zone);
+                panelA.Label = "Leak A";
+                panelA.DockingAdapter.TitleContent = "Leak A";
+
+                panelB = manager.DockNewPanel<ShowRoomPanel>(zone);
+                panelB.Label = "Leak B";
+                panelB.DockingAdapter.TitleContent = "Leak B";
+            }
+
+            // Bind a docked panel with the editor page as the binding Source. WinUI keeps a
+            // binding's Source alive while the target lives, so a surviving panel keeps the page.
+            if (panelA != null)
+            {
+                panelA.SetBinding(FrameworkElement.TagProperty, new Microsoft.UI.Xaml.Data.Binding { Source = editorPage });
+            }
+
+            return new DockingLeakProbe
+            {
+                Manager = manager,
+                RootZone = rootZone,
+                PanelA = panelA,
+                PanelB = panelB,
+            };
+        }
+
+        // Drives the app-side teardown (manager.Dispose + content null-out + window close),
+        // snapshots weak references to every node that must collect, then drops all strong refs.
+        private static DockingLeakProbeWeaks LeakProbe_TeardownDockingProbe (DockingLeakProbe probe)
+        {
+            probe.Manager.Dispose();
+
+            if (probe.Frame != null)
+            {
+                probe.Frame.Content = null;
+            }
+
+            if (probe.EditorPage is ContentControl pageContent)
+            {
+                pageContent.Content = null;
+            }
+
+            if (probe.MainHost != null)
+            {
+                probe.MainHost.Child = null;
+            }
+
+            if (probe.ChildWindow != null)
+            {
+                probe.ChildWindow.Content = null;
+                probe.ChildWindow.Close();
+            }
+
+            var weaks = new DockingLeakProbeWeaks
+            {
+                RootZone = new WeakReference(probe.RootZone),
+                PanelA = probe.PanelA != null ? new WeakReference(probe.PanelA) : null,
+                EditorPage = new WeakReference(probe.EditorPage),
+                ChildWindow = probe.ChildWindow != null ? new WeakReference(probe.ChildWindow) : null,
+            };
+
+            // Drop every strong reference the probe holds so the only remaining handles are weak.
+            probe.Manager = null;
+            probe.RootZone = null;
+            probe.PanelA = null;
+            probe.PanelB = null;
+            probe.EditorPage = null;
+            probe.Frame = null;
+            probe.MainHost = null;
+            probe.ChildWindow = null;
+
+            return weaks;
+        }
+
+        // Polls IsLoaded rather than subscribing Loaded (no anonymous handler, and re-entrant safe).
+        private static async Task LeakProbe_WaitForLoaded (FrameworkElement element, int timeoutMs)
+        {
+            int waited = 0;
+            while (element != null && !element.IsLoaded && waited < timeoutMs)
+            {
+                await Task.Delay(50);
+                waited += 50;
+            }
+        }
+
+        // Waits for the element to actually leave the live tree. WinUI releases its native /
+        // item-container references during the Unloaded pass (a later dispatcher tick), not at
+        // the moment we detach - so measuring before this completes reads a still-pinned element
+        // that would collect a beat later (the source of the flaky reads).
+        private static async Task LeakProbe_WaitForUnloaded (FrameworkElement element, int timeoutMs)
+        {
+            int waited = 0;
+            while (element != null && element.IsLoaded && waited < timeoutMs)
+            {
+                await Task.Delay(50);
+                waited += 50;
+            }
+        }
+
+        // Deterministic collect: drain the dispatcher, then run a full GC, repeated. The drain
+        // matters because some controls defer work via DispatcherQueue.TryEnqueue that captures
+        // data we are measuring - e.g. PropertyGridItemRow.OnDataContextChanged enqueues a
+        // (Normal-priority) ApplyEditorContent callback capturing the edit target -> source. Those
+        // are self-cleaning once they run, but if still queued at GC time they pin what they
+        // captured. Awaiting a Low-priority enqueue returns only after every higher-priority
+        // queued callback has run, so the captures are gone before we measure.
+        private static async Task LeakProbe_SettleAndCollectAsync ()
+        {
+            for (int i = 0; i < 6; ++i)
+            {
+                await LeakProbe_DrainDispatcherAsync();
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+                await Task.Delay(100);
+            }
+        }
+
+        // Completes only after all higher-priority dispatcher work has run (Low runs last).
+        private static Task LeakProbe_DrainDispatcherAsync ()
+        {
+            var done = new TaskCompletionSource();
+            var queue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+            bool enqueued = queue != null && queue.TryEnqueue(
+                Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
+                () => done.SetResult()
+            );
+
+            if (!enqueued)
+            {
+                done.SetResult();
+            }
+
+            return done.Task;
+        }
+
+        private static int LeakProbe_CountDescendants<T> (DependencyObject root) where T : DependencyObject
+        {
+            if (root == null)
+            {
+                return 0;
+            }
+
+            int count = root is T ? 1 : 0;
+            int childCount = VisualTreeHelper.GetChildrenCount(root);
+            for (int i = 0; i < childCount; ++i)
+            {
+                count += LeakProbe_CountDescendants<T>(VisualTreeHelper.GetChild(root, i));
+            }
+
+            return count;
+        }
+
+        // Counts only - the GC happens in LeakProbe_SettleAndCollectAsync before this is called.
+        private static string LeakProbe_ReportSurvivors (List<DockingLeakProbeWeaks> weaks)
+        {
+            int zones = 0;
+            int panels = 0;
+            int pages = 0;
+            int windows = 0;
+            int builtLeaves = 0;
+            foreach (var w in weaks)
+            {
+                if (w.RootZone.IsAlive) { ++zones; }
+                if (w.PanelA != null && w.PanelA.IsAlive) { ++panels; }
+                if (w.EditorPage.IsAlive) { ++pages; }
+                if (w.ChildWindow != null && w.ChildWindow.IsAlive) { ++windows; }
+                builtLeaves += w.BuiltLeaves;
+            }
+
+            // windows is informational only - WinUI is known to keep a closed Window alive a
+            // while; the dock leak is zones/panels/pages surviving past Dispose. builtLeaves
+            // proves the dock structure actually realized - builtLeaves=0 means a vacuous run.
+            bool leaked = zones > 0 || panels > 0 || pages > 0;
+            string detail = $"zones={zones}/{weaks.Count} panels={panels}/{weaks.Count} pages={pages}/{weaks.Count} windows={windows}/{weaks.Count} builtLeaves={builtLeaves}";
+            if (builtLeaves == 0)
+            {
+                return $"INCONCLUSIVE - dock layout never realized (builtLeaves=0): {detail}";
+            }
+
+            return leaked
+                ? $"FAIL - survivors after GC: {detail}"
+                : $"PASS - all collected ({detail})";
+        }
+
+        // ===========[ Leak Probe - Output ]=============================================
+        // Every probe routes its result here. Newest entry is prepended so the latest run
+        // is always visible at the top without scrolling.
+
+        private void LeakProbe_AppendOutput (string title, string body)
+        {
+            string stamp = DateTime.Now.ToString("HH:mm:ss");
+            string entry = $"[{stamp}] {title}\n    {body}";
+            this.LeakProbe_Output.Text = this.LeakProbe_Output.Text.Length == 0
+                ? entry
+                : entry + "\n\n" + this.LeakProbe_Output.Text;
+        }
+
+        private void LeakProbe_OnCopyOutputClicked (object sender, RoutedEventArgs e)
+        {
+            var package = new Windows.ApplicationModel.DataTransfer.DataPackage();
+            package.SetText(this.LeakProbe_Output.Text ?? string.Empty);
+            Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(package);
+        }
+
+        private void LeakProbe_OnClearOutputClicked (object sender, RoutedEventArgs e)
+        {
+            this.LeakProbe_Output.Text = string.Empty;
+        }
+
+        // ===========[ Leak Probe - PropertyGrid ]=======================================
+        // Builds a PropertyGrid against a fresh source object in the main window's tree,
+        // lets it discover + render the source's properties, then disposes it and checks
+        // that both the grid and the source object collect. A surviving source means the
+        // grid (or its manager / row tree) is holding a reference past Dispose.
+
+        private async void LeakProbe_OnPropertyGridClicked (object sender, RoutedEventArgs e)
+        {
+            const int kCycles = 4;
+            var button = sender as Button;
+            if (button != null) { button.IsEnabled = false; }
+            try
+            {
+                var weaks = new List<PropertyGridLeakProbeWeaks>();
+                for (int i = 0; i < kCycles; ++i)
+                {
+                    var probe = this.LeakProbe_BuildPropertyGrid();
+
+                    // Let the grid load + apply its template and build its property-row tree.
+                    await LeakProbe_WaitForLoaded(probe.Grid, 3000);
+                    await Task.Delay(300);
+
+                    FrameworkElement gridWatch = probe.Grid;
+
+                    weaks.Add(LeakProbe_TeardownPropertyGrid(probe, this.LeakProbe_MainHostArea));
+                    probe = null;
+
+                    // Deterministic read: wait for the grid to actually unload, then let deferred
+                    // WinUI cleanup run, before collecting.
+                    await LeakProbe_WaitForUnloaded(gridWatch, 3000);
+                    gridWatch = null;
+                    await Task.Delay(150);
+                }
+
+                await LeakProbe_SettleAndCollectAsync();
+                this.LeakProbe_AppendOutput("Probe PropertyGrid", LeakProbe_ReportPropertyGridSurvivors(weaks));
+            }
+            finally
+            {
+                if (button != null) { button.IsEnabled = true; }
+            }
+        }
+
+        private PropertyGridLeakProbe LeakProbe_BuildPropertyGrid ()
+        {
+            var grid = new AJut.UX.Controls.PropertyGrid();
+            var source = new ShowRoomAlpha();
+            grid.SingleItemSource = source;
+            this.LeakProbe_MainHostArea.Child = grid;
+
+            return new PropertyGridLeakProbe
+            {
+                Grid = grid,
+                Source = source,
+            };
+        }
+
+        private static PropertyGridLeakProbeWeaks LeakProbe_TeardownPropertyGrid (PropertyGridLeakProbe probe, Border host)
+        {
+            probe.Grid.Dispose();
+            host.Child = null;
+
+            var weaks = new PropertyGridLeakProbeWeaks
+            {
+                Grid = new WeakReference(probe.Grid),
+                Source = new WeakReference(probe.Source),
+            };
+
+            probe.Grid = null;
+            probe.Source = null;
+            return weaks;
+        }
+
+        // Counts only - the GC happens in LeakProbe_SettleAndCollectAsync before this is called.
+        private static string LeakProbe_ReportPropertyGridSurvivors (List<PropertyGridLeakProbeWeaks> weaks)
+        {
+            int grids = 0;
+            int sources = 0;
+            foreach (var w in weaks)
+            {
+                if (w.Grid.IsAlive) { ++grids; }
+                if (w.Source.IsAlive) { ++sources; }
+            }
+
+            bool leaked = grids > 0 || sources > 0;
+            string detail = $"grids={grids}/{weaks.Count} sources={sources}/{weaks.Count}";
+            return leaked
+                ? $"FAIL - survivors after GC: {detail}"
+                : $"PASS - all collected ({detail})";
+        }
+
+        private sealed class DockingLeakProbe
+        {
+            public DockingManager Manager { get; set; }
+            public AJut.UX.Controls.DockZone RootZone { get; set; }
+            public ShowRoomPanel PanelA { get; set; }
+            public ShowRoomPanel PanelB { get; set; }
+            public FrameworkElement EditorPage { get; set; }
+            public Frame Frame { get; set; }
+            public Border MainHost { get; set; }
+            public Window ChildWindow { get; set; }
+        }
+
+        private sealed class DockingLeakProbeWeaks
+        {
+            public WeakReference RootZone { get; set; }
+            public WeakReference PanelA { get; set; }
+            public WeakReference EditorPage { get; set; }
+            public WeakReference ChildWindow { get; set; }
+            public int BuiltLeaves { get; set; }
+        }
+
+        private sealed class PropertyGridLeakProbe
+        {
+            public AJut.UX.Controls.PropertyGrid Grid { get; set; }
+            public object Source { get; set; }
+        }
+
+        private sealed class PropertyGridLeakProbeWeaks
+        {
+            public WeakReference Grid { get; set; }
+            public WeakReference Source { get; set; }
         }
     }
 
@@ -965,6 +1504,28 @@ namespace AJutShowRoomWinUI
             new ShowRoomSubObject { SubObjValue = 99 },
         };
 
+        // ------ PGList element header demo ------
+        // Plain complex-element lists (no elevation, no custom editor), so each element row is expandable
+        // with an otherwise-blank value column. ElementDisplayMemberName fills that column with the
+        // element's Name. The first list shows the header in every state (Always); the second only while
+        // the element row is collapsed (WhenCollapsed).
+        [PGList(ElementDisplayMemberName = nameof(RosterEntry.Name))]
+        [PGGroup("Lists")]
+        public List<RosterEntry> Roster { get; set; } = new List<RosterEntry>
+        {
+            new RosterEntry { Name = "Tony", Age = 16 },
+            new RosterEntry { Name = "Jill", Age = 24 },
+            new RosterEntry { Name = "Jessup", Age = 31 },
+        };
+
+        [PGList(ElementDisplayMemberName = nameof(RosterEntry.Name), ElementDisplayMemberVisibility = eElementHeaderDisplay.WhenCollapsed)]
+        [PGGroup("Lists")]
+        public List<RosterEntry> RosterCollapsedHeaders { get; set; } = new List<RosterEntry>
+        {
+            new RosterEntry { Name = "Avery", Age = 19 },
+            new RosterEntry { Name = "Blake", Age = 27 },
+        };
+
         private class ColorToStringConverter : PropertyGridTypeAliasing<Color, string>
         {
             public override Type AliasType => typeof(string);
@@ -993,6 +1554,25 @@ namespace AJutShowRoomWinUI
         {
             get => m_subObjValue;
             set => this.SetAndRaiseIfChanged(ref m_subObjValue, value);
+        }
+    }
+
+    // Element type for the PGList element-header demo - a plain complex object with a couple of
+    // editable properties so the element rows expand and the value column is otherwise empty.
+    public class RosterEntry : NotifyPropertyChanged
+    {
+        private string m_name;
+        public string Name
+        {
+            get => m_name;
+            set => this.SetAndRaiseIfChanged(ref m_name, value);
+        }
+
+        private int m_age;
+        public int Age
+        {
+            get => m_age;
+            set => this.SetAndRaiseIfChanged(ref m_age, value);
         }
     }
 

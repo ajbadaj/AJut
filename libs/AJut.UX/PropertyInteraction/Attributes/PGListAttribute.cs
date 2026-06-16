@@ -49,5 +49,20 @@ namespace AJut.UX.PropertyInteraction
         /// Whether new elements can be added. Defaults to true.
         /// </summary>
         public bool CanAdd { get; set; } = true;
+
+        /// <summary>
+        /// Optional name of a member on the element type whose value fills the element row's value
+        /// column (the otherwise-blank space beside the "[index]" label). May name a method (zero
+        /// parameters), property, or field, instance or static. The resolved value is shown via
+        /// ToString. When null no element header is shown.
+        /// </summary>
+        public string ElementDisplayMemberName { get; set; }
+
+        /// <summary>
+        /// When <see cref="ElementDisplayMemberName"/> is set, controls whether the header shows in
+        /// every state or only while the element row is collapsed. Defaults to
+        /// <see cref="eElementHeaderDisplay.Always"/>.
+        /// </summary>
+        public eElementHeaderDisplay ElementDisplayMemberVisibility { get; set; } = eElementHeaderDisplay.Always;
     }
 }

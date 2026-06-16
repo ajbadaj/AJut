@@ -103,6 +103,18 @@
                                             Visibility="{Binding Source.HasInlineEditor, Converter={StaticResource PGItemRow_BoolToVis}}"
                                             ContentTemplateSelector="{TemplateBinding EditorTemplateSelector}"/>
 
+                            <!-- PART_ListElementHeader: for an expandable list element row (no inline editor),
+                                 fills the value column with the [PGList] ElementDisplayMemberName value.
+                                 Text and Visibility are applied in code. Shares column 1 with PART_EditorContent
+                                 but never shows at the same time (IsListElementHeaderVisible requires no inline editor). -->
+                            <TextBlock x:Name="PART_ListElementHeader"
+                                       Grid.Column="1"
+                                       VerticalAlignment="Center"
+                                       Margin="5,0,0,0"
+                                       Opacity="0.85"
+                                       TextTrimming="CharacterEllipsis"
+                                       Visibility="Collapsed"/>
+
                             <!-- Delete button for list elements. Visibility and Command managed in code.
                                  Only shown when the target is a list element with CanRemove. -->
                             <Button x:Name="PART_DeleteButton"

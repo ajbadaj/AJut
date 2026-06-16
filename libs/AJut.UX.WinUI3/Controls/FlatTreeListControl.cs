@@ -482,20 +482,30 @@ namespace AJut.UX.Controls
 
             FlatTreeItem[] previous = m_selectedItems.ToArray();
 
+            // In Single/None modes only the first requested item is honored.
+            bool isMulti = (this.SelectionMode != eFlatTreeSelectionMode.Single
+                            && this.SelectionMode != eFlatTreeSelectionMode.None);
+
             m_blockingReentrancy = true;
             try
             {
-                this.PART_ListView.SelectedItems.Clear();
+                // WinUI3 throws a COMException if ListView.SelectedItems is mutated (Clear/Add) while
+                // SelectionMode is Single or None - there the selection runs through SelectedItem instead.
+                // Only touch SelectedItems in the multi-select modes.
+                if (isMulti)
+                {
+                    this.PART_ListView.SelectedItems.Clear();
+                }
+                else
+                {
+                    this.PART_ListView.SelectedItem = null;
+                }
 
                 foreach (FlatTreeItem stale in previous)
                 {
                     stale.IsSelected = false;
                 }
                 m_selectedItems.Clear();
-
-                // In Single/None modes only the first requested item is honored.
-                bool isMulti = (this.SelectionMode != eFlatTreeSelectionMode.Single
-                                && this.SelectionMode != eFlatTreeSelectionMode.None);
 
                 FlatTreeItem primary = null;
                 if (isMulti)
@@ -541,6 +551,101 @@ namespace AJut.UX.Controls
             {
                 this.FireSelectionChanged(added, removed);
             }
+        }
+
+        /// <summary>
+        /// Finds the row (visible or collapsed) that wraps the given source node, or null when no row
+        /// currently represents it. Searches the full tree, not just the realized/expanded rows.
+        /// </summary>
+        public FlatTreeItem FindItemForSource (IObservableTreeNode source)
+        {
+            if (source == null || m_store.RootNode == null)
+            {
+                return null;
+            }
+
+            return _FindItemForSource(m_store.RootNode, source);
+        }
+
+        // Recurse via AllChildren (visible + collapsed) rather than TreeTraversal so the search reaches
+        // rows parked inside collapsed parents - which is exactly what programmatic selection must expand to.
+        private static FlatTreeItem _FindItemForSource (FlatTreeItem node, IObservableTreeNode source)
+        {
+            if (node.Source == source)
+            {
+                return node;
+            }
+
+            foreach (FlatTreeItem child in node.AllChildren)
+            {
+                FlatTreeItem found = _FindItemForSource(child, source);
+                if (found != null)
+                {
+                    return found;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Selects the row wrapping the given source node, expanding any collapsed ancestors first so the
+        /// row is realized, and optionally scrolling it into view. Returns false when no row matches the
+        /// source or the control isn't ready to take a selection yet.
+        /// </summary>
+        public bool TrySelectItemForSource (IObservableTreeNode source, bool scrollIntoView = true)
+        {
+            if (this.PART_ListView == null)
+            {
+                return false;
+            }
+
+            FlatTreeItem item = this.FindItemForSource(source);
+            if (item == null)
+            {
+                return false;
+            }
+
+            // Expand collapsed ancestors top-down so the target row moves out of its parents'
+            // hidden-children lists and into the visible store before we select / scroll to it.
+            var ancestry = new List<FlatTreeItem>();
+            for (FlatTreeItem ancestor = item.Parent; ancestor != null; ancestor = ancestor.Parent)
+            {
+                ancestry.Add(ancestor);
+            }
+
+            for (int i = ancestry.Count - 1; i >= 0; --i)
+            {
+                if (ancestry[i].IsExpandable && !ancestry[i].IsExpanded)
+                {
+                    ancestry[i].IsExpanded = true;
+                }
+            }
+
+            // Defer the select + scroll. Expanding a collapsed ancestor above reveals rows whose
+            // containers aren't realized until the next layout pass, so selecting / scrolling in the
+            // same synchronous beat silently no-ops. Posting to the dispatcher lets layout catch up
+            // first, and also decouples this from callers that invoke it from inside a pointer/input event.
+            void SelectAndScroll ()
+            {
+                this.SetSelection(new[] { item });
+                if (scrollIntoView)
+                {
+                    this.ScrollIntoView(item);
+                }
+            }
+
+            var dispatcher = this.DispatcherQueue;
+            if (dispatcher != null)
+            {
+                dispatcher.TryEnqueue(SelectAndScroll);
+            }
+            else
+            {
+                SelectAndScroll();
+            }
+
+            return true;
         }
 
         // ===========[ ListView event handlers ]==================================

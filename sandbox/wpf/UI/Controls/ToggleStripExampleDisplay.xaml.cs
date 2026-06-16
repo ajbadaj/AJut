@@ -1,6 +1,7 @@
 ﻿namespace TheAJutShowRoom.UI.Controls
 {
     using System.Collections.ObjectModel;
+    using System.Linq;
     using System.Windows;
     using System.Windows.Controls;
     using DPUtils = AJut.UX.DPUtils<ToggleStripExampleDisplay>;
@@ -8,6 +9,7 @@
     public partial class ToggleStripExampleDisplay : UserControl
     {
         private int m_addedItemCounter;
+        private int m_selectionChangedReproCount;
         public ToggleStripExampleDisplay()
         {
             this.ZeroToggleElementsSource = new ObservableCollection<string>();
@@ -37,6 +39,13 @@
         private void ClearItemsFromZeroToggle_OnClick (object sender, System.Windows.RoutedEventArgs e)
         {
             this.ZeroToggleElementsSource.Clear();
+        }
+
+        private void OnSelectionChangedRepro (object sender, AJut.UX.Controls.ToggleStrip.ToggleStripSelectionChangedEventArgs e)
+        {
+            ++m_selectionChangedReproCount;
+            string current = string.Join(", ", e.CurrentSelection.OfType<object>());
+            this.SelectionChangedReproStatus.Text = $"SelectionChanged fired {m_selectionChangedReproCount} times - current: [{current}]";
         }
     }
 }
