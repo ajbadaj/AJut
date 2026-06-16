@@ -306,6 +306,19 @@
                                                 <TextBlock x:Name="EnumBugReproStatus" VerticalAlignment="Center" Opacity="0.7"/>
                                             </StackPanel>
                                         </StackPanel>
+
+                                        <!-- Bug repro: SelectionChanged must fire on every standalone deselect -->
+                                        <StackPanel Spacing="4" Margin="0,12,0,0">
+                                            <TextBlock Text="SelectionChanged on deselect (repro)" FontSize="11" Opacity="0.7"/>
+                                            <TextBlock Text="Multi-select: select two, click one off - the counter must tick. Single-select + allow-none: select one, click it off to empty - the counter must tick there too. Both strips share the one counter." TextWrapping="Wrap" FontSize="11" Opacity="0.5"/>
+                                            <ajut:ToggleStrip x:Name="ToggleStripSelectionChangedRepro"
+                                                              AllowMultiSelect="True" AllowNoSelection="True"
+                                                              SelectionChanged="ToggleStripSelectionChangedRepro_OnSelectionChanged"/>
+                                            <ajut:ToggleStrip x:Name="ToggleStripSingleSelectNoneRepro"
+                                                              AllowNoSelection="True"
+                                                              SelectionChanged="ToggleStripSelectionChangedRepro_OnSelectionChanged"/>
+                                            <TextBlock x:Name="ToggleStripSelectionChangedStatus" Opacity="0.8" Text="SelectionChanged fired 0 times"/>
+                                        </StackPanel>
                                     </StackPanel>
 
                                     <TextBlock Text="EnumToggleStrip" Style="{ThemeResource SubtitleTextBlockStyle}" Margin="0,12,0,0"/>

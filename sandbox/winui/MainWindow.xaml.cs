@@ -29,6 +29,7 @@ namespace AJutShowRoomWinUI
     {
         private const string kThemeColorsSettingsKey = "_Hidden_theme_colors";
         private readonly ObservableCollection<string> m_themeColorResolver = new ObservableCollection<string>();
+        private int m_selectionChangedReproCount;
 
         // ===========[ Dock Zone test state ]============================================
         private DockingManager m_dockingManager;
@@ -57,6 +58,10 @@ namespace AJutShowRoomWinUI
 
             // ToggleStrip enum bug repro
             this.ToggleStripEnumBugRepro.ItemsSource = Enum.GetValues<eEditorMode>();
+
+            // ToggleStrip SelectionChanged deselect repros (multi-select + single-select-with-none, shared counter)
+            this.ToggleStripSelectionChangedRepro.ItemsSource = new[] { "One", "Two", "Three", "Four" };
+            this.ToggleStripSingleSelectNoneRepro.ItemsSource = new[] { "One", "Two", "Three" };
 
             this.StockBumpStackDemos();
 
@@ -149,6 +154,13 @@ namespace AJutShowRoomWinUI
             this.SelectedEditorMode = eEditorMode.Text;
             this.ToggleStripEnumBugRepro.SelectedItem = eEditorMode.Text;
             this.EnumBugReproStatus.Text = $"Set to Text. SelectedItem = {this.ToggleStripEnumBugRepro.SelectedItem}";
+        }
+
+        private void ToggleStripSelectionChangedRepro_OnSelectionChanged (object sender, AJut.UX.Controls.ToggleStrip.ToggleStripSelectionChangedEventArgs e)
+        {
+            ++m_selectionChangedReproCount;
+            string current = string.Join(", ", e.CurrentSelection.OfType<object>());
+            this.ToggleStripSelectionChangedStatus.Text = $"SelectionChanged fired {m_selectionChangedReproCount} times - current: [{current}]";
         }
 
         private void AddThemeColor(string themeColor)

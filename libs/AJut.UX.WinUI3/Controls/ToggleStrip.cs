@@ -369,12 +369,20 @@ namespace AJut.UX.Controls
                 }
             });
 
-            this.SelectionChanged?.Invoke(
-                this,
-                new ToggleStripSelectionChangedEventArgs(previousSelectedItems, newlySelectedItems)
-            );
+            this.RaiseSelectionChanged(previousSelectedItems, newlySelectedItems);
 
             this.RefreshForSelection();
+        }
+
+        // Owner-side raiser for the public SelectionChanged event. Both the select path
+        // (HandleSelectionChanged) and the multi-select deselect path (ToggleItemsCollection.
+        // HandleWasDeselected) funnel through here so the event is raised consistently.
+        internal void RaiseSelectionChanged (IList previousSelection, IList currentSelection)
+        {
+            this.SelectionChanged?.Invoke(
+                this,
+                new ToggleStripSelectionChangedEventArgs(previousSelection, currentSelection)
+            );
         }
 
         // ===========[ Item building ]============================================
@@ -817,7 +825,9 @@ namespace AJut.UX.Controls
                 this.RaisePropertyChanged(nameof(IsSelected));
                 if (!isSelected)
                 {
-                    this.Owner.Items.HandleWasDeselected(this);
+                    // This runs only as the deselect half of a single-select swap (the follow-on select
+                    // raises SelectionChanged for the whole change), so flag it to suppress a duplicate raise.
+                    this.Owner.Items.HandleWasDeselected(this, isPartOfSelectionSwap: true);
                 }
             }
 
@@ -881,8 +891,12 @@ namespace AJut.UX.Controls
                 m_owner.HandleSelectionChanged(newlySelected);
             }
 
-            internal void HandleWasDeselected (ToggleItem toggleItem)
+            internal void HandleWasDeselected (ToggleItem toggleItem, bool isPartOfSelectionSwap = false)
             {
+                // Snapshot the selection as it stood before this deselect so a raised SelectionChanged
+                // reports an accurate previous set (the bookkeeping below mutates SelectedItems in place).
+                IList previousSelection = m_owner.SelectedItems?.OfType<object>().ToList() ?? new List<object>();
+
                 if (m_owner.SelectedItems is INotifyCollectionChanged)
                 {
                     m_owner.SelectedItems.Remove(toggleItem.Data);
@@ -896,6 +910,17 @@ namespace AJut.UX.Controls
                     m_owner.SelectedItems = m_owner.SelectedItems.OfType<object>()
                         .Where(i => !Equals(i, toggleItem.Data))
                         .ToList<object>();
+                }
+
+                // A standalone deselect changes the selection in its own right, so raise it here. The one
+                // deselect that must NOT raise is the internal first-half of a single-select swap (via
+                // SetSelectionWithoutChecking): that swap's follow-on select already raises once for the
+                // whole change, so raising here too would double-fire. This is the only suppression case -
+                // multi-select deselects and single-select deselect-to-empty (AllowNoSelection) both raise.
+                if (!isPartOfSelectionSwap)
+                {
+                    IList currentSelection = this.Where(ti => ti.IsSelected).Select(ti => ti.Data).ToList();
+                    m_owner.RaiseSelectionChanged(previousSelection, currentSelection);
                 }
             }
 
