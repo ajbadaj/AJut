@@ -11,55 +11,69 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800"
              x:Name="Self">
-    <ajut:AutoGrid FixedRowCount="1">
-        <ajut:PropertyGrid Grid.Column="1" BorderThickness="3" BorderBrush="#202020" Margin="20" Background="#1000" HorizontalContentAlignment="Stretch"
+    <DockPanel>
+        <!-- Selection-surface tester: exercises the PropertyGrid selection API (SelectedSourceObject /
+             SelectedSourceObjectChanged / TrySelectSourceObject) added for surfacing list-element selection. -->
+        <Border DockPanel.Dock="Top" Background="#18000000" Padding="8" Margin="0,0,0,4">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Selection test:" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <Button Content="Select random toy" Click="SelectRandomToy_OnClick"
+                        ToolTip="Calls PropertyGrid.TrySelectSourceObject on a random Toys element - exercises programmatic select + scroll-into-view (and the collapsed-target path)"/>
+                <Button Content="Clear selection" Click="ClearSelection_OnClick" Margin="6,0,0,0"/>
+                <TextBlock Text="SelectedSourceObject:" VerticalAlignment="Center" Margin="16,0,6,0"/>
+                <TextBlock x:Name="SelectedSourceReadout" Text="(none)" FontWeight="Bold" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+        <ajut:AutoGrid FixedRowCount="1">
+            <ajut:PropertyGrid x:Name="PropGrid" Grid.Column="1" BorderThickness="3" BorderBrush="{DynamicResource AJut_Brush_BorderCommon}" Margin="20" Background="#1000" HorizontalContentAlignment="Stretch"
                            SingleItemSource="{Binding ElementName=PropGridSelectionOptions, Path=SelectedItem}"
                            LabelColumnWidth="140"
                            PropertyToolTipPlacement="PropertyNameAndValue"
                            >
-            <ajut:PropertyGrid.ItemTemplateSelector>
-                <ajut:PropertyGridTemplateSelector>
-                    <ajut:PropertyGridTemplateSelector.RegisteredTemplates>
-                        <DataTemplate x:Key="Text" DataType="{x:Type ajprop:PropertyEditTarget}">
-                            <ajut:EditableTextBlock Text="{Binding Path=EditValue, Mode=TwoWay}" FontSize="16"/>
-                        </DataTemplate>
-                        <DataTemplate x:Key="Number" DataType="{x:Type ajprop:PropertyEditTarget}">
-                            <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}"
+                <ajut:PropertyGrid.ItemTemplateSelector>
+                    <ajut:PropertyGridTemplateSelector>
+                        <ajut:PropertyGridTemplateSelector.RegisteredTemplates>
+                            <DataTemplate x:Key="Text" DataType="{x:Type ajprop:PropertyEditTarget}">
+                                <ajut:EditableTextBlock Text="{Binding Path=EditValue, Mode=TwoWay}" FontSize="16"/>
+                            </DataTemplate>
+                            <DataTemplate x:Key="Number" DataType="{x:Type ajprop:PropertyEditTarget}">
+                                <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}"
                                                 Minimum="{Binding Path=EditContext.Minimum, FallbackValue=0}"
                                                 Maximum="{Binding Path=EditContext.Maximum, FallbackValue=100}"
                                                 NumberTextAlignment="Left"/>
-                        </DataTemplate>
-                        <DataTemplate x:Key="SavePath" DataType="{x:Type ajprop:PropertyEditTarget}">
-                            <ajut:PathSelectionControl SelectedPath="{Binding Path=EditValue}"/>
-                        </DataTemplate>
-                    </ajut:PropertyGridTemplateSelector.RegisteredTemplates>
-                    <ajut:PropertyGridTemplateSelector.Default>
-                        <DataTemplate DataType="{x:Type ajprop:PropertyEditTarget}">
-                            <TextBlock Text="{Binding Path=EditValue}"/>
-                        </DataTemplate>
-                    </ajut:PropertyGridTemplateSelector.Default>
-                </ajut:PropertyGridTemplateSelector>
+                            </DataTemplate>
+                            <DataTemplate x:Key="SavePath" DataType="{x:Type ajprop:PropertyEditTarget}">
+                                <ajut:PathSelectionControl SelectedPath="{Binding Path=EditValue}"/>
+                            </DataTemplate>
+                        </ajut:PropertyGridTemplateSelector.RegisteredTemplates>
+                        <ajut:PropertyGridTemplateSelector.Default>
+                            <DataTemplate DataType="{x:Type ajprop:PropertyEditTarget}">
+                                <TextBlock Text="{Binding Path=EditValue}"/>
+                            </DataTemplate>
+                        </ajut:PropertyGridTemplateSelector.Default>
+                    </ajut:PropertyGridTemplateSelector>
 
-            </ajut:PropertyGrid.ItemTemplateSelector>
-        </ajut:PropertyGrid>
-        <ListBox x:Name="PropGridSelectionOptions" Grid.Column="1" SelectedIndex="0"
+                </ajut:PropertyGrid.ItemTemplateSelector>
+            </ajut:PropertyGrid>
+            <ListBox x:Name="PropGridSelectionOptions" Grid.Column="1" SelectedIndex="0"
                  ItemsSource="{Binding ElementName=Self, Path=PropertyGridItems}">
-            <ListBox.ItemTemplate>
-                <DataTemplate>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock>
-                            <TextBlock.Inlines>
-                                <Run Text="{Binding Path=DogsName}"/>
-                                <Run Text=": "/>
-                                <Run Text="{Binding Path=DogsAge}"/>
-                            </TextBlock.Inlines>
-                        </TextBlock>
-                        <Button Content="Set age" Click="SetDogAge_OnClick"/>
-                        <Button Content="Set speed" Click="SetElevatedTopSpeed_OnClick"
-                                ToolTip="Sets elevated TopSpeed externally - tests RecacheEditValue cascade"/>
-                    </StackPanel>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
-    </ajut:AutoGrid>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock>
+                                <TextBlock.Inlines>
+                                    <Run Text="{Binding Path=DogsName}"/>
+                                    <Run Text=": "/>
+                                    <Run Text="{Binding Path=DogsAge}"/>
+                                </TextBlock.Inlines>
+                            </TextBlock>
+                            <Button Content="Set age" Click="SetDogAge_OnClick"/>
+                            <Button Content="Set speed" Click="SetElevatedTopSpeed_OnClick"
+                                    ToolTip="Sets elevated TopSpeed externally - tests RecacheEditValue cascade"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </ajut:AutoGrid>
+    </DockPanel>
 </UserControl>

@@ -788,7 +788,16 @@
                                                Text="(diagnostics will appear here after clicking a Mode button)"/>
                                 </StackPanel>
 
-                                <TextBlock Grid.Row="2" Grid.Column="0" Text="PropertyGrid - switch sources above to test live refresh" FontStyle="Italic" Margin="0,0,0,8"/>
+                                <!-- Selection-surface tester: exercises TrySelectSourceObject / SelectedSourceObject(Changed).
+                                     Complex A/B have ListWithElevation (complex elements with identity) to target. -->
+                                <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Spacing="6" Margin="0,0,0,8">
+                                    <TextBlock Text="PropertyGrid - switch sources above to test live refresh" FontStyle="Italic" VerticalAlignment="Center"/>
+                                    <Button Content="Select random element" Click="PGSelect_OnRandomElementClicked"
+                                            ToolTipService.ToolTip="Complex A/B: TrySelectSourceObject on a random ListWithElevation element - exercises programmatic select + scroll, verifies no Single-mode COMException, and the collapsed-target expand path"/>
+                                    <Button Content="Clear selection" Click="PGSelect_OnClearClicked"/>
+                                    <TextBlock Text="SelectedSourceObject:" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="PGSelectionReadout" Text="(none)" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
                                 <TextBlock Grid.Row="2" Grid.Column="2" Text="Live source object (JSON)" FontStyle="Italic" Margin="0,0,0,8"/>
 
                                 <!-- SingleItemSource set in code-behind so we can swap it via the buttons above -->

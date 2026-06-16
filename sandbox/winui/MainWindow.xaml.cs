@@ -43,6 +43,7 @@ namespace AJutShowRoomWinUI
             this.InitializeComponent();
             this.Root.SetupFor(this);
             this.TestPropertyGrid.PropertyTreeChanged += this.TestPropertyGrid_OnPropertyTreeChanged;
+            this.TestPropertyGrid.SelectedSourceObjectChanged += this.TestPropertyGrid_OnSelectedSourceObjectChanged;
             this.SetPGSource(m_alphaObj);
 
             // ToggleStrip demo items
@@ -333,6 +334,9 @@ namespace AJutShowRoomWinUI
             m_currentPGTestObj = obj;
             this.TestPropertyGrid.SingleItemSource = obj;
             this.ResetJsonDisplay();
+
+            // Swapping the source rebuilds the tree and drops any selection - reset the readout to match.
+            this.PGSelectionReadout.Text = "(none)";
         }
 
         private void PGSource_OnAlphaClicked (object sender, RoutedEventArgs e) => this.SetPGSource(m_alphaObj);
@@ -440,6 +444,44 @@ namespace AJutShowRoomWinUI
         private void TestPropertyGrid_OnPropertyTreeChanged(object sender, EventArgs e)
         {
             this.ResetJsonDisplay();
+        }
+
+        // ------ Selection-surface tester wiring ------
+        private void TestPropertyGrid_OnSelectedSourceObjectChanged (object sender, EventArgs e)
+        {
+            this.UpdatePGSelectionReadout();
+        }
+
+        private void UpdatePGSelectionReadout ()
+        {
+            object selected = this.TestPropertyGrid.SelectedSourceObject;
+            this.PGSelectionReadout.Text = selected is ShowRoomSubObject sub
+                ? $"ShowRoomSubObject (SubObjValue={sub.SubObjValue})"
+                : selected?.ToString() ?? "(none)";
+        }
+
+        private void PGSelect_OnRandomElementClicked (object sender, RoutedEventArgs e)
+        {
+            // Complex A/B carry ListWithElevation (complex elements with identity). Selecting one by
+            // reference drives the programmatic selection path - the one that hit the Single-mode
+            // SelectedItems COMException, and (when the list node is collapsed) the expand-then-select path.
+            if (this.TestPropertyGrid.SingleItemSource is ShowRoomTester tester && tester.ListWithElevation.Count > 0)
+            {
+                ShowRoomSubObject element = tester.ListWithElevation[new Random().Next(0, tester.ListWithElevation.Count)];
+                if (!this.TestPropertyGrid.TrySelectSourceObject(element))
+                {
+                    this.PGSelectionReadout.Text = "(could not find a row for that element)";
+                }
+            }
+            else
+            {
+                this.PGSelectionReadout.Text = "(switch to Complex A or B - it has the element list)";
+            }
+        }
+
+        private void PGSelect_OnClearClicked (object sender, RoutedEventArgs e)
+        {
+            this.TestPropertyGrid.SelectedTarget = null;
         }
         private void ResetJsonDisplay()
         {

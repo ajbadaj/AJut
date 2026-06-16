@@ -20,6 +20,11 @@ namespace AJut.UX.Controls
         private readonly PropertyGridManager m_manager;
         private FlatTreeListControl PART_TreeList;
 
+        // Last source object reported through SelectedSourceObjectChanged. Held so we only raise that
+        // event when the resolved element actually changes - not when selection moves between two rows
+        // inside the same element's subtree.
+        private object m_lastSelectedSourceObject;
+
         // ===========[ Commands ]=================================================
         /// <summary>
         /// Resets the target PropertyEditTarget (passed as CommandParameter) to its default value.
@@ -50,6 +55,7 @@ namespace AJut.UX.Controls
         {
             if (this.PART_TreeList != null)
             {
+                this.PART_TreeList.SelectionChanged -= this.OnTreeListSelectionChanged;
                 this.PART_TreeList.DragDropReorderRequested -= this.OnDragDropReorderRequested;
             }
 
@@ -68,6 +74,7 @@ namespace AJut.UX.Controls
 
             if (this.PART_TreeList != null)
             {
+                this.PART_TreeList.SelectionChanged -= this.OnTreeListSelectionChanged;
                 this.PART_TreeList.DragDropReorderRequested -= this.OnDragDropReorderRequested;
             }
 
@@ -78,6 +85,8 @@ namespace AJut.UX.Controls
                 this.PART_TreeList.CanDragItem = _CanDragPropertyItem;
                 this.PART_TreeList.CanDropItem = _CanDropPropertyItem;
                 this.PART_TreeList.DragDropReorderRequested += this.OnDragDropReorderRequested;
+
+                this.PART_TreeList.SelectionChanged += this.OnTreeListSelectionChanged;
 
                 this.PART_TreeList.DragGhostTemplate = this.DragGhostTemplate;
             }
@@ -323,6 +332,74 @@ namespace AJut.UX.Controls
         /// </summary>
         public event EventHandler PropertyTreeChanged;
 
+        /// <summary>
+        /// Fires whenever the selected row changes - by user click or programmatic selection. Read
+        /// <see cref="SelectedTarget"/> / <see cref="SelectedSourceObject"/> in the handler.
+        /// </summary>
+        public event EventHandler SelectedTargetChanged;
+
+        /// <summary>
+        /// Fires when the source object behind the selected row changes. Moving the selection between two
+        /// rows inside the same list element's subtree resolves to the same element, so this does NOT fire
+        /// in that case - only when the resolved <see cref="SelectedSourceObject"/> actually changes.
+        /// </summary>
+        public event EventHandler SelectedSourceObjectChanged;
+
+        // ===========[ Selection ]================================================
+        /// <summary>
+        /// The PropertyEditTarget behind the currently selected row, or null when nothing is selected.
+        /// Setting it selects that row (expanding any collapsed ancestors) and scrolls it into view; set
+        /// to null to clear the selection. Returns null until the template has been applied.
+        /// </summary>
+        public PropertyEditTarget SelectedTarget
+        {
+            get => this.PART_TreeList?.SelectedItem as PropertyEditTarget;
+            set
+            {
+                if (this.PART_TreeList == null)
+                {
+                    return;
+                }
+
+                if (value == null)
+                {
+                    this.PART_TreeList.SelectedItems.Clear();
+                    return;
+                }
+
+                this.PART_TreeList.TrySelectItemForSource(value, scrollIntoView: true);
+            }
+        }
+
+        /// <summary>
+        /// The source object behind the selected row, resolved by walking up from the selected row to the
+        /// nearest list-element row and returning its element instance. Null when nothing is selected or
+        /// the selection sits outside any list element. Selecting any row inside an element's subtree
+        /// (the element row itself or any of its sub-property rows) resolves to that same element.
+        /// </summary>
+        public object SelectedSourceObject => _ResolveSourceObject(this.SelectedTarget);
+
+        /// <summary>
+        /// Selects the row representing <paramref name="sourceObject"/> (matched by reference), expanding
+        /// any collapsed ancestors and scrolling it into view. Returns false when no row represents the
+        /// instance. Only list-element rows carry a source object, so this targets list elements.
+        /// </summary>
+        public bool TrySelectSourceObject (object sourceObject)
+        {
+            if (sourceObject == null || this.PART_TreeList == null)
+            {
+                return false;
+            }
+
+            PropertyEditTarget match = this.FindTargetForSourceObject(sourceObject);
+            if (match == null)
+            {
+                return false;
+            }
+
+            return this.PART_TreeList.TrySelectItemForSource(match, scrollIntoView: true);
+        }
+
         private void RebuildEditTargets ()
         {
             // Unsubscribe from old tree (and hidden conditional targets) before rebuild.
@@ -427,6 +504,53 @@ namespace AJut.UX.Controls
                     }
                 }
             }
+        }
+
+        // ===========[ Selection handling ]=======================================
+        private void OnTreeListSelectionChanged (object sender, EventArgs<SelectionChange<IObservableTreeNode>> e)
+        {
+            this.SelectedTargetChanged?.Invoke(this, EventArgs.Empty);
+
+            object newSource = this.SelectedSourceObject;
+            if (!ReferenceEquals(newSource, m_lastSelectedSourceObject))
+            {
+                m_lastSelectedSourceObject = newSource;
+                this.SelectedSourceObjectChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
+        private PropertyEditTarget FindTargetForSourceObject (object sourceObject)
+        {
+            if (m_manager.RootNode == null)
+            {
+                return null;
+            }
+
+            foreach (PropertyEditTarget target in _WalkAllTargets(m_manager.RootNode))
+            {
+                if (ReferenceEquals(target.SourceObject, sourceObject))
+                {
+                    return target;
+                }
+            }
+
+            return null;
+        }
+
+        // Walk up (including the row itself) to the nearest row that stands in for a source object - i.e.
+        // the nearest list-element ancestor - and return its element instance.
+        private static object _ResolveSourceObject (PropertyEditTarget target)
+        {
+            for (PropertyEditTarget cursor = target; cursor != null; cursor = cursor.Parent as PropertyEditTarget)
+            {
+                object source = cursor.SourceObject;
+                if (source != null)
+                {
+                    return source;
+                }
+            }
+
+            return null;
         }
 
         private void OnSetPropertyToDefaultExecuted (object sender, ExecutedRoutedEventArgs e)

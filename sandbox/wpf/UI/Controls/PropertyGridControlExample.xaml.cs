@@ -22,6 +22,54 @@
                 new SelfAwarePropertyGridSource () { DogsName = "Bandit", DogsAge = 7 },
                 new SelfAwarePropertyGridSource () { DogsName = "Brosephina", DogsAge = 3 },
             };
+
+            this.Loaded += this.OnLoaded;
+            this.Unloaded += this.OnUnloaded;
+        }
+
+        // ------ Selection-surface tester wiring ------
+
+        private void OnLoaded (object sender, RoutedEventArgs e)
+        {
+            this.PropGrid.SelectedSourceObjectChanged -= this.OnSelectedSourceObjectChanged;
+            this.PropGrid.SelectedSourceObjectChanged += this.OnSelectedSourceObjectChanged;
+            this.UpdateSelectedSourceReadout();
+        }
+
+        private void OnUnloaded (object sender, RoutedEventArgs e)
+        {
+            this.PropGrid.SelectedSourceObjectChanged -= this.OnSelectedSourceObjectChanged;
+        }
+
+        private void OnSelectedSourceObjectChanged (object sender, EventArgs e)
+        {
+            this.UpdateSelectedSourceReadout();
+        }
+
+        private void UpdateSelectedSourceReadout ()
+        {
+            object selected = this.PropGrid.SelectedSourceObject;
+            this.SelectedSourceReadout.Text = selected?.ToString() ?? "(none)";
+        }
+
+        private void SelectRandomToy_OnClick (object sender, RoutedEventArgs e)
+        {
+            // Picks a Toys element off the currently-shown dog and selects its row by reference.
+            // Works whether the Toys node is expanded or collapsed (collapsed -> expands + scrolls to it).
+            if (this.PropGridSelectionOptions.SelectedItem is SelfAwarePropertyGridSource dog
+                && dog.Toys.Count > 0)
+            {
+                DogToy toy = dog.Toys[App.kRNG.Next(0, dog.Toys.Count)];
+                if (!this.PropGrid.TrySelectSourceObject(toy))
+                {
+                    this.SelectedSourceReadout.Text = $"(could not select {toy})";
+                }
+            }
+        }
+
+        private void ClearSelection_OnClick (object sender, RoutedEventArgs e)
+        {
+            this.PropGrid.SelectedTarget = null;
         }
 
         public static readonly DependencyProperty PropertyGridItemsProperty = DPUtils.Register(_ => _.PropertyGridItems);
@@ -48,6 +96,27 @@
         public string? OwnerName { get; set; } = "Unknown Owner";
         [PGEditor("Number")]
         public int OwnerAge { get; set; } = 30;
+    }
+
+    /// <summary>List element with stable identity - the selection tester resolves a selected row (the
+    /// element row or any of its sub-property rows) back to this exact instance via SelectedSourceObject.</summary>
+    public class DogToy : NotifyPropertyChanged
+    {
+        private string m_name;
+        public string Name
+        {
+            get => m_name;
+            set => this.SetAndRaiseIfChanged(ref m_name, value);
+        }
+
+        private bool m_isSqueaky;
+        public bool IsSqueaky
+        {
+            get => m_isSqueaky;
+            set => this.SetAndRaiseIfChanged(ref m_isSqueaky, value);
+        }
+
+        public override string ToString () => this.Name ?? "(toy)";
     }
 
     /// <summary>Sub-object for testing elevated child property recache.</summary>
@@ -181,6 +250,17 @@
         }
 
         // ------ PGList demos ------
+
+        // Complex-element list - each row is a DogToy with identity, so the selection tester can resolve
+        // a selected element (or sub-property) row back to the instance and select it programmatically.
+        [PGList]
+        [PGGroup("Lists")]
+        public List<DogToy> Toys { get; set; } = new List<DogToy>
+        {
+            new DogToy { Name = "Rope", IsSqueaky = false },
+            new DogToy { Name = "Squeaky Bone", IsSqueaky = true },
+            new DogToy { Name = "Tennis Ball", IsSqueaky = false },
+        };
 
         [PGList]
         [PGGroup("Lists")]

@@ -482,20 +482,30 @@ namespace AJut.UX.Controls
 
             FlatTreeItem[] previous = m_selectedItems.ToArray();
 
+            // In Single/None modes only the first requested item is honored.
+            bool isMulti = (this.SelectionMode != eFlatTreeSelectionMode.Single
+                            && this.SelectionMode != eFlatTreeSelectionMode.None);
+
             m_blockingReentrancy = true;
             try
             {
-                this.PART_ListView.SelectedItems.Clear();
+                // WinUI3 throws a COMException if ListView.SelectedItems is mutated (Clear/Add) while
+                // SelectionMode is Single or None - there the selection runs through SelectedItem instead.
+                // Only touch SelectedItems in the multi-select modes.
+                if (isMulti)
+                {
+                    this.PART_ListView.SelectedItems.Clear();
+                }
+                else
+                {
+                    this.PART_ListView.SelectedItem = null;
+                }
 
                 foreach (FlatTreeItem stale in previous)
                 {
                     stale.IsSelected = false;
                 }
                 m_selectedItems.Clear();
-
-                // In Single/None modes only the first requested item is honored.
-                bool isMulti = (this.SelectionMode != eFlatTreeSelectionMode.Single
-                                && this.SelectionMode != eFlatTreeSelectionMode.None);
 
                 FlatTreeItem primary = null;
                 if (isMulti)
@@ -554,11 +564,24 @@ namespace AJut.UX.Controls
                 return null;
             }
 
-            foreach (FlatTreeItem item in TreeTraversal<FlatTreeItem>.All(m_store.RootNode))
+            return _FindItemForSource(m_store.RootNode, source);
+        }
+
+        // Recurse via AllChildren (visible + collapsed) rather than TreeTraversal so the search reaches
+        // rows parked inside collapsed parents - which is exactly what programmatic selection must expand to.
+        private static FlatTreeItem _FindItemForSource (FlatTreeItem node, IObservableTreeNode source)
+        {
+            if (node.Source == source)
             {
-                if (item.Source == source)
+                return node;
+            }
+
+            foreach (FlatTreeItem child in node.AllChildren)
+            {
+                FlatTreeItem found = _FindItemForSource(child, source);
+                if (found != null)
                 {
-                    return item;
+                    return found;
                 }
             }
 
@@ -599,10 +622,27 @@ namespace AJut.UX.Controls
                 }
             }
 
-            this.SetSelection(new[] { item });
-            if (scrollIntoView)
+            // Defer the select + scroll. Expanding a collapsed ancestor above reveals rows whose
+            // containers aren't realized until the next layout pass, so selecting / scrolling in the
+            // same synchronous beat silently no-ops. Posting to the dispatcher lets layout catch up
+            // first, and also decouples this from callers that invoke it from inside a pointer/input event.
+            void SelectAndScroll ()
             {
-                this.ScrollIntoView(item);
+                this.SetSelection(new[] { item });
+                if (scrollIntoView)
+                {
+                    this.ScrollIntoView(item);
+                }
+            }
+
+            var dispatcher = this.DispatcherQueue;
+            if (dispatcher != null)
+            {
+                dispatcher.TryEnqueue(SelectAndScroll);
+            }
+            else
+            {
+                SelectAndScroll();
             }
 
             return true;
