@@ -253,7 +253,8 @@
 
         // Complex-element list - each row is a DogToy with identity, so the selection tester can resolve
         // a selected element (or sub-property) row back to the instance and select it programmatically.
-        [PGList]
+        // ElementDisplayMemberName fills each element row's otherwise-blank value column with the toy's Name.
+        [PGList(ElementDisplayMemberName = nameof(DogToy.Name))]
         [PGGroup("Lists")]
         public List<DogToy> Toys { get; set; } = new List<DogToy>
         {

@@ -905,18 +905,41 @@ namespace AJutShowRoomWinUI
             }
         }
 
-        // Deterministic collect: pump the dispatcher between full GC passes so any WinUI cleanup
-        // deferred to the message loop (unload finalization, container recycling) runs before the
-        // next pass. Without the pump, a single synchronous GC burst races that deferred work.
+        // Deterministic collect: drain the dispatcher, then run a full GC, repeated. The drain
+        // matters because some controls defer work via DispatcherQueue.TryEnqueue that captures
+        // data we are measuring - e.g. PropertyGridItemRow.OnDataContextChanged enqueues a
+        // (Normal-priority) ApplyEditorContent callback capturing the edit target -> source. Those
+        // are self-cleaning once they run, but if still queued at GC time they pin what they
+        // captured. Awaiting a Low-priority enqueue returns only after every higher-priority
+        // queued callback has run, so the captures are gone before we measure.
         private static async Task LeakProbe_SettleAndCollectAsync ()
         {
-            for (int i = 0; i < 4; ++i)
+            for (int i = 0; i < 6; ++i)
             {
+                await LeakProbe_DrainDispatcherAsync();
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
                 GC.Collect();
                 await Task.Delay(100);
             }
+        }
+
+        // Completes only after all higher-priority dispatcher work has run (Low runs last).
+        private static Task LeakProbe_DrainDispatcherAsync ()
+        {
+            var done = new TaskCompletionSource();
+            var queue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+            bool enqueued = queue != null && queue.TryEnqueue(
+                Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
+                () => done.SetResult()
+            );
+
+            if (!enqueued)
+            {
+                done.SetResult();
+            }
+
+            return done.Task;
         }
 
         private static int LeakProbe_CountDescendants<T> (DependencyObject root) where T : DependencyObject
@@ -1469,6 +1492,28 @@ namespace AJutShowRoomWinUI
             new ShowRoomSubObject { SubObjValue = 99 },
         };
 
+        // ------ PGList element header demo ------
+        // Plain complex-element lists (no elevation, no custom editor), so each element row is expandable
+        // with an otherwise-blank value column. ElementDisplayMemberName fills that column with the
+        // element's Name. The first list shows the header in every state (Always); the second only while
+        // the element row is collapsed (WhenCollapsed).
+        [PGList(ElementDisplayMemberName = nameof(RosterEntry.Name))]
+        [PGGroup("Lists")]
+        public List<RosterEntry> Roster { get; set; } = new List<RosterEntry>
+        {
+            new RosterEntry { Name = "Tony", Age = 16 },
+            new RosterEntry { Name = "Jill", Age = 24 },
+            new RosterEntry { Name = "Jessup", Age = 31 },
+        };
+
+        [PGList(ElementDisplayMemberName = nameof(RosterEntry.Name), ElementDisplayMemberVisibility = eElementHeaderDisplay.WhenCollapsed)]
+        [PGGroup("Lists")]
+        public List<RosterEntry> RosterCollapsedHeaders { get; set; } = new List<RosterEntry>
+        {
+            new RosterEntry { Name = "Avery", Age = 19 },
+            new RosterEntry { Name = "Blake", Age = 27 },
+        };
+
         private class ColorToStringConverter : PropertyGridTypeAliasing<Color, string>
         {
             public override Type AliasType => typeof(string);
@@ -1497,6 +1542,25 @@ namespace AJutShowRoomWinUI
         {
             get => m_subObjValue;
             set => this.SetAndRaiseIfChanged(ref m_subObjValue, value);
+        }
+    }
+
+    // Element type for the PGList element-header demo - a plain complex object with a couple of
+    // editable properties so the element rows expand and the value column is otherwise empty.
+    public class RosterEntry : NotifyPropertyChanged
+    {
+        private string m_name;
+        public string Name
+        {
+            get => m_name;
+            set => this.SetAndRaiseIfChanged(ref m_name, value);
+        }
+
+        private int m_age;
+        public int Age
+        {
+            get => m_age;
+            set => this.SetAndRaiseIfChanged(ref m_age, value);
         }
     }
 

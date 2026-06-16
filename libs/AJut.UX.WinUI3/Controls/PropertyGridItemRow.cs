@@ -37,6 +37,7 @@ namespace AJut.UX.Controls
     [TemplatePart(Name = nameof(PART_LabelContent), Type = typeof(ContentControl))]
     [TemplatePart(Name = nameof(PART_SubtitleText), Type = typeof(TextBlock))]
     [TemplatePart(Name = nameof(PART_EditorContent), Type = typeof(ContentControl))]
+    [TemplatePart(Name = nameof(PART_ListElementHeader), Type = typeof(TextBlock))]
     [TemplatePart(Name = nameof(PART_DeleteButton), Type = typeof(Button))]
     public class PropertyGridItemRow : Control
     {
@@ -46,6 +47,10 @@ namespace AJut.UX.Controls
         // ===========[ Instance fields ]==========================================
         private FlatTreeItem m_flatTreeItem;
         private PropertyEditTarget m_editTarget;
+
+        // Bumped on every DataContext change so a deferred ApplyEditorContent callback can tell
+        // whether it is still the most recent one without capturing (and thus pinning) the target.
+        private int m_dataContextRevision;
 
         // ===========[ Construction ]=============================================
         public PropertyGridItemRow ()
@@ -60,6 +65,7 @@ namespace AJut.UX.Controls
         private ContentControl PART_LabelContent { get; set; }
         private TextBlock PART_SubtitleText { get; set; }
         private ContentControl PART_EditorContent { get; set; }
+        private TextBlock PART_ListElementHeader { get; set; }
         private Button PART_DeleteButton { get; set; }
 
         // ===========[ Dependency Properties ]====================================
@@ -137,6 +143,7 @@ namespace AJut.UX.Controls
             this.PART_LabelContent = this.GetTemplateChild(nameof(PART_LabelContent)) as ContentControl;
             this.PART_SubtitleText = this.GetTemplateChild(nameof(PART_SubtitleText)) as TextBlock;
             this.PART_EditorContent = this.GetTemplateChild(nameof(PART_EditorContent)) as ContentControl;
+            this.PART_ListElementHeader = this.GetTemplateChild(nameof(PART_ListElementHeader)) as TextBlock;
             this.PART_DeleteButton = this.GetTemplateChild(nameof(PART_DeleteButton)) as Button;
 
             if (this.PART_LabelBorder != null)
@@ -153,6 +160,7 @@ namespace AJut.UX.Controls
             this.ApplyLabelTemplate();
             this.ApplySubtitle();
             this.ApplyDeleteButton();
+            this.ApplyListElementHeader();
             this.ApplyToolTips();
 
             if (m_flatTreeItem != null)
@@ -250,10 +258,14 @@ namespace AJut.UX.Controls
             //     the enclosing PropertyGrid.
             // Without deferral, DataContextChanged fires before template application on
             // newly created rows, making PART_EditorContent null at call time.
-            var capturedTarget = m_editTarget;
+            // Guard with a revision token rather than capturing m_editTarget: capturing the
+            // target would let this queued callback hold the target (and through it the source
+            // object) alive until the dispatcher pumps. Harmless in a live app, but it makes a
+            // disposed grid's source look pinned to a leak probe that GCs before the queue drains.
+            int revision = ++m_dataContextRevision;
             this.DispatcherQueue.TryEnqueue(() =>
             {
-                if (m_editTarget == capturedTarget)
+                if (m_dataContextRevision == revision)
                 {
                     this.ApplyEditorContent();
                 }
@@ -262,6 +274,7 @@ namespace AJut.UX.Controls
             this.ApplyLabelTemplate();
             this.ApplySubtitle();
             this.ApplyDeleteButton();
+            this.ApplyListElementHeader();
             this.ApplyToolTips();
         }
 
@@ -288,6 +301,11 @@ namespace AJut.UX.Controls
                 || e.PropertyName == nameof(PropertyEditTarget.DisplayName))
             {
                 this.ApplyToolTips();
+            }
+            else if (e.PropertyName == nameof(PropertyEditTarget.IsListElementHeaderVisible)
+                || e.PropertyName == nameof(PropertyEditTarget.ListElementHeaderText))
+            {
+                this.ApplyListElementHeader();
             }
         }
 
@@ -379,6 +397,18 @@ namespace AJut.UX.Controls
             this.PART_DeleteButton.Visibility = (m_editTarget?.CanRemoveFromList == true)
                 ? Visibility.Visible
                 : Visibility.Collapsed;
+        }
+
+        private void ApplyListElementHeader ()
+        {
+            if (this.PART_ListElementHeader == null)
+            {
+                return;
+            }
+
+            bool visible = m_editTarget?.IsListElementHeaderVisible == true;
+            this.PART_ListElementHeader.Text = visible ? (m_editTarget.ListElementHeaderText ?? string.Empty) : string.Empty;
+            this.PART_ListElementHeader.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
         }
 
 
