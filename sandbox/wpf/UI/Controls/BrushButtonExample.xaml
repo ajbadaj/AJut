@@ -1,0 +1,49 @@
+<UserControl x:Class="TheAJutShowRoom.UI.Controls.BrushButtonExample"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:TheAJutShowRoom.UI.Controls"
+             xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
+             mc:Ignorable="d"
+             d:DesignHeight="450" d:DesignWidth="800"
+             x:Name="Self">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="16">
+        <StackPanel>
+            <TextBlock Text="BrushButton" FontSize="18" FontWeight="Bold"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.7" Margin="0,0,0,8"
+                       Text="Per-state brushes are plain dependency properties - set, bind, or {DynamicResource} any of them. Every slot defaults to an AJut button brush, so an untouched button behaves normally and you override only the slots you want."/>
+            <WrapPanel>
+                <ajut:BrushButton Content="Default" Margin="0,0,8,8"/>
+                <ajut:BrushButton Content="Custom Red" Margin="0,0,8,8"
+                                  NormalBackground="#C0392B" PointerOverBackground="#E04A3A" PressedBackground="#96281B"
+                                  NormalForeground="White" PointerOverForeground="White" PressedForeground="White"/>
+                <ajut:BrushButton Content="Border Only" Margin="0,0,8,8" BorderThickness="2"
+                                  NormalBorderBrush="#2ECC71" PointerOverBorderBrush="#58D68D" PressedBorderBrush="#1E8449"/>
+                <ajut:BrushButton Content="Disabled" Margin="0,0,8,8" IsEnabled="False"/>
+            </WrapPanel>
+
+            <TextBlock Text="AutoBrushButton" FontSize="18" FontWeight="Bold" Margin="0,16,0,0"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.7" Margin="0,0,0,8"
+                       Text="One accent color in, a coherent readable palette out - a contrasting foreground, a visible border, and the mouse-over / pressed / disabled variants."/>
+            <WrapPanel>
+                <ajut:AutoBrushButton Content="Dark Red" Margin="0,0,8,8" PropagatedAccentColor="DarkRed"/>
+                <ajut:AutoBrushButton Content="Blue" Margin="0,0,8,8" PropagatedAccentColor="#0D83D8"/>
+                <ajut:AutoBrushButton Content="Green" Margin="0,0,8,8" PropagatedAccentColor="#186E11"/>
+                <ajut:AutoBrushButton Content="Gold" Margin="0,0,8,8" PropagatedAccentColor="Gold"/>
+                <ajut:AutoBrushButton Content="Disabled" Margin="0,0,8,8" PropagatedAccentColor="DarkRed" IsEnabled="False"/>
+            </WrapPanel>
+
+            <TextBlock Text="Live accent" FontSize="18" FontWeight="Bold" Margin="0,16,0,0"/>
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                <ajut:ColorValueEditControl x:Name="AccentMaker" EditColor="#186E11" VerticalAlignment="Top"/>
+                <StackPanel Margin="20,0,0,0" VerticalAlignment="Center">
+                    <ajut:AutoBrushButton Content="Pick my color" Padding="20,10" Margin="0,0,0,8"
+                                          PropagatedAccentColor="{Binding ElementName=AccentMaker, Path=EditColor}"/>
+                    <ajut:AutoBrushButton Content="Disabled too" Padding="20,10" IsEnabled="False"
+                                          PropagatedAccentColor="{Binding ElementName=AccentMaker, Path=EditColor}"/>
+                </StackPanel>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

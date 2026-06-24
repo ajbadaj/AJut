@@ -55,6 +55,15 @@
     <Compile Update="Controls\GeometryButton.cs">
       <DependentUpon>GeometryButton.xaml</DependentUpon>
     </Compile>
+    <Compile Update="Controls\_ManagedBrushButton.cs">
+      <DependentUpon>ManagedBrushButtons.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\BrushButton.cs">
+      <DependentUpon>ManagedBrushButtons.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\AutoBrushButton.cs">
+      <DependentUpon>ManagedBrushButtons.xaml</DependentUpon>
+    </Compile>
     <Compile Update="Controls\FlatTreeListControl.cs">
       <DependentUpon>FlatTreeListControl.xaml</DependentUpon>
     </Compile>

@@ -22,6 +22,7 @@
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/EnumComboBox.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/EnumToggleStrip.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/GeometryButton.xaml"/>
+        <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/ManagedBrushButtons.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/TitleBarCaptionButton.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/ThemedWindowRootControl.xaml"/>
         <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/FlatTreeListControl.xaml"/>

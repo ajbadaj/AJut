@@ -355,6 +355,25 @@
         <Setter Property="SwitchPadding" Value="-2"/>
     </Style>
 
+    <Style TargetType="{x:Type ajut_ctrls:BrushButton}">
+        <Setter Property="NormalBackground" Value="{DynamicResource AJut_Brush_ControlBackground}"/>
+        <Setter Property="NormalForeground" Value="{DynamicResource AJut_Brush_NormalText}"/>
+        <Setter Property="NormalBorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="PointerOverBackground" Value="{DynamicResource AJut_Brush_ControlBackgroundHover}"/>
+        <Setter Property="PointerOverForeground" Value="{DynamicResource AJut_Brush_HighlightText}"/>
+        <Setter Property="PointerOverBorderBrush" Value="{DynamicResource AJut_Brush_BorderCommonHover}"/>
+        <Setter Property="PressedBackground" Value="{DynamicResource AJut_Brush_ButtonBackgroundPressed}"/>
+        <Setter Property="PressedForeground" Value="{DynamicResource AJut_Brush_HighlightText}"/>
+        <Setter Property="PressedBorderBrush" Value="{DynamicResource AJut_Brush_BorderCommonPress}"/>
+        <Setter Property="DisabledBackground" Value="{DynamicResource AJut_Brush_ControlBackground}"/>
+        <Setter Property="DisabledForeground" Value="{DynamicResource AJut_Brush_InteractiveTextUnfocused}"/>
+        <Setter Property="DisabledBorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+    </Style>
+
+    <Style TargetType="{x:Type ajut_ctrls:AutoBrushButton}">
+        <Setter Property="PropagatedAccentColor" Value="{DynamicResource AJut_Color_PrimaryHighlight}"/>
+    </Style>
+
     <Style TargetType="{x:Type TextBlock}" x:Key="AJut_SymbolText">
         <Setter Property="FontFamily" Value="{DynamicResource AJut_Font_SymbolGlyphText}"/>
         <Setter Property="FontSize" Value="20"/>

@@ -18,6 +18,9 @@
         <TabItem Header="BumpStack">
             <ctrls:BumpStackControlExample />
         </TabItem>
+        <TabItem Header="BrushButton">
+            <ctrls:BrushButtonExample />
+        </TabItem>
         <TabItem Header="BusyWait">
             <StackPanel>
                 <ajut:BusyWait Content="A busy wait" SpinnerDock="Right"

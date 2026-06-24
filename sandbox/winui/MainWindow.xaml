@@ -976,6 +976,16 @@
                         </TabViewItem.Content>
                     </TabViewItem>
 
+                    <!-- ===[ Brush Buttons ]================================================== -->
+                    <TabViewItem Header="Brush Buttons" IsClosable="False" VerticalContentAlignment="Stretch">
+                        <TabViewItem.IconSource>
+                            <SymbolIconSource Symbol="Highlight"/>
+                        </TabViewItem.IconSource>
+                        <TabViewItem.Content>
+                            <local:BrushButtonExample/>
+                        </TabViewItem.Content>
+                    </TabViewItem>
+
                 </TabView>
             </Border>
         </Grid>
