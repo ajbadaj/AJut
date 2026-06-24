@@ -6,7 +6,7 @@ namespace AJut.UX.Helpers
     using System.Globalization;
     using System.Net;
 
-    public static class AJutColorHelper
+    public static partial class AJutColorHelper
     {
         /// <summary>Supports #RGB (converts to #RRGGBB), #RRGGBB, and #AARRGGBB. Defaults to ARGB byte order.</summary>
         public static bool TryGetColorFromHex(string hex, out byte[] argb)
