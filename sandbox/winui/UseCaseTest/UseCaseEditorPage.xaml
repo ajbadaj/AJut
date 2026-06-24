@@ -16,7 +16,9 @@
             <Button Content="Back to Landing" Click="OnBackClicked"/>
             <Button Content="Save Layout" Click="OnSaveLayoutClicked"/>
             <Button Content="Load Layout" Click="OnLoadLayoutClicked"/>
-            <TextBlock Text="Editor - select a tool on the Items tab to edit it on the Properties tab. Drag a tab to split."
+            <CheckBox x:Name="CarefulTeardownCheck" Content="Careful teardown" VerticalAlignment="Center"
+                      ToolTipService.ToolTip="OFF (default) = naive teardown: dispose the docking manager only, the way a typical consumer leaves an editor. ON = also null the tree Root and dispose the grid, which hides framework teardown gaps."/>
+            <TextBlock Text="Select a tool on Items to edit it on Properties. Drag a tab to split."
                        VerticalAlignment="Center" Opacity="0.7" TextWrapping="Wrap"/>
         </StackPanel>
 

@@ -7,9 +7,9 @@
         <StackPanel Spacing="14" MaxWidth="780" HorizontalAlignment="Left">
             <TextBlock Text="Use-Case Leak Test" Style="{ThemeResource TitleTextBlockStyle}"/>
             <TextBlock TextWrapping="Wrap" Opacity="0.85"
-                       Text="This page navigates (by type, no page caching) to an editor built the way a real tool editor is: a docking experience whose panels are a flat tree of tools and a property grid. Selecting a tool edits it. There is an add toolbar plus layout save/load."/>
+                       Text="This page navigates (by type, no page caching) to an editor built the way a real tool editor is: a docking experience whose panels are a flat tree of tools and a property grid, both bound to a long-lived document model. The document outlives the editor, the way a real app's project/document outlives the views opened on it."/>
             <TextBlock TextWrapping="Wrap" Opacity="0.85"
-                       Text="Open the editor, click around, then come back here (the editor's Back button) and run the probe. The editor tears its whole graph down on navigate-away; the probe forces GC and reports whether anything survived. Repeat the open/come-back cycle a few times before probing to see whether survivors accumulate."/>
+                       Text="Open the editor, edit a tool, then come back (the editor's Back button); repeat a few cycles, then run the probe. By default the editor uses NAIVE teardown - it disposes the docking manager but otherwise just drops the page, the way a typical consumer leaves an editor. The probe forces GC and reports whether the editor graph collected. A FAIL means the long-lived document is still pinning dropped editors - a framework teardown gap (the document itself is expected to stay alive). Toggle 'Careful teardown' in the editor to confirm the difference."/>
             <StackPanel Orientation="Horizontal" Spacing="8">
                 <Button Content="Open Editor" Click="OnOpenEditorClicked"/>
                 <Button Content="Run Memory Leak Probe" Click="OnRunProbeClicked"/>

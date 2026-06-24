@@ -9,12 +9,13 @@ namespace AJutShowRoomWinUI.UseCaseTest
     using Microsoft.UI.Xaml.Navigation;
 
     // ===========[ UseCaseEditorPage ]===========================================
-    // The editor surface, mimicking a real tool editor: a docking experience whose panels are
-    // a flat tree of tools (Items) and a property grid (Properties). Selecting a tool routes it
-    // to the property grid. The page builds the whole graph on load and tears it ALL down on
-    // navigate-away (manager.Dispose + panel teardown + unhook), then records weak references so
-    // the landing page's probe can confirm none of it survived. This is the deterministic
-    // open/close cycle that a host hits when navigating in and out of an editor.
+    // The editor surface, mimicking a real tool editor: a docking experience whose panels are a
+    // flat tree of tools (Items) and a property grid (Properties), both bound to the long-lived
+    // UseCaseDocument. Selecting a tool routes it to the property grid. On navigate-away the page
+    // disposes the docking manager and, by default, does nothing more - naive teardown, the way a
+    // typical consumer leaves an editor - then records weak refs so the landing probe can tell
+    // whether the long-lived document is still pinning the dropped editor graph. The Careful
+    // teardown checkbox also nulls the tree Root and disposes the grid, which hides framework gaps.
 
     public sealed partial class UseCaseEditorPage : Page
     {
@@ -24,6 +25,12 @@ namespace AJutShowRoomWinUI.UseCaseTest
         private ItemsDockPanel m_itemsPanel;
         private PropertiesDockPanel m_propertiesPanel;
         private ToolItemNode m_treeRoot;
+
+        // When false (default) teardown is "naive": dispose the docking manager but DON'T manually
+        // null the tree Root or dispose the property grid - the way a typical consumer leaves an
+        // editor. That is what exposes framework teardown gaps. When true, the editor also nulls
+        // Root and disposes the grid (the over-careful path that hides those gaps).
+        private bool m_carefulTeardown;
 
         // ===========[ Construction ]=========================================
         public UseCaseEditorPage ()
@@ -69,7 +76,9 @@ namespace AJutShowRoomWinUI.UseCaseTest
                 m_propertiesPanel = m_manager.DockNewPanel<PropertiesDockPanel>(zone);
             }
 
-            m_treeRoot = BuildSampleTree();
+            // Bind to the long-lived document tree (NOT a per-editor copy). This is what makes the
+            // leak visible: the document outlives the editor and pins it if teardown is incomplete.
+            m_treeRoot = UseCaseDocument.Shared.ToolTreeRoot;
             m_itemsPanel?.SetTree(m_treeRoot);
 
             if (m_itemsPanel != null)
@@ -88,6 +97,8 @@ namespace AJutShowRoomWinUI.UseCaseTest
                 return;
             }
 
+            m_carefulTeardown = this.CarefulTeardownCheck?.IsChecked == true;
+
             // 1. Drop the cross-panel subscription (its matching += is in OnEditorLoaded).
             if (m_itemsPanel != null)
             {
@@ -100,10 +111,16 @@ namespace AJutShowRoomWinUI.UseCaseTest
             PropertyGrid gridControl = m_propertiesPanel?.GridControl;
             ToolItem sampleItem = this.FirstTool();
 
-            // 3. Consumer half of teardown: panels release their inner state, then the manager
-            //    disposes (the path the docking-overlay fix and the rest of teardown run through).
-            m_itemsPanel?.Teardown();
-            m_propertiesPanel?.Teardown();
+            // 3. Teardown. A naive consumer disposes the docking manager but leaves the inner
+            //    controls to be collected by dropping the page. Careful mode also nulls the tree
+            //    Root and disposes the grid - which HIDES framework teardown gaps, so it is OFF by
+            //    default. The manager dispose runs in both modes (it is load-bearing for docking).
+            if (m_carefulTeardown)
+            {
+                m_itemsPanel?.Teardown();
+                m_propertiesPanel?.Teardown();
+            }
+
             this.DockToolbar.DockingManager = null;
             m_manager.Dispose();
 
@@ -192,17 +209,6 @@ namespace AJutShowRoomWinUI.UseCaseTest
             return (m_treeRoot != null && m_treeRoot.Children.Count > 0)
                 ? m_treeRoot.Children[0].Item
                 : null;
-        }
-
-        private static ToolItemNode BuildSampleTree ()
-        {
-            var root = new ToolItemNode("(root)") { CanHaveChildren = true };
-            for (int i = 1; i <= 6; ++i)
-            {
-                root.AddChildItem($"Tool {i}", new ToolItem($"Tool {i}"));
-            }
-
-            return root;
         }
 
         private static int CountDescendants<T> (DependencyObject root) where T : DependencyObject

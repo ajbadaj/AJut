@@ -44,6 +44,13 @@ namespace AJut.UX.Controls
         {
             this.DefaultStyleKey = typeof(PropertyGrid);
             m_manager = new PropertyGridManager(this);
+
+            // Drop the source -> grid PropertyChanged subscription whenever the grid leaves the
+            // visual tree, and restore it when it comes back. Without this a long-lived source
+            // object pins the whole grid after a consumer simply drops it (without Dispose or
+            // nulling the source) - see OnSourceItemPropertyChanged subscription below.
+            this.Loaded += this.OnLoaded;
+            this.Unloaded += this.OnUnloaded;
         }
 
         public void Dispose ()
@@ -392,6 +399,66 @@ namespace AJut.UX.Controls
             }
 
             this.ApplyRowTemplate();
+        }
+
+        // ===========[ Lifecycle - source subscription ]==========================
+        // The grid mirrors external edits by subscribing to its source object(s) PropertyChanged.
+        // That subscription is a source -> grid strong reference, so a long-lived source pins the
+        // grid once it leaves the tree (a consumer that drops the grid without Dispose or nulling
+        // the source). Toggle the subscription with tree membership: drop it on Unloaded so a
+        // dropped grid collects, restore + refresh it on Loaded so a re-shown grid stays live.
+        private void OnLoaded (object sender, RoutedEventArgs e)
+        {
+            this.UpdateSourceSubscription(subscribe: true);
+            this.RefreshAllTargets();
+        }
+
+        private void OnUnloaded (object sender, RoutedEventArgs e)
+        {
+            this.UpdateSourceSubscription(subscribe: false);
+        }
+
+        private void UpdateSourceSubscription (bool subscribe)
+        {
+            // Always detach first so re-entry / a sub already established when the source DP was set
+            // before load cannot double-subscribe.
+            if (this.SingleItemSource is INotifyPropertyChanged single)
+            {
+                single.PropertyChanged -= this.OnSourceItemPropertyChanged;
+                if (subscribe)
+                {
+                    single.PropertyChanged += this.OnSourceItemPropertyChanged;
+                }
+            }
+
+            if (this.ItemsSource != null)
+            {
+                foreach (INotifyPropertyChanged pc in this.ItemsSource.OfType<INotifyPropertyChanged>())
+                {
+                    pc.PropertyChanged -= this.OnSourceItemPropertyChanged;
+                    if (subscribe)
+                    {
+                        pc.PropertyChanged += this.OnSourceItemPropertyChanged;
+                    }
+                }
+            }
+        }
+
+        // Re-read every target's value in case the source changed while the grid was detached.
+        // Snapshots first - RecacheEditValue on a list target may rebuild children mid-enumeration.
+        private void RefreshAllTargets ()
+        {
+            if (m_manager.RootNode == null)
+            {
+                return;
+            }
+
+            foreach (var target in m_manager.Items.OfType<PropertyEditTarget>().ToArray())
+            {
+                target.RecacheEditValue();
+            }
+
+            m_manager.UpdateConditionalVisibility();
         }
 
         // ===========[ Property change handlers ]=================================

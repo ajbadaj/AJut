@@ -73,9 +73,12 @@ namespace AJutShowRoomWinUI.UseCaseTest
                 await Task.Delay(100);
             }
 
+            // The EDITOR graph must collect. The DOCUMENT (treeRoot + tool item) is the long-lived
+            // pin source and is SUPPOSED to stay alive - it only counts as the sanity check that the
+            // pin source was actually present (otherwise a pass is vacuous).
             int total = g_snapshots.Count;
             int pages = 0, managers = 0, zones = 0, itemsPanels = 0, propsPanels = 0;
-            int trees = 0, grids = 0, treeRoots = 0, items = 0, builtRows = 0;
+            int trees = 0, grids = 0, docAlive = 0, builtRows = 0;
             foreach (Snapshot s in g_snapshots)
             {
                 if (s.Page.IsAlive) { ++pages; }
@@ -85,27 +88,31 @@ namespace AJutShowRoomWinUI.UseCaseTest
                 if (s.PropertiesPanel.IsAlive) { ++propsPanels; }
                 if (s.FlatTree.IsAlive) { ++trees; }
                 if (s.PropertyGrid.IsAlive) { ++grids; }
-                if (s.TreeRoot.IsAlive) { ++treeRoots; }
-                if (s.SampleItem.IsAlive) { ++items; }
+                if (s.TreeRoot.IsAlive) { ++docAlive; }
                 builtRows += s.BuiltRows;
             }
 
             string detail =
-                $"cycles={total} builtRows={builtRows} | survivors: page={pages} manager={managers} zone={zones} "
-                + $"itemsPanel={itemsPanels} propsPanel={propsPanels} flatTree={trees} propGrid={grids} "
-                + $"treeRoot={treeRoots} toolItem={items}";
+                $"cycles={total} builtRows={builtRows} docAlive={docAlive} | editor survivors: page={pages} "
+                + $"manager={managers} zone={zones} itemsPanel={itemsPanels} propsPanel={propsPanels} "
+                + $"flatTree={trees} propGrid={grids}";
 
             if (builtRows == 0)
             {
                 return $"INCONCLUSIVE - editor never realized rows (builtRows=0): {detail}";
             }
 
+            if (docAlive == 0)
+            {
+                return $"INCONCLUSIVE - the long-lived document collected, so there was no pin source to expose a leak: {detail}";
+            }
+
             bool leaked = pages > 0 || managers > 0 || zones > 0 || itemsPanels > 0 || propsPanels > 0
-                || trees > 0 || grids > 0 || treeRoots > 0 || items > 0;
+                || trees > 0 || grids > 0;
 
             return leaked
-                ? $"FAIL - something survived teardown + GC:\n    {detail}"
-                : $"PASS - everything collected:\n    {detail}";
+                ? $"FAIL - editor graph survived teardown + GC (pinned by the long-lived document):\n    {detail}"
+                : $"PASS - editor graph fully collected; document still alive as expected:\n    {detail}";
         }
 
         // Completes only after all higher-priority dispatcher work has run (Low runs last),
