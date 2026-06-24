@@ -1,0 +1,28 @@
+<Page
+    x:Class="AJutShowRoomWinUI.UseCaseTest.UseCaseLandingPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ScrollViewer Padding="16" VerticalScrollMode="Enabled">
+        <StackPanel Spacing="14" MaxWidth="780" HorizontalAlignment="Left">
+            <TextBlock Text="Use-Case Leak Test" Style="{ThemeResource TitleTextBlockStyle}"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.85"
+                       Text="This page navigates (by type, no page caching) to an editor built the way a real tool editor is: a docking experience whose panels are a flat tree of tools and a property grid. Selecting a tool edits it. There is an add toolbar plus layout save/load."/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.85"
+                       Text="Open the editor, click around, then come back here (the editor's Back button) and run the probe. The editor tears its whole graph down on navigate-away; the probe forces GC and reports whether anything survived. Repeat the open/come-back cycle a few times before probing to see whether survivors accumulate."/>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="Open Editor" Click="OnOpenEditorClicked"/>
+                <Button Content="Run Memory Leak Probe" Click="OnRunProbeClicked"/>
+                <Button Content="Reset Probe History" Click="OnResetProbeClicked"/>
+            </StackPanel>
+            <TextBox x:Name="ProbeOutput"
+                     IsReadOnly="True"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     MinHeight="200"
+                     FontFamily="Consolas"
+                     FontSize="12"
+                     PlaceholderText="Probe results appear here (newest first)."/>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

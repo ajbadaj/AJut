@@ -1348,6 +1348,33 @@ namespace AJut.UX.Controls
             m_dropOverlay = grid;
         }
 
+        // Severs the drop-overlay back-references so a driver widget that lingers (its native
+        // peer can outlive the logical tree) can no longer root this DockZone and, through it,
+        // everything docked in it. Called from DockingManager.Dispose. Safe to call while content
+        // is still docked - the overlay is only used mid-drag, never at teardown - and idempotent.
+        internal void ReleaseDropOverlay()
+        {
+            foreach (var widget in new[] { m_overlayLeft, m_overlayTop, m_overlayRight, m_overlayBottom, m_overlayCenter })
+            {
+                if (widget != null)
+                {
+                    widget.InsertionZone = null;
+                }
+            }
+
+            if (m_dropOverlay != null)
+            {
+                m_dropOverlay.Children.Clear();
+                if (this.PART_Root?.Parent is Grid outerGrid)
+                {
+                    outerGrid.Children.Remove(m_dropOverlay);
+                }
+            }
+
+            m_overlayLeft = m_overlayTop = m_overlayRight = m_overlayBottom = m_overlayCenter = null;
+            m_dropOverlay = null;
+        }
+
         private void OnIsDirectDropTargetChanged(DependencyPropertyChangedEventArgs<bool> e)
         {
             if (m_dropOverlay == null)

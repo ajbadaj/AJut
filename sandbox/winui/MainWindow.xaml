@@ -912,6 +912,7 @@
                                         <Button Content="Probe x5 (open/close cycles)" Click="LeakProbe_OnCycleClicked" MinWidth="300" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
                                         <Button Content="Dock leak - child window" Click="LeakProbe_OnChildWindowDockingClicked" MinWidth="300" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
                                         <Button Content="Dock leak - main window (control)" Click="LeakProbe_OnMainWindowDockingClicked" MinWidth="300" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
+                                        <Button Content="Dock overlay severed on Dispose (mechanism)" Click="LeakProbe_OnDropOverlaySeveredClicked" MinWidth="300" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
                                         <Button Content="Probe PropertyGrid" Click="LeakProbe_OnPropertyGridClicked" MinWidth="300" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
                                     </StackPanel>
 
@@ -973,6 +974,19 @@
                                 <ajut:DockPanelAddRemoveToolbar x:Name="DockToolbar" Grid.Row="1"/>
                                 <ajut:DockZone x:Name="TestDockZone" Grid.Row="2" Margin="5"/>
                             </Grid>
+                        </TabViewItem.Content>
+                    </TabViewItem>
+
+                    <!-- ===[ Use-Case Leak Test ]================================================ -->
+                    <!-- A realistic editor scenario (docked tools + property grid) reached by type-based
+                         page nav with no page caching, so navigating away tears the editor down. Used to
+                         confirm teardown leaks before fixing them. See the UseCaseTest folder. -->
+                    <TabViewItem Header="Use-Case Leak Test" IsClosable="False" VerticalContentAlignment="Stretch">
+                        <TabViewItem.IconSource>
+                            <SymbolIconSource Symbol="Find"/>
+                        </TabViewItem.IconSource>
+                        <TabViewItem.Content>
+                            <Frame x:Name="UseCaseFrame" Loaded="UseCaseTab_OnLoaded"/>
                         </TabViewItem.Content>
                     </TabViewItem>
 
