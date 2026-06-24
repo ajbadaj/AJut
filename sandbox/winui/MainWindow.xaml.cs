@@ -757,6 +757,66 @@ namespace AJutShowRoomWinUI
             }
         }
 
+        // Deterministic mechanism check for the drop-overlay back-ref fix. The native-peer pin that
+        // makes the leak bite cannot be reproduced headless, but the FIX is exact and testable: after
+        // DockingManager.Dispose, every DockDropInsertionDriverWidget must have had its InsertionZone
+        // back-ref nulled and been detached from the zone's outer grid. This builds a real docked graph
+        // (so templates apply and the 5 widgets per zone exist), grabs them while live, disposes, and
+        // asserts the sever. Fails before the fix (InsertionZone still points at the zone), passes after.
+        private async void LeakProbe_OnDropOverlaySeveredClicked (object sender, RoutedEventArgs e)
+        {
+            var button = sender as Button;
+            if (button != null) { button.IsEnabled = false; }
+            try
+            {
+                var probe = this.LeakProbe_BuildMainWindowDocking();
+
+                // Wait for the page to load so each DockZone applies its template and BuildDropOverlay
+                // builds the driver widgets - the things we are about to assert get severed.
+                await LeakProbe_WaitForLoaded(probe.EditorPage, 3000);
+                await Task.Delay(200);
+
+                // Collect the driver widgets across the whole zone tree while they are still live in the
+                // overlay. Hold strong refs so Dispose can't collect them out from under the assertion -
+                // this probe checks the back-ref is nulled, not whether the widget itself collects.
+                var widgets = LeakProbe_CollectDescendants<AJut.UX.Controls.DockDropInsertionDriverWidget>(probe.RootZone);
+                int built = widgets.Count;
+                int boundBefore = widgets.Count(w => w.InsertionZone != null);
+
+                // The operation under test.
+                probe.Manager.Dispose();
+
+                int stillBound = widgets.Count(w => w.InsertionZone != null);
+                int stillParented = widgets.Count(w => VisualTreeHelper.GetParent(w) != null);
+
+                // Assertion done - drop the host parenting and strong refs.
+                if (probe.MainHost != null) { probe.MainHost.Child = null; }
+                if (probe.EditorPage is ContentControl page) { page.Content = null; }
+                widgets.Clear();
+                probe = null;
+
+                string result;
+                if (built == 0)
+                {
+                    result = "INCONCLUSIVE - no drop-overlay widgets realized (template never applied?)";
+                }
+                else if (stillBound == 0 && stillParented == 0)
+                {
+                    result = $"PASS - all {built} driver widgets severed (InsertionZone null) and detached after Dispose (boundBefore={boundBefore})";
+                }
+                else
+                {
+                    result = $"FAIL - after Dispose: {stillBound}/{built} still hold InsertionZone, {stillParented}/{built} still parented (boundBefore={boundBefore})";
+                }
+
+                this.LeakProbe_AppendOutput("Dock overlay severed (mechanism)", result);
+            }
+            finally
+            {
+                if (button != null) { button.IsEnabled = true; }
+            }
+        }
+
         // Builds the docking graph inside a fresh child Window (RootWindow stays the main window).
         private static DockingLeakProbe LeakProbe_BuildChildWindowDocking (Window mainRoot)
         {
@@ -969,6 +1029,32 @@ namespace AJutShowRoomWinUI
             }
 
             return count;
+        }
+
+        private static List<T> LeakProbe_CollectDescendants<T> (DependencyObject root) where T : DependencyObject
+        {
+            var results = new List<T>();
+            LeakProbe_CollectDescendantsInto(root, results);
+            return results;
+        }
+
+        private static void LeakProbe_CollectDescendantsInto<T> (DependencyObject node, List<T> results) where T : DependencyObject
+        {
+            if (node == null)
+            {
+                return;
+            }
+
+            if (node is T match)
+            {
+                results.Add(match);
+            }
+
+            int childCount = VisualTreeHelper.GetChildrenCount(node);
+            for (int i = 0; i < childCount; ++i)
+            {
+                LeakProbe_CollectDescendantsInto(VisualTreeHelper.GetChild(node, i), results);
+            }
         }
 
         // Counts only - the GC happens in LeakProbe_SettleAndCollectAsync before this is called.

@@ -123,6 +123,14 @@ namespace AJut.UX.Docking
             {
                 zone.Loaded -= this.MainWindowDockZone_Loaded;
                 zone.Unloaded -= this.MainWindowDockZone_Unloaded;
+
+                // The drop overlay's 5 DockDropInsertionDriverWidgets each hold InsertionZone = their
+                // zone. A widget whose native peer lingers past teardown would otherwise root the whole
+                // docked graph through that back-ref. Sever it on every zone in the tree, not just root.
+                foreach (DockZone treeZone in TreeTraversal<DockZone>.All(zone))
+                {
+                    treeZone.ReleaseDropOverlay();
+                }
             }
 
             m_rootDockZones.Clear();

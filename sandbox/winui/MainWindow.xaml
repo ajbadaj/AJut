@@ -912,6 +912,7 @@
                                         <Button Content="Probe x5 (open/close cycles)" Click="LeakProbe_OnCycleClicked" MinWidth="300" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
                                         <Button Content="Dock leak - child window" Click="LeakProbe_OnChildWindowDockingClicked" MinWidth="300" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
                                         <Button Content="Dock leak - main window (control)" Click="LeakProbe_OnMainWindowDockingClicked" MinWidth="300" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
+                                        <Button Content="Dock overlay severed on Dispose (mechanism)" Click="LeakProbe_OnDropOverlaySeveredClicked" MinWidth="300" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
                                         <Button Content="Probe PropertyGrid" Click="LeakProbe_OnPropertyGridClicked" MinWidth="300" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
                                     </StackPanel>
 
