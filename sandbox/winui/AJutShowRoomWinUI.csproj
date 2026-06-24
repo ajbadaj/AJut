@@ -15,6 +15,10 @@
   <ItemGroup>
     <None Remove="ColorParseExample.xaml" />
     <None Remove="BrushButtonExample.xaml" />
+    <None Remove="UseCaseTest\ItemsDockPanel.xaml" />
+    <None Remove="UseCaseTest\PropertiesDockPanel.xaml" />
+    <None Remove="UseCaseTest\UseCaseEditorPage.xaml" />
+    <None Remove="UseCaseTest\UseCaseLandingPage.xaml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -66,6 +70,18 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Update="BrushButtonExample.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Update="UseCaseTest\ItemsDockPanel.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Update="UseCaseTest\PropertiesDockPanel.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Update="UseCaseTest\UseCaseEditorPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Update="UseCaseTest\UseCaseLandingPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Update="Themes\DarkTheme.xaml">

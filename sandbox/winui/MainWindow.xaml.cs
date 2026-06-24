@@ -34,6 +34,7 @@ namespace AJutShowRoomWinUI
         // ===========[ Dock Zone test state ]============================================
         private DockingManager m_dockingManager;
         private bool m_dockZoneInitialized = false;
+        private bool m_useCaseInitialized = false;
 
         public MainWindow (WindowManager manager, AppThemeManager themeManager)
         {
@@ -558,6 +559,22 @@ namespace AJutShowRoomWinUI
                 // Hidden infra panel - always present in layout, never in menu/toolbar
                 m_dockingManager.DockNewPanel<HiddenInfraShowRoomPanel>(zone);
             }
+        }
+
+        // ===========[ Use-Case Leak Test tab ]==========================================
+
+        private void UseCaseTab_OnLoaded (object sender, RoutedEventArgs e)
+        {
+            if (m_useCaseInitialized)
+            {
+                return;
+            }
+
+            m_useCaseInitialized = true;
+
+            // Pass this window through as the nav parameter so the editor's DockingManager roots to
+            // the real root window (the editor lives inside this Frame, like a host editor page).
+            this.UseCaseFrame.Navigate(typeof(UseCaseTest.UseCaseLandingPage), this);
         }
 
         private void DockZone_OnSaveLayoutClicked(object sender, RoutedEventArgs e)

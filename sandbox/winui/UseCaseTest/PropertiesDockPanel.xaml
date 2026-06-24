@@ -1,0 +1,34 @@
+<UserControl
+    x:Class="AJutShowRoomWinUI.UseCaseTest.PropertiesDockPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ajut="using:AJut.UX.Controls"
+    xmlns:ajut_pg="using:AJut.UX.PropertyInteraction">
+
+    <Grid>
+        <ajut:PropertyGrid x:Name="PropertyEditor"
+                           RowSpacing="5"
+                           LabelColumnWidth="120"
+                           PropertyToolTipPlacement="PropertyNameAndValue">
+            <ajut:PropertyGrid.ItemTemplateSelector>
+                <ajut:PropertyGridTemplateSelector>
+                    <ajut:PropertyGridTemplateSelector.Default>
+                        <DataTemplate x:DataType="ajut_pg:PropertyEditTarget">
+                            <TextBox Text="{Binding Path=EditValue, Mode=TwoWay}"
+                                     Background="Transparent" BorderThickness="0"/>
+                        </DataTemplate>
+                    </ajut:PropertyGridTemplateSelector.Default>
+                    <ajut:PropertyGridTemplateSelector.RegisteredTemplates>
+                        <DataTemplate x:Key="Text" x:DataType="ajut_pg:PropertyEditTarget">
+                            <TextBox Text="{Binding Path=EditValue, Mode=TwoWay}"
+                                     Background="Transparent" BorderThickness="0"/>
+                        </DataTemplate>
+                        <DataTemplate x:Key="Single" x:DataType="ajut_pg:PropertyEditTarget">
+                            <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}" TextBoxHeight="22"/>
+                        </DataTemplate>
+                    </ajut:PropertyGridTemplateSelector.RegisteredTemplates>
+                </ajut:PropertyGridTemplateSelector>
+            </ajut:PropertyGrid.ItemTemplateSelector>
+        </ajut:PropertyGrid>
+    </Grid>
+</UserControl>

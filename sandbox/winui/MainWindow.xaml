@@ -977,6 +977,19 @@
                         </TabViewItem.Content>
                     </TabViewItem>
 
+                    <!-- ===[ Use-Case Leak Test ]================================================ -->
+                    <!-- A realistic editor scenario (docked tools + property grid) reached by type-based
+                         page nav with no page caching, so navigating away tears the editor down. Used to
+                         confirm teardown leaks before fixing them. See the UseCaseTest folder. -->
+                    <TabViewItem Header="Use-Case Leak Test" IsClosable="False" VerticalContentAlignment="Stretch">
+                        <TabViewItem.IconSource>
+                            <SymbolIconSource Symbol="Find"/>
+                        </TabViewItem.IconSource>
+                        <TabViewItem.Content>
+                            <Frame x:Name="UseCaseFrame" Loaded="UseCaseTab_OnLoaded"/>
+                        </TabViewItem.Content>
+                    </TabViewItem>
+
                     <!-- ===[ Brush Buttons ]================================================== -->
                     <TabViewItem Header="Brush Buttons" IsClosable="False" VerticalContentAlignment="Stretch">
                         <TabViewItem.IconSource>

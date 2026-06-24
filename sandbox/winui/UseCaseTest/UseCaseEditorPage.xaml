@@ -1,0 +1,26 @@
+<Page
+    x:Class="AJutShowRoomWinUI.UseCaseTest.UseCaseEditorPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ajut="using:AJut.UX.Controls">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Command bar: back to landing + layout save/load -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="8">
+            <Button Content="Back to Landing" Click="OnBackClicked"/>
+            <Button Content="Save Layout" Click="OnSaveLayoutClicked"/>
+            <Button Content="Load Layout" Click="OnLoadLayoutClicked"/>
+            <TextBlock Text="Editor - select a tool on the Items tab to edit it on the Properties tab. Drag a tab to split."
+                       VerticalAlignment="Center" Opacity="0.7" TextWrapping="Wrap"/>
+        </StackPanel>
+
+        <ajut:DockPanelAddRemoveToolbar x:Name="DockToolbar" Grid.Row="1" Margin="8,0,8,0"/>
+        <ajut:DockZone x:Name="EditorDockZone" Grid.Row="2" Margin="8"/>
+    </Grid>
+</Page>
