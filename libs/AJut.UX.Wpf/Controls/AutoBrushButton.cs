@@ -2,23 +2,27 @@ namespace AJut.UX.Controls
 {
     using AJut.UX;
     using AJut.UX.Helpers;
-    using Microsoft.UI.Xaml;
-    using Windows.UI;
+    using System.Windows;
+    using System.Windows.Media;
     using DPUtils = AJut.UX.DPUtils<AutoBrushButton>;
 
     /// <summary>
     /// A button you color with a single accent. Hand it one PropagatedAccentColor and it derives a
     /// coherent, readable palette - a foreground that contrasts the accent, a visible border, and the
-    /// pointer over / pressed / disabled variants - with no per state brushes and no ResourceDictionary
+    /// mouse-over / pressed / disabled variants - with no per state brushes and no ResourceDictionary
     /// override. The derivation lives in <see cref="InteractiveSurfaceColors.BuildFromAccent"/>.
     /// </summary>
     public class AutoBrushButton : _ManagedBrushButton
     {
         private InteractiveSurfaceColors m_palette;
 
+        static AutoBrushButton ()
+        {
+            DefaultStyleKeyProperty.OverrideMetadata(typeof(AutoBrushButton), new FrameworkPropertyMetadata(typeof(AutoBrushButton)));
+        }
+
         public AutoBrushButton ()
         {
-            this.DefaultStyleKey = typeof(AutoBrushButton);
             this.RebuildPalette();
         }
 

@@ -33,6 +33,15 @@
     <Compile Update="Controls\ColorValueEditControl.cs">
       <DependentUpon>ColorValueEditControl.xaml</DependentUpon>
     </Compile>
+    <Compile Update="Controls\_ManagedBrushButton.cs">
+      <DependentUpon>ManagedBrushButtons.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\BrushButton.cs">
+      <DependentUpon>ManagedBrushButtons.xaml</DependentUpon>
+    </Compile>
+    <Compile Update="Controls\AutoBrushButton.cs">
+      <DependentUpon>ManagedBrushButtons.xaml</DependentUpon>
+    </Compile>
     <Compile Update="Controls\DockingElements\DefaultDockTearoffWindow.cs">
       <DependentUpon>DefaultDockTearoffWindow.xaml</DependentUpon>
     </Compile>

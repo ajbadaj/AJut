@@ -10,7 +10,7 @@
     mc:Ignorable="d"
     x:Name="Self">
 
-    <ScrollViewer VerticalScrollMode="Enabled" Padding="16">
+    <ScrollViewer VerticalScrollMode="Enabled" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled" Padding="16">
         <StackPanel Spacing="20">
 
             <TextBlock Text="BrushButton" FontSize="18" FontWeight="Bold"/>

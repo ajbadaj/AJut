@@ -1,21 +1,21 @@
 namespace AJut.UX.Controls
 {
-    using Microsoft.UI.Xaml;
-    using Microsoft.UI.Xaml.Media;
+    using System.Windows;
+    using System.Windows.Media;
     using DPUtils = AJut.UX.DPUtils<BrushButton>;
 
     /// <summary>
     /// A button whose per state brushes are plain dependency properties - set them, bind them, or point
-    /// them at a {ThemeResource}, no per instance ResourceDictionary override required. Every slot defaults
-    /// (in the default style) to the matching standard WinUI button brush, so an untouched BrushButton
-    /// behaves exactly like a normal button - full hover / pressed / disabled feedback - and you override
-    /// only the slots you care about. For "one color, everything derived" use AutoBrushButton instead.
+    /// them at a {DynamicResource}, no per instance ResourceDictionary override required. Every slot defaults
+    /// (in the default style) to the matching AJut button brush, so an untouched BrushButton behaves like a
+    /// normal button - full mouse-over / pressed / disabled feedback - and you override only the slots you
+    /// care about. For "one color, everything derived" use AutoBrushButton instead.
     /// </summary>
     public class BrushButton : _ManagedBrushButton
     {
-        public BrushButton ()
+        static BrushButton ()
         {
-            this.DefaultStyleKey = typeof(BrushButton);
+            DefaultStyleKeyProperty.OverrideMetadata(typeof(BrushButton), new FrameworkPropertyMetadata(typeof(BrushButton)));
         }
 
         // ===========[ Dependency Properties ]===================================
