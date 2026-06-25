@@ -266,6 +266,7 @@ namespace AJut.UX.Docking
             {
                 dockedContent.InternalClose(true);
                 dockedContent.SetNewLocation(null);
+                dockedContent.Dispose();
             }
 
             if (this.Parent != null)
@@ -288,6 +289,14 @@ namespace AJut.UX.Docking
             }
             else if (orientation.IsFlagInGroup(eDockOrientation.AnySplitOrientation))
             {
+                // Detach each adapter before dropping it so it releases its back-reference to this
+                // zone (Location + the DockedContent CollectionChanged sub) instead of being orphaned
+                // with a live link. A split zone holds no docked content of its own.
+                foreach (var adapter in m_dockedContent.ToList())
+                {
+                    adapter.SetNewLocation(null);
+                }
+
                 m_dockedContent.Clear();
             }
 
@@ -386,7 +395,16 @@ namespace AJut.UX.Docking
 
             if (m_dockedContent.Contains(panelAdapter) && panelAdapter.Close())
             {
-                return this.DoRemoveContent(panelAdapter);
+                bool removed = this.DoRemoveContent(panelAdapter);
+                if (removed)
+                {
+                    // The panel was actually closed and removed (tearoff / relocation re-homes via
+                    // SetNewLocation and never calls Close, so it never lands here). Release the
+                    // adapter's event subscribers now that it is permanently gone.
+                    panelAdapter.Dispose();
+                }
+
+                return removed;
             }
 
             return false;
