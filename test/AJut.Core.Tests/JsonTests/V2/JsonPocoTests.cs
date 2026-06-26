@@ -122,6 +122,35 @@ namespace AJut.Core.UnitTests.AJsonV2
         }
 
         [TestMethod]
+        public void Poco_ObjectDict_BoxedArrayValue_DegradesGracefully ()
+        {
+            // An object-typed dictionary value holding an array serializes as a bare json array with
+            //  no __type discriminator. On the way back in, the value target is object, so AJson
+            //  cannot resolve an element type for the array - it used to hard-NRE here. It must
+            //  instead surface the failure on the owning Json and leave the value null, never throw.
+            Dictionary<string, object> source = new Dictionary<string, object>
+            {
+                ["a"] = new float[] { 0.1f, 0.2f, 0.3f, 0.4f },
+            };
+
+            Json json = JsonHelper.BuildJsonForObject(source);
+            Assert.IsFalse(json.HasErrors);
+
+            string serialized = json.ToString();
+            Json reparsed = JsonHelper.ParseText(serialized);
+            Assert.IsFalse(reparsed.HasErrors, "Reparse errors:\n  " + String.Join("\n  ", reparsed.Errors));
+
+            // The line that used to throw NullReferenceException.
+            Dictionary<string, object> round = JsonHelper.BuildObjectForJson<Dictionary<string, object>>(reparsed);
+
+            Assert.IsNotNull(round, "Build must return an instance, not throw, for an unresolvable value");
+            Assert.IsTrue(round.ContainsKey("a"));
+            Assert.IsNull(round["a"], "Unresolvable boxed-array value should degrade to null");
+            Assert.IsTrue(reparsed.HasErrors, "The unresolvable boxed-array value must be reported via Json.HasErrors");
+            Assert.IsFalse(String.IsNullOrEmpty(reparsed.GetErrorReport()), "GetErrorReport should describe the skipped value");
+        }
+
+        [TestMethod]
         public void Poco_NullProperty_OmittedFromOutput ()
         {
             SimplePoco source = new SimplePoco { Name = null, Count = 5, Active = false, Ratio = 0 };

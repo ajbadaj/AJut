@@ -97,11 +97,11 @@ namespace AJut.Text.AJson
                 }
 
                 object keyObj = keyJson != null
-                    ? JsonHelper.BuildObjectForJson(keyType, keyJson, settings)
+                    ? JsonHelper.BuildObjectForJson(keyType, keyJson, settings, owner)
                     : _DefaultFor(keyType);
 
                 object valueObj = valueJson != null
-                    ? JsonHelper.BuildObjectForJson(valueType, valueJson, settings)
+                    ? JsonHelper.BuildObjectForJson(valueType, valueJson, settings, owner)
                     : _DefaultFor(valueType);
 
                 return kvpType.GetConstructor(genericTypes).Invoke(new[] { keyObj, valueObj });

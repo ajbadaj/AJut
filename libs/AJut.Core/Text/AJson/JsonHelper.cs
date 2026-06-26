@@ -168,8 +168,17 @@ namespace AJut.Text.AJson
         }
 
         // ===============================[ Object-from-Json Implementation ]===========================
-        private static object BuildObjectForJson ([DynamicallyAccessedMembers(kReflectionRequirements)] Type type, JsonValue sourceJsonValue, JsonInterpreterSettings settings, Json owner)
+        internal static object BuildObjectForJson ([DynamicallyAccessedMembers(kReflectionRequirements)] Type type, JsonValue sourceJsonValue, JsonInterpreterSettings settings, Json owner)
         {
+            // No resolvable target type. Happens for a polymorphic (object-typed) value that carries
+            //  no __type discriminator - a boxed array is the usual culprit. Degrade gracefully: log
+            //  it on the owning Json and hand back null rather than dereferencing a null type below.
+            if (type == null)
+            {
+                owner?.AddError($"Could not resolve a target type for a json value (polymorphic value with no '{JsonDocument.kTypeIndicator}' discriminator). Skipping, value left null.");
+                return null;
+            }
+
             if (typeof(JsonValue).IsAssignableFrom(type))
             {
                 return sourceJsonValue;
@@ -326,6 +335,18 @@ namespace AJut.Text.AJson
                     Type collectionType = typeof(ICollection<>).MakeGenericType(elementType);
                     dictionaryAdd = collectionType.GetMethod("Add", new[] { elementType });
                     Debug.Assert(dictionaryAdd != null, $"Could not find add method for dictionary of type {targetType}");
+                }
+
+                // No element type resolved - the target (usually a bare object) is not an array,
+                //  list, or dictionary, so there is nothing to deserialize the elements into. Report
+                //  it and null the value rather than feeding a null element type into the per-item
+                //  build below, which would dereference null. This is the boxed-array-in-object case:
+                //  the array was serialized with no __type discriminator and can't be resolved back.
+                if (elementType == null)
+                {
+                    owner?.AddError($"Cannot interpret a json array as target type '{targetType}' - it is not an array, list, or dictionary. This usually means a polymorphic (object-typed) value held an array serialized with no '{JsonDocument.kTypeIndicator}' discriminator. Skipping, value left null.");
+                    targetItem = null;
+                    return;
                 }
 
                 JsonArray sourceCasted = (JsonArray)sourceJsonValue;
