@@ -204,6 +204,24 @@ namespace AJut.UX.Controls
             this.UpdateMaximizeRestoreGlyph();
         }
 
+        // Drops the window-level subscriptions this panel and its caption buttons wired in
+        // SetupForWindow. SetupForWindow only ever removes them on a re-setup, which never happens for
+        // a tearoff, so without this the closed window's AppWindow.Changed / Window.Activated invocation
+        // lists keep this panel (and the DockZone graph it hosts) rooted. Called from
+        // DockingManager.DetachTearoffSubscriptions on every tearoff close.
+        public void TeardownWindowHooks()
+        {
+            if (m_appWindow != null)
+            {
+                m_appWindow.Changed -= this.OnAppWindowChanged;
+                m_appWindow = null;
+            }
+
+            // SetupFor(null) unsubscribes each caption button's Window.Activated handler.
+            m_maximizeRestoreButton?.SetupFor(null);
+            m_closeButton?.SetupFor(null);
+        }
+
         // ===========[ Event Handlers ]=======================================
 
         private void OnTitleBarPointerPressed(object sender, PointerRoutedEventArgs e)

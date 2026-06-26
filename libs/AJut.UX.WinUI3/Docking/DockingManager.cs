@@ -520,6 +520,12 @@ namespace AJut.UX.Docking
             m_windowsToCloseSilently.AddRange(tearoffs);
             foreach (Window window in tearoffs)
             {
+                // Deregister the tearoff's zone(s) from m_rootDockZones too (see DoTearoffWindowClose).
+                if (m_dockZoneMapping.TryGetValue(window, out List<DockZone> closingZones))
+                {
+                    this.DeRegisterRootDockZones(closingZones.ToArray());
+                }
+
                 m_tearoffRootZones.Remove(window);
                 m_dockZoneMapping.Remove(window);
                 m_windowManager.StopTracking(window);
@@ -1617,6 +1623,12 @@ namespace AJut.UX.Docking
             m_windowsToCloseSilently.Add(sourceWindow);
             try
             {
+                // Deregister the tearoff's zone(s) from m_rootDockZones too (see DoTearoffWindowClose).
+                if (m_dockZoneMapping.TryGetValue(sourceWindow, out List<DockZone> closingZones))
+                {
+                    this.DeRegisterRootDockZones(closingZones.ToArray());
+                }
+
                 m_tearoffRootZones.Remove(sourceWindow);
                 m_dockZoneMapping.Remove(sourceWindow);
                 m_windowManager.StopTracking(sourceWindow);  // unregisters Window.Closed so auto-cleanup won't double-fire
@@ -1655,6 +1667,10 @@ namespace AJut.UX.Docking
             {
                 panel.TitleBarDragInitiated -= this.OnTearoffPanelDragInitiated;
                 panel.CloseRequested -= this.OnTearoffPanelCloseRequested;
+
+                // Drop the panel's own AppWindow.Changed sub and its caption buttons' Window.Activated
+                // subs, so the closing window's native peer can't keep the panel + DockZone graph rooted.
+                panel.TeardownWindowHooks();
             }
         }
 
@@ -1710,6 +1726,14 @@ namespace AJut.UX.Docking
                 if (closeResult.HasErrors)
                 {
                     return false;
+                }
+
+                // Drop the tearoff's root zone(s) from m_rootDockZones too. Without this a closed
+                // tearoff's DockZone (and everything referenced through it) stays rooted by the manager
+                // for its whole life, growing m_rootDockZones one entry per tearoff open/close cycle.
+                if (m_dockZoneMapping.TryGetValue(window, out List<DockZone> closingZones))
+                {
+                    this.DeRegisterRootDockZones(closingZones.ToArray());
                 }
 
                 m_tearoffRootZones.Remove(window);
