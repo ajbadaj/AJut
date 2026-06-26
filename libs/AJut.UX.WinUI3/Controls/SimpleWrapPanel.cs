@@ -11,7 +11,9 @@ namespace AJut.UX.Controls
     // right and wraps to the next line when the next child would overflow the available width.
     // HorizontalSpacing / VerticalSpacing gap the items. Children are arranged at their desired size
     // (never stretched), so each one stays content-sized and the flow can pack several per line.
-    // Collapsed children are skipped entirely - they take no slot and leave no gap.
+    // Collapsed (or otherwise zero-size) children still get measured, so the layout system keeps
+    // tracking them and a later Collapsed->Visible flip reflows the panel - but they take no slot in
+    // the flow and leave no gap.
     //
     // "Simple" because it deliberately does the one thing: it doesn't balance lines, reflow columns,
     // or flip orientation - it just measures, wraps, and arranges in flow order.
@@ -51,13 +53,16 @@ namespace AJut.UX.Controls
 
             foreach (UIElement child in this.Children)
             {
-                if (child.Visibility == Visibility.Collapsed)
+                // Measure EVERY child (collapsed ones return 0x0) so the layout system keeps tracking
+                // them - that is what makes a child flipping Collapsed->Visible re-run this pass instead
+                // of only updating on the next resize. Skip the flow contribution for zero-size children
+                // so a hidden group leaves no phantom spacing.
+                child.Measure(availableSize);
+                Size desired = child.DesiredSize;
+                if ((desired.Width <= 0) && (desired.Height <= 0))
                 {
                     continue;
                 }
-
-                child.Measure(availableSize);
-                Size desired = child.DesiredSize;
 
                 if (!unbounded && (lineWidth > 0) && (lineWidth + this.HorizontalSpacing + desired.Width > available))
                 {
@@ -89,12 +94,12 @@ namespace AJut.UX.Controls
 
             foreach (UIElement child in this.Children)
             {
-                if (child.Visibility == Visibility.Collapsed)
+                Size desired = child.DesiredSize;
+                if ((desired.Width <= 0) && (desired.Height <= 0))
                 {
+                    child.Arrange(new Rect(0, 0, 0, 0));
                     continue;
                 }
-
-                Size desired = child.DesiredSize;
 
                 if ((x > 0) && (x + this.HorizontalSpacing + desired.Width > available))
                 {

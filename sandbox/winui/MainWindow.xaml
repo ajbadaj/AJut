@@ -439,12 +439,12 @@
                                     </StackPanel>
 
                                     <TextBlock Text="SimpleWrapPanel" Style="{ThemeResource SubtitleTextBlockStyle}"/>
-                                    <TextBlock Text="Flows items left to right and wraps to the next line when the next one would overflow. HorizontalSpacing / VerticalSpacing gap the items; collapsed children are skipped so they leave no hole. Resize the window narrower to watch it wrap." FontStyle="Italic" Opacity="0.7" TextWrapping="Wrap"/>
+                                    <TextBlock Text="Flows items left to right and wraps to the next line when the next one would overflow. HorizontalSpacing / VerticalSpacing gap the items; collapsed children take no slot. One item (Epsilon) starts collapsed - clicking Reveal must pop it into the flow. Resize the window narrower to watch it wrap." FontStyle="Italic" Opacity="0.7" TextWrapping="Wrap"/>
                                     <StackPanel Spacing="8">
                                         <Border BorderBrush="#80808080" BorderThickness="1" Width="360" HorizontalAlignment="Left" Padding="6">
                                             <ajut:SimpleWrapPanel x:Name="WrapPanelDemo"/>
                                         </Border>
-                                        <Button Content="Toggle a middle item (collapse test)" Click="WrapPanelToggleCollapse_OnClick" HorizontalAlignment="Left"/>
+                                        <Button Content="Reveal/hide the item that starts collapsed" Click="WrapPanelToggleCollapse_OnClick" HorizontalAlignment="Left"/>
                                     </StackPanel>
 
                                     <TextBlock Text="PathSelectionControl" Style="{ThemeResource SubtitleTextBlockStyle}"/>

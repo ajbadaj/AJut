@@ -138,6 +138,10 @@ namespace AJutShowRoomWinUI
                 Border chip = MakeWrapChip(labels[i], i);
                 if (i == 4)
                 {
+                    // Start this one hidden from launch - so the panel never measures it - and let the
+                    // reveal button surface it. That is the path that must pull a never-measured child
+                    // into the flow when it becomes visible.
+                    chip.Visibility = Visibility.Collapsed;
                     m_wrapCollapseTarget = chip;
                 }
 
@@ -164,8 +168,8 @@ namespace AJutShowRoomWinUI
                 return;
             }
 
-            // Flipping a child's Visibility re-triggers the panel's layout; the collapsed one drops out
-            // of the flow entirely, so the items after it slide up to fill the gap.
+            // Flip the demo item between collapsed and visible: collapsing drops it from the flow,
+            // revealing has to pull it back in.
             m_wrapCollapseTarget.Visibility = m_wrapCollapseTarget.Visibility == Visibility.Collapsed
                 ? Visibility.Visible
                 : Visibility.Collapsed;
