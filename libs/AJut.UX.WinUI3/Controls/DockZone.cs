@@ -67,6 +67,12 @@ namespace AJut.UX.Controls
         private int m_tabReorderSourceIdx = -1;
         private int m_tabReorderTargetIdx = -1;
 
+        // Close buttons built per-rebuild inside the leaf header and each tab. Tracked so their Click
+        // (and the tab button's PointerPressed AddHandler) get unhooked in DetachLayoutSubscriptions -
+        // otherwise each one lingers holding a delegate back to this DockZone after every rebuild.
+        private readonly List<DockCloseButton> m_activeCloseButtons = new();
+        private static readonly PointerEventHandler g_suppressPointerPressedHandler = SuppressPointerPressed;
+
         // ===========[ Construction ]=========================================
         static DockZone()
         {
@@ -334,6 +340,18 @@ namespace AJut.UX.Controls
             {
                 m_tabRightScrollBtn.Click -= this.OnTabScrollRight;
             }
+
+            // Unhook the per-rebuild close buttons (leaf header + each tab). Removing both possible
+            // Click handlers and the tab button's PointerPressed handler is safe - a remove for a
+            // handler a given button never had is a no-op.
+            foreach (var closeBtn in m_activeCloseButtons)
+            {
+                closeBtn.Click -= this.OnHeaderPanelCloseBtnClicked;
+                closeBtn.Click -= this.OnTabCloseBtnClicked;
+                closeBtn.RemoveHandler(UIElement.PointerPressedEvent, g_suppressPointerPressedHandler);
+            }
+
+            m_activeCloseButtons.Clear();
         }
 
         private void BuildEmptyLayout()
@@ -415,6 +433,7 @@ namespace AJut.UX.Controls
                     Tag = selectedAdapter,
                 };
                 headerCloseBtn.Click += this.OnHeaderPanelCloseBtnClicked;
+                m_activeCloseButtons.Add(headerCloseBtn);
 
                 var hGrid = new Grid();
                 hGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -595,10 +614,11 @@ namespace AJut.UX.Controls
             // drag-start handler is not triggered when clicking the close button.
             tabCloseBtn.AddHandler(
                 UIElement.PointerPressedEvent,
-                (PointerEventHandler)SuppressPointerPressed,
+                g_suppressPointerPressedHandler,
                 handledEventsToo: false
             );
             tabCloseBtn.Click += this.OnTabCloseBtnClicked;
+            m_activeCloseButtons.Add(tabCloseBtn);
 
             var tabInner = new StackPanel { Orientation = Orientation.Horizontal };
             tabInner.Children.Add(tabLabel);

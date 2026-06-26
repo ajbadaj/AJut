@@ -29,6 +29,16 @@ namespace AJut.UX.Docking
             {
                 locationCollection.CollectionChanged -= this.OnOrderChangedInDockZone;
             }
+
+            // Release every event subscriber. A panel routinely subscribes its own methods/lambdas to
+            // CanClose (veto) and Closed (cleanup) in Setup; if those are left attached, this adapter
+            // pins the panel (and everything it reaches) through the delegate's target after the panel
+            // is gone. Called from the permanent-close paths (see DockZoneViewModel).
+            this.SetupComplete = null;
+            this.Docked = null;
+            this.TabOrderChanged = null;
+            this.CanClose = null;
+            this.Closed = null;
         }
 
         // ===========[ Events ]===================================
