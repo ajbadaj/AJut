@@ -30,6 +30,7 @@ namespace AJutShowRoomWinUI
         private const string kThemeColorsSettingsKey = "_Hidden_theme_colors";
         private readonly ObservableCollection<string> m_themeColorResolver = new ObservableCollection<string>();
         private int m_selectionChangedReproCount;
+        private UIElement m_wrapCollapseTarget;
 
         // ===========[ Dock Zone test state ]============================================
         private DockingManager m_dockingManager;
@@ -65,6 +66,7 @@ namespace AJutShowRoomWinUI
             this.ToggleStripSingleSelectNoneRepro.ItemsSource = new[] { "One", "Two", "Three" };
 
             this.StockBumpStackDemos();
+            this.StockSimpleWrapPanelDemo();
 
             this.AppWindow.Resize(new Windows.Graphics.SizeInt32(800, 1000));
 
@@ -124,6 +126,49 @@ namespace AJutShowRoomWinUI
                     Margin = new Thickness(0, 4, 0, 4),
                 },
             };
+        }
+
+        // Content-sized chips of varying width - the point of SimpleWrapPanel is that each child stays
+        // at its desired size, so deliberately uneven labels show the flow packing several per line.
+        private void StockSimpleWrapPanelDemo ()
+        {
+            string[] labels = { "Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta", "Iota", "Kappa" };
+            for (int i = 0; i < labels.Length; ++i)
+            {
+                Border chip = MakeWrapChip(labels[i], i);
+                if (i == 4)
+                {
+                    m_wrapCollapseTarget = chip;
+                }
+
+                this.WrapPanelDemo.Children.Add(chip);
+            }
+        }
+
+        private static Border MakeWrapChip (string text, int index)
+        {
+            byte tint = (byte)(70 + ((index * 22) % 150));
+            return new Border
+            {
+                CornerRadius = new CornerRadius(4),
+                Padding = new Thickness(8, 4, 8, 4),
+                Background = new SolidColorBrush(Color.FromArgb(0x55, tint, 0x90, 0xC8)),
+                Child = new TextBlock { Text = text },
+            };
+        }
+
+        private void WrapPanelToggleCollapse_OnClick (object sender, RoutedEventArgs e)
+        {
+            if (m_wrapCollapseTarget == null)
+            {
+                return;
+            }
+
+            // Flipping a child's Visibility re-triggers the panel's layout; the collapsed one drops out
+            // of the flow entirely, so the items after it slide up to fill the gap.
+            m_wrapCollapseTarget.Visibility = m_wrapCollapseTarget.Visibility == Visibility.Collapsed
+                ? Visibility.Visible
+                : Visibility.Collapsed;
         }
 
         public App Application { get; }
