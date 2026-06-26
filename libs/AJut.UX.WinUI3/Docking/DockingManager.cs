@@ -131,6 +131,11 @@ namespace AJut.UX.Docking
                 {
                     treeZone.ReleaseDropOverlay();
                 }
+
+                // Terminal teardown of the view-model tree: drop Manager/Parent/UI on every zone VM so a
+                // zone whose native peer outlives this manager can't re-root the (now disposed) manager.
+                // The VM tree is still intact here - CloseAll(force) above only handled tearoff windows.
+                zone.ViewModel?.Teardown();
             }
 
             m_rootDockZones.Clear();
@@ -455,6 +460,35 @@ namespace AJut.UX.Docking
             }
         }
 
+        // Deregister AND permanently tear down a set of closing tearoff root zones: drops them from the
+        // manager's bookkeeping, then severs Manager/Parent/UI on every zone VM in their subtrees so a
+        // surviving zone (e.g. one a native peer outlives) can't keep this manager rooted once it is
+        // disposed. Use this ONLY for genuine closes - the re-home path in RegisterRootDockZones must keep
+        // calling plain DeRegisterRootDockZones, since its VM tree is about to move to a new manager.
+        // Caller must ensure the VM trees are still intact (no prior ForceClose/RequestClose) so Teardown
+        // can walk them; DoTearoffWindowClose, which closes first, tears down separately.
+        private void DeRegisterAndTeardownRootZones(params DockZone[] closingZones)
+        {
+            var closingZoneVMs = closingZones
+                .Where(z => z?.ViewModel != null)
+                .Select(z => z.ViewModel)
+                .ToList();
+
+            this.DeRegisterRootDockZones(closingZones);
+
+            foreach (DockZoneViewModel vm in closingZoneVMs)
+            {
+                // A post-drop close (SilentlyForceCloseTearoffWindow) can hand us a source whose VM was
+                // transplanted into the live drop target by a directional-split drop - it now has a parent.
+                // Tearing that down would destroy the drop target, so only tear down genuine abandoned
+                // roots (a real tearoff root is parentless; an emptied tab-add source is too).
+                if (vm.Parent == null)
+                {
+                    vm.Teardown();
+                }
+            }
+        }
+
         // ===========[ Display Building ]=====================================
 
         public T BuildNewDisplayElement<T>() where T : IDockableDisplayElement
@@ -520,10 +554,11 @@ namespace AJut.UX.Docking
             m_windowsToCloseSilently.AddRange(tearoffs);
             foreach (Window window in tearoffs)
             {
-                // Deregister the tearoff's zone(s) from m_rootDockZones too (see DoTearoffWindowClose).
+                // Deregister the tearoff's zone(s) from m_rootDockZones AND tear down their VM trees (see
+                // DoTearoffWindowClose). The trees are still intact here - nothing closed them first.
                 if (m_dockZoneMapping.TryGetValue(window, out List<DockZone> closingZones))
                 {
-                    this.DeRegisterRootDockZones(closingZones.ToArray());
+                    this.DeRegisterAndTeardownRootZones(closingZones.ToArray());
                 }
 
                 m_tearoffRootZones.Remove(window);
@@ -1623,10 +1658,11 @@ namespace AJut.UX.Docking
             m_windowsToCloseSilently.Add(sourceWindow);
             try
             {
-                // Deregister the tearoff's zone(s) from m_rootDockZones too (see DoTearoffWindowClose).
+                // Deregister the tearoff's zone(s) from m_rootDockZones AND tear down their VM trees (see
+                // DoTearoffWindowClose). The trees are still intact here - this path closes no content first.
                 if (m_dockZoneMapping.TryGetValue(sourceWindow, out List<DockZone> closingZones))
                 {
-                    this.DeRegisterRootDockZones(closingZones.ToArray());
+                    this.DeRegisterAndTeardownRootZones(closingZones.ToArray());
                 }
 
                 m_tearoffRootZones.Remove(sourceWindow);
@@ -1713,8 +1749,12 @@ namespace AJut.UX.Docking
                 // try to re-close it when the last hideable panel is removed.
                 m_windowsToCloseSilently.Add(window);
 
-                var allAdapters = TreeTraversal<DockZoneViewModel>.All(root)
-                    .SelectMany(z => z.DockedContent).ToList();
+                // Snapshot the VM subtree NOW: RequestCloseAllAndClear below dismantles the tree
+                // (children get detached, Parent nulled), so we must capture every zone up front to
+                // sever its Manager/Parent afterward - a walk from root would only reach the root by then.
+                var closingZoneVMs = TreeTraversal<DockZoneViewModel>.All(root).ToList();
+
+                var allAdapters = closingZoneVMs.SelectMany(z => z.DockedContent).ToList();
                 var hideable = allAdapters.Where(a => a.HideDontClose).ToList();
                 foreach (var adapter in hideable)
                 {
@@ -1734,6 +1774,14 @@ namespace AJut.UX.Docking
                 if (m_dockZoneMapping.TryGetValue(window, out List<DockZone> closingZones))
                 {
                     this.DeRegisterRootDockZones(closingZones.ToArray());
+                }
+
+                // Terminal teardown of the (now-dismantled) VM subtree captured above. Each zone is
+                // childless at this point, so Teardown just severs its Manager/Parent/UI - the content
+                // was already closed and disposed by RequestCloseAllAndClear.
+                foreach (DockZoneViewModel vm in closingZoneVMs)
+                {
+                    vm.Teardown();
                 }
 
                 m_tearoffRootZones.Remove(window);

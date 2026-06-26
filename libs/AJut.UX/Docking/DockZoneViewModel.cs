@@ -365,6 +365,41 @@ namespace AJut.UX.Docking
             }
         }
 
+        /// <summary>
+        /// Terminal teardown for a zone the docking manager is permanently dropping (its Dispose, or a
+        /// tearoff window closing for good). Severs every zone in this subtree from the manager, its
+        /// parent, and its UI so a zone whose native peer - or a stray delegate - outlives the logical
+        /// tree can no longer root the manager (and through it the whole docked graph). Any content still
+        /// docked is closed and disposed so its adapter releases its subscribers.
+        ///
+        /// This is deliberately NOT one of the move/reconfigure helpers (<see cref="RunChildZoneRemoval"/>,
+        /// <see cref="DestroyUIReference"/>, <see cref="ForceCloseAllAndClear"/>) - those are reused to
+        /// detach-then-rehome a zone and must leave Manager/Parent intact. Only call this when the zone is
+        /// gone for good.
+        /// </summary>
+        public void Teardown ()
+        {
+            // Snapshot the whole subtree first - the per-zone clear below drops the Parent/Children links,
+            // so a walk afterward would strand (and fail to sever) the deeper zones. This also means the
+            // caller can hand us a tree a close path has already partly dismantled and we still cover it.
+            foreach (DockZoneViewModel zone in TreeTraversal<DockZoneViewModel>.All(this).ToList())
+            {
+                foreach (DockingContentAdapterModel adapter in zone.m_dockedContent.ToList())
+                {
+                    adapter.InternalClose(true);
+                    adapter.SetNewLocation(null);
+                    adapter.Dispose();
+                }
+
+                zone.m_dockedContent.Clear();
+                zone.m_children.Clear();
+                zone.Orientation = eDockOrientation.Empty;
+                zone.UI = null;
+                zone.Parent = null;
+                zone.Manager = null;
+            }
+        }
+
         public bool RemoveDockedContent (DockingContentAdapterModel contentAdapter)
         {
             bool orphanedAfter = m_manager.IsTearoffRootThatWouldOrphan(this);
