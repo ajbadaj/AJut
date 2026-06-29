@@ -110,6 +110,36 @@ namespace AJut.Text.AJson
             return BuildJsonForObject((object)instance, settings);
         }
 
+        // ===============================[ Data Classification ]===========================
+        // What json node a clr object maps to when built - a scalar value, an array, or a document.
+        // Same three-way split FillOutJsonBuilderForObject walks (simple value, then IEnumerable,
+        // then document), pulled out so the value-builder can decide up front whether to start as a
+        // value or hold off for StartDocument / StartArray.
+        public static bool IsValueData (object value, JsonBuilderSettings settings = null)
+        {
+            if (value == null)
+            {
+                return false;
+            }
+
+            settings = settings ?? g_defaultBuilderSettings;
+            return settings.TryGetJsonValueStringMakerFor(value.GetType()) != null;
+        }
+
+        public static bool IsArrayData (object value, JsonBuilderSettings settings = null)
+        {
+            return value != null
+                && !IsValueData(value, settings)
+                && value is IEnumerable;
+        }
+
+        public static bool IsDocumentData (object value, JsonBuilderSettings settings = null)
+        {
+            return value != null
+                && !IsValueData(value, settings)
+                && !IsArrayData(value, settings);
+        }
+
         // ===============================[ Object-from-Json Entry Points ]===========================
         private const DynamicallyAccessedMemberTypes kReflectionRequirements
             = DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;

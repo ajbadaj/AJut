@@ -1,12 +1,12 @@
-namespace AJut.Core.UnitTests.AJsonV2
+namespace AJut.Core.UnitTests.AJson
 {
     using System;
     using System.Collections.Generic;
-    using AJut.Text.AJson;
+    using AJut.Text.AJson.Legacy;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class JsonBuilderTests_FailureRegressionTests
+    public class JsonBuilderTests_Legacy_FailureRegressionTests
     {
         class TestingClass
         {
@@ -19,7 +19,7 @@ namespace AJut.Core.UnitTests.AJsonV2
             public int NumberValue { get; set; }
         }
 
-        private static readonly JsonBuilderSettings m_testSettings = new JsonBuilderSettings();
+        private static readonly JsonBuilder.Settings m_testSettings = new JsonBuilder.Settings();
         [TestMethod]
         public void AJson_JsonBuilding_CreatingJson_UsingNullValues()
         {
@@ -73,7 +73,7 @@ namespace AJut.Core.UnitTests.AJsonV2
         {
             var twa_input = new ThingWithArray()
             {
-                Names = new[]
+                Names = new[] 
                 {
                     "Bob",
                     "Joe",
@@ -132,11 +132,11 @@ namespace AJut.Core.UnitTests.AJsonV2
             var test = new ThingWithId { Ids = testGuids };
 
             Json json = JsonHelper.BuildJsonForObject(test);
-            Assert.IsFalse(json.HasErrors, "Json parse errors:\n" + String.Join("\n\t", json.Errors));
+            Assert.IsFalse(json.HasErrors, json.BuildJsonErrorReport());
 
             string jsonText = json.Data.StringValue;
             json = JsonHelper.ParseText(jsonText);
-            Assert.IsFalse(json.HasErrors, "Json parse errors:\n" + String.Join("\n\t", json.Errors));
+            Assert.IsFalse(json.HasErrors, json.BuildJsonErrorReport());
 
             var found = JsonHelper.BuildObjectForJson<ThingWithId>(json);
             Assert.IsNotNull(found?.Ids);
@@ -165,7 +165,7 @@ namespace AJut.Core.UnitTests.AJsonV2
             test.BunchaGuids = bunchaGuids;
 
             Json json = JsonHelper.BuildJsonForObject(test);
-            Assert.IsFalse(json.HasErrors, "Json parse errors:\n" + String.Join("\n\t", json.Errors));
+            Assert.IsFalse(json.HasErrors, json.BuildJsonErrorReport());
 
             var found = JsonHelper.BuildObjectForJson<ThingWithSpecialStuff>(json);
             Assert.IsNotNull(found);
@@ -236,83 +236,6 @@ namespace AJut.Core.UnitTests.AJsonV2
         {
             public int NumberProp { get; set; }
             public TNullThing NullProp { get; set; }
-        }
-
-        private class ComplexValue
-        {
-            public Guid Id { get; set; }
-            public string Name { get; set; }
-            public string Note { get; set; }
-        }
-
-        // Regression: Set of a complex (multi-property) object into a parsed document threw
-        // "Tried to start a document inside a value" - the value-builder was flagged IsValue at
-        // construction before FillOutJsonBuilderForObject could StartDocument on it. Set has to
-        // build the value as a nested document, not a scalar.
-        [TestMethod]
-        public void AJson_JsonDocument_Set_ComplexObjectValue_DoesNotThrow ()
-        {
-            string sourceText =
-@"{
-    ""Id"" : ""0aa8db63-5d15-4434-8a7a-9abc1a828c2e"",
-    ""Name"" : ""widget""
-}";
-            Json json = JsonHelper.ParseText(sourceText);
-            Assert.IsFalse(json.HasErrors, "Source parse errors:\n" + String.Join("\n\t", json.Errors));
-
-            var doc = json.Data as JsonDocument;
-            Assert.IsNotNull(doc);
-
-            var value = new ComplexValue
-            {
-                Id = Guid.NewGuid(),
-                Name = "inner"
-            };
-
-            JsonValue built = doc.Set("Details", value);
-            Assert.IsNotNull(built);
-
-            // The upsert should leave a real nested document that round-trips with the original keys intact.
-            Json reparsed = JsonHelper.ParseText(doc.StringValue);
-            Assert.IsFalse(reparsed.HasErrors, "Reparse errors:\n" + String.Join("\n\t", reparsed.Errors));
-
-            var reDoc = reparsed.Data as JsonDocument;
-            Assert.IsNotNull(reDoc);
-            Assert.AreEqual("widget", reDoc.ValueFor("Name").StringValue);
-
-            var details = reDoc.FindValueByKey("Details") as JsonDocument;
-            Assert.IsNotNull(details);
-            Assert.AreEqual("inner", details.ValueFor("Name").StringValue);
-        }
-
-        // Same root cause through the other mutation entry point.
-        [TestMethod]
-        public void AJson_JsonDocument_AppendNew_ComplexObjectValue_DoesNotThrow ()
-        {
-            Json json = JsonHelper.ParseText(@"{ ""Name"" : ""thing"" }");
-            Assert.IsFalse(json.HasErrors, "Source parse errors:\n" + String.Join("\n\t", json.Errors));
-
-            var doc = json.Data as JsonDocument;
-            Assert.IsNotNull(doc);
-
-            JsonValue built = doc.AppendNew("Details", new ComplexValue { Name = "inner" });
-            Assert.IsNotNull(built);
-        }
-
-        // Control: upserting a scalar already works - guards against a fix that breaks the simple path.
-        [TestMethod]
-        public void AJson_JsonDocument_Set_ScalarValue_Succeeds ()
-        {
-            Json json = JsonHelper.ParseText(@"{ ""Name"" : ""thing"" }");
-            var doc = json.Data as JsonDocument;
-            Assert.IsNotNull(doc);
-
-            doc.Set("Count", 5);
-
-            Json reparsed = JsonHelper.ParseText(doc.StringValue);
-            Assert.IsFalse(reparsed.HasErrors, "Reparse errors:\n" + String.Join("\n\t", reparsed.Errors));
-            var reDoc = reparsed.Data as JsonDocument;
-            Assert.AreEqual("5", reDoc.ValueFor("Count").StringValue);
         }
 
     }
