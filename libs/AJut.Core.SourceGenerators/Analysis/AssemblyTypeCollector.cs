@@ -1,5 +1,6 @@
 namespace AJut.Text.AJson.SourceGenerators.Analysis
 {
+    using System;
     using System.Collections.Generic;
     using Microsoft.CodeAnalysis;
 
@@ -12,23 +13,28 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
     {
         public static IEnumerable<INamedTypeSymbol> CollectPublicTypes (IAssemblySymbol assembly)
         {
-            return WalkNamespace(assembly.GlobalNamespace);
+            return WalkNamespace(assembly.GlobalNamespace, IsCandidate);
         }
 
-        private static IEnumerable<INamedTypeSymbol> WalkNamespace (INamespaceSymbol ns)
+        public static IEnumerable<INamedTypeSymbol> CollectPublicEnums (IAssemblySymbol assembly)
+        {
+            return WalkNamespace(assembly.GlobalNamespace, IsPublicEnum);
+        }
+
+        private static IEnumerable<INamedTypeSymbol> WalkNamespace (INamespaceSymbol ns, Func<INamedTypeSymbol, bool> filter)
         {
             foreach (INamespaceOrTypeSymbol member in ns.GetMembers())
             {
                 if (member is INamespaceSymbol nested)
                 {
-                    foreach (INamedTypeSymbol type in WalkNamespace(nested))
+                    foreach (INamedTypeSymbol type in WalkNamespace(nested, filter))
                     {
                         yield return type;
                     }
                 }
                 else if (member is INamedTypeSymbol type)
                 {
-                    foreach (INamedTypeSymbol candidate in WalkType(type))
+                    foreach (INamedTypeSymbol candidate in WalkType(type, filter))
                     {
                         yield return candidate;
                     }
@@ -36,9 +42,9 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
             }
         }
 
-        private static IEnumerable<INamedTypeSymbol> WalkType (INamedTypeSymbol type)
+        private static IEnumerable<INamedTypeSymbol> WalkType (INamedTypeSymbol type, Func<INamedTypeSymbol, bool> filter)
         {
-            if (IsCandidate(type))
+            if (filter(type))
             {
                 yield return type;
             }
@@ -48,7 +54,7 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
             {
                 if (nested.DeclaredAccessibility == Accessibility.Public)
                 {
-                    foreach (INamedTypeSymbol candidate in WalkType(nested))
+                    foreach (INamedTypeSymbol candidate in WalkType(nested, filter))
                     {
                         yield return candidate;
                     }
@@ -78,6 +84,30 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
             if (type.IsGenericType && type.TypeArguments.Length > 0 && type.TypeArguments[0].TypeKind == TypeKind.TypeParameter)
             {
                 return false;
+            }
+            return HasEmittableContainingChain(type);
+        }
+
+        private static bool IsPublicEnum (INamedTypeSymbol type)
+        {
+            if (type.DeclaredAccessibility != Accessibility.Public || type.TypeKind != TypeKind.Enum)
+            {
+                return false;
+            }
+            return HasEmittableContainingChain(type);
+        }
+
+        // The generated typeof(...) may live in another assembly, so a collected type has to be
+        //  genuinely reachable: every containing type public, and none generic (a type nested in a
+        //  generic has no single typeof(...) form to emit).
+        private static bool HasEmittableContainingChain (INamedTypeSymbol type)
+        {
+            for (INamedTypeSymbol container = type.ContainingType; container != null; container = container.ContainingType)
+            {
+                if (container.DeclaredAccessibility != Accessibility.Public || container.IsGenericType)
+                {
+                    return false;
+                }
             }
             return true;
         }

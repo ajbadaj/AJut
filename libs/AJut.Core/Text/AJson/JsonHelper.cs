@@ -791,7 +791,36 @@ namespace AJut.Text.AJson
             }
 
             foundType = Type.GetType(typeIndicator);
-            return foundType != null;
+            if (foundType != null)
+            {
+                return true;
+            }
+
+            // The id may be an assembly-qualified name whose assembly cannot bind, but whose type was
+            //  registered by full name - the source generator auto-registers an opted-in assembly's
+            //  enums that way (a hard typeof reference, so trim / ReadyToRun safe). Retry the registrar
+            //  with the assembly identity stripped off. No enum gate here: this only resolves what was
+            //  explicitly registered, never an arbitrary name.
+            string typeFullName = FallbackTypeResolver.ExtractTypeFullName(typeIndicator);
+            if (typeFullName != typeIndicator && TypeIdRegistrar.TryGetType(typeFullName, out Type fullNameMatch))
+            {
+                foundType = fullNameMatch;
+                return true;
+            }
+
+            // Last resort: still unbound. Try a name-only match across the assemblies the registrar was
+            //  asked to track. Deliberately scoped to enums: auto-resolving an arbitrary class by name
+            //  from wire input is a deserialization gadget risk, whereas an enum carries no payload. A
+            //  class/struct that must round-trip has to be registered or carry a [TypeId].
+            Type nameMatched = FallbackTypeResolver.ResolveByName(typeIndicator, TypeIdRegistrar.TrackedAssemblies);
+            if (nameMatched != null && nameMatched.IsEnum)
+            {
+                foundType = nameMatched;
+                return true;
+            }
+
+            foundType = null;
+            return false;
         }
 
         // ===============================[ Reflection Cache ]===========================

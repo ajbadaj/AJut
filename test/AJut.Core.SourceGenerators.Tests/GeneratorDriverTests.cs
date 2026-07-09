@@ -86,6 +86,70 @@ namespace TestNs
             Assert.IsTrue(generated.Any(g => g.HintName.Contains("Marker")));
         }
 
+        [TestMethod]
+        public void Generator_AssemblyLevelOptIn_RegistersPublicEnumsByFullName ()
+        {
+            const string src = @"
+using AJut.Text.AJson;
+[assembly: OptimizeAJson(typeof(TestNs.Marker))]
+namespace TestNs
+{
+    public class Marker { }
+    public enum eColor { Red, Green, Blue }
+    public enum eShape { Round, Square }
+}";
+            GeneratorDriverRunResult result = RunGenerator(src);
+
+            ImmutableArray<GeneratedSourceResult> generated = result.Results.Single().GeneratedSources;
+            GeneratedSourceResult[] enumRegs = generated.Where(g => g.HintName.Contains("EnumTypeIdRegistrations")).ToArray();
+            Assert.AreEqual(1, enumRegs.Length, "Expected exactly one enum registration file.");
+
+            string emitted = enumRegs[0].SourceText.ToString();
+            StringAssert.Contains(emitted, "[ModuleInitializer]");
+            StringAssert.Contains(emitted, "TypeIdRegistrar.RegisterTypeId");
+            StringAssert.Contains(emitted, "typeof(global::TestNs.eColor).FullName");
+            StringAssert.Contains(emitted, "typeof(global::TestNs.eShape).FullName");
+        }
+
+        [TestMethod]
+        public void Generator_PerTypeOptInOnly_EmitsNoEnumRegistrations ()
+        {
+            const string src = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson] public class Foo { public int A { get; set; } }
+    public enum eColor { Red, Green, Blue }   // no assembly-level marker, so never registered
+}";
+            GeneratorDriverRunResult result = RunGenerator(src);
+
+            ImmutableArray<GeneratedSourceResult> generated = result.Results.Single().GeneratedSources;
+            Assert.IsFalse(
+                generated.Any(g => g.HintName.Contains("EnumTypeIdRegistrations")),
+                "Enums must only be registered via the assembly-level opt-in, never from a bare enum."
+            );
+        }
+
+        [TestMethod]
+        public void Generator_AssemblyLevelOptIn_SkipsTypesNestedInInternalOrGeneric ()
+        {
+            const string src = @"
+using AJut.Text.AJson;
+[assembly: OptimizeAJson(typeof(TestNs.Marker))]
+namespace TestNs
+{
+    public class Marker { }
+    internal class Hidden { public class Reachable { public int A { get; set; } } }   // public, but nested in internal
+    public class Outer<T> { public class Inner { public int A { get; set; } } }        // nested in a generic
+}";
+            GeneratorDriverRunResult result = RunGenerator(src);
+
+            ImmutableArray<GeneratedSourceResult> generated = result.Results.Single().GeneratedSources;
+            Assert.IsFalse(generated.Any(g => g.HintName.Contains("Reachable")), "public-nested-in-internal is not reachable from another assembly - emitting typeof(...) for it would not compile");
+            Assert.IsFalse(generated.Any(g => g.HintName.Contains("Inner")), "a type nested in a generic has no single typeof(...) form");
+            Assert.IsTrue(generated.Any(g => g.HintName.Contains("Marker")), "top-level public types are still emitted");
+        }
+
         // ===========================[ Helpers ]===========================
         private static GeneratorDriverRunResult RunGenerator (string source)
         {

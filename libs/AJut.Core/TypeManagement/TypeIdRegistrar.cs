@@ -9,6 +9,13 @@
     {
         private static readonly Dictionary<string, Type> g_typeAliases = new Dictionary<string, Type>();
         private static readonly HashSet<string> g_alreadySearchedAemblies = new HashSet<string>();
+        private static readonly List<Assembly> g_trackedAssemblies = new List<Assembly>();
+
+        /// <summary>
+        /// Assemblies the registrar has been asked to track via <see cref="RegisterAllTypeIds"/>. The
+        /// fallback name-resolution path searches these when a type id cannot bind by identity.
+        /// </summary>
+        internal static IReadOnlyList<Assembly> TrackedAssemblies => g_trackedAssemblies;
 
         /// <summary>
         /// Register a type to be associated with the given type id
@@ -39,6 +46,11 @@
         /// <param name="forceSearch">Whether or not to search again if the assembly has already been searched (cached by name)</param>
         public static void RegisterAllTypeIds (Assembly assembly, bool forceSearch = false)
         {
+            if (!g_trackedAssemblies.Contains(assembly))
+            {
+                g_trackedAssemblies.Add(assembly);
+            }
+
             if (!forceSearch && g_alreadySearchedAemblies.Contains(assembly.FullName))
             {
                 return;
