@@ -85,7 +85,7 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
             {
                 return false;
             }
-            return true;
+            return HasEmittableContainingChain(type);
         }
 
         private static bool IsPublicEnum (INamedTypeSymbol type)
@@ -94,11 +94,17 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
             {
                 return false;
             }
+            return HasEmittableContainingChain(type);
+        }
 
-            // An enum nested inside a generic type has no single typeof(...) form we can emit, so skip it.
+        // The generated typeof(...) may live in another assembly, so a collected type has to be
+        //  genuinely reachable: every containing type public, and none generic (a type nested in a
+        //  generic has no single typeof(...) form to emit).
+        private static bool HasEmittableContainingChain (INamedTypeSymbol type)
+        {
             for (INamedTypeSymbol container = type.ContainingType; container != null; container = container.ContainingType)
             {
-                if (container.IsGenericType)
+                if (container.DeclaredAccessibility != Accessibility.Public || container.IsGenericType)
                 {
                     return false;
                 }

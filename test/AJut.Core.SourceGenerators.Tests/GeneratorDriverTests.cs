@@ -130,6 +130,26 @@ namespace TestNs
             );
         }
 
+        [TestMethod]
+        public void Generator_AssemblyLevelOptIn_SkipsTypesNestedInInternalOrGeneric ()
+        {
+            const string src = @"
+using AJut.Text.AJson;
+[assembly: OptimizeAJson(typeof(TestNs.Marker))]
+namespace TestNs
+{
+    public class Marker { }
+    internal class Hidden { public class Reachable { public int A { get; set; } } }   // public, but nested in internal
+    public class Outer<T> { public class Inner { public int A { get; set; } } }        // nested in a generic
+}";
+            GeneratorDriverRunResult result = RunGenerator(src);
+
+            ImmutableArray<GeneratedSourceResult> generated = result.Results.Single().GeneratedSources;
+            Assert.IsFalse(generated.Any(g => g.HintName.Contains("Reachable")), "public-nested-in-internal is not reachable from another assembly - emitting typeof(...) for it would not compile");
+            Assert.IsFalse(generated.Any(g => g.HintName.Contains("Inner")), "a type nested in a generic has no single typeof(...) form");
+            Assert.IsTrue(generated.Any(g => g.HintName.Contains("Marker")), "top-level public types are still emitted");
+        }
+
         // ===========================[ Helpers ]===========================
         private static GeneratorDriverRunResult RunGenerator (string source)
         {

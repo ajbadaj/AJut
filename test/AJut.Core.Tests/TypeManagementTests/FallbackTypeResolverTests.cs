@@ -86,5 +86,26 @@ namespace AJut.Core.UnitTests.TypeManagement
             Type resolved = FallbackTypeResolver.PickSingleCandidate("Colliding.Name", new[] { typeof(int), typeof(string) });
             Assert.IsNull(resolved);
         }
+
+        // ===========[ ExtractTypeFullName ]===================================
+        [TestMethod]
+        public void ExtractTypeFullName_SimpleName_And_SimpleAqn ()
+        {
+            Assert.AreEqual("Some.Ns.Thing", FallbackTypeResolver.ExtractTypeFullName("Some.Ns.Thing"));
+            Assert.AreEqual("Some.Ns.Thing", FallbackTypeResolver.ExtractTypeFullName("Some.Ns.Thing, MyAsm, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null"));
+        }
+
+        [TestMethod]
+        public void ExtractTypeFullName_MultiArgGenericAqn_StopsAtOuterAssemblyBoundary ()
+        {
+            // A closed generic AQN carries each type argument as a nested assembly-qualified name inside
+            //  [[ ... ]], with their own commas. The type/assembly split is the first comma at bracket
+            //  depth zero, not the first comma overall.
+            const string arg = "System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
+            string typeName = "System.Collections.Generic.Dictionary`2[[" + arg + "],[" + arg + "]]";
+            string aqn = typeName + ", mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
+
+            Assert.AreEqual(typeName, FallbackTypeResolver.ExtractTypeFullName(aqn));
+        }
     }
 }
