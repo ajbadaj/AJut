@@ -56,6 +56,24 @@ namespace AJut.Text.AJson.SourceGenerators
                     spc.AddSource(hint, source);
                 }
             });
+
+            // ---- Enum registration pipeline ----
+            // Public enums cannot carry [OptimizeAJson], so they only arrive through the assembly-level
+            // [assembly: OptimizeAJson(typeof(Marker))] form. Emit one module initializer that registers
+            // each with the TypeIdRegistrar by full name, so a boxed enum in a [JsonRuntimeTypeEval] slot
+            // resolves via the registrar (a hard typeof reference, trim / ReadyToRun safe) rather than a
+            // Type.GetType on an assembly-qualified name that a packaged app cannot bind.
+            IncrementalValueProvider<ImmutableArray<INamedTypeSymbol>> assemblyEnums = context.CompilationProvider
+                .Select(static (compilation, _) => CollectAssemblyMarkedEnums(compilation));
+
+            context.RegisterSourceOutput(assemblyEnums, static (spc, enums) =>
+            {
+                if (enums.Length == 0)
+                {
+                    return;
+                }
+                spc.AddSource("AJsonEnumTypeIdRegistrations.g.cs", EnumRegistrationEmitter.Emit(enums));
+            });
         }
 
         // ===========================[ Pipeline helpers ]===========================
@@ -123,6 +141,44 @@ namespace AJut.Text.AJson.SourceGenerators
                 foreach (INamedTypeSymbol candidate in AssemblyTypeCollector.CollectPublicTypes(targetAssembly))
                 {
                     collected.Add(candidate);
+                }
+            }
+
+            return collected.ToImmutable();
+        }
+
+        private static ImmutableArray<INamedTypeSymbol> CollectAssemblyMarkedEnums (Compilation compilation)
+        {
+            HashSet<INamedTypeSymbol> seen = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
+            ImmutableArray<INamedTypeSymbol>.Builder collected = ImmutableArray.CreateBuilder<INamedTypeSymbol>();
+
+            foreach (AttributeData attr in compilation.Assembly.GetAttributes())
+            {
+                if (attr.AttributeClass?.ToDisplayString() != AttributeNames.kOptimizeAJson)
+                {
+                    continue;
+                }
+                if (attr.ConstructorArguments.Length == 0)
+                {
+                    continue;
+                }
+                if (!(attr.ConstructorArguments[0].Value is INamedTypeSymbol marker))
+                {
+                    continue;
+                }
+
+                IAssemblySymbol targetAssembly = marker.ContainingAssembly;
+                if (targetAssembly == null)
+                {
+                    continue;
+                }
+
+                foreach (INamedTypeSymbol enumType in AssemblyTypeCollector.CollectPublicEnums(targetAssembly))
+                {
+                    if (seen.Add(enumType))
+                    {
+                        collected.Add(enumType);
+                    }
                 }
             }
 

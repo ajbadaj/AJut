@@ -574,6 +574,25 @@ namespace AJut.Core.UnitTests.AJsonV2
             Assert.IsNull(found);
         }
 
+        [TestMethod]
+        public void RuntimeTypeEval_UnresolvableAqn_ResolvesViaFullNameRegistration ()
+        {
+            // Mirrors what the source generator's module initializer does for an opted-in assembly's
+            //  enums: register the enum by its runtime full name. A boxed instance then resolves even
+            //  when its AQN cannot bind (Type.GetType returns null), via the registrar full-name retry
+            //  rather than the assembly scan.
+            TypeIdRegistrar.RegisterTypeId(typeof(eTestMode).FullName, typeof(eTestMode));
+
+            string unresolvableAqn =
+                typeof(eTestMode).FullName + ", This.Assembly.Does.Not.Exist, Version=9.9.9.9, Culture=neutral, PublicKeyToken=null";
+            Assert.IsNull(Type.GetType(unresolvableAqn), "Precondition: the bogus AQN must not resolve via Type.GetType.");
+
+            bool resolved = JsonHelper.TryGetTypeForTypeId(unresolvableAqn, out Type found);
+
+            Assert.IsTrue(resolved, "A full-name registration should resolve the AQN via the registrar retry.");
+            Assert.AreEqual(typeof(eTestMode), found);
+        }
+
         private static PolymorphicHolder RoundTripPolymorphic (PolymorphicHolder source)
         {
             Json json = JsonHelper.BuildJsonForObject(source);

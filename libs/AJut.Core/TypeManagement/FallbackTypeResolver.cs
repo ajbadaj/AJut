@@ -33,12 +33,7 @@ namespace AJut.TypeManagement
 
             // Key off the type full name; if an assembly-qualified name came through, drop the
             //  (unbindable) assembly identity and match on the name alone.
-            string typeFullName = typeNameOrAssemblyQualifiedName;
-            int assemblySeparator = typeFullName.IndexOf(',');
-            if (assemblySeparator >= 0)
-            {
-                typeFullName = typeFullName.Substring(0, assemblySeparator).Trim();
-            }
+            string typeFullName = ExtractTypeFullName(typeNameOrAssemblyQualifiedName);
 
             List<Type> candidates = new List<Type>();
             for (int index = 0; index < assemblies.Count; ++index)
@@ -51,6 +46,26 @@ namespace AJut.TypeManagement
             }
 
             return PickSingleCandidate(typeFullName, candidates);
+        }
+
+        /// <summary>
+        /// Extract the bare type full name from a possibly assembly-qualified name - everything before
+        /// the first comma. Returns the input unchanged when it carries no assembly qualifier.
+        /// </summary>
+        internal static string ExtractTypeFullName (string typeNameOrAssemblyQualifiedName)
+        {
+            if (String.IsNullOrEmpty(typeNameOrAssemblyQualifiedName))
+            {
+                return typeNameOrAssemblyQualifiedName;
+            }
+
+            int assemblySeparator = typeNameOrAssemblyQualifiedName.IndexOf(',');
+            if (assemblySeparator < 0)
+            {
+                return typeNameOrAssemblyQualifiedName;
+            }
+
+            return typeNameOrAssemblyQualifiedName.Substring(0, assemblySeparator).Trim();
         }
 
         /// <summary>
