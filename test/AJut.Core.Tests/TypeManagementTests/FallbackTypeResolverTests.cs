@@ -107,5 +107,19 @@ namespace AJut.Core.UnitTests.TypeManagement
 
             Assert.AreEqual(typeName, FallbackTypeResolver.ExtractTypeFullName(aqn));
         }
+
+        [TestMethod]
+        public void ExtractTypeFullName_NestedGenericAqn_HandlesDeepBracketDepth ()
+        {
+            // A type argument that is itself generic pushes bracket depth past two; the split must
+            //  still land on the outer assembly comma, never a comma nested inside the argument list.
+            const string tail = "mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089";
+            string keyArg = "System.String, " + tail;
+            string valueArg = "System.Collections.Generic.List`1[[System.Int32, " + tail + "]], " + tail;
+            string typeName = "System.Collections.Generic.Dictionary`2[[" + keyArg + "],[" + valueArg + "]]";
+            string aqn = typeName + ", " + tail;
+
+            Assert.AreEqual(typeName, FallbackTypeResolver.ExtractTypeFullName(aqn));
+        }
     }
 }
