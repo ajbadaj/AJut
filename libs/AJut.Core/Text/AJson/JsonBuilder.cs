@@ -32,7 +32,10 @@ namespace AJut.Text.AJson
         /// </summary>
         internal JsonBuilder (JsonBuilderSettings settings, object value) : this(settings)
         {
-            this.IsValue = true;
+            // Scalars start as a value; a complex object or array has to hold off so
+            // FillOutJsonBuilderForObject can StartDocument / StartArray on it. Flagging IsValue
+            // unconditionally here was the "start a document inside a value" bug.
+            this.IsValue = value == null || JsonHelper.IsValueData(value, this.BuilderSettings);
             JsonHelper.FillOutJsonBuilderForObject(value, this);
         }
 
