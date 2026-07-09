@@ -18,6 +18,10 @@ namespace AJut.Core.UnitTests.AJsonV2
             TypeIdRegistrar.RegisterTypeId<RuntimeShape_Simple>("test-runtime-simple");
             TypeIdRegistrar.RegisterTypeId<RuntimeShape_WithExtra>("test-runtime-extra");
             TypeIdRegistrar.RegisterTypeId<RuntimeShape_Other>("test-runtime-other");
+
+            // Enum riding a [TypeId] short id through an object slot, so the read side resolves it
+            //  via the registrar instead of Type.GetType on an assembly-qualified name.
+            TypeIdRegistrar.RegisterTypeId<eTestMode>("test-enum-mode");
         }
 
         // ===========================[ Test Models ]===================================
@@ -164,6 +168,23 @@ namespace AJut.Core.UnitTests.AJsonV2
         {
             [JsonRuntimeTypeEval]
             public RuntimeShape Shape { get; set; }
+        }
+
+        // A user enum with a [TypeId] so a boxed instance in an object slot writes the registered
+        //  short id, not an assembly-qualified name that Type.GetType cannot resolve in a
+        //  packaged/ReadyToRun host.
+        [TypeId("test-enum-mode")]
+        public enum eTestMode
+        {
+            Alpha,
+            Beta,
+            Gamma,
+        }
+
+        public class EnumValueCarrier
+        {
+            [JsonRuntimeTypeEval]
+            public object Value { get; set; }
         }
 
         public class CustomCtorThing
@@ -489,6 +510,68 @@ namespace AJut.Core.UnitTests.AJsonV2
 
             Assert.IsInstanceOfType(roundC.Shape, typeof(RuntimeShape_Other));
             Assert.AreEqual(0.5, ((RuntimeShape_Other)roundC.Shape).Ratio);
+        }
+
+        [TestMethod]
+        public void RuntimeTypeEval_BoxedEnumValue_UsesRegisteredShortId_AndRoundTrips ()
+        {
+            // A boxed user enum in a [JsonRuntimeTypeEval] object slot must ride its [TypeId] short
+            //  id (resolved via the registrar) rather than an assembly-qualified name. The AQN path
+            //  resolves in this test host but returns null in a packaged/ReadyToRun consumer, which
+            //  silently nulls the value.
+            Json json = JsonHelper.BuildJsonForObject(new EnumValueCarrier { Value = eTestMode.Beta });
+            Assert.IsFalse(json.HasErrors, json.GetErrorReport());
+
+            string text = json.ToString();
+
+            // The registered short id is written, and no assembly-qualified name leaks in.
+            StringAssert.Contains(text, "test-enum-mode");
+            Assert.IsFalse(text.Contains("eTestMode,"), "Expected the registered short id, not an assembly-qualified name:\n" + text);
+
+            Json reparsed = JsonHelper.ParseText(text);
+            Assert.IsFalse(reparsed.HasErrors, reparsed.GetErrorReport());
+
+            EnumValueCarrier rebuilt = JsonHelper.BuildObjectForJson<EnumValueCarrier>(reparsed);
+            Assert.IsInstanceOfType(rebuilt.Value, typeof(eTestMode));
+            Assert.AreEqual(eTestMode.Beta, (eTestMode)rebuilt.Value);
+        }
+
+        [TestMethod]
+        public void RuntimeTypeEval_UnresolvableAqn_ResolvesViaTrackedAssemblyFallback ()
+        {
+            // Simulates the packaged/ReadyToRun failure inside the dev host: an AQN whose assembly
+            //  identity cannot be bound (so Type.GetType returns null), but whose type full name is
+            //  present in a tracked assembly. The fallback recovers it by name where Type.GetType
+            //  could not - which is the whole point of the resolver.
+            TypeIdRegistrar.RegisterAllTypeIds(typeof(JsonAttributeTests).Assembly);
+
+            string unresolvableAqn =
+                typeof(eTestMode).FullName + ", This.Assembly.Does.Not.Exist, Version=9.9.9.9, Culture=neutral, PublicKeyToken=null";
+            Assert.IsNull(Type.GetType(unresolvableAqn), "Precondition: the bogus AQN must not resolve via Type.GetType.");
+
+            bool resolved = JsonHelper.TryGetTypeForTypeId(unresolvableAqn, out Type found);
+
+            Assert.IsTrue(resolved, "Fallback should resolve the type by name from the tracked assembly.");
+            Assert.AreEqual(typeof(eTestMode), found);
+        }
+
+        [TestMethod]
+        public void RuntimeTypeEval_UnresolvableAqn_NonEnumType_DoesNotResolveViaFallback ()
+        {
+            // The by-name fallback is deliberately scoped to enums. A class name arriving on the wire
+            //  must not be auto-instantiated - that is the polymorphic-deserialization gadget surface.
+            //  A class that needs to round-trip carries a [TypeId] / is registered (and resolves via
+            //  the registrar), never via a blind name match.
+            TypeIdRegistrar.RegisterAllTypeIds(typeof(JsonAttributeTests).Assembly);
+
+            string unresolvableClassAqn =
+                typeof(RuntimeShape_Simple).FullName + ", This.Assembly.Does.Not.Exist, Version=9.9.9.9, Culture=neutral, PublicKeyToken=null";
+            Assert.IsNull(Type.GetType(unresolvableClassAqn), "Precondition: the bogus AQN must not resolve via Type.GetType.");
+
+            bool resolved = JsonHelper.TryGetTypeForTypeId(unresolvableClassAqn, out Type found);
+
+            Assert.IsFalse(resolved, "A non-enum type must not resolve via the name-only fallback.");
+            Assert.IsNull(found);
         }
 
         private static PolymorphicHolder RoundTripPolymorphic (PolymorphicHolder source)

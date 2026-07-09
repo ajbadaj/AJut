@@ -791,7 +791,25 @@ namespace AJut.Text.AJson
             }
 
             foundType = Type.GetType(typeIndicator);
-            return foundType != null;
+            if (foundType != null)
+            {
+                return true;
+            }
+
+            // Last resort: the id could not bind by identity - the packaged / ReadyToRun failure where
+            //  Type.GetType returns null. Try a name-only match across the assemblies the registrar was
+            //  asked to track. Deliberately scoped to enums: auto-resolving an arbitrary class by name
+            //  from wire input is a deserialization gadget risk, whereas an enum carries no payload. A
+            //  class/struct that must round-trip has to be registered or carry a [TypeId].
+            Type nameMatched = FallbackTypeResolver.ResolveByName(typeIndicator, TypeIdRegistrar.TrackedAssemblies);
+            if (nameMatched != null && nameMatched.IsEnum)
+            {
+                foundType = nameMatched;
+                return true;
+            }
+
+            foundType = null;
+            return false;
         }
 
         // ===============================[ Reflection Cache ]===========================
