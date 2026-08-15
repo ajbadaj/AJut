@@ -18,6 +18,7 @@ namespace AJutShowRoomWinUI
     using AJut.UX.Docking;
     using AJut.UX.PropertyInteraction;
     using AJut.UX.Theming;
+    using Microsoft.UI.Windowing;
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
     using Microsoft.UI.Xaml.Media;
@@ -1269,6 +1270,128 @@ namespace AJutShowRoomWinUI
             return leaked
                 ? $"FAIL - survivors after GC: {detail}"
                 : $"PASS - all collected ({detail})";
+        }
+
+        // ===========[ Window Chrome probe ]=============================================
+        // Repro for the maximize/restore chrome desync. Maximize and restore keep the
+        // OverlappedPresenter kind (only its State flips Restored<->Maximized), so the
+        // AppWindow.Changed handler that only recomputed on a presenter-kind change left
+        // IsMaximizedOrFullScreened and the title-bar border stale. A fullscreen round-trip
+        // (which DOES change the presenter kind) was the only thing that snapped them back.
+        // This drives the real window through maximize then restore and checks the chrome
+        // tracks the state at each step - it is left restored when the probe finishes.
+
+        private const double kThicknessMatchEpsilon = 0.5;
+
+        private async void WindowChrome_OnMaximizeRestoreClicked (object sender, RoutedEventArgs e)
+        {
+            var button = sender as Button;
+            if (button != null) { button.IsEnabled = false; }
+            try
+            {
+                this.WindowChrome_Output.Text = string.Empty;
+
+                if (this.AppWindow.Presenter is not OverlappedPresenter)
+                {
+                    this.WindowChrome_AppendLine("INCONCLUSIVE - window is not using an OverlappedPresenter");
+                    return;
+                }
+
+                var results = new List<string>();
+                bool allPass = true;
+
+                // Baseline: make sure we start restored so the maximize step is a real transition.
+                this.PerformPresenterTask<OverlappedPresenter>(p => p.Restore());
+                await this.WindowChrome_SettleAsync();
+
+                Thickness target = this.Root.TargetBorderThickness;
+
+                // 1. Maximize - IsMaximizedOrFullScreened must go true, title-bar border must collapse to 0.
+                this.PerformPresenterTask<OverlappedPresenter>(p => p.Maximize());
+                await this.WindowChrome_SettleAsync();
+                allPass &= this.WindowChrome_Check(
+                    results,
+                    "After maximize",
+                    expectMaximizedState: true,
+                    expectIsMaximizedOrFullScreened: true,
+                    expectedTitleBarBorder: new Thickness(0)
+                );
+
+                // 2. Restore - IsMaximizedOrFullScreened must go false, border back to the target.
+                this.PerformPresenterTask<OverlappedPresenter>(p => p.Restore());
+                await this.WindowChrome_SettleAsync();
+                allPass &= this.WindowChrome_Check(
+                    results,
+                    "After restore",
+                    expectMaximizedState: false,
+                    expectIsMaximizedOrFullScreened: false,
+                    expectedTitleBarBorder: target
+                );
+
+                this.WindowChrome_AppendLine(allPass
+                    ? "PASS - chrome tracked maximize and restore"
+                    : "FAIL - chrome went stale (maximize/restore did not update IsMaximizedOrFullScreened / title-bar border)");
+                foreach (string line in results)
+                {
+                    this.WindowChrome_AppendLine("    " + line);
+                }
+            }
+            finally
+            {
+                if (button != null) { button.IsEnabled = true; }
+            }
+        }
+
+        private bool WindowChrome_Check (List<string> results, string label, bool expectMaximizedState, bool expectIsMaximizedOrFullScreened, Thickness expectedTitleBarBorder)
+        {
+            eWindowState state = this.GetWindowState();
+            bool stateOk = (state == eWindowState.Maximized) == expectMaximizedState;
+            bool flagOk = this.Root.IsMaximizedOrFullScreened == expectIsMaximizedOrFullScreened;
+
+            Thickness actualBorder = this.Root.PART_TitleBarBorder?.BorderThickness ?? new Thickness(double.NaN);
+            bool borderOk = WindowChrome_ThicknessesMatch(actualBorder, expectedTitleBarBorder);
+
+            bool ok = stateOk && flagOk && borderOk;
+            results.Add(string.Format(
+                "{0}: {1} | state={2} (want {3}), IsMaximizedOrFullScreened={4} (want {5}), titleBarBorder={6} (want {7})",
+                label,
+                ok ? "ok" : "MISMATCH",
+                state,
+                expectMaximizedState ? "Maximized" : "not Maximized",
+                this.Root.IsMaximizedOrFullScreened,
+                expectIsMaximizedOrFullScreened,
+                WindowChrome_FormatThickness(actualBorder),
+                WindowChrome_FormatThickness(expectedTitleBarBorder)
+            ));
+            return ok;
+        }
+
+        // Let the AppWindow.Changed event fire and its handler (plus any Low-priority
+        // dispatcher follow-up it enqueues) fully run before we read the chrome.
+        private async Task WindowChrome_SettleAsync ()
+        {
+            for (int i = 0; i < 4; ++i)
+            {
+                await LeakProbe_DrainDispatcherAsync();
+                await Task.Delay(80);
+            }
+        }
+
+        private static bool WindowChrome_ThicknessesMatch (Thickness a, Thickness b)
+        {
+            return Math.Abs(a.Left - b.Left) < kThicknessMatchEpsilon
+                && Math.Abs(a.Top - b.Top) < kThicknessMatchEpsilon
+                && Math.Abs(a.Right - b.Right) < kThicknessMatchEpsilon
+                && Math.Abs(a.Bottom - b.Bottom) < kThicknessMatchEpsilon;
+        }
+
+        private static string WindowChrome_FormatThickness (Thickness t) => $"({t.Left},{t.Top},{t.Right},{t.Bottom})";
+
+        private void WindowChrome_AppendLine (string line)
+        {
+            this.WindowChrome_Output.Text = this.WindowChrome_Output.Text.Length == 0
+                ? line
+                : this.WindowChrome_Output.Text + "\n" + line;
         }
 
         private sealed class DockingLeakProbe
