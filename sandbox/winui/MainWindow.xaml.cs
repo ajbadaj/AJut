@@ -1394,6 +1394,191 @@ namespace AJutShowRoomWinUI
                 : this.WindowChrome_Output.Text + "\n" + line;
         }
 
+        // ===========[ Themed-chrome window close probe ]=================================
+        // Closing a window that carries ThemedWindowRootControl fails fast inside
+        // Microsoft.UI.Windowing (E_POINTER, main thread) because the chrome leaves
+        // Window.Activated subscriptions alive past the point the native window is gone.
+        // It has never been caught because this showroom's main window is the only thing
+        // that carries the chrome, and it lives for the whole process.
+        //
+        // A fail fast is not catchable, so this probe cannot print FAIL - the showroom
+        // dying when the button is clicked IS the failure. Surviving is the pass, and the
+        // weak-ref tally catches the softer variant where the window is pinned, not killed.
+
+        private const int kThemedWindowCloseCycles = 2;
+
+        private async void WindowChrome_OnCloseThemedWindowClicked (object sender, RoutedEventArgs e)
+        {
+            var button = sender as Button;
+            if (button != null) { button.IsEnabled = false; }
+            try
+            {
+                this.WindowChrome_Output.Text = string.Empty;
+                this.WindowChrome_AppendLine($"Opening and closing {kThemedWindowCloseCycles} themed-chrome windows - a crash from here is the failure.");
+
+                var weaks = new List<WeakReference>();
+                for (int i = 0; i < kThemedWindowCloseCycles; ++i)
+                {
+                    var themedRoot = new AJut.UX.Controls.ThemedWindowRootControl
+                    {
+                        TitleBarHeight = 32,
+                        WindowContents = new TextBlock { Text = "Themed chrome close probe", Margin = new Thickness(16) },
+                    };
+
+                    var childWindow = new Window();
+                    childWindow.Content = themedRoot;
+                    themedRoot.SetupFor(childWindow);
+                    childWindow.Activate();
+
+                    await LeakProbe_WaitForLoaded(themedRoot, 3000);
+                    await Task.Delay(150);
+
+                    // Pull focus back here so the child takes a real Deactivated pass while it is
+                    // still alive. That event is what the stale handlers ride in on at close time.
+                    this.Activate();
+                    await LeakProbe_DrainDispatcherAsync();
+                    await Task.Delay(150);
+
+                    // Everything a well-behaved consumer does on the way out. Nulling Content is
+                    // the standard way to drop a child window's page graph, and it is also what
+                    // guarantees a null Window.Content for anything still listening to Activated.
+                    themedRoot.DisconnectFromOwnerWindow();
+                    childWindow.Content = null;
+                    themedRoot = null;
+
+                    weaks.Add(new WeakReference(childWindow));
+                    childWindow.Close();
+                    childWindow = null;
+
+                    await LeakProbe_DrainDispatcherAsync();
+                    await Task.Delay(250);
+                }
+
+                await LeakProbe_SettleAndCollectAsync();
+
+                int alive = weaks.Count(w => w.IsAlive);
+                this.WindowChrome_AppendLine(alive == 0
+                    ? $"PASS - all {kThemedWindowCloseCycles} themed windows opened, closed, and collected"
+                    : $"PARTIAL - survived the close, but {alive}/{kThemedWindowCloseCycles} windows are still pinned after GC");
+            }
+            finally
+            {
+                if (button != null) { button.IsEnabled = true; }
+            }
+        }
+
+        // ===========[ PathSelectionControl typed-path probe ]============================
+        // Pushes text into the control's inner TextBox, which is the same route a keystroke
+        // takes, and checks the control revalidates afterward. If a typed edit moves
+        // SelectedPath without rerunning validation then the missing-folder border can only
+        // ever come from a browsed path, and browsing cannot produce a path that is missing -
+        // which reads from the outside like the warning was never implemented.
+
+        private const string kProbeMissingFolderPath = @"C:\_ajut_showroom_probe\definitely_not_here";
+
+        private async void PathProbe_OnTypedPathClicked (object sender, RoutedEventArgs e)
+        {
+            var button = sender as Button;
+            if (button != null) { button.IsEnabled = false; }
+            try
+            {
+                this.PathProbe_Output.Text = string.Empty;
+
+                TextBox pathTextBox = LeakProbe_CollectDescendants<TextBox>(this.PathProbe_Control)
+                                            .FirstOrDefault(t => t.Name == "PART_PathTextBox");
+                if (pathTextBox == null)
+                {
+                    this.PathProbe_AppendLine("INCONCLUSIVE - PART_PathTextBox never realized (template not applied yet?)");
+                    return;
+                }
+
+                var results = new List<string>();
+                bool allPass = true;
+
+                // Baseline: empty it out so each step below is a genuine edit.
+                pathTextBox.Text = string.Empty;
+                await PathProbe_SettleAsync();
+
+                // 1. Type a folder that does not exist - has to go invalid, with a reason.
+                pathTextBox.Text = kProbeMissingFolderPath;
+                await PathProbe_SettleAsync();
+                allPass &= this.PathProbe_Check(
+                    results,
+                    "Typed a missing folder",
+                    expectValid: false,
+                    expectExists: false,
+                    expectedPath: kProbeMissingFolderPath
+                );
+
+                // 2. Type one that does exist - has to come back valid.
+                string existingFolder = AppContext.BaseDirectory.TrimEnd('\\', '/');
+                pathTextBox.Text = existingFolder;
+                await PathProbe_SettleAsync();
+                allPass &= this.PathProbe_Check(
+                    results,
+                    "Typed an existing folder",
+                    expectValid: true,
+                    expectExists: true,
+                    expectedPath: existingFolder
+                );
+
+                this.PathProbe_AppendLine(allPass
+                    ? "PASS - typed paths revalidate"
+                    : "FAIL - a typed edit moved SelectedPath without rerunning validation");
+                foreach (string line in results)
+                {
+                    this.PathProbe_AppendLine("    " + line);
+                }
+            }
+            finally
+            {
+                if (button != null) { button.IsEnabled = true; }
+            }
+        }
+
+        private bool PathProbe_Check (List<string> results, string label, bool expectValid, bool expectExists, string expectedPath)
+        {
+            bool pathOk = string.Equals(this.PathProbe_Control.SelectedPath, expectedPath, StringComparison.Ordinal);
+            bool validOk = this.PathProbe_Control.IsPathValid == expectValid;
+            bool existsOk = this.PathProbe_Control.DoesPathExist == expectExists;
+            bool reasonOk = expectValid
+                ? string.IsNullOrEmpty(this.PathProbe_Control.InvalidPathReason)
+                : !string.IsNullOrEmpty(this.PathProbe_Control.InvalidPathReason);
+
+            bool ok = pathOk && validOk && existsOk && reasonOk;
+            results.Add(string.Format(
+                "{0}: {1} | SelectedPath={2} (want {3}), IsPathValid={4} (want {5}), DoesPathExist={6} (want {7}), reason='{8}'",
+                label,
+                ok ? "ok" : "MISMATCH",
+                this.PathProbe_Control.SelectedPath ?? "(null)",
+                expectedPath,
+                this.PathProbe_Control.IsPathValid,
+                expectValid,
+                this.PathProbe_Control.DoesPathExist,
+                expectExists,
+                this.PathProbe_Control.InvalidPathReason ?? string.Empty
+            ));
+            return ok;
+        }
+
+        // TextBox.TextChanged does not always come back on the same tick as the Text assignment,
+        // and the control defers a caret move of its own, so drain before reading the result.
+        private static async Task PathProbe_SettleAsync ()
+        {
+            for (int i = 0; i < 3; ++i)
+            {
+                await LeakProbe_DrainDispatcherAsync();
+                await Task.Delay(60);
+            }
+        }
+
+        private void PathProbe_AppendLine (string line)
+        {
+            this.PathProbe_Output.Text = this.PathProbe_Output.Text.Length == 0
+                ? line
+                : this.PathProbe_Output.Text + "\n" + line;
+        }
+
         private sealed class DockingLeakProbe
         {
             public DockingManager Manager { get; set; }

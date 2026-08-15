@@ -497,6 +497,32 @@
                                                                         FileFilter="Text files (*.txt)|*.txt"
                                                                         UnsetTextPrompt="Save path..."/>
                                         </StackPanel>
+
+                                        <!-- ====[ Typed-path validation probe ]==================================
+                                             Pushes text straight into the control's inner TextBox, which is the
+                                             same route a keystroke takes, and checks the control revalidates. A
+                                             folder that does not exist has to flip IsPathValid false and produce
+                                             a reason; an existing one has to flip it back. FAIL means a typed
+                                             edit moves SelectedPath but never reruns validation, so the red
+                                             border can only ever come from a browsed path, and browsing cannot
+                                             produce a path that is missing. -->
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="Typed-path validation probe" FontSize="11" Opacity="0.7"/>
+                                            <ajut:PathSelectionControl x:Name="PathProbe_Control"
+                                                                       PathType="Folder"
+                                                                       UnsetTextPrompt="The probe types into this one"
+                                                                       TreatNonExistentPathAsInvalid="True"/>
+                                            <Button Content="Probe: typed path revalidates"
+                                                    Click="PathProbe_OnTypedPathClicked"
+                                                    HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
+                                            <TextBox x:Name="PathProbe_Output"
+                                                     IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                                                     IsSpellCheckEnabled="False" FontFamily="Consolas" FontSize="12"
+                                                     Height="130"
+                                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                                     Text=""/>
+                                        </StackPanel>
                                     </StackPanel>
 
                                     <TextBlock Text="Color Parsing Example" Style="{ThemeResource SubtitleTextBlockStyle}"/>
@@ -1047,6 +1073,21 @@
                                                Text="Drives the real window through maximize then restore and checks that ThemedWindowRootControl.IsMaximizedOrFullScreened and the title-bar border track the state at each step. The window will maximize and restore while the probe runs, and is left restored afterward. FAIL means the chrome went stale on the maximize/restore transition (the presenter kind never changed, so nothing recomputed)."/>
                                     <Button x:Name="WindowChrome_MaxRestoreButton" Content="Probe: maximize -> restore chrome sync"
                                             Click="WindowChrome_OnMaximizeRestoreClicked"
+                                            MinWidth="320" HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
+
+                                    <!-- ====[ Closing a themed-chrome window ]==============================
+                                         A window carrying ThemedWindowRootControl had never actually been
+                                         closed. This one is the only consumer of the chrome in here and it
+                                         lives as long as the process, so the teardown path has never run.
+                                         The failure is a fail fast inside Microsoft.UI.Windowing rather than
+                                         a managed exception, so there is nothing to catch and the probe
+                                         cannot print FAIL: if the showroom dies when you click it, that IS
+                                         the failure. Surviving is the pass, and the weak ref tally on top
+                                         catches the softer version where the window is pinned, not killed. -->
+                                    <TextBlock TextWrapping="Wrap" Opacity="0.75"
+                                               Text="Second probe: opens a child window carrying its own ThemedWindowRootControl, gives it a real activate / deactivate pass, disconnects the chrome the way a well behaved consumer would, then closes it. The app hard-crashing when you click this is the failure being tested for, so save anything you care about in the other tabs first."/>
+                                    <Button x:Name="WindowChrome_CloseThemedWindowButton" Content="Probe: open then close a themed-chrome window"
+                                            Click="WindowChrome_OnCloseThemedWindowClicked"
                                             MinWidth="320" HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
                                     <TextBox x:Name="WindowChrome_Output"
                                              IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
