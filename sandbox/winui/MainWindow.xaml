@@ -1092,6 +1092,22 @@
                                     <Button x:Name="WindowChrome_CloseThemedWindowNoDisconnectButton" Content="Probe: close a themed-chrome window (never disconnected)"
                                             Click="WindowChrome_OnCloseThemedWindowNoDisconnectClicked"
                                             MinWidth="320" HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
+
+                                    <!-- ====[ Title bar hover state machine ]==============================
+                                         Why the close hover tint only lands from an awkward sliver. Two
+                                         halves, both checked below: the control never got an Inactive
+                                         visual state, so every request for one is a silent no-op that
+                                         still writes LastState; and the activation path drives this exact
+                                         control through VisualStateManager directly, which leaves
+                                         LastState describing a state the control is no longer in. Once
+                                         those disagree, the equality short circuit at the top of GoToState
+                                         swallows the next real transition. Reads the live window, so the
+                                         title bar will flicker while it runs. -->
+                                    <TextBlock TextWrapping="Wrap" Opacity="0.75"
+                                               Text="Third probe: checks the title bar hover state machine rather than the pointer geometry. It drives this window's own chrome through a couple of visual states, so expect a flicker; it puts it back to Normal when it finishes."/>
+                                    <Button x:Name="WindowChrome_HoverStatesButton" Content="Probe: title bar hover state machine"
+                                            Click="WindowChrome_OnHoverStatesClicked"
+                                            MinWidth="320" HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
                                     <TextBox x:Name="WindowChrome_Output"
                                              IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
                                              IsSpellCheckEnabled="False" FontFamily="Consolas" FontSize="12"

@@ -1483,6 +1483,75 @@ namespace AJutShowRoomWinUI
             }
         }
 
+        // ===========[ Title bar hover state machine probe ]==============================
+        // The close hover tint only lands from an awkward sliver of the title bar, and the
+        // highlight that used to follow every caption button now only follows the fullscreen
+        // one. The pointer geometry is not the suspect - the caption strip really is a fixed
+        // 32 tall and the close button a fixed 46 wide, so those constants are right. What is
+        // wrong is the state machine underneath, in two halves:
+        //
+        //   1. ThemedWindowRootControl declares Normal, ChromeButtonsHover and CloseHover, and
+        //      no Inactive. So every GoToState("Inactive") is a silent visual no-op that still
+        //      writes LastState, and InactiveTitlebarBackground is a DP nothing consumes.
+        //   2. The activation path resolves Window.Content.GetFirstChildOf<Control>() with
+        //      includeSelf, which lands on this very control, and drives it through
+        //      VisualStateManager directly - past the control's own GoToState and the LastState
+        //      it keeps. Once LastState describes a state the control is not actually in, the
+        //      equality short circuit at the top of GoToState swallows the next real transition.
+
+        private async void WindowChrome_OnHoverStatesClicked (object sender, RoutedEventArgs e)
+        {
+            var button = sender as Button;
+            if (button != null) { button.IsEnabled = false; }
+            try
+            {
+                this.WindowChrome_Output.Text = string.Empty;
+
+                var results = new List<string>();
+                bool allPass = true;
+
+                // 1. Every state the control asks for has to actually exist, or the request is a
+                //    silent no-op that still moves LastState.
+                foreach (string state in new[] { "Normal", "ChromeButtonsHover", "CloseHover", "Inactive" })
+                {
+                    bool exists = VisualStateManager.GoToState(this.Root, state, false);
+                    allPass &= exists;
+                    results.Add($"State '{state}' present: {(exists ? "ok" : "MISSING")}");
+                }
+
+                // 2. The activation path targets whatever GetFirstChildOf<Control> resolves to.
+                //    If that is the chrome control itself, it is writing the same state machine
+                //    the chrome owns, from outside.
+                bool activationPathHitsChrome = ReferenceEquals(this.Content.GetFirstChildOf<Control>(), this.Root);
+                results.Add($"Activation path resolves to the chrome control itself: {(activationPathHitsChrome ? "yes" : "no")}");
+
+                // 3. And the consequence: a direct VisualStateManager call leaves LastState
+                //    describing a state the control is no longer in.
+                VisualStateManager.GoToState(this.Root, "Normal", false);
+                string lastStateBefore = this.Root.LastState;
+                VisualStateManager.GoToState(this.Root, "CloseHover", false);
+                await LeakProbe_DrainDispatcherAsync();
+
+                bool lastStateTracked = this.Root.LastState != lastStateBefore;
+                allPass &= lastStateTracked;
+                results.Add($"LastState tracked an outside state change: {(lastStateTracked ? "ok" : "STALE")} (still '{this.Root.LastState}' after moving to CloseHover)");
+
+                this.WindowChrome_AppendLine(allPass
+                    ? "PASS - hover state machine is consistent"
+                    : "FAIL - the hover states and LastState can disagree, which makes GoToState swallow the next real transition");
+                foreach (string line in results)
+                {
+                    this.WindowChrome_AppendLine("    " + line);
+                }
+            }
+            finally
+            {
+                // Put the live window back however the probe left it.
+                VisualStateManager.GoToState(this.Root, "Normal", false);
+                if (button != null) { button.IsEnabled = true; }
+            }
+        }
+
         // ===========[ PathSelectionControl typed-path probe ]============================
         // Pushes text into the control's inner TextBox, which is the same route a keystroke
         // takes, and checks the control revalidates afterward. If a typed edit moves
