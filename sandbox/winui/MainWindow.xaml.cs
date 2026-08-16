@@ -1484,20 +1484,17 @@ namespace AJutShowRoomWinUI
         }
 
         // ===========[ Title bar hover state machine probe ]==============================
-        // The close hover tint only lands from an awkward sliver of the title bar, and the
-        // highlight that used to follow every caption button now only follows the fullscreen
-        // one. The pointer geometry is not the suspect - the caption strip really is a fixed
-        // 32 tall and the close button a fixed 46 wide, so those constants are right. What is
-        // wrong is the state machine underneath, in two halves:
-        //
-        //   1. ThemedWindowRootControl declares Normal, ChromeButtonsHover and CloseHover, and
-        //      no Inactive. So every GoToState("Inactive") is a silent visual no-op that still
-        //      writes LastState, and InactiveTitlebarBackground is a DP nothing consumes.
-        //   2. The activation path resolves Window.Content.GetFirstChildOf<Control>() with
-        //      includeSelf, which lands on this very control, and drives it through
-        //      VisualStateManager directly - past the control's own GoToState and the LastState
-        //      it keeps. Once LastState describes a state the control is not actually in, the
-        //      equality short circuit at the top of GoToState swallows the next real transition.
+        // Reports how the chrome's state machine is actually wired, because it is not the one
+        // the template implies. The template's VisualStateGroups hang off the Grid inside
+        // PART_WindowRoot rather than off the ControlTemplate root, which is the element
+        // VisualStateManager.GoToState inspects - so none of its storyboards have ever run.
+        // What drives the chrome colors is LastState: the title bar binds it through a
+        // brush-switch converter, and the border brushes chain off that. Informational, not
+        // pass/fail - it exists so the next person does not go hunting the storyboards.
+
+        private const double kNativeCaptionStripHeight = 32;
+        private const double kNativeCloseButtonWidth = 46;
+        private const double kNativeChromeButtonsWidth = 245;
 
         private async void WindowChrome_OnHoverStatesClicked (object sender, RoutedEventArgs e)
         {
@@ -1508,37 +1505,28 @@ namespace AJutShowRoomWinUI
                 this.WindowChrome_Output.Text = string.Empty;
 
                 var results = new List<string>();
-                bool allPass = true;
 
-                // 1. Every state the control asks for has to actually exist, or the request is a
-                //    silent no-op that still moves LastState.
+                // Which of the template's declared states VisualStateManager can actually reach.
+                int reachable = 0;
                 foreach (string state in new[] { "Normal", "ChromeButtonsHover", "CloseHover", "Inactive" })
                 {
                     bool exists = VisualStateManager.GoToState(this.Root, state, false);
-                    allPass &= exists;
-                    results.Add($"State '{state}' present: {(exists ? "ok" : "MISSING")}");
+                    if (exists) { ++reachable; }
+                    results.Add($"VSM state '{state}' reachable: {(exists ? "yes" : "no")}");
                 }
 
-                // 2. The activation path targets whatever GetFirstChildOf<Control> resolves to.
-                //    If that is the chrome control itself, it is writing the same state machine
-                //    the chrome owns, from outside.
+                // Whether anything outside the control writes the state machine behind its back.
                 bool activationPathHitsChrome = ReferenceEquals(this.Content.GetFirstChildOf<Control>(), this.Root);
                 results.Add($"Activation path resolves to the chrome control itself: {(activationPathHitsChrome ? "yes" : "no")}");
 
-                // 3. And the consequence: a direct VisualStateManager call leaves LastState
-                //    describing a state the control is no longer in.
-                VisualStateManager.GoToState(this.Root, "Normal", false);
                 string lastStateBefore = this.Root.LastState;
                 VisualStateManager.GoToState(this.Root, "CloseHover", false);
                 await LeakProbe_DrainDispatcherAsync();
+                results.Add($"LastState after an outside VSM call: '{this.Root.LastState}' (was '{lastStateBefore}')");
 
-                bool lastStateTracked = this.Root.LastState != lastStateBefore;
-                allPass &= lastStateTracked;
-                results.Add($"LastState tracked an outside state change: {(lastStateTracked ? "ok" : "STALE")} (still '{this.Root.LastState}' after moving to CloseHover)");
-
-                this.WindowChrome_AppendLine(allPass
-                    ? "PASS - hover state machine is consistent"
-                    : "FAIL - the hover states and LastState can disagree, which makes GoToState swallow the next real transition");
+                this.WindowChrome_AppendLine(reachable == 0
+                    ? "INFO - none of the template's visual states are reachable, so its storyboards never run. LastState plus the brush-switch converters is the live state machine, and that is what the chrome colors track."
+                    : $"INFO - {reachable}/4 template visual states reachable.");
                 foreach (string line in results)
                 {
                     this.WindowChrome_AppendLine("    " + line);
@@ -1549,6 +1537,112 @@ namespace AJutShowRoomWinUI
                 // Put the live window back however the probe left it.
                 VisualStateManager.GoToState(this.Root, "Normal", false);
                 if (button != null) { button.IsEnabled = true; }
+            }
+        }
+
+        // ===========[ Title bar pointer reach probe ]====================================
+        // The one question reading the source cannot answer: does pointer input actually reach
+        // the chrome control over the native minimize / maximize / close strip? HandlePointerMoved
+        // only fires CloseHover when x lands in the rightmost 46, and ChromeButtonsHover in the
+        // rightmost 245 - but if the system owns that input, neither branch can ever run and the
+        // geometry is beside the point. This records what the control really receives.
+
+        private bool m_titleBarPointerCaptureActive;
+        private int m_titleBarPointerSamples;
+        private double m_titleBarPointerMinX;
+        private double m_titleBarPointerMaxX;
+        private double m_titleBarPointerMinY;
+        private double m_titleBarPointerMaxY;
+        private bool m_titleBarPointerReachedChromeBand;
+        private bool m_titleBarPointerReachedCloseBand;
+        private readonly List<string> m_titleBarPointerStatesSeen = new List<string>();
+        private Microsoft.UI.Xaml.Input.PointerEventHandler m_titleBarPointerHandler;
+
+        private void WindowChrome_OnCaptureTitleBarPointerClicked (object sender, RoutedEventArgs e)
+        {
+            if (m_titleBarPointerCaptureActive)
+            {
+                this.WindowChrome_StopTitleBarPointerCapture();
+            }
+            else
+            {
+                this.WindowChrome_StartTitleBarPointerCapture();
+            }
+        }
+
+        private void WindowChrome_StartTitleBarPointerCapture ()
+        {
+            m_titleBarPointerSamples = 0;
+            m_titleBarPointerMinX = double.MaxValue;
+            m_titleBarPointerMaxX = double.MinValue;
+            m_titleBarPointerMinY = double.MaxValue;
+            m_titleBarPointerMaxY = double.MinValue;
+            m_titleBarPointerReachedChromeBand = false;
+            m_titleBarPointerReachedCloseBand = false;
+            m_titleBarPointerStatesSeen.Clear();
+
+            if (m_titleBarPointerHandler == null)
+            {
+                m_titleBarPointerHandler = new Microsoft.UI.Xaml.Input.PointerEventHandler(this.WindowChrome_OnTitleBarPointerMoved);
+            }
+
+            // handledEventsToo, same as the control's own subscription - otherwise anything that
+            // marks the move handled upstream would make this read a quieter window than the real one.
+            this.Root.RemoveHandler(UIElement.PointerMovedEvent, m_titleBarPointerHandler);
+            this.Root.AddHandler(UIElement.PointerMovedEvent, m_titleBarPointerHandler, true);
+
+            m_titleBarPointerCaptureActive = true;
+            this.WindowChrome_CaptureTitleBarPointerButton.Content = "Stop capturing and report";
+            this.WindowChrome_Output.Text = "Capturing. Sweep the pointer slowly left to right across the whole title bar, out over the minimize / maximize / close buttons and back, then click Stop.";
+        }
+
+        private void WindowChrome_StopTitleBarPointerCapture ()
+        {
+            this.Root.RemoveHandler(UIElement.PointerMovedEvent, m_titleBarPointerHandler);
+            m_titleBarPointerCaptureActive = false;
+            this.WindowChrome_CaptureTitleBarPointerButton.Content = "Probe: title bar pointer reach";
+
+            this.WindowChrome_Output.Text = string.Empty;
+            if (m_titleBarPointerSamples == 0)
+            {
+                this.WindowChrome_AppendLine($"INCONCLUSIVE - no pointer samples landed in the top {kNativeCaptionStripHeight:0} of the control");
+                return;
+            }
+
+            double width = this.Root.ActualWidth;
+            this.WindowChrome_AppendLine(m_titleBarPointerReachedCloseBand
+                ? "Input DOES reach the close band - so a hover miss is the hover logic, not the input"
+                : "Input does NOT reach the close band - the system owns that area, so the CloseHover branch can never fire there no matter what the geometry says");
+
+            this.WindowChrome_AppendLine($"    samples={m_titleBarPointerSamples}, control width={width:0}");
+            this.WindowChrome_AppendLine($"    x reached {m_titleBarPointerMinX:0} to {m_titleBarPointerMaxX:0}, y reached {m_titleBarPointerMinY:0} to {m_titleBarPointerMaxY:0}");
+            this.WindowChrome_AppendLine($"    chrome-buttons band (x > {width - kNativeChromeButtonsWidth:0}): {(m_titleBarPointerReachedChromeBand ? "reached" : "never reached")}");
+            this.WindowChrome_AppendLine($"    close band (x > {width - kNativeCloseButtonWidth:0}): {(m_titleBarPointerReachedCloseBand ? "reached" : "never reached")}");
+            this.WindowChrome_AppendLine($"    LastState values seen while sweeping: {string.Join(", ", m_titleBarPointerStatesSeen)}");
+        }
+
+        private void WindowChrome_OnTitleBarPointerMoved (object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+        {
+            Windows.Foundation.Point point = e.GetCurrentPoint(this.Root).Position;
+            if (point.Y > kNativeCaptionStripHeight)
+            {
+                return;
+            }
+
+            ++m_titleBarPointerSamples;
+            m_titleBarPointerMinX = Math.Min(m_titleBarPointerMinX, point.X);
+            m_titleBarPointerMaxX = Math.Max(m_titleBarPointerMaxX, point.X);
+            m_titleBarPointerMinY = Math.Min(m_titleBarPointerMinY, point.Y);
+            m_titleBarPointerMaxY = Math.Max(m_titleBarPointerMaxY, point.Y);
+
+            double width = this.Root.ActualWidth;
+            m_titleBarPointerReachedChromeBand |= point.X > width - kNativeChromeButtonsWidth;
+            m_titleBarPointerReachedCloseBand |= point.X > width - kNativeCloseButtonWidth;
+
+            string state = this.Root.LastState ?? "(null)";
+            if (!m_titleBarPointerStatesSeen.Contains(state))
+            {
+                m_titleBarPointerStatesSeen.Add(state);
             }
         }
 

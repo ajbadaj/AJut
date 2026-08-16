@@ -1094,19 +1094,28 @@
                                             MinWidth="320" HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
 
                                     <!-- ====[ Title bar hover state machine ]==============================
-                                         Why the close hover tint only lands from an awkward sliver. Two
-                                         halves, both checked below: the control never got an Inactive
-                                         visual state, so every request for one is a silent no-op that
-                                         still writes LastState; and the activation path drives this exact
-                                         control through VisualStateManager directly, which leaves
-                                         LastState describing a state the control is no longer in. Once
-                                         those disagree, the equality short circuit at the top of GoToState
-                                         swallows the next real transition. Reads the live window, so the
-                                         title bar will flicker while it runs. -->
+                                         Informational. The template's VisualStateGroups hang off the Grid
+                                         inside PART_WindowRoot rather than off the ControlTemplate root,
+                                         which is the element VisualStateManager.GoToState inspects, so none
+                                         of its storyboards have ever run. LastState is what actually drives
+                                         the chrome, through the brush-switch converter on the title bar
+                                         jewel and the border brushes chained off it. This prints that
+                                         wiring so nobody goes hunting the storyboards. -->
                                     <TextBlock TextWrapping="Wrap" Opacity="0.75"
-                                               Text="Third probe: checks the title bar hover state machine rather than the pointer geometry. It drives this window's own chrome through a couple of visual states, so expect a flicker; it puts it back to Normal when it finishes."/>
+                                               Text="Third probe, informational: reports which of the template's visual states VisualStateManager can actually reach, and what LastState is doing. It drives this window's own chrome briefly, so expect a flicker."/>
                                     <Button x:Name="WindowChrome_HoverStatesButton" Content="Probe: title bar hover state machine"
                                             Click="WindowChrome_OnHoverStatesClicked"
+                                            MinWidth="320" HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
+
+                                    <!-- ====[ Title bar pointer reach ]====================================
+                                         The one thing reading the source cannot settle: whether pointer
+                                         input reaches this control over the native minimize / maximize /
+                                         close strip. If it never does, the CloseHover branch cannot fire
+                                         there whatever the geometry says, and the fix is a different fix. -->
+                                    <TextBlock TextWrapping="Wrap" Opacity="0.75"
+                                               Text="Fourth probe, a measurement rather than a check: click Start, sweep the pointer slowly across the whole title bar including out over the minimize / maximize / close buttons and back, then click Stop. It reports how far right the control actually receives pointer input, and which hover bands that reaches."/>
+                                    <Button x:Name="WindowChrome_CaptureTitleBarPointerButton" Content="Probe: title bar pointer reach"
+                                            Click="WindowChrome_OnCaptureTitleBarPointerClicked"
                                             MinWidth="320" HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
                                     <TextBox x:Name="WindowChrome_Output"
                                              IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
