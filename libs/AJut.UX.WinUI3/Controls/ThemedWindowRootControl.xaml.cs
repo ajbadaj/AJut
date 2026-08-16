@@ -43,12 +43,14 @@ namespace AJut.UX.Controls
 
         private eWindowState m_cachedWindowState = eWindowState.Unknown;
         private Window m_owner;
+        private AppWindow m_ownerAppWindow;
         private bool m_hasTriggeredSetup = false;
 
         // ============================[ Construction / Setup / Teardown ]========================================
         public void SetupFor(Window owner)
         {
             m_owner = owner;
+            m_ownerAppWindow = owner.AppWindow;
             m_owner.AppWindow.SetPresenter(AppWindowPresenterKind.Overlapped);
             m_owner.PerformPresenterTask((OverlappedPresenter p) =>
             {
@@ -61,8 +63,16 @@ namespace AJut.UX.Controls
 
             m_owner.Activated -= this.OwnerWindow_OnActivated;
             m_owner.Activated += this.OwnerWindow_OnActivated;
-            m_owner.AppWindow.Changed -= this.OwnerWindow_OnAppWindowChanged;
-            m_owner.AppWindow.Changed += this.OwnerWindow_OnAppWindowChanged;
+            m_ownerAppWindow.Changed -= this.OwnerWindow_OnAppWindowChanged;
+            m_ownerAppWindow.Changed += this.OwnerWindow_OnAppWindowChanged;
+
+            // Self-cleaning teardown. Without it a consumer who never calls
+            // DisconnectFromOwnerWindow leaves the window pinned by its own chrome, since the
+            // window's Activated list holds this control and this control holds the window right
+            // back. Closed only fires for a close that actually went through, so a cancelled
+            // close keeps its wiring intact.
+            m_owner.Closed -= this.OwnerWindow_OnClosed;
+            m_owner.Closed += this.OwnerWindow_OnClosed;
 
             if (this.IsLoaded)
             {
@@ -97,7 +107,17 @@ namespace AJut.UX.Controls
             }
 
             m_owner.Activated -= this.OwnerWindow_OnActivated;
-            m_owner.AppWindow.Changed -= this.OwnerWindow_OnAppWindowChanged;
+            m_owner.Closed -= this.OwnerWindow_OnClosed;
+
+            // Off the cached AppWindow rather than m_owner.AppWindow - this also runs from the
+            // Closed handler, and re-asking a closing window for its AppWindow is a native call
+            // that has no reason to still be safe by then.
+            if (m_ownerAppWindow != null)
+            {
+                m_ownerAppWindow.Changed -= this.OwnerWindow_OnAppWindowChanged;
+                m_ownerAppWindow = null;
+            }
+
             m_owner = null;
         }
         protected override void OnApplyTemplate()
@@ -481,6 +501,11 @@ namespace AJut.UX.Controls
         }
 
         // ============================[ Event Hanlders ]================================
+        private void OwnerWindow_OnClosed(object sender, WindowEventArgs args)
+        {
+            this.DisconnectFromOwnerWindow();
+        }
+
         private void OwnerWindow_OnActivated(object sender, WindowActivatedEventArgs args)
         {
             if (args.WindowActivationState != WindowActivationState.Deactivated)
