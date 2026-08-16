@@ -1085,9 +1085,12 @@
                                          the failure. Surviving is the pass, and the weak ref tally on top
                                          catches the softer version where the window is pinned, not killed. -->
                                     <TextBlock TextWrapping="Wrap" Opacity="0.75"
-                                               Text="Second probe: opens a child window carrying its own ThemedWindowRootControl, gives it a real activate / deactivate pass, disconnects the chrome the way a well behaved consumer would, then closes it. The app hard-crashing when you click this is the failure being tested for, so save anything you care about in the other tabs first."/>
-                                    <Button x:Name="WindowChrome_CloseThemedWindowButton" Content="Probe: open then close a themed-chrome window"
+                                               Text="Second probe: opens a child window carrying its own ThemedWindowRootControl, gives it a real activate / deactivate pass, then closes it. The app hard-crashing when you click either of these is the failure being tested for, so save anything you care about in the other tabs first. Run them in order - the first disconnects the chrome the way a careful consumer would, the second skips that call, which is what most consumers will actually do."/>
+                                    <Button x:Name="WindowChrome_CloseThemedWindowButton" Content="Probe: close a themed-chrome window (disconnected first)"
                                             Click="WindowChrome_OnCloseThemedWindowClicked"
+                                            MinWidth="320" HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
+                                    <Button x:Name="WindowChrome_CloseThemedWindowNoDisconnectButton" Content="Probe: close a themed-chrome window (never disconnected)"
+                                            Click="WindowChrome_OnCloseThemedWindowNoDisconnectClicked"
                                             MinWidth="320" HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
                                     <TextBox x:Name="WindowChrome_Output"
                                              IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"

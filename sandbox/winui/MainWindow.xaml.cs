@@ -369,9 +369,9 @@ namespace AJutShowRoomWinUI
         }
 
         // Source swap test objects.
-        // ShowRoomAlpha (5 props) → ShowRoomBeta (2 props) replicates an external scenario:
+        // ShowRoomAlpha (5 props) -> ShowRoomBeta (2 props) replicates an external scenario:
         //   - same float property names (X, Y) but very different values so mismatch is obvious
-        //   - count difference (5→2) forces WinUI3 container recycling
+        //   - count difference (5 to 2) forces WinUI3 container recycling
         //   - Alpha has String+Bool rows that vanish in Beta; if they persist, the bug is present
         private readonly ShowRoomAlpha m_alphaObj = new ShowRoomAlpha();
         private readonly ShowRoomBeta m_betaObj = new ShowRoomBeta();
@@ -1409,12 +1409,24 @@ namespace AJutShowRoomWinUI
 
         private async void WindowChrome_OnCloseThemedWindowClicked (object sender, RoutedEventArgs e)
         {
-            var button = sender as Button;
+            await this.WindowChrome_RunThemedWindowCloseProbe(sender as Button, "Polite consumer", disconnectBeforeClose: true);
+        }
+
+        // Same run without the DisconnectFromOwnerWindow call, which is what most consumers will
+        // actually do. It is a separate button rather than a second cycle of the one above so that
+        // the polite result is already on screen and readable if this one takes the process down.
+        private async void WindowChrome_OnCloseThemedWindowNoDisconnectClicked (object sender, RoutedEventArgs e)
+        {
+            await this.WindowChrome_RunThemedWindowCloseProbe(sender as Button, "Forgetful consumer", disconnectBeforeClose: false);
+        }
+
+        private async Task WindowChrome_RunThemedWindowCloseProbe (Button button, string label, bool disconnectBeforeClose)
+        {
             if (button != null) { button.IsEnabled = false; }
             try
             {
                 this.WindowChrome_Output.Text = string.Empty;
-                this.WindowChrome_AppendLine($"Opening and closing {kThemedWindowCloseCycles} themed-chrome windows - a crash from here is the failure.");
+                this.WindowChrome_AppendLine($"{label}: opening and closing {kThemedWindowCloseCycles} themed-chrome windows - a crash from here is the failure.");
 
                 var weaks = new List<WeakReference>();
                 for (int i = 0; i < kThemedWindowCloseCycles; ++i)
@@ -1439,10 +1451,14 @@ namespace AJutShowRoomWinUI
                     await LeakProbe_DrainDispatcherAsync();
                     await Task.Delay(150);
 
-                    // Everything a well-behaved consumer does on the way out. Nulling Content is
-                    // the standard way to drop a child window's page graph, and it is also what
-                    // guarantees a null Window.Content for anything still listening to Activated.
-                    themedRoot.DisconnectFromOwnerWindow();
+                    if (disconnectBeforeClose)
+                    {
+                        themedRoot.DisconnectFromOwnerWindow();
+                    }
+
+                    // Nulling Content is the standard way to drop a child window's page graph, and
+                    // it is also what guarantees a null Window.Content for anything still listening
+                    // to Activated as the window goes away.
                     childWindow.Content = null;
                     themedRoot = null;
 
@@ -1510,8 +1526,10 @@ namespace AJutShowRoomWinUI
                     expectedPath: kProbeMissingFolderPath
                 );
 
-                // 2. Type one that does exist - has to come back valid.
-                string existingFolder = AppContext.BaseDirectory.TrimEnd('\\', '/');
+                // 2. Type one that does exist - has to come back valid. Deliberately not the app's
+                // own base directory: under a packaged run that lands in AppX, where the path is
+                // virtualized and Directory.Exists can answer false for a folder that is plainly there.
+                string existingFolder = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
                 pathTextBox.Text = existingFolder;
                 await PathProbe_SettleAsync();
                 allPass &= this.PathProbe_Check(
@@ -2079,7 +2097,7 @@ namespace AJutShowRoomWinUI
     }
 
     // ===========[ ShowRoomBeta - 2 properties ]=====
-    // Switching Alpha→Beta: 5 rows → 2 rows, container count mismatch triggers WinUI3 recycling.
+    // Switching Alpha -> Beta: 5 rows -> 2 rows, container count mismatch triggers WinUI3 recycling.
     // After switch the grid must show X=777, Y=888 - NOT Alpha's 111/222.
     public class ShowRoomBeta
     {

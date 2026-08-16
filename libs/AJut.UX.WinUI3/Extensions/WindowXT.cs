@@ -5,7 +5,7 @@
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
     using System;
-    using System.Collections.Generic;
+    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
 
     public enum eWindowState
@@ -23,33 +23,36 @@
     public static class WindowXT
     {
 
-        private static readonly Dictionary<Window, bool> g_isActivatedTracker = new Dictionary<Window, bool>();
+        // Weak keys on purpose. The removal below happens in Window_OnClosed, which races the very
+        // close that this tracking exists to observe - so with a plain Dictionary every window that
+        // ever tracked activation stays pinned for the life of the process any time that removal is
+        // missed. The delegates themselves target static methods, so they pin nothing.
+        private static readonly ConditionalWeakTable<Window, StrongBox<bool>> g_isActivatedTracker = new ConditionalWeakTable<Window, StrongBox<bool>>();
 
         /// <summary>
         /// Initiates activation tracking if not already active, or updates state if tracking is already active
         /// </summary>
         public static void TrackActivation(this Window window, bool isActivated = false)
         {
-            if (!g_isActivatedTracker.ContainsKey(window))
+            if (g_isActivatedTracker.TryGetValue(window, out StrongBox<bool> tracked))
             {
-                g_isActivatedTracker[window] = isActivated;
-                window.Activated -= Window_OnActivationChanged;
-                window.Activated += Window_OnActivationChanged;
-                window.Closed -= Window_OnClosed;
-                window.Closed += Window_OnClosed;
+                tracked.Value = isActivated;
+                return;
             }
-            else
-            {
-                g_isActivatedTracker[window] = isActivated;
-            }
+
+            g_isActivatedTracker.Add(window, new StrongBox<bool>(isActivated));
+            window.Activated -= Window_OnActivationChanged;
+            window.Activated += Window_OnActivationChanged;
+            window.Closed -= Window_OnClosed;
+            window.Closed += Window_OnClosed;
         }
 
-        public static bool IsActivated(this Window window) => g_isActivatedTracker.TryGetValue(window, out bool isActivated) ? isActivated : false;
+        public static bool IsActivated(this Window window) => g_isActivatedTracker.TryGetValue(window, out StrongBox<bool> tracked) && tracked.Value;
         public static bool IsDeactivated(this Window window) => !window.IsActivated();
 
         private static void Window_OnClosed (object sender, WindowEventArgs args)
         {
-            if (sender is Window window && g_isActivatedTracker.ContainsKey(window))
+            if (sender is Window window)
             {
                 g_isActivatedTracker.Remove(window);
                 window.Activated -= Window_OnActivationChanged;
@@ -59,21 +62,26 @@
 
         private static void Window_OnActivationChanged (object sender, WindowActivatedEventArgs args)
         {
-            if (sender is Window window)
+            if (sender is not Window window)
             {
-                window.TrackActivation(args.WindowActivationState != WindowActivationState.Deactivated);
-                if (args.WindowActivationState == WindowActivationState.Deactivated)
-                {
-                    if (window.Content.GetFirstChildOf<Control>() is Control control)
-                    {
-                        VisualStateManager.GoToState(control, "Inactive", true);
-                    }
-                }
-                else if (window.Content.GetFirstChildOf<Control>() is Control control)
-                {
-                    VisualStateManager.GoToState(window.Content.GetFirstChildOf<Microsoft.UI.Xaml.Controls.Control>(), "Normal", true);
-                }
+                return;
             }
+
+            bool isActivated = args.WindowActivationState != WindowActivationState.Deactivated;
+            window.TrackActivation(isActivated);
+
+            // Content has to be null-guarded. Nulling Window.Content is the standard way to release
+            // a closing window's page graph, and the window raises Activated (deactivating) on its
+            // way out - so this handler routinely runs with Content already gone. Dereferencing it
+            // there throws a NullReferenceException inside a WinRT callback, which does not surface
+            // as a managed exception: it comes back as E_POINTER (0x80004003) and fails fast the
+            // whole process from native windowing code, with nothing in the log.
+            if (window.Content?.GetFirstChildOf<Control>() is not Control control)
+            {
+                return;
+            }
+
+            VisualStateManager.GoToState(control, isActivated ? "Normal" : "Inactive", true);
         }
 
         public static int DetermineActiveDPI(this Window window)

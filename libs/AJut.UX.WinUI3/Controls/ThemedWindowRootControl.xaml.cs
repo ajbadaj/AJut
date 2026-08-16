@@ -85,6 +85,12 @@ namespace AJut.UX.Controls
 
         public void DisconnectFromOwnerWindow()
         {
+            // Ahead of the m_owner null check on purpose - the caption buttons hold their own
+            // subscription to the same window and have to be let go even when this control has
+            // already been disconnected once.
+            this.PART_EnterFullscreenButton?.DisconnectFromOwnerWindow();
+            this.PART_ExitFullscreenButton?.DisconnectFromOwnerWindow();
+
             if (m_owner == null)
             {
                 return;

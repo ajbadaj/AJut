@@ -25,22 +25,34 @@
         {
             if (m_currentWindow != null)
             {
-                m_currentWindow.Activated -= _OnOwnerActivated;
+                m_currentWindow.Activated -= this.OnOwnerWindowActivated;
             }
 
             m_currentWindow = window;
             if (m_currentWindow != null)
             {
-                m_currentWindow.Activated += _OnOwnerActivated;
+                m_currentWindow.Activated -= this.OnOwnerWindowActivated;
+                m_currentWindow.Activated += this.OnOwnerWindowActivated;
                 WindowXT.TrackActivation(m_currentWindow, true);
             }
 
             this.EvaluateState();
+        }
 
-            void _OnOwnerActivated(object sender, WindowActivatedEventArgs args)
+        /// <summary>
+        /// Drops the owner window subscription. Must run before the window closes - the window
+        /// raises Activated (deactivating) on its way out, and a handler still attached at that
+        /// point is running against a window whose native object is on its way to being gone.
+        /// </summary>
+        public void DisconnectFromOwnerWindow()
+        {
+            if (m_currentWindow == null)
             {
-                this.EvaluateState();
+                return;
             }
+
+            m_currentWindow.Activated -= this.OnOwnerWindowActivated;
+            m_currentWindow = null;
         }
 
         // ======================[ Events ]==========================
@@ -88,6 +100,11 @@
         }
 
         // ======================[ Event Handlers ]==========================
+        private void OnOwnerWindowActivated(object sender, WindowActivatedEventArgs args)
+        {
+            this.EvaluateState();
+        }
+
         private void OnThemeChanged(FrameworkElement sender, object args)
         {
             this.EvaluateState();
