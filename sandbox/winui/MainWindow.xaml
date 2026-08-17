@@ -17,7 +17,9 @@
     </Window.SystemBackdrop>
     <ajut:ThemedWindowRootControl x:Name="Root" TargetBorderThickness="2" TitleBarHeight="40" ShowFullscreenButtons="True"
                                   InactiveTitlebarBackground="{ThemeResource AJut_Brush_TitleBarBackgroundInactive}"
-                                  CornerRadius="{Binding ElementName=Root, Path=IsMaximizedOrFullScreened, Converter={ajut_conv:BooleanToCornerRadiusConverter TrueValue='0', FalseValue='5'}}">
+                                  CornerRadius="{Binding ElementName=Root, Path=IsMaximizedOrFullScreened, Converter={ajut_conv:BooleanToCornerRadiusConverter TrueValue='0', FalseValue='5'}}"
+                                  BorderThickness="{Binding ElementName=Root, Path=IsMaximizedOrFullScreened, Converter={ajut_conv:BooleanToThicknessConverter TrueValue='0', FalseValue='3'}}"
+                                  BorderBrush="{Binding ElementName=JewelBkgPath, Path=Fill}">
         <ajut:ThemedWindowRootControl.ActiveTitleBarBackground>
             <AcrylicBrush TintColor="{ThemeResource AJut_Color_TitleBarBackground}" TintLuminosityOpacity="1" TintOpacity="0.3" Opacity="0.8"/>
         </ajut:ThemedWindowRootControl.ActiveTitleBarBackground>
@@ -53,6 +55,24 @@
                 </Grid>
             </Grid>
         </ajut:ThemedWindowRootControl.CustomTilteBar>
+        <!-- Content-area inset frame: a 10px left/right/bottom margin while restored that collapses
+             to 0 when maximized or fullscreened. That margin is the eyeball half of the window chrome
+             probe - it has to vanish on maximize and come back on restore. -->
+        <Border BorderBrush="{Binding ElementName=JewelBkgPath, Path=Fill}">
+            <Border.BorderThickness>
+                <Binding ElementName="Root" Path="IsMaximizedOrFullScreened" Mode="OneWay">
+                    <Binding.Converter>
+                        <ajut_conv:BooleanToValueConverter>
+                            <ajut_conv:BooleanToValueConverter.TrueValue>
+                                <Thickness>0</Thickness>
+                            </ajut_conv:BooleanToValueConverter.TrueValue>
+                            <ajut_conv:BooleanToValueConverter.FalseValue>
+                                <Thickness>10,0,10,10</Thickness>
+                            </ajut_conv:BooleanToValueConverter.FalseValue>
+                        </ajut_conv:BooleanToValueConverter>
+                    </Binding.Converter>
+                </Binding>
+            </Border.BorderThickness>
         <Grid>
             <Border x:Name="Colorization"
                     BorderThickness="8,0,0,0" Margin="0,0,0,0" CornerRadius="0,0,0,0"
@@ -476,6 +496,32 @@
                                                                         FileDialogType="SaveFile"
                                                                         FileFilter="Text files (*.txt)|*.txt"
                                                                         UnsetTextPrompt="Save path..."/>
+                                        </StackPanel>
+
+                                        <!-- ====[ Typed-path validation probe ]==================================
+                                             Pushes text straight into the control's inner TextBox, which is the
+                                             same route a keystroke takes, and checks the control revalidates. A
+                                             folder that does not exist has to flip IsPathValid false and produce
+                                             a reason; an existing one has to flip it back. FAIL means a typed
+                                             edit moves SelectedPath but never reruns validation, so the red
+                                             border can only ever come from a browsed path, and browsing cannot
+                                             produce a path that is missing. -->
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="Typed-path validation probe" FontSize="11" Opacity="0.7"/>
+                                            <ajut:PathSelectionControl x:Name="PathProbe_Control"
+                                                                       PathType="Folder"
+                                                                       UnsetTextPrompt="The probe types into this one"
+                                                                       TreatNonExistentPathAsInvalid="True"/>
+                                            <Button Content="Probe: typed path revalidates"
+                                                    Click="PathProbe_OnTypedPathClicked"
+                                                    HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
+                                            <TextBox x:Name="PathProbe_Output"
+                                                     IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                                                     IsSpellCheckEnabled="False" FontFamily="Consolas" FontSize="12"
+                                                     Height="130"
+                                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                                     Text=""/>
                                         </StackPanel>
                                     </StackPanel>
 
@@ -1009,8 +1055,69 @@
                         </TabViewItem.Content>
                     </TabViewItem>
 
+                    <!-- ===[ Window Chrome ]====================================================== -->
+                    <!-- Probe for the maximize/restore chrome desync. Maximize and restore keep the
+                         OverlappedPresenter kind (only its State flips), so the AppWindow.Changed path
+                         that only recomputed on a presenter-kind change left IsMaximizedOrFullScreened
+                         and the title-bar border stale until a fullscreen round-trip forced a recompute.
+                         This drives the real window through the cycle and checks the chrome tracks. -->
+                    <TabViewItem Header="Window Chrome" IsClosable="False">
+                        <TabViewItem.IconSource>
+                            <FontIconSource Glyph="&#xE740;"/>
+                        </TabViewItem.IconSource>
+                        <TabViewItem.Content>
+                            <ScrollViewer VerticalScrollMode="Enabled" Padding="12">
+                                <StackPanel Spacing="16" MaxWidth="700" HorizontalAlignment="Left">
+                                    <TextBlock Text="Window Chrome" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                                    <TextBlock TextWrapping="Wrap" Opacity="0.75"
+                                               Text="Drives the real window through maximize then restore and checks that ThemedWindowRootControl.IsMaximizedOrFullScreened and the title-bar border track the state at each step. The window will maximize and restore while the probe runs, and is left restored afterward. FAIL means the chrome went stale on the maximize/restore transition (the presenter kind never changed, so nothing recomputed)."/>
+                                    <Button x:Name="WindowChrome_MaxRestoreButton" Content="Probe: maximize -> restore chrome sync"
+                                            Click="WindowChrome_OnMaximizeRestoreClicked"
+                                            MinWidth="320" HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
+
+                                    <!-- ====[ Closing a themed-chrome window ]==============================
+                                         A window carrying ThemedWindowRootControl had never actually been
+                                         closed. This one is the only consumer of the chrome in here and it
+                                         lives as long as the process, so the teardown path has never run.
+                                         The failure is a fail fast inside Microsoft.UI.Windowing rather than
+                                         a managed exception, so there is nothing to catch and the probe
+                                         cannot print FAIL: if the showroom dies when you click it, that IS
+                                         the failure. Surviving is the pass, and the weak ref tally on top
+                                         catches the softer version where the window is pinned, not killed. -->
+                                    <TextBlock TextWrapping="Wrap" Opacity="0.75"
+                                               Text="Second probe: opens a child window carrying its own ThemedWindowRootControl, gives it a real activate / deactivate pass, then closes it. The app hard-crashing when you click either of these is the failure being tested for, so save anything you care about in the other tabs first. Run them in order - the first disconnects the chrome the way a careful consumer would, the second skips that call, which is what most consumers will actually do."/>
+                                    <Button x:Name="WindowChrome_CloseThemedWindowButton" Content="Probe: close a themed-chrome window (disconnected first)"
+                                            Click="WindowChrome_OnCloseThemedWindowClicked"
+                                            MinWidth="320" HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
+                                    <Button x:Name="WindowChrome_CloseThemedWindowNoDisconnectButton" Content="Probe: close a themed-chrome window (never disconnected)"
+                                            Click="WindowChrome_OnCloseThemedWindowNoDisconnectClicked"
+                                            MinWidth="320" HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
+
+                                    <!-- ====[ Title bar pointer reach ]====================================
+                                         The one thing reading the source cannot settle: whether pointer
+                                         input reaches this control over the native minimize / maximize /
+                                         close strip. If it never does, the CloseHover branch cannot fire
+                                         there whatever the geometry says, and the fix is a different fix. -->
+                                    <TextBlock TextWrapping="Wrap" Opacity="0.75"
+                                               Text="Third probe, a measurement rather than a check: click Start, sweep the pointer slowly across the whole title bar including out over the minimize / maximize / close buttons and back, then click Stop. It reports how far right the control actually receives pointer input, and which hover bands that reaches."/>
+                                    <Button x:Name="WindowChrome_CaptureTitleBarPointerButton" Content="Probe: title bar pointer reach"
+                                            Click="WindowChrome_OnCaptureTitleBarPointerClicked"
+                                            MinWidth="320" HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
+                                    <TextBox x:Name="WindowChrome_Output"
+                                             IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                                             IsSpellCheckEnabled="False" FontFamily="Consolas" FontSize="12"
+                                             Height="260"
+                                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                             ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                             Text=""/>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </TabViewItem.Content>
+                    </TabViewItem>
+
                 </TabView>
             </Border>
         </Grid>
+        </Border>
     </ajut:ThemedWindowRootControl>
 </Window>

@@ -43,12 +43,14 @@ namespace AJut.UX.Controls
 
         private eWindowState m_cachedWindowState = eWindowState.Unknown;
         private Window m_owner;
+        private AppWindow m_ownerAppWindow;
         private bool m_hasTriggeredSetup = false;
 
         // ============================[ Construction / Setup / Teardown ]========================================
         public void SetupFor(Window owner)
         {
             m_owner = owner;
+            m_ownerAppWindow = owner.AppWindow;
             m_owner.AppWindow.SetPresenter(AppWindowPresenterKind.Overlapped);
             m_owner.PerformPresenterTask((OverlappedPresenter p) =>
             {
@@ -61,8 +63,16 @@ namespace AJut.UX.Controls
 
             m_owner.Activated -= this.OwnerWindow_OnActivated;
             m_owner.Activated += this.OwnerWindow_OnActivated;
-            m_owner.AppWindow.Changed -= this.OwnerWindow_OnAppWindowChanged;
-            m_owner.AppWindow.Changed += this.OwnerWindow_OnAppWindowChanged;
+            m_ownerAppWindow.Changed -= this.OwnerWindow_OnAppWindowChanged;
+            m_ownerAppWindow.Changed += this.OwnerWindow_OnAppWindowChanged;
+
+            // Self-cleaning teardown. Without it a consumer who never calls
+            // DisconnectFromOwnerWindow leaves the window pinned by its own chrome, since the
+            // window's Activated list holds this control and this control holds the window right
+            // back. Closed only fires for a close that actually went through, so a cancelled
+            // close keeps its wiring intact.
+            m_owner.Closed -= this.OwnerWindow_OnClosed;
+            m_owner.Closed += this.OwnerWindow_OnClosed;
 
             if (this.IsLoaded)
             {
@@ -85,13 +95,29 @@ namespace AJut.UX.Controls
 
         public void DisconnectFromOwnerWindow()
         {
+            // Ahead of the m_owner null check on purpose - the caption buttons hold their own
+            // subscription to the same window and have to be let go even when this control has
+            // already been disconnected once.
+            this.PART_EnterFullscreenButton?.DisconnectFromOwnerWindow();
+            this.PART_ExitFullscreenButton?.DisconnectFromOwnerWindow();
+
             if (m_owner == null)
             {
                 return;
             }
 
             m_owner.Activated -= this.OwnerWindow_OnActivated;
-            m_owner.AppWindow.Changed -= this.OwnerWindow_OnAppWindowChanged;
+            m_owner.Closed -= this.OwnerWindow_OnClosed;
+
+            // Off the cached AppWindow rather than m_owner.AppWindow - this also runs from the
+            // Closed handler, and re-asking a closing window for its AppWindow is a native call
+            // that has no reason to still be safe by then.
+            if (m_ownerAppWindow != null)
+            {
+                m_ownerAppWindow.Changed -= this.OwnerWindow_OnAppWindowChanged;
+                m_ownerAppWindow = null;
+            }
+
             m_owner = null;
         }
         protected override void OnApplyTemplate()
@@ -325,26 +351,8 @@ namespace AJut.UX.Controls
                 return;
             }
 
-            this.ResetTitleBarDragRectangles();
-            this.ResetFullscreenButtons();
             this.ApplyTitleBarTheming();
-
-            eWindowState currentWindowState = m_owner.GetWindowState();
-            if (currentWindowState != m_cachedWindowState && currentWindowState != eWindowState.Unknown)
-            {
-                m_cachedWindowState = currentWindowState;
-                switch (m_cachedWindowState)
-                {
-                    case eWindowState.Maximized:
-                    case eWindowState.FullScreened:
-                        this.PART_TitleBarBorder.BorderThickness = new Thickness(0);
-                        break;
-
-                    default:
-                        this.PART_TitleBarBorder.BorderThickness = new Thickness(this.TargetBorderThickness.Left, this.TargetBorderThickness.Top, this.TargetBorderThickness.Right, this.TargetBorderThickness.Bottom);
-                        break;
-                }
-            }
+            this.RefreshWindowStateChrome();
 
             if (!m_hasTriggeredSetup)
             {
@@ -355,6 +363,45 @@ namespace AJut.UX.Controls
 
                 m_hasTriggeredSetup = true;
                 this.IsSetupChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
+        // Recomputes the state-dependent chrome: drag rectangles, fullscreen button visibility +
+        // IsMaximizedOrFullScreened, and the title-bar border. Maximize and restore keep the
+        // OverlappedPresenter kind (only its State flips), so DidPresenterChange does not reliably
+        // fire for them - this is what keeps the chrome in sync across those transitions when it is
+        // run from the size-change path.
+        private void RefreshWindowStateChrome()
+        {
+            if (this.PART_TitleBarBorder == null || m_owner == null)
+            {
+                return;
+            }
+
+            this.ResetTitleBarDragRectangles();
+            this.ResetFullscreenButtons();
+            this.RefreshTitleBarBorderForWindowState();
+        }
+
+        private void RefreshTitleBarBorderForWindowState()
+        {
+            eWindowState currentWindowState = m_owner.GetWindowState();
+            if (currentWindowState == m_cachedWindowState || currentWindowState == eWindowState.Unknown)
+            {
+                return;
+            }
+
+            m_cachedWindowState = currentWindowState;
+            switch (m_cachedWindowState)
+            {
+                case eWindowState.Maximized:
+                case eWindowState.FullScreened:
+                    this.PART_TitleBarBorder.BorderThickness = new Thickness(0);
+                    break;
+
+                default:
+                    this.PART_TitleBarBorder.BorderThickness = this.TargetBorderThickness;
+                    break;
             }
         }
         bool ITitleBarDragSizer.IsReadyToGenerateTitleBarDragRectangles() => m_owner?.AppWindow?.TitleBar != null && this.PART_CustomTitleBarContent != null && this.IsLoaded;
@@ -454,6 +501,11 @@ namespace AJut.UX.Controls
         }
 
         // ============================[ Event Hanlders ]================================
+        private void OwnerWindow_OnClosed(object sender, WindowEventArgs args)
+        {
+            this.DisconnectFromOwnerWindow();
+        }
+
         private void OwnerWindow_OnActivated(object sender, WindowActivatedEventArgs args)
         {
             if (args.WindowActivationState != WindowActivationState.Deactivated)
@@ -479,13 +531,16 @@ namespace AJut.UX.Controls
         private void OwnerWindow_OnAppWindowChanged(AppWindow sender, AppWindowChangedEventArgs args)
         {
             if (args.DidPositionChange
+                && !args.DidSizeChange
                 && !args.DidPresenterChange
                 && !args.DidVisibilityChange
                 && !args.DidZOrderChange
                 && !args.IsZOrderAtBottom
                 && !args.IsZOrderAtTop)
             {
-                // Exclusively position changed
+                // Window was only dragged - nothing chrome-related to redo. The DidSizeChange
+                // exclusion is load-bearing: a maximize/restore changes size AND position, so
+                // without it this guard swallows those transitions as if they were a plain move.
                 return;
             }
 
@@ -493,7 +548,9 @@ namespace AJut.UX.Controls
 
             if (args.DidPresenterChange)
             {
-                this.ResetFullscreenButtons();
+                // Presenter kind flipped (fullscreen enter/exit). Recompute the chrome now, then
+                // re-run the drag-rect pass once the new presenter's layout has settled.
+                this.RefreshWindowStateChrome();
 
                 this.DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
                 {
@@ -502,7 +559,10 @@ namespace AJut.UX.Controls
             }
             else if (args.DidSizeChange)
             {
-                this.ResetTitleBarDragRectangles();
+                // Size changed without a presenter-kind change: a maximize or restore (the
+                // OverlappedPresenter keeps its kind, only its State flips). The chrome bindings
+                // still have to track it, so recompute the full state, not just the drag rectangles.
+                this.RefreshWindowStateChrome();
             }
         }
 

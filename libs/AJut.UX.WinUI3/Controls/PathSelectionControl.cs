@@ -237,7 +237,7 @@ namespace AJut.UX.Controls
 
             if (this.PART_PathTextBox != null)
             {
-                // Sync current SelectedPath value → TextBox (handles template-applied-after-value case)
+                // Sync current SelectedPath value -> TextBox (handles template-applied-after-value case)
                 m_blockPathSync = true;
                 try
                 {
@@ -325,7 +325,11 @@ namespace AJut.UX.Controls
                 m_blockPathSync = false;
             }
 
-            // EvaluatePath is triggered by OnSelectedPathChanged
+            // The guard above is what stops OnSelectedPathChanged from writing the text back out
+            // from under the caret, but it also makes it bail before it evaluates - so a typed path
+            // has to be evaluated from here or it never gets validated at all. Browsing always
+            // hands back a path that exists, so without this the invalid-path border is unreachable.
+            this.EvaluatePath(text);
         }
 
         private void PathTextBox_OnKeyDown(object sender, KeyRoutedEventArgs e)

@@ -18,6 +18,7 @@ namespace AJutShowRoomWinUI
     using AJut.UX.Docking;
     using AJut.UX.PropertyInteraction;
     using AJut.UX.Theming;
+    using Microsoft.UI.Windowing;
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
     using Microsoft.UI.Xaml.Media;
@@ -368,9 +369,9 @@ namespace AJutShowRoomWinUI
         }
 
         // Source swap test objects.
-        // ShowRoomAlpha (5 props) → ShowRoomBeta (2 props) replicates an external scenario:
+        // ShowRoomAlpha (5 props) -> ShowRoomBeta (2 props) replicates an external scenario:
         //   - same float property names (X, Y) but very different values so mismatch is obvious
-        //   - count difference (5→2) forces WinUI3 container recycling
+        //   - count difference (5 to 2) forces WinUI3 container recycling
         //   - Alpha has String+Bool rows that vanish in Beta; if they persist, the bug is present
         private readonly ShowRoomAlpha m_alphaObj = new ShowRoomAlpha();
         private readonly ShowRoomBeta m_betaObj = new ShowRoomBeta();
@@ -1271,6 +1272,445 @@ namespace AJutShowRoomWinUI
                 : $"PASS - all collected ({detail})";
         }
 
+        // ===========[ Window Chrome probe ]=============================================
+        // Repro for the maximize/restore chrome desync. Maximize and restore keep the
+        // OverlappedPresenter kind (only its State flips Restored<->Maximized), so the
+        // AppWindow.Changed handler that only recomputed on a presenter-kind change left
+        // IsMaximizedOrFullScreened and the title-bar border stale. A fullscreen round-trip
+        // (which DOES change the presenter kind) was the only thing that snapped them back.
+        // This drives the real window through maximize then restore and checks the chrome
+        // tracks the state at each step - it is left restored when the probe finishes.
+
+        private const double kThicknessMatchEpsilon = 0.5;
+
+        private async void WindowChrome_OnMaximizeRestoreClicked (object sender, RoutedEventArgs e)
+        {
+            var button = sender as Button;
+            if (button != null) { button.IsEnabled = false; }
+            try
+            {
+                this.WindowChrome_Output.Text = string.Empty;
+
+                if (this.AppWindow.Presenter is not OverlappedPresenter)
+                {
+                    this.WindowChrome_AppendLine("INCONCLUSIVE - window is not using an OverlappedPresenter");
+                    return;
+                }
+
+                var results = new List<string>();
+                bool allPass = true;
+
+                // Baseline: make sure we start restored so the maximize step is a real transition.
+                this.PerformPresenterTask<OverlappedPresenter>(p => p.Restore());
+                await this.WindowChrome_SettleAsync();
+
+                Thickness target = this.Root.TargetBorderThickness;
+
+                // 1. Maximize - IsMaximizedOrFullScreened must go true, title-bar border must collapse to 0.
+                this.PerformPresenterTask<OverlappedPresenter>(p => p.Maximize());
+                await this.WindowChrome_SettleAsync();
+                allPass &= this.WindowChrome_Check(
+                    results,
+                    "After maximize",
+                    expectMaximizedState: true,
+                    expectIsMaximizedOrFullScreened: true,
+                    expectedTitleBarBorder: new Thickness(0)
+                );
+
+                // 2. Restore - IsMaximizedOrFullScreened must go false, border back to the target.
+                this.PerformPresenterTask<OverlappedPresenter>(p => p.Restore());
+                await this.WindowChrome_SettleAsync();
+                allPass &= this.WindowChrome_Check(
+                    results,
+                    "After restore",
+                    expectMaximizedState: false,
+                    expectIsMaximizedOrFullScreened: false,
+                    expectedTitleBarBorder: target
+                );
+
+                this.WindowChrome_AppendLine(allPass
+                    ? "PASS - chrome tracked maximize and restore"
+                    : "FAIL - chrome went stale (maximize/restore did not update IsMaximizedOrFullScreened / title-bar border)");
+                foreach (string line in results)
+                {
+                    this.WindowChrome_AppendLine("    " + line);
+                }
+            }
+            finally
+            {
+                if (button != null) { button.IsEnabled = true; }
+            }
+        }
+
+        private bool WindowChrome_Check (List<string> results, string label, bool expectMaximizedState, bool expectIsMaximizedOrFullScreened, Thickness expectedTitleBarBorder)
+        {
+            eWindowState state = this.GetWindowState();
+            bool stateOk = (state == eWindowState.Maximized) == expectMaximizedState;
+            bool flagOk = this.Root.IsMaximizedOrFullScreened == expectIsMaximizedOrFullScreened;
+
+            Thickness actualBorder = this.Root.PART_TitleBarBorder?.BorderThickness ?? new Thickness(double.NaN);
+            bool borderOk = WindowChrome_ThicknessesMatch(actualBorder, expectedTitleBarBorder);
+
+            bool ok = stateOk && flagOk && borderOk;
+            results.Add(string.Format(
+                "{0}: {1} | state={2} (want {3}), IsMaximizedOrFullScreened={4} (want {5}), titleBarBorder={6} (want {7})",
+                label,
+                ok ? "ok" : "MISMATCH",
+                state,
+                expectMaximizedState ? "Maximized" : "not Maximized",
+                this.Root.IsMaximizedOrFullScreened,
+                expectIsMaximizedOrFullScreened,
+                WindowChrome_FormatThickness(actualBorder),
+                WindowChrome_FormatThickness(expectedTitleBarBorder)
+            ));
+            return ok;
+        }
+
+        // Let the AppWindow.Changed event fire and its handler (plus any Low-priority
+        // dispatcher follow-up it enqueues) fully run before we read the chrome.
+        private async Task WindowChrome_SettleAsync ()
+        {
+            for (int i = 0; i < 4; ++i)
+            {
+                await LeakProbe_DrainDispatcherAsync();
+                await Task.Delay(80);
+            }
+        }
+
+        private static bool WindowChrome_ThicknessesMatch (Thickness a, Thickness b)
+        {
+            return Math.Abs(a.Left - b.Left) < kThicknessMatchEpsilon
+                && Math.Abs(a.Top - b.Top) < kThicknessMatchEpsilon
+                && Math.Abs(a.Right - b.Right) < kThicknessMatchEpsilon
+                && Math.Abs(a.Bottom - b.Bottom) < kThicknessMatchEpsilon;
+        }
+
+        private static string WindowChrome_FormatThickness (Thickness t) => $"({t.Left},{t.Top},{t.Right},{t.Bottom})";
+
+        private void WindowChrome_AppendLine (string line)
+        {
+            this.WindowChrome_Output.Text = this.WindowChrome_Output.Text.Length == 0
+                ? line
+                : this.WindowChrome_Output.Text + "\n" + line;
+        }
+
+        // ===========[ Themed-chrome window close probe ]=================================
+        // Closing a window that carries ThemedWindowRootControl fails fast inside
+        // Microsoft.UI.Windowing (E_POINTER, main thread) because the chrome leaves
+        // Window.Activated subscriptions alive past the point the native window is gone.
+        // It has never been caught because this showroom's main window is the only thing
+        // that carries the chrome, and it lives for the whole process.
+        //
+        // A fail fast is not catchable, so this probe cannot print FAIL - the showroom
+        // dying when the button is clicked IS the failure. Surviving is the pass, and the
+        // weak-ref tally catches the softer variant where the window is pinned, not killed.
+
+        private const int kThemedWindowCloseCycles = 2;
+
+        private async void WindowChrome_OnCloseThemedWindowClicked (object sender, RoutedEventArgs e)
+        {
+            await this.WindowChrome_RunThemedWindowCloseProbe(sender as Button, "Polite consumer", disconnectBeforeClose: true);
+        }
+
+        // Same run without the DisconnectFromOwnerWindow call, which is what most consumers will
+        // actually do. It is a separate button rather than a second cycle of the one above so that
+        // the polite result is already on screen and readable if this one takes the process down.
+        private async void WindowChrome_OnCloseThemedWindowNoDisconnectClicked (object sender, RoutedEventArgs e)
+        {
+            await this.WindowChrome_RunThemedWindowCloseProbe(sender as Button, "Forgetful consumer", disconnectBeforeClose: false);
+        }
+
+        private async Task WindowChrome_RunThemedWindowCloseProbe (Button button, string label, bool disconnectBeforeClose)
+        {
+            if (button != null) { button.IsEnabled = false; }
+            try
+            {
+                this.WindowChrome_Output.Text = string.Empty;
+                this.WindowChrome_AppendLine($"{label}: opening and closing {kThemedWindowCloseCycles} themed-chrome windows - a crash from here is the failure.");
+
+                var weaks = new List<WeakReference>();
+                for (int i = 0; i < kThemedWindowCloseCycles; ++i)
+                {
+                    var themedRoot = new AJut.UX.Controls.ThemedWindowRootControl
+                    {
+                        TitleBarHeight = 32,
+                        WindowContents = new TextBlock { Text = "Themed chrome close probe", Margin = new Thickness(16) },
+                    };
+
+                    var childWindow = new Window();
+                    childWindow.Content = themedRoot;
+                    themedRoot.SetupFor(childWindow);
+                    childWindow.Activate();
+
+                    await LeakProbe_WaitForLoaded(themedRoot, 3000);
+                    await Task.Delay(150);
+
+                    // Pull focus back here so the child takes a real Deactivated pass while it is
+                    // still alive. That event is what the stale handlers ride in on at close time.
+                    this.Activate();
+                    await LeakProbe_DrainDispatcherAsync();
+                    await Task.Delay(150);
+
+                    if (disconnectBeforeClose)
+                    {
+                        themedRoot.DisconnectFromOwnerWindow();
+                    }
+
+                    // Nulling Content is the standard way to drop a child window's page graph, and
+                    // it is also what guarantees a null Window.Content for anything still listening
+                    // to Activated as the window goes away.
+                    childWindow.Content = null;
+                    themedRoot = null;
+
+                    weaks.Add(new WeakReference(childWindow));
+                    childWindow.Close();
+                    childWindow = null;
+
+                    await LeakProbe_DrainDispatcherAsync();
+                    await Task.Delay(250);
+                }
+
+                await LeakProbe_SettleAndCollectAsync();
+
+                int alive = weaks.Count(w => w.IsAlive);
+                this.WindowChrome_AppendLine(alive == 0
+                    ? $"PASS - all {kThemedWindowCloseCycles} themed windows opened, closed, and collected"
+                    : $"PARTIAL - survived the close, but {alive}/{kThemedWindowCloseCycles} windows are still pinned after GC");
+            }
+            finally
+            {
+                if (button != null) { button.IsEnabled = true; }
+            }
+        }
+
+        // ===========[ Title bar pointer reach probe ]====================================
+        // The one question reading the source cannot answer: does pointer input actually reach
+        // the chrome control over the native minimize / maximize / close strip? HandlePointerMoved
+        // only fires CloseHover when x lands in the rightmost 46, and ChromeButtonsHover in the
+        // rightmost 245 - but if the system owns that input, neither branch can ever run and the
+        // geometry is beside the point. This records what the control really receives.
+        //
+        // The chrome's colors come off LastState, not off the template's visual states - those
+        // storyboards never run, because the VisualStateGroups hang off the Grid inside
+        // PART_WindowRoot rather than off the ControlTemplate root that GoToState inspects.
+
+        private const double kNativeCaptionStripHeight = 32;
+        private const double kNativeCloseButtonWidth = 46;
+        private const double kNativeChromeButtonsWidth = 245;
+
+        private bool m_titleBarPointerCaptureActive;
+        private int m_titleBarPointerSamples;
+        private double m_titleBarPointerMinX;
+        private double m_titleBarPointerMaxX;
+        private double m_titleBarPointerMinY;
+        private double m_titleBarPointerMaxY;
+        private bool m_titleBarPointerReachedChromeBand;
+        private bool m_titleBarPointerReachedCloseBand;
+        private readonly List<string> m_titleBarPointerStatesSeen = new List<string>();
+        private Microsoft.UI.Xaml.Input.PointerEventHandler m_titleBarPointerHandler;
+
+        private void WindowChrome_OnCaptureTitleBarPointerClicked (object sender, RoutedEventArgs e)
+        {
+            if (m_titleBarPointerCaptureActive)
+            {
+                this.WindowChrome_StopTitleBarPointerCapture();
+            }
+            else
+            {
+                this.WindowChrome_StartTitleBarPointerCapture();
+            }
+        }
+
+        private void WindowChrome_StartTitleBarPointerCapture ()
+        {
+            m_titleBarPointerSamples = 0;
+            m_titleBarPointerMinX = double.MaxValue;
+            m_titleBarPointerMaxX = double.MinValue;
+            m_titleBarPointerMinY = double.MaxValue;
+            m_titleBarPointerMaxY = double.MinValue;
+            m_titleBarPointerReachedChromeBand = false;
+            m_titleBarPointerReachedCloseBand = false;
+            m_titleBarPointerStatesSeen.Clear();
+
+            if (m_titleBarPointerHandler == null)
+            {
+                m_titleBarPointerHandler = new Microsoft.UI.Xaml.Input.PointerEventHandler(this.WindowChrome_OnTitleBarPointerMoved);
+            }
+
+            // handledEventsToo, same as the control's own subscription - otherwise anything that
+            // marks the move handled upstream would make this read a quieter window than the real one.
+            this.Root.RemoveHandler(UIElement.PointerMovedEvent, m_titleBarPointerHandler);
+            this.Root.AddHandler(UIElement.PointerMovedEvent, m_titleBarPointerHandler, true);
+
+            m_titleBarPointerCaptureActive = true;
+            this.WindowChrome_CaptureTitleBarPointerButton.Content = "Stop capturing and report";
+            this.WindowChrome_Output.Text = "Capturing. Sweep the pointer slowly left to right across the whole title bar, out over the minimize / maximize / close buttons and back, then click Stop.";
+        }
+
+        private void WindowChrome_StopTitleBarPointerCapture ()
+        {
+            this.Root.RemoveHandler(UIElement.PointerMovedEvent, m_titleBarPointerHandler);
+            m_titleBarPointerCaptureActive = false;
+            this.WindowChrome_CaptureTitleBarPointerButton.Content = "Probe: title bar pointer reach";
+
+            this.WindowChrome_Output.Text = string.Empty;
+            if (m_titleBarPointerSamples == 0)
+            {
+                this.WindowChrome_AppendLine($"INCONCLUSIVE - no pointer samples landed in the top {kNativeCaptionStripHeight:0} of the control");
+                return;
+            }
+
+            double width = this.Root.ActualWidth;
+            this.WindowChrome_AppendLine(m_titleBarPointerReachedCloseBand
+                ? "Input DOES reach the close band - so a hover miss is the hover logic, not the input"
+                : "Input does NOT reach the close band - the system owns that area, so the CloseHover branch can never fire there no matter what the geometry says");
+
+            this.WindowChrome_AppendLine($"    samples={m_titleBarPointerSamples}, control width={width:0}");
+            this.WindowChrome_AppendLine($"    x reached {m_titleBarPointerMinX:0} to {m_titleBarPointerMaxX:0}, y reached {m_titleBarPointerMinY:0} to {m_titleBarPointerMaxY:0}");
+            this.WindowChrome_AppendLine($"    chrome-buttons band (x > {width - kNativeChromeButtonsWidth:0}): {(m_titleBarPointerReachedChromeBand ? "reached" : "never reached")}");
+            this.WindowChrome_AppendLine($"    close band (x > {width - kNativeCloseButtonWidth:0}): {(m_titleBarPointerReachedCloseBand ? "reached" : "never reached")}");
+            this.WindowChrome_AppendLine($"    LastState values seen while sweeping: {string.Join(", ", m_titleBarPointerStatesSeen)}");
+        }
+
+        private void WindowChrome_OnTitleBarPointerMoved (object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+        {
+            Windows.Foundation.Point point = e.GetCurrentPoint(this.Root).Position;
+            if (point.Y > kNativeCaptionStripHeight)
+            {
+                return;
+            }
+
+            ++m_titleBarPointerSamples;
+            m_titleBarPointerMinX = Math.Min(m_titleBarPointerMinX, point.X);
+            m_titleBarPointerMaxX = Math.Max(m_titleBarPointerMaxX, point.X);
+            m_titleBarPointerMinY = Math.Min(m_titleBarPointerMinY, point.Y);
+            m_titleBarPointerMaxY = Math.Max(m_titleBarPointerMaxY, point.Y);
+
+            double width = this.Root.ActualWidth;
+            m_titleBarPointerReachedChromeBand |= point.X > width - kNativeChromeButtonsWidth;
+            m_titleBarPointerReachedCloseBand |= point.X > width - kNativeCloseButtonWidth;
+
+            string state = this.Root.LastState ?? "(null)";
+            if (!m_titleBarPointerStatesSeen.Contains(state))
+            {
+                m_titleBarPointerStatesSeen.Add(state);
+            }
+        }
+
+        // ===========[ PathSelectionControl typed-path probe ]============================
+        // Pushes text into the control's inner TextBox, which is the same route a keystroke
+        // takes, and checks the control revalidates afterward. If a typed edit moves
+        // SelectedPath without rerunning validation then the missing-folder border can only
+        // ever come from a browsed path, and browsing cannot produce a path that is missing -
+        // which reads from the outside like the warning was never implemented.
+
+        private const string kProbeMissingFolderPath = @"C:\_ajut_showroom_probe\definitely_not_here";
+
+        private async void PathProbe_OnTypedPathClicked (object sender, RoutedEventArgs e)
+        {
+            var button = sender as Button;
+            if (button != null) { button.IsEnabled = false; }
+            try
+            {
+                this.PathProbe_Output.Text = string.Empty;
+
+                TextBox pathTextBox = LeakProbe_CollectDescendants<TextBox>(this.PathProbe_Control)
+                                            .FirstOrDefault(t => t.Name == "PART_PathTextBox");
+                if (pathTextBox == null)
+                {
+                    this.PathProbe_AppendLine("INCONCLUSIVE - PART_PathTextBox never realized (template not applied yet?)");
+                    return;
+                }
+
+                var results = new List<string>();
+                bool allPass = true;
+
+                // Baseline: empty it out so each step below is a genuine edit.
+                pathTextBox.Text = string.Empty;
+                await PathProbe_SettleAsync();
+
+                // 1. Type a folder that does not exist - has to go invalid, with a reason.
+                pathTextBox.Text = kProbeMissingFolderPath;
+                await PathProbe_SettleAsync();
+                allPass &= this.PathProbe_Check(
+                    results,
+                    "Typed a missing folder",
+                    expectValid: false,
+                    expectExists: false,
+                    expectedPath: kProbeMissingFolderPath
+                );
+
+                // 2. Type one that does exist - has to come back valid. Deliberately not the app's
+                // own base directory: under a packaged run that lands in AppX, where the path is
+                // virtualized and Directory.Exists can answer false for a folder that is plainly there.
+                string existingFolder = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+                pathTextBox.Text = existingFolder;
+                await PathProbe_SettleAsync();
+                allPass &= this.PathProbe_Check(
+                    results,
+                    "Typed an existing folder",
+                    expectValid: true,
+                    expectExists: true,
+                    expectedPath: existingFolder
+                );
+
+                this.PathProbe_AppendLine(allPass
+                    ? "PASS - typed paths revalidate"
+                    : "FAIL - a typed edit moved SelectedPath without rerunning validation");
+                foreach (string line in results)
+                {
+                    this.PathProbe_AppendLine("    " + line);
+                }
+            }
+            finally
+            {
+                if (button != null) { button.IsEnabled = true; }
+            }
+        }
+
+        private bool PathProbe_Check (List<string> results, string label, bool expectValid, bool expectExists, string expectedPath)
+        {
+            bool pathOk = string.Equals(this.PathProbe_Control.SelectedPath, expectedPath, StringComparison.Ordinal);
+            bool validOk = this.PathProbe_Control.IsPathValid == expectValid;
+            bool existsOk = this.PathProbe_Control.DoesPathExist == expectExists;
+            bool reasonOk = expectValid
+                ? string.IsNullOrEmpty(this.PathProbe_Control.InvalidPathReason)
+                : !string.IsNullOrEmpty(this.PathProbe_Control.InvalidPathReason);
+
+            bool ok = pathOk && validOk && existsOk && reasonOk;
+            results.Add(string.Format(
+                "{0}: {1} | SelectedPath={2} (want {3}), IsPathValid={4} (want {5}), DoesPathExist={6} (want {7}), reason='{8}'",
+                label,
+                ok ? "ok" : "MISMATCH",
+                this.PathProbe_Control.SelectedPath ?? "(null)",
+                expectedPath,
+                this.PathProbe_Control.IsPathValid,
+                expectValid,
+                this.PathProbe_Control.DoesPathExist,
+                expectExists,
+                this.PathProbe_Control.InvalidPathReason ?? string.Empty
+            ));
+            return ok;
+        }
+
+        // TextBox.TextChanged does not always come back on the same tick as the Text assignment,
+        // and the control defers a caret move of its own, so drain before reading the result.
+        private static async Task PathProbe_SettleAsync ()
+        {
+            for (int i = 0; i < 3; ++i)
+            {
+                await LeakProbe_DrainDispatcherAsync();
+                await Task.Delay(60);
+            }
+        }
+
+        private void PathProbe_AppendLine (string line)
+        {
+            this.PathProbe_Output.Text = this.PathProbe_Output.Text.Length == 0
+                ? line
+                : this.PathProbe_Output.Text + "\n" + line;
+        }
+
         private sealed class DockingLeakProbe
         {
             public DockingManager Manager { get; set; }
@@ -1771,7 +2211,7 @@ namespace AJutShowRoomWinUI
     }
 
     // ===========[ ShowRoomBeta - 2 properties ]=====
-    // Switching Alpha→Beta: 5 rows → 2 rows, container count mismatch triggers WinUI3 recycling.
+    // Switching Alpha -> Beta: 5 rows -> 2 rows, container count mismatch triggers WinUI3 recycling.
     // After switch the grid must show X=777, Y=888 - NOT Alpha's 111/222.
     public class ShowRoomBeta
     {
