@@ -1483,69 +1483,20 @@ namespace AJutShowRoomWinUI
             }
         }
 
-        // ===========[ Title bar hover state machine probe ]==============================
-        // Reports how the chrome's state machine is actually wired, because it is not the one
-        // the template implies. The template's VisualStateGroups hang off the Grid inside
-        // PART_WindowRoot rather than off the ControlTemplate root, which is the element
-        // VisualStateManager.GoToState inspects - so none of its storyboards have ever run.
-        // What drives the chrome colors is LastState: the title bar binds it through a
-        // brush-switch converter, and the border brushes chain off that. Informational, not
-        // pass/fail - it exists so the next person does not go hunting the storyboards.
-
-        private const double kNativeCaptionStripHeight = 32;
-        private const double kNativeCloseButtonWidth = 46;
-        private const double kNativeChromeButtonsWidth = 245;
-
-        private async void WindowChrome_OnHoverStatesClicked (object sender, RoutedEventArgs e)
-        {
-            var button = sender as Button;
-            if (button != null) { button.IsEnabled = false; }
-            try
-            {
-                this.WindowChrome_Output.Text = string.Empty;
-
-                var results = new List<string>();
-
-                // Which of the template's declared states VisualStateManager can actually reach.
-                int reachable = 0;
-                foreach (string state in new[] { "Normal", "ChromeButtonsHover", "CloseHover", "Inactive" })
-                {
-                    bool exists = VisualStateManager.GoToState(this.Root, state, false);
-                    if (exists) { ++reachable; }
-                    results.Add($"VSM state '{state}' reachable: {(exists ? "yes" : "no")}");
-                }
-
-                // Whether anything outside the control writes the state machine behind its back.
-                bool activationPathHitsChrome = ReferenceEquals(this.Content.GetFirstChildOf<Control>(), this.Root);
-                results.Add($"Activation path resolves to the chrome control itself: {(activationPathHitsChrome ? "yes" : "no")}");
-
-                string lastStateBefore = this.Root.LastState;
-                VisualStateManager.GoToState(this.Root, "CloseHover", false);
-                await LeakProbe_DrainDispatcherAsync();
-                results.Add($"LastState after an outside VSM call: '{this.Root.LastState}' (was '{lastStateBefore}')");
-
-                this.WindowChrome_AppendLine(reachable == 0
-                    ? "INFO - none of the template's visual states are reachable, so its storyboards never run. LastState plus the brush-switch converters is the live state machine, and that is what the chrome colors track."
-                    : $"INFO - {reachable}/4 template visual states reachable.");
-                foreach (string line in results)
-                {
-                    this.WindowChrome_AppendLine("    " + line);
-                }
-            }
-            finally
-            {
-                // Put the live window back however the probe left it.
-                VisualStateManager.GoToState(this.Root, "Normal", false);
-                if (button != null) { button.IsEnabled = true; }
-            }
-        }
-
         // ===========[ Title bar pointer reach probe ]====================================
         // The one question reading the source cannot answer: does pointer input actually reach
         // the chrome control over the native minimize / maximize / close strip? HandlePointerMoved
         // only fires CloseHover when x lands in the rightmost 46, and ChromeButtonsHover in the
         // rightmost 245 - but if the system owns that input, neither branch can ever run and the
         // geometry is beside the point. This records what the control really receives.
+        //
+        // The chrome's colors come off LastState, not off the template's visual states - those
+        // storyboards never run, because the VisualStateGroups hang off the Grid inside
+        // PART_WindowRoot rather than off the ControlTemplate root that GoToState inspects.
+
+        private const double kNativeCaptionStripHeight = 32;
+        private const double kNativeCloseButtonWidth = 46;
+        private const double kNativeChromeButtonsWidth = 245;
 
         private bool m_titleBarPointerCaptureActive;
         private int m_titleBarPointerSamples;
