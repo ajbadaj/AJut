@@ -29,11 +29,26 @@
         // missed. The delegates themselves target static methods, so they pin nothing.
         private static readonly ConditionalWeakTable<Window, StrongBox<bool>> g_isActivatedTracker = new ConditionalWeakTable<Window, StrongBox<bool>>();
 
+        // Every one of these three tolerates a null window instead of throwing, and that is
+        // deliberate rather than defensive habit. They are extension methods, so a call site reads
+        // as `m_owner.IsActivated()` and looks like an ordinary instance call with nothing
+        // suggesting a null check is wanted - but the window a control caches is routinely nulled
+        // out at close, and input events keep arriving through that teardown. A null key handed to
+        // the ConditionalWeakTable throws ArgumentNullException, and when the caller is a WinRT
+        // pointer callback that throw takes the whole process down. A window that is not being
+        // tracked is not activated, so answering false costs nothing and is the honest answer.
+
         /// <summary>
-        /// Initiates activation tracking if not already active, or updates state if tracking is already active
+        /// Initiates activation tracking if not already active, or updates state if tracking is already active.
+        /// A null window is a no-op.
         /// </summary>
         public static void TrackActivation(this Window window, bool isActivated = false)
         {
+            if (window == null)
+            {
+                return;
+            }
+
             if (g_isActivatedTracker.TryGetValue(window, out StrongBox<bool> tracked))
             {
                 tracked.Value = isActivated;
@@ -47,7 +62,14 @@
             window.Closed += Window_OnClosed;
         }
 
-        public static bool IsActivated(this Window window) => g_isActivatedTracker.TryGetValue(window, out StrongBox<bool> tracked) && tracked.Value;
+        /// <summary>
+        /// Is the window currently activated - false for a window that was never tracked, and false for a null window.
+        /// </summary>
+        public static bool IsActivated(this Window window) => window != null && g_isActivatedTracker.TryGetValue(window, out StrongBox<bool> tracked) && tracked.Value;
+
+        /// <summary>
+        /// Is the window currently deactivated - true for a window that was never tracked, and true for a null window.
+        /// </summary>
         public static bool IsDeactivated(this Window window) => !window.IsActivated();
 
         private static void Window_OnClosed (object sender, WindowEventArgs args)
