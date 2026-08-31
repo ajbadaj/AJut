@@ -103,6 +103,48 @@
     <HasPackageAndPublishMenu>true</HasPackageAndPublishMenu>
   </PropertyGroup>
 
+  <!-- Hold the .NET 8 runtime pack at 8.0.29. The showroom builds self-contained, so this is the runtime
+       that gets baked into the output, not just the one it compiles against.
+       8.0.30 breaks it two separate ways. Release builds die in ReadyToRun with NETSDK1096 because
+       crossgen2 is never handed System.Private.CoreLib, and turning ReadyToRun off to get around that
+       produces a clean build whose app then will not start at all, dying at 0x80008089 with coreclr
+       failing to initialize, in Debug and Release alike. Holding the pack back is the only configuration
+       that both builds and runs, so do not "fix" this by switching ReadyToRun off.
+       Nothing in the repo asked for 8.0.30. A Visual Studio update replaced the .NET SDK, the new SDK
+       selects a newer runtime pack, and the runtime moved with it, which is why this arrives looking like
+       a build break rather than a dependency change. The global.json floor does not stop it, because that
+       pins the SDK and this is the pack the SDK chooses.
+       Bisected against a fixed SDK with only the pack version changing: 8.0.23 clean, 8.0.29 clean, 8.0.30
+       broken. One patch apart, so this is 8.0.30 specifically rather than drift.
+       Take the pin off when a later 8.0.x builds clean, and revisit it if this project ever leaves net8.0,
+       since the update below is not conditioned on target framework. -->
+  <PropertyGroup>
+    <PinnedDotNetRuntimeVersion>8.0.29</PinnedDotNetRuntimeVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <KnownFrameworkReference Update="Microsoft.NETCore.App" LatestRuntimeFrameworkVersion="$(PinnedDotNetRuntimeVersion)" />
+  </ItemGroup>
+
+  <!-- The pin above is worth nothing if it silently stops applying, and that is not hypothetical: two other
+       ways of writing it were tried and both did nothing at all while looking like they had worked. A pin
+       that quietly fails does not break the build, it produces a green build carrying a runtime the app
+       cannot start on.
+       So this reads the runtimeconfig the build just generated, the file that decides which runtime ships
+       in the output, and fails if it does not name the pinned version. Checking the output rather than the
+       input is the point: it cannot be fooled by a pin that evaluated to nothing.
+       Retire this together with the pin, not before it. -->
+  <Target Name="VerifyPinnedDotNetRuntimeShipped"
+          AfterTargets="GenerateBuildRuntimeConfigurationFiles"
+          Condition="'$(SelfContained)' == 'true' And '$(PinnedDotNetRuntimeVersion)' != ''">
+    <Error Condition="!$([System.IO.File]::Exists('$(ProjectRuntimeConfigFilePath)'))"
+           Text="Cannot verify the pinned .NET runtime version - no runtimeconfig was generated at '$(ProjectRuntimeConfigFilePath)'." />
+    <PropertyGroup>
+      <_GeneratedRuntimeConfig>$([System.IO.File]::ReadAllText('$(ProjectRuntimeConfigFilePath)'))</_GeneratedRuntimeConfig>
+    </PropertyGroup>
+    <Error Condition="!$(_GeneratedRuntimeConfig.Contains('&quot;$(PinnedDotNetRuntimeVersion)&quot;'))"
+           Text="The .NET runtime pin did not take effect. This build would carry a runtime other than $(PinnedDotNetRuntimeVersion), and the showroom will not start on 8.0.30. Read $(ProjectRuntimeConfigFilePath) to see what it resolved to, and check the KnownFrameworkReference update just above this target." />
+  </Target>
+
   <!-- Publish Properties -->
   <PropertyGroup>
     <PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>
