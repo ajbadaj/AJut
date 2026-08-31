@@ -615,6 +615,16 @@ namespace AJut.UX.Controls
         private void OnPointerExited (object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
         {
             this.IsHoveringOverClose = false;
+
+            // Same null guard HandlePointerMoved above carries, and for the same reason: the pointer
+            // leaves the window on its way out, so this handler runs after OwnerWindow_OnClosed has
+            // already sent DisconnectFromOwnerWindow through and nulled the owner. There is no
+            // activation state to reflect once the window is gone, so there is nothing to do here.
+            if (m_owner == null)
+            {
+                return;
+            }
+
             this.GoToState(m_owner.IsActivated() ? "Normal" : "Inactive");
         }
     }
