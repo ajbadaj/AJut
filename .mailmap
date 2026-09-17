@@ -1,0 +1,7 @@
+# Same person, spelled four ways over the years. Local git config drifted between "AJ" and "ajbadaj",
+# and merges made through the GitHub web UI are authored with the account's private noreply address.
+# This normalizes what git log, shortlog and blame report. It does not rewrite anything, and GitHub's
+# own contributor graph ignores this file.
+AJ <ajbadarni@gmail.com> <33132125+ajbadaj@users.noreply.github.com>
+AJ <ajbadarni@gmail.com> ajbadaj <ajbadarni@gmail.com>
+AJ <ajbadarni@gmail.com> ajbadj <ajbadarni@gmail.com>

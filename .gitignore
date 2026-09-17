@@ -15,6 +15,7 @@
 !*.gif
 !*.ico
 !*.editorconfig
+!.mailmap
 !*.svg
 !*.md
 !**/_TestData
