@@ -44,7 +44,11 @@
         /// <param name="args">Details about the launch request and process.</param>
         protected override void OnLaunched (LaunchActivatedEventArgs args)
         {
-            ApplicationUtilities.RunOnetimeSetup("WinUI_ShowRoom", this, sharedProjectName: "AJut.ShowRoom", onExceptionRecieved: LogException);
+            ApplicationUtilities.RunOnetimeSetup(this, new ApplicationSetupConfig("WinUI_ShowRoom")
+            {
+                SharedProjectName = "AJut.ShowRoom",
+                OnExceptionReceived = LogException,
+            });
             Logger.FlushToFileAfterEach = true;
             Logger.LogInfo("Starting up AJut Show Room for WinUI");
             Logger.LogInfo($"Using AJut.Core version #{this.AJut_Core_Version}");
@@ -74,7 +78,7 @@
             this.ThemeManager.Setup(this, m_windowManager);
         }
 
-        private bool LogException (object exceptionObject)
+        private bool LogException (UnhandledExceptionReport report)
         {
             return true;
         }

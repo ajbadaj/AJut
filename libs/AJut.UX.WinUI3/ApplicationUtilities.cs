@@ -26,32 +26,55 @@
         /// <param name="ageMaxInDaysToKeepLogs">The max age (in days) to keep logs - this will auto purge logs with this call for all logs older than specified. Pass in -1 to skip log purging (not recommended). Default = 10.</param>
         /// <param name="sharedProjectName">A shared project name so two or more projects can share a root location (ie CoolProj is the shared project name, but individually the projects are: CoolProjClient, CoolProjServer)</param>
         /// <param name="storageRootOverride">Override to the root of logs and your "app data" folder? This will seed the <see cref="AppDataRoot"/> location which is commonly used in establishing app storage info, including in <see cref="BuildAppDataProjectPath"/></param>
+        /// <remarks>
+        /// This overload seeds crypto obfuscation from <paramref name="sharedProjectName"/> when there is one and
+        /// <paramref name="projectName"/> otherwise, which is what <see cref="eCryptoSeedSource.SharedProjectNameFirst"/> does
+        /// and what the config overload defaults to - so conversion leaves the seed where it is.
+        /// <para>
+        /// Either way the seeding happens during this call, so to seed with something else entirely, call
+        /// <see cref="AJut.Security.CryptoObfuscation.SeedDefaults"/> yourself once setup has run - the last call wins.
+        /// </para>
+        /// </remarks>
+        [Obsolete("Use the ApplicationSetupConfig overload, which takes the same config type the WPF surface takes.")]
         public static void RunOnetimeSetup(string projectName, Application application, bool setupLogging = true, ExceptionProcessor onExceptionRecieved = null, int ageMaxInDaysToKeepLogs = 10, string sharedProjectName = null, string storageRootOverride = null)
+        {
+            RunOnetimeSetup(application, new ApplicationSetupConfig(projectName)
+            {
+                SharedProjectName = sharedProjectName,
+                SetupLogging = setupLogging,
+                AgeMaxInDaysToKeepLogs = ageMaxInDaysToKeepLogs,
+                OnExceptionReceived = onExceptionRecieved == null ? null : _ForwardToProcessor,
+                StorageRootOverride = storageRootOverride,
+            });
+
+            bool _ForwardToProcessor(UnhandledExceptionReport report)
+            {
+                return onExceptionRecieved(report.ExceptionObject);
+            }
+        }
+
+        /// <summary>
+        /// Sets up your application with standard project setup mechanisms including optionally logging, exception processing, and configuration of the <see cref="AppDataRoot"/>
+        /// </summary>
+        /// <param name="application">The application being setup</param>
+        /// <param name="config">The setup config, which is the same type the WPF surface takes</param>
+        /// <remarks>
+        /// Crypto obfuscation is seeded during this call, per <see cref="ApplicationSetupConfig.CryptoSeedSource"/>. To seed
+        /// with something else entirely, call <see cref="AJut.Security.CryptoObfuscation.SeedDefaults"/> yourself once setup
+        /// has run - the last call wins.
+        /// </remarks>
+        public static void RunOnetimeSetup(Application application, ApplicationSetupConfig config)
         {
             if (g_isSetup)
             {
                 return;
             }
 
-            g_sharedProjectName = sharedProjectName;
-            ProjectName = projectName;
+            g_sharedProjectName = config.SharedProjectName;
+            ProjectName = config.ProjectName;
 
-            bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-
-            AppDataRoot = storageRootOverride ??
-                (isWindows
-                    // In packaged windows apps, this will contain the package name - so putting it again is redundant
-                    //  and packaging is the default for WinUI and since this is a WinUI utility that's what we will assume
-                    //  allowing the user to override this behavior if they want via the storageRootOverride
-                    ? Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)
-                    // Mac/Linux
-                    : Path.Combine(
-                        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                        sharedProjectName ?? projectName
-                    )
-                );
-
-            CryptoObfuscation.SeedDefaults(sharedProjectName ?? projectName);
+            AppDataRoot = DetermineAppDataRoot(config);
+            CryptoObfuscation.SeedDefaults(config.DetermineCryptoSeed());
 
             TypeXT.RegisterSpecialDouble<GridLength>(gl => gl.Value);
 
@@ -60,7 +83,7 @@
             // else so an unhandled exception or process exit can still log. No -= path is
             // appropriate here - if you find yourself wanting one, add a real shutdown
             // method instead of unhooking these piecemeal.
-            if (onExceptionRecieved != null)
+            if (config.OnExceptionReceived != null)
             {
                 AppDomain.CurrentDomain.UnhandledException += _OnHandleException;
                 application.UnhandledException += _AppOnUnhandledException;
@@ -68,12 +91,12 @@
             }
 
 
-            if (setupLogging)
+            if (config.SetupLogging)
             {
                 Logger.CreateAndStartWritingToLogFileIn(EstablishLogsDirectory());
-                if (ageMaxInDaysToKeepLogs != -1)
+                if (config.AgeMaxInDaysToKeepLogs != -1)
                 {
-                    PurgeAllLogsOlderThan(TimeSpan.FromDays(ageMaxInDaysToKeepLogs));
+                    PurgeAllLogsOlderThan(TimeSpan.FromDays(config.AgeMaxInDaysToKeepLogs));
                 }
             }
 
@@ -98,7 +121,7 @@
                 try
                 {
                     Logger.LogError($"Unhandled exception received: {e.ExceptionObject}");
-                    if (onExceptionRecieved(e.ExceptionObject))
+                    if (config.OnExceptionReceived(new UnhandledExceptionReport(e.ExceptionObject, e.IsTerminating)))
                     {
                         if (e.IsTerminating)
                         {
@@ -125,7 +148,7 @@
                 try
                 {
                     Logger.LogError($"Unhandled exception received: {e.Exception}");
-                    if (onExceptionRecieved(e.Exception))
+                    if (config.OnExceptionReceived(new UnhandledExceptionReport(e.Exception, null)))
                     {
                         e.Handled = true;
                     }
@@ -161,6 +184,32 @@
         public static string BuildAppDataProjectPath(params string[] pathParts)
         {
             return Path.Combine(ApplicationUtilities.AppDataRoot, Path.Combine(pathParts));
+        }
+
+        /// <summary>
+        /// Works out what the <see cref="AppDataRoot"/> should be from the setup config
+        /// </summary>
+        private static string DetermineAppDataRoot(ApplicationSetupConfig config)
+        {
+            // An override is the root, exactly as given, so a process handed somebody else's storage root lands on it
+            if (config.StorageRootOverride != null)
+            {
+                return config.StorageRootOverride;
+            }
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // In packaged windows apps, this will contain the package name - so putting it again is redundant
+                //  and packaging is the default for WinUI and since this is a WinUI utility that's what we will assume
+                //  allowing the user to override this behavior if they want via the StorageRootOverride
+                return Environment.GetFolderPath(config.ApplicationStorageRoot ?? Environment.SpecialFolder.LocalApplicationData);
+            }
+
+            // Mac/Linux
+            return Path.Combine(
+                Environment.GetFolderPath(config.ApplicationStorageRoot ?? Environment.SpecialFolder.ApplicationData),
+                config.StorageRootProjectName
+            );
         }
 
         private static string EstablishLogsDirectory()

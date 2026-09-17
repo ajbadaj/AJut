@@ -44,7 +44,14 @@ namespace TheAJutShowRoom
             TypeIdRegistrar.RegisterAllTypeIds(typeof(App).Assembly);
 
             // Run a one time setup which will establish an appdata location, project name, logging, seed obfuscation, and optionally apply root exception handling
-            ApplicationUtilities.RunOnetimeSetup("WPF_ShowRoom", sharedProjectName: "AJut.ShowRoom", onExceptionRecieved: UnhandledExceptionProcessor);
+            ApplicationUtilities.RunOnetimeSetup(new ApplicationSetupConfig("WPF_ShowRoom")
+            {
+                SharedProjectName = "AJut.ShowRoom",
+                OnExceptionReceived = UnhandledExceptionProcessor,
+
+                // Both showrooms share the one root, so they seed from the shared name and can read each other's obfuscated data
+                CryptoSeedSource = eCryptoSeedSource.SharedProjectNameFirst,
+            });
 
             // Add an entry to the log so we know we got this far!
             Logger.LogInfo("Starting up AJut Show Room");
@@ -106,10 +113,10 @@ namespace TheAJutShowRoom
         }
 
         // ==================[ Private Utilities ]========================
-        private static bool UnhandledExceptionProcessor (Exception e)
+        private static bool UnhandledExceptionProcessor (UnhandledExceptionReport report)
         {
-            Logger.LogError(e);
-            var result = MessageBox.Show($"Whoopsie daisies!!!\n\nException Detected: {e.Message}\n\nWould you like to mark it as handled?", "Exception caught", MessageBoxButton.YesNo);
+            Logger.LogError(report.Exception);
+            var result = MessageBox.Show($"Whoopsie daisies!!!\n\nException Detected: {report.ExceptionObject}\n\nWould you like to mark it as handled?", "Exception caught", MessageBoxButton.YesNo);
             return result == MessageBoxResult.Yes;
         }
 
