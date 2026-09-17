@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<TargetFramework>net8.0-windows</TargetFramework>
+		<UseWPF>true</UseWPF>
 		<IsPackable>false</IsPackable>
 		<Platforms>AnyCPU;x64</Platforms>
 	</PropertyGroup>
@@ -25,6 +26,7 @@
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\..\libs\AJut.UX\AJut.UX.csproj" />
+		<ProjectReference Include="..\..\libs\AJut.UX.Wpf\AJut.UX.Wpf.csproj" />
 	</ItemGroup>
 
 </Project>
