@@ -262,7 +262,7 @@
 
             private delegate int UnhandledExceptionFilterDelegate(IntPtr exceptionPointersPtr);
             private static UnhandledExceptionFilterDelegate g_handler;
-            private static UnhandledExceptionFilterDelegate g_previousFilter;
+            private static IntPtr g_previousFilter;
 
             public static void Setup()
             {
@@ -273,17 +273,12 @@
                 //  this one calls it, and it gets called FIRST: after a native crash the heap may be corrupt, and the host's
                 //  filter should get its chance before this does anything that allocates. Anything that sets a filter AFTER
                 //  this replaces it, and has to chain to it the same way or this never runs.
-                IntPtr previousFilter = SetUnhandledExceptionFilter(Marshal.GetFunctionPointerForDelegate(g_handler));
-
-                // Wrapped now rather than at crash time, since wrapping allocates
-                g_previousFilter = previousFilter == IntPtr.Zero
-                    ? null
-                    : Marshal.GetDelegateForFunctionPointer<UnhandledExceptionFilterDelegate>(previousFilter);
+                g_previousFilter = SetUnhandledExceptionFilter(Marshal.GetFunctionPointerForDelegate(g_handler));
             }
 
             private static int OnNativeException(IntPtr exceptionPointersPtr)
             {
-                int result = g_previousFilter?.Invoke(exceptionPointersPtr) ?? EXCEPTION_CONTINUE_SEARCH;
+                int result = g_previousFilter == IntPtr.Zero ? EXCEPTION_CONTINUE_SEARCH : CallFilter(g_previousFilter, exceptionPointersPtr);
                 if (result == EXCEPTION_CONTINUE_EXECUTION)
                 {
                     // The earlier filter dealt with it and the app carries on, so there is no crash to report
@@ -302,6 +297,14 @@
 
                 return result;
             }
+
+            /// <summary>
+            /// Calls a filter through its raw function pointer. Wrapping the pointer in a delegate breaks when the filter was
+            /// itself made from a managed delegate, as a C# host's would be: the runtime hands back that original delegate, its
+            /// type isn't ours, and the cast throws. The raw call works whatever made the filter, and allocates nothing.
+            /// </summary>
+            private static unsafe int CallFilter(IntPtr filter, IntPtr exceptionPointersPtr)
+                => ((delegate* unmanaged[Stdcall]<IntPtr, int>)filter)(exceptionPointersPtr);
 
             private static string DecodeExceptionInfo(IntPtr exceptionPointersPtr)
             {

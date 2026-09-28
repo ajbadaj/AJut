@@ -1,6 +1,5 @@
 namespace AJutShowRoomWinUI
 {
-    using System;
     using AJut;
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
@@ -27,7 +26,7 @@ namespace AJutShowRoomWinUI
         private void OnCrashNatively_OnClick (object sender, RoutedEventArgs e)
         {
             Logger.LogInfo("[CRASH-CHECK] Starting a native thread that access violates");
-            NativeCrashCheckInterop.CreateThread(IntPtr.Zero, UIntPtr.Zero, NativeCrashCheckInterop.kUnmappedAddress, IntPtr.Zero, 0, out _);
+            NativeCrashCheckInterop.StartThreadThatAccessViolates();
         }
     }
 }

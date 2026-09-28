@@ -14,7 +14,7 @@ namespace AJutShowRoomWinUI
         public const string kLogTag = "[HOST-FILTER]";
 
         private static NativeCrashCheckInterop.UnhandledExceptionFilterDelegate? g_handler;
-        private static NativeCrashCheckInterop.UnhandledExceptionFilterDelegate? g_previousFilter;
+        private static IntPtr g_previousFilter;
 
         /// <summary>
         /// Installs the stand-in filter. Call before <see cref="AJut.UX.ApplicationUtilities.RunOnetimeSetup"/>, the way a host
@@ -23,16 +23,15 @@ namespace AJutShowRoomWinUI
         public static void Install ()
         {
             g_handler = OnNativeCrash;
-            IntPtr previousFilter = NativeCrashCheckInterop.SetUnhandledExceptionFilter(Marshal.GetFunctionPointerForDelegate(g_handler));
-            g_previousFilter = previousFilter == IntPtr.Zero
-                ? null
-                : Marshal.GetDelegateForFunctionPointer<NativeCrashCheckInterop.UnhandledExceptionFilterDelegate>(previousFilter);
+            g_previousFilter = NativeCrashCheckInterop.SetUnhandledExceptionFilter(Marshal.GetFunctionPointerForDelegate(g_handler));
         }
 
         private static int OnNativeCrash (IntPtr exceptionPointersPtr)
         {
             Logger.LogError($"{kLogTag} The stand-in host crash filter ran");
-            return g_previousFilter?.Invoke(exceptionPointersPtr) ?? NativeCrashCheckInterop.EXCEPTION_CONTINUE_SEARCH;
+            return g_previousFilter == IntPtr.Zero
+                ? NativeCrashCheckInterop.EXCEPTION_CONTINUE_SEARCH
+                : NativeCrashCheckInterop.CallFilter(g_previousFilter, exceptionPointersPtr);
         }
     }
 }
