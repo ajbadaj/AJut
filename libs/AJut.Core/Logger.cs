@@ -2,14 +2,23 @@
 {
     using System;
     using System.Diagnostics;
+    using System.Globalization;
     using System.IO;
+    using System.Threading;
 
     /// <summary>
-    /// Transmits logged infomration from any thread to any combination of a log file, the <see cref="Console"/>, the debug <see cref="Trace"/>.
+    /// Transmits logged information from any thread to any combination of a log file, the <see cref="Console"/>, the debug <see cref="Trace"/>, and an attached debugger.
     /// </summary>
     public class Logger : IDisposable
     {
-        private static Logger g_LoggerInstance = new Logger();
+        private const string kDefaultLogFilenameFormat = "log-{0:MM.dd.yyyy-hh.mm.ss}.txt";
+        private const string kDefaultDateTimeFormat = "MM.dd.yyy-hh.mm.ss";
+        private const long kDefaultLogFileSplitSizeBytes = 5L * 1024L * 1024L;
+        private const string kSlowWriteReportFormat = "[WARNING] [Logger] Slow log write: {0:F1}ms on thread {1} '{2}' ({3:F1}ms waiting for the write lock, {4:F1}ms writing)";
+
+        // One instance for the life of the process - retargeting the file never replaces it, so settings made before a
+        //  log file is started (verbosity, scenarios, formats, output switches) carry through
+        private static readonly Logger g_LoggerInstance = new Logger();
         private static readonly LogType kInfoType = new InfoLogType();
         private static readonly LogType kErrorType = new ErrorLogType();
         private static volatile Action<string> g_singleOverrideLogTarget;
@@ -26,9 +35,11 @@
         private volatile bool m_shouldLogToConsole;
         private volatile bool m_shouldLogToTrace;
         private volatile bool m_shouldLogToDebug;
+        private volatile bool m_shouldLogToAttachedDebugger;
         private volatile bool m_isEnabled = true;
-        private volatile bool m_flushToFileAfterEach = true;
-        private volatile string m_dateTimeFormat = "MM.dd.yyy-hh.mm.ss";
+        private volatile eLogFlushMode m_flushMode = eLogFlushMode.FlushToDisk;
+        private volatile string m_dateTimeFormat = kDefaultDateTimeFormat;
+        private long m_slowWriteThresholdTicks;
 
         private readonly object m_logWritingLock = new object();
 
@@ -55,12 +66,12 @@
         /// <remarks>
         /// Unlike -ALL- other properties, this will not change an actively running log file session, so set this before <see cref="CreateAndStartWritingToLogFileIn"/> is called.
         /// </remarks>
-        public static string LogFilenameFormat { get; set; } = "log-{0:MM.dd.yyyy-hh.mm.ss}.txt";
+        public static string LogFilenameFormat { get; set; } = kDefaultLogFilenameFormat;
 
         /// <summary>
         /// The maximum file size in bytes before the logger splits to a new file. Set to 0 to disable splitting. Default is 5 MB.
         /// </summary>
-        public static long LogFileSplitSizeBytes { get; set; } = 5L * 1024L * 1024L;
+        public static long LogFileSplitSizeBytes { get; set; } = kDefaultLogFileSplitSizeBytes;
 
         /// <summary>
         /// Sets a single override log target that supersedes all other outputs (console, trace, debug, file).
@@ -102,12 +113,54 @@
         }
 
         /// <summary>
-        /// Indicates if the logger should force flush to file after each call (true) or leave it up manual calls to <see cref="ForceFlushToFile"/> (false). Default is true.
+        /// Indicates if every line should also go to an attached debugger (the Visual Studio Output window, for instance) - but
+        /// only while one is attached, so with no debugger it costs one check a line. Unlike <see cref="ShouldLogToTrace"/>, this
+        /// goes straight to the debugger and skips trace listeners entirely. Default is false.
         /// </summary>
+        public static bool ShouldLogToAttachedDebugger
+        {
+            get => g_LoggerInstance.m_shouldLogToAttachedDebugger;
+            set => g_LoggerInstance.m_shouldLogToAttachedDebugger = value;
+        }
+
+        /// <summary>
+        /// How far each line is pushed before the log call returns - see <see cref="eLogFlushMode"/>. Default is
+        /// <see cref="eLogFlushMode.FlushToDisk"/>, the safest and the slowest.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="eLogFlushMode.FlushToOS"/> is what most apps want: every line still survives the process crashing, without
+        /// each one (and every other thread logging behind it) waiting on the drive.
+        /// </remarks>
+        public static eLogFlushMode FlushMode
+        {
+            get => g_LoggerInstance.m_flushMode;
+            set => g_LoggerInstance.m_flushMode = value;
+        }
+
+        /// <summary>
+        /// Indicates if the logger flushes after each line. Setting true means <see cref="eLogFlushMode.FlushToDisk"/>, and false
+        /// means <see cref="eLogFlushMode.Buffered"/> (leaving it up to manual calls to <see cref="ForceFlushToFile"/>).
+        /// </summary>
+        [Obsolete("Use FlushMode, which can also hand each line to the OS without waiting on the disk.")]
         public static bool FlushToFileAfterEach
         {
-            get => g_LoggerInstance.m_flushToFileAfterEach;
-            set => g_LoggerInstance.m_flushToFileAfterEach = value;
+            get => FlushMode != eLogFlushMode.Buffered;
+            set => FlushMode = value ? eLogFlushMode.FlushToDisk : eLogFlushMode.Buffered;
+        }
+
+        /// <summary>
+        /// When getting a line into the log file takes at least this long - counting both the wait for the write lock and the
+        /// write itself - the logger adds a line of its own saying so, at <see cref="eLogVerbosity.Force"/>, with the time split
+        /// between the two and the thread it happened on. <see cref="TimeSpan.Zero"/> (the default) turns this off.
+        /// </summary>
+        /// <remarks>
+        /// A thread that spent its time waiting on the lock was stuck behind somebody else's write, which is otherwise invisible
+        /// in the log. The report line itself is never timed.
+        /// </remarks>
+        public static TimeSpan SlowWriteThreshold
+        {
+            get => TimeSpan.FromTicks(Interlocked.Read(ref g_LoggerInstance.m_slowWriteThresholdTicks));
+            set => Interlocked.Exchange(ref g_LoggerInstance.m_slowWriteThresholdTicks, Math.Max(0L, value.Ticks));
         }
 
         /// <summary>
@@ -157,7 +210,8 @@
             }
             // else: m_currentSplitIndex == 0, m_logFilePath is already the original path
 
-            m_logFileStream = File.Open(m_logFilePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
+            // Append, so reopening a file that already has lines in it carries on after them rather than writing over them
+            m_logFileStream = File.Open(m_logFilePath, FileMode.Append, FileAccess.Write, FileShare.Read);
             m_logFileWriter = new StreamWriter(m_logFileStream);
         }
 
@@ -180,16 +234,25 @@
         }
 
         /// <summary>
-        /// Tears down the file locks and reads log file stream, sets the log file stream back up, and returns the text
+        /// Reads back everything written to the current log file so far. The file stays open throughout, and lines logged
+        /// afterward carry on appending to it.
         /// </summary>
         public static string ReadCurrentLogFromDisk ()
         {
-            ForceFlushToFile();
-            g_LoggerInstance.TearDownLogFileStream();
-            string logFileText = File.ReadAllText(g_LoggerInstance.m_logFilePath);
-            g_LoggerInstance.BuildAndSetupLogFileStream();
+            Logger logger = g_LoggerInstance;
+            string logFilePath;
+            lock (logger.m_logWritingLock)
+            {
+                // Handing what is buffered to the OS is all a reader needs, reads come through the same OS cache
+                logger.m_logFileWriter?.Flush();
+                logFilePath = logger.m_logFilePath;
+            }
 
-            return logFileText;
+            using (var stream = new FileStream(logFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var reader = new StreamReader(stream))
+            {
+                return reader.ReadToEnd();
+            }
         }
 
         /// <summary>
@@ -208,27 +271,33 @@
         public static string LogFilePath => g_LoggerInstance.m_logFilePath;
 
         /// <summary>
-        /// Sets up the log file for writing
+        /// Sets up the log file for writing, closing whatever log file was open before. Every other setting on the logger
+        /// (verbosity and scenarios, formats, flush mode, output switches) carries over untouched.
         /// </summary>
-        /// <param name="directoryPath">Path to the directory under which we should create a new log file</param>
+        /// <param name="directoryPath">Path to the directory under which we should create a new log file, or null to close the current file and stop writing to disk</param>
         public static void CreateAndStartWritingToLogFileIn (string directoryPath)
         {
-            g_LoggerInstance.TearDownLogFileStream();
-            g_LoggerInstance = new Logger();
-
-            if (directoryPath != null)
+            Logger logger = g_LoggerInstance;
+            lock (logger.m_logWritingLock)
             {
-                Directory.CreateDirectory(directoryPath);
-                string logFileName = AJut.IO.PathHelpers.SanitizeFileName(String.Format(LogFilenameFormat, DateTime.Now));
-                g_LoggerInstance.BuildAndSetupLogFileStream(Path.Combine(directoryPath, logFileName));
+                logger.TearDownLogFileStream();
+                logger.m_logFilePath = null;
+
+                if (directoryPath != null)
+                {
+                    Directory.CreateDirectory(directoryPath);
+                    string logFileName = AJut.IO.PathHelpers.SanitizeFileName(String.Format(LogFilenameFormat, DateTime.Now));
+                    logger.BuildAndSetupLogFileStream(Path.Combine(directoryPath, logFileName));
+                }
             }
         }
 
         /// <summary>
-        /// Forces flushing all pending log statements to the log file
+        /// Forces flushing all pending log statements all the way to the physical disk
         /// </summary>
         /// <remarks>
-        /// NOTE: This will happen automatically if you have set <see cref="FlushToFileAfterEach"/>
+        /// NOTE: Lines already reach the OS after each call unless <see cref="FlushMode"/> is <see cref="eLogFlushMode.Buffered"/>,
+        /// which is enough to survive the process dying - this is for surviving the machine going down too
         /// </remarks>
         public static void ForceFlushToFile ()
         {
@@ -241,6 +310,32 @@
                     g_LoggerInstance.m_logFileStream.Flush(true);
                 }
             }
+        }
+
+        /// <summary>
+        /// Indicates whether an info line at the given verbosity would be logged right now, so a hot path can skip building a
+        /// message that would only be thrown away.
+        /// </summary>
+        /// <remarks>
+        /// This only reads <see cref="LogVerbosityManager.EffectiveVerbosity"/>, it never runs scenarios - so don't guard a line
+        /// that is itself meant to set off a scenario, since skipping it means the scenario never sees it. Past that it errs on
+        /// the side of yes: it can say yes to a line a scenario's <see cref="LogVerbosityScenario.AppliesTo"/> then turns away, but
+        /// never no to a line that would have been logged. Errors ignore verbosity, so there is nothing to ask here for those.
+        /// </remarks>
+        public static bool WouldLog (eLogVerbosity verbosity)
+        {
+            if (!g_LoggerInstance.m_isEnabled)
+            {
+                return false;
+            }
+
+            if (verbosity == eLogVerbosity.Force)
+            {
+                return true;
+            }
+
+            eLogVerbositySetting effective = g_LoggerInstance.m_verbosityManager.EffectiveVerbosity;
+            return effective != eLogVerbositySetting.None && (int)verbosity <= (int)effective;
         }
 
         /// <summary>
@@ -303,40 +398,130 @@
             DoLog(kErrorType, $"{message}\nException Encountered: {exc}");
         }
 
+        /// <summary>
+        /// Puts the logger back the way a fresh process has it: no log file, no override target, every setting at its default,
+        /// and no scenarios. The logger is one static instance, so this is how tests keep from leaking settings into each other.
+        /// </summary>
+        internal static void ResetToDefaults ()
+        {
+            CreateAndStartWritingToLogFileIn(null);
+            g_singleOverrideLogTarget = null;
+            LogFilenameFormat = kDefaultLogFilenameFormat;
+            LogFileSplitSizeBytes = kDefaultLogFileSplitSizeBytes;
+
+            Logger logger = g_LoggerInstance;
+            logger.m_shouldLogToConsole = false;
+            logger.m_shouldLogToTrace = false;
+            logger.m_shouldLogToDebug = false;
+            logger.m_shouldLogToAttachedDebugger = false;
+            logger.SetDebugDefaults();
+            logger.m_isEnabled = true;
+            logger.m_flushMode = eLogFlushMode.FlushToDisk;
+            logger.m_dateTimeFormat = kDefaultDateTimeFormat;
+            Interlocked.Exchange(ref logger.m_slowWriteThresholdTicks, 0L);
+            logger.m_verbosityManager.ResetToDefaults();
+        }
+
         private static void DoLog (LogType logType, string message, eLogVerbosity verbosity = eLogVerbosity.Normal)
         {
-            if (g_LoggerInstance == null || g_LoggerInstance.m_isEnabled == false)
+            Logger logger = g_LoggerInstance;
+            if (!logger.m_isEnabled)
             {
                 return;
             }
 
-            // Scenarios evaluate BEFORE the gate check so a message that would be suppressed can still trigger
-            // a scenario which raises EffectiveVerbosity, causing that same message to be logged at the new level.
-            g_LoggerInstance.m_verbosityManager.ProcessLogLine(message, logType.IsError);
+            // Scenarios evaluate BEFORE the gate check so a message that would be suppressed can still trigger a scenario which
+            //  lets that same message through. The level comes back from this line's own pass through the scenarios, so another
+            //  thread switching a scenario off in the meantime can't drop the line that switched it on.
+            eLogVerbositySetting admitLevel = logger.m_verbosityManager.ProcessLogLine(message, logType.IsError);
 
             // Force verbosity bypasses all filtering (None gate and verbosity level gate).
             if (verbosity != eLogVerbosity.Force)
             {
-                var setting = g_LoggerInstance.m_verbosityManager.EffectiveVerbosity;
-                if (setting == eLogVerbositySetting.None)
+                if (admitLevel == eLogVerbositySetting.None)
                 {
                     return;
                 }
-                if (!logType.IsError && (int)verbosity > (int)setting)
+                if (!logType.IsError && (int)verbosity > (int)admitLevel)
                 {
                     return;
                 }
             }
 
-            string output = logType.GenerateOutputText(message);
+            logger.Emit(logType, message, isSlowWriteReport: false);
+        }
 
-            if (g_singleOverrideLogTarget != null)
+        private void Emit (LogType logType, string message, bool isSlowWriteReport)
+        {
+            Action<string> overrideTarget = g_singleOverrideLogTarget;
+            if (overrideTarget != null)
             {
-                g_singleOverrideLogTarget(output);
+                overrideTarget(logType.GenerateOutputText(message));
                 return;
             }
 
-            if (ShouldLogToConsole)
+            bool isTimingWrite = !isSlowWriteReport && Interlocked.Read(ref m_slowWriteThresholdTicks) > 0;
+            long lockRequestedAt = isTimingWrite ? Stopwatch.GetTimestamp() : 0;
+            long lockAcquiredAt = 0;
+            string output;
+            lock (m_logWritingLock)
+            {
+                if (isTimingWrite)
+                {
+                    lockAcquiredAt = Stopwatch.GetTimestamp();
+                }
+
+                // Stamped once the lock is held, so the order lines land in the file is the order of their timestamps
+                output = logType.GenerateOutputText(message);
+                this.WriteToLogFile(output);
+            }
+
+            long writtenAt = isTimingWrite ? Stopwatch.GetTimestamp() : 0;
+
+            this.MirrorOutput(logType, output);
+
+            if (isTimingWrite)
+            {
+                this.ReportIfWriteWasSlow(lockRequestedAt, lockAcquiredAt, writtenAt);
+            }
+        }
+
+        /// <summary>
+        /// Writes one formatted line to the log file, flushes it as far as <see cref="FlushMode"/> says, and splits to a new
+        /// file once this one is big enough. Only call with <see cref="m_logWritingLock"/> held.
+        /// </summary>
+        private void WriteToLogFile (string text)
+        {
+            if (m_logFileWriter == null)
+            {
+                return;
+            }
+
+            m_logFileWriter.Write(text);
+            switch (m_flushMode)
+            {
+                case eLogFlushMode.FlushToOS:
+                    // StreamWriter.Flush pushes through the FileStream into a completed OS write, which the process dying can't undo
+                    m_logFileWriter.Flush();
+                    break;
+
+                case eLogFlushMode.FlushToDisk:
+                    m_logFileWriter.Flush();
+                    m_logFileStream.Flush(true);
+                    break;
+            }
+
+            if (LogFileSplitSizeBytes > 0 && m_logFileStream.Position >= LogFileSplitSizeBytes)
+            {
+                ++m_currentSplitIndex;
+                this.TearDownLogFileStream();
+                this.BuildAndSetupLogFileStream();
+            }
+        }
+
+        private void MirrorOutput (LogType logType, string output)
+        {
+            if (m_shouldLogToConsole)
             {
                 if (logType.IsError)
                 {
@@ -348,7 +533,7 @@
                 }
             }
 
-            if (ShouldLogToTrace)
+            if (m_shouldLogToTrace)
             {
                 if (logType.IsError)
                 {
@@ -360,41 +545,42 @@
                 }
             }
 
-            if (ShouldLogToDebug)
+            if (m_shouldLogToDebug)
             {
                 Debug.WriteLine(output);
             }
 
-            WriteTextUnformattedToLog(output);
-        }
-
-        private static void WriteTextUnformattedToLog (string text)
-        {
-            lock (g_LoggerInstance.m_logWritingLock)
+            if (m_shouldLogToAttachedDebugger && Debugger.IsAttached)
             {
-                if (g_LoggerInstance.m_logFileWriter != null)
-                {
-                    g_LoggerInstance.m_logFileWriter.Write(text);
-                }
-
-                if (g_LoggerInstance.m_flushToFileAfterEach)
-                {
-                    ForceFlushToFile();
-                }
-
-                if (LogFileSplitSizeBytes > 0
-                    && g_LoggerInstance.m_logFileStream != null
-                    && g_LoggerInstance.m_logFileStream.Position >= LogFileSplitSizeBytes)
-                {
-                    ++g_LoggerInstance.m_currentSplitIndex;
-                    g_LoggerInstance.TearDownLogFileStream();
-                    g_LoggerInstance.BuildAndSetupLogFileStream();
-                }
+                Debugger.Log(0, null, output);
             }
         }
 
+        private void ReportIfWriteWasSlow (long lockRequestedAt, long lockAcquiredAt, long writtenAt)
+        {
+            TimeSpan total = Stopwatch.GetElapsedTime(lockRequestedAt, writtenAt);
+            if (total.Ticks < Interlocked.Read(ref m_slowWriteThresholdTicks))
+            {
+                return;
+            }
 
-        private abstract class LogType 
+            Thread thread = Thread.CurrentThread;
+            string report = String.Format(
+                CultureInfo.InvariantCulture,
+                kSlowWriteReportFormat,
+                total.TotalMilliseconds,
+                thread.ManagedThreadId,
+                thread.Name ?? "unnamed",
+                Stopwatch.GetElapsedTime(lockRequestedAt, lockAcquiredAt).TotalMilliseconds,
+                Stopwatch.GetElapsedTime(lockAcquiredAt, writtenAt).TotalMilliseconds
+            );
+
+            // Straight to emit, as a Force line would be, without timing it (so a slow disk can't set off a chain of reports)
+            this.Emit(kInfoType, report, isSlowWriteReport: true);
+        }
+
+
+        private abstract class LogType
         {
             public virtual bool IsError { get; } = false;
             public abstract string GenerateOutputText (string message);

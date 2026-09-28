@@ -2,9 +2,14 @@ namespace AJut.Core.UnitTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Globalization;
     using System.IO;
+    using System.Reflection;
+    using System.Text.RegularExpressions;
     using System.Threading;
     using AJut;
+    using AJut.Core.CrashHost;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     // =====================================================================================
@@ -418,6 +423,198 @@ namespace AJut.Core.UnitTests
             manager.EvaluateAllCriteria();
             Assert.IsTrue(scenario.IsCurrentlyActive, "EvaluateAllCriteria should activate time-based scenario after duration elapses.");
         }
+
+        // ---- Count exit window ----
+
+        [TestMethod]
+        public void Scenario_CountExit_AdmitsTheTriggerLinePlusCountMinusOneMore ()
+        {
+            var manager = new LogVerbosityManager { BaseVerbosity = eLogVerbositySetting.Normal };
+            manager.Scenarios.Add(new LogVerbosityScenario
+            {
+                RaiseToLevel = eLogVerbositySetting.Verbose,
+                EnterCriteria = new LogTextMatchCriteria { SearchText = "[TRIGGER]" },
+                ExitCriteria = new LogCountCriteria { CountThreshold = 3 },
+            });
+
+            Assert.AreEqual(eLogVerbositySetting.Verbose, manager.ProcessLogLine("[TRIGGER] opens it", false), "The trigger line is inside the window.");
+            Assert.AreEqual(eLogVerbositySetting.Verbose, manager.ProcessLogLine("second", false));
+            Assert.AreEqual(eLogVerbositySetting.Verbose, manager.ProcessLogLine("third", false));
+            Assert.AreEqual(eLogVerbositySetting.Normal, manager.ProcessLogLine("fourth", false), "Count(3) is the trigger plus two more, the fourth line closes the window.");
+        }
+
+        [TestMethod]
+        public void Scenario_CountExitOfOne_IsExactlyTheTriggerLine ()
+        {
+            var manager = new LogVerbosityManager { BaseVerbosity = eLogVerbositySetting.Normal };
+            manager.Scenarios.Add(new LogVerbosityScenario
+            {
+                RaiseToLevel = eLogVerbositySetting.Verbose,
+                EnterCriteria = new LogTextMatchCriteria { SearchText = "[TRIGGER]" },
+                ExitCriteria = new LogCountCriteria { CountThreshold = 1 },
+            });
+
+            Assert.AreEqual(eLogVerbositySetting.Verbose, manager.ProcessLogLine("[TRIGGER] opens it", false));
+            Assert.AreEqual(eLogVerbositySetting.Normal, manager.ProcessLogLine("next", false));
+        }
+
+        // ---- Switching scenarios from code ----
+
+        [TestMethod]
+        public void Scenario_Activate_RaisesWithoutALogLine ()
+        {
+            var manager = new LogVerbosityManager { BaseVerbosity = eLogVerbositySetting.Normal };
+            var scenario = new LogVerbosityScenario { RaiseToLevel = eLogVerbositySetting.Verbose };
+            manager.Scenarios.Add(scenario);
+
+            scenario.Activate();
+
+            Assert.IsTrue(scenario.IsCurrentlyActive);
+            Assert.AreEqual(eLogVerbositySetting.Verbose, manager.EffectiveVerbosity, "Activating from code should update the manager straight away.");
+            Assert.AreEqual(eLogVerbositySetting.Verbose, manager.ProcessLogLine("any line", false));
+        }
+
+        [TestMethod]
+        public void Scenario_Activate_StartsTheExitCriteriaWatchingFromThere ()
+        {
+            var manager = new LogVerbosityManager { BaseVerbosity = eLogVerbositySetting.Normal };
+            var scenario = new LogVerbosityScenario
+            {
+                RaiseToLevel = eLogVerbositySetting.Verbose,
+                ExitCriteria = new LogCountCriteria { CountThreshold = 2 },
+            };
+            manager.Scenarios.Add(scenario);
+
+            scenario.Activate();
+
+            Assert.AreEqual(eLogVerbositySetting.Verbose, manager.ProcessLogLine("first line after activating", false));
+            Assert.AreEqual(eLogVerbositySetting.Normal, manager.ProcessLogLine("second line closes it", false));
+            Assert.IsFalse(scenario.IsCurrentlyActive);
+        }
+
+        [TestMethod]
+        public void Scenario_Deactivate_DropsTheRaiseAndReArms ()
+        {
+            var manager = new LogVerbosityManager { BaseVerbosity = eLogVerbositySetting.Normal };
+            var scenario = new LogVerbosityScenario
+            {
+                RaiseToLevel = eLogVerbositySetting.Verbose,
+                EnterCriteria = new LogTextMatchCriteria { SearchText = "GO" },
+            };
+            manager.Scenarios.Add(scenario);
+
+            scenario.Activate();
+            scenario.Deactivate();
+
+            Assert.IsFalse(scenario.IsCurrentlyActive);
+            Assert.AreEqual(eLogVerbositySetting.Normal, manager.EffectiveVerbosity, "Deactivating from code should update the manager straight away.");
+
+            manager.ProcessLogLine("GO again", false);
+            Assert.IsTrue(scenario.IsCurrentlyActive, "Deactivating should leave the scenario armed to activate again.");
+        }
+
+        [TestMethod]
+        public void Scenario_ActivateAndDeactivate_RaiseIsCurrentlyActiveChanged ()
+        {
+            var scenario = new LogVerbosityScenario();
+            var recorder = new PropertyChangeRecorder();
+            scenario.PropertyChanged += recorder.OnPropertyChanged;
+
+            scenario.Activate();
+            scenario.Activate();
+            scenario.Deactivate();
+
+            scenario.PropertyChanged -= recorder.OnPropertyChanged;
+            CollectionAssert.AreEqual(
+                new[] { nameof(LogVerbosityScenario.IsCurrentlyActive), nameof(LogVerbosityScenario.IsCurrentlyActive) },
+                recorder.PropertyNames,
+                "Expected one change on, one change off, and nothing for activating twice."
+            );
+        }
+
+        [TestMethod]
+        public void Scenarios_RemovingAnActiveScenario_DropsTheRaiseRightAway ()
+        {
+            var manager = new LogVerbosityManager { BaseVerbosity = eLogVerbositySetting.Normal };
+            var scenario = new LogVerbosityScenario { RaiseToLevel = eLogVerbositySetting.Verbose };
+            manager.Scenarios.Add(scenario);
+            scenario.Activate();
+
+            manager.Scenarios.Remove(scenario);
+
+            Assert.AreEqual(eLogVerbositySetting.Normal, manager.EffectiveVerbosity);
+            Assert.AreEqual(eLogVerbositySetting.Normal, manager.ProcessLogLine("any line", false));
+        }
+
+        // ---- Narrowing a raise ----
+
+        [TestMethod]
+        public void Scenario_AppliesTo_NarrowsWhichLinesTheRaiseCovers ()
+        {
+            var manager = new LogVerbosityManager { BaseVerbosity = eLogVerbositySetting.Normal };
+            var scenario = new TagOnlyScenario("[MINE]") { RaiseToLevel = eLogVerbositySetting.Verbose };
+            manager.Scenarios.Add(scenario);
+            scenario.Activate();
+
+            Assert.AreEqual(eLogVerbositySetting.Verbose, manager.ProcessLogLine("[MINE] covered by the raise", false));
+            Assert.AreEqual(eLogVerbositySetting.Normal, manager.ProcessLogLine("[OTHER] not covered", false));
+            Assert.AreEqual(eLogVerbositySetting.Verbose, manager.EffectiveVerbosity, "EffectiveVerbosity stays the broad answer, it doesn't consult AppliesTo.");
+        }
+
+        // ---- Timed raises ----
+
+        [TestMethod]
+        public void RaiseFor_RaisesUntilItRunsOut ()
+        {
+            var manager = new LogVerbosityManager { BaseVerbosity = eLogVerbositySetting.Normal };
+
+            manager.RaiseFor(eLogVerbositySetting.Verbose, TimeSpan.FromMilliseconds(50));
+            Assert.AreEqual(eLogVerbositySetting.Verbose, manager.EffectiveVerbosity);
+            Assert.AreEqual(eLogVerbositySetting.Verbose, manager.ProcessLogLine("inside the raise", false));
+
+            Thread.Sleep(120);
+            Assert.AreEqual(eLogVerbositySetting.Normal, manager.ProcessLogLine("after it ran out", false));
+            Assert.AreEqual(eLogVerbositySetting.Normal, manager.EffectiveVerbosity);
+        }
+
+        [TestMethod]
+        public void RaiseFor_Overlapping_HighestStillRunningWins ()
+        {
+            var manager = new LogVerbosityManager { BaseVerbosity = eLogVerbositySetting.Normal };
+
+            manager.RaiseFor(eLogVerbositySetting.Detailed, TimeSpan.FromMinutes(5));
+            manager.RaiseFor(eLogVerbositySetting.Verbose, TimeSpan.FromMilliseconds(50));
+            Assert.AreEqual(eLogVerbositySetting.Verbose, manager.EffectiveVerbosity);
+
+            Thread.Sleep(120);
+            manager.EvaluateAllCriteria();
+            Assert.AreEqual(eLogVerbositySetting.Detailed, manager.EffectiveVerbosity, "Once the short raise runs out, the longer one should still hold.");
+        }
+
+        /// <summary>
+        /// A scenario whose raise only covers lines carrying a given tag.
+        /// </summary>
+        private sealed class TagOnlyScenario : LogVerbosityScenario
+        {
+            private readonly string m_tag;
+
+            public TagOnlyScenario (string tag)
+            {
+                m_tag = tag;
+            }
+
+            protected override bool AppliesTo (string message, bool isError) => message.Contains(m_tag);
+        }
+
+        private sealed class PropertyChangeRecorder
+        {
+            public List<string> PropertyNames { get; } = new List<string>();
+
+            public void OnPropertyChanged (object sender, System.ComponentModel.PropertyChangedEventArgs e)
+            {
+                this.PropertyNames.Add(e.PropertyName);
+            }
+        }
     }
 
 
@@ -435,8 +632,8 @@ namespace AJut.Core.UnitTests
         [TestInitialize]
         public void TestSetup ()
         {
-            // Fresh Logger instance, no file
-            Logger.CreateAndStartWritingToLogFileIn(null);
+            // Default settings, no file
+            Logger.ResetToDefaults();
             Logger.ShouldLogToConsole = false;
             Logger.ShouldLogToTrace = false;
 
@@ -447,8 +644,7 @@ namespace AJut.Core.UnitTests
         [TestCleanup]
         public void TestCleanup ()
         {
-            Logger.SetSingleOverrideLogTarget(null);
-            Logger.CreateAndStartWritingToLogFileIn(null);
+            Logger.ResetToDefaults();
         }
 
         private bool Captured (string fragment) => m_loggedOutput.Exists(s => s.Contains(fragment));
@@ -516,9 +712,6 @@ namespace AJut.Core.UnitTests
         {
             foreach (var setting in new[] { eLogVerbositySetting.Normal, eLogVerbositySetting.Detailed, eLogVerbositySetting.Verbose })
             {
-                Logger.CreateAndStartWritingToLogFileIn(null);
-                Logger.SetSingleOverrideLogTarget(msg => m_loggedOutput.Add(msg));
-
                 m_loggedOutput.Clear();
                 Logger.VerbosityManager.BaseVerbosity = setting;
                 Logger.LogError($"ERROR_AT_{setting}");
@@ -554,6 +747,43 @@ namespace AJut.Core.UnitTests
 
             Assert.IsTrue(Captured("RAISE_FROM_NONE"), "Message should be logged: scenario raised EffectiveVerbosity before gate was evaluated.");
         }
+
+        [TestMethod]
+        public void Gate_RaiseFor_LetsHigherVerbosityThrough ()
+        {
+            Logger.VerbosityManager.BaseVerbosity = eLogVerbositySetting.Normal;
+            Logger.VerbosityManager.RaiseFor(eLogVerbositySetting.Verbose, TimeSpan.FromMinutes(1));
+            Logger.LogInfo("VERBOSE_MSG", eLogVerbosity.Verbose);
+            Assert.IsTrue(Captured("VERBOSE_MSG"));
+        }
+
+        // ---- WouldLog ----
+
+        [TestMethod]
+        public void WouldLog_FollowsTheEffectiveVerbosity ()
+        {
+            Logger.VerbosityManager.BaseVerbosity = eLogVerbositySetting.Normal;
+            Assert.IsTrue(Logger.WouldLog(eLogVerbosity.Normal));
+            Assert.IsFalse(Logger.WouldLog(eLogVerbosity.Detailed));
+
+            Logger.VerbosityManager.RaiseFor(eLogVerbositySetting.Verbose, TimeSpan.FromMinutes(1));
+            Assert.IsTrue(Logger.WouldLog(eLogVerbosity.Verbose), "A raise should show up in WouldLog straight away.");
+        }
+
+        [TestMethod]
+        public void WouldLog_NoneMeansNoExceptForce ()
+        {
+            Logger.VerbosityManager.BaseVerbosity = eLogVerbositySetting.None;
+            Assert.IsFalse(Logger.WouldLog(eLogVerbosity.Normal));
+            Assert.IsTrue(Logger.WouldLog(eLogVerbosity.Force));
+        }
+
+        [TestMethod]
+        public void WouldLog_NothingWhileDisabled ()
+        {
+            Logger.Disable();
+            Assert.IsFalse(Logger.WouldLog(eLogVerbosity.Force));
+        }
     }
 
 
@@ -572,15 +802,15 @@ namespace AJut.Core.UnitTests
         [TestInitialize]
         public void TestSetup ()
         {
+            Logger.ResetToDefaults();
             Logger.LogFileSplitSizeBytes = kDefaultSplitSize;
             m_tempDir = Path.Combine(Path.GetTempPath(), $"AJut_SplitTests_{Guid.NewGuid():N}");
-            Logger.SetSingleOverrideLogTarget(null);
         }
 
         [TestCleanup]
         public void TestCleanup ()
         {
-            Logger.CreateAndStartWritingToLogFileIn(null);
+            Logger.ResetToDefaults();
             Logger.LogFileSplitSizeBytes = kDefaultSplitSize;
             try
             {
@@ -658,6 +888,616 @@ namespace AJut.Core.UnitTests
 
             Assert.AreEqual(originalPath, Logger.LogFilePath, "LogFilePath should not change when splitting is disabled.");
             Assert.AreEqual(1, Directory.GetFiles(m_tempDir, "*.txt").Length, "Only one log file should exist.");
+        }
+    }
+
+
+    // =====================================================================================
+    // LoggerScenarioThreadingTests
+    // Scenario evaluation with more than one thread logging. A PauseCriteria parks one
+    // thread partway through its scenario pass, so each interleaving here is exact rather
+    // than something a stress loop might happen to hit.
+    // =====================================================================================
+
+    [TestClass]
+    public class LoggerScenarioThreadingTests
+    {
+        private readonly List<string> m_loggedOutput = new List<string>();
+
+        [TestInitialize]
+        public void TestSetup ()
+        {
+            Logger.ResetToDefaults();
+            Logger.ShouldLogToConsole = false;
+            Logger.ShouldLogToTrace = false;
+            Logger.SetSingleOverrideLogTarget(this.CaptureOutput);
+        }
+
+        [TestCleanup]
+        public void TestCleanup ()
+        {
+            Logger.ResetToDefaults();
+        }
+
+        [TestMethod]
+        public void Scenario_TriggerLineIsLogged_WhenAnotherThreadClosesTheWindowMidPass ()
+        {
+            // A Count(1) exit means the window is exactly the line that opened it. Thread A opens the window and is
+            //  parked before its line reaches the verbosity gate, thread B's line closes the window, then A resumes.
+            //  A's own pass opened that window, so A's line has to come out no matter what B did in the meantime.
+            Logger.VerbosityManager.BaseVerbosity = eLogVerbositySetting.Normal;
+            var window = new LogVerbosityScenario
+            {
+                RaiseToLevel = eLogVerbositySetting.Verbose,
+                EnterCriteria = new LogTextMatchCriteria { SearchText = "[TRIGGER]" },
+                ExitCriteria = new LogCountCriteria { CountThreshold = 1 },
+            };
+            var pause = new PauseCriteria("[TRIGGER]");
+            Logger.VerbosityManager.Scenarios.Add(window);
+            Logger.VerbosityManager.Scenarios.Add(new LogVerbosityScenario { EnterCriteria = pause });
+
+            var threadA = new LoggingThread("[TRIGGER] the line the window was opened for", eLogVerbosity.Verbose);
+            Assert.IsTrue(pause.WaitUntilParked(), "Thread A never reached the pause point.");
+
+            var threadB = new LoggingThread("[OTHER] a line from some other thread", eLogVerbosity.Verbose);
+            Assert.IsTrue(LoggerTestHelpers.WaitFor(() => !window.IsCurrentlyActive), "Thread B never closed the window.");
+
+            pause.Release();
+            Assert.IsTrue(threadA.Join() && threadB.Join(), "The logging threads did not finish.");
+            Assert.IsNull(threadA.Failure, $"Thread A threw: {threadA.Failure}");
+            Assert.IsNull(threadB.Failure, $"Thread B threw: {threadB.Failure}");
+
+            Assert.IsTrue(this.Captured("[TRIGGER]"), "The line that opened the window was dropped.");
+        }
+
+        [TestMethod]
+        public void Scenarios_AddedWhileAnotherThreadIsMidPass_DoesNotThrowIntoThatThread ()
+        {
+            var pause = new PauseCriteria("[PARKED]");
+            Logger.VerbosityManager.Scenarios.Add(new LogVerbosityScenario { EnterCriteria = pause });
+
+            var parked = new LoggingThread("[PARKED] partway through the scenario pass", eLogVerbosity.Normal);
+            Assert.IsTrue(pause.WaitUntilParked(), "The logging thread never reached the pause point.");
+
+            Logger.VerbosityManager.Scenarios.Add(
+                new LogVerbosityScenario { EnterCriteria = new LogTextMatchCriteria { SearchText = "[ADDED]" } }
+            );
+            pause.Release();
+
+            Assert.IsTrue(parked.Join(), "The logging thread did not finish.");
+            Assert.IsNull(parked.Failure, $"Adding a scenario threw into a thread that was logging: {parked.Failure}");
+            Assert.IsTrue(this.Captured("[PARKED]"), "The parked line never made it out.");
+        }
+
+        private void CaptureOutput (string output)
+        {
+            lock (m_loggedOutput)
+            {
+                m_loggedOutput.Add(output);
+            }
+        }
+
+        private bool Captured (string fragment)
+        {
+            lock (m_loggedOutput)
+            {
+                return m_loggedOutput.Exists(s => s.Contains(fragment));
+            }
+        }
+
+        /// <summary>
+        /// Criteria that never passes, but parks whichever thread evaluates a line containing the given text until
+        /// released, so a test can hold one thread in the middle of its scenario pass.
+        /// </summary>
+        private sealed class PauseCriteria : LogScenarioCriteriaBase
+        {
+            private readonly string m_pauseOnText;
+            private readonly ManualResetEventSlim m_parked = new ManualResetEventSlim(false);
+            private readonly ManualResetEventSlim m_released = new ManualResetEventSlim(false);
+
+            public PauseCriteria (string pauseOnText)
+            {
+                m_pauseOnText = pauseOnText;
+            }
+
+            public bool WaitUntilParked () => m_parked.Wait(LoggerTestHelpers.kWaitTimeout);
+
+            public void Release () => m_released.Set();
+
+            public override bool Evaluate (string message, bool isError)
+            {
+                if (message.Contains(m_pauseOnText))
+                {
+                    m_parked.Set();
+                    m_released.Wait(LoggerTestHelpers.kWaitTimeout);
+                }
+
+                return false;
+            }
+
+            public override void InitiateScenario () { }
+
+            public override void Reset () { }
+        }
+
+        /// <summary>
+        /// Logs one line on its own thread, and holds on to anything the log call throws instead of letting it take
+        /// down the test host.
+        /// </summary>
+        private sealed class LoggingThread
+        {
+            private readonly Thread m_thread;
+            private readonly string m_message;
+            private readonly eLogVerbosity m_verbosity;
+
+            public LoggingThread (string message, eLogVerbosity verbosity)
+            {
+                m_message = message;
+                m_verbosity = verbosity;
+                m_thread = new Thread(this.Run) { IsBackground = true };
+                m_thread.Start();
+            }
+
+            public Exception Failure { get; private set; }
+
+            public bool Join () => m_thread.Join(LoggerTestHelpers.kWaitTimeout);
+
+            private void Run ()
+            {
+                try
+                {
+                    Logger.LogInfo(m_message, m_verbosity);
+                }
+                catch (Exception exc)
+                {
+                    this.Failure = exc;
+                }
+            }
+        }
+    }
+
+
+    // =====================================================================================
+    // LoggerFileBehaviorTests
+    // What happens to the log file, and to the logger's settings, across retargets and
+    // reads. Uses temp dirs, and reads each file back after the logger has let go of it.
+    // =====================================================================================
+
+    [TestClass]
+    public class LoggerFileBehaviorTests
+    {
+        private const string kSortableTimestampFormat = "HH:mm:ss.fffffff";
+        private const string kSlowWriteReportTag = "[Logger] Slow log write:";
+        private const int kClockAdvanceMs = 50;
+        private const int kLockHoldMs = 100;
+        private const int kTimerSlopMs = 5;
+
+        private string m_tempDir;
+        private bool m_defaultLogToConsole;
+        private bool m_defaultLogToTrace;
+
+        [TestInitialize]
+        public void TestSetup ()
+        {
+            Logger.ResetToDefaults();
+            m_defaultLogToConsole = Logger.ShouldLogToConsole;
+            m_defaultLogToTrace = Logger.ShouldLogToTrace;
+
+            Logger.ShouldLogToConsole = false;
+            Logger.ShouldLogToTrace = false;
+            m_tempDir = Path.Combine(Path.GetTempPath(), $"AJut_LoggerFileTests_{Guid.NewGuid():N}");
+        }
+
+        [TestCleanup]
+        public void TestCleanup ()
+        {
+            Logger.ResetToDefaults();
+            try
+            {
+                if (Directory.Exists(m_tempDir))
+                {
+                    Directory.Delete(m_tempDir, true);
+                }
+            }
+            catch { }
+        }
+
+        // ---- Retargeting keeps settings ----
+
+        [TestMethod]
+        public void Retarget_KeepsDateTimeFormat ()
+        {
+            Logger.DateTimeFormat = "[dd/MMM/yyyy HH:mm:ss.ffff]";
+            Logger.CreateAndStartWritingToLogFileIn(m_tempDir);
+            Assert.AreEqual("[dd/MMM/yyyy HH:mm:ss.ffff]", Logger.DateTimeFormat, "Starting a log file threw away the timestamp format.");
+        }
+
+        [TestMethod]
+        public void Retarget_KeepsVerbosityManagerAndScenarios ()
+        {
+            LogVerbosityManager manager = Logger.VerbosityManager;
+            var scenario = new LogVerbosityScenario { EnterCriteria = new LogTextMatchCriteria { SearchText = "[ANY]" } };
+            manager.BaseVerbosity = eLogVerbositySetting.Verbose;
+            manager.Scenarios.Add(scenario);
+
+            Logger.CreateAndStartWritingToLogFileIn(m_tempDir);
+
+            Assert.AreSame(manager, Logger.VerbosityManager, "Starting a log file swapped out the verbosity manager.");
+            Assert.AreEqual(eLogVerbositySetting.Verbose, Logger.VerbosityManager.BaseVerbosity);
+            CollectionAssert.Contains(Logger.VerbosityManager.Scenarios, scenario);
+        }
+
+        [TestMethod]
+        public void Retarget_KeepsOutputSwitches ()
+        {
+            // Flip each switch away from its default, so a reset to defaults can't pass by luck
+            bool logToConsole = !m_defaultLogToConsole;
+            bool logToTrace = !m_defaultLogToTrace;
+            Logger.ShouldLogToConsole = logToConsole;
+            Logger.ShouldLogToTrace = logToTrace;
+            Logger.FlushToFileAfterEach = false;
+
+            Logger.CreateAndStartWritingToLogFileIn(m_tempDir);
+
+            Assert.AreEqual(logToConsole, Logger.ShouldLogToConsole, "Starting a log file reset ShouldLogToConsole.");
+            Assert.AreEqual(logToTrace, Logger.ShouldLogToTrace, "Starting a log file reset ShouldLogToTrace.");
+            Assert.IsFalse(Logger.FlushToFileAfterEach, "Starting a log file reset FlushToFileAfterEach.");
+        }
+
+        // ---- Reading the live log ----
+
+        [TestMethod]
+        public void ReadCurrentLogFromDisk_LaterLinesAppendRatherThanOverwrite ()
+        {
+            Logger.CreateAndStartWritingToLogFileIn(m_tempDir);
+            Logger.LogInfo("FIRST-LINE");
+            Logger.LogInfo("SECOND-LINE");
+
+            StringAssert.Contains(Logger.ReadCurrentLogFromDisk(), "FIRST-LINE");
+
+            // Longer than the first two lines together, so writing from the start of the file would wipe both out
+            Logger.LogInfo("THIRD-LINE, logged after the read, and long enough to cover everything written before it");
+            string logPath = Logger.LogFilePath;
+            Logger.CreateAndStartWritingToLogFileIn(null);
+
+            string logText = File.ReadAllText(logPath);
+            StringAssert.Contains(logText, "FIRST-LINE", "A line logged after reading the log overwrote the start of the file.");
+            StringAssert.Contains(logText, "SECOND-LINE");
+            StringAssert.Contains(logText, "THIRD-LINE");
+        }
+
+        // ---- Line order ----
+
+        [TestMethod]
+        public void LineOrder_TimestampsNeverRunBackward_WhenALineWaitedOnTheWriteLock ()
+        {
+            // Format goes on after the retarget, so this test only ever trips on line order
+            Logger.CreateAndStartWritingToLogFileIn(m_tempDir);
+            Logger.DateTimeFormat = kSortableTimestampFormat;
+
+            // Gets the first-call costs out of the way, so the waiting thread goes straight to the lock
+            Logger.LogInfo("WARM-UP-LINE");
+
+            object writeLock = GetWriteLock();
+            var waiter = new Thread(LogTheWaitingLine) { IsBackground = true };
+            lock (writeLock)
+            {
+                waiter.Start();
+                Assert.IsTrue(
+                    LoggerTestHelpers.WaitFor(() => (waiter.ThreadState & System.Threading.ThreadState.WaitSleepJoin) != 0),
+                    "The waiting thread never blocked on the write lock."
+                );
+                Thread.Sleep(kClockAdvanceMs);
+
+                // The lock is re-entrant, so this line goes straight into the file ahead of the one that is waiting
+                Logger.LogInfo("HOLDER-LINE");
+            }
+
+            Assert.IsTrue(waiter.Join(LoggerTestHelpers.kWaitTimeout), "The waiting thread did not finish.");
+            string logPath = Logger.LogFilePath;
+            Logger.CreateAndStartWritingToLogFileIn(null);
+
+            List<DateTime> stamps = ReadTimestamps(File.ReadAllText(logPath));
+            Assert.AreEqual(3, stamps.Count, "Expected the warm-up, holder, and waiting lines.");
+            for (int index = 1; index < stamps.Count; ++index)
+            {
+                Assert.IsTrue(stamps[index] >= stamps[index - 1], $"Line {index} is stamped earlier than the line written before it.");
+            }
+        }
+
+        // ---- Flush modes ----
+
+        [TestMethod]
+        public void FlushMode_DefaultsToFlushToDisk ()
+        {
+            Assert.AreEqual(eLogFlushMode.FlushToDisk, Logger.FlushMode);
+        }
+
+        [TestMethod]
+        public void FlushToFileAfterEach_MapsOntoFlushMode ()
+        {
+            Logger.FlushToFileAfterEach = false;
+            Assert.AreEqual(eLogFlushMode.Buffered, Logger.FlushMode);
+
+            Logger.FlushToFileAfterEach = true;
+            Assert.AreEqual(eLogFlushMode.FlushToDisk, Logger.FlushMode);
+
+            Logger.FlushMode = eLogFlushMode.FlushToOS;
+            Assert.IsTrue(Logger.FlushToFileAfterEach, "FlushToOS still flushes after each line.");
+        }
+
+        [TestMethod]
+        public void FlushToOS_LineIsInTheFileTheMomentTheCallReturns ()
+        {
+            Logger.FlushMode = eLogFlushMode.FlushToOS;
+            Logger.CreateAndStartWritingToLogFileIn(m_tempDir);
+
+            Logger.LogInfo("ALREADY-OUT");
+            StringAssert.Contains(ReadLiveLog(), "ALREADY-OUT");
+        }
+
+        [TestMethod]
+        public void Buffered_LineWaitsInTheProcessUntilFlushed ()
+        {
+            Logger.FlushMode = eLogFlushMode.Buffered;
+            Logger.CreateAndStartWritingToLogFileIn(m_tempDir);
+
+            Logger.LogInfo("STILL-BUFFERED");
+            Assert.IsFalse(ReadLiveLog().Contains("STILL-BUFFERED"), "A buffered line should not be in the file yet.");
+
+            Logger.ForceFlushToFile();
+            StringAssert.Contains(ReadLiveLog(), "STILL-BUFFERED");
+        }
+
+        // ---- Slow write reporting ----
+
+        [TestMethod]
+        public void SlowWriteThreshold_OffByDefault ()
+        {
+            Assert.AreEqual(TimeSpan.Zero, Logger.SlowWriteThreshold);
+            Logger.CreateAndStartWritingToLogFileIn(m_tempDir);
+            Logger.LogInfo("LINE-ONE");
+            Logger.LogInfo("LINE-TWO");
+
+            Assert.AreEqual(0, CountOccurrences(ReadLiveLog(), kSlowWriteReportTag));
+        }
+
+        [TestMethod]
+        public void SlowWriteThreshold_EachSlowLineGetsExactlyOneReport ()
+        {
+            // Every write takes longer than a single tick
+            Logger.SlowWriteThreshold = TimeSpan.FromTicks(1);
+            Logger.CreateAndStartWritingToLogFileIn(m_tempDir);
+            Logger.LogInfo("LINE-ONE");
+            Logger.LogInfo("LINE-TWO");
+
+            Assert.AreEqual(2, CountOccurrences(ReadLiveLog(), kSlowWriteReportTag), "One report per slow line, and a report is never itself reported on.");
+        }
+
+        [TestMethod]
+        public void SlowWriteThreshold_CountsTimeSpentWaitingOnTheWriteLock ()
+        {
+            Logger.SlowWriteThreshold = TimeSpan.FromMilliseconds(kLockHoldMs / 2);
+            Logger.CreateAndStartWritingToLogFileIn(m_tempDir);
+
+            object writeLock = GetWriteLock();
+            var waiter = new Thread(LogTheWaitingLine) { IsBackground = true, Name = "Waiting logger" };
+            lock (writeLock)
+            {
+                waiter.Start();
+                Assert.IsTrue(
+                    LoggerTestHelpers.WaitFor(() => (waiter.ThreadState & System.Threading.ThreadState.WaitSleepJoin) != 0),
+                    "The waiting thread never blocked on the write lock."
+                );
+                Thread.Sleep(kLockHoldMs);
+            }
+
+            Assert.IsTrue(waiter.Join(LoggerTestHelpers.kWaitTimeout), "The waiting thread did not finish.");
+            string logText = ReadLiveLog();
+            StringAssert.Contains(logText, "on thread", "No slow write report was logged.");
+            StringAssert.Contains(logText, "'Waiting logger'", "The report should name the thread that waited.");
+
+            Match waited = Regex.Match(logText, @"\(([\d.]+)ms waiting for the write lock");
+            Assert.IsTrue(waited.Success, "The report should break out the time spent waiting on the lock.");
+            double waitedMs = Double.Parse(waited.Groups[1].Value, CultureInfo.InvariantCulture);
+            Assert.IsTrue(waitedMs >= kLockHoldMs - kTimerSlopMs, $"Reported {waitedMs}ms waiting, but the lock was held for {kLockHoldMs}ms.");
+        }
+
+        // ---- Default formats ----
+
+        [TestMethod]
+        public void DefaultDateTimeFormat_TellsMorningFromAfternoon ()
+        {
+            var morning = new DateTime(2026, 9, 28, 2, 15, 30);
+            Assert.AreNotEqual(
+                morning.ToString(Logger.DateTimeFormat),
+                morning.AddHours(12).ToString(Logger.DateTimeFormat),
+                "2am and 2pm come out the same with the default timestamp format."
+            );
+        }
+
+        [TestMethod]
+        public void DefaultLogFilenameFormat_TellsMorningFromAfternoon ()
+        {
+            var morning = new DateTime(2026, 9, 28, 2, 15, 30);
+            Assert.AreNotEqual(
+                String.Format(Logger.LogFilenameFormat, morning),
+                String.Format(Logger.LogFilenameFormat, morning.AddHours(12)),
+                "Logs started at 2am and 2pm get the same file name with the default format."
+            );
+        }
+
+        private static void LogTheWaitingLine () => Logger.LogInfo("WAITING-LINE");
+
+        private static string ReadLiveLog () => LoggerTestHelpers.ReadFileShared(Logger.LogFilePath);
+
+        private static int CountOccurrences (string text, string fragment) => LoggerTestHelpers.CountOccurrences(text, fragment);
+
+        private static object GetWriteLock ()
+        {
+            object loggerInstance = typeof(Logger)
+                .GetField("g_LoggerInstance", BindingFlags.NonPublic | BindingFlags.Static)
+                .GetValue(null);
+
+            return typeof(Logger)
+                .GetField("m_logWritingLock", BindingFlags.NonPublic | BindingFlags.Instance)
+                .GetValue(loggerInstance);
+        }
+
+        private static List<DateTime> ReadTimestamps (string logText)
+        {
+            var stamps = new List<DateTime>();
+            foreach (string line in logText.Split("\r\n", StringSplitOptions.RemoveEmptyEntries))
+            {
+                // Lines look like: [Info] <timestamp> |   <message>
+                int start = line.IndexOf("] ") + 2;
+                int end = line.IndexOf(" |");
+                stamps.Add(
+                    DateTime.ParseExact(line.Substring(start, end - start), kSortableTimestampFormat, CultureInfo.InvariantCulture)
+                );
+            }
+
+            return stamps;
+        }
+    }
+
+
+    // =====================================================================================
+    // LoggerCrashSafetyTests
+    // Runs the crash host, which logs a known run of lines and then dies with none of the
+    // normal shutdown, and counts what made it into the file. A line the OS has been handed
+    // survives the process dying by any means, so with either flush mode every line has to
+    // be there - right up to the last one before the process went down.
+    // =====================================================================================
+
+    [TestClass]
+    public class LoggerCrashSafetyTests
+    {
+        private const string kCrashHostFileName = "AJut.Core.CrashHost.exe";
+        private static readonly TimeSpan kCrashHostTimeout = TimeSpan.FromSeconds(60);
+
+        private string m_tempDir;
+
+        [TestInitialize]
+        public void TestSetup ()
+        {
+            m_tempDir = Path.Combine(Path.GetTempPath(), $"AJut_LoggerCrashTests_{Guid.NewGuid():N}");
+        }
+
+        [TestCleanup]
+        public void TestCleanup ()
+        {
+            try
+            {
+                if (Directory.Exists(m_tempDir))
+                {
+                    Directory.Delete(m_tempDir, true);
+                }
+            }
+            catch { }
+        }
+
+        [DataTestMethod]
+        [DataRow(eCrashHostDeath.FailFast)]
+        [DataRow(eCrashHostDeath.StackOverflow)]
+        [DataRow(eCrashHostDeath.UnhandledException)]
+        [DataRow(eCrashHostDeath.AccessViolation)]
+        public void FlushToOS_EveryLineSurvivesTheProcessDying (eCrashHostDeath death)
+        {
+            this.AssertEveryLineSurvives(death, eLogFlushMode.FlushToOS);
+        }
+
+        [DataTestMethod]
+        [DataRow(eCrashHostDeath.FailFast)]
+        [DataRow(eCrashHostDeath.StackOverflow)]
+        [DataRow(eCrashHostDeath.UnhandledException)]
+        [DataRow(eCrashHostDeath.AccessViolation)]
+        public void FlushToDisk_EveryLineSurvivesTheProcessDying (eCrashHostDeath death)
+        {
+            this.AssertEveryLineSurvives(death, eLogFlushMode.FlushToDisk);
+        }
+
+        private void AssertEveryLineSurvives (eCrashHostDeath death, eLogFlushMode flushMode)
+        {
+            var startInfo = new ProcessStartInfo(Path.Combine(AppContext.BaseDirectory, kCrashHostFileName))
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+            startInfo.ArgumentList.Add(death.ToString());
+            startInfo.ArgumentList.Add(flushMode.ToString());
+            startInfo.ArgumentList.Add(m_tempDir);
+
+            using (Process crashHost = Process.Start(startInfo))
+            {
+                if (!crashHost.WaitForExit((int)kCrashHostTimeout.TotalMilliseconds))
+                {
+                    crashHost.Kill();
+                    Assert.Fail($"The crash host never died from {death}.");
+                }
+
+                Assert.AreNotEqual(0, crashHost.ExitCode, $"The crash host exited cleanly, so the {death} never happened.");
+            }
+
+            string[] logFiles = Directory.GetFiles(m_tempDir);
+            Assert.AreEqual(1, logFiles.Length, "Expected the crash host to leave exactly one log file.");
+            string logText = LoggerTestHelpers.ReadFileShared(logFiles[0]);
+
+            Assert.AreEqual(CrashHostScript.kBurstLineCount, LoggerTestHelpers.CountOccurrences(logText, CrashHostScript.kBurstTag), "Burst lines were lost.");
+            Assert.AreEqual(1, LoggerTestHelpers.CountOccurrences(logText, CrashHostScript.kErrorTag), "The error line was lost.");
+            Assert.AreEqual(CrashHostScript.kTrailingLineCount, LoggerTestHelpers.CountOccurrences(logText, CrashHostScript.kTrailingTag), "Trailing lines were lost.");
+            Assert.AreEqual(1, LoggerTestHelpers.CountOccurrences(logText, CrashHostScript.kLastTag), $"The last line before the {death} was lost.");
+        }
+    }
+
+
+    /// <summary>
+    /// Shared bits for the logger tests: bounded waits (so a broken interleaving fails the test instead of hanging the run),
+    /// and reading log files back.
+    /// </summary>
+    internal static class LoggerTestHelpers
+    {
+        public static readonly TimeSpan kWaitTimeout = TimeSpan.FromSeconds(5);
+
+        public static bool WaitFor (Func<bool> condition)
+        {
+            var timer = Stopwatch.StartNew();
+            while (!condition())
+            {
+                if (timer.Elapsed > kWaitTimeout)
+                {
+                    return false;
+                }
+
+                Thread.Sleep(1);
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Reads a log file even while something still has it open for writing, the way a log viewer would.
+        /// </summary>
+        public static string ReadFileShared (string path)
+        {
+            using (var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var reader = new StreamReader(stream))
+            {
+                return reader.ReadToEnd();
+            }
+        }
+
+        public static int CountOccurrences (string text, string fragment)
+        {
+            int count = 0;
+            int index = text.IndexOf(fragment, StringComparison.Ordinal);
+            while (index >= 0)
+            {
+                ++count;
+                index = text.IndexOf(fragment, index + fragment.Length, StringComparison.Ordinal);
+            }
+
+            return count;
         }
     }
 }

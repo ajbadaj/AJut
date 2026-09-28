@@ -28,6 +28,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\libs\AJut.Core\AJut.Core.csproj" />
+    <!-- The logger crash-safety tests launch this, and share its script constants -->
+    <ProjectReference Include="..\AJut.Core.CrashHost\AJut.Core.CrashHost.csproj" />
     <!-- Hook the source generator directly so JsonSourceGenTests' [OptimizeAJson] types get -->
     <!-- compiled with their generated serializers. Mirrors how a NuGet consumer picks the    -->
     <!-- analyzer up via AJut.Core's nupkg, but in-repo we go ProjectReference-as-Analyzer.   -->

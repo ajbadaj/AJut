@@ -26,6 +26,9 @@
                 Debug.WriteLine(e.Exception.ToString());
             };
 
+            // Goes in before AJut's setup runs, the way a host app with its own crash reporter would - see the Crash Filter tab
+            StandInHostCrashFilter.Install();
+
             Instance = this;
             this.InitializeComponent();
 
@@ -49,7 +52,7 @@
                 SharedProjectName = "AJut.ShowRoom",
                 OnExceptionReceived = LogException,
             });
-            Logger.FlushToFileAfterEach = true;
+            Logger.FlushMode = eLogFlushMode.FlushToOS;
             Logger.LogInfo("Starting up AJut Show Room for WinUI");
             Logger.LogInfo($"Using AJut.Core version #{this.AJut_Core_Version}");
             Logger.LogInfo($"Using AJut.UX.WinUI version #{this.AJut_UX_WinUI_Version}");
@@ -63,7 +66,7 @@
                 {
                     SearchText = "[DOCK-SIZE]",
                 },
-                // Don't log anything until we see our test, then allow the next 10 things
+                // Don't log anything until we see our text, then let that line plus the 9 after it through
                 ExitCriteria = new LogCountCriteria
                 {
                     CountThreshold = 10,

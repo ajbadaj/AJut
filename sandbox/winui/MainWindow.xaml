@@ -1055,6 +1055,18 @@
                         </TabViewItem.Content>
                     </TabViewItem>
 
+                    <!-- ===[ Crash Filter ]======================================================= -->
+                    <!-- Manual check that AJut's native crash filter keeps a host's filter installed
+                         before it, and runs that one first. Needs running without the debugger. -->
+                    <TabViewItem Header="Crash Filter" IsClosable="False" VerticalContentAlignment="Stretch">
+                        <TabViewItem.IconSource>
+                            <SymbolIconSource Symbol="Important"/>
+                        </TabViewItem.IconSource>
+                        <TabViewItem.Content>
+                            <local:NativeCrashFilterCheck/>
+                        </TabViewItem.Content>
+                    </TabViewItem>
+
                     <!-- ===[ Window Chrome ]====================================================== -->
                     <!-- Probe for the maximize/restore chrome desync. Maximize and restore keep the
                          OverlappedPresenter kind (only its State flips), so the AppWindow.Changed path

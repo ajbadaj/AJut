@@ -87,6 +87,8 @@
             {
                 AppDomain.CurrentDomain.UnhandledException += _OnHandleException;
                 application.UnhandledException += _AppOnUnhandledException;
+
+                // Keeps any native crash filter the host set up before this, and runs it first on a crash - see Setup for why
                 NativeCrashHandler.Setup();
             }
 
@@ -232,6 +234,8 @@
         {
             private const uint EXCEPTION_ACCESS_VIOLATION = 0xC0000005;
             private const uint EXCEPTION_STACK_OVERFLOW = 0xC00000FD;
+            private const int EXCEPTION_CONTINUE_SEARCH = 0;
+            private const int EXCEPTION_CONTINUE_EXECUTION = -1;
 
             [StructLayout(LayoutKind.Sequential)]
             private struct EXCEPTION_RECORD
@@ -257,16 +261,35 @@
             private static extern IntPtr SetUnhandledExceptionFilter(IntPtr lpTopLevelExceptionFilter);
 
             private delegate int UnhandledExceptionFilterDelegate(IntPtr exceptionPointersPtr);
-            private static UnhandledExceptionFilterDelegate m_handler;
+            private static UnhandledExceptionFilterDelegate g_handler;
+            private static UnhandledExceptionFilterDelegate g_previousFilter;
 
             public static void Setup()
             {
-                m_handler = OnNativeException;
-                SetUnhandledExceptionFilter(Marshal.GetFunctionPointerForDelegate(m_handler));
+                g_handler = OnNativeException;
+
+                // A process only gets one of these filters - setting one replaces whatever was there, and hands back what it
+                //  replaced. So a filter the host set up before this (a crash reporter writing a dump, say) only ever runs if
+                //  this one calls it, and it gets called FIRST: after a native crash the heap may be corrupt, and the host's
+                //  filter should get its chance before this does anything that allocates. Anything that sets a filter AFTER
+                //  this replaces it, and has to chain to it the same way or this never runs.
+                IntPtr previousFilter = SetUnhandledExceptionFilter(Marshal.GetFunctionPointerForDelegate(g_handler));
+
+                // Wrapped now rather than at crash time, since wrapping allocates
+                g_previousFilter = previousFilter == IntPtr.Zero
+                    ? null
+                    : Marshal.GetDelegateForFunctionPointer<UnhandledExceptionFilterDelegate>(previousFilter);
             }
 
             private static int OnNativeException(IntPtr exceptionPointersPtr)
             {
+                int result = g_previousFilter?.Invoke(exceptionPointersPtr) ?? EXCEPTION_CONTINUE_SEARCH;
+                if (result == EXCEPTION_CONTINUE_EXECUTION)
+                {
+                    // The earlier filter dealt with it and the app carries on, so there is no crash to report
+                    return result;
+                }
+
                 try
                 {
                     var message = DecodeExceptionInfo(exceptionPointersPtr);
@@ -277,7 +300,7 @@
                     Logger.LogError($"Native crash (failed to decode: {ex.Message})");
                 }
 
-                return 0; // EXCEPTION_CONTINUE_SEARCH
+                return result;
             }
 
             private static string DecodeExceptionInfo(IntPtr exceptionPointersPtr)
