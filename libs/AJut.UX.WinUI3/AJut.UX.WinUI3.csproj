@@ -18,7 +18,7 @@
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <EnableMsixTooling>true</EnableMsixTooling>
     <WindowsPackageType>None</WindowsPackageType>
-    <Version>1.1.16.136</Version>
+    <Version>1.1.17.137</Version>
     <!-- For the native crash filter to call the filter it replaced through a raw function pointer -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- =========[ NuGet packaging - ensure XBF + PRI resources are included ]======== -->
