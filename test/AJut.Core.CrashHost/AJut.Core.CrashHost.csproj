@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- A throwaway process for the logger crash-safety tests: it logs a known run of lines, then dies  -->
+  <!-- in whatever way it is told to, and the tests count what made it into the log file.            -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\libs\AJut.Core\AJut.Core.csproj" />
+  </ItemGroup>
+</Project>

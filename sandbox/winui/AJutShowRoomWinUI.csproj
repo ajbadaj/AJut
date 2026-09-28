@@ -11,10 +11,13 @@
     <UseWinUI>true</UseWinUI>
     <EnableMsixTooling>true</EnableMsixTooling>
     <Nullable>enable</Nullable>
+    <!-- The crash filter check calls a crash filter through a raw function pointer -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="ColorParseExample.xaml" />
     <None Remove="BrushButtonExample.xaml" />
+    <None Remove="NativeCrashCheck\NativeCrashFilterCheck.xaml" />
     <None Remove="UseCaseTest\ItemsDockPanel.xaml" />
     <None Remove="UseCaseTest\PropertiesDockPanel.xaml" />
     <None Remove="UseCaseTest\UseCaseEditorPage.xaml" />
@@ -70,6 +73,9 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Update="BrushButtonExample.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Update="NativeCrashCheck\NativeCrashFilterCheck.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Update="UseCaseTest\ItemsDockPanel.xaml">

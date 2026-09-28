@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="AJutShowRoomWinUI.NativeCrashFilterCheck"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    x:Name="Self">
+
+    <ScrollViewer VerticalScrollMode="Enabled" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled" Padding="16">
+        <StackPanel Spacing="16" MaxWidth="720" HorizontalAlignment="Left">
+
+            <TextBlock Text="Native Crash Filter Chaining" FontSize="18" FontWeight="Bold"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.7"
+                       Text="A process only gets one native crash filter, and setting one replaces the last. The show room installs a stand-in 'host' filter in its App constructor, before AJut's setup installs its own - the same order an app with its own crash reporter would have. AJut's filter should keep the stand-in, run it first on a crash, and only then log its own line."/>
+
+            <TextBlock Text="To check it" FontWeight="SemiBold"/>
+            <TextBlock TextWrapping="Wrap"
+                       Text="1. Run WITHOUT the debugger (Ctrl+F5). With a debugger attached, Windows hands the crash to the debugger and neither filter runs."/>
+            <TextBlock TextWrapping="Wrap"
+                       Text="2. Press the button below. It starts a native thread that access violates, which nothing can catch, so the app closes."/>
+            <TextBlock TextWrapping="Wrap"
+                       Text="3. Open the log file below. The last two lines should be the [HOST-FILTER] line, then AJut's 'The app will crash...' line, in that order. Only AJut's line means AJut replaced the host's filter. The two the other way round means AJut logged before giving the host its chance."/>
+
+            <TextBlock Text="Current log file" FontWeight="SemiBold"/>
+            <TextBox IsReadOnly="True" TextWrapping="Wrap" Text="{Binding Path=LogFilePath, ElementName=Self}"/>
+
+            <Button Content="Crash the app natively" Click="OnCrashNatively_OnClick" HorizontalAlignment="Left"/>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
