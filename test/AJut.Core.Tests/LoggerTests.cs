@@ -1376,6 +1376,12 @@ namespace AJut.Core.UnitTests
         private const string kCrashHostFileName = "AJut.Core.CrashHost.exe";
         private static readonly TimeSpan kCrashHostTimeout = TimeSpan.FromSeconds(60);
 
+        // What each death leaves as the exit code, so a death that quietly turned into another kind fails the test
+        private const uint kFailFastExitCode = 0x80131623;           // COR_E_FAILFAST
+        private const uint kStackOverflowExitCode = 0xC00000FD;      // STATUS_STACK_OVERFLOW
+        private const uint kUnhandledExceptionExitCode = 0xE0434352; // The runtime's own exception code
+        private const uint kAccessViolationExitCode = 0xC0000005;    // STATUS_ACCESS_VIOLATION
+
         private string m_tempDir;
 
         [TestInitialize]
@@ -1436,7 +1442,8 @@ namespace AJut.Core.UnitTests
                     Assert.Fail($"The crash host never died from {death}.");
                 }
 
-                Assert.AreNotEqual(0, crashHost.ExitCode, $"The crash host exited cleanly, so the {death} never happened.");
+                uint exitCode = unchecked((uint)crashHost.ExitCode);
+                Assert.AreEqual(ExpectedExitCode(death), exitCode, $"The crash host exited with 0x{exitCode:X8}, which is not what a {death} leaves.");
             }
 
             string[] logFiles = Directory.GetFiles(m_tempDir);
@@ -1447,6 +1454,18 @@ namespace AJut.Core.UnitTests
             Assert.AreEqual(1, LoggerTestHelpers.CountOccurrences(logText, CrashHostScript.kErrorTag), "The error line was lost.");
             Assert.AreEqual(CrashHostScript.kTrailingLineCount, LoggerTestHelpers.CountOccurrences(logText, CrashHostScript.kTrailingTag), "Trailing lines were lost.");
             Assert.AreEqual(1, LoggerTestHelpers.CountOccurrences(logText, CrashHostScript.kLastTag), $"The last line before the {death} was lost.");
+        }
+
+        private static uint ExpectedExitCode (eCrashHostDeath death)
+        {
+            return death switch
+            {
+                eCrashHostDeath.FailFast => kFailFastExitCode,
+                eCrashHostDeath.StackOverflow => kStackOverflowExitCode,
+                eCrashHostDeath.UnhandledException => kUnhandledExceptionExitCode,
+                eCrashHostDeath.AccessViolation => kAccessViolationExitCode,
+                _ => throw new ArgumentOutOfRangeException(nameof(death)),
+            };
         }
     }
 

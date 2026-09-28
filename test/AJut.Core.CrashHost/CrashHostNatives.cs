@@ -13,7 +13,7 @@ namespace AJut.Core.CrashHost
         private const uint SEM_NOGPFAULTERRORBOX = 0x0002;
         private const uint SEM_NOOPENFILEERRORBOX = 0x8000;
 
-        // Nothing is mapped at the very bottom of the address space, so starting a thread there faults immediately
+        // Nothing is mapped at the very bottom of the address space, so reading from here faults
         private static readonly IntPtr kUnmappedAddress = new IntPtr(0x10);
 
         [DllImport("kernel32.dll")]
@@ -31,11 +31,14 @@ namespace AJut.Core.CrashHost
         }
 
         /// <summary>
-        /// Starts a native thread at an unmapped address, which access violates before a single instruction runs.
+        /// Starts a native thread running strlen on an unmapped address, which access violates with no managed code on its
+        /// stack. Starting a thread AT an unmapped address instead gets the process killed by Control Flow Guard, which is a
+        /// fail fast rather than an access violation.
         /// </summary>
         public static void StartThreadThatAccessViolates ()
         {
-            CreateThread(IntPtr.Zero, UIntPtr.Zero, kUnmappedAddress, IntPtr.Zero, 0, out _);
+            IntPtr strlen = NativeLibrary.GetExport(NativeLibrary.Load("msvcrt.dll"), "strlen");
+            CreateThread(IntPtr.Zero, UIntPtr.Zero, strlen, kUnmappedAddress, 0, out _);
         }
     }
 }

@@ -25,7 +25,6 @@ namespace AJut.Core.CrashHost
     {
         public const int kBurstLineCount = 2000;
         public const int kTrailingLineCount = 200;
-        public const int kTrailingLineGapMs = 1;
 
         public const string kBurstTag = "[BURST]";
         public const string kErrorTag = "[ERROR-LINE]";

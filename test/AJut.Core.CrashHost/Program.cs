@@ -30,7 +30,6 @@ namespace AJut.Core.CrashHost
             for (int index = 0; index < CrashHostScript.kTrailingLineCount; ++index)
             {
                 Logger.LogInfo($"{CrashHostScript.kTrailingTag} {index}");
-                Thread.Sleep(CrashHostScript.kTrailingLineGapMs);
             }
 
             Logger.LogInfo(CrashHostScript.kLastTag);
