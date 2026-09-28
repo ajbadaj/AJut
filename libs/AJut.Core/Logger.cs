@@ -11,8 +11,9 @@
     /// </summary>
     public class Logger : IDisposable
     {
-        private const string kDefaultLogFilenameFormat = "log-{0:MM.dd.yyyy-hh.mm.ss}.txt";
-        private const string kDefaultDateTimeFormat = "MM.dd.yyy-hh.mm.ss";
+        // 24 hour clock, since the 12 hour one needs an AM/PM marker that some cultures print as nothing at all
+        private const string kDefaultLogFilenameFormat = "log-{0:MM.dd.yyyy-HH.mm.ss}.txt";
+        private const string kDefaultDateTimeFormat = "MM.dd.yyyy-HH.mm.ss";
         private const long kDefaultLogFileSplitSizeBytes = 5L * 1024L * 1024L;
         private const string kSlowWriteReportFormat = "[WARNING] [Logger] Slow log write: {0:F1}ms on thread {1} '{2}' ({3:F1}ms waiting for the write lock, {4:F1}ms writing)";
 
