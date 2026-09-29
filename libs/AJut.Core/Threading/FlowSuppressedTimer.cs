@@ -5,8 +5,11 @@ namespace AJut.Threading
 
     /// <summary>
     /// Builds <see cref="Timer"/>s with execution context flow suppressed, so their callbacks don't run inside (or keep alive)
-    /// the async locals and culture of whichever thread happened to build them. This is the right default for nearly every
-    /// timer. The only case for a plain <see cref="Timer"/> is a one-shot timer built inside a single operation, whose callback
+    /// the async locals and culture of whichever thread happened to build them.
+    /// 
+    /// <b>This is the right default for nearly every timer</b>.
+    /// 
+    /// The only case for a plain <see cref="Timer"/> is a one-shot timer built inside a single operation, whose callback
     /// is the rest of that operation and needs its ambient state - the comment inside <see cref="Create"/> goes through why.
     /// Elsewhere this is known as a non-capturing timer. Mimics the Microsoft NonCapturing timer built in a few
     /// places, example: https://source.dot.net/#Microsoft.Extensions.FileProviders.Physical/src/runtime/src/libraries/Common/src/Extensions/NonCapturingTimer/NonCapturingTimer.cs,f98caeaeb54188ff
