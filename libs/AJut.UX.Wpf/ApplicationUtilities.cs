@@ -17,7 +17,6 @@
         private static bool g_isSetup = false;
         private static bool g_blockReentrancy = false;
         public static string g_sharedProjectName = null;
-
         public static string ProjectName { get; private set; }
         public static string AppDataRoot { get; private set; }
 
@@ -50,10 +49,12 @@
 
             if (config.SetupLogging)
             {
-                Logger.CreateAndStartWritingToLogFileIn(EstablishLogsDirectory());
+                string logsDir = DetermineLogsDirectory(AppDataRoot, ProjectName, g_sharedProjectName, config.StorageRootIsolation);
+                Directory.CreateDirectory(logsDir);
+                Logger.CreateAndStartWritingToLogFileIn(logsDir);
                 if (config.AgeMaxInDaysToKeepLogs != -1)
                 {
-                    PurgeAllLogsOlderThan(TimeSpan.FromDays(config.AgeMaxInDaysToKeepLogs));
+                    PurgeAllLogsOlderThan(TimeSpan.FromDays(config.AgeMaxInDaysToKeepLogs), logsDir);
                 }
             }
 
@@ -150,13 +151,11 @@
         /// </summary>
         public static void PurgeAllLogsOlderThan (TimeSpan age)
         {
-            DirectoryInfo logsFolder = new DirectoryInfo(EstablishLogsDirectory());
-            foreach (FileInfo file in logsFolder.EnumerateFiles().ToList())
+            // Nothing to purge if the logger never started
+            string logsDir = Path.GetDirectoryName(Logger.LogFilePath);
+            if (logsDir != null)
             {
-                if (DateTime.Now - file.LastWriteTime > age)
-                {
-                    file.Delete();
-                }
+                PurgeAllLogsOlderThan(age, logsDir);
             }
         }
 
@@ -185,7 +184,34 @@
                 return config.StorageRootOverride;
             }
 
-            return WindowsEnvironmentHelper.EstablishSpecialFolderLocation(config.ApplicationStorageRoot ?? kDefaultStorageRoot, config.StorageRootProjectName);
+            Environment.SpecialFolder specialFolder = config.ApplicationStorageRoot ?? kDefaultStorageRoot;
+
+            // Packaging alone does not isolate the special folder. GetFolderPath hands a packaged app the plain shared
+            //  folder, and only MSIX write virtualization makes it app specific, so the project folder goes on unless the
+            //  config says virtualization is on. Nothing detects that - the config states it.
+            if (config.StorageRootIsolation == eStorageRootIsolation.PackageVirtualization)
+            {
+                return WindowsEnvironmentHelper.EstablishSpecialFolderLocation(specialFolder);
+            }
+
+            return WindowsEnvironmentHelper.EstablishSpecialFolderLocation(specialFolder, config.StorageRootProjectName);
+        }
+
+        /// <summary>
+        /// Works out where logs go under the app data root: a folder per project whenever that root is shared, straight
+        /// into Logs otherwise.
+        /// </summary>
+        internal static string DetermineLogsDirectory (string appDataRoot, string projectName, string sharedProjectName, eStorageRootIsolation storageRootIsolation)
+        {
+            // Projects sharing a root each get their own logs folder. A virtualized package root is shared by everything
+            //  in the package (and by every app on the machine if the setting is wrong), so it gets one too.
+            if ((sharedProjectName != null)
+                || (storageRootIsolation == eStorageRootIsolation.PackageVirtualization))
+            {
+                return Path.Combine(appDataRoot, "Logs", projectName);
+            }
+
+            return Path.Combine(appDataRoot, "Logs");
         }
 
         /// <summary>
@@ -214,20 +240,16 @@
             return config.DetermineCryptoSeed();
         }
 
-        private static string EstablishLogsDirectory ()
+        private static void PurgeAllLogsOlderThan (TimeSpan age, string logsDir)
         {
-            string logsDir;
-            if (g_sharedProjectName != null)
+            DirectoryInfo logsFolder = new DirectoryInfo(logsDir);
+            foreach (FileInfo file in logsFolder.EnumerateFiles().ToList())
             {
-                logsDir = Path.Combine(AppDataRoot, "Logs", ProjectName);
+                if (DateTime.Now - file.LastWriteTime > age)
+                {
+                    file.Delete();
+                }
             }
-            else
-            {
-                logsDir = Path.Combine(AppDataRoot, "Logs");
-            }
-
-            Directory.CreateDirectory(logsDir);
-            return logsDir;
         }
     }
 }

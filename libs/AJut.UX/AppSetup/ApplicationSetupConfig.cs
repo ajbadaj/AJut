@@ -22,6 +22,28 @@ namespace AJut.UX
     }
 
     /// <summary>
+    /// What keeps an app's storage root apart from every other app using the same special folder
+    /// </summary>
+    public enum eStorageRootIsolation
+    {
+        /// <summary>
+        /// A folder named for <see cref="ApplicationSetupConfig.StorageRootProjectName"/> is appended to the special
+        /// folder. This is right for unpackaged apps and for packaged apps with MSIX write virtualization turned off, and
+        /// merely redundant (one extra folder level, nothing breaks) for packaged apps that have it on.
+        /// </summary>
+        ProjectFolder,
+
+        /// <summary>
+        /// The special folder is used as is, with no project folder appended, because MSIX write virtualization already
+        /// redirects what the app writes there into the package's own LocalCache. Only pick this for a packaged app that
+        /// has write virtualization on. Anywhere else the root is the real special folder shared by every app on the
+        /// machine, and anything built with BuildAppDataProjectPath lands directly in it. Logs are kept safe either way,
+        /// since this setting always gives them a project named folder under Logs.
+        /// </summary>
+        PackageVirtualization,
+    }
+
+    /// <summary>
     /// Everything application setup needs, shared by the WPF and WinUI3 surfaces so a project targeting both writes one
     /// config instead of two parameter lists that have quietly drifted apart from each other.
     /// </summary>
@@ -69,6 +91,14 @@ namespace AJut.UX
         /// when a <see cref="StorageRootOverride"/> is set.
         /// </summary>
         public Environment.SpecialFolder? ApplicationStorageRoot { get; init; }
+
+        /// <summary>
+        /// Whether a <see cref="StorageRootProjectName"/> folder is appended to the <see cref="ApplicationStorageRoot"/>
+        /// special folder, or the special folder is used as is because package virtualization already isolates it. See
+        /// <see cref="eStorageRootIsolation"/> for when each is right. Ignored entirely when a
+        /// <see cref="StorageRootOverride"/> is set.
+        /// </summary>
+        public eStorageRootIsolation StorageRootIsolation { get; init; } = eStorageRootIsolation.ProjectFolder;
 
         /// <summary>
         /// The exact folder to use as the app data root. This wins over <see cref="ApplicationStorageRoot"/>, and unlike

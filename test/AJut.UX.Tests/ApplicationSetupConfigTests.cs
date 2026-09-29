@@ -28,6 +28,13 @@ namespace AJut.UX.Tests
         }
 
         [TestMethod]
+        public void SetupConfig_StorageRootIsolation_DefaultsToAppendingTheProjectFolder ()
+        {
+            // The safe answer everywhere - redundant under package virtualization, but never a root shared with other apps
+            Assert.AreEqual(eStorageRootIsolation.ProjectFolder, new ApplicationSetupConfig(kProjectName).StorageRootIsolation);
+        }
+
+        [TestMethod]
         public void SetupConfig_StorageRootProjectName_PrefersTheSharedName ()
         {
             Assert.AreEqual(kProjectName, new ApplicationSetupConfig(kProjectName).StorageRootProjectName);
