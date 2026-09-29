@@ -1,5 +1,6 @@
 ﻿namespace AJut.UX
 {
+    using AJut.OS.Windows;
     using AJut.Security;
     using Microsoft.UI.Xaml;
     using System;
@@ -10,9 +11,15 @@
     public delegate bool ExceptionProcessor(object exceptionObject);
     public static class ApplicationUtilities
     {
+        // What WinUI3 setup roots app data in when a config does not say: local app data on Windows, roaming elsewhere
+        private static readonly Environment.SpecialFolder kDefaultStorageRoot = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            ? Environment.SpecialFolder.LocalApplicationData
+            : Environment.SpecialFolder.ApplicationData;
+
         private static bool g_isSetup = false;
         private static bool g_blockReentrancy = false;
         public static string g_sharedProjectName = null;
+        private static eStorageRootIsolation g_storageRootIsolation = eStorageRootIsolation.ProjectFolder;
 
         public static string ProjectName { get; private set; }
         public static string AppDataRoot { get; private set; }
@@ -71,6 +78,7 @@
             }
 
             g_sharedProjectName = config.SharedProjectName;
+            g_storageRootIsolation = config.StorageRootIsolation;
             ProjectName = config.ProjectName;
 
             AppDataRoot = DetermineAppDataRoot(config);
@@ -95,10 +103,11 @@
 
             if (config.SetupLogging)
             {
-                Logger.CreateAndStartWritingToLogFileIn(EstablishLogsDirectory());
+                string logsDir = EstablishLogsDirectory();
+                Logger.CreateAndStartWritingToLogFileIn(logsDir);
                 if (config.AgeMaxInDaysToKeepLogs != -1)
                 {
-                    PurgeAllLogsOlderThan(TimeSpan.FromDays(config.AgeMaxInDaysToKeepLogs));
+                    PurgeAllLogsOlderThan(TimeSpan.FromDays(config.AgeMaxInDaysToKeepLogs), logsDir);
                 }
             }
 
@@ -168,17 +177,7 @@
         /// <summary>
         /// Manually purge all logs that are outside of the given time span (evaluated by last write time)
         /// </summary>
-        public static void PurgeAllLogsOlderThan(TimeSpan age)
-        {
-            DirectoryInfo logsFolder = new DirectoryInfo(EstablishLogsDirectory());
-            foreach (FileInfo file in logsFolder.EnumerateFiles().ToList())
-            {
-                if (DateTime.Now - file.LastWriteTime > age)
-                {
-                    file.Delete();
-                }
-            }
-        }
+        public static void PurgeAllLogsOlderThan(TimeSpan age) => PurgeAllLogsOlderThan(age, EstablishLogsDirectory());
 
         /// <summary>
         /// Builds a string path for something relative to this application's app data root folder (assumes it was setup via the <see cref="RunOnetimeSetup"/> function).
@@ -189,45 +188,69 @@
         }
 
         /// <summary>
-        /// Works out what the <see cref="AppDataRoot"/> should be from the setup config
+        /// Works out what the <see cref="AppDataRoot"/> should be from the setup config, ensuring the folder exists either way.
         /// </summary>
-        private static string DetermineAppDataRoot(ApplicationSetupConfig config)
+        /// <remarks>
+        /// Split out of <see cref="RunOnetimeSetup(Application, ApplicationSetupConfig)"/> so the precedence and the verbatim handling can be tested without standing up an <see cref="Application"/>.
+        /// </remarks>
+        internal static string DetermineAppDataRoot(ApplicationSetupConfig config)
         {
-            // An override is the root, exactly as given, so a process handed somebody else's storage root lands on it
+            // An override is the root, exactly as given. Appending the project name the way the special folder path
+            //  below does would defeat the entire point of setting one - you would end up in a subfolder of the root
+            //  you were handed, and quietly disagree with whoever handed it to you.
             if (config.StorageRootOverride != null)
             {
+                Directory.CreateDirectory(config.StorageRootOverride);
                 return config.StorageRootOverride;
             }
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            Environment.SpecialFolder specialFolder = config.ApplicationStorageRoot ?? kDefaultStorageRoot;
+
+            // Packaging alone does not isolate the special folder. GetFolderPath hands a packaged app the plain shared
+            //  folder, and only MSIX write virtualization makes it app specific, so the project folder goes on unless the
+            //  config says virtualization is on. Nothing detects that - the config states it.
+            if (config.StorageRootIsolation == eStorageRootIsolation.PackageVirtualization)
             {
-                // In packaged windows apps, this will contain the package name - so putting it again is redundant
-                //  and packaging is the default for WinUI and since this is a WinUI utility that's what we will assume
-                //  allowing the user to override this behavior if they want via the StorageRootOverride
-                return Environment.GetFolderPath(config.ApplicationStorageRoot ?? Environment.SpecialFolder.LocalApplicationData);
+                return WindowsEnvironmentHelper.EstablishSpecialFolderLocation(specialFolder);
             }
 
-            // Mac/Linux
-            return Path.Combine(
-                Environment.GetFolderPath(config.ApplicationStorageRoot ?? Environment.SpecialFolder.ApplicationData),
-                config.StorageRootProjectName
-            );
+            return WindowsEnvironmentHelper.EstablishSpecialFolderLocation(specialFolder, config.StorageRootProjectName);
+        }
+
+        /// <summary>
+        /// Works out where logs go under the app data root: a folder per project whenever that root is shared, straight
+        /// into Logs otherwise.
+        /// </summary>
+        internal static string DetermineLogsDirectory(string appDataRoot, string projectName, string sharedProjectName, eStorageRootIsolation storageRootIsolation)
+        {
+            // Projects sharing a root each get their own logs folder. A virtualized package root is shared by everything
+            //  in the package (and by every app on the machine if the setting is wrong), so it gets one too.
+            if ((sharedProjectName != null)
+                || (storageRootIsolation == eStorageRootIsolation.PackageVirtualization))
+            {
+                return Path.Combine(appDataRoot, "Logs", projectName);
+            }
+
+            return Path.Combine(appDataRoot, "Logs");
         }
 
         private static string EstablishLogsDirectory()
         {
-            string logsDir;
-            if (g_sharedProjectName != null)
-            {
-                logsDir = Path.Combine(AppDataRoot, "Logs", ProjectName);
-            }
-            else
-            {
-                logsDir = Path.Combine(AppDataRoot, "Logs");
-            }
-
+            string logsDir = DetermineLogsDirectory(AppDataRoot, ProjectName, g_sharedProjectName, g_storageRootIsolation);
             Directory.CreateDirectory(logsDir);
             return logsDir;
+        }
+
+        private static void PurgeAllLogsOlderThan(TimeSpan age, string logsDir)
+        {
+            DirectoryInfo logsFolder = new DirectoryInfo(logsDir);
+            foreach (FileInfo file in logsFolder.EnumerateFiles().ToList())
+            {
+                if (DateTime.Now - file.LastWriteTime > age)
+                {
+                    file.Delete();
+                }
+            }
         }
 
         private static class NativeCrashHandler
