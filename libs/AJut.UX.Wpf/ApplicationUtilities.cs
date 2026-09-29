@@ -17,8 +17,6 @@
         private static bool g_isSetup = false;
         private static bool g_blockReentrancy = false;
         public static string g_sharedProjectName = null;
-        private static eStorageRootIsolation g_storageRootIsolation = eStorageRootIsolation.ProjectFolder;
-
         public static string ProjectName { get; private set; }
         public static string AppDataRoot { get; private set; }
 
@@ -42,7 +40,6 @@
             string cryptoSeed = DetermineCryptoSeed(config);
 
             g_sharedProjectName = config.SharedProjectName;
-            g_storageRootIsolation = config.StorageRootIsolation;
             ProjectName = config.ProjectName;
             AppDataRoot = DetermineAppDataRoot(config);
             CryptoObfuscation.SeedDefaults(cryptoSeed);
@@ -52,7 +49,8 @@
 
             if (config.SetupLogging)
             {
-                string logsDir = EstablishLogsDirectory();
+                string logsDir = DetermineLogsDirectory(AppDataRoot, ProjectName, g_sharedProjectName, config.StorageRootIsolation);
+                Directory.CreateDirectory(logsDir);
                 Logger.CreateAndStartWritingToLogFileIn(logsDir);
                 if (config.AgeMaxInDaysToKeepLogs != -1)
                 {
@@ -151,7 +149,15 @@
         /// <summary>
         /// Manually purge all logs that are outside of the given time span (evaluated by last write time)
         /// </summary>
-        public static void PurgeAllLogsOlderThan (TimeSpan age) => PurgeAllLogsOlderThan(age, EstablishLogsDirectory());
+        public static void PurgeAllLogsOlderThan (TimeSpan age)
+        {
+            // Nothing to purge if the logger never started
+            string logsDir = Path.GetDirectoryName(Logger.LogFilePath);
+            if (logsDir != null)
+            {
+                PurgeAllLogsOlderThan(age, logsDir);
+            }
+        }
 
         /// <summary>
         /// Builds a string path for something relative to this application's app data root folder (assumes it was setup via the <see cref="RunOnetimeSetup"/> function).
@@ -232,13 +238,6 @@
             }
 
             return config.DetermineCryptoSeed();
-        }
-
-        private static string EstablishLogsDirectory ()
-        {
-            string logsDir = DetermineLogsDirectory(AppDataRoot, ProjectName, g_sharedProjectName, g_storageRootIsolation);
-            Directory.CreateDirectory(logsDir);
-            return logsDir;
         }
 
         private static void PurgeAllLogsOlderThan (TimeSpan age, string logsDir)
