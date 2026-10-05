@@ -465,8 +465,9 @@ namespace AJut.Text.AJson
             Type sourceType = source.GetType();
 
             // Source-gen fast path. The generated writer handles document-startup, type-id header,
-            //  and per-property writes in a single explicit call - no reflection on the property
-            //  loop, direct primitive append (no boxing) for value-typed properties.
+            //  and per-property writes in a single explicit call, with no reflection on the property
+            //  loop. Value-typed properties are still boxed: each one goes through
+            //  JsonBuilder.AddProperty, which takes an object.
             if (AJsonGeneratedDispatch.TryGet(sourceType, out AJsonGeneratedSerializer generated))
             {
                 generated.Writer(source, target);
