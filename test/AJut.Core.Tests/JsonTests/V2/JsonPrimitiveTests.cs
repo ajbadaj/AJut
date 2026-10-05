@@ -15,6 +15,11 @@ namespace AJut.Core.UnitTests.AJsonV2
     [TestClass]
     public class JsonPrimitiveTests
     {
+        // de-DE uses a comma for the decimal separator and a period for grouping, so it is the
+        //  culture that tells culture-invariant number text apart from current-culture text.
+        private const string kCommaDecimalCulture = "de-DE";
+        private const string kPeriodDecimalCulture = "en-US";
+
         // ===========================[ Test Models ]===================================
         public class NumericMatrix
         {
@@ -112,11 +117,6 @@ namespace AJut.Core.UnitTests.AJsonV2
         }
 
         // ===========================[ Culture ]===================================
-        // de-DE uses a comma for the decimal separator and a period for grouping, so it is the
-        //  culture that tells culture-invariant number text apart from current-culture text.
-        private const string kCommaDecimalCulture = "de-DE";
-        private const string kPeriodDecimalCulture = "en-US";
-
         [TestMethod]
         public void Primitives_FloatingPoint_ReadsJsonNumbers_UnderCommaDecimalCulture ()
         {

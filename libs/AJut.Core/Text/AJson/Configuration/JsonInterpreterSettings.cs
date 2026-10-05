@@ -50,7 +50,15 @@ namespace AJut.Text.AJson
                 // 1. Round-trip ISO 8601, which is what AJson writes. RoundtripKind hands back the
                 //    Kind the text carries: Z is Utc, an offset is Local (as this machine's local
                 //    time), and no suffix is Unspecified.
-                if (DateTime.TryParseExact(text, kIso8601DateTimeFormats, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTime found))
+                bool isIso8601 = DateTime.TryParseExact(
+                    text,
+                    kIso8601DateTimeFormats,
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.RoundtripKind,
+                    out DateTime found
+                );
+
+                if (isIso8601)
                 {
                     return found;
                 }
@@ -59,8 +67,8 @@ namespace AJut.Text.AJson
                 //    offset or Kind, which was always UTC under the old defaults. It reads the way it
                 //    always did, with the invariant culture as a second try for a file written under
                 //    another culture.
-                if (DateTime.TryParse(text, CultureInfo.CurrentCulture.DateTimeFormat, this.DefaultDateTimeParseStyle, out found)
-                    || DateTime.TryParse(text, CultureInfo.InvariantCulture.DateTimeFormat, this.DefaultDateTimeParseStyle, out found))
+                if (DateTime.TryParse(text, CultureInfo.CurrentCulture, this.DefaultDateTimeParseStyle, out found)
+                    || DateTime.TryParse(text, CultureInfo.InvariantCulture, this.DefaultDateTimeParseStyle, out found))
                 {
                     return found;
                 }

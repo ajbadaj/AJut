@@ -191,7 +191,12 @@ namespace AJut.Text.AJson
             // JSON numbers are culture-invariant. The current culture's ToString writes 0.5 as 0,5
             //  under a comma-decimal culture, which the reader splits at the comma, and which no
             //  machine with a different culture could read anyway.
-            string _SimpleTypeStringMaker (object _instance) => _instance is IFormattable formattable ? formattable.ToString(null, CultureInfo.InvariantCulture) : _instance?.ToString();
+            string _SimpleTypeStringMaker (object _instance)
+            {
+                return _instance is IFormattable formattable
+                    ? formattable.ToString(null, CultureInfo.InvariantCulture)
+                    : _instance?.ToString();
+            }
         }
 
         public static JsonBuilderSettings BuildMinifiedSettings ()

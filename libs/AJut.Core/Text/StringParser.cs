@@ -57,9 +57,26 @@
 
             this.Register(s => s.Replace("\\\"", "\"")); // string
 
-            static double _ParseDouble (string s) => double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out double value) ? value : double.Parse(s, CultureInfo.CurrentCulture);
-            static float _ParseFloat (string s) => float.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : float.Parse(s, CultureInfo.CurrentCulture);
-            static decimal _ParseDecimal (string s) => decimal.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out decimal value) ? value : decimal.Parse(s, CultureInfo.CurrentCulture);
+            static double _ParseDouble (string s)
+            {
+                return double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out double value)
+                    ? value
+                    : double.Parse(s, CultureInfo.CurrentCulture);
+            }
+
+            static float _ParseFloat (string s)
+            {
+                return float.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out float value)
+                    ? value
+                    : float.Parse(s, CultureInfo.CurrentCulture);
+            }
+
+            static decimal _ParseDecimal (string s)
+            {
+                return decimal.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out decimal value)
+                    ? value
+                    : decimal.Parse(s, CultureInfo.CurrentCulture);
+            }
         }
 
         /// <summary>
