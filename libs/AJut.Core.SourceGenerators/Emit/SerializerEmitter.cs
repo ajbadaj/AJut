@@ -239,12 +239,13 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
                 {
                     continue;
                 }
+                // Every case of a switch shares one scope, so each case body gets a block of its own. Without it, any local a read
+                //  declares (the runtime type eval read declares one) collides with the next property on the type that declares it.
                 cb.AppendLine($"case \"{Escape(prop.JsonKey)}\":");
-                cb.IndentBlock(() =>
-                {
-                    EmitPropertyRead(cb, prop);
-                    cb.AppendLine("break;");
-                });
+                cb.OpenBrace();
+                EmitPropertyRead(cb, prop);
+                cb.AppendLine("break;");
+                cb.CloseBrace();
             }
             cb.CloseBrace();   // closes switch
             cb.CloseBrace();   // closes foreach
