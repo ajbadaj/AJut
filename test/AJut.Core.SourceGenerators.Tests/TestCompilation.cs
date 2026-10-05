@@ -8,6 +8,7 @@ namespace AJut.Text.AJson.SourceGenerators.Tests
     using AJut.Text.AJson;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
+    using Microsoft.CodeAnalysis.Emit;
 
     /// <summary>
     /// Spins up a CSharpCompilation from a source string with references to AJut.Core. The
@@ -18,15 +19,37 @@ namespace AJut.Text.AJson.SourceGenerators.Tests
     {
         private static readonly IReadOnlyList<MetadataReference> g_baseRefs = BuildBaseRefs();
 
-        public static CSharpCompilation Build (string source, string assemblyName = "TestAssembly")
+        public static CSharpCompilation Build (string source, string assemblyName = "TestAssembly", params MetadataReference[] additionalReferences)
         {
             SyntaxTree tree = CSharpSyntaxTree.ParseText(source);
             return CSharpCompilation.Create(
                 assemblyName: assemblyName,
                 syntaxTrees: new[] { tree },
-                references: g_baseRefs,
+                references: g_baseRefs.Concat(additionalReferences),
                 options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
         }
+
+        /// <summary>
+        /// Compiles to an in-memory image, failing with the compiler's errors if it does not build
+        /// </summary>
+        public static byte[] EmitToImage (CSharpCompilation compilation)
+        {
+            using MemoryStream image = new MemoryStream();
+            EmitResult emit = compilation.Emit(image);
+            if (!emit.Success)
+            {
+                string errors = string.Join("\n", emit.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).Select(d => $"  {d.Id}: {d.GetMessage()} @ {d.Location}"));
+                throw new InvalidOperationException($"'{compilation.AssemblyName}' did not compile:\n{errors}");
+            }
+
+            return image.ToArray();
+        }
+
+        /// <summary>
+        /// A reference to the compiled image, so another compilation sees its types as metadata, the way a consumer sees a
+        /// referenced assembly, rather than as source
+        /// </summary>
+        public static MetadataReference EmitToReference (CSharpCompilation compilation) => MetadataReference.CreateFromImage(EmitToImage(compilation));
 
         public static INamedTypeSymbol? GetType (CSharpCompilation compilation, string fullyQualifiedMetadataName)
         {

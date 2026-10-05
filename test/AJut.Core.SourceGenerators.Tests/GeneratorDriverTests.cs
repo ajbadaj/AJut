@@ -177,6 +177,30 @@ namespace TestNs
         }
 
         [TestMethod]
+        public void Generator_AssemblyLevelOptIn_SkipsStaticClasses ()
+        {
+            // The assembly-wide opt-in takes every public type, and a static class can never satisfy AJSON001's constructor check,
+            //  so one static helper in an opted-in assembly used to fail the whole build (AJU-1)
+            const string src = @"
+using AJut.Text.AJson;
+[assembly: OptimizeAJson(typeof(TestNs.Marker))]
+namespace TestNs
+{
+    public class Marker { }
+    public class Foo { public int A { get; set; } }
+    public static class Helpers { public static int Twice (int x) => x * 2; }
+}";
+            GeneratorDriverRunResult result = RunGenerator(src);
+
+            Diagnostic[] ajson001 = result.Diagnostics.Where(d => d.Id == "AJSON001").ToArray();
+            Assert.AreEqual(0, ajson001.Length, string.Join("\n", ajson001.Select(d => d.GetMessage())));
+
+            ImmutableArray<GeneratedSourceResult> generated = result.Results.Single().GeneratedSources;
+            Assert.IsFalse(generated.Any(g => g.HintName.Contains("Helpers")));
+            Assert.IsTrue(generated.Any(g => g.HintName.Contains("Foo")));
+        }
+
+        [TestMethod]
         public void Generator_AssemblyLevelOptIn_SkipsTypesNestedInInternalOrGeneric ()
         {
             const string src = @"
