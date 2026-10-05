@@ -1,9 +1,11 @@
 namespace AJut.Core.UnitTests
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Reflection;
     using AJut.OS.Windows;
     using AJut.Storage;
     using AJut.Text.AJson.Legacy;
@@ -1372,6 +1374,40 @@ namespace AJut.Core.UnitTests
         }
 
         [TestMethod]
+        public void Stratabase_AccessManagers_AreReleasedWhenTheirAccessesAre ()
+        {
+            // The store subscribes to every access manager it creates, so the "nothing is listening any more" check that would
+            //  release one can never pass, and every id ever accessed keeps a manager for the life of the store (AJU-39)
+            const int kIdCount = 100;
+            Stratabase sb = new Stratabase(1);
+            Assert.AreEqual(0, CountAccessManagers(sb));
+
+            for (int index = 0; index < kIdCount; ++index)
+            {
+                StrataPropertyValueAccess<int> access = sb.GeneratePropertyAccess<int>(Guid.NewGuid(), "Value");
+                access.Dispose();
+            }
+
+            Assert.AreEqual(0, CountAccessManagers(sb), $"{kIdCount} ids were accessed and every access released");
+        }
+
+        [TestMethod]
+        public void Stratabase_AccessManagers_AreReleasedWhenTheirIdsAreCleared ()
+        {
+            const int kIdCount = 100;
+            Stratabase sb = new Stratabase(1);
+
+            for (int index = 0; index < kIdCount; ++index)
+            {
+                Guid id = Guid.NewGuid();
+                sb.SetBaselinePropertyValue(id, "Value", index);
+                sb.ClearAllFor(id);
+            }
+
+            Assert.AreEqual(0, CountAccessManagers(sb), $"{kIdCount} ids were written and then cleared, with no access to any of them");
+        }
+
+        [TestMethod]
         public void Stratabase_EnsureListElementType_NullInsertionAtFirstElementWorks ()
         {
             Stratabase sb = new Stratabase(1);
@@ -1417,6 +1453,16 @@ namespace AJut.Core.UnitTests
             Child castedChild = value as Child;
             Assert.IsNotNull(castedChild);
             Assert.AreSame(child, castedChild);
+        }
+
+        /// <summary>
+        /// How many access managers the store holds, read from its private map so the count needs nothing added to the store itself
+        /// </summary>
+        private static int CountAccessManagers (Stratabase sb)
+        {
+            FieldInfo objectAccess = typeof(Stratabase).GetField("m_objectAccess", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.IsNotNull(objectAccess, "Stratabase.m_objectAccess was renamed; update this test");
+            return ((IDictionary)objectAccess.GetValue(sb)).Count;
         }
 
         public class DotClassStore
