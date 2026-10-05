@@ -71,7 +71,11 @@ namespace AJut.Text.AJson
             this.QuotePropertyNames = true;
             this.Newline = "\n";
             this.PropertyValueQuoting = ePropertyValueQuoting.QuoteAnyUsuallyQuotedItem;
-            this.MakeDateTimesUTC = true;
+
+            // This used to default true, when a DateTime was written with no offset or Kind and UTC
+            //  was the only way to pin down the instant. The text carries the Kind now, so converting
+            //  by default would only hand a Local value back as a Utc one.
+            this.MakeDateTimesUTC = false;
             this.TypeIdToWrite = eTypeIdInfo.TypeIdAttributed;
             this.KeyValuePairKeyTypeIdToWrite = eTypeIdInfo.None;
             this.KeyValuePairValueTypeIdToWrite = eTypeIdInfo.None;
@@ -94,7 +98,10 @@ namespace AJut.Text.AJson
                     date = date.ToUniversalTime();
                 }
 
-                return date.ToString();
+                // Round-trip ISO 8601: culture-invariant, every tick kept, and the Kind carried in
+                //  the suffix (Z for Utc, the offset for Local, nothing for Unspecified), so the
+                //  reader hands back exactly the value it was given.
+                return date.ToString("o", CultureInfo.InvariantCulture);
             }
             string _TimeSpanToJsonString (object instance) => ((TimeSpan)instance).ToString();
             string _GuidToJsonString (object instance) => ((Guid)instance).ToString();
@@ -114,6 +121,11 @@ namespace AJut.Text.AJson
         public char PropertyNameQuoteChars { get; set; }
         public char PropertyValueQuoteChars { get; set; }
 
+        /// <summary>
+        /// When true, Local and Unspecified DateTimes are converted to UTC before they are written,
+        /// so they read back as Utc values. Default false: each DateTime is written with its own
+        /// Kind and reads back with the same ticks and Kind.
+        /// </summary>
         public bool MakeDateTimesUTC { get; set; }
 
         public ePropertyValueQuoting PropertyValueQuoting { get; set; }

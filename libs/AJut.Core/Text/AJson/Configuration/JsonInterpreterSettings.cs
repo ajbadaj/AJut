@@ -21,6 +21,10 @@ namespace AJut.Text.AJson
     /// </summary>
     public class JsonInterpreterSettings
     {
+        // "o" is exactly what the writer produces. The second form also takes ISO 8601 text with
+        //  fewer (or no) fractional digits, as other tools write it.
+        private static readonly string[] kIso8601DateTimeFormats = { "o", "yyyy-MM-ddTHH:mm:ss.FFFFFFFK" };
+
         private readonly Dictionary<Type, JsonToObjectConstructor> m_customConstructors = new Dictionary<Type, JsonToObjectConstructor>();
 
         // ===========================[ Construction ]===============================
@@ -41,7 +45,28 @@ namespace AJut.Text.AJson
 
             object _CreateDateTimeFor (Type fullTarget, JsonValue json, JsonInterpreterSettings settings, Json owner)
             {
-                return DateTime.TryParse(json.StringValue, CultureInfo.CurrentCulture.DateTimeFormat, this.DefaultDateTimeParseStyle, out DateTime found) ? found : default;
+                string text = json.StringValue;
+
+                // 1. Round-trip ISO 8601, which is what AJson writes. RoundtripKind hands back the
+                //    Kind the text carries: Z is Utc, an offset is Local (as this machine's local
+                //    time), and no suffix is Unspecified.
+                if (DateTime.TryParseExact(text, kIso8601DateTimeFormats, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTime found))
+                {
+                    return found;
+                }
+
+                // 2. Text written before that: the writing machine's current culture format, with no
+                //    offset or Kind, which was always UTC under the old defaults. It reads the way it
+                //    always did, with the invariant culture as a second try for a file written under
+                //    another culture.
+                if (DateTime.TryParse(text, CultureInfo.CurrentCulture.DateTimeFormat, this.DefaultDateTimeParseStyle, out found)
+                    || DateTime.TryParse(text, CultureInfo.InvariantCulture.DateTimeFormat, this.DefaultDateTimeParseStyle, out found))
+                {
+                    return found;
+                }
+
+                owner?.AddError($"Could not read '{text}' as a DateTime, the value is left at default");
+                return default(DateTime);
             }
 
             object _CreateTimeSpanFor (Type fullTarget, JsonValue json, JsonInterpreterSettings settings, Json owner)
@@ -141,6 +166,11 @@ namespace AJut.Text.AJson
 
         public StringParser StringParser { get; }
 
+        /// <summary>
+        /// How DateTime text that is not round-trip ISO 8601 is read: text written before AJson
+        /// wrote ISO 8601, or by something else. The default, AssumeUniversal, matches how the old
+        /// writer wrote it (UTC, with no offset).
+        /// </summary>
         public DateTimeStyles DefaultDateTimeParseStyle { get; set; } = DateTimeStyles.AssumeUniversal;
 
         // ===========================[ Public Interface Methods ]===============================
