@@ -48,6 +48,52 @@ namespace TestNs
         }
 
         [TestMethod]
+        public void Generator_ReportsAJSON004_OnInitOnlyPropertyWithNoWayToRebuild ()
+        {
+            // Not a record, and no parameterless constructor: the generated reader has nothing to set an init-only property through
+            const string src = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson]
+    public class OnlyAJsonCtor
+    {
+        [AJsonConstructor] public OnlyAJsonCtor (int count) { Count = count; }
+        public int Count { get; init; }
+    }
+}";
+            GeneratorDriverRunResult result = RunGenerator(src);
+            Assert.IsTrue(result.Diagnostics.Any(d => d.Id == "AJSON004"));
+            Assert.IsFalse(result.Diagnostics.Any(d => d.Id == "AJSON001"), "[AJsonConstructor] satisfies AJSON001");
+        }
+
+        [TestMethod]
+        public void Generator_DoesNotReportAJSON004_WhenARebuildRouteExistsOrAJSON001AlreadyFired ()
+        {
+            const string src = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson]
+    public record OnlyAJsonCtorRecord
+    {
+        [AJsonConstructor] public OnlyAJsonCtorRecord (int count) { Count = count; }
+        public int Count { get; init; }
+    }
+
+    [OptimizeAJson]
+    public class NoCtorAtAll
+    {
+        public NoCtorAtAll (int count) { Count = count; }
+        public int Count { get; init; }
+    }
+}";
+            GeneratorDriverRunResult result = RunGenerator(src);
+            Assert.IsFalse(result.Diagnostics.Any(d => d.Id == "AJSON004"), "a record rebuilds through with, and a class with no constructor already has AJSON001");
+            Assert.IsTrue(result.Diagnostics.Any(d => d.Id == "AJSON001" && d.GetMessage().Contains("NoCtorAtAll")));
+        }
+
+        [TestMethod]
         public void Generator_GeneratedCodeContainsModuleInitializer ()
         {
             const string src = @"

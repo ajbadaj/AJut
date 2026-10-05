@@ -25,6 +25,12 @@ namespace AJut.Text.AJson.SourceGenerators.Model
 
         public bool IsValueType { get; init; }
 
+        /// <summary>
+        /// True for a record class or record struct. The generated reader sets init-only properties on a record with a with
+        /// expression, which needs no parameterless constructor.
+        /// </summary>
+        public bool IsRecord { get; init; }
+
         public bool HasParameterlessConstructor { get; init; }
 
         public bool HasAJsonConstructor { get; init; }

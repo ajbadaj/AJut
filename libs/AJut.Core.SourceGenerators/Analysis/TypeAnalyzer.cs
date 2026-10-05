@@ -70,6 +70,23 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                 }
 
                 propertyModels.Add(propModel);
+
+                // ---- AJSON004 ----
+                // The generated reader sets init-only properties by rebuilding the instance: a with expression for a record, an
+                //  object initializer otherwise. A class that is not a record and only has an [AJsonConstructor] has neither. A
+                //  class with no usable constructor at all already has AJSON001, so this stays quiet rather than piling on.
+                if (propModel.IsInitOnly
+                    && !typeSymbol.IsRecord
+                    && !typeSymbol.IsValueType
+                    && !hasParameterlessCtor
+                    && hasAJsonCtor)
+                {
+                    diagnostics.Add(Diagnostic.Create(
+                        Diagnostics.InitOnlyPropertyCannotBeSet,
+                        propSymbol.Locations.FirstOrDefault(),
+                        typeSymbol.Name,
+                        propSymbol.Name));
+                }
             }
 
             SerializableTypeModel model = new SerializableTypeModel
@@ -80,6 +97,7 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                     : string.Empty,
                 MangledName = mangled,
                 IsValueType = typeSymbol.IsValueType,
+                IsRecord = typeSymbol.IsRecord,
                 HasParameterlessConstructor = hasParameterlessCtor,
                 HasAJsonConstructor = hasAJsonCtor,
                 PropertyAsSelfName = asSelfPropName,
@@ -125,6 +143,7 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
 
             bool hasGetter = propSymbol.GetMethod != null && propSymbol.GetMethod.DeclaredAccessibility != Accessibility.Private;
             bool hasSetter = propSymbol.SetMethod != null && propSymbol.SetMethod.DeclaredAccessibility != Accessibility.Private;
+            bool isInitOnly = hasSetter && propSymbol.SetMethod.IsInitOnly;
 
             // [JsonRuntimeTypeEval] short-circuits the kind decision.
             AttributeData runtimeAttr = propSymbol.GetAttributes().FirstOrDefault(
@@ -203,6 +222,7 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                 IsNullable = isNullableValueType,
                 IsValueType = underlying.IsValueType,
                 HasSetter = hasSetter,
+                IsInitOnly = isInitOnly,
                 HasGetter = hasGetter,
                 IsUsuallyQuoted = IsUsuallyQuoted(underlying, kind),
                 HasOmitIfDefault = hasOmit,

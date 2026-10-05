@@ -1,6 +1,7 @@
 namespace AJut.Text.AJson.SourceGenerators.Emit
 {
     using System.Collections.Generic;
+    using System.Linq;
     using System.Text;
     using AJut.Text.AJson.SourceGenerators.Model;
 
@@ -222,16 +223,74 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
                 cb.AppendLine("if (result == null) { return null; }");
             }
 
+            // An init-only property cannot be assigned once the instance exists, so a type that has any is read in two steps: every
+            //  key goes into a local first, then the instance is rebuilt with its init-only values and the rest are assigned (see
+            //  EmitDeferredAssignments). A type with no init-only property keeps the direct form, assigning as each key is read.
+            List<PropertyModel> readable = CollectReadableProperties(model);
+            bool defersAssignments = readable.Any(p => p.IsInitOnly);
+            if (defersAssignments)
+            {
+                for (int index = 0; index < readable.Count; ++index)
+                {
+                    cb.AppendLine($"{readable[index].TypeFullName} {DeferredValue(index)} = default;");
+                    cb.AppendLine($"bool {DeferredFound(index)} = false;");
+                }
+            }
+
             // Property-by-property switch on the json key.
             cb.AppendLine("foreach (global::System.Collections.Generic.KeyValuePair<global::System.String, global::AJut.Text.AJson.JsonValue> kvp in doc)");
             cb.OpenBrace();
             cb.AppendLine("switch (kvp.Key)");
             cb.OpenBrace();
 
+            for (int index = 0; index < readable.Count; ++index)
+            {
+                PropertyModel prop = readable[index];
+
+                // Every case of a switch shares one scope, so each case body gets a block of its own. Without it, any local a read
+                //  declares (the runtime type eval read declares one) collides with the next property on the type that declares it.
+                cb.AppendLine($"case \"{Escape(prop.JsonKey)}\":");
+                cb.OpenBrace();
+                if (defersAssignments)
+                {
+                    EmitPropertyRead(cb, prop, DeferredValue(index), DeferredFound(index));
+                }
+                else
+                {
+                    EmitPropertyRead(cb, prop, $"result.{prop.Name}", null);
+                }
+                cb.AppendLine("break;");
+                cb.CloseBrace();
+            }
+            cb.CloseBrace();   // closes switch
+            cb.CloseBrace();   // closes foreach
+
+            if (defersAssignments)
+            {
+                EmitDeferredAssignments(cb, model, readable);
+            }
+
+            cb.AppendLine("return result;");
+            cb.CloseBrace();
+        }
+
+        /// <summary>
+        /// The properties the generated reader sets, in model order: each one with a setter, and only the first for any json key.
+        /// An init-only property is left out when the reader has no way to rebuild the instance with it, which is a class that is not
+        /// a record and has no parameterless constructor (AJSON004 reports that), or a property with no getter to fall back on.
+        /// </summary>
+        private static List<PropertyModel> CollectReadableProperties (SerializableTypeModel model)
+        {
+            bool canRebuild = model.IsRecord || model.IsValueType || model.HasParameterlessConstructor;
             HashSet<string> emittedKeys = new HashSet<string>();
+            List<PropertyModel> output = new List<PropertyModel>();
             foreach (PropertyModel prop in model.Properties)
             {
                 if (!prop.HasSetter)
+                {
+                    continue;
+                }
+                if (prop.IsInitOnly && (!canRebuild || !prop.HasGetter))
                 {
                     continue;
                 }
@@ -239,20 +298,62 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
                 {
                     continue;
                 }
-                // Every case of a switch shares one scope, so each case body gets a block of its own. Without it, any local a read
-                //  declares (the runtime type eval read declares one) collides with the next property on the type that declares it.
-                cb.AppendLine($"case \"{Escape(prop.JsonKey)}\":");
-                cb.OpenBrace();
-                EmitPropertyRead(cb, prop);
-                cb.AppendLine("break;");
-                cb.CloseBrace();
-            }
-            cb.CloseBrace();   // closes switch
-            cb.CloseBrace();   // closes foreach
 
-            cb.AppendLine("return result;");
-            cb.CloseBrace();
+                output.Add(prop);
+            }
+
+            return output;
         }
+
+        /// <summary>
+        /// Emits the second step of a deferred read: rebuild the instance with the init-only values that were found, then assign
+        /// the settable ones
+        /// </summary>
+        private static void EmitDeferredAssignments (CodeBuilder cb, SerializableTypeModel model, List<PropertyModel> readable)
+        {
+            // 1. Rebuild with the init-only values. A record is copied with a with expression, which needs no constructor of its
+            //  own. Anything else is constructed again through an object initializer, so a class pays for one extra construction.
+            //  Either way a key the json did not have takes the value the first instance was constructed with (its initializer, if
+            //  it has one), which is where the reflection path leaves a property whose key is missing.
+            List<string> initOnlyFoundFlags = new List<string>();
+            List<string> initOnlyAssignments = new List<string>();
+            for (int index = 0; index < readable.Count; ++index)
+            {
+                PropertyModel prop = readable[index];
+                if (prop.IsInitOnly)
+                {
+                    initOnlyFoundFlags.Add(DeferredFound(index));
+                    initOnlyAssignments.Add($"{prop.Name} = {DeferredFound(index)} ? {DeferredValue(index)} : result.{prop.Name},");
+                }
+            }
+
+            cb.AppendLine($"if ({string.Join(" || ", initOnlyFoundFlags)})");
+            cb.OpenBrace();
+            cb.AppendLine(model.IsRecord ? "result = result with" : $"result = new {model.FullyQualifiedTypeName}");
+            cb.AppendLine("{");
+            cb.IndentBlock(() =>
+            {
+                foreach (string assignment in initOnlyAssignments)
+                {
+                    cb.AppendLine(assignment);
+                }
+            });
+            cb.AppendLine("};");
+            cb.CloseBrace();
+
+            // 2. Assign the settable properties onto the rebuilt instance, so the rebuild cannot drop them
+            for (int index = 0; index < readable.Count; ++index)
+            {
+                PropertyModel prop = readable[index];
+                if (!prop.IsInitOnly)
+                {
+                    cb.AppendLine($"if ({DeferredFound(index)}) {{ result.{prop.Name} = {DeferredValue(index)}; }}");
+                }
+            }
+        }
+
+        private static string DeferredValue (int index) => $"deferredValue{index}";
+        private static string DeferredFound (int index) => $"deferredFound{index}";
 
         private static PropertyModel FindProperty (SerializableTypeModel model, string name)
         {
@@ -266,22 +367,27 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
             return null;
         }
 
-        private static void EmitPropertyRead (CodeBuilder cb, PropertyModel prop)
+        /// <param name="cb">The code being built</param>
+        /// <param name="prop">The property being read</param>
+        /// <param name="assignTo">Where the value goes: the property itself, or a local when the type's assignments are deferred</param>
+        /// <param name="foundFlag">The local that records the key was read, or null when the value goes straight to the property</param>
+        private static void EmitPropertyRead (CodeBuilder cb, PropertyModel prop, string assignTo, string foundFlag)
         {
+            string markFound = foundFlag == null ? string.Empty : $" {foundFlag} = true;";
             switch (prop.Kind)
             {
                 case ePropertyKind.RuntimeTypeEval:
                     cb.AppendLine($"global::System.Object rteRead = global::AJut.Text.AJson.AJsonGenerationSupport.ReadRuntimeTypeEvalProperty(kvp.Value, settings, owner);");
-                    cb.AppendLine($"if (rteRead != null) {{ result.{prop.Name} = ({prop.TypeFullName})rteRead; }}");
+                    cb.AppendLine($"if (rteRead != null) {{ {assignTo} = ({prop.TypeFullName})rteRead;{markFound} }}");
                     break;
                 default:
                     if (prop.IsNullable)
                     {
-                        cb.AppendLine($"result.{prop.Name} = global::AJut.Text.AJson.JsonHelper.BuildObjectForJson<{prop.TypeFullName}>(kvp.Value, settings);");
+                        cb.AppendLine($"{assignTo} = global::AJut.Text.AJson.JsonHelper.BuildObjectForJson<{prop.TypeFullName}>(kvp.Value, settings);{markFound}");
                     }
                     else
                     {
-                        cb.AppendLine($"result.{prop.Name} = global::AJut.Text.AJson.JsonHelper.BuildObjectForJson<{prop.TypeFullName}>(kvp.Value, settings);");
+                        cb.AppendLine($"{assignTo} = global::AJut.Text.AJson.JsonHelper.BuildObjectForJson<{prop.TypeFullName}>(kvp.Value, settings);{markFound}");
                     }
                     break;
             }

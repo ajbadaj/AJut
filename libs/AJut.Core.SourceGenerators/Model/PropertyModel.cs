@@ -44,6 +44,11 @@ namespace AJut.Text.AJson.SourceGenerators.Model
         public bool HasSetter { get; init; }
 
         /// <summary>
+        /// True if the setter is init-only, so the generated reader cannot assign it after construction and sets it by rebuilding the instance instead.
+        /// </summary>
+        public bool IsInitOnly { get; init; }
+
+        /// <summary>
         /// True if the property has an accessible getter. Write code skips properties without one.
         /// </summary>
         public bool HasGetter { get; init; }

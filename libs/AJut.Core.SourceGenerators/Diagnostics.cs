@@ -35,5 +35,13 @@ namespace AJut.Text.AJson.SourceGenerators
             category: kCategory,
             defaultSeverity: DiagnosticSeverity.Error,
             isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor InitOnlyPropertyCannotBeSet = new DiagnosticDescriptor(
+            id: "AJSON004",
+            title: "AJson optimized type has an init-only property the generated reader cannot set",
+            messageFormat: "Property '{0}.{1}' is init-only, but '{0}' is not a record and has no parameterless constructor, so the generated reader has no way to set it - add a parameterless constructor, make the type a record, or give the property a setter",
+            category: kCategory,
+            defaultSeverity: DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
     }
 }
