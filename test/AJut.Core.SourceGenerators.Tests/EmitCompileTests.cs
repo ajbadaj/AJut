@@ -107,6 +107,40 @@ namespace TestNs
         }
 
         [TestMethod]
+        public void GeneratedCode_CompilesCleanly_WithInitOnlyProperties ()
+        {
+            const string src = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson]
+    public class InitOnly
+    {
+        public int Count { get; init; }
+        public string Label { get; init; }
+    }
+}";
+            AssertCompilesCleanly(src);
+        }
+
+        [TestMethod]
+        public void GeneratedCode_CompilesCleanly_WithPositionalRecord ()
+        {
+            // A positional record's parameters become init-only properties
+            const string src = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson]
+    public record Pair (int Left, string Right)
+    {
+        public Pair () : this(0, null) { }
+    }
+}";
+            AssertCompilesCleanly(src);
+        }
+
+        [TestMethod]
         public void GeneratedCode_CompilesCleanly_WithPropertyAsSelf ()
         {
             const string src = @"

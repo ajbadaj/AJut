@@ -20,6 +20,19 @@ namespace AJut.Text.AJson.SourceGenerators.Tests
     [TestClass]
     public class GeneratedRoundTripTests
     {
+        private const string kInitOnlySource = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson]
+    public class InitOnly
+    {
+        public int Count { get; init; }
+        public string Label { get; init; } = ""unset"";
+        public double Ratio { get; set; }
+    }
+}";
+
         [TestMethod]
         public void GeneratedReader_RoundTrips_OneRuntimeTypeEvalProperty ()
         {
@@ -83,6 +96,83 @@ namespace TestNs
             Assert.AreEqual("TestNs.Square", second?.GetType().FullName);
             Assert.AreEqual(4.0, Get(second!, "Side"));
             Assert.AreEqual(7, Get(readBack, "Third"));
+        }
+
+        [TestMethod]
+        public void GeneratedReader_RoundTrips_InitOnlyProperties ()
+        {
+            Assembly fixture = CompileAndLoad(kInitOnlySource, "RoundTrip_InitOnly");
+
+            object source = Create(fixture, "TestNs.InitOnly");
+            Set(source, "Count", 3);
+            Set(source, "Label", "three");
+            Set(source, "Ratio", 1.5);
+
+            object readBack = RoundTrip(source);
+
+            Assert.AreEqual(3, Get(readBack, "Count"));
+            Assert.AreEqual("three", Get(readBack, "Label"));
+            Assert.AreEqual(1.5, Get(readBack, "Ratio"));
+        }
+
+        [TestMethod]
+        public void GeneratedReader_InitOnlyPropertyMissingFromJson_KeepsItsInitializer ()
+        {
+            // Same as the reflection path: a key the json does not have leaves the property as construction left it
+            Assembly fixture = CompileAndLoad(kInitOnlySource, "RoundTrip_InitOnlyMissingKey");
+            Type type = fixture.GetType("TestNs.InitOnly", throwOnError: true)!;
+            Assert.IsTrue(AJsonGeneratedDispatch.TryGet(type, out _));
+
+            Json parsed = JsonHelper.ParseText("{ \"Count\": 4 }");
+            object readBack = JsonHelper.BuildObjectForJson(type, parsed);
+            Assert.IsFalse(parsed.HasErrors, parsed.GetErrorReport());
+
+            Assert.AreEqual(4, Get(readBack, "Count"));
+            Assert.AreEqual("unset", Get(readBack, "Label"));
+            Assert.AreEqual(0.0, Get(readBack, "Ratio"));
+        }
+
+        [TestMethod]
+        public void GeneratedReader_RoundTrips_PositionalRecord ()
+        {
+            Assembly fixture = CompileAndLoad(@"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson]
+    public record Pair (int Left, string Right)
+    {
+        public Pair () : this(0, null) { }
+        public double Extra { get; set; }
+    }
+}", "RoundTrip_PositionalRecord");
+
+            Type type = fixture.GetType("TestNs.Pair", throwOnError: true)!;
+            object source = Activator.CreateInstance(type, 5, "five")!;
+            Set(source, "Extra", 0.25);
+
+            object readBack = RoundTrip(source);
+
+            Assert.AreEqual(source, readBack, "a record compares by value, so this checks every property");
+        }
+
+        [TestMethod]
+        public void GeneratedReader_RoundTrips_ReadonlyRecordStruct ()
+        {
+            Assembly fixture = CompileAndLoad(@"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson]
+    public readonly record struct Point (double X, double Y);
+}", "RoundTrip_ReadonlyRecordStruct");
+
+            Type type = fixture.GetType("TestNs.Point", throwOnError: true)!;
+            object source = Activator.CreateInstance(type, 1.25, -3.5)!;
+
+            object readBack = RoundTrip(source);
+
+            Assert.AreEqual(source, readBack);
         }
 
         // ===========================[ Helpers ]===========================
