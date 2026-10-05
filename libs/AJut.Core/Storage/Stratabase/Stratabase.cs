@@ -18,6 +18,11 @@
     /// The highest stored value, which is to say the largest index of override layer, down to baseline (effectively index -1) is the effective value for a given property.
     /// To simplify access, flyweights are available with <see cref="IStrataPropertyAccess"/> instances - in addition property adapters are also available for automatic conversion
     /// of storage value to used value (for instance maybe you store a string, but you use an enum).
+    /// <para>
+    /// Threading: a <see cref="Stratabase"/> is single threaded. It takes no locks, every read, write, enumeration and change event
+    /// runs on the calling thread, and nothing in it is safe to touch from two threads at once. Code that works with one from more
+    /// than one thread must marshal every access to a single thread (usually the UI thread) itself.
+    /// </para>
     /// </summary>
     public sealed partial class Stratabase
     {
@@ -112,6 +117,21 @@
         public IEnumerable<string> GetAllBaselinePropertiesFor (Guid targetId)
         {
             if (m_baselineStorageLayer.TryGetValue(targetId, out PseudoPropertyBag propbag))
+            {
+                return propbag.m_storage.Keys;
+            }
+
+            return Enumerable.Empty<string>();
+        }
+
+        /// <summary>
+        /// Looks up all property names stored in one override layer for a given target. This is a live view of the layer: do not
+        /// modify the <see cref="Stratabase"/> while enumerating it (the same rule as enumerating any Dictionary).
+        /// </summary>
+        public IEnumerable<string> GetAllOverridePropertiesFor (int layer, Guid targetId)
+        {
+            this.ValidateOverrideLayerIndex(layer);
+            if (m_overrideStorageLayers[layer].TryGetValue(targetId, out PseudoPropertyBag propbag))
             {
                 return propbag.m_storage.Keys;
             }
@@ -702,6 +722,12 @@
 
         private void Odam_LayerDataSet (object sender, StratabasePropertyChangeEventArgs e)
         {
+            // Property access objects listen to the access manager directly, so they have already seen this change
+            if (e.SuppressStoreEvents)
+            {
+                return;
+            }
+
             if (e.IsBaseline)
             {
                 this.BaselineDataChanged?.Invoke(this, new BaselineStratumModificationEventArgs(e.ItemId, e.PropertyName, e.OldValue, e.NewValue, false));
@@ -714,6 +740,12 @@
 
         private void Odam_LayerDataRemoved (object sender, StratabasePropertyChangeEventArgs e)
         {
+            // Property access objects listen to the access manager directly, so they have already seen this change
+            if (e.SuppressStoreEvents)
+            {
+                return;
+            }
+
             if (e.IsBaseline)
             {
                 this.BaselineDataChanged?.Invoke(this, new BaselineStratumModificationEventArgs(e.ItemId, e.PropertyName, e.OldValue, null, true));
@@ -782,7 +814,7 @@
                 return false;
             }
 
-            public bool ObliteratePropertyStorageInBaseline (string propertyName)
+            public bool ObliteratePropertyStorageInBaseline (string propertyName, bool notifyStore = true)
             {
                 if (this.SB.GetBaselinePropertyBagFor(this.Id).PullValueOut(propertyName, out object oldValue))
                 {
@@ -792,7 +824,8 @@
                             ItemId = this.Id,
                             PropertyName = propertyName,
                             OldValue = oldValue,
-                            NewValue = null
+                            NewValue = null,
+                            SuppressStoreEvents = !notifyStore,
                         }
                     );
                     return true;
@@ -801,7 +834,7 @@
                 return false;
             }
 
-            public Result<object> ObliteratePropertyStorageInLayer (int overrideLayer, string propertyName)
+            public Result<object> ObliteratePropertyStorageInLayer (int overrideLayer, string propertyName, bool notifyStore = true)
             {
                 if (this.SB.GetOverridePropertyBagFor(overrideLayer, this.Id).PullValueOut(propertyName, out object oldValue))
                 {
@@ -812,7 +845,8 @@
                             LayerIndex = overrideLayer,
                             PropertyName = propertyName,
                             OldValue = oldValue,
-                            NewValue = null
+                            NewValue = null,
+                            SuppressStoreEvents = !notifyStore,
                         }
                     );
                     return true;
@@ -835,17 +869,18 @@
 
             // ------------- Set Value ----------------
 
-            public bool SetBaselineValue (string property, object newValue)
+            public bool SetBaselineValue (string property, object newValue, bool notifyStore = true)
             {
                 if (this.SB.GetBaselinePropertyBagFor(this.Id).SetValue(property, newValue, out object oldValue))
                 {
-                    this.LayerDataSet?.Invoke(this, 
+                    this.LayerDataSet?.Invoke(this,
                         new StratabasePropertyChangeEventArgs
                         {
                             ItemId = this.Id,
                             PropertyName = property,
                             OldValue = oldValue,
-                            NewValue = newValue
+                            NewValue = newValue,
+                            SuppressStoreEvents = !notifyStore,
                         }
                     );
                     return true;
@@ -854,7 +889,7 @@
                 return false;
             }
 
-            public bool SetOverrideValue (int overrideLayerIndex, string property, object newValue)
+            public bool SetOverrideValue (int overrideLayerIndex, string property, object newValue, bool notifyStore = true)
             {
                 if (this.SB.GetOverridePropertyBagFor(overrideLayerIndex, this.Id).SetValue(property, newValue, out object oldValue))
                 {
@@ -865,7 +900,8 @@
                             LayerIndex = overrideLayerIndex,
                             PropertyName = property,
                             OldValue = oldValue,
-                            NewValue = newValue
+                            NewValue = newValue,
+                            SuppressStoreEvents = !notifyStore,
                         }
                     );
                     return true;
