@@ -1,6 +1,8 @@
 namespace AJut.Text.AJson.SourceGenerators.Analysis
 {
+    using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Collections.Immutable;
     using System.Linq;
     using AJut.Text.AJson.SourceGenerators.Model;
@@ -461,14 +463,51 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                 return $"(global::{propertyType.ToDisplayString()}){arg.Value}";
             }
 
+            // Numbers are written invariant, since the generator runs inside the build under whatever culture the build machine has
+            //  (2.5 is "2,5" in some), and with the suffix of their own type, since a bare fractional literal is a double and does
+            //  not convert to a float in the omit check's EqualityComparer<float>.Equals call.
             switch (arg.Value)
             {
                 case string s: return SymbolDisplay.FormatLiteral(s, quote: true);
                 case char c: return SymbolDisplay.FormatLiteral(c, quote: true);
                 case bool b: return b ? "true" : "false";
+                case float f: return FormatFloatLiteral(f);
+                case double d: return FormatDoubleLiteral(d);
+                case long l: return l.ToString(CultureInfo.InvariantCulture) + "L";
+                case ulong ul: return ul.ToString(CultureInfo.InvariantCulture) + "UL";
+                case uint ui: return ui.ToString(CultureInfo.InvariantCulture) + "U";
+                case IFormattable formattable: return formattable.ToString(null, CultureInfo.InvariantCulture);
             }
 
             return arg.Value.ToString();
+        }
+
+        private static string FormatFloatLiteral (float value)
+        {
+            if (float.IsNaN(value))
+            {
+                return "float.NaN";
+            }
+            if (float.IsInfinity(value))
+            {
+                return value > 0 ? "float.PositiveInfinity" : "float.NegativeInfinity";
+            }
+
+            return value.ToString("R", CultureInfo.InvariantCulture) + "F";
+        }
+
+        private static string FormatDoubleLiteral (double value)
+        {
+            if (double.IsNaN(value))
+            {
+                return "double.NaN";
+            }
+            if (double.IsInfinity(value))
+            {
+                return value > 0 ? "double.PositiveInfinity" : "double.NegativeInfinity";
+            }
+
+            return value.ToString("R", CultureInfo.InvariantCulture) + "D";
         }
 
         private static bool IsCompatibleExplicitDefault (TypedConstant arg, ITypeSymbol propertyType)
