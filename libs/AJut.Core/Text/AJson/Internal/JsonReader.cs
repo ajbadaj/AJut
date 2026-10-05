@@ -13,18 +13,44 @@ namespace AJut.Text.AJson
 
         public static Json Parse (ReadOnlySpan<char> text, ParserRules rules)
         {
-            Json output = new Json();
             if (text.Length == 0)
             {
-                output.AddError("Empty input text");
-                return output;
+                Json empty = new Json();
+                empty.AddError("Empty input text");
+                return empty;
             }
 
             rules = rules ?? new ParserRules();
+            Json output = ParseWith(text, rules, oldTextQuoteRule: false);
+
+            // Text written before strings were escaped can hold a value ending in a raw backslash,
+            //  whose closing quote then reads as escaped and the parse fails. If it failed and a
+            //  backslash sits in front of a quote, try once more reading quotes the way that text
+            //  needs, and keep the result only if it parses clean. Escaped text always parses on the
+            //  first pass, so this never runs for it, and strict mode never reads old text.
+            if (output.HasErrors
+                && !rules.StrictMode
+                && text.IndexOf("\\\"".AsSpan()) != -1)
+            {
+                Json oldTextOutput = ParseWith(text, rules, oldTextQuoteRule: true);
+                if (!oldTextOutput.HasErrors)
+                {
+                    return oldTextOutput;
+                }
+            }
+
+            return output;
+        }
+
+        // ===============================[ Helper Methods ]===========================
+
+        private static Json ParseWith (ReadOnlySpan<char> text, ParserRules rules, bool oldTextQuoteRule)
+        {
+            Json output = new Json();
             SeparatorIndex index = null;
             try
             {
-                index = new SeparatorIndex(text, rules);
+                index = new SeparatorIndex(text, rules, oldTextQuoteRule);
 
                 // Strict JSON has no comments, even when the rules configure comment indicators
                 if (rules.StrictMode)
@@ -64,8 +90,6 @@ namespace AJut.Text.AJson
                 index?.Dispose();
             }
         }
-
-        // ===============================[ Helper Methods ]===========================
 
         private static JsonDocument ReadDocument (ReadOnlySpan<char> text, SeparatorIndex index, Json owner, ParserRules rules, int startIndex, out int endIndex)
         {
@@ -227,7 +251,7 @@ namespace AJut.Text.AJson
                             if (gotPeek && peekKind == eSeparatorKind.Colon)
                             {
                                 CheckStrictStrayText(text, index, owner, rules, sepPos + 1, peekPos - 1);
-                                pendingKey = text.Slice(insideQuoteStart, sepPos - insideQuoteStart).ToString();
+                                pendingKey = ReadQuoted(text, insideQuoteStart, sepPos);
                                 searchPos = peekPos + 1;
                                 lastStart = peekPos + 1;
                                 insideQuoteStart = -1;
@@ -242,7 +266,7 @@ namespace AJut.Text.AJson
                                     break;
                                 }
 
-                                string strValue = text.Slice(insideQuoteStart, sepPos - insideQuoteStart).ToString();
+                                string strValue = ReadQuoted(text, insideQuoteStart, sepPos);
                                 doc.Add(pendingKey, new JsonValue(strValue, isQuoted: true));
                                 pendingKey = null;
                                 insideQuoteStart = -1;
@@ -451,7 +475,7 @@ namespace AJut.Text.AJson
                     case eSeparatorKind.Quote:
                         if (insideQuoteStart != -1)
                         {
-                            string strValue = text.Slice(insideQuoteStart, sepPos - insideQuoteStart).ToString();
+                            string strValue = ReadQuoted(text, insideQuoteStart, sepPos);
                             arr.Add(new JsonValue(strValue, isQuoted: true));
                             insideQuoteStart = -1;
 
@@ -498,6 +522,13 @@ namespace AJut.Text.AJson
             }
 
             return arr;
+        }
+
+        // The inside of a quoted key or value, from just after its opening quote up to (not
+        //  including) its closing quote, unescaped: the tree holds strings as they are.
+        private static string ReadQuoted (ReadOnlySpan<char> text, int startPos, int closingQuotePos)
+        {
+            return JsonStringEscaping.UnescapeLenient(text.Slice(startPos, closingQuotePos - startPos));
         }
 
         // Trim leading/trailing whitespace and produce a JsonValue, or null if the chunk is empty.

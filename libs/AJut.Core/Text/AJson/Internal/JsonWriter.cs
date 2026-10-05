@@ -129,10 +129,12 @@ namespace AJut.Text.AJson
             bool quote = settings.PropertyValueQuoting == ePropertyValueQuoting.QuoteAll
                       || (settings.PropertyValueQuoting == ePropertyValueQuoting.QuoteAnyUsuallyQuotedItem && value.IsQuoted);
 
+            // The tree holds strings unescaped, so a quoted value is escaped here, on its way into
+            //  text. An unquoted value goes out as it is.
             if (quote)
             {
                 sb.Append(settings.PropertyValueQuoteChars);
-                sb.Append(raw);
+                JsonStringEscaping.AppendEscaped(sb, raw, settings.PropertyValueQuoteChars);
                 sb.Append(settings.PropertyValueQuoteChars);
             }
             else
@@ -146,7 +148,7 @@ namespace AJut.Text.AJson
             if (settings.QuotePropertyNames)
             {
                 sb.Append(settings.PropertyNameQuoteChars);
-                sb.Append(propName);
+                JsonStringEscaping.AppendEscaped(sb, propName, settings.PropertyNameQuoteChars);
                 sb.Append(settings.PropertyNameQuoteChars);
             }
             else

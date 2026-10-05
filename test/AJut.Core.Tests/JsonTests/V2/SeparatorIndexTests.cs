@@ -34,16 +34,13 @@ namespace AJut.Core.UnitTests.AJsonV2
             Json json = JsonHelper.ParseText("{ k: \"a\\\"b\" }");
             Assert.IsFalse(json.HasErrors, String.Join(", ", json.Errors));
             JsonDocument doc = (JsonDocument)json.Data;
-            Assert.AreEqual("a\\\"b", doc.ValueFor("k").StringValue);
+            Assert.AreEqual("a\"b", doc.ValueFor("k").StringValue);
         }
 
-        // Note on comment parity with V1: the indexer correctly drops comment regions from the
-        // separator stream, so the parser does not stumble over them structurally - that is the
-        // contract V1 carried and these tests verify (the no-errors / data-non-null shape used
-        // by V1's ParserRulesTests). Comments embedded *inside* an unquoted key or value chunk
-        // still leak into the resulting StringValue text the same way they did in V1, because the
-        // reader extracts text slices from the original char span. Cleaning that up is a separate
-        // concern not in any Phase B / Phase C fold-in scope.
+        // The indexer drops comment regions from the separator stream, so the parser does not
+        // stumble over them structurally, and records where they were, so the reader can take them
+        // back out of the unquoted key and value text it slices from the original text. The tests
+        // for that are in JsonReaderTests.
 
         [TestMethod]
         public void Indexer_LineComment_BetweenProperties_ParsesWithoutErrors ()

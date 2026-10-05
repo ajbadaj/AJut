@@ -47,15 +47,19 @@ namespace AJut.Text.AJson
         private const char kQuoteChar = '"';
         private SeparatorRecord[] m_buffer;
         private int m_count;
+        private readonly bool m_oldTextQuoteRule;
 
         // Comment regions in text order, recorded so the reader can take them back out of the
         //  unquoted text it slices. Null when the text has no comments, which is the usual case.
         private List<CommentRegion> m_comments;
 
         // ===============================[ Construction ]===========================
-        public SeparatorIndex (ReadOnlySpan<char> text, ParserRules rules = null)
+        /// <param name="oldTextQuoteRule">Read quotes the way text written before string escaping
+        /// needs (see ClosesString). Only the reader's retry of a failed parse sets this.</param>
+        public SeparatorIndex (ReadOnlySpan<char> text, ParserRules rules = null, bool oldTextQuoteRule = false)
         {
             rules = rules ?? new ParserRules();
+            m_oldTextQuoteRule = oldTextQuoteRule;
 
             int estimatedSeparators = Math.Max(16, text.Length / 10);
             m_buffer = ArrayPool<SeparatorRecord>.Shared.Rent(estimatedSeparators);
@@ -252,7 +256,7 @@ namespace AJut.Text.AJson
 
                 if (insideQuote)
                 {
-                    if (ch == kQuoteChar && (i == 0 || text[i - 1] != '\\'))
+                    if (ch == kQuoteChar && this.ClosesString(text, i))
                     {
                         insideQuote = false;
                         this.Mark(i, eSeparatorKind.Quote);
@@ -323,6 +327,61 @@ namespace AJut.Text.AJson
             {
                 this.AddComment(activeCommentStart, text.Length);
             }
+        }
+
+        // A quote inside a string closes it unless an odd run of backslashes escapes it. Counting
+        //  the run is what lets a string end in an escaped backslash: in "C:\\dir\\" the last quote
+        //  follows two backslashes and closes, where looking at one character saw \" and read on.
+        private bool ClosesString (ReadOnlySpan<char> text, int quotePos)
+        {
+            int backslashes = 0;
+            for (int index = quotePos - 1; index >= 0 && text[index] == '\\'; --index)
+            {
+                ++backslashes;
+            }
+
+            if (backslashes == 0)
+            {
+                return true;
+            }
+
+            // Text written before strings were escaped put backslashes out raw and escaped only
+            //  quotes, so a value ending in a backslash has a closing quote that looks escaped, and
+            //  a quote in a value can follow any number of backslashes. The reader retries a failed
+            //  parse with this rule: a quote after backslashes closes the string only when what
+            //  comes next is structure.
+            if (m_oldTextQuoteRule)
+            {
+                return IsFollowedByStructure(text, quotePos + 1);
+            }
+
+            return backslashes % 2 == 0;
+        }
+
+        private static bool IsFollowedByStructure (ReadOnlySpan<char> text, int startPos)
+        {
+            for (int index = startPos; index < text.Length; ++index)
+            {
+                switch (text[index])
+                {
+                    case ' ':
+                    case '\t':
+                    case '\r':
+                    case '\n':
+                        continue;
+
+                    case ',':
+                    case '}':
+                    case ']':
+                    case ':':
+                        return true;
+
+                    default:
+                        return false;
+                }
+            }
+
+            return true;
         }
 
         private void AddComment (int start, int end)

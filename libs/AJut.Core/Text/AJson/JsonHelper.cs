@@ -324,6 +324,15 @@ namespace AJut.Text.AJson
                 Type nullableElementType = targetType.TargetsSameTypeAs(typeof(Nullable<>)) ? targetType.GenericTypeArguments[0] : null;
                 Type effectiveType = nullableElementType ?? targetType;
 
+                // The tree already holds the string unescaped. StringParser's default string entry
+                //  undoes the quote-only escape the legacy tree still carries, which would corrupt a
+                //  string that really contains a backslash before a quote.
+                if (effectiveType == typeof(string))
+                {
+                    targetItem = sourceJsonValue.StringValue;
+                    return;
+                }
+
                 if (settings.StringParser.CanConvert(effectiveType))
                 {
                     object parsedValue = settings.StringParser.Convert(sourceJsonValue.StringValue, effectiveType);
@@ -726,18 +735,19 @@ namespace AJut.Text.AJson
             return false;
         }
 
+        // The value goes into the tree as it is. Escaping belongs to the text: JsonWriter escapes
+        //  it on the way out and JsonReader unescapes it on the way in.
         private static void ApplySimpleValue (JsonBuilder target, string rawValue)
         {
-            string escaped = rawValue == null ? null : rawValue.Replace("\"", "\\\"");
             if (target.IsValue)
             {
-                target.Value = escaped;
+                target.Value = rawValue;
             }
             else
             {
                 target.DocumentKVPValue = new JsonBuilder(target);
                 target.DocumentKVPValue.IsValueUsualQuoteTarget = target.IsValueUsualQuoteTarget;
-                target.DocumentKVPValue.Value = escaped;
+                target.DocumentKVPValue.Value = rawValue;
             }
         }
 
