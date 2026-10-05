@@ -4,7 +4,9 @@ namespace AJut.Text.AJson
 {
     using System;
     using System.Buffers;
+    using System.Collections.Generic;
     using System.Runtime.CompilerServices;
+    using System.Text;
 
     internal enum eSeparatorKind : byte
     {
@@ -45,6 +47,10 @@ namespace AJut.Text.AJson
         private const char kQuoteChar = '"';
         private SeparatorRecord[] m_buffer;
         private int m_count;
+
+        // Comment regions in text order, recorded so the reader can take them back out of the
+        //  unquoted text it slices. Null when the text has no comments, which is the usual case.
+        private List<CommentRegion> m_comments;
 
         // ===============================[ Construction ]===========================
         public SeparatorIndex (ReadOnlySpan<char> text, ParserRules rules = null)
@@ -143,6 +149,53 @@ namespace AJut.Text.AJson
             return false;
         }
 
+        /// <summary>
+        /// Whether any comment region overlaps <c>text[startPos..endPos]</c> (both inclusive).
+        /// </summary>
+        public bool HasCommentWithin (int startPos, int endPos)
+        {
+            if (m_comments == null)
+            {
+                return false;
+            }
+
+            int idx = this.FirstCommentEndingAfter(startPos);
+            return idx < m_comments.Count && m_comments[idx].Start <= endPos;
+        }
+
+        /// <summary>
+        /// Copies <c>text[startPos..endPos]</c> (both inclusive) with each comment region inside it
+        /// replaced by a single space, so a slice of the original text matches what the indexer saw.
+        /// </summary>
+        public string SliceWithCommentsAsSpaces (ReadOnlySpan<char> text, int startPos, int endPos)
+        {
+            StringBuilder output = new StringBuilder(endPos - startPos + 1);
+            int pos = startPos;
+            if (m_comments != null)
+            {
+                for (int idx = this.FirstCommentEndingAfter(startPos); idx < m_comments.Count; ++idx)
+                {
+                    CommentRegion comment = m_comments[idx];
+                    if (comment.Start > endPos)
+                    {
+                        break;
+                    }
+
+                    int commentStart = Math.Max(comment.Start, pos);
+                    output.Append(text.Slice(pos, commentStart - pos));
+                    output.Append(' ');
+                    pos = Math.Min(comment.End, endPos + 1);
+                }
+            }
+
+            if (pos <= endPos)
+            {
+                output.Append(text.Slice(pos, endPos - pos + 1));
+            }
+
+            return output.ToString();
+        }
+
         public void Dispose ()
         {
             if (m_buffer != null)
@@ -164,6 +217,7 @@ namespace AJut.Text.AJson
 
             bool insideQuote = false;
             string activeCommentEnd = null;
+            int activeCommentStart = -1;
 
             for (int i = 0; i < text.Length; ++i)
             {
@@ -177,6 +231,7 @@ namespace AJut.Text.AJson
                         {
                             i += activeCommentEnd.Length - 1;
                             activeCommentEnd = null;
+                            this.AddComment(activeCommentStart, i + 1);
                         }
                     }
                     continue;
@@ -211,6 +266,7 @@ namespace AJut.Text.AJson
 
                         if (text.Slice(i, commentStart.Length).SequenceEqual(commentStart.AsSpan()))
                         {
+                            activeCommentStart = i;
                             activeCommentEnd = rules.CommentIndicators[idx].Item2;
                             i += commentStart.Length - 1;
                             startedComment = true;
@@ -250,6 +306,39 @@ namespace AJut.Text.AJson
 
                 this.Mark(i, kind);
             }
+
+            // A comment still open at the end of the text runs to the end of the text
+            if (activeCommentEnd != null)
+            {
+                this.AddComment(activeCommentStart, text.Length);
+            }
+        }
+
+        private void AddComment (int start, int end)
+        {
+            m_comments ??= new List<CommentRegion>();
+            m_comments.Add(new CommentRegion(start, end));
+        }
+
+        // Comments are recorded in text order and never overlap, so their ends ascend too
+        private int FirstCommentEndingAfter (int position)
+        {
+            int left = 0;
+            int right = m_comments.Count - 1;
+            while (left <= right)
+            {
+                int mid = left + ((right - left) >> 1);
+                if (m_comments[mid].End <= position)
+                {
+                    left = mid + 1;
+                }
+                else
+                {
+                    right = mid - 1;
+                }
+            }
+
+            return left;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -287,6 +376,23 @@ namespace AJut.Text.AJson
             }
 
             return left < m_count ? left : -1;
+        }
+
+        // ===============================[ Subclasses ]===========================
+        /// <summary>
+        /// A comment's span in the source text, from the first character of its start marker up to
+        /// (not including) the character after its end marker.
+        /// </summary>
+        private readonly struct CommentRegion
+        {
+            public readonly int Start;
+            public readonly int End;
+
+            public CommentRegion (int start, int end)
+            {
+                this.Start = start;
+                this.End = end;
+            }
         }
     }
 }

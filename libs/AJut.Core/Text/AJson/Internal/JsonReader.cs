@@ -30,7 +30,7 @@ namespace AJut.Text.AJson
                 if (firstOpen == -1)
                 {
                     // Bare-value case - no brackets at the top level.
-                    output.Data = ReadUnquotedValue(text, 0, text.Length - 1);
+                    output.Data = ReadUnquotedValue(text, index, 0, text.Length - 1);
                     return output;
                 }
 
@@ -87,7 +87,7 @@ namespace AJut.Text.AJson
 
                         if (pendingKey != null)
                         {
-                            JsonValue tail = ReadUnquotedValue(text, lastStart, sepPos - 1);
+                            JsonValue tail = ReadUnquotedValue(text, index, lastStart, sepPos - 1);
                             if (tail != null)
                             {
                                 if (rules.StrictMode && tail.IsQuoted == false && !LooksLikeJsonLiteralOrNumber(tail.StringValue))
@@ -171,7 +171,7 @@ namespace AJut.Text.AJson
                         // The chunk between lastStart and sepPos-1 is an unquoted key (lenient).
                         // Strict mode rejects it.
                         {
-                            string keyChunk = TrimUnquoted(text, lastStart, sepPos - 1);
+                            string keyChunk = TrimUnquoted(text, index, lastStart, sepPos - 1);
                             if (keyChunk.Length == 0)
                             {
                                 owner.AddError($"Empty key at position {sepPos}");
@@ -234,7 +234,7 @@ namespace AJut.Text.AJson
 
                         if (pendingKey != null)
                         {
-                            JsonValue endValue = ReadUnquotedValue(text, lastStart, sepPos - 1);
+                            JsonValue endValue = ReadUnquotedValue(text, index, lastStart, sepPos - 1);
                             if (endValue != null)
                             {
                                 if (rules.StrictMode && endValue.IsQuoted == false && !LooksLikeJsonLiteralOrNumber(endValue.StringValue))
@@ -302,7 +302,7 @@ namespace AJut.Text.AJson
                         // Trailing unquoted item between last comma and the close bracket.
                         if (lastStart != sepPos)
                         {
-                            JsonValue tail = ReadUnquotedValue(text, lastStart, sepPos - 1);
+                            JsonValue tail = ReadUnquotedValue(text, index, lastStart, sepPos - 1);
                             if (tail != null)
                             {
                                 if (rules.StrictMode && tail.IsQuoted == false && !LooksLikeJsonLiteralOrNumber(tail.StringValue))
@@ -388,7 +388,7 @@ namespace AJut.Text.AJson
                         }
 
                         {
-                            JsonValue itemValue = ReadUnquotedValue(text, lastStart, sepPos - 1);
+                            JsonValue itemValue = ReadUnquotedValue(text, index, lastStart, sepPos - 1);
                             if (itemValue != null)
                             {
                                 if (rules.StrictMode && itemValue.IsQuoted == false && !LooksLikeJsonLiteralOrNumber(itemValue.StringValue))
@@ -449,40 +449,38 @@ namespace AJut.Text.AJson
         }
 
         // Trim leading/trailing whitespace and produce a JsonValue, or null if the chunk is empty.
-        private static JsonValue ReadUnquotedValue (ReadOnlySpan<char> text, int startPos, int endPos)
+        private static JsonValue ReadUnquotedValue (ReadOnlySpan<char> text, SeparatorIndex index, int startPos, int endPos)
+        {
+            string raw = TrimUnquoted(text, index, startPos, endPos);
+            return raw.Length == 0 ? null : new JsonValue(raw, isQuoted: false);
+        }
+
+        private static string TrimUnquoted (ReadOnlySpan<char> text, SeparatorIndex index, int startPos, int endPos)
         {
             if (endPos < startPos)
             {
-                return null;
+                return String.Empty;
             }
 
-            int s = startPos;
-            int e = endPos;
-            while (s <= e && IsWhitespace(text[s])) { ++s; }
-            while (e >= s && IsWhitespace(text[e])) { --e; }
+            // The indexer leaves comments out of the separator stream, but an unquoted chunk is
+            //  sliced from the original text, so a comment sitting inside it has to come out here.
+            //  It is replaced with a space rather than removed: a comment separates the text on
+            //  either side of it, as in C and JSON5. Text with no comments takes the plain slice.
+            ReadOnlySpan<char> chunk = index.HasCommentWithin(startPos, endPos)
+                ? index.SliceWithCommentsAsSpaces(text, startPos, endPos).AsSpan()
+                : text.Slice(startPos, endPos - startPos + 1);
 
-            if (e < s)
-            {
-                return null;
-            }
-
-            string raw = text.Slice(s, e - s + 1).ToString();
-            return new JsonValue(raw, isQuoted: false);
-        }
-
-        private static string TrimUnquoted (ReadOnlySpan<char> text, int startPos, int endPos)
-        {
-            int s = startPos;
-            int e = endPos;
-            while (s <= e && IsWhitespace(text[s])) { ++s; }
-            while (e >= s && IsWhitespace(text[e])) { --e; }
+            int s = 0;
+            int e = chunk.Length - 1;
+            while (s <= e && IsWhitespace(chunk[s])) { ++s; }
+            while (e >= s && IsWhitespace(chunk[e])) { --e; }
 
             if (e < s)
             {
                 return String.Empty;
             }
 
-            return text.Slice(s, e - s + 1).ToString();
+            return chunk.Slice(s, e - s + 1).ToString();
         }
 
         private static bool IsWhitespace (char c)
