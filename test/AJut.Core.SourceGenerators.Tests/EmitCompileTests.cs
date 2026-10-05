@@ -85,6 +85,28 @@ namespace TestNs
         }
 
         [TestMethod]
+        public void GeneratedCode_CompilesCleanly_WithThreeRuntimeTypeEvalProperties ()
+        {
+            // Each [JsonRuntimeTypeEval] read declares a local inside the reader's switch, and every case of a switch shares one
+            //  scope, so a second such property on one type is where the names collide
+            const string src = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    public abstract class Shape { }
+    public class Circle : Shape { public double Radius { get; set; } }
+    [OptimizeAJson]
+    public class ThreeHolder
+    {
+        [JsonRuntimeTypeEval] public Shape First { get; set; }
+        [JsonRuntimeTypeEval] public Shape Second { get; set; }
+        [JsonRuntimeTypeEval] public object Third { get; set; }
+    }
+}";
+            AssertCompilesCleanly(src);
+        }
+
+        [TestMethod]
         public void GeneratedCode_CompilesCleanly_WithPropertyAsSelf ()
         {
             const string src = @"
