@@ -3,6 +3,7 @@ namespace AJut.Core.UnitTests.AJsonV2
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Numerics;
     using System.Reflection;
     using AJut.Text.AJson;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -19,6 +20,7 @@ namespace AJut.Core.UnitTests.AJsonV2
         //  culture that tells culture-invariant number text apart from current-culture text.
         private const string kCommaDecimalCulture = "de-DE";
         private const string kPeriodDecimalCulture = "en-US";
+        private static readonly Vector2 kFractionalVector = new Vector2(0.5f, 1.25f);
 
         // ===========================[ Test Models ]===================================
         public class NumericMatrix
@@ -57,6 +59,11 @@ namespace AJut.Core.UnitTests.AJsonV2
         public class PriceHolder
         {
             public decimal Price { get; set; }
+        }
+
+        public class VectorHolder
+        {
+            public Vector2 Position { get; set; }
         }
 
         // ===========================[ Numeric Round-Trips ]===================================
@@ -182,6 +189,59 @@ namespace AJut.Core.UnitTests.AJsonV2
                 Assert.IsFalse(json.HasErrors, json.GetErrorReport());
                 Assert.AreEqual(double.PositiveInfinity, JsonHelper.BuildObjectForJson<NumericMatrix>(json).Double, oldText);
             });
+        }
+
+        // ===========================[ Vector2 ]===================================
+        [TestMethod]
+        public void Vector2_RoundTrips ()
+        {
+            Assert.AreEqual(kFractionalVector, RoundTrip(new VectorHolder { Position = kFractionalVector }).Position);
+        }
+
+        [TestMethod]
+        public void Vector2_RoundTrips_UnderCommaDecimalCulture ()
+        {
+            RunUnderCulture(kCommaDecimalCulture, () =>
+            {
+                VectorHolder round = RoundTrip(new VectorHolder { Position = kFractionalVector });
+                Assert.AreEqual(kFractionalVector, round.Position);
+            });
+        }
+
+        [TestMethod]
+        public void Vector2_ReadsInvariantText_UnderCommaDecimalCulture ()
+        {
+            RunUnderCulture(kCommaDecimalCulture, () =>
+            {
+                Json json = JsonHelper.ParseText("{ \"Position\": \"<0.5,1.25>\" }");
+                Assert.IsFalse(json.HasErrors, json.GetErrorReport());
+                Assert.AreEqual(kFractionalVector, JsonHelper.BuildObjectForJson<VectorHolder>(json).Position);
+            });
+        }
+
+        [TestMethod]
+        public void Vector2_TextWrittenUnderOneCulture_ReadsUnderAnother ()
+        {
+            string written = null;
+            RunUnderCulture(kCommaDecimalCulture, () => written = JsonHelper.BuildJsonForObject(new VectorHolder { Position = kFractionalVector }).ToString());
+
+            RunUnderCulture(kPeriodDecimalCulture, () =>
+            {
+                Json json = JsonHelper.ParseText(written);
+                Assert.IsFalse(json.HasErrors, json.GetErrorReport());
+                Assert.AreEqual(kFractionalVector, JsonHelper.BuildObjectForJson<VectorHolder>(json).Position, written);
+            });
+        }
+
+        [TestMethod]
+        public void Vector2_UnreadableText_ReportsError ()
+        {
+            Json json = JsonHelper.ParseText("{ \"Position\": \"<not,a,vector>\" }");
+            Assert.IsFalse(json.HasErrors, json.GetErrorReport());
+
+            VectorHolder read = JsonHelper.BuildObjectForJson<VectorHolder>(json);
+            Assert.AreEqual(Vector2.Zero, read.Position);
+            Assert.IsTrue(json.HasErrors, "An unreadable Vector2 must be reported, not silently zeroed");
         }
 
         // ===========================[ Helpers ]===================================
