@@ -1303,6 +1303,75 @@ namespace AJut.Core.UnitTests
         }
 
         [TestMethod]
+        public void Stratabase_ListAccess_WholeListSetIntoTheActiveOverrideLayer_RefreshesElements ()
+        {
+            // The list access caches its elements, and only reloaded them when the active layer moved, so a new list landing in
+            //  the layer that was already active never reached Elements (AJU-37)
+            Stratabase sb = new Stratabase(2);
+            Guid id = Guid.NewGuid();
+            sb.SetOverridePropertyValue(0, id, "List", new List<int> { 1, 2 });
+            StrataPropertyListAccess<int> access = sb.GenerateListPropertyAccess<int>(id, "List");
+            Assert.AreEqual(0, access.ActiveLayerIndex);
+            CollectionAssert.AreEqual(new[] { 1, 2 }, access.Elements.ToArray());
+
+            sb.SetOverridePropertyValue(0, id, "List", new List<int> { 7, 8, 9 });
+
+            CollectionAssert.AreEqual(new[] { 7, 8, 9 }, access.Elements.ToArray(), "Elements still holds the list the layer had before");
+        }
+
+        [TestMethod]
+        public void Stratabase_ListAccess_WholeListSetIntoTheActiveBaseline_RefreshesElements ()
+        {
+            Stratabase sb = new Stratabase(1);
+            Guid id = Guid.NewGuid();
+            sb.SetBaselinePropertyValue(id, "List", new List<int> { 1 });
+            StrataPropertyListAccess<int> access = sb.GenerateListPropertyAccess<int>(id, "List");
+            Assert.IsTrue(access.IsActiveLayerBaseline);
+
+            sb.SetBaselinePropertyValue(id, "List", new List<int> { 5, 6 });
+
+            CollectionAssert.AreEqual(new[] { 5, 6 }, access.Elements.ToArray(), "Elements still holds the list the baseline had before");
+        }
+
+        [TestMethod]
+        public void Stratabase_ListAccess_ElementsAreCurrentWhenValueChangedIsRaised ()
+        {
+            // A listener reads Elements from its ValueChanged handler, so the cache has to be current before the event goes out
+            Stratabase sb = new Stratabase(2);
+            Guid id = Guid.NewGuid();
+            sb.SetOverridePropertyValue(0, id, "List", new List<int> { 1, 2 });
+            StrataPropertyListAccess<int> access = sb.GenerateListPropertyAccess<int>(id, "List");
+            int[] seenInHandler = null;
+            access.ValueChanged += _OnValueChanged;
+
+            sb.SetOverridePropertyValue(0, id, "List", new List<int> { 4 });
+
+            access.ValueChanged -= _OnValueChanged;
+            Assert.IsNotNull(seenInHandler, "ValueChanged was not raised");
+            CollectionAssert.AreEqual(new[] { 4 }, seenInHandler, "Elements was stale inside the ValueChanged handler");
+
+            void _OnValueChanged (object sender, EventArgs e)
+            {
+                seenInHandler = access.Elements.ToArray();
+            }
+        }
+
+        [TestMethod]
+        public void Stratabase_ListAccess_CreatedOverABaselineAndAHigherOverride_ShowsTheActiveLayer ()
+        {
+            // The initial load read the baseline whenever one was set, without checking which layer is active (AJU-37)
+            Stratabase sb = new Stratabase(1);
+            Guid id = Guid.NewGuid();
+            sb.SetBaselinePropertyValue(id, "List", new List<int> { 1 });
+            sb.SetOverridePropertyValue(0, id, "List", new List<int> { 2, 3 });
+
+            StrataPropertyListAccess<int> access = sb.GenerateListPropertyAccess<int>(id, "List");
+
+            Assert.AreEqual(0, access.ActiveLayerIndex);
+            CollectionAssert.AreEqual(new[] { 2, 3 }, access.Elements.ToArray(), "Elements shows the baseline's list under an active override");
+        }
+
+        [TestMethod]
         public void Stratabase_EnsureListElementType_NullInsertionAtFirstElementWorks ()
         {
             Stratabase sb = new Stratabase(1);
