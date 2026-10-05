@@ -1,6 +1,7 @@
 namespace AJut.TypeManagement
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
@@ -17,6 +18,10 @@ namespace AJut.TypeManagement
     ///
     /// Use <see cref="For{T}()"/> to get a fluent builder for a type. The ordering cache is
     /// invalidated automatically whenever a registration is modified.
+    ///
+    /// Queries are safe from any number of threads, including the first query for a type. Make
+    /// registrations up front: changing a type's registration while another thread is querying
+    /// that type is not supported.
     /// </summary>
     public static class TypeMetadataExtensionRegistrar
     {
@@ -25,8 +30,15 @@ namespace AJut.TypeManagement
             = BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty;
 
         // ===========[ Static fields ]==========================================
-        private static readonly Dictionary<Type, TypeMetadataExtension> g_extensions = new();
-        private static readonly Dictionary<(Type, BindingFlags), PropertyInfo[]> g_orderCache = new();
+        // Both maps are concurrent because the first use of a type writes g_orderCache from whatever
+        //  thread got there, and AJson calls GetOrderedProperties from inside its own
+        //  ConcurrentDictionary.GetOrAdd factory, which runs outside any lock. Two threads building
+        //  json for new types at once (the same type or two different ones) both wrote this cache,
+        //  and concurrent writes can corrupt a plain Dictionary for the rest of the process: later
+        //  lookups throw or hang. Two racing computations of one entry both produce the same order,
+        //  so last-write-wins is fine.
+        private static readonly ConcurrentDictionary<Type, TypeMetadataExtension> g_extensions = new();
+        private static readonly ConcurrentDictionary<(Type, BindingFlags), PropertyInfo[]> g_orderCache = new();
         private static eMemberInheritanceOrdering g_defaultMemberOrdering = eMemberInheritanceOrdering.BaseFirst;
 
         // ===========[ Global ordering default ]==========================================
@@ -63,13 +75,7 @@ namespace AJut.TypeManagement
         /// creating it if necessary. Repeat calls for the same type accumulate registrations.</summary>
         public static TypeMetadataExtension For (Type type)
         {
-            if (!g_extensions.TryGetValue(type, out TypeMetadataExtension ext))
-            {
-                ext = new TypeMetadataExtension(type);
-                g_extensions[type] = ext;
-            }
-
-            return ext;
+            return g_extensions.GetOrAdd(type, static t => new TypeMetadataExtension(t));
         }
 
         // ===========[ Clearing ]==========================================
@@ -77,7 +83,7 @@ namespace AJut.TypeManagement
         /// <summary>Removes all registered metadata extensions for <paramref name="type"/>.</summary>
         public static void ClearFor (Type type)
         {
-            g_extensions.Remove(type);
+            g_extensions.TryRemove(type, out _);
             InvalidateOrderCacheFor(type);
         }
 
@@ -211,7 +217,7 @@ namespace AJut.TypeManagement
 
             foreach (var key in toRemove)
             {
-                g_orderCache.Remove(key);
+                g_orderCache.TryRemove(key, out _);
             }
 
             // AJson keeps its own per-type property lists, filtered by IsHidden and taken from
