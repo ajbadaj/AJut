@@ -5,6 +5,7 @@ namespace AJut.TypeManagement
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Reflection;
+    using AJut.Text.AJson;
 
     /// <summary>
     /// Central registry for type metadata extensions. Provides deterministic member ordering
@@ -47,6 +48,7 @@ namespace AJut.TypeManagement
                 {
                     g_defaultMemberOrdering = value;
                     g_orderCache.Clear();
+                    JsonHelper.ClearPropertyCaches();
                 }
             }
         }
@@ -88,6 +90,7 @@ namespace AJut.TypeManagement
         {
             g_extensions.Clear();
             g_orderCache.Clear();
+            JsonHelper.ClearPropertyCaches();
         }
 
         // ===========[ Ordering ]==========================================
@@ -198,15 +201,22 @@ namespace AJut.TypeManagement
 
         internal static void InvalidateOrderCacheFor (Type type)
         {
-            // Remove all cache entries involving this type (any BindingFlags combination)
+            // Remove the entries for this type and every type derived from it, under any BindingFlags
+            //  combination. A derived type's order is built from its bases' tier and member orders,
+            //  and its property list carries the bases' members, so a registration on a base changes
+            //  the derived types' results too.
             List<(Type, BindingFlags)> toRemove = g_orderCache.Keys
-                .Where(k => k.Item1 == type)
+                .Where(k => type.IsAssignableFrom(k.Item1))
                 .ToList();
 
             foreach (var key in toRemove)
             {
                 g_orderCache.Remove(key);
             }
+
+            // AJson keeps its own per-type property lists, filtered by IsHidden and taken from
+            //  GetOrderedProperties, so they go stale the same way.
+            JsonHelper.InvalidatePropertyCachesFor(type);
         }
 
         // ===========[ Private helpers ]==========================================

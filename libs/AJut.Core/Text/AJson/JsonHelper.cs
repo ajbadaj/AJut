@@ -28,8 +28,9 @@ namespace AJut.Text.AJson
         private static JsonBuilderSettings g_defaultBuilderSettings = new JsonBuilderSettings();
 
         // Per-type reflection cache. Bounded by Type identity (assembly-bounded), no leak risk.
-        // ConcurrentDictionary chosen for thread-safety in case AJson is called concurrently
-        // (Call Familiar wire-message hot path may serialize on multiple threads).
+        // ConcurrentDictionary chosen for thread-safety in case AJson is called concurrently.
+        // The lists depend on TypeMetadataExtensionRegistrar state as well as on the Type, so the
+        // registrar invalidates them whenever a registration changes (InvalidatePropertyCachesFor).
         private static readonly ConcurrentDictionary<Type, PropertyInfo[]> g_propertyCacheReadable
             = new ConcurrentDictionary<Type, PropertyInfo[]>();
         private static readonly ConcurrentDictionary<Type, PropertyInfo[]> g_propertyCacheWritable
@@ -829,6 +830,39 @@ namespace AJut.Text.AJson
         }
 
         // ===============================[ Reflection Cache ]===========================
+        /// <summary>
+        /// Drops the cached property lists for <paramref name="type"/> and every type derived from
+        /// it. A cached list bakes in the <see cref="TypeMetadataExtensionRegistrar"/> hide and order
+        /// state from when it was built, and a derived type's list carries its bases' members, so a
+        /// registration on a base has to reach the derived types too. Called by the registrar.
+        /// </summary>
+        internal static void InvalidatePropertyCachesFor (Type type)
+        {
+            RemoveTypeAndDerived(g_propertyCacheReadable, type);
+            RemoveTypeAndDerived(g_propertyCacheWritable, type);
+        }
+
+        /// <summary>
+        /// Drops every cached property list. Called by the registrar when a change can affect any
+        /// type (clearing all registrations, or changing the default member ordering).
+        /// </summary>
+        internal static void ClearPropertyCaches ()
+        {
+            g_propertyCacheReadable.Clear();
+            g_propertyCacheWritable.Clear();
+        }
+
+        private static void RemoveTypeAndDerived (ConcurrentDictionary<Type, PropertyInfo[]> cache, Type type)
+        {
+            foreach (Type cachedType in cache.Keys)
+            {
+                if (type.IsAssignableFrom(cachedType))
+                {
+                    cache.TryRemove(cachedType, out _);
+                }
+            }
+        }
+
         private static PropertyInfo[] GetCachedReadableProperties (Type type, bool requiresSet)
         {
             ConcurrentDictionary<Type, PropertyInfo[]> cache = requiresSet ? g_propertyCacheWritable : g_propertyCacheReadable;
