@@ -25,6 +25,10 @@
 
         private void RegisterDefaults()
         {
+            // Every simple type AJson writes needs a parser here. A type without one does not fail
+            //  on read, it silently keeps the default its instance was constructed with.
+            this.Register(Byte.Parse);
+            this.Register(SByte.Parse);
             this.Register(Int16.Parse);
             this.Register(Int32.Parse);
             this.Register(Int64.Parse);
@@ -34,7 +38,8 @@
 
             this.Register(double.Parse);
             this.Register(float.Parse);
-            
+            this.Register(decimal.Parse);
+
             this.Register(bool.Parse);
             
             this.Register(char.Parse);
