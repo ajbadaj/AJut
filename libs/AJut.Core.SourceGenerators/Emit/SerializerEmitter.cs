@@ -184,7 +184,11 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
                 PropertyModel asSelfProp = FindProperty(model, model.PropertyAsSelfName);
                 if (asSelfProp != null && asSelfProp.HasSetter)
                 {
-                    cb.AppendLine($"{model.FullyQualifiedTypeName} elevatedHost = new {model.FullyQualifiedTypeName}();");
+                    // An init-only inner property can only be set by an object initializer, so then the host is built after the inner value
+                    if (!asSelfProp.IsInitOnly)
+                    {
+                        cb.AppendLine($"{model.FullyQualifiedTypeName} elevatedHost = new {model.FullyQualifiedTypeName}();");
+                    }
                     cb.AppendLine("global::AJut.Text.AJson.JsonValue elevatedSource = value;");
                     cb.AppendLine("if (value is global::AJut.Text.AJson.JsonDocument legacyDoc)");
                     cb.OpenBrace();
@@ -192,7 +196,14 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
                     cb.AppendLine("if (legacyMatch != null) { elevatedSource = legacyMatch; }");
                     cb.CloseBrace();
                     cb.AppendLine($"{asSelfProp.UnderlyingTypeFullName} elevatedInner = global::AJut.Text.AJson.JsonHelper.BuildObjectForJson<{asSelfProp.UnderlyingTypeFullName}>(elevatedSource, settings);");
-                    cb.AppendLine($"elevatedHost.{model.PropertyAsSelfName} = elevatedInner;");
+                    if (asSelfProp.IsInitOnly)
+                    {
+                        cb.AppendLine($"{model.FullyQualifiedTypeName} elevatedHost = new {model.FullyQualifiedTypeName} {{ {model.PropertyAsSelfName} = elevatedInner }};");
+                    }
+                    else
+                    {
+                        cb.AppendLine($"elevatedHost.{model.PropertyAsSelfName} = elevatedInner;");
+                    }
                     cb.AppendLine("return elevatedHost;");
                 }
                 else
