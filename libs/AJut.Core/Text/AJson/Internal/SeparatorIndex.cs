@@ -67,6 +67,11 @@ namespace AJut.Text.AJson
         // ===============================[ Properties ]===========================
         public int Count => m_count;
 
+        /// <summary>
+        /// How many comments the indexer skipped.
+        /// </summary>
+        public int CommentCount => m_comments?.Count ?? 0;
+
         // ===============================[ Public Interface Methods ]===========================
         /// <summary>
         /// Returns the position of the next separator at-or-after the given starting position,
@@ -148,6 +153,12 @@ namespace AJut.Text.AJson
             kind = default;
             return false;
         }
+
+        /// <summary>
+        /// Position of the first character of the <paramref name="commentIndex"/>th comment, counted
+        /// in text order (see <see cref="CommentCount"/>).
+        /// </summary>
+        public int CommentStartAt (int commentIndex) => m_comments[commentIndex].Start;
 
         /// <summary>
         /// Whether any comment region overlaps <c>text[startPos..endPos]</c> (both inclusive).

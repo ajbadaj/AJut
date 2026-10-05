@@ -26,6 +26,15 @@ namespace AJut.Text.AJson
             {
                 index = new SeparatorIndex(text, rules);
 
+                // Strict JSON has no comments, even when the rules configure comment indicators
+                if (rules.StrictMode)
+                {
+                    for (int commentIndex = 0; commentIndex < index.CommentCount; ++commentIndex)
+                    {
+                        output.AddError($"Strict mode violation - comment at position {index.CommentStartAt(commentIndex)}");
+                    }
+                }
+
                 int firstOpen = index.NextOfKinds(0, kBracketKindMask);
                 if (firstOpen == -1)
                 {
@@ -68,6 +77,10 @@ namespace AJut.Text.AJson
             int insideQuoteStart = -1;
             string pendingKey = null;
 
+            // The last comma, while no entry has started after it. Strict mode reports it as a
+            //  trailing comma if the document closes first.
+            int openCommaPos = -1;
+
             while (true)
             {
                 if (!index.TryNext(searchPos, out int sepPos, out eSeparatorKind sepKind))
@@ -98,6 +111,10 @@ namespace AJut.Text.AJson
                             }
                             pendingKey = null;
                         }
+                        else
+                        {
+                            CheckStrictTextBeforeClose(text, index, owner, rules, lastStart, sepPos - 1, openCommaPos);
+                        }
                         endIndex = sepPos;
                         break;
 
@@ -116,6 +133,8 @@ namespace AJut.Text.AJson
                                 break;
                             }
 
+                            CheckStrictStrayText(text, index, owner, rules, lastStart, sepPos - 1);
+                            openCommaPos = -1;
                             JsonDocument child = ReadDocument(text, index, owner, rules, sepPos, out int childEnd);
                             if (childEnd == -1)
                             {
@@ -146,6 +165,8 @@ namespace AJut.Text.AJson
                                 break;
                             }
 
+                            CheckStrictStrayText(text, index, owner, rules, lastStart, sepPos - 1);
+                            openCommaPos = -1;
                             JsonArray childArr = ReadArray(text, index, owner, rules, sepPos, out int arrEnd);
                             if (arrEnd == -1)
                             {
@@ -185,12 +206,15 @@ namespace AJut.Text.AJson
                             }
 
                             pendingKey = keyChunk;
+                            openCommaPos = -1;
                         }
                         break;
 
                     case eSeparatorKind.Quote:
                         if (insideQuoteStart == -1)
                         {
+                            CheckStrictStrayText(text, index, owner, rules, lastStart, sepPos - 1);
+                            openCommaPos = -1;
                             insideQuoteStart = sepPos + 1;
                         }
                         else
@@ -202,6 +226,7 @@ namespace AJut.Text.AJson
 
                             if (gotPeek && peekKind == eSeparatorKind.Colon)
                             {
+                                CheckStrictStrayText(text, index, owner, rules, sepPos + 1, peekPos - 1);
                                 pendingKey = text.Slice(insideQuoteStart, sepPos - insideQuoteStart).ToString();
                                 searchPos = peekPos + 1;
                                 lastStart = peekPos + 1;
@@ -245,6 +270,12 @@ namespace AJut.Text.AJson
                             }
                             pendingKey = null;
                         }
+                        else
+                        {
+                            CheckStrictStrayText(text, index, owner, rules, lastStart, sepPos - 1);
+                        }
+
+                        openCommaPos = sepPos;
                         break;
 
                     default:
@@ -282,6 +313,10 @@ namespace AJut.Text.AJson
             int lastStart = startIndex + 1;
             int insideQuoteStart = -1;
 
+            // The last comma, while no item has started after it. Strict mode reports it as a
+            //  trailing comma if the array closes first.
+            int openCommaPos = -1;
+
             while (true)
             {
                 if (!index.TryNext(searchPos, out int sepPos, out eSeparatorKind sepKind))
@@ -300,7 +335,6 @@ namespace AJut.Text.AJson
                         }
 
                         // Trailing unquoted item between last comma and the close bracket.
-                        if (lastStart != sepPos)
                         {
                             JsonValue tail = ReadUnquotedValue(text, index, lastStart, sepPos - 1);
                             if (tail != null)
@@ -310,6 +344,10 @@ namespace AJut.Text.AJson
                                     owner.AddError($"Strict mode violation - unquoted string array element at position {sepPos}");
                                 }
                                 arr.Add(tail);
+                            }
+                            else
+                            {
+                                CheckStrictTextBeforeClose(text, index, owner, rules, lastStart, sepPos - 1, openCommaPos);
                             }
                         }
                         endIndex = sepPos;
@@ -323,6 +361,8 @@ namespace AJut.Text.AJson
                         }
 
                         {
+                            CheckStrictStrayText(text, index, owner, rules, lastStart, sepPos - 1);
+                            openCommaPos = -1;
                             JsonDocument child = ReadDocument(text, index, owner, rules, sepPos, out int childEnd);
                             if (childEnd == -1)
                             {
@@ -337,6 +377,8 @@ namespace AJut.Text.AJson
                             if (index.TryNext(childEnd + 1, out int peekPos, out eSeparatorKind peekKind)
                                 && peekKind == eSeparatorKind.Comma)
                             {
+                                CheckStrictStrayText(text, index, owner, rules, childEnd + 1, peekPos - 1);
+                                openCommaPos = peekPos;
                                 searchPos = peekPos + 1;
                                 lastStart = peekPos + 1;
                             }
@@ -356,6 +398,8 @@ namespace AJut.Text.AJson
                         }
 
                         {
+                            CheckStrictStrayText(text, index, owner, rules, lastStart, sepPos - 1);
+                            openCommaPos = -1;
                             JsonArray child = ReadArray(text, index, owner, rules, sepPos, out int childEnd);
                             if (childEnd == -1)
                             {
@@ -369,6 +413,8 @@ namespace AJut.Text.AJson
                             if (index.TryNext(childEnd + 1, out int peekPos, out eSeparatorKind peekKind)
                                 && peekKind == eSeparatorKind.Comma)
                             {
+                                CheckStrictStrayText(text, index, owner, rules, childEnd + 1, peekPos - 1);
+                                openCommaPos = peekPos;
                                 searchPos = peekPos + 1;
                                 lastStart = peekPos + 1;
                             }
@@ -398,6 +444,8 @@ namespace AJut.Text.AJson
                                 arr.Add(itemValue);
                             }
                         }
+
+                        openCommaPos = sepPos;
                         break;
 
                     case eSeparatorKind.Quote:
@@ -411,6 +459,8 @@ namespace AJut.Text.AJson
                             if (index.TryNext(sepPos + 1, out int peekPos, out eSeparatorKind peekKind)
                                 && peekKind == eSeparatorKind.Comma)
                             {
+                                CheckStrictStrayText(text, index, owner, rules, sepPos + 1, peekPos - 1);
+                                openCommaPos = peekPos;
                                 searchPos = peekPos + 1;
                                 lastStart = peekPos + 1;
                                 continue;
@@ -418,6 +468,8 @@ namespace AJut.Text.AJson
                         }
                         else
                         {
+                            CheckStrictStrayText(text, index, owner, rules, lastStart, sepPos - 1);
+                            openCommaPos = -1;
                             insideQuoteStart = sepPos + 1;
                         }
                         break;
@@ -481,6 +533,44 @@ namespace AJut.Text.AJson
             }
 
             return chunk.Slice(s, e - s + 1).ToString();
+        }
+
+        // Strict JSON has only whitespace between its structural markers, keys and values. The
+        //  lenient reader passes over text it has no use for (before a quote, around a nested
+        //  document, between a value and its comma), which in strict mode would let a comment
+        //  through when no comment indicators are configured, or any other stray text.
+        private static void CheckStrictStrayText (ReadOnlySpan<char> text, SeparatorIndex index, Json owner, ParserRules rules, int startPos, int endPos)
+        {
+            if (!rules.StrictMode)
+            {
+                return;
+            }
+
+            string stray = TrimUnquoted(text, index, startPos, endPos);
+            if (stray.Length != 0)
+            {
+                owner.AddError($"Strict mode violation - unexpected text '{stray}' at position {startPos}");
+            }
+        }
+
+        // At a close brace or bracket with no value left to read: anything in front of it is stray,
+        //  and if nothing is, a comma still waiting for its entry is a trailing comma.
+        private static void CheckStrictTextBeforeClose (ReadOnlySpan<char> text, SeparatorIndex index, Json owner, ParserRules rules, int startPos, int endPos, int openCommaPos)
+        {
+            if (!rules.StrictMode)
+            {
+                return;
+            }
+
+            string stray = TrimUnquoted(text, index, startPos, endPos);
+            if (stray.Length != 0)
+            {
+                owner.AddError($"Strict mode violation - unexpected text '{stray}' at position {startPos}");
+            }
+            else if (openCommaPos != -1)
+            {
+                owner.AddError($"Strict mode violation - trailing comma at position {openCommaPos}");
+            }
         }
 
         private static bool IsWhitespace (char c)
