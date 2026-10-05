@@ -184,7 +184,7 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
                 PropertyModel asSelfProp = FindProperty(model, model.PropertyAsSelfName);
                 if (asSelfProp != null && asSelfProp.HasSetter)
                 {
-                    // An init-only inner property can only be set by an object initializer, so then the host is built after the inner value
+                    // An init-only inner property can only be set by an object initializer, so in that case the host is built after the inner value
                     if (!asSelfProp.IsInitOnly)
                     {
                         cb.AppendLine($"{model.FullyQualifiedTypeName} elevatedHost = new {model.FullyQualifiedTypeName}();");
