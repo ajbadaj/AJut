@@ -1,15 +1,10 @@
 namespace AJut.Text.AJson.SourceGenerators.Tests
 {
     using System;
-    using System.IO;
-    using System.Linq;
     using System.Reflection;
-    using System.Runtime.CompilerServices;
     using AJut.Text.AJson;
-    using AJut.TypeManagement;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
-    using Microsoft.CodeAnalysis.Emit;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
@@ -202,40 +197,45 @@ namespace TestNs
             Assert.AreEqual(7, Get(readElevator!, "Inner"));
         }
 
+        [TestMethod]
+        public void GeneratedReader_RoundTrips_TypesFromAReferencedAssembly ()
+        {
+            // The assembly-wide opt-in can name a marker in another assembly. The consumer then carries generated serializers for
+            //  types it only sees as metadata, including skipping that assembly's static classes (AJU-1).
+            byte[] libraryImage = TestCompilation.EmitToImage(TestCompilation.Build(@"
+namespace ForeignNs
+{
+    public class Marker { }
+    public class Payload
+    {
+        public int Count { get; set; }
+        public string Label { get; init; } = ""unset"";
+    }
+    public static class Helpers { public static int Twice (int x) => x * 2; }
+}", "RoundTrip_ForeignLibrary"));
+
+            CSharpCompilation consumer = TestCompilation.Build(@"
+using AJut.Text.AJson;
+[assembly: OptimizeAJson(typeof(ForeignNs.Marker))]
+namespace ConsumerNs { public class Unrelated { } }", "RoundTrip_ForeignConsumer", MetadataReference.CreateFromImage(libraryImage));
+
+            FixtureLoadContext context = new FixtureLoadContext();
+            Assembly library = FixtureAssemblies.Load(libraryImage, context);
+            FixtureAssemblies.Load(FixtureAssemblies.CompileWithGeneratedSerializers(consumer), context);
+
+            object payload = Create(library, "ForeignNs.Payload");
+            Set(payload, "Count", 4);
+            Set(payload, "Label", "four");
+
+            object readBack = RoundTrip(payload);
+
+            Assert.AreEqual(4, Get(readBack, "Count"));
+            Assert.AreEqual("four", Get(readBack, "Label"));
+        }
+
         // ===========================[ Helpers ]===========================
 
-        /// <summary>
-        /// Compiles the fixture with the generator's output and loads it. Loading runs the module constructor, which is where
-        /// the generated [ModuleInitializer] registers each serializer with AJsonGeneratedDispatch.
-        /// </summary>
-        private static Assembly CompileAndLoad (string source, string assemblyName)
-        {
-            CSharpCompilation compilation = TestCompilation.Build(source, assemblyName);
-            GeneratorDriver driver = CSharpGeneratorDriver.Create(new AJsonSourceGenerator()).RunGenerators(compilation);
-            GeneratorDriverRunResult result = driver.GetRunResult();
-
-            Diagnostic[] generatorErrors = result.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ToArray();
-            if (generatorErrors.Length > 0)
-            {
-                Assert.Fail($"Generator reported errors for '{assemblyName}':\n{_Report(generatorErrors)}");
-            }
-
-            using MemoryStream image = new MemoryStream();
-            EmitResult emit = compilation.AddSyntaxTrees(result.GeneratedTrees).Emit(image);
-            if (!emit.Success)
-            {
-                string emitted = string.Join("\n---\n", result.GeneratedTrees.Select(t => t.ToString()));
-                Diagnostic[] compileErrors = emit.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ToArray();
-                Assert.Fail($"Fixture '{assemblyName}' did not compile with its generated serializers. Errors:\n{_Report(compileErrors)}\n\nEmitted source:\n{emitted}");
-            }
-
-            Assembly loaded = Assembly.Load(image.ToArray());
-            RuntimeHelpers.RunModuleConstructor(loaded.ManifestModule.ModuleHandle);
-            TypeIdRegistrar.RegisterAllTypeIds(loaded);
-            return loaded;
-
-            static string _Report (Diagnostic[] _diagnostics) => string.Join("\n", _diagnostics.Select(d => $"  {d.Id}: {d.GetMessage()} @ {d.Location}"));
-        }
+        private static Assembly CompileAndLoad (string source, string assemblyName) => FixtureAssemblies.LoadWithGeneratedSerializers(source, assemblyName);
 
         /// <summary>
         /// Writes <paramref name="source"/> to json text and reads it back as the same type, through the generated serializer
