@@ -2,6 +2,7 @@ namespace AJut.Core.UnitTests.AJsonV2
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Reflection;
     using AJut.Text.AJson;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -110,7 +111,94 @@ namespace AJut.Core.UnitTests.AJsonV2
             Assert.AreEqual(1.5m, holder.Price);
         }
 
+        // ===========================[ Culture ]===================================
+        // de-DE uses a comma for the decimal separator and a period for grouping, so it is the
+        //  culture that tells culture-invariant number text apart from current-culture text.
+        private const string kCommaDecimalCulture = "de-DE";
+        private const string kPeriodDecimalCulture = "en-US";
+
+        [TestMethod]
+        public void Primitives_FloatingPoint_ReadsJsonNumbers_UnderCommaDecimalCulture ()
+        {
+            RunUnderCulture(kCommaDecimalCulture, () =>
+            {
+                Json json = JsonHelper.ParseText("{\"Float\": 0.5, \"Double\": 1.25, \"Decimal\": 12345.6789}");
+                Assert.IsFalse(json.HasErrors, json.GetErrorReport());
+
+                NumericMatrix read = JsonHelper.BuildObjectForJson<NumericMatrix>(json);
+                Assert.AreEqual(0.5f, read.Float, "Float");
+                Assert.AreEqual(1.25, read.Double, "Double");
+                Assert.AreEqual(12345.6789m, read.Decimal, "Decimal");
+            });
+        }
+
+        [TestMethod]
+        public void Primitives_NumericMatrix_RoundTrip_UnderCommaDecimalCulture ()
+        {
+            RunUnderCulture(kCommaDecimalCulture, () =>
+            {
+                NumericMatrix source = new NumericMatrix
+                {
+                    Float = 0.5f,
+                    Double = 1.25,
+                    Decimal = 12345.6789m,
+                    NullableDecimal = -0.001m,
+                };
+
+                AssertAllPropertiesEqual(source, RoundTrip(source));
+            });
+        }
+
+        [TestMethod]
+        public void Primitives_FloatingPoint_TextWrittenUnderOneCulture_ReadsUnderAnother ()
+        {
+            NumericMatrix source = new NumericMatrix
+            {
+                Float = 0.5f,
+                Double = 1.25,
+                Decimal = 12345.6789m,
+            };
+
+            string written = null;
+            RunUnderCulture(kCommaDecimalCulture, () => written = JsonHelper.BuildJsonForObject(source).ToString());
+
+            RunUnderCulture(kPeriodDecimalCulture, () =>
+            {
+                Json json = JsonHelper.ParseText(written);
+                Assert.IsFalse(json.HasErrors, json.GetErrorReport());
+                AssertAllPropertiesEqual(source, JsonHelper.BuildObjectForJson<NumericMatrix>(json));
+            });
+        }
+
+        [TestMethod]
+        public void Primitives_Infinity_WrittenByCurrentCulture_StillReads ()
+        {
+            // Guards older text: before numbers were written culture-invariant, infinity was written
+            //  with the current culture's symbol, which is not always the invariant "Infinity".
+            RunUnderCulture(kPeriodDecimalCulture, () =>
+            {
+                string oldText = "{\"Double\": " + double.PositiveInfinity.ToString() + "}";
+                Json json = JsonHelper.ParseText(oldText);
+                Assert.IsFalse(json.HasErrors, json.GetErrorReport());
+                Assert.AreEqual(double.PositiveInfinity, JsonHelper.BuildObjectForJson<NumericMatrix>(json).Double, oldText);
+            });
+        }
+
         // ===========================[ Helpers ]===================================
+        private static void RunUnderCulture (string cultureName, Action action)
+        {
+            CultureInfo previous = CultureInfo.CurrentCulture;
+            try
+            {
+                CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo(cultureName);
+                action();
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = previous;
+            }
+        }
+
         private static T RoundTrip<T> (T source)
         {
             Json json = JsonHelper.BuildJsonForObject(source);
