@@ -585,7 +585,12 @@ namespace AJut.Text.AJson
                 requiresSet: source.GetType().IsSimpleType() || !target.BuilderSettings.UseReadonlyObjectProperties
             );
 
-            if (allProperties.Length == 0 && target.Parent != null)
+            // A document with nothing to write is dropped from its parent, unless it carries a type
+            //  id. For a type with no data members the type id is the whole value: an empty marker
+            //  type in an interface-typed property or a list has to come back as an instance of that
+            //  type, not vanish and read back as null (or shift the list).
+            bool hasTypeId = TryGetTypeIdForType(target.BuilderSettings.TypeIdToWrite, sourceType, out string typeId);
+            if (allProperties.Length == 0 && !hasTypeId && target.Parent != null)
             {
                 target.Parent.Children.Remove(target);
                 return;
@@ -596,7 +601,7 @@ namespace AJut.Text.AJson
                 target = target.StartDocument();
             }
 
-            if (TryGetTypeIdForType(target.BuilderSettings.TypeIdToWrite, sourceType, out string typeId))
+            if (hasTypeId)
             {
                 target.AddProperty(JsonDocument.kTypeIndicator, typeId);
             }
