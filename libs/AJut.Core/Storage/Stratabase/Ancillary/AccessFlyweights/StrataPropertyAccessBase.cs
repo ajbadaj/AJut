@@ -98,6 +98,12 @@
 
         protected virtual void OnActiveLayerChanged (int formerActiveLayer) { }
 
+        /// <summary>
+        /// The active layer stayed the same, but the value stored in it was replaced. Called before <see cref="ValueChanged"/> is
+        /// raised, so anything cached from the active layer can be refreshed before listeners read it.
+        /// </summary>
+        protected virtual void OnActiveLayerValueReplaced () { }
+
         public bool IsActiveLayerBaseline => this.ActiveLayerIndex == kBaselineLayerIndex;
 
         internal Stratabase.ObjectDataAccessManager ODAM { get; private set; }
@@ -134,6 +140,7 @@
                 // If it's already the baseline layer, then we just need to trigger the value has changed
                 if (this.ActiveLayerIndex == kBaselineLayerIndex)
                 {
+                    this.OnActiveLayerValueReplaced();
                     this.TriggerValueChanged();
                 }
                 // If it's unset, then we need to move to the baseline layer and trigger value changed
@@ -152,7 +159,17 @@
             {
                 if (e.LayerIndex >= this.ActiveLayerIndex)
                 {
-                    this.ActiveLayerIndex = e.LayerIndex;
+                    // Setting the index to the layer it already is raises nothing, so a new value in the active layer is
+                    //  reported separately for anything that caches it
+                    if (e.LayerIndex == this.ActiveLayerIndex)
+                    {
+                        this.OnActiveLayerValueReplaced();
+                    }
+                    else
+                    {
+                        this.ActiveLayerIndex = e.LayerIndex;
+                    }
+
                     this.TriggerValueChanged();
                 }
 
