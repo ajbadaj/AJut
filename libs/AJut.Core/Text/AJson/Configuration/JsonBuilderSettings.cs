@@ -108,8 +108,10 @@ namespace AJut.Text.AJson
             string _TimeZoneToAJsonString (object instance) => ((TimeZoneInfo)instance).Id;
             string _Vector2ToAJsonString (object instance)
             {
+                // Invariant, or a comma-decimal culture's components would carry commas of their own
+                //  and the reader could not find the one between them
                 Vector2 vec2 = (Vector2)instance;
-                return $"<{vec2.X},{vec2.Y}>";
+                return FormattableString.Invariant($"<{vec2.X},{vec2.Y}>");
             }
         }
 

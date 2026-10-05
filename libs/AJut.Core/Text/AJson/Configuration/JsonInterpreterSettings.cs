@@ -155,15 +155,36 @@ namespace AJut.Text.AJson
 
             object _CreateVector2 (Type fullTarget, JsonValue json, JsonInterpreterSettings settings, Json owner)
             {
-                string[] xystrs = json.StringValue.Trim('<', '>').Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                if (xystrs.Length == 2
-                    && float.TryParse(xystrs[0], out float x)
-                    && float.TryParse(xystrs[1], out float y))
+                // The writer puts each component out invariant. Text written before that used the
+                //  writing machine's culture, which reads back with the current culture as before.
+                //  A comma-decimal culture's old text (<0,5,1,25>) splits into four parts and was
+                //  never readable, so it is reported along with anything else that does not parse.
+                string[] xystrs = (json.StringValue ?? String.Empty)
+                    .Trim('<', '>')
+                    .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+
+                if (_TryReadVector2(xystrs, NumberStyles.Float, CultureInfo.InvariantCulture, out Vector2 found)
+                    || _TryReadVector2(xystrs, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.CurrentCulture, out found))
                 {
-                    return new Vector2(x, y);
+                    return found;
                 }
 
+                owner?.AddError($"Could not read '{json.StringValue}' as a Vector2, the value is left at zero");
                 return Vector2.Zero;
+            }
+
+            static bool _TryReadVector2 (string[] parts, NumberStyles styles, CultureInfo culture, out Vector2 vector)
+            {
+                if (parts.Length == 2
+                    && float.TryParse(parts[0], styles, culture, out float x)
+                    && float.TryParse(parts[1], styles, culture, out float y))
+                {
+                    vector = new Vector2(x, y);
+                    return true;
+                }
+
+                vector = Vector2.Zero;
+                return false;
             }
 
             static object _DefaultFor ([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type t) => t.IsValueType ? Activator.CreateInstance(t) : null;
