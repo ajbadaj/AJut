@@ -154,6 +154,20 @@ namespace TestNs
             AssertCompilesCleanly(src);
         }
 
+        [TestMethod]
+        public void GeneratedCode_CompilesCleanly_WithPropertyAsSelfInitOnly ()
+        {
+            const string src = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson]
+    [JsonPropertyAsSelf(""Inner"")]
+    public class InitElevator { public int Inner { get; init; } }
+}";
+            AssertCompilesCleanly(src);
+        }
+
         // ===========================[ Helpers ]===========================
         private static void AssertCompilesCleanly (string source)
         {

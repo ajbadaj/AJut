@@ -175,6 +175,33 @@ namespace TestNs
             Assert.AreEqual(source, readBack);
         }
 
+        [TestMethod]
+        public void GeneratedReader_RoundTrips_PropertyAsSelfWithInitOnlyInner ()
+        {
+            Assembly fixture = CompileAndLoad(@"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson]
+    [JsonPropertyAsSelf(""Inner"")]
+    public class InitElevator { public int Inner { get; init; } }
+
+    [OptimizeAJson]
+    public class ElevatorHolder { public InitElevator Elevator { get; set; } }
+}", "RoundTrip_PropertyAsSelfInitOnly");
+
+            object elevator = Create(fixture, "TestNs.InitElevator");
+            Set(elevator, "Inner", 7);
+            object holder = Create(fixture, "TestNs.ElevatorHolder");
+            Set(holder, "Elevator", elevator);
+
+            object readBack = RoundTrip(holder);
+
+            object? readElevator = Get(readBack, "Elevator");
+            Assert.IsNotNull(readElevator);
+            Assert.AreEqual(7, Get(readElevator!, "Inner"));
+        }
+
         // ===========================[ Helpers ]===========================
 
         /// <summary>
