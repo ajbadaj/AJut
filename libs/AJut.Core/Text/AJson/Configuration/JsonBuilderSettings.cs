@@ -2,6 +2,7 @@ namespace AJut.Text.AJson
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Numerics;
     using AJut;
 
@@ -175,7 +176,10 @@ namespace AJut.Text.AJson
 
             return instanceType.IsSimpleType() ? (JsonStringMaker)_SimpleTypeStringMaker : null;
 
-            string _SimpleTypeStringMaker (object _instance) => _instance?.ToString();
+            // JSON numbers are culture-invariant. The current culture's ToString writes 0.5 as 0,5
+            //  under a comma-decimal culture, which the reader splits at the comma, and which no
+            //  machine with a different culture could read anyway.
+            string _SimpleTypeStringMaker (object _instance) => _instance is IFormattable formattable ? formattable.ToString(null, CultureInfo.InvariantCulture) : _instance?.ToString();
         }
 
         public static JsonBuilderSettings BuildMinifiedSettings ()

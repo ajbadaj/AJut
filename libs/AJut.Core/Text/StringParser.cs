@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Net;
 
     /// <summary>
@@ -36,9 +37,15 @@
             this.Register(UInt32.Parse);
             this.Register(UInt64.Parse);
 
-            this.Register(double.Parse);
-            this.Register(float.Parse);
-            this.Register(decimal.Parse);
+            // JSON numbers are culture-invariant text, so the floating point parsers read invariant
+            //  first. Before AJson wrote numbers invariant, a comma-decimal culture wrote 0.5 as 0,5
+            //  and infinity was written with the current culture's symbol, so anything invariant
+            //  rejects gets a second try with the current culture. NumberStyles.Float leaves out
+            //  thousands grouping on purpose: with it, invariant would take "0,5" as 5 and the
+            //  fallback would never run.
+            this.Register(_ParseDouble);
+            this.Register(_ParseFloat);
+            this.Register(_ParseDecimal);
 
             this.Register(bool.Parse);
             
@@ -49,6 +56,10 @@
             this.Register(IPEndPoint.Parse);
 
             this.Register(s => s.Replace("\\\"", "\"")); // string
+
+            static double _ParseDouble (string s) => double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out double value) ? value : double.Parse(s, CultureInfo.CurrentCulture);
+            static float _ParseFloat (string s) => float.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) ? value : float.Parse(s, CultureInfo.CurrentCulture);
+            static decimal _ParseDecimal (string s) => decimal.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out decimal value) ? value : decimal.Parse(s, CultureInfo.CurrentCulture);
         }
 
         /// <summary>
