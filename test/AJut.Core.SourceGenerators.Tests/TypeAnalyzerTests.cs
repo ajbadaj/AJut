@@ -208,6 +208,33 @@ namespace TestNs
             Assert.IsTrue(prop.ExplicitOmitDefaultLiteral.EndsWith("1"));   // Center is the second member
         }
 
+        [TestMethod]
+        public void AliasAndOmitIfDefault_OnOneProperty_BothCaptured ()
+        {
+            const string src = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson]
+    public class Both
+    {
+        [JsonPropertyAlias(""s"")]
+        [JsonOmitIfDefault(5)]
+        public int Score { get; set; }
+    }
+}";
+            CSharpCompilation compilation = TestCompilation.Build(src);
+            INamedTypeSymbol? type = TestCompilation.GetType(compilation, "TestNs.Both");
+            TypeAnalyzer.AnalysisResult result = TypeAnalyzer.Analyze(type!);
+
+            PropertyModel prop = result.Model.Properties.Single(p => p.Name == "Score");
+            Assert.AreEqual("s", prop.JsonKey);
+            Assert.IsTrue(prop.HasOmitIfDefault);
+            Assert.IsTrue(prop.HasExplicitOmitDefault);
+            StringAssert.Contains(prop.ExplicitOmitDefaultLiteral, "5");
+            Assert.AreEqual(0, result.Diagnostics.Length);
+        }
+
         // ===========================[ RuntimeTypeEval ]===========================
         [TestMethod]
         public void RuntimeTypeEval_MarksPropertyKind ()
