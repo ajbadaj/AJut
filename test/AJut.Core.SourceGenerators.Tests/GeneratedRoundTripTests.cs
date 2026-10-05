@@ -1,6 +1,7 @@
 namespace AJut.Text.AJson.SourceGenerators.Tests
 {
     using System;
+    using System.Linq;
     using System.Reflection;
     using AJut.Text.AJson;
     using Microsoft.CodeAnalysis;
@@ -231,6 +232,39 @@ namespace ConsumerNs { public class Unrelated { } }", "RoundTrip_ForeignConsumer
 
             Assert.AreEqual(4, Get(readBack, "Count"));
             Assert.AreEqual("four", Get(readBack, "Label"));
+        }
+
+        [TestMethod]
+        public void GeneratedWriter_OmitsNumericDefaultsOfEachWidth ()
+        {
+            Assembly fixture = CompileAndLoad(@"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson]
+    public class Numbers
+    {
+        [JsonOmitIfDefault(2.5)] public double Ratio { get; set; }
+        [JsonOmitIfDefault(0.1f)] public float Scale { get; set; }
+        [JsonOmitIfDefault(5000000000L)] public long Big { get; set; }
+        [JsonOmitIfDefault(7u)] public uint Unsigned { get; set; }
+    }
+}", "RoundTrip_NumericOmitDefaults");
+
+            object atDefaults = Create(fixture, "TestNs.Numbers");
+            Set(atDefaults, "Ratio", 2.5);
+            Set(atDefaults, "Scale", 0.1f);
+            Set(atDefaults, "Big", 5000000000L);
+            Set(atDefaults, "Unsigned", 7u);
+            Assert.IsTrue(AJsonGeneratedDispatch.TryGet(atDefaults.GetType(), out _));
+
+            Json written = JsonHelper.BuildJsonForObject(atDefaults);
+            Assert.IsFalse(written.HasErrors, written.GetErrorReport());
+            Assert.AreEqual(0, ((JsonDocument)written.Data).AllKeys().Count(), $"every value sits at its default, so nothing should be written: {written}");
+
+            Set(atDefaults, "Scale", 0.2f);
+            written = JsonHelper.BuildJsonForObject(atDefaults);
+            CollectionAssert.AreEqual(new[] { "Scale" }, ((JsonDocument)written.Data).AllKeys().ToArray(), written.ToString());
         }
 
         // ===========================[ Helpers ]===========================

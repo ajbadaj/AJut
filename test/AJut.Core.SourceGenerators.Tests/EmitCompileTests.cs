@@ -1,6 +1,7 @@
 namespace AJut.Text.AJson.SourceGenerators.Tests
 {
     using System.Collections.Immutable;
+    using System.Globalization;
     using System.Linq;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
@@ -166,6 +167,48 @@ namespace TestNs
     public class InitElevator { public int Inner { get; init; } }
 }";
             AssertCompilesCleanly(src);
+        }
+
+        [TestMethod]
+        public void GeneratedCode_CompilesCleanly_WithNumericOmitDefaultsOfEachWidth ()
+        {
+            const string src = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson]
+    public class Numbers
+    {
+        [JsonOmitIfDefault(2.5)] public double Ratio { get; set; }
+        [JsonOmitIfDefault(0.1f)] public float Scale { get; set; }
+        [JsonOmitIfDefault(5000000000L)] public long Big { get; set; }
+        [JsonOmitIfDefault(7u)] public uint Unsigned { get; set; }
+    }
+}";
+            AssertCompilesCleanly(src);
+        }
+
+        [TestMethod]
+        public void GeneratedCode_CompilesCleanly_WithFractionalOmitDefault_UnderACommaDecimalCulture ()
+        {
+            // The generator runs inside the build, under whatever culture the build machine has
+            const string src = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson]
+    public class Ratio { [JsonOmitIfDefault(2.5)] public double Value { get; set; } }
+}";
+            CultureInfo original = CultureInfo.CurrentCulture;
+            try
+            {
+                CultureInfo.CurrentCulture = new CultureInfo("de-DE");
+                AssertCompilesCleanly(src);
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = original;
+            }
         }
 
         // ===========================[ Helpers ]===========================
