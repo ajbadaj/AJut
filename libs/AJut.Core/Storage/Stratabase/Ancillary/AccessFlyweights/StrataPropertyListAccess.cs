@@ -111,6 +111,7 @@
         protected override void HandleAdditionalDispose ()
         {
             this.ODAM.LayerListElementsChanged -= this.OnLayerListElementsChanged;
+            this.ODAM.LayerListElementsCleared -= this.OnLayerListCleared;
         }
 
         /// <summary>
