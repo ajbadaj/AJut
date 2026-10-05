@@ -1408,6 +1408,29 @@ namespace AJut.Core.UnitTests
         }
 
         [TestMethod]
+        public void Stratabase_ListAccess_DisposeUnhooksEveryAccessManagerEvent ()
+        {
+            // An access manager outlives its accesses, so any handler a disposed access leaves on it keeps that access alive too
+            Stratabase sb = new Stratabase(1);
+            Guid id = Guid.NewGuid();
+            sb.SetBaselinePropertyValue(id, "List", new List<int> { 1 });
+            StrataPropertyListAccess<int> access = sb.GenerateListPropertyAccess<int>(id, "List");
+            Stratabase.ObjectDataAccessManager manager = sb.GetAccessManager(id);
+
+            access.Dispose();
+
+            foreach (string eventName in new[] { "LayerDataSet", "LayerDataRemoved", "LayerListElementsChanged", "LayerListElementsCleared" })
+            {
+                FieldInfo eventField = typeof(Stratabase.ObjectDataAccessManager).GetField(eventName, BindingFlags.NonPublic | BindingFlags.Instance);
+                Assert.IsNotNull(eventField, $"ObjectDataAccessManager.{eventName} was renamed; update this test");
+
+                Delegate handlers = (Delegate)eventField.GetValue(manager);
+                bool isStillHooked = handlers?.GetInvocationList().Any(h => ReferenceEquals(h.Target, access)) ?? false;
+                Assert.IsFalse(isStillHooked, $"the disposed list access is still subscribed to {eventName}");
+            }
+        }
+
+        [TestMethod]
         public void Stratabase_EnsureListElementType_NullInsertionAtFirstElementWorks ()
         {
             Stratabase sb = new Stratabase(1);
