@@ -71,11 +71,6 @@ namespace AJut.Text.AJson
             this.QuotePropertyNames = true;
             this.Newline = "\n";
             this.PropertyValueQuoting = ePropertyValueQuoting.QuoteAnyUsuallyQuotedItem;
-
-            // This used to default true, when a DateTime was written with no offset or Kind and UTC
-            //  was the only way to pin down the instant. The text carries the Kind now, so converting
-            //  by default would only hand a Local value back as a Utc one.
-            this.MakeDateTimesUTC = false;
             this.TypeIdToWrite = eTypeIdInfo.TypeIdAttributed;
             this.KeyValuePairKeyTypeIdToWrite = eTypeIdInfo.None;
             this.KeyValuePairValueTypeIdToWrite = eTypeIdInfo.None;
@@ -93,10 +88,6 @@ namespace AJut.Text.AJson
             string _DateTimeToJsonString (object instance)
             {
                 DateTime date = (DateTime)instance;
-                if (this.MakeDateTimesUTC && date.Kind != DateTimeKind.Utc)
-                {
-                    date = date.ToUniversalTime();
-                }
 
                 // Round-trip ISO 8601: culture-invariant, every tick kept, and the Kind carried in
                 //  the suffix (Z for Utc, the offset for Local, nothing for Unspecified), so the
@@ -124,11 +115,26 @@ namespace AJut.Text.AJson
         public char PropertyValueQuoteChars { get; set; }
 
         /// <summary>
-        /// When true, Local and Unspecified DateTimes are converted to UTC before they are written,
-        /// so they read back as Utc values. Default false: each DateTime is written with its own
-        /// Kind and reads back with the same ticks and Kind.
+        /// No longer does anything, and using it is a compile error. It converted DateTimes to UTC
+        /// before writing, back when the text carried no offset or Kind and UTC was the only way
+        /// to pin down the instant. Each DateTime is now written with its own Kind and reads back
+        /// the same, so anything that wants UTC stored converts in its own model.
         /// </summary>
-        public bool MakeDateTimesUTC { get; set; }
+        /// <remarks>
+        /// An error rather than a plain removal, so a project that set it is told why. Delete it
+        /// in a later release.
+        /// </remarks>
+        [Obsolete(
+            "AJson now writes each DateTime as round-trip ISO 8601 with its own Kind, and it reads back the "
+            + "same, so this setting no longer does anything. To store UTC, convert in your own model with "
+            + "ToUniversalTime().",
+            error: true
+        )]
+        public bool MakeDateTimesUTC
+        {
+            get => false;
+            set { }
+        }
 
         /// <summary>
         /// Whether text written from json built with these settings carries the AJson version
