@@ -211,6 +211,35 @@ namespace TestNs
             }
         }
 
+        [TestMethod]
+        public void GeneratedCode_CompilesCleanly_WithADoubleOmitValueOnAFloatProperty ()
+        {
+            // AJSON003 accepts any number for a numeric property, but a double does not convert to a float on its own
+            const string src = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson]
+    public class Scaled { [JsonOmitIfDefault(2.5)] public float Scale { get; set; } }
+}";
+            AssertCompilesCleanly(src);
+        }
+
+        [TestMethod]
+        public void GeneratedCode_CompilesCleanly_WithAnEnumOmitValueGivenAsItsNumber ()
+        {
+            // AJSON003 accepts an enum's underlying number, but only a constant zero converts to an enum on its own
+            const string src = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    public enum eAnchor { Left, Center, Right }
+    [OptimizeAJson]
+    public class Anchored { [JsonOmitIfDefault(1)] public eAnchor Anchor { get; set; } }
+}";
+            AssertCompilesCleanly(src);
+        }
+
         // ===========================[ Helpers ]===========================
         private static void AssertCompilesCleanly (string source)
         {

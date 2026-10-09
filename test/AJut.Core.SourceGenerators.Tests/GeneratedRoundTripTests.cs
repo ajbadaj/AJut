@@ -668,6 +668,27 @@ namespace TestNs
         }
 
         [TestMethod]
+        public void GeneratedWriter_OmitsAFloatAtADoubleOmitValue ()
+        {
+            Assembly fixture = CompileAndLoad(@"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson]
+    public class Scaled { [JsonOmitIfDefault(2.5)] public float Scale { get; set; } }
+}", "RoundTrip_DoubleOmitValueOnFloat");
+
+            object atDefault = Create(fixture, "TestNs.Scaled");
+            Set(atDefault, "Scale", 2.5f);
+            Json written = JsonHelper.BuildJsonForObject(atDefault);
+            Assert.AreEqual(0, ((JsonDocument)written.Data).AllKeys().Count(), written.ToString());
+
+            Set(atDefault, "Scale", 3f);
+            written = JsonHelper.BuildJsonForObject(atDefault);
+            CollectionAssert.AreEqual(new[] { "Scale" }, ((JsonDocument)written.Data).AllKeys().ToArray(), written.ToString());
+        }
+
+        [TestMethod]
         public void GeneratedReader_NestedReadError_ReachesTheOwningJson ()
         {
             // A json array cannot be read into a class that is not a collection. The nested read reports that to the Json the
