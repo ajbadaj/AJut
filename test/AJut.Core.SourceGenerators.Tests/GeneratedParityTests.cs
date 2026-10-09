@@ -55,6 +55,7 @@ namespace ParityNs
         [JsonPropertyAlias(""both"")] [JsonOmitIfDefault(3)] public int AliasedAndOmitted { get; set; }
         [JsonPropertyAlias(""bothKept"")] [JsonOmitIfDefault(3)] public int AliasedAndKept { get; set; }
         [JsonOmitIfDefault(2.5)] public float FloatAtDoubleOmitValue { get; set; }
+        [JsonOmitIfDefault(2.5)] public decimal DecimalAtDoubleOmitValue { get; set; }
         [JsonRuntimeTypeEval] public object BoxedNumber { get; set; }
         [JsonRuntimeTypeEval] public object BoxedText { get; set; }
         [JsonIgnore] public string Ignored { get; set; }
@@ -161,6 +162,7 @@ namespace ParityRouteNs
                 SetProperty(everything, "AliasedAndOmitted", 3);
                 SetProperty(everything, "AliasedAndKept", 4);
                 SetProperty(everything, "FloatAtDoubleOmitValue", 2.5f);
+                SetProperty(everything, "DecimalAtDoubleOmitValue", 2.5m);
                 SetProperty(everything, "BoxedNumber", 42);
                 SetProperty(everything, "BoxedText", "boxed");
                 SetProperty(everything, "Ignored", "never written");
