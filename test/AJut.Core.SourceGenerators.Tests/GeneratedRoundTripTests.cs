@@ -267,6 +267,54 @@ namespace TestNs
             CollectionAssert.AreEqual(new[] { "Scale" }, ((JsonDocument)written.Data).AllKeys().ToArray(), written.ToString());
         }
 
+        [TestMethod]
+        public void GeneratedReader_NestedReadError_ReachesTheOwningJson ()
+        {
+            // A json array cannot be read into a class that is not a collection. The nested read reports that to the Json the
+            //  outer read was handed, and from inside a generated reader it has to get there too.
+            Assembly fixture = CompileAndLoad(@"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    public class Inner { public int A { get; set; } }
+    [OptimizeAJson] public class Outer { public Inner Child { get; set; } }
+}", "RoundTrip_NestedReadError");
+            Type type = fixture.GetType("TestNs.Outer", throwOnError: true)!;
+            Assert.IsTrue(AJsonGeneratedDispatch.TryGet(type, out _));
+
+            Json parsed = JsonHelper.ParseText("{ \"Child\": [1, 2] }");
+            Assert.IsFalse(parsed.HasErrors, parsed.GetErrorReport());
+            JsonHelper.BuildObjectForJson(type, parsed);
+
+            Assert.IsTrue(parsed.HasErrors, "the nested read's error was dropped instead of reaching the owning Json");
+            StringAssert.Contains(parsed.GetErrorReport(), "Cannot interpret a json array as target type");
+        }
+
+        [TestMethod]
+        public void GeneratedReader_PropertyAsSelfNestedReadError_ReachesTheOwningJson ()
+        {
+            // JsonHelper handles [JsonPropertyAsSelf] itself before it looks for a generated reader, so this calls the generated
+            //  reader directly
+            Assembly fixture = CompileAndLoad(@"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    public class Inner { public int A { get; set; } }
+    [OptimizeAJson]
+    [JsonPropertyAsSelf(""Content"")]
+    public class Wrapper { public Inner Content { get; set; } }
+}", "RoundTrip_PropertyAsSelfNestedReadError");
+            Type type = fixture.GetType("TestNs.Wrapper", throwOnError: true)!;
+            Assert.IsTrue(AJsonGeneratedDispatch.TryGet(type, out AJsonGeneratedSerializer serializer));
+
+            Json parsed = JsonHelper.ParseText("[1, 2]");
+            Assert.IsFalse(parsed.HasErrors, parsed.GetErrorReport());
+            serializer.Reader(parsed.Data, null, parsed);
+
+            Assert.IsTrue(parsed.HasErrors, "the nested read's error was dropped instead of reaching the owning Json");
+            StringAssert.Contains(parsed.GetErrorReport(), "Cannot interpret a json array as target type");
+        }
+
         // ===========================[ Helpers ]===========================
 
         private static Assembly CompileAndLoad (string source, string assemblyName) => FixtureAssemblies.LoadWithGeneratedSerializers(source, assemblyName);
