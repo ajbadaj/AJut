@@ -3,10 +3,8 @@ namespace AJut.Text.AJson.SourceGenerators
     using Microsoft.CodeAnalysis;
 
     /// <summary>
-    /// The full set of diagnostics the AJson source generator reports. IDs are AJSON001 onward;
-    /// the original Phase D plan reserved AJSON001 for "type is not partial" but the emit shape
-    /// shifted to external static helpers, so the partial constraint went away and the IDs were
-    /// renumbered to start clean.
+    /// The full set of diagnostics the AJson source generator reports, numbered from AJSON001. The generated serializers are
+    /// static helper classes of their own rather than partial members of the opted-in type, so a type never has to be partial.
     /// </summary>
     internal static class Diagnostics
     {

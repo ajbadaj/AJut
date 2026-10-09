@@ -26,11 +26,16 @@ namespace AJut.Text.AJson
         private const string kRecordCloneMethodName = "<Clone>$";
 
         private const BindingFlags kInstanceConstructors = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        private const string kTrimJustification = "Reflection path; the trim-safe path is [OptimizeAJson], whose generated reader calls the constructor directly.";
+
+        /// <summary>
+        /// FindRoute as a delegate, made once rather than on every GetOrAdd
+        /// </summary>
+        private static readonly Func<Type, Route> kFindRoute = FindRoute;
 
         // Both dictionaries are filled on first use from any thread, so both are concurrent
         private static readonly ConcurrentDictionary<Type, Route> g_routes = new ConcurrentDictionary<Type, Route>();
         private static readonly ConcurrentDictionary<Type, byte> g_customConstructorChecked = new ConcurrentDictionary<Type, byte>();
-        private static readonly Func<Type, Route> g_findRoute = FindRoute;
 
         // ===========================[ Public Interface Methods ]===========================
 
@@ -43,7 +48,7 @@ namespace AJut.Text.AJson
         public static bool TryConstruct (Type type, JsonValue jsonValue, JsonInterpreterSettings settings, Json owner, out object instance)
         {
             instance = null;
-            Route route = g_routes.GetOrAdd(type, g_findRoute);
+            Route route = g_routes.GetOrAdd(type, kFindRoute);
             if (route.IsAmbiguous)
             {
                 owner?.AddError($"Type '{type.FullName}' has more than one constructor marked [AJsonConstructor], so there is no way to tell which to use. Mark exactly one.");
@@ -74,7 +79,7 @@ namespace AJut.Text.AJson
             }
 
             if (g_customConstructorChecked.TryAdd(type, 0)
-                && g_routes.GetOrAdd(type, g_findRoute).MarkedConstructorCount > 0)
+                && g_routes.GetOrAdd(type, kFindRoute).MarkedConstructorCount > 0)
             {
                 Logger.LogInfo($"[WARNING] AJson: '{type.FullName}' has a constructor marked [AJsonConstructor], but a custom constructor is also registered for it with JsonInterpreterSettings. The registered one wins, so the marked constructor is not used.");
             }
@@ -82,8 +87,8 @@ namespace AJut.Text.AJson
 
         // ===========================[ Helper Methods ]===========================
 
-        [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = "Reflection path; the trim-safe path is [OptimizeAJson], whose generated reader calls the constructor directly.")]
-        [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "Reflection path; the trim-safe path is [OptimizeAJson], whose generated reader calls the constructor directly.")]
+        [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = kTrimJustification)]
+        [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = kTrimJustification)]
         private static Route FindRoute (Type type)
         {
             if (type.IsAbstract || type.IsInterface || type.ContainsGenericParameters)
@@ -226,7 +231,7 @@ namespace AJut.Text.AJson
             return arguments;
         }
 
-        [UnconditionalSuppressMessage("Trimming", "IL2072", Justification = "Reflection path; the trim-safe path is [OptimizeAJson], whose generated reader calls the constructor directly.")]
+        [UnconditionalSuppressMessage("Trimming", "IL2072", Justification = kTrimJustification)]
         private static object ReadArgument (RouteParameter parameter, JsonValue value, JsonInterpreterSettings settings, Json owner)
         {
             // [JsonRuntimeTypeEval] wraps the value with its runtime type id, the same as when it fills a property
@@ -303,7 +308,7 @@ namespace AJut.Text.AJson
             return IsIntegral(type);
         }
 
-        [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "Reflection path; the trim-safe path is [OptimizeAJson], whose generated reader calls the constructor directly.")]
+        [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = kTrimJustification)]
         private static PropertyInfo[] GetMatchableProperties (Type type)
         {
             // The same properties the reflection path reads and writes
