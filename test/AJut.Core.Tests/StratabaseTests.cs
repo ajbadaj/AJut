@@ -1531,6 +1531,69 @@ namespace AJut.Core.UnitTests
         }
 
         [TestMethod]
+        public void Stratabase_DeserializedStore_TryGetReadsStoredValues ()
+        {
+            // A freshly deserialized store holds values but no access managers yet, so nothing that reads may depend on one
+            Guid id = Guid.NewGuid();
+            Stratabase source = new Stratabase(1);
+            source.SetBaselinePropertyValue(id, "Name", "stored");
+            source.SetOverridePropertyValue(0, id, "Count", 3);
+            source.SetBaselinePropertyValue(id, "List", new List<int> { 7, 8 });
+
+            Stratabase loaded = Stratabase.DeserializeFromJson(source.SerializeToJson());
+
+            Assert.IsTrue(loaded.TryGetBaselinePropertyValue(id, "Name", out string name), "a stored baseline value was not found");
+            Assert.AreEqual("stored", name);
+            Assert.IsTrue(loaded.TryGetOverridePropertyValue(0, id, "Count", out int count), "a stored override value was not found");
+            Assert.AreEqual(3, count);
+            Assert.IsTrue(loaded.TryGetBaselineElementValue(id, "List", 1, out int element), "a stored list element was not found");
+            Assert.AreEqual(8, element);
+            Assert.AreEqual(2, loaded.GetElementCountInBaseline(id, "List"));
+        }
+
+        [TestMethod]
+        public void Stratabase_DeserializedStore_ClearAllClearsAndNotifies ()
+        {
+            Guid first = Guid.NewGuid(), second = Guid.NewGuid();
+            Stratabase source = new Stratabase(1);
+            source.SetBaselinePropertyValue(first, "Value", 1);
+            source.SetOverridePropertyValue(0, second, "Value", 2);
+            Stratabase loaded = Stratabase.DeserializeFromJson(source.SerializeToJson());
+            var cleared = new List<Guid>();
+            loaded.BaselineDataChanged += _OnBaselineDataChanged;
+
+            loaded.ClearAll();
+
+            loaded.BaselineDataChanged -= _OnBaselineDataChanged;
+            Assert.IsFalse(loaded.Contains(first), "ClearAll left a stored baseline value in place");
+            Assert.IsFalse(loaded.Contains(second), "ClearAll left a stored override value in place");
+            CollectionAssert.AreEquivalent(new[] { first, second }, cleared, "expected one clear event per stored id");
+
+            void _OnBaselineDataChanged (object sender, BaselineStratumModificationEventArgs e)
+            {
+                if (e.WasPropertyRemoved && e.PropertyName == String.Empty)
+                {
+                    cleared.Add(e.ItemId);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void Stratabase_DeserializedStore_SetObjectWithPropertiesFillsTheObject ()
+        {
+            var data = new TestData { Name = "loaded", Value = 9 };
+            Stratabase source = new Stratabase(1);
+            source.SetBaselineFromPropertiesOf(data);
+            Stratabase loaded = Stratabase.DeserializeFromJson(source.SerializeToJson());
+
+            var found = new TestData(data.Id);
+            loaded.SetObjectWithProperties(data.Id, ref found);
+
+            Assert.AreEqual("loaded", found.Name, "nothing was set on the object");
+            Assert.AreEqual(9, found.Value);
+        }
+
+        [TestMethod]
         public void Stratabase_EnsureListElementType_NullInsertionAtFirstElementWorks ()
         {
             Stratabase sb = new Stratabase(1);
