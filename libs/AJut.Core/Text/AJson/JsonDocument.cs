@@ -13,6 +13,12 @@ namespace AJut.Text.AJson
         public const string kKVPValueTypeIndicator = "__value-type";
         public const string kRuntimeTypeEvalValue = "__value";
 
+        /// <summary>
+        /// The key of the AJson version marker, written as the root document's first key. It
+        /// only exists in text: the reader takes it out into <see cref="Json.AJsonVersion"/>.
+        /// </summary>
+        public const string kAJsonVersionIndicator = "__ajson";
+
         private List<KeyValuePair<string, JsonValue>> m_memberStorage;
 
         // ===============================[ Construction ]===========================

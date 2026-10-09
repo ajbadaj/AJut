@@ -3,6 +3,7 @@
 namespace AJut.Text.AJson
 {
     using System;
+    using System.Globalization;
     using System.Text;
 
     internal static class JsonWriter
@@ -10,11 +11,23 @@ namespace AJut.Text.AJson
         private static readonly JsonBuilderSettings g_defaultPretty = new JsonBuilderSettings();
         private static readonly JsonBuilderSettings g_defaultCompact = JsonBuilderSettings.BuildMinifiedSettings();
 
-        public static string Write (JsonValue root, JsonBuilderSettings settings = null)
+        /// <summary>
+        /// Writes <paramref name="root"/> as text. An <paramref name="ajsonVersion"/> above 0 is
+        /// written as the version marker, the first key of a root document.
+        /// </summary>
+        public static string Write (JsonValue root, JsonBuilderSettings settings = null, int ajsonVersion = 0)
         {
             settings = settings ?? g_defaultPretty;
             StringBuilder sb = new StringBuilder(EstimateSize(root));
-            WriteValue(sb, root, 0, settings);
+            if (ajsonVersion > 0 && root is JsonDocument rootDocument)
+            {
+                WriteDocument(sb, rootDocument, 0, settings, ajsonVersion);
+            }
+            else
+            {
+                WriteValue(sb, root, 0, settings);
+            }
+
             return sb.ToString();
         }
 
@@ -61,12 +74,23 @@ namespace AJut.Text.AJson
             WriteSimpleValue(sb, value, settings);
         }
 
-        private static void WriteDocument (StringBuilder sb, JsonDocument doc, int currentTabbing, JsonBuilderSettings settings)
+        private static void WriteDocument (StringBuilder sb, JsonDocument doc, int currentTabbing, JsonBuilderSettings settings, int ajsonVersion = 0)
         {
             sb.Append('{');
             ++currentTabbing;
 
             int count = doc.Count;
+            if (ajsonVersion > 0)
+            {
+                MakeNewline(sb, currentTabbing, settings);
+                WritePropertyHeading(sb, JsonDocument.kAJsonVersionIndicator, settings);
+                sb.Append(ajsonVersion.ToString(CultureInfo.InvariantCulture));
+                if (count > 0)
+                {
+                    sb.Append(',');
+                }
+            }
+
             for (int i = 0; i < count; ++i)
             {
                 MakeNewline(sb, currentTabbing, settings);
@@ -84,7 +108,7 @@ namespace AJut.Text.AJson
             }
 
             --currentTabbing;
-            if (count > 0)
+            if (count > 0 || ajsonVersion > 0)
             {
                 MakeNewline(sb, currentTabbing, settings);
             }

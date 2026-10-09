@@ -31,6 +31,20 @@ namespace AJut.Text.AJson
         public bool StrictMode { get; set; } = false;
 
         /// <summary>
+        /// Log a warning when the text read is a root document whose AJson version (0 when it has
+        /// no version marker) is below this. Null follows
+        /// <see cref="JsonHelper.WarnIfAJsonVersionBelow"/>, and 0 never warns.
+        /// </summary>
+        public int? WarnIfAJsonVersionBelow { get; set; }
+
+        /// <summary>
+        /// The AJson version to read text as when it has no version marker. Null, the default,
+        /// lets the reader decide from the text itself. Below 2 reads every string as written,
+        /// for text known to predate escaped strings; 2 or above decodes every string.
+        /// </summary>
+        public int? AssumeAJsonVersion { get; set; }
+
+        /// <summary>
         /// Returns a default ParserRules with C-style line and block comments enabled.
         /// </summary>
         public static ParserRules WithDefaultComments ()

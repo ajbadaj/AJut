@@ -25,6 +25,13 @@ namespace AJut.Text.AJson
     /// </summary>
     public static class JsonHelper
     {
+        /// <summary>
+        /// The AJson text format this AJson writes into its version marker
+        /// (<see cref="JsonDocument.kAJsonVersionIndicator"/>). 2 is the first: strings escaped to
+        /// the JSON spec and DateTimes as round-trip ISO 8601. Text with no marker reads as 0.
+        /// </summary>
+        public const int kCurrentAJsonVersion = 2;
+
         private static JsonBuilderSettings g_defaultBuilderSettings = new JsonBuilderSettings();
 
         // Per-type reflection cache. Bounded by Type identity (assembly-bounded), no leak risk.
@@ -35,6 +42,21 @@ namespace AJut.Text.AJson
             = new ConcurrentDictionary<Type, PropertyInfo[]>();
         private static readonly ConcurrentDictionary<Type, PropertyInfo[]> g_propertyCacheWritable
             = new ConcurrentDictionary<Type, PropertyInfo[]>();
+
+        // ===============================[ AJson Version ]===========================
+        /// <summary>
+        /// Whether text written from a <see cref="Json"/> carries the AJson version marker, unless
+        /// the build's <see cref="JsonBuilderSettings.WriteAJsonVersion"/> or the json's own
+        /// <see cref="Json.WriteAJsonVersion"/> says otherwise. On by default.
+        /// </summary>
+        public static bool WriteAJsonVersion { get; set; } = true;
+
+        /// <summary>
+        /// The default for <see cref="ParserRules.WarnIfAJsonVersionBelow"/>: a read of a root
+        /// document whose AJson version is below this logs a warning. 0, the default, never warns,
+        /// since a reader cannot know whether the writer had the marker on.
+        /// </summary>
+        public static int WarnIfAJsonVersionBelow { get; set; } = 0;
 
         // ===============================[ Type ID Registration ]===========================
         public static void RegisterTypeId<T> (string id)

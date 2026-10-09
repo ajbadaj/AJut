@@ -5,11 +5,23 @@
 namespace AJut.Text.AJson
 {
     using System;
+    using System.Globalization;
 
     internal static class JsonReader
     {
         private const int kBracketKindMask =
             (1 << (int)eSeparatorKind.OpenBrace) | (1 << (int)eSeparatorKind.OpenBracket);
+
+        // Everything but newlines and single quotes, which the indexer also records
+        private const int kStructureKindMask =
+            (1 << (int)eSeparatorKind.OpenBrace) | (1 << (int)eSeparatorKind.CloseBrace)
+            | (1 << (int)eSeparatorKind.OpenBracket) | (1 << (int)eSeparatorKind.CloseBracket)
+            | (1 << (int)eSeparatorKind.Colon) | (1 << (int)eSeparatorKind.Comma)
+            | (1 << (int)eSeparatorKind.Quote);
+
+        // The first AJson version whose strings are escaped to the JSON spec. Text below it put
+        //  every backslash out raw.
+        private const int kFirstVersionWithEscapedStrings = 2;
 
         public static Json Parse (ReadOnlySpan<char> text, ParserRules rules)
         {
@@ -35,10 +47,11 @@ namespace AJut.Text.AJson
                 Json oldTextOutput = ParseWith(text, rules, oldTextQuoteRule: true);
                 if (!oldTextOutput.HasErrors)
                 {
-                    return oldTextOutput;
+                    output = oldTextOutput;
                 }
             }
 
+            WarnIfAJsonVersionBelowExpected(output, rules);
             return output;
         }
 
@@ -70,17 +83,32 @@ namespace AJut.Text.AJson
                     return output;
                 }
 
-                // Text written before AJson escaped strings has every backslash raw, and is told apart
-                //  by an escape JSON does not have (\U in C:\Users, say). One such string anywhere
-                //  decides it for the whole text, since a file is written all at once: otherwise a
-                //  string beside it whose backslashes happen to look like escapes (C:\temp\new) would
-                //  come back with a tab and a newline in it. Valid JSON never has one, so it is never
-                //  read this way.
-                bool quotedTextIsOld = text.IndexOf('\\') != -1 && index.AnyQuotedTextHasEscapeJsonLacks(text);
+                int markedVersion = 0;
+                bool isMarked = text[firstOpen] == '{'
+                    && TryReadAJsonVersion(text, index, firstOpen, out markedVersion);
+                output.AJsonVersion = markedVersion;
+
+                // How to read strings. Text written before AJson escaped strings has every backslash
+                //  raw. Its version marker says so outright, as can the caller with
+                //  AssumeAJsonVersion. Otherwise it is told apart by an escape JSON does not have (\U
+                //  in C:\Users, say), and one such string anywhere decides it for the whole text,
+                //  since a file is written all at once: a string beside it whose backslashes happen
+                //  to look like escapes (C:\temp\new) would otherwise come back with a tab and a
+                //  newline in it. Valid JSON never has one, so it is never read this way.
+                int? readAsVersion = isMarked ? markedVersion : rules.AssumeAJsonVersion;
+                bool quotedTextIsOld = readAsVersion.HasValue
+                    ? readAsVersion.Value < kFirstVersionWithEscapedStrings
+                    : text.IndexOf('\\') != -1 && index.AnyQuotedTextHasEscapeJsonLacks(text);
 
                 if (text[firstOpen] == '{')
                 {
-                    output.Data = ReadDocument(text, index, output, rules, quotedTextIsOld, firstOpen, out _);
+                    JsonDocument root = ReadDocument(text, index, output, rules, quotedTextIsOld, firstOpen, out _);
+                    if (isMarked)
+                    {
+                        root.Remove(JsonDocument.kAJsonVersionIndicator);
+                    }
+
+                    output.Data = root;
                 }
                 else
                 {
@@ -537,6 +565,62 @@ namespace AJut.Text.AJson
             }
 
             return arr;
+        }
+
+        // The writer puts the version marker as the root document's first key, so that is the only
+        //  place it is looked for: an "__ajson" key anywhere else is ordinary data.
+        private static bool TryReadAJsonVersion (ReadOnlySpan<char> text, SeparatorIndex index, int rootOpen, out int version)
+        {
+            version = 0;
+            if (!index.TryNextOfKinds(rootOpen + 1, kStructureKindMask, out int keyOpen, out eSeparatorKind kind)
+                || kind != eSeparatorKind.Quote
+                || TrimUnquoted(text, index, rootOpen + 1, keyOpen - 1).Length != 0)
+            {
+                return false;
+            }
+
+            if (!index.TryNextOfKinds(keyOpen + 1, kStructureKindMask, out int keyClose, out kind)
+                || kind != eSeparatorKind.Quote)
+            {
+                return false;
+            }
+
+            ReadOnlySpan<char> key = text.Slice(keyOpen + 1, keyClose - keyOpen - 1);
+            if (!key.SequenceEqual(JsonDocument.kAJsonVersionIndicator.AsSpan()))
+            {
+                return false;
+            }
+
+            if (!index.TryNextOfKinds(keyClose + 1, kStructureKindMask, out int colon, out kind)
+                || kind != eSeparatorKind.Colon
+                || !index.TryNextOfKinds(colon + 1, kStructureKindMask, out int valueEnd, out kind)
+                || (kind != eSeparatorKind.Comma && kind != eSeparatorKind.CloseBrace))
+            {
+                return false;
+            }
+
+            string versionText = TrimUnquoted(text, index, colon + 1, valueEnd - 1);
+            return int.TryParse(versionText, NumberStyles.None, CultureInfo.InvariantCulture, out version);
+        }
+
+        // Warning is off unless the caller asks for it: a reader cannot know whether the writer had
+        //  the marker on. Only a root document can carry a marker, so nothing else is warned about.
+        private static void WarnIfAJsonVersionBelowExpected (Json output, ParserRules rules)
+        {
+            int expected = rules.WarnIfAJsonVersionBelow ?? JsonHelper.WarnIfAJsonVersionBelow;
+            if (expected <= 0 || output.AJsonVersion >= expected || !(output.Data is JsonDocument))
+            {
+                return;
+            }
+
+            string found = output.AJsonVersion == 0
+                ? "no AJson version marker"
+                : $"AJson version {output.AJsonVersion}";
+            Logger.LogInfo(
+                $"[WARNING] AJson read text with {found}, below the expected version {expected}. Text written before "
+                + $"AJson version {kFirstVersionWithEscapedStrings} kept its backslashes raw, and can read differently "
+                + "than it was written."
+            );
         }
 
         // The inside of a quoted key or value, from just after its opening quote up to (not

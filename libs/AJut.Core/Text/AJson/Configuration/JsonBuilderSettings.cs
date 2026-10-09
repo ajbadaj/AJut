@@ -130,6 +130,12 @@ namespace AJut.Text.AJson
         /// </summary>
         public bool MakeDateTimesUTC { get; set; }
 
+        /// <summary>
+        /// Whether text written from json built with these settings carries the AJson version
+        /// marker. Null, the default, follows <see cref="JsonHelper.WriteAJsonVersion"/>.
+        /// </summary>
+        public bool? WriteAJsonVersion { get; set; }
+
         public ePropertyValueQuoting PropertyValueQuoting { get; set; }
 
         /// <summary>
