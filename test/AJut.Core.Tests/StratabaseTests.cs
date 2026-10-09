@@ -1479,6 +1479,58 @@ namespace AJut.Core.UnitTests
         }
 
         [TestMethod]
+        public void Stratabase_ClearAllFor_RaisesOneEmptyPropertyEventOnceTheValuesAreGone ()
+        {
+            // Listeners rely on this shape: one store event per cleared id, with an empty property name, raised after the values
+            //  are already gone, never one event per property
+            Stratabase sb = new Stratabase(1);
+            Guid id = Guid.NewGuid();
+            sb.SetBaselinePropertyValue(id, "First", 1);
+            sb.SetBaselinePropertyValue(id, "Second", 2);
+            sb.SetOverridePropertyValue(0, id, "First", 10);
+            var seen = new List<string>();
+            bool wasStillStoredDuringEvent = false;
+            sb.BaselineDataChanged += _OnBaselineDataChanged;
+            sb.OverrideDataChanged += _OnOverrideDataChanged;
+
+            sb.ClearAllFor(id);
+
+            sb.BaselineDataChanged -= _OnBaselineDataChanged;
+            sb.OverrideDataChanged -= _OnOverrideDataChanged;
+
+            CollectionAssert.AreEqual(new[] { String.Empty }, seen, "expected exactly one event, with an empty property name");
+            Assert.IsFalse(wasStillStoredDuringEvent, "the event was raised before the values were removed");
+
+            void _OnBaselineDataChanged (object sender, BaselineStratumModificationEventArgs e) => _Record(e.ItemId, e.PropertyName);
+            void _OnOverrideDataChanged (object sender, OverrideStratumModificationEventArgs e) => _Record(e.ItemId, e.PropertyName);
+            void _Record (Guid itemId, string propertyName)
+            {
+                Assert.AreEqual(id, itemId);
+                seen.Add(propertyName);
+                wasStillStoredDuringEvent |= sb.Contains(id);
+            }
+        }
+
+        [TestMethod]
+        public void Stratabase_WritingAnIdAgainAfterClearAllFor_RaisesTheStoreEvent ()
+        {
+            // An id can come back after it was cleared, and listeners of the store-wide events have to hear about it
+            Stratabase sb = new Stratabase(1);
+            Guid id = Guid.NewGuid();
+            sb.SetOverridePropertyValue(0, id, "Value", 1);
+            sb.ClearAllFor(id);
+            var seen = new List<string>();
+            sb.OverrideDataChanged += _OnOverrideDataChanged;
+
+            sb.SetOverridePropertyValue(0, id, "Value", 2);
+
+            sb.OverrideDataChanged -= _OnOverrideDataChanged;
+            CollectionAssert.AreEqual(new[] { "Value" }, seen);
+
+            void _OnOverrideDataChanged (object sender, OverrideStratumModificationEventArgs e) => seen.Add(e.PropertyName);
+        }
+
+        [TestMethod]
         public void Stratabase_EnsureListElementType_NullInsertionAtFirstElementWorks ()
         {
             Stratabase sb = new Stratabase(1);
