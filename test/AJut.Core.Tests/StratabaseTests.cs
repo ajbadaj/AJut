@@ -1632,6 +1632,28 @@ namespace AJut.Core.UnitTests
         }
 
         [TestMethod]
+        public void Stratabase_ClearingTheActiveLayer_RaisesValueChangedAsALowerLayerTakesOver ()
+        {
+            // The property is still set, by the baseline, but its value changed, and listeners read on ValueChanged
+            Stratabase sb = new Stratabase(1);
+            Guid id = Guid.NewGuid();
+            sb.SetBaselinePropertyValue(id, "Value", 1);
+            sb.SetOverridePropertyValue(0, id, "Value", 2);
+            StrataPropertyValueAccess<int> access = sb.GeneratePropertyAccess<int>(id, "Value");
+            int valueChangedCount = 0;
+            access.ValueChanged += _OnValueChanged;
+
+            sb.ClearPropertyOverride(0, id, "Value");
+
+            access.ValueChanged -= _OnValueChanged;
+            Assert.AreEqual(1, valueChangedCount, "clearing the active layer let the baseline show through without a ValueChanged");
+            Assert.IsTrue(access.IsActiveLayerBaseline);
+            Assert.AreEqual(1, access.GetValue());
+
+            void _OnValueChanged (object sender, EventArgs e) => ++valueChangedCount;
+        }
+
+        [TestMethod]
         public void Stratabase_AccessAfterItsLastValueIsCleared_HearsTheNextWrite ()
         {
             Stratabase sb = new Stratabase(1);
