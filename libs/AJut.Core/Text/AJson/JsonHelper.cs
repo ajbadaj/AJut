@@ -681,7 +681,7 @@ namespace AJut.Text.AJson
                 else if (attrDefault != null
                     && (attrDefault.GetType() != value.GetType())
                     && (attrDefault is IConvertible)
-                    && value.GetType().IsPrimitive)
+                    && (value.GetType().IsPrimitive || (value is decimal)))
                 {
                     attrDefault = Convert.ChangeType(attrDefault, value.GetType(), System.Globalization.CultureInfo.InvariantCulture);
                 }
