@@ -165,6 +165,41 @@ namespace AJut.Text.AJson
         public int CommentStartAt (int commentIndex) => m_comments[commentIndex].Start;
 
         /// <summary>
+        /// Whether any quoted string in <paramref name="text"/> holds an escape JSON does not have,
+        /// which marks the whole text as written before AJson escaped strings. Quote separators are
+        /// recorded in pairs, opening then closing, so each pair bounds one string.
+        /// </summary>
+        public bool AnyQuotedTextHasEscapeJsonLacks (ReadOnlySpan<char> text)
+        {
+            int openingQuote = -1;
+            for (int recordIndex = 0; recordIndex < m_count; ++recordIndex)
+            {
+                if (m_buffer[recordIndex].Kind != eSeparatorKind.Quote)
+                {
+                    continue;
+                }
+
+                int quotePos = m_buffer[recordIndex].Position;
+                if (openingQuote == -1)
+                {
+                    openingQuote = quotePos;
+                    continue;
+                }
+
+                ReadOnlySpan<char> quoted = text.Slice(openingQuote + 1, quotePos - openingQuote - 1);
+                if (JsonStringEscaping.HasEscapeJsonLacks(quoted))
+                {
+                    return true;
+                }
+
+                openingQuote = -1;
+            }
+
+            // A string never closed runs to the end of the text
+            return openingQuote != -1 && JsonStringEscaping.HasEscapeJsonLacks(text.Slice(openingQuote + 1));
+        }
+
+        /// <summary>
         /// Whether any comment region overlaps <c>text[startPos..endPos]</c> (both inclusive).
         /// </summary>
         public bool HasCommentWithin (int startPos, int endPos)

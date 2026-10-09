@@ -79,13 +79,12 @@ namespace AJut.Text.AJson
 
             // Before strings were escaped, the writer escaped only quotes (as \") and put every
             //  backslash out raw, so C:\dir\file was written as is. That text is told apart by an
-            //  escape JSON does not have: \d here, or a lone backslash at the end. A string with one
-            //  is read as old text, undoing only the quote escape. Old text whose backslashes all
-            //  happen to form real escapes (C:\temp, where \t is a tab) cannot be told apart, and
-            //  reads as escaped.
+            //  escape JSON does not have: \d here, or a lone backslash at the end. The reader looks
+            //  for one across the whole text first and reads every string as old text if it finds
+            //  one, so this check only decides for a string whose text gave no sign either way.
             if (!HasOnlyValidEscapes(raw, firstBackslash))
             {
-                return raw.ToString().Replace("\\\"", "\"");
+                return ReadAsOldText(raw);
             }
 
             StringBuilder output = new StringBuilder(raw.Length);
@@ -124,6 +123,22 @@ namespace AJut.Text.AJson
 
             return output.ToString();
         }
+
+        /// <summary>
+        /// Whether <paramref name="raw"/>, the inside of a json string, holds an escape JSON does
+        /// not have. Only text written before AJson escaped strings can.
+        /// </summary>
+        public static bool HasEscapeJsonLacks (ReadOnlySpan<char> raw)
+        {
+            int firstBackslash = raw.IndexOf('\\');
+            return firstBackslash != -1 && !HasOnlyValidEscapes(raw, firstBackslash);
+        }
+
+        /// <summary>
+        /// Reads the inside of a json string written before AJson escaped strings: as written,
+        /// undoing only the quote escape (<c>\"</c>) that writer used.
+        /// </summary>
+        public static string ReadAsOldText (ReadOnlySpan<char> raw) => raw.ToString().Replace("\\\"", "\"");
 
         // ===============================[ Helper Methods ]===========================
         // Runs on every string value and property name the writer puts out, and most of them need

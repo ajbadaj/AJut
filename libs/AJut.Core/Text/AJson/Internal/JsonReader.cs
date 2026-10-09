@@ -70,13 +70,21 @@ namespace AJut.Text.AJson
                     return output;
                 }
 
+                // Text written before AJson escaped strings has every backslash raw, and is told apart
+                //  by an escape JSON does not have (\U in C:\Users, say). One such string anywhere
+                //  decides it for the whole text, since a file is written all at once: otherwise a
+                //  string beside it whose backslashes happen to look like escapes (C:\temp\new) would
+                //  come back with a tab and a newline in it. Valid JSON never has one, so it is never
+                //  read this way.
+                bool quotedTextIsOld = text.IndexOf('\\') != -1 && index.AnyQuotedTextHasEscapeJsonLacks(text);
+
                 if (text[firstOpen] == '{')
                 {
-                    output.Data = ReadDocument(text, index, output, rules, firstOpen, out _);
+                    output.Data = ReadDocument(text, index, output, rules, quotedTextIsOld, firstOpen, out _);
                 }
                 else
                 {
-                    output.Data = ReadArray(text, index, output, rules, firstOpen, out _);
+                    output.Data = ReadArray(text, index, output, rules, quotedTextIsOld, firstOpen, out _);
                 }
 
                 return output;
@@ -92,7 +100,7 @@ namespace AJut.Text.AJson
             }
         }
 
-        private static JsonDocument ReadDocument (ReadOnlySpan<char> text, SeparatorIndex index, Json owner, ParserRules rules, int startIndex, out int endIndex)
+        private static JsonDocument ReadDocument (ReadOnlySpan<char> text, SeparatorIndex index, Json owner, ParserRules rules, bool quotedTextIsOld, int startIndex, out int endIndex)
         {
             JsonDocument doc = new JsonDocument();
             endIndex = -1;
@@ -163,7 +171,7 @@ namespace AJut.Text.AJson
 
                             CheckStrictStrayText(text, index, owner, rules, lastStart, sepPos - 1);
                             openCommaPos = -1;
-                            JsonDocument child = ReadDocument(text, index, owner, rules, sepPos, out int childEnd);
+                            JsonDocument child = ReadDocument(text, index, owner, rules, quotedTextIsOld, sepPos, out int childEnd);
                             if (childEnd == -1)
                             {
                                 owner.AddError($"Unterminated nested document starting at position {sepPos}");
@@ -195,7 +203,7 @@ namespace AJut.Text.AJson
 
                             CheckStrictStrayText(text, index, owner, rules, lastStart, sepPos - 1);
                             openCommaPos = -1;
-                            JsonArray childArr = ReadArray(text, index, owner, rules, sepPos, out int arrEnd);
+                            JsonArray childArr = ReadArray(text, index, owner, rules, quotedTextIsOld, sepPos, out int arrEnd);
                             if (arrEnd == -1)
                             {
                                 owner.AddError($"Unterminated array starting at position {sepPos}");
@@ -255,7 +263,7 @@ namespace AJut.Text.AJson
                             if (gotPeek && peekKind == eSeparatorKind.Colon)
                             {
                                 CheckStrictStrayText(text, index, owner, rules, sepPos + 1, peekPos - 1);
-                                pendingKey = ReadQuoted(text, insideQuoteStart, sepPos);
+                                pendingKey = ReadQuoted(text, insideQuoteStart, sepPos, quotedTextIsOld);
                                 searchPos = peekPos + 1;
                                 lastStart = peekPos + 1;
                                 insideQuoteStart = -1;
@@ -270,7 +278,7 @@ namespace AJut.Text.AJson
                                     break;
                                 }
 
-                                string strValue = ReadQuoted(text, insideQuoteStart, sepPos);
+                                string strValue = ReadQuoted(text, insideQuoteStart, sepPos, quotedTextIsOld);
                                 doc.Add(pendingKey, new JsonValue(strValue, isQuoted: true));
                                 pendingKey = null;
                                 insideQuoteStart = -1;
@@ -332,7 +340,7 @@ namespace AJut.Text.AJson
             return doc;
         }
 
-        private static JsonArray ReadArray (ReadOnlySpan<char> text, SeparatorIndex index, Json owner, ParserRules rules, int startIndex, out int endIndex)
+        private static JsonArray ReadArray (ReadOnlySpan<char> text, SeparatorIndex index, Json owner, ParserRules rules, bool quotedTextIsOld, int startIndex, out int endIndex)
         {
             JsonArray arr = new JsonArray();
             endIndex = -1;
@@ -394,7 +402,7 @@ namespace AJut.Text.AJson
                         {
                             CheckStrictStrayText(text, index, owner, rules, lastStart, sepPos - 1);
                             openCommaPos = -1;
-                            JsonDocument child = ReadDocument(text, index, owner, rules, sepPos, out int childEnd);
+                            JsonDocument child = ReadDocument(text, index, owner, rules, quotedTextIsOld, sepPos, out int childEnd);
                             if (childEnd == -1)
                             {
                                 owner.AddError($"Unterminated nested document in array at position {sepPos}");
@@ -431,7 +439,7 @@ namespace AJut.Text.AJson
                         {
                             CheckStrictStrayText(text, index, owner, rules, lastStart, sepPos - 1);
                             openCommaPos = -1;
-                            JsonArray child = ReadArray(text, index, owner, rules, sepPos, out int childEnd);
+                            JsonArray child = ReadArray(text, index, owner, rules, quotedTextIsOld, sepPos, out int childEnd);
                             if (childEnd == -1)
                             {
                                 owner.AddError($"Unterminated nested array in array at position {sepPos}");
@@ -482,7 +490,7 @@ namespace AJut.Text.AJson
                     case eSeparatorKind.Quote:
                         if (insideQuoteStart != -1)
                         {
-                            string strValue = ReadQuoted(text, insideQuoteStart, sepPos);
+                            string strValue = ReadQuoted(text, insideQuoteStart, sepPos, quotedTextIsOld);
                             arr.Add(new JsonValue(strValue, isQuoted: true));
                             insideQuoteStart = -1;
 
@@ -533,8 +541,13 @@ namespace AJut.Text.AJson
 
         // The inside of a quoted key or value, from just after its opening quote up to (not
         //  including) its closing quote, unescaped: the tree holds strings as they are.
-        private static string ReadQuoted (ReadOnlySpan<char> text, int startPos, int closingQuotePos)
-            => JsonStringEscaping.UnescapeLenient(text.Slice(startPos, closingQuotePos - startPos));
+        private static string ReadQuoted (ReadOnlySpan<char> text, int startPos, int closingQuotePos, bool quotedTextIsOld)
+        {
+            ReadOnlySpan<char> quoted = text.Slice(startPos, closingQuotePos - startPos);
+            return quotedTextIsOld
+                ? JsonStringEscaping.ReadAsOldText(quoted)
+                : JsonStringEscaping.UnescapeLenient(quoted);
+        }
 
         // Trim leading/trailing whitespace and produce a JsonValue, or null if the chunk is empty.
         private static JsonValue ReadUnquotedValue (ReadOnlySpan<char> text, SeparatorIndex index, int startPos, int endPos)
