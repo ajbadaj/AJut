@@ -1376,8 +1376,8 @@ namespace AJut.Core.UnitTests
         [TestMethod]
         public void Stratabase_AccessManagers_AreReleasedWhenTheirAccessesAre ()
         {
-            // The store subscribes to every access manager it creates, so the "nothing is listening any more" check that would
-            //  release one can never pass, and every id ever accessed keeps a manager for the life of the store (AJU-39)
+            // Access managers were only released when nothing was subscribed to them, and the store subscribes to every one, so every
+            //  id ever accessed kept a manager for the life of the store (AJU-39)
             const int kIdCount = 100;
             Stratabase sb = new Stratabase(1);
             Assert.AreEqual(0, CountAccessManagers(sb));

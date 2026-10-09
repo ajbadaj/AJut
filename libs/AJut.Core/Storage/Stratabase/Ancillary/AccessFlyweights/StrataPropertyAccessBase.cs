@@ -99,12 +99,6 @@
 
         protected virtual void OnActiveLayerChanged (int formerActiveLayer) { }
 
-        /// <summary>
-        /// The active layer stayed the same, but the value stored in it was replaced. Called before <see cref="ValueChanged"/> is
-        /// raised, so anything cached from the active layer can be refreshed before listeners read it.
-        /// </summary>
-        protected virtual void OnActiveLayerValueReplaced () { }
-
         public bool IsActiveLayerBaseline => this.ActiveLayerIndex == kBaselineLayerIndex;
 
         internal Stratabase.ObjectDataAccessManager ODAM { get; private set; }
@@ -118,6 +112,12 @@
         protected virtual void OnBaselineLayerChanged (T oldValue, T newValue) { }
         protected virtual void OnOverrideLayerChanged (int layerIndex, T oldValue, T newValue) { }
         protected virtual void OnClearAllTriggered () { }
+
+        /// <summary>
+        /// The active layer stayed the same, but the value stored in it was replaced. Called before <see cref="ValueChanged"/> is
+        /// raised, so anything cached from the active layer can be refreshed before listeners read it.
+        /// </summary>
+        protected virtual void OnActiveLayerValueReplaced () { }
 
         // ===============================[ Utility Methods ]=======================================
 

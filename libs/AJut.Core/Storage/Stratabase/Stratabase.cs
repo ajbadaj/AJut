@@ -704,7 +704,8 @@
 
         private bool TryReadStored<T> (int layer, Guid id, string property, out T value)
         {
-            if (this.TryGetStoredBag(layer, id, out PseudoPropertyBag propertyBag) && propertyBag.TryGetValue(property, out object storedValue))
+            if (this.TryGetStoredBag(layer, id, out PseudoPropertyBag propertyBag)
+                && propertyBag.TryGetValue(property, out object storedValue))
             {
                 value = (T)storedValue;
                 return true;
@@ -897,6 +898,11 @@
 
             public Guid Id { get; }
             public Stratabase SB { get; }
+
+            /// <summary>
+            /// True while any property access object is attached to this manager
+            /// </summary>
+            public bool HasAccessObjects => m_accessObjectCount > 0;
 
             /// <summary>
             /// Determines the active layer set, if any
@@ -1222,7 +1228,10 @@
 
             // ------------- Get Value ----------------
 
-            public bool TryGetBaselineValue<T> (string property, out T value) => this.SB.TryReadStored(kActiveLayerBaseline, this.Id, property, out value);
+            public bool TryGetBaselineValue<T> (string property, out T value)
+            {
+                return this.SB.TryReadStored(kActiveLayerBaseline, this.Id, property, out value);
+            }
 
             public bool SearchForFirstSetValue<T> (int layerStartIndex, string property, out T value)
             {
@@ -1281,9 +1290,20 @@
                         && propertyBag.ContainsKey(property);
             }
 
-            public int GetElementCountFromBaseline (string property) => this.SB.CountStoredElements(kActiveLayerBaseline, this.Id, property);
-            public int GetElementCountFromOverrideLayer (int layerIndex, string property) => this.SB.CountStoredElements(layerIndex, this.Id, property);
-            public bool TryGetBaselineElementValue<T> (string property, int elementIndex, out T value) => this.SB.TryReadStoredElement(kActiveLayerBaseline, this.Id, property, elementIndex, out value);
+            public int GetElementCountFromBaseline (string property)
+            {
+                return this.SB.CountStoredElements(kActiveLayerBaseline, this.Id, property);
+            }
+
+            public int GetElementCountFromOverrideLayer (int layerIndex, string property)
+            {
+                return this.SB.CountStoredElements(layerIndex, this.Id, property);
+            }
+
+            public bool TryGetBaselineElementValue<T> (string property, int elementIndex, out T value)
+            {
+                return this.SB.TryReadStoredElement(kActiveLayerBaseline, this.Id, property, elementIndex, out value);
+            }
 
 
             public bool TryGetOverrideElementValue<T> (int layerIndex, string property, int elementIndex, out T value)
@@ -1329,11 +1349,6 @@
                 //  next write would go to a new one it never hears from.
                 this.SB.ReleaseAccessManagerIfUnused(this);
             }
-
-            /// <summary>
-            /// True while any property access object is attached to this manager
-            /// </summary>
-            public bool HasAccessObjects => m_accessObjectCount > 0;
 
             /// <summary>
             /// Called by a property access object as it attaches to this manager

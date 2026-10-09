@@ -88,7 +88,7 @@ namespace AJut.Storage
         /// into an unset or higher layer reading its old value, with nothing anywhere to say so. A stale value nobody can see is a worse bug than
         /// an event nobody expected.
         /// <para>
-        /// This is not how <see cref="ClearAll(bool)"/> treats notifyOfRemovals false: that skips the access objects as well.
+        /// <see cref="ClearAll(bool)"/> and <see cref="ClearAllFor(Guid, bool)"/> give their notifyOfRemovals the same meaning.
         /// </para>
         /// <para>
         /// The silence covers only the import's own writes. Anything a handler writes while the import is running notifies normally.
