@@ -80,14 +80,16 @@ namespace AJut.Core.UnitTests.AJsonV2
         [TestMethod]
         public void Hide_AfterFirstUse_PropertyNoLongerWritten ()
         {
+            const string kHidden = nameof(HideAfterUseWriteModel.Hidden);
             try
             {
-                CollectionAssert.Contains(WrittenKeys(new HideAfterUseWriteModel()), nameof(HideAfterUseWriteModel.Hidden), "Precondition: written before the hide");
+                string[] before = WrittenKeys(new HideAfterUseWriteModel());
+                CollectionAssert.Contains(before, kHidden, "Precondition: written before the hide");
 
-                TypeMetadataExtensionRegistrar.For<HideAfterUseWriteModel>().Hide(nameof(HideAfterUseWriteModel.Hidden));
+                TypeMetadataExtensionRegistrar.For<HideAfterUseWriteModel>().Hide(kHidden);
 
                 string[] keys = WrittenKeys(new HideAfterUseWriteModel());
-                CollectionAssert.DoesNotContain(keys, nameof(HideAfterUseWriteModel.Hidden), "Written after the hide: " + String.Join(", ", keys));
+                CollectionAssert.DoesNotContain(keys, kHidden, Listed("Written after the hide", keys));
             }
             finally
             {
@@ -118,15 +120,17 @@ namespace AJut.Core.UnitTests.AJsonV2
         [TestMethod]
         public void Unhide_AfterFirstUse_PropertyWrittenAgain ()
         {
+            const string kHidden = nameof(UnhideAfterUseModel.Hidden);
             try
             {
-                TypeMetadataExtensionRegistrar.For<UnhideAfterUseModel>().Hide(nameof(UnhideAfterUseModel.Hidden));
-                CollectionAssert.DoesNotContain(WrittenKeys(new UnhideAfterUseModel()), nameof(UnhideAfterUseModel.Hidden), "Precondition: hidden before the unhide");
+                TypeMetadataExtensionRegistrar.For<UnhideAfterUseModel>().Hide(kHidden);
+                string[] before = WrittenKeys(new UnhideAfterUseModel());
+                CollectionAssert.DoesNotContain(before, kHidden, "Precondition: hidden before the unhide");
 
-                TypeMetadataExtensionRegistrar.For<UnhideAfterUseModel>().Unhide(nameof(UnhideAfterUseModel.Hidden));
+                TypeMetadataExtensionRegistrar.For<UnhideAfterUseModel>().Unhide(kHidden);
 
                 string[] keys = WrittenKeys(new UnhideAfterUseModel());
-                CollectionAssert.Contains(keys, nameof(UnhideAfterUseModel.Hidden), "Written after the unhide: " + String.Join(", ", keys));
+                CollectionAssert.Contains(keys, kHidden, Listed("Written after the unhide", keys));
             }
             finally
             {
@@ -137,15 +141,17 @@ namespace AJut.Core.UnitTests.AJsonV2
         [TestMethod]
         public void ClearAll_AfterFirstUse_HiddenPropertyWrittenAgain ()
         {
+            const string kHidden = nameof(ClearAllAfterUseModel.Hidden);
             try
             {
-                TypeMetadataExtensionRegistrar.For<ClearAllAfterUseModel>().Hide(nameof(ClearAllAfterUseModel.Hidden));
-                CollectionAssert.DoesNotContain(WrittenKeys(new ClearAllAfterUseModel()), nameof(ClearAllAfterUseModel.Hidden), "Precondition: hidden before ClearAll");
+                TypeMetadataExtensionRegistrar.For<ClearAllAfterUseModel>().Hide(kHidden);
+                string[] before = WrittenKeys(new ClearAllAfterUseModel());
+                CollectionAssert.DoesNotContain(before, kHidden, "Precondition: hidden before ClearAll");
 
                 TypeMetadataExtensionRegistrar.ClearAll();
 
                 string[] keys = WrittenKeys(new ClearAllAfterUseModel());
-                CollectionAssert.Contains(keys, nameof(ClearAllAfterUseModel.Hidden), "Written after ClearAll: " + String.Join(", ", keys));
+                CollectionAssert.Contains(keys, kHidden, Listed("Written after ClearAll", keys));
             }
             finally
             {
@@ -158,14 +164,16 @@ namespace AJut.Core.UnitTests.AJsonV2
         {
             // The hide goes on the type that declares the property, which is the base. The derived
             //  type's cached property list has to see it too.
+            const string kBaseProp = nameof(HideOnBaseModel.BaseProp);
             try
             {
-                CollectionAssert.Contains(WrittenKeys(new HideOnBaseDerivedModel()), nameof(HideOnBaseModel.BaseProp), "Precondition: written before the hide");
+                string[] before = WrittenKeys(new HideOnBaseDerivedModel());
+                CollectionAssert.Contains(before, kBaseProp, "Precondition: written before the hide");
 
-                TypeMetadataExtensionRegistrar.For<HideOnBaseModel>().Hide(nameof(HideOnBaseModel.BaseProp));
+                TypeMetadataExtensionRegistrar.For<HideOnBaseModel>().Hide(kBaseProp);
 
                 string[] keys = WrittenKeys(new HideOnBaseDerivedModel());
-                CollectionAssert.DoesNotContain(keys, nameof(HideOnBaseModel.BaseProp), "Written after the hide: " + String.Join(", ", keys));
+                CollectionAssert.DoesNotContain(keys, kBaseProp, Listed("Written after the hide", keys));
             }
             finally
             {
@@ -179,14 +187,15 @@ namespace AJut.Core.UnitTests.AJsonV2
         {
             try
             {
-                CollectionAssert.AreEqual(new[] { "Alpha", "Beta" }, WrittenKeys(new ReorderAfterUseModel()), "Precondition: declaration order before the reorder");
+                string[] before = WrittenKeys(new ReorderAfterUseModel());
+                CollectionAssert.AreEqual(new[] { "Alpha", "Beta" }, before, "Precondition: declaration order");
 
                 TypeMetadataExtensionRegistrar.For<ReorderAfterUseModel>()
                     .SetMemberOrder(nameof(ReorderAfterUseModel.Beta), 0)
                     .SetMemberOrder(nameof(ReorderAfterUseModel.Alpha), 1);
 
                 string[] keys = WrittenKeys(new ReorderAfterUseModel());
-                CollectionAssert.AreEqual(new[] { "Beta", "Alpha" }, keys, "Written after the reorder: " + String.Join(", ", keys));
+                CollectionAssert.AreEqual(new[] { "Beta", "Alpha" }, keys, Listed("Written after the reorder", keys));
             }
             finally
             {
@@ -203,15 +212,16 @@ namespace AJut.Core.UnitTests.AJsonV2
             try
             {
                 TypeMetadataExtensionRegistrar.DefaultMemberOrdering = eMemberInheritanceOrdering.BaseFirst;
-                CollectionAssert.AreEqual(new[] { "BaseProp", "DerivedProp" }, WrittenKeys(new TierOnBaseDerivedModel()), "Precondition: base first before the tier order");
+                string[] before = WrittenKeys(new TierOnBaseDerivedModel());
+                CollectionAssert.AreEqual(new[] { "BaseProp", "DerivedProp" }, before, "Precondition: base first");
 
                 // The derived tier keeps its default order (1, with base first), so a base tier order
                 //  of 100 puts the base last
-
                 TypeMetadataExtensionRegistrar.For<TierOnBaseModel>().SetTierOrder(100);
 
                 string[] keys = WrittenKeys(new TierOnBaseDerivedModel());
-                CollectionAssert.AreEqual(new[] { "DerivedProp", "BaseProp" }, keys, "Written after the tier order: " + String.Join(", ", keys));
+                string[] expected = { "DerivedProp", "BaseProp" };
+                CollectionAssert.AreEqual(expected, keys, Listed("Written after the tier order", keys));
             }
             finally
             {
@@ -227,12 +237,13 @@ namespace AJut.Core.UnitTests.AJsonV2
             try
             {
                 TypeMetadataExtensionRegistrar.DefaultMemberOrdering = eMemberInheritanceOrdering.BaseFirst;
-                CollectionAssert.AreEqual(new[] { "BaseProp", "DerivedProp" }, WrittenKeys(new DefaultOrderingDerivedModel()), "Precondition: base first");
+                string[] before = WrittenKeys(new DefaultOrderingDerivedModel());
+                CollectionAssert.AreEqual(new[] { "BaseProp", "DerivedProp" }, before, "Precondition: base first");
 
                 TypeMetadataExtensionRegistrar.DefaultMemberOrdering = eMemberInheritanceOrdering.DerivedFirst;
 
                 string[] keys = WrittenKeys(new DefaultOrderingDerivedModel());
-                CollectionAssert.AreEqual(new[] { "DerivedProp", "BaseProp" }, keys, "Written after switching to derived first: " + String.Join(", ", keys));
+                CollectionAssert.AreEqual(new[] { "DerivedProp", "BaseProp" }, keys, Listed("Written with derived first", keys));
             }
             finally
             {
@@ -245,7 +256,10 @@ namespace AJut.Core.UnitTests.AJsonV2
         {
             Json json = JsonHelper.BuildJsonForObject(source);
             Assert.IsFalse(json.HasErrors, json.GetErrorReport());
-            return ((JsonDocument)json.Data).Select(kvp => kvp.Key).Where(key => key != JsonDocument.kTypeIndicator).ToArray();
+            return ((JsonDocument)json.Data)
+                .Select(kvp => kvp.Key)
+                .Where(key => key != JsonDocument.kTypeIndicator)
+                .ToArray();
         }
 
         private static T ReadFrom<T> (string text)
@@ -254,5 +268,7 @@ namespace AJut.Core.UnitTests.AJsonV2
             Assert.IsFalse(json.HasErrors, json.GetErrorReport());
             return JsonHelper.BuildObjectForJson<T>(json);
         }
+
+        private static string Listed (string label, string[] keys) => label + ": " + String.Join(", ", keys);
     }
 }

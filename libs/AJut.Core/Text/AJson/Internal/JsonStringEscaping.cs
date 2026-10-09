@@ -59,8 +59,10 @@ namespace AJut.Text.AJson
         }
 
         /// <summary>
-        /// Unescapes the inside of a json string. Text written before AJson escaped strings is read
-        /// the way it was written, where it can be told apart (see the remarks in the body).
+        /// Unescapes the inside of a json string. A string holding an escape JSON does not have (a
+        /// backslash before anything but <c>" \ / b f n r t u</c>, or a lone trailing backslash)
+        /// was written before AJson escaped strings, and is read as written, undoing only the
+        /// quote escape.
         /// </summary>
         public static string UnescapeLenient (ReadOnlySpan<char> raw)
         {
@@ -101,7 +103,12 @@ namespace AJut.Text.AJson
                     case 'r': output.Append('\r'); break;
                     case 't': output.Append('\t'); break;
                     case 'u':
-                        output.Append((char)ushort.Parse(raw.Slice(index + 1, kUnicodeEscapeDigits), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture));
+                        ushort codeUnit = ushort.Parse(
+                            raw.Slice(index + 1, kUnicodeEscapeDigits),
+                            NumberStyles.AllowHexSpecifier,
+                            CultureInfo.InvariantCulture
+                        );
+                        output.Append((char)codeUnit);
                         index += kUnicodeEscapeDigits;
                         break;
 

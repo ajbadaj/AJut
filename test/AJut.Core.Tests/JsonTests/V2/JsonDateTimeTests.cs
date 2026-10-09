@@ -13,9 +13,9 @@ namespace AJut.Core.UnitTests.AJsonV2
     public class JsonDateTimeTests
     {
         private const long kSubSecondTicks = 1234567;
-        private static readonly DateTime kUtc = new DateTime(2026, 10, 5, 7, 30, 15, DateTimeKind.Utc).AddTicks(kSubSecondTicks);
-        private static readonly DateTime kLocal = new DateTime(2026, 10, 5, 7, 30, 15, DateTimeKind.Local).AddTicks(kSubSecondTicks);
-        private static readonly DateTime kUnspecified = new DateTime(2026, 10, 5, 7, 30, 15, DateTimeKind.Unspecified).AddTicks(kSubSecondTicks);
+        private static readonly DateTime kUtc = MakeSample(DateTimeKind.Utc);
+        private static readonly DateTime kLocal = MakeSample(DateTimeKind.Local);
+        private static readonly DateTime kUnspecified = MakeSample(DateTimeKind.Unspecified);
 
         // ===========================[ Test Models ]===================================
         public class DateHolder
@@ -46,7 +46,8 @@ namespace AJut.Core.UnitTests.AJsonV2
         public void DateTime_Utc_WrittenAsRoundTripIso8601 ()
         {
             Json json = JsonHelper.BuildJsonForObject(new DateHolder { When = kUtc });
-            Assert.AreEqual("2026-10-05T07:30:15.1234567Z", ((JsonDocument)json.Data).ValueFor(nameof(DateHolder.When)).StringValue);
+            string written = ((JsonDocument)json.Data).ValueFor(nameof(DateHolder.When)).StringValue;
+            Assert.AreEqual("2026-10-05T07:30:15.1234567Z", written);
         }
 
         // ===========================[ Reading Text ]===================================
@@ -82,6 +83,8 @@ namespace AJut.Core.UnitTests.AJsonV2
         }
 
         // ===========================[ Helpers ]===================================
+        private static DateTime MakeSample (DateTimeKind kind) => new DateTime(2026, 10, 5, 7, 30, 15, kind).AddTicks(kSubSecondTicks);
+
         private static void AssertRoundTrips (DateTime source)
         {
             Json json = JsonHelper.BuildJsonForObject(new DateHolder { When = source });

@@ -98,7 +98,8 @@ namespace AJut.Core.UnitTests.AJsonV2
         [TestMethod]
         public void Read_Strict_ValidJson_NoErrors ()
         {
-            Json json = JsonHelper.ParseText("{ \"a\": 1, \"b\": [1, \"two\", { \"c\": null }], \"d\": { \"e\": true } }", new ParserRules { StrictMode = true });
+            const string kValidJson = "{ \"a\": 1, \"b\": [1, \"two\", { \"c\": null }], \"d\": { \"e\": true } }";
+            Json json = JsonHelper.ParseText(kValidJson, new ParserRules { StrictMode = true });
             AssertNoErrors(json);
         }
 

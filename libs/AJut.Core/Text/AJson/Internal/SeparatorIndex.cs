@@ -455,14 +455,14 @@ namespace AJut.Text.AJson
         /// </summary>
         private readonly struct CommentRegion
         {
-            public readonly int Start;
-            public readonly int End;
-
             public CommentRegion (int start, int end)
             {
                 this.Start = start;
                 this.End = end;
             }
+
+            public int Start { get; }
+            public int End { get; }
         }
     }
 }

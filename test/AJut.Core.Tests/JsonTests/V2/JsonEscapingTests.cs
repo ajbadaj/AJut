@@ -28,7 +28,10 @@ namespace AJut.Core.UnitTests.AJsonV2
         [TestMethod]
         public void Escape_EverySpecialCharacter_RoundTrips ()
         {
-            AssertRoundTrips("quote \" backslash \\ slash / backspace \b formfeed \f newline \n return \r tab \t control \u0001 accent \u00e9 end");
+            AssertRoundTrips(
+                "quote \" backslash \\ slash / backspace \b formfeed \f newline \n return \r tab \t"
+                + " control \u0001 accent \u00e9 end"
+            );
         }
 
         [TestMethod]

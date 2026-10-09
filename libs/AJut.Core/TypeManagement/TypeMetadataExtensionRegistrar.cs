@@ -20,8 +20,9 @@ namespace AJut.TypeManagement
     /// invalidated automatically whenever a registration is modified.
     ///
     /// Queries are safe from any number of threads, including the first query for a type. Make
-    /// registrations up front: changing a type's registration while another thread is querying
-    /// that type is not supported.
+    /// registrations up front: changing a type's registration, calling <see cref="ClearAll"/> or
+    /// changing <see cref="DefaultMemberOrdering"/> while another thread is querying is not
+    /// supported, since a query already in flight can put back what the change just cleared.
     /// </summary>
     public static class TypeMetadataExtensionRegistrar
     {
@@ -33,10 +34,10 @@ namespace AJut.TypeManagement
         // Both maps are concurrent because the first use of a type writes g_orderCache from whatever
         //  thread got there, and AJson calls GetOrderedProperties from inside its own
         //  ConcurrentDictionary.GetOrAdd factory, which runs outside any lock. Two threads building
-        //  json for new types at once (the same type or two different ones) both wrote this cache,
-        //  and concurrent writes can corrupt a plain Dictionary for the rest of the process: later
-        //  lookups throw or hang. Two racing computations of one entry both produce the same order,
-        //  so last-write-wins is fine.
+        //  json for new types at once (the same type or two different ones) write this cache at the
+        //  same time, and concurrent writes can corrupt a plain Dictionary for the rest of the
+        //  process: later lookups throw or hang. Two racing computations of one entry both produce
+        //  the same order, so last-write-wins is fine.
         private static readonly ConcurrentDictionary<Type, TypeMetadataExtension> g_extensions = new();
         private static readonly ConcurrentDictionary<(Type, BindingFlags), PropertyInfo[]> g_orderCache = new();
         private static eMemberInheritanceOrdering g_defaultMemberOrdering = eMemberInheritanceOrdering.BaseFirst;

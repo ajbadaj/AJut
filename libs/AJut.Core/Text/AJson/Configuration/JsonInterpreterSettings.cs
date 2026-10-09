@@ -67,8 +67,9 @@ namespace AJut.Text.AJson
                 //    offset or Kind, which was always UTC under the old defaults. It reads the way it
                 //    always did, with the invariant culture as a second try for a file written under
                 //    another culture.
-                if (DateTime.TryParse(text, CultureInfo.CurrentCulture, this.DefaultDateTimeParseStyle, out found)
-                    || DateTime.TryParse(text, CultureInfo.InvariantCulture, this.DefaultDateTimeParseStyle, out found))
+                DateTimeStyles oldTextStyle = this.DefaultDateTimeParseStyle;
+                if (DateTime.TryParse(text, CultureInfo.CurrentCulture, oldTextStyle, out found)
+                    || DateTime.TryParse(text, CultureInfo.InvariantCulture, oldTextStyle, out found))
                 {
                     return found;
                 }
@@ -163,8 +164,10 @@ namespace AJut.Text.AJson
                     .Trim('<', '>')
                     .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
 
+                // The old read used float.TryParse's own defaults, which allow thousands grouping
+                const NumberStyles kOldTextStyles = NumberStyles.Float | NumberStyles.AllowThousands;
                 if (_TryReadVector2(xystrs, NumberStyles.Float, CultureInfo.InvariantCulture, out Vector2 found)
-                    || _TryReadVector2(xystrs, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.CurrentCulture, out found))
+                    || _TryReadVector2(xystrs, kOldTextStyles, CultureInfo.CurrentCulture, out found))
                 {
                     return found;
                 }

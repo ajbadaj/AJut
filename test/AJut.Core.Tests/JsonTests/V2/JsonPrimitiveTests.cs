@@ -92,7 +92,8 @@ namespace AJut.Core.UnitTests.AJsonV2
         [TestMethod]
         public void Primitives_NumericMatrix_SourceGen_RoundTrip ()
         {
-            Assert.IsTrue(AJsonGeneratedDispatch.IsRegistered(typeof(NumericMatrixGen)), "Source generator did not register NumericMatrixGen");
+            bool isRegistered = AJsonGeneratedDispatch.IsRegistered(typeof(NumericMatrixGen));
+            Assert.IsTrue(isRegistered, "Source generator did not register NumericMatrixGen");
 
             NumericMatrixGen source = new NumericMatrixGen
             {
@@ -223,7 +224,8 @@ namespace AJut.Core.UnitTests.AJsonV2
         public void Vector2_TextWrittenUnderOneCulture_ReadsUnderAnother ()
         {
             string written = null;
-            RunUnderCulture(kCommaDecimalCulture, () => written = JsonHelper.BuildJsonForObject(new VectorHolder { Position = kFractionalVector }).ToString());
+            VectorHolder source = new VectorHolder { Position = kFractionalVector };
+            RunUnderCulture(kCommaDecimalCulture, () => written = JsonHelper.BuildJsonForObject(source).ToString());
 
             RunUnderCulture(kPeriodDecimalCulture, () =>
             {
@@ -266,7 +268,8 @@ namespace AJut.Core.UnitTests.AJsonV2
 
             string serialized = json.ToString();
             Json reparsed = JsonHelper.ParseText(serialized);
-            Assert.IsFalse(reparsed.HasErrors, "Reparse errors:\n  " + String.Join("\n  ", reparsed.Errors) + "\nText:\n" + serialized);
+            string reparseErrors = String.Join("\n  ", reparsed.Errors);
+            Assert.IsFalse(reparsed.HasErrors, "Reparse errors:\n  " + reparseErrors + "\nText:\n" + serialized);
 
             return JsonHelper.BuildObjectForJson<T>(reparsed);
         }

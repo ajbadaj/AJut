@@ -600,7 +600,8 @@ namespace AJut.Text.AJson
             //  id. For a type with no data members the type id is the whole value: an empty marker
             //  type in an interface-typed property or a list has to come back as an instance of that
             //  type, not vanish and read back as null (or shift the list).
-            bool hasTypeId = TryGetTypeIdForType(target.BuilderSettings.TypeIdToWrite, sourceType, out string typeId);
+            eTypeIdInfo typeIdToWrite = target.BuilderSettings.TypeIdToWrite;
+            bool hasTypeId = TryGetTypeIdForType(typeIdToWrite, sourceType, out string typeId);
             if (allProperties.Length == 0 && !hasTypeId && target.Parent != null)
             {
                 target.Parent.Children.Remove(target);

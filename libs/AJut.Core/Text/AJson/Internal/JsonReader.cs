@@ -57,7 +57,8 @@ namespace AJut.Text.AJson
                 {
                     for (int commentIndex = 0; commentIndex < index.CommentCount; ++commentIndex)
                     {
-                        output.AddError($"Strict mode violation - comment at position {index.CommentStartAt(commentIndex)}");
+                        int commentStart = index.CommentStartAt(commentIndex);
+                        output.AddError($"Strict mode violation - comment at position {commentStart}");
                     }
                 }
 
@@ -137,7 +138,10 @@ namespace AJut.Text.AJson
                         }
                         else
                         {
-                            CheckStrictTextBeforeClose(text, index, owner, rules, lastStart, sepPos - 1, openCommaPos);
+                            CheckStrictTextBeforeClose(
+                                text, index, owner, rules,
+                                lastStart, sepPos - 1, openCommaPos
+                            );
                         }
                         endIndex = sepPos;
                         break;
@@ -371,7 +375,10 @@ namespace AJut.Text.AJson
                             }
                             else
                             {
-                                CheckStrictTextBeforeClose(text, index, owner, rules, lastStart, sepPos - 1, openCommaPos);
+                                CheckStrictTextBeforeClose(
+                                    text, index, owner, rules,
+                                    lastStart, sepPos - 1, openCommaPos
+                                );
                             }
                         }
                         endIndex = sepPos;
@@ -527,9 +534,7 @@ namespace AJut.Text.AJson
         // The inside of a quoted key or value, from just after its opening quote up to (not
         //  including) its closing quote, unescaped: the tree holds strings as they are.
         private static string ReadQuoted (ReadOnlySpan<char> text, int startPos, int closingQuotePos)
-        {
-            return JsonStringEscaping.UnescapeLenient(text.Slice(startPos, closingQuotePos - startPos));
-        }
+            => JsonStringEscaping.UnescapeLenient(text.Slice(startPos, closingQuotePos - startPos));
 
         // Trim leading/trailing whitespace and produce a JsonValue, or null if the chunk is empty.
         private static JsonValue ReadUnquotedValue (ReadOnlySpan<char> text, SeparatorIndex index, int startPos, int endPos)

@@ -70,9 +70,11 @@ namespace AJut.Core.UnitTests.AJsonV2
         [TestMethod]
         public void EmptyTypeId_RuntimeTypeEvalProperty_SourceGen_RoundTrips ()
         {
-            Assert.IsTrue(AJsonGeneratedDispatch.IsRegistered(typeof(RuntimeTypeEvalHostGen)), "Source generator did not register RuntimeTypeEvalHostGen");
+            bool isRegistered = AJsonGeneratedDispatch.IsRegistered(typeof(RuntimeTypeEvalHostGen));
+            Assert.IsTrue(isRegistered, "Source generator did not register RuntimeTypeEvalHostGen");
 
-            RuntimeTypeEvalHostGen round = RoundTrip(new RuntimeTypeEvalHostGen { Payload = new EmptyMarker() }, out string text);
+            RuntimeTypeEvalHostGen source = new RuntimeTypeEvalHostGen { Payload = new EmptyMarker() };
+            RuntimeTypeEvalHostGen round = RoundTrip(source, out string text);
             Assert.IsInstanceOfType(round.Payload, typeof(EmptyMarker), text);
         }
 
@@ -131,7 +133,8 @@ namespace AJut.Core.UnitTests.AJsonV2
 
             serialized = json.ToString();
             Json reparsed = JsonHelper.ParseText(serialized);
-            Assert.IsFalse(reparsed.HasErrors, "Reparse errors:\n  " + String.Join("\n  ", reparsed.Errors) + "\nText:\n" + serialized);
+            string reparseErrors = String.Join("\n  ", reparsed.Errors);
+            Assert.IsFalse(reparsed.HasErrors, "Reparse errors:\n  " + reparseErrors + "\nText:\n" + serialized);
 
             T round = JsonHelper.BuildObjectForJson<T>(reparsed);
             Assert.IsNotNull(round, serialized);
