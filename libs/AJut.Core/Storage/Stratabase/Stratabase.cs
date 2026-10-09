@@ -149,9 +149,18 @@
         /// <see cref="ImportIntoOverrideLayer"/> gives its notifyOfChanges.</param>
         public void ClearAll (bool notifyOfRemovals = true)
         {
-            foreach (var odam in m_objectAccess.Values.ToList())
+            // Every id that holds a value, plus every id with an access manager. A freshly deserialized store holds values with no
+            //  managers yet, and its clear still has to reach the store-wide listeners, which hear it through a manager.
+            var ids = new HashSet<Guid>(m_baselineStorageLayer.Keys);
+            foreach (Stratum stratum in m_overrideStorageLayers)
             {
-                odam.ClearAll(notifyOfRemovals);
+                ids.UnionWith(stratum.Keys);
+            }
+
+            ids.UnionWith(m_objectAccess.Keys);
+            foreach (Guid id in ids)
+            {
+                this.EnsureDataAccess(id).ClearAll(notifyOfRemovals);
             }
         }
 
@@ -164,7 +173,13 @@
         /// clear. Property access objects still see it, the same meaning <see cref="ImportIntoOverrideLayer"/> gives its notifyOfChanges.</param>
         public void ClearAllFor (Guid id, bool notifyOfRemovals = true)
         {
-            this.GetAccessManager(id)?.ClearAll(notifyOfRemovals);
+            ObjectDataAccessManager odam = this.GetAccessManager(id);
+            if (odam == null && this.Contains(id))
+            {
+                odam = this.EnsureDataAccess(id);
+            }
+
+            odam?.ClearAll(notifyOfRemovals);
         }
 
         /// <summary>
@@ -274,13 +289,12 @@
         /// </summary>
         public void SetObjectWithProperties (Guid objectId, ref object source)
         {
-            ObjectDataAccessManager odam = this.GetAccessManager(objectId);
-            if (odam == null)
+            // Read from storage rather than through an access manager: a freshly deserialized store holds values before any
+            //  manager exists for them
+            if (!m_baselineStorageLayer.TryGetValue(objectId, out PseudoPropertyBag baseline))
             {
                 return;
             }
-
-            var baseline = this.GetBaselinePropertyBagFor(objectId);
 
             // If there is a type id for a sub object, then pre-allocate the sub-object to make set easier
             string[] typeIdKeys = baseline.Keys.Where(k => k.EndsWith("." + kTypeIdStorage)).ToArray();
@@ -296,7 +310,7 @@
 
             foreach (string propPath in baseline.Keys)
             {
-                if (kTypeIdStorage == propPath || !odam.SearchForFirstSetValue(m_overrideStorageLayers.Length - 1, propPath, out object storedPropValue))
+                if (kTypeIdStorage == propPath || !this.TrySearchStoredValue(objectId, propPath, out object storedPropValue))
                 {
                     continue;
                 }
@@ -465,31 +479,19 @@
 
         public int GetElementCount (Guid id, string property)
         {
-            ObjectDataAccessManager odam = this.EnsureDataAccess(id);
-            if (odam.TryFindActiveLayer(property, out int activeLayer))
+            for (int layer = m_overrideStorageLayers.Length - 1; layer >= 0; --layer)
             {
-                if (activeLayer == kActiveLayerBaseline)
+                if (this.TryReadStored(layer, id, property, out object _))
                 {
-                    return odam.GetElementCountFromBaseline(property);
-                }
-                else
-                {
-                    return odam.GetElementCountFromOverrideLayer(activeLayer, property);
+                    return this.CountStoredElements(layer, id, property);
                 }
             }
 
-            return -1;
+            return this.CountStoredElements(kActiveLayerBaseline, id, property);
         }
 
-        public int GetElementCountInBaseline (Guid id, string property)
-        {
-            return this.EnsureDataAccess(id).GetElementCountFromBaseline(property);
-        }
-
-        public int GetElementCountInOverrideLayer (int layer, Guid id, string property)
-        {
-            return this.EnsureDataAccess(id).GetElementCountFromOverrideLayer(layer, property);
-        }
+        public int GetElementCountInBaseline (Guid id, string property) => this.CountStoredElements(kActiveLayerBaseline, id, property);
+        public int GetElementCountInOverrideLayer (int layer, Guid id, string property) => this.CountStoredElements(layer, id, property);
 
         /// <summary>
         /// It may be that inserting directly into a list fails if it's the first insertion and the element is null. In cases like that and others, 
@@ -573,8 +575,7 @@
         /// </summary>
         public bool TryGetBaselinePropertyValue<T> (Guid id, string property, out T value)
         {
-            value = default;
-            return this.GetAccessManager(id)?.TryGetBaselineValue(property, out value) == true;
+            return this.TryReadStored(kActiveLayerBaseline, id, property, out value);
         }
 
         /// <summary>
@@ -590,8 +591,7 @@
         /// </summary>
         public bool TryGetOverridePropertyValue<T> (int layer, Guid id, string property, out T value)
         {
-            value = default;
-            return this.GetAccessManager(id)?.TryGetOverrideValue(layer, property, out value) == true;
+            return this.TryReadStored(layer, id, property, out value);
         }
 
         /// <summary>
@@ -609,8 +609,7 @@
         /// </summary>
         public bool TryGetBaselineElementValue<T> (Guid id, string property, int elementIndex, out T value)
         {
-            value = default;
-            return this.GetAccessManager(id)?.TryGetBaselineElementValue(property, elementIndex, out value) == true;
+            return this.TryReadStoredElement(kActiveLayerBaseline, id, property, elementIndex, out value);
         }
 
         /// <summary>
@@ -626,8 +625,7 @@
         /// </summary>
         public bool TryGetOverridePropertyElementValue<T> (int layer, Guid id, string property, int elementIndex, out T value)
         {
-            value = default;
-            return this.GetAccessManager(id)?.TryGetOverrideElementValue(layer, property, elementIndex, out value) == true;
+            return this.TryReadStoredElement(layer, id, property, elementIndex, out value);
         }
 
         /// <summary>
@@ -686,6 +684,60 @@
             }
 
             return accessManager;
+        }
+
+        // Reads go straight to storage and never create anything. An access manager only routes change events, so a value has to
+        //  be readable whether or not one exists for its id (a freshly deserialized store has none), and a read must not create a
+        //  manager or an empty property bag, or reading alone would grow the store.
+
+        private bool TryGetStoredBag (int layer, Guid id, out PseudoPropertyBag propertyBag)
+        {
+            Stratum stratum = layer == kActiveLayerBaseline ? m_baselineStorageLayer : m_overrideStorageLayers[layer];
+            return stratum.TryGetValue(id, out propertyBag);
+        }
+
+        private bool TryReadStored<T> (int layer, Guid id, string property, out T value)
+        {
+            if (this.TryGetStoredBag(layer, id, out PseudoPropertyBag propertyBag) && propertyBag.TryGetValue(property, out object storedValue))
+            {
+                value = (T)storedValue;
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+
+        private bool TryReadStoredElement<T> (int layer, Guid id, string property, int elementIndex, out T value)
+        {
+            if (this.TryGetStoredBag(layer, id, out PseudoPropertyBag propertyBag))
+            {
+                return propertyBag.TryGetElementValue(property, elementIndex, out value);
+            }
+
+            value = default;
+            return false;
+        }
+
+        private int CountStoredElements (int layer, Guid id, string property)
+        {
+            return this.TryReadStored(layer, id, property, out IList list) ? list.Count : -1;
+        }
+
+        /// <summary>
+        /// Finds the effective stored value: the highest override layer holding the property, down to the baseline
+        /// </summary>
+        private bool TrySearchStoredValue (Guid id, string property, out object value)
+        {
+            for (int layer = m_overrideStorageLayers.Length - 1; layer >= 0; --layer)
+            {
+                if (this.TryReadStored(layer, id, property, out value))
+                {
+                    return true;
+                }
+            }
+
+            return this.TryReadStored(kActiveLayerBaseline, id, property, out value);
         }
 
         internal PseudoPropertyBag GetBaselinePropertyBagFor (Guid id)
@@ -1111,18 +1163,7 @@
 
             // ------------- Get Value ----------------
 
-            public bool TryGetBaselineValue<T> (string property, out T value)
-            {
-                var propBag = this.SB.GetBaselinePropertyBagFor(this.Id);
-                if (propBag != null && propBag.TryGetValue(property, out object v))
-                {
-                    value = (T)v;
-                    return true;
-                }
-
-                value = default;
-                return false;
-            }
+            public bool TryGetBaselineValue<T> (string property, out T value) => this.SB.TryReadStored(kActiveLayerBaseline, this.Id, property, out value);
 
             public bool SearchForFirstSetValue<T> (int layerStartIndex, string property, out T value)
             {
@@ -1181,39 +1222,9 @@
                         && propertyBag.ContainsKey(property);
             }
 
-            public int GetElementCountFromBaseline (string property)
-            {
-                var propBag = this.SB.GetBaselinePropertyBagFor(this.Id);
-                if (propBag != null && propBag.TryGetValue(property, out IList list))
-                {
-                    return list.Count;
-                }
-
-                return -1;
-            }
-
-            public int GetElementCountFromOverrideLayer (int layerIndex, string property)
-            {
-                var propBag = this.SB.GetOverridePropertyBagFor(layerIndex, this.Id);
-                if (propBag != null && propBag.TryGetValue(property, out IList list))
-                {
-                    return list.Count;
-                }
-
-                return -1;
-            }
-
-            public bool TryGetBaselineElementValue<T> (string property, int elementIndex, out T value)
-            {
-                var propBag = this.SB.GetBaselinePropertyBagFor(this.Id);
-                if (propBag != null && propBag.TryGetElementValue<T>(property, elementIndex, out value))
-                {
-                    return true;
-                }
-
-                value = default;
-                return false;
-            }
+            public int GetElementCountFromBaseline (string property) => this.SB.CountStoredElements(kActiveLayerBaseline, this.Id, property);
+            public int GetElementCountFromOverrideLayer (int layerIndex, string property) => this.SB.CountStoredElements(layerIndex, this.Id, property);
+            public bool TryGetBaselineElementValue<T> (string property, int elementIndex, out T value) => this.SB.TryReadStoredElement(kActiveLayerBaseline, this.Id, property, elementIndex, out value);
 
 
             public bool TryGetOverrideElementValue<T> (int layerIndex, string property, int elementIndex, out T value)
