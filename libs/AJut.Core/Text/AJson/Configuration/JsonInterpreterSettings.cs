@@ -174,6 +174,11 @@ namespace AJut.Text.AJson
             return this.ConstructInstanceFor(type, jsonValue, owner, out _);
         }
 
+        /// <summary>
+        /// Builds an instance exactly as <see cref="ConstructInstanceFor(Type, JsonValue, Json)"/> does, and also reports the json
+        /// keys a constructor route took as arguments, so the property fill that follows can leave them alone instead of
+        /// overwriting what the constructor did with those values
+        /// </summary>
         /// <param name="type">The type to build</param>
         /// <param name="jsonValue">The json the instance is built from</param>
         /// <param name="owner">Receives errors, if given</param>
