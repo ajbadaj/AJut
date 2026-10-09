@@ -26,6 +26,12 @@ namespace AJut.Text.AJson
     /// </list>
     /// </para>
     /// <para>
+    /// The marked constructor can have any accessibility. The generated reader calls one that is not public through an
+    /// UnsafeAccessor. The exception is a private or internal constructor on a type from a referenced assembly, opted in with
+    /// the assembly-wide [OptimizeAJson]: the compiler does not import those members from another assembly, so the generator never
+    /// sees the constructor and reports AJSON001.
+    /// </para>
+    /// <para>
     /// A key the json does not have is never an error, since nulls are never written. When the matched property has
     /// <see cref="JsonOmitIfDefaultAttribute"/>, the parameter is passed the value the writer leaves out: the attribute's explicit
     /// value, or the type's default for the bare attribute. Otherwise it is passed its own declared default, or the type's default.

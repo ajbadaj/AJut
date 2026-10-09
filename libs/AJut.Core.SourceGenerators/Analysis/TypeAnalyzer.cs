@@ -124,6 +124,7 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                 IsValueType = typeSymbol.IsValueType,
                 HasParameterlessConstructor = buildsWithParameterless,
                 HasConstructorRoute = routeConstructor != null,
+                ConstructsThroughAccessor = routeConstructor != null && routeConstructor.DeclaredAccessibility != Accessibility.Public,
                 ConstructorParameters = constructorParameters,
                 PropertyAsSelfName = asSelfPropName,
                 Properties = propertyModels,

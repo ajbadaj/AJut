@@ -39,6 +39,12 @@ namespace AJut.Text.AJson.SourceGenerators.Model
         public bool HasConstructorRoute { get; init; }
 
         /// <summary>
+        /// True when the constructor route's constructor is not public, so the generated reader calls it through an
+        /// UnsafeAccessor rather than with new
+        /// </summary>
+        public bool ConstructsThroughAccessor { get; init; }
+
+        /// <summary>
         /// The parameters of the constructor route, in order. Empty unless <see cref="HasConstructorRoute"/> is true.
         /// </summary>
         public IReadOnlyList<ConstructorParameterModel> ConstructorParameters { get; init; } = System.Array.Empty<ConstructorParameterModel>();

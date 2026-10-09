@@ -17,6 +17,11 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
     /// </remarks>
     internal static class SerializerEmitter
     {
+        /// <summary>
+        /// Name of the emitted UnsafeAccessor for a constructor route whose constructor is not public
+        /// </summary>
+        private const string kConstructorAccessor = "ConstructNonPublic";
+
         public static string Emit (SerializableTypeModel model)
         {
             CodeBuilder cb = new CodeBuilder();
@@ -51,6 +56,7 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
             cb.AppendLine();
             EmitReadMethod(cb, model, slots);
             EmitInitOnlyAccessors(cb, model, slots);
+            EmitConstructorAccessor(cb, model);
 
             cb.CloseBrace();
             cb.CloseBrace();
@@ -371,13 +377,14 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
         private static void EmitRouteConstruction (CodeBuilder cb, SerializableTypeModel model, List<ReadSlot> slots)
         {
             IReadOnlyList<ConstructorParameterModel> parameters = model.ConstructorParameters;
+            string construct = model.ConstructsThroughAccessor ? kConstructorAccessor : $"new {model.FullyQualifiedTypeName}";
             if (parameters.Count == 0)
             {
-                cb.AppendLine($"result = new {model.FullyQualifiedTypeName}();");
+                cb.AppendLine($"result = {construct}();");
                 return;
             }
 
-            cb.AppendLine($"result = new {model.FullyQualifiedTypeName}(");
+            cb.AppendLine($"result = {construct}(");
             cb.IndentBlock(() =>
             {
                 for (int index = 0; index < parameters.Count; ++index)
@@ -460,6 +467,30 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
                 cb.AppendLine($"[global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = \"{prop.SetterName}\")]");
                 cb.AppendLine($"private static extern void {InitOnlyAccessor(index)}({target}, {prop.TypeFullName} value);");
             }
+        }
+
+        /// <summary>
+        /// Emits an UnsafeAccessor for the constructor route's constructor, when it is not public
+        /// </summary>
+        private static void EmitConstructorAccessor (CodeBuilder cb, SerializableTypeModel model)
+        {
+            // A marked constructor can have any accessibility. The reflection path calls it with ConstructorInfo.Invoke, which
+            //  does not check, but generated code is plain C# and cannot name a private or protected constructor, nor a protected
+            //  one of a type opted in from a referenced assembly. UnsafeAccessorKind.Constructor binds an extern static method to
+            //  the type's constructor with the same parameter types, and calling it builds and returns a new instance, the same as
+            //  new does, for a struct as well as a class. A private or internal constructor of a type in a referenced assembly
+            //  never gets here: the compiler does not import those members, so the generator never sees one and AJSON001 reports
+            //  the type. EmitInitOnlyAccessors says what UnsafeAccessor is and where it stops being the right tool.
+            if (!model.ConstructsThroughAccessor)
+            {
+                return;
+            }
+
+            IReadOnlyList<ConstructorParameterModel> parameters = model.ConstructorParameters;
+            string signature = string.Join(", ", parameters.Select((p, index) => $"{p.TypeFullName} arg{index}"));
+            cb.AppendLine();
+            cb.AppendLine("[global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Constructor)]");
+            cb.AppendLine($"private static extern {model.FullyQualifiedTypeName} {kConstructorAccessor}({signature});");
         }
 
         private static string DeferredValue (int index) => $"deferredValue{index}";

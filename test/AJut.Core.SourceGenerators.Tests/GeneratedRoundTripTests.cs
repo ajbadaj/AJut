@@ -387,6 +387,87 @@ namespace TestNs
         }
 
         [TestMethod]
+        public void GeneratedReader_BuildsThroughANonPublicAJsonConstructor ()
+        {
+            // Generated code cannot name a private or protected constructor, so it calls the marked one through an UnsafeAccessor
+            Assembly fixture = CompileAndLoad(@"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson]
+    public class Hidden
+    {
+        [AJsonConstructor] private Hidden (int count, string label) { Count = count; Label = label; }
+        public static Hidden Make (int count, string label) => new Hidden(count, label);
+        public int Count { get; }
+        public string Label { get; }
+        public string Note { get; init; }
+    }
+
+    [OptimizeAJson]
+    public class Guarded
+    {
+        [AJsonConstructor] protected Guarded (int count) { Count = count; }
+        public static Guarded Make (int count) => new Guarded(count);
+        public int Count { get; }
+    }
+
+    [OptimizeAJson]
+    public struct HiddenSpan
+    {
+        [AJsonConstructor] private HiddenSpan (int start) { Start = start; Length = -1; }
+        public static HiddenSpan Make (int start) => new HiddenSpan(start);
+        public int Start { get; }
+        public int Length { get; init; }
+    }
+}", "RoundTrip_NonPublicAJsonConstructor");
+
+            object hidden = Make(fixture, "TestNs.Hidden", 3, "three");
+            Set(hidden, "Note", "noted");
+            object hiddenBack = RoundTrip(hidden);
+            Assert.AreEqual(3, Get(hiddenBack, "Count"));
+            Assert.AreEqual("three", Get(hiddenBack, "Label"));
+            Assert.AreEqual("noted", Get(hiddenBack, "Note"));
+
+            Assert.AreEqual(5, Get(RoundTrip(Make(fixture, "TestNs.Guarded", 5)), "Count"));
+
+            object span = Make(fixture, "TestNs.HiddenSpan", 10);
+            Set(span, "Length", 4);
+            object spanBack = RoundTrip(span);
+            Assert.AreEqual(10, Get(spanBack, "Start"));
+            Assert.AreEqual(4, Get(spanBack, "Length"));
+        }
+
+        [TestMethod]
+        public void GeneratedReader_BuildsThroughAProtectedAJsonConstructorInAReferencedAssembly ()
+        {
+            // The accessor reaches across assemblies, for a consumer that opts the type in from another one
+            byte[] libraryImage = TestCompilation.EmitToImage(TestCompilation.Build(@"
+using AJut.Text.AJson;
+namespace ForeignNs
+{
+    public class Marker { }
+    public class Guarded
+    {
+        [AJsonConstructor] protected Guarded (int count) { Count = count; }
+        public static Guarded Make (int count) => new Guarded(count);
+        public int Count { get; }
+    }
+}", "RoundTrip_ForeignProtectedCtorLibrary"));
+
+            CSharpCompilation consumer = TestCompilation.Build(@"
+using AJut.Text.AJson;
+[assembly: OptimizeAJson(typeof(ForeignNs.Marker))]
+namespace ConsumerNs { public class Unrelated { } }", "RoundTrip_ForeignProtectedCtorConsumer", MetadataReference.CreateFromImage(libraryImage));
+
+            FixtureLoadContext context = new FixtureLoadContext();
+            Assembly library = FixtureAssemblies.Load(libraryImage, context);
+            FixtureAssemblies.Load(FixtureAssemblies.CompileWithGeneratedSerializers(consumer), context);
+
+            Assert.AreEqual(8, Get(RoundTrip(Make(library, "ForeignNs.Guarded", 8)), "Count"));
+        }
+
+        [TestMethod]
         public void GeneratedReader_SetsAnInitOnlyPropertyInheritedFromABaseClass ()
         {
             // The accessor targets the base class, which is where the setter is declared
@@ -761,6 +842,11 @@ namespace TestNs
         }
 
         private static object Create (Assembly fixture, string typeName) => Activator.CreateInstance(fixture.GetType(typeName, throwOnError: true)!)!;
+
+        /// <summary>
+        /// Builds a fixture type through its static Make, for a type whose constructors the test cannot call
+        /// </summary>
+        private static object Make (Assembly fixture, string typeName, params object[] arguments) => fixture.GetType(typeName, throwOnError: true)!.GetMethod("Make")!.Invoke(null, arguments)!;
         private static void Set (object target, string property, object? value) => target.GetType().GetProperty(property)!.SetValue(target, value);
         private static object? Get (object target, string property) => target.GetType().GetProperty(property)!.GetValue(target);
     }

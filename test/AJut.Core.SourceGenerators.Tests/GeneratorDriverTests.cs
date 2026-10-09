@@ -108,6 +108,32 @@ namespace TestNs
         }
 
         [TestMethod]
+        public void Generator_ReportsAJSON001_ForAnInternalAJsonConstructorInAReferencedAssembly ()
+        {
+            // The compiler only imports the public and protected members of a referenced assembly, so the generator never sees
+            //  an internal or private constructor there, marked or not
+            byte[] libraryImage = TestCompilation.EmitToImage(TestCompilation.Build(@"
+using AJut.Text.AJson;
+namespace ForeignNs
+{
+    public class Marker { }
+    public class Sealed
+    {
+        [AJsonConstructor] internal Sealed (int count) { Count = count; }
+        public int Count { get; }
+    }
+}", "Driver_ForeignInternalCtorLibrary"));
+
+            CSharpCompilation consumer = TestCompilation.Build(@"
+using AJut.Text.AJson;
+[assembly: OptimizeAJson(typeof(ForeignNs.Marker))]
+namespace ConsumerNs { public class Unrelated { } }", "Driver_ForeignInternalCtorConsumer", MetadataReference.CreateFromImage(libraryImage));
+
+            GeneratorDriverRunResult result = CSharpGeneratorDriver.Create(new AJsonSourceGenerator()).RunGenerators(consumer).GetRunResult();
+            Assert.IsTrue(result.Diagnostics.Any(d => d.Id == "AJSON001" && d.GetMessage().Contains("'Sealed'")));
+        }
+
+        [TestMethod]
         public void Generator_ReportsAJSON005_OnMoreThanOneAJsonConstructor ()
         {
             const string src = @"
