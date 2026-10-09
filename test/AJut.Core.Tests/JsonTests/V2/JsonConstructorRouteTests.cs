@@ -21,6 +21,17 @@ namespace AJut.Core.UnitTests.AJsonV2
         private readonly List<string> m_loggedOutput = new List<string>();
 
         // ===========================[ Test Models ]===========================
+        public class ScaledCount
+        {
+            [AJsonConstructor]
+            public ScaledCount (int count)
+            {
+                this.Count = count * 10;
+            }
+
+            public int Count { get; set; }
+        }
+
         public class Sized
         {
             [AJsonConstructor]
@@ -400,6 +411,17 @@ namespace AJut.Core.UnitTests.AJsonV2
             T read = JsonHelper.BuildObjectForJson<T>(parsed);
             Assert.IsFalse(parsed.HasErrors, parsed.GetErrorReport());
             return read;
+        }
+
+        [TestMethod]
+        public void ConstructorConsumedProperty_IsNotSetAgainAfterConstruction ()
+        {
+            // The constructor consumed the key, so what it did with the value stands, the same as on the generated path
+            Json parsed = JsonHelper.ParseText("{ \"Count\": 2 }");
+            ScaledCount read = JsonHelper.BuildObjectForJson<ScaledCount>(parsed);
+
+            Assert.IsFalse(parsed.HasErrors, parsed.GetErrorReport());
+            Assert.AreEqual(20, read.Count, "the setter ran again after the constructor and replaced what the constructor set");
         }
 
         private void CaptureLog (string line)
