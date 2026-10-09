@@ -10,7 +10,7 @@ internal static class TrimmedRoundTrip
 {
     public static int Run ()
     {
-        Probe original = new Probe { Name = "trim-test", Score = 7, Active = true };
+        Probe original = new Probe { Name = "trim-test", Score = 7, Active = true, Tag = "init-only" };
 
         Json json = JsonHelper.BuildJsonForObject(original);
         if (json.HasErrors)
@@ -31,6 +31,13 @@ internal static class TrimmedRoundTrip
             return 3;
         }
 
+        // The generated reader sets an init-only property through an UnsafeAccessor, so the setter it names has to survive
+        //  trimming too
+        if (round.Tag != original.Tag)
+        {
+            return 5;
+        }
+
         if (!AJsonGeneratedDispatch.IsRegistered(typeof(Probe)))
         {
             // The dispatch table wasn't populated -> the source generator never ran or the
@@ -49,4 +56,5 @@ public class Probe
     public string Name { get; set; } = string.Empty;
     public int Score { get; set; }
     public bool Active { get; set; }
+    public string Tag { get; init; } = string.Empty;
 }
