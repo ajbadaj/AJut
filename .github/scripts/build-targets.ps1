@@ -66,13 +66,26 @@ try {
         exit 2
     }
 
+    # dotnet's exit code has to be checked after every call. A failed native command does not stop a
+    #  PowerShell script, and the workflow step only sees the exit code of the last one, so a failed
+    #  build of an early library used to be masked by a later one that succeeded. Stop at the first
+    #  failure: every later library builds on the earlier ones.
     foreach ($projectName in $targetProjects) {
         $projectPath = "libs/$projectName/$projectName.csproj"
 
         Write-Host "--> Building $projectName..."
         dotnet build $projectPath --configuration Release
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "Build failed: $projectName"
+            exit 1
+        }
+
         Write-Host "--> Packing $projectName..."
         dotnet pack $projectPath --configuration Release --no-build
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "Pack failed: $projectName"
+            exit 1
+        }
     }
 
     # Save the list of target projects to a file so it can be used by other scripts
