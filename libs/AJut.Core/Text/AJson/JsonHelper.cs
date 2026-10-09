@@ -282,9 +282,10 @@ namespace AJut.Text.AJson
                 return generated.Reader(sourceJsonValue, settings, owner);
             }
 
+            IReadOnlySet<string> keysConsumedByConstructor = null;
             if (sourceJsonValue.IsDocument && concreteType != type)
             {
-                outputInstance = settings.ConstructInstanceFor(concreteType, sourceJsonValue, owner);
+                outputInstance = settings.ConstructInstanceFor(concreteType, sourceJsonValue, owner, out keysConsumedByConstructor);
             }
             else if (sourceJsonValue.IsArray)
             {
@@ -297,10 +298,10 @@ namespace AJut.Text.AJson
 
             if (outputInstance == null)
             {
-                outputInstance = settings.ConstructInstanceFor(type, sourceJsonValue, owner);
+                outputInstance = settings.ConstructInstanceFor(type, sourceJsonValue, owner, out keysConsumedByConstructor);
             }
 
-            FillOutObjectWithJson(ref outputInstance, type, sourceJsonValue, settings, owner);
+            FillOutObjectWithJson(ref outputInstance, type, sourceJsonValue, settings, owner, keysConsumedByConstructor);
             return outputInstance;
         }
 
@@ -309,7 +310,7 @@ namespace AJut.Text.AJson
             FillOutObjectWithJson(ref targetItem, targetType, sourceJsonValue, settings, owner: null);
         }
 
-        private static void FillOutObjectWithJson (ref object targetItem, [DynamicallyAccessedMembers(kReflectionRequirements)] Type targetType, JsonValue sourceJsonValue, JsonInterpreterSettings settings, Json owner)
+        private static void FillOutObjectWithJson (ref object targetItem, [DynamicallyAccessedMembers(kReflectionRequirements)] Type targetType, JsonValue sourceJsonValue, JsonInterpreterSettings settings, Json owner, IReadOnlySet<string> keysConsumedByConstructor = null)
         {
             if (targetItem != null)
             {
@@ -408,6 +409,13 @@ namespace AJut.Text.AJson
                 foreach (KeyValuePair<string, JsonValue> kvp in sourceCasted)
                 {
                     if (kvp.Key == JsonDocument.kTypeIndicator)
+                    {
+                        continue;
+                    }
+
+                    // A key the constructor took as an argument is done: setting its property again would replace whatever the
+                    //  constructor did with the value, which the generated reader never does either
+                    if (keysConsumedByConstructor != null && keysConsumedByConstructor.Contains(kvp.Key))
                     {
                         continue;
                     }

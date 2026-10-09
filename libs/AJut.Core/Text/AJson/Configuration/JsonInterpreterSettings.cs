@@ -171,12 +171,23 @@ namespace AJut.Text.AJson
         /// </remarks>
         public object ConstructInstanceFor ([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type, JsonValue jsonValue, Json owner = null)
         {
+            return this.ConstructInstanceFor(type, jsonValue, owner, out _);
+        }
+
+        /// <param name="type">The type to build</param>
+        /// <param name="jsonValue">The json the instance is built from</param>
+        /// <param name="owner">Receives errors, if given</param>
+        /// <param name="keysConsumedByConstructor">The json keys a constructor route took as arguments, which the property fill after
+        /// construction must leave alone; null when the instance was built any other way</param>
+        internal object ConstructInstanceFor ([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type, JsonValue jsonValue, Json owner, out IReadOnlySet<string> keysConsumedByConstructor)
+        {
+            keysConsumedByConstructor = null;
             if (this.TryConstructWithCustomConstructor(type, jsonValue, owner, out object custom))
             {
                 return custom;
             }
 
-            if (AJsonConstructorRoute.TryConstruct(type, jsonValue, this, owner, out object routed))
+            if (AJsonConstructorRoute.TryConstruct(type, jsonValue, this, owner, out object routed, out keysConsumedByConstructor))
             {
                 return routed;
             }

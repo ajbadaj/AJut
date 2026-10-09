@@ -45,9 +45,11 @@ namespace AJut.Text.AJson
         /// </summary>
         /// <returns>True if the type has a constructor route and <paramref name="instance"/> was built through it, false if the
         /// type should be built the way any other type is</returns>
-        public static bool TryConstruct (Type type, JsonValue jsonValue, JsonInterpreterSettings settings, Json owner, out object instance)
+        /// <param name="consumedJsonKeys">The json keys the constructor took as arguments, for the property fill to leave alone; null when false is returned</param>
+        public static bool TryConstruct (Type type, JsonValue jsonValue, JsonInterpreterSettings settings, Json owner, out object instance, out IReadOnlySet<string> consumedJsonKeys)
         {
             instance = null;
+            consumedJsonKeys = null;
             Route route = g_routes.GetOrAdd(type, kFindRoute);
             if (route.IsAmbiguous)
             {
@@ -61,6 +63,7 @@ namespace AJut.Text.AJson
             }
 
             instance = route.Constructor.Invoke(BuildArguments(route, jsonValue, settings, owner));
+            consumedJsonKeys = route.ConsumedJsonKeys;
             return true;
         }
 
@@ -361,12 +364,27 @@ namespace AJut.Text.AJson
                 this.Parameters = parameters;
                 this.MarkedConstructorCount = markedConstructorCount;
                 this.IsAmbiguous = isAmbiguous;
+
+                this.ConsumedJsonKeys = new HashSet<string>(StringComparer.Ordinal);
+                foreach (RouteParameter parameter in parameters)
+                {
+                    if (parameter.JsonKey != null)
+                    {
+                        this.ConsumedJsonKeys.Add(parameter.JsonKey);
+                    }
+                }
             }
 
             public static Route None (int markedConstructorCount) => new Route(null, Array.Empty<RouteParameter>(), markedConstructorCount, isAmbiguous: false);
 
             public ConstructorInfo Constructor { get; }
             public RouteParameter[] Parameters { get; }
+
+            /// <summary>
+            /// The json keys the constructor takes as arguments. The property fill that runs after construction leaves these alone,
+            /// so what the constructor did with a value stands.
+            /// </summary>
+            public HashSet<string> ConsumedJsonKeys { get; }
 
             /// <summary>
             /// How many constructors carry [AJsonConstructor], counted even when the type is built some other way
