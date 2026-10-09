@@ -1594,6 +1594,65 @@ namespace AJut.Core.UnitTests
         }
 
         [TestMethod]
+        public void Stratabase_AccessAfterClearAllFor_HearsTheNextWrite ()
+        {
+            // A clear has to leave the access with no active layer: one still pointing at the layer it last saw treats a later
+            //  write below that layer as hidden, and raises nothing for it
+            Stratabase sb = new Stratabase(1);
+            Guid id = Guid.NewGuid();
+            sb.SetOverridePropertyValue(0, id, "Value", 1);
+            StrataPropertyValueAccess<int> access = sb.GeneratePropertyAccess<int>(id, "Value");
+            Assert.AreEqual(0, access.ActiveLayerIndex);
+            sb.ClearAllFor(id);
+            int valueChangedCount = 0;
+            access.ValueChanged += _OnValueChanged;
+
+            sb.SetBaselinePropertyValue(id, "Value", 5);
+
+            access.ValueChanged -= _OnValueChanged;
+            Assert.AreEqual(1, valueChangedCount, "the baseline write after the clear raised no ValueChanged");
+            Assert.IsTrue(access.IsActiveLayerBaseline);
+            Assert.AreEqual(5, access.GetValue());
+
+            void _OnValueChanged (object sender, EventArgs e) => ++valueChangedCount;
+        }
+
+        [TestMethod]
+        public void Stratabase_ListAccessAfterClearAllFor_ShowsTheNextBaselineList ()
+        {
+            Stratabase sb = new Stratabase(1);
+            Guid id = Guid.NewGuid();
+            sb.SetOverridePropertyValue(0, id, "List", new List<int> { 1 });
+            StrataPropertyListAccess<int> list = sb.GenerateListPropertyAccess<int>(id, "List");
+            sb.ClearAllFor(id);
+
+            sb.SetBaselinePropertyValue(id, "List", new List<int> { 4, 5 });
+
+            CollectionAssert.AreEqual(new[] { 4, 5 }, list.Elements.ToArray(), "the list access did not pick up the list written after the clear");
+        }
+
+        [TestMethod]
+        public void Stratabase_AccessAfterItsLastValueIsCleared_HearsTheNextWrite ()
+        {
+            Stratabase sb = new Stratabase(1);
+            Guid id = Guid.NewGuid();
+            sb.SetOverridePropertyValue(0, id, "Value", 1);
+            StrataPropertyValueAccess<int> access = sb.GeneratePropertyAccess<int>(id, "Value");
+            sb.ClearPropertyOverride(0, id, "Value");
+            Assert.IsFalse(access.IsSet);
+            int valueChangedCount = 0;
+            access.ValueChanged += _OnValueChanged;
+
+            sb.SetBaselinePropertyValue(id, "Value", 5);
+
+            access.ValueChanged -= _OnValueChanged;
+            Assert.AreEqual(1, valueChangedCount, "the baseline write after the last value was cleared raised no ValueChanged");
+            Assert.AreEqual(5, access.GetValue());
+
+            void _OnValueChanged (object sender, EventArgs e) => ++valueChangedCount;
+        }
+
+        [TestMethod]
         public void Stratabase_EnsureListElementType_NullInsertionAtFirstElementWorks ()
         {
             Stratabase sb = new Stratabase(1);
