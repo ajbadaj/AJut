@@ -234,6 +234,7 @@ namespace AJut.Text.AJson
             return arguments;
         }
 
+        [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = kTrimJustification)]
         [UnconditionalSuppressMessage("Trimming", "IL2072", Justification = kTrimJustification)]
         private static object ReadArgument (RouteParameter parameter, JsonValue value, JsonInterpreterSettings settings, Json owner)
         {
