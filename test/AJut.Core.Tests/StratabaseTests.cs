@@ -1431,6 +1431,54 @@ namespace AJut.Core.UnitTests
         }
 
         [TestMethod]
+        public void Stratabase_ClearAll_NotificationsOff_KeepsAccessObjectsInSync ()
+        {
+            // With notifications off only the store-wide events stay quiet, the same as a silent import. Access objects cache
+            //  whether a property is set, so one that misses the clear keeps reporting a value that is gone.
+            Stratabase sb = new Stratabase(1);
+            Guid id = Guid.NewGuid();
+            sb.SetBaselinePropertyValue(id, "Value", 3);
+            sb.SetOverridePropertyValue(0, id, "Value", 4);
+            StrataPropertyValueAccess<int> access = sb.GeneratePropertyAccess<int>(id, "Value");
+            int storeEventCount = 0, valueChangedCount = 0;
+            sb.BaselineDataChanged += _OnBaselineDataChanged;
+            sb.OverrideDataChanged += _OnOverrideDataChanged;
+            access.ValueChanged += _OnValueChanged;
+
+            sb.ClearAll(notifyOfRemovals: false);
+
+            sb.BaselineDataChanged -= _OnBaselineDataChanged;
+            sb.OverrideDataChanged -= _OnOverrideDataChanged;
+            access.ValueChanged -= _OnValueChanged;
+
+            Assert.AreEqual(0, storeEventCount, "the store-wide events stay quiet");
+            Assert.IsFalse(access.IsSet, "the access object still reports the cleared value as set");
+            Assert.AreEqual(1, valueChangedCount, "the access object raises its own ValueChanged");
+
+            void _OnBaselineDataChanged (object sender, BaselineStratumModificationEventArgs e) => ++storeEventCount;
+            void _OnOverrideDataChanged (object sender, OverrideStratumModificationEventArgs e) => ++storeEventCount;
+            void _OnValueChanged (object sender, EventArgs e) => ++valueChangedCount;
+        }
+
+        [TestMethod]
+        public void Stratabase_ClearAllFor_NotificationsOff_ClearsListAccessElements ()
+        {
+            Stratabase sb = new Stratabase(1);
+            Guid id = Guid.NewGuid();
+            Guid otherId = Guid.NewGuid();
+            sb.SetBaselinePropertyValue(id, "List", new List<int> { 1, 2 });
+            sb.SetBaselinePropertyValue(otherId, "List", new List<int> { 5 });
+            StrataPropertyListAccess<int> list = sb.GenerateListPropertyAccess<int>(id, "List");
+            StrataPropertyListAccess<int> otherList = sb.GenerateListPropertyAccess<int>(otherId, "List");
+
+            sb.ClearAllFor(id, notifyOfRemovals: false);
+
+            Assert.AreEqual(0, list.Elements.Count, "the list access still holds the cleared elements");
+            Assert.IsFalse(list.IsSet, "the list access still reports the cleared list as set");
+            CollectionAssert.AreEqual(new[] { 5 }, otherList.Elements.ToArray(), "another id was touched by the clear");
+        }
+
+        [TestMethod]
         public void Stratabase_EnsureListElementType_NullInsertionAtFirstElementWorks ()
         {
             Stratabase sb = new Stratabase(1);
