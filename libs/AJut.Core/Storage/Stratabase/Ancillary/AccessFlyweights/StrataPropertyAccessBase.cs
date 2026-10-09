@@ -228,11 +228,14 @@
             void _UpdateIsSetAndTopMost ()
             {
                 bool isSet = this.IsSet;
+                int formerActiveLayer = this.ActiveLayerIndex;
+
                 // With no layer left holding a value, nothing is active, the same as after a clear
                 this.IsSet = this.ODAM.TryFindActiveLayer(this.PropertyName, out int activeLayer);
                 this.ActiveLayerIndex = this.IsSet ? activeLayer : kUnsetLayerIndex;
 
-                if (this.IsSet != isSet)
+                // The value changed if the property stopped being set, or if a lower layer now shows through
+                if ((this.IsSet != isSet) || (this.ActiveLayerIndex != formerActiveLayer))
                 {
                     this.TriggerValueChanged();
                 }
