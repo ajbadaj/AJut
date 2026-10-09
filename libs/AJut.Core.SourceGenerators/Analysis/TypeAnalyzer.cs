@@ -8,6 +8,7 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
     using AJut.Text.AJson.SourceGenerators.Model;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
+    using Microsoft.CodeAnalysis.CSharp.Syntax;
 
     /// <summary>
     /// Pure analysis - takes an INamedTypeSymbol, returns a SerializableTypeModel plus any
@@ -24,20 +25,6 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
             string fullyQualified = typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
             string mangled = MangleName(fullyQualified);
 
-            // ---- Constructor analysis (AJSON001) ----
-            bool hasParameterlessCtor = typeSymbol.InstanceConstructors.Any(
-                c => c.Parameters.Length == 0 && c.DeclaredAccessibility != Accessibility.Private
-            );
-            bool hasAJsonCtor = typeSymbol.InstanceConstructors.Any(c => HasAttribute(c, AttributeNames.kAJsonConstructor));
-
-            if (!typeSymbol.IsValueType && !hasParameterlessCtor && !hasAJsonCtor)
-            {
-                diagnostics.Add(Diagnostic.Create(
-                    Diagnostics.MissingParameterlessConstructor,
-                    typeSymbol.Locations.FirstOrDefault(),
-                    typeSymbol.Name));
-            }
-
             // ---- [JsonPropertyAsSelf] on the type ----
             string asSelfPropName = string.Empty;
             AttributeData asSelfAttr = typeSymbol.GetAttributes().FirstOrDefault(
@@ -50,6 +37,7 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
 
             // ---- Property walk ----
             List<PropertyModel> propertyModels = new List<PropertyModel>();
+            Dictionary<string, IPropertySymbol> propertySymbols = new Dictionary<string, IPropertySymbol>();
             foreach (IPropertySymbol propSymbol in EnumerateInstanceProperties(typeSymbol))
             {
                 if (propSymbol.IsIndexer)
@@ -72,24 +60,59 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                 }
 
                 propertyModels.Add(propModel);
-
-                // ---- AJSON004 ----
-                // The generated reader sets init-only properties by rebuilding the instance: a with expression for a record, an
-                //  object initializer otherwise. A class that is not a record and only has an [AJsonConstructor] has neither. A
-                //  class with no usable constructor at all already has AJSON001, so this stays quiet rather than piling on.
-                if (propModel.IsInitOnly
-                    && !typeSymbol.IsRecord
-                    && !typeSymbol.IsValueType
-                    && !hasParameterlessCtor
-                    && hasAJsonCtor)
+                if (!propertySymbols.ContainsKey(propModel.Name))
                 {
-                    diagnostics.Add(Diagnostic.Create(
-                        Diagnostics.InitOnlyPropertyCannotBeSet,
-                        propSymbol.Locations.FirstOrDefault(),
-                        typeSymbol.Name,
-                        propSymbol.Name));
+                    propertySymbols.Add(propModel.Name, propSymbol);
                 }
             }
+
+            // ---- Construction route (AJSON001, AJSON005) ----
+            // In order: a non-private parameterless constructor, or a value type's default when it marks no constructor; then the
+            //  one constructor marked [AJsonConstructor]; then a record's positional constructor. The reflection path follows the
+            //  same rules (AJsonConstructorRoute).
+            IMethodSymbol[] markedConstructors = typeSymbol.InstanceConstructors.Where(c => HasAttribute(c, AttributeNames.kAJsonConstructor)).ToArray();
+            if (markedConstructors.Length > 1)
+            {
+                diagnostics.Add(Diagnostic.Create(
+                    Diagnostics.MultipleAJsonConstructors,
+                    typeSymbol.Locations.FirstOrDefault(),
+                    typeSymbol.Name,
+                    markedConstructors.Length));
+            }
+
+            // Roslyn lists a struct's implicit parameterless constructor too, which is why a value type is decided on its own
+            bool buildsWithParameterless = typeSymbol.InstanceConstructors.Any(
+                c => c.Parameters.Length == 0
+                    && c.DeclaredAccessibility != Accessibility.Private
+                    && !(typeSymbol.IsValueType && c.IsImplicitlyDeclared)
+            );
+            buildsWithParameterless = buildsWithParameterless || (typeSymbol.IsValueType && markedConstructors.Length == 0);
+
+            IMethodSymbol routeConstructor = null;
+            if (!buildsWithParameterless)
+            {
+                if (markedConstructors.Length == 1)
+                {
+                    routeConstructor = markedConstructors[0];
+                }
+                else if (markedConstructors.Length == 0 && typeSymbol.IsRecord)
+                {
+                    routeConstructor = FindPositionalRecordConstructor(typeSymbol, propertyModels);
+                }
+
+                // More than one marked constructor already has AJSON005
+                if (routeConstructor == null && markedConstructors.Length < 2)
+                {
+                    diagnostics.Add(Diagnostic.Create(
+                        Diagnostics.MissingParameterlessConstructor,
+                        typeSymbol.Locations.FirstOrDefault(),
+                        typeSymbol.Name));
+                }
+            }
+
+            IReadOnlyList<ConstructorParameterModel> constructorParameters = routeConstructor == null
+                ? Array.Empty<ConstructorParameterModel>()
+                : AnalyzeConstructorParameters(typeSymbol, routeConstructor, propertyModels, propertySymbols, diagnostics);
 
             SerializableTypeModel model = new SerializableTypeModel
             {
@@ -99,14 +122,229 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                     : string.Empty,
                 MangledName = mangled,
                 IsValueType = typeSymbol.IsValueType,
-                IsRecord = typeSymbol.IsRecord,
-                HasParameterlessConstructor = hasParameterlessCtor,
-                HasAJsonConstructor = hasAJsonCtor,
+                HasParameterlessConstructor = buildsWithParameterless,
+                HasConstructorRoute = routeConstructor != null,
+                ConstructorParameters = constructorParameters,
                 PropertyAsSelfName = asSelfPropName,
                 Properties = propertyModels,
             };
 
             return new AnalysisResult(model, diagnostics.ToImmutable());
+        }
+
+        // ===========================[ Construction route ]===========================
+        /// <summary>
+        /// A record's positional (primary) constructor. In source it is the constructor the record declaration itself declares.
+        /// A record from a referenced assembly has no syntax, so there it is the single public constructor, other than the copy
+        /// constructor, whose every parameter matches a property.
+        /// </summary>
+        private static IMethodSymbol FindPositionalRecordConstructor (INamedTypeSymbol typeSymbol, List<PropertyModel> properties)
+        {
+            foreach (IMethodSymbol constructor in typeSymbol.InstanceConstructors)
+            {
+                if (constructor.Parameters.Length == 0 || IsCopyConstructor(constructor, typeSymbol))
+                {
+                    continue;
+                }
+
+                foreach (SyntaxReference reference in constructor.DeclaringSyntaxReferences)
+                {
+                    if (reference.GetSyntax() is RecordDeclarationSyntax)
+                    {
+                        return constructor;
+                    }
+                }
+            }
+
+            if (!typeSymbol.DeclaringSyntaxReferences.IsEmpty)
+            {
+                return null;
+            }
+
+            IMethodSymbol found = null;
+            foreach (IMethodSymbol constructor in typeSymbol.InstanceConstructors)
+            {
+                if (constructor.DeclaredAccessibility != Accessibility.Public
+                    || constructor.Parameters.Length == 0
+                    || IsCopyConstructor(constructor, typeSymbol))
+                {
+                    continue;
+                }
+
+                if (!constructor.Parameters.All(p => FindMatchingProperty(properties, p.Name) != null))
+                {
+                    continue;
+                }
+
+                if (found != null)
+                {
+                    return null;
+                }
+
+                found = constructor;
+            }
+
+            return found;
+        }
+
+        private static bool IsCopyConstructor (IMethodSymbol constructor, INamedTypeSymbol typeSymbol)
+        {
+            return constructor.Parameters.Length == 1
+                && SymbolEqualityComparer.Default.Equals(constructor.Parameters[0].Type, typeSymbol);
+        }
+
+        /// <summary>
+        /// Matches each parameter to its property and works out what it is passed when the json has no key for it (AJSON006, AJSON007)
+        /// </summary>
+        private static List<ConstructorParameterModel> AnalyzeConstructorParameters (
+            INamedTypeSymbol typeSymbol,
+            IMethodSymbol constructor,
+            List<PropertyModel> properties,
+            Dictionary<string, IPropertySymbol> propertySymbols,
+            ImmutableArray<Diagnostic>.Builder diagnostics)
+        {
+            List<ConstructorParameterModel> output = new List<ConstructorParameterModel>(constructor.Parameters.Length);
+            foreach (IParameterSymbol parameter in constructor.Parameters)
+            {
+                string parameterFqn = ToFullyQualified(parameter.Type);
+                PropertyModel matched = FindMatchingProperty(properties, parameter.Name);
+                if (matched == null)
+                {
+                    diagnostics.Add(Diagnostic.Create(
+                        Diagnostics.UnmatchedConstructorParameter,
+                        parameter.Locations.FirstOrDefault(),
+                        typeSymbol.Name,
+                        parameter.Name));
+                }
+
+                // A key the json does not have is never an error, since nulls are never written. The value passed, in order: the
+                //  matched property's [JsonOmitIfDefault(x)] value (the writer leaves the property out when it equals that), the
+                //  parameter's own default, then the type's default. Each is cast to the parameter's type, which turns an enum's
+                //  stored number back into the enum and narrows a number written wider than the parameter.
+                string missingValue;
+                if (matched != null && matched.HasExplicitOmitDefault)
+                {
+                    missingValue = $"({parameterFqn})({matched.ExplicitOmitDefaultLiteral})";
+                    if (parameter.HasExplicitDefaultValue
+                        && DefaultsDiffer(GetExplicitOmitValue(propertySymbols[matched.Name]), parameter.ExplicitDefaultValue, parameter.Type))
+                    {
+                        diagnostics.Add(Diagnostic.Create(
+                            Diagnostics.ConstructorDefaultDiffersFromOmitDefault,
+                            parameter.Locations.FirstOrDefault(),
+                            typeSymbol.Name,
+                            parameter.Name,
+                            parameter.ExplicitDefaultValue == null ? "null" : FormatConstant(parameter.ExplicitDefaultValue),
+                            matched.Name,
+                            matched.ExplicitOmitDefaultLiteral));
+                    }
+                }
+                else if (parameter.HasExplicitDefaultValue && parameter.ExplicitDefaultValue != null)
+                {
+                    missingValue = $"({parameterFqn})({FormatConstant(parameter.ExplicitDefaultValue)})";
+                }
+                else
+                {
+                    missingValue = $"default({parameterFqn})";
+                }
+
+                output.Add(new ConstructorParameterModel
+                {
+                    Name = parameter.Name,
+                    TypeFullName = parameterFqn,
+                    PropertyName = matched?.Name ?? string.Empty,
+                    MissingValueExpression = missingValue,
+                });
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// The property a constructor parameter fills: the same name, preferring an exact match over one that differs only by case
+        /// </summary>
+        private static PropertyModel FindMatchingProperty (List<PropertyModel> properties, string parameterName)
+        {
+            PropertyModel caseInsensitiveMatch = null;
+            foreach (PropertyModel property in properties)
+            {
+                if (property.Name == parameterName)
+                {
+                    return property;
+                }
+
+                if (caseInsensitiveMatch == null && string.Equals(property.Name, parameterName, StringComparison.OrdinalIgnoreCase))
+                {
+                    caseInsensitiveMatch = property;
+                }
+            }
+
+            return caseInsensitiveMatch;
+        }
+
+        private static object GetExplicitOmitValue (IPropertySymbol propSymbol)
+        {
+            AttributeData omitAttr = propSymbol.GetAttributes().FirstOrDefault(a => SameAttribute(a, AttributeNames.kOmitIfDefault));
+            return omitAttr != null && omitAttr.ConstructorArguments.Length > 0 ? omitAttr.ConstructorArguments[0].Value : null;
+        }
+
+        /// <summary>
+        /// Whether two constant values end up different once they are the parameter's type. Numbers are compared as that type (an
+        /// int 5 and a long 5 are the same, as are 0.1 and 0.1f for a float), and an enum as its stored number.
+        /// </summary>
+        private static bool DefaultsDiffer (object omitValue, object declaredDefault, ITypeSymbol parameterType)
+        {
+            if (omitValue == null || declaredDefault == null)
+            {
+                return (omitValue == null) != (declaredDefault == null);
+            }
+
+            if (!IsNumberValue(omitValue) || !IsNumberValue(declaredDefault))
+            {
+                return !omitValue.Equals(declaredDefault);
+            }
+
+            ITypeSymbol target = parameterType;
+            if (target is INamedTypeSymbol named && named.ConstructedFrom?.SpecialType == SpecialType.System_Nullable_T)
+            {
+                target = named.TypeArguments[0];
+            }
+
+            switch (target.SpecialType)
+            {
+                case SpecialType.System_Single:
+                    return !((float)Convert.ToDouble(omitValue, CultureInfo.InvariantCulture)).Equals((float)Convert.ToDouble(declaredDefault, CultureInfo.InvariantCulture));
+                case SpecialType.System_Double:
+                    return !Convert.ToDouble(omitValue, CultureInfo.InvariantCulture).Equals(Convert.ToDouble(declaredDefault, CultureInfo.InvariantCulture));
+            }
+
+            // Whole numbers and decimals compare exactly as decimal, which holds every value either can have
+            if (!(omitValue is float || omitValue is double || declaredDefault is float || declaredDefault is double))
+            {
+                return Convert.ToDecimal(omitValue, CultureInfo.InvariantCulture) != Convert.ToDecimal(declaredDefault, CultureInfo.InvariantCulture);
+            }
+
+            return !Convert.ToDouble(omitValue, CultureInfo.InvariantCulture).Equals(Convert.ToDouble(declaredDefault, CultureInfo.InvariantCulture));
+        }
+
+        private static bool IsNumberValue (object value)
+        {
+            switch (value)
+            {
+                case sbyte _:
+                case byte _:
+                case short _:
+                case ushort _:
+                case int _:
+                case uint _:
+                case long _:
+                case ulong _:
+                case float _:
+                case double _:
+                case decimal _:
+                    return true;
+            }
+
+            return false;
         }
 
         // ===========================[ Property analysis ]===========================
@@ -225,6 +463,8 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                 IsValueType = underlying.IsValueType,
                 HasSetter = hasSetter,
                 IsInitOnly = isInitOnly,
+                DeclaringTypeFullName = ToFullyQualified(propSymbol.SetMethod?.ContainingType ?? propSymbol.ContainingType),
+                SetterName = propSymbol.SetMethod?.MetadataName ?? string.Empty,
                 HasGetter = hasGetter,
                 IsUsuallyQuoted = IsUsuallyQuoted(underlying, kind),
                 HasOmitIfDefault = hasOmit,
@@ -463,23 +703,32 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                 return $"(global::{propertyType.ToDisplayString()}){arg.Value}";
             }
 
+            return FormatConstant(arg.Value);
+        }
+
+        /// <summary>
+        /// A constant (an attribute argument, or a parameter's declared default) as C# source
+        /// </summary>
+        private static string FormatConstant (object value)
+        {
             // Numbers are written invariant, since the generator runs inside the build under whatever culture the build machine has
             //  (2.5 is "2,5" in some), and with the suffix of their own type, since a bare fractional literal is a double and does
             //  not convert to a float in the omit check's EqualityComparer<float>.Equals call.
-            switch (arg.Value)
+            switch (value)
             {
                 case string s: return SymbolDisplay.FormatLiteral(s, quote: true);
                 case char c: return SymbolDisplay.FormatLiteral(c, quote: true);
                 case bool b: return b ? "true" : "false";
                 case float f: return FormatFloatLiteral(f);
                 case double d: return FormatDoubleLiteral(d);
+                case decimal m: return m.ToString(CultureInfo.InvariantCulture) + "M";
                 case long l: return l.ToString(CultureInfo.InvariantCulture) + "L";
                 case ulong ul: return ul.ToString(CultureInfo.InvariantCulture) + "UL";
                 case uint ui: return ui.ToString(CultureInfo.InvariantCulture) + "U";
                 case IFormattable formattable: return formattable.ToString(null, CultureInfo.InvariantCulture);
             }
 
-            return arg.Value.ToString();
+            return value.ToString();
         }
 
         private static string FormatFloatLiteral (float value)

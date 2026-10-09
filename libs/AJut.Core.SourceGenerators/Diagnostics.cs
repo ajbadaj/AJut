@@ -15,7 +15,7 @@ namespace AJut.Text.AJson.SourceGenerators
         public static readonly DiagnosticDescriptor MissingParameterlessConstructor = new DiagnosticDescriptor(
             id: "AJSON001",
             title: "AJson optimized type has no usable constructor",
-            messageFormat: "Type '{0}' is opted into AJson optimization but has no parameterless constructor and no constructor marked [AJsonConstructor]",
+            messageFormat: "Type '{0}' is opted into AJson optimization but has no parameterless constructor, no constructor marked [AJsonConstructor], and is not a record with a positional constructor",
             category: kCategory,
             defaultSeverity: DiagnosticSeverity.Error,
             isEnabledByDefault: true);
@@ -36,12 +36,31 @@ namespace AJut.Text.AJson.SourceGenerators
             defaultSeverity: DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
-        public static readonly DiagnosticDescriptor InitOnlyPropertyCannotBeSet = new DiagnosticDescriptor(
-            id: "AJSON004",
-            title: "AJson optimized type has an init-only property the generated reader cannot set",
-            messageFormat: "Property '{0}.{1}' is init-only, but '{0}' is not a record and has no parameterless constructor, so the generated reader has no way to set it - add a parameterless constructor, make the type a record, or give the property a setter",
+        // AJSON004 was an init-only property the generated reader could not set. It never shipped, and the reader now sets every
+        //  init-only property, so the id is left unused rather than given a new meaning.
+
+        public static readonly DiagnosticDescriptor MultipleAJsonConstructors = new DiagnosticDescriptor(
+            id: "AJSON005",
+            title: "AJson optimized type marks more than one constructor with [AJsonConstructor]",
+            messageFormat: "Type '{0}' has {1} constructors marked [AJsonConstructor] - mark exactly one",
             category: kCategory,
             defaultSeverity: DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor UnmatchedConstructorParameter = new DiagnosticDescriptor(
+            id: "AJSON006",
+            title: "Constructor parameter matches no property",
+            messageFormat: "Parameter '{1}' of the constructor AJson builds '{0}' with matches no property by name, so json never sets it and it always gets its declared default, or the type's default when it has none",
+            category: kCategory,
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
+
+        public static readonly DiagnosticDescriptor ConstructorDefaultDiffersFromOmitDefault = new DiagnosticDescriptor(
+            id: "AJSON007",
+            title: "Constructor parameter default differs from the property's JsonOmitIfDefault value",
+            messageFormat: "Parameter '{1}' of the constructor AJson builds '{0}' with defaults to {2}, but property '{3}' is [JsonOmitIfDefault({4})] - a missing key passes {4}, since that is the value the writer leaves out",
+            category: kCategory,
+            defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
     }
 }

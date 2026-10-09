@@ -48,9 +48,10 @@ namespace TestNs
         }
 
         [TestMethod]
-        public void Generator_ReportsAJSON004_OnInitOnlyPropertyWithNoWayToRebuild ()
+        public void Generator_ReportsNothing_ForInitOnlyPropertiesOnAClassWithOnlyAnAJsonConstructor ()
         {
-            // Not a record, and no parameterless constructor: the generated reader has nothing to set an init-only property through
+            // The generated reader once had no way to set an init-only property on this shape. It now sets it through an
+            //  UnsafeAccessor after the one construction (GeneratedRoundTripTests runs it).
             const string src = @"
 using AJut.Text.AJson;
 namespace TestNs
@@ -60,25 +61,36 @@ namespace TestNs
     {
         [AJsonConstructor] public OnlyAJsonCtor (int count) { Count = count; }
         public int Count { get; init; }
+        public string Label { get; init; }
     }
-}";
-            GeneratorDriverRunResult result = RunGenerator(src);
-            Assert.IsTrue(result.Diagnostics.Any(d => d.Id == "AJSON004"));
-            Assert.IsFalse(result.Diagnostics.Any(d => d.Id == "AJSON001"), "[AJsonConstructor] satisfies AJSON001");
-        }
 
-        [TestMethod]
-        public void Generator_DoesNotReportAJSON004_WhenARebuildRouteExistsOrAJSON001AlreadyFired ()
-        {
-            const string src = @"
-using AJut.Text.AJson;
-namespace TestNs
-{
     [OptimizeAJson]
     public record OnlyAJsonCtorRecord
     {
         [AJsonConstructor] public OnlyAJsonCtorRecord (int count) { Count = count; }
         public int Count { get; init; }
+    }
+}";
+            GeneratorDriverRunResult result = RunGenerator(src);
+            Assert.AreEqual(0, result.Diagnostics.Length, string.Join("\n", result.Diagnostics.Select(d => d.GetMessage())));
+        }
+
+        [TestMethod]
+        public void Generator_ReportsAJSON001_OnlyWhenNoConstructorRouteExists ()
+        {
+            // A record's positional constructor is a route with no attribute. A record whose only constructor is an ordinary one
+            //  is not positional, and neither is a class.
+            const string src = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson] public record Positional (int Left, string Right);
+
+    [OptimizeAJson]
+    public record NotPositional
+    {
+        public NotPositional (int count) { Count = count; }
+        public int Count { get; }
     }
 
     [OptimizeAJson]
@@ -89,8 +101,96 @@ namespace TestNs
     }
 }";
             GeneratorDriverRunResult result = RunGenerator(src);
-            Assert.IsFalse(result.Diagnostics.Any(d => d.Id == "AJSON004"), "a record rebuilds through with, and a class with no constructor already has AJSON001");
-            Assert.IsTrue(result.Diagnostics.Any(d => d.Id == "AJSON001" && d.GetMessage().Contains("NoCtorAtAll")));
+            string[] ajson001 = result.Diagnostics.Where(d => d.Id == "AJSON001").Select(d => d.GetMessage()).ToArray();
+            Assert.AreEqual(2, ajson001.Length, string.Join("\n", ajson001));
+            Assert.IsTrue(ajson001.Any(m => m.Contains("'NotPositional'")));
+            Assert.IsTrue(ajson001.Any(m => m.Contains("'NoCtorAtAll'")));
+        }
+
+        [TestMethod]
+        public void Generator_ReportsAJSON005_OnMoreThanOneAJsonConstructor ()
+        {
+            const string src = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson]
+    public class TwoMarked
+    {
+        [AJsonConstructor] public TwoMarked (int count) { }
+        [AJsonConstructor] public TwoMarked (string count) { }
+        public int Count { get; set; }
+    }
+
+    [OptimizeAJson]
+    public struct TwoMarkedStruct
+    {
+        [AJsonConstructor] public TwoMarkedStruct (int count) { Count = count; }
+        [AJsonConstructor] public TwoMarkedStruct (long count) { Count = (int)count; }
+        public int Count { get; }
+    }
+}";
+            GeneratorDriverRunResult result = RunGenerator(src);
+            Diagnostic[] ajson005 = result.Diagnostics.Where(d => d.Id == "AJSON005").ToArray();
+            Assert.AreEqual(2, ajson005.Length);
+            Assert.IsTrue(ajson005.All(d => d.Severity == DiagnosticSeverity.Error));
+            Assert.IsFalse(result.Diagnostics.Any(d => d.Id == "AJSON001"), "AJSON005 already says what is wrong");
+        }
+
+        [TestMethod]
+        public void Generator_ReportsAJSON006_OnAParameterThatMatchesNoProperty ()
+        {
+            const string src = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson]
+    public class Unmatched
+    {
+        [AJsonConstructor] public Unmatched (int COUNT, string stray = ""x"") { Count = COUNT; }
+        public int Count { get; }
+    }
+}";
+            GeneratorDriverRunResult result = RunGenerator(src);
+            Diagnostic[] ajson006 = result.Diagnostics.Where(d => d.Id == "AJSON006").ToArray();
+            Assert.AreEqual(1, ajson006.Length, "COUNT matches Count, ignoring case; stray matches nothing");
+            Assert.AreEqual(DiagnosticSeverity.Warning, ajson006[0].Severity);
+            StringAssert.Contains(ajson006[0].GetMessage(), "'stray'");
+        }
+
+        [TestMethod]
+        public void Generator_ReportsAJSON007_WhenADeclaredDefaultDiffersFromTheOmitValue ()
+        {
+            // Values that agree once they are the parameter's type are not a mismatch: 5 and 5L for a long, 0.1 and 0.1f for a float
+            const string src = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    public enum eMode { Calm, Busy }
+
+    [OptimizeAJson]
+    public class Defaults
+    {
+        [AJsonConstructor]
+        public Defaults (int differs = 3, long sameWider = 5, float sameFloat = 0.1f, eMode sameEnum = eMode.Busy)
+        {
+            Differs = differs;
+            SameWider = sameWider;
+            SameFloat = sameFloat;
+            SameEnum = sameEnum;
+        }
+
+        [JsonOmitIfDefault(9)] public int Differs { get; }
+        [JsonOmitIfDefault(5)] public long SameWider { get; }
+        [JsonOmitIfDefault(0.1)] public float SameFloat { get; }
+        [JsonOmitIfDefault(eMode.Busy)] public eMode SameEnum { get; }
+    }
+}";
+            GeneratorDriverRunResult result = RunGenerator(src);
+            Diagnostic[] ajson007 = result.Diagnostics.Where(d => d.Id == "AJSON007").ToArray();
+            Assert.AreEqual(1, ajson007.Length, string.Join("\n", ajson007.Select(d => d.GetMessage())));
+            Assert.AreEqual(DiagnosticSeverity.Warning, ajson007[0].Severity);
+            StringAssert.Contains(ajson007[0].GetMessage(), "'differs'");
         }
 
         [TestMethod]
