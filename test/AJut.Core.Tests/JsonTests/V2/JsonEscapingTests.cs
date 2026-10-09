@@ -1,6 +1,7 @@
 namespace AJut.Core.UnitTests.AJsonV2
 {
     using System;
+    using System.Text;
     using AJut.Text.AJson;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -51,6 +52,24 @@ namespace AJut.Core.UnitTests.AJsonV2
             Json json = JsonHelper.ParseText(text);
             Assert.IsFalse(json.HasErrors, json.GetErrorReport() + "\nText:\n" + text);
             Assert.AreEqual("1", ((JsonDocument)json.Data).ValueFor(kKey)?.StringValue, text);
+        }
+
+        [TestMethod]
+        public void Escape_NonDefaultQuoteChar_IsEscaped ()
+        {
+            // A quote char other than the default gets escaped like the default one would be, and
+            //  the double quote still gets its usual escape
+            StringBuilder output = new StringBuilder();
+            JsonStringEscaping.AppendEscaped(output, "it's \"x\"", '\'');
+            Assert.AreEqual("it\\'s \\\"x\\\"", output.ToString());
+        }
+
+        [TestMethod]
+        public void Escape_NothingToEscape_AppendsAsIs ()
+        {
+            StringBuilder output = new StringBuilder();
+            JsonStringEscaping.AppendEscaped(output, "plain text, no escapes", '"');
+            Assert.AreEqual("plain text, no escapes", output.ToString());
         }
 
         // ===========================[ Valid JSON ]===================================

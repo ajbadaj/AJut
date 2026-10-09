@@ -1,6 +1,7 @@
 namespace AJut.Text.AJson
 {
     using System;
+    using System.Buffers;
     using System.Globalization;
     using System.Text;
 
@@ -11,6 +12,10 @@ namespace AJut.Text.AJson
     internal static class JsonStringEscaping
     {
         private const int kUnicodeEscapeDigits = 4;
+        private const int kFirstPrintableChar = ' ';
+
+        // Every json string escapes these: the quote, the backslash and every control character
+        private static readonly SearchValues<char> kAlwaysEscaped = SearchValues.Create(BuildAlwaysEscaped());
 
         // ===============================[ Public Interface Methods ]===========================
         /// <summary>
@@ -121,18 +126,35 @@ namespace AJut.Text.AJson
         }
 
         // ===============================[ Helper Methods ]===========================
+        // Runs on every string value and property name the writer puts out, and most of them need
+        //  no escaping at all, so the search is a vectorized SearchValues scan rather than a loop
+        //  over each char. A quote char other than the default needs its own search, but only up to
+        //  the first char that already has to be escaped.
         private static int IndexOfFirstToEscape (string value, char quoteChar)
         {
-            for (int index = 0; index < value.Length; ++index)
+            ReadOnlySpan<char> text = value.AsSpan();
+            int first = text.IndexOfAny(kAlwaysEscaped);
+            if (quoteChar == '"')
             {
-                char c = value[index];
-                if (c < ' ' || c == '"' || c == '\\' || c == quoteChar)
-                {
-                    return index;
-                }
+                return first;
             }
 
-            return -1;
+            int searchLength = first == -1 ? text.Length : first;
+            int quoteIndex = text.Slice(0, searchLength).IndexOf(quoteChar);
+            return quoteIndex == -1 ? first : quoteIndex;
+        }
+
+        private static string BuildAlwaysEscaped ()
+        {
+            char[] chars = new char[kFirstPrintableChar + 2];
+            for (int index = 0; index < kFirstPrintableChar; ++index)
+            {
+                chars[index] = (char)index;
+            }
+
+            chars[kFirstPrintableChar] = '"';
+            chars[kFirstPrintableChar + 1] = '\\';
+            return new string(chars);
         }
 
         private static bool HasOnlyValidEscapes (ReadOnlySpan<char> raw, int firstBackslash)
