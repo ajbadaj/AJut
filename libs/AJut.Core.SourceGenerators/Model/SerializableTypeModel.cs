@@ -25,9 +25,29 @@ namespace AJut.Text.AJson.SourceGenerators.Model
 
         public bool IsValueType { get; init; }
 
+        /// <summary>
+        /// True when the generated reader builds the instance with new T(): the type has a non-private parameterless constructor,
+        /// or is a value type that marks no constructor with [AJsonConstructor].
+        /// </summary>
         public bool HasParameterlessConstructor { get; init; }
 
-        public bool HasAJsonConstructor { get; init; }
+        /// <summary>
+        /// True when the generated reader builds the instance through a constructor that takes <see cref="ConstructorParameters"/>:
+        /// the one marked [AJsonConstructor], or a record's positional constructor. False whenever <see cref="HasParameterlessConstructor"/>
+        /// is true, and when neither is, the type has no usable constructor (AJSON001 or AJSON005).
+        /// </summary>
+        public bool HasConstructorRoute { get; init; }
+
+        /// <summary>
+        /// True when the constructor route's constructor is not public, so the generated reader calls it through an
+        /// UnsafeAccessor rather than with new
+        /// </summary>
+        public bool ConstructsThroughAccessor { get; init; }
+
+        /// <summary>
+        /// The parameters of the constructor route, in order. Empty unless <see cref="HasConstructorRoute"/> is true.
+        /// </summary>
+        public IReadOnlyList<ConstructorParameterModel> ConstructorParameters { get; init; } = System.Array.Empty<ConstructorParameterModel>();
 
         /// <summary>
         /// When [JsonPropertyAsSelf] is on the type, the name of the property whose content

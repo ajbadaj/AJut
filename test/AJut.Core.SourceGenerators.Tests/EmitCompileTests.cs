@@ -1,6 +1,7 @@
 namespace AJut.Text.AJson.SourceGenerators.Tests
 {
     using System.Collections.Immutable;
+    using System.Globalization;
     using System.Linq;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
@@ -85,6 +86,62 @@ namespace TestNs
         }
 
         [TestMethod]
+        public void GeneratedCode_CompilesCleanly_WithThreeRuntimeTypeEvalProperties ()
+        {
+            // Each [JsonRuntimeTypeEval] read declares a local inside the reader's switch, and every case of a switch shares one
+            //  scope, so a second such property on one type is where the names collide
+            const string src = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    public abstract class Shape { }
+    public class Circle : Shape { public double Radius { get; set; } }
+    [OptimizeAJson]
+    public class ThreeHolder
+    {
+        [JsonRuntimeTypeEval] public Shape First { get; set; }
+        [JsonRuntimeTypeEval] public Shape Second { get; set; }
+        [JsonRuntimeTypeEval] public object Third { get; set; }
+    }
+}";
+            AssertCompilesCleanly(src);
+        }
+
+        [TestMethod]
+        public void GeneratedCode_CompilesCleanly_WithInitOnlyProperties ()
+        {
+            const string src = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson]
+    public class InitOnly
+    {
+        public int Count { get; init; }
+        public string Label { get; init; }
+    }
+}";
+            AssertCompilesCleanly(src);
+        }
+
+        [TestMethod]
+        public void GeneratedCode_CompilesCleanly_WithPositionalRecord ()
+        {
+            // A positional record's parameters become init-only properties
+            const string src = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson]
+    public record Pair (int Left, string Right)
+    {
+        public Pair () : this(0, null) { }
+    }
+}";
+            AssertCompilesCleanly(src);
+        }
+
+        [TestMethod]
         public void GeneratedCode_CompilesCleanly_WithPropertyAsSelf ()
         {
             const string src = @"
@@ -94,6 +151,91 @@ namespace TestNs
     [OptimizeAJson]
     [JsonPropertyAsSelf(""Inner"")]
     public class Elevator { public int Inner { get; set; } }
+}";
+            AssertCompilesCleanly(src);
+        }
+
+        [TestMethod]
+        public void GeneratedCode_CompilesCleanly_WithPropertyAsSelfInitOnly ()
+        {
+            const string src = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson]
+    [JsonPropertyAsSelf(""Inner"")]
+    public class InitElevator { public int Inner { get; init; } }
+}";
+            AssertCompilesCleanly(src);
+        }
+
+        [TestMethod]
+        public void GeneratedCode_CompilesCleanly_WithNumericOmitDefaultsOfEachWidth ()
+        {
+            const string src = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson]
+    public class Numbers
+    {
+        [JsonOmitIfDefault(2.5)] public double Ratio { get; set; }
+        [JsonOmitIfDefault(0.1f)] public float Scale { get; set; }
+        [JsonOmitIfDefault(5000000000L)] public long Big { get; set; }
+        [JsonOmitIfDefault(7u)] public uint Unsigned { get; set; }
+    }
+}";
+            AssertCompilesCleanly(src);
+        }
+
+        [TestMethod]
+        public void GeneratedCode_CompilesCleanly_WithFractionalOmitDefault_UnderACommaDecimalCulture ()
+        {
+            // The generator runs inside the build, under whatever culture the build machine has
+            const string src = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson]
+    public class Ratio { [JsonOmitIfDefault(2.5)] public double Value { get; set; } }
+}";
+            CultureInfo original = CultureInfo.CurrentCulture;
+            try
+            {
+                CultureInfo.CurrentCulture = new CultureInfo("de-DE");
+                AssertCompilesCleanly(src);
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = original;
+            }
+        }
+
+        [TestMethod]
+        public void GeneratedCode_CompilesCleanly_WithADoubleOmitValueOnAFloatProperty ()
+        {
+            // AJSON003 accepts any number for a numeric property, but a double does not convert to a float on its own
+            const string src = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson]
+    public class Scaled { [JsonOmitIfDefault(2.5)] public float Scale { get; set; } }
+}";
+            AssertCompilesCleanly(src);
+        }
+
+        [TestMethod]
+        public void GeneratedCode_CompilesCleanly_WithAnEnumOmitValueGivenAsItsNumber ()
+        {
+            // AJSON003 accepts an enum's underlying number, but only a constant zero converts to an enum on its own
+            const string src = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    public enum eAnchor { Left, Center, Right }
+    [OptimizeAJson]
+    public class Anchored { [JsonOmitIfDefault(1)] public eAnchor Anchor { get; set; } }
 }";
             AssertCompilesCleanly(src);
         }

@@ -1,6 +1,7 @@
 namespace AJut.Text.AJson
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// Public helper surface that the AJson source generator emits calls into. Lives here rather
@@ -14,6 +15,11 @@ namespace AJut.Text.AJson
     /// </remarks>
     public static class AJsonGenerationSupport
     {
+        /// <summary>
+        /// What the reflection path needs kept of a type it reads: the same as JsonHelper.BuildObjectForJson asks for
+        /// </summary>
+        private const DynamicallyAccessedMemberTypes kReadRequirements = DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;
+
         /// <summary>
         /// Generated writers call this first. Promotes the builder to a document if needed and
         /// writes the type-id header per the active builder settings. Returns the document
@@ -34,6 +40,16 @@ namespace AJut.Text.AJson
             }
 
             return doc;
+        }
+
+        /// <summary>
+        /// Generated readers call this to read a property's value. Same as <see cref="JsonHelper.BuildObjectForJson{T}(JsonValue, JsonInterpreterSettings)"/>,
+        /// except that errors from the read, including any nested inside it, go to <paramref name="owner"/> the way they do on the
+        /// reflection path, rather than being dropped.
+        /// </summary>
+        public static T ReadValue<[DynamicallyAccessedMembers(kReadRequirements)] T> (JsonValue value, JsonInterpreterSettings settings, Json owner)
+        {
+            return (T)JsonHelper.BuildObjectForJson(typeof(T), value, settings, owner);
         }
 
         /// <summary>

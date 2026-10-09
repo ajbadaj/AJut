@@ -5,7 +5,7 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
     using Microsoft.CodeAnalysis;
 
     /// <summary>
-    /// Walks an IAssemblySymbol and yields every public, non-abstract, non-interface type that
+    /// Walks an IAssemblySymbol and yields every public, non-abstract, non-static, non-interface type that
     /// is a serialization candidate. Used to expand the assembly-level [assembly: OptimizeAJson(typeof(...))]
     /// form into a per-type list the analyzer can process.
     /// </summary>
@@ -69,6 +69,13 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                 return false;
             }
             if (type.IsAbstract)
+            {
+                return false;
+            }
+            // A static class has no instances to serialize and can never have a constructor, so collecting one could only end in
+            //  AJSON001, failing the build of an assembly that opted in wholesale (AJU-1). Interfaces and delegates are already
+            //  left out by the TypeKind check below.
+            if (type.IsStatic)
             {
                 return false;
             }

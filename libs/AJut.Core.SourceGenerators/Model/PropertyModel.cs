@@ -44,6 +44,21 @@ namespace AJut.Text.AJson.SourceGenerators.Model
         public bool HasSetter { get; init; }
 
         /// <summary>
+        /// True if the setter is init-only, so the generated reader cannot assign it after construction and calls the setter through an UnsafeAccessor instead.
+        /// </summary>
+        public bool IsInitOnly { get; init; }
+
+        /// <summary>
+        /// Fully qualified name of the type that declares the setter. For a property inherited from a base class that is the base, which is what an UnsafeAccessor for the setter has to target.
+        /// </summary>
+        public string DeclaringTypeFullName { get; init; } = string.Empty;
+
+        /// <summary>
+        /// Metadata name of the setter ("set_Name"), which an UnsafeAccessor looks the setter up by. Empty when there is no setter.
+        /// </summary>
+        public string SetterName { get; init; } = string.Empty;
+
+        /// <summary>
         /// True if the property has an accessible getter. Write code skips properties without one.
         /// </summary>
         public bool HasGetter { get; init; }

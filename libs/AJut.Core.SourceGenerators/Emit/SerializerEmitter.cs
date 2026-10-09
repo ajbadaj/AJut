@@ -1,6 +1,7 @@
 namespace AJut.Text.AJson.SourceGenerators.Emit
 {
     using System.Collections.Generic;
+    using System.Linq;
     using System.Text;
     using AJut.Text.AJson.SourceGenerators.Model;
 
@@ -16,6 +17,11 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
     /// </remarks>
     internal static class SerializerEmitter
     {
+        /// <summary>
+        /// Name of the emitted UnsafeAccessor for a constructor route whose constructor is not public
+        /// </summary>
+        private const string kConstructorAccessor = "ConstructNonPublic";
+
         public static string Emit (SerializableTypeModel model)
         {
             CodeBuilder cb = new CodeBuilder();
@@ -45,9 +51,12 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
             cb.CloseBrace();
             cb.AppendLine();
 
+            List<ReadSlot> slots = CollectReadSlots(model);
             EmitWriteMethod(cb, model);
             cb.AppendLine();
-            EmitReadMethod(cb, model);
+            EmitReadMethod(cb, model, slots);
+            EmitInitOnlyAccessors(cb, model, slots);
+            EmitConstructorAccessor(cb, model);
 
             cb.CloseBrace();
             cb.CloseBrace();
@@ -108,9 +117,12 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
 
             if (needsOmitGuard)
             {
+                // The explicit value is cast to the property's type, since AJSON003 accepts any number for a numeric property and an
+                //  enum's underlying number for an enum, and neither a double into a float nor a nonzero number into an enum converts
+                //  on its own
                 string valueExpr = prop.IsNullable ? $"{accessor}.Value" : accessor;
                 string compareTo = prop.HasExplicitOmitDefault
-                    ? prop.ExplicitOmitDefaultLiteral
+                    ? $"({prop.UnderlyingTypeFullName})({prop.ExplicitOmitDefaultLiteral})"
                     : $"default({prop.UnderlyingTypeFullName})";
                 cb.AppendLine($"if (!global::System.Collections.Generic.EqualityComparer<{prop.UnderlyingTypeFullName}>.Default.Equals({valueExpr}, {compareTo}))");
                 cb.OpenBrace();
@@ -170,7 +182,7 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
         }
 
         // ===========================[ Read ]===========================
-        private static void EmitReadMethod (CodeBuilder cb, SerializableTypeModel model)
+        private static void EmitReadMethod (CodeBuilder cb, SerializableTypeModel model, List<ReadSlot> slots)
         {
             cb.AppendLine("public static global::System.Object Read(global::AJut.Text.AJson.JsonValue value, global::AJut.Text.AJson.JsonInterpreterSettings settings, global::AJut.Text.AJson.Json owner)");
             cb.OpenBrace();
@@ -180,18 +192,31 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
             // [JsonPropertyAsSelf] read-side: the json we have is the inner property's content; build instance + assign.
             if (!string.IsNullOrEmpty(model.PropertyAsSelfName))
             {
+                // With no parameterless constructor to build the type with, AJSON001 has already failed the build, and returning
+                //  null only keeps the output compiling
                 PropertyModel asSelfProp = FindProperty(model, model.PropertyAsSelfName);
-                if (asSelfProp != null && asSelfProp.HasSetter)
+                if (asSelfProp != null && asSelfProp.HasSetter && model.HasParameterlessConstructor)
                 {
-                    cb.AppendLine($"{model.FullyQualifiedTypeName} elevatedHost = new {model.FullyQualifiedTypeName}();");
+                    // An init-only inner property can only be set by an object initializer, so in that case the host is built after the inner value
+                    if (!asSelfProp.IsInitOnly)
+                    {
+                        cb.AppendLine($"{model.FullyQualifiedTypeName} elevatedHost = new {model.FullyQualifiedTypeName}();");
+                    }
                     cb.AppendLine("global::AJut.Text.AJson.JsonValue elevatedSource = value;");
                     cb.AppendLine("if (value is global::AJut.Text.AJson.JsonDocument legacyDoc)");
                     cb.OpenBrace();
                     cb.AppendLine($"global::AJut.Text.AJson.JsonValue legacyMatch = legacyDoc.ValueFor(\"{Escape(model.PropertyAsSelfName)}\");");
                     cb.AppendLine("if (legacyMatch != null) { elevatedSource = legacyMatch; }");
                     cb.CloseBrace();
-                    cb.AppendLine($"{asSelfProp.UnderlyingTypeFullName} elevatedInner = global::AJut.Text.AJson.JsonHelper.BuildObjectForJson<{asSelfProp.UnderlyingTypeFullName}>(elevatedSource, settings);");
-                    cb.AppendLine($"elevatedHost.{model.PropertyAsSelfName} = elevatedInner;");
+                    cb.AppendLine($"{asSelfProp.UnderlyingTypeFullName} elevatedInner = global::AJut.Text.AJson.AJsonGenerationSupport.ReadValue<{asSelfProp.UnderlyingTypeFullName}>(elevatedSource, settings, owner);");
+                    if (asSelfProp.IsInitOnly)
+                    {
+                        cb.AppendLine($"{model.FullyQualifiedTypeName} elevatedHost = new {model.FullyQualifiedTypeName} {{ {model.PropertyAsSelfName} = elevatedInner }};");
+                    }
+                    else
+                    {
+                        cb.AppendLine($"elevatedHost.{model.PropertyAsSelfName} = elevatedInner;");
+                    }
                     cb.AppendLine("return elevatedHost;");
                 }
                 else
@@ -208,18 +233,22 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
             cb.AppendLine("return null;");
             cb.CloseBrace();
 
-            // Construct instance.
-            if (model.HasParameterlessConstructor || model.IsValueType)
+            // Two forms. A type built through a constructor route, or with an init-only property to set, reads every key into a
+            //  local first, then builds the instance once (the constructor takes what it consumes) and sets the rest onto it. Any
+            //  other type keeps the direct form: build first, then assign each property as its key is read. Either way a key the
+            //  json does not have leaves its property as construction left it, initializer included, the same as the reflection path.
+            bool defersAssignments = model.HasConstructorRoute || slots.Any(s => s.Property.IsInitOnly);
+            if (defersAssignments)
             {
-                cb.AppendLine($"{model.FullyQualifiedTypeName} result = new {model.FullyQualifiedTypeName}();");
+                for (int index = 0; index < slots.Count; ++index)
+                {
+                    cb.AppendLine($"{slots[index].ValueType} {DeferredValue(index)} = default;");
+                    cb.AppendLine($"bool {DeferredFound(index)} = false;");
+                }
             }
             else
             {
-                // Fall back to ConstructInstanceFor (the custom-constructor path) - the AJSON001
-                // diagnostic should have fired at compile time already, but keep the runtime path
-                // sound so the generated code at least compiles.
-                cb.AppendLine($"{model.FullyQualifiedTypeName} result = ({model.FullyQualifiedTypeName})settings.ConstructInstanceFor(typeof({model.FullyQualifiedTypeName}), value, owner);");
-                cb.AppendLine("if (result == null) { return null; }");
+                EmitConstruction(cb, model, slots);
             }
 
             // Property-by-property switch on the json key.
@@ -228,10 +257,58 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
             cb.AppendLine("switch (kvp.Key)");
             cb.OpenBrace();
 
+            for (int index = 0; index < slots.Count; ++index)
+            {
+                PropertyModel prop = slots[index].Property;
+
+                // Every case of a switch shares one scope, so each case body gets a block of its own. Without it, any local a read
+                //  declares (the runtime type eval read declares one) collides with the next property on the type that declares it.
+                cb.AppendLine($"case \"{Escape(prop.JsonKey)}\":");
+                cb.OpenBrace();
+                if (defersAssignments)
+                {
+                    EmitPropertyRead(cb, prop, slots[index].ValueType, DeferredValue(index), DeferredFound(index));
+                }
+                else
+                {
+                    EmitPropertyRead(cb, prop, prop.TypeFullName, $"result.{prop.Name}", null);
+                }
+                cb.AppendLine("break;");
+                cb.CloseBrace();
+            }
+            cb.CloseBrace();   // closes switch
+            cb.CloseBrace();   // closes foreach
+
+            if (defersAssignments)
+            {
+                EmitConstruction(cb, model, slots);
+
+                // Everything the constructor did not take goes onto the one instance
+                for (int index = 0; index < slots.Count; ++index)
+                {
+                    if (!slots[index].IsConsumed)
+                    {
+                        EmitSetIfFound(cb, model, slots[index], index);
+                    }
+                }
+            }
+
+            cb.AppendLine("return result;");
+            cb.CloseBrace();
+        }
+
+        /// <summary>
+        /// The json keys the generated reader reads, in model order, one per key (the first property that has it): every property
+        /// the constructor route consumes, and every other property with a setter, init-only included
+        /// </summary>
+        private static List<ReadSlot> CollectReadSlots (SerializableTypeModel model)
+        {
             HashSet<string> emittedKeys = new HashSet<string>();
+            List<ReadSlot> output = new List<ReadSlot>();
             foreach (PropertyModel prop in model.Properties)
             {
-                if (!prop.HasSetter)
+                ConstructorParameterModel consumer = model.ConstructorParameters.FirstOrDefault(p => p.PropertyName == prop.Name);
+                if (consumer == null && !prop.HasSetter)
                 {
                     continue;
                 }
@@ -239,19 +316,188 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
                 {
                     continue;
                 }
-                cb.AppendLine($"case \"{Escape(prop.JsonKey)}\":");
-                cb.IndentBlock(() =>
-                {
-                    EmitPropertyRead(cb, prop);
-                    cb.AppendLine("break;");
-                });
-            }
-            cb.CloseBrace();   // closes switch
-            cb.CloseBrace();   // closes foreach
 
-            cb.AppendLine("return result;");
+                output.Add(new ReadSlot(prop, consumer?.TypeFullName ?? prop.TypeFullName, consumer != null));
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Declares result and builds it. In the deferred form this comes after the key switch, so the constructor route's
+        /// arguments are already in their locals.
+        /// </summary>
+        private static void EmitConstruction (CodeBuilder cb, SerializableTypeModel model, List<ReadSlot> slots)
+        {
+            string typeName = model.FullyQualifiedTypeName;
+            cb.AppendLine($"{typeName} result;");
+
+            // No usable constructor. AJSON001 or AJSON005 has already failed the build, so this only keeps the output compiling.
+            //  ConstructInstanceFor tries a registered custom constructor first itself.
+            if (!model.HasParameterlessConstructor && !model.HasConstructorRoute)
+            {
+                cb.AppendLine($"global::System.Object constructed = settings.ConstructInstanceFor(typeof({typeName}), value, owner);");
+                cb.AppendLine("if (constructed == null) { return null; }");
+                cb.AppendLine($"result = ({typeName})constructed;");
+                return;
+            }
+
+            // A constructor registered with the settings wins, the same as on the reflection path, where ConstructInstanceFor
+            //  tries it first. This reader runs before ConstructInstanceFor would, so it has to ask on its own.
+            cb.AppendLine($"if (settings.TryConstructWithCustomConstructor(typeof({typeName}), value, owner, out global::System.Object customInstance))");
+            cb.OpenBrace();
+            cb.AppendLine("if (customInstance == null) { return null; }");
+            cb.AppendLine($"result = ({typeName})customInstance;");
+
+            // The registered constructor consumed nothing, so a property the route would have passed to the constructor is set
+            //  like any other: init-only through its accessor, settable directly, get-only not at all. One whose parameter takes
+            //  a different type is skipped too, since its key was read as the parameter's type, not the property's.
+            for (int index = 0; index < slots.Count; ++index)
+            {
+                ReadSlot slot = slots[index];
+                if (slot.IsConsumed
+                    && slot.Property.HasSetter
+                    && slot.ValueType == slot.Property.TypeFullName)
+                {
+                    EmitSetIfFound(cb, model, slot, index);
+                }
+            }
+            cb.CloseBrace();
+            cb.AppendLine("else");
+            cb.OpenBrace();
+            if (model.HasConstructorRoute)
+            {
+                EmitRouteConstruction(cb, model, slots);
+            }
+            else
+            {
+                cb.AppendLine($"result = new {typeName}();");
+            }
             cb.CloseBrace();
         }
+
+        private static void EmitRouteConstruction (CodeBuilder cb, SerializableTypeModel model, List<ReadSlot> slots)
+        {
+            IReadOnlyList<ConstructorParameterModel> parameters = model.ConstructorParameters;
+            string construct = model.ConstructsThroughAccessor ? kConstructorAccessor : $"new {model.FullyQualifiedTypeName}";
+            if (parameters.Count == 0)
+            {
+                cb.AppendLine($"result = {construct}();");
+                return;
+            }
+
+            cb.AppendLine($"result = {construct}(");
+            cb.IndentBlock(() =>
+            {
+                for (int index = 0; index < parameters.Count; ++index)
+                {
+                    string separator = index < parameters.Count - 1 ? "," : string.Empty;
+                    cb.AppendLine(ArgumentFor(parameters[index], slots) + separator);
+                }
+            });
+            cb.AppendLine(");");
+        }
+
+        /// <summary>
+        /// The value read for the parameter's property if its key was there, else the parameter's missing-key value
+        /// </summary>
+        private static string ArgumentFor (ConstructorParameterModel parameter, List<ReadSlot> slots)
+        {
+            for (int index = 0; index < slots.Count; ++index)
+            {
+                if (slots[index].IsConsumed && slots[index].Property.Name == parameter.PropertyName)
+                {
+                    return $"{DeferredFound(index)} ? {DeferredValue(index)} : {parameter.MissingValueExpression}";
+                }
+            }
+
+            return parameter.MissingValueExpression;
+        }
+
+        private static void EmitSetIfFound (CodeBuilder cb, SerializableTypeModel model, ReadSlot slot, int index)
+        {
+            if (slot.Property.IsInitOnly)
+            {
+                string target = model.IsValueType ? "ref result" : "result";
+                cb.AppendLine($"if ({DeferredFound(index)}) {{ {InitOnlyAccessor(index)}({target}, {DeferredValue(index)}); }}");
+            }
+            else
+            {
+                cb.AppendLine($"if ({DeferredFound(index)}) {{ result.{slot.Property.Name} = {DeferredValue(index)}; }}");
+            }
+        }
+
+        /// <summary>
+        /// Emits an UnsafeAccessor for the setter of each init-only property the reader sets
+        /// </summary>
+        private static void EmitInitOnlyAccessors (CodeBuilder cb, SerializableTypeModel model, List<ReadSlot> slots)
+        {
+            // Setting an init-only property once the instance exists, with UnsafeAccessor.
+            //
+            // An init accessor can only be called from an object initializer, a with expression, or a constructor or init accessor
+            //  of the type itself. The compiler enforces that (CS8852), not the runtime: in IL an init accessor is an ordinary
+            //  setter whose return type carries modreq(IsExternalInit), and the modreq only stops compilers. Generated code is plain
+            //  C#, so once the instance exists, "result.Prop = value;" does not compile.
+            //
+            // [UnsafeAccessor] (System.Runtime.CompilerServices, new in .NET 8) declares an extern static method that the runtime
+            //  binds to a member of another type by name, here the setter "set_Prop", without the accessibility check or the
+            //  compiler's init rule. The runtime supplies the body, which calls the setter directly: no reflection, no delegate. The
+            //  first parameter is the instance, by ref for a struct so the setter writes into the caller's copy, and its type has to
+            //  be the type that declares the setter, which for an inherited property is the base class.
+            //
+            // The other way is to build the instance a second time with an object initializer (or a with expression for a record)
+            //  that copies everything across. That runs the constructor twice, with any side effects it has, allocates a second
+            //  instance of a class, and needs a parameterless constructor or a record to rebuild with. The accessor builds once and
+            //  sets in place, which is also what the reflection path does through PropertyInfo.SetValue.
+            //
+            // When it is wrong: it needs .NET 8, which AJut.Core already requires, so every consumer has it. It has been run on
+            //  .NET 8, 9 and 10 against a class, a struct, a record's positional property and a property inherited from a base
+            //  class. A generic declaring type (a property inherited from Base<T>) has not been, and UnsafeAccessor's support for
+            //  generics only arrived in .NET 9, so that case may need another route.
+            //
+            // https://learn.microsoft.com/dotnet/api/system.runtime.compilerservices.unsafeaccessorattribute
+            for (int index = 0; index < slots.Count; ++index)
+            {
+                PropertyModel prop = slots[index].Property;
+                if (!prop.IsInitOnly)
+                {
+                    continue;
+                }
+
+                string target = model.IsValueType ? $"ref {prop.DeclaringTypeFullName} target" : $"{prop.DeclaringTypeFullName} target";
+                cb.AppendLine();
+                cb.AppendLine($"[global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = \"{prop.SetterName}\")]");
+                cb.AppendLine($"private static extern void {InitOnlyAccessor(index)}({target}, {prop.TypeFullName} value);");
+            }
+        }
+
+        /// <summary>
+        /// Emits an UnsafeAccessor for the constructor route's constructor, when it is not public
+        /// </summary>
+        private static void EmitConstructorAccessor (CodeBuilder cb, SerializableTypeModel model)
+        {
+            // A marked constructor can have any accessibility. The reflection path calls it with ConstructorInfo.Invoke, which
+            //  does not check, but generated code is plain C# and cannot name a private or protected constructor, nor a protected
+            //  one of a type opted in from a referenced assembly. UnsafeAccessorKind.Constructor binds an extern static method to
+            //  the type's constructor with the same parameter types, and calling it builds and returns a new instance, the same as
+            //  new does, for a struct as well as a class. A private or internal constructor of a type in a referenced assembly
+            //  never gets here: the compiler does not import those members, so the generator never sees one and AJSON001 reports
+            //  the type. EmitInitOnlyAccessors says what UnsafeAccessor is and where it stops being the right tool.
+            if (!model.ConstructsThroughAccessor)
+            {
+                return;
+            }
+
+            IReadOnlyList<ConstructorParameterModel> parameters = model.ConstructorParameters;
+            string signature = string.Join(", ", parameters.Select((p, index) => $"{p.TypeFullName} arg{index}"));
+            cb.AppendLine();
+            cb.AppendLine("[global::System.Runtime.CompilerServices.UnsafeAccessor(global::System.Runtime.CompilerServices.UnsafeAccessorKind.Constructor)]");
+            cb.AppendLine($"private static extern {model.FullyQualifiedTypeName} {kConstructorAccessor}({signature});");
+        }
+
+        private static string DeferredValue (int index) => $"deferredValue{index}";
+        private static string DeferredFound (int index) => $"deferredFound{index}";
+        private static string InitOnlyAccessor (int index) => $"SetInitOnly{index}";
 
         private static PropertyModel FindProperty (SerializableTypeModel model, string name)
         {
@@ -265,22 +511,28 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
             return null;
         }
 
-        private static void EmitPropertyRead (CodeBuilder cb, PropertyModel prop)
+        /// <param name="cb">The code being built</param>
+        /// <param name="prop">The property being read</param>
+        /// <param name="readType">The type the value is read as: the property's, or a constructor parameter's when the constructor route consumes it</param>
+        /// <param name="assignTo">Where the value goes: the property itself, or a local when the type's assignments are deferred</param>
+        /// <param name="foundFlag">The local that records the key was read, or null when the value goes straight to the property</param>
+        private static void EmitPropertyRead (CodeBuilder cb, PropertyModel prop, string readType, string assignTo, string foundFlag)
         {
+            string markFound = foundFlag == null ? string.Empty : $" {foundFlag} = true;";
             switch (prop.Kind)
             {
                 case ePropertyKind.RuntimeTypeEval:
                     cb.AppendLine($"global::System.Object rteRead = global::AJut.Text.AJson.AJsonGenerationSupport.ReadRuntimeTypeEvalProperty(kvp.Value, settings, owner);");
-                    cb.AppendLine($"if (rteRead != null) {{ result.{prop.Name} = ({prop.TypeFullName})rteRead; }}");
+                    cb.AppendLine($"if (rteRead != null) {{ {assignTo} = ({readType})rteRead;{markFound} }}");
                     break;
                 default:
                     if (prop.IsNullable)
                     {
-                        cb.AppendLine($"result.{prop.Name} = global::AJut.Text.AJson.JsonHelper.BuildObjectForJson<{prop.TypeFullName}>(kvp.Value, settings);");
+                        cb.AppendLine($"{assignTo} = global::AJut.Text.AJson.AJsonGenerationSupport.ReadValue<{readType}>(kvp.Value, settings, owner);{markFound}");
                     }
                     else
                     {
-                        cb.AppendLine($"result.{prop.Name} = global::AJut.Text.AJson.JsonHelper.BuildObjectForJson<{prop.TypeFullName}>(kvp.Value, settings);");
+                        cb.AppendLine($"{assignTo} = global::AJut.Text.AJson.AJsonGenerationSupport.ReadValue<{readType}>(kvp.Value, settings, owner);{markFound}");
                     }
                     break;
             }
@@ -307,6 +559,33 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
                 }
             }
             return sb.ToString();
+        }
+
+        // ===========================[ Subclasses/structs ]===========================
+        /// <summary>
+        /// One json key the generated reader reads. Its position in the list names its locals and its init-only accessor.
+        /// </summary>
+        private sealed class ReadSlot
+        {
+            public ReadSlot (PropertyModel property, string valueType, bool isConsumed)
+            {
+                this.Property = property;
+                this.ValueType = valueType;
+                this.IsConsumed = isConsumed;
+            }
+
+            public PropertyModel Property { get; }
+
+            /// <summary>
+            /// The type the key is read as: the constructor parameter's for a property the constructor route consumes, the
+            /// property's own otherwise
+            /// </summary>
+            public string ValueType { get; }
+
+            /// <summary>
+            /// True when the constructor route passes this property's value to the constructor, rather than setting it afterwards
+            /// </summary>
+            public bool IsConsumed { get; }
         }
     }
 }

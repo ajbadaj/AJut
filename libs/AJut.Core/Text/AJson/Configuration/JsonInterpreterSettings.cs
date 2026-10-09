@@ -165,14 +165,36 @@ namespace AJut.Text.AJson
         /// Construct an instance of the given type from the passed in json. Owner Json (if any)
         /// receives error reports from delegate constructors instead of throwing.
         /// </summary>
+        /// <remarks>
+        /// In order: a constructor registered with <see cref="RegisterCustomConstructor{T}"/> or <see cref="Add"/>, then the
+        /// type's constructor route (see <see cref="AJsonConstructorAttribute"/>), then a parameterless constructor.
+        /// </remarks>
         public object ConstructInstanceFor ([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type, JsonValue jsonValue, Json owner = null)
         {
-            foreach (KeyValuePair<Type, JsonToObjectConstructor> kvp in m_customConstructors)
+            return this.ConstructInstanceFor(type, jsonValue, owner, out _);
+        }
+
+        /// <summary>
+        /// Builds an instance exactly as <see cref="ConstructInstanceFor(Type, JsonValue, Json)"/> does, and also reports the json
+        /// keys a constructor route took as arguments, so the property fill that follows can leave them alone instead of
+        /// overwriting what the constructor did with those values
+        /// </summary>
+        /// <param name="type">The type to build</param>
+        /// <param name="jsonValue">The json the instance is built from</param>
+        /// <param name="owner">Receives errors, if given</param>
+        /// <param name="keysConsumedByConstructor">The json keys a constructor route took as arguments, which the property fill after
+        /// construction must leave alone; null when the instance was built any other way</param>
+        internal object ConstructInstanceFor ([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type, JsonValue jsonValue, Json owner, out IReadOnlySet<string> keysConsumedByConstructor)
+        {
+            keysConsumedByConstructor = null;
+            if (this.TryConstructWithCustomConstructor(type, jsonValue, owner, out object custom))
             {
-                if (type.TargetsSameTypeAs(kvp.Key))
-                {
-                    return kvp.Value(type, jsonValue, this, owner);
-                }
+                return custom;
+            }
+
+            if (AJsonConstructorRoute.TryConstruct(type, jsonValue, this, owner, out object routed, out keysConsumedByConstructor))
+            {
+                return routed;
             }
 
             if (type == typeof(string))
@@ -181,6 +203,32 @@ namespace AJut.Text.AJson
             }
 
             return AJutActivator.CreateInstanceOf(type);
+        }
+
+        /// <summary>
+        /// Builds <paramref name="type"/> with a constructor registered for it through <see cref="RegisterCustomConstructor{T}"/>
+        /// or <see cref="Add"/>, if there is one. Generated readers call this before building the type themselves, so a registered
+        /// constructor wins on both paths.
+        /// </summary>
+        /// <remarks>
+        /// A registered constructor also wins over one marked [AJsonConstructor]. The first time that happens for a type, it is
+        /// logged as a warning.
+        /// </remarks>
+        /// <returns>True if a registered constructor matched the type and built <paramref name="instance"/>, false otherwise</returns>
+        public bool TryConstructWithCustomConstructor (Type type, JsonValue jsonValue, Json owner, out object instance)
+        {
+            foreach (KeyValuePair<Type, JsonToObjectConstructor> kvp in m_customConstructors)
+            {
+                if (type.TargetsSameTypeAs(kvp.Key))
+                {
+                    instance = kvp.Value(type, jsonValue, this, owner);
+                    AJsonConstructorRoute.NoteCustomConstructorWon(type);
+                    return true;
+                }
+            }
+
+            instance = null;
+            return false;
         }
     }
 }
