@@ -186,10 +186,13 @@
         {
             if (e.PropertyName == String.Empty)
             {
+                // Nothing is active after a clear. Left pointing at the old layer, the next write below it would look hidden and
+                //  raise nothing. Caches are cleared before ValueChanged goes out, so listeners read the cleared state.
                 this.IsBaselineSet = false;
                 this.IsSet = false;
-                this.TriggerValueChanged();
+                this.ActiveLayerIndex = kUnsetLayerIndex;
                 this.OnClearAllTriggered();
+                this.TriggerValueChanged();
                 return;
             }
 
@@ -225,10 +228,9 @@
             void _UpdateIsSetAndTopMost ()
             {
                 bool isSet = this.IsSet;
-                if (this.IsSet = this.ODAM.TryFindActiveLayer(this.PropertyName, out int activeLayer))
-                {
-                    this.ActiveLayerIndex = activeLayer;
-                }
+                // With no layer left holding a value, nothing is active, the same as after a clear
+                this.IsSet = this.ODAM.TryFindActiveLayer(this.PropertyName, out int activeLayer);
+                this.ActiveLayerIndex = this.IsSet ? activeLayer : kUnsetLayerIndex;
 
                 if (this.IsSet != isSet)
                 {
