@@ -195,7 +195,7 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
                     cb.AppendLine($"global::AJut.Text.AJson.JsonValue legacyMatch = legacyDoc.ValueFor(\"{Escape(model.PropertyAsSelfName)}\");");
                     cb.AppendLine("if (legacyMatch != null) { elevatedSource = legacyMatch; }");
                     cb.CloseBrace();
-                    cb.AppendLine($"{asSelfProp.UnderlyingTypeFullName} elevatedInner = global::AJut.Text.AJson.JsonHelper.BuildObjectForJson<{asSelfProp.UnderlyingTypeFullName}>(elevatedSource, settings);");
+                    cb.AppendLine($"{asSelfProp.UnderlyingTypeFullName} elevatedInner = global::AJut.Text.AJson.AJsonGenerationSupport.ReadValue<{asSelfProp.UnderlyingTypeFullName}>(elevatedSource, settings, owner);");
                     if (asSelfProp.IsInitOnly)
                     {
                         cb.AppendLine($"{model.FullyQualifiedTypeName} elevatedHost = new {model.FullyQualifiedTypeName} {{ {model.PropertyAsSelfName} = elevatedInner }};");
@@ -394,11 +394,11 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
                 default:
                     if (prop.IsNullable)
                     {
-                        cb.AppendLine($"{assignTo} = global::AJut.Text.AJson.JsonHelper.BuildObjectForJson<{prop.TypeFullName}>(kvp.Value, settings);{markFound}");
+                        cb.AppendLine($"{assignTo} = global::AJut.Text.AJson.AJsonGenerationSupport.ReadValue<{prop.TypeFullName}>(kvp.Value, settings, owner);{markFound}");
                     }
                     else
                     {
-                        cb.AppendLine($"{assignTo} = global::AJut.Text.AJson.JsonHelper.BuildObjectForJson<{prop.TypeFullName}>(kvp.Value, settings);{markFound}");
+                        cb.AppendLine($"{assignTo} = global::AJut.Text.AJson.AJsonGenerationSupport.ReadValue<{prop.TypeFullName}>(kvp.Value, settings, owner);{markFound}");
                     }
                     break;
             }
