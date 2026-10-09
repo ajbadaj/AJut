@@ -668,6 +668,15 @@ namespace AJut.Text.AJson
                 {
                     attrDefault = Enum.ToObject(propertyType, attrDefault);
                 }
+                // A number of another width (2.5 given for a float) is converted to the value's own type, the same cast the
+                //  generated writer emits, or the two would disagree about whether to omit it
+                else if (attrDefault != null
+                    && (attrDefault.GetType() != value.GetType())
+                    && (attrDefault is IConvertible)
+                    && value.GetType().IsPrimitive)
+                {
+                    attrDefault = Convert.ChangeType(attrDefault, value.GetType(), System.Globalization.CultureInfo.InvariantCulture);
+                }
                 return Equals(value, attrDefault);
             }
 
