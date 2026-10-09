@@ -284,7 +284,7 @@ namespace AJut.Text.AJson
 
             if (sourceJsonValue.IsDocument && concreteType != type)
             {
-                outputInstance = AJutActivator.CreateInstanceOf(concreteType);
+                outputInstance = settings.ConstructInstanceFor(concreteType, sourceJsonValue, owner);
             }
             else if (sourceJsonValue.IsArray)
             {
