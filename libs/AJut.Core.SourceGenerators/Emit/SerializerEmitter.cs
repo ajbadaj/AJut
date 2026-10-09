@@ -111,9 +111,12 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
 
             if (needsOmitGuard)
             {
+                // The explicit value is cast to the property's type, since AJSON003 accepts any number for a numeric property and an
+                //  enum's underlying number for an enum, and neither a double into a float nor a nonzero number into an enum converts
+                //  on its own
                 string valueExpr = prop.IsNullable ? $"{accessor}.Value" : accessor;
                 string compareTo = prop.HasExplicitOmitDefault
-                    ? prop.ExplicitOmitDefaultLiteral
+                    ? $"({prop.UnderlyingTypeFullName})({prop.ExplicitOmitDefaultLiteral})"
                     : $"default({prop.UnderlyingTypeFullName})";
                 cb.AppendLine($"if (!global::System.Collections.Generic.EqualityComparer<{prop.UnderlyingTypeFullName}>.Default.Equals({valueExpr}, {compareTo}))");
                 cb.OpenBrace();
