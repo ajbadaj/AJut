@@ -129,6 +129,29 @@ namespace AJut.Core.UnitTests.AJsonV2
         }
 
         [TestMethod]
+        public void Old_InvalidEscapeAnywhere_MarksTheWholeDocumentAsOldText ()
+        {
+            // \U and \d are not JSON escapes, so this text predates escaping. Its other string has
+            //  only backslashes that look like escapes (\t, \n), and has to be read as written too
+            Json json = JsonHelper.ParseText("{ \"a\": \"C:\\Users\\data\", \"b\": \"C:\\temp\\new\" }");
+            Assert.IsFalse(json.HasErrors, json.GetErrorReport());
+
+            JsonDocument doc = (JsonDocument)json.Data;
+            Assert.AreEqual(@"C:\Users\data", doc.ValueFor("a")?.StringValue);
+            Assert.AreEqual(@"C:\temp\new", doc.ValueFor("b")?.StringValue);
+        }
+
+        [TestMethod]
+        public void Old_InvalidEscapeInNestedDocument_MarksTheWholeTextAsOldText ()
+        {
+            Json json = JsonHelper.ParseText("{ \"outer\": { \"a\": \"C:\\Users\\data\" }, \"list\": [ \"C:\\temp\\new\" ] }");
+            Assert.IsFalse(json.HasErrors, json.GetErrorReport());
+
+            JsonArray list = (JsonArray)((JsonDocument)json.Data).ValueFor("list");
+            Assert.AreEqual(@"C:\temp\new", list[0].StringValue);
+        }
+
+        [TestMethod]
         public void Old_EscapedQuotes_Read ()
         {
             Assert.AreEqual("say \"hi\"", ReadText("{ \"Text\": \"say \\\"hi\\\"\" }"));
