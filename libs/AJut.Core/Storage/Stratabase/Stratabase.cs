@@ -142,8 +142,11 @@
         // ----------------- Clear -----------------
 
         /// <summary>
-        /// Clear the entire <see cref="Stratabase"/>, optionally notify of the removals
+        /// Clear the entire <see cref="Stratabase"/>. Each cleared id raises one removal with an empty property name.
         /// </summary>
+        /// <param name="notifyOfRemovals">When false, <see cref="BaselineDataChanged"/> and <see cref="OverrideDataChanged"/> are not raised for the
+        /// clear. Property access objects still see it, so they never report a cleared value as set; this is the same meaning
+        /// <see cref="ImportIntoOverrideLayer"/> gives its notifyOfChanges.</param>
         public void ClearAll (bool notifyOfRemovals = true)
         {
             foreach (var odam in m_objectAccess.Values.ToList())
@@ -153,8 +156,12 @@
         }
 
         /// <summary>
-        /// Clear the <see cref="Stratabase"/> of all properties associated to the given <paramref name="id"/>, optionally notify of the removals
+        /// Clear the <see cref="Stratabase"/> of all properties associated to the given <paramref name="id"/>, raising one removal with an
+        /// empty property name
         /// </summary>
+        /// <param name="id">The id to clear</param>
+        /// <param name="notifyOfRemovals">When false, <see cref="BaselineDataChanged"/> and <see cref="OverrideDataChanged"/> are not raised for the
+        /// clear. Property access objects still see it, the same meaning <see cref="ImportIntoOverrideLayer"/> gives its notifyOfChanges.</param>
         public void ClearAllFor (Guid id, bool notifyOfRemovals = true)
         {
             this.GetAccessManager(id)?.ClearAll(notifyOfRemovals);
@@ -1240,16 +1247,17 @@
                 //          up the property access flyweights, and unhooking them would be a futile operation.
                 // ===================================================================================================
 
-                if (notifyOfRemovals)
-                {
-                    this.LayerDataRemoved?.Invoke(this,
-                        new StratabasePropertyChangeEventArgs
-                        {
-                            ItemId = this.Id,
-                            PropertyName = String.Empty,
-                        }
-                    );
-                }
+                // One event for the whole id, with an empty property name, raised once the values are gone. Access objects
+                //  always hear it, since they cache what is set and would otherwise keep reporting values that are gone.
+                //  notifyOfRemovals only decides whether the store-wide events go out, the same as an import's notifyOfChanges.
+                this.LayerDataRemoved?.Invoke(this,
+                    new StratabasePropertyChangeEventArgs
+                    {
+                        ItemId = this.Id,
+                        PropertyName = String.Empty,
+                        SuppressStoreEvents = !notifyOfRemovals,
+                    }
+                );
             }
 
             /// <summary>
