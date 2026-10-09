@@ -1,9 +1,11 @@
 namespace AJut.Core.UnitTests
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Reflection;
     using AJut.OS.Windows;
     using AJut.Storage;
     using AJut.Text.AJson.Legacy;
@@ -1303,6 +1305,376 @@ namespace AJut.Core.UnitTests
         }
 
         [TestMethod]
+        public void Stratabase_ListAccess_WholeListSetIntoTheActiveOverrideLayer_RefreshesElements ()
+        {
+            // The list access caches its elements, and only reloaded them when the active layer moved, so a new list landing in
+            //  the layer that was already active never reached Elements (AJU-37)
+            Stratabase sb = new Stratabase(2);
+            Guid id = Guid.NewGuid();
+            sb.SetOverridePropertyValue(0, id, "List", new List<int> { 1, 2 });
+            StrataPropertyListAccess<int> access = sb.GenerateListPropertyAccess<int>(id, "List");
+            Assert.AreEqual(0, access.ActiveLayerIndex);
+            CollectionAssert.AreEqual(new[] { 1, 2 }, access.Elements.ToArray());
+
+            sb.SetOverridePropertyValue(0, id, "List", new List<int> { 7, 8, 9 });
+
+            CollectionAssert.AreEqual(new[] { 7, 8, 9 }, access.Elements.ToArray(), "Elements still holds the list the layer had before");
+        }
+
+        [TestMethod]
+        public void Stratabase_ListAccess_WholeListSetIntoTheActiveBaseline_RefreshesElements ()
+        {
+            Stratabase sb = new Stratabase(1);
+            Guid id = Guid.NewGuid();
+            sb.SetBaselinePropertyValue(id, "List", new List<int> { 1 });
+            StrataPropertyListAccess<int> access = sb.GenerateListPropertyAccess<int>(id, "List");
+            Assert.IsTrue(access.IsActiveLayerBaseline);
+
+            sb.SetBaselinePropertyValue(id, "List", new List<int> { 5, 6 });
+
+            CollectionAssert.AreEqual(new[] { 5, 6 }, access.Elements.ToArray(), "Elements still holds the list the baseline had before");
+        }
+
+        [TestMethod]
+        public void Stratabase_ListAccess_ElementsAreCurrentWhenValueChangedIsRaised ()
+        {
+            // A listener reads Elements from its ValueChanged handler, so the cache has to be current before the event goes out
+            Stratabase sb = new Stratabase(2);
+            Guid id = Guid.NewGuid();
+            sb.SetOverridePropertyValue(0, id, "List", new List<int> { 1, 2 });
+            StrataPropertyListAccess<int> access = sb.GenerateListPropertyAccess<int>(id, "List");
+            int[] seenInHandler = null;
+            access.ValueChanged += _OnValueChanged;
+
+            sb.SetOverridePropertyValue(0, id, "List", new List<int> { 4 });
+
+            access.ValueChanged -= _OnValueChanged;
+            Assert.IsNotNull(seenInHandler, "ValueChanged was not raised");
+            CollectionAssert.AreEqual(new[] { 4 }, seenInHandler, "Elements was stale inside the ValueChanged handler");
+
+            void _OnValueChanged (object sender, EventArgs e)
+            {
+                seenInHandler = access.Elements.ToArray();
+            }
+        }
+
+        [TestMethod]
+        public void Stratabase_ListAccess_CreatedOverABaselineAndAHigherOverride_ShowsTheActiveLayer ()
+        {
+            // The initial load read the baseline whenever one was set, without checking which layer is active (AJU-37)
+            Stratabase sb = new Stratabase(1);
+            Guid id = Guid.NewGuid();
+            sb.SetBaselinePropertyValue(id, "List", new List<int> { 1 });
+            sb.SetOverridePropertyValue(0, id, "List", new List<int> { 2, 3 });
+
+            StrataPropertyListAccess<int> access = sb.GenerateListPropertyAccess<int>(id, "List");
+
+            Assert.AreEqual(0, access.ActiveLayerIndex);
+            CollectionAssert.AreEqual(new[] { 2, 3 }, access.Elements.ToArray(), "Elements shows the baseline's list under an active override");
+        }
+
+        [TestMethod]
+        public void Stratabase_AccessManagers_AreReleasedWhenTheirAccessesAre ()
+        {
+            // Access managers were only released when nothing was subscribed to them, and the store subscribes to every one, so every
+            //  id ever accessed kept a manager for the life of the store (AJU-39)
+            const int kIdCount = 100;
+            Stratabase sb = new Stratabase(1);
+            Assert.AreEqual(0, CountAccessManagers(sb));
+
+            for (int index = 0; index < kIdCount; ++index)
+            {
+                StrataPropertyValueAccess<int> access = sb.GeneratePropertyAccess<int>(Guid.NewGuid(), "Value");
+                access.Dispose();
+            }
+
+            Assert.AreEqual(0, CountAccessManagers(sb), $"{kIdCount} ids were accessed and every access released");
+        }
+
+        [TestMethod]
+        public void Stratabase_AccessManagers_AreReleasedWhenTheirIdsAreCleared ()
+        {
+            const int kIdCount = 100;
+            Stratabase sb = new Stratabase(1);
+
+            for (int index = 0; index < kIdCount; ++index)
+            {
+                Guid id = Guid.NewGuid();
+                sb.SetBaselinePropertyValue(id, "Value", index);
+                sb.ClearAllFor(id);
+            }
+
+            Assert.AreEqual(0, CountAccessManagers(sb), $"{kIdCount} ids were written and then cleared, with no access to any of them");
+        }
+
+        [TestMethod]
+        public void Stratabase_ListAccess_DisposeUnhooksEveryAccessManagerEvent ()
+        {
+            // An access manager outlives its accesses, so any handler a disposed access leaves on it keeps that access alive too
+            Stratabase sb = new Stratabase(1);
+            Guid id = Guid.NewGuid();
+            sb.SetBaselinePropertyValue(id, "List", new List<int> { 1 });
+            StrataPropertyListAccess<int> access = sb.GenerateListPropertyAccess<int>(id, "List");
+            Stratabase.ObjectDataAccessManager manager = sb.GetAccessManager(id);
+
+            access.Dispose();
+
+            foreach (string eventName in new[] { "LayerDataSet", "LayerDataRemoved", "LayerListElementsChanged", "LayerListElementsCleared" })
+            {
+                FieldInfo eventField = typeof(Stratabase.ObjectDataAccessManager).GetField(eventName, BindingFlags.NonPublic | BindingFlags.Instance);
+                Assert.IsNotNull(eventField, $"ObjectDataAccessManager.{eventName} was renamed; update this test");
+
+                Delegate handlers = (Delegate)eventField.GetValue(manager);
+                bool isStillHooked = handlers?.GetInvocationList().Any(h => ReferenceEquals(h.Target, access)) ?? false;
+                Assert.IsFalse(isStillHooked, $"the disposed list access is still subscribed to {eventName}");
+            }
+        }
+
+        [TestMethod]
+        public void Stratabase_ClearAll_NotificationsOff_KeepsAccessObjectsInSync ()
+        {
+            // With notifications off only the store-wide events stay quiet, the same as a silent import. Access objects cache
+            //  whether a property is set, so one that misses the clear keeps reporting a value that is gone.
+            Stratabase sb = new Stratabase(1);
+            Guid id = Guid.NewGuid();
+            sb.SetBaselinePropertyValue(id, "Value", 3);
+            sb.SetOverridePropertyValue(0, id, "Value", 4);
+            StrataPropertyValueAccess<int> access = sb.GeneratePropertyAccess<int>(id, "Value");
+            int storeEventCount = 0, valueChangedCount = 0;
+            sb.BaselineDataChanged += _OnBaselineDataChanged;
+            sb.OverrideDataChanged += _OnOverrideDataChanged;
+            access.ValueChanged += _OnValueChanged;
+
+            sb.ClearAll(notifyOfRemovals: false);
+
+            sb.BaselineDataChanged -= _OnBaselineDataChanged;
+            sb.OverrideDataChanged -= _OnOverrideDataChanged;
+            access.ValueChanged -= _OnValueChanged;
+
+            Assert.AreEqual(0, storeEventCount, "the store-wide events stay quiet");
+            Assert.IsFalse(access.IsSet, "the access object still reports the cleared value as set");
+            Assert.AreEqual(1, valueChangedCount, "the access object raises its own ValueChanged");
+
+            void _OnBaselineDataChanged (object sender, BaselineStratumModificationEventArgs e) => ++storeEventCount;
+            void _OnOverrideDataChanged (object sender, OverrideStratumModificationEventArgs e) => ++storeEventCount;
+            void _OnValueChanged (object sender, EventArgs e) => ++valueChangedCount;
+        }
+
+        [TestMethod]
+        public void Stratabase_ClearAllFor_NotificationsOff_ClearsListAccessElements ()
+        {
+            Stratabase sb = new Stratabase(1);
+            Guid id = Guid.NewGuid();
+            Guid otherId = Guid.NewGuid();
+            sb.SetBaselinePropertyValue(id, "List", new List<int> { 1, 2 });
+            sb.SetBaselinePropertyValue(otherId, "List", new List<int> { 5 });
+            StrataPropertyListAccess<int> list = sb.GenerateListPropertyAccess<int>(id, "List");
+            StrataPropertyListAccess<int> otherList = sb.GenerateListPropertyAccess<int>(otherId, "List");
+
+            sb.ClearAllFor(id, notifyOfRemovals: false);
+
+            Assert.AreEqual(0, list.Elements.Count, "the list access still holds the cleared elements");
+            Assert.IsFalse(list.IsSet, "the list access still reports the cleared list as set");
+            CollectionAssert.AreEqual(new[] { 5 }, otherList.Elements.ToArray(), "another id was touched by the clear");
+        }
+
+        [TestMethod]
+        public void Stratabase_ClearAllFor_RaisesOneEmptyPropertyEventOnceTheValuesAreGone ()
+        {
+            // Listeners rely on this shape: one store event per cleared id, with an empty property name, raised after the values
+            //  are already gone, never one event per property
+            Stratabase sb = new Stratabase(1);
+            Guid id = Guid.NewGuid();
+            sb.SetBaselinePropertyValue(id, "First", 1);
+            sb.SetBaselinePropertyValue(id, "Second", 2);
+            sb.SetOverridePropertyValue(0, id, "First", 10);
+            var seen = new List<string>();
+            bool wasStillStoredDuringEvent = false;
+            sb.BaselineDataChanged += _OnBaselineDataChanged;
+            sb.OverrideDataChanged += _OnOverrideDataChanged;
+
+            sb.ClearAllFor(id);
+
+            sb.BaselineDataChanged -= _OnBaselineDataChanged;
+            sb.OverrideDataChanged -= _OnOverrideDataChanged;
+
+            CollectionAssert.AreEqual(new[] { String.Empty }, seen, "expected exactly one event, with an empty property name");
+            Assert.IsFalse(wasStillStoredDuringEvent, "the event was raised before the values were removed");
+
+            void _OnBaselineDataChanged (object sender, BaselineStratumModificationEventArgs e) => _Record(e.ItemId, e.PropertyName);
+            void _OnOverrideDataChanged (object sender, OverrideStratumModificationEventArgs e) => _Record(e.ItemId, e.PropertyName);
+            void _Record (Guid itemId, string propertyName)
+            {
+                Assert.AreEqual(id, itemId);
+                seen.Add(propertyName);
+                wasStillStoredDuringEvent |= sb.Contains(id);
+            }
+        }
+
+        [TestMethod]
+        public void Stratabase_WritingAnIdAgainAfterClearAllFor_RaisesTheStoreEvent ()
+        {
+            // An id can come back after it was cleared, and listeners of the store-wide events have to hear about it
+            Stratabase sb = new Stratabase(1);
+            Guid id = Guid.NewGuid();
+            sb.SetOverridePropertyValue(0, id, "Value", 1);
+            sb.ClearAllFor(id);
+            var seen = new List<string>();
+            sb.OverrideDataChanged += _OnOverrideDataChanged;
+
+            sb.SetOverridePropertyValue(0, id, "Value", 2);
+
+            sb.OverrideDataChanged -= _OnOverrideDataChanged;
+            CollectionAssert.AreEqual(new[] { "Value" }, seen);
+
+            void _OnOverrideDataChanged (object sender, OverrideStratumModificationEventArgs e) => seen.Add(e.PropertyName);
+        }
+
+        [TestMethod]
+        public void Stratabase_DeserializedStore_TryGetReadsStoredValues ()
+        {
+            // A freshly deserialized store holds values but no access managers yet, so nothing that reads may depend on one
+            Guid id = Guid.NewGuid();
+            Stratabase source = new Stratabase(1);
+            source.SetBaselinePropertyValue(id, "Name", "stored");
+            source.SetOverridePropertyValue(0, id, "Count", 3);
+            source.SetBaselinePropertyValue(id, "List", new List<int> { 7, 8 });
+
+            Stratabase loaded = Stratabase.DeserializeFromJson(source.SerializeToJson());
+
+            Assert.IsTrue(loaded.TryGetBaselinePropertyValue(id, "Name", out string name), "a stored baseline value was not found");
+            Assert.AreEqual("stored", name);
+            Assert.IsTrue(loaded.TryGetOverridePropertyValue(0, id, "Count", out int count), "a stored override value was not found");
+            Assert.AreEqual(3, count);
+            Assert.IsTrue(loaded.TryGetBaselineElementValue(id, "List", 1, out int element), "a stored list element was not found");
+            Assert.AreEqual(8, element);
+            Assert.AreEqual(2, loaded.GetElementCountInBaseline(id, "List"));
+        }
+
+        [TestMethod]
+        public void Stratabase_DeserializedStore_ClearAllClearsAndNotifies ()
+        {
+            Guid first = Guid.NewGuid(), second = Guid.NewGuid();
+            Stratabase source = new Stratabase(1);
+            source.SetBaselinePropertyValue(first, "Value", 1);
+            source.SetOverridePropertyValue(0, second, "Value", 2);
+            Stratabase loaded = Stratabase.DeserializeFromJson(source.SerializeToJson());
+            var cleared = new List<Guid>();
+            loaded.BaselineDataChanged += _OnBaselineDataChanged;
+
+            loaded.ClearAll();
+
+            loaded.BaselineDataChanged -= _OnBaselineDataChanged;
+            Assert.IsFalse(loaded.Contains(first), "ClearAll left a stored baseline value in place");
+            Assert.IsFalse(loaded.Contains(second), "ClearAll left a stored override value in place");
+            CollectionAssert.AreEquivalent(new[] { first, second }, cleared, "expected one clear event per stored id");
+
+            void _OnBaselineDataChanged (object sender, BaselineStratumModificationEventArgs e)
+            {
+                if (e.WasPropertyRemoved && e.PropertyName == String.Empty)
+                {
+                    cleared.Add(e.ItemId);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void Stratabase_DeserializedStore_SetObjectWithPropertiesFillsTheObject ()
+        {
+            var data = new TestData { Name = "loaded", Value = 9 };
+            Stratabase source = new Stratabase(1);
+            source.SetBaselineFromPropertiesOf(data);
+            Stratabase loaded = Stratabase.DeserializeFromJson(source.SerializeToJson());
+
+            var found = new TestData(data.Id);
+            loaded.SetObjectWithProperties(data.Id, ref found);
+
+            Assert.AreEqual("loaded", found.Name, "nothing was set on the object");
+            Assert.AreEqual(9, found.Value);
+        }
+
+        [TestMethod]
+        public void Stratabase_AccessAfterClearAllFor_HearsTheNextWrite ()
+        {
+            // A clear has to leave the access with no active layer: one still pointing at the layer it last saw treats a later
+            //  write below that layer as hidden, and raises nothing for it
+            Stratabase sb = new Stratabase(1);
+            Guid id = Guid.NewGuid();
+            sb.SetOverridePropertyValue(0, id, "Value", 1);
+            StrataPropertyValueAccess<int> access = sb.GeneratePropertyAccess<int>(id, "Value");
+            Assert.AreEqual(0, access.ActiveLayerIndex);
+            sb.ClearAllFor(id);
+            int valueChangedCount = 0;
+            access.ValueChanged += _OnValueChanged;
+
+            sb.SetBaselinePropertyValue(id, "Value", 5);
+
+            access.ValueChanged -= _OnValueChanged;
+            Assert.AreEqual(1, valueChangedCount, "the baseline write after the clear raised no ValueChanged");
+            Assert.IsTrue(access.IsActiveLayerBaseline);
+            Assert.AreEqual(5, access.GetValue());
+
+            void _OnValueChanged (object sender, EventArgs e) => ++valueChangedCount;
+        }
+
+        [TestMethod]
+        public void Stratabase_ListAccessAfterClearAllFor_ShowsTheNextBaselineList ()
+        {
+            Stratabase sb = new Stratabase(1);
+            Guid id = Guid.NewGuid();
+            sb.SetOverridePropertyValue(0, id, "List", new List<int> { 1 });
+            StrataPropertyListAccess<int> list = sb.GenerateListPropertyAccess<int>(id, "List");
+            sb.ClearAllFor(id);
+
+            sb.SetBaselinePropertyValue(id, "List", new List<int> { 4, 5 });
+
+            CollectionAssert.AreEqual(new[] { 4, 5 }, list.Elements.ToArray(), "the list access did not pick up the list written after the clear");
+        }
+
+        [TestMethod]
+        public void Stratabase_ClearingTheActiveLayer_RaisesValueChangedAsALowerLayerTakesOver ()
+        {
+            // The property is still set, by the baseline, but its value changed, and listeners read on ValueChanged
+            Stratabase sb = new Stratabase(1);
+            Guid id = Guid.NewGuid();
+            sb.SetBaselinePropertyValue(id, "Value", 1);
+            sb.SetOverridePropertyValue(0, id, "Value", 2);
+            StrataPropertyValueAccess<int> access = sb.GeneratePropertyAccess<int>(id, "Value");
+            int valueChangedCount = 0;
+            access.ValueChanged += _OnValueChanged;
+
+            sb.ClearPropertyOverride(0, id, "Value");
+
+            access.ValueChanged -= _OnValueChanged;
+            Assert.AreEqual(1, valueChangedCount, "clearing the active layer let the baseline show through without a ValueChanged");
+            Assert.IsTrue(access.IsActiveLayerBaseline);
+            Assert.AreEqual(1, access.GetValue());
+
+            void _OnValueChanged (object sender, EventArgs e) => ++valueChangedCount;
+        }
+
+        [TestMethod]
+        public void Stratabase_AccessAfterItsLastValueIsCleared_HearsTheNextWrite ()
+        {
+            Stratabase sb = new Stratabase(1);
+            Guid id = Guid.NewGuid();
+            sb.SetOverridePropertyValue(0, id, "Value", 1);
+            StrataPropertyValueAccess<int> access = sb.GeneratePropertyAccess<int>(id, "Value");
+            sb.ClearPropertyOverride(0, id, "Value");
+            Assert.IsFalse(access.IsSet);
+            int valueChangedCount = 0;
+            access.ValueChanged += _OnValueChanged;
+
+            sb.SetBaselinePropertyValue(id, "Value", 5);
+
+            access.ValueChanged -= _OnValueChanged;
+            Assert.AreEqual(1, valueChangedCount, "the baseline write after the last value was cleared raised no ValueChanged");
+            Assert.AreEqual(5, access.GetValue());
+
+            void _OnValueChanged (object sender, EventArgs e) => ++valueChangedCount;
+        }
+
+        [TestMethod]
         public void Stratabase_EnsureListElementType_NullInsertionAtFirstElementWorks ()
         {
             Stratabase sb = new Stratabase(1);
@@ -1348,6 +1720,16 @@ namespace AJut.Core.UnitTests
             Child castedChild = value as Child;
             Assert.IsNotNull(castedChild);
             Assert.AreSame(child, castedChild);
+        }
+
+        /// <summary>
+        /// How many access managers the store holds, read from its private map so the count needs nothing added to the store itself
+        /// </summary>
+        private static int CountAccessManagers (Stratabase sb)
+        {
+            FieldInfo objectAccess = typeof(Stratabase).GetField("m_objectAccess", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.IsNotNull(objectAccess, "Stratabase.m_objectAccess was renamed; update this test");
+            return ((IDictionary)objectAccess.GetValue(sb)).Count;
         }
 
         public class DotClassStore

@@ -23,26 +23,27 @@
         {
             this.ODAM.LayerListElementsChanged += this.OnLayerListElementsChanged;
             this.ODAM.LayerListElementsCleared += this.OnLayerListCleared;
-            this.ResetElementsFromActive();
+            this.ReloadElementsFromActiveLayer();
             this.Elements = new ReadOnlyObservableCollection<TElement>(m_currentListCache);
         }
 
-        private void ResetElementsFromActive ()
+        /// <summary>
+        /// Replaces the cached elements with the list stored in the active layer. The active layer decides, not whether a baseline
+        /// is set: a baseline under a higher override is not what this property reads (AJU-37). When the active layer holds no
+        /// list of <typeparamref name="TElement"/>, the cache is left as it is.
+        /// </summary>
+        private void ReloadElementsFromActiveLayer ()
         {
-            m_currentListCache.Clear();
-            if (this.IsSet)
+            List<TElement> listTracker = null;
+            bool foundList = this.IsActiveLayerBaseline
+                ? this.ODAM.TryGetBaselineValue(this.PropertyName, out listTracker)
+                : (this.ActiveLayerIndex >= 0 && this.ODAM.TryGetOverrideValue(this.ActiveLayerIndex, this.PropertyName, out listTracker));
+
+            if (foundList)
             {
-                if (this.IsBaselineSet)
-                {
-                    if (this.ODAM.TryGetBaselineValue(this.PropertyName, out List<TElement> listTracker))
-                    {
-                        m_currentListCache.AddEach(listTracker);
-                    }
-                }
-                else if (this.ODAM.TryGetOverrideValue(this.ActiveLayerIndex, this.PropertyName, out List<TElement> listTracker))
-                {
-                    m_currentListCache.AddEach(listTracker);
-                }
+                // TODO: It would be nice to take a more surgical approach
+                m_currentListCache.Clear();
+                m_currentListCache.AddEach(listTracker);
             }
         }
 
@@ -96,27 +97,21 @@
             base.OnActiveLayerChanged(formerActiveLayer);
             if (this.ActiveLayerIndex != kUnsetLayerIndex)
             {
-                if (this.IsActiveLayerBaseline)
-                {
-                    if (this.ODAM.TryGetBaselineValue(this.PropertyName, out List<TElement> listTracker))
-                    {
-                        // TODO: It would be nice to take a more surgical approach
-                        m_currentListCache.Clear();
-                        m_currentListCache.AddEach(listTracker);
-                    }
-                }
-                else if (this.ODAM.TryGetOverrideValue(this.ActiveLayerIndex, this.PropertyName, out List<TElement> listTracker))
-                {
-                    // TODO: It would be nice to take a more surgical approach
-                    m_currentListCache.Clear();
-                    m_currentListCache.AddEach(listTracker);
-                }
+                this.ReloadElementsFromActiveLayer();
             }
+        }
+
+        protected override void OnActiveLayerValueReplaced ()
+        {
+            // A whole new list in the layer that was already active: the index did not move, so OnActiveLayerChanged never ran (AJU-37)
+            base.OnActiveLayerValueReplaced();
+            this.ReloadElementsFromActiveLayer();
         }
 
         protected override void HandleAdditionalDispose ()
         {
             this.ODAM.LayerListElementsChanged -= this.OnLayerListElementsChanged;
+            this.ODAM.LayerListElementsCleared -= this.OnLayerListCleared;
         }
 
         /// <summary>

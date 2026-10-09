@@ -24,6 +24,7 @@
 
             this.ODAM.LayerDataSet += this.OnLayerDataSet;
             this.ODAM.LayerDataRemoved += this.OnLayerDataRemoved;
+            this.ODAM.HandleAccessAttached();
 
             if (this.IsSet = this.ODAM.TryFindActiveLayer(this.PropertyName, out int activeLayer))
             {
@@ -112,6 +113,12 @@
         protected virtual void OnOverrideLayerChanged (int layerIndex, T oldValue, T newValue) { }
         protected virtual void OnClearAllTriggered () { }
 
+        /// <summary>
+        /// The active layer stayed the same, but the value stored in it was replaced. Called before <see cref="ValueChanged"/> is
+        /// raised, so anything cached from the active layer can be refreshed before listeners read it.
+        /// </summary>
+        protected virtual void OnActiveLayerValueReplaced () { }
+
         // ===============================[ Utility Methods ]=======================================
 
         protected void TriggerValueChanged ()
@@ -134,6 +141,7 @@
                 // If it's already the baseline layer, then we just need to trigger the value has changed
                 if (this.ActiveLayerIndex == kBaselineLayerIndex)
                 {
+                    this.OnActiveLayerValueReplaced();
                     this.TriggerValueChanged();
                 }
                 // If it's unset, then we need to move to the baseline layer and trigger value changed
@@ -152,7 +160,17 @@
             {
                 if (e.LayerIndex >= this.ActiveLayerIndex)
                 {
-                    this.ActiveLayerIndex = e.LayerIndex;
+                    // Setting the index to the layer it already is raises nothing, so a new value in the active layer is
+                    //  reported separately for anything that caches it
+                    if (e.LayerIndex == this.ActiveLayerIndex)
+                    {
+                        this.OnActiveLayerValueReplaced();
+                    }
+                    else
+                    {
+                        this.ActiveLayerIndex = e.LayerIndex;
+                    }
+
                     this.TriggerValueChanged();
                 }
 
@@ -168,10 +186,13 @@
         {
             if (e.PropertyName == String.Empty)
             {
+                // Nothing is active after a clear. Left pointing at the old layer, the next write below it would look hidden and
+                //  raise nothing. Caches are cleared before ValueChanged goes out, so listeners read the cleared state.
                 this.IsBaselineSet = false;
                 this.IsSet = false;
-                this.TriggerValueChanged();
+                this.ActiveLayerIndex = kUnsetLayerIndex;
                 this.OnClearAllTriggered();
+                this.TriggerValueChanged();
                 return;
             }
 
@@ -207,12 +228,14 @@
             void _UpdateIsSetAndTopMost ()
             {
                 bool isSet = this.IsSet;
-                if (this.IsSet = this.ODAM.TryFindActiveLayer(this.PropertyName, out int activeLayer))
-                {
-                    this.ActiveLayerIndex = activeLayer;
-                }
+                int formerActiveLayer = this.ActiveLayerIndex;
 
-                if (this.IsSet != isSet)
+                // With no layer left holding a value, nothing is active, the same as after a clear
+                this.IsSet = this.ODAM.TryFindActiveLayer(this.PropertyName, out int activeLayer);
+                this.ActiveLayerIndex = this.IsSet ? activeLayer : kUnsetLayerIndex;
+
+                // The value changed if the property stopped being set, or if a lower layer now shows through
+                if ((this.IsSet != isSet) || (this.ActiveLayerIndex != formerActiveLayer))
                 {
                     this.TriggerValueChanged();
                 }

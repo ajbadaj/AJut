@@ -65,7 +65,6 @@ namespace AJut.Storage
                             ? _StratumToSaveData(sb.m_overrideStorageLayers[stratumIndex])
                             : null;
                 }
-                sb.m_overrideStorageLayers.Select(_StratumToSaveData).ToArray();
 
                 Dictionary<Guid, Dictionary<string, object>> _StratumToSaveData (Stratum _s)
                 {
