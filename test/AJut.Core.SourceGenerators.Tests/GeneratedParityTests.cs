@@ -68,6 +68,56 @@ namespace ParityNs
     public class ElevatedHolder { public Elevated Lifted { get; set; } }
 }";
 
+        // Types built through a constructor route, and types with init-only properties, which the generated reader sets through
+        //  UnsafeAccessors and the reflection path through PropertyInfo.SetValue
+        private const string kRouteFixture = @"
+using AJut.Text.AJson;
+namespace ParityRouteNs
+{
+    public enum eMode { Calm, Busy, Loud }
+
+    [OptimizeAJson]
+    public class Routed
+    {
+        [AJsonConstructor]
+        public Routed (string name, int size, eMode mode, int declared = 7)
+        {
+            Name = name;
+            Size = size;
+            Mode = mode;
+            Declared = declared;
+        }
+
+        public string Name { get; }
+        [JsonPropertyAlias(""sz"")] public int Size { get; }
+        [JsonOmitIfDefault(eMode.Busy)] public eMode Mode { get; }
+        [JsonOmitIfDefault] public int Declared { get; }
+        public string Label { get; init; } = ""unset"";
+        public double Ratio { get; set; }
+    }
+
+    [OptimizeAJson]
+    public record PositionalPair (int Left, string Right)
+    {
+        public string Note { get; init; } = ""unset"";
+    }
+
+    [OptimizeAJson]
+    public struct InitStruct
+    {
+        public int X { get; init; }
+        public string Label { get; init; }
+    }
+
+    [OptimizeAJson]
+    public class RouteHolder
+    {
+        public Routed First { get; set; }
+        public PositionalPair Second { get; set; }
+        public InitStruct Third { get; set; }
+    }
+}";
+
         [TestMethod]
         public void Generated_WritesAndReadsTheSameAsReflection ()
         {
@@ -133,6 +183,62 @@ namespace ParityNs
                 SetProperty(holder, "Lifted", elevated);
                 return holder;
             }
+        }
+
+        [TestMethod]
+        public void Generated_ConstructorRouteAndInitOnly_WritesAndReadsTheSameAsReflection ()
+        {
+            Assembly generated = FixtureAssemblies.LoadWithGeneratedSerializers(kRouteFixture, "Parity_Generated_Route");
+            Assembly reflection = FixtureAssemblies.LoadWithoutGenerator(kRouteFixture, "Parity_Reflection_Route");
+
+            object fromGenerated = _BuildHolder(generated);
+            Assert.IsTrue(AJsonGeneratedDispatch.TryGet(fromGenerated.GetType(), out _), "the generated fixture registered its serializer");
+            AssertSameJsonAndReadBack(fromGenerated, _BuildHolder(reflection));
+
+            static object _BuildHolder (Assembly _fixture)
+            {
+                // Mode sits at its omit value and Declared at zero, so the writer leaves both out and they read back through the
+                //  missing-key rule. Mode takes its omit value. Declared's [JsonOmitIfDefault] has no explicit value, so it takes
+                //  the parameter's declared default of 7 on both paths.
+                Type modeType = _fixture.GetType("ParityRouteNs.eMode", throwOnError: true)!;
+                object routed = Activator.CreateInstance(_fixture.GetType("ParityRouteNs.Routed", throwOnError: true)!, "routed", 12, Enum.ToObject(modeType, 1), 0)!;
+                SetProperty(routed, "Label", "labeled");
+                SetProperty(routed, "Ratio", 0.75);
+
+                object pair = Activator.CreateInstance(_fixture.GetType("ParityRouteNs.PositionalPair", throwOnError: true)!, 4, "four")!;
+                SetProperty(pair, "Note", "noted");
+
+                object initStruct = Activator.CreateInstance(_fixture.GetType("ParityRouteNs.InitStruct", throwOnError: true)!)!;
+                SetProperty(initStruct, "X", 9);
+                SetProperty(initStruct, "Label", "nine");
+
+                object holder = Activator.CreateInstance(_fixture.GetType("ParityRouteNs.RouteHolder", throwOnError: true)!)!;
+                SetProperty(holder, "First", routed);
+                SetProperty(holder, "Second", pair);
+                SetProperty(holder, "Third", initStruct);
+                return holder;
+            }
+        }
+
+        [TestMethod]
+        public void Generated_ConstructorRouteAndInitOnly_MissingKeysReadTheSameAsReflection ()
+        {
+            // Keys left out of hand-written json: constructor parameters take their missing-key values, and init-only and settable
+            //  properties stay as construction left them
+            Assembly generated = FixtureAssemblies.LoadWithGeneratedSerializers(kRouteFixture, "Parity_Generated_RouteMissing");
+            Assembly reflection = FixtureAssemblies.LoadWithoutGenerator(kRouteFixture, "Parity_Reflection_RouteMissing");
+            const string kSparse = "{ \"First\": { \"Name\": \"sparse\" }, \"Second\": { \"Right\": \"right only\" }, \"Third\": { \"Label\": \"label only\" } }";
+
+            Type generatedType = generated.GetType("ParityRouteNs.RouteHolder", throwOnError: true)!;
+            Type reflectionType = reflection.GetType("ParityRouteNs.RouteHolder", throwOnError: true)!;
+            Json forGenerated = JsonHelper.ParseText(kSparse);
+            Json forReflection = JsonHelper.ParseText(kSparse);
+            object generatedRead = JsonHelper.BuildObjectForJson(generatedType, forGenerated);
+            object reflectionRead = JsonHelper.BuildObjectForJson(reflectionType, forReflection);
+            Assert.IsFalse(forGenerated.HasErrors, forGenerated.GetErrorReport());
+            Assert.IsFalse(forReflection.HasErrors, forReflection.GetErrorReport());
+
+            AssertSameValue(reflectionRead, generatedRead, "$");
         }
 
         // ===========================[ Helpers ]===========================
