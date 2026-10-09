@@ -20,6 +20,18 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
+  <!-- Hold the .NET 8 runtime pack at 8.0.29, the same pin the WinUI showroom carries. The probe publishes self-contained
+       and trimmed, and the 8.0.30 pack a newer SDK selects never hands the build tools System.Private.CoreLib: the
+       trimmer dies with IL1007 "Missing predefined 'System.NotSupportedException' type" (the showroom saw the same
+       break as NETSDK1096 in ReadyToRun). The global.json SDK floor does not prevent it, since this is the pack the SDK
+       chooses. Take the pin off together with the showroom's, once a later 8.0.x builds clean. -->
+  <PropertyGroup>
+    <PinnedDotNetRuntimeVersion>8.0.29</PinnedDotNetRuntimeVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <KnownFrameworkReference Update="Microsoft.NETCore.App" LatestRuntimeFrameworkVersion="$(PinnedDotNetRuntimeVersion)" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\libs\AJut.Core\AJut.Core.csproj" />
     <ProjectReference Include="..\..\libs\AJut.Core.SourceGenerators\AJut.Core.SourceGenerators.csproj"
