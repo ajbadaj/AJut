@@ -134,6 +134,46 @@ namespace ConsumerNs { public class Unrelated { } }", "Driver_ForeignInternalCto
         }
 
         [TestMethod]
+        public void Generator_ReportsAJSON001_ForPropertyAsSelfWithNoParameterlessConstructor ()
+        {
+            // [JsonPropertyAsSelf] builds the type around the one property's value with a parameterless constructor, so a
+            //  constructor route does not satisfy it, and the generated code should not leave a compile error of its own
+            const string src = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson]
+    [JsonPropertyAsSelf(""Value"")]
+    public record Wrapped (int Value);
+
+    [OptimizeAJson]
+    [JsonPropertyAsSelf(""Value"")]
+    public class MarkedWrapper
+    {
+        [AJsonConstructor] public MarkedWrapper (int value) { Value = value; }
+        public int Value { get; set; }
+    }
+
+    [OptimizeAJson]
+    [JsonPropertyAsSelf(""Value"")]
+    public record WrappedWithParameterless (int Value)
+    {
+        public WrappedWithParameterless () : this(0) { }
+    }
+}";
+            CSharpCompilation compilation = TestCompilation.Build(src);
+            GeneratorDriverRunResult result = CSharpGeneratorDriver.Create(new AJsonSourceGenerator()).RunGenerators(compilation).GetRunResult();
+
+            string[] ajson001 = result.Diagnostics.Where(d => d.Id == "AJSON001").Select(d => d.GetMessage()).ToArray();
+            Assert.AreEqual(2, ajson001.Length, string.Join("\n", ajson001));
+            Assert.IsTrue(ajson001.Any(m => m.Contains("'Wrapped'") && m.Contains("[JsonPropertyAsSelf]")));
+            Assert.IsTrue(ajson001.Any(m => m.Contains("'MarkedWrapper'") && m.Contains("[JsonPropertyAsSelf]")));
+
+            Diagnostic[] compileErrors = compilation.AddSyntaxTrees(result.GeneratedTrees).GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ToArray();
+            Assert.AreEqual(0, compileErrors.Length, string.Join("\n", compileErrors.Select(d => $"{d.Id}: {d.GetMessage()}")));
+        }
+
+        [TestMethod]
         public void Generator_ReportsAJSON005_OnMoreThanOneAJsonConstructor ()
         {
             const string src = @"

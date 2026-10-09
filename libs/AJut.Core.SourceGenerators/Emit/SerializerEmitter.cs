@@ -192,8 +192,10 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
             // [JsonPropertyAsSelf] read-side: the json we have is the inner property's content; build instance + assign.
             if (!string.IsNullOrEmpty(model.PropertyAsSelfName))
             {
+                // With no parameterless constructor to build the type with, AJSON001 has already failed the build, and returning
+                //  null only keeps the output compiling
                 PropertyModel asSelfProp = FindProperty(model, model.PropertyAsSelfName);
-                if (asSelfProp != null && asSelfProp.HasSetter)
+                if (asSelfProp != null && asSelfProp.HasSetter && model.HasParameterlessConstructor)
                 {
                     // An init-only inner property can only be set by an object initializer, so in that case the host is built after the inner value
                     if (!asSelfProp.IsInitOnly)

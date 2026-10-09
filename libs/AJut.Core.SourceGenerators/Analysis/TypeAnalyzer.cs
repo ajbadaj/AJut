@@ -106,7 +106,18 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                     diagnostics.Add(Diagnostic.Create(
                         Diagnostics.MissingParameterlessConstructor,
                         typeSymbol.Locations.FirstOrDefault(),
-                        typeSymbol.Name));
+                        typeSymbol.Name,
+                        "it has no parameterless constructor, no constructor marked [AJsonConstructor], and is not a record with a positional constructor"));
+                }
+                // [JsonPropertyAsSelf] reads the json as the one property's value, and both paths build the type around it with a
+                //  parameterless constructor, so a constructor route does not help it
+                else if (asSelfPropName.Length > 0)
+                {
+                    diagnostics.Add(Diagnostic.Create(
+                        Diagnostics.MissingParameterlessConstructor,
+                        typeSymbol.Locations.FirstOrDefault(),
+                        typeSymbol.Name,
+                        "[JsonPropertyAsSelf] builds it with a parameterless constructor, and it has none"));
                 }
             }
 

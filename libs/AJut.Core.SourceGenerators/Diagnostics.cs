@@ -15,7 +15,7 @@ namespace AJut.Text.AJson.SourceGenerators
         public static readonly DiagnosticDescriptor MissingParameterlessConstructor = new DiagnosticDescriptor(
             id: "AJSON001",
             title: "AJson optimized type has no usable constructor",
-            messageFormat: "Type '{0}' is opted into AJson optimization but has no parameterless constructor, no constructor marked [AJsonConstructor], and is not a record with a positional constructor",
+            messageFormat: "Type '{0}' is opted into AJson optimization but has no usable constructor: {1}",
             category: kCategory,
             defaultSeverity: DiagnosticSeverity.Error,
             isEnabledByDefault: true);

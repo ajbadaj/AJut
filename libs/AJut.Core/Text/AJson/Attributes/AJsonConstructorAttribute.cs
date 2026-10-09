@@ -26,6 +26,10 @@ namespace AJut.Text.AJson
     /// </list>
     /// </para>
     /// <para>
+    /// A type with <see cref="JsonPropertyAsSelfAttribute"/> is the exception: both paths build it with its parameterless
+    /// constructor, so it needs one (AJSON001 for an [OptimizeAJson] type).
+    /// </para>
+    /// <para>
     /// The marked constructor can have any accessibility. The generated reader calls one that is not public through an
     /// UnsafeAccessor. The exception is a private or internal constructor on a type from a referenced assembly, opted in with
     /// the assembly-wide [OptimizeAJson]: the compiler does not import those members from another assembly, so the generator never
