@@ -188,7 +188,10 @@
         /// <returns>True if the property was found and cleared, false otherwise.</returns>
         public bool ClearPropertyBaseline (Guid id, string property)
         {
-            return this.EnsureDataAccess(id).ObliteratePropertyStorageInBaseline(property);
+            ObjectDataAccessManager odam = this.EnsureDataAccess(id);
+            bool wasCleared = odam.ObliteratePropertyStorageInBaseline(property);
+            this.ReleaseAccessManagerIfUnused(odam);
+            return wasCleared;
         }
 
         /// <summary>
@@ -197,7 +200,10 @@
         /// <returns>True if the property was found and cleared, false otherwise.</returns>
         public bool ClearPropertyOverride (int layer, Guid id, string property)
         {
-            return this.EnsureDataAccess(id).ObliteratePropertyStorageInLayer(layer, property);
+            ObjectDataAccessManager odam = this.EnsureDataAccess(id);
+            bool wasCleared = odam.ObliteratePropertyStorageInLayer(layer, property);
+            this.ReleaseAccessManagerIfUnused(odam);
+            return wasCleared;
         }
 
         // ----------------- Set From Properties of Object -----------------
@@ -772,6 +778,55 @@
             odam.LayerDataSet += this.Odam_LayerDataSet;
         }
 
+        /// <summary>
+        /// Releases an access manager once no property access object is attached to it and its id holds no value in any layer, so the
+        /// store only keeps managers for ids that hold data or are being watched, however many ids come and go (AJU-39). A manager
+        /// an access object holds is never released. Property bags left with nothing in them go with it.
+        /// </summary>
+        private void ReleaseAccessManagerIfUnused (ObjectDataAccessManager odam)
+        {
+            if (odam.HasAccessObjects || this.HoldsAnyValue(odam.Id))
+            {
+                return;
+            }
+
+            if (m_baselineStorageLayer.TryGetValue(odam.Id, out PseudoPropertyBag baselineBag) && baselineBag.IsEmpty)
+            {
+                m_baselineStorageLayer.Remove(odam.Id);
+            }
+
+            foreach (Stratum stratum in m_overrideStorageLayers)
+            {
+                if (stratum.TryGetValue(odam.Id, out PseudoPropertyBag overrideBag) && overrideBag.IsEmpty)
+                {
+                    stratum.Remove(odam.Id);
+                }
+            }
+
+            if (m_objectAccess.TryGetValue(odam.Id, out ObjectDataAccessManager registered) && ReferenceEquals(registered, odam))
+            {
+                this.OnObjectDataAccessManagerRemoved(odam);
+            }
+        }
+
+        private bool HoldsAnyValue (Guid id)
+        {
+            if (m_baselineStorageLayer.TryGetValue(id, out PseudoPropertyBag baselineBag) && !baselineBag.IsEmpty)
+            {
+                return true;
+            }
+
+            foreach (Stratum stratum in m_overrideStorageLayers)
+            {
+                if (stratum.TryGetValue(id, out PseudoPropertyBag overrideBag) && !overrideBag.IsEmpty)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private void OnObjectDataAccessManagerRemoved (ObjectDataAccessManager odam)
         {
             m_objectAccess.Remove(odam.Id);
@@ -823,6 +878,10 @@
         /// </summary>
         internal class ObjectDataAccessManager
         {
+            // How many property access objects are attached. The store's own subscriptions are deliberately not counted: the store
+            //  subscribes to every manager, so counting it would keep every manager alive forever.
+            private int m_accessObjectCount;
+
             public ObjectDataAccessManager (Stratabase stratabase, Guid id)
             {
                 this.SB = stratabase;
@@ -1253,11 +1312,6 @@
                     stratum.Remove(this.Id);
                 }
 
-                // ===================================================================================================
-                // Note: Remember, don't remove this manager from parent as the events are still potentially hooked
-                //          up the property access flyweights, and unhooking them would be a futile operation.
-                // ===================================================================================================
-
                 // One event for the whole id, with an empty property name, raised once the values are gone. Access objects
                 //  always hear it, since they cache what is set and would otherwise keep reporting values that are gone.
                 //  notifyOfRemovals only decides whether the store-wide events go out, the same as an import's notifyOfChanges.
@@ -1269,18 +1323,31 @@
                         SuppressStoreEvents = !notifyOfRemovals,
                     }
                 );
+
+                // Only after the event, so listeners heard the clear through this manager. A manager an access object still holds
+                //  is never released: dropping it would leave that access on a manager the store no longer routes through, and the
+                //  next write would go to a new one it never hears from.
+                this.SB.ReleaseAccessManagerIfUnused(this);
             }
 
             /// <summary>
-            /// Handles with a flyweight has been disposed. Removing access points may mean this instance could
-            /// remove itself
+            /// True while any property access object is attached to this manager
+            /// </summary>
+            public bool HasAccessObjects => m_accessObjectCount > 0;
+
+            /// <summary>
+            /// Called by a property access object as it attaches to this manager
+            /// </summary>
+            public void HandleAccessAttached () => ++m_accessObjectCount;
+
+            /// <summary>
+            /// Called by a property access object as it is disposed. The manager is released once nothing else is attached and its
+            /// id holds no value.
             /// </summary>
             public void HandleAccessWithdrawn ()
             {
-                if (this.LayerDataSet == null && this.LayerDataRemoved == null)
-                {
-                    this.SB.OnObjectDataAccessManagerRemoved(this);
-                }
+                --m_accessObjectCount;
+                this.SB.ReleaseAccessManagerIfUnused(this);
             }
         }
 
@@ -1308,6 +1375,11 @@
 
             // ==========================[ Properties ]===================================
             public IEnumerable<string> Keys => m_storage.Keys;
+
+            /// <summary>
+            /// Holds no value and no established list element type, so dropping it loses nothing
+            /// </summary>
+            public bool IsEmpty => m_storage.Count == 0 && m_propertyListElementTypeRestriction.Count == 0;
 
             // ==========================[ Retrieval Methods ]=============================
             public bool TryGetValue (string propertyName, out object value) => this.m_storage.TryGetValue(propertyName, out value);

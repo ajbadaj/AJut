@@ -181,6 +181,7 @@ namespace AJut.Storage
                         wasRemoved = odam.ObliteratePropertyStorageInLayer(layer, unnamed.PropertyName, notifyOfChanges);
                     }
 
+                    this.ReleaseAccessManagerIfUnused(odam);
                     if (wasRemoved)
                     {
                         ++changeCount;

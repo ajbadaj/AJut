@@ -24,6 +24,7 @@
 
             this.ODAM.LayerDataSet += this.OnLayerDataSet;
             this.ODAM.LayerDataRemoved += this.OnLayerDataRemoved;
+            this.ODAM.HandleAccessAttached();
 
             if (this.IsSet = this.ODAM.TryFindActiveLayer(this.PropertyName, out int activeLayer))
             {
