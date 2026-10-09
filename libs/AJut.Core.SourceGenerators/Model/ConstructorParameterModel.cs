@@ -21,8 +21,9 @@ namespace AJut.Text.AJson.SourceGenerators.Model
         public string PropertyName { get; init; } = string.Empty;
 
         /// <summary>
-        /// The C# expression passed when the json has no key for the parameter: the matched property's [JsonOmitIfDefault(x)]
-        /// value, else the parameter's declared default, else the type's default
+        /// The C# expression passed when the json has no key for the parameter: the value the matched property's [JsonOmitIfDefault]
+        /// leaves out (its explicit value, or the type's default for the bare attribute), else the parameter's declared default,
+        /// else the type's default
         /// </summary>
         public string MissingValueExpression { get; init; } = string.Empty;
     }

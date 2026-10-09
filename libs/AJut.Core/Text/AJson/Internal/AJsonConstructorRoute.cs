@@ -175,14 +175,16 @@ namespace AJut.Text.AJson
 
         private static RouteParameter BuildRouteParameter (ParameterInfo parameter, PropertyInfo matchedProperty)
         {
-            // A key the json does not have is never an error, since nulls are never written. The value it takes, in order: the
-            //  matched property's [JsonOmitIfDefault(x)] value (the writer leaves the property out when it equals that), the
-            //  parameter's own default, then the type's default (null, which Invoke passes to a value type as its default).
+            // A key the json does not have is never an error, since nulls are never written. The value it takes is the one the
+            //  writer leaves out, when the matched property has [JsonOmitIfDefault]: its explicit value, or the type's default for
+            //  the bare attribute. Otherwise the parameter's own default, then the type's default. The type's default is null here,
+            //  which Invoke passes to a value type as its default. A default registered with
+            //  JsonBuilderSettings.RegisterDefaultEquivalent cannot be used, since the reader never sees the writer's settings.
             object missingValue = null;
             JsonOmitIfDefaultAttribute omit = matchedProperty?.GetCustomAttribute<JsonOmitIfDefaultAttribute>(inherit: true);
-            if (omit != null && omit.HasExplicitDefault)
+            if (omit != null)
             {
-                missingValue = CoerceTo(omit.ExplicitDefault, parameter.ParameterType);
+                missingValue = omit.HasExplicitDefault ? CoerceTo(omit.ExplicitDefault, parameter.ParameterType) : null;
             }
             else if (parameter.HasDefaultValue)
             {

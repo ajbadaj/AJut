@@ -217,16 +217,35 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                         parameter.Name));
                 }
 
-                // A key the json does not have is never an error, since nulls are never written. The value passed, in order: the
-                //  matched property's [JsonOmitIfDefault(x)] value (the writer leaves the property out when it equals that), the
-                //  parameter's own default, then the type's default. Each is cast to the parameter's type, which turns an enum's
-                //  stored number back into the enum and narrows a number written wider than the parameter.
+                // A key the json does not have is never an error, since nulls are never written. The value passed is the one the
+                //  writer leaves out, when the matched property has [JsonOmitIfDefault]: its explicit value, or the type's default for
+                //  the bare attribute. Otherwise the parameter's own default, then the type's default. Each is cast to the parameter's
+                //  type, which turns an enum's stored number back into the enum and narrows a number written wider than the
+                //  parameter. A default registered with JsonBuilderSettings.RegisterDefaultEquivalent cannot be passed, since the
+                //  reader never sees the writer's settings.
                 string missingValue;
-                if (matched != null && matched.HasExplicitOmitDefault)
+                if (matched != null && matched.HasOmitIfDefault)
                 {
-                    missingValue = $"({parameterFqn})({matched.ExplicitOmitDefaultLiteral})";
-                    if (parameter.HasExplicitDefaultValue
-                        && DefaultsDiffer(GetExplicitOmitValue(propertySymbols[matched.Name]), parameter.ExplicitDefaultValue, parameter.Type))
+                    bool declaredDefaultDiffers;
+                    string omitArgument;
+                    string omittedAt;
+                    if (matched.HasExplicitOmitDefault)
+                    {
+                        missingValue = $"({parameterFqn})({matched.ExplicitOmitDefaultLiteral})";
+                        declaredDefaultDiffers = parameter.HasExplicitDefaultValue
+                            && DefaultsDiffer(GetExplicitOmitValue(propertySymbols[matched.Name]), parameter.ExplicitDefaultValue, parameter.Type);
+                        omitArgument = $"({matched.ExplicitOmitDefaultLiteral})";
+                        omittedAt = matched.ExplicitOmitDefaultLiteral;
+                    }
+                    else
+                    {
+                        missingValue = $"default({parameterFqn})";
+                        declaredDefaultDiffers = parameter.HasExplicitDefaultValue && !IsDefaultConstant(parameter.ExplicitDefaultValue);
+                        omitArgument = string.Empty;
+                        omittedAt = $"default({parameter.Type.ToDisplayString()})";
+                    }
+
+                    if (declaredDefaultDiffers)
                     {
                         diagnostics.Add(Diagnostic.Create(
                             Diagnostics.ConstructorDefaultDiffersFromOmitDefault,
@@ -235,7 +254,8 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                             parameter.Name,
                             parameter.ExplicitDefaultValue == null ? "null" : FormatConstant(parameter.ExplicitDefaultValue),
                             matched.Name,
-                            matched.ExplicitOmitDefaultLiteral));
+                            omitArgument,
+                            omittedAt));
                     }
                 }
                 else if (parameter.HasExplicitDefaultValue && parameter.ExplicitDefaultValue != null)
@@ -324,6 +344,23 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
             }
 
             return !Convert.ToDouble(omitValue, CultureInfo.InvariantCulture).Equals(Convert.ToDouble(declaredDefault, CultureInfo.InvariantCulture));
+        }
+
+        /// <summary>
+        /// Whether a declared parameter default is the type's default, which is what a bare [JsonOmitIfDefault] leaves out
+        /// </summary>
+        private static bool IsDefaultConstant (object value)
+        {
+            switch (value)
+            {
+                case null: return true;
+                case bool b: return !b;
+                case char c: return c == '\0';
+                case float f: return f == 0f;
+                case double d: return d == 0d;
+            }
+
+            return IsNumberValue(value) && Convert.ToDecimal(value, CultureInfo.InvariantCulture) == 0m;
         }
 
         private static bool IsNumberValue (object value)

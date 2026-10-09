@@ -26,11 +26,16 @@ namespace AJut.Text.AJson
     /// </list>
     /// </para>
     /// <para>
-    /// A key the json does not have is never an error, since nulls are never written. The parameter is passed, in order: the
-    /// matched property's <see cref="JsonOmitIfDefaultAttribute"/> explicit value (the writer leaves the property out when it
-    /// equals that), the parameter's own declared default, or the type's default. A parameter that matches no property always
-    /// gets that value (warning AJSON006 for an [OptimizeAJson] type), and a declared default that differs from the omit value is
-    /// warning AJSON007.
+    /// A key the json does not have is never an error, since nulls are never written. When the matched property has
+    /// <see cref="JsonOmitIfDefaultAttribute"/>, the parameter is passed the value the writer leaves out: the attribute's explicit
+    /// value, or the type's default for the bare attribute. Otherwise it is passed its own declared default, or the type's default.
+    /// A parameter that matches no property always gets that value (warning AJSON006 for an [OptimizeAJson] type), and a declared
+    /// default that differs from the value the writer leaves out is warning AJSON007.
+    /// </para>
+    /// <para>
+    /// A default registered with <see cref="JsonBuilderSettings.RegisterDefaultEquivalent{T}"/> is the one case this cannot cover.
+    /// The reflection path's writer leaves a bare [JsonOmitIfDefault] property out when it equals that registered value, but the
+    /// reader never sees the writer's settings, so the parameter is passed the type's default instead.
     /// </para>
     /// </remarks>
     [AttributeUsage(AttributeTargets.Constructor, AllowMultiple = false, Inherited = false)]

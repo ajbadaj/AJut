@@ -83,13 +83,14 @@ namespace AJut.Core.UnitTests.AJsonV2
         public class MissingKeys
         {
             [AJsonConstructor]
-            public MissingKeys (int omitted, int neither, eMode mode, int declared = 7, int omittedOverDeclared = 3, string unmatched = "fallback")
+            public MissingKeys (int omitted, int neither, eMode mode, int declared = 7, int omittedOverDeclared = 3, int bareOmitted = 4, string unmatched = "fallback")
             {
                 this.Omitted = omitted;
                 this.Neither = neither;
                 this.Mode = mode;
                 this.Declared = declared;
                 this.OmittedOverDeclared = omittedOverDeclared;
+                this.BareOmitted = bareOmitted;
                 this.Stored = unmatched;
             }
 
@@ -105,6 +106,9 @@ namespace AJut.Core.UnitTests.AJsonV2
 
             [JsonOmitIfDefault(9)]
             public int OmittedOverDeclared { get; }
+
+            [JsonOmitIfDefault]
+            public int BareOmitted { get; }
 
             public string Stored { get; }
         }
@@ -289,6 +293,7 @@ namespace AJut.Core.UnitTests.AJsonV2
             Assert.AreEqual(eMode.Busy, read.Mode, "the omit value, an enum stored as its number");
             Assert.AreEqual(7, read.Declared, "the declared default");
             Assert.AreEqual(9, read.OmittedOverDeclared, "the omit value wins over a declared default");
+            Assert.AreEqual(0, read.BareOmitted, "a bare omit attribute's type default wins over a declared default");
             Assert.AreEqual(0, read.Neither, "the type default");
             Assert.AreEqual("fallback", read.Stored, "a parameter that matches no property always gets its missing value");
         }
@@ -296,18 +301,20 @@ namespace AJut.Core.UnitTests.AJsonV2
         [TestMethod]
         public void MissingKey_ValuesTheWriterLeftOut_ReadBackTheSame ()
         {
-            MissingKeys source = new MissingKeys(omitted: 5, neither: 2, mode: eMode.Busy, declared: 1, omittedOverDeclared: 9);
+            MissingKeys source = new MissingKeys(omitted: 5, neither: 2, mode: eMode.Busy, declared: 1, omittedOverDeclared: 9, bareOmitted: 0);
             Json written = JsonHelper.BuildJsonForObject(source);
             List<string> keys = ((JsonDocument)written.Data).AllKeys().ToList();
             CollectionAssert.DoesNotContain(keys, "Omitted");
             CollectionAssert.DoesNotContain(keys, "Mode");
             CollectionAssert.DoesNotContain(keys, "OmittedOverDeclared");
+            CollectionAssert.DoesNotContain(keys, "BareOmitted");
 
             MissingKeys round = RoundTrip(source);
 
             Assert.AreEqual(5, round.Omitted);
             Assert.AreEqual(eMode.Busy, round.Mode);
             Assert.AreEqual(9, round.OmittedOverDeclared);
+            Assert.AreEqual(0, round.BareOmitted, "zero comes back as zero, not the declared default of 4");
             Assert.AreEqual(2, round.Neither);
             Assert.AreEqual(1, round.Declared);
         }

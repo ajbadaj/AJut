@@ -161,7 +161,9 @@ namespace TestNs
         [TestMethod]
         public void Generator_ReportsAJSON007_WhenADeclaredDefaultDiffersFromTheOmitValue ()
         {
-            // Values that agree once they are the parameter's type are not a mismatch: 5 and 5L for a long, 0.1 and 0.1f for a float
+            // Values that agree once they are the parameter's type are not a mismatch: 5 and 5L for a long, 0.1 and 0.1f for a float.
+            //  A bare [JsonOmitIfDefault] leaves the property out at the type's default, so a declared default of anything else is
+            //  a mismatch too.
             const string src = @"
 using AJut.Text.AJson;
 namespace TestNs
@@ -172,25 +174,32 @@ namespace TestNs
     public class Defaults
     {
         [AJsonConstructor]
-        public Defaults (int differs = 3, long sameWider = 5, float sameFloat = 0.1f, eMode sameEnum = eMode.Busy)
+        public Defaults (int differs = 3, long sameWider = 5, float sameFloat = 0.1f, eMode sameEnum = eMode.Busy, int bareDiffers = 2, int bareSame = 0, string bareText = null)
         {
             Differs = differs;
             SameWider = sameWider;
             SameFloat = sameFloat;
             SameEnum = sameEnum;
+            BareDiffers = bareDiffers;
+            BareSame = bareSame;
+            BareText = bareText;
         }
 
         [JsonOmitIfDefault(9)] public int Differs { get; }
         [JsonOmitIfDefault(5)] public long SameWider { get; }
         [JsonOmitIfDefault(0.1)] public float SameFloat { get; }
         [JsonOmitIfDefault(eMode.Busy)] public eMode SameEnum { get; }
+        [JsonOmitIfDefault] public int BareDiffers { get; }
+        [JsonOmitIfDefault] public int BareSame { get; }
+        [JsonOmitIfDefault] public string BareText { get; }
     }
 }";
             GeneratorDriverRunResult result = RunGenerator(src);
             Diagnostic[] ajson007 = result.Diagnostics.Where(d => d.Id == "AJSON007").ToArray();
-            Assert.AreEqual(1, ajson007.Length, string.Join("\n", ajson007.Select(d => d.GetMessage())));
-            Assert.AreEqual(DiagnosticSeverity.Warning, ajson007[0].Severity);
-            StringAssert.Contains(ajson007[0].GetMessage(), "'differs'");
+            Assert.AreEqual(2, ajson007.Length, string.Join("\n", ajson007.Select(d => d.GetMessage())));
+            Assert.IsTrue(ajson007.All(d => d.Severity == DiagnosticSeverity.Warning));
+            Assert.IsTrue(ajson007.Any(d => d.GetMessage().Contains("'differs'") && d.GetMessage().Contains("[JsonOmitIfDefault(9)]")));
+            Assert.IsTrue(ajson007.Any(d => d.GetMessage().Contains("'bareDiffers'") && d.GetMessage().Contains("default(int)")));
         }
 
         [TestMethod]

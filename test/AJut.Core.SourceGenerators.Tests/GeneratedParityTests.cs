@@ -193,13 +193,16 @@ namespace ParityRouteNs
 
             object fromGenerated = _BuildHolder(generated);
             Assert.IsTrue(AJsonGeneratedDispatch.TryGet(fromGenerated.GetType(), out _), "the generated fixture registered its serializer");
-            AssertSameJsonAndReadBack(fromGenerated, _BuildHolder(reflection));
+            object readBack = AssertSameJsonAndReadBack(fromGenerated, _BuildHolder(reflection));
+
+            object first = readBack.GetType().GetProperty("First")!.GetValue(readBack)!;
+            Assert.AreEqual(0, first.GetType().GetProperty("Declared")!.GetValue(first), "zero comes back as zero, not the declared default of 7");
 
             static object _BuildHolder (Assembly _fixture)
             {
                 // Mode sits at its omit value and Declared at zero, so the writer leaves both out and they read back through the
-                //  missing-key rule. Mode takes its omit value. Declared's [JsonOmitIfDefault] has no explicit value, so it takes
-                //  the parameter's declared default of 7 on both paths.
+                //  missing-key rule: Mode as its omit value, and Declared, whose [JsonOmitIfDefault] is bare, as the type's default
+                //  rather than the parameter's declared default of 7.
                 Type modeType = _fixture.GetType("ParityRouteNs.eMode", throwOnError: true)!;
                 object routed = Activator.CreateInstance(_fixture.GetType("ParityRouteNs.Routed", throwOnError: true)!, "routed", 12, Enum.ToObject(modeType, 1), 0)!;
                 SetProperty(routed, "Label", "labeled");
@@ -246,7 +249,8 @@ namespace ParityRouteNs
         /// <summary>
         /// Writes both, checks the json matches key for key, then reads that same json back with each and checks the results match
         /// </summary>
-        private static void AssertSameJsonAndReadBack (object fromGenerated, object fromReflection)
+        /// <returns>What the generated reader read back, which the check has shown matches the reflection path's</returns>
+        private static object AssertSameJsonAndReadBack (object fromGenerated, object fromReflection)
         {
             Json generatedJson = JsonHelper.BuildJsonForObject(fromGenerated);
             Json reflectionJson = JsonHelper.BuildJsonForObject(fromReflection);
@@ -266,6 +270,7 @@ namespace ParityRouteNs
             Assert.IsFalse(forReflection.HasErrors, forReflection.GetErrorReport());
 
             AssertSameValue(reflectionReadBack, generatedReadBack, "$");
+            return generatedReadBack;
         }
 
         /// <summary>

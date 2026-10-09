@@ -58,7 +58,7 @@ namespace AJut.Text.AJson.SourceGenerators
         public static readonly DiagnosticDescriptor ConstructorDefaultDiffersFromOmitDefault = new DiagnosticDescriptor(
             id: "AJSON007",
             title: "Constructor parameter default differs from the property's JsonOmitIfDefault value",
-            messageFormat: "Parameter '{1}' of the constructor AJson builds '{0}' with defaults to {2}, but property '{3}' is [JsonOmitIfDefault({4})] - a missing key passes {4}, since that is the value the writer leaves out",
+            messageFormat: "Parameter '{1}' of the constructor AJson builds '{0}' with defaults to {2}, but property '{3}' is [JsonOmitIfDefault{4}] - the writer leaves it out at {5}, so a missing key passes {5}",
             category: kCategory,
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);

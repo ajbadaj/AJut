@@ -29,8 +29,8 @@ namespace TestNs
     }
 }";
 
-        // Each parameter takes a different branch of the missing-key rule. Two of them also raise warnings: AJSON006 for unmatched
-        //  and AJSON007 for omittedOverDeclared.
+        // Each parameter takes a different branch of the missing-key rule. Three of them also raise warnings: AJSON006 for unmatched
+        //  and AJSON007 for omittedOverDeclared and bareOmitted.
         private const string kMissingKeysSource = @"
 using AJut.Text.AJson;
 namespace TestNs
@@ -41,7 +41,7 @@ namespace TestNs
     public class MissingKeys
     {
         [AJsonConstructor]
-        public MissingKeys (int omitted, int neither, eMode mode, float scale, int declared = 7, int omittedOverDeclared = 3, string unmatched = ""fallback"")
+        public MissingKeys (int omitted, int neither, eMode mode, float scale, int declared = 7, int omittedOverDeclared = 3, int bareOmitted = 4, string unmatched = ""fallback"")
         {
             Omitted = omitted;
             Neither = neither;
@@ -49,6 +49,7 @@ namespace TestNs
             Scale = scale;
             Declared = declared;
             OmittedOverDeclared = omittedOverDeclared;
+            BareOmitted = bareOmitted;
             Stored = unmatched;
         }
 
@@ -58,6 +59,7 @@ namespace TestNs
         [JsonOmitIfDefault(2.5f)] public float Scale { get; }
         public int Declared { get; }
         [JsonOmitIfDefault(9)] public int OmittedOverDeclared { get; }
+        [JsonOmitIfDefault] public int BareOmitted { get; }
         public string Stored { get; }
     }
 }";
@@ -452,6 +454,7 @@ namespace TestNs
             Assert.AreEqual(2.5f, Get(read, "Scale"), "the omit value, a float");
             Assert.AreEqual(7, Get(read, "Declared"), "the declared default");
             Assert.AreEqual(9, Get(read, "OmittedOverDeclared"), "the omit value wins over a declared default");
+            Assert.AreEqual(0, Get(read, "BareOmitted"), "a bare omit attribute's type default wins over a declared default");
             Assert.AreEqual(0, Get(read, "Neither"), "the type default");
             Assert.AreEqual("fallback", Get(read, "Stored"), "a parameter that matches no property always gets its missing value");
         }
@@ -462,7 +465,7 @@ namespace TestNs
             Assembly fixture = CompileAndLoad(kMissingKeysSource, "RoundTrip_ConstructorOmittedValues");
             Type type = fixture.GetType("TestNs.MissingKeys", throwOnError: true)!;
             Type modeType = fixture.GetType("TestNs.eMode", throwOnError: true)!;
-            object source = Activator.CreateInstance(type, 5, 2, Enum.ToObject(modeType, 1), 2.5f, 1, 9, "ignored")!;
+            object source = Activator.CreateInstance(type, 5, 2, Enum.ToObject(modeType, 1), 2.5f, 1, 9, 0, "ignored")!;
 
             Json written = JsonHelper.BuildJsonForObject(source);
             CollectionAssert.AreEquivalent(new[] { "Neither", "Declared", "Stored" }, ((JsonDocument)written.Data).AllKeys().ToArray(), written.ToString());
@@ -472,6 +475,7 @@ namespace TestNs
             Assert.AreEqual("Busy", Get(readBack, "Mode")!.ToString());
             Assert.AreEqual(2.5f, Get(readBack, "Scale"));
             Assert.AreEqual(9, Get(readBack, "OmittedOverDeclared"));
+            Assert.AreEqual(0, Get(readBack, "BareOmitted"), "zero comes back as zero, not the declared default of 4");
             Assert.AreEqual(2, Get(readBack, "Neither"));
             Assert.AreEqual(1, Get(readBack, "Declared"));
         }
