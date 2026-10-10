@@ -14,7 +14,7 @@
     <PackageTags>c#;dotnet;theming;controls;converters;app;utilities</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <Version>1.1.17.139</Version>
+    <Version>1.1.18.145</Version>
   </PropertyGroup>
   <ItemGroup>
     <None Include="..\..\ajut-logo-128.png">
