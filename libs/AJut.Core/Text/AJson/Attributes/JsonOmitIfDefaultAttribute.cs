@@ -3,7 +3,7 @@ namespace AJut.Text.AJson
     using System;
 
     /// <summary>
-    /// Skip writing a property when its value matches a default. The zero-arg form treats
+    /// Skip writing a property or public field when its value matches a default. The zero-arg form treats
     /// default(T) (the type's zero value) as the omit marker; the explicit-default form
     /// takes a value to compare against, used when a class's initializer default differs
     /// from default(T) - the canonical case is enums whose intended default is not the
@@ -13,7 +13,7 @@ namespace AJut.Text.AJson
     /// Read-side is unaffected - older files that include the default value still round-trip
     /// to the same value.
     /// </remarks>
-    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
     public class JsonOmitIfDefaultAttribute : Attribute
     {
         public JsonOmitIfDefaultAttribute ()

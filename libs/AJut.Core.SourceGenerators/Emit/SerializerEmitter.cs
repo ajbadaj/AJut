@@ -88,13 +88,32 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
 
             cb.AppendLine($"global::AJut.Text.AJson.JsonBuilder doc = global::AJut.Text.AJson.AJsonGenerationSupport.StartGeneratedDocument(builder, typeof({model.FullyQualifiedTypeName}));");
 
+            // A get-only member is written by default only when the reader can get it back, the same rule as the reflection
+            //  path: a collection the reader fills, a value the constructor route takes, or anything on a type with nothing the
+            //  reader can set or fill. Anything else get-only is written only with UseReadonlyObjectProperties on.
+            bool readerSetsAnything = model.Properties.Any(p => p.HasSetter || p.IsGetOnlyCollection);
             foreach (PropertyModel prop in model.Properties)
             {
                 if (!prop.HasGetter)
                 {
                     continue;
                 }
-                EmitPropertyWrite(cb, prop);
+
+                bool isWrittenByDefault = prop.HasSetter
+                    || prop.IsGetOnlyCollection
+                    || !readerSetsAnything
+                    || model.ConstructorParameters.Any(p => p.PropertyName == prop.Name);
+                if (isWrittenByDefault)
+                {
+                    EmitPropertyWrite(cb, prop);
+                }
+                else
+                {
+                    cb.AppendLine("if (doc.BuilderSettings.UseReadonlyObjectProperties)");
+                    cb.OpenBrace();
+                    EmitPropertyWrite(cb, prop);
+                    cb.CloseBrace();
+                }
             }
 
             cb.CloseBrace();
@@ -135,9 +154,9 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
                     break;
                 case ePropertyKind.SimpleValue:
                 case ePropertyKind.Enum:
-                case ePropertyKind.BuiltInCustom:
                     EmitWriteSimple(cb, prop, accessor);
                     break;
+                case ePropertyKind.Parsable:
                 case ePropertyKind.ComplexReference:
                 case ePropertyKind.Collection:
                 case ePropertyKind.Dictionary:
@@ -265,7 +284,16 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
                 //  declares (the runtime type eval read declares one) collides with the next property on the type that declares it.
                 cb.AppendLine($"case \"{Escape(prop.JsonKey)}\":");
                 cb.OpenBrace();
-                if (defersAssignments)
+                if (slots[index].IsFill && defersAssignments)
+                {
+                    // The collection to fill does not exist until the instance is built, so the json waits for it
+                    cb.AppendLine($"{DeferredValue(index)} = kvp.Value; {DeferredFound(index)} = true;");
+                }
+                else if (slots[index].IsFill)
+                {
+                    EmitFill(cb, prop, "kvp.Value");
+                }
+                else if (defersAssignments)
                 {
                     EmitPropertyRead(cb, prop, slots[index].ValueType, DeferredValue(index), DeferredFound(index));
                 }
@@ -299,7 +327,8 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
 
         /// <summary>
         /// The json keys the generated reader reads, in model order, one per key (the first property that has it): every property
-        /// the constructor route consumes, and every other property with a setter, init-only included
+        /// the constructor route consumes, every other property with a setter, init-only included, and every get-only collection,
+        /// which is filled where it is
         /// </summary>
         private static List<ReadSlot> CollectReadSlots (SerializableTypeModel model)
         {
@@ -308,7 +337,8 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
             foreach (PropertyModel prop in model.Properties)
             {
                 ConstructorParameterModel consumer = model.ConstructorParameters.FirstOrDefault(p => p.PropertyName == prop.Name);
-                if (consumer == null && !prop.HasSetter)
+                bool isFill = (consumer == null) && prop.IsGetOnlyCollection;
+                if (consumer == null && !prop.HasSetter && !isFill)
                 {
                     continue;
                 }
@@ -317,7 +347,8 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
                     continue;
                 }
 
-                output.Add(new ReadSlot(prop, consumer?.TypeFullName ?? prop.TypeFullName, consumer != null));
+                string valueType = isFill ? "global::AJut.Text.AJson.JsonValue" : (consumer?.TypeFullName ?? prop.TypeFullName);
+                output.Add(new ReadSlot(prop, valueType, consumer != null, isFill));
             }
 
             return output;
@@ -416,7 +447,14 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
 
         private static void EmitSetIfFound (CodeBuilder cb, SerializableTypeModel model, ReadSlot slot, int index)
         {
-            if (slot.Property.IsInitOnly)
+            if (slot.IsFill)
+            {
+                cb.AppendLine($"if ({DeferredFound(index)})");
+                cb.OpenBrace();
+                EmitFill(cb, slot.Property, DeferredValue(index));
+                cb.CloseBrace();
+            }
+            else if (slot.Property.IsInitOnly)
             {
                 string target = model.IsValueType ? "ref result" : "result";
                 cb.AppendLine($"if ({DeferredFound(index)}) {{ {InitOnlyAccessor(index)}({target}, {DeferredValue(index)}); }}");
@@ -495,6 +533,14 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
             cb.AppendLine($"private static extern {model.FullyQualifiedTypeName} {kConstructorAccessor}({signature});");
         }
 
+        /// <summary>
+        /// Fills a get-only collection where it is, from <paramref name="valueExpression"/>, a JsonValue
+        /// </summary>
+        private static void EmitFill (CodeBuilder cb, PropertyModel prop, string valueExpression)
+        {
+            cb.AppendLine($"global::AJut.Text.AJson.AJsonGenerationSupport.FillGetOnlyCollection(result.{prop.Name}, \"{Escape(prop.JsonKey)}\", {valueExpression}, settings, owner);");
+        }
+
         private static string DeferredValue (int index) => $"deferredValue{index}";
         private static string DeferredFound (int index) => $"deferredFound{index}";
         private static string InitOnlyAccessor (int index) => $"SetInitOnly{index}";
@@ -525,6 +571,13 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
                     cb.AppendLine($"global::System.Object rteRead = global::AJut.Text.AJson.AJsonGenerationSupport.ReadRuntimeTypeEvalProperty(kvp.Value, settings, owner);");
                     cb.AppendLine($"if (rteRead != null) {{ {assignTo} = ({readType})rteRead;{markFound} }}");
                     break;
+
+                // Read as the property's own type, unwrapped from Nullable, which converts to the property on assignment. A
+                //  constructor parameter of some other type is read the general way.
+                case ePropertyKind.Parsable when (readType == prop.TypeFullName) || (readType == prop.UnderlyingTypeFullName):
+                    cb.AppendLine($"{assignTo} = global::AJut.Text.AJson.AJsonGenerationSupport.ReadParsable<{prop.UnderlyingTypeFullName}>(kvp.Value, settings, owner);{markFound}");
+                    break;
+
                 default:
                     if (prop.IsNullable)
                     {
@@ -567,11 +620,12 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
         /// </summary>
         private sealed class ReadSlot
         {
-            public ReadSlot (PropertyModel property, string valueType, bool isConsumed)
+            public ReadSlot (PropertyModel property, string valueType, bool isConsumed, bool isFill)
             {
                 this.Property = property;
                 this.ValueType = valueType;
                 this.IsConsumed = isConsumed;
+                this.IsFill = isFill;
             }
 
             public PropertyModel Property { get; }
@@ -586,6 +640,12 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
             /// True when the constructor route passes this property's value to the constructor, rather than setting it afterwards
             /// </summary>
             public bool IsConsumed { get; }
+
+            /// <summary>
+            /// True for a get-only collection, which is filled where it is. Its local, when the read is deferred, holds the
+            /// JsonValue to fill it from.
+            /// </summary>
+            public bool IsFill { get; }
         }
     }
 }

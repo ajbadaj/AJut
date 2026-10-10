@@ -3,7 +3,6 @@ namespace AJut.Text.AJson
     using System;
     using System.Collections.Generic;
     using System.Globalization;
-    using System.Numerics;
     using AJut;
 
     public enum ePropertyValueQuoting
@@ -74,37 +73,15 @@ namespace AJut.Text.AJson
             this.TypeIdToWrite = eTypeIdInfo.TypeIdAttributed;
             this.KeyValuePairKeyTypeIdToWrite = eTypeIdInfo.None;
             this.KeyValuePairValueTypeIdToWrite = eTypeIdInfo.None;
-            this.UseReadonlyObjectProperties = true;
+            this.UseReadonlyObjectProperties = false;
             this.SpacingAroundPropertyIndicators = " ";
-
-            m_customJsonConstructor.Add(typeof(bool), _BoolToJsonString);
-            m_customJsonConstructor.Add(typeof(DateTime), _DateTimeToJsonString);
-            m_customJsonConstructor.Add(typeof(TimeSpan), _TimeSpanToJsonString);
-            m_customJsonConstructor.Add(typeof(Guid), _GuidToJsonString);
-            m_customJsonConstructor.Add(typeof(TimeZoneInfo), _TimeZoneToAJsonString);
-            m_customJsonConstructor.Add(typeof(Vector2), _Vector2ToAJsonString);
-
-            string _BoolToJsonString (object instance) => ((bool)instance) ? "true" : "false";
-            string _DateTimeToJsonString (object instance)
-            {
-                DateTime date = (DateTime)instance;
-
-                // Round-trip ISO 8601: culture-invariant, every tick kept, and the Kind carried in
-                //  the suffix (Z for Utc, the offset for Local, nothing for Unspecified), so the
-                //  reader hands back exactly the value it was given.
-                return date.ToString("o", CultureInfo.InvariantCulture);
-            }
-            string _TimeSpanToJsonString (object instance) => ((TimeSpan)instance).ToString();
-            string _GuidToJsonString (object instance) => ((Guid)instance).ToString();
-            string _TimeZoneToAJsonString (object instance) => ((TimeZoneInfo)instance).Id;
-            string _Vector2ToAJsonString (object instance)
-            {
-                // Invariant, or a comma-decimal culture's components would carry commas of their own
-                //  and the reader could not find the one between them
-                Vector2 vec2 = (Vector2)instance;
-                return FormattableString.Invariant($"<{vec2.X},{vec2.Y}>");
-            }
         }
+
+        /// <summary>
+        /// The settings json is built with when none are given. A string maker registered here with
+        /// <see cref="SetCustomJsonManager"/> applies to every such build.
+        /// </summary>
+        public static JsonBuilderSettings Default { get; set; } = new JsonBuilderSettings();
 
         public string Tabbing { get; set; }
         public string Newline { get; set; }
@@ -164,10 +141,20 @@ namespace AJut.Text.AJson
             || this.KeyValuePairValueTypeIdToWrite != eTypeIdInfo.None;
 
         /// <summary>
-        /// When pulling properties off an object, should read-only properties be included (default true).
+        /// Whether every get-only property and readonly field is written (default false). Off, a get-only member is written
+        /// only when the reader can get it back: when the constructor the reader builds the type with takes it, when it is a
+        /// collection the reader fills where it is, or when the type has nothing the reader can set or fill, so only a
+        /// constructor can rebuild it. Turn it on to also write values worked out from other members (a Rect's Right, a
+        /// Quaternion's IsIdentity) for something other than AJson to read, or for a type with settable members whose
+        /// registered custom constructor reads a get-only member's key.
         /// </summary>
         public bool UseReadonlyObjectProperties { get; set; }
 
+        /// <summary>
+        /// Writes <paramref name="forType"/> as one value, the text <paramref name="creator"/> makes, for json built with these
+        /// settings. It wins over a <see cref="JsonValueConverter"/> registered for the type. An open generic type covers every
+        /// type made from it.
+        /// </summary>
         public void SetCustomJsonManager (Type forType, JsonStringMaker creator)
         {
             m_customJsonConstructor[forType] = creator;
@@ -190,14 +177,23 @@ namespace AJut.Text.AJson
             return m_defaultEquivalents.TryGetValue(type, out value);
         }
 
+        /// <summary>
+        /// What writes <paramref name="instanceType"/> as one value, if anything does: a string maker registered with
+        /// <see cref="SetCustomJsonManager"/>, then a <see cref="JsonScalarConverter"/>, then the simple-type maker for a
+        /// primitive, string or enum
+        /// </summary>
+        /// <returns>The maker, or null when the type is written as a document or an array</returns>
         public JsonStringMaker TryGetJsonValueStringMakerFor (Type instanceType)
         {
-            foreach (KeyValuePair<Type, JsonStringMaker> kvp in m_customJsonConstructor)
+            JsonStringMaker registered = this.TryGetRegisteredStringMakerFor(instanceType);
+            if (registered != null)
             {
-                if (instanceType.TargetsSameTypeAs(kvp.Key))
-                {
-                    return kvp.Value;
-                }
+                return registered;
+            }
+
+            if (JsonHelper.TryGetConverterFor(instanceType, out JsonValueConverter converter))
+            {
+                return (converter as JsonScalarConverter)?.StringMaker;
             }
 
             return instanceType.IsSimpleType() ? (JsonStringMaker)_SimpleTypeStringMaker : null;
@@ -208,6 +204,31 @@ namespace AJut.Text.AJson
             string _SimpleTypeStringMaker (object _instance) => _instance is IFormattable formattable
                 ? formattable.ToString(null, CultureInfo.InvariantCulture)
                 : _instance?.ToString();
+        }
+
+        /// <summary>
+        /// The string maker registered with <see cref="SetCustomJsonManager"/> for <paramref name="instanceType"/> exactly, or
+        /// for the generic type it is made from
+        /// </summary>
+        internal JsonStringMaker TryGetRegisteredStringMakerFor (Type instanceType)
+        {
+            if (m_customJsonConstructor.Count == 0)
+            {
+                return null;
+            }
+
+            if (m_customJsonConstructor.TryGetValue(instanceType, out JsonStringMaker exact))
+            {
+                return exact;
+            }
+
+            if (instanceType.IsGenericType
+                && m_customJsonConstructor.TryGetValue(instanceType.GetGenericTypeDefinition(), out JsonStringMaker byDefinition))
+            {
+                return byDefinition;
+            }
+
+            return null;
         }
 
         public static JsonBuilderSettings BuildMinifiedSettings ()

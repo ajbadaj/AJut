@@ -7,7 +7,6 @@ namespace AJut.Text.AJson
     using System.Globalization;
     using System.Linq;
     using System.Reflection;
-    using AJut.TypeManagement;
 
     /// <summary>
     /// The reflection path's constructor route: how a type that has no parameterless constructor, or that names one with
@@ -32,6 +31,8 @@ namespace AJut.Text.AJson
         /// FindRoute as a delegate, made once rather than on every GetOrAdd
         /// </summary>
         private static readonly Func<Type, Route> kFindRoute = FindRoute;
+
+        private static readonly IReadOnlySet<string> kNoJsonKeys = new HashSet<string>();
 
         // Both dictionaries are filled on first use from any thread, so both are concurrent
         private static readonly ConcurrentDictionary<Type, Route> g_routes = new ConcurrentDictionary<Type, Route>();
@@ -65,6 +66,16 @@ namespace AJut.Text.AJson
             instance = route.Constructor.Invoke(BuildArguments(route, jsonValue, settings, owner));
             consumedJsonKeys = route.ConsumedJsonKeys;
             return true;
+        }
+
+        /// <summary>
+        /// The json keys <paramref name="type"/>'s constructor route takes as arguments, empty when it has no route. The writer
+        /// keeps writing a get-only member whose key is here, since the constructor is how the reader gets its value back.
+        /// </summary>
+        public static IReadOnlySet<string> GetConsumedJsonKeys (Type type)
+        {
+            Route route = g_routes.GetOrAdd(type, kFindRoute);
+            return route.Constructor != null ? route.ConsumedJsonKeys : kNoJsonKeys;
         }
 
         /// <summary>
@@ -117,13 +128,14 @@ namespace AJut.Text.AJson
             }
 
             ConstructorInfo chosen = marked.Length == 1 ? marked[0] : null;
-            PropertyInfo[] properties = null;
+
+            // The same members the reflection path reads and writes
+            JsonHelper.DataMember[] members = JsonHelper.GetDataMembers(type);
 
             // 3. A record's positional constructor, which needs no attribute
             if (chosen == null && type.GetMethod(kRecordCloneMethodName, BindingFlags.Public | BindingFlags.Instance) != null)
             {
-                properties = GetMatchableProperties(type);
-                chosen = FindPositionalRecordConstructor(type, constructors, properties);
+                chosen = FindPositionalRecordConstructor(type, constructors, members);
             }
 
             // 4. Nothing to use, so the type is built like any other (and fails like any other with no parameterless constructor)
@@ -132,23 +144,22 @@ namespace AJut.Text.AJson
                 return Route.None(marked.Length);
             }
 
-            properties = properties ?? GetMatchableProperties(type);
             ParameterInfo[] parameters = chosen.GetParameters();
             RouteParameter[] routeParameters = new RouteParameter[parameters.Length];
             for (int index = 0; index < parameters.Length; ++index)
             {
-                routeParameters[index] = BuildRouteParameter(parameters[index], FindMatchingProperty(properties, parameters[index].Name));
+                routeParameters[index] = BuildRouteParameter(parameters[index], FindMatchingMember(members, parameters[index].Name));
             }
 
             return new Route(chosen, routeParameters, marked.Length, isAmbiguous: false);
         }
 
         /// <summary>
-        /// The public constructor, other than the copy constructor, whose every parameter matches a property. A record compiled
+        /// The public constructor, other than the copy constructor, whose every parameter matches a member. A record compiled
         /// from source has exactly one (its primary constructor), but reflection has no way to tell which constructor that was,
         /// so more than one candidate means no route.
         /// </summary>
-        private static ConstructorInfo FindPositionalRecordConstructor (Type type, ConstructorInfo[] constructors, PropertyInfo[] properties)
+        private static ConstructorInfo FindPositionalRecordConstructor (Type type, ConstructorInfo[] constructors, JsonHelper.DataMember[] members)
         {
             ConstructorInfo found = null;
             foreach (ConstructorInfo constructor in constructors)
@@ -165,7 +176,7 @@ namespace AJut.Text.AJson
                     continue;
                 }
 
-                if (!parameters.All(p => FindMatchingProperty(properties, p.Name) != null))
+                if (!parameters.All(p => FindMatchingMember(members, p.Name) != null))
                 {
                     continue;
                 }
@@ -181,15 +192,15 @@ namespace AJut.Text.AJson
             return found;
         }
 
-        private static RouteParameter BuildRouteParameter (ParameterInfo parameter, PropertyInfo matchedProperty)
+        private static RouteParameter BuildRouteParameter (ParameterInfo parameter, JsonHelper.DataMember matchedMember)
         {
             // A key the json does not have is never an error, since nulls are never written. The value it takes is the one the
-            //  writer leaves out, when the matched property has [JsonOmitIfDefault]: its explicit value, or the type's default for
+            //  writer leaves out, when the matched member has [JsonOmitIfDefault]: its explicit value, or the type's default for
             //  the bare attribute. Otherwise the parameter's own default, then the type's default. The type's default is null here,
             //  which Invoke passes to a value type as its default. A default registered with
             //  JsonBuilderSettings.RegisterDefaultEquivalent cannot be used, since the reader never sees the writer's settings.
             object missingValue = null;
-            JsonOmitIfDefaultAttribute omit = matchedProperty?.GetCustomAttribute<JsonOmitIfDefaultAttribute>(inherit: true);
+            JsonOmitIfDefaultAttribute omit = matchedMember?.Info.GetCustomAttribute<JsonOmitIfDefaultAttribute>(inherit: true);
             if (omit != null)
             {
                 missingValue = omit.HasExplicitDefault ? CoerceTo(omit.ExplicitDefault, parameter.ParameterType) : null;
@@ -201,8 +212,8 @@ namespace AJut.Text.AJson
 
             return new RouteParameter(
                 parameter.ParameterType,
-                matchedProperty == null ? null : KeyForProperty(matchedProperty),
-                matchedProperty?.GetCustomAttribute<JsonRuntimeTypeEvalAttribute>(inherit: false) != null,
+                matchedMember?.JsonKey,
+                matchedMember?.Info.GetCustomAttribute<JsonRuntimeTypeEvalAttribute>(inherit: false) != null,
                 missingValue
             );
         }
@@ -312,44 +323,27 @@ namespace AJut.Text.AJson
             return IsIntegral(type);
         }
 
-        [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = kTrimJustification)]
-        private static PropertyInfo[] GetMatchableProperties (Type type)
-        {
-            // The same properties the reflection path reads and writes
-            return TypeMetadataExtensionRegistrar
-                .GetOrderedProperties(type, BindingFlags.Public | BindingFlags.Instance)
-                .Where(prop => prop.GetIndexParameters().Length == 0
-                            && !TypeMetadataExtensionRegistrar.IsHidden(prop)
-                            && prop.GetCustomAttribute<JsonIgnoreAttribute>(inherit: true) == null)
-                .ToArray();
-        }
-
         /// <summary>
-        /// The property a constructor parameter fills: the same name, preferring an exact match over one that differs only by case
+        /// The property or field a constructor parameter fills: the same name, preferring an exact match over one that differs only
+        /// by case
         /// </summary>
-        private static PropertyInfo FindMatchingProperty (PropertyInfo[] properties, string parameterName)
+        private static JsonHelper.DataMember FindMatchingMember (JsonHelper.DataMember[] members, string parameterName)
         {
-            PropertyInfo caseInsensitiveMatch = null;
-            foreach (PropertyInfo property in properties)
+            JsonHelper.DataMember caseInsensitiveMatch = null;
+            foreach (JsonHelper.DataMember member in members)
             {
-                if (property.Name == parameterName)
+                if (member.Info.Name == parameterName)
                 {
-                    return property;
+                    return member;
                 }
 
-                if (caseInsensitiveMatch == null && string.Equals(property.Name, parameterName, StringComparison.OrdinalIgnoreCase))
+                if (caseInsensitiveMatch == null && string.Equals(member.Info.Name, parameterName, StringComparison.OrdinalIgnoreCase))
                 {
-                    caseInsensitiveMatch = property;
+                    caseInsensitiveMatch = member;
                 }
             }
 
             return caseInsensitiveMatch;
-        }
-
-        private static string KeyForProperty (PropertyInfo property)
-        {
-            JsonPropertyAliasAttribute alias = property.GetCustomAttribute<JsonPropertyAliasAttribute>(inherit: true);
-            return alias?.PropertyName ?? property.Name;
         }
 
         // ===========================[ Subclasses/structs ]===========================

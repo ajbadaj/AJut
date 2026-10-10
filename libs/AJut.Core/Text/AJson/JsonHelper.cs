@@ -4,7 +4,6 @@ namespace AJut.Text.AJson
     using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
@@ -13,12 +12,13 @@ namespace AJut.Text.AJson
     using AJut.IO;
     using AJut.TypeManagement;
 
-    // The reflection path uses Type.GetProperties / Activator.CreateInstance / Type.GetProperty
+    // The reflection path uses Type.GetProperties / Type.GetFields / Activator.CreateInstance
     // throughout. Each Type-taking entry point carries a DynamicallyAccessedMembers annotation
-    // so the IL trimmer keeps the relevant members. The kAJsonReflectionRequirements constant
-    // (PublicProperties + PublicParameterlessConstructor) is the minimum set the reflection path
-    // needs - properties to walk, parameterless ctor to construct. Source-generator-handled types
-    // do not need these; they pre-emit explicit code referencing each property by name.
+    // so the IL trimmer keeps the relevant members. The kReflectionRequirements constant
+    // (PublicProperties + PublicFields + PublicParameterlessConstructor) is the minimum set the
+    // reflection path needs - properties and fields to walk, parameterless ctor to construct.
+    // Source-generator-handled types do not need these; they pre-emit explicit code referencing
+    // each member by name.
 
     /// <summary>
     /// Public entry point for V2 AJson - parsing, building, and POCO conversion.
@@ -28,20 +28,37 @@ namespace AJut.Text.AJson
         /// <summary>
         /// The AJson text format this AJson writes into its version marker
         /// (<see cref="JsonDocument.kAJsonVersionIndicator"/>). 2 is the first: strings escaped to
-        /// the JSON spec and DateTimes as round-trip ISO 8601. Text with no marker reads as 0.
+        /// the JSON spec, DateTimes as round-trip ISO 8601, public fields written as well as
+        /// properties, which puts the System.Numerics vectors and matrices down as documents of
+        /// their components, and a get-only member left out unless the reader can get it back (see
+        /// <see cref="JsonBuilderSettings.UseReadonlyObjectProperties"/>). It also writes the .NET
+        /// types a <see cref="JsonValueConverter"/> covers in their own shape (DateTimeOffset,
+        /// DateOnly and TimeOnly as ISO 8601, byte[] as base64, Complex as its two parts, a type
+        /// that formats and parses itself as its text), a dictionary whose keys are single values
+        /// as an object of its entries, and every number bare, in an array as well. Text with no
+        /// marker reads as 0.
         /// </summary>
         public const int kCurrentAJsonVersion = 2;
 
-        private static JsonBuilderSettings g_defaultBuilderSettings = new JsonBuilderSettings();
+        // The converters by the type each converts, AJson's own registered first. The parsable fallbacks are made the first
+        //  time a type is looked up and kept, null included for a type that has none, so the interface check runs once per type.
+        private static readonly ConcurrentDictionary<Type, JsonValueConverter> g_converters = JsonBuiltInConverters.CreateTable();
+        private static readonly ConcurrentDictionary<Type, JsonValueConverter> g_parsableFallbacks
+            = new ConcurrentDictionary<Type, JsonValueConverter>();
 
-        // Per-type reflection cache. Bounded by Type identity (assembly-bounded), no leak risk.
+        // Types already logged as written with nothing, so each is logged once
+        private static readonly ConcurrentDictionary<Type, byte> g_typesLoggedAsWrittenEmpty = new ConcurrentDictionary<Type, byte>();
+
+        // Per-type reflection caches. Bounded by Type identity (assembly-bounded), no leak risk.
         // ConcurrentDictionary chosen for thread-safety in case AJson is called concurrently.
         // The lists depend on TypeMetadataExtensionRegistrar state as well as on the Type, so the
-        // registrar invalidates them whenever a registration changes (InvalidatePropertyCachesFor).
-        private static readonly ConcurrentDictionary<Type, PropertyInfo[]> g_propertyCacheReadable
-            = new ConcurrentDictionary<Type, PropertyInfo[]>();
-        private static readonly ConcurrentDictionary<Type, PropertyInfo[]> g_propertyCacheWritable
-            = new ConcurrentDictionary<Type, PropertyInfo[]>();
+        // registrar invalidates them whenever a registration changes (InvalidateMemberCachesFor).
+        // The member sets are built from the member lists, which is why they are two caches: a
+        // GetOrAdd factory that asked its own cache for the same type would recurse.
+        private static readonly ConcurrentDictionary<Type, DataMember[]> g_memberCache
+            = new ConcurrentDictionary<Type, DataMember[]>();
+        private static readonly ConcurrentDictionary<Type, MemberSet> g_memberSetCache
+            = new ConcurrentDictionary<Type, MemberSet>();
 
         // ===============================[ AJson Version ]===========================
         /// <summary>
@@ -57,6 +74,63 @@ namespace AJut.Text.AJson
         /// since a reader cannot know whether the writer had the marker on.
         /// </summary>
         public static int WarnIfAJsonVersionBelow { get; set; } = 0;
+
+        // ===============================[ Converters ]===========================
+        /// <summary>
+        /// Registers <paramref name="converter"/> as how its <see cref="JsonValueConverter.TargetType"/> is written and read,
+        /// replacing any converter already registered for that type, AJson's own included
+        /// </summary>
+        public static void RegisterConverter (JsonValueConverter converter)
+        {
+            if (converter == null)
+            {
+                throw new ArgumentNullException(nameof(converter));
+            }
+
+            g_converters[converter.TargetType] = converter;
+            g_parsableFallbacks.TryRemove(converter.TargetType, out _);
+        }
+
+        /// <summary>
+        /// Removes the converter registered for <paramref name="targetType"/>, AJson's own included, so the type is written and
+        /// read the way it would be without one
+        /// </summary>
+        /// <returns>True if a converter was registered for it</returns>
+        public static bool UnregisterConverter (Type targetType)
+        {
+            return g_converters.TryRemove(targetType, out _);
+        }
+
+        /// <summary>
+        /// The converter for <paramref name="type"/>: one registered for it exactly, then one registered for the generic type
+        /// it is made from, then the fallback for a type that writes and reads itself as text (one implementing IFormattable
+        /// and IParsable of itself)
+        /// </summary>
+        public static bool TryGetConverterFor (Type type, out JsonValueConverter converter)
+        {
+            if (g_converters.TryGetValue(type, out converter))
+            {
+                return true;
+            }
+
+            if (type.IsGenericType && g_converters.TryGetValue(type.GetGenericTypeDefinition(), out converter))
+            {
+                return true;
+            }
+
+            converter = g_parsableFallbacks.GetOrAdd(type, static t => JsonBuiltInConverters.TryMakeParsableConverter(t));
+            return converter != null;
+        }
+
+        /// <summary>
+        /// Whether a converter is registered for <paramref name="type"/> or the generic type it is made from, AJson's own
+        /// included, as opposed to the parsable fallback
+        /// </summary>
+        internal static bool IsRegisteredConverterFor (Type type)
+        {
+            return g_converters.ContainsKey(type)
+                || (type.IsGenericType && g_converters.ContainsKey(type.GetGenericTypeDefinition()));
+        }
 
         // ===============================[ Type ID Registration ]===========================
         public static void RegisterTypeId<T> (string id)
@@ -110,7 +184,7 @@ namespace AJut.Text.AJson
         // ===============================[ Build Entry Points ]===========================
         public static JsonBuilder MakeRootBuilder (JsonBuilderSettings settings = null)
         {
-            return new JsonBuilder(settings ?? g_defaultBuilderSettings);
+            return new JsonBuilder(settings ?? JsonBuilderSettings.Default);
         }
 
         internal static JsonBuilder MakeValueBuilder (object value, JsonBuilderSettings settings = null)
@@ -145,15 +219,28 @@ namespace AJut.Text.AJson
                 return false;
             }
 
-            settings = settings ?? g_defaultBuilderSettings;
+            settings = settings ?? JsonBuilderSettings.Default;
             return settings.TryGetJsonValueStringMakerFor(value.GetType()) != null;
         }
 
+        /// <summary>
+        /// Not a value, and either a <see cref="JsonValueConverter"/> writes it as an array, or it has no converter and is
+        /// <see cref="IEnumerable"/>
+        /// </summary>
         public static bool IsArrayData (object value, JsonBuilderSettings settings = null)
         {
-            return value != null
-                && !IsValueData(value, settings)
-                && value is IEnumerable;
+            if (value == null || IsValueData(value, settings))
+            {
+                return false;
+            }
+
+            if (TryGetConverterFor(value.GetType(), out JsonValueConverter converter))
+            {
+                return converter.WrittenShape == eJsonValueShape.Array;
+            }
+
+            return (value is IEnumerable)
+                && !IsDictionaryWrittenAsDocument(value, settings ?? JsonBuilderSettings.Default, out _, out _);
         }
 
         public static bool IsDocumentData (object value, JsonBuilderSettings settings = null)
@@ -165,7 +252,9 @@ namespace AJut.Text.AJson
 
         // ===============================[ Object-from-Json Entry Points ]===========================
         private const DynamicallyAccessedMemberTypes kReflectionRequirements
-            = DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;
+            = DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicFields
+            | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;
 
         public static T BuildObjectForJson<[DynamicallyAccessedMembers(kReflectionRequirements)] T> (Json sourceJson, JsonInterpreterSettings settings = null)
         {
@@ -250,6 +339,24 @@ namespace AJut.Text.AJson
                 return null;
             }
 
+            // A converter owns how its type reads, unless these settings registered a constructor for the type, which is the
+            //  more specific ask. A converter that does not take this shape of json (a scalar's converter given a document
+            //  written before the type had one) leaves it to the path below.
+            bool hasCustomConstructor = settings.HasCustomConstructorFor(type);
+            if (!hasCustomConstructor
+                && TryGetConverterFor(type, out JsonValueConverter converter)
+                && converter.CanRead(sourceJsonValue))
+            {
+                return converter.Read(type, sourceJsonValue, settings, owner);
+            }
+
+            // A registered constructor given a single value builds the whole value. Filling it after would parse the same text
+            //  again with the StringParser, over whatever the constructor made of it.
+            if (hasCustomConstructor && sourceJsonValue.IsValue)
+            {
+                return settings.ConstructInstanceFor(type, sourceJsonValue, owner);
+            }
+
             // Class-level [JsonPropertyAsSelf] elevation - the json data we have is the inner
             //  property's content rather than a doc with a named entry. Build an instance of the
             //  outer type, build the inner value via the property type, set, return. Backward-compat
@@ -321,11 +428,64 @@ namespace AJut.Text.AJson
 
             if (outputInstance == null)
             {
-                outputInstance = settings.ConstructInstanceFor(type, sourceJsonValue, owner, out keysConsumedByConstructor);
+                // An interface or abstract type cannot be built as itself. A collection interface is built as the collection
+                //  .NET would hand back for it; anything else has nothing saying what to build, which is reported rather than
+                //  thrown, the same as any other json AJson cannot make sense of.
+                Type typeToBuild = type;
+                if ((type.IsInterface || type.IsAbstract) && !hasCustomConstructor)
+                {
+                    typeToBuild = CollectionTypeToBuildFor(type);
+                    if (typeToBuild == null)
+                    {
+                        owner?.AddError($"'{type.FullName}' is an interface or abstract type, and its json has no '{JsonDocument.kTypeIndicator}' saying what to build. Skipping, value left null.");
+                        return null;
+                    }
+                }
+
+                outputInstance = settings.ConstructInstanceFor(typeToBuild, sourceJsonValue, owner, out keysConsumedByConstructor);
             }
 
             FillOutObjectWithJson(ref outputInstance, type, sourceJsonValue, settings, owner, keysConsumedByConstructor);
             return outputInstance;
+        }
+
+        /// <summary>
+        /// The concrete collection to build for a collection interface: a List for IEnumerable, IReadOnlyCollection,
+        /// IReadOnlyList, ICollection and IList, a HashSet for ISet and IReadOnlySet, and a Dictionary for IDictionary and
+        /// IReadOnlyDictionary
+        /// </summary>
+        /// <returns>The type to build, or null when <paramref name="type"/> is not one of those interfaces</returns>
+        [UnconditionalSuppressMessage("AOT", "IL3050",
+            Justification = "Reflection-path construction of the collection the consumer's own interface-typed member holds; the element types are the consumer's.")]
+        private static Type CollectionTypeToBuildFor (Type type)
+        {
+            if (!type.IsInterface || !type.IsGenericType)
+            {
+                return null;
+            }
+
+            Type definition = type.GetGenericTypeDefinition();
+            Type[] arguments = type.GetGenericArguments();
+            if (definition == typeof(IEnumerable<>)
+                || definition == typeof(IReadOnlyCollection<>)
+                || definition == typeof(IReadOnlyList<>)
+                || definition == typeof(ICollection<>)
+                || definition == typeof(IList<>))
+            {
+                return typeof(List<>).MakeGenericType(arguments);
+            }
+
+            if (definition == typeof(ISet<>) || definition == typeof(IReadOnlySet<>))
+            {
+                return typeof(HashSet<>).MakeGenericType(arguments);
+            }
+
+            if (definition == typeof(IDictionary<,>) || definition == typeof(IReadOnlyDictionary<,>))
+            {
+                return typeof(Dictionary<,>).MakeGenericType(arguments);
+            }
+
+            return null;
         }
 
         public static void FillOutObjectWithJson (ref object targetItem, [DynamicallyAccessedMembers(kReflectionRequirements)] Type targetType, JsonValue sourceJsonValue, JsonInterpreterSettings settings = null)
@@ -375,39 +535,36 @@ namespace AJut.Text.AJson
 
             if (sourceJsonValue.IsArray)
             {
-                bool isArray = false, isList = false, isDictionary = false;
+                bool isArray = false, isList = false;
                 Type elementType = null;
-                MethodInfo dictionaryAdd = null;
+                MethodInfo collectionAdd = null;
 
                 if (targetType.IsArray)
                 {
                     isArray = true;
                     elementType = targetType.GetElementType();
                 }
-                else if (targetType.FindBaseTypeOrInterface(typeof(IList<>)) is Type listType)
+                else if ((targetItem is IList) && targetType.FindBaseTypeOrInterface(typeof(IList<>)) is Type listType)
                 {
                     isList = true;
                     elementType = listType.GetGenericArguments()[0];
                 }
-                else if (targetType.FindBaseTypeOrInterface(typeof(IDictionary<,>)) is Type dictionaryType)
+                // Any other collection goes in through ICollection<T>.Add: a HashSet or a LinkedList, which have no index
+                //  to Insert at, and a dictionary, whose elements are its KeyValuePairs
+                else if (targetType.FindBaseTypeOrInterface(typeof(ICollection<>)) is Type collectionType)
                 {
-                    isDictionary = true;
-                    Type[] generics = dictionaryType.GetGenericArguments();
-                    elementType = typeof(KeyValuePair<,>).MakeGenericType(generics[0], generics[1]);
-
-                    Type collectionType = typeof(ICollection<>).MakeGenericType(elementType);
-                    dictionaryAdd = collectionType.GetMethod("Add", new[] { elementType });
-                    Debug.Assert(dictionaryAdd != null, $"Could not find add method for dictionary of type {targetType}");
+                    elementType = collectionType.GetGenericArguments()[0];
+                    collectionAdd = collectionType.GetMethod(nameof(ICollection<object>.Add), new[] { elementType });
                 }
 
-                // No element type resolved - the target (usually a bare object) is not an array,
-                //  list, or dictionary, so there is nothing to deserialize the elements into. Report
-                //  it and null the value rather than feeding a null element type into the per-item
-                //  build below, which would dereference null. This is the boxed-array-in-object case:
-                //  the array was serialized with no __type discriminator and can't be resolved back.
+                // No element type resolved - the target (usually a bare object) is not an array or a
+                //  collection, so there is nothing to deserialize the elements into. Report it and null
+                //  the value rather than feeding a null element type into the per-item build below,
+                //  which would dereference null. This is the boxed-array-in-object case: the array was
+                //  serialized with no __type discriminator and can't be resolved back.
                 if (elementType == null)
                 {
-                    owner?.AddError($"Cannot interpret a json array as target type '{targetType}' - it is not an array, list, or dictionary. This usually means a polymorphic (object-typed) value held an array serialized with no '{JsonDocument.kTypeIndicator}' discriminator. Skipping, value left null.");
+                    owner?.AddError($"Cannot interpret a json array as target type '{targetType}' - it is not an array or a collection. This usually means a polymorphic (object-typed) value held an array serialized with no '{JsonDocument.kTypeIndicator}' discriminator. Skipping, value left null.");
                     targetItem = null;
                     return;
                 }
@@ -426,9 +583,9 @@ namespace AJut.Text.AJson
                     {
                         ((IList)targetItem).Insert(index, built);
                     }
-                    else if (isDictionary)
+                    else
                     {
-                        dictionaryAdd.Invoke(targetItem, new object[] { built });
+                        collectionAdd.Invoke(targetItem, new object[] { built });
                     }
                 }
             }
@@ -436,7 +593,27 @@ namespace AJut.Text.AJson
             if (sourceJsonValue.IsDocument)
             {
                 JsonDocument sourceCasted = (JsonDocument)sourceJsonValue;
-                PropertyInfo[] allProperties = GetCachedWritableProperties(targetType);
+
+                // A dictionary written with its keys as the document's keys. One written as an array of Key and Value
+                //  documents went through the array branch above.
+                if (targetType.FindBaseTypeOrInterface(typeof(IDictionary<,>)) is Type dictionaryInterface)
+                {
+                    FillDictionaryFromDocument(targetItem, dictionaryInterface, sourceCasted, settings, owner);
+                    return;
+                }
+
+                DataMember[] membersToReadInto = GetMemberSet(targetType).ReadInto;
+
+                // Json for a type that has data, where nothing took any of it (no member to set, no constructor that took a
+                //  key), is json the type comes back from at its default. That is reported rather than passed over quietly.
+                if (membersToReadInto.Length == 0
+                    && keysConsumedByConstructor == null
+                    && !settings.HasCustomConstructorFor(targetType)
+                    && GetDataMembers(targetType).Length > 0
+                    && sourceCasted.AllKeys().Any(key => key != JsonDocument.kTypeIndicator))
+                {
+                    owner?.AddError($"'{targetType.FullName}' has nothing AJson can read json into: no settable member, no constructor AJson can call, and no JsonValueConverter. It is left at its default. Register a JsonValueConverter for it, or mark a constructor with [AJsonConstructor].");
+                }
 
                 foreach (KeyValuePair<string, JsonValue> kvp in sourceCasted)
                 {
@@ -445,25 +622,32 @@ namespace AJut.Text.AJson
                         continue;
                     }
 
-                    // A key the constructor took as an argument is done: setting its property again would replace whatever the
+                    // A key the constructor took as an argument is done: setting its member again would replace whatever the
                     //  constructor did with the value, which the generated reader never does either
                     if (keysConsumedByConstructor != null && keysConsumedByConstructor.Contains(kvp.Key))
                     {
                         continue;
                     }
 
-                    PropertyInfo propToSet = FindPropertyForKey(allProperties, kvp.Key);
-                    if (propToSet == null)
+                    DataMember memberToSet = FindMemberForKey(membersToReadInto, kvp.Key);
+                    if (memberToSet == null)
                     {
                         continue;
                     }
 
-                    object newPropValue = null;
+                    // A get-only collection is filled where it is, since there is no setting a new one
+                    if (memberToSet.IsGetOnlyCollection)
+                    {
+                        FillCollectionInPlace(memberToSet.GetValue(targetItem), kvp.Key, kvp.Value, settings, owner);
+                        continue;
+                    }
+
+                    object newMemberValue = null;
 
                     // [JsonRuntimeTypeEval] read path: the value side is a small doc carrying the
                     //  payload's runtime type id and the actual content. Resolve the type, build
                     //  against that concrete type, then set.
-                    JsonRuntimeTypeEvalAttribute runtimeTypeEval = propToSet.GetCustomAttribute<JsonRuntimeTypeEvalAttribute>(inherit: false);
+                    JsonRuntimeTypeEvalAttribute runtimeTypeEval = memberToSet.Info.GetCustomAttribute<JsonRuntimeTypeEvalAttribute>(inherit: false);
                     if (runtimeTypeEval != null && kvp.Value.IsDocument)
                     {
                         JsonDocument runtimeDoc = (JsonDocument)kvp.Value;
@@ -471,16 +655,104 @@ namespace AJut.Text.AJson
                             && runtimeDoc.ValueFor(JsonDocument.kRuntimeTypeEvalValue) is JsonValue wrappedValue
                             && TryGetTypeForTypeId(runtimeTypeId, out Type runtimeType))
                         {
-                            newPropValue = BuildObjectForJson(runtimeType, wrappedValue, settings, owner);
+                            newMemberValue = BuildObjectForJson(runtimeType, wrappedValue, settings, owner);
                         }
                     }
 
-                    if (newPropValue == null)
+                    if (newMemberValue == null)
                     {
-                        newPropValue = BuildObjectForJson(propToSet.PropertyType, kvp.Value, settings, owner);
+                        newMemberValue = BuildObjectForJson(memberToSet.Type, kvp.Value, settings, owner);
                     }
 
-                    propToSet.SetValue(targetItem, newPropValue);
+                    memberToSet.SetValue(targetItem, newMemberValue);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Reads a json array into a collection that already exists, the value of a get-only property or readonly field:
+        /// whatever is in it is cleared, then each element is added. A collection that is null or read-only, or json that is
+        /// not an array, is reported to the owner rather than thrown, and the collection is left as it was.
+        /// </summary>
+        /// <param name="collection">The collection to fill</param>
+        /// <param name="jsonKey">The key it was read from, for error reports</param>
+        /// <param name="sourceJsonValue">The json array to fill it from</param>
+        /// <param name="settings">How elements are built</param>
+        /// <param name="owner">Receives errors, if given</param>
+        [UnconditionalSuppressMessage("Trimming", "IL2072",
+            Justification = "Reflection-path fill of a collection the consumer's type already holds; the trim-safe path is [OptimizeAJson].")]
+        internal static void FillCollectionInPlace (object collection, string jsonKey, JsonValue sourceJsonValue, JsonInterpreterSettings settings, Json owner)
+        {
+            if (collection == null)
+            {
+                owner?.AddError($"'{jsonKey}' is a get-only collection that is null, so there is nothing to read its values into. Skipping.");
+                return;
+            }
+
+            // A dictionary is filled from a document of its entries as well as from an array of Key and Value documents
+            Type collectionInterface = collection.GetType().FindBaseTypeOrInterface(typeof(ICollection<>));
+            bool isDictionary = collection.GetType().FindBaseTypeOrInterface(typeof(IDictionary<,>)) != null;
+            bool canFillFromJson = sourceJsonValue.IsArray || (isDictionary && sourceJsonValue.IsDocument);
+            if (collectionInterface == null || !canFillFromJson)
+            {
+                owner?.AddError($"'{jsonKey}' is a get-only collection, and its json is not an array (or, for a dictionary, a document) it can be filled from. Skipping.");
+                return;
+            }
+
+            bool isReadOnly = (bool)collectionInterface.GetProperty(nameof(ICollection<object>.IsReadOnly)).GetValue(collection);
+            if (isReadOnly)
+            {
+                owner?.AddError($"'{jsonKey}' is a get-only collection that is read-only, so it can not be filled. Skipping.");
+                return;
+            }
+
+            collectionInterface.GetMethod(nameof(ICollection<object>.Clear)).Invoke(collection, null);
+            FillOutObjectWithJson(ref collection, collection.GetType(), sourceJsonValue, settings, owner);
+        }
+
+        /// <summary>
+        /// Reads a document whose keys are a dictionary's keys into <paramref name="dictionary"/>. Each key is read from its
+        /// text as the dictionary's key type, the way a value of that type is, so a string, a number, an enum or anything a
+        /// converter writes as one value can key it. A later duplicate key replaces an earlier one.
+        /// </summary>
+        [UnconditionalSuppressMessage("Trimming", "IL2072",
+            Justification = "Key and value types come from the generic arguments of the consumer's own dictionary - keeping members of those is the consumer's responsibility per AJson reflection-path contract.")]
+        [UnconditionalSuppressMessage("Trimming", "IL2075",
+            Justification = "IDictionary<,> is intrinsic and its indexer always preserved; the interface comes from the dictionary the consumer's member holds.")]
+        private static void FillDictionaryFromDocument (object dictionary, Type dictionaryInterface, JsonDocument source, JsonInterpreterSettings settings, Json owner)
+        {
+            Type[] keyAndValueTypes = dictionaryInterface.GetGenericArguments();
+            IDictionary untyped = dictionary as IDictionary;
+            if (dictionary == null || (untyped?.IsReadOnly ?? false))
+            {
+                owner?.AddError($"Could not fill a {dictionaryInterface.Name} from json: it is {(dictionary == null ? "null" : "read-only")}. Skipping.");
+                return;
+            }
+
+            PropertyInfo typedIndexer = untyped == null ? dictionaryInterface.GetProperty("Item") : null;
+
+            foreach (KeyValuePair<string, JsonValue> entry in source)
+            {
+                if (entry.Key == JsonDocument.kTypeIndicator)
+                {
+                    continue;
+                }
+
+                object key = BuildObjectForJson(keyAndValueTypes[0], new JsonValue(entry.Key, isQuoted: true), settings, owner);
+                if (key == null)
+                {
+                    owner?.AddError($"Could not read dictionary key '{entry.Key}' as a {keyAndValueTypes[0].Name}. Skipping the entry.");
+                    continue;
+                }
+
+                object value = BuildObjectForJson(keyAndValueTypes[1], entry.Value, settings, owner);
+                if (untyped != null)
+                {
+                    untyped[key] = value;
+                }
+                else
+                {
+                    typedIndexer.SetValue(dictionary, value, new[] { key });
                 }
             }
         }
@@ -503,6 +775,21 @@ namespace AJut.Text.AJson
 
             Type sourceType = source.GetType();
 
+            // A string maker registered on the settings is the most specific ask, then a converter, and either one owns how
+            //  the type is written
+            JsonStringMaker registeredMaker = target.BuilderSettings.TryGetRegisteredStringMakerFor(sourceType);
+            if (registeredMaker != null)
+            {
+                ApplySimpleValue(target, registeredMaker(source), IsUsuallyQuotedFor(sourceType));
+                return;
+            }
+
+            if (TryGetConverterFor(sourceType, out JsonValueConverter converter))
+            {
+                converter.Write(source, target);
+                return;
+            }
+
             // Source-gen fast path. The generated writer handles document-startup, type-id header,
             //  and per-property writes in a single explicit call, with no reflection on the property
             //  loop. Value-typed properties are still boxed: each one goes through
@@ -513,35 +800,38 @@ namespace AJut.Text.AJson
                 return;
             }
 
-            // Class-level [JsonPropertyAsSelf] elevation - swap the source for the named property's
-            //  value and continue down the normal path. Null elevated value falls out as a no-op
-            //  (matches the null-property omit policy the outer property handler applies).
+            // Class-level [JsonPropertyAsSelf] elevation - the named property's value is written in
+            //  the source's place, the whole way through, so a converter or generated serializer for
+            //  it is used the same as anywhere else (the generated writer does the same). Null elevated
+            //  value falls out as a no-op (matches the null-property omit policy the outer property
+            //  handler applies).
             JsonPropertyAsSelfAttribute elevatedAttr = sourceType.GetCustomAttribute<JsonPropertyAsSelfAttribute>(inherit: true);
             if (elevatedAttr != null)
             {
                 PropertyInfo elevatedProp = sourceType.GetProperty(elevatedAttr.PropertyName, BindingFlags.Public | BindingFlags.Instance);
                 if (elevatedProp != null)
                 {
-                    source = elevatedProp.GetValue(source);
-                    if (source == null)
-                    {
-                        return;
-                    }
-                    sourceType = source.GetType();
+                    FillOutJsonBuilderForObject(elevatedProp.GetValue(source), target);
+                    return;
                 }
             }
 
             // Simple value path.
             if (TryGetSimpleStringValue(target.BuilderSettings, sourceType, source, out bool isUsuallyQuoted, out string value))
             {
-                target.IsValueUsualQuoteTarget = isUsuallyQuoted;
-                ApplySimpleValue(target, value);
+                ApplySimpleValue(target, value, isUsuallyQuoted);
                 return;
             }
 
-            // Array / IEnumerable path.
+            // Array / IEnumerable path. A dictionary whose keys are written as single values goes down
+            //  as a document of its entries instead.
             if (typeof(IEnumerable).IsAssignableFrom(sourceType))
             {
+                if (TryWriteDictionaryAsDocument(source, target))
+                {
+                    return;
+                }
+
                 JsonBuilder array = target.StartArray();
                 IEnumerable enumerableValue = (IEnumerable)source;
                 foreach (object arrayItemObj in enumerableValue)
@@ -559,8 +849,7 @@ namespace AJut.Text.AJson
                             }
                             else if (elementType.IsSimpleType() || target.BuilderSettings.TryGetJsonValueStringMakerFor(elementType) != null)
                             {
-                                JsonBuilder item = array.AddArrayItem(String.Empty);
-                                item.IsValueUsualQuoteTarget = true;
+                                array.AddArrayItem(String.Empty);
                             }
                             else
                             {
@@ -571,12 +860,13 @@ namespace AJut.Text.AJson
                         continue;
                     }
 
-                    if (TryGetSimpleStringValue(target.BuilderSettings, arrayItemObj.GetType(), arrayItemObj, out bool itemIsQuoted, out string itemString))
+                    // The item itself goes in rather than its text, so it is written, and quoted or not,
+                    //  by its own type: text added as a string is always quoted, a number included
+                    if (IsValueData(arrayItemObj, target.BuilderSettings))
                     {
-                        JsonBuilder item = array.AddArrayItem(itemString);
-                        item.IsValueUsualQuoteTarget = itemIsQuoted;
+                        array.AddArrayItem(arrayItemObj);
                     }
-                    else if (arrayItemObj is IEnumerable)
+                    else if (IsArrayData(arrayItemObj, target.BuilderSettings))
                     {
                         FillOutJsonBuilderForObject(arrayItemObj, array);
                     }
@@ -615,16 +905,16 @@ namespace AJut.Text.AJson
                     target.AddProperty(JsonDocument.kKVPValueTypeIndicator, valueTypeId);
                 }
 
-                ApplyDocumentProperty(target, source, keyProp);
-                ApplyDocumentProperty(target, source, valueProp);
+                ApplyDocumentMember(target, source, new DataMember(keyProp));
+                ApplyDocumentMember(target, source, new DataMember(valueProp));
                 return;
             }
 
             // Document path.
-            PropertyInfo[] allProperties = GetCachedReadableProperties(
-                sourceType,
-                requiresSet: source.GetType().IsSimpleType() || !target.BuilderSettings.UseReadonlyObjectProperties
-            );
+            MemberSet members = GetMemberSet(sourceType);
+            DataMember[] membersToWrite = (sourceType.IsSimpleType() || !target.BuilderSettings.UseReadonlyObjectProperties)
+                ? members.WrittenByDefault
+                : members.WithGetter;
 
             // A document with nothing to write is dropped from its parent, unless it carries a type
             //  id. For a type with no data members the type id is the whole value: an empty marker
@@ -632,10 +922,14 @@ namespace AJut.Text.AJson
             //  type, not vanish and read back as null (or shift the list).
             eTypeIdInfo typeIdToWrite = target.BuilderSettings.TypeIdToWrite;
             bool hasTypeId = TryGetTypeIdForType(typeIdToWrite, sourceType, out string typeId);
-            if (allProperties.Length == 0 && !hasTypeId && target.Parent != null)
+            if (membersToWrite.Length == 0)
             {
-                target.Parent.Children.Remove(target);
-                return;
+                LogIfStateIsHidden(sourceType);
+                if (!hasTypeId && target.Parent != null)
+                {
+                    target.Parent.Children.Remove(target);
+                    return;
+                }
             }
 
             if (!target.IsArrayItem)
@@ -648,35 +942,132 @@ namespace AJut.Text.AJson
                 target.AddProperty(JsonDocument.kTypeIndicator, typeId);
             }
 
-            foreach (PropertyInfo prop in allProperties)
+            foreach (DataMember member in membersToWrite)
             {
-                ApplyDocumentProperty(target, source, prop);
+                ApplyDocumentMember(target, source, member);
             }
         }
 
         // ===============================[ Internal Helpers ]===========================
-        private static void ApplyDocumentProperty (JsonBuilder target, object propSource, PropertyInfo propInfo)
+        /// <summary>
+        /// Writes <paramref name="source"/> as a document of its entries, { "key": value, ... }, when it is a dictionary
+        /// written that way (see <see cref="IsDictionaryWrittenAsDocument"/>). An entry with a null value is left out, the
+        /// same as a null member.
+        /// </summary>
+        /// <returns>True if it was written, false if it is written some other way</returns>
+        private static bool TryWriteDictionaryAsDocument (object source, JsonBuilder target)
         {
-            string key = KeyForProperty(propInfo);
-            object sourceValue = propInfo.GetValue(propSource);
+            if (!IsDictionaryWrittenAsDocument(source, target.BuilderSettings, out Type dictionaryInterface, out JsonStringMaker keyMaker))
+            {
+                return false;
+            }
+
+            JsonBuilder document = (target.IsArrayItem && target.IsDocument) ? target : target.StartDocument();
+            foreach (KeyValuePair<object, object> entry in EnumerateDictionaryEntries(source, dictionaryInterface))
+            {
+                if (entry.Value == null)
+                {
+                    continue;
+                }
+
+                string key = keyMaker(entry.Key);
+                if (TryGetSimpleStringValue(document.BuilderSettings, entry.Value.GetType(), entry.Value, out bool isUsuallyQuoted, out _))
+                {
+                    document.AddProperty(key, entry.Value, isUsuallyQuoted);
+                }
+                else
+                {
+                    FillOutJsonBuilderForObject(entry.Value, document.StartProperty(key));
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Whether <paramref name="value"/> is a dictionary written as a document of its entries: one whose key type is written
+        /// as a single value (a string, a number, an enum, anything a converter writes as one value), written with no
+        /// KeyValuePair type ids asked for, and with no key whose text is one of AJson's own markers, which a read would take
+        /// as the marker. Any other dictionary is written as an array of Key and Value documents.
+        /// </summary>
+        private static bool IsDictionaryWrittenAsDocument (object value, JsonBuilderSettings settings, out Type dictionaryInterface, out JsonStringMaker keyMaker)
+        {
+            keyMaker = null;
+            dictionaryInterface = value.GetType().FindBaseTypeOrInterface(typeof(IDictionary<,>));
+            if (dictionaryInterface == null || settings.HasAnyKVPTypeIdWriteInstructions)
+            {
+                return false;
+            }
+
+            keyMaker = settings.TryGetJsonValueStringMakerFor(dictionaryInterface.GenericTypeArguments[0]);
+            if (keyMaker == null)
+            {
+                return false;
+            }
+
+            foreach (KeyValuePair<object, object> entry in EnumerateDictionaryEntries(value, dictionaryInterface))
+            {
+                string key = keyMaker(entry.Key);
+                if (key == JsonDocument.kTypeIndicator || key == JsonDocument.kAJsonVersionIndicator)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// A dictionary's entries, through the non-generic IDictionary when it has one (every .NET dictionary does), or else
+        /// through its KeyValuePairs
+        /// </summary>
+        [UnconditionalSuppressMessage("Trimming", "IL2075",
+            Justification = "KeyValuePair<,> is intrinsic and its Key and Value always preserved; it is made from the consumer's own dictionary type.")]
+        [UnconditionalSuppressMessage("AOT", "IL3050",
+            Justification = "Reflection-path read of a dictionary the consumer passed in, which only lacks the non-generic IDictionary when it is the consumer's own type.")]
+        private static IEnumerable<KeyValuePair<object, object>> EnumerateDictionaryEntries (object dictionary, Type dictionaryInterface)
+        {
+            if (dictionary is IDictionary untyped)
+            {
+                foreach (DictionaryEntry entry in untyped)
+                {
+                    yield return new KeyValuePair<object, object>(entry.Key, entry.Value);
+                }
+
+                yield break;
+            }
+
+            Type pairType = typeof(KeyValuePair<,>).MakeGenericType(dictionaryInterface.GenericTypeArguments);
+            PropertyInfo keyProperty = pairType.GetProperty(nameof(KeyValuePair<object, object>.Key));
+            PropertyInfo valueProperty = pairType.GetProperty(nameof(KeyValuePair<object, object>.Value));
+            foreach (object pair in (IEnumerable)dictionary)
+            {
+                yield return new KeyValuePair<object, object>(keyProperty.GetValue(pair), valueProperty.GetValue(pair));
+            }
+        }
+
+        private static void ApplyDocumentMember (JsonBuilder target, object memberSource, DataMember member)
+        {
+            string key = member.JsonKey;
+            object sourceValue = member.GetValue(memberSource);
 
             if (sourceValue == null)
             {
                 return;
             }
 
-            // [JsonOmitIfDefault] - skip the property if the value matches a default. Three sources
+            // [JsonOmitIfDefault] - skip the member if the value matches a default. Three sources
             //  in priority order: per-attribute explicit, settings-registered equivalent, then the
             //  type's zero value.
-            JsonOmitIfDefaultAttribute omitAttr = propInfo.GetCustomAttribute<JsonOmitIfDefaultAttribute>(inherit: true);
-            if (omitAttr != null && IsConsideredDefault(target.BuilderSettings, propInfo.PropertyType, sourceValue, omitAttr))
+            JsonOmitIfDefaultAttribute omitAttr = member.Info.GetCustomAttribute<JsonOmitIfDefaultAttribute>(inherit: true);
+            if (omitAttr != null && IsConsideredDefault(target.BuilderSettings, member.Type, sourceValue, omitAttr))
             {
                 return;
             }
 
             // [JsonRuntimeTypeEval] - wrap the value in a type-id-bearing doc so the read path can
-            //  recover the concrete runtime type for the property (typically an object/interface).
-            JsonRuntimeTypeEvalAttribute runtimeTypeEval = propInfo.GetCustomAttribute<JsonRuntimeTypeEvalAttribute>(inherit: false);
+            //  recover the concrete runtime type for the member (typically an object/interface).
+            JsonRuntimeTypeEvalAttribute runtimeTypeEval = member.Info.GetCustomAttribute<JsonRuntimeTypeEvalAttribute>(inherit: false);
             if (runtimeTypeEval != null
                 && TryGetTypeIdForType(runtimeTypeEval.TypeWriteTarget, sourceValue.GetType(), out string runtimeTypeId))
             {
@@ -687,7 +1078,7 @@ namespace AJut.Text.AJson
                 return;
             }
 
-            if (TryGetSimpleStringValue(target.BuilderSettings, propInfo.PropertyType, sourceValue, out bool isUsuallyQuoted, out string simpleStringValue))
+            if (TryGetSimpleStringValue(target.BuilderSettings, member.Type, sourceValue, out bool isUsuallyQuoted, out string simpleStringValue))
             {
                 target.AddProperty(key, sourceValue, isUsuallyQuoted);
             }
@@ -746,39 +1137,49 @@ namespace AJut.Text.AJson
 
         private static bool TryGetSimpleStringValue (JsonBuilderSettings settings, Type type, object instance, out bool isUsuallyQuoted, out string stringValue)
         {
-            isUsuallyQuoted = false;
             JsonStringMaker maker = settings.TryGetJsonValueStringMakerFor(type);
-            if (maker != null)
+            if (maker == null)
             {
-                stringValue = maker(instance);
-                if (type == typeof(string) || type == typeof(char) || type.IsEnum)
-                {
-                    isUsuallyQuoted = true;
-                }
-                else if (type.IsNumericType())
-                {
-                    isUsuallyQuoted = false;
-                }
-                else if (type == typeof(bool))
-                {
-                    isUsuallyQuoted = false;
-                }
-                else
-                {
-                    isUsuallyQuoted = true;
-                }
+                isUsuallyQuoted = false;
+                stringValue = null;
+                return false;
+            }
 
+            stringValue = maker(instance);
+
+            // A scalar converter says for itself whether its text is quoted, unless a maker registered on the settings stands
+            //  in front of it
+            JsonScalarConverter scalarConverter = null;
+            if (settings.TryGetRegisteredStringMakerFor(type) == null
+                && TryGetConverterFor(type, out JsonValueConverter converter))
+            {
+                scalarConverter = converter as JsonScalarConverter;
+            }
+
+            isUsuallyQuoted = scalarConverter?.IsUsuallyQuoted ?? IsUsuallyQuotedFor(type);
+            return true;
+        }
+
+        /// <summary>
+        /// Whether a simple value of <paramref name="type"/> is written as a json string: a string, a char or an enum is, a
+        /// number (any width, signed or not) or a bool is not, and anything else written as one value is
+        /// </summary>
+        private static bool IsUsuallyQuotedFor (Type type)
+        {
+            if (type == typeof(string) || type == typeof(char) || type.IsEnum)
+            {
                 return true;
             }
 
-            stringValue = null;
-            return false;
+            bool isNumber = (type.IsPrimitive && type != typeof(bool)) || type == typeof(decimal) || type.IsNumericType();
+            return !isNumber && type != typeof(bool);
         }
 
         // The value goes into the tree as it is. Escaping belongs to the text: JsonWriter escapes
         //  it on the way out and JsonReader unescapes it on the way in.
-        private static void ApplySimpleValue (JsonBuilder target, string rawValue)
+        internal static void ApplySimpleValue (JsonBuilder target, string rawValue, bool isUsuallyQuoted)
         {
+            target.IsValueUsualQuoteTarget = isUsuallyQuoted;
             if (target.IsValue)
             {
                 target.Value = rawValue;
@@ -882,28 +1283,44 @@ namespace AJut.Text.AJson
 
         // ===============================[ Reflection Cache ]===========================
         /// <summary>
-        /// Drops the cached property lists for <paramref name="type"/> and every type derived from
+        /// Drops the cached member lists for <paramref name="type"/> and every type derived from
         /// it. A cached list bakes in the <see cref="TypeMetadataExtensionRegistrar"/> hide and order
         /// state from when it was built, and a derived type's list carries its bases' members, so a
         /// registration on a base has to reach the derived types too. Called by the registrar.
         /// </summary>
-        internal static void InvalidatePropertyCachesFor (Type type)
+        internal static void InvalidateMemberCachesFor (Type type)
         {
-            RemoveTypeAndDerived(g_propertyCacheReadable, type);
-            RemoveTypeAndDerived(g_propertyCacheWritable, type);
+            RemoveTypeAndDerived(g_memberCache, type);
+            RemoveTypeAndDerived(g_memberSetCache, type);
         }
 
         /// <summary>
-        /// Drops every cached property list. Called by the registrar when a change can affect any
+        /// Drops every cached member list. Called by the registrar when a change can affect any
         /// type (clearing all registrations, or changing the default member ordering).
         /// </summary>
-        internal static void ClearPropertyCaches ()
+        internal static void ClearMemberCaches ()
         {
-            g_propertyCacheReadable.Clear();
-            g_propertyCacheWritable.Clear();
+            g_memberCache.Clear();
+            g_memberSetCache.Clear();
         }
 
-        private static void RemoveTypeAndDerived (ConcurrentDictionary<Type, PropertyInfo[]> cache, Type type)
+        /// <summary>
+        /// The public properties and fields AJson reads and writes for <paramref name="type"/>, in member order: every public
+        /// instance property but an indexer, and every public instance field but one a property stands in front of, leaving
+        /// out anything hidden through <see cref="TypeMetadataExtensionRegistrar"/> or marked [JsonIgnore]. The constructor
+        /// route matches its parameters against the same list.
+        /// </summary>
+        internal static DataMember[] GetDataMembers (Type type)
+        {
+            return g_memberCache.GetOrAdd(type, static t => ComputeDataMembers(t));
+        }
+
+        private static MemberSet GetMemberSet (Type type)
+        {
+            return g_memberSetCache.GetOrAdd(type, static t => new MemberSet(t, GetDataMembers(t)));
+        }
+
+        private static void RemoveTypeAndDerived<TValue> (ConcurrentDictionary<Type, TValue> cache, Type type)
         {
             foreach (Type cachedType in cache.Keys)
             {
@@ -914,44 +1331,243 @@ namespace AJut.Text.AJson
             }
         }
 
-        private static PropertyInfo[] GetCachedReadableProperties (Type type, bool requiresSet)
+        private static DataMember[] ComputeDataMembers (Type targetType)
         {
-            ConcurrentDictionary<Type, PropertyInfo[]> cache = requiresSet ? g_propertyCacheWritable : g_propertyCacheReadable;
-            return cache.GetOrAdd(type, t => ComputeProperties(t, requiresGet: true, requiresSet: requiresSet));
-        }
-
-        private static PropertyInfo[] GetCachedWritableProperties (Type type)
-        {
-            return g_propertyCacheWritable.GetOrAdd(type, t => ComputeProperties(t, requiresGet: false, requiresSet: true));
-        }
-
-        private static PropertyInfo[] ComputeProperties (Type targetType, bool requiresGet, bool requiresSet)
-        {
-            return TypeMetadataExtensionRegistrar
-                .GetOrderedProperties(targetType, BindingFlags.Public | BindingFlags.Instance)
-                .Where(prop => (!requiresGet || prop.GetGetMethod() != null)
-                            && (!requiresSet || prop.GetSetMethod() != null)
-                            && !TypeMetadataExtensionRegistrar.IsHidden(prop)
-                            && prop.GetCustomAttribute<JsonIgnoreAttribute>(inherit: true) == null)
+            MemberInfo[] orderedMembers = TypeMetadataExtensionRegistrar.GetOrderedPropertiesAndFields(targetType).ToArray();
+            string[] propertyNames = orderedMembers
+                .OfType<PropertyInfo>()
+                .Where(prop => prop.GetIndexParameters().Length == 0)
+                .Select(prop => prop.Name)
                 .ToArray();
+
+            List<DataMember> output = new List<DataMember>(orderedMembers.Length);
+            foreach (MemberInfo member in orderedMembers)
+            {
+                if (TypeMetadataExtensionRegistrar.IsHidden(member)
+                    || member.GetCustomAttribute<JsonIgnoreAttribute>(inherit: true) != null)
+                {
+                    continue;
+                }
+
+                if (member is PropertyInfo property)
+                {
+                    // An indexer is a property with parameters, and has no value to read or write without an index. Reading
+                    //  one with no index throws, which is what writing any type with an indexer used to do, the
+                    //  System.Numerics vectors included.
+                    if (property.GetIndexParameters().Length == 0)
+                    {
+                        output.Add(new DataMember(property));
+                    }
+                }
+                else if (member is FieldInfo field && !IsStorageForAProperty(field, propertyNames))
+                {
+                    output.Add(new DataMember(field));
+                }
+            }
+
+            return output.ToArray();
         }
 
-        private static PropertyInfo FindPropertyForKey (PropertyInfo[] props, string key)
+        private static bool IsStorageForAProperty (FieldInfo field, string[] propertyNames)
         {
-            for (int i = 0; i < props.Length; ++i)
+            // A public field with a property of the same name in front of it, ignoring a leading underscore and case, is that
+            //  property's storage. The property stands for the value, so the field is not written a second time. The WinUI3
+            //  Rect, Point and Size keep their values that way (public float _x behind public double X). A field that matches
+            //  no property is data in its own right, like the X, Y, Z and W of the System.Numerics vectors.
+            string name = field.Name.TrimStart('_');
+            foreach (string propertyName in propertyNames)
             {
-                if (KeyForProperty(props[i]) == key)
+                if (String.Equals(propertyName, name, StringComparison.OrdinalIgnoreCase))
                 {
-                    return props[i];
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Logs a type written with nothing because AJson can see none of its state, once per type: it has no public property or
+        /// field at all, yet keeps non-public fields. A type whose public members were all ignored or hidden is not logged,
+        /// since leaving them out was asked for.
+        /// </summary>
+        private static void LogIfStateIsHidden (Type type)
+        {
+            if (g_typesLoggedAsWrittenEmpty.ContainsKey(type) || !HasOnlyHiddenState(type))
+            {
+                return;
+            }
+
+            if (g_typesLoggedAsWrittenEmpty.TryAdd(type, 0))
+            {
+                Logger.LogError($"AJson: '{type.FullName}' is written with nothing, since it keeps all its state in non-public fields, which AJson does not read. Whatever holds one reads it back at its default. Register a JsonValueConverter for it, or give it public properties.");
+            }
+        }
+
+        [UnconditionalSuppressMessage("Trimming", "IL2070",
+            Justification = "Reflection-path diagnostic only; a member trimmed away is one the reflection path could not have written either.")]
+        [UnconditionalSuppressMessage("Trimming", "IL2075",
+            Justification = "Reflection-path diagnostic only; a member trimmed away is one the reflection path could not have written either.")]
+        private static bool HasOnlyHiddenState (Type type)
+        {
+            if (type.GetFields(BindingFlags.Public | BindingFlags.Instance).Length > 0
+                || type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Length > 0)
+            {
+                return false;
+            }
+
+            for (Type tier = type; tier != null && tier != typeof(object); tier = tier.BaseType)
+            {
+                if (tier.GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly).Length > 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static DataMember FindMemberForKey (DataMember[] members, string key)
+        {
+            for (int i = 0; i < members.Length; ++i)
+            {
+                if (members[i].JsonKey == key)
+                {
+                    return members[i];
                 }
             }
             return null;
         }
 
-        private static string KeyForProperty (PropertyInfo prop)
+        // ===============================[ Subclasses/structs ]===========================
+        /// <summary>
+        /// A public property or field that AJson reads and writes, so the walk treats both the same way
+        /// </summary>
+        internal sealed class DataMember
         {
-            JsonPropertyAliasAttribute alias = prop.GetCustomAttribute<JsonPropertyAliasAttribute>(inherit: true);
-            return alias?.PropertyName ?? prop.Name;
+            private readonly PropertyInfo m_property;
+            private readonly FieldInfo m_field;
+
+            public DataMember (PropertyInfo property)
+            {
+                m_property = property;
+                this.Info = property;
+                this.Type = property.PropertyType;
+                this.CanGet = property.GetGetMethod() != null;
+                this.CanSet = property.GetSetMethod() != null;
+                this.IsGetOnlyCollection = this.CanGet && !this.CanSet && IsCollectionWithAdd(this.Type);
+                this.JsonKey = KeyFor(property);
+            }
+
+            public DataMember (FieldInfo field)
+            {
+                m_field = field;
+                this.Info = field;
+                this.Type = field.FieldType;
+                this.CanGet = true;
+
+                // A readonly field can only be set by its own type's constructor, so it counts as get-only
+                this.CanSet = !field.IsInitOnly;
+                this.IsGetOnlyCollection = !this.CanSet && IsCollectionWithAdd(this.Type);
+                this.JsonKey = KeyFor(field);
+            }
+
+            /// <summary>
+            /// The property or field itself, for its attributes
+            /// </summary>
+            public MemberInfo Info { get; }
+
+            public Type Type { get; }
+
+            /// <summary>
+            /// The key it is written and read under: its name, or its <see cref="JsonPropertyAliasAttribute"/>
+            /// </summary>
+            public string JsonKey { get; }
+
+            /// <summary>
+            /// True for a field, or a property with a public getter
+            /// </summary>
+            public bool CanGet { get; }
+
+            /// <summary>
+            /// True for a field that is not readonly, or a property with a public setter (init-only included)
+            /// </summary>
+            public bool CanSet { get; }
+
+            /// <summary>
+            /// True for a get-only property or readonly field whose type is a collection with Add (a list, a dictionary, a
+            /// HashSet, but not an array), which the reader fills where it is
+            /// </summary>
+            public bool IsGetOnlyCollection { get; }
+
+            public object GetValue (object source) => m_property != null ? m_property.GetValue(source) : m_field.GetValue(source);
+
+            public void SetValue (object target, object value)
+            {
+                if (m_property != null)
+                {
+                    m_property.SetValue(target, value);
+                }
+                else
+                {
+                    m_field.SetValue(target, value);
+                }
+            }
+
+            private static string KeyFor (MemberInfo member)
+            {
+                JsonPropertyAliasAttribute alias = member.GetCustomAttribute<JsonPropertyAliasAttribute>(inherit: true);
+                return alias?.PropertyName ?? member.Name;
+            }
+
+            private static bool IsCollectionWithAdd (Type type) => !type.IsArray && type.FindBaseTypeOrInterface(typeof(ICollection<>)) != null;
+        }
+
+        /// <summary>
+        /// One type's members, split the ways reading and writing use them
+        /// </summary>
+        private sealed class MemberSet
+        {
+            public MemberSet (Type type, DataMember[] members)
+            {
+                // A get-only member is written by default only when the reader can get it back. A collection it fills where it
+                //  is. A value the type's constructor route takes as an argument. And anything at all on a type with nothing the
+                //  reader can set or fill: only a constructor can rebuild one of those, and a constructor registered with
+                //  JsonInterpreterSettings can read any key it likes (AJson's own KeyValuePair constructor reads Key and Value,
+                //  which are get-only, and an anonymous type is all get-only). Anything else get-only is worked out from other
+                //  members, the way a Rect's Right is from X and Width, so writing it only adds text the reader ignores.
+                //
+                // What this cannot see: a constructor registered for a type that also has settable members, which reads a
+                //  get-only member's key itself. That type needs UseReadonlyObjectProperties on.
+                IReadOnlySet<string> constructorKeys = AJsonConstructorRoute.GetConsumedJsonKeys(type);
+                bool readerSetsAnything = members.Any(m => m.CanSet || m.IsGetOnlyCollection);
+
+                this.ReadInto = members.Where(m => m.CanSet || m.IsGetOnlyCollection).ToArray();
+                this.WithGetter = members.Where(m => m.CanGet).ToArray();
+                this.WrittenByDefault = members
+                    .Where(m => m.CanGet
+                        && (m.CanSet
+                            || m.IsGetOnlyCollection
+                            || !readerSetsAnything
+                            || constructorKeys.Contains(m.JsonKey)))
+                    .ToArray();
+            }
+
+            /// <summary>
+            /// The members a document's keys are read into: everything settable, and the get-only collections, which are
+            /// filled where they are
+            /// </summary>
+            public DataMember[] ReadInto { get; }
+
+            /// <summary>
+            /// What is written with <see cref="JsonBuilderSettings.UseReadonlyObjectProperties"/> on: every member with a getter
+            /// </summary>
+            public DataMember[] WithGetter { get; }
+
+            /// <summary>
+            /// What is written with <see cref="JsonBuilderSettings.UseReadonlyObjectProperties"/> off: what the reader can get back
+            /// </summary>
+            public DataMember[] WrittenByDefault { get; }
         }
     }
 }

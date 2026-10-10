@@ -35,34 +35,58 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                 asSelfPropName = asSelfAttr.ConstructorArguments[0].Value as string ?? string.Empty;
             }
 
-            // ---- Property walk ----
+            // ---- Member walk: public properties and fields ----
+            List<ISymbol> instanceMembers = EnumerateInstanceMembers(typeSymbol).ToList();
+            string[] propertyNames = instanceMembers
+                .OfType<IPropertySymbol>()
+                .Where(p => !p.IsIndexer && p.DeclaredAccessibility == Accessibility.Public)
+                .Select(p => p.Name)
+                .ToArray();
+
             List<PropertyModel> propertyModels = new List<PropertyModel>();
-            Dictionary<string, IPropertySymbol> propertySymbols = new Dictionary<string, IPropertySymbol>();
-            foreach (IPropertySymbol propSymbol in EnumerateInstanceProperties(typeSymbol))
+            Dictionary<string, ISymbol> memberSymbols = new Dictionary<string, ISymbol>();
+            foreach (ISymbol memberSymbol in instanceMembers)
             {
-                if (propSymbol.IsIndexer)
+                if (memberSymbol.DeclaredAccessibility != Accessibility.Public)
                 {
                     continue;
                 }
-                if (HasAttribute(propSymbol, AttributeNames.kIgnore))
-                {
-                    continue;
-                }
-                if (propSymbol.DeclaredAccessibility != Accessibility.Public)
+                if (HasAttribute(memberSymbol, AttributeNames.kIgnore))
                 {
                     continue;
                 }
 
-                PropertyModel propModel = AnalyzeProperty(typeSymbol, propSymbol, diagnostics);
-                if (propModel == null)
+                PropertyModel memberModel = null;
+                if (memberSymbol is IPropertySymbol propSymbol)
+                {
+                    if (propSymbol.IsIndexer)
+                    {
+                        continue;
+                    }
+
+                    memberModel = AnalyzeProperty(typeSymbol, propSymbol, diagnostics);
+                }
+                else if (memberSymbol is IFieldSymbol fieldSymbol)
+                {
+                    // The same rule as the reflection path: a public field with a property of the same name in front of it,
+                    //  ignoring a leading underscore and case, is that property's storage, and the property stands for it
+                    if (IsStorageForAProperty(fieldSymbol, propertyNames))
+                    {
+                        continue;
+                    }
+
+                    memberModel = AnalyzeField(typeSymbol, fieldSymbol, diagnostics);
+                }
+
+                if (memberModel == null)
                 {
                     continue;
                 }
 
-                propertyModels.Add(propModel);
-                if (!propertySymbols.ContainsKey(propModel.Name))
+                propertyModels.Add(memberModel);
+                if (!memberSymbols.ContainsKey(memberModel.Name))
                 {
-                    propertySymbols.Add(propModel.Name, propSymbol);
+                    memberSymbols.Add(memberModel.Name, memberSymbol);
                 }
             }
 
@@ -123,7 +147,7 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
 
             IReadOnlyList<ConstructorParameterModel> constructorParameters = routeConstructor == null
                 ? Array.Empty<ConstructorParameterModel>()
-                : AnalyzeConstructorParameters(typeSymbol, routeConstructor, propertyModels, propertySymbols, diagnostics);
+                : AnalyzeConstructorParameters(typeSymbol, routeConstructor, propertyModels, memberSymbols, diagnostics);
 
             SerializableTypeModel model = new SerializableTypeModel
             {
@@ -212,7 +236,7 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
             INamedTypeSymbol typeSymbol,
             IMethodSymbol constructor,
             List<PropertyModel> properties,
-            Dictionary<string, IPropertySymbol> propertySymbols,
+            Dictionary<string, ISymbol> memberSymbols,
             ImmutableArray<Diagnostic>.Builder diagnostics)
         {
             List<ConstructorParameterModel> output = new List<ConstructorParameterModel>(constructor.Parameters.Length);
@@ -245,7 +269,7 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                     {
                         missingValue = $"({parameterFqn})({matched.ExplicitOmitDefaultLiteral})";
                         declaredDefaultDiffers = parameter.HasExplicitDefaultValue
-                            && DefaultsDiffer(GetExplicitOmitValue(propertySymbols[matched.Name]), parameter.ExplicitDefaultValue, parameter.Type);
+                            && DefaultsDiffer(GetExplicitOmitValue(memberSymbols[matched.Name]), parameter.ExplicitDefaultValue, parameter.Type);
                         omitArgument = $"({matched.ExplicitOmitDefaultLiteral})";
                         omittedAt = matched.ExplicitOmitDefaultLiteral;
                     }
@@ -313,9 +337,9 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
             return caseInsensitiveMatch;
         }
 
-        private static object GetExplicitOmitValue (IPropertySymbol propSymbol)
+        private static object GetExplicitOmitValue (ISymbol memberSymbol)
         {
-            AttributeData omitAttr = propSymbol.GetAttributes().FirstOrDefault(a => SameAttribute(a, AttributeNames.kOmitIfDefault));
+            AttributeData omitAttr = memberSymbol.GetAttributes().FirstOrDefault(a => SameAttribute(a, AttributeNames.kOmitIfDefault));
             return omitAttr != null && omitAttr.ConstructorArguments.Length > 0 ? omitAttr.ConstructorArguments[0].Value : null;
         }
 
@@ -396,14 +420,69 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
             return false;
         }
 
-        // ===========================[ Property analysis ]===========================
+        // ===========================[ Member analysis ]===========================
         private static PropertyModel AnalyzeProperty (
             INamedTypeSymbol owningType,
             IPropertySymbol propSymbol,
             ImmutableArray<Diagnostic>.Builder diagnostics)
         {
-            string jsonKey = propSymbol.Name;
-            AttributeData aliasAttr = propSymbol.GetAttributes().FirstOrDefault(
+            bool hasGetter = propSymbol.GetMethod != null && propSymbol.GetMethod.DeclaredAccessibility != Accessibility.Private;
+            bool hasSetter = propSymbol.SetMethod != null && propSymbol.SetMethod.DeclaredAccessibility != Accessibility.Private;
+            return AnalyzeMember(
+                owningType,
+                propSymbol,
+                propSymbol.Type,
+                hasGetter,
+                hasSetter,
+                hasSetter && propSymbol.SetMethod.IsInitOnly,
+                propSymbol.SetMethod?.ContainingType ?? propSymbol.ContainingType,
+                propSymbol.SetMethod?.MetadataName ?? string.Empty,
+                diagnostics
+            );
+        }
+
+        private static PropertyModel AnalyzeField (
+            INamedTypeSymbol owningType,
+            IFieldSymbol fieldSymbol,
+            ImmutableArray<Diagnostic>.Builder diagnostics)
+        {
+            // A field can always be read, and set unless it is readonly, since only its own type's constructor can set one of
+            //  those. Generated code reads and assigns a field with the same syntax as a property, so it gets the same model.
+            return AnalyzeMember(
+                owningType,
+                fieldSymbol,
+                fieldSymbol.Type,
+                hasGetter: true,
+                hasSetter: !fieldSymbol.IsReadOnly,
+                isInitOnly: false,
+                setterDeclaringType: fieldSymbol.ContainingType,
+                setterName: string.Empty,
+                diagnostics: diagnostics
+            );
+        }
+
+        /// <param name="owningType">The type being analyzed</param>
+        /// <param name="memberSymbol">The public property or field</param>
+        /// <param name="declaredType">The member's type</param>
+        /// <param name="hasGetter">Whether generated code can read it</param>
+        /// <param name="hasSetter">Whether generated code can set it, init-only included</param>
+        /// <param name="isInitOnly">Whether it can only be set through an UnsafeAccessor for its init accessor</param>
+        /// <param name="setterDeclaringType">The type that declares the setter, which an init-only accessor takes as its target</param>
+        /// <param name="setterName">The setter's metadata name, for the init-only accessor</param>
+        /// <param name="diagnostics">Where AJSON002 and AJSON003 go</param>
+        private static PropertyModel AnalyzeMember (
+            INamedTypeSymbol owningType,
+            ISymbol memberSymbol,
+            ITypeSymbol declaredType,
+            bool hasGetter,
+            bool hasSetter,
+            bool isInitOnly,
+            ITypeSymbol setterDeclaringType,
+            string setterName,
+            ImmutableArray<Diagnostic>.Builder diagnostics)
+        {
+            string jsonKey = memberSymbol.Name;
+            AttributeData aliasAttr = memberSymbol.GetAttributes().FirstOrDefault(
                 a => SameAttribute(a, AttributeNames.kPropertyAlias)
             );
             if (aliasAttr != null && aliasAttr.ConstructorArguments.Length > 0)
@@ -416,7 +495,6 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
             }
 
             // Nullable<T> unwrap.
-            ITypeSymbol declaredType = propSymbol.Type;
             ITypeSymbol underlying = declaredType;
             bool isNullableValueType = false;
             if (declaredType is INamedTypeSymbol named
@@ -430,12 +508,8 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
             string typeFqn = ToFullyQualified(declaredType);
             string underlyingFqn = ToFullyQualified(underlying);
 
-            bool hasGetter = propSymbol.GetMethod != null && propSymbol.GetMethod.DeclaredAccessibility != Accessibility.Private;
-            bool hasSetter = propSymbol.SetMethod != null && propSymbol.SetMethod.DeclaredAccessibility != Accessibility.Private;
-            bool isInitOnly = hasSetter && propSymbol.SetMethod.IsInitOnly;
-
             // [JsonRuntimeTypeEval] short-circuits the kind decision.
-            AttributeData runtimeAttr = propSymbol.GetAttributes().FirstOrDefault(
+            AttributeData runtimeAttr = memberSymbol.GetAttributes().FirstOrDefault(
                 a => SameAttribute(a, AttributeNames.kRuntimeTypeEval)
             );
 
@@ -457,9 +531,9 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                 {
                     diagnostics.Add(Diagnostic.Create(
                         Diagnostics.UnsupportedPropertyType,
-                        propSymbol.Locations.FirstOrDefault(),
+                        memberSymbol.Locations.FirstOrDefault(),
                         owningType.Name,
-                        propSymbol.Name,
+                        memberSymbol.Name,
                         underlyingFqn));
                 }
             }
@@ -468,7 +542,7 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
             bool hasOmit = false;
             bool hasExplicitOmit = false;
             string explicitLiteral = string.Empty;
-            AttributeData omitAttr = propSymbol.GetAttributes().FirstOrDefault(
+            AttributeData omitAttr = memberSymbol.GetAttributes().FirstOrDefault(
                 a => SameAttribute(a, AttributeNames.kOmitIfDefault)
             );
             if (omitAttr != null)
@@ -491,9 +565,9 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                             diagnostics.Add(Diagnostic.Create(
                                 Diagnostics.OmitIfDefaultTypeMismatch,
                                 omitAttr.ApplicationSyntaxReference?.GetSyntax().GetLocation()
-                                    ?? propSymbol.Locations.FirstOrDefault(),
+                                    ?? memberSymbol.Locations.FirstOrDefault(),
                                 owningType.Name,
-                                propSymbol.Name,
+                                memberSymbol.Name,
                                 arg.Type?.ToDisplayString() ?? "<null>",
                                 underlying.ToDisplayString()));
                         }
@@ -503,7 +577,7 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
 
             return new PropertyModel
             {
-                Name = propSymbol.Name,
+                Name = memberSymbol.Name,
                 JsonKey = jsonKey,
                 TypeFullName = typeFqn,
                 UnderlyingTypeFullName = underlyingFqn,
@@ -512,9 +586,10 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                 IsValueType = underlying.IsValueType,
                 HasSetter = hasSetter,
                 IsInitOnly = isInitOnly,
-                DeclaringTypeFullName = ToFullyQualified(propSymbol.SetMethod?.ContainingType ?? propSymbol.ContainingType),
-                SetterName = propSymbol.SetMethod?.MetadataName ?? string.Empty,
+                DeclaringTypeFullName = ToFullyQualified(setterDeclaringType),
+                SetterName = setterName,
                 HasGetter = hasGetter,
+                IsGetOnlyCollection = hasGetter && !hasSetter && IsCollectionWithAdd(declaredType),
                 IsUsuallyQuoted = IsUsuallyQuoted(underlying, kind),
                 HasOmitIfDefault = hasOmit,
                 HasExplicitOmitDefault = hasExplicitOmit,
@@ -547,9 +622,9 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                 return ePropertyKind.SimpleValue;
             }
 
-            if (IsBuiltInCustomType(type))
+            if (IsParsableOfItself(type))
             {
-                return ePropertyKind.BuiltInCustom;
+                return ePropertyKind.Parsable;
             }
 
             // Array
@@ -614,28 +689,49 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
             return false;
         }
 
-        private static bool IsBuiltInCustomType (ITypeSymbol type)
+        /// <summary>
+        /// The same test as the reflection path's parsable fallback: implements IFormattable, and IParsable of itself. There is
+        /// no list of known types here: which of these AJson writes as text, and how, is the runtime converter table's call, so
+        /// the generator and the reflection path cannot drift apart over it.
+        /// </summary>
+        private static bool IsParsableOfItself (ITypeSymbol type)
         {
-            string fqn = type.ToDisplayString();
-            switch (fqn)
+            bool isFormattable = false;
+            bool isParsable = false;
+            foreach (INamedTypeSymbol implemented in type.AllInterfaces)
             {
-                case "System.DateTime":
-                case "System.TimeSpan":
-                case "System.Guid":
-                case "System.Numerics.Vector2":
-                case "System.TimeZoneInfo":
-                    return true;
+                string name = implemented.OriginalDefinition.ToDisplayString();
+                if (name == "System.IFormattable")
+                {
+                    isFormattable = true;
+                }
+                else if (name == "System.IParsable<TSelf>"
+                    && SymbolEqualityComparer.Default.Equals(implemented.TypeArguments[0], type))
+                {
+                    isParsable = true;
+                }
             }
-            return false;
+
+            return isFormattable && isParsable;
+        }
+
+        /// <summary>
+        /// The same test as the reflection path: any ICollection&lt;T&gt; but an array, which the reader can clear and Add to
+        /// </summary>
+        private static bool IsCollectionWithAdd (ITypeSymbol type)
+        {
+            if (type is IArrayTypeSymbol)
+            {
+                return false;
+            }
+
+            return (type.OriginalDefinition.SpecialType == SpecialType.System_Collections_Generic_ICollection_T)
+                || type.AllInterfaces.Any(i => i.OriginalDefinition.SpecialType == SpecialType.System_Collections_Generic_ICollection_T);
         }
 
         private static bool IsUsuallyQuoted (ITypeSymbol type, ePropertyKind kind)
         {
             if (kind == ePropertyKind.Enum)
-            {
-                return true;
-            }
-            if (kind == ePropertyKind.BuiltInCustom)
             {
                 return true;
             }
@@ -653,10 +749,12 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
         }
 
         // ===========================[ Helpers ]===========================
-        private static IEnumerable<IPropertySymbol> EnumerateInstanceProperties (INamedTypeSymbol typeSymbol)
+        private static IEnumerable<ISymbol> EnumerateInstanceMembers (INamedTypeSymbol typeSymbol)
         {
-            // Walk most-derived first, then bases. Within each tier, source order (Roslyn returns
-            // members in declaration order). Mirrors TypeMetadataExtensionRegistrar for the
+            // Walk most-derived first, then bases. Within each tier, the fields and then the
+            // properties, each in source order (Roslyn returns members in declaration order). That
+            // matches the reflection path for members with no explicit order, where every field's
+            // MetadataToken is below every property's. Mirrors TypeMetadataExtensionRegistrar for the
             // attributes-only case; runtime-registered orderings are only honored on the
             // reflection path.
             List<INamedTypeSymbol> chain = new List<INamedTypeSymbol>();
@@ -669,7 +767,17 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
 
             foreach (INamedTypeSymbol tier in chain)
             {
-                foreach (ISymbol member in tier.GetMembers())
+                ImmutableArray<ISymbol> tierMembers = tier.GetMembers();
+                foreach (ISymbol member in tierMembers)
+                {
+                    // An auto-property's backing field is implicitly declared, and a const is static
+                    if (member is IFieldSymbol field && !field.IsStatic && !field.IsConst && !field.IsImplicitlyDeclared)
+                    {
+                        yield return field;
+                    }
+                }
+
+                foreach (ISymbol member in tierMembers)
                 {
                     if (member is IPropertySymbol prop && !prop.IsStatic)
                     {
@@ -677,6 +785,20 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                     }
                 }
             }
+        }
+
+        private static bool IsStorageForAProperty (IFieldSymbol field, string[] propertyNames)
+        {
+            string name = field.Name.TrimStart('_');
+            foreach (string propertyName in propertyNames)
+            {
+                if (string.Equals(propertyName, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static bool HasAttribute (ISymbol symbol, string fullyQualifiedAttrName)

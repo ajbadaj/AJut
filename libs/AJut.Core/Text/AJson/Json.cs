@@ -43,12 +43,18 @@ namespace AJut.Text.AJson
         public int AJsonVersion { get; internal set; }
 
         /// <summary>
-        /// Whether <see cref="ToString"/> writes the AJson version marker. Null follows the
-        /// settings this json was built with, then <see cref="JsonHelper.WriteAJsonVersion"/>.
-        /// Only a root document can carry the marker, and the text of a JsonDocument or JsonArray
-        /// written on its own never does.
+        /// Whether <see cref="ToString()"/> writes the AJson version marker. Null follows the
+        /// settings the text is written with (those this json was built with, unless others are
+        /// passed), then <see cref="JsonHelper.WriteAJsonVersion"/>. Only a root document can carry
+        /// the marker, and the text of a JsonDocument or JsonArray written on its own never does.
         /// </summary>
         public bool? WriteAJsonVersion { get; set; }
+
+        /// <summary>
+        /// The settings this json was built with, which its text is written with. Null for json that
+        /// was read rather than built.
+        /// </summary>
+        internal JsonBuilderSettings BuiltWith { get; set; }
 
         // ===============================[ Public Interface Methods ]===========================
         public static Json Failure (string error = null)
@@ -59,18 +65,28 @@ namespace AJut.Text.AJson
         }
 
         /// <summary>
-        /// Returns the serialized form of the json data, or a placeholder string if no data was parsed.
+        /// Returns the serialized form of the json data, or a placeholder string if no data was parsed. Built json is
+        /// written with the formatting of the settings it was built with, and json that was read with
+        /// <see cref="JsonBuilderSettings.Default"/>.
         /// </summary>
-        public override string ToString ()
+        public override string ToString () => this.ToString(null);
+
+        /// <summary>
+        /// Returns the serialized form of the json data, formatted by <paramref name="settings"/>: tabbing, newlines, spacing,
+        /// quoting and quote characters (<see cref="JsonBuilderSettings.BuildMinifiedSettings"/> for minified text). Null
+        /// writes it the way <see cref="ToString()"/> does.
+        /// </summary>
+        public string ToString (JsonBuilderSettings settings)
         {
             if (this.Data == null)
             {
                 return "<Invalid Source Text>";
             }
 
-            bool writeVersion = this.WriteAJsonVersion ?? JsonHelper.WriteAJsonVersion;
+            JsonBuilderSettings writeWith = settings ?? this.BuiltWith ?? JsonBuilderSettings.Default;
+            bool writeVersion = this.WriteAJsonVersion ?? writeWith.WriteAJsonVersion ?? JsonHelper.WriteAJsonVersion;
             int versionToWrite = writeVersion && this.Data.IsDocument ? JsonHelper.kCurrentAJsonVersion : 0;
-            return JsonWriter.Write(this.Data, ajsonVersion: versionToWrite);
+            return JsonWriter.Write(this.Data, writeWith, versionToWrite);
         }
 
         public void FormatAllKeys (Formatter keyStringFormatter)

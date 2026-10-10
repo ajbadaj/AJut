@@ -1,13 +1,15 @@
 namespace AJut.Text.AJson.SourceGenerators.Model
 {
     /// <summary>
-    /// Per-property analysis result. Frozen record - the emitter consumes these without going
-    /// back to the symbol model.
+    /// Per-member analysis result, for a public property or a public field. Frozen record - the
+    /// emitter consumes these without going back to the symbol model. Generated code reads and
+    /// assigns a field with the same syntax as a property, so the two share one model: a field
+    /// always has a getter, has a setter unless it is readonly, and is never init-only.
     /// </summary>
     internal sealed record PropertyModel
     {
         /// <summary>
-        /// CLR property name (from the source).
+        /// CLR property or field name (from the source).
         /// </summary>
         public string Name { get; init; } = string.Empty;
 
@@ -62,6 +64,12 @@ namespace AJut.Text.AJson.SourceGenerators.Model
         /// True if the property has an accessible getter. Write code skips properties without one.
         /// </summary>
         public bool HasGetter { get; init; }
+
+        /// <summary>
+        /// True for a get-only property or readonly field whose type is a collection with Add (any ICollection&lt;T&gt; but an
+        /// array). The reader fills the collection already there, through AJsonGenerationSupport.FillGetOnlyCollection.
+        /// </summary>
+        public bool IsGetOnlyCollection { get; init; }
 
         /// <summary>
         /// `true` for typical quoted-on-write types (string, char, enum, GUID, DateTime). False for numerics / bool. Drives the AddProperty isUsuallyQuoted flag.

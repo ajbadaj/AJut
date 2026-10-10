@@ -65,5 +65,16 @@ namespace AJut.Text.AJson
         {
             return this.StringValue;
         }
+
+        /// <summary>
+        /// Writes this as json text, formatted by <paramref name="settings"/> (<see cref="JsonBuilderSettings.Default"/> when
+        /// null): a document or an array with that tabbing, newlines and quoting, and a single value as it appears in json,
+        /// quoted and escaped if it is a string. That last is unlike <see cref="ToString()"/>, which gives a single value's
+        /// raw text.
+        /// </summary>
+        public string ToString (JsonBuilderSettings settings)
+        {
+            return JsonWriter.Write(this, settings);
+        }
     }
 }
