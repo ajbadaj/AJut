@@ -31,8 +31,12 @@ namespace AJut.Text.AJson
         /// the JSON spec, DateTimes as round-trip ISO 8601, public fields written as well as
         /// properties, which puts the System.Numerics vectors and matrices down as documents of
         /// their components, and a get-only member left out unless the reader can get it back (see
-        /// <see cref="JsonBuilderSettings.UseReadonlyObjectProperties"/>). Text with no marker
-        /// reads as 0.
+        /// <see cref="JsonBuilderSettings.UseReadonlyObjectProperties"/>). It also writes the .NET
+        /// types a <see cref="JsonValueConverter"/> covers in their own shape (DateTimeOffset,
+        /// DateOnly and TimeOnly as ISO 8601, byte[] as base64, Complex as its two parts, a type
+        /// that formats and parses itself as its text), a dictionary whose keys are single values
+        /// as an object of its entries, and every number bare, in an array as well. Text with no
+        /// marker reads as 0.
         /// </summary>
         public const int kCurrentAJsonVersion = 2;
 
