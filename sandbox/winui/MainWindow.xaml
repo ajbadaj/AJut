@@ -1067,6 +1067,19 @@
                         </TabViewItem.Content>
                     </TabViewItem>
 
+                    <!-- ===[ Palette Doubles ]==================================================== -->
+                    <!-- Manual check that the two opacity doubles in the AJut palettes can be looked
+                         up. Nothing else in here ever looks them up, and WinUI only builds an entry on
+                         its first lookup, so a bad declaration hides until something does. -->
+                    <TabViewItem Header="Palette Doubles" IsClosable="False" VerticalContentAlignment="Stretch">
+                        <TabViewItem.IconSource>
+                            <SymbolIconSource Symbol="Highlight"/>
+                        </TabViewItem.IconSource>
+                        <TabViewItem.Content>
+                            <local:PaletteDoubleCheck/>
+                        </TabViewItem.Content>
+                    </TabViewItem>
+
                     <!-- ===[ Window Chrome ]====================================================== -->
                     <!-- Probe for the maximize/restore chrome desync. Maximize and restore keep the
                          OverlappedPresenter kind (only its State flips), so the AppWindow.Changed path
