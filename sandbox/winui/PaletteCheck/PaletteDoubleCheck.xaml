@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="AJutShowRoomWinUI.PaletteDoubleCheck"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    x:Name="Self">
+
+    <ScrollViewer VerticalScrollMode="Enabled" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled" Padding="16">
+        <StackPanel Spacing="16" MaxWidth="720" HorizontalAlignment="Left">
+
+            <TextBlock Text="Palette Doubles" FontSize="18" FontWeight="Bold"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.7"
+                       Text="Both AJut palettes declare two opacity doubles, AJut_Double_StandardShadowOpacity and AJut_Double_StandardDisabledOpacity. WinUI builds a dictionary entry the first time something looks it up, so an entry declared wrong loads without complaint and only fails on that first lookup. Nothing in AJut.UX.WinUI3 uses either key, so these probes are the first thing in the showroom to look them up."/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.7"
+                       Text="Each probe checks the palette for this tab's current theme. Switch the theme with the Theme Switcher on the Custom AJut Controls tab and run them again to check the other palette."/>
+
+            <TextBlock TextWrapping="Wrap"
+                       Text="1. Looks up both keys from code, through the loaded theme. PASS means each came back as a double holding the value this theme's palette declares. FAIL says what came back instead, or what the lookup threw."/>
+            <Button Content="Probe: look up both keys from code" Click="OnLookUpFromCode_OnClick" HorizontalAlignment="Left"/>
+
+            <TextBlock TextWrapping="Wrap"
+                       Text="2. Builds list rows whose borders take their Opacity from both keys with ThemeResource, the way an app would use them. PASS means every row was built and carries this theme's values. If the showroom closes when you click it, that is the failure."/>
+            <Button Content="Probe: build rows that bind both keys" Click="OnBuildRows_OnClick" HorizontalAlignment="Left"/>
+
+            <TextBox IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                     IsSpellCheckEnabled="False" FontFamily="Consolas" FontSize="12"
+                     Height="200"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     Text="{Binding Path=OutputText, ElementName=Self}"/>
+
+            <ItemsControl x:Name="BoundRows" ItemsSource="{Binding Path=ProbeRows, ElementName=Self}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,2">
+                            <Border Width="80" Height="16" Background="{ThemeResource AJut_Brush_PrimaryHighlight}" Opacity="{ThemeResource AJut_Double_StandardShadowOpacity}"/>
+                            <Border Width="80" Height="16" Background="{ThemeResource AJut_Brush_PrimaryHighlight}" Opacity="{ThemeResource AJut_Double_StandardDisabledOpacity}"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

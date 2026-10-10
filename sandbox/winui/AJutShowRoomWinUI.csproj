@@ -18,6 +18,7 @@
     <None Remove="ColorParseExample.xaml" />
     <None Remove="BrushButtonExample.xaml" />
     <None Remove="NativeCrashCheck\NativeCrashFilterCheck.xaml" />
+    <None Remove="PaletteCheck\PaletteDoubleCheck.xaml" />
     <None Remove="UseCaseTest\ItemsDockPanel.xaml" />
     <None Remove="UseCaseTest\PropertiesDockPanel.xaml" />
     <None Remove="UseCaseTest\UseCaseEditorPage.xaml" />
@@ -76,6 +77,9 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Update="NativeCrashCheck\NativeCrashFilterCheck.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Update="PaletteCheck\PaletteDoubleCheck.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Update="UseCaseTest\ItemsDockPanel.xaml">
