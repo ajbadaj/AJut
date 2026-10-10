@@ -35,6 +35,21 @@ namespace AJut.Text.AJson
 
         public TreeTraverser<JsonValue> Traverser { get; private set; }
 
+        /// <summary>
+        /// The AJson version of the text this json was read from: the root document's version
+        /// marker, or 0 when it had none. Json that was built rather than read has the current
+        /// version, <see cref="JsonHelper.kCurrentAJsonVersion"/>.
+        /// </summary>
+        public int AJsonVersion { get; internal set; }
+
+        /// <summary>
+        /// Whether <see cref="ToString"/> writes the AJson version marker. Null follows the
+        /// settings this json was built with, then <see cref="JsonHelper.WriteAJsonVersion"/>.
+        /// Only a root document can carry the marker, and the text of a JsonDocument or JsonArray
+        /// written on its own never does.
+        /// </summary>
+        public bool? WriteAJsonVersion { get; set; }
+
         // ===============================[ Public Interface Methods ]===========================
         public static Json Failure (string error = null)
         {
@@ -48,7 +63,14 @@ namespace AJut.Text.AJson
         /// </summary>
         public override string ToString ()
         {
-            return this.Data != null ? JsonWriter.Write(this.Data) : "<Invalid Source Text>";
+            if (this.Data == null)
+            {
+                return "<Invalid Source Text>";
+            }
+
+            bool writeVersion = this.WriteAJsonVersion ?? JsonHelper.WriteAJsonVersion;
+            int versionToWrite = writeVersion && this.Data.IsDocument ? JsonHelper.kCurrentAJsonVersion : 0;
+            return JsonWriter.Write(this.Data, ajsonVersion: versionToWrite);
         }
 
         public void FormatAllKeys (Formatter keyStringFormatter)

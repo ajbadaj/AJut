@@ -4,7 +4,9 @@ namespace AJut.Text.AJson
 {
     using System;
     using System.Buffers;
+    using System.Collections.Generic;
     using System.Runtime.CompilerServices;
+    using System.Text;
 
     internal enum eSeparatorKind : byte
     {
@@ -45,11 +47,19 @@ namespace AJut.Text.AJson
         private const char kQuoteChar = '"';
         private SeparatorRecord[] m_buffer;
         private int m_count;
+        private readonly bool m_oldTextQuoteRule;
+
+        // Comment regions in text order, recorded so the reader can take them back out of the
+        //  unquoted text it slices. Null when the text has no comments, which is the usual case.
+        private List<CommentRegion> m_comments;
 
         // ===============================[ Construction ]===========================
-        public SeparatorIndex (ReadOnlySpan<char> text, ParserRules rules = null)
+        /// <param name="oldTextQuoteRule">Read quotes the way text written before string escaping
+        /// needs (see ClosesString). Only the reader's retry of a failed parse sets this.</param>
+        public SeparatorIndex (ReadOnlySpan<char> text, ParserRules rules = null, bool oldTextQuoteRule = false)
         {
             rules = rules ?? new ParserRules();
+            m_oldTextQuoteRule = oldTextQuoteRule;
 
             int estimatedSeparators = Math.Max(16, text.Length / 10);
             m_buffer = ArrayPool<SeparatorRecord>.Shared.Rent(estimatedSeparators);
@@ -60,6 +70,11 @@ namespace AJut.Text.AJson
 
         // ===============================[ Properties ]===========================
         public int Count => m_count;
+
+        /// <summary>
+        /// How many comments the indexer skipped.
+        /// </summary>
+        public int CommentCount => m_comments?.Count ?? 0;
 
         // ===============================[ Public Interface Methods ]===========================
         /// <summary>
@@ -143,6 +158,94 @@ namespace AJut.Text.AJson
             return false;
         }
 
+        /// <summary>
+        /// Position of the first character of the <paramref name="commentIndex"/>th comment, counted
+        /// in text order (see <see cref="CommentCount"/>).
+        /// </summary>
+        public int CommentStartAt (int commentIndex) => m_comments[commentIndex].Start;
+
+        /// <summary>
+        /// Whether any quoted string in <paramref name="text"/> holds an escape JSON does not have,
+        /// which marks the whole text as written before AJson escaped strings. Quote separators are
+        /// recorded in pairs, opening then closing, so each pair bounds one string.
+        /// </summary>
+        public bool AnyQuotedTextHasEscapeJsonLacks (ReadOnlySpan<char> text)
+        {
+            int openingQuote = -1;
+            for (int recordIndex = 0; recordIndex < m_count; ++recordIndex)
+            {
+                if (m_buffer[recordIndex].Kind != eSeparatorKind.Quote)
+                {
+                    continue;
+                }
+
+                int quotePos = m_buffer[recordIndex].Position;
+                if (openingQuote == -1)
+                {
+                    openingQuote = quotePos;
+                    continue;
+                }
+
+                ReadOnlySpan<char> quoted = text.Slice(openingQuote + 1, quotePos - openingQuote - 1);
+                if (JsonStringEscaping.HasEscapeJsonLacks(quoted))
+                {
+                    return true;
+                }
+
+                openingQuote = -1;
+            }
+
+            // A string never closed runs to the end of the text
+            return openingQuote != -1 && JsonStringEscaping.HasEscapeJsonLacks(text.Slice(openingQuote + 1));
+        }
+
+        /// <summary>
+        /// Whether any comment region overlaps <c>text[startPos..endPos]</c> (both inclusive).
+        /// </summary>
+        public bool HasCommentWithin (int startPos, int endPos)
+        {
+            if (m_comments == null)
+            {
+                return false;
+            }
+
+            int idx = this.FirstCommentEndingAfter(startPos);
+            return idx < m_comments.Count && m_comments[idx].Start <= endPos;
+        }
+
+        /// <summary>
+        /// Copies <c>text[startPos..endPos]</c> (both inclusive) with each comment region inside it
+        /// replaced by a single space, so a slice of the original text matches what the indexer saw.
+        /// </summary>
+        public string SliceWithCommentsAsSpaces (ReadOnlySpan<char> text, int startPos, int endPos)
+        {
+            StringBuilder output = new StringBuilder(endPos - startPos + 1);
+            int pos = startPos;
+            if (m_comments != null)
+            {
+                for (int idx = this.FirstCommentEndingAfter(startPos); idx < m_comments.Count; ++idx)
+                {
+                    CommentRegion comment = m_comments[idx];
+                    if (comment.Start > endPos)
+                    {
+                        break;
+                    }
+
+                    int commentStart = Math.Max(comment.Start, pos);
+                    output.Append(text.Slice(pos, commentStart - pos));
+                    output.Append(' ');
+                    pos = Math.Min(comment.End, endPos + 1);
+                }
+            }
+
+            if (pos <= endPos)
+            {
+                output.Append(text.Slice(pos, endPos - pos + 1));
+            }
+
+            return output.ToString();
+        }
+
         public void Dispose ()
         {
             if (m_buffer != null)
@@ -164,6 +267,7 @@ namespace AJut.Text.AJson
 
             bool insideQuote = false;
             string activeCommentEnd = null;
+            int activeCommentStart = -1;
 
             for (int i = 0; i < text.Length; ++i)
             {
@@ -177,6 +281,7 @@ namespace AJut.Text.AJson
                         {
                             i += activeCommentEnd.Length - 1;
                             activeCommentEnd = null;
+                            this.AddComment(activeCommentStart, i + 1);
                         }
                     }
                     continue;
@@ -186,7 +291,7 @@ namespace AJut.Text.AJson
 
                 if (insideQuote)
                 {
-                    if (ch == kQuoteChar && (i == 0 || text[i - 1] != '\\'))
+                    if (ch == kQuoteChar && this.ClosesString(text, i))
                     {
                         insideQuote = false;
                         this.Mark(i, eSeparatorKind.Quote);
@@ -211,6 +316,7 @@ namespace AJut.Text.AJson
 
                         if (text.Slice(i, commentStart.Length).SequenceEqual(commentStart.AsSpan()))
                         {
+                            activeCommentStart = i;
                             activeCommentEnd = rules.CommentIndicators[idx].Item2;
                             i += commentStart.Length - 1;
                             startedComment = true;
@@ -250,6 +356,94 @@ namespace AJut.Text.AJson
 
                 this.Mark(i, kind);
             }
+
+            // A comment still open at the end of the text runs to the end of the text
+            if (activeCommentEnd != null)
+            {
+                this.AddComment(activeCommentStart, text.Length);
+            }
+        }
+
+        // A quote inside a string closes it unless an odd run of backslashes escapes it. Counting
+        //  the run is what lets a string end in an escaped backslash: in "C:\\dir\\" the last quote
+        //  follows two backslashes and closes, where looking at one character saw \" and read on.
+        private bool ClosesString (ReadOnlySpan<char> text, int quotePos)
+        {
+            int backslashes = 0;
+            for (int index = quotePos - 1; index >= 0 && text[index] == '\\'; --index)
+            {
+                ++backslashes;
+            }
+
+            if (backslashes == 0)
+            {
+                return true;
+            }
+
+            // Text written before strings were escaped put backslashes out raw and escaped only
+            //  quotes, so a value ending in a backslash has a closing quote that looks escaped, and
+            //  a quote in a value can follow any number of backslashes. The reader retries a failed
+            //  parse with this rule: a quote after backslashes closes the string only when what
+            //  comes next is structure.
+            if (m_oldTextQuoteRule)
+            {
+                return IsFollowedByStructure(text, quotePos + 1);
+            }
+
+            return backslashes % 2 == 0;
+        }
+
+        private static bool IsFollowedByStructure (ReadOnlySpan<char> text, int startPos)
+        {
+            for (int index = startPos; index < text.Length; ++index)
+            {
+                switch (text[index])
+                {
+                    case ' ':
+                    case '\t':
+                    case '\r':
+                    case '\n':
+                        continue;
+
+                    case ',':
+                    case '}':
+                    case ']':
+                    case ':':
+                        return true;
+
+                    default:
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
+        private void AddComment (int start, int end)
+        {
+            m_comments ??= new List<CommentRegion>();
+            m_comments.Add(new CommentRegion(start, end));
+        }
+
+        // Comments are recorded in text order and never overlap, so their ends ascend too
+        private int FirstCommentEndingAfter (int position)
+        {
+            int left = 0;
+            int right = m_comments.Count - 1;
+            while (left <= right)
+            {
+                int mid = left + ((right - left) >> 1);
+                if (m_comments[mid].End <= position)
+                {
+                    left = mid + 1;
+                }
+                else
+                {
+                    right = mid - 1;
+                }
+            }
+
+            return left;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -287,6 +481,23 @@ namespace AJut.Text.AJson
             }
 
             return left < m_count ? left : -1;
+        }
+
+        // ===============================[ Subclasses ]===========================
+        /// <summary>
+        /// A comment's span in the source text, from the first character of its start marker up to
+        /// (not including) the character after its end marker.
+        /// </summary>
+        private readonly struct CommentRegion
+        {
+            public CommentRegion (int start, int end)
+            {
+                this.Start = start;
+                this.End = end;
+            }
+
+            public int Start { get; }
+            public int End { get; }
         }
     }
 }

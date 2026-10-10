@@ -1,21 +1,35 @@
 ﻿namespace AJut.TypeManagement
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
+    using System.Threading;
 
+    /// <summary>
+    /// Maps type ids to types. Lookups are safe from any thread, including while something else
+    /// registers: the AJson source generator's [ModuleInitializer] registers an assembly's enums
+    /// when that assembly is first touched, on whatever thread touched it, so registration is not
+    /// only a startup concern.
+    /// </summary>
     public static class TypeIdRegistrar
     {
-        private static readonly Dictionary<string, Type> g_typeAliases = new Dictionary<string, Type>();
-        private static readonly HashSet<string> g_alreadySearchedAemblies = new HashSet<string>();
-        private static readonly List<Assembly> g_trackedAssemblies = new List<Assembly>();
+        // Type id lookups happen on every typed json read and never take a lock, so the map is
+        //  concurrent. A whole-assembly scan is rare and takes g_assemblyScanLock, so a second
+        //  caller for the same assembly waits for the first scan to finish instead of returning
+        //  before its ids are registered. The tracked assembly list is copy-on-write under that
+        //  lock, so the name fallback always enumerates a complete snapshot.
+        private static readonly ConcurrentDictionary<string, Type> g_typeAliases = new ConcurrentDictionary<string, Type>();
+        private static readonly object g_assemblyScanLock = new object();
+        private static readonly HashSet<string> g_alreadySearchedAssemblies = new HashSet<string>();
+        private static Assembly[] g_trackedAssemblies = Array.Empty<Assembly>();
 
         /// <summary>
         /// Assemblies the registrar has been asked to track via <see cref="RegisterAllTypeIds"/>. The
         /// fallback name-resolution path searches these when a type id cannot bind by identity.
         /// </summary>
-        internal static IReadOnlyList<Assembly> TrackedAssemblies => g_trackedAssemblies;
+        internal static IReadOnlyList<Assembly> TrackedAssemblies => Volatile.Read(ref g_trackedAssemblies);
 
         /// <summary>
         /// Register a type to be associated with the given type id
@@ -30,13 +44,13 @@
         /// </summary>
         public static bool RegisterTypeId (string id, Type type)
         {
-            if (g_typeAliases.TryGetValue(id, out Type existing))
+            // The first registration for an id wins, as it always has
+            if (g_typeAliases.TryAdd(id, type))
             {
-                return existing != type;
+                return true;
             }
 
-            g_typeAliases.Add(id, type);
-            return true;
+            return g_typeAliases.TryGetValue(id, out Type existing) && existing != type;
         }
 
         /// <summary>
@@ -46,34 +60,38 @@
         /// <param name="forceSearch">Whether or not to search again if the assembly has already been searched (cached by name)</param>
         public static void RegisterAllTypeIds (Assembly assembly, bool forceSearch = false)
         {
-            if (!g_trackedAssemblies.Contains(assembly))
+            lock (g_assemblyScanLock)
             {
-                g_trackedAssemblies.Add(assembly);
-            }
-
-            if (!forceSearch && g_alreadySearchedAemblies.Contains(assembly.FullName))
-            {
-                return;
-            }
-
-            g_alreadySearchedAemblies.Add(assembly.FullName);
-
-            Type[] allTypes;
-            if (assembly.FullName == typeof(AJutActivator).Assembly.FullName)
-            {
-                allTypes = assembly.GetTypes();
-            }
-            else
-            {
-                allTypes = assembly.GetExportedTypes();
-            }
-
-            foreach (Type type in allTypes)
-            {
-                string typeId = GetTypeIdFor(type);
-                if (typeId != null)
+                if (Array.IndexOf(g_trackedAssemblies, assembly) == -1)
                 {
-                    RegisterTypeId(typeId, type);
+                    Assembly[] grown = new Assembly[g_trackedAssemblies.Length + 1];
+                    g_trackedAssemblies.CopyTo(grown, 0);
+                    grown[grown.Length - 1] = assembly;
+                    Volatile.Write(ref g_trackedAssemblies, grown);
+                }
+
+                if (!g_alreadySearchedAssemblies.Add(assembly.FullName) && !forceSearch)
+                {
+                    return;
+                }
+
+                Type[] allTypes;
+                if (assembly.FullName == typeof(AJutActivator).Assembly.FullName)
+                {
+                    allTypes = assembly.GetTypes();
+                }
+                else
+                {
+                    allTypes = assembly.GetExportedTypes();
+                }
+
+                foreach (Type type in allTypes)
+                {
+                    string typeId = GetTypeIdFor(type);
+                    if (typeId != null)
+                    {
+                        RegisterTypeId(typeId, type);
+                    }
                 }
             }
         }

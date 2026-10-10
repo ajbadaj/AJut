@@ -2,6 +2,7 @@ namespace AJut.Text.AJson
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Numerics;
     using AJut;
 
@@ -70,7 +71,6 @@ namespace AJut.Text.AJson
             this.QuotePropertyNames = true;
             this.Newline = "\n";
             this.PropertyValueQuoting = ePropertyValueQuoting.QuoteAnyUsuallyQuotedItem;
-            this.MakeDateTimesUTC = true;
             this.TypeIdToWrite = eTypeIdInfo.TypeIdAttributed;
             this.KeyValuePairKeyTypeIdToWrite = eTypeIdInfo.None;
             this.KeyValuePairValueTypeIdToWrite = eTypeIdInfo.None;
@@ -88,20 +88,21 @@ namespace AJut.Text.AJson
             string _DateTimeToJsonString (object instance)
             {
                 DateTime date = (DateTime)instance;
-                if (this.MakeDateTimesUTC && date.Kind != DateTimeKind.Utc)
-                {
-                    date = date.ToUniversalTime();
-                }
 
-                return date.ToString();
+                // Round-trip ISO 8601: culture-invariant, every tick kept, and the Kind carried in
+                //  the suffix (Z for Utc, the offset for Local, nothing for Unspecified), so the
+                //  reader hands back exactly the value it was given.
+                return date.ToString("o", CultureInfo.InvariantCulture);
             }
             string _TimeSpanToJsonString (object instance) => ((TimeSpan)instance).ToString();
             string _GuidToJsonString (object instance) => ((Guid)instance).ToString();
             string _TimeZoneToAJsonString (object instance) => ((TimeZoneInfo)instance).Id;
             string _Vector2ToAJsonString (object instance)
             {
+                // Invariant, or a comma-decimal culture's components would carry commas of their own
+                //  and the reader could not find the one between them
                 Vector2 vec2 = (Vector2)instance;
-                return $"<{vec2.X},{vec2.Y}>";
+                return FormattableString.Invariant($"<{vec2.X},{vec2.Y}>");
             }
         }
 
@@ -113,7 +114,33 @@ namespace AJut.Text.AJson
         public char PropertyNameQuoteChars { get; set; }
         public char PropertyValueQuoteChars { get; set; }
 
-        public bool MakeDateTimesUTC { get; set; }
+        /// <summary>
+        /// No longer does anything, and using it is a compile error. It converted DateTimes to UTC
+        /// before writing, back when the text carried no offset or Kind and UTC was the only way
+        /// to pin down the instant. Each DateTime is now written with its own Kind and reads back
+        /// the same, so anything that wants UTC stored converts in its own model.
+        /// </summary>
+        /// <remarks>
+        /// An error rather than a plain removal, so a project that set it is told why. Delete it
+        /// in a later release.
+        /// </remarks>
+        [Obsolete(
+            "AJson now writes each DateTime as round-trip ISO 8601 with its own Kind, and it reads back the "
+            + "same, so this setting no longer does anything. To store UTC, convert in your own model with "
+            + "ToUniversalTime().",
+            error: true
+        )]
+        public bool MakeDateTimesUTC
+        {
+            get => false;
+            set { }
+        }
+
+        /// <summary>
+        /// Whether text written from json built with these settings carries the AJson version
+        /// marker. Null, the default, follows <see cref="JsonHelper.WriteAJsonVersion"/>.
+        /// </summary>
+        public bool? WriteAJsonVersion { get; set; }
 
         public ePropertyValueQuoting PropertyValueQuoting { get; set; }
 
@@ -175,7 +202,12 @@ namespace AJut.Text.AJson
 
             return instanceType.IsSimpleType() ? (JsonStringMaker)_SimpleTypeStringMaker : null;
 
-            string _SimpleTypeStringMaker (object _instance) => _instance?.ToString();
+            // JSON numbers are culture-invariant. The current culture's ToString writes 0.5 as 0,5
+            //  under a comma-decimal culture, which the reader splits at the comma, and which no
+            //  machine with a different culture could read anyway.
+            string _SimpleTypeStringMaker (object _instance) => _instance is IFormattable formattable
+                ? formattable.ToString(null, CultureInfo.InvariantCulture)
+                : _instance?.ToString();
         }
 
         public static JsonBuilderSettings BuildMinifiedSettings ()

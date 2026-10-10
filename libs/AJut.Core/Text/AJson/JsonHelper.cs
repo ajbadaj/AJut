@@ -25,15 +25,38 @@ namespace AJut.Text.AJson
     /// </summary>
     public static class JsonHelper
     {
+        /// <summary>
+        /// The AJson text format this AJson writes into its version marker
+        /// (<see cref="JsonDocument.kAJsonVersionIndicator"/>). 2 is the first: strings escaped to
+        /// the JSON spec and DateTimes as round-trip ISO 8601. Text with no marker reads as 0.
+        /// </summary>
+        public const int kCurrentAJsonVersion = 2;
+
         private static JsonBuilderSettings g_defaultBuilderSettings = new JsonBuilderSettings();
 
         // Per-type reflection cache. Bounded by Type identity (assembly-bounded), no leak risk.
-        // ConcurrentDictionary chosen for thread-safety in case AJson is called concurrently
-        // (Call Familiar wire-message hot path may serialize on multiple threads).
+        // ConcurrentDictionary chosen for thread-safety in case AJson is called concurrently.
+        // The lists depend on TypeMetadataExtensionRegistrar state as well as on the Type, so the
+        // registrar invalidates them whenever a registration changes (InvalidatePropertyCachesFor).
         private static readonly ConcurrentDictionary<Type, PropertyInfo[]> g_propertyCacheReadable
             = new ConcurrentDictionary<Type, PropertyInfo[]>();
         private static readonly ConcurrentDictionary<Type, PropertyInfo[]> g_propertyCacheWritable
             = new ConcurrentDictionary<Type, PropertyInfo[]>();
+
+        // ===============================[ AJson Version ]===========================
+        /// <summary>
+        /// Whether text written from a <see cref="Json"/> carries the AJson version marker, unless
+        /// the build's <see cref="JsonBuilderSettings.WriteAJsonVersion"/> or the json's own
+        /// <see cref="Json.WriteAJsonVersion"/> says otherwise. On by default.
+        /// </summary>
+        public static bool WriteAJsonVersion { get; set; } = true;
+
+        /// <summary>
+        /// The default for <see cref="ParserRules.WarnIfAJsonVersionBelow"/>: a read of a root
+        /// document whose AJson version is below this logs a warning. 0, the default, never warns,
+        /// since a reader cannot know whether the writer had the marker on.
+        /// </summary>
+        public static int WarnIfAJsonVersionBelow { get; set; } = 0;
 
         // ===============================[ Type ID Registration ]===========================
         public static void RegisterTypeId<T> (string id)
@@ -324,6 +347,15 @@ namespace AJut.Text.AJson
                 Type nullableElementType = targetType.TargetsSameTypeAs(typeof(Nullable<>)) ? targetType.GenericTypeArguments[0] : null;
                 Type effectiveType = nullableElementType ?? targetType;
 
+                // The tree already holds the string unescaped. StringParser's default string entry
+                //  undoes the quote-only escape the legacy tree still carries, which would corrupt a
+                //  string that really contains a backslash before a quote.
+                if (effectiveType == typeof(string))
+                {
+                    targetItem = sourceJsonValue.StringValue;
+                    return;
+                }
+
                 if (settings.StringParser.CanConvert(effectiveType))
                 {
                     object parsedValue = settings.StringParser.Convert(sourceJsonValue.StringValue, effectiveType);
@@ -472,8 +504,9 @@ namespace AJut.Text.AJson
             Type sourceType = source.GetType();
 
             // Source-gen fast path. The generated writer handles document-startup, type-id header,
-            //  and per-property writes in a single explicit call - no reflection on the property
-            //  loop, direct primitive append (no boxing) for value-typed properties.
+            //  and per-property writes in a single explicit call, with no reflection on the property
+            //  loop. Value-typed properties are still boxed: each one goes through
+            //  JsonBuilder.AddProperty, which takes an object.
             if (AJsonGeneratedDispatch.TryGet(sourceType, out AJsonGeneratedSerializer generated))
             {
                 generated.Writer(source, target);
@@ -593,7 +626,13 @@ namespace AJut.Text.AJson
                 requiresSet: source.GetType().IsSimpleType() || !target.BuilderSettings.UseReadonlyObjectProperties
             );
 
-            if (allProperties.Length == 0 && target.Parent != null)
+            // A document with nothing to write is dropped from its parent, unless it carries a type
+            //  id. For a type with no data members the type id is the whole value: an empty marker
+            //  type in an interface-typed property or a list has to come back as an instance of that
+            //  type, not vanish and read back as null (or shift the list).
+            eTypeIdInfo typeIdToWrite = target.BuilderSettings.TypeIdToWrite;
+            bool hasTypeId = TryGetTypeIdForType(typeIdToWrite, sourceType, out string typeId);
+            if (allProperties.Length == 0 && !hasTypeId && target.Parent != null)
             {
                 target.Parent.Children.Remove(target);
                 return;
@@ -604,7 +643,7 @@ namespace AJut.Text.AJson
                 target = target.StartDocument();
             }
 
-            if (TryGetTypeIdForType(target.BuilderSettings.TypeIdToWrite, sourceType, out string typeId))
+            if (hasTypeId)
             {
                 target.AddProperty(JsonDocument.kTypeIndicator, typeId);
             }
@@ -736,18 +775,19 @@ namespace AJut.Text.AJson
             return false;
         }
 
+        // The value goes into the tree as it is. Escaping belongs to the text: JsonWriter escapes
+        //  it on the way out and JsonReader unescapes it on the way in.
         private static void ApplySimpleValue (JsonBuilder target, string rawValue)
         {
-            string escaped = rawValue == null ? null : rawValue.Replace("\"", "\\\"");
             if (target.IsValue)
             {
-                target.Value = escaped;
+                target.Value = rawValue;
             }
             else
             {
                 target.DocumentKVPValue = new JsonBuilder(target);
                 target.DocumentKVPValue.IsValueUsualQuoteTarget = target.IsValueUsualQuoteTarget;
-                target.DocumentKVPValue.Value = escaped;
+                target.DocumentKVPValue.Value = rawValue;
             }
         }
 
@@ -841,6 +881,39 @@ namespace AJut.Text.AJson
         }
 
         // ===============================[ Reflection Cache ]===========================
+        /// <summary>
+        /// Drops the cached property lists for <paramref name="type"/> and every type derived from
+        /// it. A cached list bakes in the <see cref="TypeMetadataExtensionRegistrar"/> hide and order
+        /// state from when it was built, and a derived type's list carries its bases' members, so a
+        /// registration on a base has to reach the derived types too. Called by the registrar.
+        /// </summary>
+        internal static void InvalidatePropertyCachesFor (Type type)
+        {
+            RemoveTypeAndDerived(g_propertyCacheReadable, type);
+            RemoveTypeAndDerived(g_propertyCacheWritable, type);
+        }
+
+        /// <summary>
+        /// Drops every cached property list. Called by the registrar when a change can affect any
+        /// type (clearing all registrations, or changing the default member ordering).
+        /// </summary>
+        internal static void ClearPropertyCaches ()
+        {
+            g_propertyCacheReadable.Clear();
+            g_propertyCacheWritable.Clear();
+        }
+
+        private static void RemoveTypeAndDerived (ConcurrentDictionary<Type, PropertyInfo[]> cache, Type type)
+        {
+            foreach (Type cachedType in cache.Keys)
+            {
+                if (type.IsAssignableFrom(cachedType))
+                {
+                    cache.TryRemove(cachedType, out _);
+                }
+            }
+        }
+
         private static PropertyInfo[] GetCachedReadableProperties (Type type, bool requiresSet)
         {
             ConcurrentDictionary<Type, PropertyInfo[]> cache = requiresSet ? g_propertyCacheWritable : g_propertyCacheReadable;

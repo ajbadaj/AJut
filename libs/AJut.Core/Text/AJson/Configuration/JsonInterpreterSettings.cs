@@ -21,6 +21,10 @@ namespace AJut.Text.AJson
     /// </summary>
     public class JsonInterpreterSettings
     {
+        // "o" is exactly what the writer produces. The second form also takes ISO 8601 text with
+        //  fewer (or no) fractional digits, as other tools write it.
+        private static readonly string[] kIso8601DateTimeFormats = { "o", "yyyy-MM-ddTHH:mm:ss.FFFFFFFK" };
+
         private readonly Dictionary<Type, JsonToObjectConstructor> m_customConstructors = new Dictionary<Type, JsonToObjectConstructor>();
 
         // ===========================[ Construction ]===============================
@@ -41,7 +45,37 @@ namespace AJut.Text.AJson
 
             object _CreateDateTimeFor (Type fullTarget, JsonValue json, JsonInterpreterSettings settings, Json owner)
             {
-                return DateTime.TryParse(json.StringValue, CultureInfo.CurrentCulture.DateTimeFormat, this.DefaultDateTimeParseStyle, out DateTime found) ? found : default;
+                string text = json.StringValue;
+
+                // 1. Round-trip ISO 8601, which is what AJson writes. RoundtripKind hands back the
+                //    Kind the text carries: Z is Utc, an offset is Local (as this machine's local
+                //    time), and no suffix is Unspecified.
+                bool isIso8601 = DateTime.TryParseExact(
+                    text,
+                    kIso8601DateTimeFormats,
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.RoundtripKind,
+                    out DateTime found
+                );
+
+                if (isIso8601)
+                {
+                    return found;
+                }
+
+                // 2. Text written before that: the writing machine's current culture format, with no
+                //    offset or Kind, which was always UTC under the old defaults. It reads the way it
+                //    always did, with the invariant culture as a second try for a file written under
+                //    another culture.
+                DateTimeStyles oldTextStyle = this.DefaultDateTimeParseStyle;
+                if (DateTime.TryParse(text, CultureInfo.CurrentCulture, oldTextStyle, out found)
+                    || DateTime.TryParse(text, CultureInfo.InvariantCulture, oldTextStyle, out found))
+                {
+                    return found;
+                }
+
+                owner?.AddError($"Could not read '{text}' as a DateTime, the value is left at default");
+                return default(DateTime);
             }
 
             object _CreateTimeSpanFor (Type fullTarget, JsonValue json, JsonInterpreterSettings settings, Json owner)
@@ -122,15 +156,38 @@ namespace AJut.Text.AJson
 
             object _CreateVector2 (Type fullTarget, JsonValue json, JsonInterpreterSettings settings, Json owner)
             {
-                string[] xystrs = json.StringValue.Trim('<', '>').Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                if (xystrs.Length == 2
-                    && float.TryParse(xystrs[0], out float x)
-                    && float.TryParse(xystrs[1], out float y))
+                // The writer puts each component out invariant. Text written before that used the
+                //  writing machine's culture, which reads back with the current culture as before.
+                //  A comma-decimal culture's old text (<0,5,1,25>) splits into four parts and was
+                //  never readable, so it is reported along with anything else that does not parse.
+                string[] xystrs = (json.StringValue ?? String.Empty)
+                    .Trim('<', '>')
+                    .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+
+                // The old read used float.TryParse's own defaults, which allow thousands grouping
+                const NumberStyles kOldTextStyles = NumberStyles.Float | NumberStyles.AllowThousands;
+                if (_TryReadVector2(xystrs, NumberStyles.Float, CultureInfo.InvariantCulture, out Vector2 found)
+                    || _TryReadVector2(xystrs, kOldTextStyles, CultureInfo.CurrentCulture, out found))
                 {
-                    return new Vector2(x, y);
+                    return found;
                 }
 
+                owner?.AddError($"Could not read '{json.StringValue}' as a Vector2, the value is left at zero");
                 return Vector2.Zero;
+            }
+
+            static bool _TryReadVector2 (string[] parts, NumberStyles styles, CultureInfo culture, out Vector2 vector)
+            {
+                if (parts.Length == 2
+                    && float.TryParse(parts[0], styles, culture, out float x)
+                    && float.TryParse(parts[1], styles, culture, out float y))
+                {
+                    vector = new Vector2(x, y);
+                    return true;
+                }
+
+                vector = Vector2.Zero;
+                return false;
             }
 
             static object _DefaultFor ([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type t) => t.IsValueType ? Activator.CreateInstance(t) : null;
@@ -141,6 +198,11 @@ namespace AJut.Text.AJson
 
         public StringParser StringParser { get; }
 
+        /// <summary>
+        /// How DateTime text that is not round-trip ISO 8601 is read: text written before AJson
+        /// wrote ISO 8601, or by something else. The default, AssumeUniversal, matches how the old
+        /// writer wrote it (UTC, with no offset).
+        /// </summary>
         public DateTimeStyles DefaultDateTimeParseStyle { get; set; } = DateTimeStyles.AssumeUniversal;
 
         // ===========================[ Public Interface Methods ]===============================

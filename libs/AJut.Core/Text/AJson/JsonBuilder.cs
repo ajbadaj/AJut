@@ -234,6 +234,8 @@ namespace AJut.Text.AJson
 
             Json output = new Json();
             output.Data = data;
+            output.AJsonVersion = JsonHelper.kCurrentAJsonVersion;
+            output.WriteAJsonVersion = root.BuilderSettings.WriteAJsonVersion;
             return output;
         }
 

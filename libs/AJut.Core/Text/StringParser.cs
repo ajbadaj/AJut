@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Net;
 
     /// <summary>
@@ -25,6 +26,10 @@
 
         private void RegisterDefaults()
         {
+            // Every simple type AJson writes needs a parser here. A type without one does not fail
+            //  on read, it silently keeps the default its instance was constructed with.
+            this.Register(Byte.Parse);
+            this.Register(SByte.Parse);
             this.Register(Int16.Parse);
             this.Register(Int32.Parse);
             this.Register(Int64.Parse);
@@ -32,9 +37,16 @@
             this.Register(UInt32.Parse);
             this.Register(UInt64.Parse);
 
-            this.Register(double.Parse);
-            this.Register(float.Parse);
-            
+            // JSON numbers are culture-invariant text, so the floating point parsers read invariant
+            //  first. Before AJson wrote numbers invariant, a comma-decimal culture wrote 0.5 as 0,5
+            //  and infinity was written with the current culture's symbol, so anything invariant
+            //  rejects gets a second try with the current culture. NumberStyles.Float leaves out
+            //  thousands grouping on purpose: with it, invariant would take "0,5" as 5 and the
+            //  fallback would never run.
+            this.Register(_ParseDouble);
+            this.Register(_ParseFloat);
+            this.Register(_ParseDecimal);
+
             this.Register(bool.Parse);
             
             this.Register(char.Parse);
@@ -44,6 +56,27 @@
             this.Register(IPEndPoint.Parse);
 
             this.Register(s => s.Replace("\\\"", "\"")); // string
+
+            static double _ParseDouble (string s)
+            {
+                return double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out double value)
+                    ? value
+                    : double.Parse(s, CultureInfo.CurrentCulture);
+            }
+
+            static float _ParseFloat (string s)
+            {
+                return float.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out float value)
+                    ? value
+                    : float.Parse(s, CultureInfo.CurrentCulture);
+            }
+
+            static decimal _ParseDecimal (string s)
+            {
+                return decimal.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out decimal value)
+                    ? value
+                    : decimal.Parse(s, CultureInfo.CurrentCulture);
+            }
         }
 
         /// <summary>

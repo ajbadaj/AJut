@@ -5,42 +5,114 @@
 namespace AJut.Text.AJson
 {
     using System;
+    using System.Globalization;
 
     internal static class JsonReader
     {
         private const int kBracketKindMask =
             (1 << (int)eSeparatorKind.OpenBrace) | (1 << (int)eSeparatorKind.OpenBracket);
 
+        // Everything but newlines and single quotes, which the indexer also records
+        private const int kStructureKindMask =
+            (1 << (int)eSeparatorKind.OpenBrace) | (1 << (int)eSeparatorKind.CloseBrace)
+            | (1 << (int)eSeparatorKind.OpenBracket) | (1 << (int)eSeparatorKind.CloseBracket)
+            | (1 << (int)eSeparatorKind.Colon) | (1 << (int)eSeparatorKind.Comma)
+            | (1 << (int)eSeparatorKind.Quote);
+
+        // The first AJson version whose strings are escaped to the JSON spec. Text below it put
+        //  every backslash out raw.
+        private const int kFirstVersionWithEscapedStrings = 2;
+
         public static Json Parse (ReadOnlySpan<char> text, ParserRules rules)
         {
-            Json output = new Json();
             if (text.Length == 0)
             {
-                output.AddError("Empty input text");
-                return output;
+                Json empty = new Json();
+                empty.AddError("Empty input text");
+                return empty;
             }
 
             rules = rules ?? new ParserRules();
+            Json output = ParseWith(text, rules, oldTextQuoteRule: false);
+
+            // Text written before strings were escaped can hold a value ending in a raw backslash,
+            //  whose closing quote then reads as escaped and the parse fails. If it failed and a
+            //  backslash sits in front of a quote, try once more reading quotes the way that text
+            //  needs, and keep the result only if it parses clean. Escaped text always parses on the
+            //  first pass, so this never runs for it, and strict mode never reads old text.
+            if (output.HasErrors
+                && !rules.StrictMode
+                && text.IndexOf("\\\"".AsSpan()) != -1)
+            {
+                Json oldTextOutput = ParseWith(text, rules, oldTextQuoteRule: true);
+                if (!oldTextOutput.HasErrors)
+                {
+                    output = oldTextOutput;
+                }
+            }
+
+            WarnIfAJsonVersionBelowExpected(output, rules);
+            return output;
+        }
+
+        // ===============================[ Helper Methods ]===========================
+
+        private static Json ParseWith (ReadOnlySpan<char> text, ParserRules rules, bool oldTextQuoteRule)
+        {
+            Json output = new Json();
             SeparatorIndex index = null;
             try
             {
-                index = new SeparatorIndex(text, rules);
+                index = new SeparatorIndex(text, rules, oldTextQuoteRule);
+
+                // Strict JSON has no comments, even when the rules configure comment indicators
+                if (rules.StrictMode)
+                {
+                    for (int commentIndex = 0; commentIndex < index.CommentCount; ++commentIndex)
+                    {
+                        int commentStart = index.CommentStartAt(commentIndex);
+                        output.AddError($"Strict mode violation - comment at position {commentStart}");
+                    }
+                }
 
                 int firstOpen = index.NextOfKinds(0, kBracketKindMask);
                 if (firstOpen == -1)
                 {
                     // Bare-value case - no brackets at the top level.
-                    output.Data = ReadUnquotedValue(text, 0, text.Length - 1);
+                    output.Data = ReadUnquotedValue(text, index, 0, text.Length - 1);
                     return output;
                 }
 
+                int markedVersion = 0;
+                bool isMarked = text[firstOpen] == '{'
+                    && TryReadAJsonVersion(text, index, firstOpen, out markedVersion);
+                output.AJsonVersion = markedVersion;
+
+                // How to read strings. Text written before AJson escaped strings has every backslash
+                //  raw. Its version marker says so outright, as can the caller with
+                //  AssumeAJsonVersion. Otherwise it is told apart by an escape JSON does not have (\U
+                //  in C:\Users, say), and one such string anywhere decides it for the whole text,
+                //  since a file is written all at once: a string beside it whose backslashes happen
+                //  to look like escapes (C:\temp\new) would otherwise come back with a tab and a
+                //  newline in it. Valid JSON never has one, so it is never read this way.
+                int? readAsVersion = isMarked ? markedVersion : rules.AssumeAJsonVersion;
+                bool quotedTextIsOld = readAsVersion.HasValue
+                    ? readAsVersion.Value < kFirstVersionWithEscapedStrings
+                    : text.IndexOf('\\') != -1 && index.AnyQuotedTextHasEscapeJsonLacks(text);
+
                 if (text[firstOpen] == '{')
                 {
-                    output.Data = ReadDocument(text, index, output, rules, firstOpen, out _);
+                    JsonDocument root = ReadDocument(text, index, output, rules, quotedTextIsOld, firstOpen, out _);
+                    if (isMarked)
+                    {
+                        root.Remove(JsonDocument.kAJsonVersionIndicator);
+                    }
+
+                    output.Data = root;
                 }
                 else
                 {
-                    output.Data = ReadArray(text, index, output, rules, firstOpen, out _);
+                    output.Data = ReadArray(text, index, output, rules, quotedTextIsOld, firstOpen, out _);
                 }
 
                 return output;
@@ -56,9 +128,7 @@ namespace AJut.Text.AJson
             }
         }
 
-        // ===============================[ Helper Methods ]===========================
-
-        private static JsonDocument ReadDocument (ReadOnlySpan<char> text, SeparatorIndex index, Json owner, ParserRules rules, int startIndex, out int endIndex)
+        private static JsonDocument ReadDocument (ReadOnlySpan<char> text, SeparatorIndex index, Json owner, ParserRules rules, bool quotedTextIsOld, int startIndex, out int endIndex)
         {
             JsonDocument doc = new JsonDocument();
             endIndex = -1;
@@ -67,6 +137,10 @@ namespace AJut.Text.AJson
             int lastStart = startIndex + 1;
             int insideQuoteStart = -1;
             string pendingKey = null;
+
+            // The last comma, while no entry has started after it. Strict mode reports it as a
+            //  trailing comma if the document closes first.
+            int openCommaPos = -1;
 
             while (true)
             {
@@ -87,7 +161,7 @@ namespace AJut.Text.AJson
 
                         if (pendingKey != null)
                         {
-                            JsonValue tail = ReadUnquotedValue(text, lastStart, sepPos - 1);
+                            JsonValue tail = ReadUnquotedValue(text, index, lastStart, sepPos - 1);
                             if (tail != null)
                             {
                                 if (rules.StrictMode && tail.IsQuoted == false && !LooksLikeJsonLiteralOrNumber(tail.StringValue))
@@ -97,6 +171,13 @@ namespace AJut.Text.AJson
                                 doc.Add(pendingKey, tail);
                             }
                             pendingKey = null;
+                        }
+                        else
+                        {
+                            CheckStrictTextBeforeClose(
+                                text, index, owner, rules,
+                                lastStart, sepPos - 1, openCommaPos
+                            );
                         }
                         endIndex = sepPos;
                         break;
@@ -116,7 +197,9 @@ namespace AJut.Text.AJson
                                 break;
                             }
 
-                            JsonDocument child = ReadDocument(text, index, owner, rules, sepPos, out int childEnd);
+                            CheckStrictStrayText(text, index, owner, rules, lastStart, sepPos - 1);
+                            openCommaPos = -1;
+                            JsonDocument child = ReadDocument(text, index, owner, rules, quotedTextIsOld, sepPos, out int childEnd);
                             if (childEnd == -1)
                             {
                                 owner.AddError($"Unterminated nested document starting at position {sepPos}");
@@ -146,7 +229,9 @@ namespace AJut.Text.AJson
                                 break;
                             }
 
-                            JsonArray childArr = ReadArray(text, index, owner, rules, sepPos, out int arrEnd);
+                            CheckStrictStrayText(text, index, owner, rules, lastStart, sepPos - 1);
+                            openCommaPos = -1;
+                            JsonArray childArr = ReadArray(text, index, owner, rules, quotedTextIsOld, sepPos, out int arrEnd);
                             if (arrEnd == -1)
                             {
                                 owner.AddError($"Unterminated array starting at position {sepPos}");
@@ -171,7 +256,7 @@ namespace AJut.Text.AJson
                         // The chunk between lastStart and sepPos-1 is an unquoted key (lenient).
                         // Strict mode rejects it.
                         {
-                            string keyChunk = TrimUnquoted(text, lastStart, sepPos - 1);
+                            string keyChunk = TrimUnquoted(text, index, lastStart, sepPos - 1);
                             if (keyChunk.Length == 0)
                             {
                                 owner.AddError($"Empty key at position {sepPos}");
@@ -185,12 +270,15 @@ namespace AJut.Text.AJson
                             }
 
                             pendingKey = keyChunk;
+                            openCommaPos = -1;
                         }
                         break;
 
                     case eSeparatorKind.Quote:
                         if (insideQuoteStart == -1)
                         {
+                            CheckStrictStrayText(text, index, owner, rules, lastStart, sepPos - 1);
+                            openCommaPos = -1;
                             insideQuoteStart = sepPos + 1;
                         }
                         else
@@ -202,7 +290,8 @@ namespace AJut.Text.AJson
 
                             if (gotPeek && peekKind == eSeparatorKind.Colon)
                             {
-                                pendingKey = text.Slice(insideQuoteStart, sepPos - insideQuoteStart).ToString();
+                                CheckStrictStrayText(text, index, owner, rules, sepPos + 1, peekPos - 1);
+                                pendingKey = ReadQuoted(text, insideQuoteStart, sepPos, quotedTextIsOld);
                                 searchPos = peekPos + 1;
                                 lastStart = peekPos + 1;
                                 insideQuoteStart = -1;
@@ -217,7 +306,7 @@ namespace AJut.Text.AJson
                                     break;
                                 }
 
-                                string strValue = text.Slice(insideQuoteStart, sepPos - insideQuoteStart).ToString();
+                                string strValue = ReadQuoted(text, insideQuoteStart, sepPos, quotedTextIsOld);
                                 doc.Add(pendingKey, new JsonValue(strValue, isQuoted: true));
                                 pendingKey = null;
                                 insideQuoteStart = -1;
@@ -234,7 +323,7 @@ namespace AJut.Text.AJson
 
                         if (pendingKey != null)
                         {
-                            JsonValue endValue = ReadUnquotedValue(text, lastStart, sepPos - 1);
+                            JsonValue endValue = ReadUnquotedValue(text, index, lastStart, sepPos - 1);
                             if (endValue != null)
                             {
                                 if (rules.StrictMode && endValue.IsQuoted == false && !LooksLikeJsonLiteralOrNumber(endValue.StringValue))
@@ -245,6 +334,12 @@ namespace AJut.Text.AJson
                             }
                             pendingKey = null;
                         }
+                        else
+                        {
+                            CheckStrictStrayText(text, index, owner, rules, lastStart, sepPos - 1);
+                        }
+
+                        openCommaPos = sepPos;
                         break;
 
                     default:
@@ -273,7 +368,7 @@ namespace AJut.Text.AJson
             return doc;
         }
 
-        private static JsonArray ReadArray (ReadOnlySpan<char> text, SeparatorIndex index, Json owner, ParserRules rules, int startIndex, out int endIndex)
+        private static JsonArray ReadArray (ReadOnlySpan<char> text, SeparatorIndex index, Json owner, ParserRules rules, bool quotedTextIsOld, int startIndex, out int endIndex)
         {
             JsonArray arr = new JsonArray();
             endIndex = -1;
@@ -281,6 +376,10 @@ namespace AJut.Text.AJson
             int searchPos = startIndex + 1;
             int lastStart = startIndex + 1;
             int insideQuoteStart = -1;
+
+            // The last comma, while no item has started after it. Strict mode reports it as a
+            //  trailing comma if the array closes first.
+            int openCommaPos = -1;
 
             while (true)
             {
@@ -300,9 +399,8 @@ namespace AJut.Text.AJson
                         }
 
                         // Trailing unquoted item between last comma and the close bracket.
-                        if (lastStart != sepPos)
                         {
-                            JsonValue tail = ReadUnquotedValue(text, lastStart, sepPos - 1);
+                            JsonValue tail = ReadUnquotedValue(text, index, lastStart, sepPos - 1);
                             if (tail != null)
                             {
                                 if (rules.StrictMode && tail.IsQuoted == false && !LooksLikeJsonLiteralOrNumber(tail.StringValue))
@@ -310,6 +408,13 @@ namespace AJut.Text.AJson
                                     owner.AddError($"Strict mode violation - unquoted string array element at position {sepPos}");
                                 }
                                 arr.Add(tail);
+                            }
+                            else
+                            {
+                                CheckStrictTextBeforeClose(
+                                    text, index, owner, rules,
+                                    lastStart, sepPos - 1, openCommaPos
+                                );
                             }
                         }
                         endIndex = sepPos;
@@ -323,7 +428,9 @@ namespace AJut.Text.AJson
                         }
 
                         {
-                            JsonDocument child = ReadDocument(text, index, owner, rules, sepPos, out int childEnd);
+                            CheckStrictStrayText(text, index, owner, rules, lastStart, sepPos - 1);
+                            openCommaPos = -1;
+                            JsonDocument child = ReadDocument(text, index, owner, rules, quotedTextIsOld, sepPos, out int childEnd);
                             if (childEnd == -1)
                             {
                                 owner.AddError($"Unterminated nested document in array at position {sepPos}");
@@ -337,6 +444,8 @@ namespace AJut.Text.AJson
                             if (index.TryNext(childEnd + 1, out int peekPos, out eSeparatorKind peekKind)
                                 && peekKind == eSeparatorKind.Comma)
                             {
+                                CheckStrictStrayText(text, index, owner, rules, childEnd + 1, peekPos - 1);
+                                openCommaPos = peekPos;
                                 searchPos = peekPos + 1;
                                 lastStart = peekPos + 1;
                             }
@@ -356,7 +465,9 @@ namespace AJut.Text.AJson
                         }
 
                         {
-                            JsonArray child = ReadArray(text, index, owner, rules, sepPos, out int childEnd);
+                            CheckStrictStrayText(text, index, owner, rules, lastStart, sepPos - 1);
+                            openCommaPos = -1;
+                            JsonArray child = ReadArray(text, index, owner, rules, quotedTextIsOld, sepPos, out int childEnd);
                             if (childEnd == -1)
                             {
                                 owner.AddError($"Unterminated nested array in array at position {sepPos}");
@@ -369,6 +480,8 @@ namespace AJut.Text.AJson
                             if (index.TryNext(childEnd + 1, out int peekPos, out eSeparatorKind peekKind)
                                 && peekKind == eSeparatorKind.Comma)
                             {
+                                CheckStrictStrayText(text, index, owner, rules, childEnd + 1, peekPos - 1);
+                                openCommaPos = peekPos;
                                 searchPos = peekPos + 1;
                                 lastStart = peekPos + 1;
                             }
@@ -388,7 +501,7 @@ namespace AJut.Text.AJson
                         }
 
                         {
-                            JsonValue itemValue = ReadUnquotedValue(text, lastStart, sepPos - 1);
+                            JsonValue itemValue = ReadUnquotedValue(text, index, lastStart, sepPos - 1);
                             if (itemValue != null)
                             {
                                 if (rules.StrictMode && itemValue.IsQuoted == false && !LooksLikeJsonLiteralOrNumber(itemValue.StringValue))
@@ -398,12 +511,14 @@ namespace AJut.Text.AJson
                                 arr.Add(itemValue);
                             }
                         }
+
+                        openCommaPos = sepPos;
                         break;
 
                     case eSeparatorKind.Quote:
                         if (insideQuoteStart != -1)
                         {
-                            string strValue = text.Slice(insideQuoteStart, sepPos - insideQuoteStart).ToString();
+                            string strValue = ReadQuoted(text, insideQuoteStart, sepPos, quotedTextIsOld);
                             arr.Add(new JsonValue(strValue, isQuoted: true));
                             insideQuoteStart = -1;
 
@@ -411,6 +526,8 @@ namespace AJut.Text.AJson
                             if (index.TryNext(sepPos + 1, out int peekPos, out eSeparatorKind peekKind)
                                 && peekKind == eSeparatorKind.Comma)
                             {
+                                CheckStrictStrayText(text, index, owner, rules, sepPos + 1, peekPos - 1);
+                                openCommaPos = peekPos;
                                 searchPos = peekPos + 1;
                                 lastStart = peekPos + 1;
                                 continue;
@@ -418,6 +535,8 @@ namespace AJut.Text.AJson
                         }
                         else
                         {
+                            CheckStrictStrayText(text, index, owner, rules, lastStart, sepPos - 1);
+                            openCommaPos = -1;
                             insideQuoteStart = sepPos + 1;
                         }
                         break;
@@ -448,41 +567,143 @@ namespace AJut.Text.AJson
             return arr;
         }
 
+        // The writer puts the version marker as the root document's first key, so that is the only
+        //  place it is looked for: an "__ajson" key anywhere else is ordinary data.
+        private static bool TryReadAJsonVersion (ReadOnlySpan<char> text, SeparatorIndex index, int rootOpen, out int version)
+        {
+            version = 0;
+            if (!index.TryNextOfKinds(rootOpen + 1, kStructureKindMask, out int keyOpen, out eSeparatorKind kind)
+                || kind != eSeparatorKind.Quote
+                || TrimUnquoted(text, index, rootOpen + 1, keyOpen - 1).Length != 0)
+            {
+                return false;
+            }
+
+            if (!index.TryNextOfKinds(keyOpen + 1, kStructureKindMask, out int keyClose, out kind)
+                || kind != eSeparatorKind.Quote)
+            {
+                return false;
+            }
+
+            ReadOnlySpan<char> key = text.Slice(keyOpen + 1, keyClose - keyOpen - 1);
+            if (!key.SequenceEqual(JsonDocument.kAJsonVersionIndicator.AsSpan()))
+            {
+                return false;
+            }
+
+            if (!index.TryNextOfKinds(keyClose + 1, kStructureKindMask, out int colon, out kind)
+                || kind != eSeparatorKind.Colon
+                || !index.TryNextOfKinds(colon + 1, kStructureKindMask, out int valueEnd, out kind)
+                || (kind != eSeparatorKind.Comma && kind != eSeparatorKind.CloseBrace))
+            {
+                return false;
+            }
+
+            string versionText = TrimUnquoted(text, index, colon + 1, valueEnd - 1);
+            return int.TryParse(versionText, NumberStyles.None, CultureInfo.InvariantCulture, out version);
+        }
+
+        // Warning is off unless the caller asks for it: a reader cannot know whether the writer had
+        //  the marker on. Only a root document can carry a marker, so nothing else is warned about.
+        private static void WarnIfAJsonVersionBelowExpected (Json output, ParserRules rules)
+        {
+            int expected = rules.WarnIfAJsonVersionBelow ?? JsonHelper.WarnIfAJsonVersionBelow;
+            if (expected <= 0 || output.AJsonVersion >= expected || !(output.Data is JsonDocument))
+            {
+                return;
+            }
+
+            string found = output.AJsonVersion == 0
+                ? "no AJson version marker"
+                : $"AJson version {output.AJsonVersion}";
+            Logger.LogInfo(
+                $"[WARNING] AJson read text with {found}, below the expected version {expected}. Text written before "
+                + $"AJson version {kFirstVersionWithEscapedStrings} kept its backslashes raw, and can read differently "
+                + "than it was written."
+            );
+        }
+
+        // The inside of a quoted key or value, from just after its opening quote up to (not
+        //  including) its closing quote, unescaped: the tree holds strings as they are.
+        private static string ReadQuoted (ReadOnlySpan<char> text, int startPos, int closingQuotePos, bool quotedTextIsOld)
+        {
+            ReadOnlySpan<char> quoted = text.Slice(startPos, closingQuotePos - startPos);
+            return quotedTextIsOld
+                ? JsonStringEscaping.ReadAsOldText(quoted)
+                : JsonStringEscaping.UnescapeLenient(quoted);
+        }
+
         // Trim leading/trailing whitespace and produce a JsonValue, or null if the chunk is empty.
-        private static JsonValue ReadUnquotedValue (ReadOnlySpan<char> text, int startPos, int endPos)
+        private static JsonValue ReadUnquotedValue (ReadOnlySpan<char> text, SeparatorIndex index, int startPos, int endPos)
+        {
+            string raw = TrimUnquoted(text, index, startPos, endPos);
+            return raw.Length == 0 ? null : new JsonValue(raw, isQuoted: false);
+        }
+
+        private static string TrimUnquoted (ReadOnlySpan<char> text, SeparatorIndex index, int startPos, int endPos)
         {
             if (endPos < startPos)
             {
-                return null;
+                return String.Empty;
             }
 
-            int s = startPos;
-            int e = endPos;
-            while (s <= e && IsWhitespace(text[s])) { ++s; }
-            while (e >= s && IsWhitespace(text[e])) { --e; }
+            // The indexer leaves comments out of the separator stream, but an unquoted chunk is
+            //  sliced from the original text, so a comment sitting inside it has to come out here.
+            //  It is replaced with a space rather than removed: a comment separates the text on
+            //  either side of it, as in C and JSON5. Text with no comments takes the plain slice.
+            ReadOnlySpan<char> chunk = index.HasCommentWithin(startPos, endPos)
+                ? index.SliceWithCommentsAsSpaces(text, startPos, endPos).AsSpan()
+                : text.Slice(startPos, endPos - startPos + 1);
 
-            if (e < s)
-            {
-                return null;
-            }
-
-            string raw = text.Slice(s, e - s + 1).ToString();
-            return new JsonValue(raw, isQuoted: false);
-        }
-
-        private static string TrimUnquoted (ReadOnlySpan<char> text, int startPos, int endPos)
-        {
-            int s = startPos;
-            int e = endPos;
-            while (s <= e && IsWhitespace(text[s])) { ++s; }
-            while (e >= s && IsWhitespace(text[e])) { --e; }
+            int s = 0;
+            int e = chunk.Length - 1;
+            while (s <= e && IsWhitespace(chunk[s])) { ++s; }
+            while (e >= s && IsWhitespace(chunk[e])) { --e; }
 
             if (e < s)
             {
                 return String.Empty;
             }
 
-            return text.Slice(s, e - s + 1).ToString();
+            return chunk.Slice(s, e - s + 1).ToString();
+        }
+
+        // Strict JSON has only whitespace between its structural markers, keys and values. The
+        //  lenient reader passes over text it has no use for (before a quote, around a nested
+        //  document, between a value and its comma), which in strict mode would let a comment
+        //  through when no comment indicators are configured, or any other stray text.
+        private static void CheckStrictStrayText (ReadOnlySpan<char> text, SeparatorIndex index, Json owner, ParserRules rules, int startPos, int endPos)
+        {
+            if (!rules.StrictMode)
+            {
+                return;
+            }
+
+            string stray = TrimUnquoted(text, index, startPos, endPos);
+            if (stray.Length != 0)
+            {
+                owner.AddError($"Strict mode violation - unexpected text '{stray}' at position {startPos}");
+            }
+        }
+
+        // At a close brace or bracket with no value left to read: anything in front of it is stray,
+        //  and if nothing is, a comma still waiting for its entry is a trailing comma.
+        private static void CheckStrictTextBeforeClose (ReadOnlySpan<char> text, SeparatorIndex index, Json owner, ParserRules rules, int startPos, int endPos, int openCommaPos)
+        {
+            if (!rules.StrictMode)
+            {
+                return;
+            }
+
+            string stray = TrimUnquoted(text, index, startPos, endPos);
+            if (stray.Length != 0)
+            {
+                owner.AddError($"Strict mode violation - unexpected text '{stray}' at position {startPos}");
+            }
+            else if (openCommaPos != -1)
+            {
+                owner.AddError($"Strict mode violation - trailing comma at position {openCommaPos}");
+            }
         }
 
         private static bool IsWhitespace (char c)

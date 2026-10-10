@@ -92,6 +92,137 @@ namespace AJut.Core.UnitTests.AJsonV2
             Assert.IsTrue(json.HasErrors, "Strict mode should reject unquoted string values");
         }
 
+        // ===============================[ Strict Mode ]===========================
+        // ParserRules.StrictMode documents strict JSON: quoted keys, no comments, no trailing
+        //  commas, no unquoted string values.
+        [TestMethod]
+        public void Read_Strict_ValidJson_NoErrors ()
+        {
+            const string kValidJson = "{ \"a\": 1, \"b\": [1, \"two\", { \"c\": null }], \"d\": { \"e\": true } }";
+            Json json = JsonHelper.ParseText(kValidJson, new ParserRules { StrictMode = true });
+            AssertNoErrors(json);
+        }
+
+        [TestMethod]
+        public void Read_Strict_TrailingCommaInDocument_Errors ()
+        {
+            Json json = JsonHelper.ParseText("{ \"a\": 1, }", new ParserRules { StrictMode = true });
+            Assert.IsTrue(json.HasErrors, "Strict mode should reject a trailing comma in a document");
+        }
+
+        [TestMethod]
+        public void Read_Strict_TrailingCommaAfterNestedDocument_Errors ()
+        {
+            Json json = JsonHelper.ParseText("{ \"a\": { \"b\": 1 }, }", new ParserRules { StrictMode = true });
+            Assert.IsTrue(json.HasErrors, "Strict mode should reject a trailing comma after a nested document");
+        }
+
+        [TestMethod]
+        public void Read_Strict_TrailingCommaInArray_Errors ()
+        {
+            Json json = JsonHelper.ParseText("[ 1, 2, ]", new ParserRules { StrictMode = true });
+            Assert.IsTrue(json.HasErrors, "Strict mode should reject a trailing comma in an array");
+        }
+
+        [TestMethod]
+        public void Read_Strict_TrailingCommaAfterQuotedArrayItem_Errors ()
+        {
+            Json json = JsonHelper.ParseText("[ \"a\", \"b\", ]", new ParserRules { StrictMode = true });
+            Assert.IsTrue(json.HasErrors, "Strict mode should reject a trailing comma after a quoted array item");
+        }
+
+        [TestMethod]
+        public void Read_Strict_ConfiguredBlockComment_Errors ()
+        {
+            ParserRules rules = ParserRules.WithDefaultComments();
+            rules.StrictMode = true;
+            Json json = JsonHelper.ParseText("{ \"a\": 1 /* note */ }", rules);
+            Assert.IsTrue(json.HasErrors, "Strict mode should reject a comment even with comment indicators configured");
+        }
+
+        [TestMethod]
+        public void Read_Strict_ConfiguredLineComment_Errors ()
+        {
+            ParserRules rules = ParserRules.WithDefaultComments();
+            rules.StrictMode = true;
+            Json json = JsonHelper.ParseText("{\n\"a\": 1 // note\n}", rules);
+            Assert.IsTrue(json.HasErrors, "Strict mode should reject a comment even with comment indicators configured");
+        }
+
+        [TestMethod]
+        public void Read_Strict_UnconfiguredCommentBeforeQuotedKey_Errors ()
+        {
+            // With no comment indicators the comment is just stray text, which strict JSON rejects
+            //  as surely as a comment.
+            Json json = JsonHelper.ParseText("{ \"a\": 1, /* note */ \"b\": 2 }", new ParserRules { StrictMode = true });
+            Assert.IsTrue(json.HasErrors, "Strict mode should reject stray text before a key");
+        }
+
+        [TestMethod]
+        public void Read_Lenient_TrailingCommasAndComments_StillAccepted ()
+        {
+            Json json = JsonHelper.ParseText("{ \"a\": [1, 2,], /* note */ \"b\": 2, }", ParserRules.WithDefaultComments());
+            AssertNoErrors(json);
+        }
+
+        // ===============================[ Comments Inside Unquoted Text ]===========================
+        // The indexer drops comments from the separator stream, but unquoted keys and values are
+        //  sliced from the original text, so a comment sitting inside one must not end up in it.
+        [TestMethod]
+        public void Read_LineCommentAfterUnquotedValue_NotInValue ()
+        {
+            Json json = JsonHelper.ParseText("{ count: 42 // the count\n}", ParserRules.WithDefaultComments());
+            AssertNoErrors(json);
+            Assert.AreEqual("42", ((JsonDocument)json.Data).ValueFor("count")?.StringValue);
+        }
+
+        [TestMethod]
+        public void Read_BlockCommentBeforeUnquotedValue_NotInValue ()
+        {
+            Json json = JsonHelper.ParseText("{ a: /* note */ 1 }", ParserRules.WithDefaultComments());
+            AssertNoErrors(json);
+            Assert.AreEqual("1", ((JsonDocument)json.Data).ValueFor("a")?.StringValue);
+        }
+
+        [TestMethod]
+        public void Read_BlockCommentBeforeUnquotedKey_NotInKey ()
+        {
+            Json json = JsonHelper.ParseText("{ a: 1, /* note */ b: 2 }", ParserRules.WithDefaultComments());
+            AssertNoErrors(json);
+            JsonDocument doc = (JsonDocument)json.Data;
+            string[] keys = doc.Select(kvp => kvp.Key).ToArray();
+            CollectionAssert.AreEqual(new[] { "a", "b" }, keys, "Keys: " + String.Join(", ", keys));
+            Assert.AreEqual("2", doc.ValueFor("b")?.StringValue);
+        }
+
+        [TestMethod]
+        public void Read_LineCommentAfterUnquotedArrayItem_NotInItem ()
+        {
+            Json json = JsonHelper.ParseText("[ 1, 2 // the last one\n]", ParserRules.WithDefaultComments());
+            AssertNoErrors(json);
+            JsonArray array = (JsonArray)json.Data;
+            Assert.AreEqual(2, array.Count);
+            Assert.AreEqual("2", array[1].StringValue);
+        }
+
+        [TestMethod]
+        public void Read_LineCommentAfterBareValue_NotInValue ()
+        {
+            Json json = JsonHelper.ParseText("dude // a bare value", ParserRules.WithDefaultComments());
+            AssertNoErrors(json);
+            Assert.AreEqual("dude", json.Data.StringValue);
+        }
+
+        [TestMethod]
+        public void Read_BlockCommentInsideUnquotedValue_ActsAsWhitespace ()
+        {
+            // A comment separates the text either side of it, as it would in C or JSON5, rather than
+            //  gluing the two halves together.
+            Json json = JsonHelper.ParseText("{ a: left/* note */right }", ParserRules.WithDefaultComments());
+            AssertNoErrors(json);
+            Assert.AreEqual("left right", ((JsonDocument)json.Data).ValueFor("a")?.StringValue);
+        }
+
         // ===============================[ Errors-or-Value Contract ]===========================
         [TestMethod]
         public void Read_NullText_ProducesError_NoThrow ()

@@ -80,7 +80,8 @@ namespace AJut.Text.AJson
         /// <summary>
         /// Generated readers call this for properties carrying [JsonRuntimeTypeEval]. Unwraps the
         /// wrapper document and constructs an instance of the runtime-resolved type. Returns the
-        /// constructed object or null if the wrapper is malformed / type id cannot be resolved.
+        /// constructed object, or null if the value is not a wrapper document or its type id is
+        /// missing or cannot be resolved.
         /// </summary>
         public static object ReadRuntimeTypeEvalProperty (JsonValue propertyValue, JsonInterpreterSettings settings, Json owner)
         {
@@ -94,18 +95,17 @@ namespace AJut.Text.AJson
                 return null;
             }
 
-            JsonValue payload = wrapper.ValueFor(JsonDocument.kRuntimeTypeEvalValue);
-            if (payload == null)
-            {
-                return null;
-            }
-
             if (!JsonHelper.TryGetTypeForTypeId(runtimeTypeId, out Type runtimeType))
             {
                 owner?.AddError($"Runtime type id '{runtimeTypeId}' could not be resolved");
                 return null;
             }
 
+            // A wrapper with no __value held an object with nothing to write: a type with no data
+            //  members (text written before those kept their document), or one whose builder
+            //  settings wrote no type id inside the payload. The wrapper's type id is then the whole
+            //  value, so build from the wrapper itself, the same fallback the reflection reader uses.
+            JsonValue payload = wrapper.ValueFor(JsonDocument.kRuntimeTypeEvalValue) ?? wrapper;
             return JsonHelper.BuildObjectForJson(runtimeType, payload, settings);
         }
     }
