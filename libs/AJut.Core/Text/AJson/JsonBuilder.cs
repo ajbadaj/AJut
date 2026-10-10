@@ -246,10 +246,11 @@ namespace AJut.Text.AJson
             JsonBuilder root = this.FindRoot();
             JsonValue data = root.BuildJsonValue();
 
+            // The settings go with the json, so its text is written with their formatting and their version marker switch
             Json output = new Json();
             output.Data = data;
             output.AJsonVersion = JsonHelper.kCurrentAJsonVersion;
-            output.WriteAJsonVersion = root.BuilderSettings.WriteAJsonVersion;
+            output.BuiltWith = root.BuilderSettings;
             return output;
         }
 

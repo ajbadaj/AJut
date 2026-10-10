@@ -8,16 +8,16 @@ namespace AJut.Text.AJson
 
     internal static class JsonWriter
     {
-        private static readonly JsonBuilderSettings g_defaultPretty = new JsonBuilderSettings();
         private static readonly JsonBuilderSettings g_defaultCompact = JsonBuilderSettings.BuildMinifiedSettings();
 
         /// <summary>
-        /// Writes <paramref name="root"/> as text. An <paramref name="ajsonVersion"/> above 0 is
-        /// written as the version marker, the first key of a root document.
+        /// Writes <paramref name="root"/> as text, formatted by <paramref name="settings"/>, or by
+        /// <see cref="JsonBuilderSettings.Default"/> when null. An <paramref name="ajsonVersion"/>
+        /// above 0 is written as the version marker, the first key of a root document.
         /// </summary>
         public static string Write (JsonValue root, JsonBuilderSettings settings = null, int ajsonVersion = 0)
         {
-            settings = settings ?? g_defaultPretty;
+            settings = settings ?? JsonBuilderSettings.Default;
             StringBuilder sb = new StringBuilder(EstimateSize(root));
             if (ajsonVersion > 0 && root is JsonDocument rootDocument)
             {
