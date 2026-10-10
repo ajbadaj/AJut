@@ -73,7 +73,7 @@ namespace AJut.Text.AJson
             this.TypeIdToWrite = eTypeIdInfo.TypeIdAttributed;
             this.KeyValuePairKeyTypeIdToWrite = eTypeIdInfo.None;
             this.KeyValuePairValueTypeIdToWrite = eTypeIdInfo.None;
-            this.UseReadonlyObjectProperties = true;
+            this.UseReadonlyObjectProperties = false;
             this.SpacingAroundPropertyIndicators = " ";
 
             m_customJsonConstructor.Add(typeof(bool), _BoolToJsonString);
@@ -155,7 +155,12 @@ namespace AJut.Text.AJson
             || this.KeyValuePairValueTypeIdToWrite != eTypeIdInfo.None;
 
         /// <summary>
-        /// When pulling properties off an object, should read-only properties be included (default true).
+        /// Whether every get-only property and readonly field is written (default false). Off, a get-only member is written
+        /// only when the reader can get it back: when the constructor the reader builds the type with takes it, when it is a
+        /// collection the reader fills where it is, or when the type has nothing the reader can set or fill, so only a
+        /// constructor can rebuild it. Turn it on to also write values worked out from other members (a Rect's Right, a
+        /// Quaternion's IsIdentity) for something other than AJson to read, or for a type with settable members whose
+        /// registered custom constructor reads a get-only member's key.
         /// </summary>
         public bool UseReadonlyObjectProperties { get; set; }
 

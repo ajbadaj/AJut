@@ -4,7 +4,6 @@ namespace AJut.Text.AJson
     using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
@@ -29,9 +28,11 @@ namespace AJut.Text.AJson
         /// <summary>
         /// The AJson text format this AJson writes into its version marker
         /// (<see cref="JsonDocument.kAJsonVersionIndicator"/>). 2 is the first: strings escaped to
-        /// the JSON spec, DateTimes as round-trip ISO 8601, and public fields written as well as
+        /// the JSON spec, DateTimes as round-trip ISO 8601, public fields written as well as
         /// properties, which puts the System.Numerics vectors and matrices down as documents of
-        /// their components. Text with no marker reads as 0.
+        /// their components, and a get-only member left out unless the reader can get it back (see
+        /// <see cref="JsonBuilderSettings.UseReadonlyObjectProperties"/>). Text with no marker
+        /// reads as 0.
         /// </summary>
         public const int kCurrentAJsonVersion = 2;
 
@@ -382,39 +383,36 @@ namespace AJut.Text.AJson
 
             if (sourceJsonValue.IsArray)
             {
-                bool isArray = false, isList = false, isDictionary = false;
+                bool isArray = false, isList = false;
                 Type elementType = null;
-                MethodInfo dictionaryAdd = null;
+                MethodInfo collectionAdd = null;
 
                 if (targetType.IsArray)
                 {
                     isArray = true;
                     elementType = targetType.GetElementType();
                 }
-                else if (targetType.FindBaseTypeOrInterface(typeof(IList<>)) is Type listType)
+                else if ((targetItem is IList) && targetType.FindBaseTypeOrInterface(typeof(IList<>)) is Type listType)
                 {
                     isList = true;
                     elementType = listType.GetGenericArguments()[0];
                 }
-                else if (targetType.FindBaseTypeOrInterface(typeof(IDictionary<,>)) is Type dictionaryType)
+                // Any other collection goes in through ICollection<T>.Add: a HashSet or a LinkedList, which have no index
+                //  to Insert at, and a dictionary, whose elements are its KeyValuePairs
+                else if (targetType.FindBaseTypeOrInterface(typeof(ICollection<>)) is Type collectionType)
                 {
-                    isDictionary = true;
-                    Type[] generics = dictionaryType.GetGenericArguments();
-                    elementType = typeof(KeyValuePair<,>).MakeGenericType(generics[0], generics[1]);
-
-                    Type collectionType = typeof(ICollection<>).MakeGenericType(elementType);
-                    dictionaryAdd = collectionType.GetMethod("Add", new[] { elementType });
-                    Debug.Assert(dictionaryAdd != null, $"Could not find add method for dictionary of type {targetType}");
+                    elementType = collectionType.GetGenericArguments()[0];
+                    collectionAdd = collectionType.GetMethod(nameof(ICollection<object>.Add), new[] { elementType });
                 }
 
-                // No element type resolved - the target (usually a bare object) is not an array,
-                //  list, or dictionary, so there is nothing to deserialize the elements into. Report
-                //  it and null the value rather than feeding a null element type into the per-item
-                //  build below, which would dereference null. This is the boxed-array-in-object case:
-                //  the array was serialized with no __type discriminator and can't be resolved back.
+                // No element type resolved - the target (usually a bare object) is not an array or a
+                //  collection, so there is nothing to deserialize the elements into. Report it and null
+                //  the value rather than feeding a null element type into the per-item build below,
+                //  which would dereference null. This is the boxed-array-in-object case: the array was
+                //  serialized with no __type discriminator and can't be resolved back.
                 if (elementType == null)
                 {
-                    owner?.AddError($"Cannot interpret a json array as target type '{targetType}' - it is not an array, list, or dictionary. This usually means a polymorphic (object-typed) value held an array serialized with no '{JsonDocument.kTypeIndicator}' discriminator. Skipping, value left null.");
+                    owner?.AddError($"Cannot interpret a json array as target type '{targetType}' - it is not an array or a collection. This usually means a polymorphic (object-typed) value held an array serialized with no '{JsonDocument.kTypeIndicator}' discriminator. Skipping, value left null.");
                     targetItem = null;
                     return;
                 }
@@ -433,9 +431,9 @@ namespace AJut.Text.AJson
                     {
                         ((IList)targetItem).Insert(index, built);
                     }
-                    else if (isDictionary)
+                    else
                     {
-                        dictionaryAdd.Invoke(targetItem, new object[] { built });
+                        collectionAdd.Invoke(targetItem, new object[] { built });
                     }
                 }
             }
@@ -443,7 +441,7 @@ namespace AJut.Text.AJson
             if (sourceJsonValue.IsDocument)
             {
                 JsonDocument sourceCasted = (JsonDocument)sourceJsonValue;
-                DataMember[] membersToSet = GetMemberSet(targetType).ReadInto;
+                DataMember[] membersToReadInto = GetMemberSet(targetType).ReadInto;
 
                 foreach (KeyValuePair<string, JsonValue> kvp in sourceCasted)
                 {
@@ -459,9 +457,16 @@ namespace AJut.Text.AJson
                         continue;
                     }
 
-                    DataMember memberToSet = FindMemberForKey(membersToSet, kvp.Key);
+                    DataMember memberToSet = FindMemberForKey(membersToReadInto, kvp.Key);
                     if (memberToSet == null)
                     {
+                        continue;
+                    }
+
+                    // A get-only collection is filled where it is, since there is no setting a new one
+                    if (memberToSet.IsGetOnlyCollection)
+                    {
+                        FillCollectionInPlace(memberToSet.GetValue(targetItem), kvp.Key, kvp.Value, settings, owner);
                         continue;
                     }
 
@@ -490,6 +495,44 @@ namespace AJut.Text.AJson
                     memberToSet.SetValue(targetItem, newMemberValue);
                 }
             }
+        }
+
+        /// <summary>
+        /// Reads a json array into a collection that already exists, the value of a get-only property or readonly field:
+        /// whatever is in it is cleared, then each element is added. A collection that is null or read-only, or json that is
+        /// not an array, is reported to the owner rather than thrown, and the collection is left as it was.
+        /// </summary>
+        /// <param name="collection">The collection to fill</param>
+        /// <param name="jsonKey">The key it was read from, for error reports</param>
+        /// <param name="sourceJsonValue">The json array to fill it from</param>
+        /// <param name="settings">How elements are built</param>
+        /// <param name="owner">Receives errors, if given</param>
+        [UnconditionalSuppressMessage("Trimming", "IL2072",
+            Justification = "Reflection-path fill of a collection the consumer's type already holds; the trim-safe path is [OptimizeAJson].")]
+        internal static void FillCollectionInPlace (object collection, string jsonKey, JsonValue sourceJsonValue, JsonInterpreterSettings settings, Json owner)
+        {
+            if (collection == null)
+            {
+                owner?.AddError($"'{jsonKey}' is a get-only collection that is null, so there is nothing to read its values into. Skipping.");
+                return;
+            }
+
+            Type collectionInterface = collection.GetType().FindBaseTypeOrInterface(typeof(ICollection<>));
+            if (collectionInterface == null || !sourceJsonValue.IsArray)
+            {
+                owner?.AddError($"'{jsonKey}' is a get-only collection, and its json is not an array it can be filled from. Skipping.");
+                return;
+            }
+
+            bool isReadOnly = (bool)collectionInterface.GetProperty(nameof(ICollection<object>.IsReadOnly)).GetValue(collection);
+            if (isReadOnly)
+            {
+                owner?.AddError($"'{jsonKey}' is a get-only collection that is read-only, so it can not be filled. Skipping.");
+                return;
+            }
+
+            collectionInterface.GetMethod(nameof(ICollection<object>.Clear)).Invoke(collection, null);
+            FillOutObjectWithJson(ref collection, collection.GetType(), sourceJsonValue, settings, owner);
         }
 
         // ===============================[ Object-to-Json Implementation ]===========================
@@ -630,7 +673,7 @@ namespace AJut.Text.AJson
             // Document path.
             MemberSet members = GetMemberSet(sourceType);
             DataMember[] membersToWrite = (sourceType.IsSimpleType() || !target.BuilderSettings.UseReadonlyObjectProperties)
-                ? members.WithGetterAndSetter
+                ? members.WrittenByDefault
                 : members.WithGetter;
 
             // A document with nothing to write is dropped from its parent, unless it carries a type
@@ -923,7 +966,7 @@ namespace AJut.Text.AJson
 
         private static MemberSet GetMemberSet (Type type)
         {
-            return g_memberSetCache.GetOrAdd(type, static t => new MemberSet(GetDataMembers(t)));
+            return g_memberSetCache.GetOrAdd(type, static t => new MemberSet(t, GetDataMembers(t)));
         }
 
         private static void RemoveTypeAndDerived<TValue> (ConcurrentDictionary<Type, TValue> cache, Type type)
@@ -1020,6 +1063,7 @@ namespace AJut.Text.AJson
                 this.Type = property.PropertyType;
                 this.CanGet = property.GetGetMethod() != null;
                 this.CanSet = property.GetSetMethod() != null;
+                this.IsGetOnlyCollection = this.CanGet && !this.CanSet && IsCollectionWithAdd(this.Type);
                 this.JsonKey = KeyFor(property);
             }
 
@@ -1032,6 +1076,7 @@ namespace AJut.Text.AJson
 
                 // A readonly field can only be set by its own type's constructor, so it counts as get-only
                 this.CanSet = !field.IsInitOnly;
+                this.IsGetOnlyCollection = !this.CanSet && IsCollectionWithAdd(this.Type);
                 this.JsonKey = KeyFor(field);
             }
 
@@ -1057,6 +1102,12 @@ namespace AJut.Text.AJson
             /// </summary>
             public bool CanSet { get; }
 
+            /// <summary>
+            /// True for a get-only property or readonly field whose type is a collection with Add (a list, a dictionary, a
+            /// HashSet, but not an array), which the reader fills where it is
+            /// </summary>
+            public bool IsGetOnlyCollection { get; }
+
             public object GetValue (object source) => m_property != null ? m_property.GetValue(source) : m_field.GetValue(source);
 
             public void SetValue (object target, object value)
@@ -1076,6 +1127,8 @@ namespace AJut.Text.AJson
                 JsonPropertyAliasAttribute alias = member.GetCustomAttribute<JsonPropertyAliasAttribute>(inherit: true);
                 return alias?.PropertyName ?? member.Name;
             }
+
+            private static bool IsCollectionWithAdd (Type type) => !type.IsArray && type.FindBaseTypeOrInterface(typeof(ICollection<>)) != null;
         }
 
         /// <summary>
@@ -1083,27 +1136,46 @@ namespace AJut.Text.AJson
         /// </summary>
         private sealed class MemberSet
         {
-            public MemberSet (DataMember[] members)
+            public MemberSet (Type type, DataMember[] members)
             {
-                this.ReadInto = members.Where(m => m.CanSet).ToArray();
+                // A get-only member is written by default only when the reader can get it back. A collection it fills where it
+                //  is. A value the type's constructor route takes as an argument. And anything at all on a type with nothing the
+                //  reader can set or fill: only a constructor can rebuild one of those, and a constructor registered with
+                //  JsonInterpreterSettings can read any key it likes (AJson's own KeyValuePair constructor reads Key and Value,
+                //  which are get-only, and an anonymous type is all get-only). Anything else get-only is worked out from other
+                //  members, the way a Rect's Right is from X and Width, so writing it only adds text the reader ignores.
+                //
+                // What this cannot see: a constructor registered for a type that also has settable members, which reads a
+                //  get-only member's key itself. That type needs UseReadonlyObjectProperties on.
+                IReadOnlySet<string> constructorKeys = AJsonConstructorRoute.GetConsumedJsonKeys(type);
+                bool readerSetsAnything = members.Any(m => m.CanSet || m.IsGetOnlyCollection);
+
+                this.ReadInto = members.Where(m => m.CanSet || m.IsGetOnlyCollection).ToArray();
                 this.WithGetter = members.Where(m => m.CanGet).ToArray();
-                this.WithGetterAndSetter = members.Where(m => m.CanGet && m.CanSet).ToArray();
+                this.WrittenByDefault = members
+                    .Where(m => m.CanGet
+                        && (m.CanSet
+                            || m.IsGetOnlyCollection
+                            || !readerSetsAnything
+                            || constructorKeys.Contains(m.JsonKey)))
+                    .ToArray();
             }
 
             /// <summary>
-            /// The members a document's keys are read into
+            /// The members a document's keys are read into: everything settable, and the get-only collections, which are
+            /// filled where they are
             /// </summary>
             public DataMember[] ReadInto { get; }
 
             /// <summary>
-            /// What is written when get-only members are written too: every member with a getter
+            /// What is written with <see cref="JsonBuilderSettings.UseReadonlyObjectProperties"/> on: every member with a getter
             /// </summary>
             public DataMember[] WithGetter { get; }
 
             /// <summary>
-            /// What is written when get-only members are not
+            /// What is written with <see cref="JsonBuilderSettings.UseReadonlyObjectProperties"/> off: what the reader can get back
             /// </summary>
-            public DataMember[] WithGetterAndSetter { get; }
+            public DataMember[] WrittenByDefault { get; }
         }
     }
 }

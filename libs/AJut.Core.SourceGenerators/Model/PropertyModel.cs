@@ -66,6 +66,12 @@ namespace AJut.Text.AJson.SourceGenerators.Model
         public bool HasGetter { get; init; }
 
         /// <summary>
+        /// True for a get-only property or readonly field whose type is a collection with Add (any ICollection&lt;T&gt; but an
+        /// array). The reader fills the collection already there, through AJsonGenerationSupport.FillGetOnlyCollection.
+        /// </summary>
+        public bool IsGetOnlyCollection { get; init; }
+
+        /// <summary>
         /// `true` for typical quoted-on-write types (string, char, enum, GUID, DateTime). False for numerics / bool. Drives the AddProperty isUsuallyQuoted flag.
         /// </summary>
         public bool IsUsuallyQuoted { get; init; }

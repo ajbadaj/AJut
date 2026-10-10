@@ -18,7 +18,10 @@ namespace AJut.Text.AJson
         /// <summary>
         /// What the reflection path needs kept of a type it reads: the same as JsonHelper.BuildObjectForJson asks for
         /// </summary>
-        private const DynamicallyAccessedMemberTypes kReadRequirements = DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;
+        private const DynamicallyAccessedMemberTypes kReadRequirements
+            = DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicFields
+            | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;
 
         /// <summary>
         /// Generated writers call this first. Promotes the builder to a document if needed and
@@ -50,6 +53,17 @@ namespace AJut.Text.AJson
         public static T ReadValue<[DynamicallyAccessedMembers(kReadRequirements)] T> (JsonValue value, JsonInterpreterSettings settings, Json owner)
         {
             return (T)JsonHelper.BuildObjectForJson(typeof(T), value, settings, owner);
+        }
+
+        /// <summary>
+        /// Generated readers call this for a get-only collection property or readonly collection field, since there is no
+        /// setting a new one: the collection already there is cleared, then filled from <paramref name="value"/>. A collection
+        /// that is null or read-only, or json that is not an array, is reported to <paramref name="owner"/>, the same as on the
+        /// reflection path.
+        /// </summary>
+        public static void FillGetOnlyCollection (object collection, string jsonKey, JsonValue value, JsonInterpreterSettings settings, Json owner)
+        {
+            JsonHelper.FillCollectionInPlace(collection, jsonKey, value, settings, owner);
         }
 
         /// <summary>

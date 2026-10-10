@@ -589,6 +589,7 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                 DeclaringTypeFullName = ToFullyQualified(setterDeclaringType),
                 SetterName = setterName,
                 HasGetter = hasGetter,
+                IsGetOnlyCollection = hasGetter && !hasSetter && IsCollectionWithAdd(declaredType),
                 IsUsuallyQuoted = IsUsuallyQuoted(underlying, kind),
                 HasOmitIfDefault = hasOmit,
                 HasExplicitOmitDefault = hasExplicitOmit,
@@ -700,6 +701,20 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                     return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// The same test as the reflection path: any ICollection&lt;T&gt; but an array, which the reader can clear and Add to
+        /// </summary>
+        private static bool IsCollectionWithAdd (ITypeSymbol type)
+        {
+            if (type is IArrayTypeSymbol)
+            {
+                return false;
+            }
+
+            return (type.OriginalDefinition.SpecialType == SpecialType.System_Collections_Generic_ICollection_T)
+                || type.AllInterfaces.Any(i => i.OriginalDefinition.SpecialType == SpecialType.System_Collections_Generic_ICollection_T);
         }
 
         private static bool IsUsuallyQuoted (ITypeSymbol type, ePropertyKind kind)

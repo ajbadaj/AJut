@@ -32,6 +32,8 @@ namespace AJut.Text.AJson
         /// </summary>
         private static readonly Func<Type, Route> kFindRoute = FindRoute;
 
+        private static readonly IReadOnlySet<string> kNoJsonKeys = new HashSet<string>();
+
         // Both dictionaries are filled on first use from any thread, so both are concurrent
         private static readonly ConcurrentDictionary<Type, Route> g_routes = new ConcurrentDictionary<Type, Route>();
         private static readonly ConcurrentDictionary<Type, byte> g_customConstructorChecked = new ConcurrentDictionary<Type, byte>();
@@ -64,6 +66,16 @@ namespace AJut.Text.AJson
             instance = route.Constructor.Invoke(BuildArguments(route, jsonValue, settings, owner));
             consumedJsonKeys = route.ConsumedJsonKeys;
             return true;
+        }
+
+        /// <summary>
+        /// The json keys <paramref name="type"/>'s constructor route takes as arguments, empty when it has no route. The writer
+        /// keeps writing a get-only member whose key is here, since the constructor is how the reader gets its value back.
+        /// </summary>
+        public static IReadOnlySet<string> GetConsumedJsonKeys (Type type)
+        {
+            Route route = g_routes.GetOrAdd(type, kFindRoute);
+            return route.Constructor != null ? route.ConsumedJsonKeys : kNoJsonKeys;
         }
 
         /// <summary>
