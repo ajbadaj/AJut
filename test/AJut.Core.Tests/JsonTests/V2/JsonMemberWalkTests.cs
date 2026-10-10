@@ -213,6 +213,25 @@ namespace AJut.Core.UnitTests.AJsonV2
             public List<string> Tags { get; } = new List<string>();
         }
 
+        public class SetHolder
+        {
+            public HashSet<string> Names { get; set; }
+            public LinkedList<int> Order { get; set; }
+            public HashSet<int> Ids { get; } = new HashSet<int>();
+        }
+
+        [OptimizeAJson]
+        public class SetHolderGen
+        {
+            public HashSet<string> Names { get; set; }
+            public HashSet<int> Ids { get; } = new HashSet<int>();
+        }
+
+        public class NullCollectionHolder
+        {
+            public List<string> Tags { get; }
+        }
+
         public class IndexerHolder
         {
             public string Name { get; set; }
@@ -565,6 +584,45 @@ namespace AJut.Core.UnitTests.AJsonV2
             TaggedRouteGen round = RoundTrip(source, out string text);
             Assert.AreEqual("routed", round.Name, text);
             CollectionAssert.AreEqual(new[] { "a" }, round.Tags, text);
+        }
+
+        [TestMethod]
+        public void HashSet_AndOtherCollections_RoundTrip ()
+        {
+            // A HashSet or a LinkedList is a collection with Add, but no index to Insert at
+            SetHolder source = new SetHolder
+            {
+                Names = new HashSet<string> { "a", "b" },
+                Order = new LinkedList<int>(new[] { 3, 1, 2 }),
+            };
+            source.Ids.Add(7);
+
+            SetHolder round = RoundTrip(source, out string text);
+            CollectionAssert.AreEquivalent(new[] { "a", "b" }, round.Names?.ToArray(), text);
+            CollectionAssert.AreEqual(new[] { 3, 1, 2 }, round.Order?.ToArray(), text);
+            CollectionAssert.AreEqual(new[] { 7 }, round.Ids.ToArray(), text);
+        }
+
+        [TestMethod]
+        public void HashSets_RoundTrip_ThroughAGeneratedSerializer ()
+        {
+            AssertIsGenerated(typeof(SetHolderGen));
+
+            SetHolderGen source = new SetHolderGen { Names = new HashSet<string> { "a" } };
+            source.Ids.Add(7);
+
+            SetHolderGen round = RoundTrip(source, out string text);
+            CollectionAssert.AreEquivalent(new[] { "a" }, round.Names?.ToArray(), text);
+            CollectionAssert.AreEqual(new[] { 7 }, round.Ids.ToArray(), text);
+        }
+
+        [TestMethod]
+        public void GetOnlyCollection_ThatIsNull_IsReported_NotThrown ()
+        {
+            Json json = JsonHelper.ParseText("{ \"Tags\": [ \"a\" ] }");
+            NullCollectionHolder read = JsonHelper.BuildObjectForJson<NullCollectionHolder>(json);
+            Assert.IsNotNull(read);
+            Assert.IsTrue(json.HasErrors, "A get-only collection that is null has nothing to read into, and that should be reported");
         }
 
         // ===========================[ Indexers ]===========================
