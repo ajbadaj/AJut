@@ -508,6 +508,81 @@ namespace AJut.Core.UnitTests.AJsonV2
         }
 
         [TestMethod]
+        public void Dictionary_WithAComplexKey_IsWrittenAsKeysAndValues_AndReadsBack ()
+        {
+            DictionaryHolder source = new DictionaryHolder
+            {
+                ByPoint = new Dictionary<PointKey, string> { [new PointKey { X = 1, Y = 2 }] = "corner" },
+            };
+
+            Assert.IsInstanceOfType(WriteAndReparse(source).ValueFor(nameof(DictionaryHolder.ByPoint)), typeof(JsonArray));
+
+            DictionaryHolder round = RoundTrip(source, out string text);
+            CollectionAssert.AreEquivalent(source.ByPoint, round.ByPoint, text);
+        }
+
+        [TestMethod]
+        public void Dictionary_WrittenAsKeysAndValues_StillReads ()
+        {
+            DictionaryHolder read = Read<DictionaryHolder>(
+                "{ \"ByName\": [ { \"Key\": \"a\", \"Value\": 1 }, { \"Key\": \"b\", \"Value\": 2 } ] }"
+            );
+
+            CollectionAssert.AreEquivalent(new Dictionary<string, int> { ["a"] = 1, ["b"] = 2 }, read.ByName);
+        }
+
+        [TestMethod]
+        public void Dictionary_IsWrittenAsKeysAndValues_WhenKeyValuePairTypeIdsAreAskedFor ()
+        {
+            JsonBuilderSettings settings = new JsonBuilderSettings { KeyValuePairValueTypeIdToWrite = eTypeIdInfo.Any };
+            DictionaryHolder source = new DictionaryHolder { ByName = new Dictionary<string, int> { ["a"] = 1 } };
+
+            JsonValue written = WriteAndReparse(source, settings).ValueFor(nameof(DictionaryHolder.ByName));
+            Assert.IsInstanceOfType(written, typeof(JsonArray));
+        }
+
+        [TestMethod]
+        public void Dictionary_WithAKeyThatIsAnAJsonMarker_IsWrittenAsKeysAndValues_AndReadsBack ()
+        {
+            DictionaryHolder source = new DictionaryHolder
+            {
+                ByName = new Dictionary<string, int> { [JsonDocument.kTypeIndicator] = 1, ["b"] = 2 },
+            };
+
+            Assert.IsInstanceOfType(WriteAndReparse(source).ValueFor(nameof(DictionaryHolder.ByName)), typeof(JsonArray));
+
+            DictionaryHolder round = RoundTrip(source, out string text);
+            CollectionAssert.AreEquivalent(source.ByName, round.ByName, text);
+        }
+
+        [TestMethod]
+        public void Dictionaries_InAList_AtTheRoot_AndEmpty_RoundTrip ()
+        {
+            List<Dictionary<string, int>> list = new List<Dictionary<string, int>>
+            {
+                new Dictionary<string, int> { ["a"] = 1 },
+                new Dictionary<string, int>(),
+            };
+
+            List<Dictionary<string, int>> roundList = RoundTrip(list, out string listText);
+            Assert.AreEqual(2, roundList.Count, listText);
+            CollectionAssert.AreEquivalent(list[0], roundList[0], listText);
+            Assert.AreEqual(0, roundList[1].Count, listText);
+
+            Dictionary<string, int> root = new Dictionary<string, int> { ["x"] = 9 };
+            Dictionary<string, int> roundRoot = RoundTrip(root, out string rootText);
+            CollectionAssert.AreEquivalent(root, roundRoot, rootText);
+        }
+
+        [TestMethod]
+        public void NumbersWrittenQuoted_StillRead ()
+        {
+            NumberArrays read = Read<NumberArrays>("{ \"Ints\": [ \"1\", \"2\" ], \"Flags\": [ \"true\" ] }");
+            CollectionAssert.AreEqual(new[] { 1, 2 }, read.Ints);
+            CollectionAssert.AreEqual(new[] { true }, read.Flags);
+        }
+
+        [TestMethod]
         public void GetOnlyDictionary_IsWrittenAsAnObject_AndFilledBack ()
         {
             GetOnlyDictionaryHolder source = new GetOnlyDictionaryHolder();
@@ -622,6 +697,16 @@ namespace AJut.Core.UnitTests.AJsonV2
         private static void AssertIsGenerated (Type type)
         {
             Assert.IsTrue(AJsonGeneratedDispatch.IsRegistered(type), $"The source generator did not register {type.Name}");
+        }
+
+        private static T Read<T> (string text)
+        {
+            Json json = JsonHelper.ParseText(text);
+            Assert.IsFalse(json.HasErrors, json.GetErrorReport());
+
+            T read = JsonHelper.BuildObjectForJson<T>(json);
+            Assert.IsFalse(json.HasErrors, json.GetErrorReport());
+            return read;
         }
 
         private static JsonDocument WriteAndReparse (object source, JsonBuilderSettings settings = null)
