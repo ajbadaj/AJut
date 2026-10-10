@@ -1,6 +1,7 @@
 namespace AJut.Text.AJson
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
 
     /// <summary>
@@ -170,7 +171,11 @@ namespace AJut.Text.AJson
                     child.Key = propertyName;
                     child.DocumentKVPValue = new JsonBuilder(child);
                     child.DocumentKVPValue.IsValueUsualQuoteTarget = isUsuallyQuoted;
-                    child.DocumentKVPValue.IsValue = true;
+
+                    // Only a scalar starts as a value. A document or array has to start unset so
+                    //  FillOutJsonBuilderForObject can StartDocument or StartArray on it, the same
+                    //  rule as the root value-builder constructor.
+                    child.DocumentKVPValue.IsValue = JsonHelper.IsValueData(propertyValue, this.BuilderSettings);
                     JsonHelper.FillOutJsonBuilderForObject(propertyValue, child.DocumentKVPValue);
 
                     this.Children.Add(child);
@@ -185,6 +190,15 @@ namespace AJut.Text.AJson
         {
             if (this.IsArray)
             {
+                // A document or an array goes in the way the array loop in FillOutJsonBuilderForObject
+                //  puts one in. Only a scalar (or null) is added as a value.
+                if (arrayValue != null && !JsonHelper.IsValueData(arrayValue, this.BuilderSettings))
+                {
+                    JsonBuilder container = arrayValue is IEnumerable ? this : this.StartDocument();
+                    JsonHelper.FillOutJsonBuilderForObject(arrayValue, container);
+                    return this;
+                }
+
                 JsonBuilder child = new JsonBuilder(this);
                 child.IsValue = true;
                 JsonHelper.FillOutJsonBuilderForObject(arrayValue, child);

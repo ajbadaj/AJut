@@ -156,10 +156,18 @@ namespace AJut.Text.AJson
 
             object _CreateVector2 (Type fullTarget, JsonValue json, JsonInterpreterSettings settings, Json owner)
             {
-                // The writer puts each component out invariant. Text written before that used the
-                //  writing machine's culture, which reads back with the current culture as before.
-                //  A comma-decimal culture's old text (<0,5,1,25>) splits into four parts and was
-                //  never readable, so it is reported along with anything else that does not parse.
+                // A Vector2 is written as a document of its public fields, { "X": 0.25, "Y": 0.5 }, the
+                //  way any other type's members are, and the member fill that runs after this reads it
+                if (json.IsDocument)
+                {
+                    return Vector2.Zero;
+                }
+
+                // Text written before that is an angle-bracket string, "<0.25,0.5>", with invariant
+                //  components or, from older versions, the writing machine's culture, which reads back
+                //  with the current culture as before. A comma-decimal culture's old text (<0,5,1,25>)
+                //  splits into four parts and was never readable, so it is reported along with anything
+                //  else that does not parse.
                 string[] xystrs = (json.StringValue ?? String.Empty)
                     .Trim('<', '>')
                     .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);

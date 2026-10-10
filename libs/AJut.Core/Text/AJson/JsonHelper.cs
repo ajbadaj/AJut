@@ -13,12 +13,13 @@ namespace AJut.Text.AJson
     using AJut.IO;
     using AJut.TypeManagement;
 
-    // The reflection path uses Type.GetProperties / Activator.CreateInstance / Type.GetProperty
+    // The reflection path uses Type.GetProperties / Type.GetFields / Activator.CreateInstance
     // throughout. Each Type-taking entry point carries a DynamicallyAccessedMembers annotation
-    // so the IL trimmer keeps the relevant members. The kAJsonReflectionRequirements constant
-    // (PublicProperties + PublicParameterlessConstructor) is the minimum set the reflection path
-    // needs - properties to walk, parameterless ctor to construct. Source-generator-handled types
-    // do not need these; they pre-emit explicit code referencing each property by name.
+    // so the IL trimmer keeps the relevant members. The kReflectionRequirements constant
+    // (PublicProperties + PublicFields + PublicParameterlessConstructor) is the minimum set the
+    // reflection path needs - properties and fields to walk, parameterless ctor to construct.
+    // Source-generator-handled types do not need these; they pre-emit explicit code referencing
+    // each member by name.
 
     /// <summary>
     /// Public entry point for V2 AJson - parsing, building, and POCO conversion.
@@ -28,20 +29,24 @@ namespace AJut.Text.AJson
         /// <summary>
         /// The AJson text format this AJson writes into its version marker
         /// (<see cref="JsonDocument.kAJsonVersionIndicator"/>). 2 is the first: strings escaped to
-        /// the JSON spec and DateTimes as round-trip ISO 8601. Text with no marker reads as 0.
+        /// the JSON spec, DateTimes as round-trip ISO 8601, and public fields written as well as
+        /// properties, which puts the System.Numerics vectors and matrices down as documents of
+        /// their components. Text with no marker reads as 0.
         /// </summary>
         public const int kCurrentAJsonVersion = 2;
 
         private static JsonBuilderSettings g_defaultBuilderSettings = new JsonBuilderSettings();
 
-        // Per-type reflection cache. Bounded by Type identity (assembly-bounded), no leak risk.
+        // Per-type reflection caches. Bounded by Type identity (assembly-bounded), no leak risk.
         // ConcurrentDictionary chosen for thread-safety in case AJson is called concurrently.
         // The lists depend on TypeMetadataExtensionRegistrar state as well as on the Type, so the
-        // registrar invalidates them whenever a registration changes (InvalidatePropertyCachesFor).
-        private static readonly ConcurrentDictionary<Type, PropertyInfo[]> g_propertyCacheReadable
-            = new ConcurrentDictionary<Type, PropertyInfo[]>();
-        private static readonly ConcurrentDictionary<Type, PropertyInfo[]> g_propertyCacheWritable
-            = new ConcurrentDictionary<Type, PropertyInfo[]>();
+        // registrar invalidates them whenever a registration changes (InvalidateMemberCachesFor).
+        // The member sets are built from the member lists, which is why they are two caches: a
+        // GetOrAdd factory that asked its own cache for the same type would recurse.
+        private static readonly ConcurrentDictionary<Type, DataMember[]> g_memberCache
+            = new ConcurrentDictionary<Type, DataMember[]>();
+        private static readonly ConcurrentDictionary<Type, MemberSet> g_memberSetCache
+            = new ConcurrentDictionary<Type, MemberSet>();
 
         // ===============================[ AJson Version ]===========================
         /// <summary>
@@ -165,7 +170,9 @@ namespace AJut.Text.AJson
 
         // ===============================[ Object-from-Json Entry Points ]===========================
         private const DynamicallyAccessedMemberTypes kReflectionRequirements
-            = DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;
+            = DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.PublicFields
+            | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;
 
         public static T BuildObjectForJson<[DynamicallyAccessedMembers(kReflectionRequirements)] T> (Json sourceJson, JsonInterpreterSettings settings = null)
         {
@@ -436,7 +443,7 @@ namespace AJut.Text.AJson
             if (sourceJsonValue.IsDocument)
             {
                 JsonDocument sourceCasted = (JsonDocument)sourceJsonValue;
-                PropertyInfo[] allProperties = GetCachedWritableProperties(targetType);
+                DataMember[] membersToSet = GetMemberSet(targetType).ReadInto;
 
                 foreach (KeyValuePair<string, JsonValue> kvp in sourceCasted)
                 {
@@ -445,25 +452,25 @@ namespace AJut.Text.AJson
                         continue;
                     }
 
-                    // A key the constructor took as an argument is done: setting its property again would replace whatever the
+                    // A key the constructor took as an argument is done: setting its member again would replace whatever the
                     //  constructor did with the value, which the generated reader never does either
                     if (keysConsumedByConstructor != null && keysConsumedByConstructor.Contains(kvp.Key))
                     {
                         continue;
                     }
 
-                    PropertyInfo propToSet = FindPropertyForKey(allProperties, kvp.Key);
-                    if (propToSet == null)
+                    DataMember memberToSet = FindMemberForKey(membersToSet, kvp.Key);
+                    if (memberToSet == null)
                     {
                         continue;
                     }
 
-                    object newPropValue = null;
+                    object newMemberValue = null;
 
                     // [JsonRuntimeTypeEval] read path: the value side is a small doc carrying the
                     //  payload's runtime type id and the actual content. Resolve the type, build
                     //  against that concrete type, then set.
-                    JsonRuntimeTypeEvalAttribute runtimeTypeEval = propToSet.GetCustomAttribute<JsonRuntimeTypeEvalAttribute>(inherit: false);
+                    JsonRuntimeTypeEvalAttribute runtimeTypeEval = memberToSet.Info.GetCustomAttribute<JsonRuntimeTypeEvalAttribute>(inherit: false);
                     if (runtimeTypeEval != null && kvp.Value.IsDocument)
                     {
                         JsonDocument runtimeDoc = (JsonDocument)kvp.Value;
@@ -471,16 +478,16 @@ namespace AJut.Text.AJson
                             && runtimeDoc.ValueFor(JsonDocument.kRuntimeTypeEvalValue) is JsonValue wrappedValue
                             && TryGetTypeForTypeId(runtimeTypeId, out Type runtimeType))
                         {
-                            newPropValue = BuildObjectForJson(runtimeType, wrappedValue, settings, owner);
+                            newMemberValue = BuildObjectForJson(runtimeType, wrappedValue, settings, owner);
                         }
                     }
 
-                    if (newPropValue == null)
+                    if (newMemberValue == null)
                     {
-                        newPropValue = BuildObjectForJson(propToSet.PropertyType, kvp.Value, settings, owner);
+                        newMemberValue = BuildObjectForJson(memberToSet.Type, kvp.Value, settings, owner);
                     }
 
-                    propToSet.SetValue(targetItem, newPropValue);
+                    memberToSet.SetValue(targetItem, newMemberValue);
                 }
             }
         }
@@ -615,16 +622,16 @@ namespace AJut.Text.AJson
                     target.AddProperty(JsonDocument.kKVPValueTypeIndicator, valueTypeId);
                 }
 
-                ApplyDocumentProperty(target, source, keyProp);
-                ApplyDocumentProperty(target, source, valueProp);
+                ApplyDocumentMember(target, source, new DataMember(keyProp));
+                ApplyDocumentMember(target, source, new DataMember(valueProp));
                 return;
             }
 
             // Document path.
-            PropertyInfo[] allProperties = GetCachedReadableProperties(
-                sourceType,
-                requiresSet: source.GetType().IsSimpleType() || !target.BuilderSettings.UseReadonlyObjectProperties
-            );
+            MemberSet members = GetMemberSet(sourceType);
+            DataMember[] membersToWrite = (sourceType.IsSimpleType() || !target.BuilderSettings.UseReadonlyObjectProperties)
+                ? members.WithGetterAndSetter
+                : members.WithGetter;
 
             // A document with nothing to write is dropped from its parent, unless it carries a type
             //  id. For a type with no data members the type id is the whole value: an empty marker
@@ -632,7 +639,7 @@ namespace AJut.Text.AJson
             //  type, not vanish and read back as null (or shift the list).
             eTypeIdInfo typeIdToWrite = target.BuilderSettings.TypeIdToWrite;
             bool hasTypeId = TryGetTypeIdForType(typeIdToWrite, sourceType, out string typeId);
-            if (allProperties.Length == 0 && !hasTypeId && target.Parent != null)
+            if (membersToWrite.Length == 0 && !hasTypeId && target.Parent != null)
             {
                 target.Parent.Children.Remove(target);
                 return;
@@ -648,35 +655,35 @@ namespace AJut.Text.AJson
                 target.AddProperty(JsonDocument.kTypeIndicator, typeId);
             }
 
-            foreach (PropertyInfo prop in allProperties)
+            foreach (DataMember member in membersToWrite)
             {
-                ApplyDocumentProperty(target, source, prop);
+                ApplyDocumentMember(target, source, member);
             }
         }
 
         // ===============================[ Internal Helpers ]===========================
-        private static void ApplyDocumentProperty (JsonBuilder target, object propSource, PropertyInfo propInfo)
+        private static void ApplyDocumentMember (JsonBuilder target, object memberSource, DataMember member)
         {
-            string key = KeyForProperty(propInfo);
-            object sourceValue = propInfo.GetValue(propSource);
+            string key = member.JsonKey;
+            object sourceValue = member.GetValue(memberSource);
 
             if (sourceValue == null)
             {
                 return;
             }
 
-            // [JsonOmitIfDefault] - skip the property if the value matches a default. Three sources
+            // [JsonOmitIfDefault] - skip the member if the value matches a default. Three sources
             //  in priority order: per-attribute explicit, settings-registered equivalent, then the
             //  type's zero value.
-            JsonOmitIfDefaultAttribute omitAttr = propInfo.GetCustomAttribute<JsonOmitIfDefaultAttribute>(inherit: true);
-            if (omitAttr != null && IsConsideredDefault(target.BuilderSettings, propInfo.PropertyType, sourceValue, omitAttr))
+            JsonOmitIfDefaultAttribute omitAttr = member.Info.GetCustomAttribute<JsonOmitIfDefaultAttribute>(inherit: true);
+            if (omitAttr != null && IsConsideredDefault(target.BuilderSettings, member.Type, sourceValue, omitAttr))
             {
                 return;
             }
 
             // [JsonRuntimeTypeEval] - wrap the value in a type-id-bearing doc so the read path can
-            //  recover the concrete runtime type for the property (typically an object/interface).
-            JsonRuntimeTypeEvalAttribute runtimeTypeEval = propInfo.GetCustomAttribute<JsonRuntimeTypeEvalAttribute>(inherit: false);
+            //  recover the concrete runtime type for the member (typically an object/interface).
+            JsonRuntimeTypeEvalAttribute runtimeTypeEval = member.Info.GetCustomAttribute<JsonRuntimeTypeEvalAttribute>(inherit: false);
             if (runtimeTypeEval != null
                 && TryGetTypeIdForType(runtimeTypeEval.TypeWriteTarget, sourceValue.GetType(), out string runtimeTypeId))
             {
@@ -687,7 +694,7 @@ namespace AJut.Text.AJson
                 return;
             }
 
-            if (TryGetSimpleStringValue(target.BuilderSettings, propInfo.PropertyType, sourceValue, out bool isUsuallyQuoted, out string simpleStringValue))
+            if (TryGetSimpleStringValue(target.BuilderSettings, member.Type, sourceValue, out bool isUsuallyQuoted, out string simpleStringValue))
             {
                 target.AddProperty(key, sourceValue, isUsuallyQuoted);
             }
@@ -882,28 +889,44 @@ namespace AJut.Text.AJson
 
         // ===============================[ Reflection Cache ]===========================
         /// <summary>
-        /// Drops the cached property lists for <paramref name="type"/> and every type derived from
+        /// Drops the cached member lists for <paramref name="type"/> and every type derived from
         /// it. A cached list bakes in the <see cref="TypeMetadataExtensionRegistrar"/> hide and order
         /// state from when it was built, and a derived type's list carries its bases' members, so a
         /// registration on a base has to reach the derived types too. Called by the registrar.
         /// </summary>
-        internal static void InvalidatePropertyCachesFor (Type type)
+        internal static void InvalidateMemberCachesFor (Type type)
         {
-            RemoveTypeAndDerived(g_propertyCacheReadable, type);
-            RemoveTypeAndDerived(g_propertyCacheWritable, type);
+            RemoveTypeAndDerived(g_memberCache, type);
+            RemoveTypeAndDerived(g_memberSetCache, type);
         }
 
         /// <summary>
-        /// Drops every cached property list. Called by the registrar when a change can affect any
+        /// Drops every cached member list. Called by the registrar when a change can affect any
         /// type (clearing all registrations, or changing the default member ordering).
         /// </summary>
-        internal static void ClearPropertyCaches ()
+        internal static void ClearMemberCaches ()
         {
-            g_propertyCacheReadable.Clear();
-            g_propertyCacheWritable.Clear();
+            g_memberCache.Clear();
+            g_memberSetCache.Clear();
         }
 
-        private static void RemoveTypeAndDerived (ConcurrentDictionary<Type, PropertyInfo[]> cache, Type type)
+        /// <summary>
+        /// The public properties and fields AJson reads and writes for <paramref name="type"/>, in member order: every public
+        /// instance property but an indexer, and every public instance field but one a property stands in front of, leaving
+        /// out anything hidden through <see cref="TypeMetadataExtensionRegistrar"/> or marked [JsonIgnore]. The constructor
+        /// route matches its parameters against the same list.
+        /// </summary>
+        internal static DataMember[] GetDataMembers (Type type)
+        {
+            return g_memberCache.GetOrAdd(type, static t => ComputeDataMembers(t));
+        }
+
+        private static MemberSet GetMemberSet (Type type)
+        {
+            return g_memberSetCache.GetOrAdd(type, static t => new MemberSet(GetDataMembers(t)));
+        }
+
+        private static void RemoveTypeAndDerived<TValue> (ConcurrentDictionary<Type, TValue> cache, Type type)
         {
             foreach (Type cachedType in cache.Keys)
             {
@@ -914,44 +937,173 @@ namespace AJut.Text.AJson
             }
         }
 
-        private static PropertyInfo[] GetCachedReadableProperties (Type type, bool requiresSet)
+        private static DataMember[] ComputeDataMembers (Type targetType)
         {
-            ConcurrentDictionary<Type, PropertyInfo[]> cache = requiresSet ? g_propertyCacheWritable : g_propertyCacheReadable;
-            return cache.GetOrAdd(type, t => ComputeProperties(t, requiresGet: true, requiresSet: requiresSet));
-        }
-
-        private static PropertyInfo[] GetCachedWritableProperties (Type type)
-        {
-            return g_propertyCacheWritable.GetOrAdd(type, t => ComputeProperties(t, requiresGet: false, requiresSet: true));
-        }
-
-        private static PropertyInfo[] ComputeProperties (Type targetType, bool requiresGet, bool requiresSet)
-        {
-            return TypeMetadataExtensionRegistrar
-                .GetOrderedProperties(targetType, BindingFlags.Public | BindingFlags.Instance)
-                .Where(prop => (!requiresGet || prop.GetGetMethod() != null)
-                            && (!requiresSet || prop.GetSetMethod() != null)
-                            && !TypeMetadataExtensionRegistrar.IsHidden(prop)
-                            && prop.GetCustomAttribute<JsonIgnoreAttribute>(inherit: true) == null)
+            MemberInfo[] orderedMembers = TypeMetadataExtensionRegistrar.GetOrderedPropertiesAndFields(targetType).ToArray();
+            string[] propertyNames = orderedMembers
+                .OfType<PropertyInfo>()
+                .Where(prop => prop.GetIndexParameters().Length == 0)
+                .Select(prop => prop.Name)
                 .ToArray();
+
+            List<DataMember> output = new List<DataMember>(orderedMembers.Length);
+            foreach (MemberInfo member in orderedMembers)
+            {
+                if (TypeMetadataExtensionRegistrar.IsHidden(member)
+                    || member.GetCustomAttribute<JsonIgnoreAttribute>(inherit: true) != null)
+                {
+                    continue;
+                }
+
+                if (member is PropertyInfo property)
+                {
+                    // An indexer is a property with parameters, and has no value to read or write without an index. Reading
+                    //  one with no index throws, which is what writing any type with an indexer used to do, the
+                    //  System.Numerics vectors included.
+                    if (property.GetIndexParameters().Length == 0)
+                    {
+                        output.Add(new DataMember(property));
+                    }
+                }
+                else if (member is FieldInfo field && !IsStorageForAProperty(field, propertyNames))
+                {
+                    output.Add(new DataMember(field));
+                }
+            }
+
+            return output.ToArray();
         }
 
-        private static PropertyInfo FindPropertyForKey (PropertyInfo[] props, string key)
+        private static bool IsStorageForAProperty (FieldInfo field, string[] propertyNames)
         {
-            for (int i = 0; i < props.Length; ++i)
+            // A public field with a property of the same name in front of it, ignoring a leading underscore and case, is that
+            //  property's storage. The property stands for the value, so the field is not written a second time. The WinUI3
+            //  Rect, Point and Size keep their values that way (public float _x behind public double X). A field that matches
+            //  no property is data in its own right, like the X, Y, Z and W of the System.Numerics vectors.
+            string name = field.Name.TrimStart('_');
+            foreach (string propertyName in propertyNames)
             {
-                if (KeyForProperty(props[i]) == key)
+                if (String.Equals(propertyName, name, StringComparison.OrdinalIgnoreCase))
                 {
-                    return props[i];
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static DataMember FindMemberForKey (DataMember[] members, string key)
+        {
+            for (int i = 0; i < members.Length; ++i)
+            {
+                if (members[i].JsonKey == key)
+                {
+                    return members[i];
                 }
             }
             return null;
         }
 
-        private static string KeyForProperty (PropertyInfo prop)
+        // ===============================[ Subclasses/structs ]===========================
+        /// <summary>
+        /// A public property or field that AJson reads and writes, so the walk treats both the same way
+        /// </summary>
+        internal sealed class DataMember
         {
-            JsonPropertyAliasAttribute alias = prop.GetCustomAttribute<JsonPropertyAliasAttribute>(inherit: true);
-            return alias?.PropertyName ?? prop.Name;
+            private readonly PropertyInfo m_property;
+            private readonly FieldInfo m_field;
+
+            public DataMember (PropertyInfo property)
+            {
+                m_property = property;
+                this.Info = property;
+                this.Type = property.PropertyType;
+                this.CanGet = property.GetGetMethod() != null;
+                this.CanSet = property.GetSetMethod() != null;
+                this.JsonKey = KeyFor(property);
+            }
+
+            public DataMember (FieldInfo field)
+            {
+                m_field = field;
+                this.Info = field;
+                this.Type = field.FieldType;
+                this.CanGet = true;
+
+                // A readonly field can only be set by its own type's constructor, so it counts as get-only
+                this.CanSet = !field.IsInitOnly;
+                this.JsonKey = KeyFor(field);
+            }
+
+            /// <summary>
+            /// The property or field itself, for its attributes
+            /// </summary>
+            public MemberInfo Info { get; }
+
+            public Type Type { get; }
+
+            /// <summary>
+            /// The key it is written and read under: its name, or its <see cref="JsonPropertyAliasAttribute"/>
+            /// </summary>
+            public string JsonKey { get; }
+
+            /// <summary>
+            /// True for a field, or a property with a public getter
+            /// </summary>
+            public bool CanGet { get; }
+
+            /// <summary>
+            /// True for a field that is not readonly, or a property with a public setter (init-only included)
+            /// </summary>
+            public bool CanSet { get; }
+
+            public object GetValue (object source) => m_property != null ? m_property.GetValue(source) : m_field.GetValue(source);
+
+            public void SetValue (object target, object value)
+            {
+                if (m_property != null)
+                {
+                    m_property.SetValue(target, value);
+                }
+                else
+                {
+                    m_field.SetValue(target, value);
+                }
+            }
+
+            private static string KeyFor (MemberInfo member)
+            {
+                JsonPropertyAliasAttribute alias = member.GetCustomAttribute<JsonPropertyAliasAttribute>(inherit: true);
+                return alias?.PropertyName ?? member.Name;
+            }
+        }
+
+        /// <summary>
+        /// One type's members, split the ways reading and writing use them
+        /// </summary>
+        private sealed class MemberSet
+        {
+            public MemberSet (DataMember[] members)
+            {
+                this.ReadInto = members.Where(m => m.CanSet).ToArray();
+                this.WithGetter = members.Where(m => m.CanGet).ToArray();
+                this.WithGetterAndSetter = members.Where(m => m.CanGet && m.CanSet).ToArray();
+            }
+
+            /// <summary>
+            /// The members a document's keys are read into
+            /// </summary>
+            public DataMember[] ReadInto { get; }
+
+            /// <summary>
+            /// What is written when get-only members are written too: every member with a getter
+            /// </summary>
+            public DataMember[] WithGetter { get; }
+
+            /// <summary>
+            /// What is written when get-only members are not
+            /// </summary>
+            public DataMember[] WithGetterAndSetter { get; }
         }
     }
 }

@@ -91,6 +91,25 @@ namespace AJut.Core.UnitTests.AJsonV2
             }
         }
 
+        public class AttributedFields
+        {
+            [JsonPropertyAlias("label")]
+            public string Name;
+
+            [JsonIgnore]
+            public int Scratch;
+        }
+
+        [OptimizeAJson]
+        public class AttributedFieldsGen
+        {
+            [JsonPropertyAlias("label")]
+            public string Name;
+
+            [JsonIgnore]
+            public int Scratch;
+        }
+
         public class HiddenFieldHolder
         {
             public int Kept;
@@ -389,6 +408,23 @@ namespace AJut.Core.UnitTests.AJsonV2
         {
             AssertIsGenerated(typeof(BackedByPublicFieldsGen));
             CollectionAssert.AreEqual(new[] { "X" }, KeysOf(WriteAndReparse(new BackedByPublicFieldsGen { X = 1.5 })));
+        }
+
+        [TestMethod]
+        public void AliasAndIgnore_WorkOnFields_OnBothPaths ()
+        {
+            AttributedFields reflected = new AttributedFields { Name = "n", Scratch = 5 };
+            CollectionAssert.AreEqual(new[] { "label" }, KeysOf(WriteAndReparse(reflected)), "reflection");
+            AttributedFields round = RoundTrip(reflected, out string text);
+            Assert.AreEqual("n", round.Name, text);
+            Assert.AreEqual(0, round.Scratch, text);
+
+            AssertIsGenerated(typeof(AttributedFieldsGen));
+            AttributedFieldsGen generated = new AttributedFieldsGen { Name = "n", Scratch = 5 };
+            CollectionAssert.AreEqual(new[] { "label" }, KeysOf(WriteAndReparse(generated)), "generated");
+            AttributedFieldsGen roundGen = RoundTrip(generated, out text);
+            Assert.AreEqual("n", roundGen.Name, text);
+            Assert.AreEqual(0, roundGen.Scratch, text);
         }
 
         [TestMethod]

@@ -1,13 +1,15 @@
 namespace AJut.Text.AJson.SourceGenerators.Model
 {
     /// <summary>
-    /// Per-property analysis result. Frozen record - the emitter consumes these without going
-    /// back to the symbol model.
+    /// Per-member analysis result, for a public property or a public field. Frozen record - the
+    /// emitter consumes these without going back to the symbol model. Generated code reads and
+    /// assigns a field with the same syntax as a property, so the two share one model: a field
+    /// always has a getter, has a setter unless it is readonly, and is never init-only.
     /// </summary>
     internal sealed record PropertyModel
     {
         /// <summary>
-        /// CLR property name (from the source).
+        /// CLR property or field name (from the source).
         /// </summary>
         public string Name { get; init; } = string.Empty;
 

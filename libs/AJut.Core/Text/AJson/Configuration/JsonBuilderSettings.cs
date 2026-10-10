@@ -3,7 +3,6 @@ namespace AJut.Text.AJson
     using System;
     using System.Collections.Generic;
     using System.Globalization;
-    using System.Numerics;
     using AJut;
 
     public enum ePropertyValueQuoting
@@ -82,7 +81,6 @@ namespace AJut.Text.AJson
             m_customJsonConstructor.Add(typeof(TimeSpan), _TimeSpanToJsonString);
             m_customJsonConstructor.Add(typeof(Guid), _GuidToJsonString);
             m_customJsonConstructor.Add(typeof(TimeZoneInfo), _TimeZoneToAJsonString);
-            m_customJsonConstructor.Add(typeof(Vector2), _Vector2ToAJsonString);
 
             string _BoolToJsonString (object instance) => ((bool)instance) ? "true" : "false";
             string _DateTimeToJsonString (object instance)
@@ -97,13 +95,6 @@ namespace AJut.Text.AJson
             string _TimeSpanToJsonString (object instance) => ((TimeSpan)instance).ToString();
             string _GuidToJsonString (object instance) => ((Guid)instance).ToString();
             string _TimeZoneToAJsonString (object instance) => ((TimeZoneInfo)instance).Id;
-            string _Vector2ToAJsonString (object instance)
-            {
-                // Invariant, or a comma-decimal culture's components would carry commas of their own
-                //  and the reader could not find the one between them
-                Vector2 vec2 = (Vector2)instance;
-                return FormattableString.Invariant($"<{vec2.X},{vec2.Y}>");
-            }
         }
 
         public string Tabbing { get; set; }

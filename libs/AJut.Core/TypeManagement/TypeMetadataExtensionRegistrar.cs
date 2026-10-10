@@ -29,10 +29,11 @@ namespace AJut.TypeManagement
         // ===========[ Const-like ]==========================================
         private const BindingFlags kDefaultPropertyFlags
             = BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty;
+        private const BindingFlags kPublicInstanceMembers = BindingFlags.Public | BindingFlags.Instance;
 
         // ===========[ Static fields ]==========================================
-        // Both maps are concurrent because the first use of a type writes g_orderCache from whatever
-        //  thread got there, and AJson calls GetOrderedProperties from inside its own
+        // These maps are concurrent because the first use of a type writes the order caches from whatever
+        //  thread got there, and AJson calls GetOrderedPropertiesAndFields from inside its own
         //  ConcurrentDictionary.GetOrAdd factory, which runs outside any lock. Two threads building
         //  json for new types at once (the same type or two different ones) write this cache at the
         //  same time, and concurrent writes can corrupt a plain Dictionary for the rest of the
@@ -40,6 +41,7 @@ namespace AJut.TypeManagement
         //  the same order, so last-write-wins is fine.
         private static readonly ConcurrentDictionary<Type, TypeMetadataExtension> g_extensions = new();
         private static readonly ConcurrentDictionary<(Type, BindingFlags), PropertyInfo[]> g_orderCache = new();
+        private static readonly ConcurrentDictionary<Type, MemberInfo[]> g_propertyAndFieldOrderCache = new();
         private static eMemberInheritanceOrdering g_defaultMemberOrdering = eMemberInheritanceOrdering.BaseFirst;
 
         // ===========[ Global ordering default ]==========================================
@@ -61,7 +63,8 @@ namespace AJut.TypeManagement
                 {
                     g_defaultMemberOrdering = value;
                     g_orderCache.Clear();
-                    JsonHelper.ClearPropertyCaches();
+                    g_propertyAndFieldOrderCache.Clear();
+                    JsonHelper.ClearMemberCaches();
                 }
             }
         }
@@ -97,7 +100,8 @@ namespace AJut.TypeManagement
         {
             g_extensions.Clear();
             g_orderCache.Clear();
-            JsonHelper.ClearPropertyCaches();
+            g_propertyAndFieldOrderCache.Clear();
+            JsonHelper.ClearMemberCaches();
         }
 
         // ===========[ Ordering ]==========================================
@@ -120,41 +124,33 @@ namespace AJut.TypeManagement
                 return cached;
             }
 
-            // 1. Collect all properties for this type
-            PropertyInfo[] allProps = type.GetProperties(flags);
-
-            // 2. Build inheritance chain from most-derived to object (exclusive)
-            var chain = new List<Type>();
-            Type current = type;
-            while (current != null && current != typeof(object))
-            {
-                chain.Add(current);
-                current = current.BaseType;
-            }
-
-            // 3. Sort the tiers by their priority
-            int chainLength = chain.Count;
-            var tiersWithOrder = chain
-                .Select((tier, depth) => (tier, order: _GetTierOrder(tier, depth, chainLength)))
-                .OrderBy(x => x.order);
-
-            // 4. Within each tier, collect and sort its own properties.
-            //    Two-key sort: explicitly ordered properties always precede unattributed ones,
-            //    regardless of the magnitude of the explicit order value. This prevents MetadataToken
-            //    values (which are in the hundreds-of-millions range) from interleaving with large
-            //    explicit orders. Within each group, sort by the order value or MetadataToken.
-            var result = new List<PropertyInfo>();
-            foreach (var (tier, _) in tiersWithOrder)
-            {
-                IEnumerable<PropertyInfo> tierProps = allProps
-                    .Where(p => p.DeclaringType == tier)
-                    .OrderBy(p => _HasExplicitMemberOrder(tier, p) ? 0 : 1)
-                    .ThenBy(p => _GetMemberOrder(tier, p));
-                result.AddRange(tierProps);
-            }
-
-            PropertyInfo[] resultArray = result.ToArray();
+            PropertyInfo[] resultArray = _OrderByTier(type, type.GetProperties(flags));
             g_orderCache[(type, flags)] = resultArray;
+            return resultArray;
+        }
+
+        /// <summary>
+        /// Returns the public instance properties and fields of <paramref name="type"/>, ordered the same way
+        /// <see cref="GetOrderedProperties"/> orders properties. Within a tier, a field with no explicit order comes before a
+        /// property with none, since its MetadataToken is lower: a token's top byte names its metadata table, and the field
+        /// table comes before the property table.
+        ///
+        /// Results are cached per type, and invalidated when registrations change for the type.
+        /// </summary>
+        public static IEnumerable<MemberInfo> GetOrderedPropertiesAndFields (
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields)] Type type)
+        {
+            if (g_propertyAndFieldOrderCache.TryGetValue(type, out MemberInfo[] cached))
+            {
+                return cached;
+            }
+
+            MemberInfo[] allMembers = type.GetProperties(kPublicInstanceMembers)
+                .Concat<MemberInfo>(type.GetFields(kPublicInstanceMembers))
+                .ToArray();
+
+            MemberInfo[] resultArray = _OrderByTier(type, allMembers);
+            g_propertyAndFieldOrderCache[type] = resultArray;
             return resultArray;
         }
 
@@ -221,12 +217,55 @@ namespace AJut.TypeManagement
                 g_orderCache.TryRemove(key, out _);
             }
 
-            // AJson keeps its own per-type property lists, filtered by IsHidden and taken from
-            //  GetOrderedProperties, so they go stale the same way.
-            JsonHelper.InvalidatePropertyCachesFor(type);
+            foreach (Type cachedType in g_propertyAndFieldOrderCache.Keys)
+            {
+                if (type.IsAssignableFrom(cachedType))
+                {
+                    g_propertyAndFieldOrderCache.TryRemove(cachedType, out _);
+                }
+            }
+
+            // AJson keeps its own per-type member lists, filtered by IsHidden and taken from
+            //  GetOrderedPropertiesAndFields, so they go stale the same way.
+            JsonHelper.InvalidateMemberCachesFor(type);
         }
 
         // ===========[ Private helpers ]==========================================
+
+        private static TMember[] _OrderByTier<TMember> (Type type, TMember[] allMembers) where TMember : MemberInfo
+        {
+            // 1. Build inheritance chain from most-derived to object (exclusive)
+            var chain = new List<Type>();
+            Type current = type;
+            while (current != null && current != typeof(object))
+            {
+                chain.Add(current);
+                current = current.BaseType;
+            }
+
+            // 2. Sort the tiers by their priority
+            int chainLength = chain.Count;
+            var tiersWithOrder = chain
+                .Select((tier, depth) => (tier, order: _GetTierOrder(tier, depth, chainLength)))
+                .OrderBy(x => x.order);
+
+            // 3. Within each tier, collect and sort its own members.
+            //    Two-key sort: explicitly ordered members always precede unattributed ones,
+            //    regardless of the magnitude of the explicit order value. This prevents MetadataToken
+            //    values (which are in the hundreds-of-millions range) from interleaving with large
+            //    explicit orders. Within each group, sort by the order value or MetadataToken.
+            var result = new List<TMember>();
+            foreach (var (tier, _) in tiersWithOrder)
+            {
+                IEnumerable<TMember> tierMembers = allMembers
+                    .Where(m => m.DeclaringType == tier)
+                    .OrderBy(m => _HasExplicitMemberOrder(tier, m) ? 0 : 1)
+                    .ThenBy(m => _GetMemberOrder(tier, m));
+                result.AddRange(tierMembers);
+            }
+
+            return result.ToArray();
+        }
 
         private static int _GetTierOrder (Type tier, int depthIndex, int chainLength)
         {
@@ -252,35 +291,35 @@ namespace AJut.TypeManagement
                 : (chainLength - 1 - depthIndex);
         }
 
-        private static bool _HasExplicitMemberOrder (Type declaringTier, PropertyInfo prop)
+        private static bool _HasExplicitMemberOrder (Type declaringTier, MemberInfo member)
         {
             if (g_extensions.TryGetValue(declaringTier, out TypeMetadataExtension ext)
-                && ext.TryGetMemberOrder(prop.Name, out _))
+                && ext.TryGetMemberOrder(member.Name, out _))
             {
                 return true;
             }
 
-            return prop.GetCustomAttribute<MemberOrderAttribute>(inherit: false) != null;
+            return member.GetCustomAttribute<MemberOrderAttribute>(inherit: false) != null;
         }
 
-        private static int _GetMemberOrder (Type declaringTier, PropertyInfo prop)
+        private static int _GetMemberOrder (Type declaringTier, MemberInfo member)
         {
             // 1. Registry registration (highest priority)
             if (g_extensions.TryGetValue(declaringTier, out TypeMetadataExtension ext)
-                && ext.TryGetMemberOrder(prop.Name, out int registeredOrder))
+                && ext.TryGetMemberOrder(member.Name, out int registeredOrder))
             {
                 return registeredOrder;
             }
 
             // 2. [MemberOrder] attribute
-            var attr = prop.GetCustomAttribute<MemberOrderAttribute>(inherit: false);
+            var attr = member.GetCustomAttribute<MemberOrderAttribute>(inherit: false);
             if (attr != null)
             {
                 return attr.Order;
             }
 
             // 3. Default: source declaration order via MetadataToken
-            return prop.MetadataToken;
+            return member.MetadataToken;
         }
 
         private static IEnumerable<TAttr> _GetRegisteredAttributes<TAttr> (MemberInfo member)
