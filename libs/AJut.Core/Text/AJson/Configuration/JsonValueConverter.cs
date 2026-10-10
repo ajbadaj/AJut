@@ -134,6 +134,9 @@ namespace AJut.Text.AJson
         /// <returns>True if the text was read into <paramref name="value"/>, false if it could not be</returns>
         public abstract bool TryReadJsonText (string text, Type fullTarget, JsonInterpreterSettings settings, out object value);
 
+        /// <summary>
+        /// Writes the text <see cref="ToJsonText"/> makes as one value, quoted or not by <see cref="IsUsuallyQuoted"/>
+        /// </summary>
         public sealed override void Write (object instance, JsonBuilder target)
         {
             JsonHelper.ApplySimpleValue(target, this.ToJsonText(instance), this.IsUsuallyQuoted);

@@ -164,7 +164,11 @@ namespace AJut.Text.AJson
             static string _WriteBytes (byte[] value) => Convert.ToBase64String(value);
             static bool _TryReadBytes (string text, JsonInterpreterSettings settings, out byte[] value)
             {
-                value = new byte[(text.Length * 3) / 4];
+                // Base64 writes every 3 bytes as 4 characters, which is how big a buffer its text needs
+                const int kBytesPerBase64Block = 3;
+                const int kCharactersPerBase64Block = 4;
+
+                value = new byte[(text.Length * kBytesPerBase64Block) / kCharactersPerBase64Block];
                 if (Convert.TryFromBase64String(text, value, out int bytesWritten))
                 {
                     Array.Resize(ref value, bytesWritten);
@@ -281,6 +285,9 @@ namespace AJut.Text.AJson
             {
             }
 
+            /// <summary>
+            /// Writes { "Real": ..., "Imaginary": ... }, both as bare numbers
+            /// </summary>
             public override void Write (object instance, JsonBuilder target)
             {
                 Complex value = (Complex)instance;
