@@ -36,7 +36,14 @@ namespace AJut.Text.AJson
         /// </summary>
         public const int kCurrentAJsonVersion = 2;
 
-        private static JsonBuilderSettings g_defaultBuilderSettings = new JsonBuilderSettings();
+        // The converters by the type each converts, AJson's own registered first. The parsable fallbacks are made the first
+        //  time a type is looked up and kept, null included for a type that has none, so the interface check runs once per type.
+        private static readonly ConcurrentDictionary<Type, JsonValueConverter> g_converters = JsonBuiltInConverters.CreateTable();
+        private static readonly ConcurrentDictionary<Type, JsonValueConverter> g_parsableFallbacks
+            = new ConcurrentDictionary<Type, JsonValueConverter>();
+
+        // Types already logged as written with nothing, so each is logged once
+        private static readonly ConcurrentDictionary<Type, byte> g_typesLoggedAsWrittenEmpty = new ConcurrentDictionary<Type, byte>();
 
         // Per-type reflection caches. Bounded by Type identity (assembly-bounded), no leak risk.
         // ConcurrentDictionary chosen for thread-safety in case AJson is called concurrently.
@@ -63,6 +70,63 @@ namespace AJut.Text.AJson
         /// since a reader cannot know whether the writer had the marker on.
         /// </summary>
         public static int WarnIfAJsonVersionBelow { get; set; } = 0;
+
+        // ===============================[ Converters ]===========================
+        /// <summary>
+        /// Registers <paramref name="converter"/> as how its <see cref="JsonValueConverter.TargetType"/> is written and read,
+        /// replacing any converter already registered for that type, AJson's own included
+        /// </summary>
+        public static void RegisterConverter (JsonValueConverter converter)
+        {
+            if (converter == null)
+            {
+                throw new ArgumentNullException(nameof(converter));
+            }
+
+            g_converters[converter.TargetType] = converter;
+            g_parsableFallbacks.TryRemove(converter.TargetType, out _);
+        }
+
+        /// <summary>
+        /// Removes the converter registered for <paramref name="targetType"/>, AJson's own included, so the type is written and
+        /// read the way it would be without one
+        /// </summary>
+        /// <returns>True if a converter was registered for it</returns>
+        public static bool UnregisterConverter (Type targetType)
+        {
+            return g_converters.TryRemove(targetType, out _);
+        }
+
+        /// <summary>
+        /// The converter for <paramref name="type"/>: one registered for it exactly, then one registered for the generic type
+        /// it is made from, then the fallback for a type that writes and reads itself as text (one implementing IFormattable
+        /// and IParsable of itself)
+        /// </summary>
+        public static bool TryGetConverterFor (Type type, out JsonValueConverter converter)
+        {
+            if (g_converters.TryGetValue(type, out converter))
+            {
+                return true;
+            }
+
+            if (type.IsGenericType && g_converters.TryGetValue(type.GetGenericTypeDefinition(), out converter))
+            {
+                return true;
+            }
+
+            converter = g_parsableFallbacks.GetOrAdd(type, static t => JsonBuiltInConverters.TryMakeParsableConverter(t));
+            return converter != null;
+        }
+
+        /// <summary>
+        /// Whether a converter is registered for <paramref name="type"/> or the generic type it is made from, AJson's own
+        /// included, as opposed to the parsable fallback
+        /// </summary>
+        internal static bool IsRegisteredConverterFor (Type type)
+        {
+            return g_converters.ContainsKey(type)
+                || (type.IsGenericType && g_converters.ContainsKey(type.GetGenericTypeDefinition()));
+        }
 
         // ===============================[ Type ID Registration ]===========================
         public static void RegisterTypeId<T> (string id)
@@ -116,7 +180,7 @@ namespace AJut.Text.AJson
         // ===============================[ Build Entry Points ]===========================
         public static JsonBuilder MakeRootBuilder (JsonBuilderSettings settings = null)
         {
-            return new JsonBuilder(settings ?? g_defaultBuilderSettings);
+            return new JsonBuilder(settings ?? JsonBuilderSettings.Default);
         }
 
         internal static JsonBuilder MakeValueBuilder (object value, JsonBuilderSettings settings = null)
@@ -151,15 +215,27 @@ namespace AJut.Text.AJson
                 return false;
             }
 
-            settings = settings ?? g_defaultBuilderSettings;
+            settings = settings ?? JsonBuilderSettings.Default;
             return settings.TryGetJsonValueStringMakerFor(value.GetType()) != null;
         }
 
+        /// <summary>
+        /// Not a value, and either a <see cref="JsonValueConverter"/> writes it as an array, or it has no converter and is
+        /// <see cref="IEnumerable"/>
+        /// </summary>
         public static bool IsArrayData (object value, JsonBuilderSettings settings = null)
         {
-            return value != null
-                && !IsValueData(value, settings)
-                && value is IEnumerable;
+            if (value == null || IsValueData(value, settings))
+            {
+                return false;
+            }
+
+            if (TryGetConverterFor(value.GetType(), out JsonValueConverter converter))
+            {
+                return converter.WrittenShape == eJsonValueShape.Array;
+            }
+
+            return value is IEnumerable;
         }
 
         public static bool IsDocumentData (object value, JsonBuilderSettings settings = null)
@@ -256,6 +332,24 @@ namespace AJut.Text.AJson
             if (sourceJsonValue == null)
             {
                 return null;
+            }
+
+            // A converter owns how its type reads, unless these settings registered a constructor for the type, which is the
+            //  more specific ask. A converter that does not take this shape of json (a scalar's converter given a document
+            //  written before the type had one) leaves it to the path below.
+            bool hasCustomConstructor = settings.HasCustomConstructorFor(type);
+            if (!hasCustomConstructor
+                && TryGetConverterFor(type, out JsonValueConverter converter)
+                && converter.CanRead(sourceJsonValue))
+            {
+                return converter.Read(type, sourceJsonValue, settings, owner);
+            }
+
+            // A registered constructor given a single value builds the whole value. Filling it after would parse the same text
+            //  again with the StringParser, over whatever the constructor made of it.
+            if (hasCustomConstructor && sourceJsonValue.IsValue)
+            {
+                return settings.ConstructInstanceFor(type, sourceJsonValue, owner);
             }
 
             // Class-level [JsonPropertyAsSelf] elevation - the json data we have is the inner
@@ -443,6 +537,17 @@ namespace AJut.Text.AJson
                 JsonDocument sourceCasted = (JsonDocument)sourceJsonValue;
                 DataMember[] membersToReadInto = GetMemberSet(targetType).ReadInto;
 
+                // Json for a type that has data, where nothing took any of it (no member to set, no constructor that took a
+                //  key), is json the type comes back from at its default. That is reported rather than passed over quietly.
+                if (membersToReadInto.Length == 0
+                    && keysConsumedByConstructor == null
+                    && !settings.HasCustomConstructorFor(targetType)
+                    && GetDataMembers(targetType).Length > 0
+                    && sourceCasted.AllKeys().Any(key => key != JsonDocument.kTypeIndicator))
+                {
+                    owner?.AddError($"'{targetType.FullName}' has nothing AJson can read json into: no settable member, no constructor AJson can call, and no JsonValueConverter. It is left at its default. Register a JsonValueConverter for it, or mark a constructor with [AJsonConstructor].");
+                }
+
                 foreach (KeyValuePair<string, JsonValue> kvp in sourceCasted)
                 {
                     if (kvp.Key == JsonDocument.kTypeIndicator)
@@ -553,6 +658,21 @@ namespace AJut.Text.AJson
 
             Type sourceType = source.GetType();
 
+            // A string maker registered on the settings is the most specific ask, then a converter, and either one owns how
+            //  the type is written
+            JsonStringMaker registeredMaker = target.BuilderSettings.TryGetRegisteredStringMakerFor(sourceType);
+            if (registeredMaker != null)
+            {
+                ApplySimpleValue(target, registeredMaker(source), IsUsuallyQuotedFor(sourceType));
+                return;
+            }
+
+            if (TryGetConverterFor(sourceType, out JsonValueConverter converter))
+            {
+                converter.Write(source, target);
+                return;
+            }
+
             // Source-gen fast path. The generated writer handles document-startup, type-id header,
             //  and per-property writes in a single explicit call, with no reflection on the property
             //  loop. Value-typed properties are still boxed: each one goes through
@@ -563,29 +683,26 @@ namespace AJut.Text.AJson
                 return;
             }
 
-            // Class-level [JsonPropertyAsSelf] elevation - swap the source for the named property's
-            //  value and continue down the normal path. Null elevated value falls out as a no-op
-            //  (matches the null-property omit policy the outer property handler applies).
+            // Class-level [JsonPropertyAsSelf] elevation - the named property's value is written in
+            //  the source's place, the whole way through, so a converter or generated serializer for
+            //  it is used the same as anywhere else (the generated writer does the same). Null elevated
+            //  value falls out as a no-op (matches the null-property omit policy the outer property
+            //  handler applies).
             JsonPropertyAsSelfAttribute elevatedAttr = sourceType.GetCustomAttribute<JsonPropertyAsSelfAttribute>(inherit: true);
             if (elevatedAttr != null)
             {
                 PropertyInfo elevatedProp = sourceType.GetProperty(elevatedAttr.PropertyName, BindingFlags.Public | BindingFlags.Instance);
                 if (elevatedProp != null)
                 {
-                    source = elevatedProp.GetValue(source);
-                    if (source == null)
-                    {
-                        return;
-                    }
-                    sourceType = source.GetType();
+                    FillOutJsonBuilderForObject(elevatedProp.GetValue(source), target);
+                    return;
                 }
             }
 
             // Simple value path.
             if (TryGetSimpleStringValue(target.BuilderSettings, sourceType, source, out bool isUsuallyQuoted, out string value))
             {
-                target.IsValueUsualQuoteTarget = isUsuallyQuoted;
-                ApplySimpleValue(target, value);
+                ApplySimpleValue(target, value, isUsuallyQuoted);
                 return;
             }
 
@@ -626,7 +743,7 @@ namespace AJut.Text.AJson
                         JsonBuilder item = array.AddArrayItem(itemString);
                         item.IsValueUsualQuoteTarget = itemIsQuoted;
                     }
-                    else if (arrayItemObj is IEnumerable)
+                    else if (IsArrayData(arrayItemObj, target.BuilderSettings))
                     {
                         FillOutJsonBuilderForObject(arrayItemObj, array);
                     }
@@ -682,10 +799,14 @@ namespace AJut.Text.AJson
             //  type, not vanish and read back as null (or shift the list).
             eTypeIdInfo typeIdToWrite = target.BuilderSettings.TypeIdToWrite;
             bool hasTypeId = TryGetTypeIdForType(typeIdToWrite, sourceType, out string typeId);
-            if (membersToWrite.Length == 0 && !hasTypeId && target.Parent != null)
+            if (membersToWrite.Length == 0)
             {
-                target.Parent.Children.Remove(target);
-                return;
+                LogIfStateIsHidden(sourceType);
+                if (!hasTypeId && target.Parent != null)
+                {
+                    target.Parent.Children.Remove(target);
+                    return;
+                }
             }
 
             if (!target.IsArrayItem)
@@ -796,39 +917,48 @@ namespace AJut.Text.AJson
 
         private static bool TryGetSimpleStringValue (JsonBuilderSettings settings, Type type, object instance, out bool isUsuallyQuoted, out string stringValue)
         {
-            isUsuallyQuoted = false;
             JsonStringMaker maker = settings.TryGetJsonValueStringMakerFor(type);
-            if (maker != null)
+            if (maker == null)
             {
-                stringValue = maker(instance);
-                if (type == typeof(string) || type == typeof(char) || type.IsEnum)
-                {
-                    isUsuallyQuoted = true;
-                }
-                else if (type.IsNumericType())
-                {
-                    isUsuallyQuoted = false;
-                }
-                else if (type == typeof(bool))
-                {
-                    isUsuallyQuoted = false;
-                }
-                else
-                {
-                    isUsuallyQuoted = true;
-                }
+                isUsuallyQuoted = false;
+                stringValue = null;
+                return false;
+            }
 
+            stringValue = maker(instance);
+
+            // A scalar converter says for itself whether its text is quoted, unless a maker registered on the settings stands
+            //  in front of it
+            JsonScalarConverter scalarConverter = null;
+            if (settings.TryGetRegisteredStringMakerFor(type) == null
+                && TryGetConverterFor(type, out JsonValueConverter converter))
+            {
+                scalarConverter = converter as JsonScalarConverter;
+            }
+
+            isUsuallyQuoted = scalarConverter?.IsUsuallyQuoted ?? IsUsuallyQuotedFor(type);
+            return true;
+        }
+
+        /// <summary>
+        /// Whether a simple value of <paramref name="type"/> is written as a json string: a string, a char or an enum is, a
+        /// number or a bool is not, and anything else written as one value is
+        /// </summary>
+        private static bool IsUsuallyQuotedFor (Type type)
+        {
+            if (type == typeof(string) || type == typeof(char) || type.IsEnum)
+            {
                 return true;
             }
 
-            stringValue = null;
-            return false;
+            return !type.IsNumericType() && type != typeof(bool);
         }
 
         // The value goes into the tree as it is. Escaping belongs to the text: JsonWriter escapes
         //  it on the way out and JsonReader unescapes it on the way in.
-        private static void ApplySimpleValue (JsonBuilder target, string rawValue)
+        internal static void ApplySimpleValue (JsonBuilder target, string rawValue, bool isUsuallyQuoted)
         {
+            target.IsValueUsualQuoteTarget = isUsuallyQuoted;
             if (target.IsValue)
             {
                 target.Value = rawValue;
@@ -1027,6 +1157,47 @@ namespace AJut.Text.AJson
             foreach (string propertyName in propertyNames)
             {
                 if (String.Equals(propertyName, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Logs a type written with nothing because AJson can see none of its state, once per type: it has no public property or
+        /// field at all, yet keeps non-public fields. A type whose public members were all ignored or hidden is not logged,
+        /// since leaving them out was asked for.
+        /// </summary>
+        private static void LogIfStateIsHidden (Type type)
+        {
+            if (g_typesLoggedAsWrittenEmpty.ContainsKey(type) || !HasOnlyHiddenState(type))
+            {
+                return;
+            }
+
+            if (g_typesLoggedAsWrittenEmpty.TryAdd(type, 0))
+            {
+                Logger.LogError($"AJson: '{type.FullName}' is written with nothing, since it keeps all its state in non-public fields, which AJson does not read. Whatever holds one reads it back at its default. Register a JsonValueConverter for it, or give it public properties.");
+            }
+        }
+
+        [UnconditionalSuppressMessage("Trimming", "IL2070",
+            Justification = "Reflection-path diagnostic only; a member trimmed away is one the reflection path could not have written either.")]
+        [UnconditionalSuppressMessage("Trimming", "IL2075",
+            Justification = "Reflection-path diagnostic only; a member trimmed away is one the reflection path could not have written either.")]
+        private static bool HasOnlyHiddenState (Type type)
+        {
+            if (type.GetFields(BindingFlags.Public | BindingFlags.Instance).Length > 0
+                || type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Length > 0)
+            {
+                return false;
+            }
+
+            for (Type tier = type; tier != null && tier != typeof(object); tier = tier.BaseType)
+            {
+                if (tier.GetFields(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly).Length > 0)
                 {
                     return true;
                 }

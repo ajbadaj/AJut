@@ -622,9 +622,9 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                 return ePropertyKind.SimpleValue;
             }
 
-            if (IsBuiltInCustomType(type))
+            if (IsParsableOfItself(type))
             {
-                return ePropertyKind.BuiltInCustom;
+                return ePropertyKind.Parsable;
             }
 
             // Array
@@ -689,18 +689,30 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
             return false;
         }
 
-        private static bool IsBuiltInCustomType (ITypeSymbol type)
+        /// <summary>
+        /// The same test as the reflection path's parsable fallback: implements IFormattable, and IParsable of itself. There is
+        /// no list of known types here: which of these AJson writes as text, and how, is the runtime converter table's call, so
+        /// the generator and the reflection path cannot drift apart over it.
+        /// </summary>
+        private static bool IsParsableOfItself (ITypeSymbol type)
         {
-            string fqn = type.ToDisplayString();
-            switch (fqn)
+            bool isFormattable = false;
+            bool isParsable = false;
+            foreach (INamedTypeSymbol implemented in type.AllInterfaces)
             {
-                case "System.DateTime":
-                case "System.TimeSpan":
-                case "System.Guid":
-                case "System.TimeZoneInfo":
-                    return true;
+                string name = implemented.OriginalDefinition.ToDisplayString();
+                if (name == "System.IFormattable")
+                {
+                    isFormattable = true;
+                }
+                else if (name == "System.IParsable<TSelf>"
+                    && SymbolEqualityComparer.Default.Equals(implemented.TypeArguments[0], type))
+                {
+                    isParsable = true;
+                }
             }
-            return false;
+
+            return isFormattable && isParsable;
         }
 
         /// <summary>
@@ -720,10 +732,6 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
         private static bool IsUsuallyQuoted (ITypeSymbol type, ePropertyKind kind)
         {
             if (kind == ePropertyKind.Enum)
-            {
-                return true;
-            }
-            if (kind == ePropertyKind.BuiltInCustom)
             {
                 return true;
             }

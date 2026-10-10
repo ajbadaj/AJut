@@ -2,6 +2,7 @@ namespace AJut.Text.AJson
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
 
     /// <summary>
     /// Public helper surface that the AJson source generator emits calls into. Lives here rather
@@ -53,6 +54,35 @@ namespace AJut.Text.AJson
         public static T ReadValue<[DynamicallyAccessedMembers(kReadRequirements)] T> (JsonValue value, JsonInterpreterSettings settings, Json owner)
         {
             return (T)JsonHelper.BuildObjectForJson(typeof(T), value, settings, owner);
+        }
+
+        /// <summary>
+        /// Generated readers call this to read a property whose type implements IParsable of itself. A single value with no
+        /// constructor registered for the type and no converter registered for it is read with the type's own TryParse, called
+        /// directly, which keeps working under trimming where the reflection path's lookup of it may not. Anything else is
+        /// read the way <see cref="ReadValue{T}"/> reads it.
+        /// </summary>
+        public static T ReadParsable<[DynamicallyAccessedMembers(kReadRequirements)] T> (JsonValue value, JsonInterpreterSettings settings, Json owner)
+            where T : IParsable<T>
+        {
+            settings = settings ?? JsonInterpreterSettings.Default;
+            bool isReadByTryParse = value != null
+                && value.IsValue
+                && !settings.HasCustomConstructorFor(typeof(T))
+                && !JsonHelper.IsRegisteredConverterFor(typeof(T));
+
+            if (!isReadByTryParse)
+            {
+                return ReadValue<T>(value, settings, owner);
+            }
+
+            if (T.TryParse(value.StringValue, CultureInfo.InvariantCulture, out T parsed))
+            {
+                return parsed;
+            }
+
+            owner?.AddError($"Could not read '{value.StringValue}' as a {typeof(T).Name}, the value is left at its default");
+            return default;
         }
 
         /// <summary>

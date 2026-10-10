@@ -18,7 +18,7 @@ namespace AJut.Text.AJson
         internal JsonBuilder (JsonBuilderSettings settings)
         {
             this.Key = String.Empty;
-            this.BuilderSettings = settings ?? new JsonBuilderSettings();
+            this.BuilderSettings = settings ?? JsonBuilderSettings.Default;
             this.Children = new List<JsonBuilder>();
             this.ArrayIndex = -1;
         }

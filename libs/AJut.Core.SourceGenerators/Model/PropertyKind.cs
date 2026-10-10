@@ -17,12 +17,12 @@ namespace AJut.Text.AJson.SourceGenerators.Model
         Enum,
 
         /// <summary>
-        /// DateTime, TimeSpan, Guid, Vector2, TimeZoneInfo - the curated list of types that have
-        /// custom string makers / constructors registered in JsonBuilderSettings /
-        /// JsonInterpreterSettings by default. Treated as simple values for write/read but the
-        /// parser side has to route through the settings hook.
+        /// A type that implements IFormattable and IParsable of itself (DateTime, Guid, BigInteger, and the like). Written
+        /// through JsonHelper, where a converter or the parsable fallback decides its shape, and read through
+        /// AJsonGenerationSupport.ReadParsable, which calls the type's own TryParse directly when nothing registered stands in
+        /// front of it.
         /// </summary>
-        BuiltInCustom,
+        Parsable,
 
         /// <summary>
         /// Reference type that is itself a candidate for nested object serialization. Generated

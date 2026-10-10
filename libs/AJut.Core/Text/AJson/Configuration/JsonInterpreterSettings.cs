@@ -21,9 +21,22 @@ namespace AJut.Text.AJson
     /// </summary>
     public class JsonInterpreterSettings
     {
-        // "o" is exactly what the writer produces. The second form also takes ISO 8601 text with
-        //  fewer (or no) fractional digits, as other tools write it.
-        private static readonly string[] kIso8601DateTimeFormats = { "o", "yyyy-MM-ddTHH:mm:ss.FFFFFFFK" };
+        /// <summary>
+        /// The Tuple types a read builds through their constructor. A Tuple has nothing settable, so the member walk writes its
+        /// items and only a constructor can build one back.
+        /// </summary>
+        private static readonly Type[] kTupleTypes =
+        {
+            typeof(Tuple<>), typeof(Tuple<,>), typeof(Tuple<,,>), typeof(Tuple<,,,>),
+            typeof(Tuple<,,,,>), typeof(Tuple<,,,,,>), typeof(Tuple<,,,,,,>), typeof(Tuple<,,,,,,,>),
+        };
+
+        /// <summary>
+        /// A Tuple's eighth constructor argument (index 7) is the tuple holding the rest of its items, written under the key
+        /// <see cref="kTupleRestKey"/> rather than as Item8
+        /// </summary>
+        private const int kTupleRestIndex = 7;
+        private const string kTupleRestKey = "Rest";
 
         private readonly Dictionary<Type, JsonToObjectConstructor> m_customConstructors = new Dictionary<Type, JsonToObjectConstructor>();
 
@@ -31,56 +44,11 @@ namespace AJut.Text.AJson
         public JsonInterpreterSettings (StringParser stringParser = null)
         {
             this.StringParser = stringParser ?? new StringParser();
-            m_customConstructors.Add(typeof(Guid), _CreateGuidFor);
-            m_customConstructors.Add(typeof(DateTime), _CreateDateTimeFor);
-            m_customConstructors.Add(typeof(TimeSpan), _CreateTimeSpanFor);
             m_customConstructors.Add(typeof(KeyValuePair<,>), _CreateKeyValuePairFor);
-            m_customConstructors.Add(typeof(TimeZoneInfo), _CreateTimezoneInfo);
             m_customConstructors.Add(typeof(Vector2), _CreateVector2);
-
-            object _CreateGuidFor (Type fullTarget, JsonValue json, JsonInterpreterSettings settings, Json owner)
+            foreach (Type tupleType in kTupleTypes)
             {
-                return Guid.TryParse(json.StringValue, out Guid found) ? found : Guid.Empty;
-            }
-
-            object _CreateDateTimeFor (Type fullTarget, JsonValue json, JsonInterpreterSettings settings, Json owner)
-            {
-                string text = json.StringValue;
-
-                // 1. Round-trip ISO 8601, which is what AJson writes. RoundtripKind hands back the
-                //    Kind the text carries: Z is Utc, an offset is Local (as this machine's local
-                //    time), and no suffix is Unspecified.
-                bool isIso8601 = DateTime.TryParseExact(
-                    text,
-                    kIso8601DateTimeFormats,
-                    CultureInfo.InvariantCulture,
-                    DateTimeStyles.RoundtripKind,
-                    out DateTime found
-                );
-
-                if (isIso8601)
-                {
-                    return found;
-                }
-
-                // 2. Text written before that: the writing machine's current culture format, with no
-                //    offset or Kind, which was always UTC under the old defaults. It reads the way it
-                //    always did, with the invariant culture as a second try for a file written under
-                //    another culture.
-                DateTimeStyles oldTextStyle = this.DefaultDateTimeParseStyle;
-                if (DateTime.TryParse(text, CultureInfo.CurrentCulture, oldTextStyle, out found)
-                    || DateTime.TryParse(text, CultureInfo.InvariantCulture, oldTextStyle, out found))
-                {
-                    return found;
-                }
-
-                owner?.AddError($"Could not read '{text}' as a DateTime, the value is left at default");
-                return default(DateTime);
-            }
-
-            object _CreateTimeSpanFor (Type fullTarget, JsonValue json, JsonInterpreterSettings settings, Json owner)
-            {
-                return TimeSpan.TryParse(json.StringValue, out TimeSpan found) ? found : TimeSpan.Zero;
+                m_customConstructors.Add(tupleType, _CreateTupleFor);
             }
 
             // KVP construction goes through Type.GetConstructor on a generic KeyValuePair<,> the
@@ -141,17 +109,32 @@ namespace AJut.Text.AJson
                 return kvpType.GetConstructor(genericTypes).Invoke(new[] { keyObj, valueObj });
             }
 
-            object _CreateTimezoneInfo (Type fullTarget, JsonValue json, JsonInterpreterSettings settings, Json owner)
+            // A Tuple is read from the document of items the member walk writes for it, Item1 to Item7 and then Rest, each
+            //  read as its type argument and passed to the constructor. A missing item is its type's default.
+            [UnconditionalSuppressMessage("Trimming", "IL2075",
+                Justification = "Tuple<> constructors are intrinsic and always preserved; the type is a constructed Tuple<> by definition of the registration.")]
+            [UnconditionalSuppressMessage("Trimming", "IL2072",
+                Justification = "Tuple item types come from the generic arguments of the Tuple<> the consumer requested - keeping members of those is the consumer's responsibility per AJson reflection-path contract.")]
+            object _CreateTupleFor (Type fullTarget, JsonValue json, JsonInterpreterSettings settings, Json owner)
             {
-                try
+                Type[] itemTypes = fullTarget.GetGenericArguments();
+                object[] items = new object[itemTypes.Length];
+                JsonDocument document = json as JsonDocument;
+                if (document == null)
                 {
-                    return TimeZoneInfo.FindSystemTimeZoneById(json.StringValue);
+                    owner?.AddError($"A {fullTarget.Name} is read from a document of its items, and this is {(json.IsArray ? "an array" : "a value")}");
                 }
-                catch (Exception exc)
+
+                for (int index = 0; index < itemTypes.Length; ++index)
                 {
-                    owner?.AddError($"Failed to resolve TimeZoneInfo '{json.StringValue}': {exc.Message}");
-                    return TimeZoneInfo.Utc;
+                    string key = (index == kTupleRestIndex) ? kTupleRestKey : $"Item{index + 1}";
+                    JsonValue itemJson = document?.ValueFor(key);
+                    items[index] = itemJson != null
+                        ? JsonHelper.BuildObjectForJson(itemTypes[index], itemJson, settings, owner)
+                        : _DefaultFor(itemTypes[index]);
                 }
+
+                return fullTarget.GetConstructor(itemTypes).Invoke(items);
             }
 
             object _CreateVector2 (Type fullTarget, JsonValue json, JsonInterpreterSettings settings, Json owner)
@@ -287,18 +270,42 @@ namespace AJut.Text.AJson
         /// <returns>True if a registered constructor matched the type and built <paramref name="instance"/>, false otherwise</returns>
         public bool TryConstructWithCustomConstructor (Type type, JsonValue jsonValue, Json owner, out object instance)
         {
-            foreach (KeyValuePair<Type, JsonToObjectConstructor> kvp in m_customConstructors)
+            JsonToObjectConstructor constructor = this.TryGetCustomConstructorFor(type);
+            if (constructor == null)
             {
-                if (type.TargetsSameTypeAs(kvp.Key))
-                {
-                    instance = kvp.Value(type, jsonValue, this, owner);
-                    AJsonConstructorRoute.NoteCustomConstructorWon(type);
-                    return true;
-                }
+                instance = null;
+                return false;
             }
 
-            instance = null;
-            return false;
+            instance = constructor(type, jsonValue, this, owner);
+            AJsonConstructorRoute.NoteCustomConstructorWon(type);
+            return true;
+        }
+
+        /// <summary>
+        /// Whether a constructor is registered for <paramref name="type"/>, through <see cref="RegisterCustomConstructor{T}"/>,
+        /// <see cref="Add"/> or as one of AJson's own (KeyValuePair, Tuple, Vector2's old text)
+        /// </summary>
+        internal bool HasCustomConstructorFor (Type type) => this.TryGetCustomConstructorFor(type) != null;
+
+        // ===========================[ Helper Methods ]===============================
+        /// <summary>
+        /// The constructor registered for <paramref name="type"/> exactly, or for the generic type it is made from
+        /// </summary>
+        private JsonToObjectConstructor TryGetCustomConstructorFor (Type type)
+        {
+            if (m_customConstructors.TryGetValue(type, out JsonToObjectConstructor exact))
+            {
+                return exact;
+            }
+
+            if (type.IsGenericType
+                && m_customConstructors.TryGetValue(type.GetGenericTypeDefinition(), out JsonToObjectConstructor byDefinition))
+            {
+                return byDefinition;
+            }
+
+            return null;
         }
     }
 }

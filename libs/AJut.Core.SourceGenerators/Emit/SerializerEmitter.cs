@@ -154,9 +154,9 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
                     break;
                 case ePropertyKind.SimpleValue:
                 case ePropertyKind.Enum:
-                case ePropertyKind.BuiltInCustom:
                     EmitWriteSimple(cb, prop, accessor);
                     break;
+                case ePropertyKind.Parsable:
                 case ePropertyKind.ComplexReference:
                 case ePropertyKind.Collection:
                 case ePropertyKind.Dictionary:
@@ -571,6 +571,13 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
                     cb.AppendLine($"global::System.Object rteRead = global::AJut.Text.AJson.AJsonGenerationSupport.ReadRuntimeTypeEvalProperty(kvp.Value, settings, owner);");
                     cb.AppendLine($"if (rteRead != null) {{ {assignTo} = ({readType})rteRead;{markFound} }}");
                     break;
+
+                // Read as the property's own type, unwrapped from Nullable, which converts to the property on assignment. A
+                //  constructor parameter of some other type is read the general way.
+                case ePropertyKind.Parsable when (readType == prop.TypeFullName) || (readType == prop.UnderlyingTypeFullName):
+                    cb.AppendLine($"{assignTo} = global::AJut.Text.AJson.AJsonGenerationSupport.ReadParsable<{prop.UnderlyingTypeFullName}>(kvp.Value, settings, owner);{markFound}");
+                    break;
+
                 default:
                     if (prop.IsNullable)
                     {
