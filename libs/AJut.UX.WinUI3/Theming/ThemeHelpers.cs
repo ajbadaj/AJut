@@ -5,6 +5,11 @@
 
     public static class ThemeHelpers
     {
+        /// <summary>
+        /// Looks up a resource the way a ThemeResource reference on <paramref name="pointOfOrigin"/> would: through its resources
+        /// and its visual parents', then the application's, reading theme dictionaries for the point of origin's
+        /// <see cref="FrameworkElement.ActualTheme"/> the whole way up.
+        /// </summary>
         public static bool TryFindThemedResource(this FrameworkElement pointOfOrigin, object resourceKey, out object foundResource)
         {
             return TryFindThemedResource(pointOfOrigin, pointOfOrigin.ActualTheme.ToString(), resourceKey, out foundResource);
@@ -20,9 +25,18 @@
             return TryFindThemedResource(null, Application.Current.RequestedTheme.ToString(), resourceKey, out foundResource);
         }
 
-        private static bool TryFindThemedResource(FrameworkElement currentPointOfOrigin, string fallbackTheme, object resourceKey, out object foundResource)
+        private static bool TryFindThemedResource(FrameworkElement currentPointOfOrigin, string theme, object resourceKey, out object foundResource)
         {
-            string theme = currentPointOfOrigin?.ActualTheme.ToString() ?? fallbackTheme;
+            // The theme is the original point of origin's for the whole walk, never re-read from the parents. That's how a
+            // ThemeResource reference resolves: the element's ActualTheme (the nearest RequestedTheme above it, else the app's)
+            // picks the theme dictionary in every resource dictionary on the way up, the application's included. See
+            // https://learn.microsoft.com/windows/windows-app-sdk/api/winrt/microsoft.ui.xaml.frameworkelement.requestedtheme
+            //
+            // The parents can be on a different theme than the element. A window's content is the usual case: AppThemeManager
+            // sets RequestedTheme on the content and on every parent it has at that moment, and at startup the content has no
+            // parent yet, so the window's own root elements above it keep following the app's theme, which is the system's.
+            // Reading the theme off each parent gave a window switched away from the system theme the system theme's values
+            // as soon as the walk got past the content.
 
             // If point of origin is null, then we've reached the top and all there is left to do is check Application
             if (currentPointOfOrigin == null)
