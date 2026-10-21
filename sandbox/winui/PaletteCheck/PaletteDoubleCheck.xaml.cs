@@ -45,8 +45,13 @@ namespace AJutShowRoomWinUI
         private void OnLookUpFromCode_OnClick (object sender, RoutedEventArgs e)
         {
             var results = new List<string>();
-            bool allPass = this.CheckLookupFromCode(kShadowOpacityKey, results);
-            allPass &= this.CheckLookupFromCode(kDisabledOpacityKey, results);
+            bool allPass = this.CheckLookupFromCode(kShadowOpacityKey, byThemeName: false, results);
+            allPass &= this.CheckLookupFromCode(kDisabledOpacityKey, byThemeName: false, results);
+
+            // The same keys by this tab's theme name, straight from the application's resources. When only the lookups
+            // from this element fail, the palette is fine and the walk up from the element is reading the wrong theme.
+            allPass &= this.CheckLookupFromCode(kShadowOpacityKey, byThemeName: true, results);
+            allPass &= this.CheckLookupFromCode(kDisabledOpacityKey, byThemeName: true, results);
 
             this.ShowResults(
                 allPass
@@ -99,27 +104,36 @@ namespace AJutShowRoomWinUI
             );
         }
 
-        private bool CheckLookupFromCode (string resourceKey, List<string> results)
+        private bool CheckLookupFromCode (string resourceKey, bool byThemeName, List<string> results)
         {
+            string label = byThemeName
+                ? $"by theme name {this.ActualTheme}, {resourceKey}"
+                : $"from this element, {resourceKey}";
+
             try
             {
-                if (!this.TryFindThemedResource(resourceKey, out object found))
+                object found;
+                bool wasFound = byThemeName
+                    ? ThemeHelpers.TryFindThemedResource(this.ActualTheme.ToString(), resourceKey, out found)
+                    : this.TryFindThemedResource(resourceKey, out found);
+
+                if (!wasFound)
                 {
-                    results.Add($"{resourceKey}: MISMATCH | not found in the loaded theme");
+                    results.Add($"{label}: MISMATCH | not found in the loaded theme");
                     return false;
                 }
 
                 if (found is double opacity)
                 {
-                    return this.CheckOpacity(resourceKey, resourceKey, opacity, results);
+                    return this.CheckOpacity(label, resourceKey, opacity, results);
                 }
 
-                results.Add($"{resourceKey}: MISMATCH | came back as {found.GetType().FullName} '{found}', want a double");
+                results.Add($"{label}: MISMATCH | came back as {found.GetType().FullName} '{found}', want a double");
                 return false;
             }
             catch (Exception ex)
             {
-                results.Add($"{resourceKey}: MISMATCH | the lookup threw {ex.GetType().FullName}: {ex.Message}");
+                results.Add($"{label}: MISMATCH | the lookup threw {ex.GetType().FullName}: {ex.Message}");
                 return false;
             }
         }
