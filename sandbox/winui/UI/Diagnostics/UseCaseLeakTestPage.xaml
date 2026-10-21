@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AJutShowRoomWinUI.UI.Diagnostics.UseCaseLeakTestPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid Padding="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Use-case leak test" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,8"/>
+        <TextBlock Grid.Row="1" TextWrapping="Wrap" Opacity="0.8" Margin="0,0,0,12"
+                   Text="A realistic editor scenario (docked tools + property grid) reached by type-based page nav with no page caching, so navigating away tears the editor down. Used to confirm teardown leaks before fixing them. See the UseCaseTest folder."/>
+
+        <Frame Grid.Row="2" x:Name="UseCaseFrame" Loaded="UseCaseFrame_OnLoaded"/>
+    </Grid>
+</Page>

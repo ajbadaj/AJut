@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AJutShowRoomWinUI.UI.Diagnostics.LeakProbePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <!-- Spot-check panel for catching memory leak regressions in DockingManager /
+         WindowManager. Each button builds the target type, disposes it, drops the
+         strong ref, runs GC, and reports whether the WeakReference came back null.
+         Not a CI test - meant to be clicked when something feels off. -->
+    <ScrollViewer Padding="16">
+        <StackPanel Spacing="12" MaxWidth="1000" HorizontalAlignment="Left">
+            <TextBlock Text="Memory Leak Probes" FontSize="20" FontWeight="SemiBold"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                       Text="Each probe builds a fresh instance against the main window, disposes it, drops the strong ref, then forces GC and checks that the WeakReference is dead. PASS means the instance got collected. FAIL means something is still pinning it (likely an event subscription that didn't get unhooked in Dispose)."/>
+
+            <StackPanel Spacing="6">
+                <Button Content="Probe DockingManager" Click="LeakProbe_OnDockingManagerClicked" MinWidth="300" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
+                <Button Content="Probe WindowManager" Click="LeakProbe_OnWindowManagerClicked" MinWidth="300" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
+                <Button Content="Probe x5 (open/close cycles)" Click="LeakProbe_OnCycleClicked" MinWidth="300" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
+                <Button Content="Dock leak - child window" Click="LeakProbe_OnChildWindowDockingClicked" MinWidth="300" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
+                <Button Content="Dock leak - main window (control)" Click="LeakProbe_OnMainWindowDockingClicked" MinWidth="300" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
+                <Button Content="Dock overlay severed on Dispose (mechanism)" Click="LeakProbe_OnDropOverlaySeveredClicked" MinWidth="300" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
+                <Button Content="Probe PropertyGrid" Click="LeakProbe_OnPropertyGridClicked" MinWidth="300" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
+            </StackPanel>
+
+            <!-- Transient host for the main-window-control and PropertyGrid probes. They
+                 briefly parent a real control here (long-lived main window tree), then
+                 detach it - mirrors a main-frame-nav editor, which collects cleanly. -->
+            <Border x:Name="LeakProbe_MainHostArea" Height="140" Margin="0,4,0,0"/>
+
+            <Grid Margin="0,8,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="Output" VerticalAlignment="Center" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                <Button Grid.Column="1" Content="Copy to clipboard" Click="LeakProbe_OnCopyOutputClicked" Margin="0,0,8,0"/>
+                <Button Grid.Column="2" Content="Clear" Click="LeakProbe_OnClearOutputClicked"/>
+            </Grid>
+            <TextBox x:Name="LeakProbe_Output"
+                     IsReadOnly="True"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     IsSpellCheckEnabled="False"
+                     FontFamily="Consolas"
+                     FontSize="12"
+                     Height="240"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                     Text=""/>
+
+            <TextBlock Text="Notes" Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,0"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.7" FontSize="12"
+                       Text="A FAIL here is real - it means a subscription survived Dispose. A PASS does not prove the absence of all leaks (some subs may only manifest after specific operations like opening a tearoff). For deeper coverage, exercise the docking experience (open tabs, tear off, dock back) and re-run the cycle probe."/>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

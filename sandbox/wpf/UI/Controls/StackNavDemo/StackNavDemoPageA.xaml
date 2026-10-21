@@ -1,0 +1,26 @@
+<UserControl x:Class="TheAJutShowRoom.UI.Controls.StackNavDemo.StackNavDemoPageA"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:TheAJutShowRoom.UI.Controls.StackNavDemo"
+             mc:Ignorable="d"
+             d:DesignHeight="300" d:DesignWidth="400"
+             x:Name="Self">
+    <StackPanel Margin="15">
+        <TextBlock Text="Page A" FontSize="18"/>
+        <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0"
+                   Text="This page is the bottom of the demo stack. Open the drawer with the header button, push page B, then come back: the click count survives because the page hands its state to the navigator when it is covered."/>
+        <StackPanel Orientation="Horizontal" Margin="0,15,0,0">
+            <Button Content="Click me" Padding="10,4" Click="ClickMe_OnClick"/>
+            <TextBlock VerticalAlignment="Center" Margin="10,0,0,0">
+                <TextBlock.Inlines>
+                    <Run Text="Clicks:"/>
+                    <Run Text="{Binding ElementName=Self, Path=ClickCount, Mode=OneWay}" FontWeight="Bold"/>
+                </TextBlock.Inlines>
+            </TextBlock>
+        </StackPanel>
+        <Button Content="Push page B" Padding="10,4" Margin="0,15,0,0" HorizontalAlignment="Left" Click="PushPageB_OnClick"/>
+        <Button Content="Busy wait for two seconds" Padding="10,4" Margin="0,5,0,0" HorizontalAlignment="Left" Click="BusyWait_OnClick"/>
+    </StackPanel>
+</UserControl>

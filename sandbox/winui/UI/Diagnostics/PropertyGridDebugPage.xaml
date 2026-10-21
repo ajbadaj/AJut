@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AJutShowRoomWinUI.UI.Diagnostics.PropertyGridDebugPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ajut="using:AJut.UX.Controls"
+    xmlns:ajut_pg="using:AJut.UX.PropertyInteraction"
+    xmlns:ui="using:AJutShowRoomWinUI.UI"
+    mc:Ignorable="d"
+    Unloaded="Page_OnUnloaded">
+
+    <Grid Padding="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="PropertyGrid debug" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,8"/>
+        <TextBlock Grid.Row="1" TextWrapping="Wrap" Opacity="0.8" Margin="0,0,0,12"
+                   Text="PropertyGrid builds an editor tree from a source object and its attributes: groups, editors, elevation, conditional rows, coercion, ordering, buttons, and lists. Switch sources with the buttons to check live refresh, container recycling, and expansion memory. The JSON on the right mirrors the current source and updates on every PropertyTreeChanged."/>
+
+        <Grid Grid.Row="2" Margin="8">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="300"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Source switcher: simulates selecting different element types -->
+            <ajut:SimpleWrapPanel Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3" HorizontalSpacing="6" VerticalSpacing="6" Margin="0,0,0,8">
+                <TextBlock Text="Source:" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                <Button x:Name="PG_AlphaButton" Content="Alpha (5 props, includes string+bool)"
+                        Click="PGSource_OnAlphaClicked"/>
+                <Button x:Name="PG_BetaButton" Content="Beta (2 props, floats only)"
+                        Click="PGSource_OnBetaClicked"/>
+                <Button x:Name="PG_ComplexButton" Content="Complex A (ShowRoomTester)"
+                        Click="PGSource_OnComplexClicked"/>
+                <Button x:Name="PG_ComplexBButton" Content="Complex B (same type - expansion memory test)"
+                        Click="PGSource_OnComplexBClicked"
+                        ToolTipService.ToolTip="Expand a sub-object or group on Complex A, then switch here - the same tree pathway should stay expanded so you can compare the two objects."/>
+                <Button x:Name="PG_DelegatedButtonsButton" Content="Delegated Buttons (delegating edit manager)"
+                        Click="PGSource_OnDelegatedButtonsClicked"
+                        ToolTipService.ToolTip="Source is a delegating edit manager wrapping an inner object that has a [PGButton]. The manager surfaces the inner button itself, so it shows in the grid."/>
+                <Button x:Name="PG_MixedOrderButton" Content="Mixed Order ([MemberOrder] props + [PGMemberOrder] button)"
+                        Click="PGSource_OnMixedOrderClicked"
+                        ToolTipService.ToolTip="Properties use core [MemberOrder] (1,10,11,20,21); the button uses [PGMemberOrder(22)]. With the fold, the button slots in after Height instead of floating to the top."/>
+                <Button x:Name="PG_ManualMixedOrderButton" Content="Mixed Order (manual PET construction)"
+                        Click="PGSource_OnManualMixedOrderClicked"
+                        ToolTipService.ToolTip="Same mix built by hand (no attributes) - the manager positions every row, properties and button, by setting MemberSortOrder directly."/>
+                <Button Content="Set Elevated Values" Click="PGSource_OnSetElevatedClicked"
+                        ToolTipService.ToolTip="Sets elevated property values externally - tests RecacheEditValue cascade"/>
+                <Button x:Name="PG_WrappedMatrixButton" Content="Wrapped Mode Matrix (PGShowIf repro)"
+                        Click="PGSource_OnWrappedMatrixClicked"
+                        ToolTipService.ToolTip="Source whose Mode is behind a wrapper; rows A/B/C conditional on Mode.Value"/>
+                <Button x:Name="PG_NoneButton" Content="None (Empty)"
+                        Click="PGSource_OnNoneClicked"/>
+            </ajut:SimpleWrapPanel>
+
+            <!-- Mode cycler for the Wrapped Mode Matrix source. Directly mutates
+                 the wrapper's Value so the only signal is the wrapper's INPC. -->
+            <ajut:SimpleWrapPanel Grid.Row="1" Grid.Column="0" HorizontalSpacing="6" VerticalSpacing="6" Margin="0,0,0,8">
+                <TextBlock Text="Matrix Mode:" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                <Button Content="Mode -> A" Click="PGMatrix_SetModeA"/>
+                <Button Content="Mode -> B" Click="PGMatrix_SetModeB"/>
+                <Button Content="Mode -> C" Click="PGMatrix_SetModeC"/>
+                <TextBlock x:Name="PGMatrixDiagnostic"
+                           VerticalAlignment="Center" FontFamily="Consolas" FontSize="11"
+                           Text="(diagnostics will appear here after clicking a Mode button)"/>
+            </ajut:SimpleWrapPanel>
+
+            <!-- Selection-surface tester: exercises TrySelectSourceObject / SelectedSourceObject(Changed).
+                 Complex A/B have ListWithElevation (complex elements with identity) to target. -->
+            <ajut:SimpleWrapPanel Grid.Row="2" Grid.Column="0" HorizontalSpacing="6" VerticalSpacing="6" Margin="0,0,0,8">
+                <TextBlock Text="PropertyGrid - switch sources above to test live refresh" FontStyle="Italic" VerticalAlignment="Center"/>
+                <Button Content="Select random element" Click="PGSelect_OnRandomElementClicked"
+                        ToolTipService.ToolTip="Complex A/B: TrySelectSourceObject on a random ListWithElevation element - exercises programmatic select + scroll, verifies no Single-mode COMException, and the collapsed-target expand path"/>
+                <Button Content="Clear selection" Click="PGSelect_OnClearClicked"/>
+                <TextBlock Text="SelectedSourceObject:" VerticalAlignment="Center"/>
+                <TextBlock x:Name="PGSelectionReadout" Text="(none)" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            </ajut:SimpleWrapPanel>
+            <TextBlock Grid.Row="2" Grid.Column="2" Text="Live source object (JSON)" FontStyle="Italic" Margin="0,0,0,8"/>
+
+            <!-- SingleItemSource set in code-behind so it can be swapped via the buttons above -->
+            <ajut:PropertyGrid x:Name="TestPropertyGrid"
+                               Grid.Row="3" Grid.Column="0"
+                               RowSpacing="5"
+                               FixedRowHeight="40"
+                               LabelColumnWidth="180"
+                               PropertyToolTipPlacement="PropertyNameAndValue">
+                <ajut:PropertyGrid.ItemTemplateSelector>
+                    <ajut:PropertyGridTemplateSelector>
+                        <ajut:PropertyGridTemplateSelector.Default>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Path=EditValue}" VerticalAlignment="Center"/>
+                            </DataTemplate>
+                        </ajut:PropertyGridTemplateSelector.Default>
+                        <ajut:PropertyGridTemplateSelector.RegisteredTemplates>
+                            <DataTemplate x:Key="Single" x:DataType="ajut_pg:PropertyEditTarget">
+                                <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}" TextBoxHeight="20"
+                                                    Minimum="{Binding Path=EditContext.Min, Mode=TwoWay, FallbackValue=-10000}"
+                                                    Maximum="{Binding Path=EditContext.Max, Mode=TwoWay, FallbackValue=10000}"
+                                                    BigNudge="{Binding Path=EditContext.BigStep, Mode=OneWay, FallbackValue=5}"
+                                                    Nudge="{Binding Path=EditContext.Step, Mode=OneWay, FallbackValue=1}"
+                                                    SmallNudge="{Binding Path=EditContext.SmallStep, Mode=OneWay, FallbackValue=0.1}"/>
+                            </DataTemplate>
+                            <DataTemplate x:Key="Double">
+                                <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}" TextBoxHeight="20"/>
+                            </DataTemplate>
+                            <DataTemplate x:Key="Int32">
+                                <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}" TextBoxHeight="20"/>
+                            </DataTemplate>
+                            <DataTemplate x:Key="ColorPick">
+                                <ajut:ColorEditIngressControl EditColor="{Binding Path=EditValue, Mode=TwoWay}" VerticalAlignment="Stretch" MaxWidth="150" HorizontalAlignment="Left"/>
+                            </DataTemplate>
+                            <DataTemplate x:Key="Boolean">
+                                <CheckBox IsChecked="{Binding Path=EditValue, Mode=TwoWay}" VerticalAlignment="Center"/>
+                            </DataTemplate>
+                            <DataTemplate x:Key="String">
+                                <TextBox Text="{Binding Path=EditValue, Mode=TwoWay}"/>
+                            </DataTemplate>
+                            <DataTemplate x:Key="eEditorMode">
+                                <ajut:EnumComboBox SelectedItem="{Binding Path=EditValue, Mode=TwoWay}" VerticalAlignment="Center"/>
+                            </DataTemplate>
+                            <DataTemplate x:Key="SpecialString">
+                                <Border CornerRadius="8" Padding="3" Background="Yellow"
+                                        ToolTipService.ToolTip="This shows usage of elevate as parent, where property attributes were deferred back to parent">
+                                    <TextBox Text="{Binding Path=EditValue, Mode=TwoWay}"/>
+                                </Border>
+                            </DataTemplate>
+                            <DataTemplate x:Key="WidgetEditor">
+                                <Border>
+                                    <StackPanel>
+                                        <TextBlock Text="Widget Editor:"/>
+                                        <ajut:NumericEditor Value="{Binding Path=EditValue.SubObjValue, Mode=TwoWay}"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ajut:PropertyGridTemplateSelector.RegisteredTemplates>
+                    </ajut:PropertyGridTemplateSelector>
+                </ajut:PropertyGrid.ItemTemplateSelector>
+            </ajut:PropertyGrid>
+
+            <!-- JSON display: live mirror of current source, updated on every PropertyTreeChanged -->
+            <Border Grid.Row="3" Grid.Column="2"
+                    BorderBrush="{ThemeResource SystemControlForegroundBaseMediumLowBrush}"
+                    BorderThickness="1"
+                    CornerRadius="4">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <TextBlock x:Name="PropertyGridJsonDisplay"
+                               FontFamily="Consolas"
+                               FontSize="11"
+                               Margin="6"
+                               TextWrapping="Wrap" IsTextSelectionEnabled="True"/>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <ui:ShowroomCodeDisplay Grid.Row="3" CodeText="{x:Bind DemoCode}" Height="200" Margin="0,12,0,0"/>
+    </Grid>
+</Page>

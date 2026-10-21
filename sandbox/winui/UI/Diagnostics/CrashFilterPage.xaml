@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AJutShowRoomWinUI.UI.Diagnostics.CrashFilterPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:local="using:AJutShowRoomWinUI"
+    mc:Ignorable="d">
+
+    <!-- Manual check that AJut's native crash filter keeps a host's filter installed
+         before it, and runs that one first. Needs running without the debugger. -->
+    <local:NativeCrashFilterCheck/>
+</Page>

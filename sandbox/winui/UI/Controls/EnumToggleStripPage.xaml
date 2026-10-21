@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AJutShowRoomWinUI.UI.Controls.EnumToggleStripPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ajut="using:AJut.UX.Controls"
+    xmlns:ui="using:AJutShowRoomWinUI.UI"
+    mc:Ignorable="d">
+
+    <ScrollViewer Padding="16">
+        <StackPanel Spacing="12" MaxWidth="1000" HorizontalAlignment="Left">
+            <TextBlock Text="EnumToggleStrip" FontSize="20" FontWeight="SemiBold"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                       Text="Auto-builds option list from the bound enum's type. Multi-select with [Flags] OR's into SelectedItem; otherwise SelectedItem is the most recent toggle."/>
+
+            <StackPanel Spacing="12">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Single-select (eDisplayMode)" FontSize="11" Opacity="0.7"/>
+                    <ajut:EnumToggleStrip SelectedItem="{x:Bind DisplayMode, Mode=TwoWay}"/>
+                </StackPanel>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Multi-select on a [Flags] enum (eToppings, default = Cheese | Pepperoni)" FontSize="11" Opacity="0.7"/>
+                    <ajut:EnumToggleStrip AllowMultiSelect="True" AllowNoSelection="True"
+                                          SelectedItem="{x:Bind Toppings, Mode=TwoWay}"/>
+                </StackPanel>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Exclusions: Visible1/2/3 only - HiddenViaBrowsable hidden by [Browsable(false)], HiddenViaAjutAttr hidden by [ExcludeFromSelection]" FontSize="11" Opacity="0.7" TextWrapping="Wrap"/>
+                    <ajut:EnumToggleStrip SelectedItem="{x:Bind ExclusionPick, Mode=TwoWay}"/>
+                </StackPanel>
+            </StackPanel>
+
+            <ui:ShowroomCodeDisplay CodeText="{x:Bind DemoCode}" Height="220"/>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

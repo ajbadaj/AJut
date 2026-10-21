@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AJutShowRoomWinUI.UI.Diagnostics.WindowChromePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <!-- Probe for the maximize/restore chrome desync. Maximize and restore keep the
+         OverlappedPresenter kind (only its State flips), so the AppWindow.Changed path
+         that only recomputed on a presenter-kind change left IsMaximizedOrFullScreened
+         and the title-bar border stale until a fullscreen round-trip forced a recompute.
+         This drives the real window through the cycle and checks the chrome tracks. -->
+    <ScrollViewer Padding="16">
+        <StackPanel Spacing="12" MaxWidth="1000" HorizontalAlignment="Left">
+            <TextBlock Text="Window Chrome" FontSize="20" FontWeight="SemiBold"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                       Text="Probes that drive the real main window and its ThemedWindowRootControl. Every probe writes to the output box at the bottom. Some of them maximize, restore or open and close windows while they run, so finish anything you care about in the other areas first."/>
+
+            <!-- ====[ Maximize / restore chrome sync ]============================== -->
+            <TextBlock Text="Maximize and restore" Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,0"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.75"
+                       Text="Drives the real window through maximize then restore and checks that ThemedWindowRootControl.IsMaximizedOrFullScreened and the title-bar border track the state at each step. The window will maximize and restore while the probe runs, and is left restored afterward. FAIL means the chrome went stale on the maximize/restore transition (the presenter kind never changed, so nothing recomputed)."/>
+            <Button x:Name="WindowChrome_MaxRestoreButton" Content="Probe: maximize -> restore chrome sync"
+                    Click="WindowChrome_OnMaximizeRestoreClicked"
+                    MinWidth="320" HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
+
+            <!-- ====[ Closing a themed-chrome window ]==============================
+                 A window carrying ThemedWindowRootControl had never actually been
+                 closed. This one is the only consumer of the chrome in here and it
+                 lives as long as the process, so the teardown path has never run.
+                 The failure is a fail fast inside Microsoft.UI.Windowing rather than
+                 a managed exception, so there is nothing to catch and the probe
+                 cannot print FAIL: if the showroom dies when you click it, that IS
+                 the failure. Surviving is the pass, and the weak ref tally on top
+                 catches the softer version where the window is pinned, not killed. -->
+            <TextBlock Text="Closing a themed-chrome window" Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,0"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.75"
+                       Text="Second probe: opens a child window carrying its own ThemedWindowRootControl, gives it a real activate / deactivate pass, then closes it. The app hard-crashing when you click either of these is the failure being tested for, so save anything you care about in the other tabs first. Run them in order - the first disconnects the chrome the way a careful consumer would, the second skips that call, which is what most consumers will actually do."/>
+            <Button x:Name="WindowChrome_CloseThemedWindowButton" Content="Probe: close a themed-chrome window (disconnected first)"
+                    Click="WindowChrome_OnCloseThemedWindowClicked"
+                    MinWidth="320" HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
+            <Button x:Name="WindowChrome_CloseThemedWindowNoDisconnectButton" Content="Probe: close a themed-chrome window (never disconnected)"
+                    Click="WindowChrome_OnCloseThemedWindowNoDisconnectClicked"
+                    MinWidth="320" HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
+
+            <!-- ====[ Title bar pointer reach ]====================================
+                 The one thing reading the source cannot settle: whether pointer
+                 input reaches this control over the native minimize / maximize /
+                 close strip. If it never does, the CloseHover branch cannot fire
+                 there whatever the geometry says, and the fix is a different fix. -->
+            <TextBlock Text="Title bar pointer reach" Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,0"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.75"
+                       Text="Third probe, a measurement rather than a check: click Start, sweep the pointer slowly across the whole title bar including out over the minimize / maximize / close buttons and back, then click Stop. It reports how far right the control actually receives pointer input, and which hover bands that reaches."/>
+            <Button x:Name="WindowChrome_CaptureTitleBarPointerButton" Content="Probe: title bar pointer reach"
+                    Click="WindowChrome_OnCaptureTitleBarPointerClicked"
+                    MinWidth="320" HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
+
+            <!-- ====[ Non-client pointer events ]==================================
+                 The system owns the pointer while it is over its own caption buttons,
+                 so the XAML pointer events on the chrome never fire there. The
+                 window's InputNonClientPointerSource is the only thing that reports
+                 that input, region by region, and the first-party close hover is
+                 built on it. This listens to the same source and shows what arrives. -->
+            <TextBlock Text="Non-client pointer events" Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,0"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.75"
+                       Text="The mechanism the first-party close hover depends on. The system owns the pointer over its own minimize, maximize and close buttons, so the chrome's XAML pointer events never see a hover there; the window's non-client pointer source is the only way it can. Click Start, sweep the pointer across the title bar and over the three system buttons, then click Stop. Each (event, region) pair is logged once as it first arrives, with a count per region in the summary, so you can see exactly which regions report on this machine. The summary also prints the chrome's HasSeenNonClientCaptionInput, LastState and IsHoveringOverClose. If Close never shows up here, the close hover cannot work whatever the chrome does with it."/>
+            <Button x:Name="WindowChrome_NonClientWatchButton" Content="Probe: non-client pointer events (start)"
+                    Click="WindowChrome_OnNonClientWatchClicked"
+                    MinWidth="320" HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
+
+            <!-- ====[ Chrome state watch ]=========================================
+                 LastState and IsHoveringOverClose are the whole chrome state machine,
+                 and the window border is pushed from them. Watching the two change
+                 with the border color beside each change is the direct read on
+                 whether the border actually goes red on close hover. -->
+            <TextBlock Text="Chrome state watch" Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,0"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.75"
+                       Text="Click Start, then move the pointer around the title bar, over the system buttons, in and out of the window, and switch to another window and back. Every change of the chrome's LastState and IsHoveringOverClose is logged with a timestamp and the window root border color at that moment (when the border brush is a solid color), so you can confirm the border goes to the close-hover color while the pointer is over the close button and comes back when it leaves. Click Stop to end the watch."/>
+            <Button x:Name="WindowChrome_StateWatchButton" Content="Probe: chrome state watch (start)"
+                    Click="WindowChrome_OnStateWatchClicked"
+                    MinWidth="320" HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
+
+            <!-- ====[ Drag rectangle customizer readiness ]========================
+                 ResetTitleBarDragRectangles is meant to wait on a customizer that says
+                 it is not ready yet, by subscribing to its ready event and generating
+                 when that fires. This checks that the wait actually happens. -->
+            <TextBlock Text="Drag rectangle customizer readiness" Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,8,0,0"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.75"
+                       Text="Installs a TitleBarDragRectanglesCustomizer that starts not ready, calls ResetTitleBarDragRectangles on the chrome, then flips the customizer ready and raises its ReadyToGenerateTitleBarDragRectangles event. PASS means GenerateTitleBarDragRectangles was called exactly once, after the event: the chrome subscribed while the customizer was not ready and generated when it said so. FAIL means it was never called: nothing subscribed while the customizer was not ready, so a customizer that is not ready at Reset time never gets its drag rectangles applied and the title bar is not draggable until something else triggers a reset. The customizer is removed and the window's real drag regions are put back when the probe ends."/>
+            <Button x:Name="WindowChrome_CustomizerReadinessButton" Content="Probe: drag rectangle customizer readiness"
+                    Click="WindowChrome_OnCustomizerReadinessClicked"
+                    MinWidth="320" HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
+
+            <Grid Margin="0,8,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="Output" VerticalAlignment="Center" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                <Button Grid.Column="1" Content="Clear" Click="WindowChrome_OnClearOutputClicked"/>
+            </Grid>
+            <TextBox x:Name="WindowChrome_Output"
+                     IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                     IsSpellCheckEnabled="False" FontFamily="Consolas" FontSize="12"
+                     Height="260"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                     Text=""/>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

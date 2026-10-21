@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AJutShowRoomWinUI.UI.Diagnostics.ToggleStripReprosPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ajut="using:AJut.UX.Controls"
+    mc:Ignorable="d">
+
+    <ScrollViewer Padding="16">
+        <StackPanel Spacing="12" MaxWidth="1000" HorizontalAlignment="Left">
+            <TextBlock Text="ToggleStrip bug repros" FontSize="20" FontWeight="SemiBold"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                       Text="Two repros kept around so a regression shows up the moment it lands: programmatic SelectedItem with a boxed enum, and SelectionChanged firing on every standalone deselect."/>
+
+            <!-- Bug repro: programmatic SelectedItem with boxed enum -->
+            <StackPanel Spacing="4" Margin="0,12,0,0">
+                <TextBlock Text="Programmatic SelectedItem (enum bug repro)" FontSize="11" Opacity="0.7"/>
+                <TextBlock Text="Click the button to set SelectedItem to 'Number' programmatically. With the bug, it stays on 'Text'." TextWrapping="Wrap" FontSize="11" Opacity="0.5"/>
+                <ajut:ToggleStrip x:Name="ToggleStripEnumBugRepro"
+                                  SelectedItem="{x:Bind SelectedEditorMode, Mode=TwoWay}"/>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="Set to Number" Click="EnumBugRepro_OnSetNumber"/>
+                    <Button Content="Set to Color" Click="EnumBugRepro_OnSetColor"/>
+                    <Button Content="Set to Text" Click="EnumBugRepro_OnSetText"/>
+                    <TextBlock x:Name="EnumBugReproStatus" VerticalAlignment="Center" Opacity="0.7"/>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Bug repro: SelectionChanged must fire on every standalone deselect -->
+            <StackPanel Spacing="4" Margin="0,12,0,0">
+                <TextBlock Text="SelectionChanged on deselect (repro)" FontSize="11" Opacity="0.7"/>
+                <TextBlock Text="Multi-select: select two, click one off - the counter must tick. Single-select + allow-none: select one, click it off to empty - the counter must tick there too. Both strips share the one counter." TextWrapping="Wrap" FontSize="11" Opacity="0.5"/>
+                <ajut:ToggleStrip x:Name="ToggleStripSelectionChangedRepro"
+                                  AllowMultiSelect="True" AllowNoSelection="True"
+                                  SelectionChanged="ToggleStripSelectionChangedRepro_OnSelectionChanged"/>
+                <ajut:ToggleStrip x:Name="ToggleStripSingleSelectNoneRepro"
+                                  AllowNoSelection="True"
+                                  SelectionChanged="ToggleStripSelectionChangedRepro_OnSelectionChanged"/>
+                <TextBlock x:Name="ToggleStripSelectionChangedStatus" Opacity="0.8" Text="SelectionChanged fired 0 times"/>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

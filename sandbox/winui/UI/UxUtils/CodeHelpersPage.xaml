@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AJutShowRoomWinUI.UI.UxUtils.CodeHelpersPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="using:AJutShowRoomWinUI.UI"
+    mc:Ignorable="d">
+
+    <ScrollViewer Padding="16">
+        <StackPanel Spacing="12" MaxWidth="1000" HorizontalAlignment="Left">
+            <TextBlock Text="Code helpers" FontSize="20" FontWeight="SemiBold"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                       Text="The C# side of AJut.UX: the helpers that take a class of boilerplate off a control or a page. Each one below is in use on this page, so the demo is the page itself."/>
+
+            <!-- ====[ DPUtils ]==== -->
+            <TextBlock Text="DPUtils: dependency properties on one line" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                       Text="DPUtils registers a dependency property from a lambda naming the CLR property, so the name, the owner type and the property type are never typed twice and never drift. A default value and a typed change handler are optional. Every property this page binds to below is registered this way; the code is lifted straight from this page."/>
+            <ui:ShowroomCodeDisplay CodeText="{x:Bind DpUtilsCode}" Height="220"/>
+
+            <!-- ====[ DependencyObjectXT ]==== -->
+            <TextBlock Text="DependencyObjectXT: walking the visual tree" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                       Text="Extension methods on any DependencyObject for the visual tree: GetFirstChildOf finds the first descendant of a type, GetFirstParentOf the first ancestor, SearchParentsOf every ancestor of a type, and GetVisualChildren the direct children. The button runs them against this page's own tree."/>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button x:Name="WalkTreeButton" Content="Walk the tree from this button" Click="WalkTree_OnClick"/>
+                <TextBox x:Name="FirstTextBoxOnThePage" Text="The first TextBox on the page" Width="260"/>
+            </StackPanel>
+            <TextBlock Text="{x:Bind TreeOutput, Mode=OneWay}" FontFamily="Consolas" FontSize="12" TextWrapping="Wrap"/>
+            <ui:ShowroomCodeDisplay CodeText="{x:Bind TreeWalkCode}" Height="200"/>
+
+            <!-- ====[ CoerceUtils ]==== -->
+            <TextBlock Text="CoerceUtils: a string, a Color, a Brush into whatever the DP wants" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                       Text="CoerceUtils turns loosely typed input into the XAML types: CoerceThicknessFrom and CoerceCornerRadiusFrom read 1, 2 or 4 comma separated numbers, CoerceBrushFrom takes a Brush, a Color, a hex string or a gradient string, CoerceColorFrom and TryGetColorFromString read hex and named colors, and CoerceImageSourceFrom and CoerceUriSourceFrom build an ms-appx source from a path. The CallbackFor variants are ready to drop into a DP's coercion. Type into the boxes and apply."/>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBox x:Name="ThicknessText" Header="Border thickness" Text="4,1" Width="160"/>
+                <TextBox x:Name="CornerRadiusText" Header="Corner radius" Text="12,4" Width="160"/>
+                <Button Content="Apply" Click="ApplyCoercion_OnClick" VerticalAlignment="Bottom"/>
+            </StackPanel>
+            <Border Width="420" Height="64" HorizontalAlignment="Left" BorderBrush="{ThemeResource SystemControlHighlightAccentBrush}"
+                    BorderThickness="{x:Bind PreviewThickness, Mode=OneWay}" CornerRadius="{x:Bind PreviewCornerRadius, Mode=OneWay}"/>
+            <TextBlock Text="{x:Bind CoercionOutput, Mode=OneWay}" FontFamily="Consolas" FontSize="12" TextWrapping="Wrap"/>
+            <ui:ShowroomCodeDisplay CodeText="{x:Bind CoerceCode}" Height="200"/>
+
+            <!-- ====[ Color math ]==== -->
+            <TextBlock Text="Color math: lighten, darken, and a foreground that reads" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                       Text="AJutColorHelper in AJut.UX does the math on bytes so WPF and WinUI3 share it, and ColorMathExtensions puts it on the WinUI3 Color as extension methods: Lighten and Darken move HSL lightness, GetRelativeLuminance and GetContrastRatio are the WCAG numbers, IsDark says which side of the readable crossover a color sits, and PickReadableForeground chooses near white or near black for text on it. Type a base color and drag the slider."/>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <TextBox x:Name="BaseColorText" Header="Base color" Text="#3A7BD5" Width="160" TextChanged="BaseColorText_OnTextChanged"/>
+                <Slider Header="Lightness delta" Minimum="-0.5" Maximum="0.5" StepFrequency="0.05" Width="240" Value="{x:Bind LightnessDelta, Mode=TwoWay}"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <Border Width="200" Height="64" CornerRadius="4" Background="{x:Bind BaseBrush, Mode=OneWay}">
+                    <TextBlock Text="Base" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{x:Bind BaseForegroundBrush, Mode=OneWay}"/>
+                </Border>
+                <Border Width="200" Height="64" CornerRadius="4" Background="{x:Bind AdjustedBrush, Mode=OneWay}">
+                    <TextBlock Text="Adjusted" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{x:Bind AdjustedForegroundBrush, Mode=OneWay}"/>
+                </Border>
+            </StackPanel>
+            <TextBlock Text="{x:Bind ColorMathReport, Mode=OneWay}" FontFamily="Consolas" FontSize="12" TextWrapping="Wrap"/>
+            <ui:ShowroomCodeDisplay CodeText="{x:Bind ColorMathCode}" Height="220"/>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

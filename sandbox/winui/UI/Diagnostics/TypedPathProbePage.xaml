@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AJutShowRoomWinUI.UI.Diagnostics.TypedPathProbePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ajut="using:AJut.UX.Controls"
+    mc:Ignorable="d">
+
+    <ScrollViewer Padding="16">
+        <StackPanel Spacing="12" MaxWidth="1000" HorizontalAlignment="Left">
+            <TextBlock Text="Typed-path validation probe" FontSize="20" FontWeight="SemiBold"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                       Text="Checks that PathSelectionControl revalidates when a path is typed rather than browsed. PASS means a missing folder flips IsPathValid false with a reason and an existing one flips it back. FAIL means a typed edit moves SelectedPath but never reruns validation."/>
+
+            <!-- ====[ Typed-path validation probe ]==================================
+                 Pushes text straight into the control's inner TextBox, which is the
+                 same route a keystroke takes, and checks the control revalidates. A
+                 folder that does not exist has to flip IsPathValid false and produce
+                 a reason; an existing one has to flip it back. FAIL means a typed
+                 edit moves SelectedPath but never reruns validation, so the red
+                 border can only ever come from a browsed path, and browsing cannot
+                 produce a path that is missing. -->
+            <StackPanel Spacing="4" MaxWidth="500" HorizontalAlignment="Left">
+                <TextBlock Text="Typed-path validation probe" FontSize="11" Opacity="0.7"/>
+                <ajut:PathSelectionControl x:Name="PathProbe_Control"
+                                           PathType="Folder"
+                                           UnsetTextPrompt="The probe types into this one"
+                                           TreatNonExistentPathAsInvalid="True"/>
+                <Button Content="Probe: typed path revalidates"
+                        Click="PathProbe_OnTypedPathClicked"
+                        HorizontalAlignment="Left" HorizontalContentAlignment="Left"/>
+                <TextBox x:Name="PathProbe_Output"
+                         IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                         IsSpellCheckEnabled="False" FontFamily="Consolas" FontSize="12"
+                         Height="130"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                         Text=""/>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

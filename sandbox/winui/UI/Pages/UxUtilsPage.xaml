@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AJutShowRoomWinUI.UI.Pages.UxUtilsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+    <!-- One area of the showroom: the pane lists its pages, the frame shows the selected one. Each item's Tag is
+         the full type name of the page it opens; ShowroomNavigation does the rest. -->
+    <NavigationView x:Name="AreaNav" PaneDisplayMode="Left" IsPaneOpen="True" OpenPaneLength="240" CompactModeThresholdWidth="0" ExpandedModeThresholdWidth="0"
+                    IsSettingsVisible="False" IsBackButtonVisible="Collapsed" IsPaneToggleButtonVisible="False"
+                    SelectionChanged="AreaNav_OnSelectionChanged" Loaded="AreaNav_OnLoaded">
+        <NavigationView.PaneHeader>
+            <StackPanel Margin="12,8,12,4">
+                <TextBlock Text="UX Utils" FontSize="18" FontWeight="SemiBold"/>
+                <TextBlock Text="The helpers around the controls: converters for markup, and the code-side utilities that save a class each." TextWrapping="Wrap" Opacity="0.7" FontSize="12"/>
+            </StackPanel>
+        </NavigationView.PaneHeader>
+        <NavigationView.MenuItems>
+            <NavigationViewItem Content="Converters" Tag="AJutShowRoomWinUI.UI.UxUtils.ConvertersPage"/>
+            <NavigationViewItem Content="Code Helpers" Tag="AJutShowRoomWinUI.UI.UxUtils.CodeHelpersPage"/>
+        </NavigationView.MenuItems>
+        <NavigationView.PaneFooter>
+            <TextBlock Margin="12,4,12,12" TextWrapping="Wrap" Opacity="0.6" FontSize="12" Text="WPF only, shown in the WPF showroom: the XTA attached properties (BorderXTA, ClickableXTA, ScrollXTA and friends)."/>
+        </NavigationView.PaneFooter>
+        <Frame x:Name="AreaFrame"/>
+    </NavigationView>
+</Page>

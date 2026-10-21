@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AJutShowRoomWinUI.UI.Controls.GridSplitterPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ajut="using:AJut.UX.Controls"
+    xmlns:ui="using:AJutShowRoomWinUI.UI"
+    mc:Ignorable="d">
+
+    <ScrollViewer Padding="16">
+        <StackPanel Spacing="12" MaxWidth="1000" HorizontalAlignment="Left">
+            <TextBlock Text="GridSplitter" FontSize="20" FontWeight="SemiBold"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                       Text="A draggable splitter that resizes the grid columns or rows on either side of it. Place it in the cell it should sit against, align it to the edge it splits, and set Thickness for the grab width. Drag the vertical one between the panes, and the horizontal one inside the right pane."/>
+
+            <Grid Height="240" Width="700" HorizontalAlignment="Left">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <Border Margin="0,0,3,0" BorderBrush="#80808080" BorderThickness="1" Padding="6">
+                    <TextBlock TextWrapping="WrapWholeWords" Text="This is the left side. Drag the splitter on its right edge to change how the two panes share the width."/>
+                </Border>
+                <ajut:GridSplitter HorizontalAlignment="Right" VerticalAlignment="Stretch" Margin="1"/>
+                <Grid Grid.Column="1" Margin="3,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <TextBlock Margin="3,0" TextWrapping="WrapWholeWords" Text="This is the right side, and it shows the testing of a Grid Splitter (which WinUI does not ship)"/>
+                    <ajut:GridSplitter Thickness="5" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" />
+                    <TextBlock Grid.Row="1" Margin="3,0" TextWrapping="WrapWholeWords" Text="This is the right side, but the 'Bottom split'"/>
+                </Grid>
+            </Grid>
+
+            <ui:ShowroomCodeDisplay CodeText="{x:Bind DemoCode}" Height="220"/>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

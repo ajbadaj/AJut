@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AJutShowRoomWinUI.UI.Strategies.LayeredOverridesPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="using:AJutShowRoomWinUI.UI"
+    mc:Ignorable="d">
+
+    <ScrollViewer Padding="16">
+        <StackPanel Spacing="12" MaxWidth="1000" HorizontalAlignment="Left">
+            <TextBlock Text="Layered overrides with Stratabase" FontSize="20" FontWeight="SemiBold"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                       Text="Maybe you want a value with a default underneath and an override on top, where clearing the override falls back to the default instead of losing it. A document's defaults with the user's edits over them, a preset with a session's tweaks, a base theme with a per-window change. Here it is, built with Stratabase from AJut.Core: one baseline layer, as many override layers as you ask for, and a property access that always resolves to the highest layer with a value set. Flip the override on and off and watch the resolved value and the winning layer."/>
+
+            <Grid ColumnSpacing="24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- ====[ The two layers ]==== -->
+                <StackPanel Spacing="8">
+                    <TextBox Header="Baseline title (the default)" Text="{x:Bind BaselineTitle, Mode=TwoWay}"/>
+                    <ToggleSwitch Header="Override layer 0" OnContent="Set" OffContent="Cleared" IsOn="{x:Bind IsOverrideOn, Mode=TwoWay}"/>
+                    <TextBox Header="Override title (wins while set)" Text="{x:Bind OverrideTitle, Mode=TwoWay}" IsEnabled="{x:Bind IsOverrideOn, Mode=OneWay}"/>
+                </StackPanel>
+
+                <!-- ====[ What resolves ]==== -->
+                <Border Grid.Column="1" BorderThickness="1" BorderBrush="{ThemeResource SystemControlForegroundBaseMediumBrush}" CornerRadius="4" Padding="12" VerticalAlignment="Top">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Resolved through the property access" FontWeight="SemiBold"/>
+                        <TextBlock Text="{x:Bind ResolvedTitle, Mode=OneWay}" FontSize="22"/>
+                        <TextBlock Text="{x:Bind WinningLayerText, Mode=OneWay}" Opacity="0.8"/>
+                        <TextBlock Text="{x:Bind ChangeLogText, Mode=OneWay}" FontFamily="Consolas" FontSize="12" Opacity="0.8" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <ui:ShowroomCodeDisplay CodeText="{x:Bind DemoCode}" Height="260"/>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

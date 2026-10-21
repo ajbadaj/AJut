@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AJutShowRoomWinUI.UI.Controls.FlatTreeListControlPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ajut="using:AJut.UX.Controls"
+    xmlns:ui="using:AJutShowRoomWinUI.UI"
+    mc:Ignorable="d">
+
+    <Grid Padding="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*" MinHeight="200"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="220" MinHeight="80"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Flat tree list" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,8"/>
+        <TextBlock Grid.Row="1" TextWrapping="Wrap" Opacity="0.8" Margin="0,0,0,12"
+                   Text="FlatTreeListControl renders a tree as a flat list of rows: expand and collapse, multi-level nesting, extended selection, drag and drop reordering, and a choice of sibling display order. Each sub-tab below is one of those scenarios."/>
+
+        <TabView Grid.Row="2" CanDragTabs="False" CanReorderTabs="False" IsAddTabButtonVisible="False" TabWidthMode="SizeToContent">
+            <TabView.Resources>
+                <ResourceDictionary>
+                    <x:Double x:Key="AJut_Double_TabViewStrokeThickness">1.0</x:Double>
+                    <SolidColorBrush x:Key="TabViewBorderBrush" Color="{ThemeResource AJut_Color_Shadow}"/>
+                </ResourceDictionary>
+            </TabView.Resources>
+
+            <!-- Overview -->
+            <TabViewItem Header="Overview" IsClosable="False" VerticalContentAlignment="Stretch">
+                <TabViewItem.Content>
+                    <Grid Margin="8">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="FlatTreeListControl - expand/collapse tree nodes, multi-level nesting" FontStyle="Italic" Margin="0,0,0,4"/>
+                        <TextBlock Grid.Row="1" Text="Selection indicator: 4px colored strip on the left edge (AJut signature selection style). Row background receives only a subtle tint." TextWrapping="Wrap" Opacity="0.7" Margin="0,0,0,8"/>
+                        <ajut:FlatTreeListControl Grid.Row="2"
+                                                  Root="{x:Bind TreeRoot}"
+                                                  IncludeRoot="True"
+                                                  StartItemsExpanded="True">
+                            <ajut:FlatTreeListControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Path=Source.NodeName}" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </ajut:FlatTreeListControl.ItemTemplate>
+                        </ajut:FlatTreeListControl>
+                    </Grid>
+                </TabViewItem.Content>
+            </TabViewItem>
+
+            <!-- Drag/Drop -->
+            <TabViewItem Header="Drag/Drop" IsClosable="False" VerticalContentAlignment="Stretch">
+                <TabViewItem.Content>
+                    <Grid Margin="8">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="FlatTreeListControl - Drag and Drop Reordering + SetSelection test" FontStyle="Italic" Margin="0,0,0,4"/>
+                        <TextBlock Grid.Row="1" Text="Drag items to reorder. X position determines target depth. Blue insertion line shows where item will land; dotted connector shows target parent." TextWrapping="Wrap" Opacity="0.7" Margin="0,0,0,8"/>
+                        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="6" Margin="0,0,0,8">
+                            <Button Content="SetSelection: 3 scattered items" Click="SetSelectionScattered_OnClick"/>
+                            <Button Content="SetSelection: all descendants of Scenes" Click="SetSelectionScenesDescendants_OnClick"/>
+                            <Button Content="SetSelection: empty" Click="SetSelectionEmpty_OnClick"/>
+                            <TextBlock x:Name="SetSelectionStatus" VerticalAlignment="Center" Opacity="0.8"/>
+                        </StackPanel>
+                        <ajut:FlatTreeListControl Grid.Row="3"
+                                                  x:Name="DragDropTree"
+                                                  Root="{x:Bind DragDropTreeRoot}"
+                                                  IncludeRoot="True"
+                                                  StartItemsExpanded="True"
+                                                  IsDragDropReorderEnabled="True"
+                                                  SelectionMode="Extended"
+                                                  SelectionChanged="DragDropTree_OnSelectionChanged">
+                            <ajut:FlatTreeListControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Path=Source.NodeName}" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </ajut:FlatTreeListControl.ItemTemplate>
+                        </ajut:FlatTreeListControl>
+                    </Grid>
+                </TabViewItem.Content>
+            </TabViewItem>
+
+            <!-- Sibling Order -->
+            <TabViewItem Header="Sibling Order" IsClosable="False" VerticalContentAlignment="Stretch">
+                <TabViewItem.Content>
+                    <Grid Margin="8">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.ColumnSpan="3" Text="FlatTreeListControl SiblingDisplayOrder - left=Forward, right=Reversed. Both wrap the same source tree shape; drag-drop should produce identical source-space InsertIndex values."
+                                   TextWrapping="Wrap" FontStyle="Italic" Opacity="0.75" Margin="0,0,0,4"/>
+                        <TextBlock Grid.Row="1" Grid.ColumnSpan="3" Text="Drop somewhere and watch the log below for the chosen TargetParent + InsertIndex (source-space)."
+                                   TextWrapping="Wrap" Opacity="0.7" Margin="0,0,0,8"/>
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Forward" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <TextBlock Grid.Row="2" Grid.Column="2" Text="Reversed (layers-panel style)" FontWeight="SemiBold" Margin="0,0,0,4"/>
+
+                        <Grid Grid.Row="3" Grid.Column="0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="120"/>
+                            </Grid.RowDefinitions>
+                            <ajut:FlatTreeListControl Grid.Row="0"
+                                                      x:Name="SiblingOrderForwardTree"
+                                                      Root="{x:Bind SiblingOrderForwardRoot}"
+                                                      IncludeRoot="True"
+                                                      StartItemsExpanded="True"
+                                                      IsDragDropReorderEnabled="True"
+                                                      SelectionMode="Extended"
+                                                      SiblingDisplayOrder="Forward"
+                                                      DragDropReorderRequested="SiblingOrderTree_OnReorder">
+                                <ajut:FlatTreeListControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Path=Source.NodeName}" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </ajut:FlatTreeListControl.ItemTemplate>
+                            </ajut:FlatTreeListControl>
+                            <TextBox Grid.Row="1" x:Name="SiblingOrderForwardLog" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                                     FontFamily="Consolas" FontSize="11" Margin="0,4,0,0"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                        </Grid>
+
+                        <Grid Grid.Row="3" Grid.Column="2">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="120"/>
+                            </Grid.RowDefinitions>
+                            <ajut:FlatTreeListControl Grid.Row="0"
+                                                      x:Name="SiblingOrderReversedTree"
+                                                      Root="{x:Bind SiblingOrderReversedRoot}"
+                                                      IncludeRoot="True"
+                                                      StartItemsExpanded="True"
+                                                      IsDragDropReorderEnabled="True"
+                                                      SelectionMode="Extended"
+                                                      SiblingDisplayOrder="Reversed"
+                                                      DragDropReorderRequested="SiblingOrderTree_OnReorder">
+                                <ajut:FlatTreeListControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Path=Source.NodeName}" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </ajut:FlatTreeListControl.ItemTemplate>
+                            </ajut:FlatTreeListControl>
+                            <TextBox Grid.Row="1" x:Name="SiblingOrderReversedLog" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                                     FontFamily="Consolas" FontSize="11" Margin="0,4,0,0"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                        </Grid>
+                    </Grid>
+                </TabViewItem.Content>
+            </TabViewItem>
+        </TabView>
+
+        <!-- The tree takes the page; the code box sits under a splitter so it can be pulled up when the markup matters more than the rows. -->
+        <ajut:GridSplitter Grid.Row="3" Orientation="Rows" Thickness="6" HorizontalAlignment="Stretch" Margin="0,6,0,6"/>
+        <ui:ShowroomCodeDisplay Grid.Row="4" CodeText="{x:Bind DemoCode}"/>
+    </Grid>
+</Page>

@@ -51,7 +51,7 @@
                                 <Viewbox Width="120">
                                     <ajut:Svg Source="Images/PenguinExample.svg"/>
                                 </Viewbox>
-                                <TextBlock Text="Check out this ↑ SVG" FontSize="16"/>
+                                <TextBlock Text="Check out this SVG" FontSize="16"/>
                             </StackPanel>
                             <ajut:NumericEditor VerticalAlignment="Center" Width="100" Margin="50,0,0,0"/>
                             <ajut:ToggleStrip VerticalAlignment="Center" Margin="50,0,0,0">
@@ -70,7 +70,7 @@
                                                     TextBlockTextTrimming="CharacterEllipsis"/>
                         </ajut:BumpStack>
                     </Grid>
-                    <Button Grid.Row="2" Content="Explore standalone controls →" HorizontalAlignment="Right" Padding="15,10" FontSize="14" Click="NavControls_OnClick"/>
+                    <Button Grid.Row="2" Content="Explore controls" HorizontalAlignment="Right" Padding="15,10" FontSize="14" Click="NavControls_OnClick"/>
                 </Grid>
             </TabItem>
             <TabItem Header="Content Flows" FontSize="15" Padding="10,3">
@@ -89,10 +89,10 @@
                             </TextBlock.Inlines>
                         </TextBlock>
                     </StackPanel>
-                    <Button Grid.Row="1" Content="Explore content flows →" HorizontalAlignment="Right" Padding="15,10" FontSize="14" Click="NavContentFlows_OnClick"/>
+                    <Button Grid.Row="1" Content="Explore content flows" HorizontalAlignment="Right" Padding="15,10" FontSize="14" Click="NavContentFlows_OnClick"/>
                 </Grid>
             </TabItem>
-            <TabItem Header="Utilities" FontSize="15" Padding="10,3">
+            <TabItem Header="UX Utils" FontSize="15" Padding="10,3">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition />
@@ -102,16 +102,17 @@
                         <TextBlock Text="UX Utils" FontSize="18"/>
                         <TextBlock TextWrapping="WrapWithOverflow">
                             <TextBlock.Inlines>
-                                <Run Text="While controls server many utilities - some utilities are harder to show though support display and management of UI. In this section we'll explore"/>
-                                <Run Text="Attached Properties, Converters," FontWeight="Bold"/>
-                                <Run Text="and other"/>
-                                <Run Text="supporting utilities" FontWeight="Bold"/>
-                                <Run Text="and"/>
-                                <Run Text="extensions to ui." FontWeight="Bold"/>
+                                <Run Text="Not everything in ajut.ux.wpf is a control. This section covers the"/>
+                                <Run Text="converters" FontWeight="Bold"/>
+                                <Run Text="(every one of them a markup extension, used inline with no resource entry), the"/>
+                                <Run Text="attached properties" FontWeight="Bold"/>
+                                <Run Text="(corner radius, click tracking, scroll state, headered control styling), and the"/>
+                                <Run Text="code helpers" FontWeight="Bold"/>
+                                <Run Text="(DPUtils and APUtils registration, visual tree walkers, CoerceUtils, and color math). Every example is live, with its code beside it."/>
                             </TextBlock.Inlines>
                         </TextBlock>
                     </StackPanel>
-                    <Button Grid.Row="1" Content="Explore UX Utils →" HorizontalAlignment="Right" Padding="15,10" FontSize="14" Click="NavUxUtils_OnClick"/>
+                    <Button Grid.Row="1" Content="Explore UX Utils" HorizontalAlignment="Right" Padding="15,10" FontSize="14" Click="NavUxUtils_OnClick"/>
                 </Grid>
             </TabItem>
             <TabItem Header="Strategies" FontSize="15" Padding="10,3">
@@ -124,11 +125,36 @@
                         <TextBlock Text="Strategies" FontSize="18"/>
                         <TextBlock TextWrapping="WrapWithOverflow">
                             <TextBlock.Inlines>
-                                <Run Text="The final notable section of the ajut.ux library are the strategies employed. There are several ideas, and supporting examples inside that might interest you! In addition some supporting technologies that help make these easy to build and develop!"/>
+                                <Run Text="Worked examples of things an app usually needs, each one built the AJut way and shown with its code:"/>
+                                <Run Text="undo and redo" FontWeight="Bold"/>
+                                <Run Text="with UndoRedoManager,"/>
+                                <Run Text="settings saved as JSON" FontWeight="Bold"/>
+                                <Run Text="with JsonHelper,"/>
+                                <Run Text="layered overrides" FontWeight="Bold"/>
+                                <Run Text="with Stratabase, and"/>
+                                <Run Text="editing any object" FontWeight="Bold"/>
+                                <Run Text="with the PropertyGrid and its attributes."/>
                             </TextBlock.Inlines>
                         </TextBlock>
                     </StackPanel>
-                    <Button Grid.Row="1" Content="Explore UX Strategies →" HorizontalAlignment="Right" Padding="15,10" FontSize="14" Click="NavUxStrats_OnClick"/>
+                    <Button Grid.Row="1" Content="Explore strategies" HorizontalAlignment="Right" Padding="15,10" FontSize="14" Click="NavUxStrats_OnClick"/>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Debug" FontSize="15" Padding="10,3">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition Height="auto"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Margin="5">
+                        <TextBlock Text="Debug" FontSize="18"/>
+                        <TextBlock TextWrapping="WrapWithOverflow">
+                            <TextBlock.Inlines>
+                                <Run Text="Probes and diagnostics for the showroom itself: the current theme state and loaded AJut versions, and a string-to-brush swatch for checking what a color or gradient string parses into."/>
+                            </TextBlock.Inlines>
+                        </TextBlock>
+                    </StackPanel>
+                    <Button Grid.Row="1" Content="Explore debug tools" HorizontalAlignment="Right" Padding="15,10" FontSize="14" Click="NavDebug_OnClick"/>
                 </Grid>
             </TabItem>
         </TabControl>

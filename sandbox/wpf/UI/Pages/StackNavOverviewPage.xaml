@@ -1,12 +1,116 @@
 ﻿<UserControl x:Class="TheAJutShowRoom.UI.Pages.StackNavOverviewPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:local="clr-namespace:TheAJutShowRoom.UI.Pages"
-             mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
-    <StackPanel Margin="20">
-        <TextBlock FontSize="18" TextWrapping="WrapWithOverflow" Text="⚠ Under construction: This will one day detail how to use StackNav stuff."/>
-    </StackPanel>
+             xmlns:ctrls="clr-namespace:TheAJutShowRoom.UI.Controls"
+             xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
+             xmlns:ajut_ap="clr-namespace:AJut.UX.AttachedProperties;assembly=AJut.UX.Wpf"
+             mc:Ignorable="d"
+             d:DesignHeight="450" d:DesignWidth="800"
+             x:Name="Self">
+    <DockPanel Margin="20">
+        <StackPanel DockPanel.Dock="Top">
+            <TextBlock Text="Stack Nav" FontSize="18"/>
+            <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0"
+                       Text="StackNav is a page stack with a header, a drawer, and cover overlays, and it is what the showroom itself runs on. The pieces:"/>
+            <TextBlock TextWrapping="WrapWithOverflow" Margin="15,5,0,0">
+                <TextBlock.Inlines>
+                    <Run Text="StackNavFlowController" FontFamily="Consolas" FontWeight="Bold"/>
+                    <Run Text="is the stack. Push a page with"/>
+                    <Run Text="GenerateAndPushDisplay&lt;T&gt;()" FontFamily="Consolas"/>
+                    <Run Text="and close the top one with"/>
+                    <Run Text="PopDisplay()." FontFamily="Consolas"/>
+                    <Run Text="It also opens and closes the drawer and reports"/>
+                    <Run Text="CanGoBack." FontFamily="Consolas"/>
+                </TextBlock.Inlines>
+            </TextBlock>
+            <TextBlock TextWrapping="WrapWithOverflow" Margin="15,3,0,0">
+                <TextBlock.Inlines>
+                    <Run Text="StackNavDisplay" FontFamily="Consolas" FontWeight="Bold"/>
+                    <Run Text="is the control that renders a controller: header bar with back and drawer buttons, the drawer, the current page, and the busy wait and popover overlays. Give it a controller through its"/>
+                    <Run Text="Navigator" FontFamily="Consolas"/>
+                    <Run Text="property and it does the rest."/>
+                </TextBlock.Inlines>
+            </TextBlock>
+            <TextBlock TextWrapping="WrapWithOverflow" Margin="15,3,0,0">
+                <TextBlock.Inlines>
+                    <Run Text="IStackNavDisplayControl" FontFamily="Consolas" FontWeight="Bold"/>
+                    <Run Text="is what a page implements. It needs an empty constructor and"/>
+                    <Run Text="Setup(StackNavAdapter)," FontFamily="Consolas"/>
+                    <Run Text="which is where the page sets its"/>
+                    <Run Text="Title," FontFamily="Consolas"/>
+                    <Run Text="DrawerHeading," FontFamily="Consolas"/>
+                    <Run Text="and"/>
+                    <Run Text="DrawerDisplay" FontFamily="Consolas"/>
+                    <Run Text="on the adapter. The optional"/>
+                    <Run Text="GenerateState" FontFamily="Consolas"/>
+                    <Run Text="and"/>
+                    <Run Text="SetState" FontFamily="Consolas"/>
+                    <Run Text="carry page state across a cover: by default a covered page is thrown away and rebuilt from its type when it is shown again."/>
+                </TextBlock.Inlines>
+            </TextBlock>
+            <TextBlock TextWrapping="WrapWithOverflow" Margin="15,3,0,0">
+                <TextBlock.Inlines>
+                    <Run Text="StackNavAdapter" FontFamily="Consolas" FontWeight="Bold"/>
+                    <Run Text="is the page's handle on the system. Besides the title and drawer,"/>
+                    <Run Text="adapter.ShowPopover(...)" FontFamily="Consolas"/>
+                    <Run Text="shows an"/>
+                    <Run Text="IStackNavPopoverDisplay" FontFamily="Consolas"/>
+                    <Run Text="centered over the page and awaits its result, and"/>
+                    <Run Text="adapter.GenerateBusyWait(...)" FontFamily="Consolas"/>
+                    <Run Text="puts up the busy wait overlay until the returned tracker is disposed. The adapter's"/>
+                    <Run Text="Closing" FontFamily="Consolas"/>
+                    <Run Text="event lets a page refuse to be popped."/>
+                </TextBlock.Inlines>
+            </TextBlock>
+            <TextBlock TextWrapping="WrapWithOverflow" Margin="0,10,0,0" FontStyle="Italic"
+                       Text="Below is a second, independent StackNav running inside this page with its own controller. Push, pop, open the drawer, show a popover, and watch the busy wait, then read the code on the right."/>
+        </StackPanel>
+        <Grid Margin="0,10,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Border BorderThickness="2" BorderBrush="{DynamicResource AJut_Brush_GroupBorder}" ajut_ap:BorderXTA.CornerRadius="5">
+                <ajut:StackNavDisplay Navigator="{Binding ElementName=Self, Path=DemoNavigator, Mode=OneWay}" FixedDrawerWidth="180">
+                    <ajut:StackNavDisplay.Resources>
+                        <!-- The window's StackNavDisplay styles its header with the window chrome strip and the showroom title; this nested one takes a plain header -->
+                        <Style TargetType="{x:Type ajut:StackNavActiveHeaderPresenter}" BasedOn="{StaticResource {x:Type ajut:StackNavActiveHeaderPresenter}}">
+                            <Setter Property="AdditionalRightSideDisplay" Value="{x:Null}"/>
+                            <Setter Property="TitleTemplate">
+                                <Setter.Value>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" FontSize="16" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                        <Style TargetType="{x:Type ajut:StackNavActiveDrawerPresenter}" BasedOn="{StaticResource {x:Type ajut:StackNavActiveDrawerPresenter}}">
+                            <Setter Property="AdditionalBottomDisplay" Value="{x:Null}"/>
+                        </Style>
+                    </ajut:StackNavDisplay.Resources>
+                </ajut:StackNavDisplay>
+            </Border>
+            <TabControl Grid.Column="2" TabStripPlacement="Top">
+                <TabItem Header="Hosting (XAML)">
+                    <ctrls:BasicCodeDisplay CodeText="{Binding ElementName=Self, Path=HostingXamlCode, Mode=OneWay}"/>
+                </TabItem>
+                <TabItem Header="Hosting (C#)">
+                    <ctrls:BasicCodeDisplay CodeText="{Binding ElementName=Self, Path=HostingCSharpCode, Mode=OneWay}"/>
+                </TabItem>
+                <TabItem Header="Page A (C#)">
+                    <ctrls:BasicCodeDisplay CodeText="{Binding ElementName=Self, Path=PageACode, Mode=OneWay}"/>
+                </TabItem>
+                <TabItem Header="Page B (C#)">
+                    <ctrls:BasicCodeDisplay CodeText="{Binding ElementName=Self, Path=PageBCode, Mode=OneWay}"/>
+                </TabItem>
+                <TabItem Header="Drawer (C#)">
+                    <ctrls:BasicCodeDisplay CodeText="{Binding ElementName=Self, Path=DrawerCode, Mode=OneWay}"/>
+                </TabItem>
+            </TabControl>
+        </Grid>
+    </DockPanel>
 </UserControl>

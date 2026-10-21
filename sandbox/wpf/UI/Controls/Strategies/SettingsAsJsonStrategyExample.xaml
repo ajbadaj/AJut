@@ -1,0 +1,65 @@
+<UserControl x:Class="TheAJutShowRoom.UI.Controls.Strategies.SettingsAsJsonStrategyExample"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:TheAJutShowRoom.UI.Controls.Strategies"
+             xmlns:ctrls="clr-namespace:TheAJutShowRoom.UI.Controls"
+             xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
+             mc:Ignorable="d"
+             d:DesignHeight="450" d:DesignWidth="800"
+             x:Name="Self">
+    <DockPanel Margin="10">
+        <StackPanel DockPanel.Dock="Top">
+            <TextBlock Text="Maybe you want settings saved as JSON" FontSize="18"/>
+            <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,10">
+                <TextBlock.Inlines>
+                    <Run Text="Here it is, built with"/>
+                    <Run Text="AJut.Text.AJson.JsonHelper." FontFamily="Consolas" FontWeight="Bold"/>
+                    <Run Text="A settings class is plain properties, nothing to annotate. BuildJsonForObject turns an instance into a Json document, which ToString writes out, and ParseText plus BuildObjectForJson bring one back. A Json is also a Result, so"/>
+                    <Run Text="if (!json)" FontFamily="Consolas"/>
+                    <Run Text="is the error check and GetErrorReport says what went wrong. The showroom's own config on disk goes through exactly this path. Edit the settings, press Save to see the JSON, edit the JSON by hand, and press Load to push it back into the settings."/>
+                </TextBlock.Inlines>
+            </TextBlock>
+        </StackPanel>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <DockPanel>
+                <GroupBox DockPanel.Dock="Top" Header="Settings">
+                    <StackPanel>
+                        <DockPanel>
+                            <TextBlock Text="Display name:" Width="110" VerticalAlignment="Center"/>
+                            <TextBox Text="{Binding ElementName=Self, Path=Settings.DisplayName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,5,0,0">
+                            <TextBlock Text="Volume:" Width="110" VerticalAlignment="Center"/>
+                            <ajut:NumericEditor Value="{Binding ElementName=Self, Path=Settings.Volume, Mode=TwoWay}" Minimum="0" Maximum="100" Width="120" HorizontalAlignment="Left"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,5,0,0">
+                            <TextBlock Text="Auto save:" Width="110" VerticalAlignment="Center"/>
+                            <ajut:ToggleSwitchButton IsChecked="{Binding ElementName=Self, Path=Settings.AutoSave, Mode=TwoWay}" HorizontalAlignment="Left"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,5,0,0">
+                            <TextBlock Text="Startup page:" Width="110" VerticalAlignment="Center"/>
+                            <ajut:EnumComboBox SelectedItem="{Binding ElementName=Self, Path=Settings.StartupPage, Mode=TwoWay}" Width="160" HorizontalAlignment="Left"/>
+                        </DockPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <Button Content="Save to JSON" Padding="15,4" Click="Save_OnClick"/>
+                            <Button Content="Load from JSON" Padding="15,4" Margin="5,0,0,0" Click="Load_OnClick"/>
+                        </StackPanel>
+                        <TextBlock Margin="0,5,0,0" FontStyle="Italic" Text="{Binding ElementName=Self, Path=StatusText, Mode=OneWay}"/>
+                    </StackPanel>
+                </GroupBox>
+                <GroupBox Header="JSON" Margin="0,10,0,0">
+                    <TextBox AcceptsReturn="True" FontFamily="Consolas" VerticalScrollBarVisibility="Auto" BorderThickness="0"
+                             Text="{Binding ElementName=Self, Path=JsonText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                </GroupBox>
+            </DockPanel>
+            <ctrls:BasicCodeDisplay Grid.Column="2" CodeText="{Binding ElementName=Self, Path=CodeText, Mode=OneWay}"/>
+        </Grid>
+    </DockPanel>
+</UserControl>

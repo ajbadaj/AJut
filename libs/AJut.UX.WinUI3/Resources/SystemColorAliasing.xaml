@@ -35,7 +35,9 @@
 
     <!-- ===[ TitleBar / Chrome Colors ]=== -->
     <StaticResource x:Key="SystemChromeBlackHighBrush" ResourceKey="AJut_Brush_ChromeButtonHoverBackground" />
-    <StaticResource x:Key="TitleBarCaptionButtonHoverForegroundColor" ResourceKey="AJut_Brush_ChromeButtonHoverBackground"/>
+    <!-- Named as a color and read as a hover foreground, so it points at the hover foreground color rather than the
+         hover background brush it used to name. -->
+    <StaticResource x:Key="TitleBarCaptionButtonHoverForegroundColor" ResourceKey="AJut_Color_ChromeButtonHoverForeground"/>
     <StaticResource x:Key="TitleBarCaptionButtonPressedForegroundColor" ResourceKey="AJut_Color_ChromeButtonPressedForeground"/>
     <StaticResource x:Key="TitleBarCaptionButtonInactiveForegroundColor" ResourceKey="AJut_Color_ChromeButtonInactiveForeground"/>
     <StaticResource x:Key="TitleBarCaptionButtonForegroundColor" ResourceKey="AJut_Brush_TitleBarForeground"/>

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AJutShowRoomWinUI.UI.UxUtils.ConvertersPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ajut_conv="using:AJut.UX.Converters"
+    xmlns:local="using:AJutShowRoomWinUI"
+    xmlns:ui="using:AJutShowRoomWinUI.UI"
+    mc:Ignorable="d"
+    x:Name="Self">
+
+    <ScrollViewer Padding="16">
+        <StackPanel Spacing="12" MaxWidth="1000" HorizontalAlignment="Left">
+            <TextBlock Text="Converters" FontSize="20" FontWeight="SemiBold"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                       Text="Every converter in AJut.UX.Converters is also a markup extension, so it goes inline in the binding with its options set right there, and never needs a resource entry. Each example below is live: change the input and the converted output follows."/>
+
+            <!-- ====[ Boolean converters ]==== -->
+            <TextBlock Text="The boolean converters" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                       Text="One flag, read four ways. BooleanToVisibilityConverter defaults to Visible for true and Collapsed for false, and TrueValue and FalseValue flip it. BooleanToValueConverter hands back whichever of two objects fits, BooleanInverseConverter is the plain not, and BooleanToBrushConverter picks a brush."/>
+            <ToggleSwitch x:Name="FlagSwitch" Header="The flag" IsOn="True" OnContent="True" OffContent="False"/>
+            <StackPanel Spacing="6">
+                <TextBlock Text="Shown while the flag is true (BooleanToVisibilityConverter)"
+                           Visibility="{Binding ElementName=FlagSwitch, Path=IsOn, Converter={ajut_conv:BooleanToVisibilityConverter}}"/>
+                <TextBlock Text="Shown while the flag is false (BooleanToVisibilityConverter with the values flipped)"
+                           Visibility="{Binding ElementName=FlagSwitch, Path=IsOn, Converter={ajut_conv:BooleanToVisibilityConverter TrueValue=Collapsed, FalseValue=Visible}}"/>
+                <Button HorizontalAlignment="Left"
+                        Content="{Binding ElementName=FlagSwitch, Path=IsOn, Converter={ajut_conv:BooleanToValueConverter TrueValue='Apply changes', FalseValue='Add record'}}"/>
+                <TextBox HorizontalAlignment="Left" Width="260" Text="Editable while the flag is false"
+                         IsEnabled="{Binding ElementName=FlagSwitch, Path=IsOn, Converter={ajut_conv:BooleanInverseConverter}}"/>
+                <Border Width="120" Height="24" HorizontalAlignment="Left" CornerRadius="4"
+                        Background="{Binding ElementName=FlagSwitch, Path=IsOn, Converter={ajut_conv:BooleanToBrushConverter TrueValue=SeaGreen, FalseValue=Gray}}"/>
+            </StackPanel>
+            <ui:ShowroomCodeDisplay CodeText="{x:Bind BooleanCode}" Height="200"/>
+
+            <!-- ====[ Numeric comparison ]==== -->
+            <TextBlock Text="NumericComparisonToVisibilityConverter" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                       Text="Compares a number against To with the Comp you name (Equal, NotEqual, GreaterThan, LessThan, GreaterThanOrEqual, LessThanOrEqual) and shows or hides on the answer. NumericComparisonToBoolConverter is the same thing returning a bool, for IsEnabled and friends."/>
+            <Slider x:Name="AmountSlider" Header="Amount" Minimum="0" Maximum="100" Value="35" Width="300" HorizontalAlignment="Left"/>
+            <StackPanel Spacing="4">
+                <TextBlock Text="The amount is over 50." FontWeight="SemiBold"
+                           Visibility="{Binding ElementName=AmountSlider, Path=Value, Converter={ajut_conv:NumericComparisonToVisibilityConverter Comp=GreaterThan, To=50}}"/>
+                <TextBlock Text="The amount is 50 or under." FontWeight="SemiBold"
+                           Visibility="{Binding ElementName=AmountSlider, Path=Value, Converter={ajut_conv:NumericComparisonToVisibilityConverter Comp=LessThanOrEqual, To=50}}"/>
+                <Button Content="Only enabled at exactly 100" HorizontalAlignment="Left"
+                        IsEnabled="{Binding ElementName=AmountSlider, Path=Value, Converter={ajut_conv:NumericComparisonToBoolConverter Comp=Equal, To=100}}"/>
+            </StackPanel>
+            <ui:ShowroomCodeDisplay CodeText="{x:Bind ComparisonCode}" Height="160"/>
+
+            <!-- ====[ Color string to brush ]==== -->
+            <TextBlock Text="ColorStringToBrushConverter" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                       Text="A string becomes a brush. A hex color (#F0F, #FF8800, #80FF8800) or a named color gives a SolidColorBrush. A CSS style gradient gives a gradient brush: try linear-gradient(76deg, #A22, #0000FF) or radial-gradient(circle at 25% 90%, #FF0000, #0000FF). This is CoerceUtils.CoerceBrushFrom with a binding around it."/>
+            <TextBox x:Name="BrushText" Header="Color or gradient" Text="linear-gradient(76deg, #A22, #0000FF)" Width="420" HorizontalAlignment="Left"/>
+            <Border Width="420" Height="48" HorizontalAlignment="Left" CornerRadius="4" BorderThickness="1" BorderBrush="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+                    Background="{Binding ElementName=BrushText, Path=Text, Converter={ajut_conv:ColorStringToBrushConverter}}"/>
+            <ui:ShowroomCodeDisplay CodeText="{x:Bind ColorStringCode}" Height="120"/>
+
+            <!-- ====[ String switch ]==== -->
+            <TextBlock Text="StringToBrushSwitchConverter" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                       Text="A switch statement in markup: the string picks a case from a dictionary of brushes, and a string with no case keeps the last match (or Default before there is one). Useful for a status jewel that follows a state name."/>
+            <ComboBox Header="Status" Width="200" ItemsSource="{x:Bind StatusOptions}" SelectedItem="{x:Bind Status, Mode=TwoWay}"/>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Ellipse Width="24" Height="24">
+                    <Ellipse.Fill>
+                        <Binding ElementName="Self" Path="Status">
+                            <Binding.Converter>
+                                <ajut_conv:StringToBrushSwitchConverter>
+                                    <ajut_conv:StringToBrushSwitchConverter.Cases>
+                                        <ajut_conv:BrushDictionary>
+                                            <SolidColorBrush x:Key="Ready" Color="SeaGreen"/>
+                                            <SolidColorBrush x:Key="Busy" Color="Goldenrod"/>
+                                            <SolidColorBrush x:Key="Failed" Color="Firebrick"/>
+                                        </ajut_conv:BrushDictionary>
+                                    </ajut_conv:StringToBrushSwitchConverter.Cases>
+                                </ajut_conv:StringToBrushSwitchConverter>
+                            </Binding.Converter>
+                        </Binding>
+                    </Ellipse.Fill>
+                </Ellipse>
+                <TextBlock Text="{x:Bind Status, Mode=OneWay}" VerticalAlignment="Center"/>
+            </StackPanel>
+            <ui:ShowroomCodeDisplay CodeText="{x:Bind StringSwitchCode}" Height="200"/>
+
+            <!-- ====[ Thickness from number ]==== -->
+            <TextBlock Text="ThicknessFromNumberConverter" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                       Text="One number becomes a Thickness by multiplying a mask. A mask of 1,0,1,0 puts the number on the left and right only, so a single slider drives an inset without four bindings."/>
+            <Slider x:Name="InsetSlider" Header="Inset" Minimum="0" Maximum="60" Value="12" Width="300" HorizontalAlignment="Left"/>
+            <Border Width="420" HorizontalAlignment="Left" Background="{ThemeResource SystemControlBackgroundBaseLowBrush}" CornerRadius="4">
+                <Border Height="32" CornerRadius="4" Background="{ThemeResource SystemControlHighlightAccentBrush}"
+                        Margin="{Binding ElementName=InsetSlider, Path=Value, Converter={ajut_conv:ThicknessFromNumberConverter MultiplyMask='1,0,1,0'}}"/>
+            </Border>
+            <ui:ShowroomCodeDisplay CodeText="{x:Bind ThicknessCode}" Height="120"/>
+
+            <!-- ====[ The color parse example ]==== -->
+            <TextBlock Text="Parsing a color from text" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                       Text="The same parsing from code rather than a converter: a control whose text runs through CoerceUtils.TryGetColorFromString on every change, and whose background takes the color when it parses. Type a hex color or a named one."/>
+            <local:ColorParseExample Width="420" Height="120" HorizontalAlignment="Left"/>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

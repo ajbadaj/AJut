@@ -1,0 +1,23 @@
+<UserControl x:Class="TheAJutShowRoom.UI.Controls.StackNavDemo.StackNavDemoPageB"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:TheAJutShowRoom.UI.Controls.StackNavDemo"
+             mc:Ignorable="d"
+             d:DesignHeight="300" d:DesignWidth="400"
+             x:Name="Self">
+    <StackPanel Margin="15">
+        <TextBlock Text="Page B" FontSize="18"/>
+        <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0"
+                   Text="Pushed on top of page A. The header's back button pops this page, and so does the button below. This page sets no drawer, so the header shows no drawer button."/>
+        <Button Content="Show a popover" Padding="10,4" Margin="0,15,0,0" HorizontalAlignment="Left" Click="ShowPopover_OnClick"/>
+        <TextBlock Margin="0,5,0,0">
+            <TextBlock.Inlines>
+                <Run Text="Last popover result:"/>
+                <Run Text="{Binding ElementName=Self, Path=LastPopoverResult, Mode=OneWay}" FontWeight="Bold"/>
+            </TextBlock.Inlines>
+        </TextBlock>
+        <Button Content="Pop back to page A" Padding="10,4" Margin="0,15,0,0" HorizontalAlignment="Left" Click="PopBack_OnClick"/>
+    </StackPanel>
+</UserControl>

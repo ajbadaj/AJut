@@ -1,0 +1,76 @@
+<UserControl x:Class="TheAJutShowRoom.UI.Controls.Strategies.UndoRedoStrategyExample"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:TheAJutShowRoom.UI.Controls.Strategies"
+             xmlns:ctrls="clr-namespace:TheAJutShowRoom.UI.Controls"
+             xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
+             mc:Ignorable="d"
+             d:DesignHeight="450" d:DesignWidth="800"
+             x:Name="Self">
+    <DockPanel Margin="10">
+        <StackPanel DockPanel.Dock="Top">
+            <TextBlock Text="Maybe you want undo and redo" FontSize="18"/>
+            <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,10">
+                <TextBlock.Inlines>
+                    <Run Text="Here it is, built with"/>
+                    <Run Text="AJut.UndoRedo.UndoRedoManager." FontFamily="Consolas" FontWeight="Bold"/>
+                    <Run Text="The manager keeps an undo stack and a redo stack of"/>
+                    <Run Text="IUndoableAction" FontFamily="Consolas"/>
+                    <Run Text="entries. ExecuteAction runs an action and records it; AddAction records one that already happened (the number editor below applies its own value, so it only needs recording). Undo and Redo move entries between the stacks, and AnyUndos and AnyRedos are bindable so the buttons enable themselves. LambdaUndoableAction covers most cases without a class per edit; UndoableGroupAction and substacks fold many edits into one entry."/>
+                </TextBlock.Inlines>
+            </TextBlock>
+        </StackPanel>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <DockPanel>
+                <GroupBox DockPanel.Dock="Top" Header="The editor">
+                    <StackPanel>
+                        <DockPanel>
+                            <TextBlock Text="Name:" Width="60" VerticalAlignment="Center"/>
+                            <Button DockPanel.Dock="Right" Content="Apply" Margin="5,0,0,0" Padding="10,2" Click="ApplyName_OnClick"/>
+                            <TextBox x:Name="NameInput" Text="{Binding ElementName=Self, Path=Document.Name, Mode=OneWay}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,5,0,0">
+                            <TextBlock Text="Number:" Width="60" VerticalAlignment="Center"/>
+                            <ajut:NumericEditor Value="{Binding ElementName=Self, Path=Document.Number, Mode=TwoWay}" UserEditComplete="Number_OnUserEditComplete"/>
+                        </DockPanel>
+                        <Border Margin="0,10,0,0" Padding="8" BorderThickness="1" BorderBrush="{DynamicResource AJut_Brush_GroupBorder}">
+                            <TextBlock>
+                                <TextBlock.Inlines>
+                                    <Run Text="Document now reads:"/>
+                                    <Run Text="{Binding ElementName=Self, Path=Document.Name, Mode=OneWay}" FontWeight="Bold"/>
+                                    <Run Text="/"/>
+                                    <Run Text="{Binding ElementName=Self, Path=Document.Number, Mode=OneWay}" FontWeight="Bold"/>
+                                </TextBlock.Inlines>
+                            </TextBlock>
+                        </Border>
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <Button Content="Undo" Padding="15,4" Click="Undo_OnClick" IsEnabled="{Binding ElementName=Self, Path=UndoRedo.AnyUndos, Mode=OneWay}"/>
+                            <Button Content="Redo" Padding="15,4" Margin="5,0,0,0" Click="Redo_OnClick" IsEnabled="{Binding ElementName=Self, Path=UndoRedo.AnyRedos, Mode=OneWay}"/>
+                            <Button Content="Clear history" Padding="15,4" Margin="15,0,0,0" Click="ClearHistory_OnClick"/>
+                        </StackPanel>
+                    </StackPanel>
+                </GroupBox>
+                <Grid Margin="0,10,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <GroupBox Header="Undo stack (newest first)" Margin="0,0,5,0">
+                        <ListBox ItemsSource="{Binding ElementName=Self, Path=UndoRedo.UndoStack, Mode=OneWay}" DisplayMemberPath="DisplayName" BorderThickness="0"/>
+                    </GroupBox>
+                    <GroupBox Grid.Column="1" Header="Redo stack (newest first)" Margin="5,0,0,0">
+                        <ListBox ItemsSource="{Binding ElementName=Self, Path=UndoRedo.RedoStack, Mode=OneWay}" DisplayMemberPath="DisplayName" BorderThickness="0"/>
+                    </GroupBox>
+                </Grid>
+            </DockPanel>
+            <ctrls:BasicCodeDisplay Grid.Column="2" CodeText="{Binding ElementName=Self, Path=CodeText, Mode=OneWay}"/>
+        </Grid>
+    </DockPanel>
+</UserControl>

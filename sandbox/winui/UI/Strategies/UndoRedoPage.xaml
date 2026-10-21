@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AJutShowRoomWinUI.UI.Strategies.UndoRedoPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ajut="using:AJut.UX.Controls"
+    xmlns:ui="using:AJutShowRoomWinUI.UI"
+    mc:Ignorable="d"
+    x:Name="Self">
+
+    <ScrollViewer Padding="16">
+        <StackPanel Spacing="12" MaxWidth="1000" HorizontalAlignment="Left">
+            <TextBlock Text="Undo and redo" FontSize="20" FontWeight="SemiBold"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                       Text="Maybe you want undo and redo in an editor without writing a command pattern from scratch. Here it is, built with UndoRedoManager from AJut.Core: every edit is a LambdaUndoableAction that knows how to apply itself and how to put the old value back, the manager keeps the two stacks, and the buttons enable themselves from its AnyUndos and AnyRedos. Edit the title (commit with Tab or by clicking away) and nudge the count, then walk back through the history."/>
+
+            <Grid ColumnSpacing="24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- ====[ The editor ]==== -->
+                <StackPanel Spacing="8">
+                    <TextBox Header="Title" Text="{x:Bind DocumentTitle, Mode=TwoWay}"/>
+                    <ajut:NumericEditor LabelContent="Count" Minimum="0" Maximum="100"
+                                        Value="{Binding ElementName=Self, Path=DocumentCount, Mode=TwoWay}"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Undo" Click="Undo_OnClick" IsEnabled="{x:Bind CanUndo, Mode=OneWay}"/>
+                        <Button Content="Redo" Click="Redo_OnClick" IsEnabled="{x:Bind CanRedo, Mode=OneWay}"/>
+                        <Button Content="Clear history" Click="ClearHistory_OnClick"/>
+                    </StackPanel>
+                    <TextBlock Text="{x:Bind CurrentStateText, Mode=OneWay}" Opacity="0.8"/>
+                </StackPanel>
+
+                <!-- ====[ The history ]==== -->
+                <StackPanel Grid.Column="1" Spacing="4">
+                    <TextBlock Text="Undo stack, newest first" FontWeight="SemiBold"/>
+                    <ItemsControl ItemsSource="{x:Bind UndoStack}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Path=DisplayName}" FontFamily="Consolas" FontSize="12"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="Redo stack, next first" FontWeight="SemiBold" Margin="0,8,0,0"/>
+                    <ItemsControl ItemsSource="{x:Bind RedoStack}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Path=DisplayName}" FontFamily="Consolas" FontSize="12" Opacity="0.7"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Grid>
+
+            <ui:ShowroomCodeDisplay CodeText="{x:Bind DemoCode}" Height="260"/>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

@@ -88,7 +88,10 @@
             return true;
         }
 
-        private Window? m_window;
+        private MainWindow? m_window;
+
+        /// <summary>The showroom window, for pages that need the Window itself or its chrome.</summary>
+        public MainWindow MainWindow => m_window!;
 
         public string AJut_Core_Version { get; }
         public string AJut_UX_WinUI_Version { get; }

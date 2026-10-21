@@ -1,0 +1,152 @@
+<UserControl x:Class="TheAJutShowRoom.UI.Controls.UxUtils.ConvertersExample"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:TheAJutShowRoom.UI.Controls.UxUtils"
+             xmlns:ctrls="clr-namespace:TheAJutShowRoom.UI.Controls"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
+             xmlns:ajut_conv="clr-namespace:AJut.UX.Converters;assembly=AJut.UX.Wpf"
+             mc:Ignorable="d"
+             d:DesignHeight="450" d:DesignWidth="800"
+             x:Name="Self">
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Margin="10,10,10,0">
+            <TextBlock Text="Converters" FontSize="18"/>
+            <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0">
+                <TextBlock.Inlines>
+                    <Run Text="Every converter in"/>
+                    <Run Text="AJut.UX.Converters" FontFamily="Consolas" FontWeight="Bold"/>
+                    <Run Text="is also a markup extension, so it is used inline with its options set right in the binding, and never needs a resource entry. Each example below is live: change the input on the left and the converted output follows."/>
+                </TextBlock.Inlines>
+            </TextBlock>
+        </StackPanel>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="10">
+
+                <GroupBox Header="BooleanToVisibilityConverter" Margin="0,0,0,10">
+                    <StackPanel>
+                        <CheckBox x:Name="ShowMessage" Content="Show the message" IsChecked="True"/>
+                        <TextBlock Text="Here is the message, shown while the box is checked." Margin="0,5,0,5"
+                                   Visibility="{Binding ElementName=ShowMessage, Path=IsChecked, Converter={ajut_conv:BooleanToVisibilityConverter TrueValue=Visible, FalseValue=Collapsed}}"/>
+                        <ctrls:BasicCodeDisplay CodeText="{Binding ElementName=Self, Path=BooleanToVisibilityCode, Mode=OneWay}"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="BooleanToValueConverter" Margin="0,0,0,10">
+                    <StackPanel>
+                        <CheckBox x:Name="IsExisting" Content="Editing an existing record"/>
+                        <Button HorizontalAlignment="Left" Padding="15,4" Margin="0,5,0,5"
+                                Content="{Binding ElementName=IsExisting, Path=IsChecked, Converter={ajut_conv:BooleanToValueConverter TrueValue='Apply changes', FalseValue='Add record'}}"/>
+                        <ctrls:BasicCodeDisplay CodeText="{Binding ElementName=Self, Path=BooleanToValueCode, Mode=OneWay}"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="BooleanInverseConverter" Margin="0,0,0,10">
+                    <StackPanel>
+                        <CheckBox x:Name="IsLocked" Content="Lock the text box"/>
+                        <TextBox Text="Editable until locked" Margin="0,5,0,5" MaxWidth="300" HorizontalAlignment="Left"
+                                 IsEnabled="{Binding ElementName=IsLocked, Path=IsChecked, Converter={ajut_conv:BooleanInverseConverter}}"/>
+                        <ctrls:BasicCodeDisplay CodeText="{Binding ElementName=Self, Path=BooleanInverseCode, Mode=OneWay}"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="NumericComparisonToVisibilityConverter" Margin="0,0,0,10">
+                    <StackPanel>
+                        <DockPanel HorizontalAlignment="Left">
+                            <TextBlock Text="Value:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <ajut:NumericEditor x:Name="ComparisonSource" Value="5" Width="120"/>
+                        </DockPanel>
+                        <TextBlock Text="The value is over 10." Margin="0,5,0,5" FontWeight="Bold"
+                                   Visibility="{Binding ElementName=ComparisonSource, Path=Value, Converter={ajut_conv:NumericComparisonToVisibilityConverter Comp=GreaterThan, To=10}}"/>
+                        <ctrls:BasicCodeDisplay CodeText="{Binding ElementName=Self, Path=NumericComparisonCode, Mode=OneWay}"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="ColorStringToBrushConverter" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBlock TextWrapping="WrapWithOverflow" Text="Type a color (#F0F, Teal) or a gradient. Anything CSS-like parses: radial-gradient(circle at 25% 90%, #FF0000, #0000FF), linear-gradient(76deg, #A22, #0000FF)."/>
+                        <TextBox x:Name="BrushText" Text="linear-gradient(90deg, #A22, #00F)" MaxWidth="400" HorizontalAlignment="Left"/>
+                        <Border Width="200" Height="100" HorizontalAlignment="Left" Margin="0,5,0,5" BorderBrush="Black" BorderThickness="1"
+                                Background="{Binding ElementName=BrushText, Path=Text, Converter={ajut_conv:ColorStringToBrushConverter}}"/>
+                        <ctrls:BasicCodeDisplay CodeText="{Binding ElementName=Self, Path=ColorStringToBrushCode, Mode=OneWay}"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="NullnessToVisibilityConverter" Margin="0,0,0,10">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <ComboBox x:Name="NullnessSource" Width="150">
+                                <ComboBox.ItemsSource>
+                                    <x:Array Type="{x:Type sys:String}">
+                                        <sys:String>First</sys:String>
+                                        <sys:String>Second</sys:String>
+                                        <sys:String>Third</sys:String>
+                                    </x:Array>
+                                </ComboBox.ItemsSource>
+                            </ComboBox>
+                            <Button Content="Clear selection" Margin="5,0,0,0" Click="ClearNullnessSelection_OnClick"/>
+                        </StackPanel>
+                        <TextBlock Text="Nothing is selected." FontStyle="Italic" Margin="0,5,0,5"
+                                   Visibility="{Binding ElementName=NullnessSource, Path=SelectedItem, Converter={ajut_conv:NullnessToVisibilityConverter WhenNull=Visible, WhenNotNull=Collapsed}}"/>
+                        <ctrls:BasicCodeDisplay CodeText="{Binding ElementName=Self, Path=NullnessCode, Mode=OneWay}"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="FixedArithmeticConverter" Margin="0,0,0,10">
+                    <StackPanel>
+                        <DockPanel>
+                            <TextBlock Text="Base size:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <Slider x:Name="FontSizeSource" Minimum="6" Maximum="20" Value="10" Width="200" HorizontalAlignment="Left"/>
+                        </DockPanel>
+                        <TextBlock Text="Twice the slider, as a font size" Margin="0,5,0,5"
+                                   FontSize="{Binding ElementName=FontSizeSource, Path=Value, Converter={ajut_conv:FixedArithmeticConverter Operation=Multiply, FixedOperand=2}}"/>
+                        <ctrls:BasicCodeDisplay CodeText="{Binding ElementName=Self, Path=FixedArithmeticCode, Mode=OneWay}"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="ArithmeticMultiBinding" Margin="0,0,0,10">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <ajut:NumericEditor x:Name="AddendA" Value="2" Width="100"/>
+                            <TextBlock Text="+" VerticalAlignment="Center" Margin="8,0"/>
+                            <ajut:NumericEditor x:Name="AddendB" Value="3" Width="100"/>
+                            <TextBlock Text="=" VerticalAlignment="Center" Margin="8,0"/>
+                            <TextBlock VerticalAlignment="Center" FontWeight="Bold">
+                                <TextBlock.Text>
+                                    <ajut_conv:ArithmeticMultiBinding Operation="Add">
+                                        <Binding ElementName="AddendA" Path="Value"/>
+                                        <Binding ElementName="AddendB" Path="Value"/>
+                                    </ajut_conv:ArithmeticMultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </StackPanel>
+                        <ctrls:BasicCodeDisplay Margin="0,5,0,0" CodeText="{Binding ElementName=Self, Path=ArithmeticMultiBindingCode, Mode=OneWay}"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="ThicknessFromNumberConverter" Margin="0,0,0,10">
+                    <StackPanel>
+                        <DockPanel>
+                            <TextBlock Text="Indent:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <Slider x:Name="IndentSource" Minimum="0" Maximum="60" Value="20" Width="200" HorizontalAlignment="Left"/>
+                        </DockPanel>
+                        <Border Background="#4080FF" Height="20" Width="200" HorizontalAlignment="Left"
+                                Margin="{Binding ElementName=IndentSource, Path=Value, Converter={ajut_conv:ThicknessFromNumberConverter MultiplyMask='1,0.25,0,0.25'}}"/>
+                        <ctrls:BasicCodeDisplay Margin="0,5,0,0" CodeText="{Binding ElementName=Self, Path=ThicknessFromNumberCode, Mode=OneWay}"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="FriendlyTextEnConverter" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBox x:Name="FriendlyTextSource" Text="UseSameAsOS" MaxWidth="300" HorizontalAlignment="Left"/>
+                        <TextBlock Margin="0,5,0,5" Text="{Binding ElementName=FriendlyTextSource, Path=Text, Converter={ajut_conv:FriendlyTextEnConverter}}"/>
+                        <ctrls:BasicCodeDisplay CodeText="{Binding ElementName=Self, Path=FriendlyTextCode, Mode=OneWay}"/>
+                    </StackPanel>
+                </GroupBox>
+
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

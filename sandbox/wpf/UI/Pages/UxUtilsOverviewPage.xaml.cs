@@ -15,7 +15,7 @@
         public void Setup (StackNavAdapter adapter)
         {
             m_adapter = adapter;
-            m_adapter.Title = "UX Utilities";
+            m_adapter.Title = "UX Utils";
         }
     }
 }

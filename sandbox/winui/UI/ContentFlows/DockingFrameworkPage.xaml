@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AJutShowRoomWinUI.UI.ContentFlows.DockingFrameworkPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ajut="using:AJut.UX.Controls"
+    xmlns:ui="using:AJutShowRoomWinUI.UI"
+    mc:Ignorable="d"
+    Loaded="Page_OnLoaded"
+    Unloaded="Page_OnUnloaded">
+
+    <Grid Padding="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Docking framework" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,8"/>
+        <TextBlock Grid.Row="1" TextWrapping="Wrap" Opacity="0.8" Margin="0,0,0,12"
+                   Text="The docking framework content flow, the same one the WPF showroom shows. A DockingManager rooted to the main window owns the dock zone below: panels are registered by type, docked, split, torn off into their own windows, and saved and reloaded as a layout. The toolbar and the View menu are both driven by the manager's registrations."/>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="6" Margin="4,4,4,4">
+            <Button Content="Save Layout" Click="DockZone_OnSaveLayoutClicked"/>
+            <Button Content="Load Layout" Click="DockZone_OnLoadLayoutClicked"/>
+            <Button Content="Set All Values (test)" Click="DockZone_OnSetAllValuesTestClicked"/>
+            <MenuBar>
+                <MenuBarItem x:Name="ViewMenu" Title="View" />
+            </MenuBar>
+        </StackPanel>
+        <ajut:DockPanelAddRemoveToolbar x:Name="DockToolbar" Grid.Row="3"/>
+        <ajut:DockZone x:Name="TestDockZone" Grid.Row="4" Margin="5"/>
+
+        <ui:ShowroomCodeDisplay Grid.Row="5" CodeText="{x:Bind DemoCode}" Height="220" Margin="0,12,0,0"/>
+    </Grid>
+</Page>

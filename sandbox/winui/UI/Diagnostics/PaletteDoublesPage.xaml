@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AJutShowRoomWinUI.UI.Diagnostics.PaletteDoublesPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:local="using:AJutShowRoomWinUI"
+    mc:Ignorable="d">
+
+    <!-- Manual check that the two opacity doubles in the AJut palettes can be looked
+         up. Nothing else in here ever looks them up, and WinUI only builds an entry on
+         its first lookup, so a bad declaration hides until something does. -->
+    <local:PaletteDoubleCheck/>
+</Page>

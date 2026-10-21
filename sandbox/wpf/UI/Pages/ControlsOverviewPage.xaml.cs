@@ -22,18 +22,7 @@
         public void Setup (StackNavAdapter adapter)
         {
             this.Navigator = adapter;
-            this.Navigator.Title = "ajut.ux.controls";
-        }
-
-        private void Test1_OnClick (object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("Got it!");
-        }
-
-        private void ColorEdit_OnUserEditComplete (object sender, UserEditAppliedEventArgs e)
-        {
-            MessageBox.Show($"Color changed from: {e.OldValue} → {e.NewValue}");
-
+            this.Navigator.Title = "Controls";
         }
     }
 }

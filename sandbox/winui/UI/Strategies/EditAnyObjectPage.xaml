@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AJutShowRoomWinUI.UI.Strategies.EditAnyObjectPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ajut="using:AJut.UX.Controls"
+    xmlns:ajut_pg="using:AJut.UX.PropertyInteraction"
+    xmlns:ui="using:AJutShowRoomWinUI.UI"
+    mc:Ignorable="d">
+
+    <ScrollViewer Padding="16">
+        <StackPanel Spacing="12" MaxWidth="1000" HorizontalAlignment="Left">
+            <TextBlock Text="Edit any object" FontSize="20" FontWeight="SemiBold"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                       Text="Maybe you want an editor for an object without building a form for it, and the next object, and the one after that. Here it is, built with PropertyGrid from AJut.UX: hand it any object and it reflects the public properties into rows, each with an editor picked by type. A handful of attributes on the class tune what it shows: a label and subtitle, a tooltip, a numeric range, a hidden property, a method shown as a button. The readout on the right is the same object, so every edit lands on it immediately."/>
+
+            <Grid ColumnSpacing="24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="3*"/>
+                    <ColumnDefinition Width="2*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- ====[ The grid over the sample object ]==== -->
+                <ajut:PropertyGrid x:Name="SampleGrid" SingleItemSource="{x:Bind Sample}" Height="300"
+                                   LabelColumnWidth="140" RowSpacing="4" PropertyToolTipPlacement="PropertyNameAndValue">
+                    <ajut:PropertyGrid.ItemTemplateSelector>
+                        <ajut:PropertyGridTemplateSelector>
+                            <ajut:PropertyGridTemplateSelector.Default>
+                                <DataTemplate x:DataType="ajut_pg:PropertyEditTarget">
+                                    <TextBlock Text="{Binding Path=EditValue}" VerticalAlignment="Center" Opacity="0.7"/>
+                                </DataTemplate>
+                            </ajut:PropertyGridTemplateSelector.Default>
+                            <ajut:PropertyGridTemplateSelector.RegisteredTemplates>
+                                <DataTemplate x:Key="String" x:DataType="ajut_pg:PropertyEditTarget">
+                                    <TextBox Text="{Binding Path=EditValue, Mode=TwoWay}"/>
+                                </DataTemplate>
+                                <DataTemplate x:Key="Boolean" x:DataType="ajut_pg:PropertyEditTarget">
+                                    <CheckBox IsChecked="{Binding Path=EditValue, Mode=TwoWay}" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                                <DataTemplate x:Key="Int32" x:DataType="ajut_pg:PropertyEditTarget">
+                                    <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}" TextBoxHeight="24"
+                                                        Minimum="{Binding Path=EditContext.Min, Mode=OneWay, FallbackValue=-10000}"
+                                                        Maximum="{Binding Path=EditContext.Max, Mode=OneWay, FallbackValue=10000}"
+                                                        Nudge="{Binding Path=EditContext.Step, Mode=OneWay, FallbackValue=1}"/>
+                                </DataTemplate>
+                                <DataTemplate x:Key="Single" x:DataType="ajut_pg:PropertyEditTarget">
+                                    <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}" TextBoxHeight="24"
+                                                        Minimum="{Binding Path=EditContext.Min, Mode=OneWay, FallbackValue=-10000}"
+                                                        Maximum="{Binding Path=EditContext.Max, Mode=OneWay, FallbackValue=10000}"
+                                                        Nudge="{Binding Path=EditContext.Step, Mode=OneWay, FallbackValue=1}"/>
+                                </DataTemplate>
+                                <DataTemplate x:Key="eSampleQuality" x:DataType="ajut_pg:PropertyEditTarget">
+                                    <ajut:EnumComboBox SelectedItem="{Binding Path=EditValue, Mode=TwoWay}" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </ajut:PropertyGridTemplateSelector.RegisteredTemplates>
+                        </ajut:PropertyGridTemplateSelector>
+                    </ajut:PropertyGrid.ItemTemplateSelector>
+                </ajut:PropertyGrid>
+
+                <!-- ====[ The same object, read back ]==== -->
+                <Border Grid.Column="1" BorderThickness="1" BorderBrush="{ThemeResource SystemControlForegroundBaseMediumBrush}" CornerRadius="4" Padding="12" VerticalAlignment="Top">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="The object right now" FontWeight="SemiBold"/>
+                        <TextBlock Text="{x:Bind Sample.DisplayName, Mode=OneWay}" FontSize="18"/>
+                        <TextBlock Text="{x:Bind Sample.Level, Mode=OneWay}"/>
+                        <TextBlock Text="{x:Bind Sample.Scale, Mode=OneWay}"/>
+                        <TextBlock Text="{x:Bind Sample.Quality, Mode=OneWay}"/>
+                        <TextBlock Text="{x:Bind Sample.IsVisible, Mode=OneWay}"/>
+                        <TextBlock Text="{x:Bind Sample.Summary, Mode=OneWay}" Opacity="0.8" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <ui:ShowroomCodeDisplay CodeText="{x:Bind DemoCode}" Height="260"/>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

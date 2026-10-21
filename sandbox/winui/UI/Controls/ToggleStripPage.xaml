@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AJutShowRoomWinUI.UI.Controls.ToggleStripPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ajut="using:AJut.UX.Controls"
+    xmlns:ui="using:AJutShowRoomWinUI.UI"
+    mc:Ignorable="d">
+
+    <ScrollViewer Padding="16">
+        <StackPanel Spacing="12" MaxWidth="1000" HorizontalAlignment="Left">
+            <TextBlock Text="ToggleStrip" FontSize="20" FontWeight="SemiBold"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                       Text="Single-select by default. AllowMultiSelect for multi-select, AllowNoSelection to permit zero selected. Every strip here takes its ItemsSource from the page constructor, the way an app would hand it a list."/>
+
+            <StackPanel Spacing="12">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Single-select (default)" FontSize="11" Opacity="0.7"/>
+                    <ajut:ToggleStrip x:Name="ToggleStripSingle"/>
+                </StackPanel>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Multi-select" FontSize="11" Opacity="0.7"/>
+                    <ajut:ToggleStrip x:Name="ToggleStripMulti" AllowMultiSelect="True"/>
+                </StackPanel>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Allow no selection" FontSize="11" Opacity="0.7"/>
+                    <ajut:ToggleStrip x:Name="ToggleStripFreeform" AllowNoSelection="True"/>
+                </StackPanel>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="EnsureUniformSize (every item as wide as the widest)" FontSize="11" Opacity="0.7"/>
+                    <ajut:ToggleStrip x:Name="ToggleStripUniform" EnsureUniformSize="True"/>
+                </StackPanel>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="OverflowPopup (constrained width - chevron reveals the rest)" FontSize="11" Opacity="0.7"/>
+                    <ajut:ToggleStrip x:Name="ToggleStripOverflow" Width="220" HorizontalAlignment="Left"
+                                      OverflowBehavior="OverflowPopup"/>
+                </StackPanel>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Scroll (constrained width - scrolls horizontally)" FontSize="11" Opacity="0.7"/>
+                    <ajut:ToggleStrip x:Name="ToggleStripScroll" Width="220" HorizontalAlignment="Left"
+                                      OverflowBehavior="Scroll"/>
+                </StackPanel>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Custom corner radius" FontSize="11" Opacity="0.7"/>
+                    <ajut:ToggleStrip x:Name="ToggleStripCustom"
+                                      CornerRadius="15"/>
+                </StackPanel>
+            </StackPanel>
+
+            <ui:ShowroomCodeDisplay CodeText="{x:Bind DemoCode}" Height="220"/>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

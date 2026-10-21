@@ -59,6 +59,11 @@
             m_adapter?.Navigator.GenerateAndPushDisplay<UxStrategiesOverviewPage>();
         }
 
+        private void NavDebug_OnClick (object sender, RoutedEventArgs e)
+        {
+            m_adapter?.Navigator.GenerateAndPushDisplay<DebugOverviewPage>();
+        }
+
         private class LandingPageUIState
         {
             public int SelectedTabIndex { get; set; }

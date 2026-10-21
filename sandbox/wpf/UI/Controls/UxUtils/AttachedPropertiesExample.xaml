@@ -1,0 +1,136 @@
+<UserControl x:Class="TheAJutShowRoom.UI.Controls.UxUtils.AttachedPropertiesExample"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:TheAJutShowRoom.UI.Controls.UxUtils"
+             xmlns:ctrls="clr-namespace:TheAJutShowRoom.UI.Controls"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
+             xmlns:ajut_ap="clr-namespace:AJut.UX.AttachedProperties;assembly=AJut.UX.Wpf"
+             mc:Ignorable="d"
+             d:DesignHeight="450" d:DesignWidth="800"
+             x:Name="Self">
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Margin="10,10,10,0">
+            <TextBlock Text="Attached properties" FontSize="18"/>
+            <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0">
+                <TextBlock.Inlines>
+                    <Run Text="The"/>
+                    <Run Text="AJut.UX.AttachedProperties" FontFamily="Consolas" FontWeight="Bold"/>
+                    <Run Text="namespace adds behavior to elements that do not have it on their own: a corner radius the themed templates read, click tracking on anything, scroll state you can bind to, and header styling for headered controls. The XTA suffix means extension attached."/>
+                </TextBlock.Inlines>
+            </TextBlock>
+        </StackPanel>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="10">
+
+                <GroupBox Header="BorderXTA.CornerRadius" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBlock TextWrapping="WrapWithOverflow" Margin="0,0,0,5"
+                                   Text="One attached property, read by the AJut themed templates for buttons, text boxes, toggle strips, tab controls, group boxes and more. With themes turned off the built-in templates ignore it."/>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="Radius 0" Padding="12,5" ajut_ap:BorderXTA.CornerRadius="0"/>
+                            <Button Content="Radius 6" Padding="12,5" Margin="5,0,0,0" ajut_ap:BorderXTA.CornerRadius="6"/>
+                            <Button Content="Radius 16" Padding="12,5" Margin="5,0,0,0" ajut_ap:BorderXTA.CornerRadius="16"/>
+                            <Button Content="Top only" Padding="12,5" Margin="5,0,0,0" ajut_ap:BorderXTA.CornerRadius="12,12,0,0"/>
+                        </StackPanel>
+                        <ajut:ToggleStrip Margin="0,8,0,8" HorizontalAlignment="Left" ajut_ap:BorderXTA.CornerRadius="10">
+                            <ajut:ToggleStrip.ItemsSource>
+                                <x:Array Type="{x:Type sys:String}">
+                                    <sys:String>Rounded</sys:String>
+                                    <sys:String>Toggle</sys:String>
+                                    <sys:String>Strip</sys:String>
+                                </x:Array>
+                            </ajut:ToggleStrip.ItemsSource>
+                        </ajut:ToggleStrip>
+                        <ctrls:BasicCodeDisplay CodeText="{Binding ElementName=Self, Path=CornerRadiusCode, Mode=OneWay}"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="ClickableXTA" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBlock TextWrapping="WrapWithOverflow" Margin="0,0,0,5"
+                                   Text="Turns any element into something clickable: a Click event with proper press and release tracking, an IsPressed read-only property to style against, and switches for which mouse buttons count."/>
+                        <StackPanel Orientation="Horizontal">
+                            <Border Padding="20,10" BorderThickness="2" BorderBrush="{DynamicResource AJut_Brush_GroupBorder}"
+                                    ajut_ap:ClickableXTA.IsTrackingClick="True" ajut_ap:ClickableXTA.Click="LeftClickBorder_OnClick">
+                                <Border.Style>
+                                    <Style TargetType="{x:Type Border}">
+                                        <Setter Property="Background" Value="#3040A0FF"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=(ajut_ap:ClickableXTA.IsPressed)}" Value="True">
+                                                <Setter Property="Background" Value="#A040A0FF"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <TextBlock Text="Left click this border"/>
+                            </Border>
+                            <Border Padding="20,10" Margin="10,0,0,0" BorderThickness="2" BorderBrush="{DynamicResource AJut_Brush_GroupBorder}" Background="#30FF8040"
+                                    ajut_ap:ClickableXTA.IsTrackingClick="True"
+                                    ajut_ap:ClickableXTA.AcceptsMousePrimaryButton="False"
+                                    ajut_ap:ClickableXTA.AcceptsMouseSecondaryButton="True"
+                                    ajut_ap:ClickableXTA.Click="RightClickBorder_OnClick">
+                                <TextBlock Text="Right click this one"/>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Margin="0,5,0,5" Text="{Binding ElementName=Self, Path=ClickReport, Mode=OneWay}"/>
+                        <ctrls:BasicCodeDisplay CodeText="{Binding ElementName=Self, Path=ClickableCode, Mode=OneWay}"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="ScrollXTA" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBlock TextWrapping="WrapWithOverflow" Margin="0,0,0,5"
+                                   Text="Set IsScrollWatchEnabled on a ScrollViewer and it publishes CanScrollUp, CanScrollDown, CanScrollLeft, CanScrollRight, and the combined CanScrollVertically and CanScrollHorizontally as bindable read-only attached properties. The BumpStack control uses this to decide when to show its bump buttons."/>
+                        <ScrollViewer x:Name="WatchedScroller" Height="90" Width="300" HorizontalAlignment="Left"
+                                      VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                                      ajut_ap:ScrollXTA.IsScrollWatchEnabled="True">
+                            <StackPanel>
+                                <TextBlock Text="Line one, a long line of text that will need horizontal scrolling to be read all the way through"/>
+                                <TextBlock Text="Line two"/>
+                                <TextBlock Text="Line three"/>
+                                <TextBlock Text="Line four"/>
+                                <TextBlock Text="Line five"/>
+                                <TextBlock Text="Line six"/>
+                                <TextBlock Text="Line seven"/>
+                                <TextBlock Text="Line eight"/>
+                            </StackPanel>
+                        </ScrollViewer>
+                        <WrapPanel Margin="0,5,0,5">
+                            <CheckBox Content="Can scroll up" IsHitTestVisible="False" Margin="0,0,10,0" IsChecked="{Binding ElementName=WatchedScroller, Path=(ajut_ap:ScrollXTA.CanScrollUp), Mode=OneWay}"/>
+                            <CheckBox Content="Can scroll down" IsHitTestVisible="False" Margin="0,0,10,0" IsChecked="{Binding ElementName=WatchedScroller, Path=(ajut_ap:ScrollXTA.CanScrollDown), Mode=OneWay}"/>
+                            <CheckBox Content="Can scroll left" IsHitTestVisible="False" Margin="0,0,10,0" IsChecked="{Binding ElementName=WatchedScroller, Path=(ajut_ap:ScrollXTA.CanScrollLeft), Mode=OneWay}"/>
+                            <CheckBox Content="Can scroll right" IsHitTestVisible="False" Margin="0,0,10,0" IsChecked="{Binding ElementName=WatchedScroller, Path=(ajut_ap:ScrollXTA.CanScrollRight), Mode=OneWay}"/>
+                        </WrapPanel>
+                        <ctrls:BasicCodeDisplay CodeText="{Binding ElementName=Self, Path=ScrollWatchCode, Mode=OneWay}"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="HeaderedContentControlXTA" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBlock TextWrapping="WrapWithOverflow" Margin="0,0,0,5"
+                                   Text="HeaderPadding, HeaderFontSize, HorizontalHeaderAlignment and VerticalHeaderAlignment on any HeaderedContentControl. The themed GroupBox template reads them, which is how the group box below gets a large, right-aligned header."/>
+                        <GroupBox Header="Big header on the right" Width="400" HorizontalAlignment="Left"
+                                  ajut_ap:HeaderedContentControlXTA.HeaderFontSize="22"
+                                  ajut_ap:HeaderedContentControlXTA.HorizontalHeaderAlignment="Right"
+                                  ajut_ap:HeaderedContentControlXTA.HeaderPadding="0,0,12,-8">
+                            <TextBlock Text="The content is unchanged, only the header moved." Margin="5"/>
+                        </GroupBox>
+                        <ctrls:BasicCodeDisplay Margin="0,5,0,0" CodeText="{Binding ElementName=Self, Path=HeaderedContentCode, Mode=OneWay}"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="WindowXTA" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBlock TextWrapping="WrapWithOverflow" Margin="0,0,0,5"
+                                   Text="For custom chrome windows. FixMaximizeAsFullscreenIssue keeps a WindowStyle=None window from covering the taskbar when maximized, and the margin properties give the root element room when maximized or fullscreen. The showroom window uses all three, so there is nothing to click here: the code is what matters."/>
+                        <ctrls:BasicCodeDisplay CodeText="{Binding ElementName=Self, Path=WindowCode, Mode=OneWay}"/>
+                    </StackPanel>
+                </GroupBox>
+
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

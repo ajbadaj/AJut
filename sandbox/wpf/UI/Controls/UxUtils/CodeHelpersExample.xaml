@@ -1,0 +1,112 @@
+<UserControl x:Class="TheAJutShowRoom.UI.Controls.UxUtils.CodeHelpersExample"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:TheAJutShowRoom.UI.Controls.UxUtils"
+             xmlns:ctrls="clr-namespace:TheAJutShowRoom.UI.Controls"
+             mc:Ignorable="d"
+             d:DesignHeight="450" d:DesignWidth="800"
+             x:Name="Self">
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Margin="10,10,10,0">
+            <TextBlock Text="Code helpers" FontSize="18"/>
+            <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0"
+                       Text="The C# side of AJut.UX.Wpf: registration helpers that take the boilerplate out of dependency and attached properties, tree walkers, coercion of loose values into WPF types, and color math. Where a thing can be run, there is a button for it."/>
+        </StackPanel>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="10">
+
+                <GroupBox Header="DPUtils: dependency property registration" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBlock TextWrapping="WrapWithOverflow" Margin="0,0,0,5"
+                                   Text="A using alias binds DPUtils to the owning type, and Register takes a lambda naming the property, so the name, the owner and the type all come from the one expression. Default values, change callbacks, coercion, and read-only keys are overloads. This is how every dependency property in this showroom is declared, including the ones on this page."/>
+                        <ctrls:BasicCodeDisplay CodeText="{Binding ElementName=Self, Path=DPUtilsCode, Mode=OneWay}"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="APUtils: attached property registration" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBlock TextWrapping="WrapWithOverflow" Margin="0,0,0,5"
+                                   Text="Attached properties live on static classes, so instead of a using alias they get a registration helper field. Register is handed the Get and Set methods and checks that they are named and typed the way WPF expects. This is BorderXTA, in full."/>
+                        <ctrls:BasicCodeDisplay CodeText="{Binding ElementName=Self, Path=APUtilsCode, Mode=OneWay}"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="DependencyObjectXT: visual and logical tree walkers" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBlock TextWrapping="WrapWithOverflow" Margin="0,0,0,5"
+                                   Text="GetFirstChildOf, GetFirstParentOf and SearchParentsOf walk the visual tree by default, or the logical tree, or both. The buttons below run them against this page's own tree."/>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="First ScrollViewer above this button" Padding="10,4" Click="FindParentScroller_OnClick"/>
+                            <Button Content="First TextBlock under this page" Padding="10,4" Margin="5,0,0,0" Click="FindFirstTextBlock_OnClick"/>
+                            <Button Content="List every parent of this button" Padding="10,4" Margin="5,0,0,0" Click="ListParents_OnClick"/>
+                        </StackPanel>
+                        <TextBox Margin="0,5,0,5" IsReadOnly="True" MinHeight="60" MaxHeight="200" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"
+                                 FontFamily="Consolas" Text="{Binding ElementName=Self, Path=TreeProbeResult, Mode=OneWay}"/>
+                        <ctrls:BasicCodeDisplay CodeText="{Binding ElementName=Self, Path=TreeWalkCode, Mode=OneWay}"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="CoerceUtils: loose values into WPF types" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBlock TextWrapping="WrapWithOverflow" Margin="0,0,0,5"
+                                   Text="CoerceBrushFrom, CoerceColorFrom, CoerceThicknessFrom, CoerceCornerRadiusFrom, CoerceUriSourceFrom, CoerceImageSourceFrom and CoerceEnumFrom each take an object (a string, a number, the already-right type) and hand back the WPF type. The CallbackFor* versions plug straight into a dependency property as its CoerceValueCallback. ColorStringToBrushConverter is CoerceBrushFrom wearing a converter hat."/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="Brush text:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <TextBox Grid.Column="1" x:Name="BrushInput" Text="radial-gradient(circle at 30% 30%, #FFF, #246)" VerticalAlignment="Center"/>
+                            <Button Grid.Column="2" Content="Coerce brush" Margin="5,0" Click="CoerceBrush_OnClick"/>
+                            <Border Grid.Column="3" Height="24" Width="120" HorizontalAlignment="Left" BorderBrush="Black" BorderThickness="1"
+                                    Background="{Binding ElementName=Self, Path=CoercedBrush, Mode=OneWay}"/>
+
+                            <TextBlock Grid.Row="1" Text="Thickness text:" VerticalAlignment="Center" Margin="0,5,5,0"/>
+                            <TextBox Grid.Row="1" Grid.Column="1" x:Name="ThicknessInput" Text="8,2" VerticalAlignment="Center" Margin="0,5,0,0"/>
+                            <Button Grid.Row="1" Grid.Column="2" Content="Coerce thickness" Margin="5,5,5,0" Click="CoerceThickness_OnClick"/>
+                            <Border Grid.Row="1" Grid.Column="3" Margin="0,5,0,0" HorizontalAlignment="Left" BorderBrush="#246" Background="#8CCC"
+                                    BorderThickness="{Binding ElementName=Self, Path=CoercedThickness, Mode=OneWay}">
+                                <TextBlock Text="{Binding ElementName=Self, Path=CoercedThicknessReport, Mode=OneWay}" Margin="5,2"/>
+                            </Border>
+                        </Grid>
+                        <ctrls:BasicCodeDisplay Margin="0,5,0,0" CodeText="{Binding ElementName=Self, Path=CoerceCode, Mode=OneWay}"/>
+                    </StackPanel>
+                </GroupBox>
+
+                <GroupBox Header="ColorMathExtensions and AJutColorHelper" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBlock TextWrapping="WrapWithOverflow" Margin="0,0,0,5"
+                                   Text="AJutColorHelper in AJut.UX holds the platform-free math (HSL conversion, relative luminance, contrast ratio, lighten, darken, blend, and picking a readable foreground). ColorMathExtensions in AJut.UX.Wpf puts the same math on System.Windows.Media.Color as extension methods."/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Color:" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <TextBox x:Name="ColorInput" Text="#2A6F97" Width="120" VerticalAlignment="Center"/>
+                            <Button Content="Analyze" Margin="5,0,0,0" Click="AnalyzeColor_OnClick"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                            <Border Width="90" Height="50" Background="{Binding ElementName=Self, Path=AnalyzedBrush, Mode=OneWay}" BorderBrush="Black" BorderThickness="1">
+                                <TextBlock Text="Readable" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{Binding ElementName=Self, Path=ReadableForegroundBrush, Mode=OneWay}"/>
+                            </Border>
+                            <Border Width="90" Height="50" Margin="5,0,0,0" Background="{Binding ElementName=Self, Path=LightenedBrush, Mode=OneWay}" BorderBrush="Black" BorderThickness="1">
+                                <TextBlock Text="Lighten 0.2" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <Border Width="90" Height="50" Margin="5,0,0,0" Background="{Binding ElementName=Self, Path=DarkenedBrush, Mode=OneWay}" BorderBrush="Black" BorderThickness="1">
+                                <TextBlock Text="Darken 0.2" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White"/>
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Margin="0,5,0,5" FontFamily="Consolas" Text="{Binding ElementName=Self, Path=ColorReport, Mode=OneWay}"/>
+                        <ctrls:BasicCodeDisplay CodeText="{Binding ElementName=Self, Path=ColorMathCode, Mode=OneWay}"/>
+                    </StackPanel>
+                </GroupBox>
+
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

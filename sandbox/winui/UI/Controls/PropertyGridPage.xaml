@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AJutShowRoomWinUI.UI.Controls.PropertyGridPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ajut="using:AJut.UX.Controls"
+    xmlns:ajut_pg="using:AJut.UX.PropertyInteraction"
+    xmlns:ui="using:AJutShowRoomWinUI.UI"
+    mc:Ignorable="d"
+    Unloaded="Page_OnUnloaded">
+
+    <ScrollViewer Padding="16">
+        <StackPanel Spacing="12" MaxWidth="1000" HorizontalAlignment="Left">
+            <TextBlock Text="PropertyGrid" FontSize="20" FontWeight="SemiBold"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                       Text="Point the grid at an object and it builds a row per public property, each with an editor picked by the property's type name (or by a PGEditor attribute). Attributes on the object tune the rows: PGLabel for the label and subtitle, PGToolTip, PGGroup to fold rows under a header, PGHidden to skip one, PGButton to show a method as a button. The three sources below are plain classes; switch between them to see the grid rebuild. The exhaustive source switcher, the ordering and PGShowIf repros and the JSON mirror are on the Debug area's PropertyGrid debug page."/>
+
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="Source:" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                <Button Content="Lamp" Click="SourceLamp_OnClick"/>
+                <Button Content="Speaker" Click="SourceSpeaker_OnClick"/>
+                <Button Content="Nothing" Click="SourceNone_OnClick"/>
+            </StackPanel>
+
+            <Grid ColumnSpacing="24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="3*"/>
+                    <ColumnDefinition Width="2*"/>
+                </Grid.ColumnDefinitions>
+
+                <ajut:PropertyGrid x:Name="DemoGrid" Height="320" LabelColumnWidth="140" RowSpacing="4" PropertyToolTipPlacement="PropertyNameAndValue">
+                    <ajut:PropertyGrid.ItemTemplateSelector>
+                        <ajut:PropertyGridTemplateSelector>
+                            <ajut:PropertyGridTemplateSelector.Default>
+                                <DataTemplate x:DataType="ajut_pg:PropertyEditTarget">
+                                    <TextBlock Text="{Binding Path=EditValue}" VerticalAlignment="Center" Opacity="0.7"/>
+                                </DataTemplate>
+                            </ajut:PropertyGridTemplateSelector.Default>
+                            <ajut:PropertyGridTemplateSelector.RegisteredTemplates>
+                                <DataTemplate x:Key="String" x:DataType="ajut_pg:PropertyEditTarget">
+                                    <TextBox Text="{Binding Path=EditValue, Mode=TwoWay}"/>
+                                </DataTemplate>
+                                <DataTemplate x:Key="Boolean" x:DataType="ajut_pg:PropertyEditTarget">
+                                    <CheckBox IsChecked="{Binding Path=EditValue, Mode=TwoWay}" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                                <DataTemplate x:Key="Int32" x:DataType="ajut_pg:PropertyEditTarget">
+                                    <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}" TextBoxHeight="24"/>
+                                </DataTemplate>
+                                <DataTemplate x:Key="Single" x:DataType="ajut_pg:PropertyEditTarget">
+                                    <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}" TextBoxHeight="24"/>
+                                </DataTemplate>
+                                <DataTemplate x:Key="eLampMode" x:DataType="ajut_pg:PropertyEditTarget">
+                                    <ajut:EnumComboBox SelectedItem="{Binding Path=EditValue, Mode=TwoWay}" VerticalAlignment="Center"/>
+                                </DataTemplate>
+                            </ajut:PropertyGridTemplateSelector.RegisteredTemplates>
+                        </ajut:PropertyGridTemplateSelector>
+                    </ajut:PropertyGrid.ItemTemplateSelector>
+                </ajut:PropertyGrid>
+
+                <Border Grid.Column="1" BorderThickness="1" BorderBrush="{ThemeResource SystemControlForegroundBaseMediumBrush}" CornerRadius="4" Padding="12" VerticalAlignment="Top">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="The source right now" FontWeight="SemiBold"/>
+                        <TextBlock Text="{x:Bind SourceSummary, Mode=OneWay}" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <ui:ShowroomCodeDisplay CodeText="{x:Bind DemoCode}" Height="300"/>
+        </StackPanel>
+    </ScrollViewer>
+</Page>
