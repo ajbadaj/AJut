@@ -18,7 +18,7 @@
                        Text="Each probe checks the palette for this tab's current theme. Switch the theme with the Theme Switcher on the Custom AJut Controls tab and run them again to check the other palette."/>
 
             <TextBlock TextWrapping="Wrap"
-                       Text="1. Looks up both keys from code, through the loaded theme. PASS means each came back as a double holding the value this theme's palette declares. FAIL says what came back instead, or what the lookup threw."/>
+                       Text="1. Looks up both keys from code, through the loaded theme, two ways: from this tab, the way a control finds a resource for itself, and by this tab's theme name, straight from the application's resources. PASS means each came back as a double holding the value this theme's palette declares. FAIL says what came back instead, or what the lookup threw. If only the lookups from this tab fail, the walk up from the tab is reading the wrong theme."/>
             <Button Content="Probe: look up both keys from code" Click="OnLookUpFromCode_OnClick" HorizontalAlignment="Left"/>
 
             <TextBlock TextWrapping="Wrap"
