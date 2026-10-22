@@ -6,6 +6,7 @@
     <!-- Default style: WinUI3 system resources only, no AJut_ brush keys.
          AllControlThemeOverrides.xaml provides the AJut-branded variant.
          PART_ItemsPanel is a StackPanel; code populates it with ToggleStripButton items.
+         The OrientationStates group turns the strip for its Orientation DP.
          ToggleStripButton controls own all button-level visual state - no Border.Resources
          overrides are needed here. -->
     <Style TargetType="local:ToggleStrip">
@@ -22,10 +23,42 @@
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="{TemplateBinding CornerRadius}">
+                        <!-- OrientationStates: code goes to Horizontal or Vertical from the strip's
+                             Orientation. Literal values only (structural, nothing themed), and each state
+                             sets every property explicitly so switching back and forth always lands clean.
+                             Vertical turns the BumpStack so it scrolls and bumps up and down, and moves the
+                             overflow chevron to the bottom edge pointing down. PART_ItemsPanel is turned from
+                             code instead: the BumpStack moves it into its own template, so it is not a safe
+                             setter target from here. -->
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="OrientationStates">
+                                <VisualState x:Name="Horizontal">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_ScrollHost.Orientation" Value="Horizontal"/>
+                                        <Setter Target="PART_ScrollHost.ButtonPadding" Value="4,0"/>
+                                        <Setter Target="PART_OverflowButton.HorizontalAlignment" Value="Right"/>
+                                        <Setter Target="PART_OverflowButton.VerticalAlignment" Value="Stretch"/>
+                                        <Setter Target="PART_OverflowButton.Padding" Value="6,0"/>
+                                        <Setter Target="OverflowGlyph.Glyph" Value="&#xE76C;"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Vertical">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_ScrollHost.Orientation" Value="Vertical"/>
+                                        <Setter Target="PART_ScrollHost.ButtonPadding" Value="0,4"/>
+                                        <Setter Target="PART_OverflowButton.HorizontalAlignment" Value="Stretch"/>
+                                        <Setter Target="PART_OverflowButton.VerticalAlignment" Value="Bottom"/>
+                                        <Setter Target="PART_OverflowButton.Padding" Value="0,6"/>
+                                        <Setter Target="OverflowGlyph.Glyph" Value="&#xE70D;"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+
                         <!-- Single overlay cell: the BumpStack hosts the items and (in Scroll mode)
                              provides the bump-scroll buttons; the overflow chevron is drawn on top at
-                             the trailing edge so it never consumes layout width (which would otherwise
-                             feed back into the overflow calculation). -->
+                             the trailing edge (right, or bottom when vertical) so it never consumes
+                             layout length (which would otherwise feed back into the overflow calculation). -->
                         <Grid>
                             <local:BumpStack x:Name="PART_ScrollHost"
                                              ScrollingEnabled="False"
@@ -44,7 +77,8 @@
                                     Background="{TemplateBinding Background}"
                                     BorderThickness="0"
                                     Visibility="Collapsed">
-                                <FontIcon FontFamily="Segoe MDL2 Assets"
+                                <FontIcon x:Name="OverflowGlyph"
+                                          FontFamily="Segoe MDL2 Assets"
                                           Glyph="&#xE76C;"
                                           FontSize="12"/>
                                 <Button.Flyout>

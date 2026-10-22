@@ -103,6 +103,27 @@ namespace AJut.UX.Tests
         public int Modified { get; set; } = 99;
     }
 
+    /// <summary>
+    /// Rows with no default of their own (list elements, a button, a default method that is not found) beside rows
+    /// that have one, for the rule that only a row away from a known default draws bold.
+    /// </summary>
+    public class NoDefaultRowsModel
+    {
+        [PGList]
+        public List<int> Numbers { get; set; } = new List<int> { 5, 7 };
+
+        [PGOverrideDefault("NotARealMethod")]
+        public int Unresolved { get; set; } = 3;
+
+        [PGOverrideDefault(10)]
+        public int Modified { get; set; } = 99;
+
+        public string Name { get; set; } = "set";
+
+        [PGButton("Run")]
+        public void Run () { }
+    }
+
     /// <summary>Sub-object for expansion tests.</summary>
     public class InnerObject
     {
@@ -699,6 +720,53 @@ namespace AJut.UX.Tests
             Assert.IsTrue(modified.IsAtDefaultValue);
             Assert.AreEqual(10, modified.EditValue);
             Assert.AreEqual(10, model.Modified, "ResetToDefault should push the value back to the source");
+        }
+
+        [TestMethod]
+        public void PET_ListElementOfPlainValues_HasNoDefault_IsNotShownModified ()
+        {
+            // A list element has no default to go back to, so it is never "away from" one
+            var model = new NoDefaultRowsModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+            SetupAll(targets);
+
+            PropertyEditTarget element = FirstElement(targets, nameof(NoDefaultRowsModel.Numbers));
+            Assert.AreEqual(5, element.EditValue);
+            Assert.IsFalse(element.HasDefaultValue);
+            Assert.IsTrue(element.IsAtDefaultValue, "An element with no default counts as at default");
+            Assert.IsTrue(PropertyGridRowRules.UsesDefaultValueLabel(element), "An element with no default is not bold");
+        }
+
+        [TestMethod]
+        public void PET_ButtonRow_HasNoDefault_IsNotShownModified ()
+        {
+            PropertyEditTarget button = PropertyEditTarget.GenerateButtonsForMethodsOf(new NoDefaultRowsModel()).Single();
+            button.Setup();
+
+            Assert.IsFalse(button.HasDefaultValue);
+            Assert.IsTrue(button.IsAtDefaultValue, "A button row with no default counts as at default");
+            Assert.IsTrue(PropertyGridRowRules.UsesDefaultValueLabel(button), "A button row is not bold");
+        }
+
+        [TestMethod]
+        public void PET_EveryRowShownModified_CanResetToDefault ()
+        {
+            // Bold says the value differs from its default, and reset is how it goes back, so the two have to agree
+            var model = new NoDefaultRowsModel();
+            var targets = PropertyEditTarget.GenerateForPropertiesOf(model).ToList();
+            targets.AddRange(PropertyEditTarget.GenerateButtonsForMethodsOf(model));
+            SetupAll(targets);
+
+            List<PropertyEditTarget> rows = targets
+                .Concat(targets.SelectMany(t => t.Children.OfType<PropertyEditTarget>()))
+                .ToList();
+            List<string> boldWithoutReset = rows
+                .Where(r => !PropertyGridRowRules.UsesDefaultValueLabel(r) && !PropertyGridRowRules.CanResetToDefault(r))
+                .Select(r => r.PropertyPathTarget)
+                .ToList();
+
+            Assert.AreEqual(string.Empty, string.Join(", ", boldWithoutReset), "Rows shown bold that cannot reset");
+            Assert.IsFalse(PropertyGridRowRules.UsesDefaultValueLabel(Find(targets, nameof(NoDefaultRowsModel.Modified))), "A row away from a known default is still bold");
         }
 
         // ===[ Expandable sub-object tests ]===

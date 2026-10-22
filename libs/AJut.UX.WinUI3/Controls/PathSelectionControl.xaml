@@ -8,6 +8,7 @@
          Template parts: PART_Root, PART_PathTextBox, PART_BrowseButton,
          PART_ShowInExplorerButton (optional, collapsed unless IsOpenInExplorerButtonAllowed).
          VSM groups: BorderStates (Normal/Focused/PathInvalid),
+                     TextBoxFocusStates (TextBoxUnfocused/TextBoxFocused),
                      WarningDisplayStates (WarningHidden/WarningShown),
                      ExplorerButtonStates (ExplorerButtonHidden/ExplorerButtonShown). -->
     <Style TargetType="local:PathSelectionControl">
@@ -145,15 +146,31 @@
                                 <VisualState x:Name="Focused">
                                     <VisualState.Setters>
                                         <Setter Target="PART_Root.BorderBrush" Value="{ThemeResource AJut_PathSelectionControl_FocusedBorderBrush}"/>
-                                        <Setter Target="RimLighting_Bright.BorderBrush" Value="#5FFF"/>
-                                        <Setter Target="RimLighting_Dark.BorderBrush" Value="#8000"/>
-                                        <Setter Target="RimLighting_Dark.Background" Value="{ThemeResource AJut_PathSelectionControl_FocusedTextBoxBackgroundBrush}"/>
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="PathInvalid">
                                     <VisualState.Setters>
                                         <Setter Target="PART_Root.BorderBrush"
                                                 Value="#C00000"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                            <!-- The text box's focused look follows focus alone, in its own group, so an invalid path shows
+                                 its red border on top of it rather than taking it away while the user is still typing -->
+                            <VisualStateGroup x:Name="TextBoxFocusStates">
+                                <!-- TextBoxUnfocused: explicit revert - WinUI3 Setters do not auto-revert on state exit -->
+                                <VisualState x:Name="TextBoxUnfocused">
+                                    <VisualState.Setters>
+                                        <Setter Target="RimLighting_Bright.BorderBrush" Value="Transparent"/>
+                                        <Setter Target="RimLighting_Dark.BorderBrush" Value="Transparent"/>
+                                        <Setter Target="RimLighting_Dark.Background" Value="Transparent"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="TextBoxFocused">
+                                    <VisualState.Setters>
+                                        <Setter Target="RimLighting_Bright.BorderBrush" Value="#5FFF"/>
+                                        <Setter Target="RimLighting_Dark.BorderBrush" Value="#8000"/>
+                                        <Setter Target="RimLighting_Dark.Background" Value="{ThemeResource AJut_PathSelectionControl_FocusedTextBoxBackgroundBrush}"/>
                                     </VisualState.Setters>
                                 </VisualState>
                             </VisualStateGroup>

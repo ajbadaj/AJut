@@ -44,6 +44,8 @@
                                        FontWeight="{ajut:TemplateBinding FontWeight}"
                                        FontStyle="{ajut:TemplateBinding FontStyle}"
                                        HorizontalContentAlignment="{ajut:TemplateBinding HorizontalContentAlignment}"
+                                       VerticalContentAlignment="{ajut:TemplateBinding VerticalContentAlignment}"
+                                       Orientation="{ajut:TemplateBinding Orientation}"
                                        Padding="{ajut:TemplateBinding Padding}"
                                        SeparatorBrush="{ajut:TemplateBinding SeparatorBrush}"
                                        SeparatorThickness="{ajut:TemplateBinding SeparatorThickness}"

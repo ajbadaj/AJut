@@ -55,6 +55,8 @@
     <SolidColorBrush x:Key="AJut_PropertyGridItemRow_HoverBackground" Color="#1A2196F3"/>
     <!-- Hover border: 1px outline around the full row on hover. Default: subtle gray. -->
     <SolidColorBrush x:Key="AJut_PropertyGridItemRow_HoverBorderBrush" Color="#888888"/>
+    <!-- Label splitter: the line over the label and editor boundary while the pointer is near it. Default: accent blue. -->
+    <SolidColorBrush x:Key="AJut_PropertyGrid_LabelSplitterBrush" Color="#FF2196F3"/>
 
     <!-- ===========[ PopupMenuButton ]====================================== -->
     <!-- Dropdown chevron glyph foreground (default: light gray, readable on most backgrounds) -->

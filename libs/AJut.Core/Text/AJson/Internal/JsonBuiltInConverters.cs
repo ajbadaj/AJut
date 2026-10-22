@@ -328,13 +328,10 @@ namespace AJut.Text.AJson
         /// </summary>
         private sealed class ParsableConverter : JsonScalarConverter
         {
-            private readonly TryParseText m_tryParse;
+            private TryParseText m_tryParse;
 
-            [UnconditionalSuppressMessage("AOT", "IL3050",
-                Justification = "Reflection-path fallback; generated serializers call the type's TryParse directly instead.")]
             public ParsableConverter (Type type, bool isUsuallyQuoted) : base(type, isUsuallyQuoted)
             {
-                m_tryParse = kTryParseWithMethod.MakeGenericMethod(type).CreateDelegate<TryParseText>();
             }
 
             private delegate bool TryParseText (string text, out object value);
@@ -344,8 +341,24 @@ namespace AJut.Text.AJson
                 return ((IFormattable)instance).ToString(null, CultureInfo.InvariantCulture);
             }
 
+            [UnconditionalSuppressMessage("AOT", "IL3050",
+                Justification = "Reflection-path fallback, only made where dynamic code is supported; generated serializers call the type's TryParse directly instead.")]
             public override bool TryReadJsonText (string text, Type fullTarget, JsonInterpreterSettings settings, out object value)
             {
+                // The TryParse is made for the type on the first read. Writing needs only IFormattable, so it works
+                //  everywhere; reading this way needs the generic TryParse made at runtime, which a platform without
+                //  dynamic code can't do. Generated readers never come here, they call the type's TryParse themselves.
+                if (m_tryParse == null)
+                {
+                    if (!JsonHelper.CanUseReflectionPathFor(this.TargetType, owner: null, "Read it as a member of an [OptimizeAJson] type, whose generated reader calls its TryParse directly."))
+                    {
+                        value = null;
+                        return false;
+                    }
+
+                    m_tryParse = kTryParseWithMethod.MakeGenericMethod(this.TargetType).CreateDelegate<TryParseText>();
+                }
+
                 return m_tryParse(text, out value);
             }
         }

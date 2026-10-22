@@ -583,6 +583,115 @@ namespace AJut.Core.UnitTests
 
 
         [TestMethod]
+        public void Stratabase_NoDynamicCode_BuiltInValueTypeListsStillWork ()
+        {
+            using (DynamicCodeAvailability.SimulateUnsupported())
+            {
+                var data = new ThingWithTwoLists();
+                data.Ints.AddRange(new[] { 1, 2, 3 });
+
+                Stratabase sb = new Stratabase(1);
+                sb.SetBaselineFromPropertiesOf(data);
+
+                Assert.IsTrue(sb.TryGetBaselinePropertyValue(data.Id, nameof(ThingWithTwoLists.Ints), out List<int> stored));
+                CollectionAssert.AreEqual(new[] { 1, 2, 3 }, stored);
+            }
+        }
+
+        [TestMethod]
+        public void Stratabase_NoDynamicCode_ReferenceTypeListsStillWork ()
+        {
+            using (DynamicCodeAvailability.SimulateUnsupported())
+            {
+                var data = new TestDataWithList { Name = "Bob" };
+                data.ChildList.Add(new TestData { Name = "Mary" });
+
+                Stratabase sb = new Stratabase(1);
+                sb.SetBaselineFromPropertiesOf(data.Id, data);
+
+                Assert.IsTrue(sb.TryGetBaselinePropertyValue(data.Id, nameof(TestDataWithList.ChildList), out List<TestData> stored));
+                Assert.AreEqual(1, stored.Count);
+            }
+        }
+
+        [TestMethod]
+        public void Stratabase_NoDynamicCode_AnUnregisteredStructListSaysWhatToRegister ()
+        {
+            using (DynamicCodeAvailability.SimulateUnsupported())
+            {
+                var data = new ThingWithUnregisteredStructList();
+                data.Points.Add(new UnregisteredStrataPoint { X = 1 });
+
+                Stratabase sb = new Stratabase(1);
+                var error = Assert.ThrowsException<InvalidOperationException>(() => sb.SetBaselineFromPropertiesOf(data));
+                StringAssert.Contains(error.Message, nameof(Stratabase.RegisterListElementType));
+                StringAssert.Contains(error.Message, nameof(UnregisteredStrataPoint));
+            }
+        }
+
+        [TestMethod]
+        public void Stratabase_NoDynamicCode_ARegisteredStructListWorks ()
+        {
+            Stratabase.RegisterListElementType<RegisteredStrataPoint>();
+            using (DynamicCodeAvailability.SimulateUnsupported())
+            {
+                var data = new ThingWithRegisteredStructList();
+                data.Points.Add(new RegisteredStrataPoint { X = 7 });
+
+                Stratabase sb = new Stratabase(1);
+                sb.SetBaselineFromPropertiesOf(data);
+
+                Assert.IsTrue(sb.TryGetBaselinePropertyValue(data.Id, nameof(ThingWithRegisteredStructList.Points), out List<RegisteredStrataPoint> stored));
+                Assert.AreEqual(7, stored[0].X);
+            }
+        }
+
+        [TestMethod]
+        public void Stratabase_NoDynamicCode_AListAccessRegistersItsElementType ()
+        {
+            Stratabase sb = new Stratabase(1);
+            Guid id = Guid.NewGuid();
+            using (sb.GenerateListPropertyAccess<AccessRegisteredStrataPoint>(id, "Points"))
+            {
+            }
+
+            using (DynamicCodeAvailability.SimulateUnsupported())
+            {
+                Assert.IsTrue(sb.InsertElementIntoBaselineList(id, "Points", 0, new AccessRegisteredStrataPoint { X = 3 }));
+                Assert.AreEqual(1, sb.GetElementCountInBaseline(id, "Points"));
+            }
+        }
+
+        [TestMethod]
+        public void Stratabase_ListAccess_ABaseAddsAfterADerivedFirstAdd ()
+        {
+            Stratabase sb = new Stratabase(1);
+            Guid id = Guid.NewGuid();
+            using (StrataPropertyListAccess<TestData> list = sb.GenerateListPropertyAccess<TestData>(id, "Items"))
+            {
+                list.AddElementIntoBaseline(new DerivedTestData { Name = "Derived first" });
+                list.AddElementIntoBaseline(new TestData { Name = "Base second" });
+
+                Assert.AreEqual(2, list.Elements.Count);
+                Assert.AreEqual("Base second", list.Elements[1].Name);
+            }
+        }
+
+        [TestMethod]
+        public void Stratabase_SetObjectWithProperties_FillsAListConfigArray ()
+        {
+            var data = new TestDataWithArray { Name = "Bob", Numbers = new[] { 4, 5, 6 } };
+
+            Stratabase sb = new Stratabase(1);
+            sb.SetBaselineFromPropertiesOf(data.Id, data);
+
+            var found = new TestDataWithArray(data.Id);
+            sb.SetObjectWithProperties(data.Id, ref found);
+
+            CollectionAssert.AreEqual(data.Numbers, found.Numbers);
+        }
+
+        [TestMethod]
         public void Stratabase_TestFail_SetObjectWithReferenceListProperties ()
         {
             var data = new TestDataWithReferenceList
@@ -1786,6 +1895,51 @@ namespace AJut.Core.UnitTests
             public Guid Id { get; init; }
             public string Name { get; set; }
             public int Value { get; set; }
+        }
+
+        public class DerivedTestData : TestData
+        {
+        }
+
+        // Each of these structs is used by one test only, since registering an element type lasts the whole run
+        public struct UnregisteredStrataPoint
+        {
+            public int X { get; set; }
+        }
+
+        public struct RegisteredStrataPoint
+        {
+            public int X { get; set; }
+        }
+
+        public struct AccessRegisteredStrataPoint
+        {
+            public int X { get; set; }
+        }
+
+        public class ThingWithUnregisteredStructList
+        {
+            [StratabaseId]
+            public Guid Id { get; set; } = Guid.NewGuid();
+            public List<UnregisteredStrataPoint> Points { get; set; } = new List<UnregisteredStrataPoint>();
+        }
+
+        public class ThingWithRegisteredStructList
+        {
+            [StratabaseId]
+            public Guid Id { get; set; } = Guid.NewGuid();
+            public List<RegisteredStrataPoint> Points { get; set; } = new List<RegisteredStrataPoint>();
+        }
+
+        public class TestDataWithArray : TestData
+        {
+            public TestDataWithArray () : base() { }
+
+            [StratabaseIdConstructor]
+            public TestDataWithArray (Guid id) : base(id) { }
+
+            [StrataListConfig(eStrataListConfig.ObservableElementManagement)]
+            public int[] Numbers { get; set; }
         }
 
         public class TestDataWithList : TestData

@@ -66,6 +66,7 @@ namespace AJut.UX.Controls
         private DockTabItem m_tabReorderDragItem;
         private int m_tabReorderSourceIdx = -1;
         private int m_tabReorderTargetIdx = -1;
+        private readonly List<double> m_tabReorderWidths = new List<double>();
 
         // Close buttons built per-rebuild inside the leaf header and each tab. Tracked so their Click
         // (and the tab button's PointerPressed AddHandler) get unhooked in DetachLayoutSubscriptions -
@@ -322,6 +323,7 @@ namespace AJut.UX.Controls
                     oldTab.TabReorderDropped            -= this.OnTabReorderDropped;
                     oldTab.TabDragCancelled             -= this.OnTabDragCancelled;
                     oldTab.TabRightTapped               -= this.OnTabRightTapped;
+                    oldTab.Adapter = null;
                 }
             }
 
@@ -519,6 +521,7 @@ namespace AJut.UX.Controls
                 var tabItem = new DockTabItem
                 {
                     Index = i,
+                    Adapter = adapter,
                     IsSelected = isSelected,
                     BorderThickness = new Thickness(leftBorder, 0, rightBorder, 1),
                     Content = this.BuildTabContent(adapter, i, dockingManager),
@@ -626,29 +629,18 @@ namespace AJut.UX.Controls
             return tabInner;
         }
 
-        // Returns the index of the tab whose x-range contains cursorX within the panel.
-        // Only counts DockTabItem children; the trailing spacer Border is skipped.
-        private static int FindTabIndexAtX(StackPanel panel, double cursorX)
+        // Fills widths with the widths of the tabs in the strip, in order, skipping the spacer and anything else that
+        // isn't a tab. The list is reused across a reorder drag's pointer moves rather than made on each.
+        private static void FillTabWidths(StackPanel panel, List<double> widths)
         {
-            double accum = 0;
-            int realIndex = 0;
-            for (int i = 0; i < panel.Children.Count; i++)
+            widths.Clear();
+            foreach (UIElement child in panel.Children)
             {
-                if (panel.Children[i] is not DockTabItem child)
+                if (child is DockTabItem tab)
                 {
-                    continue;
-                }
-
-                accum += child.ActualWidth;
-                ++realIndex;
-
-                if (cursorX < accum)
-                {
-                    return realIndex - 1;
+                    widths.Add(tab.ActualWidth);
                 }
             }
-
-            return Math.Max(0, realIndex - 1);
         }
 
         // ===========[ Tab Strip Event Handlers ]================================
@@ -733,40 +725,19 @@ namespace AJut.UX.Controls
             ghostTransform.Y = panelOrigin.Y;
 
             // Find target index and position insertion indicator
-            int targetIdx = FindTabIndexAtX(m_tabPanel, cursorXInPanel);
+            FillTabWidths(m_tabPanel, m_tabReorderWidths);
+            int targetIdx = DockDragRules.FindTabIndexAtX(m_tabReorderWidths, cursorXInPanel);
             m_tabReorderTargetIdx = targetIdx;
 
-            if (targetIdx == m_tabReorderSourceIdx)
+            double? lineX = DockDragRules.FindInsertLineX(m_tabReorderWidths, m_tabReorderSourceIdx, targetIdx);
+            if (lineX == null)
             {
                 this.PART_DragInsertLine.Visibility = Visibility.Collapsed;
             }
             else
             {
-                // Position the line at the left edge of the target tab
-                double lineX = 0;
-                int tabCount = 0;
-                for (int i = 0; i < m_tabPanel.Children.Count; i++)
-                {
-                    if (m_tabPanel.Children[i] is DockTabItem t)
-                    {
-                        if (tabCount == targetIdx)
-                        {
-                            // If target is after source, show line at right edge instead
-                            if (targetIdx > m_tabReorderSourceIdx)
-                            {
-                                lineX += t.ActualWidth;
-                            }
-
-                            break;
-                        }
-
-                        lineX += t.ActualWidth;
-                        tabCount++;
-                    }
-                }
-
                 var lineTransform = (TranslateTransform)this.PART_DragInsertLine.RenderTransform;
-                lineTransform.X = panelOrigin.X + lineX - 1;
+                lineTransform.X = panelOrigin.X + lineX.Value - 1;
                 lineTransform.Y = panelOrigin.Y;
                 this.PART_DragInsertLine.Visibility = Visibility.Visible;
             }
@@ -778,9 +749,8 @@ namespace AJut.UX.Controls
             int sourceIdx = m_tabReorderSourceIdx;
             this.ClearTabReorderDragState();
 
-            if (targetIdx >= 0
-                && targetIdx != sourceIdx
-                && targetIdx < this.ViewModel?.DockedContent.Count)
+            if ((this.ViewModel != null)
+                && DockDragRules.ShouldCommitTabReorder(sourceIdx, targetIdx, this.ViewModel.DockedContent.Count))
             {
                 this.ViewModel.SwapDockedContentOrder(sourceIdx, targetIdx);
                 this.ViewModel.SelectedIndex = targetIdx;
@@ -1318,7 +1288,7 @@ namespace AJut.UX.Controls
 
         private void BuildDropOverlay()
         {
-            // 3×3 grid (84×60 px) centered over the zone - shown when IsDirectDropTarget=true
+            // 3x3 grid (84x60 px) centered over the zone - shown when IsDirectDropTarget=true
             //   Col layout: 20 | 44 | 20
             //   Row layout: 19 | 22 | 19
             //   [1,0]=Left  [0,1]=Top  [1,2]=Right  [2,1]=Bottom  [1,1]=Center(AddToTabbed)
@@ -1335,8 +1305,8 @@ namespace AJut.UX.Controls
 
             var grid = new Grid
             {
-                Width = 84,
-                Height = 60,
+                Width = DockDragRules.kOverlayWidth,
+                Height = DockDragRules.kOverlayHeight,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
                 Visibility = Visibility.Collapsed,
@@ -1346,12 +1316,12 @@ namespace AJut.UX.Controls
             Grid.SetRowSpan(grid, 99);
             Grid.SetColumnSpan(grid, 99);
 
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(20) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(44) });
-            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(20) });
-            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(19) });
-            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(22) });
-            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(19) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(DockDragRules.kOverlayEdgeColumnWidth) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(DockDragRules.kOverlayCenterColumnWidth) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(DockDragRules.kOverlayEdgeColumnWidth) });
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(DockDragRules.kOverlayEdgeRowHeight) });
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(DockDragRules.kOverlayCenterRowHeight) });
+            grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(DockDragRules.kOverlayEdgeRowHeight) });
 
             Grid.SetRow(left, 1); Grid.SetColumn(left, 0);
             Grid.SetRow(top, 0); Grid.SetColumn(top, 1);
@@ -1417,10 +1387,8 @@ namespace AJut.UX.Controls
             // The center "+" stays visible for all orientations but is disabled (50% opacity)
             // for split zones so users can see it exists without being able to misuse it.
             var orientation = this.ViewModel?.Orientation ?? eDockOrientation.Empty;
-            bool canSplit      = orientation != eDockOrientation.Empty;
-            bool isLeaf        = orientation == eDockOrientation.Single || orientation == eDockOrientation.Tabbed;
-            bool centerEnabled = !canSplit || isLeaf;
-            var splitVis = canSplit ? Visibility.Visible : Visibility.Collapsed;
+            bool centerEnabled = DockDragRules.IsCenterWidgetEnabled(orientation);
+            var splitVis = DockDragRules.ShowsSplitWidgets(orientation) ? Visibility.Visible : Visibility.Collapsed;
             m_overlayLeft.Visibility   = splitVis;
             m_overlayTop.Visibility    = splitVis;
             m_overlayRight.Visibility  = splitVis;
@@ -1439,38 +1407,30 @@ namespace AJut.UX.Controls
         private void OnHeaderPointerPressed(object sender, PointerRoutedEventArgs e)
         {
             var manager = m_manager as DockingManager;
-            if (manager == null)
+            if ((manager == null) || (this.ViewModel == null))
             {
                 return;
             }
 
+            // In the root window, dragging tears this zone off. In a tearoff, the tearoff's own root zone leaves
+            // dragging to the title bar; any other zone tears off when the root is a split (its siblings keep the
+            // root from emptying), and otherwise the whole tearoff window moves. A zone holding a panel that can't
+            // tear off doesn't tear off at all, so its header drags nothing.
             var hostWindow = manager.GetWindowForZone(this);
-
-            if (hostWindow != manager.RootWindow)
+            bool isInTearoff = hostWindow != manager.RootWindow;
+            DockZone tearoffRootZone = isInTearoff ? manager.GetRootDockZoneForWindow(hostWindow) : null;
+            switch (DockDragRules.ChooseHeaderDragSubject(this.ViewModel, isInTearoff, tearoffRootZone?.ViewModel))
             {
-                // This zone lives inside a tearoff window.
-                var rootZone = manager.GetRootDockZoneForWindow(hostWindow);
+                case eHeaderDragSubject.ThisZone:
+                    m_headerDragZone = this;
+                    break;
 
-                if (rootZone == this)
-                {
-                    // This IS the root zone of the tearoff. The title bar handles all
-                    // window-level drag; suppress the panel header entirely.
+                case eHeaderDragSubject.TearoffRoot:
+                    m_headerDragZone = tearoffRootZone;
+                    break;
+
+                default:
                     return;
-                }
-
-                // Non-root panel in a tearoff. If the tearoff root is a split zone
-                // (Horizontal/Vertical) this zone can be torn off independently - the
-                // remaining sibling(s) keep the root non-empty, which is required.
-                // If the root is a leaf (Single/Tabbed), tearing off would empty it,
-                // which is not allowed; drag the whole tearoff window instead.
-                bool rootIsSplit = rootZone?.ViewModel?.Orientation
-                    .IsFlagInGroup(eDockOrientation.AnySplitOrientation) == true;
-                m_headerDragZone = rootIsSplit ? this : rootZone;
-            }
-            else
-            {
-                // Root window - dragging tears this zone off.
-                m_headerDragZone = this;
             }
 
             var border = (Border)sender;
@@ -1495,9 +1455,9 @@ namespace AJut.UX.Controls
             double dy = cur.Y - m_headerDragLocalPressPt.Y;
 
             var manager = m_manager as DockingManager;
-            double threshold = manager?.DragThresholdPixels ?? 8.0;
+            double threshold = manager?.DragThresholdPixels ?? DockDragRules.kDefaultDragThreshold;
 
-            if (dx * dx + dy * dy > threshold * threshold)
+            if (DockDragRules.HasMovedPastThreshold(dx, dy, threshold))
             {
                 m_headerDragPending = false;
                 border.ReleasePointerCapture(e.Pointer);

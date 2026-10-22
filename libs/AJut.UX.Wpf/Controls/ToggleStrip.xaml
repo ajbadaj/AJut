@@ -9,12 +9,30 @@
          RelativeSource AncestorType ToggleStrip - so the same template works inside the overflow
          Popup, which lives in a separate visual tree that FindAncestor cannot cross. -->
     <ControlTemplate x:Key="ToggleStripItemButtonTemplate" TargetType="{x:Type ToggleButton}">
-        <Border x:Name="RootBorder" Background="#01000000"
-                CornerRadius="{Binding Converter={local:ToggleStripCornerRadiusConverter ReductionPercent=0.25}}">
+        <!-- The corner and separator converters take the ToggleItem itself and read its Edges (set by the items panel
+             from the shared ToggleStripItemEdges); the Edges binding in each MultiBinding is there so it runs again
+             when they change. -->
+        <Border x:Name="RootBorder" Background="#01000000">
+            <Border.CornerRadius>
+                <MultiBinding Converter="{local:ToggleStripCornerRadiusConverter ReductionPercent=0.25}">
+                    <Binding/>
+                    <Binding Path="Edges"/>
+                </MultiBinding>
+            </Border.CornerRadius>
             <Border x:Name="InnerBorder" Background="#01000000"
-                    BorderBrush="{Binding Path=Owner.SeparatorBrush, Mode=OneWay}"
-                    CornerRadius="{Binding Converter={local:ToggleStripCornerRadiusConverter ReductionPercent=0.3}}"
-                    BorderThickness="{Binding Converter={local:ToggleStripBorderThicknessConverter Inside=True}}">
+                    BorderBrush="{Binding Path=Owner.SeparatorBrush, Mode=OneWay}">
+                <Border.CornerRadius>
+                    <MultiBinding Converter="{local:ToggleStripCornerRadiusConverter ReductionPercent=0.3}">
+                        <Binding/>
+                        <Binding Path="Edges"/>
+                    </MultiBinding>
+                </Border.CornerRadius>
+                <Border.BorderThickness>
+                    <MultiBinding Converter="{local:ToggleStripBorderThicknessConverter}">
+                        <Binding/>
+                        <Binding Path="Edges"/>
+                    </MultiBinding>
+                </Border.BorderThickness>
                 <Grid Margin="{Binding Path=Owner.ItemPadding}">
                     <!-- A ContentPresenter overrides its own DataContext to its Content (the item Data),
                          so its ItemTemplate/Visibility bindings must go through the TemplatedParent
@@ -103,7 +121,8 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:ToggleStrip}">
-                    <Border Background="{ajut:TemplateBinding Background}"
+                    <Border x:Name="StripBorder"
+                            Background="{ajut:TemplateBinding Background}"
                             BorderBrush="{ajut:TemplateBinding BorderBrush}"
                             BorderThickness="{ajut:TemplateBinding BorderThickness}"
                             CornerRadius="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=(ap:BorderXTA.CornerRadius)}"
@@ -111,8 +130,9 @@
                             SnapsToDevicePixels="True">
                         <!-- Single overlay cell: the ScrollViewer hosts the items and clips (Clip/OverflowPopup)
                              or scrolls (Scroll); the overflow chevron and the two Scroll-mode bump buttons are
-                             drawn on top at the edges so they never consume layout width. The bump buttons'
-                             scrollbar visibility, show/hide, enable, clearance and scroll are driven from code. -->
+                             drawn on top at the edges so they never consume layout length. The bump buttons'
+                             scrollbar visibility, show/hide, enable, clearance and scroll are driven from code.
+                             Each button's glyph is its Tag, so the Orientation trigger below can swap it. -->
                         <Grid>
                             <ScrollViewer x:Name="PART_ScrollHost"
                                           Focusable="False"
@@ -134,15 +154,14 @@
                                           HorizontalAlignment="Right"
                                           VerticalAlignment="Stretch"
                                           Width="28"
+                                          Tag="&#xE76C;"
                                           Focusable="False"
                                           Visibility="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=HasOverflow, Converter={conv:BooleanToVisibilityConverter}}">
                                 <ToggleButton.Template>
                                     <ControlTemplate TargetType="{x:Type ToggleButton}">
-                                        <!-- Left divider separates the chevron from the last visible item. -->
-                                        <Border Background="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=Background}"
-                                                BorderBrush="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=SeparatorBrush}"
-                                                BorderThickness="1,0,0,0">
-                                            <TextBlock Text="&#xE76C;"
+                                        <!-- No divider of its own: the last item showing draws the separator before the chevron. -->
+                                        <Border Background="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=Background}">
+                                            <TextBlock Text="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Tag}"
                                                        FontFamily="Segoe MDL2 Assets"
                                                        FontSize="12"
                                                        VerticalAlignment="Center"
@@ -172,12 +191,12 @@
                                  mode when there is something to scroll, enables them per end, and scrolls. -->
                             <RepeatButton x:Name="PART_ScrollLeftButton"
                                           HorizontalAlignment="Left" VerticalAlignment="Stretch"
-                                          Width="24" Focusable="False" Visibility="Collapsed">
+                                          Width="24" Tag="&#xE76B;" Focusable="False" Visibility="Collapsed">
                                 <RepeatButton.Template>
                                     <ControlTemplate TargetType="{x:Type RepeatButton}">
                                         <Border Background="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=Background}">
                                             <TextBlock x:Name="Chevron" Opacity="0.55"
-                                                       Text="&#xE76B;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                                       Text="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Tag}" FontFamily="Segoe MDL2 Assets" FontSize="12"
                                                        VerticalAlignment="Center" HorizontalAlignment="Center"
                                                        Foreground="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=Foreground}"/>
                                         </Border>
@@ -194,12 +213,12 @@
                             </RepeatButton>
                             <RepeatButton x:Name="PART_ScrollRightButton"
                                           HorizontalAlignment="Right" VerticalAlignment="Stretch"
-                                          Width="24" Focusable="False" Visibility="Collapsed">
+                                          Width="24" Tag="&#xE76C;" Focusable="False" Visibility="Collapsed">
                                 <RepeatButton.Template>
                                     <ControlTemplate TargetType="{x:Type RepeatButton}">
                                         <Border Background="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=Background}">
                                             <TextBlock x:Name="Chevron" Opacity="0.55"
-                                                       Text="&#xE76C;" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                                       Text="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Tag}" FontFamily="Segoe MDL2 Assets" FontSize="12"
                                                        VerticalAlignment="Center" HorizontalAlignment="Center"
                                                        Foreground="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=Foreground}"/>
                                         </Border>
@@ -216,6 +235,29 @@
                             </RepeatButton>
                         </Grid>
                     </Border>
+                    <ControlTemplate.Triggers>
+                        <!-- Vertical: the strip sizes its height from VerticalContentAlignment (as it sizes its
+                             width from HorizontalContentAlignment), the overflow chevron runs along the bottom
+                             edge pointing down, and the bump buttons sit on the top and bottom edges. -->
+                        <Trigger Property="Orientation" Value="Vertical">
+                            <Setter TargetName="StripBorder" Property="VerticalAlignment" Value="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=VerticalContentAlignment}"/>
+                            <Setter TargetName="PART_OverflowToggle" Property="HorizontalAlignment" Value="Stretch"/>
+                            <Setter TargetName="PART_OverflowToggle" Property="VerticalAlignment" Value="Bottom"/>
+                            <Setter TargetName="PART_OverflowToggle" Property="Width" Value="NaN"/>
+                            <Setter TargetName="PART_OverflowToggle" Property="Height" Value="28"/>
+                            <Setter TargetName="PART_OverflowToggle" Property="Tag" Value="&#xE70D;"/>
+                            <Setter TargetName="PART_ScrollLeftButton" Property="HorizontalAlignment" Value="Stretch"/>
+                            <Setter TargetName="PART_ScrollLeftButton" Property="VerticalAlignment" Value="Top"/>
+                            <Setter TargetName="PART_ScrollLeftButton" Property="Width" Value="NaN"/>
+                            <Setter TargetName="PART_ScrollLeftButton" Property="Height" Value="24"/>
+                            <Setter TargetName="PART_ScrollLeftButton" Property="Tag" Value="&#xE70E;"/>
+                            <Setter TargetName="PART_ScrollRightButton" Property="HorizontalAlignment" Value="Stretch"/>
+                            <Setter TargetName="PART_ScrollRightButton" Property="VerticalAlignment" Value="Bottom"/>
+                            <Setter TargetName="PART_ScrollRightButton" Property="Width" Value="NaN"/>
+                            <Setter TargetName="PART_ScrollRightButton" Property="Height" Value="24"/>
+                            <Setter TargetName="PART_ScrollRightButton" Property="Tag" Value="&#xE70D;"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

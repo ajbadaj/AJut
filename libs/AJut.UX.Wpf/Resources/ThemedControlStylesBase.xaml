@@ -107,6 +107,29 @@
         <Setter Property="ForegroundPressed" Value="{DynamicResource AJut_Brush_ImportantText}"/>
     </Style>
 
+    <!-- EnumToggleStrip hands its own brushes to its inner ToggleStrip as local values, which win over the themed
+         ToggleStrip style above, so it needs the same themed brushes itself. Keep the two in step. -->
+    <Style TargetType="{x:Type ajut_ctrls:EnumToggleStrip}">
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_OverlayBlockoutBackground}"/>
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_PopOutControlBackground}" />
+        <Setter Property="BackgroundPressedColorBase" Value="{DynamicResource AJut_Color_SecondaryHighlightBright}"/>
+        <Setter Property="BackgroundHover" Value="{DynamicResource AJut_Brush_SecondaryHighlight}" />
+        <Setter Property="BackgroundHoverOverPressed">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Offset="0.0" Color="{DynamicResource AJut_Color_SecondaryHighlightDark}" />
+                    <GradientStop Offset="0.3" Color="{DynamicResource AJut_Color_SecondaryHighlightBright}" />
+                    <GradientStop Offset="1" Color="{DynamicResource AJut_Color_SecondaryHighlightBright}" />
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="SeparatorThickness" Value="1"/>
+        <Setter Property="SeparatorBrush" Value="{DynamicResource AJut_Brush_OverlayBlockoutBackground}" />
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
+        <Setter Property="ForegroundHover" Value="{DynamicResource AJut_Brush_ImportantText}"/>
+        <Setter Property="ForegroundPressed" Value="{DynamicResource AJut_Brush_ImportantText}"/>
+    </Style>
+
     <Style TargetType="{x:Type ajut_ctrls:FlatTreeListControl}">
         <Setter Property="SelectionBrush" Value="{DynamicResource AJut_Brush_TreeSelection}"/>
         <Setter Property="SelectionInactiveBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightDesat}"/>
@@ -178,6 +201,7 @@
 
     <Style TargetType="{x:Type ajut_ctrls:PropertyGrid}">
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ListBorder}" />
+        <Setter Property="LabelSplitterBrush" Value="{DynamicResource AJut_Brush_ListSelection}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_ListBackground}"/>
         <Setter Property="TextLabelStyle">
             <Setter.Value>

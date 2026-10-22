@@ -1,4 +1,4 @@
-﻿namespace AJut.UX.Controls
+namespace AJut.UX.Controls
 {
     using System;
     using System.Windows;
@@ -176,7 +176,7 @@
             protected set => this.SetValue(DisplayValuePropertyKey, value);
         }
 
-        public static readonly DependencyProperty EnforceNumericTypeProperty = DPUtils.Register(_ => _.EnforceNumericType, (d,e)=>d.DisplayValue.ForceType(e.NewValue));
+        public static readonly DependencyProperty EnforceNumericTypeProperty = DPUtils.Register(_ => _.EnforceNumericType, (d, e) => d.OnEnforceNumericTypeChanged());
         public Type EnforceNumericType
         {
             get => (Type)this.GetValue(EnforceNumericTypeProperty);
@@ -223,7 +223,7 @@
             // Are we parsing a string?
             if (providedValueType == typeof(string))
             {
-                if (NumericConversion.TryParseString((string)valueAsObj, this.DisplayValue.ValueType, out dynamic castedValue))
+                if (NumericConversion.TryParseString((string)valueAsObj, this.DisplayValue.ValueType, out object castedValue))
                 {
                     return castedValue;
                 }
@@ -389,7 +389,7 @@
         /// Nudge by a passed in value (which will be converted to the target type before application)
         /// </summary>
         /// <param name="value">The value to nudge by, will be converted to the target type before application</param>
-        private void NudgeBy (dynamic value, bool notifyOfUserEdit)
+        private void NudgeBy (double value, bool notifyOfUserEdit)
         {
             if (this.DisplayValue.IsTextInErrorState)
             {
@@ -417,8 +417,7 @@
             bool positive = true;
             if (value < 0)
             {
-                dynamic negatizer = Convert.ChangeType(-1, value.GetType());
-                value *= negatizer;
+                value = -value;
                 positive = false;
             }
 
@@ -509,11 +508,38 @@
             }
         }
 
+        // The view model is rebuilt from the value already there rather than told the new type. A value set before the type
+        //  (XAML sets attributes in the order they're written) then takes it, and a type cleared to null goes back to being
+        //  detected from the value, where telling the view model a null type would leave it forced to nothing.
+        private void OnEnforceNumericTypeChanged ()
+        {
+            if (m_blockValueChangeReentrancy)
+            {
+                return;
+            }
+
+            try
+            {
+                m_blockValueChangeReentrancy = true;
+
+                object previousValue = this.DisplayValue.SourceValue;
+                this.DisplayValue = new NumericEditorViewModel(this, previousValue, this.EnforceNumericType);
+                if (!Equals(previousValue, this.DisplayValue.SourceValue))
+                {
+                    this.SetCurrentValue(ValueProperty, this.DisplayValue.SourceValue);
+                }
+            }
+            finally
+            {
+                m_blockValueChangeReentrancy = false;
+            }
+        }
+
         private object OnCoerceValue (object baseValue)
         {
             if (baseValue is string strCasted)
             {
-                if (this.DisplayValue.TryParseString(strCasted, out dynamic castedValue))
+                if (this.DisplayValue.TryParseString(strCasted, out object castedValue))
                 {
                     return castedValue;
                 }

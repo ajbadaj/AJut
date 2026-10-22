@@ -15,6 +15,9 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <Version>1.1.19.146</Version>
+    <!-- Turns on the trim, single-file and AOT analyzers, so code that would break in a trimmed or AOT build (iOS, -->
+    <!-- Android, NativeAOT) warns here rather than failing at runtime on a device                                    -->
+    <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
   <ItemGroup>
     <None Include="..\..\ajut-logo-128.png">

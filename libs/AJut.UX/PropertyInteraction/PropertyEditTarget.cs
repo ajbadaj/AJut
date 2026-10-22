@@ -8,11 +8,14 @@ namespace AJut.UX.PropertyInteraction
     using System;
     using System.Collections.Generic;
     using System.ComponentModel;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Reflection;
     using System.Text.RegularExpressions;
     using System.Threading;
 
+    [RequiresUnreferencedCode(PropertyGridTrimming.kMessage)]
+    [RequiresDynamicCode(PropertyGridTrimming.kListMessage)]
     public class PropertyEditTarget : ObservableTreeNode, IExpandableNode
     {
         public delegate object? GetValue();
@@ -301,8 +304,10 @@ namespace AJut.UX.PropertyInteraction
 
         private bool m_isAtDefaultValue;
         /// <summary>
-        /// True when EditValue equals DefaultValue. Drives the DefaultValueLabelDataTemplate /
-        /// ModifiedValueLabelDataTemplate switch on the PropertyGrid label.
+        /// True when EditValue equals DefaultValue, or when there is no default (HasDefaultValue is false). Drives the
+        /// DefaultValueLabelDataTemplate / ModifiedValueLabelDataTemplate switch on the PropertyGrid label. A row with
+        /// no default (a list element, a button, a default method that did not resolve) has nothing to differ from and
+        /// nothing to reset to, so the modified look only ever means "differs from a known default", which reset undoes.
         /// </summary>
         public bool IsAtDefaultValue
         {
@@ -395,7 +400,7 @@ namespace AJut.UX.PropertyInteraction
         /// Unconditionally re-reads the source value and raises PropertyChanged("EditValue")
         /// even if the cached value hasn't changed. Used by NullableEditor to force the inner
         /// editor to refresh when the outer nullable target transitions between null and non-null
-        /// states (null→0 and 0→0 would both appear as "no change" to SetAndRaiseIfChanged).
+        /// states (null to 0 and 0 to 0 would both appear as "no change" to SetAndRaiseIfChanged).
         /// </summary>
         public void ForceRaiseEditValueChanged()
         {
@@ -1488,7 +1493,7 @@ namespace AJut.UX.PropertyInteraction
                 return;
             }
 
-            this.IsAtDefaultValue = m_hasDefaultValue && object.Equals(m_editValue, m_defaultValue);
+            this.IsAtDefaultValue = !m_hasDefaultValue || object.Equals(m_editValue, m_defaultValue);
         }
 
         private void OnElevatedChildPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)

@@ -2,6 +2,7 @@ namespace AJut.Text.AJson.Legacy
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
 
     /// <summary>
@@ -29,6 +30,7 @@ namespace AJut.Text.AJson.Legacy
         /// <summary>
         /// Root value builder constructor
         /// </summary>
+        [RequiresUnreferencedCode("AJson V1 writes an object value through reflection, and trimming can remove the members it reaches. AJson V2 with [OptimizeAJson] is trim safe.")]
         internal JsonBuilder (Settings settings, object value) : this(settings)
         {
             this.IsValue = true;
@@ -196,6 +198,7 @@ namespace AJut.Text.AJson.Legacy
             return this;
         }
 
+        [RequiresUnreferencedCode("AJson V1 writes an object value through reflection, and trimming can remove the members it reaches. AJson V2 with [OptimizeAJson] is trim safe.")]
         public JsonBuilder AddProperty(string propertyName, object propertyValue, bool isUsuallyQuoted = true)
         {
             if (this.IsDocument)
@@ -217,6 +220,7 @@ namespace AJut.Text.AJson.Legacy
             throw new InvalidOperationException("You can only call AddProperty on documents.");
         }
 
+        [RequiresUnreferencedCode("AJson V1 writes an object value through reflection, and trimming can remove the members it reaches. AJson V2 with [OptimizeAJson] is trim safe.")]
         public JsonBuilder AddArrayItem(object arrayValue)
         {
             if (this.IsArray)

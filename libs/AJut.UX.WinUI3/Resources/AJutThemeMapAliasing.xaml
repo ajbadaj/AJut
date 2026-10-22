@@ -35,13 +35,15 @@
     <SolidColorBrush x:Key="AJut_DockTearoffContainerPanel_CloseButtonPressedBackground" Color="{ThemeResource AJut_Color_ChromeCloseButtonPressedBackground}"/>
 
     <!-- ===========[ PropertyGridItemRow ]================================
-         SelectionBorderBrush → ListSelection (solid accent, same as FlatTree nub/strip).
-         HoverBackground      → ListSelectionBackground (10% opacity fill, same as FlatTree hover fill).
-         HoverBorderBrush     → BorderCommon (neutral 1px outline, same as FlatTree hover border). -->
+         SelectionBorderBrush -> ListSelection (solid accent, same as FlatTree nub/strip).
+         HoverBackground      -> ListSelectionBackground (10% opacity fill, same as FlatTree hover fill).
+         HoverBorderBrush     -> BorderCommon (neutral 1px outline, same as FlatTree hover border).
+         The PropertyGrid's LabelSplitterBrush -> ListSelection too: it is the splitter's accent line. -->
     <SolidColorBrush x:Key="AJut_PropertyGridItemRow_LabelForeground"      Color="{ThemeResource AJut_Color_NormalText}"/>
     <SolidColorBrush x:Key="AJut_PropertyGridItemRow_SelectionBorderBrush" Color="{ThemeResource AJut_Color_ListSelection}"/>
     <SolidColorBrush x:Key="AJut_PropertyGridItemRow_HoverBackground"      Color="{ThemeResource AJut_Color_ListSelectionBackground}"/>
     <SolidColorBrush x:Key="AJut_PropertyGridItemRow_HoverBorderBrush"     Color="{ThemeResource AJut_Color_BorderCommon}"/>
+    <SolidColorBrush x:Key="AJut_PropertyGrid_LabelSplitterBrush"          Color="{ThemeResource AJut_Color_ListSelection}"/>
 
     <!-- ===========[ PopupMenuButton ]===================================== -->
     <SolidColorBrush x:Key="AJut_PopupMenuButton_ChevronForeground" Color="{ThemeResource AJut_Color_SymbolForeground}"/>
@@ -65,7 +67,7 @@
 
     <!-- ===========[ FlatTree ListViewItem ]=============================== -->
     <!-- Redirects selection/hover to AJut palette colors.
-         HoverBackground → ListSelectionBackground (10% opacity tint, matches PropertyGrid row hover). -->
+         HoverBackground -> ListSelectionBackground (10% opacity tint, matches PropertyGrid row hover). -->
     <SolidColorBrush x:Key="AJut_FlatTree_SelectionBrush"          Color="{ThemeResource AJut_Color_ListSelection}"/>
     <SolidColorBrush x:Key="AJut_FlatTree_SelectionBackground"     Color="{ThemeResource AJut_Color_ListSelectionBackground}"/>
     <SolidColorBrush x:Key="AJut_FlatTree_SelectionBrushUnfocused" Color="{ThemeResource AJut_Color_PrimaryHighlightDesat}"/>

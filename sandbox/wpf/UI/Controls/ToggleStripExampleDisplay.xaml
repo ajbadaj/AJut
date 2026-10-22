@@ -206,6 +206,61 @@
                         </DockPanel>
                     </GroupBox>
 
+                    <GroupBox Header="Vertical" Margin="0,0,20,0" Padding="10" ToolTip="Orientation=Vertical">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Bottom" Margin="0,5,0,0" FontStyle="Italic" Opacity="0.8" TextWrapping="WrapWithOverflow" MaxWidth="400">
+                                <TextBlock.Inlines>
+                                    <Run Text="Setting"/>
+                                    <Run Text="Orientation=Vertical" FontWeight="Bold" FontFamily="Consolas" FontStyle="Normal"/>
+                                    <Run Text="stacks the items top to bottom, each as wide as the widest. Uniform sizing, overflow and scrolling all work along the height, so the last three are 120 tall, too short for their seven items."/>
+                                </TextBlock.Inlines>
+                            </TextBlock>
+                            <StackPanel Orientation="Horizontal">
+                                <StackPanel Margin="0,0,15,0">
+                                    <TextBlock Text="Plain" Opacity="0.7"/>
+                                    <ajut:ToggleStrip Orientation="Vertical" ajutap:BorderXTA.CornerRadius="6">
+                                        <ajut:ToggleStrip.ItemsSource>
+                                            <x:Array Type="{x:Type sys:String}">
+                                                <sys:String>Top</sys:String>
+                                                <sys:String>Middle</sys:String>
+                                                <sys:String>Bottom</sys:String>
+                                            </x:Array>
+                                        </ajut:ToggleStrip.ItemsSource>
+                                    </ajut:ToggleStrip>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,15,0">
+                                    <TextBlock Text="EnsureUniformSize" Opacity="0.7"/>
+                                    <ajut:ToggleStrip Orientation="Vertical" EnsureUniformSize="True">
+                                        <ajut:ToggleStrip.ItemsSource>
+                                            <x:Array Type="{x:Type sys:String}">
+                                                <sys:String>One line</sys:String>
+                                                <sys:String xml:space="preserve">Two&#x0a;lines</sys:String>
+                                                <sys:String>Three</sys:String>
+                                            </x:Array>
+                                        </ajut:ToggleStrip.ItemsSource>
+                                    </ajut:ToggleStrip>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,15,0">
+                                    <TextBlock Text="Clip" Opacity="0.7"/>
+                                    <ajut:ToggleStrip Orientation="Vertical" Height="120" VerticalAlignment="Top"
+                                                      ItemsSource="{Binding ElementName=Self, Path=SevenItems, Mode=OneTime}"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,15,0">
+                                    <TextBlock Text="OverflowPopup" Opacity="0.7"/>
+                                    <ajut:ToggleStrip Orientation="Vertical" Height="120" VerticalAlignment="Top"
+                                                      OverflowBehavior="OverflowPopup"
+                                                      ItemsSource="{Binding ElementName=Self, Path=SevenItems, Mode=OneTime}"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,15,0">
+                                    <TextBlock Text="Scroll" Opacity="0.7"/>
+                                    <ajut:ToggleStrip Orientation="Vertical" Height="120" VerticalAlignment="Top"
+                                                      OverflowBehavior="Scroll"
+                                                      ItemsSource="{Binding ElementName=Self, Path=SevenItems, Mode=OneTime}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </DockPanel>
+                    </GroupBox>
+
                     <GroupBox Header="No-select" Margin="0,0,20,0" Padding="10" ToolTip="AllowNoSelection">
                         <DockPanel>
                             <ajut:ToggleStrip AllowNoSelection="True" DockPanel.Dock="Top">

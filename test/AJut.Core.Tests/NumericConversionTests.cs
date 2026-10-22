@@ -11,20 +11,34 @@
     {
         [DataTestMethod]
         [DataRow("sdfasdf-5a.0", -5, typeof(int))]
-        [DataRow("sdfasdf-3.332a.0", -3, typeof(long))]
-        public void NumericConversion_InterestingStringParsing_IntTypes(string toParse, dynamic expectedValue, Type expectedType)
+        public void NumericConversion_InterestingStringParsing_IntTypes(string toParse, object expectedValue, Type expectedType)
         {
-            Assert.IsTrue(NumericConversion.TryParseString(toParse, expectedType, out dynamic castedValue));
-            Assert.AreEqual(expectedValue, castedValue);
+            Assert.IsTrue(NumericConversion.TryParseString(toParse, expectedType, out object castedValue));
+            Assert.AreEqual(Convert.ChangeType(expectedValue, expectedType), castedValue);
+        }
+
+        [DataTestMethod]
+        [DataRow("43.5", typeof(int))]
+        [DataRow("-43.5", typeof(int))]
+        [DataRow("-43.5", typeof(long))]
+        [DataRow("7.25", typeof(uint))]
+        [DataRow("value: 12.5 units", typeof(byte))]
+        [DataRow("sdfasdf-3.332a.0", typeof(long))]
+        public void NumericConversion_IntegerTypes_RefuseAFraction (string toParse, Type integerType)
+        {
+            // An integer type cannot hold the number the text says, so the parse fails rather than quietly dropping
+            // the fraction and handing back a different number
+            Assert.IsFalse(NumericConversion.TryParseString(toParse, integerType, out object _));
         }
 
         [DataTestMethod]
         [DataRow("sdfasdf-5a.0", -5f, typeof(float))]
         [DataRow("sdfasdf-3.332a.0", -3.332, typeof(double))]
-        public void NumericConversion_InterestingStringParsing_FloatTypes (string toParse, dynamic expectedValue, Type expectedType)
+        public void NumericConversion_InterestingStringParsing_FloatTypes (string toParse, object expectedValue, Type expectedType)
         {
-            Assert.IsTrue(NumericConversion.TryParseString(toParse, expectedType, out dynamic castedValue));
-            Assert.IsTrue(MathExtensions.IsApproximatelyEqualTo(expectedValue, castedValue));
+            Assert.IsTrue(NumericConversion.TryParseString(toParse, expectedType, out object castedValue));
+            Assert.AreEqual(expectedType, castedValue.GetType());
+            Assert.IsTrue(MathExtensions.IsApproximatelyEqualTo(Convert.ToDouble(expectedValue), Convert.ToDouble(castedValue)));
         }
 
         [TestMethod]

@@ -49,6 +49,9 @@ namespace AJut.Text.AJson
         // Types already logged as written with nothing, so each is logged once
         private static readonly ConcurrentDictionary<Type, byte> g_typesLoggedAsWrittenEmpty = new ConcurrentDictionary<Type, byte>();
 
+        // Types already logged as having no reflection path on a platform without dynamic code, so each is logged once
+        private static readonly ConcurrentDictionary<Type, byte> g_typesLoggedAsNeedingGeneration = new ConcurrentDictionary<Type, byte>();
+
         // Per-type reflection caches. Bounded by Type identity (assembly-bounded), no leak risk.
         // ConcurrentDictionary chosen for thread-safety in case AJson is called concurrently.
         // The lists depend on TypeMetadataExtensionRegistrar state as well as on the Type, so the
@@ -256,6 +259,10 @@ namespace AJut.Text.AJson
             | DynamicallyAccessedMemberTypes.PublicFields
             | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;
 
+        // The reasons behind the reflection-path suppressions below, where a Type comes from somewhere the trimmer can't follow
+        private const string kNestedTypeJustification = "Reflection-path read or write of a member, element or argument type the consumer's own type declares; the trim-safe path is [OptimizeAJson] on that type, or DynamicallyAccessedMembers on it.";
+        private const string kInterfaceCheckJustification = "Only checks for a framework collection interface this code uses, and the trimmer keeps an interface implementation when the interface itself is used.";
+
         public static T BuildObjectForJson<[DynamicallyAccessedMembers(kReflectionRequirements)] T> (Json sourceJson, JsonInterpreterSettings settings = null)
         {
             return (T)BuildObjectForJson(typeof(T), sourceJson, settings);
@@ -310,6 +317,8 @@ namespace AJut.Text.AJson
         }
 
         // ===============================[ Object-from-Json Implementation ]===========================
+        [UnconditionalSuppressMessage("Trimming", "IL2062", Justification = kNestedTypeJustification)]
+        [UnconditionalSuppressMessage("Trimming", "IL2072", Justification = kNestedTypeJustification)]
         internal static object BuildObjectForJson ([DynamicallyAccessedMembers(kReflectionRequirements)] Type type, JsonValue sourceJsonValue, JsonInterpreterSettings settings, Json owner)
         {
             // No resolvable target type. Happens for a polymorphic (object-typed) value that carries
@@ -412,6 +421,16 @@ namespace AJut.Text.AJson
                 return generated.Reader(sourceJsonValue, settings, owner);
             }
 
+            // A document for anything but a dictionary is read into the type's members by reflection, which a platform
+            //  without dynamic code doesn't do. A registered constructor is the consumer's own code, so it still runs.
+            if (sourceJsonValue.IsDocument
+                && !hasCustomConstructor
+                && !IsDictionaryType(concreteType)
+                && !CanUseReflectionPathFor(concreteType, owner))
+            {
+                return null;
+            }
+
             IReadOnlySet<string> keysConsumedByConstructor = null;
             if (sourceJsonValue.IsDocument && concreteType != type)
             {
@@ -493,6 +512,9 @@ namespace AJut.Text.AJson
             FillOutObjectWithJson(ref targetItem, targetType, sourceJsonValue, settings, owner: null);
         }
 
+        [UnconditionalSuppressMessage("Trimming", "IL2062", Justification = kNestedTypeJustification)]
+        [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = kInterfaceCheckJustification)]
+        [UnconditionalSuppressMessage("Trimming", "IL2072", Justification = kNestedTypeJustification)]
         private static void FillOutObjectWithJson (ref object targetItem, [DynamicallyAccessedMembers(kReflectionRequirements)] Type targetType, JsonValue sourceJsonValue, JsonInterpreterSettings settings, Json owner, IReadOnlySet<string> keysConsumedByConstructor = null)
         {
             if (targetItem != null)
@@ -516,18 +538,11 @@ namespace AJut.Text.AJson
                     return;
                 }
 
+                // A nullable with a value boxes as the value itself, so the parsed value is already what a Nullable<T>
+                //  member takes; no Nullable<T> needs making from its Type
                 if (settings.StringParser.CanConvert(effectiveType))
                 {
-                    object parsedValue = settings.StringParser.Convert(sourceJsonValue.StringValue, effectiveType);
-                    if (nullableElementType != null)
-                    {
-                        ConstructorInfo nullableCtor = typeof(Nullable<>).MakeGenericType(nullableElementType).GetConstructor(new[] { nullableElementType });
-                        targetItem = nullableCtor.Invoke(new[] { parsedValue });
-                    }
-                    else
-                    {
-                        targetItem = parsedValue;
-                    }
+                    targetItem = settings.StringParser.Convert(sourceJsonValue.StringValue, effectiveType);
                 }
 
                 return;
@@ -599,6 +614,11 @@ namespace AJut.Text.AJson
                 if (targetType.FindBaseTypeOrInterface(typeof(IDictionary<,>)) is Type dictionaryInterface)
                 {
                     FillDictionaryFromDocument(targetItem, dictionaryInterface, sourceCasted, settings, owner);
+                    return;
+                }
+
+                if (!settings.HasCustomConstructorFor(targetType) && !CanUseReflectionPathFor(targetType, owner))
+                {
                     return;
                 }
 
@@ -681,6 +701,7 @@ namespace AJut.Text.AJson
         /// <param name="owner">Receives errors, if given</param>
         [UnconditionalSuppressMessage("Trimming", "IL2072",
             Justification = "Reflection-path fill of a collection the consumer's type already holds; the trim-safe path is [OptimizeAJson].")]
+        [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = kNestedTypeJustification)]
         internal static void FillCollectionInPlace (object collection, string jsonKey, JsonValue sourceJsonValue, JsonInterpreterSettings settings, Json owner)
         {
             if (collection == null)
@@ -719,6 +740,8 @@ namespace AJut.Text.AJson
             Justification = "Key and value types come from the generic arguments of the consumer's own dictionary - keeping members of those is the consumer's responsibility per AJson reflection-path contract.")]
         [UnconditionalSuppressMessage("Trimming", "IL2075",
             Justification = "IDictionary<,> is intrinsic and its indexer always preserved; the interface comes from the dictionary the consumer's member holds.")]
+        [UnconditionalSuppressMessage("Trimming", "IL2062", Justification = kNestedTypeJustification)]
+        [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = kNestedTypeJustification)]
         private static void FillDictionaryFromDocument (object dictionary, Type dictionaryInterface, JsonDocument source, JsonInterpreterSettings settings, Json owner)
         {
             Type[] keyAndValueTypes = dictionaryInterface.GetGenericArguments();
@@ -910,7 +933,14 @@ namespace AJut.Text.AJson
                 return;
             }
 
-            // Document path.
+            // Document path. A platform without dynamic code doesn't write a type's members by reflection, so the type
+            //  is left out, the same as a type with nothing to write.
+            if (!CanUseReflectionPathFor(sourceType, owner: null))
+            {
+                target.Parent?.Children.Remove(target);
+                return;
+            }
+
             MemberSet members = GetMemberSet(sourceType);
             DataMember[] membersToWrite = (sourceType.IsSimpleType() || !target.BuilderSettings.UseReadonlyObjectProperties)
                 ? members.WrittenByDefault
@@ -949,6 +979,42 @@ namespace AJut.Text.AJson
         }
 
         // ===============================[ Internal Helpers ]===========================
+        /// <summary>
+        /// Whether AJson may read or write <paramref name="type"/>'s members by reflection: always where dynamic code is supported,
+        /// never where it isn't (an iOS build compiled ahead of time). There, a type without a generated serializer is reported once
+        /// to the log, and to <paramref name="owner"/> every time, naming the source generator as the way to read and write it.
+        /// </summary>
+        /// <param name="remedy">What to tell the reader to do instead; the [OptimizeAJson] source generator when not given</param>
+        internal static bool CanUseReflectionPathFor (Type type, Json owner, string remedy = null)
+        {
+            // The reflection path walks a type's members, which works anywhere, but the collections and generic types it
+            //  builds along the way need code made at runtime that an ahead of time compiled build may not have. So rather
+            //  than failing somewhere deep in a read, a platform without dynamic code is pointed at the generated
+            //  serializer up front, which names every member and type it uses in code the compiler sees. A platform with a
+            //  JIT keeps the reflection path.
+            if (DynamicCodeAvailability.IsSupported)
+            {
+                return true;
+            }
+
+            remedy = remedy ?? "Mark it [OptimizeAJson] so the AJson source generator writes its serializer.";
+            string message = $"{type.FullName} has no generated serializer, and on a platform without dynamic code (an iOS build compiled ahead of time) AJson does not read or write a type's members by reflection. {remedy}";
+            if (g_typesLoggedAsNeedingGeneration.TryAdd(type, 0))
+            {
+                Logger.LogError($"[AJson] {message}");
+            }
+
+            owner?.AddError(message);
+            return false;
+        }
+
+        [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = kInterfaceCheckJustification)]
+        private static bool IsDictionaryType (Type type)
+        {
+            return (type.FindBaseTypeOrInterface(typeof(IDictionary<,>)) != null)
+                || (type.FindBaseTypeOrInterface(typeof(IReadOnlyDictionary<,>)) != null);
+        }
+
         /// <summary>
         /// Writes <paramref name="source"/> as a document of its entries, { "key": value, ... }, when it is a dictionary
         /// written that way (see <see cref="IsDictionaryWrittenAsDocument"/>). An entry with a null value is left out, the
@@ -1046,6 +1112,7 @@ namespace AJut.Text.AJson
             }
         }
 
+        [UnconditionalSuppressMessage("Trimming", "IL2072", Justification = kNestedTypeJustification)]
         private static void ApplyDocumentMember (JsonBuilder target, object memberSource, DataMember member)
         {
             string key = member.JsonKey;
@@ -1235,6 +1302,8 @@ namespace AJut.Text.AJson
         // here.
         [UnconditionalSuppressMessage("Trimming", "IL2057",
             Justification = "Fallback for type ids not registered with TypeIdRegistrar - consumers using this path must keep target types alive themselves.")]
+        [UnconditionalSuppressMessage("Trimming", "IL2026",
+            Justification = "Fallback for type ids not registered with TypeIdRegistrar - consumers using this path must keep target types alive themselves.")]
         public static bool TryGetTypeForTypeId (string typeIndicator, out Type foundType)
         {
             if (typeIndicator == null)
@@ -1331,6 +1400,7 @@ namespace AJut.Text.AJson
             }
         }
 
+        [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = kNestedTypeJustification)]
         private static DataMember[] ComputeDataMembers (Type targetType)
         {
             MemberInfo[] orderedMembers = TypeMetadataExtensionRegistrar.GetOrderedPropertiesAndFields(targetType).ToArray();
@@ -1520,6 +1590,7 @@ namespace AJut.Text.AJson
                 return alias?.PropertyName ?? member.Name;
             }
 
+            [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = kInterfaceCheckJustification)]
             private static bool IsCollectionWithAdd (Type type) => !type.IsArray && type.FindBaseTypeOrInterface(typeof(ICollection<>)) != null;
         }
 

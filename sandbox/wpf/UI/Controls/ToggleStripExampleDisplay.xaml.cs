@@ -19,6 +19,9 @@
 
         public ObservableCollection<string> ZeroToggleElementsSource { get; }
 
+        // Items for the vertical strips that are too short to show them all
+        public string[] SevenItems { get; } = new[] { "One", "Two", "Three", "Four", "Five", "Six", "Seven" };
+
         public string ToggleStripExample { get; } = @"<ajut:ToggleStrip Margin=""0,0,0,5"">
     <ajut:ToggleStrip.ItemsSource>
         <x:Array Type=""{x:Type sys:String}"">

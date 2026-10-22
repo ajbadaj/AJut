@@ -1,11 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+	<!-- Plain net8.0 with no WPF, so these build and run on any machine. Tests that need WPF types go in AJut.UX.Wpf.Tests. -->
 	<PropertyGroup>
-		<TargetFramework>net8.0-windows</TargetFramework>
-		<UseWPF>true</UseWPF>
+		<TargetFramework>net8.0</TargetFramework>
 		<IsPackable>false</IsPackable>
 		<Platforms>AnyCPU;x64</Platforms>
 	</PropertyGroup>
-	<PropertyGroup Condition="'$(Platform)'=='AnyCPU'">
+	<!-- AnyCPU runs as x86 on Windows, so a plain run covers the 32-bit process there; macOS and Linux have no x86 runtime -->
+	<PropertyGroup Condition="('$(Platform)'=='AnyCPU') And $([MSBuild]::IsOSPlatform('Windows'))">
 		<PlatformTarget>x86</PlatformTarget>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Platform)'=='x64'">
@@ -26,7 +27,9 @@
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\..\libs\AJut.UX\AJut.UX.csproj" />
-		<ProjectReference Include="..\..\libs\AJut.UX.Wpf\AJut.UX.Wpf.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Include="_TestData\*.layout" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
 </Project>

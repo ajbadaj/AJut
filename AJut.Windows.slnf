@@ -1,0 +1,22 @@
+{
+  "solution": {
+    "path": "AJut.slnx",
+    "projects": [
+      "libs\\AJut.Core.SourceGenerators\\AJut.Core.SourceGenerators.csproj",
+      "libs\\AJut.Core\\AJut.Core.csproj",
+      "libs\\AJut.UX.WinUI3\\AJut.UX.WinUI3.csproj",
+      "libs\\AJut.UX.Wpf\\AJut.UX.Wpf.csproj",
+      "libs\\AJut.UX\\AJut.UX.csproj",
+      "sandbox\\winui\\AJutShowRoomWinUI.csproj",
+      "sandbox\\wpf\\TheAJutShowRoomWPF.csproj",
+      "test\\AJut.Bench\\AJut.Bench.csproj",
+      "test\\AJut.Core.CrashHost\\AJut.Core.CrashHost.csproj",
+      "test\\AJut.Core.SourceGenerators.Tests\\AJut.Core.SourceGenerators.Tests.csproj",
+      "test\\AJut.Core.Tests\\AJut.Core.Tests.csproj",
+      "test\\AJut.Trimming.Probe\\AJut.Trimming.Probe.csproj",
+      "test\\AJut.UX.Tests\\AJut.UX.Tests.csproj",
+      "test\\AJut.UX.Wpf.Tests\\AJut.UX.Wpf.Tests.csproj",
+      "test\\AJut.UX.WinUI3.Tests\\AJut.UX.WinUI3.Tests.csproj"
+    ]
+  }
+}

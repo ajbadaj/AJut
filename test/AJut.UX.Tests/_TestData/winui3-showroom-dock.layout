@@ -1,0 +1,123 @@
+{
+	"Core" : {
+		"ZoneInfoByRoot" : [
+			{
+				"Key" : "TestDockZone",
+				"Value" : {
+					"ChildZones" : [
+						{
+							"ChildZones" : [],
+							"SizeOnParent" : {
+								"Width" : 1422,
+								"Height" : 1192.6666259765625,
+								"IsEmpty" : false
+							},
+							"Orientation" : "Tabbed",
+							"DisplayState" : [
+								{
+									"TypeId" : "ShowRoomPanel",
+									"State" : {
+										"__type" : "ShowRoomPanelState",
+										"__value" : {
+											"__type" : "ShowRoomPanelState",
+											"Label" : "Panel A",
+											"Value" : 0
+										}
+									}
+								},
+								{
+									"TypeId" : "ShowRoomPanel",
+									"State" : {
+										"__type" : "ShowRoomPanelState",
+										"__value" : {
+											"__type" : "ShowRoomPanelState",
+											"Label" : "Panel B",
+											"Value" : 0
+										}
+									}
+								},
+								{
+									"TypeId" : "ShowRoomPanel",
+									"State" : {
+										"__type" : "ShowRoomPanelState",
+										"__value" : {
+											"__type" : "ShowRoomPanelState",
+											"Label" : "Panel",
+											"Value" : 0
+										}
+									}
+								}
+							],
+							"SelectedIndex" : 0
+						},
+						{
+							"ChildZones" : [
+								{
+									"ChildZones" : [],
+									"SizeOnParent" : {
+										"Width" : 709.3333129882812,
+										"Height" : 1192,
+										"IsEmpty" : false
+									},
+									"Orientation" : "Single",
+									"DisplayState" : [
+										{
+											"TypeId" : "ShowRoomPanel-hidden-infra",
+											"State" : {
+												"__type" : "ShowRoomPanelState",
+												"__value" : {
+													"__type" : "ShowRoomPanelState",
+													"Label" : "Hidden Infra",
+													"Value" : 0
+												}
+											}
+										}
+									],
+									"SelectedIndex" : 0
+								},
+								{
+									"ChildZones" : [],
+									"SizeOnParent" : {
+										"Width" : 708.6666870117188,
+										"Height" : 1192,
+										"IsEmpty" : false
+									},
+									"Orientation" : "Single",
+									"DisplayState" : [
+										{
+											"TypeId" : "ShowRoomPanel-single-inst",
+											"State" : {
+												"__type" : "ShowRoomPanelState",
+												"__value" : {
+													"__type" : "ShowRoomPanelState",
+													"Label" : "Panel",
+													"Value" : 0
+												}
+											}
+										}
+									],
+									"SelectedIndex" : 0
+								}
+							],
+							"SizeOnParent" : {
+								"Width" : 1422,
+								"Height" : 1192,
+								"IsEmpty" : false
+							},
+							"Orientation" : "Horizontal",
+							"SelectedIndex" : 0
+						}
+					],
+					"SizeOnParent" : {
+						"Width" : 1422,
+						"Height" : 2388.666748046875,
+						"IsEmpty" : false
+					},
+					"Orientation" : "Vertical",
+					"SelectedIndex" : 0
+				}
+			}
+		]
+	},
+	"Ancillary" : []
+}

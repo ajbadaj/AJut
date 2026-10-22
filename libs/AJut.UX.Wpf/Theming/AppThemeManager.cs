@@ -6,12 +6,13 @@
     using System.Windows.Media;
     using Microsoft.Win32;
 
-    public enum eAppTheme { Dark, Light }
-    public enum eAppThemeConfiguration { Dark, Light, UseSameAsOS }
-
     /// <summary>
     /// A theme management object to use in your App, to set manually or to provide user bindable options for app configuration
     /// </summary>
+    /// <remarks>
+    /// Which theme is in effect is decided by AJut.UX's <see cref="AppThemeResolver"/>, shared with every other stack.
+    /// This class reads the OS theme from the registry, and applies a theme by swapping the app's theme colors dictionary.
+    /// </remarks>
     public class AppThemeManager : NotifyPropertyChanged, IDisposable
     {
         private static readonly APUtilsRegistrationHelper APUtils = new APUtilsRegistrationHelper(typeof(AppThemeManager));
@@ -20,6 +21,8 @@
 
         private readonly Application m_targetApplication;
         private readonly int m_themeColorsInsertionIndex;
+        private readonly RegistryThemeSource m_osSource;
+        private readonly AppThemeResolver m_resolver;
         private ResourceDictionary m_lightThemeColors;
         private ResourceDictionary m_darkThemeColors;
 
@@ -27,7 +30,7 @@
         private Func<ResourceDictionary> m_lightThemeLoader;
         private Func<ResourceDictionary> m_darkThemeLoader;
 
-        private eAppThemeConfiguration m_themeConfiguration;
+        // The theme whose colors are loaded now. The resolver decides which theme is in effect; this is what has been applied.
         private eAppTheme m_currentTheme;
 
         // =========================[ Construction / Setup ]=============================
@@ -51,30 +54,46 @@
             m_lightThemeLoader = () => Application.LoadComponent(lightThemeXamlUri) as ResourceDictionary;
             m_darkThemeLoader = () => Application.LoadComponent(darkThemeXamlUri) as ResourceDictionary;
 
+            // The starting choice is whichever theme's colors the app already has loaded, dark when it is neither
+            eAppThemeConfiguration startingConfiguration;
+            bool isStartingThemeLoaded = true;
             ResourceDictionary currentThemeColors = m_targetApplication.Resources.MergedDictionaries[m_themeColorsInsertionIndex];
             if (currentThemeColors.Source == lightThemeXamlUri)
             {
                 m_lightThemeColors = currentThemeColors;
                 m_currentTheme = eAppTheme.Light;
-                m_themeConfiguration = eAppThemeConfiguration.Light;
+                startingConfiguration = eAppThemeConfiguration.Light;
             }
             else if (currentThemeColors.Source == darkThemeXamlUri)
             {
                 m_darkThemeColors = currentThemeColors;
                 m_currentTheme = eAppTheme.Dark;
-                m_themeConfiguration = eAppThemeConfiguration.Dark;
+                startingConfiguration = eAppThemeConfiguration.Dark;
             }
             else
             {
                 m_darkThemeColors = m_darkThemeLoader();
-                m_themeConfiguration = eAppThemeConfiguration.Dark;
-                AlterApplicationTheme(eAppTheme.Dark);
+                startingConfiguration = eAppThemeConfiguration.Dark;
+                isStartingThemeLoaded = false;
+            }
+
+            m_osSource = new RegistryThemeSource();
+            m_resolver = new AppThemeResolver(m_osSource, store: null, fallback: startingConfiguration);
+            m_resolver.ThemeChanged += this.OnResolverThemeChanged;
+            m_resolver.PropertyChanged += this.OnResolverPropertyChanged;
+
+            if (!isStartingThemeLoaded)
+            {
+                this.AlterApplicationTheme(eAppTheme.Dark);
             }
         }
 
         public void Dispose ()
         {
-            this.StopWatchingOSForUserThemeChange();
+            m_resolver.ThemeChanged -= this.OnResolverThemeChanged;
+            m_resolver.PropertyChanged -= this.OnResolverPropertyChanged;
+            m_resolver.Dispose();
+            m_osSource.Dispose();
             m_lightThemeColors = null;
             m_darkThemeColors = null;
             m_lightThemeLoader = null;
@@ -102,38 +121,14 @@
         /// </summary>
         public eAppThemeConfiguration ThemeConfiguration
         {
-            get => m_themeConfiguration;
-            set
-            {
-                if (this.SetAndRaiseIfChanged(ref m_themeConfiguration, value))
-                {
-                    switch (value)
-                    {
-                        case eAppThemeConfiguration.UseSameAsOS:
-                            this.AlterApplicationTheme(GetWindowsUserAppThemeSetting());
-                            this.EnsureOsMonitoringUnderwayForUserThemeChange();
-                            break;
-
-                        case eAppThemeConfiguration.Light:
-                            this.AlterApplicationTheme(eAppTheme.Light);
-                            break;
-
-                        case eAppThemeConfiguration.Dark:
-                            this.AlterApplicationTheme(eAppTheme.Dark);
-                            break;
-                    }
-                }
-            }
+            get => m_resolver.ThemeConfiguration;
+            set => m_resolver.ThemeConfiguration = value;
         }
 
         /// <summary>
         /// The current app theme, this is readonly - to alter the theme set the ThemeConfiguration instead
         /// </summary>
-        public eAppTheme CurrentTheme
-        {
-            get => m_currentTheme;
-            private set => this.SetAndRaiseIfChanged(ref m_currentTheme, value);
-        }
+        public eAppTheme CurrentTheme => m_currentTheme;
 
         /// <summary>
         /// Flags that control the theme from a global xaml perspective
@@ -169,6 +164,7 @@
             m_targetApplication.Resources.MergedDictionaries.RemoveAt(m_themeColorsInsertionIndex);
             m_targetApplication.Resources.MergedDictionaries.Insert(0, theme == eAppTheme.Dark ? _GetDarkThemeColors() : _GetLightThemeColors());
             m_currentTheme = theme;
+            this.RaisePropertiesChanged(nameof(CurrentTheme));
 
             ResourceDictionary _GetLightThemeColors ()
             {
@@ -193,40 +189,60 @@
             }
         }
 
-        private void EnsureOsMonitoringUnderwayForUserThemeChange ()
+        private void OnResolverThemeChanged (object sender, EventArgs<eAppTheme> e)
         {
-            try
-            {
-                SystemEvents.UserPreferenceChanged -= this.OnUserPreferenceChanged;
-                SystemEvents.UserPreferenceChanged += this.OnUserPreferenceChanged;
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError("Theming error - starting up OS user preference monitoring is failing (likely a machine problem)", ex);
-            }
+            this.AlterApplicationTheme(e.Value);
         }
 
-        private void StopWatchingOSForUserThemeChange ()
+        private void OnResolverPropertyChanged (object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            try
+            if (e.PropertyName == nameof(AppThemeResolver.ThemeConfiguration))
             {
-                SystemEvents.UserPreferenceChanged -= this.OnUserPreferenceChanged;
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError("Theming error - stopping OS user preference monitoring is failing (likely a machine problem)", ex);
-            }
-        }
-
-        private void OnUserPreferenceChanged (object sender, UserPreferenceChangedEventArgs e)
-        {
-            if (m_themeConfiguration == eAppThemeConfiguration.UseSameAsOS)
-            {
-                this.AlterApplicationTheme(GetWindowsUserAppThemeSetting());
+                this.RaisePropertiesChanged(nameof(ThemeConfiguration));
             }
         }
 
         // =========================[ Utility Classes ]=============================
+        // The OS theme from the registry, and its changes from SystemEvents.UserPreferenceChanged. SystemEvents raises
+        // on the thread that first used it when that thread pumps messages, which in a WPF app is the UI thread.
+        private sealed class RegistryThemeSource : IOSThemeSource, IDisposable
+        {
+            public RegistryThemeSource ()
+            {
+                try
+                {
+                    SystemEvents.UserPreferenceChanged += this.OnUserPreferenceChanged;
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError("Theming error - starting up OS user preference monitoring is failing (likely a machine problem)", ex);
+                }
+            }
+
+            public void Dispose ()
+            {
+                try
+                {
+                    SystemEvents.UserPreferenceChanged -= this.OnUserPreferenceChanged;
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError("Theming error - stopping OS user preference monitoring is failing (likely a machine problem)", ex);
+                }
+
+                this.OSThemeChanged = null;
+            }
+
+            public event EventHandler OSThemeChanged;
+
+            public eAppTheme GetOSTheme () => GetWindowsUserAppThemeSetting();
+
+            private void OnUserPreferenceChanged (object sender, UserPreferenceChangedEventArgs e)
+            {
+                this.OSThemeChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
         public class Flags : NotifyPropertyChanged
         {
             private bool m_listItemsShowHover = true;
@@ -236,28 +252,5 @@
                 set => this.SetAndRaiseIfChanged(ref m_listItemsShowHover, value);
             }
         }
-    }
-}
-
-namespace AJut.UX.Themeing
-{
-    using System;
-    using System.Windows;
-
-    [Obsolete("This was a naming error, please use AppThemeManager from AJut.Ux.Theming (not this class from AJut.UX.Themeing) - this version will be removed in future updates")]
-    public enum eAppTheme { Dark, Light }
-
-    [Obsolete("This was a naming error, please use AppThemeManager from AJut.Ux.Theming (not this class from AJut.UX.Themeing) - this version will be removed in future updates")]
-    public enum eAppThemeConfiguration { Dark, Light, UseSameAsOS }
-
-    [Obsolete("This was a naming error, please use AppThemeManager from AJut.Ux.Theming (not this class from AJut.UX.Themeing) - this version will be removed in future updates")]
-    public class AppThemeManager : Theming.AppThemeManager
-    {
-        public AppThemeManager (Application target = null, string lightThemeXamlUriPath = null, string darkThemeXamlUriPath = null, int themeColorsInsertionIndex = 0)
-            : base(target, lightThemeXamlUriPath, darkThemeXamlUriPath, themeColorsInsertionIndex)
-        {
-
-        }
-
     }
 }

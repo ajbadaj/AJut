@@ -3,27 +3,41 @@ namespace AJut.UX.Controls
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Collections.Specialized;
-    using System.ComponentModel;
-    using System.Linq;
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Input;
+    using System.Windows.Media;
     using AJut;
     using AJut.Tree;
+    using AJut.UX.AttachedProperties;
+    using AJut.UX.Converters;
     using AJut.UX.PropertyInteraction;
     using AJut.Storage;
     using DPUtils = DPUtils<PropertyGrid>;
 
-    public class PropertyGrid : Control, IDisposable, IPropertyGrid
+    // The label splitter: with the pointer on a row's label within PropertyGridRowRules.kLabelSplitterHitDistance
+    // of the boundary between the label and its editor, a line shows on it (PART_LabelSplitter).
+    // Dragging it sets LabelColumnWidth, and double-clicking it fits LabelColumnWidth to the labels
+    // on screen.
+    public class PropertyGrid : Control, IDisposable, IPropertyGridHost
     {
-        private readonly PropertyGridManager m_manager;
-        private FlatTreeListControl PART_TreeList;
+        private const string kPropertyRowPartName = "PART_PropertyRow";
+        private const string kPropertyRowLabelPartName = "PART_PropertyRowLabel";
 
-        // Last source object reported through SelectedSourceObjectChanged. Held so we only raise that
-        // event when the resolved element actually changes - not when selection moves between two rows
-        // inside the same element's subtree.
-        private object m_lastSelectedSourceObject;
+        // Every rule that never touches a view (rebuilding, mirroring source edits, teardown, selection
+        // by source object, list reordering) lives in the shared controller; this control is the view
+        private readonly PropertyGridController m_controller;
+        private FlatTreeListControl PART_TreeList;
+        private FrameworkElement PART_LabelSplitter;
+
+        // The label splitter, in PART_TreeList's coordinates: where the boundary under the pointer is,
+        // the label column width that boundary stands for, and the drag in progress
+        private double m_labelSplitterBoundaryX;
+        private double m_labelSplitterColumnWidth = double.NaN;
+        private double m_labelSplitterDragStartX;
+        private double m_labelSplitterDragStartBoundaryX;
+        private double m_labelSplitterDragStartWidth;
+        private bool m_isDraggingLabelSplitter;
 
         // ===========[ Commands ]=================================================
         /// <summary>
@@ -43,7 +57,8 @@ namespace AJut.UX.Controls
 
         public PropertyGrid ()
         {
-            m_manager = new PropertyGridManager(this);
+            m_controller = new PropertyGridController(this);
+            m_controller.PropertyTreeChanged += this.OnControllerPropertyTreeChanged;
             this.CommandBindings.Add(new CommandBinding(
                 SetPropertyToDefaultCommand,
                 this.OnSetPropertyToDefaultExecuted,
@@ -53,7 +68,7 @@ namespace AJut.UX.Controls
             // Drop the source -> grid PropertyChanged subscription whenever the grid leaves the
             // visual tree, and restore it when it comes back. Without this a long-lived source
             // object pins the whole grid after a consumer simply drops it (without Dispose or
-            // nulling the source) - see OnSourceItemPropertyChanged subscription below.
+            // nulling the source).
             this.Loaded += this.OnLoaded;
             this.Unloaded += this.OnUnloaded;
         }
@@ -66,15 +81,20 @@ namespace AJut.UX.Controls
                 this.PART_TreeList.DragDropReorderRequested -= this.OnDragDropReorderRequested;
             }
 
-            // Drop the per-target subscriptions and each target's elevated INPC hooks while the
-            // tree is still walkable. m_manager.Dispose() only clears collections; without this a
-            // long-lived source object keeps the disposed grid (and its target tree) alive.
-            this._TeardownTargetSubscriptions();
-            m_manager.Dispose();
+            this.UnhookLabelSplitter();
+            m_controller.PropertyTreeChanged -= this.OnControllerPropertyTreeChanged;
+            m_controller.Dispose();
             this.ItemsSource = null;
             this.SingleItemSource = null;
         }
 
+        // ===========[ IPropertyGridHost ]=======================================
+        void IPropertyGridHost.ShowRootItems (IReadOnlyList<IObservableTreeNode> rootItems)
+        {
+            this.PropertyTreeItems = rootItems;
+        }
+
+        // ===========[ Template application ]====================================
         public override void OnApplyTemplate ()
         {
             base.OnApplyTemplate();
@@ -89,16 +109,27 @@ namespace AJut.UX.Controls
             if (this.PART_TreeList != null)
             {
                 this.PART_TreeList.IsDragDropReorderEnabled = true;
-                this.PART_TreeList.CanDragItem = _CanDragPropertyItem;
-                this.PART_TreeList.CanDropItem = _CanDropPropertyItem;
+                this.PART_TreeList.CanDragItem = m_controller.CanDragRow;
+                this.PART_TreeList.CanDropItem = PropertyGridController.CanDropItem;
                 this.PART_TreeList.DragDropReorderRequested += this.OnDragDropReorderRequested;
 
                 this.PART_TreeList.SelectionChanged += this.OnTreeListSelectionChanged;
 
                 this.PART_TreeList.DragGhostTemplate = this.DragGhostTemplate;
             }
+
+            this.UnhookLabelSplitter();
+            this.PART_LabelSplitter = this.GetTemplateChild(nameof(PART_LabelSplitter)) as FrameworkElement;
+            if (this.PART_LabelSplitter != null)
+            {
+                this.PART_LabelSplitter.MouseLeftButtonDown += this.OnLabelSplitterMouseLeftButtonDown;
+                this.PART_LabelSplitter.MouseMove += this.OnLabelSplitterMouseMove;
+                this.PART_LabelSplitter.MouseLeftButtonUp += this.OnLabelSplitterMouseLeftButtonUp;
+                this.PART_LabelSplitter.LostMouseCapture += this.OnLabelSplitterLostMouseCapture;
+            }
         }
 
+        // ===========[ Dependency Properties ]====================================
         public static readonly DependencyProperty ItemsSourceProperty = DPUtils.Register(_ => _.ItemsSource, (d, e) => d.OnItemsSourceChanged(e));
         public IEnumerable ItemsSource
         {
@@ -142,7 +173,7 @@ namespace AJut.UX.Controls
             set => this.SetValue(TextLabelStyleProperty, value);
         }
 
-        public static readonly DependencyProperty MaxRecursionDepthProperty = DPUtils.Register(_ => _.MaxRecursionDepth, 5, (d, e) => d.m_manager.MaxRecursionDepth = e.NewValue);
+        public static readonly DependencyProperty MaxRecursionDepthProperty = DPUtils.Register(_ => _.MaxRecursionDepth, 5, (d, e) => d.m_controller.Manager.MaxRecursionDepth = e.NewValue);
         public int MaxRecursionDepth
         {
             get => (int)this.GetValue(MaxRecursionDepthProperty);
@@ -170,11 +201,48 @@ namespace AJut.UX.Controls
             set => this.SetValue(FixedRowHeightProperty, value);
         }
 
+        /// <summary>
+        /// Makes the whole grid read-only, the same as setting <see cref="Edit.IsReadOnlyProperty"/> on it, which it
+        /// does: AJut's editors honor that inherited property, list elements can't be removed or dragged to reorder,
+        /// and nothing offers "Set to default". False clears the grid's own setting, so a read-only inherited from
+        /// further up still applies. The grid's own setting is its Edit.IsReadOnly, so false also clears an
+        /// Edit.IsReadOnly set directly on the grid: use one or the other on the grid itself, not both.
+        /// </summary>
+        public static readonly DependencyProperty IsReadOnlyProperty = DPUtils.Register(_ => _.IsReadOnly, false, (d, e) => d.OnIsReadOnlyChanged(e.NewValue));
+        public bool IsReadOnly
+        {
+            get => (bool)this.GetValue(IsReadOnlyProperty);
+            set => this.SetValue(IsReadOnlyProperty, value);
+        }
+        private void OnIsReadOnlyChanged (bool newValue)
+        {
+            if (newValue)
+            {
+                Edit.SetIsReadOnly(this, true);
+            }
+            else
+            {
+                this.ClearValue(Edit.IsReadOnlyProperty);
+            }
+        }
+
+        /// <summary>
+        /// Width of the label column in pixels, so every row's editor starts at the same x whatever its depth; NaN (the
+        /// default) sizes each label to its text. The label splitter sets it.
+        /// </summary>
         public static readonly DependencyProperty LabelColumnWidthProperty = DPUtils.Register(_ => _.LabelColumnWidth, double.NaN);
         public double LabelColumnWidth
         {
             get => (double)this.GetValue(LabelColumnWidthProperty);
             set => this.SetValue(LabelColumnWidthProperty, value);
+        }
+
+        /// <summary>The label splitter's line, shown over the label and editor boundary while the pointer is near it</summary>
+        public static readonly DependencyProperty LabelSplitterBrushProperty = DPUtils.Register(_ => _.LabelSplitterBrush);
+        public Brush LabelSplitterBrush
+        {
+            get => (Brush)this.GetValue(LabelSplitterBrushProperty);
+            set => this.SetValue(LabelSplitterBrushProperty, value);
         }
 
         /// <summary>Decides where per-property tooltips render (property name, value, both, or none).</summary>
@@ -246,159 +314,47 @@ namespace AJut.UX.Controls
         // ===========[ Lifecycle - source subscription ]==========================
         // The grid mirrors external edits by subscribing to its source object(s) PropertyChanged.
         // That subscription is a source -> grid strong reference, so a long-lived source pins the
-        // grid once it leaves the tree (a consumer that drops the grid without Dispose or nulling
-        // the source). Toggle the subscription with tree membership: drop it on Unloaded so a
-        // dropped grid collects, restore + refresh it on Loaded so a re-shown grid stays live.
+        // grid once it leaves the tree. The controller drops it (and the ItemsSource collection's
+        // CollectionChanged) on Unloaded so a dropped grid collects, and restores and refreshes it
+        // on Loaded so a re-shown grid stays live.
         private void OnLoaded (object sender, RoutedEventArgs e)
         {
-            this.UpdateSourceSubscription(subscribe: true);
-            this.RefreshAllTargets();
+            m_controller.OnAttached();
         }
 
         private void OnUnloaded (object sender, RoutedEventArgs e)
         {
-            this.UpdateSourceSubscription(subscribe: false);
-        }
-
-        private void UpdateSourceSubscription (bool subscribe)
-        {
-            // Always detach first so re-entry / a sub already established when the source DP was set
-            // before load cannot double-subscribe.
-            if (this.SingleItemSource is INotifyPropertyChanged single)
-            {
-                single.PropertyChanged -= this.OnSourceItemPropertyChanged;
-                if (subscribe)
-                {
-                    single.PropertyChanged += this.OnSourceItemPropertyChanged;
-                }
-            }
-
-            if (this.ItemsSource != null)
-            {
-                // The ItemsSource collection's CollectionChanged is also a source -> grid link, so toggle
-                // it alongside the per-item PropertyChanged subs.
-                if (this.ItemsSource is INotifyCollectionChanged collectionChange)
-                {
-                    collectionChange.CollectionChanged -= this.NotifyCollectionChangedItemsSource_OnCollectionChanged;
-                    if (subscribe)
-                    {
-                        collectionChange.CollectionChanged += this.NotifyCollectionChangedItemsSource_OnCollectionChanged;
-                    }
-                }
-
-                foreach (INotifyPropertyChanged pc in this.ItemsSource.OfType<INotifyPropertyChanged>())
-                {
-                    pc.PropertyChanged -= this.OnSourceItemPropertyChanged;
-                    if (subscribe)
-                    {
-                        pc.PropertyChanged += this.OnSourceItemPropertyChanged;
-                    }
-                }
-            }
-        }
-
-        // Re-read every target's value in case the source changed while the grid was detached.
-        // Snapshots first - RecacheEditValue on a list target may rebuild children mid-enumeration.
-        private void RefreshAllTargets ()
-        {
-            foreach (var target in m_manager.Items.OfType<PropertyEditTarget>().ToArray())
-            {
-                target.RecacheEditValue();
-            }
-
-            m_manager.UpdateConditionalVisibility();
+            m_controller.OnDetached();
         }
 
         private void OnSingleItemSourceChanged (DependencyPropertyChangedEventArgs<object> e)
         {
-            if (e.OldValue is INotifyPropertyChanged oldPropChanged)
-            {
-                oldPropChanged.PropertyChanged -= this.OnSourceItemPropertyChanged;
-            }
-
+            // A single source replaces an items source
             if (e.HasNewValue)
             {
                 this.ItemsSource = null;
-                this.RebuildEditTargets();
+            }
 
-                if (e.NewValue is INotifyPropertyChanged newPropChanged)
-                {
-                    newPropChanged.PropertyChanged += this.OnSourceItemPropertyChanged;
-                }
-            }
-            else
-            {
-                this._TeardownTargetSubscriptions();
-                m_manager.Dispose();
-                this.PropertyTreeItems = null;
-            }
+            m_controller.OnSingleItemSourceChanged(e.NewValue);
         }
 
         private void OnItemsSourceChanged (DependencyPropertyChangedEventArgs<IEnumerable> e)
         {
-            if (e.OldValue is INotifyCollectionChanged oldCollectionChange)
-            {
-                oldCollectionChange.CollectionChanged -= this.NotifyCollectionChangedItemsSource_OnCollectionChanged;
-
-                foreach (INotifyPropertyChanged pc in e.OldValue.OfType<INotifyPropertyChanged>())
-                {
-                    pc.PropertyChanged -= this.OnSourceItemPropertyChanged;
-                }
-            }
-
+            // An items source replaces a single source
             if (e.HasNewValue)
             {
                 this.SingleItemSource = null;
-                this.RebuildEditTargets();
-
-                if (e.NewValue is INotifyCollectionChanged newCollectionChange)
-                {
-                    newCollectionChange.CollectionChanged -= this.NotifyCollectionChangedItemsSource_OnCollectionChanged;
-                    newCollectionChange.CollectionChanged += this.NotifyCollectionChangedItemsSource_OnCollectionChanged;
-                }
-
-                foreach (INotifyPropertyChanged pc in e.NewValue.OfType<INotifyPropertyChanged>())
-                {
-                    pc.PropertyChanged += this.OnSourceItemPropertyChanged;
-                }
             }
-            else
-            {
-                this._TeardownTargetSubscriptions();
-                m_manager.Dispose();
-                this.PropertyTreeItems = null;
-            }
+
+            m_controller.OnItemsSourceChanged(e.NewValue);
         }
 
-        private void OnSourceItemPropertyChanged (object sender, PropertyChangedEventArgs e)
+        private void OnControllerPropertyTreeChanged (object sender, EventArgs e)
         {
-            // Snapshot: RecacheEditValue on list targets may rebuild children,
-            // which modifies the Items collection during enumeration.
-            var items = m_manager.Items.Where(i => i.ShouldEvaluateFor(e.PropertyName)).ToArray();
-            foreach (var item in items)
-            {
-                item.RecacheEditValue();
-            }
-
-            // External INPC changes may affect ShowIf/HideIf conditions
-            m_manager.UpdateConditionalVisibility();
+            this.PropertyTreeChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        private void NotifyCollectionChangedItemsSource_OnCollectionChanged (object sender, NotifyCollectionChangedEventArgs e)
-        {
-            foreach (INotifyPropertyChanged pc in e.OldItems?.OfType<INotifyPropertyChanged>() ?? Enumerable.Empty<INotifyPropertyChanged>())
-            {
-                pc.PropertyChanged -= this.OnSourceItemPropertyChanged;
-            }
-
-            foreach (INotifyPropertyChanged pc in e.NewItems?.OfType<INotifyPropertyChanged>() ?? Enumerable.Empty<INotifyPropertyChanged>())
-            {
-                pc.PropertyChanged += this.OnSourceItemPropertyChanged;
-            }
-
-            this.RebuildEditTargets();
-        }
-
+        // ===========[ Events ]===================================================
         /// <summary>
         /// Fires whenever any property in the displayed tree is edited via the property grid.
         /// Subscribe to detect any change and refresh displays that mirror the source object.
@@ -450,7 +406,7 @@ namespace AJut.UX.Controls
         /// the selection sits outside any list element. Selecting any row inside an element's subtree
         /// (the element row itself or any of its sub-property rows) resolves to that same element.
         /// </summary>
-        public object SelectedSourceObject => _ResolveSourceObject(this.SelectedTarget);
+        public object SelectedSourceObject => PropertyGridController.ResolveSourceObject(this.SelectedTarget);
 
         /// <summary>
         /// Selects the row representing <paramref name="sourceObject"/> (matched by reference), expanding
@@ -464,7 +420,7 @@ namespace AJut.UX.Controls
                 return false;
             }
 
-            PropertyEditTarget match = this.FindTargetForSourceObject(sourceObject);
+            PropertyEditTarget match = m_controller.FindTargetForSourceObject(sourceObject);
             if (match == null)
             {
                 return false;
@@ -473,157 +429,25 @@ namespace AJut.UX.Controls
             return this.PART_TreeList.TrySelectItemForSource(match, scrollIntoView: true);
         }
 
-        private void RebuildEditTargets ()
-        {
-            // Unsubscribe from old tree (and hidden conditional targets) before rebuild.
-            this._TeardownTargetSubscriptions();
-
-            m_manager.RebuildEditTargets();
-            this.PropertyTreeItems = m_manager.RootNode != null
-                ? ((IObservableTreeNode)m_manager.RootNode).Children
-                : null;
-
-            // Subscribe to all new targets for PropertyTreeChanged notification,
-            // including conditionally-hidden targets so they fire events when shown.
-            if (m_manager.RootNode != null)
-            {
-                foreach (var target in _WalkAllTargets(m_manager.RootNode))
-                {
-                    target.PropertyChanged += this.OnAnyTargetPropertyChanged;
-                }
-
-                foreach (var target in m_manager.HiddenConditionalTargets)
-                {
-                    target.PropertyChanged += this.OnAnyTargetPropertyChanged;
-                }
-            }
-        }
-
-        private void OnAnyTargetPropertyChanged (object sender, PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == PropertyEditTarget.SourceCommittedPropertyName)
-            {
-                this.PropertyTreeChanged?.Invoke(this, EventArgs.Empty);
-
-                // List operations (add/remove/reorder) rebuild children via RebuildListChildren,
-                // creating new PropertyEditTarget objects that aren't subscribed yet. Re-subscribe
-                // all descendants of the list parent so future edits fire PropertyTreeChanged.
-                if (sender is PropertyEditTarget { IsListEditor: true } listTarget)
-                {
-                    foreach (var child in _WalkAllTargets(listTarget))
-                    {
-                        child.PropertyChanged -= this.OnAnyTargetPropertyChanged;
-                        child.PropertyChanged += this.OnAnyTargetPropertyChanged;
-                    }
-                }
-
-                // Button actions may change source properties without INPC - recache all targets
-                if (sender is PropertyEditTarget { Editor: "Button" } && m_manager.RootNode != null)
-                {
-                    foreach (var target in _WalkAllTargets(m_manager.RootNode))
-                    {
-                        if (target.Editor != "Button")
-                        {
-                            target.RecacheEditValue();
-                        }
-                    }
-                }
-
-                // A property edit may change a ShowIf/HideIf condition - toggle
-                // affected targets in/out without a full rebuild.
-                m_manager.UpdateConditionalVisibility();
-            }
-        }
-
-        // Drops every per-target PropertyChanged subscription and tears down each target's elevated
-        // sub-object INPC hooks. Walks the live tree plus the hidden-conditional targets (which are
-        // subscribed even while out of the tree). Called before every rebuild and on dispose / source
-        // clear so a torn-down grid does not leave subscriptions pinning the target/source graph.
-        private void _TeardownTargetSubscriptions ()
-        {
-            if (m_manager.RootNode == null)
-            {
-                return;
-            }
-
-            foreach (var target in _WalkAllTargets(m_manager.RootNode))
-            {
-                target.PropertyChanged -= this.OnAnyTargetPropertyChanged;
-                target.Teardown();
-            }
-
-            foreach (var target in m_manager.HiddenConditionalTargets)
-            {
-                target.PropertyChanged -= this.OnAnyTargetPropertyChanged;
-                target.Teardown();
-            }
-        }
-
-        private static IEnumerable<PropertyEditTarget> _WalkAllTargets (IObservableTreeNode node)
-        {
-            foreach (var child in node.Children)
-            {
-                if (child is PropertyEditTarget target)
-                {
-                    yield return target;
-                    if (target.ElevatedChildTarget != null)
-                    {
-                        yield return target.ElevatedChildTarget;
-                    }
-
-                    foreach (var descendant in _WalkAllTargets(target))
-                    {
-                        yield return descendant;
-                    }
-                }
-            }
-        }
-
         // ===========[ Selection handling ]=======================================
         private void OnTreeListSelectionChanged (object sender, EventArgs<SelectionChange<IObservableTreeNode>> e)
         {
             this.SelectedTargetChanged?.Invoke(this, EventArgs.Empty);
-
-            object newSource = this.SelectedSourceObject;
-            if (!ReferenceEquals(newSource, m_lastSelectedSourceObject))
+            if (m_controller.OnSelectedTargetChanged(this.SelectedTarget))
             {
-                m_lastSelectedSourceObject = newSource;
                 this.SelectedSourceObjectChanged?.Invoke(this, EventArgs.Empty);
             }
         }
 
-        private PropertyEditTarget FindTargetForSourceObject (object sourceObject)
+        // Edit.IsReadOnly is inherited, so it changes here whether the grid's own IsReadOnly set it or an
+        // ancestor did; the controller follows the effective value either way
+        protected override void OnPropertyChanged (DependencyPropertyChangedEventArgs e)
         {
-            if (m_manager.RootNode == null)
+            base.OnPropertyChanged(e);
+            if (e.Property == Edit.IsReadOnlyProperty)
             {
-                return null;
+                m_controller.IsReadOnly = (bool)e.NewValue;
             }
-
-            foreach (PropertyEditTarget target in _WalkAllTargets(m_manager.RootNode))
-            {
-                if (ReferenceEquals(target.SourceObject, sourceObject))
-                {
-                    return target;
-                }
-            }
-
-            return null;
-        }
-
-        // Walk up (including the row itself) to the nearest row that stands in for a source object - i.e.
-        // the nearest list-element ancestor - and return its element instance.
-        private static object _ResolveSourceObject (PropertyEditTarget target)
-        {
-            for (PropertyEditTarget cursor = target; cursor != null; cursor = cursor.Parent as PropertyEditTarget)
-            {
-                object source = cursor.SourceObject;
-                if (source != null)
-                {
-                    return source;
-                }
-            }
-
-            return null;
         }
 
         private void OnSetPropertyToDefaultExecuted (object sender, ExecutedRoutedEventArgs e)
@@ -636,47 +460,218 @@ namespace AJut.UX.Controls
 
         private void OnSetPropertyToDefaultCanExecute (object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = e.Parameter is PropertyEditTarget target && target.HasDefaultValue && !target.IsExpandable;
+            e.CanExecute = e.Parameter is PropertyEditTarget target && PropertyGridRowRules.CanResetToDefault(target, Edit.GetIsReadOnly(this));
         }
 
-        // ===========[ Drag/Drop for list element reordering ]====================
-
-        private static bool _CanDragPropertyItem (IObservableTreeNode node)
+        // ===========[ Label splitter ]===========================================
+        // A preview sees every move over the grid, even ones an editor handles: shows the splitter over
+        // the boundary of the row under the pointer when the pointer is near it, and hides it otherwise
+        protected override void OnPreviewMouseMove (MouseEventArgs e)
         {
-            return node is PropertyEditTarget target
-                && target.IsListElement
-                && (target.EditContext as PropertyGridListElementContext)?.ParentListContext?.CanReorder == true;
-        }
-
-        private static bool _CanDropPropertyItem (IObservableTreeNode draggedNode, IObservableTreeNode targetParent)
-        {
-            if (draggedNode is PropertyEditTarget draggedTarget && draggedTarget.IsListElement
-                && targetParent is PropertyEditTarget parentTarget && parentTarget.IsListEditor)
+            base.OnPreviewMouseMove(e);
+            if (m_isDraggingLabelSplitter || this.PART_TreeList == null || this.PART_LabelSplitter == null)
             {
-                var draggedListCtx = (draggedTarget.EditContext as PropertyGridListElementContext)?.ParentListContext;
-                var parentListCtx = parentTarget.EditContext as PropertyGridListContext;
-                return draggedListCtx != null && draggedListCtx == parentListCtx;
+                return;
             }
 
+            Point pointer = e.GetPosition(this.PART_TreeList);
+            if (this.TryGetLabelBoundary(this.FindPropertyRowAt(pointer), out double boundaryX, out double shownWidth)
+                && PropertyGridRowRules.IsNearLabelBoundary(pointer.X, boundaryX))
+            {
+                // A set width is the same boundary on every row, so a drag starts from it
+                m_labelSplitterColumnWidth = double.IsNaN(this.LabelColumnWidth) ? shownWidth : this.LabelColumnWidth;
+                this.PlaceLabelSplitter(boundaryX);
+                this.PART_LabelSplitter.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                this.HideLabelSplitter();
+            }
+        }
+
+        protected override void OnMouseLeave (MouseEventArgs e)
+        {
+            base.OnMouseLeave(e);
+            if (!m_isDraggingLabelSplitter)
+            {
+                this.HideLabelSplitter();
+            }
+        }
+
+        private void OnLabelSplitterMouseLeftButtonDown (object sender, MouseButtonEventArgs e)
+        {
+            if (e.ClickCount == 2)
+            {
+                this.FitLabelColumnWidthToShownLabels();
+                this.HideLabelSplitter();
+                e.Handled = true;
+                return;
+            }
+
+            if (double.IsNaN(m_labelSplitterColumnWidth))
+            {
+                return;
+            }
+
+            m_labelSplitterDragStartX = e.GetPosition(this.PART_TreeList).X;
+            m_labelSplitterDragStartBoundaryX = m_labelSplitterBoundaryX;
+            m_labelSplitterDragStartWidth = m_labelSplitterColumnWidth;
+            m_isDraggingLabelSplitter = this.PART_LabelSplitter.CaptureMouse();
+            e.Handled = true;
+        }
+
+        private void OnLabelSplitterMouseMove (object sender, MouseEventArgs e)
+        {
+            if (!m_isDraggingLabelSplitter)
+            {
+                return;
+            }
+
+            // Every move is measured from where the drag started. The line follows the width actually
+            // set, which stops at the limits even when the pointer doesn't.
+            double pointerDelta = e.GetPosition(this.PART_TreeList).X - m_labelSplitterDragStartX;
+            double width = PropertyGridRowRules.ComputeDraggedLabelColumnWidth(m_labelSplitterDragStartWidth, pointerDelta, this.PART_TreeList.ActualWidth);
+            this.LabelColumnWidth = width;
+            this.PlaceLabelSplitter(m_labelSplitterDragStartBoundaryX + (width - m_labelSplitterDragStartWidth));
+        }
+
+        private void OnLabelSplitterMouseLeftButtonUp (object sender, MouseButtonEventArgs e)
+        {
+            if (m_isDraggingLabelSplitter)
+            {
+                this.PART_LabelSplitter.ReleaseMouseCapture();
+                e.Handled = true;
+            }
+        }
+
+        // A drag that moved has already set its width; a press with no move sets nothing, so a click
+        // on the splitter doesn't fix an auto sized column
+        private void OnLabelSplitterLostMouseCapture (object sender, MouseEventArgs e)
+        {
+            m_isDraggingLabelSplitter = false;
+        }
+
+        private void FitLabelColumnWidthToShownLabels ()
+        {
+            var widths = new List<double>();
+            foreach (DependencyObject element in TreeTraversal<DependencyObject>.All(this.PART_TreeList, getChildrenMethodOverride: DependencyObjectXT.GetVisualChildren))
+            {
+                if (element is Grid row && row.Name == kPropertyRowPartName && this.IsRowShown(row) && this.TryMeasureFittingLabelColumnWidth(row, out double width))
+                {
+                    widths.Add(width);
+                }
+            }
+
+            double fit = PropertyGridRowRules.FitLabelColumnWidth(widths, this.PART_TreeList.ActualWidth);
+            if (!double.IsNaN(fit))
+            {
+                this.LabelColumnWidth = fit;
+            }
+        }
+
+        // The row template's root (PART_PropertyRow) under a point in PART_TreeList, or null
+        private Grid FindPropertyRowAt (Point pointInTreeList)
+        {
+            for (DependencyObject current = VisualTreeHelper.HitTest(this.PART_TreeList, pointInTreeList)?.VisualHit; current != null && current != this.PART_TreeList; current = current.GetVisualParent())
+            {
+                if (current is Grid row && row.Name == kPropertyRowPartName)
+                {
+                    return row;
+                }
+            }
+
+            return null;
+        }
+
+        // The middle of the gap between a row's label and its editor, in PART_TreeList's coordinates,
+        // and the label column width the row shows
+        private bool TryGetLabelBoundary (Grid row, out double boundaryX, out double shownLabelColumnWidth)
+        {
+            boundaryX = 0.0;
+            shownLabelColumnWidth = double.NaN;
+            if (row == null || !(LogicalTreeHelper.FindLogicalNode(row, kPropertyRowLabelPartName) is FrameworkElement label) || !TryGetIndentWidth(row, out double indentWidth))
+            {
+                return false;
+            }
+
+            var gapMiddle = new Point(label.ActualWidth + (label.Margin.Right / 2), 0);
+            boundaryX = label.TranslatePoint(gapMiddle, this.PART_TreeList).X;
+            shownLabelColumnWidth = PropertyGridRowRules.ToLabelColumnWidth(row.ColumnDefinitions[0].ActualWidth, indentWidth, LabelWidthAfterIndentConverter.kExpanderColumnWidth);
+            return true;
+        }
+
+        // The label column width that would show a row's whole label. The label column's width is set,
+        // so what the label's content wants is measured unconstrained, then marked for a normal measure
+        // again, or it keeps this one when the fit leaves the width as it was.
+        private bool TryMeasureFittingLabelColumnWidth (Grid row, out double labelColumnWidth)
+        {
+            labelColumnWidth = double.NaN;
+            if (!(LogicalTreeHelper.FindLogicalNode(row, kPropertyRowLabelPartName) is Border label) || label.Child == null || !TryGetIndentWidth(row, out double indentWidth))
+            {
+                return false;
+            }
+
+            label.Child.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            double columnWidth = label.Child.DesiredSize.Width
+                + label.Margin.Left + label.Margin.Right
+                + label.BorderThickness.Left + label.BorderThickness.Right
+                + label.Padding.Left + label.Padding.Right;
+            label.Child.InvalidateMeasure();
+
+            labelColumnWidth = PropertyGridRowRules.ToLabelColumnWidth(columnWidth, indentWidth, LabelWidthAfterIndentConverter.kExpanderColumnWidth);
+            return true;
+        }
+
+        // The row template's DataContext is the PropertyEditTarget; the indent is on the FlatTreeItem
+        // its ListBoxItem holds, which the label column's width binding reads the same way
+        private static bool TryGetIndentWidth (Grid row, out double indentWidth)
+        {
+            if (row.GetFirstParentOf<ListBoxItem>()?.DataContext is FlatTreeItem item)
+            {
+                indentWidth = item.IndentWidth;
+                return true;
+            }
+
+            indentWidth = 0.0;
             return false;
         }
 
+        // Realized rows include a few just off screen; fitting only counts the ones in view
+        private bool IsRowShown (FrameworkElement row)
+        {
+            Rect bounds = row.TransformToVisual(this.PART_TreeList).TransformBounds(new Rect(0, 0, row.ActualWidth, row.ActualHeight));
+            return bounds.Bottom > 0 && bounds.Top < this.PART_TreeList.ActualHeight;
+        }
+
+        private void PlaceLabelSplitter (double boundaryX)
+        {
+            m_labelSplitterBoundaryX = boundaryX;
+            this.PART_LabelSplitter.Margin = new Thickness(boundaryX - PropertyGridRowRules.kLabelSplitterHitDistance, 0, 0, 0);
+        }
+
+        private void HideLabelSplitter ()
+        {
+            if (this.PART_LabelSplitter != null)
+            {
+                this.PART_LabelSplitter.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void UnhookLabelSplitter ()
+        {
+            if (this.PART_LabelSplitter != null)
+            {
+                this.PART_LabelSplitter.MouseLeftButtonDown -= this.OnLabelSplitterMouseLeftButtonDown;
+                this.PART_LabelSplitter.MouseMove -= this.OnLabelSplitterMouseMove;
+                this.PART_LabelSplitter.MouseLeftButtonUp -= this.OnLabelSplitterMouseLeftButtonUp;
+                this.PART_LabelSplitter.LostMouseCapture -= this.OnLabelSplitterLostMouseCapture;
+            }
+        }
+
+        // ===========[ Drag/Drop for list element reordering ]====================
         private void OnDragDropReorderRequested (object sender, FlatTreeReorderEventArgs e)
         {
-            if (e.Items.Length == 1 && e.Items[0] is PropertyEditTarget draggedTarget && draggedTarget.IsListElement)
-            {
-                var elementCtx = draggedTarget.EditContext as PropertyGridListElementContext;
-                if (elementCtx?.ParentListContext != null)
-                {
-                    e.Cancel = true;
-                    int fromIndex = elementCtx.Index;
-                    int toIndex = e.InsertIndex > fromIndex ? e.InsertIndex - 1 : e.InsertIndex;
-                    if (fromIndex != toIndex)
-                    {
-                        elementCtx.ParentListContext.MoveElement(fromIndex, toIndex);
-                    }
-                }
-            }
+            PropertyGridController.TryHandleReorder(e);
         }
     }
 }

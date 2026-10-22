@@ -3,14 +3,13 @@ namespace AJut.UX.Controls
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Collections.Specialized;
-    using System.ComponentModel;
     using System.Linq;
-    using System.Runtime.CompilerServices;
+    using Microsoft.UI.Input;
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
     using Microsoft.UI.Xaml.Data;
+    using Microsoft.UI.Xaml.Input;
     using Microsoft.UI.Xaml.Media;
     using Windows.Foundation;
     using DPUtils = AJut.UX.DPUtils<ToggleStrip>;
@@ -24,18 +23,29 @@ namespace AJut.UX.Controls
     //   PART_ItemsPanel  - StackPanel that holds the generated toggle buttons
     //
     // Note: CornerRadius distribution and BorderThickness are intentionally set in
-    // code (CreateItemButton) because they are index-aware - the first and last buttons
+    // code (ApplyEdgeStyling) because they are index-aware - the first and last buttons
     // receive rounded corners matching the strip's CornerRadius DP, while interior
     // buttons receive squared corners. These are structural, not stylistic, assignments.
     // Button Padding comes from the ItemPadding DP (default 8,4); callers can override
     // via that DP or via ToggleButtonItemStyle.
+    //
+    // Orientation: the template's OrientationStates group (Horizontal / Vertical) turns the
+    // BumpStack and the overflow button, and code turns the items panel. Everything measured along the strip
+    // (natural sizes, uniform sizing, the overflow budget) is widths for a horizontal strip
+    // and heights for a vertical one.
 
     [TemplatePart(Name = nameof(PART_ScrollHost), Type = typeof(BumpStack))]
     [TemplatePart(Name = nameof(PART_OverflowButton), Type = typeof(Button))]
-    public class ToggleStrip : Control
+    [TemplateVisualState(GroupName = kOrientationStatesGroup, Name = kHorizontalState)]
+    [TemplateVisualState(GroupName = kOrientationStatesGroup, Name = kVerticalState)]
+    public class ToggleStrip : Control, IToggleStripHost
     {
         // ===========[ Const-like ]===============================================
-        private const double kFallbackOverflowButtonWidth = 28.0;
+        // Used when the overflow button can't be measured yet (it measures empty while collapsed), along either axis.
+        private const double kFallbackOverflowButtonLength = 28.0;
+        private const string kOrientationStatesGroup = "OrientationStates";
+        private const string kHorizontalState = "Horizontal";
+        private const string kVerticalState = "Vertical";
         private static readonly PropertyPath kIsSelectedPath = new PropertyPath("IsSelected");
         private static readonly PropertyPath kNamePath = new PropertyPath("Name");
         private static readonly PropertyPath kBorderBrushPath = new PropertyPath("BorderBrush");
@@ -48,17 +58,28 @@ namespace AJut.UX.Controls
         private Button PART_OverflowButton;
         private StackPanel PART_OverflowPanel;
 
+        // Natural lengths are measured along the strip: widths when horizontal, heights when vertical.
         private readonly List<ToggleStripButton> m_buttons = new List<ToggleStripButton>();
-        private readonly List<double> m_naturalWidths = new List<double>();
-        private double m_uniformItemWidth;
+        private readonly List<double> m_naturalLengths = new List<double>();
+        private double m_uniformItemLength;
         private bool m_isUpdatingOverflow;
 
         private bool m_isChangingSelectedItem;
         private bool m_isChangingSelectedItemsList;
 
+        // Click-and-drag scrolling in Scroll mode; the handlers are kept so they can be removed from the template part
+        private readonly ToggleStripDragScroll m_dragScroll = new ToggleStripDragScroll();
+        private readonly PointerEventHandler m_dragPressedHandler;
+        private readonly PointerEventHandler m_dragMovedHandler;
+        private readonly PointerEventHandler m_dragReleasedHandler;
+        private bool m_hasDragCapture;
+
         // ===========[ Construction ]=============================================
         public ToggleStrip ()
         {
+            m_dragPressedHandler = this.OnScrollHostPointerPressed;
+            m_dragMovedHandler = this.OnScrollHostPointerMoved;
+            m_dragReleasedHandler = this.OnScrollHostPointerReleased;
             this.DefaultStyleKey = typeof(ToggleStrip);
             this.Items = new ToggleItemsCollection(this);
             this.Items.CollectionChanged += this.Items_OnCollectionChanged;
@@ -161,8 +182,11 @@ namespace AJut.UX.Controls
             set => this.SetValue(ItemPaddingProperty, value);
         }
 
-        // EnsureUniformSize: when true every item is widened to the widest item's natural size, so
-        // the buttons read as an even grid rather than each hugging its own content.
+        /// <summary>
+        /// When true every item is grown to the largest item's natural length along the strip (the widest when
+        /// horizontal, the tallest when vertical), so the buttons read as an even grid rather than each hugging
+        /// its own content.
+        /// </summary>
         public static readonly DependencyProperty EnsureUniformSizeProperty = DPUtils.Register(_ => _.EnsureUniformSize, false, (d, e) => d.RebuildItems());
         public bool EnsureUniformSize
         {
@@ -170,9 +194,12 @@ namespace AJut.UX.Controls
             set => this.SetValue(EnsureUniformSizeProperty, value);
         }
 
-        // OverflowBehavior: how the strip reacts when its items do not all fit (default Clip).
-        // Scroll and OverflowPopup only do anything when the strip is width constrained
-        // (e.g. HorizontalAlignment=Stretch or an explicit Width) - a content sized strip never overflows.
+        /// <summary>
+        /// How the strip reacts when its items do not all fit (default Clip). Scroll and OverflowPopup only do
+        /// anything when the strip is constrained along its own axis: a horizontal strip by width (for example
+        /// HorizontalAlignment=Stretch or an explicit Width), a vertical one by height (VerticalAlignment=Stretch in
+        /// a sized parent, or an explicit Height). A content sized strip never overflows.
+        /// </summary>
         public static readonly DependencyProperty OverflowBehaviorProperty = DPUtils.Register(_ => _.OverflowBehavior, eToggleStripOverflow.Clip, (d, e) => d.UpdateOverflowLayout());
         public eToggleStripOverflow OverflowBehavior
         {
@@ -180,12 +207,52 @@ namespace AJut.UX.Controls
             set => this.SetValue(OverflowBehaviorProperty, value);
         }
 
+        /// <summary>
+        /// Lays the buttons out left to right (Horizontal, the default) or top to bottom (Vertical). A vertical
+        /// strip stretches each button across its width, so it is as wide as its widest button unless sized
+        /// otherwise; overflow, scrolling and uniform sizing all work along its height instead of its width.
+        /// </summary>
+        public static readonly DependencyProperty OrientationProperty = DPUtils.Register(_ => _.Orientation, Orientation.Horizontal, (d, e) => d.OnOrientationChanged());
+        public Orientation Orientation
+        {
+            get => (Orientation)this.GetValue(OrientationProperty);
+            set => this.SetValue(OrientationProperty, value);
+        }
+
+        private void OnOrientationChanged ()
+        {
+            // The buttons are rebuilt so their natural lengths are re-measured along the new axis and the
+            // uniform size of the old axis does not linger as a MinWidth or MinHeight.
+            this.ApplyOrientationState();
+            this.RebuildItems();
+        }
+
+        // ===========[ Properties ]===============================================
+        private bool IsVertical => this.Orientation == Orientation.Vertical;
+
         // ===========[ Template application ]=====================================
         protected override void OnApplyTemplate ()
         {
             base.OnApplyTemplate();
 
+            if (this.PART_ScrollHost != null)
+            {
+                this.PART_ScrollHost.RemoveHandler(PointerPressedEvent, m_dragPressedHandler);
+                this.PART_ScrollHost.RemoveHandler(PointerMovedEvent, m_dragMovedHandler);
+                this.PART_ScrollHost.RemoveHandler(PointerReleasedEvent, m_dragReleasedHandler);
+                this.PART_ScrollHost.PointerCaptureLost -= this.OnScrollHostPointerCaptureLost;
+            }
+
             this.PART_ScrollHost = this.GetTemplateChild(nameof(PART_ScrollHost)) as BumpStack;
+            if (this.PART_ScrollHost != null)
+            {
+                // handledEventsToo: the item buttons mark the press and release handled, and a drag starts on one
+                this.PART_ScrollHost.AddHandler(PointerPressedEvent, m_dragPressedHandler, true);
+                this.PART_ScrollHost.AddHandler(PointerMovedEvent, m_dragMovedHandler, true);
+                this.PART_ScrollHost.AddHandler(PointerReleasedEvent, m_dragReleasedHandler, true);
+                this.PART_ScrollHost.PointerCaptureLost += this.OnScrollHostPointerCaptureLost;
+            }
+
             this.PART_OverflowButton = this.GetTemplateChild(nameof(PART_OverflowButton)) as Button;
 
             // PART_ItemsPanel is the BumpStack's single child (its content). It is reparented into the
@@ -195,7 +262,22 @@ namespace AJut.UX.Controls
             this.PART_ItemsPanel = this.PART_ScrollHost?.Children.Count > 0 ? this.PART_ScrollHost.Children[0] as StackPanel : null;
             this.PART_OverflowPanel = (this.PART_OverflowButton?.Flyout as Flyout)?.Content as StackPanel;
 
+            this.ApplyOrientationState();
             this.RebuildItems();
+        }
+
+        // The template turns its BumpStack and overflow button for the orientation; this picks the state. The
+        // items panel is turned here rather than by the state: the BumpStack holds it in a plain collection and
+        // moves it into the BumpStack's own template (which is also why OnApplyTemplate finds it through Children),
+        // so a state setter naming it from this template is not guaranteed to resolve.
+        private void ApplyOrientationState ()
+        {
+            if (this.PART_ItemsPanel != null)
+            {
+                this.PART_ItemsPanel.Orientation = this.Orientation;
+            }
+
+            VisualStateManager.GoToState(this, this.IsVertical ? kVerticalState : kHorizontalState, false);
         }
 
         // ===========[ Events ]===================================================
@@ -206,17 +288,69 @@ namespace AJut.UX.Controls
             this.UpdateOverflowLayout();
         }
 
+        // Click-and-drag scrolling in Scroll mode, by AJut.UX's shared ToggleStripDragScroll, for the mouse (touch already
+        // pans the scroller). Past the threshold the scroll host captures the pointer, which takes it from the item button
+        // under it, so that button never clicks; the strip then follows the pointer until the release.
+        private void OnScrollHostPointerPressed (object sender, PointerRoutedEventArgs e)
+        {
+            if ((this.OverflowBehavior == eToggleStripOverflow.Scroll)
+                && (e.Pointer.PointerDeviceType == PointerDeviceType.Mouse))
+            {
+                m_dragScroll.Begin(this.PositionAlongStrip(e.GetCurrentPoint(this.PART_ScrollHost).Position));
+            }
+        }
+
+        private void OnScrollHostPointerMoved (object sender, PointerRoutedEventArgs e)
+        {
+            PointerPoint point = e.GetCurrentPoint(this.PART_ScrollHost);
+            if (!point.Properties.IsLeftButtonPressed)
+            {
+                return;
+            }
+
+            double delta = m_dragScroll.Move(this.PositionAlongStrip(point.Position));
+            if (!m_dragScroll.IsDragging)
+            {
+                return;
+            }
+
+            if (!m_hasDragCapture)
+            {
+                m_hasDragCapture = this.PART_ScrollHost.CapturePointer(e.Pointer);
+            }
+
+            this.PART_ScrollHost.ScrollBy(-delta);
+            e.Handled = true;
+        }
+
+        private void OnScrollHostPointerReleased (object sender, PointerRoutedEventArgs e)
+        {
+            if (m_dragScroll.End())
+            {
+                this.PART_ScrollHost.ReleasePointerCapture(e.Pointer);
+                m_hasDragCapture = false;
+                e.Handled = true;
+            }
+        }
+
+        private void OnScrollHostPointerCaptureLost (object sender, PointerRoutedEventArgs e)
+        {
+            m_dragScroll.End();
+            m_hasDragCapture = false;
+        }
+
+        private double PositionAlongStrip (Point point) => this.IsVertical ? point.Y : point.X;
+
         // ===========[ Private handlers ]=========================================
         private void Items_OnCollectionChanged (object sender, NotifyCollectionChangedEventArgs e)
         {
             this.HasItems = this.Items.Count > 0;
-            this.Items.ForEach(i => i.EvaluateOrder());
             this.RebuildItems();
         }
 
         private void OnDisplayPropertyPathChanged (string newPath)
         {
-            this.Items.ForEach(i => i.ResetName(newPath));
+            this.Items.ResetNames();
         }
 
         private void OnItemsSourceChanged (DependencyPropertyChangedEventArgs<IEnumerable> e)
@@ -247,56 +381,14 @@ namespace AJut.UX.Controls
                 newSource.CollectionChanged += this.ItemsSource_OnCollectionChanged;
             }
 
-            // 3. Rebuild the ToggleItem collection
-            if (e.NewValue == null)
-            {
-                this.Items.Clear();
-            }
-            else
-            {
-                int index = 0;
-                this.Items.ReplaceAllWith(
-                    e.NewValue.OfType<object>().Select(i => new ToggleItem(this, i, index++, this.DisplayPropertyPath))
-                );
-
-                // 4. Try to restore the previous selection (value-based match)
-                if (previousSelectedItem != null)
-                {
-                    ToggleItem match = this.Items.FirstOrDefault(ti => Equals(ti.Data, previousSelectedItem));
-                    if (match != null)
-                    {
-                        match.IsSelected = true;
-                        return;
-                    }
-                }
-
-                // 5. Fall back: select the first item if not allowing empty selection
-                if (this.Items.Count > 0
-                    && (this.SelectedItems == null || this.SelectedItems.Count == 0)
-                    && !this.AllowNoSelection)
-                {
-                    this.Items[0].IsSelected = true;
-                }
-            }
+            // 3. Rebuild the items, restoring the previous selection by value (so boxed value types survive the
+            //    round-trip), else selecting the first item unless an empty selection is allowed
+            this.Items.ResetFromSource(e.NewValue, previousSelectedItem);
         }
 
         private void ItemsSource_OnCollectionChanged (object sender, NotifyCollectionChangedEventArgs e)
         {
-            if (e.Action == NotifyCollectionChangedAction.Reset)
-            {
-                this.Items.Clear();
-                return;
-            }
-
-            IEnumerable<ToggleItem> addedItems = e.NewItems != null
-                ? e.NewItems.OfType<object>().Select(i => new ToggleItem(this, i, -1, this.DisplayPropertyPath))
-                : Enumerable.Empty<ToggleItem>();
-
-            IEnumerable<ToggleItem> removedItems = e.OldItems != null
-                ? this.Items.Where(ti => e.OldItems.Contains(ti.Data))
-                : Enumerable.Empty<ToggleItem>();
-
-            this.Items.AddAndRemove(addedItems, removedItems);
+            this.Items.ApplySourceChange(e);
         }
 
         private void OnSelectedItemChanged (DependencyPropertyChangedEventArgs<object> e)
@@ -322,11 +414,7 @@ namespace AJut.UX.Controls
                 return;
             }
 
-            ToggleItem newlySelected = this.Items.FirstOrDefault(ti => Equals(ti.Data, e.NewValue));
-            if (newlySelected != null)
-            {
-                newlySelected.IsSelected = true;
-            }
+            this.Items.SelectData(e.NewValue);
         }
 
         private void OnSelectedItemsChanged (DependencyPropertyChangedEventArgs<IList> e)
@@ -335,49 +423,43 @@ namespace AJut.UX.Controls
             // Selection is driven through SelectedItem or by clicking items directly.
         }
 
-        internal void HandleSelectionChanged (ToggleItem latest)
+        // The items collection worked out the change; this keeps SelectedItem and SelectedItems in step with it and raises
+        // SelectionChanged. A select comes with the item that was selected, a standalone deselect without one.
+        void IToggleStripHost.OnSelectionChanged (ToggleStripSelectionChange change)
         {
-            IList previousSelectedItems = this.SelectedItems;
-            IList newlySelectedItems;
-
-            if (this.AllowMultiSelect)
-            {
-                newlySelectedItems = this.Items.Where(ti => ti.IsSelected).Select(ti => ti.Data).ToList();
-            }
-            else
-            {
-                newlySelectedItems = new List<object> { latest.Data };
-            }
-
             this.PerformModificationWithBlocker(ref m_isChangingSelectedItem,
-                () => this.SelectedItem = latest.Data
+                () => this.SelectedItem = change.SelectedItem
             );
 
+            // A SelectedItems list that reports its own changes (a consumer's ObservableCollection, say) is kept and
+            // updated in place, so bindings to it hold; any other list is replaced.
             this.PerformModificationWithBlocker(ref m_isChangingSelectedItemsList, () =>
             {
                 if (this.SelectedItems is INotifyCollectionChanged)
                 {
                     this.SelectedItems.Clear();
-                    foreach (object obj in newlySelectedItems)
+                    foreach (object obj in change.CurrentSelection)
                     {
                         this.SelectedItems.Add(obj);
                     }
                 }
                 else
                 {
-                    this.SelectedItems = newlySelectedItems;
+                    this.SelectedItems = change.CurrentSelection;
                 }
             });
 
-            this.RaiseSelectionChanged(previousSelectedItems, newlySelectedItems);
+            this.RaiseSelectionChanged(change.PreviousSelection, change.CurrentSelection);
 
-            this.RefreshForSelection();
+            // A newly selected item is kept in view (and closes the overflow popup), so only a select re-lays the strip out.
+            if (change.Selected != null)
+            {
+                this.RefreshForSelection();
+            }
         }
 
-        // Owner-side raiser for the public SelectionChanged event. Both the select path
-        // (HandleSelectionChanged) and the multi-select deselect path (ToggleItemsCollection.
-        // HandleWasDeselected) funnel through here so the event is raised consistently.
-        internal void RaiseSelectionChanged (IList previousSelection, IList currentSelection)
+        // The one raiser for the public SelectionChanged event, for the select path and the standalone deselect path alike.
+        private void RaiseSelectionChanged (IList previousSelection, IList currentSelection)
         {
             this.SelectionChanged?.Invoke(
                 this,
@@ -397,25 +479,26 @@ namespace AJut.UX.Controls
             this.PART_ItemsPanel.Children.Clear();
             this.PART_OverflowPanel?.Children.Clear();
             m_buttons.Clear();
-            m_naturalWidths.Clear();
+            m_naturalLengths.Clear();
 
-            // 2. Build a button per item and capture a best-effort natural width up front. Widths are
-            //    needed for uniform sizing and overflow math; they are refined from the real layout in
-            //    UpdateOverflowLayout because an off-tree Measure can come back empty before first arrange.
+            // 2. Build a button per item and capture a best-effort natural length along the strip up front.
+            //    Lengths are needed for uniform sizing and overflow math; they are refined from the real layout
+            //    in UpdateOverflowLayout because an off-tree Measure can come back empty before first arrange.
+            bool isVertical = this.IsVertical;
             foreach (ToggleItem item in this.Items)
             {
                 ToggleStripButton btn = this.CreateItemButton(item);
                 btn.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
                 m_buttons.Add(btn);
-                m_naturalWidths.Add(btn.DesiredSize.Width);
+                m_naturalLengths.Add(isVertical ? btn.DesiredSize.Height : btn.DesiredSize.Width);
             }
 
             this.UpdateOverflowLayout();
 
             // The off-tree Measure above can come back empty before the buttons are first arranged. If
             // so, schedule one more pass after this layout cycle so uniform sizing and overflow can use
-            // the real widths even when nothing triggers a SizeChanged (e.g. toggling a DP at runtime).
-            if (m_buttons.Count > 0 && m_naturalWidths.All(w => w <= 0.0))
+            // the real lengths even when nothing triggers a SizeChanged (e.g. toggling a DP at runtime).
+            if (m_buttons.Count > 0 && m_naturalLengths.All(w => w <= 0.0))
             {
                 this.DispatcherQueue?.TryEnqueue(() => this.UpdateOverflowLayout());
             }
@@ -479,13 +562,22 @@ namespace AJut.UX.Controls
             m_isUpdatingOverflow = true;
             try
             {
-                // Refine natural widths from the real layout if the up-front measure came back empty,
-                // then widen everyone to the widest when uniform sizing is on.
-                this.RefreshNaturalWidthsIfNeeded();
-                m_uniformItemWidth = m_naturalWidths.Count > 0 ? m_naturalWidths.Max() : 0.0;
+                // Measure every natural length again, in the tree, then grow everyone to the longest along the
+                // strip when uniform sizing is on.
+                bool isVertical = this.IsVertical;
+                this.MeasureNaturalLengths(isVertical);
+                m_uniformItemLength = m_naturalLengths.Count > 0 ? m_naturalLengths.Max() : 0.0;
+                double minLength = this.EnsureUniformSize ? m_uniformItemLength : 0.0;
                 foreach (ToggleStripButton btn in m_buttons)
                 {
-                    btn.MinWidth = this.EnsureUniformSize ? m_uniformItemWidth : 0.0;
+                    if (isVertical)
+                    {
+                        btn.MinHeight = minLength;
+                    }
+                    else
+                    {
+                        btn.MinWidth = minLength;
+                    }
                 }
 
                 // A UIElement can only live in one panel, so detach everything before redistributing.
@@ -504,25 +596,33 @@ namespace AJut.UX.Controls
                     return;
                 }
 
-                // OverflowPopup: nothing to lay out against until we have a real viewport width.
-                double available = this.PART_ScrollHost?.ActualWidth ?? this.ActualWidth;
+                // OverflowPopup: nothing to lay out against until we have a real viewport length along the strip.
+                double available = isVertical
+                    ? (this.PART_ScrollHost?.ActualHeight ?? this.ActualHeight)
+                    : (this.PART_ScrollHost?.ActualWidth ?? this.ActualWidth);
                 if (available <= 0.0)
                 {
                     this.PlaceAllInStrip();
                     return;
                 }
 
-                // Partition by available width, keeping selected items visible where possible.
-                double[] widths = new double[m_buttons.Count];
+                // Partition by available length, keeping selected items visible where possible, and the item just
+                // picked (SelectedItem) ahead of the rest, so a pick from the popup comes into the strip.
+                double[] lengths = new double[m_buttons.Count];
                 bool[] selected = new bool[m_buttons.Count];
+                int pickedIndex = -1;
                 for (int i = 0; i < m_buttons.Count; ++i)
                 {
-                    widths[i] = this.EnsureUniformSize ? m_uniformItemWidth : m_naturalWidths[i];
+                    lengths[i] = this.EnsureUniformSize ? m_uniformItemLength : m_naturalLengths[i];
                     selected[i] = i < this.Items.Count && this.Items[i].IsSelected;
+                    if (selected[i] && Equals(this.Items[i].Data, this.SelectedItem))
+                    {
+                        pickedIndex = i;
+                    }
                 }
 
-                double reserved = this.MeasureOverflowButtonWidth();
-                ToggleStripOverflowResult result = ToggleStripOverflowCalculator.Compute(widths, selected, available, reserved);
+                double reserved = this.MeasureOverflowButtonLength();
+                ToggleStripOverflowResult result = ToggleStripOverflowCalculator.Compute(lengths, selected, available, reserved, pickedIndex);
 
                 var visibleButtons = new List<ToggleStripButton>(result.VisibleIndices.Count);
                 foreach (int index in result.VisibleIndices)
@@ -554,7 +654,6 @@ namespace AJut.UX.Controls
         {
             foreach (ToggleStripButton btn in m_buttons)
             {
-                btn.HorizontalAlignment = HorizontalAlignment.Left;
                 this.PART_ItemsPanel.Children.Add(btn);
             }
 
@@ -576,33 +675,24 @@ namespace AJut.UX.Controls
 
         // Distribute the strip's outer CornerRadius and separator borders across the given ordered,
         // currently-visible buttons so the group reads as one cohesive control. When trailingSeparator
-        // is set the last item also gets a right divider - used to separate it from the overflow chevron.
+        // is set the last item also gets a trailing divider (right, or bottom when vertical) to separate
+        // it from the overflow chevron, and stays square on that end since the strip's outer border
+        // supplies the rounded edge there. The rules are AJut.UX's ToggleStripItemEdges, shared by every stack.
+        //
+        // A horizontal strip's buttons hug their content left to right; a vertical strip's buttons stretch
+        // across the strip's width so the column reads as one control rather than a ragged edge.
         private void ApplyEdgeStyling (IReadOnlyList<ToggleStripButton> orderedButtons, bool trailingSeparator = false)
         {
-            CornerRadius cr = this.CornerRadius;
-            int last = orderedButtons.Count - 1;
+            bool isVertical = this.IsVertical;
+            HorizontalAlignment alignment = isVertical ? HorizontalAlignment.Stretch : HorizontalAlignment.Left;
             for (int i = 0; i < orderedButtons.Count; ++i)
             {
                 ToggleStripButton btn = orderedButtons[i];
-                bool isFirst = i == 0;
-                bool isLast = i == last;
+                ToggleStripItemEdges edges = ToggleStripItemEdges.For(i, orderedButtons.Count, isVertical, trailingSeparator);
 
-                double left = isFirst ? 0.0 : this.SeparatorThickness;
-                double right = (isLast && trailingSeparator) ? this.SeparatorThickness : 0.0;
-
-                btn.HorizontalAlignment = HorizontalAlignment.Left;
-                btn.BorderThickness = new Thickness(left, 0, right, 0);
-
-                // The strip continues into the chevron when there is a trailing separator, so the last
-                // item stays square on the right - the strip's outer border supplies the rounded edge.
-                bool roundLeft = isFirst;
-                bool roundRight = isLast && !trailingSeparator;
-                btn.CornerRadius = new CornerRadius(
-                    roundLeft ? cr.TopLeft : 0,
-                    roundRight ? cr.TopRight : 0,
-                    roundRight ? cr.BottomRight : 0,
-                    roundLeft ? cr.BottomLeft : 0
-                );
+                btn.HorizontalAlignment = alignment;
+                btn.BorderThickness = EdgeStyling.BorderThicknessFor(edges, this.SeparatorThickness);
+                btn.CornerRadius = EdgeStyling.CornerRadiusFor(edges, this.CornerRadius);
             }
         }
 
@@ -621,39 +711,52 @@ namespace AJut.UX.Controls
             }
         }
 
-        // The up-front off-tree Measure in RebuildItems can return 0 before the buttons are first
-        // arranged. Once they have a real ActualWidth, capture it as the natural width. We only do
-        // this while widths are still empty so MinWidth-inflated values never overwrite the natural ones.
-        private void RefreshNaturalWidthsIfNeeded ()
+        // Every pass measures each button's natural length again, inside the strip's items panel. The up-front
+        // Measure in RebuildItems runs before the buttons are in the tree, and a button that started in the
+        // overflow popup has never been laid out at all, so either can come back short of its real size (seen on a
+        // vertical strip: an item picked from the popup came into the strip with only its top third showing). A
+        // short length lets the overflow split keep more than the strip can show, and the last one kept is cut
+        // off. Measured in the tree, with the uniform minimum along the strip cleared first, the length is the
+        // button's own. A measure that still comes back empty (before the first layout) keeps the last length.
+        private void MeasureNaturalLengths (bool isVertical)
         {
-            for (int i = 0; i < m_naturalWidths.Count; ++i)
-            {
-                if (m_naturalWidths[i] > 0.0)
-                {
-                    return;
-                }
-            }
+            this.PART_OverflowPanel?.Children.Clear();
+            this.PART_ItemsPanel.Children.Clear();
 
+            var unconstrained = new Size(double.PositiveInfinity, double.PositiveInfinity);
             for (int i = 0; i < m_buttons.Count; ++i)
             {
-                double actual = m_buttons[i].ActualWidth;
-                if (actual > 0.0)
+                ToggleStripButton btn = m_buttons[i];
+                if (isVertical)
                 {
-                    m_naturalWidths[i] = actual;
+                    btn.MinHeight = 0.0;
+                }
+                else
+                {
+                    btn.MinWidth = 0.0;
+                }
+
+                this.PART_ItemsPanel.Children.Add(btn);
+                btn.Measure(unconstrained);
+                double length = isVertical ? btn.DesiredSize.Height : btn.DesiredSize.Width;
+                if (length > 0.0)
+                {
+                    m_naturalLengths[i] = length;
                 }
             }
         }
 
-        private double MeasureOverflowButtonWidth ()
+        private double MeasureOverflowButtonLength ()
         {
             if (this.PART_OverflowButton == null)
             {
-                return kFallbackOverflowButtonWidth;
+                return kFallbackOverflowButtonLength;
             }
 
             this.PART_OverflowButton.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-            double measured = this.PART_OverflowButton.DesiredSize.Width;
-            return measured > 0.0 ? measured : kFallbackOverflowButtonWidth;
+            Size desired = this.PART_OverflowButton.DesiredSize;
+            double measured = this.IsVertical ? desired.Height : desired.Width;
+            return measured > 0.0 ? measured : kFallbackOverflowButtonLength;
         }
 
         private void RefreshForSelection ()
@@ -688,6 +791,10 @@ namespace AJut.UX.Controls
             return null;
         }
 
+        // ===========[ IToggleStripHost Implementations ]=========================
+        // Items are named through DisplayPropertyPath here; the reflection-free selector is for toolkits that trim.
+        Func<object, string> IToggleStripHost.ItemNameSelector => null;
+
         // ===========[ Helpers ]==================================================
         private void PerformModificationWithBlocker (ref bool blocker, Action action)
         {
@@ -704,243 +811,55 @@ namespace AJut.UX.Controls
 
         // ===========[ Subclasses ]===============================================
 
-        public class ToggleItem : INotifyPropertyChanged
+        /// <summary>
+        /// Turns AJut.UX's <see cref="ToggleStripItemEdges"/> into the WinUI3 values a button takes: a
+        /// <see cref="Thickness"/> with the separator on each edge that draws one, and a <see cref="CornerRadius"/>
+        /// with the strip's own radius on each corner that rounds.
+        /// </summary>
+        internal static class EdgeStyling
         {
-            // ===========[ Fields ]===============================================
-            private string m_name;
-            private bool m_isSelected;
-            private int m_itemIndex;
-            private bool m_hasDefaultName;
-            private bool m_isFirstItem;
-            private bool m_isLastItem;
-
-            // ===========[ Construction ]=========================================
-            internal ToggleItem (ToggleStrip owner, object data, int index, string displayPropertyPath)
+            /// <summary>The button's BorderThickness: <paramref name="separatorThickness"/> on each separator edge, 0 elsewhere.</summary>
+            public static Thickness BorderThicknessFor (ToggleStripItemEdges edges, double separatorThickness)
             {
-                this.Data = data;
-                m_itemIndex = index;
-                this.Owner = owner;
-                this.ResetName(displayPropertyPath);
+                return new Thickness(
+                    edges.SeparatorLeft ? separatorThickness : 0.0,
+                    edges.SeparatorTop ? separatorThickness : 0.0,
+                    edges.SeparatorRight ? separatorThickness : 0.0,
+                    edges.SeparatorBottom ? separatorThickness : 0.0
+                );
             }
 
-            // ===========[ Events ]===============================================
-            public event PropertyChangedEventHandler PropertyChanged;
-
-            // ===========[ Properties ]==========================================
-            public object Data { get; }
-            public ToggleStrip Owner { get; }
-
-            public int ItemIndex
+            /// <summary>The button's CornerRadius: the matching corner of <paramref name="stripRadius"/> where it rounds, 0 elsewhere.</summary>
+            public static CornerRadius CornerRadiusFor (ToggleStripItemEdges edges, CornerRadius stripRadius)
             {
-                get => m_itemIndex;
-                internal set
-                {
-                    if (this.SetAndRaiseIfChanged(ref m_itemIndex, value))
-                    {
-                        this.IsFirstItem = (m_itemIndex == 0);
-                        this.IsLastItem = (this.Owner.Items.LastOrDefault() == this);
-                        if (m_hasDefaultName)
-                        {
-                            this.ResetNameWithDefault();
-                        }
-                    }
-                }
-            }
-
-            public string Name
-            {
-                get => m_name;
-                set => this.SetAndRaiseIfChanged(ref m_name, value);
-            }
-
-            public bool IsSelected
-            {
-                get => m_isSelected;
-                set
-                {
-                    if (!value && !this.Owner.Items.CanBeDeselected())
-                    {
-                        // Deselect rejected - raise PropertyChanged to revert the ToggleButton's IsChecked
-                        this.RaisePropertyChanged(nameof(IsSelected));
-                        return;
-                    }
-
-                    if (this.SetAndRaiseIfChanged(ref m_isSelected, value))
-                    {
-                        if (value)
-                        {
-                            this.Owner.Items.HandleWasSelected(this);
-                        }
-                        else
-                        {
-                            this.Owner.Items.HandleWasDeselected(this);
-                        }
-                    }
-                }
-            }
-
-            public bool IsFirstItem
-            {
-                get => m_isFirstItem;
-                private set => this.SetAndRaiseIfChanged(ref m_isFirstItem, value);
-            }
-
-            public bool IsLastItem
-            {
-                get => m_isLastItem;
-                private set => this.SetAndRaiseIfChanged(ref m_isLastItem, value);
-            }
-
-            // ===========[ Internal methods ]=====================================
-            internal void EvaluateOrder ()
-            {
-                m_itemIndex = -1;
-                this.ItemIndex = this.Owner.Items.IndexOf(this);
-            }
-
-            internal void ResetName (string displayPropertyPath = null)
-            {
-                if (displayPropertyPath?.Length > 0)
-                {
-                    try
-                    {
-                        var prop = this.Data?.GetType().GetProperty(displayPropertyPath);
-                        string resolved = prop?.GetValue(this.Data)?.ToString();
-                        if (resolved != null)
-                        {
-                            this.Name = resolved;
-                            m_hasDefaultName = false;
-                            return;
-                        }
-                    }
-                    catch { }
-                }
-
-                this.ResetNameWithDefault();
-            }
-
-            internal void SetSelectionWithoutChecking (bool isSelected)
-            {
-                m_isSelected = isSelected;
-                this.RaisePropertyChanged(nameof(IsSelected));
-                if (!isSelected)
-                {
-                    // This runs only as the deselect half of a single-select swap (the follow-on select
-                    // raises SelectionChanged for the whole change), so flag it to suppress a duplicate raise.
-                    this.Owner.Items.HandleWasDeselected(this, isPartOfSelectionSwap: true);
-                }
-            }
-
-            // ===========[ Helpers ]=============================================
-            private bool SetAndRaiseIfChanged<T> (ref T field, T value, [CallerMemberName] string propertyName = null)
-            {
-                if (EqualityComparer<T>.Default.Equals(field, value))
-                {
-                    return false;
-                }
-
-                field = value;
-                this.RaisePropertyChanged(propertyName);
-                return true;
-            }
-
-            private void RaisePropertyChanged (string propertyName)
-                => this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-
-            private void ResetNameWithDefault ()
-            {
-                // Use Data.ToString() when it is meaningfully overridden (i.e. not
-                // just the default type-name). Works naturally for strings, enums,
-                // and value types. Falls back to positional label otherwise.
-                string fromData = this.Data?.ToString();
-                bool usable = fromData != null && fromData != this.Data.GetType().FullName;
-                this.Name = usable ? fromData : $"Item {m_itemIndex}";
-                m_hasDefaultName = !usable;
+                return new CornerRadius(
+                    edges.RoundTopLeft ? stripRadius.TopLeft : 0.0,
+                    edges.RoundTopRight ? stripRadius.TopRight : 0.0,
+                    edges.RoundBottomRight ? stripRadius.BottomRight : 0.0,
+                    edges.RoundBottomLeft ? stripRadius.BottomLeft : 0.0
+                );
             }
         }
 
-        public class ToggleItemsCollection : ObservableCollection<ToggleItem>
+        /// <summary>One option in the strip. The selection rules and naming live in AJut.UX's <see cref="ToggleStripItem"/>, shared with every toolkit's strip.</summary>
+        public class ToggleItem : ToggleStripItem
         {
-            // ===========[ Fields ]===============================================
-            private ToggleStrip m_owner;
+            internal ToggleItem (ToggleStrip owner, object data, int index)
+                : base(owner, data, index)
+            {
+                this.Owner = owner;
+            }
 
-            // ===========[ Construction ]=========================================
+            /// <summary>The strip this item belongs to.</summary>
+            public ToggleStrip Owner { get; }
+        }
+
+        /// <summary>The strip's items. The selection bookkeeping lives in AJut.UX's <see cref="ToggleStripItemCollection{TItem}"/>, shared with every toolkit's strip.</summary>
+        public class ToggleItemsCollection : ToggleStripItemCollection<ToggleItem>
+        {
             internal ToggleItemsCollection (ToggleStrip owner)
+                : base(owner, (data, index) => new ToggleItem(owner, data, index))
             {
-                m_owner = owner;
-                this.CollectionChanged += this.Self_OnCollectionChanged;
-            }
-
-            // ===========[ Internal methods ]=====================================
-            internal bool CanBeDeselected ()
-                => m_owner.AllowNoSelection || (m_owner.SelectedItems?.Count ?? 0) > 1;
-
-            internal void HandleWasSelected (ToggleItem newlySelected)
-            {
-                if (!m_owner.AllowMultiSelect)
-                {
-                    foreach (ToggleItem item in this)
-                    {
-                        if (item != newlySelected)
-                        {
-                            item.SetSelectionWithoutChecking(false);
-                        }
-                    }
-                }
-
-                m_owner.HandleSelectionChanged(newlySelected);
-            }
-
-            internal void HandleWasDeselected (ToggleItem toggleItem, bool isPartOfSelectionSwap = false)
-            {
-                // Snapshot the selection as it stood before this deselect so a raised SelectionChanged
-                // reports an accurate previous set (the bookkeeping below mutates SelectedItems in place).
-                IList previousSelection = m_owner.SelectedItems?.OfType<object>().ToList() ?? new List<object>();
-
-                if (m_owner.SelectedItems is INotifyCollectionChanged)
-                {
-                    m_owner.SelectedItems.Remove(toggleItem.Data);
-                    if (Equals(m_owner.SelectedItem, toggleItem.Data))
-                    {
-                        m_owner.SelectedItem = m_owner.SelectedItems.OfType<object>().LastOrDefault();
-                    }
-                }
-                else if (m_owner.SelectedItems != null)
-                {
-                    m_owner.SelectedItems = m_owner.SelectedItems.OfType<object>()
-                        .Where(i => !Equals(i, toggleItem.Data))
-                        .ToList<object>();
-                }
-
-                // A standalone deselect changes the selection in its own right, so raise it here. The one
-                // deselect that must NOT raise is the internal first-half of a single-select swap (via
-                // SetSelectionWithoutChecking): that swap's follow-on select already raises once for the
-                // whole change, so raising here too would double-fire. This is the only suppression case -
-                // multi-select deselects and single-select deselect-to-empty (AllowNoSelection) both raise.
-                if (!isPartOfSelectionSwap)
-                {
-                    IList currentSelection = this.Where(ti => ti.IsSelected).Select(ti => ti.Data).ToList();
-                    m_owner.RaiseSelectionChanged(previousSelection, currentSelection);
-                }
-            }
-
-            internal void ReplaceAllWith (IEnumerable<ToggleItem> items)
-            {
-                this.Clear();
-                this.AddEach(items);
-            }
-
-            internal void AddAndRemove (IEnumerable<ToggleItem> addedItems, IEnumerable<ToggleItem> removedItems)
-            {
-                this.AddEach(addedItems);
-                this.RemoveEach(removedItems);
-            }
-
-            // ===========[ Private handlers ]=====================================
-            private void Self_OnCollectionChanged (object sender, NotifyCollectionChangedEventArgs e)
-            {
-                int index = 0;
-                this.ForEach(ti => ti.ItemIndex = index++);
             }
         }
 

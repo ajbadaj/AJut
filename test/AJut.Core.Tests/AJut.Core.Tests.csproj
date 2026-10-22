@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <Platforms>AnyCPU;x64</Platforms>
 
@@ -9,7 +9,9 @@
     <!-- build. V2 tests are scoped to JsonTests/V2/. Remove once Legacy is deleted.        -->
     <NoWarn>$(NoWarn);CS0618</NoWarn>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Platform)'=='AnyCPU'">
+  <!-- AnyCPU runs as x86 on Windows, so a plain run and an x64 run between them cover both process bitnesses (string -->
+  <!-- hashing and crypto obfuscation must agree across them); macOS and Linux have no x86 runtime                    -->
+  <PropertyGroup Condition="('$(Platform)'=='AnyCPU') And $([MSBuild]::IsOSPlatform('Windows'))">
     <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)'=='x64'">

@@ -1,5 +1,7 @@
 ﻿namespace AJut.Core.UnitTests
 {
+    using System;
+    using System.Collections;
     using System.Collections.Generic;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -66,6 +68,37 @@
         {
             Assert.AreEqual(null, (new object()).GetComplexPropertyValue<SimpleContainer>("Fake.SupaFake", null));
         }
+
+        [TestMethod]
+        public void ReflectionXT_RunStaticTemplatedMethod_FindsAStaticGenericMethod ()
+        {
+            object result = ReflectionXT.RunStaticTemplatedMethod(typeof(TemplatedStatics), nameof(TemplatedStatics.Describe), typeof(int), 5);
+            Assert.AreEqual("Int32:5", result);
+        }
+
+        [TestMethod]
+        public void EnumerableXT_CastToArrayOfType_MakesATypedArray ()
+        {
+            Array result = new object[] { 1, 2, 3 }.CastToArrayOfType(typeof(int));
+            Assert.IsInstanceOfType(result, typeof(int[]));
+            CollectionAssert.AreEqual(new[] { 1, 2, 3 }, (int[])result);
+        }
+
+        [TestMethod]
+        public void EnumerableXT_CastAndToArrayOverAType_GiveTheTypedElements ()
+        {
+            IEnumerable cast = new List<object> { "a", "b" }.Cast(typeof(string));
+            Assert.IsInstanceOfType(cast, typeof(IEnumerable<string>));
+
+            Array array = new List<object> { 4.5, 6.0 }.ToArray(typeof(double));
+            Assert.IsInstanceOfType(array, typeof(double[]));
+            CollectionAssert.AreEqual(new[] { 4.5, 6.0 }, (double[])array);
+        }
+    }
+
+    public static class TemplatedStatics
+    {
+        public static string Describe<T> (T value) => $"{typeof(T).Name}:{value}";
     }
 
     public class SimpleSetTest
