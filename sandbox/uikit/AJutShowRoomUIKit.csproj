@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-ios</TargetFramework>
+    <SupportedOSPlatformVersion>15.0</SupportedOSPlatformVersion>
+    <RootNamespace>AJutShowRoomUIKit</RootNamespace>
+    <ApplicationId>dev.ajut.showroom.uikit</ApplicationId>
+    <ApplicationTitle>AJut Show Room</ApplicationTitle>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\libs\AJut.Core\AJut.Core.csproj" />
+    <ProjectReference Include="..\..\libs\AJut.UX\AJut.UX.csproj" />
+    <ProjectReference Include="..\..\libs\AJut.UX.UIKit\AJut.UX.UIKit.csproj" />
+  </ItemGroup>
+</Project>

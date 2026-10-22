@@ -5,6 +5,7 @@
       "libs\\AJut.Core.SourceGenerators\\AJut.Core.SourceGenerators.csproj",
       "libs\\AJut.Core\\AJut.Core.csproj",
       "libs\\AJut.UX.AppKit\\AJut.UX.AppKit.csproj",
+      "libs\\AJut.UX.UIKit\\AJut.UX.UIKit.csproj",
       "libs\\AJut.UX.WinUI3\\AJut.UX.WinUI3.csproj",
       "libs\\AJut.UX.Wpf\\AJut.UX.Wpf.csproj",
       "libs\\AJut.UX\\AJut.UX.csproj",
