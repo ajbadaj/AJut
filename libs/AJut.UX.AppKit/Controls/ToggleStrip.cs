@@ -161,6 +161,11 @@ namespace AJut.UX.Controls
             this.ShowOverflowMenu();
         }
 
+        private void OnScrolledAlong (object sender, EventArgs e)
+        {
+            this.UpdateScrollIndicators();
+        }
+
         private void OnOverflowMenuItemActivated (object sender, EventArgs e)
         {
             int index = (int)((NSMenuItem)sender).Tag;
@@ -686,11 +691,6 @@ namespace AJut.UX.Controls
             m_scrollForwardIndicator.SetFrameOrigin(isVertical
                 ? new CGPoint((nfloat)crossStart, (nfloat)((double)bounds.Height + kScrollIndicatorGap))
                 : new CGPoint((nfloat)((double)bounds.Width + kScrollIndicatorGap), (nfloat)crossStart));
-        }
-
-        private void OnScrolledAlong (object sender, EventArgs e)
-        {
-            this.UpdateScrollIndicators();
         }
 
         private static ThemedView MakeScrollIndicator ()
