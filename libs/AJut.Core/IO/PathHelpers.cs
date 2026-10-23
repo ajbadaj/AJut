@@ -195,7 +195,7 @@
         public static string NormalizePath (string path)
         {
             path = path.ToLower().Replace('/', '\\');
-            List<string> pathParts = GetAllPathParts(path).ToList();
+            List<string> pathParts = GetAllPathParts(path, '\\').ToList();
             for (int index = 0; index < pathParts.Count; ++index)
             {
                 if (pathParts[index] == "..")
