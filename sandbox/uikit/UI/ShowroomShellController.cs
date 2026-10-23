@@ -179,6 +179,10 @@ namespace AJutShowRoomUIKit.UI
             {
                 m_barLayout.Axis = axis;
                 m_barLayout.Alignment = isOneRow ? UIStackViewAlignment.Center : UIStackViewAlignment.Leading;
+
+                // This pass has already placed the bar at its old height, and a new axis changes only the stack's own
+                // constraints, so nothing else asks for the pass that moves the separator and pages to fit it
+                this.View.SetNeedsLayout();
             }
         }
 
