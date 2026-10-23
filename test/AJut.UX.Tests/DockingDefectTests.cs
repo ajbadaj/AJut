@@ -26,6 +26,22 @@ namespace AJut.UX.Tests
             CollectionAssert.AreEqual(new[] { "persistent.layout" }, manager.Saved, "A first run with no layout yet must still save the layout the user goes on to build");
         }
 
+        // ===========[ Group tearoff ]=========================================
+        [TestMethod]
+        public void DockDefect_RootZoneTornOffWhole_TearoffZoneKeepsTheManager ()
+        {
+            var manager = new TestDockingManager();
+            DockZoneViewModel root = manager.RegisterRoot().ViewModel;
+            manager.RegisterDisplayFactory<FakeDockPanel>();
+            manager.AddPanel(typeof(FakeDockPanel));
+
+            FakeDockWindow tearoff = manager.DoGroupTearoff(root, new DockWindowBounds(50, 50, 300, 200)).Value;
+
+            // A stack that registers a tearoff's root zone checks it was made for that manager (AppKit refuses it otherwise,
+            // and the tearoff can then neither be dragged nor closed)
+            Assert.AreSame(manager, manager.ZonesFor(tearoff)[0].ViewModel.Manager, "The zone a root zone's contents move into must belong to the same manager");
+        }
+
         // ===========[ Instance counts ]=======================================
         [TestMethod]
         public void DockDefect_TabClose_LowersTheInstanceCount ()

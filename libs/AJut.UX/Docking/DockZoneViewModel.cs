@@ -192,7 +192,9 @@ namespace AJut.UX.Docking
 
         public DockZoneViewModel DuplicateAndClear ()
         {
-            var dupe = new DockZoneViewModel
+            // The dupe belongs to the same manager: a whole root zone torn off moves into it, and a stack that registers a
+            // tearoff's root zone refuses one made for no manager
+            var dupe = new DockZoneViewModel(this.Manager)
             {
                 Orientation = this.Orientation,
                 SelectedIndex = this.SelectedIndex,
