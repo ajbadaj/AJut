@@ -31,6 +31,7 @@ namespace AJutShowRoomAppKit.UI.ContentFlows
             var buttons = new FillStack(NSUserInterfaceLayoutOrientation.Horizontal, spacing: 8.0);
             buttons.Add(this.MakeButton("Save Layout", this.SaveLayout));
             buttons.Add(this.MakeButton("Load Layout", this.LoadLayout));
+            buttons.Add(this.MakeButton("Reset Layout", this.ResetLayout));
             buttons.Add(this.MakeButton("Set All Values (test)", this.SetAllValues));
             this.AddDemo(buttons, eFillStackCrossAlignment.Start);
 
@@ -157,6 +158,26 @@ docking.Dispose();"
         private void LoadLayout ()
         {
             m_dockingManager?.ReloadDockLayoutFromPersistentStorage();
+        }
+
+        // Back to the panels the page starts with. The manager is let go the same way leaving the page lets it go (its
+        // tearoffs close and its zone tree is torn down), and a new one is built in its place. The saved layout is kept.
+        private void ResetLayout ()
+        {
+            if (this.Window == null)
+            {
+                return;
+            }
+
+            m_toolbar.DockingManager = null;
+            m_dockingManager?.Dispose();
+            m_dockingManager = null;
+            foreach (NSView view in m_dockArea.Subviews)
+            {
+                view.RemoveFromSuperview();
+            }
+
+            this.BuildDocking(this.Window);
         }
 
         private void SetAllValues ()

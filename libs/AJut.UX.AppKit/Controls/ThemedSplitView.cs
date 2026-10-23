@@ -146,6 +146,11 @@ namespace AJut.UX.Controls
         // ===========[ Helper Methods ]========================================
         // Each divider goes after its pane, so every divider is placed, scaled so the panes fill what the dividers leave.
         // With nothing to scale by (all zero), the panes share it equally.
+        //
+        // NSSplitView never lets a divider pass its neighbors, so one pass in order is not enough when the panes start
+        // somewhere else. New panes (every pane, on a layout load) can start piled up at one end: with dividers 0 and 1
+        // both at the far left, divider 0 cannot move right past divider 1, divider 1 then moves, and pane 0 is left
+        // zero wide. Each pass frees the next divider back, so as many passes as there are dividers always lands them.
         private void PlacePanes (double[] lengths, double splitLength)
         {
             int paneCount = this.ArrangedSubviews.Length;
@@ -158,6 +163,7 @@ namespace AJut.UX.Controls
                 given += i < lengths.Length ? Math.Max(0.0, lengths[i]) : 0.0;
             }
 
+            var positions = new double[dividerCount];
             double position = 0.0;
             for (int i = 0; i < dividerCount; ++i)
             {
@@ -166,8 +172,16 @@ namespace AJut.UX.Controls
                     : available / paneCount;
 
                 position += pane;
-                this.SetPositionOfDivider((nfloat)position, i);
+                positions[i] = position;
                 position += m_thickness;
+            }
+
+            for (int pass = 0; pass < dividerCount; ++pass)
+            {
+                for (int i = 0; i < dividerCount; ++i)
+                {
+                    this.SetPositionOfDivider((nfloat)positions[i], i);
+                }
             }
         }
 

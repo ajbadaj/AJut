@@ -130,9 +130,8 @@ namespace AJut.UX.Controls
                     editor.ToolTip = toolTip;
                 }
 
-                // 5. "Set to default" on a right click, where it applies. A right click goes to the view under the
-                //  pointer, which is usually the label rather than the row, so the label and its column carry the menu
-                //  as well as the row.
+                // 5. "Set to default" on a right click anywhere on the row, where it applies; HitTest sends the click to
+                //  the row. The label and its column carry the same menu.
                 if (PropertyGridRowRules.CanResetToDefault(m_target, owner.IsReadOnly))
                 {
                     var menu = new NSMenu { AutoEnablesItems = false };
@@ -147,6 +146,25 @@ namespace AJut.UX.Controls
             }
 
             public override bool IsFlipped => true;
+
+            // A right click (or Control click) anywhere on a row with "Set to default" goes to the row, so the whole row
+            // offers it: a right click goes to the view under the pointer, and the label and the editors would otherwise
+            // take it first. Only right clicks are taken, so left clicks, editing and tooltips are untouched.
+            public override NSView HitTest (CGPoint point)
+            {
+                NSView hit = base.HitTest(point);
+                if ((hit == null) || (this.Menu == null))
+                {
+                    return hit;
+                }
+
+                NSEvent current = NSApplication.SharedApplication.CurrentEvent;
+                bool isRightClick = (current != null)
+                    && ((current.Type == NSEventType.RightMouseDown)
+                        || ((current.Type == NSEventType.LeftMouseDown) && current.ModifierFlags.HasFlag(NSEventModifierMask.ControlKeyMask)));
+
+                return isRightClick ? this : hit;
+            }
 
             /// <summary>Whether any of the row is in view; the table keeps a few rows ready just off screen</summary>
             public bool IsShown => !this.VisibleRect().IsEmpty;

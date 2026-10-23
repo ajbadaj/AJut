@@ -40,7 +40,7 @@ namespace AJut.UX.Controls
     {
         private const float kOverflowLength = 36f;
         private const double kScrollIndicatorDiameter = 6.0;
-        private const double kScrollIndicatorInset = 4.0;
+        private const double kScrollIndicatorGap = 4.0;
         private const double kScrollIndicatorOpacity = 0.8;
         private const double kScrollEndTolerance = 0.5;
 
@@ -104,17 +104,20 @@ namespace AJut.UX.Controls
         {
             const float kBorderWidth = 1f;
 
-            this.ClipsToBounds = true;
+            // The buttons are clipped to the rounded border by the stack that holds them, not by the strip, so the
+            // scroll indicators can sit outside the strip's ends
+            this.ClipsToBounds = false;
             this.Layer.BorderWidth = kBorderWidth;
             this.Layer.CornerRadius = m_cornerRadius;
+            m_outer.ClipsToBounds = true;
+            m_outer.Layer.CornerRadius = m_cornerRadius;
 
             m_scroller.AddSubview(m_row);
             m_outer.AddArrangedSubview(m_scroller);
             m_outer.AddArrangedSubview(m_overflowButton);
             this.AddSubview(m_outer);
 
-            // The scroll indicators sit over the strip's ends and take no touches, so a drag that starts on one still
-            // scrolls the strip
+            // The scroll indicators sit just outside the strip's ends and take no touches
             foreach (UIView indicator in new[] { m_scrollBackIndicator, m_scrollForwardIndicator })
             {
                 indicator.BackgroundColor = ThemedColors.Get(ThemedColorKeys.ToggleStrip_ScrollIndicator);
@@ -381,6 +384,7 @@ namespace AJut.UX.Controls
             {
                 m_cornerRadius = value;
                 this.Layer.CornerRadius = value;
+                m_outer.Layer.CornerRadius = value;
                 this.ApplyItemEdges();
             }
         }
@@ -537,7 +541,9 @@ namespace AJut.UX.Controls
             }
         }
 
-        // A Scroll strip shows a dot at each end it can scroll further toward, and none at an end it has reached
+        // A Scroll strip shows a dot just outside each end it can scroll further toward, and none at an end it has reached.
+        // The dots are drawn past the strip's bounds and take no layout space, so the strip does not move as they come
+        // and go.
         private void UpdateScrollIndicators ()
         {
             if (m_overflowBehavior != eToggleStripOverflow.Scroll)
@@ -552,7 +558,7 @@ namespace AJut.UX.Controls
             m_scroller.LayoutIfNeeded();
 
             bool isVertical = this.IsVertical;
-            CGRect frame = m_outer.ConvertRectToView(m_scroller.Frame, this);
+            CGRect frame = this.Bounds;
             double offset = isVertical ? (double)m_scroller.ContentOffset.Y : (double)m_scroller.ContentOffset.X;
             double contentLength = isVertical ? (double)m_scroller.ContentSize.Height : (double)m_scroller.ContentSize.Width;
             double viewLength = isVertical ? (double)frame.Height : (double)frame.Width;
@@ -561,13 +567,13 @@ namespace AJut.UX.Controls
             m_scrollBackIndicator.Hidden = offset <= kScrollEndTolerance;
             m_scrollForwardIndicator.Hidden = offset >= (maxOffset - kScrollEndTolerance);
 
-            double reach = kScrollIndicatorInset + (kScrollIndicatorDiameter / 2.0);
+            double reach = kScrollIndicatorGap + (kScrollIndicatorDiameter / 2.0);
             m_scrollBackIndicator.Center = isVertical
-                ? new CGPoint(frame.GetMidX(), (double)frame.GetMinY() + reach)
-                : new CGPoint((double)frame.GetMinX() + reach, frame.GetMidY());
+                ? new CGPoint(frame.GetMidX(), (double)frame.GetMinY() - reach)
+                : new CGPoint((double)frame.GetMinX() - reach, frame.GetMidY());
             m_scrollForwardIndicator.Center = isVertical
-                ? new CGPoint(frame.GetMidX(), (double)frame.GetMaxY() - reach)
-                : new CGPoint((double)frame.GetMaxX() - reach, frame.GetMidY());
+                ? new CGPoint(frame.GetMidX(), (double)frame.GetMaxY() + reach)
+                : new CGPoint((double)frame.GetMaxX() + reach, frame.GetMidY());
 
             this.BringSubviewToFront(m_scrollBackIndicator);
             this.BringSubviewToFront(m_scrollForwardIndicator);

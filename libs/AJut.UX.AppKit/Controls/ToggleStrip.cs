@@ -37,12 +37,18 @@ namespace AJut.UX.Controls
     public class ToggleStrip : NSView, IToggleStripHost
     {
         private const double kOverflowButtonLength = 22.0;
+        private const double kScrollIndicatorDiameter = 6.0;
+        private const double kScrollIndicatorGap = 4.0;
+        private const double kScrollIndicatorOpacity = 0.8;
+        private const double kScrollEndTolerance = 0.5;
 
         private readonly ToggleStripItemCollection m_items;
         private readonly List<ItemButton> m_buttons = new List<ItemButton>();
         private readonly OverflowChevronButton m_overflowButton;
         private readonly StripScrollView m_scrollView;
         private readonly FlippedDocumentView m_scrollDocument;
+        private readonly ThemedView m_scrollBackIndicator;
+        private readonly ThemedView m_scrollForwardIndicator;
         private IEnumerable m_itemsSource;
         private INotifyCollectionChanged m_listenedSource;
         private object m_selectedItem;
@@ -84,6 +90,12 @@ namespace AJut.UX.Controls
                 Hidden = true,
             };
             this.AddSubview(m_scrollView);
+            m_scrollView.ScrolledAlong += this.OnScrolledAlong;
+
+            m_scrollBackIndicator = MakeScrollIndicator();
+            m_scrollForwardIndicator = MakeScrollIndicator();
+            this.AddSubview(m_scrollBackIndicator);
+            this.AddSubview(m_scrollForwardIndicator);
 
             this.ClipsToBounds = true;
         }
@@ -95,6 +107,7 @@ namespace AJut.UX.Controls
                 this.ListenToSource(null);
                 m_items.CollectionChanged -= this.OnItemsChanged;
                 m_overflowButton.Activated -= this.OnOverflowButtonActivated;
+                m_scrollView.ScrolledAlong -= this.OnScrolledAlong;
                 foreach (ItemButton button in m_buttons)
                 {
                     button.Activated -= this.OnItemButtonActivated;
@@ -467,6 +480,10 @@ namespace AJut.UX.Controls
 
             m_scrollView.Hidden = m_overflowBehavior != eToggleStripOverflow.Scroll;
             m_scrollView.IsVertical = this.IsVertical;
+
+            // Clip mode leaves items past the end that must not show, so the strip clips them. In Scroll mode the
+            // scroll view clips its own content, and the strip draws its scroll indicators just outside its ends.
+            this.ClipsToBounds = m_overflowBehavior != eToggleStripOverflow.Scroll;
             this.RelayoutItems();
         }
 
@@ -633,6 +650,59 @@ namespace AJut.UX.Controls
                     ? new CGRect(0, 0, (nfloat)crossSize, (nfloat)position)
                     : new CGRect(0, 0, (nfloat)position, (nfloat)crossSize);
             }
+
+            this.UpdateScrollIndicators();
+        }
+
+        // A Scroll strip shows a dot just outside each end it can scroll further toward, and none at an end it has reached.
+        // The dots are drawn past the strip's bounds and take no layout space, so the strip does not move as they come and
+        // go, and they take no clicks.
+        private void UpdateScrollIndicators ()
+        {
+            if (m_overflowBehavior != eToggleStripOverflow.Scroll)
+            {
+                m_scrollBackIndicator.Hidden = true;
+                m_scrollForwardIndicator.Hidden = true;
+                return;
+            }
+
+            bool isVertical = this.IsVertical;
+            CGRect visible = m_scrollView.ContentView.Bounds;
+            CGRect content = m_scrollDocument.Frame;
+            double offset = isVertical ? (double)visible.Y : (double)visible.X;
+            double maxOffset = isVertical
+                ? Math.Max(0.0, (double)content.Height - (double)visible.Height)
+                : Math.Max(0.0, (double)content.Width - (double)visible.Width);
+
+            m_scrollBackIndicator.Hidden = offset <= kScrollEndTolerance;
+            m_scrollForwardIndicator.Hidden = offset >= (maxOffset - kScrollEndTolerance);
+
+            CGRect bounds = this.Bounds;
+            double reach = kScrollIndicatorGap + kScrollIndicatorDiameter;
+            double crossStart = ((isVertical ? (double)bounds.Width : (double)bounds.Height) - kScrollIndicatorDiameter) / 2.0;
+            m_scrollBackIndicator.SetFrameOrigin(isVertical
+                ? new CGPoint((nfloat)crossStart, (nfloat)(-reach))
+                : new CGPoint((nfloat)(-reach), (nfloat)crossStart));
+            m_scrollForwardIndicator.SetFrameOrigin(isVertical
+                ? new CGPoint((nfloat)crossStart, (nfloat)((double)bounds.Height + kScrollIndicatorGap))
+                : new CGPoint((nfloat)((double)bounds.Width + kScrollIndicatorGap), (nfloat)crossStart));
+        }
+
+        private void OnScrolledAlong (object sender, EventArgs e)
+        {
+            this.UpdateScrollIndicators();
+        }
+
+        private static ThemedView MakeScrollIndicator ()
+        {
+            return new ThemedView
+            {
+                BackgroundColorKey = ThemedColorKeys.ToggleStrip_ScrollIndicator,
+                CornerRadius = kScrollIndicatorDiameter / 2.0,
+                AlphaValue = (nfloat)kScrollIndicatorOpacity,
+                Frame = new CGRect(0, 0, (nfloat)kScrollIndicatorDiameter, (nfloat)kScrollIndicatorDiameter),
+                Hidden = true,
+            };
         }
 
         // Click-and-drag scrolling in Scroll mode. AppKit sends a press's drags and release to the view that took the
@@ -845,7 +915,17 @@ namespace AJut.UX.Controls
         // sideways one (a trackpad swipe) goes through as normal, and so does everything on a vertical strip.
         private sealed class StripScrollView : NSScrollView
         {
+            /// <summary>Raised whenever the content scrolls, by the wheel, a drag or code</summary>
+            public event EventHandler ScrolledAlong;
+
             public bool IsVertical { get; set; }
+
+            // AppKit calls this after every scroll of the clip view, whatever moved it
+            public override void ReflectScrolledClipView (NSClipView cView)
+            {
+                base.ReflectScrolledClipView(cView);
+                this.ScrolledAlong?.Invoke(this, EventArgs.Empty);
+            }
 
             public override void ScrollWheel (NSEvent theEvent)
             {

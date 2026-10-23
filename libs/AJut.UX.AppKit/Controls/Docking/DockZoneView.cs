@@ -42,7 +42,7 @@ namespace AJut.UX.Controls
         private const double kTabCloseButtonSize = 16.0;
         private const double kTabCloseGap = 2.0;
         private const double kUnselectedTabBottomInset = 2.0;
-        private const double kUnselectedTabOpacity = 0.6;
+        private const double kUnselectedTabOpacity = 0.5;
         private const double kTabScrollButtonWidth = 16.0;
         private const double kTabScrollStep = 80.0;
         private const double kWheelLineDistance = 10.0;

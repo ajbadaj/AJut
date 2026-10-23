@@ -114,6 +114,9 @@ namespace AJut.UX.Theming
         /// <summary>The strip's outline and the separators between items. AppKit only.</summary>
         public const string ToggleStrip_Border = "AJut_ToggleStrip_Border";
 
+        /// <summary>The dots outside a Scroll strip's ends that show it scrolls further that way. AppKit only.</summary>
+        public const string ToggleStrip_ScrollIndicator = "AJut_ToggleStrip_ScrollIndicator";
+
         // ===========[ NumericEditor ]=========================================
         /// <summary>The border while the field has focus. Shared key.</summary>
         public const string NumericEditor_FocusBorder = "AJut_NumericEditor_FocusBorderBrush";
@@ -309,6 +312,7 @@ namespace AJut.UX.Theming
             RegisterAppKitOnly(ToggleStripButton_CheckedForeground, NSColor.AlternateSelectedControlText, "AJut_Brush_NormalText");
             RegisterAppKitOnly(ToggleStrip_Background, NSColor.Control, "AJut_Brush_PopOutControlBackground");
             RegisterAppKitOnly(ToggleStrip_Border, NSColor.Separator, "AJut_Brush_BorderCommon");
+            RegisterAppKitOnly(ToggleStrip_ScrollIndicator, NSColor.SecondaryLabel, "AJut_Brush_SymbolForeground");
 
             // 8. NumericEditor, shared keys
             ThemedColors.SetUnthemedDefault(NumericEditor_FocusBorder, NSColor.KeyboardFocusIndicator);
