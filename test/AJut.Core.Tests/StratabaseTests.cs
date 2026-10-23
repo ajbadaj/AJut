@@ -692,6 +692,28 @@ namespace AJut.Core.UnitTests
         }
 
         [TestMethod]
+        public void Stratabase_SetObjectWithProperties_FillsEveryPropertyAfterAListConfigList ()
+        {
+            // The first list config list used to end the whole fill, so every property stored after it was left unset
+            var data = new ThingWithTwoConfigListsAndAName
+            {
+                Ints = new List<int> { 1, 2 },
+                Strings = new List<string> { "a", "b", "c" },
+                Name = "after the lists",
+            };
+
+            Stratabase sb = new Stratabase(1);
+            sb.SetBaselineFromPropertiesOf(data);
+
+            var found = new ThingWithTwoConfigListsAndAName { Id = data.Id };
+            sb.SetObjectWithProperties(data.Id, ref found);
+
+            CollectionAssert.AreEqual(data.Ints, found.Ints);
+            CollectionAssert.AreEqual(data.Strings, found.Strings);
+            Assert.AreEqual(data.Name, found.Name);
+        }
+
+        [TestMethod]
         public void Stratabase_TestFail_SetObjectWithReferenceListProperties ()
         {
             var data = new TestDataWithReferenceList
@@ -2171,6 +2193,20 @@ namespace AJut.Core.UnitTests
         {
             public const string kTypeId = "DerivedTypedItem";
             public int Bat { get; set; }
+        }
+
+        public class ThingWithTwoConfigListsAndAName
+        {
+            [StratabaseId]
+            public Guid Id { get; set; } = Guid.NewGuid();
+
+            [StrataListConfig]
+            public List<int> Ints { get; set; } = new List<int>();
+
+            [StrataListConfig]
+            public List<string> Strings { get; set; } = new List<string>();
+
+            public string Name { get; set; }
         }
 
         public class ThingWithTwoLists

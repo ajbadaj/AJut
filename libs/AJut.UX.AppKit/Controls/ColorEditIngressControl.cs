@@ -242,6 +242,44 @@ namespace AJut.UX.Controls
             // no longer be dragged out of the swatch, which this control never set out to offer.
             public override void MouseDown (NSEvent theEvent)
             {
+                this.TogglePanel();
+            }
+
+            // A keyboard press (Space) and an accessibility press (VoiceOver's, or AXPress) both end up in NSColorWell's
+            // own handling, which deactivates an active well without putting the panel away. The panel then stays up
+            // editing nothing, and leaving the window no longer closes it, since this swatch no longer has it. So both
+            // kinds of press toggle the same way a click does.
+            public override void PerformClick (NSObject sender)
+            {
+                this.TogglePanel();
+            }
+
+            public override bool AccessibilityPerformPress ()
+            {
+                if (!this.Enabled)
+                {
+                    return false;
+                }
+
+                this.TogglePanel();
+                return true;
+            }
+
+            public override void Activate (bool exclusive)
+            {
+                base.Activate(exclusive);
+                m_owner.OnEditStarted();
+            }
+
+            public override void Deactivate ()
+            {
+                base.Deactivate();
+                m_owner.OnEditEnded();
+            }
+
+            // Opens the panel for this swatch, or puts it away if this swatch has it already
+            private void TogglePanel ()
+            {
                 if (!this.Enabled)
                 {
                     return;
@@ -255,18 +293,6 @@ namespace AJut.UX.Controls
 
                 this.Activate(true);
                 NSApplication.SharedApplication.OrderFrontColorPanel(this);
-            }
-
-            public override void Activate (bool exclusive)
-            {
-                base.Activate(exclusive);
-                m_owner.OnEditStarted();
-            }
-
-            public override void Deactivate ()
-            {
-                base.Deactivate();
-                m_owner.OnEditEnded();
             }
         }
     }

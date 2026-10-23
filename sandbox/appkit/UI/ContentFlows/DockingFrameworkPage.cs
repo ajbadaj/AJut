@@ -2,6 +2,7 @@ namespace AJutShowRoomAppKit.UI.ContentFlows
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
+    using AJut.TypeManagement;
     using AJut.UX.CodeBinding;
     using AJut.UX.Controls;
     using AJut.UX.Docking;
@@ -89,6 +90,15 @@ docking.Dispose();"
                 FixedTearoffWindowTitle = "Show Room",
             };
 
+            // A layout names each panel, and each panel's state, by its [TypeId], and a load finds the type by looking
+            //  that id up in the TypeIdRegistrar, which only knows the ids it is given. A save reads the attribute
+            //  itself, so without these a layout saves and then loads with no panels in it. The WinUI3 and WPF showrooms
+            //  register their whole assembly at startup; one type at a time is the form trimming keeps.
+            RegisterTypeIdOf<ShowRoomPanel>();
+            RegisterTypeIdOf<SingleInstanceShowRoomPanel>();
+            RegisterTypeIdOf<HiddenInfraShowRoomPanel>();
+            RegisterTypeIdOf<ShowRoomPanelState>();
+
             m_dockingManager.RegisterDisplayFactory<ShowRoomPanel>();
             m_dockingManager.RegisterDisplayFactory<SingleInstanceShowRoomPanel>(new DockPanelRegistrationRules
             {
@@ -128,6 +138,8 @@ docking.Dispose();"
                 m_dockingManager.DockNewPanel<HiddenInfraShowRoomPanel>(zone);
             }
         }
+
+        private static void RegisterTypeIdOf<T> () => TypeIdRegistrar.RegisterTypeId<T>(TypeIdRegistrar.GetTypeIdFor<T>());
 
         private NSButton MakeButton (string title, Action action)
         {

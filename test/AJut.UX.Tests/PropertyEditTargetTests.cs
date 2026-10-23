@@ -568,6 +568,21 @@ namespace AJut.UX.Tests
             Assert.IsNotNull(Find(targets, "Editable"));
         }
 
+        [TestMethod]
+        public void PET_PGShowReadonly_ShownPropertyWithNoSetterIsReadOnly ()
+        {
+            // Shown, but with no setter there is nowhere for an edit to go: the target used to get a setter that
+            //  threw "Property set method not found", and its editor took edits it could not keep
+            List<PropertyEditTarget> targets = PropertyEditTarget.GenerateForPropertiesOf(new VisibilityModel()).ToList();
+            Assert.IsTrue(Find(targets, "ReadOnlyShown").IsReadOnly, "A [PGShowReadonly] property with no setter is read only");
+            Assert.IsFalse(Find(targets, "Shown").IsReadOnly, "A property with a setter is editable");
+
+            List<PropertyEditTarget> classLevel = PropertyEditTarget.GenerateForPropertiesOf(new ShowAllReadonlyModel()).ToList();
+            Assert.IsTrue(Find(classLevel, "ReadOnly1").IsReadOnly);
+            Assert.IsTrue(Find(classLevel, "ReadOnly2").IsReadOnly);
+            Assert.IsFalse(Find(classLevel, "Editable").IsReadOnly);
+        }
+
         // ===[ PGEditor tests ]===
 
         [TestMethod]

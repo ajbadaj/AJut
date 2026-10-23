@@ -686,6 +686,35 @@ namespace AJut.UX.Tests
         }
 
         [TestMethod]
+        public void DMB_LayoutFile_UngroupedRootLoadsBackIntoItself ()
+        {
+            string path = TempLayoutPath();
+            try
+            {
+                // A root zone with no group id saves under the empty string, and it is not the first root here, so
+                //  falling back to the first root would put its panels in the wrong zone
+                var saver = MakeLayoutManager();
+                saver.RegisterRoot("main").ViewModel.AddDockedContent(saver.BuildNewDisplayElement<FakeDockPanel>());
+                DockZoneViewModel ungrouped = saver.RegisterRoot().ViewModel;
+                ungrouped.AddDockedContent(saver.BuildNewDisplayElement<FakeDockPanel>());
+                ungrouped.AddDockedContent(saver.BuildNewDisplayElement<FakeDockPanel>());
+                Assert.IsTrue(saver.SaveDockLayoutToFile(path));
+
+                var loader = MakeLayoutManager();
+                DockZoneViewModel loadedMain = loader.RegisterRoot("main").ViewModel;
+                DockZoneViewModel loadedUngrouped = loader.RegisterRoot().ViewModel;
+                Assert.IsTrue(loader.LoadDockLayoutFromFile(path));
+
+                Assert.AreEqual(1, loadedMain.DockedContent.Count);
+                Assert.AreEqual(2, loadedUngrouped.DockedContent.Count);
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
+        [TestMethod]
         public void DMB_LayoutFile_LeavesOutAWindowAlreadyGone ()
         {
             string path = TempLayoutPath();

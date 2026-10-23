@@ -428,9 +428,10 @@
                                 }
                             }
 
-                            // Don't forget to dispose of hte list access
+                            // Don't forget to dispose of hte list access. Then on to the next property: this one is
+                            //  done, but returning here would leave every property stored after it unset.
                             listAccess.Dispose();
-                            return;
+                            continue;
                         }
                     }
                 }

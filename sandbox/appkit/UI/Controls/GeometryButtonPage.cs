@@ -21,39 +21,39 @@ namespace AJutShowRoomAppKit.UI.Controls
         public GeometryButtonPage ()
             : base("GeometryButton", "A button whose background is a path geometry instead of a rectangle. GeometryMarkup takes path mini-language, and TraceThickness outlines it. The shape is fitted to the button by GeometryStretch.")
         {
-            m_notched = MakeButton(kNotchedShape, 150, 100);
+            m_notched = MakeButton(kNotchedShape, 150, 100, "Notched, traced");
             m_notched.TraceThickness = 1.0;
             m_notched.Activated += this.OnNotchedActivated;
-            this.AddLabeledDemo("Notched, traced", m_notched);
+            this.AddLabeledDemo(m_notched.ToolTip, m_notched);
 
             m_clickCount = ShowroomStyle.Understated("Not clicked yet");
             this.AddLabeledDemo("Clicks", m_clickCount);
 
             this.AddHeading("Curves, arcs and stretch");
 
-            GeometryButton circle = MakeButton(kCircleShape, 110, 110);
+            GeometryButton circle = MakeButton(kCircleShape, 110, 110, "Arc, Uniform");
             circle.GeometryStretch = ePathStretch.Uniform;
             circle.TraceThickness = 2.0;
-            this.AddLabeledDemo("Arc, Uniform", circle);
+            this.AddLabeledDemo(circle.ToolTip, circle);
 
-            GeometryButton wave = MakeButton(kWaveShape, 160, 110);
+            GeometryButton wave = MakeButton(kWaveShape, 160, 110, "Cubic curves, Fill");
             wave.GeometryStretch = ePathStretch.Fill;
             wave.TraceThickness = 2.0;
-            this.AddLabeledDemo("Cubic curves, Fill", wave);
+            this.AddLabeledDemo(wave.ToolTip, wave);
 
             foreach (ePathStretch stretch in new[] { ePathStretch.None, ePathStretch.Fill, ePathStretch.Uniform, ePathStretch.UniformToFill })
             {
-                GeometryButton sized = MakeButton(kPlayShape, 80, 40);
+                GeometryButton sized = MakeButton(kPlayShape, 80, 40, $"Stretch {stretch}, 80x40");
                 sized.GeometryStretch = stretch;
                 sized.TraceThickness = 1.0;
-                this.AddLabeledDemo($"Stretch {stretch}, 80x40", sized);
+                this.AddLabeledDemo(sized.ToolTip, sized);
             }
 
-            m_disabled = MakeButton(kClippedCornerShape, 220, 60);
+            m_disabled = MakeButton(kClippedCornerShape, 220, 60, "Disabled, H V and L");
             m_disabled.GeometryStretch = ePathStretch.Fill;
             m_disabled.TraceThickness = 1.0;
             m_disabled.Enabled = false;
-            this.AddLabeledDemo("Disabled, H V and L", m_disabled);
+            this.AddLabeledDemo(m_disabled.ToolTip, m_disabled);
 
             this.AddCode(
 @"var button = new GeometryButton
@@ -80,9 +80,10 @@ bindings.BindCommand(button, viewModel.PlayCommand);"
             m_clickCount.StringValue = m_clicks == 1 ? "Clicked once" : $"Clicked {m_clicks} times";
         }
 
-        private static GeometryButton MakeButton (string markup, double width, double height)
+        // A GeometryButton draws no text, so its ToolTip is also what VoiceOver reads it by
+        private static GeometryButton MakeButton (string markup, double width, double height, string toolTip)
         {
-            var button = new GeometryButton { GeometryMarkup = markup };
+            var button = new GeometryButton { GeometryMarkup = markup, ToolTip = toolTip };
             button.TranslatesAutoresizingMaskIntoConstraints = false;
             NSLayoutConstraint.ActivateConstraints(new[]
             {

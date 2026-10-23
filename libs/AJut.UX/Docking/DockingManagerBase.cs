@@ -680,9 +680,16 @@ namespace AJut.UX.Docking
         protected DockZoneViewModel? GetFallbackRootZone ()
             => m_rootZones.FirstOrDefault() is TZone zone ? this.GetZoneViewModel(zone) : null;
 
-        /// <summary>The view model of the root zone registered under <paramref name="groupId"/>, or null</summary>
+        /// <summary>
+        /// The view model of the root zone registered under <paramref name="groupId"/>, or null. A root zone with no group
+        /// id is saved under the empty string, so the empty string (or null) finds it.
+        /// </summary>
         protected DockZoneViewModel? GetRootZoneForGroup (string groupId)
-            => m_rootZones.FirstOrDefault(z => this.GetZoneGroupId(z) == groupId) is TZone zone ? this.GetZoneViewModel(zone) : null;
+        {
+            string wanted = groupId ?? string.Empty;
+            TZone? zone = m_rootZones.FirstOrDefault(z => (this.GetZoneGroupId(z) ?? string.Empty) == wanted);
+            return zone != null ? this.GetZoneViewModel(zone) : null;
+        }
 
         /// <summary>
         /// Rebuilds <paramref name="zone"/> from a layout file's zone tree, building each panel the file names by its

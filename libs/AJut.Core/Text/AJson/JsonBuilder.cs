@@ -13,6 +13,7 @@ namespace AJut.Text.AJson
     public sealed class JsonBuilder
     {
         private string m_value;
+        private bool m_isDocumentProperty;
 
         // ===============================[ Construction ]===========================
         internal JsonBuilder (JsonBuilderSettings settings)
@@ -64,7 +65,13 @@ namespace AJut.Text.AJson
         public bool IsArray { get; private set; }
         public bool IsValue { get; private set; }
 
-        public bool IsDocumentKVP => this.Key != String.Empty;
+        /// <summary>
+        /// Set if this builder is a document key/value pair entry, made by <see cref="StartProperty"/> or
+        /// <see cref="AddProperty"/>. That is what makes it one, not its <see cref="Key"/>: an empty string is a valid key,
+        /// and a pair keyed by one has to put its value in <see cref="DocumentKVPValue"/> like any other, or the document
+        /// leaves the pair out.
+        /// </summary>
+        public bool IsDocumentKVP => m_isDocumentProperty;
         public bool IsArrayItem => this.ArrayIndex != -1;
 
         public string Value
@@ -94,6 +101,7 @@ namespace AJut.Text.AJson
             {
                 JsonBuilder child = new JsonBuilder(this);
                 child.Key = propertyName;
+                child.m_isDocumentProperty = true;
                 this.Children.Add(child);
                 return child;
             }
@@ -169,6 +177,7 @@ namespace AJut.Text.AJson
                 {
                     JsonBuilder child = new JsonBuilder(this);
                     child.Key = propertyName;
+                    child.m_isDocumentProperty = true;
                     child.DocumentKVPValue = new JsonBuilder(child);
                     child.DocumentKVPValue.IsValueUsualQuoteTarget = isUsuallyQuoted;
 

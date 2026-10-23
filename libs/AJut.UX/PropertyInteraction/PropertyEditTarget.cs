@@ -494,10 +494,16 @@ namespace AJut.UX.PropertyInteraction
                     ? () => aliasing.ConvertToAlias(prop.GetValue(sourceItem))
                     : () => prop.GetValue(sourceItem);
 
-                // 2b. Build setter and optional [PGCoerce] delegate
-                SetValue setter;
+                // 2b. Build setter and optional [PGCoerce] delegate. A property shown by [PGShowReadonly] with no set
+                //  accessor gets no setter, which is what makes its target read only: one built anyway throws
+                //  "Property set method not found" on every edit, and leaves its editor taking edits it cannot keep.
+                SetValue? setter;
                 Func<object, object> coerceDelegate = null;
-                if (aliasing != null)
+                if (prop.SetMethod == null)
+                {
+                    setter = null;
+                }
+                else if (aliasing != null)
                 {
                     setter = v => prop.SetValue(sourceItem, aliasing.ConvertFromAlias(v));
                 }
