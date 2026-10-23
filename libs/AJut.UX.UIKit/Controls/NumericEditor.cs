@@ -486,6 +486,19 @@ namespace AJut.UX.Controls
                 this.WidthAnchor.ConstraintEqualTo(kButtonWidth).Active = true;
             }
 
+            // While pressed the whole button shows the theme's primary highlight, the way WinUI3's nudge buttons do in
+            // their Pressed state. UIKit asks for this on every state change. base.UpdateConfiguration is skipped so the
+            // system does not lay its own dimmed highlight over it.
+            public override void UpdateConfiguration ()
+            {
+                UIButtonConfiguration configuration = this.Configuration ?? UIButtonConfiguration.PlainButtonConfiguration;
+                UIBackgroundConfiguration background = configuration.Background;
+                background.BackgroundColor = ThemedColors.Get(this.Highlighted ? ThemedColorKeys.NumericEditor_NudgePressedBackground : ThemedColorKeys.ButtonBackground);
+                background.CornerRadius = 0;
+                configuration.Background = background;
+                this.Configuration = configuration;
+            }
+
             public override bool BeginTracking (UITouch uitouch, UIEvent uievent)
             {
                 m_modifiers = uievent?.ModifierFlags ?? 0;

@@ -52,6 +52,18 @@ namespace AJut.UX.Theming
         public const string ColorEditIngressControl_NormalBorderBrush = "AJut_ColorEditIngressControl_NormalBorderBrush";
         public const string ColorEditIngressControl_HighlightBorderBrush = "AJut_ColorEditIngressControl_HighlightBorderBrush";
 
+        /// <summary>
+        /// A NumericEditor nudge button while it is pressed. Themed, it is the AJut palette's primary highlight, named
+        /// here by its palette key since the WinUI3 theme has no UIKit-shaped control key for it.
+        /// </summary>
+        public const string NumericEditor_NudgePressedBackground = "AJut_Color_PrimaryHighlight";
+
+        /// <summary>
+        /// The dots at the ends of a Scroll ToggleStrip that show it scrolls further that way. Themed, it is the AJut
+        /// palette's symbol color, named here by its palette key.
+        /// </summary>
+        public const string ToggleStrip_ScrollIndicator = "AJut_Color_SymbolForeground";
+
         // ===========[ Public Interface Methods ]===================================
         /// <summary>
         /// Registers every key above with its unthemed default. Runs once, from ThemedColors' static constructor;
@@ -93,6 +105,8 @@ namespace AJut.UX.Theming
             ThemedColors.SetUnthemedDefault(NumericEditor_ErrorBrush, UIColor.SystemRed);
             ThemedColors.SetUnthemedDefault(ColorEditIngressControl_NormalBorderBrush, UIColor.Separator);
             ThemedColors.SetUnthemedDefault(ColorEditIngressControl_HighlightBorderBrush, null);
+            ThemedColors.SetUnthemedDefault(NumericEditor_NudgePressedBackground, UIColor.SystemBlue);
+            ThemedColors.SetUnthemedDefault(ToggleStrip_ScrollIndicator, UIColor.SecondaryLabel);
         }
     }
 }

@@ -38,6 +38,12 @@ namespace AJut.UX.Controls
 
     public class ToggleStrip : UIControl, IToggleStripHost
     {
+        private const float kOverflowLength = 36f;
+        private const double kScrollIndicatorDiameter = 6.0;
+        private const double kScrollIndicatorInset = 4.0;
+        private const double kScrollIndicatorOpacity = 0.8;
+        private const double kScrollEndTolerance = 0.5;
+
         // ===========[ Instance Fields ]===================================
         private readonly UIScrollView m_scroller = new UIScrollView
         {
@@ -57,7 +63,9 @@ namespace AJut.UX.Controls
             Alignment = UIStackViewAlignment.Fill,
             TranslatesAutoresizingMaskIntoConstraints = false,
         };
-        private readonly UIButton m_overflowButton = new UIButton(CGRect.Empty) { Hidden = true };
+        private readonly OverflowButton m_overflowButton = new OverflowButton();
+        private readonly UIView m_scrollBackIndicator = new UIView { UserInteractionEnabled = false, Hidden = true };
+        private readonly UIView m_scrollForwardIndicator = new UIView { UserInteractionEnabled = false, Hidden = true };
         private NSLayoutConstraint[] m_horizontalConstraints;
         private NSLayoutConstraint[] m_verticalConstraints;
         private UILayoutConstraintAxis m_orientation = UILayoutConstraintAxis.Horizontal;
@@ -95,24 +103,28 @@ namespace AJut.UX.Controls
         private void Setup ()
         {
             const float kBorderWidth = 1f;
-            const float kOverflowLength = 36f;
 
             this.ClipsToBounds = true;
             this.Layer.BorderWidth = kBorderWidth;
             this.Layer.CornerRadius = m_cornerRadius;
 
-            UIButtonConfiguration overflowConfiguration = UIButtonConfiguration.PlainButtonConfiguration;
-            overflowConfiguration.Image = UIImage.GetSystemImage("chevron.down");
-            m_overflowButton.Configuration = overflowConfiguration;
-            m_overflowButton.ShowsMenuAsPrimaryAction = true;
-            m_overflowButton.AccessibilityLabel = "More options";
-            m_overflowButton.BackgroundColor = ThemedColors.Get(ThemedColorKeys.ToggleButtonBackground);
-            m_overflowButton.TranslatesAutoresizingMaskIntoConstraints = false;
-
             m_scroller.AddSubview(m_row);
             m_outer.AddArrangedSubview(m_scroller);
             m_outer.AddArrangedSubview(m_overflowButton);
             this.AddSubview(m_outer);
+
+            // The scroll indicators sit over the strip's ends and take no touches, so a drag that starts on one still
+            // scrolls the strip
+            foreach (UIView indicator in new[] { m_scrollBackIndicator, m_scrollForwardIndicator })
+            {
+                indicator.BackgroundColor = ThemedColors.Get(ThemedColorKeys.ToggleStrip_ScrollIndicator);
+                indicator.Alpha = (nfloat)kScrollIndicatorOpacity;
+                indicator.Layer.CornerRadius = (nfloat)(kScrollIndicatorDiameter / 2.0);
+                indicator.Frame = new CGRect(0, 0, kScrollIndicatorDiameter, kScrollIndicatorDiameter);
+                this.AddSubview(indicator);
+            }
+
+            m_scroller.Scrolled += this.Scroller_OnScrolled;
 
             NSLayoutConstraint.ActivateConstraints(new[]
             {
@@ -128,18 +140,19 @@ namespace AJut.UX.Controls
 
             // Across the strip the row fills the scroller, which is what stretches a vertical strip's buttons across its
             // width. Along it, the scroller takes the row's natural length when there is room and scrolls (or clips) when
-            // there is not, and the overflow button takes a fixed length at the trailing end.
+            // there is not. The overflow button takes at least a fixed length at the trailing end, and all the strip past
+            // the items showing: it hugs less than anything, so the room the scroller's natural length leaves goes to it.
             m_horizontalConstraints = new[]
             {
                 m_row.HeightAnchor.ConstraintEqualTo(m_scroller.FrameLayoutGuide.HeightAnchor),
                 _Natural(m_scroller.WidthAnchor.ConstraintEqualTo(m_row.WidthAnchor)),
-                m_overflowButton.WidthAnchor.ConstraintEqualTo(kOverflowLength),
+                _NearlyRequired(m_overflowButton.WidthAnchor.ConstraintGreaterThanOrEqualTo(kOverflowLength)),
             };
             m_verticalConstraints = new[]
             {
                 m_row.WidthAnchor.ConstraintEqualTo(m_scroller.FrameLayoutGuide.WidthAnchor),
                 _Natural(m_scroller.HeightAnchor.ConstraintEqualTo(m_row.HeightAnchor)),
-                m_overflowButton.HeightAnchor.ConstraintEqualTo(kOverflowLength),
+                _NearlyRequired(m_overflowButton.HeightAnchor.ConstraintGreaterThanOrEqualTo(kOverflowLength)),
             };
 
             this.Items.CollectionChanged += this.Items_OnCollectionChanged;
@@ -151,6 +164,13 @@ namespace AJut.UX.Controls
                 constraint.Priority = (float)UILayoutPriority.DefaultLow;
                 return constraint;
             }
+
+            // Below required, so it gives way to the stack's own zero length for the button while it is hidden
+            static NSLayoutConstraint _NearlyRequired (NSLayoutConstraint constraint)
+            {
+                constraint.Priority = (float)UILayoutPriority.Required - 1f;
+                return constraint;
+            }
         }
 
         protected override void Dispose (bool disposing)
@@ -158,6 +178,7 @@ namespace AJut.UX.Controls
             if (disposing)
             {
                 this.Items.CollectionChanged -= this.Items_OnCollectionChanged;
+                m_scroller.Scrolled -= this.Scroller_OnScrolled;
                 this.UntrackSource();
                 foreach (ToggleStripButton button in m_buttons)
                 {
@@ -192,6 +213,11 @@ namespace AJut.UX.Controls
         private void Items_OnCollectionChanged (object sender, NotifyCollectionChangedEventArgs e)
         {
             this.RebuildButtons();
+        }
+
+        private void Scroller_OnScrolled (object sender, EventArgs e)
+        {
+            this.UpdateScrollIndicators();
         }
 
         private void ItemsSource_OnCollectionChanged (object sender, NotifyCollectionChangedEventArgs e)
@@ -378,6 +404,8 @@ namespace AJut.UX.Controls
                 m_lastOverflowLength = length;
                 this.UpdateOverflowLayout();
             }
+
+            this.UpdateScrollIndicators();
         }
 
         // ===========[ IToggleStripHost Implementations ]===================================
@@ -462,6 +490,7 @@ namespace AJut.UX.Controls
             NSLayoutConstraint.ActivateConstraints(isVertical ? m_verticalConstraints : m_horizontalConstraints);
             m_row.Axis = m_orientation;
             m_outer.Axis = m_orientation;
+            m_overflowButton.SetIsVertical(isVertical);
 
             this.ApplyItemEdges();
             m_lastOverflowLength = -1f;
@@ -506,6 +535,42 @@ namespace AJut.UX.Controls
             {
                 showing[index].ApplyEdges(ToggleStripItemEdges.For(index, showing.Count, isVertical, overflowShown), m_separatorThickness, m_cornerRadius);
             }
+        }
+
+        // A Scroll strip shows a dot at each end it can scroll further toward, and none at an end it has reached
+        private void UpdateScrollIndicators ()
+        {
+            if (m_overflowBehavior != eToggleStripOverflow.Scroll)
+            {
+                m_scrollBackIndicator.Hidden = true;
+                m_scrollForwardIndicator.Hidden = true;
+                return;
+            }
+
+            // The scroller's frame and content size are only final once it has laid out itself
+            m_outer.LayoutIfNeeded();
+            m_scroller.LayoutIfNeeded();
+
+            bool isVertical = this.IsVertical;
+            CGRect frame = m_outer.ConvertRectToView(m_scroller.Frame, this);
+            double offset = isVertical ? (double)m_scroller.ContentOffset.Y : (double)m_scroller.ContentOffset.X;
+            double contentLength = isVertical ? (double)m_scroller.ContentSize.Height : (double)m_scroller.ContentSize.Width;
+            double viewLength = isVertical ? (double)frame.Height : (double)frame.Width;
+            double maxOffset = Math.Max(0.0, contentLength - viewLength);
+
+            m_scrollBackIndicator.Hidden = offset <= kScrollEndTolerance;
+            m_scrollForwardIndicator.Hidden = offset >= (maxOffset - kScrollEndTolerance);
+
+            double reach = kScrollIndicatorInset + (kScrollIndicatorDiameter / 2.0);
+            m_scrollBackIndicator.Center = isVertical
+                ? new CGPoint(frame.GetMidX(), (double)frame.GetMinY() + reach)
+                : new CGPoint((double)frame.GetMinX() + reach, frame.GetMidY());
+            m_scrollForwardIndicator.Center = isVertical
+                ? new CGPoint(frame.GetMidX(), (double)frame.GetMaxY() - reach)
+                : new CGPoint((double)frame.GetMaxX() - reach, frame.GetMidY());
+
+            this.BringSubviewToFront(m_scrollBackIndicator);
+            this.BringSubviewToFront(m_scrollForwardIndicator);
         }
 
         private void UpdateOverflowLayout ()
@@ -599,8 +664,8 @@ namespace AJut.UX.Controls
             // The WinUI3 unthemed defaults (AJutCustomControlStylingDefaults.xaml), with the light set of each checked
             // gradient lightened, the same as the Android strip, so dark text stays readable on a light background.
             // The AJut theme supplies its own for every one of these keys.
-            private static readonly ThemedGradient kPointerOverBackground = Uniform(AJutThemeKeys.ToggleStripButton_PointerOverBackground, 0x20FFFFFF, 0x20FFFFFF);
-            private static readonly ThemedGradient kPressedBackground = Uniform(AJutThemeKeys.ToggleStripButton_PressedBackground, 0x40000000, 0x40000000);
+            public static readonly ThemedGradient kPointerOverBackground = Uniform(AJutThemeKeys.ToggleStripButton_PointerOverBackground, 0x20FFFFFF, 0x20FFFFFF);
+            public static readonly ThemedGradient kPressedBackground = Uniform(AJutThemeKeys.ToggleStripButton_PressedBackground, 0x40000000, 0x40000000);
             private static readonly ThemedGradient kCheckedBackground = new ThemedGradient(
                 AJutThemeKeys.ToggleStripButton_CheckedBackground,
                 new[] { ThemedGradient.Stop(0.0, 0x59000000), ThemedGradient.Stop(0.2, 0x38000000), ThemedGradient.Stop(1.0, 0x1A000000) },
@@ -814,6 +879,91 @@ namespace AJut.UX.Controls
             private void Item_OnPropertyChanged (object sender, PropertyChangedEventArgs e)
             {
                 this.Refresh();
+            }
+        }
+
+        // The overflow ("more") button. It takes all of the strip past the last item showing, in the items' own face
+        // color, with its chevron at the trailing end (the foot, on a vertical strip), so the strip reads as one piece out
+        // to its edge and the whole of that space is the button. It takes the items' hover and pressed looks too.
+        private sealed class OverflowButton : UIButton
+        {
+            private const float kHuggingPriority = 1f;
+            private const double kGlyphInset = 10.0;
+
+            private readonly CAGradientLayer m_overlay = new CAGradientLayer
+            {
+                StartPoint = new CGPoint(0.5, 0.0),
+                EndPoint = new CGPoint(0.5, 1.0),
+            };
+
+            public OverflowButton () : base(CGRect.Empty)
+            {
+                UIButtonConfiguration configuration = UIButtonConfiguration.PlainButtonConfiguration;
+                configuration.Image = UIImage.GetSystemImage("chevron.down");
+                configuration.ContentInsets = new NSDirectionalEdgeInsets((nfloat)kGlyphInset, (nfloat)kGlyphInset, (nfloat)kGlyphInset, (nfloat)kGlyphInset);
+                this.Configuration = configuration;
+                this.ShowsMenuAsPrimaryAction = true;
+                this.AccessibilityLabel = "More options";
+                this.BackgroundColor = ThemedColors.Get(ThemedColorKeys.ToggleButtonBackground);
+                this.ClipsToBounds = true;
+                this.Hidden = true;
+                this.TranslatesAutoresizingMaskIntoConstraints = false;
+                this.Layer.InsertSublayer(m_overlay, 0);
+                this.SetContentHuggingPriority(kHuggingPriority, UILayoutConstraintAxis.Horizontal);
+                this.SetContentHuggingPriority(kHuggingPriority, UILayoutConstraintAxis.Vertical);
+                this.SetIsVertical(false);
+            }
+
+            /// <summary>Puts the chevron at the trailing end of a horizontal strip, or the foot of a vertical one</summary>
+            public void SetIsVertical (bool isVertical)
+            {
+                this.HorizontalAlignment = isVertical ? UIControlContentHorizontalAlignment.Center : UIControlContentHorizontalAlignment.Trailing;
+                this.VerticalAlignment = isVertical ? UIControlContentVerticalAlignment.Bottom : UIControlContentVerticalAlignment.Center;
+            }
+
+            public override void UpdateConfiguration ()
+            {
+                // As with the items: the background is the button's own color plus the overlay, so base is skipped and
+                // the system adds no highlight of its own
+                UIButtonConfiguration configuration = this.Configuration ?? UIButtonConfiguration.PlainButtonConfiguration;
+                UIBackgroundConfiguration background = configuration.Background;
+                background.CornerRadius = 0;
+                background.BackgroundColor = UIColor.Clear;
+                configuration.Background = background;
+                configuration.BaseForegroundColor = ThemedColors.Get(ThemedColorKeys.ToggleButtonForeground);
+                this.Configuration = configuration;
+                this.SetNeedsLayout();
+            }
+
+            public override void LayoutSubviews ()
+            {
+                base.LayoutSubviews();
+
+                // CGColors miss a light/dark switch on their own, so the overlay is worked out on every layout
+                ThemedGradient overlay = this.Highlighted
+                    ? ToggleStripButton.kPressedBackground
+                    : (this.Hovered ? ToggleStripButton.kPointerOverBackground : null);
+
+                CATransaction.Begin();
+                CATransaction.DisableActions = true;
+                m_overlay.Frame = this.Bounds;
+                m_overlay.Hidden = overlay == null;
+                if (overlay != null)
+                {
+                    IReadOnlyList<AJutGradientStop> stops = overlay.Resolve(this.TraitCollection.UserInterfaceStyle);
+                    var colors = new CGColor[stops.Count];
+                    var locations = new Foundation.NSNumber[stops.Count];
+                    for (int index = 0; index < stops.Count; ++index)
+                    {
+                        colors[index] = stops[index].Color.ToUIColor().CGColor;
+                        locations[index] = new Foundation.NSNumber(stops[index].Offset);
+                    }
+
+                    m_overlay.Colors = colors;
+                    m_overlay.Locations = locations;
+                }
+
+                CATransaction.Commit();
             }
         }
 

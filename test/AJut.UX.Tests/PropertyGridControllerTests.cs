@@ -132,6 +132,10 @@ namespace AJut.UX.Tests
         public int Size { get; set; } = 7;
 
         public CountedSubscriptionSource Child { get; set; } = new CountedSubscriptionSource();
+
+        [PGShowReadonly]
+        [PGOverrideDefault(3)]
+        public int Locked { get; } = 4;
     }
 
     // ===========[ Tests ]=================================================
@@ -472,6 +476,18 @@ namespace AJut.UX.Tests
             var (_, controller) = MakeWithSingleSource(new DefaultedValueSource());
             Assert.IsTrue(PropertyGridRowRules.CanResetToDefault(FindTarget(controller, nameof(DefaultedValueSource.Size))));
             Assert.IsFalse(PropertyGridRowRules.CanResetToDefault(FindTarget(controller, nameof(DefaultedValueSource.Child))));
+        }
+
+        [TestMethod]
+        public void PGRowRules_CanResetToDefault_ShownPropertyWithNoSetterNo ()
+        {
+            // It has a default, and it is away from it, but with no setter a reset has nowhere to go
+            var (_, controller) = MakeWithSingleSource(new DefaultedValueSource());
+            PropertyEditTarget locked = FindTarget(controller, nameof(DefaultedValueSource.Locked));
+            Assert.IsTrue(locked.IsReadOnly);
+            Assert.IsTrue(locked.HasDefaultValue);
+            Assert.IsFalse(PropertyGridRowRules.CanResetToDefault(locked));
+            Assert.IsFalse(PropertyGridRowRules.CanResetToDefault(locked, isGridReadOnly: false));
         }
 
         [TestMethod]

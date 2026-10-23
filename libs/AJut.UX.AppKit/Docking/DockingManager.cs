@@ -128,6 +128,12 @@ namespace AJut.UX.Docking
         /// <summary>The title every tearoff window shows; empty, the default, shows none</summary>
         public string FixedTearoffWindowTitle { get; set; } = String.Empty;
 
+        /// <summary>When true, the default, each tab of a closable panel shows an X that closes it</summary>
+        public bool ShowTabHeaderClose { get; set; } = true;
+
+        /// <summary>When true, the default, a middle click on a tab closes that panel</summary>
+        public bool AllowMiddleMouseClose { get; set; } = true;
+
         /// <summary>
         /// How far, in points, a press on a panel header, a tab or a tearoff's title strip moves before it starts a drag.
         /// The same default as WinUI3's DragThresholdPixels.

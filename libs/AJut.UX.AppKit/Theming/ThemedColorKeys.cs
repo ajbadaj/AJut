@@ -209,8 +209,11 @@ namespace AJut.UX.Theming
         /// <summary>An unselected tab. AppKit only.</summary>
         public const string DockZone_TabBackground = "AJut_DockZone_TabBackground";
 
-        /// <summary>The selected tab. AppKit only.</summary>
+        /// <summary>The selected tab, which is the panel's own fill so the tab reads as part of the panel. AppKit only.</summary>
         public const string DockZone_SelectedTabBackground = "AJut_DockZone_SelectedTabBackground";
+
+        /// <summary>The line marking where a dragged tab will land. Shared key.</summary>
+        public const string DockZone_DragInsertLine = "AJut_DockZone_DragInsertLineBrush";
 
         // ===========[ DockDropOverlayView ]===================================
         // Shared keys, the WinUI3 DockDropInsertionDriverWidget's
@@ -344,7 +347,8 @@ namespace AJut.UX.Theming
             RegisterAppKitOnly(DockZone_HeaderForeground, NSColor.Label, "AJut_Brush_NormalText");
             RegisterAppKitOnly(DockZone_TabStripBackground, NSColor.WindowBackground, "AJut_Brush_PanelBackground");
             RegisterAppKitOnly(DockZone_TabBackground, NSColor.UnderPageBackground, "AJut_Brush_PanelBackground");
-            RegisterAppKitOnly(DockZone_SelectedTabBackground, NSColor.ControlBackground, "AJut_Brush_InnerPanelBackground");
+            RegisterAppKitOnly(DockZone_SelectedTabBackground, NSColor.WindowBackground, "AJut_Brush_PanelBackground");
+            ThemedColors.SetUnthemedDefault(DockZone_DragInsertLine, NSColor.ControlAccent);
 
             // 13. NumericEditor, AppKit only
             RegisterAppKitOnly(NumericEditor_TextBoxBackground, NSColor.TextBackground, "AJut_Brush_TextBoxBackground");

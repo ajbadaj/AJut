@@ -130,7 +130,9 @@ namespace AJut.UX.Controls
                     editor.ToolTip = toolTip;
                 }
 
-                // 5. "Set to default" on a right click, where it applies
+                // 5. "Set to default" on a right click, where it applies. A right click goes to the view under the
+                //  pointer, which is usually the label rather than the row, so the label and its column carry the menu
+                //  as well as the row.
                 if (PropertyGridRowRules.CanResetToDefault(m_target, owner.IsReadOnly))
                 {
                     var menu = new NSMenu { AutoEnablesItems = false };
@@ -138,6 +140,9 @@ namespace AJut.UX.Controls
                     m_bindings.BindCommand(setToDefault, new ActionCommand(m_target.ResetToDefault));
                     menu.AddItem(setToDefault);
                     this.Menu = menu;
+                    m_labelColumn.Menu = menu;
+                    m_nameLabel.Menu = menu;
+                    m_subtitle.Menu = menu;
                 }
             }
 

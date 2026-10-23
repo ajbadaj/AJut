@@ -1,5 +1,8 @@
 namespace AJut.UX.Controls
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using AJut.UX.Theming;
     using AppKit;
     using Foundation;
@@ -33,6 +36,7 @@ namespace AJut.UX.Controls
         private double m_thickness = kDefaultThickness;
         private double m_initialSplitRatio = 0.5;
         private bool m_hasPlacedInitialSplit;
+        private double[] m_pendingPaneLengths;
 
         // ===========[ Setup/Construction/Teardown ]===========================
         /// <summary>Creates a split view; vertical dividers (panes side by side) unless <paramref name="isVertical"/> is false</summary>
@@ -85,16 +89,46 @@ namespace AJut.UX.Controls
         public override nfloat DividerThickness => (nfloat)m_thickness;
 
         // ===========[ Public Interface Methods ]==============================
+        /// <summary>
+        /// Sets every pane's length along the split, in pane order, on the next layout that has a real size. The lengths
+        /// are scaled to fit the space the panes share (the split's length less its dividers), so proportions work as
+        /// well as points. Replaces <see cref="InitialSplitRatio"/> when it arrives before the first layout.
+        /// </summary>
+        /// <remarks>
+        /// NSSplitView only places a divider where it is told to, and a pane added later starts at whatever size it had,
+        /// which for a new view is none. With three or more panes, only the first divider is placed by the initial
+        /// ratio, so the rest need their lengths given here or a pane can start (and stay) zero length.
+        /// </remarks>
+        public void SetPaneLengths (IReadOnlyList<double> lengths)
+        {
+            m_pendingPaneLengths = lengths?.ToArray();
+            this.NeedsLayout = true;
+        }
+
         public override void Layout ()
         {
             base.Layout();
-            if (m_hasPlacedInitialSplit || this.ArrangedSubviews.Length < 2)
+            int paneCount = this.ArrangedSubviews.Length;
+            if (paneCount < 2)
             {
                 return;
             }
 
             double length = this.IsVertical ? (double)this.Bounds.Width : (double)this.Bounds.Height;
             if (length <= 0.0)
+            {
+                return;
+            }
+
+            if (m_pendingPaneLengths != null)
+            {
+                this.PlacePanes(m_pendingPaneLengths, length);
+                m_pendingPaneLengths = null;
+                m_hasPlacedInitialSplit = true;
+                return;
+            }
+
+            if (m_hasPlacedInitialSplit)
             {
                 return;
             }
@@ -107,6 +141,34 @@ namespace AJut.UX.Controls
         {
             base.ViewDidChangeEffectiveAppearance();
             this.NeedsDisplay = true;
+        }
+
+        // ===========[ Helper Methods ]========================================
+        // Each divider goes after its pane, so every divider is placed, scaled so the panes fill what the dividers leave.
+        // With nothing to scale by (all zero), the panes share it equally.
+        private void PlacePanes (double[] lengths, double splitLength)
+        {
+            int paneCount = this.ArrangedSubviews.Length;
+            int dividerCount = paneCount - 1;
+            double available = Math.Max(0.0, splitLength - (dividerCount * m_thickness));
+
+            double given = 0.0;
+            for (int i = 0; i < paneCount; ++i)
+            {
+                given += i < lengths.Length ? Math.Max(0.0, lengths[i]) : 0.0;
+            }
+
+            double position = 0.0;
+            for (int i = 0; i < dividerCount; ++i)
+            {
+                double pane = given > 0.0
+                    ? available * ((i < lengths.Length ? Math.Max(0.0, lengths[i]) : 0.0) / given)
+                    : available / paneCount;
+
+                position += pane;
+                this.SetPositionOfDivider((nfloat)position, i);
+                position += m_thickness;
+            }
         }
 
         // ===========[ Subclasses/structs ]====================================

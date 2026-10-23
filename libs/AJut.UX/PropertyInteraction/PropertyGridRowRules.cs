@@ -153,10 +153,13 @@ namespace AJut.UX.PropertyInteraction
             return (target?.IsAtDefaultValue ?? true) || (target?.IsExpandable == true);
         }
 
-        /// <summary>Whether a row offers "Set to default": it has a default, and it is a value rather than an expandable object</summary>
+        /// <summary>
+        /// Whether a row offers "Set to default": it has a default, it is a value rather than an expandable object, and it
+        /// can be set (a property shown by [PGShowReadonly] with no setter has nowhere for the reset to go)
+        /// </summary>
         public static bool CanResetToDefault (PropertyEditTarget target)
         {
-            return target.HasDefaultValue && !target.IsExpandable;
+            return target.HasDefaultValue && !target.IsExpandable && !target.IsReadOnly;
         }
 
         /// <summary>Whether a row offers "Set to default" in a grid that may be read-only: never in a read-only grid, otherwise as <see cref="CanResetToDefault(PropertyEditTarget)"/></summary>
