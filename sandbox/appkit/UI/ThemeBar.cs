@@ -65,6 +65,13 @@ namespace AJutShowRoomAppKit.UI
                 row.TrailingAnchor.ConstraintEqualTo(this.TrailingAnchor),
             });
 
+            // The row's items are centered and its spacer stretches, so nothing in it sets the bar's height, and the
+            // window would split its height between the bar and the page however the layout engine liked. This pulls
+            // the bar down to its content.
+            NSLayoutConstraint hugContent = this.HeightAnchor.ConstraintEqualTo(0);
+            hugContent.Priority = (float)NSLayoutPriority.DefaultLow;
+            hugContent.Active = true;
+
             this.ApplyTouch();
         }
 
