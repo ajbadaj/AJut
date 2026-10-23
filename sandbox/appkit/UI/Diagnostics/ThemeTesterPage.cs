@@ -131,6 +131,13 @@ class PressedBrushButton : BrushButton
                 var column = new FillStack(NSUserInterfaceLayoutOrientation.Vertical, spacing: 6.0);
                 column.Add(sample.View, alignment: eFillStackCrossAlignment.Start);
                 column.Add(ShowroomStyle.Understated(sample.Label), alignment: eFillStackCrossAlignment.Start);
+
+                // Start alignment only keeps the sample and label inside the column, so without this a column could take
+                // any spare width in the row, and a relayout (a theme switch) would spread the samples unevenly. It sits
+                // just under the label's horizontal compression resistance (250, so it can wrap) to keep the label on one line.
+                NSLayoutConstraint hugContent = column.WidthAnchor.ConstraintEqualTo(0);
+                hugContent.Priority = (float)NSLayoutPriority.DefaultLow - 1;
+                hugContent.Active = true;
                 row.Add(column);
             }
 
