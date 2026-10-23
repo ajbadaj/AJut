@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-macos</TargetFramework>
+    <SupportedOSPlatformVersion>14.0</SupportedOSPlatformVersion>
+    <RootNamespace>AJutShowRoomAppKit</RootNamespace>
+    <ApplicationId>dev.ajut.showroom.appkit</ApplicationId>
+    <ApplicationTitle>AJut Showroom (AppKit)</ApplicationTitle>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\libs\AJut.Core\AJut.Core.csproj" />
+    <ProjectReference Include="..\..\libs\AJut.UX\AJut.UX.csproj" />
+    <ProjectReference Include="..\..\libs\AJut.UX.AppKit\AJut.UX.AppKit.csproj" />
+  </ItemGroup>
+
+</Project>
