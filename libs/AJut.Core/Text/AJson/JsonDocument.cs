@@ -123,7 +123,7 @@ namespace AJut.Text.AJson
         public string KeyFor (JsonValue value)
             => m_memberStorage.Where(kvp => kvp.Value == value).Select(kvp => kvp.Key).FirstOrDefault();
 
-        public bool TryGetValue<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T> (string key, out T foundValue)
+        public bool TryGetValue<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T> (string key, out T foundValue)
         {
             JsonValue value = this.ValueFor(key);
             if (value == null)

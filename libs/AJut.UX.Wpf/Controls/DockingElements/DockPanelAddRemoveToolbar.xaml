@@ -3,8 +3,8 @@
                     xmlns:local="clr-namespace:AJut.UX.Controls">
 
     <Style TargetType="{x:Type local:DockPanelAddRemoveToolbar}">
-        <Setter Property="Background" Value="{DynamicResource AJut_Brush_PanelBackground}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="Background" Value="#EDF0F3"/>
+        <Setter Property="BorderBrush" Value="#8A8A8A"/>
         <Setter Property="BorderThickness" Value="0,0,0,1"/>
         <Setter Property="Padding" Value="4,2,4,2"/>
         <Setter Property="HorizontalAlignment" Value="Left"/>

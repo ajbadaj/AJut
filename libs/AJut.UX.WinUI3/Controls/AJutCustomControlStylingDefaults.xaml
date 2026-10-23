@@ -14,8 +14,11 @@
 
     This file is placed in Generic.xaml ThemeDictionaries["Default"] so parse-time
     {ThemeResource} lookups (e.g. Style Setters applied when the control is instantiated)
-    CAN find these keys. But for GoToState runtime lookups to also find them, consumers
-    must ensure this file is ALSO in App.Resources, either by:
+    CAN find these keys. Its own entries are theme-neutral. The defaults that follow WinUI's
+    own theme colors come from its theme dictionaries below, which merge the _Dark, _Light and
+    _HighContrast files beside it, so wherever this one file is merged, they come with it and
+    follow a light and dark switch. But for GoToState runtime lookups to also find them,
+    consumers must ensure this file is ALSO in App.Resources, either by:
 
       (a) Using AJutControlsResources (recommended for unthemed / partial-theme usage):
               <ajut:AJutControlsResources xmlns:ajut="using:AJut.UX.Controls"/>
@@ -30,6 +33,28 @@
 <ResourceDictionary
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ===========[ Per theme ]============================================ -->
+    <!-- One dictionary for each theme WinUI defines (Default is its dark), with the defaults that
+         copy WinUI's own per-theme colors. A theme dictionary entry is looked up again for each
+         element's theme, where a StaticResource to a WinUI brush would keep the theme it loaded in. -->
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Default">
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/AJutCustomControlStylingDefaults_Dark.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Light">
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/AJutCustomControlStylingDefaults_Light.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="HighContrast">
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Controls/AJutCustomControlStylingDefaults_HighContrast.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
 
     <!-- ===========[ DockDropInsertionDriverWidget ]========================= -->
     <!-- Idle: neutral gray resting state. Engaged: blue highlight. -->
@@ -55,6 +80,8 @@
     <SolidColorBrush x:Key="AJut_PropertyGridItemRow_HoverBackground" Color="#1A2196F3"/>
     <!-- Hover border: 1px outline around the full row on hover. Default: subtle gray. -->
     <SolidColorBrush x:Key="AJut_PropertyGridItemRow_HoverBorderBrush" Color="#888888"/>
+    <!-- Label splitter: the line over the label and editor boundary while the pointer is near it. Default: accent blue. -->
+    <SolidColorBrush x:Key="AJut_PropertyGrid_LabelSplitterBrush" Color="#FF2196F3"/>
 
     <!-- ===========[ PopupMenuButton ]====================================== -->
     <!-- Dropdown chevron glyph foreground (default: light gray, readable on most backgrounds) -->
@@ -85,12 +112,8 @@
     <SolidColorBrush x:Key="AJut_FlatTree_DragTargetHighlight"         Color="#2196F3"/>
 
     <!-- ===========[ FlatTree ListViewItem ]================================ -->
-    <!-- Default: point at WinUI3 system brushes; AJutThemeMapAliasing.xaml redirects to AJut palette -->
-    <StaticResource x:Key="AJut_FlatTree_SelectionBrush"         ResourceKey="SystemControlHighlightListAccentHighBrush"/>
-    <StaticResource x:Key="AJut_FlatTree_SelectionBackground"    ResourceKey="SystemControlHighlightListAccentLowBrush"/>
-    <StaticResource x:Key="AJut_FlatTree_SelectionBrushUnfocused" ResourceKey="SystemControlHighlightListAccentMediumBrush"/>
-    <StaticResource x:Key="AJut_FlatTree_HoverBackground"        ResourceKey="SystemControlHighlightListLowBrush"/>
-    <StaticResource x:Key="AJut_FlatTree_HoverBorderBrush"       ResourceKey="ControlStrokeColorDefaultBrush"/>
+    <!-- The selection and hover brushes follow WinUI's own list colors, so they are per theme, in the
+         _Dark, _Light and _HighContrast files. AJutThemeMapAliasing.xaml redirects them to the AJut palette. -->
 
     <!-- ===========[ ToggleStripButton ]===================================== -->
     <!-- Unchecked interaction backgrounds - alpha overlays that work on any background.
@@ -167,6 +190,10 @@
     <SolidColorBrush x:Key="AJut_DockZone_EmptyBorderBrush"     Color="#FF4A4A4A"/>
     <SolidColorBrush x:Key="AJut_DockZone_EmptyForeground"      Color="#FFCCCCCC"/>
     <SolidColorBrush x:Key="AJut_DockZone_DragInsertLineBrush"  Color="#FF0078D4"/>
+
+    <!-- ===========[ GeometryButton ]====================================== -->
+    <!-- The shape's trace follows WinUI's button borders, so it is per theme, in the _Dark, _Light and
+         _HighContrast files. AJutThemeMapAliasing.xaml redirects it to the AJut common borders. -->
 
     <!-- ===========[ NumericEditor ]======================================== -->
     <!-- Increase button hover/pressed (blue-tinted gradient, top-to-bottom) -->

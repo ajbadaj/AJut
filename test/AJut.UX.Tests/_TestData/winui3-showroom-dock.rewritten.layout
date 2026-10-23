@@ -1,0 +1,161 @@
+{
+	"__ajson" : 2,
+	"Core" : {
+		"ZoneInfoByRoot" : {
+			"TestDockZone" : {
+				"ChildZones" : [
+					{
+						"ChildZones" : [],
+						"SizeOnParent" : {
+							"Width" : 1422,
+							"Height" : 1192.6666259765625
+						},
+						"Orientation" : "Tabbed",
+						"DisplayState" : [
+							{
+								"TypeId" : "ShowRoomPanel",
+								"State" : {
+									"__type" : "AJut.UX.Tests.ShowRoomFixturePanelState, AJut.UX.Tests, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+									"__value" : {
+										"Label" : "Panel A",
+										"Value" : 0
+									}
+								}
+							},
+							{
+								"TypeId" : "ShowRoomPanel",
+								"State" : {
+									"__type" : "AJut.UX.Tests.ShowRoomFixturePanelState, AJut.UX.Tests, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+									"__value" : {
+										"Label" : "Panel B",
+										"Value" : 0
+									}
+								}
+							},
+							{
+								"TypeId" : "ShowRoomPanel",
+								"State" : {
+									"__type" : "AJut.UX.Tests.ShowRoomFixturePanelState, AJut.UX.Tests, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+									"__value" : {
+										"Label" : "Panel",
+										"Value" : 0
+									}
+								}
+							}
+						],
+						"SelectedIndex" : 0
+					},
+					{
+						"ChildZones" : [
+							{
+								"ChildZones" : [],
+								"SizeOnParent" : {
+									"Width" : 709.3333129882812,
+									"Height" : 1192
+								},
+								"Orientation" : "Single",
+								"DisplayState" : [
+									{
+										"TypeId" : "ShowRoomPanel-hidden-infra",
+										"State" : {
+											"__type" : "AJut.UX.Tests.ShowRoomFixturePanelState, AJut.UX.Tests, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+											"__value" : {
+												"Label" : "Hidden Infra",
+												"Value" : 0
+											}
+										}
+									}
+								],
+								"SelectedIndex" : 0
+							},
+							{
+								"ChildZones" : [],
+								"SizeOnParent" : {
+									"Width" : 708.6666870117188,
+									"Height" : 1192
+								},
+								"Orientation" : "Single",
+								"DisplayState" : [
+									{
+										"TypeId" : "ShowRoomPanel-single-inst",
+										"State" : {
+											"__type" : "AJut.UX.Tests.ShowRoomFixturePanelState, AJut.UX.Tests, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+											"__value" : {
+												"Label" : "Panel",
+												"Value" : 0
+											}
+										}
+									}
+								],
+								"SelectedIndex" : 0
+							}
+						],
+						"SizeOnParent" : {
+							"Width" : 1422,
+							"Height" : 1192
+						},
+						"Orientation" : "Horizontal",
+						"SelectedIndex" : 0
+					}
+				],
+				"SizeOnParent" : {
+					"Width" : 1422,
+					"Height" : 2388.666748046875
+				},
+				"Orientation" : "Vertical",
+				"SelectedIndex" : 0
+			}
+		}
+	},
+	"Ancillary" : [
+		{
+			"WindowX" : 120,
+			"WindowY" : 80,
+			"WindowWidth" : 900,
+			"WindowHeight" : 700,
+			"IsMaximized" : false,
+			"IsFullscreen" : true,
+			"State" : {
+				"ChildZones" : [],
+				"SizeOnParent" : {
+					"Width" : 1422,
+					"Height" : 1192.6666259765625
+				},
+				"Orientation" : "Tabbed",
+				"DisplayState" : [
+					{
+						"TypeId" : "ShowRoomPanel",
+						"State" : {
+							"__type" : "AJut.UX.Tests.ShowRoomFixturePanelState, AJut.UX.Tests, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+							"__value" : {
+								"Label" : "Panel A",
+								"Value" : 0
+							}
+						}
+					},
+					{
+						"TypeId" : "ShowRoomPanel",
+						"State" : {
+							"__type" : "AJut.UX.Tests.ShowRoomFixturePanelState, AJut.UX.Tests, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+							"__value" : {
+								"Label" : "Panel B",
+								"Value" : 0
+							}
+						}
+					},
+					{
+						"TypeId" : "ShowRoomPanel",
+						"State" : {
+							"__type" : "AJut.UX.Tests.ShowRoomFixturePanelState, AJut.UX.Tests, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+							"__value" : {
+								"Label" : "Panel",
+								"Value" : 0
+							}
+						}
+					}
+				],
+				"SelectedIndex" : 0
+			}
+		}
+	]
+}

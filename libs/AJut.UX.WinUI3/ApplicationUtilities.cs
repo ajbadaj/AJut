@@ -1,6 +1,5 @@
 ﻿namespace AJut.UX
 {
-    using AJut.OS.Windows;
     using AJut.Security;
     using Microsoft.UI.Xaml;
     using System;
@@ -20,7 +19,8 @@
         private static bool g_blockReentrancy = false;
         public static string g_sharedProjectName = null;
         public static string ProjectName { get; private set; }
-        public static string AppDataRoot { get; private set; }
+        /// <summary>The folder this app may write to, kept in <see cref="AppStorage.AppDataRoot"/> and set by setup</summary>
+        public static string AppDataRoot => AppStorage.AppDataRoot;
 
         /// <summary>
         /// Sets up your application with standard project setup mechanisms including optionally logging, exception processing, and configuration of the <see cref="AppDataRoot"/>
@@ -78,7 +78,7 @@
             g_sharedProjectName = config.SharedProjectName;
             ProjectName = config.ProjectName;
 
-            AppDataRoot = DetermineAppDataRoot(config);
+            AppStorage.SetAppDataRoot(DetermineAppDataRoot(config));
             CryptoObfuscation.SeedDefaults(config.DetermineCryptoSeed());
 
             TypeXT.RegisterSpecialDouble<GridLength>(gl => gl.Value);
@@ -200,57 +200,17 @@
         /// Split out of <see cref="RunOnetimeSetup(Application, ApplicationSetupConfig)"/> so the precedence and the verbatim handling can be tested without standing up an <see cref="Application"/>.
         /// </remarks>
         internal static string DetermineAppDataRoot(ApplicationSetupConfig config)
-        {
-            // An override is the root, exactly as given. Appending the project name the way the special folder path
-            //  below does would defeat the entire point of setting one - you would end up in a subfolder of the root
-            //  you were handed, and quietly disagree with whoever handed it to you.
-            if (config.StorageRootOverride != null)
-            {
-                Directory.CreateDirectory(config.StorageRootOverride);
-                return config.StorageRootOverride;
-            }
-
-            Environment.SpecialFolder specialFolder = config.ApplicationStorageRoot ?? kDefaultStorageRoot;
-
-            // Packaging alone does not isolate the special folder. GetFolderPath hands a packaged app the plain shared
-            //  folder, and only MSIX write virtualization makes it app specific, so the project folder goes on unless the
-            //  config says virtualization is on. Nothing detects that - the config states it.
-            if (config.StorageRootIsolation == eStorageRootIsolation.PackageVirtualization)
-            {
-                return WindowsEnvironmentHelper.EstablishSpecialFolderLocation(specialFolder);
-            }
-
-            return WindowsEnvironmentHelper.EstablishSpecialFolderLocation(specialFolder, config.StorageRootProjectName);
-        }
+            => AppStorage.DetermineSpecialFolderRoot(config, kDefaultStorageRoot);
 
         /// <summary>
         /// Works out where logs go under the app data root: a folder per project whenever that root is shared, straight
         /// into Logs otherwise.
         /// </summary>
         internal static string DetermineLogsDirectory(string appDataRoot, string projectName, string sharedProjectName, eStorageRootIsolation storageRootIsolation)
-        {
-            // Projects sharing a root each get their own logs folder. A virtualized package root is shared by everything
-            //  in the package (and by every app on the machine if the setting is wrong), so it gets one too.
-            if ((sharedProjectName != null)
-                || (storageRootIsolation == eStorageRootIsolation.PackageVirtualization))
-            {
-                return Path.Combine(appDataRoot, "Logs", projectName);
-            }
-
-            return Path.Combine(appDataRoot, "Logs");
-        }
+            => AppStorage.DetermineLogsDirectory(appDataRoot, projectName, sharedProjectName, storageRootIsolation);
 
         private static void PurgeAllLogsOlderThan(TimeSpan age, string logsDir)
-        {
-            DirectoryInfo logsFolder = new DirectoryInfo(logsDir);
-            foreach (FileInfo file in logsFolder.EnumerateFiles().ToList())
-            {
-                if (DateTime.Now - file.LastWriteTime > age)
-                {
-                    file.Delete();
-                }
-            }
-        }
+            => AppStorage.PurgeLogsOlderThan(age, logsDir);
 
         private static class NativeCrashHandler
         {

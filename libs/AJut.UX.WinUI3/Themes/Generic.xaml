@@ -3,12 +3,16 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!--
-        AJutCustomControlStylingDefaults lives in ThemeDictionaries["Default"] so that
-        {ThemeResource} lookups from VSM Setters inside control templates can reach these
-        keys. Flat MergedDictionaries are NOT reachable by {ThemeResource} - only
-        ThemeDictionaries entries are. When the AJut theme is loaded (AllControlThemeOverrides
-        merged into App.Resources), App.Resources has higher priority than Generic.xaml
-        ThemeDictionaries, so AJutThemeMapAliasing.xaml keys override these defaults.
+        AJutCustomControlStylingDefaults lives in ThemeDictionaries so that {ThemeResource}
+        lookups from VSM Setters inside control templates can reach these keys. Flat
+        MergedDictionaries are NOT reachable by {ThemeResource} - only ThemeDictionaries entries
+        are. When the AJut theme is loaded (AllControlThemeOverrides merged into App.Resources),
+        App.Resources has higher priority than Generic.xaml ThemeDictionaries, so
+        AJutThemeMapAliasing.xaml keys override these defaults.
+
+        The defaults that follow WinUI's own theme colors are in AJutCustomControlStylingDefaults's
+        own theme dictionaries, so they come with that one file wherever it is merged: here, and
+        in App.Resources for an app with no AJut theme.
     -->
     <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Default">

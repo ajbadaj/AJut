@@ -22,6 +22,8 @@
                 <Button Content="Clear selection" Click="ClearSelection_OnClick" Margin="6,0,0,0"/>
                 <TextBlock Text="SelectedSourceObject:" VerticalAlignment="Center" Margin="16,0,6,0"/>
                 <TextBlock x:Name="SelectedSourceReadout" Text="(none)" FontWeight="Bold" VerticalAlignment="Center"/>
+                <CheckBox Content="Read-only grid" IsChecked="{Binding ElementName=PropGrid, Path=IsReadOnly, Mode=TwoWay}" VerticalAlignment="Center" Margin="16,0,0,0"
+                          ToolTip="PropertyGrid.IsReadOnly: every editor shows its value without letting it change, and list add, remove, reorder and Set to default are off"/>
             </StackPanel>
         </Border>
         <ajut:AutoGrid FixedRowCount="1">

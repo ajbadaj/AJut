@@ -143,6 +143,14 @@
     <ProjectReference Include="..\AJut.Core\AJut.Core.csproj" />
     <ProjectReference Include="..\AJut.UX\AJut.UX.csproj" />
   </ItemGroup>
+  <!-- The AJson source generator writes the serializers for this library's own [OptimizeAJson] types (WPF's docking layout -->
+  <!-- file). An analyzer doesn't flow through a project reference, so without this they are read and written by reflection. -->
+  <ItemGroup>
+    <ProjectReference Include="..\AJut.Core.SourceGenerators\AJut.Core.SourceGenerators.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all" />
+  </ItemGroup>
   <ItemGroup>
     <None Include="..\..\ajut-logo-128.png">
       <Pack>True</Pack>

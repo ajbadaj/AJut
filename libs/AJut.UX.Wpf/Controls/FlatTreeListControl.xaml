@@ -74,6 +74,9 @@
                 <SolidColorBrush Color="#2196F3"/>
             </Setter.Value>
         </Setter>
+        <Setter Property="DragGhostBackground" Value="#E0404040"/>
+        <Setter Property="DragGhostBorderBrush" Value="#80FFFFFF"/>
+        <Setter Property="DragGhostForeground" Value="White"/>
 
         <!-- ===[ Glyph: Open Arrow Style ]=== -->
         <Setter Property="CollapsedElementGlyph" Value="&#xE970;"/>
@@ -199,11 +202,12 @@
                         <Border x:Name="PART_DragGhost"
                                 Visibility="Collapsed"
                                 Opacity="0.65"
-                                Background="#E0404040"
+                                Background="{TemplateBinding DragGhostBackground}"
                                 CornerRadius="4"
                                 Padding="8,4"
-                                BorderBrush="#80FFFFFF"
-                                BorderThickness="1">
+                                BorderBrush="{TemplateBinding DragGhostBorderBrush}"
+                                BorderThickness="1"
+                                TextElement.Foreground="{TemplateBinding DragGhostForeground}">
                             <ContentPresenter x:Name="PART_DragGhostContent"/>
                         </Border>
                     </Canvas>

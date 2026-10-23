@@ -5,6 +5,7 @@
     <Style TargetType="{x:Type local:NullableEditor}">
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="OverlayBackground" Value="#3000"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:NullableEditor}">
@@ -30,7 +31,7 @@
                              The darkening Border + "Not set" label + [Set] button together
                              prevent interaction with the editor beneath. -->
                         <Grid x:Name="PART_NullOverlay" Grid.Column="0" IsHitTestVisible="True">
-                            <Border Background="#3000"/>
+                            <Border Background="{TemplateBinding OverlayBackground}"/>
                             <StackPanel Orientation="Horizontal"
                                         HorizontalAlignment="Left"
                                         VerticalAlignment="Center">

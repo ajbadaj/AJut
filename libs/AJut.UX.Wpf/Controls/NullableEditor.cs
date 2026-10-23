@@ -64,6 +64,16 @@ namespace AJut.UX.Controls
             private set => this.SetValue(InnerEditorTemplateSelectorProperty, value);
         }
 
+        public static readonly DependencyProperty OverlayBackgroundProperty = DPUtils.Register(_ => _.OverlayBackground);
+        /// <summary>
+        /// What dims the editor while the value is null, under the "Not set" label and its [Set] button
+        /// </summary>
+        public Brush OverlayBackground
+        {
+            get => (Brush)this.GetValue(OverlayBackgroundProperty);
+            set => this.SetValue(OverlayBackgroundProperty, value);
+        }
+
         // ===========[ Template application ]====================================
         public override void OnApplyTemplate ()
         {
@@ -112,7 +122,7 @@ namespace AJut.UX.Controls
                 m_outerTarget.PropertyChanged += this.OnOuterTargetPropertyChanged;
 
                 var context = m_outerTarget.EditContext as NullableEditorContext;
-                this.ProxyTarget = BuildProxyTarget(m_outerTarget, context);
+                this.ProxyTarget = NullableEditorContext.BuildProxyTarget(m_outerTarget, context);
                 this.InnerEditorTemplateSelector = this.FindParentPropertyGrid()?.ItemTemplateSelector;
             }
             else
@@ -137,7 +147,7 @@ namespace AJut.UX.Controls
         {
             if (e.PropertyName == nameof(PropertyEditTarget.EditValue))
             {
-                // ForceRaise instead of RecacheEditValue: when outer goes null→0 and back,
+                // ForceRaise instead of RecacheEditValue: when outer goes null -> 0 and back,
                 // the proxy's cached value stays at 0 both times (getter returns default(T)
                 // when outer is null). SetAndRaiseIfChanged would see no change and the inner
                 // editor (NumericEditor) would not refresh. Force-raising always updates it.
@@ -185,25 +195,6 @@ namespace AJut.UX.Controls
             }
 
             return null;
-        }
-
-        private static PropertyEditTarget BuildProxyTarget (PropertyEditTarget outer, NullableEditorContext context)
-        {
-            Type innerType = context?.InnerType ?? typeof(object);
-            string editorKey = context?.InnerEditorKey ?? innerType.Name;
-
-            var proxy = new PropertyEditTarget(
-                outer.PropertyPathTarget,
-                () => outer.EditValue ?? (innerType.IsValueType ? Activator.CreateInstance(innerType) : null),
-                (v) => outer.EditValue = v
-            )
-            {
-                Editor = editorKey,
-                DisplayName = outer.DisplayName,
-            };
-
-            proxy.Setup();
-            return proxy;
         }
     }
 }

@@ -3,6 +3,7 @@ namespace AJut.Text.AJson.Legacy
     using AJut.TypeManagement;
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Numerics;
 
@@ -46,6 +47,8 @@ namespace AJut.Text.AJson.Legacy
                 return TimeSpan.TryParse(json.StringValue, out TimeSpan found) ? found : TimeSpan.Zero;
             }
 
+            [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Only called through ConstructInstanceFor, on the AJson V1 reflection path that carries RequiresUnreferencedCode and RequiresDynamicCode.")]
+            [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Only called through ConstructInstanceFor, on the AJson V1 reflection path that carries RequiresUnreferencedCode and RequiresDynamicCode.")]
             object _CreateKeyValuePairFor (Type fullTarget, JsonValue json, JsonInterpretterSettings settings)
             {
                 if (!json.IsDocument)
@@ -136,6 +139,7 @@ namespace AJut.Text.AJson.Legacy
         /// <summary>
         /// Construct an instance of the given type from the passed in json
         /// </summary>
+        [RequiresUnreferencedCode("AJson V1 constructs a type known only at runtime, and trimming can remove its constructor. AJson V2 with [OptimizeAJson] is trim safe.")]
         public object ConstructInstanceFor(Type type, JsonValue jsonValue)
         {
             // Check custom type constructors first

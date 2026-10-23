@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    TouchThemeColors.xaml
+    =====================
+    The AJut touch palettes as theme dictionaries. AppThemeManager.IsTouchFocused adds this as the last of the
+    application's merged dictionaries, where its keys win over the app's own light and dark theme dictionaries, and
+    takes it out again when touch focus goes off.
+
+    Each theme carries the whole touch palette and the stock key aliasing, the same pair an app's own theme dictionary
+    carries, so every key resolves from here while it is loaded. That also means an app's own changes to the AJut
+    colors don't show while touch is on: an app that changes them supplies its own file of this shape to
+    AppThemeManager.Setup, with its changes laid over the touch palettes.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Resources/LightTouchThemeColorsBase.xaml"/>
+                <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Resources/SystemColorAliasing.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Resources/DarkTouchThemeColorsBase.xaml"/>
+                <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Resources/SystemColorAliasing.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>

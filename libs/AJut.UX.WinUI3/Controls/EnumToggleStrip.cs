@@ -3,9 +3,7 @@ namespace AJut.UX.Controls
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.ComponentModel;
     using System.Linq;
-    using System.Reflection;
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
     using Microsoft.UI.Xaml.Markup;
@@ -13,13 +11,15 @@ namespace AJut.UX.Controls
     using DPUtils = AJut.UX.DPUtils<EnumToggleStrip>;
 
     // Wraps a ToggleStrip and infers the option list from the enum type of SelectedItem
-    // (works the same way EnumComboBox does for ComboBox). Hidden values respect:
+    // (works the same way EnumComboBox does for ComboBox). The options come from AJut.UX's
+    // EnumSelectionOptions, which hides values marked:
     //  * [Browsable(false)] from System.ComponentModel
     //  * [ExcludeFromSelection] from AJut
     //
     // Selection semantics:
     //  * Single-select (default): SelectedItem is the chosen value.
     //  * Multi-select on a [Flags] enum: SelectedItem is the OR'd combined value, SelectedItems is the per-bit list.
+    //    Picking the enum's zero value (a None) makes SelectedItem zero and turns the other flags off.
     //  * Multi-select on a non-[Flags] enum: SelectedItem is the most recently toggled value (OR is meaningless),
     //    SelectedItems is still the full list.
     [TemplatePart(Name = nameof(PART_ToggleStrip), Type = typeof(ToggleStrip))]
@@ -27,7 +27,6 @@ namespace AJut.UX.Controls
     {
         // ===========[ Instance fields ]==========================================
         private Type m_determinedItemType;
-        private bool m_isFlagsEnum;
         private bool m_syncing;
 
         // ===========[ Construction ]=============================================
@@ -95,6 +94,27 @@ namespace AJut.UX.Controls
             set => this.SetValue(ToggleButtonItemStyleProperty, value);
         }
 
+        /// <summary>
+        /// Lays the options out left to right (Horizontal, the default) or top to bottom (Vertical); the inner
+        /// <see cref="ToggleStrip"/>'s <see cref="ToggleStrip.Orientation"/>.
+        /// </summary>
+        public static readonly DependencyProperty OrientationProperty = DPUtils.Register(_ => _.Orientation, Orientation.Horizontal, (d, e) => d.PushOrientation());
+        public Orientation Orientation
+        {
+            get => (Orientation)this.GetValue(OrientationProperty);
+            set => this.SetValue(OrientationProperty, value);
+        }
+
+        // Pushed from code rather than TemplateBinding: a value set before the template is applied would not
+        // reach the inner strip through a TemplateBinding, and a push from OnApplyTemplate would replace one anyway.
+        private void PushOrientation ()
+        {
+            if (this.PART_ToggleStrip != null)
+            {
+                this.PART_ToggleStrip.Orientation = this.Orientation;
+            }
+        }
+
         // ===========[ Properties ]===============================================
         public ToggleStrip PART_ToggleStrip { get; private set; }
 
@@ -119,11 +139,11 @@ namespace AJut.UX.Controls
                 this.PART_ToggleStrip.SeparatorThickness = this.SeparatorThickness;
                 this.PART_ToggleStrip.ItemPadding = this.ItemPadding;
                 this.PART_ToggleStrip.ToggleButtonItemStyle = this.ToggleButtonItemStyle;
+                this.PushOrientation();
 
                 if (this.SelectedItem is Enum existing)
                 {
                     m_determinedItemType = existing.GetType();
-                    m_isFlagsEnum = m_determinedItemType.IsTaggedWithAttribute<FlagsAttribute>();
                 }
 
                 this.RebuildItems();
@@ -142,7 +162,6 @@ namespace AJut.UX.Controls
             if (itemType != m_determinedItemType)
             {
                 m_determinedItemType = itemType;
-                m_isFlagsEnum = itemType.IsTaggedWithAttribute<FlagsAttribute>();
                 this.RebuildItems();
                 return;
             }
@@ -162,7 +181,7 @@ namespace AJut.UX.Controls
             {
                 this.PART_ToggleStrip.AllowMultiSelect = this.AllowMultiSelect;
                 this.PART_ToggleStrip.AllowNoSelection = this.AllowNoSelection;
-                this.PART_ToggleStrip.ItemsSource = GatherVisibleEnumValues(m_determinedItemType).ToArray();
+                this.PART_ToggleStrip.ItemsSource = EnumSelectionOptions.GetSelectableValues(m_determinedItemType).ToArray();
             }
             finally
             {
@@ -175,67 +194,14 @@ namespace AJut.UX.Controls
             }
         }
 
-        private static IEnumerable<Enum> GatherVisibleEnumValues (Type enumType)
-        {
-            foreach (FieldInfo field in enumType.GetFields(BindingFlags.Public | BindingFlags.Static))
-            {
-                Enum value = (Enum)field.GetValue(null);
-
-                BrowsableAttribute browsable = field.GetCustomAttribute<BrowsableAttribute>(false);
-                if (browsable != null && !browsable.Browsable)
-                {
-                    continue;
-                }
-
-                if (field.IsDefined(typeof(ExcludeFromSelectionAttribute), false))
-                {
-                    continue;
-                }
-
-                yield return value;
-            }
-        }
-
         private void PushSelectionFromValue (Enum value)
         {
             m_syncing = true;
             try
             {
-                if (this.AllowMultiSelect && m_isFlagsEnum)
-                {
-                    long combined = Convert.ToInt64(value);
-
-                    // Select desired first, then deselect undesired - so CanBeDeselected stays true while we work
-                    foreach (ToggleStrip.ToggleItem item in this.PART_ToggleStrip.Items)
-                    {
-                        long bits = Convert.ToInt64(item.Data);
-                        bool shouldBeSelected = bits != 0 && (combined & bits) == bits;
-                        if (shouldBeSelected && !item.IsSelected)
-                        {
-                            item.IsSelected = true;
-                        }
-                    }
-                    foreach (ToggleStrip.ToggleItem item in this.PART_ToggleStrip.Items)
-                    {
-                        long bits = Convert.ToInt64(item.Data);
-                        bool shouldBeSelected = bits != 0 && (combined & bits) == bits;
-                        if (!shouldBeSelected && item.IsSelected)
-                        {
-                            item.IsSelected = false;
-                        }
-                    }
-                }
-                else
-                {
-                    // Single-select (or non-Flags multi-select): force this one on. For single-select the
-                    // inner strip auto-deselects siblings; for non-Flags multi we leave existing on, since
-                    // SelectedItem only carries one value of intent.
-                    ToggleStrip.ToggleItem match = this.PART_ToggleStrip.Items.FirstOrDefault(i => value.Equals(i.Data));
-                    if (match != null && !match.IsSelected)
-                    {
-                        match.IsSelected = true;
-                    }
-                }
+                // The shared rules: [Flags] multi-select sets each flag (select first, deselect after), otherwise
+                // this value is turned on.
+                EnumSelectionOptions.ApplyValueToItems(this.PART_ToggleStrip.Items, value, this.AllowMultiSelect);
 
                 this.SelectedItems = this.PART_ToggleStrip.Items.Where(i => i.IsSelected).Select(i => i.Data).ToList();
             }
@@ -255,21 +221,16 @@ namespace AJut.UX.Controls
             m_syncing = true;
             try
             {
-                this.SelectedItems = e.CurrentSelection;
+                object value = EnumSelectionOptions.ValueFromSelection(m_determinedItemType, this.AllowMultiSelect, e.CurrentSelection, this.PART_ToggleStrip.SelectedItem);
 
-                if (this.AllowMultiSelect && m_isFlagsEnum)
+                // The items follow the value they made, so picking a [Flags] None turns the other flags off
+                if (value is Enum enumValue)
                 {
-                    long combined = 0;
-                    foreach (object obj in e.CurrentSelection)
-                    {
-                        combined |= Convert.ToInt64(obj);
-                    }
-                    this.SelectedItem = Enum.ToObject(m_determinedItemType, combined);
+                    EnumSelectionOptions.ApplyValueToItems(this.PART_ToggleStrip.Items, enumValue, this.AllowMultiSelect);
                 }
-                else
-                {
-                    this.SelectedItem = this.PART_ToggleStrip.SelectedItem;
-                }
+
+                this.SelectedItems = this.PART_ToggleStrip.Items.Where(i => i.IsSelected).Select(i => i.Data).ToList();
+                this.SelectedItem = value;
             }
             finally
             {

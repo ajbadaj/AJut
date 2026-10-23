@@ -29,6 +29,11 @@
                     <TextBlock Text="Exclusions: Visible1/2/3 only - HiddenViaBrowsable hidden by [Browsable(false)], HiddenViaAjutAttr hidden by [ExcludeFromSelection]" FontSize="11" Opacity="0.7" TextWrapping="Wrap"/>
                     <ajut:EnumToggleStrip SelectedItem="{x:Bind ExclusionPick, Mode=TwoWay}"/>
                 </StackPanel>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Vertical (eDisplayMode, Orientation=Vertical)" FontSize="11" Opacity="0.7"/>
+                    <ajut:EnumToggleStrip Orientation="Vertical"
+                                          SelectedItem="{x:Bind VerticalDisplayMode, Mode=TwoWay}"/>
+                </StackPanel>
             </StackPanel>
 
             <ui:ShowroomCodeDisplay CodeText="{x:Bind DemoCode}" Height="220"/>

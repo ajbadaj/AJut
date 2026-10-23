@@ -17,6 +17,8 @@ namespace AJut.UX.Controls
     //
     // Visual feedback: the outer border turns red when the path is invalid and
     // accent-colored when the control is focused (using VSM BorderStates group).
+    // The text box's own focused look is a separate group (TextBoxFocusStates),
+    // so it stays while focus is inside, even with an invalid path.
     //
     // Template parts:
     //   PART_Root              - outer Border (receives border-brush VSM changes)
@@ -540,6 +542,10 @@ namespace AJut.UX.Controls
                 ? "PathInvalid"
                 : m_isFocused ? "Focused" : "Normal";
             VisualStateManager.GoToState(this, borderState, false);
+
+            // The text box keeps its focused look while focus is inside it, valid or not, so the error border above
+            // shows on top of it instead of replacing it mid-edit
+            VisualStateManager.GoToState(this, m_isFocused ? "TextBoxFocused" : "TextBoxUnfocused", false);
 
             // Warning icon
             VisualStateManager.GoToState(this,

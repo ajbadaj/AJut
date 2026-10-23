@@ -1,14 +1,15 @@
 namespace AJut.UX.Controls
 {
     // ===========[ eToggleStripOverflow ]=======================================
-    // How a ToggleStrip responds when its items do not all fit in the available width.
+    // How a ToggleStrip responds when its items do not all fit in the length available along it
+    // (its width when horizontal, its height when vertical).
 
     public enum eToggleStripOverflow
     {
-        /// <summary>Items are clipped to the available width (the original behavior).</summary>
+        /// <summary>Items are clipped to the length available along the strip (the original behavior).</summary>
         Clip,
 
-        /// <summary>The strip becomes horizontally scrollable so every item stays reachable.</summary>
+        /// <summary>The strip scrolls along its own axis so every item stays reachable.</summary>
         Scroll,
 
         /// <summary>

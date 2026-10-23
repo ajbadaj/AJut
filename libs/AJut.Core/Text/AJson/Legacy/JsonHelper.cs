@@ -4,6 +4,7 @@ namespace AJut.Text.AJson.Legacy
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
     using System.Reflection;
@@ -18,6 +19,13 @@ namespace AJut.Text.AJson.Legacy
     [Obsolete("AJson V1 is moved to AJut.Text.AJson.Legacy and will be removed in a future release. Migrate to AJut.Text.AJson (V2). See AJut README for migration notes.")]
     public static class JsonHelper
     {
+        private const string kReflectionMessage = "AJson V1 reads and writes objects through reflection, and trimming can remove the members it reaches. AJson V2 with [OptimizeAJson] is trim safe.";
+        private const string kDynamicCodeMessage = "AJson V1 makes generic collection types at runtime, which an ahead of time compiled build (iOS, NativeAOT) may never have compiled. AJson V2 with [OptimizeAJson] does not.";
+
+        // V1 has no source generator, so on a platform without dynamic code (an iOS build compiled ahead of time) it reads and
+        //  writes only single values and plain lists
+        private const string kLegacyRemedy = "AJson V1 has no source generator: move to AJson V2 (AJut.Text.AJson) and mark the type [OptimizeAJson].";
+
         // For specialized trim
         private static readonly char[] kWhitespace = new[] { ' ', '\r', '\n', '\t' };
 
@@ -34,6 +42,7 @@ namespace AJut.Text.AJson.Legacy
         /// <param name="assembly">The assembly to search</param>
         /// <param name="forceSearch">Whether or not to search again if the assembly has already been searched (cached by name)</param>
         [Obsolete("JsonTypeId is being deprecated in favor of the more generic TypeId, please use TypeIdRegistrar.RegisterAllTypeIds instead")]
+        [RequiresUnreferencedCode(kReflectionMessage)]
         public static void RegisterAllTypeIds (Assembly assembly, bool forceSearch = false)
         {
             TypeIdRegistrar.RegisterAllTypeIds(assembly, forceSearch);
@@ -177,6 +186,7 @@ namespace AJut.Text.AJson.Legacy
             return new JsonBuilder(settings ?? DefaultSettings);
         }
 
+        [RequiresUnreferencedCode(kReflectionMessage)]
         internal static JsonBuilder MakeValueBuilder (object value, JsonBuilder.Settings settings = null)
         {
             return new JsonBuilder(settings, value);
@@ -188,6 +198,7 @@ namespace AJut.Text.AJson.Legacy
         /// <param name="instance">The instance to build the <see cref="JsonBuilder"/> from</param>
         /// <param name="settings">The builder settings to use while constructing the <see cref="Json"/> (optional, null will give you the default settings)</param>
         /// <returns>A <see cref="JsonBuilder"/> for you to chain construction commands to in order to form <see cref="Json"/>.</returns>
+        [RequiresUnreferencedCode(kReflectionMessage)]
         public static Json BuildJsonForObject (object instance, JsonBuilder.Settings settings = null)
         {
             JsonBuilder output = MakeRootBuilder(settings);
@@ -206,6 +217,8 @@ namespace AJut.Text.AJson.Legacy
         /// <param name="sourceJson">The <see cref="Json"/> used</param>
         /// <param name="settings">Special interpretter settings</param>
         /// <returns>The object built from the <see cref="Json"/></returns>
+        [RequiresUnreferencedCode(kReflectionMessage)]
+        [RequiresDynamicCode(kDynamicCodeMessage)]
         public static T BuildObjectForJson<T> (Json sourceJson, JsonInterpretterSettings settings = null)
         {
             return (T)BuildObjectForJson(typeof(T), sourceJson, settings);
@@ -218,6 +231,8 @@ namespace AJut.Text.AJson.Legacy
         /// <param name="sourceJsonValue">The <see cref="JsonValue"/> used</param>
         /// <param name="settings">Special interpretter settings</param>
         /// <returns>The object built from the <see cref="JsonValue"/></returns>
+        [RequiresUnreferencedCode(kReflectionMessage)]
+        [RequiresDynamicCode(kDynamicCodeMessage)]
         public static T BuildObjectForJson<T> (JsonValue sourceJsonValue, JsonInterpretterSettings settings = null)
         {
             return (T)BuildObjectForJson(typeof(T), sourceJsonValue, settings);
@@ -230,6 +245,8 @@ namespace AJut.Text.AJson.Legacy
         /// <param name="sourceJsonArray">The <see cref="JsonValue"/> being evaluated</param>
         /// <param name="settings">Special interpretter settings</param>
         /// <returns>A list built with objects parsed from the array</returns>
+        [RequiresUnreferencedCode(kReflectionMessage)]
+        [RequiresDynamicCode(kDynamicCodeMessage)]
         public static List<T> BuildObjectListForJson<T> (JsonArray sourceJsonArray, JsonInterpretterSettings settings = null)
         {
             var list = new List<T>();
@@ -244,6 +261,8 @@ namespace AJut.Text.AJson.Legacy
         /// <summary>
         /// Build an object for json that has been typed (using the built in <see cref="JsonDocument.kTypeIndicator"/> property)
         /// </summary>
+        [RequiresUnreferencedCode(kReflectionMessage)]
+        [RequiresDynamicCode(kDynamicCodeMessage)]
         public static object BuildObjectForTypedJson (Json sourceJson, JsonInterpretterSettings settings = null)
         {
             return sourceJson.HasErrors ? null : BuildObjectForTypedJson(sourceJson.Data, settings);
@@ -252,6 +271,8 @@ namespace AJut.Text.AJson.Legacy
         /// <summary>
         /// Build an object for json that has been typed (using the built in <see cref="JsonDocument.kTypeIndicator"/> property)
         /// </summary>
+        [RequiresUnreferencedCode(kReflectionMessage)]
+        [RequiresDynamicCode(kDynamicCodeMessage)]
         public static object BuildObjectForTypedJson (JsonValue sourceJson, JsonInterpretterSettings settings = null)
         {
             if (sourceJson is JsonDocument doc
@@ -272,6 +293,8 @@ namespace AJut.Text.AJson.Legacy
         /// <param name="sourceJson">The <see cref="Json"/> used</param>
         /// <param name="settings">Special interpretter settings</param>
         /// <returns>The object built from the <see cref="Json"/></returns>
+        [RequiresUnreferencedCode(kReflectionMessage)]
+        [RequiresDynamicCode(kDynamicCodeMessage)]
         public static object BuildObjectForJson (Type type, Json sourceJson, JsonInterpretterSettings settings = null)
         {
             if (sourceJson.HasErrors)
@@ -289,6 +312,8 @@ namespace AJut.Text.AJson.Legacy
         /// <param name="sourceJsonValue">The <see cref="JsonValue"/> used</param>
         /// <param name="settings">Special interpretter settings</param>
         /// <returns>The object built from the <see cref="JsonValue"/></returns>
+        [RequiresUnreferencedCode(kReflectionMessage)]
+        [RequiresDynamicCode(kDynamicCodeMessage)]
         public static object BuildObjectForJson (Type type, JsonValue sourceJsonValue, JsonInterpretterSettings settings = null)
         {
             if (typeof(JsonValue).IsAssignableFrom(type))
@@ -382,6 +407,8 @@ namespace AJut.Text.AJson.Legacy
         /// <param name="targetItem">The instance to fill out</param>
         /// <param name="sourceJsonValue">The <see cref="JsonValue"/> used</param>
         /// <param name="settings">Special interpretter settings</param>
+        [RequiresUnreferencedCode(kReflectionMessage)]
+        [RequiresDynamicCode(kDynamicCodeMessage)]
         public static void FillOutObjectWithJson (ref object targetItem, Type targetType, JsonValue sourceJsonValue, JsonInterpretterSettings settings = null)
         {
             // Favor the object's type info as it may be more derived
@@ -395,18 +422,11 @@ namespace AJut.Text.AJson.Legacy
             if (sourceJsonValue.IsValue)
             {
                 Type nullableElementType = targetType.TargetsSameTypeAs(typeof(Nullable<>)) ? targetType.GenericTypeArguments[0] : null;
+                // A nullable with a value boxes as the value itself, so the parsed value is already what a Nullable<T>
+                //  member takes
                 if (settings.StringParser.CanConvert(nullableElementType ?? targetType))
                 {
-                    object parsedValue = settings.StringParser.Convert(sourceJsonValue.StringValue, nullableElementType ?? targetType);
-                    if (nullableElementType != null)
-                    {
-                        var nullableConstructor = typeof(Nullable<>).MakeGenericType(nullableElementType).GetConstructor(new[] { nullableElementType });
-                        targetItem = nullableConstructor.Invoke(new[] { parsedValue });
-                    }
-                    else
-                    {
-                        targetItem = parsedValue;
-                    }
+                    targetItem = settings.StringParser.Convert(sourceJsonValue.StringValue, nullableElementType ?? targetType);
                 }
 
                 return;
@@ -428,6 +448,11 @@ namespace AJut.Text.AJson.Legacy
                 }
                 else if (targetType.FindBaseTypeOrInterface(typeof(IDictionary<,>)) is Type dictionaryType)
                 {
+                    if (!AJut.Text.AJson.JsonHelper.CanUseReflectionPathFor(targetType, owner: null, kLegacyRemedy))
+                    {
+                        return;
+                    }
+
                     isDictionary = true;
                     var generics = dictionaryType.GetGenericArguments();
                     elementType = typeof(KeyValuePair<,>).MakeGenericType(generics[0], generics[1]);
@@ -460,6 +485,11 @@ namespace AJut.Text.AJson.Legacy
             }
             if (sourceJsonValue.IsDocument)
             {
+                if (!AJut.Text.AJson.JsonHelper.CanUseReflectionPathFor(targetType, owner: null, kLegacyRemedy))
+                {
+                    return;
+                }
+
                 JsonDocument sourceCasted = (JsonDocument)sourceJsonValue;
                 PropertyInfo[] allProperties = GetPropertiesFrom(targetType, false, true);
 
@@ -508,6 +538,7 @@ namespace AJut.Text.AJson.Legacy
             }
         }
 
+        [RequiresUnreferencedCode(kReflectionMessage)]
         private static void SetValueOnObject (object target, Type targetType, PropertyInfo prop, JsonValue sourceValue)
         {
             if (sourceValue.IsDocument)
@@ -537,6 +568,7 @@ namespace AJut.Text.AJson.Legacy
         /// </summary>
         /// <param name="source">The object to pull data from</param>
         /// <param name="target">The builder to fill out</param>
+        [RequiresUnreferencedCode(kReflectionMessage)]
         public static void FillOutJsonBuilderForObject (object source, JsonBuilder target)
         {
             Type sourceType = source.GetType();
@@ -665,6 +697,11 @@ namespace AJut.Text.AJson.Legacy
             }
 
             // ----------- Handle Document ------------
+            if (!AJut.Text.AJson.JsonHelper.CanUseReflectionPathFor(source.GetType(), owner: null, kLegacyRemedy))
+            {
+                return;
+            }
+
             PropertyInfo[] allProperties = GetPropertiesFrom(
                 source.GetType(),
                 true, 
@@ -848,6 +885,7 @@ namespace AJut.Text.AJson.Legacy
             return false;
         }
 
+        [RequiresUnreferencedCode(kReflectionMessage)]
         internal static bool TryGetTypeForTypeId (string typeIndicator, out Type foundType)
         {
             if (typeIndicator == null)
@@ -933,6 +971,7 @@ namespace AJut.Text.AJson.Legacy
             return trimmed.TrimEnd(kWhitespace);
         }
 
+        [RequiresUnreferencedCode(kReflectionMessage)]
         private static PropertyInfo[] GetPropertiesFrom(Type targetType, bool requiresGet, bool requiresSet)
         {
             return TypeMetadataExtensionRegistrar

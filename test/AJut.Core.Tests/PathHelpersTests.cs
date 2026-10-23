@@ -1,5 +1,6 @@
 ﻿namespace AJut.Core.UnitTests
 {
+    using System;
     using System.Linq;
     using AJut.IO;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -102,6 +103,12 @@
         [TestMethod]
         public void PathHelpers_GetAllPathParts_Basic ()
         {
+            // Splits on the OS's own separator, and this is a Windows path
+            if (!OperatingSystem.IsWindows())
+            {
+                Assert.Inconclusive("Windows only: splits a Windows path on the OS's separator");
+            }
+
             string[] parts = PathHelpers.GetAllPathParts(@"C:\test\125\log.txt").ToArray();
             Assert.AreEqual(4, parts.Length);
             Assert.AreEqual("C:", parts[0]);
@@ -134,6 +141,12 @@
         [TestMethod]
         public void PathHelpers_PathValidityTester ()
         {
+            // Which characters a path can hold is the OS's call: '|' is invalid on Windows but valid on macOS and Linux
+            if (!OperatingSystem.IsWindows())
+            {
+                Assert.Inconclusive("Windows only: path validity follows the OS, and these are Windows paths");
+            }
+
             _EvalExpectValid(@"C:\test\test.txt");
             _EvalExpectValid(@"C:\test\test2\");
             _EvalExpectValid(@"C:\test\test2");

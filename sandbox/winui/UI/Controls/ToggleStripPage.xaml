@@ -49,7 +49,35 @@
                 </StackPanel>
             </StackPanel>
 
-            <ui:ShowroomCodeDisplay CodeText="{x:Bind DemoCode}" Height="220"/>
+            <TextBlock Text="Vertical" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                       Text="Orientation=Vertical stacks the items top to bottom, each as wide as the widest. The constrained strips here are 120 tall, too short for their seven items."/>
+            <StackPanel Orientation="Horizontal" Spacing="24">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Vertical" FontSize="11" Opacity="0.7"/>
+                    <ajut:ToggleStrip x:Name="ToggleStripVertical" Orientation="Vertical"/>
+                </StackPanel>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="EnsureUniformSize" FontSize="11" Opacity="0.7"/>
+                    <ajut:ToggleStrip x:Name="ToggleStripVerticalUniform" Orientation="Vertical" EnsureUniformSize="True"/>
+                </StackPanel>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Clip" FontSize="11" Opacity="0.7"/>
+                    <ajut:ToggleStrip x:Name="ToggleStripVerticalClip" Orientation="Vertical" Height="120"/>
+                </StackPanel>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="OverflowPopup" FontSize="11" Opacity="0.7"/>
+                    <ajut:ToggleStrip x:Name="ToggleStripVerticalOverflow" Orientation="Vertical" Height="120"
+                                      OverflowBehavior="OverflowPopup"/>
+                </StackPanel>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Scroll" FontSize="11" Opacity="0.7"/>
+                    <ajut:ToggleStrip x:Name="ToggleStripVerticalScroll" Orientation="Vertical" Height="120"
+                                      OverflowBehavior="Scroll"/>
+                </StackPanel>
+            </StackPanel>
+
+            <ui:ShowroomCodeDisplay CodeText="{x:Bind DemoCode}" Height="300"/>
         </StackPanel>
     </ScrollViewer>
 </Page>

@@ -5,7 +5,6 @@ namespace AJut.UX.Converters
     using System.Windows;
     using System.Windows.Data;
 
-    public enum eArithmeticOperation { Add, Subtract, Multiply, Divide }
     public class ArithmeticConverter : SimpleMultiValueConverter
     {
         public eArithmeticOperation Operation { get; set; }
@@ -21,19 +20,7 @@ namespace AJut.UX.Converters
 
             foreach (double other in options.Skip(1))
             {
-                switch (this.Operation)
-                {
-                    case eArithmeticOperation.Add: result += other; break;
-                    case eArithmeticOperation.Subtract: result -= other; break;
-                    case eArithmeticOperation.Multiply: result *= other; break;
-                    case eArithmeticOperation.Divide:
-                        if (other != 0.0)
-                        {
-                            result /= other;
-                        }
-                        break;
-                    default: break;
-                }
+                result = NumericConverterMath.Apply(this.Operation, result, other);
             }
 
             return System.Convert.ChangeType(result, targetType);

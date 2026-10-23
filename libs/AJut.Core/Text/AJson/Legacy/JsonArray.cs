@@ -3,6 +3,7 @@ namespace AJut.Text.AJson.Legacy
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// An array of json values, values can be simple strings, JsonDocument or even child arrays.
@@ -190,6 +191,7 @@ namespace AJut.Text.AJson.Legacy
             return value;
         }
 
+        [RequiresUnreferencedCode("AJson V1 writes an object value through reflection, and trimming can remove the members it reaches. AJson V2 with [OptimizeAJson] is trim safe.")]
         public JsonValue AppendNew(object value, JsonBuilder.Settings settings = null)
         {
             return AppendNew(JsonHelper.MakeValueBuilder(value, settings));

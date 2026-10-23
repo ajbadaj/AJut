@@ -25,6 +25,17 @@
                 </LinearGradientBrush>
             </Setter.Value>
         </Setter>
+        <Setter Property="CoverGlossBrush">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
+                    <GradientStop Offset="0.00" Color="#0C000000" />
+                    <GradientStop Offset="0.50" Color="#23000000" />
+                    <GradientStop Offset="0.50" Color="#25FFFFFF" />
+                    <GradientStop Offset="1.00" Color="#0CFFFFFF" />
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="CornerBannerForeground" Value="White"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:ColorEditIngressControl}">
@@ -54,16 +65,7 @@
                                     </Grid>
                                 </Grid>
                             </Border>
-                            <Grid x:Name="FancyCover">
-                                <Grid.Background>
-                                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
-                                        <GradientStop Offset="0.00" Color="#0C000000" />
-                                        <GradientStop Offset="0.50" Color="#23000000" />
-                                        <GradientStop Offset="0.50" Color="#25FFFFFF" />
-                                        <GradientStop Offset="1.00" Color="#0CFFFFFF" />
-                                    </LinearGradientBrush>
-                                </Grid.Background>
-                            </Grid>
+                            <Grid x:Name="FancyCover" Background="{TemplateBinding CoverGlossBrush}"/>
                             <Popup PlacementTarget="{Binding ElementName=ColorDisplay}" HorizontalOffset="140" VerticalOffset="20"
                                    IsOpen="{ajut:TemplateBinding Path=ShowEditDisplay, Mode=TwoWay}"
                                    ap:PopupXTA.StaysOpenUnlessClickAway="True"
@@ -90,7 +92,7 @@
                                         </Path.Data>
                                     </Path>
                                 </Viewbox>
-                                <TextBlock FontFamily="Segoe MDL2 Assets" Foreground="White" Opacity="0.7"
+                                <TextBlock FontFamily="Segoe MDL2 Assets" Foreground="{TemplateBinding CornerBannerForeground}" Opacity="0.7"
                                            HorizontalAlignment="Right" VerticalAlignment="Bottom" FontSize="{TemplateBinding CornerBannerIconFontSize}">
                                     <TextBlock.Style>
                                         <Style TargetType="{x:Type TextBlock}">

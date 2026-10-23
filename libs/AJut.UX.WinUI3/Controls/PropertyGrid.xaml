@@ -116,17 +116,35 @@
                     <Border Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}">
-                        <local:FlatTreeListControl x:Name="PART_TreeList"
-                                                   ItemTemplate="{TemplateBinding RowTemplate}"
-                                                   ListViewItemContainerStyle="{TemplateBinding ListViewItemContainerStyle}"
-                                                   TreeDepthIndentSize="{TemplateBinding TreeDepthIndentSize}"
-                                                   RowSpacing="{TemplateBinding RowSpacing}"
-                                                   FixedRowHeight="{TemplateBinding FixedRowHeight}"
-                                                   InsertionLineXOffset="{TemplateBinding InsertionLineXOffset}"
-                                                   Background="Transparent"
-                                                   BorderThickness="0"
-                                                   Padding="{TemplateBinding Padding}"
-                                                   HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+                        <Grid>
+                            <local:FlatTreeListControl x:Name="PART_TreeList"
+                                                       ItemTemplate="{TemplateBinding RowTemplate}"
+                                                       ListViewItemContainerStyle="{TemplateBinding ListViewItemContainerStyle}"
+                                                       TreeDepthIndentSize="{TemplateBinding TreeDepthIndentSize}"
+                                                       RowSpacing="{TemplateBinding RowSpacing}"
+                                                       FixedRowHeight="{TemplateBinding FixedRowHeight}"
+                                                       InsertionLineXOffset="{TemplateBinding InsertionLineXOffset}"
+                                                       Background="Transparent"
+                                                       BorderThickness="0"
+                                                       Padding="{TemplateBinding Padding}"
+                                                       HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+
+                            <!-- Label splitter: at the label and editor boundary while the pointer is near it, placed
+                                 and shown in code. Its hit area is 10 wide, PropertyGridRowRules.kLabelSplitterHitDistance
+                                 into the label with the line along its right edge, and sits over the rows so a press
+                                 there drags. Nothing on the editor side, which takes its own clicks. Drag to size the
+                                 label column, double-click to fit it. -->
+                            <Border x:Name="PART_LabelSplitter"
+                                    Width="10"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Stretch"
+                                    Background="Transparent"
+                                    Visibility="Collapsed">
+                                <Rectangle Width="2"
+                                           HorizontalAlignment="Right"
+                                           Fill="{ThemeResource AJut_PropertyGrid_LabelSplitterBrush}"/>
+                            </Border>
+                        </Grid>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>

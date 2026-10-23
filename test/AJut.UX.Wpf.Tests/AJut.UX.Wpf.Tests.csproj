@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<!-- The tests that need WPF types, kept apart so AJut.UX.Tests builds and runs anywhere -->
+	<PropertyGroup>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<UseWPF>true</UseWPF>
+		<IsPackable>false</IsPackable>
+		<Platforms>AnyCPU;x64</Platforms>
+		<!-- The touch preference tests call a COM handler through its vtable, the way Windows does -->
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Platform)'=='AnyCPU'">
+		<PlatformTarget>x86</PlatformTarget>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Platform)'=='x64'">
+		<PlatformTarget>x64</PlatformTarget>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="MSTest" Version="3.6.4" />
+		<PackageReference Include="MSTest.TestAdapter" Version="3.6.4" />
+		<PackageReference Include="MSTest.TestFramework" Version="3.6.4" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+		<PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="17.12.6" />
+		<PackageReference Include="Microsoft.Testing.Extensions.TrxReport" Version="1.4.3" />
+		<PackageReference Include="coverlet.collector" Version="6.0.2">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\libs\AJut.UX\AJut.UX.csproj" />
+		<ProjectReference Include="..\..\libs\AJut.UX.Wpf\AJut.UX.Wpf.csproj" />
+	</ItemGroup>
+	<ItemGroup>
+		<!-- The docking test doubles are AJut.UX's, shared rather than copied -->
+		<Compile Include="..\AJut.UX.Tests\DockingTestDoubles.cs" Link="DockingTestDoubles.cs" />
+	</ItemGroup>
+	<ItemGroup>
+		<!-- The fixture lives once, beside the shared reader's tests -->
+		<None Include="..\AJut.UX.Tests\_TestData\wpf-showroom-docking-overview.layout" Link="_TestData\wpf-showroom-docking-overview.layout" CopyToOutputDirectory="PreserveNewest" />
+		<None Include="..\AJut.UX.Tests\_TestData\wpf-showroom-docking-overview.rewritten.layout" Link="_TestData\wpf-showroom-docking-overview.rewritten.layout" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+
+</Project>

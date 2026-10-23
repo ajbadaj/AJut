@@ -3,8 +3,6 @@
     using System;
     using Microsoft.UI.Xaml;
 
-    public enum eArithmeticOperation { Add, Subtract, Multiply, Divide }
-
     public class FixedArithmeticConverter : SimpleValueConverter
     {
         public eArithmeticOperation Operation { get; set; } = eArithmeticOperation.Multiply;
@@ -17,22 +15,7 @@
                 return value;
             }
 
-            double result = System.Convert.ToDouble(value);
-            
-            switch (this.Operation)
-            {
-                case eArithmeticOperation.Add: result += this.FixedOperand; break;
-                case eArithmeticOperation.Subtract: result -= this.FixedOperand; break;
-                case eArithmeticOperation.Multiply: result *= this.FixedOperand; break;
-                case eArithmeticOperation.Divide:
-                    if (this.FixedOperand != 0.0)
-                    {
-                        result /= this.FixedOperand;
-                    }
-                    break;
-                default: break;
-            }
-
+            double result = NumericConverterMath.Apply(this.Operation, System.Convert.ToDouble(value), this.FixedOperand);
             return System.Convert.ChangeType(result, targetType);
         }
     }

@@ -1,5 +1,6 @@
 namespace AJut.UX.Controls
 {
+    using AJut.UX.Docking;
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
     using Microsoft.UI.Xaml.Input;
@@ -31,7 +32,7 @@ namespace AJut.UX.Controls
     public sealed class DockTabItem : ContentControl
     {
         // ===========[ Constants ]============================================
-        internal const double kDefaultDragThresholdPixels = 8.0;
+        internal const double kDefaultDragThresholdPixels = DockDragRules.kDefaultDragThreshold;
 
         // ===========[ Fields ]===============================================
         private bool m_isPointerOver;
@@ -115,6 +116,9 @@ namespace AJut.UX.Controls
         // Position of this tab in the strip. Set by DockZone before adding to the panel.
         public int Index { get; set; }
 
+        // The docked panel this tab stands for, which decides what a drag on it can do. Set by DockZone with Index.
+        internal DockingContentAdapterModel Adapter { get; set; }
+
         // Drag threshold in pixels. Set by DockZone to match DockingManager.DragThresholdPixels.
         public double DragThresholdPixels { get; set; } = kDefaultDragThresholdPixels;
 
@@ -138,7 +142,7 @@ namespace AJut.UX.Controls
         {
             base.OnPointerPressed(e);
 
-            // Middle-click → close request (DockZone checks AllowMiddleMouseClose before acting)
+            // Middle-click -> close request (DockZone checks AllowMiddleMouseClose before acting)
             if (e.GetCurrentPoint(this).Properties.IsMiddleButtonPressed)
             {
                 e.Handled = true;
@@ -169,17 +173,25 @@ namespace AJut.UX.Controls
 
             if (!m_isDragModeDecided)
             {
-                if ((dx * dx + dy * dy) < (threshold * threshold))
+                // The strip was rebuilt under a press still in progress: this tab stands for nothing now
+                if (this.Adapter == null)
+                {
+                    this.ResetDragState();
+                    return;
+                }
+
+                eTabDragKind dragKind = DockDragRules.DecideTabDrag(this.Adapter, dx, dy, threshold);
+                if (dragKind == eTabDragKind.None)
                 {
                     return;
                 }
 
                 m_isDragModeDecided = true;
-                m_isReorderDrag = Math.Abs(dx) > Math.Abs(dy);
+                m_isReorderDrag = dragKind == eTabDragKind.Reorder;
 
                 if (!m_isReorderDrag)
                 {
-                    // Vertical drag → tearoff. Reset state before releasing capture so
+                    // Vertical drag -> tearoff. Reset state before releasing capture so
                     // OnPointerCaptureLost does not incorrectly fire TabDragCancelled.
                     this.ResetDragState();
                     this.ReleasePointerCapture(e.Pointer);

@@ -138,6 +138,17 @@ namespace AJut.UX.Controls
             set => this.SetValue(CornerRadiusProperty, value);
         }
 
+        /// <summary>
+        /// Lays the options out left to right (Horizontal, the default) or top to bottom (Vertical); the inner
+        /// <see cref="ToggleStrip"/>'s <see cref="ToggleStrip.Orientation"/>.
+        /// </summary>
+        public static readonly DependencyProperty OrientationProperty = DPUtils.Register(_ => _.Orientation, Orientation.Horizontal);
+        public Orientation Orientation
+        {
+            get => (Orientation)this.GetValue(OrientationProperty);
+            set => this.SetValue(OrientationProperty, value);
+        }
+
         // ================== [ Properties ]================================
         public ToggleStrip PART_ToggleStrip { get; private set; }
 

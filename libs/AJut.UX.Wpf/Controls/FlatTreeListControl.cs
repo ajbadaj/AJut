@@ -51,7 +51,7 @@ namespace AJut.UX.Controls
         private double m_rowXInOverlay = double.NaN;
         private FlatTreeDropTarget m_currentDropTarget;
         private ToggleButton m_highlightedExpander;
-        private Brush m_highlightedExpanderOriginalBrush;
+        private object m_highlightedExpanderOriginalLocalForeground;
 
         // ========================[Construction]==============================
         static FlatTreeListControl ()
@@ -362,6 +362,36 @@ namespace AJut.UX.Controls
         {
             get => (Brush)this.GetValue(DragTargetHighlightBrushProperty);
             set => this.SetValue(DragTargetHighlightBrushProperty, value);
+        }
+
+        public static readonly DependencyProperty DragGhostBackgroundProperty = DPUtils.Register(_ => _.DragGhostBackground);
+        /// <summary>
+        /// The fill of the ghost that follows the pointer during a drag
+        /// </summary>
+        public Brush DragGhostBackground
+        {
+            get => (Brush)this.GetValue(DragGhostBackgroundProperty);
+            set => this.SetValue(DragGhostBackgroundProperty, value);
+        }
+
+        public static readonly DependencyProperty DragGhostBorderBrushProperty = DPUtils.Register(_ => _.DragGhostBorderBrush);
+        /// <summary>
+        /// The border of the ghost that follows the pointer during a drag
+        /// </summary>
+        public Brush DragGhostBorderBrush
+        {
+            get => (Brush)this.GetValue(DragGhostBorderBrushProperty);
+            set => this.SetValue(DragGhostBorderBrushProperty, value);
+        }
+
+        public static readonly DependencyProperty DragGhostForegroundProperty = DPUtils.Register(_ => _.DragGhostForeground);
+        /// <summary>
+        /// The text of the drag ghost's label, shown when there is no <see cref="DragGhostTemplate"/>
+        /// </summary>
+        public Brush DragGhostForeground
+        {
+            get => (Brush)this.GetValue(DragGhostForegroundProperty);
+            set => this.SetValue(DragGhostForegroundProperty, value);
         }
 
         /// <summary>
@@ -943,7 +973,8 @@ namespace AJut.UX.Controls
                         ? (m_dragItems[0].Source?.ToString() ?? "Item")
                         : $"{m_dragItems.Length} items";
                     this.PART_DragGhostContent.ContentTemplate = null;
-                    this.PART_DragGhostContent.Content = new TextBlock { Text = label, Foreground = Brushes.White, FontSize = 11 };
+                    // The label's text color comes from the ghost, DragGhostForeground
+                    this.PART_DragGhostContent.Content = new TextBlock { Text = label, FontSize = 11 };
                 }
 
                 this.PART_DragGhost.Visibility = Visibility.Visible;
@@ -1092,13 +1123,7 @@ namespace AJut.UX.Controls
                 ToggleButton expander = FindVisualDescendant<ToggleButton>(parentContainer);
                 if (expander != null)
                 {
-                    m_highlightedExpanderOriginalBrush = expander.Foreground;
-                    m_highlightedExpander = expander;
-                    Brush highlightBrush = this.DragTargetHighlightBrush ?? this.InsertionLineBrush;
-                    if (highlightBrush != null)
-                    {
-                        expander.Foreground = highlightBrush;
-                    }
+                    this.HighlightDragTargetExpander_Wpf(expander);
                 }
 
                 // Draw L-shape connector from parent's chevron to insertion line
@@ -1203,13 +1228,40 @@ namespace AJut.UX.Controls
             this.ClearParentHighlight_Wpf();
         }
 
-        private void ClearParentHighlight_Wpf ()
+        /// <summary>
+        /// Recolors the drop parent's expander chevron for the length of a drag; <see cref="ClearParentHighlight_Wpf"/> puts it back
+        /// </summary>
+        internal void HighlightDragTargetExpander_Wpf (ToggleButton expander)
+        {
+            // Remember the expander's own local value, not the brush it shows: its brush comes from its style, and putting
+            // that brush back as a local value would cut the style off, its hover highlight and later theme switches too
+            m_highlightedExpanderOriginalLocalForeground = expander.ReadLocalValue(Control.ForegroundProperty);
+            m_highlightedExpander = expander;
+            Brush highlightBrush = this.DragTargetHighlightBrush ?? this.InsertionLineBrush;
+            if (highlightBrush != null)
+            {
+                expander.Foreground = highlightBrush;
+            }
+        }
+
+        /// <summary>
+        /// Puts back the expander chevron <see cref="HighlightDragTargetExpander_Wpf"/> recolored, if any
+        /// </summary>
+        internal void ClearParentHighlight_Wpf ()
         {
             if (m_highlightedExpander != null)
             {
-                m_highlightedExpander.Foreground = m_highlightedExpanderOriginalBrush;
+                if (m_highlightedExpanderOriginalLocalForeground == DependencyProperty.UnsetValue)
+                {
+                    m_highlightedExpander.ClearValue(Control.ForegroundProperty);
+                }
+                else
+                {
+                    m_highlightedExpander.SetValue(Control.ForegroundProperty, m_highlightedExpanderOriginalLocalForeground);
+                }
+
                 m_highlightedExpander = null;
-                m_highlightedExpanderOriginalBrush = null;
+                m_highlightedExpanderOriginalLocalForeground = null;
             }
         }
 

@@ -39,6 +39,7 @@
         <Setter Property="ButtonHoverForeground" Value="White"/>
         <Setter Property="ButtonPressedBackground" Value="#3388CC"/>
         <Setter Property="ButtonPressedForeground" Value="#DDD"/>
+        <Setter Property="TextBoxBorderBrush" Value="#8000"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:PathSelectionControl}">
@@ -78,7 +79,7 @@
 
                             <TextBox x:Name="PART_PathTextBox" Grid.Column="0" Text="{ajut:TemplateBinding Path=SelectedPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                      ap:BorderXTA.CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius), Converter={ajconv:CornerRadiusSideExtractionConverter Side=Left}}"
-                                     BorderThickness="1,1,0,0" BorderBrush="#8000" Margin="3" FontSize="12"
+                                     BorderThickness="1,1,0,0" BorderBrush="{TemplateBinding TextBoxBorderBrush}" Margin="3" FontSize="12"
                                      VerticalContentAlignment="Center" Padding="{ajut:TemplateBinding Path=Padding}"/>
                             <TextBlock Margin="10,3" Padding="{Binding ElementName=PART_PathTextBox, Path=Padding}" Opacity="0.5" FontStyle="Italic" 
                                        FontSize="{Binding ElementName=PART_PathTextBox, Path=FontSize}" IsHitTestVisible="False"
