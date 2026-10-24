@@ -38,7 +38,7 @@ namespace AJut.UX.Theming
         /// <summary>The AJut dark theme's values.</summary>
         public static Table Dark => g_dark;
 
-        /// <summary>The AJut light theme's values for touch-focused UI: the light values, with enabled button surfaces tinted and button borders off.</summary>
+        /// <summary>The AJut light theme's values for touch-focused UI: the light values, with enabled button surfaces a neutral step darker than the panels and button borders off.</summary>
         public static Table LightTouch => g_lightTouch;
 
         /// <summary>The AJut dark theme's values for touch-focused UI: the dark values, with enabled button surfaces lifted, button borders off and text brighter.</summary>

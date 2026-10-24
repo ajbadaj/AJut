@@ -3,7 +3,8 @@
     LightTouchThemeColorsBase.xaml
     ==============================
     The light palette for touch. Touch has no hover, so a button has to read as one from its fill alone: button
-    surfaces take a tint that stands off the panels (a disabled button's does not), and button borders come off.
+    surfaces are a neutral gray a clear step darker than the panels (a disabled button's sits at the panels), and
+    button borders come off. The step is in lightness, not hue, so it holds on the darker and the lighter panels alike.
     Everything not stated here is the light palette's, merged in below.
 
     A key changed here is stated in full here, and so is any brush in the light palette that takes its color from it,
@@ -19,17 +20,17 @@
     </ResourceDictionary.MergedDictionaries>
 
     <!-- ================[ Button surfaces ]====================== -->
-    <SolidColorBrush x:Key="AJut_Brush_ControlBackground" Color="#CFE0F2"/>
+    <SolidColorBrush x:Key="AJut_Brush_ControlBackground" Color="#B8B8B8"/>
     <LinearGradientBrush x:Key="AJut_Brush_PopOutControlBackground" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Offset="0.00" Color="#FFFFFF" />
-        <GradientStop Offset="0.10" Color="#DCE8F5" />
-        <GradientStop Offset="0.90" Color="#B4CDE8" />
-        <GradientStop Offset="1.00" Color="#5A7896" />
+        <GradientStop Offset="0.00" Color="#F0F0F0" />
+        <GradientStop Offset="0.10" Color="#C8C8C8" />
+        <GradientStop Offset="0.90" Color="#ACACAC" />
+        <GradientStop Offset="1.00" Color="#6A6A6A" />
     </LinearGradientBrush>
-    <SolidColorBrush x:Key="AJut_Brush_ControlBackgroundHover" Color="#BCD4EE"/>
-    <SolidColorBrush x:Key="AJut_Brush_ButtonBackgroundPressed" Color="#8CB8E6"/>
-    <!-- Not tinted: the light palette's own control surface, so a disabled button does not read as a tap target -->
-    <SolidColorBrush x:Key="AJut_Brush_ControlBackgroundDisabled" Color="#D7D7D7"/>
+    <SolidColorBrush x:Key="AJut_Brush_ControlBackgroundHover" Color="#C9C9C9"/>
+    <SolidColorBrush x:Key="AJut_Brush_ButtonBackgroundPressed" Color="#8E8E8E"/>
+    <!-- Close to the panels, so a disabled button does not read as a tap target -->
+    <SolidColorBrush x:Key="AJut_Brush_ControlBackgroundDisabled" Color="#E3E3E3"/>
 
     <!-- ================[ Button borders ]====================== -->
     <Color x:Key="AJut_Color_ButtonBorder">#00000000</Color>

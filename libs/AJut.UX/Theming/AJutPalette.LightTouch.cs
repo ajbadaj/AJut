@@ -12,11 +12,11 @@ namespace AJut.UX.Theming
         {
             return new Dictionary<string, AJutThemeEntry>
             {
-                { "AJut_Brush_ControlBackground", Solid(0xFFCFE0F2) },
-                { "AJut_Brush_PopOutControlBackground", Gradient(Stop(0.0, 0xFFFFFFFF), Stop(0.1, 0xFFDCE8F5), Stop(0.9, 0xFFB4CDE8), Stop(1.0, 0xFF5A7896)) },
-                { "AJut_Brush_ControlBackgroundHover", Solid(0xFFBCD4EE) },
-                { "AJut_Brush_ButtonBackgroundPressed", Solid(0xFF8CB8E6) },
-                { "AJut_Brush_ControlBackgroundDisabled", Solid(0xFFD7D7D7) },
+                { "AJut_Brush_ControlBackground", Solid(0xFFB8B8B8) },
+                { "AJut_Brush_PopOutControlBackground", Gradient(Stop(0.0, 0xFFF0F0F0), Stop(0.1, 0xFFC8C8C8), Stop(0.9, 0xFFACACAC), Stop(1.0, 0xFF6A6A6A)) },
+                { "AJut_Brush_ControlBackgroundHover", Solid(0xFFC9C9C9) },
+                { "AJut_Brush_ButtonBackgroundPressed", Solid(0xFF8E8E8E) },
+                { "AJut_Brush_ControlBackgroundDisabled", Solid(0xFFE3E3E3) },
                 { "AJut_Color_ButtonBorder", Solid(0x00000000) },
                 { "AJut_Brush_ButtonBorder", Alias("AJut_Color_ButtonBorder") },
                 { "AJut_Brush_ButtonBorderHover", Solid(0x00000000) },
