@@ -22,7 +22,8 @@
         <TextBlock Grid.Row="1" TextWrapping="Wrap" Opacity="0.8" Margin="0,0,0,12"
                    Text="FlatTreeListControl renders a tree as a flat list of rows: expand and collapse, multi-level nesting, extended selection, drag and drop reordering, and a choice of sibling display order. Each sub-tab below is one of those scenarios."/>
 
-        <TabView Grid.Row="2" CanDragTabs="False" CanReorderTabs="False" IsAddTabButtonVisible="False" TabWidthMode="SizeToContent">
+        <!-- WinUI3's default TabView style sets VerticalAlignment Top, so without Stretch the tabs only take the height of their content instead of the page -->
+        <TabView Grid.Row="2" VerticalAlignment="Stretch" CanDragTabs="False" CanReorderTabs="False" IsAddTabButtonVisible="False" TabWidthMode="SizeToContent">
             <TabView.Resources>
                 <ResourceDictionary>
                     <x:Double x:Key="AJut_Double_TabViewStrokeThickness">1.0</x:Double>

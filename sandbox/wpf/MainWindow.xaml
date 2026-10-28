@@ -57,17 +57,25 @@
                                         <Border BorderThickness="0,2,0,0" VerticalAlignment="Center" BorderBrush="Black" Margin="-2,0"
                                                     Visibility="{Binding RelativeSource={RelativeSource Self}, Path=IsEnabled, Mode=OneWay, Converter={ajut_conv:BooleanToVisibilityConverter TrueValue=Collapsed, FalseValue=Visible}}"/>
                                     </Grid>
+                                    <ajut:ToggleSwitchButton Margin="0,0,0,5" HorizontalAlignment="Center"
+                                                             IsChecked="{Binding Source={x:Static local:App.ThemeTracker}, Path=IsTouchFocused, Mode=TwoWay}"
+                                                             Content="Touch Focused: " ToolTip="The touch palette: lifted button surfaces and no button borders, for touch with no hover"/>
+                                    <ajut:ToggleSwitchButton Margin="0,0,0,5" HorizontalAlignment="Center"
+                                                             IsChecked="{Binding Source={x:Static local:App.TouchFocus}, Path=FollowsWindows, Mode=TwoWay}"
+                                                             Content="Follow Windows Touch: " ToolTip="Set Touch Focused from Windows' touch preference (Windows 11 24H2 and later), the way an app opts in"/>
+                                    <TextBlock HorizontalAlignment="Center" Margin="0,0,0,10" FontStyle="Italic" Opacity="0.9" TextWrapping="Wrap"
+                                               Text="{Binding Source={x:Static local:App.TouchFocus}, Path=WindowsPreferenceText, Mode=OneWay}"/>
                                 </StackPanel>
                             </Border>
                             <TextBlock HorizontalAlignment="Right">
                                 <TextBlock.Inlines>
-                                    <Run Text="ajut.core → " FontSize="14"/>
+                                    <Run Text="ajut.core -> " FontSize="14"/>
                                     <Run Text="{Binding Source={x:Static local:App.AJut_Core_Version}, Mode=OneWay}" FontFamily="Consolas"/>
                                 </TextBlock.Inlines>
                             </TextBlock>
                             <TextBlock HorizontalAlignment="Right">
                                 <TextBlock.Inlines>
-                                    <Run Text="ajut.ux.wpf → " FontSize="14"/>
+                                    <Run Text="ajut.ux.wpf -> " FontSize="14"/>
                                     <Run Text="{Binding Source={x:Static local:App.AJut_Ux_Wpf_Version}, Mode=OneWay}" FontFamily="Consolas"/>
                                 </TextBlock.Inlines>
                             </TextBlock>

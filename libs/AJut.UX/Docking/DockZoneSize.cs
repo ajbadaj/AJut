@@ -1,5 +1,9 @@
 namespace AJut.UX.Docking
 {
+    using AJut.Text.AJson;
+
+    /// <summary>A zone's size on its parent, as a docking layout file keeps it</summary>
+    [OptimizeAJson]
     public struct DockZoneSize
     {
         public static readonly DockZoneSize Empty = default;

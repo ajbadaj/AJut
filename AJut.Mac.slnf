@@ -1,0 +1,14 @@
+{
+  "solution": {
+    "path": "AJut.slnx",
+    "projects": [
+      "libs\\AJut.Core.SourceGenerators\\AJut.Core.SourceGenerators.csproj",
+      "libs\\AJut.Core\\AJut.Core.csproj",
+      "libs\\AJut.UX\\AJut.UX.csproj",
+      "test\\AJut.Core.CrashHost\\AJut.Core.CrashHost.csproj",
+      "test\\AJut.Core.SourceGenerators.Tests\\AJut.Core.SourceGenerators.Tests.csproj",
+      "test\\AJut.Core.Tests\\AJut.Core.Tests.csproj",
+      "test\\AJut.UX.Tests\\AJut.UX.Tests.csproj"
+    ]
+  }
+}

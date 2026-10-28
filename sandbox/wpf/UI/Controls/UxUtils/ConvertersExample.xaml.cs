@@ -39,6 +39,19 @@ namespace TheAJutShowRoom.UI.Controls.UxUtils
 <TextBlock Text=""Nothing is selected.""
            Visibility=""{Binding ElementName=NullnessSource, Path=SelectedItem, Converter={ajut_conv:NullnessToVisibilityConverter WhenNull=Visible, WhenNotNull=Collapsed}}""/>";
 
+        public string TextStatusCode { get; } =
+@"<TextBox x:Name=""TextStatusSource"" Text=""Penguin""/>
+
+<!-- By default it shows while there is text, and collapses when the text is null or empty -->
+<TextBlock Visibility=""{Binding ElementName=TextStatusSource, Path=Text, Converter={ajut_conv:IsTextNullOrEmptyToVisibilityConverter}}"">
+    <Run Text=""Hello,""/>
+    <Run Text=""{Binding ElementName=TextStatusSource, Path=Text, Mode=OneWay}""/>
+</TextBlock>
+
+<!-- Flip the two values for a hint that shows only while the text is empty -->
+<TextBlock Text=""Type a name above.""
+           Visibility=""{Binding ElementName=TextStatusSource, Path=Text, Converter={ajut_conv:IsTextNullOrEmptyToVisibilityConverter WhenHasText=Collapsed, WhenNullOrEmpty=Visible}}""/>";
+
         public string FixedArithmeticCode { get; } =
 @"<Slider x:Name=""FontSizeSource"" Minimum=""6"" Maximum=""20"" Value=""10""/>
 <TextBlock Text=""Twice the slider, as a font size""

@@ -27,6 +27,8 @@
         <Setter Property="LabelForeground" Value="Black"/>
         <Setter Property="SnapsToDevicePixels" Value="True"/>
         <Setter Property="ErrorBrush" Value="#920"/>
+        <Setter Property="InsetShadowBrush" Value="#8000"/>
+        <Setter Property="InsetHighlightBrush" Value="#5FFF"/>
         <Setter Property="Background">
             <Setter.Value>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
@@ -188,8 +190,8 @@
                                                Grid.Column="1" Margin="2,4,2,2" FontSize="12"
                                                Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:NumericEditor}}, Path=ErrorBrush}"
                                                Visibility="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:NumericEditor}}, Path=DisplayValue.ShouldShowError, Converter={conv:BooleanToVisibilityConverter}}"/>
-                                    <Border BorderBrush="#8000" BorderThickness="1.4,1.4,0,0">
-                                        <Border BorderBrush="#5FFF" BorderThickness="0,0,1,1"/>
+                                    <Border BorderBrush="{TemplateBinding InsetShadowBrush}" BorderThickness="1.4,1.4,0,0">
+                                        <Border BorderBrush="{TemplateBinding InsetHighlightBrush}" BorderThickness="0,0,1,1"/>
                                     </Border>
                                 </Grid>
                             </DockPanel>

@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.ObjectModel;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// A base class for a <see cref="Stratabase"/> backed model, makes easier access to forward value change events via the <see cref="System.ComponentModel.INotifyPropertyChanged.PropertyChanged"/> event.
@@ -66,6 +67,7 @@
         /// </summary>
         public class Property<T> : IStrataBackedModelProperty
         {
+            [UnconditionalSuppressMessage("Trimming", "IL2091", Justification = "Lazy<T> needs T's parameterless constructor only for its own parameterless constructor, and this one is always made with a factory.")]
             private Lazy<T> m_valueCache;
             private readonly StratabaseBackedModel m_owner;
             public Property (StratabaseBackedModel owner, string propertyName, T defaultValue)
@@ -117,6 +119,7 @@
                     disposable.Dispose();
                 }
             }
+            [UnconditionalSuppressMessage("Trimming", "IL2091", Justification = "Lazy<T> needs T's parameterless constructor only for its own parameterless constructor, and this one is always made with a factory.")]
             private void ResetCache ()
             {
                 this.HandleDisposeCachedValue();

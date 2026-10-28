@@ -119,12 +119,4 @@ namespace AJut.UX.Controls
         /// <summary>The resolved brushes to paint for one interaction state. Any may be null (no paint).</summary>
         protected readonly record struct SurfaceBrushes (Brush Background, Brush Foreground, Brush Border);
     }
-
-    public enum eManagedButtonState
-    {
-        Normal,
-        PointerOver,
-        Pressed,
-        Disabled,
-    }
 }

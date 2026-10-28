@@ -28,7 +28,9 @@
                                         CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}"
                                         Margin="0,0,0,15">
                                     <Border.Effect>
-                                        <DropShadowEffect ShadowDepth="6" Direction="300" Opacity="{DynamicResource AJut_Double_StandardShadowOpacity}" Color="{DynamicResource AJut_Color_Shadow}"/>
+                                        <DropShadowEffect ShadowDepth="6" Direction="300"
+                                                          Opacity="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=MenuShadowOpacity}"
+                                                          Color="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=MenuShadowColor}"/>
                                     </Border.Effect>
                                     <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Auto" Margin="{TemplateBinding Padding}">
                                         <Menu ItemsSource="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PopupMenuButton}}, Path=MenuItems, Mode=OneWay}"

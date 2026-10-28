@@ -3,6 +3,7 @@ namespace AJut.UX.PropertyInteraction
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Reflection;
     using System.Windows.Input;
     using AJut.Storage;
@@ -12,6 +13,8 @@ namespace AJut.UX.PropertyInteraction
     /// Context object for a list property in the PropertyGrid. Carries the add/remove/reorder
     /// capabilities and element count. Set as EditContext on the list parent PropertyEditTarget.
     /// </summary>
+    [RequiresUnreferencedCode(PropertyGridTrimming.kMessage)]
+    [RequiresDynamicCode(PropertyGridTrimming.kListMessage)]
     public class PropertyGridListContext : NotifyPropertyChanged
     {
         // ===========[ Instance fields ]==========================================

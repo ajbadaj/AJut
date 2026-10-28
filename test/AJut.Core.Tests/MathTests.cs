@@ -1,5 +1,6 @@
 ﻿namespace AJut.Core.UnitTests
 {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
     using AJut.MathUtilities;
@@ -89,6 +90,30 @@
             var madeItToEndTest = new VisitWatchEnumeration<int>(10, 20, 30, 40, 50);
             Assert.IsTrue(Calculate.QuickEvaluateIfSumIsLessThanOrEqualTo(madeItToEndTest, 2000));
             Assert.AreEqual(5, madeItToEndTest.LastVisitedIndex);
+        }
+
+        [TestMethod]
+        public void Math_Calculate_SumPastTheElementType_Throws ()
+        {
+            // The sums add in the element type, so a sum past its range has to throw (as Enumerable.Sum does) rather than
+            // wrap around: two bytes of 200 would otherwise sum to 144.
+            byte[] bytes = { 200, 200 };
+            Assert.ThrowsException<OverflowException>(() => Calculate.SumAndCount(bytes, out int _));
+            Assert.ThrowsException<OverflowException>(() => Calculate.Mean(bytes));
+            Assert.ThrowsException<OverflowException>(() => Calculate.SumAndCount(new[] { int.MaxValue, 1 }, out int _));
+        }
+
+        [TestMethod]
+        public void Math_Calculate_QuickEvaluate_SumPastTheElementType_IsPastTheLimit ()
+        {
+            // A sum past the element type's maximum is past any limit of that type, so the answer is false, not a throw
+            byte[] bytes = { 200, 200 };
+            Assert.IsFalse(Calculate.QuickEvaluateIfSumIsLessThan(bytes, (byte)255));
+            Assert.IsFalse(Calculate.QuickEvaluateIfSumIsLessThanOrEqualTo(bytes, (byte)255));
+            Assert.IsFalse(Calculate.QuickEvaluateIfSumIsLessThanOrEqualTo(new[] { int.MaxValue, 1 }, int.MaxValue));
+
+            // A negative running sum leaves room above the maximum, so this one fits and stays under the limit
+            Assert.IsTrue(Calculate.QuickEvaluateIfSumIsLessThan(new[] { -5, int.MaxValue }, int.MaxValue));
         }
 
         public class VisitWatchEnumeration<T> : IEnumerable<T>

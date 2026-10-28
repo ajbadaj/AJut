@@ -53,11 +53,6 @@
             return (T)This;
         }
 
-        public static object BoxCast (this object This, Type t)
-        {
-            return This.InvokeTemplatedExtensionMethod(typeof(TypeXT), nameof(BoxCast), t);
-        }
-
         public static void RegisterSpecialDouble<T> (CastToDoubleTyped<T> doubleCaster)
         {
             RegisterSpecialDouble(typeof(T), o => doubleCaster((T)o));

@@ -12,14 +12,9 @@ namespace AJut.UX.Converters
         protected override bool Convert (ePropertyToolTipPlacement value, object parameter)
         {
             bool forValue = parameter is string text && text.Equals("Value", StringComparison.OrdinalIgnoreCase);
-            if (forValue)
-            {
-                return value == ePropertyToolTipPlacement.ValueOnly
-                    || value == ePropertyToolTipPlacement.PropertyNameAndValue;
-            }
-
-            return value == ePropertyToolTipPlacement.PropertyNameOnly
-                || value == ePropertyToolTipPlacement.PropertyNameAndValue;
+            return forValue
+                ? PropertyGridRowRules.ShowsToolTipOnValue(value)
+                : PropertyGridRowRules.ShowsToolTipOnName(value);
         }
     }
 }

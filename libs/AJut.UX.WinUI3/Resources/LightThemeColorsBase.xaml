@@ -75,9 +75,17 @@
     <Color x:Key="AJut_Color_BorderCommon">#8A8A8A</Color>
     <Color x:Key="AJut_Color_BorderCommonTransparent">#008A8A8A</Color>
     <SolidColorBrush x:Key="AJut_Brush_BorderCommon" Color="{ThemeResource AJut_Color_BorderCommon}"/>
-    <SolidColorBrush x:Key="AJut_Brush_BorderCommonHover" Color="#555"/>
+    <Color x:Key="AJut_Color_BorderCommonHover">#555</Color>
+    <SolidColorBrush x:Key="AJut_Brush_BorderCommonHover" Color="{ThemeResource AJut_Color_BorderCommonHover}"/>
     <SolidColorBrush x:Key="AJut_Brush_BorderCommonPress" Color="#333"/>
     <SolidColorBrush x:Key="AJut_Brush_BorderShadow" Color="{ThemeResource AJut_Color_Shadow}"/>
+    <!-- What outlines a button, in each of its states. The same as the common borders here; the touch palettes take
+         them off, since a tap target reads by its fill. They are keys of their own because the common borders also
+         draw splitters, scrollbar thumbs and separators. -->
+    <StaticResource x:Key="AJut_Color_ButtonBorder" ResourceKey="AJut_Color_BorderCommon"/>
+    <SolidColorBrush x:Key="AJut_Brush_ButtonBorder" Color="{ThemeResource AJut_Color_ButtonBorder}"/>
+    <StaticResource x:Key="AJut_Brush_ButtonBorderHover" ResourceKey="AJut_Brush_BorderCommonHover"/>
+    <StaticResource x:Key="AJut_Brush_ButtonBorderPressed" ResourceKey="AJut_Brush_BorderCommonPress"/>
 
     <Color x:Key="AJut_Color_PanelBackground">#EDF0F3</Color>
     <SolidColorBrush x:Key="AJut_Brush_RootPanelBackground" Color="#DDD"/>
@@ -98,6 +106,9 @@
     </LinearGradientBrush>
     <SolidColorBrush x:Key="AJut_Brush_ControlBackgroundHover" Color="#EEE"/>
     <SolidColorBrush x:Key="AJut_Brush_ButtonBackgroundPressed" Color="#CCC"/>
+    <!-- A disabled control's surface. The same as at rest here; the touch palettes lift the rest surface so a button
+         reads as one from its fill, and keep this one flat, since a disabled button should not. -->
+    <StaticResource x:Key="AJut_Brush_ControlBackgroundDisabled" ResourceKey="AJut_Brush_ControlBackground"/>
     <Color x:Key="AJut_Color_TextBoxBackground">#FFFFFF</Color>
     <Color x:Key="AJut_Color_TextBoxBorder">#222222</Color>
     <SolidColorBrush x:Key="AJut_Brush_TextBoxBackground" Color="{ThemeResource AJut_Color_TextBoxBackground}"/>

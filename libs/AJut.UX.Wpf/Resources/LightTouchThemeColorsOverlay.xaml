@@ -1,0 +1,28 @@
+<!--
+    LightTouchThemeColorsOverlay.xaml
+    =================================
+    What the light palette changes for touch, and nothing else. Touch has no hover, so a button has to read as one
+    from its fill alone: button surfaces are a neutral gray a clear step darker than the panels, and button borders
+    come off.
+
+    AppThemeManager.IsTouchFocused lays this over the app's light theme colors as the application's last merged
+    dictionary, so the app's own colors stay for every key this doesn't name. The values are the shared light touch
+    palette's (AJut.UX's AJutPalette.LightTouch), and a test keeps them in step.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <SolidColorBrush x:Key="AJut_Brush_ControlBackground" Color="#B8B8B8"/>
+    <LinearGradientBrush x:Key="AJut_Brush_PopOutControlBackground"  StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0.00" Color="#F0F0F0" />
+        <GradientStop Offset="0.10" Color="#C8C8C8" />
+        <GradientStop Offset="0.90" Color="#ACACAC" />
+        <GradientStop Offset="1.00" Color="#6A6A6A" />
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="AJut_Brush_ControlBackgroundHover" Color="#C9C9C9"/>
+    <SolidColorBrush x:Key="AJut_Brush_ButtonBackgroundPressed" Color="#8E8E8E"/>
+
+    <SolidColorBrush x:Key="AJut_Brush_ButtonBorder" Color="#00000000"/>
+    <SolidColorBrush x:Key="AJut_Brush_ButtonBorderHover" Color="#00000000"/>
+    <SolidColorBrush x:Key="AJut_Brush_ButtonBorderPressed" Color="#00000000"/>
+</ResourceDictionary>

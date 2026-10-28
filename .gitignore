@@ -8,6 +8,8 @@
 !*.gitignore
 !*.csproj
 !*.sln
+!*.slnx
+!*.slnf
 !*.cs
 !*.xaml
 !*.jpg
@@ -32,6 +34,22 @@
 
 # Bench sample payloads (deterministic, committed for inspection)
 !test/AJut.Bench/Payloads/*.json
+
+# Docking layout files saved by the showrooms, kept as test fixtures
+!test/AJut.UX.Tests/_TestData/*.layout
+
+# Apple app heads: bundle info and signing entitlements
+!sandbox/appkit/Info.plist
+!sandbox/appkit/Entitlements.plist
+!sandbox/appkit/Assets.xcassets/**/Contents.json
+!sandbox/uikit/Info.plist
+!sandbox/uikit/Entitlements.plist
+!sandbox/uikit/Assets.xcassets/**/Contents.json
+
+# Android: manifests and Resources XML (layouts, values, drawables, styleable attrs)
+!libs/AJut.UX.Android/**/*.xml
+!sandbox/android/**/*.xml
+!test/AJut.UX.Android.Tests/**/*.xml
 
 # ============[ And finally nix these ]=========================
 *Settings.Designer.cs

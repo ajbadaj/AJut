@@ -30,6 +30,11 @@ namespace AJut.Core.UnitTests.AJsonV2
             public Dictionary<string, int> Counts { get; set; }
         }
 
+        public class DocumentDictPoco
+        {
+            public Dictionary<string, SimplePoco> ByName { get; set; }
+        }
+
         public enum eFlavor { Vanilla, Chocolate, Strawberry }
 
         public class EnumPoco
@@ -104,6 +109,35 @@ namespace AJut.Core.UnitTests.AJsonV2
             Assert.AreEqual(1, round.Counts["a"]);
             Assert.AreEqual(2, round.Counts["b"]);
             Assert.AreEqual(3, round.Counts["c"]);
+        }
+
+        [TestMethod]
+        public void Poco_Dictionary_EmptyKeyWithDocumentValue_RoundTrip ()
+        {
+            // An empty string is a valid key. With a document for its value the entry used to be dropped without an
+            //  error, which is how a docking layout keyed by a root zone with no group id saved as {}.
+            DocumentDictPoco source = new DocumentDictPoco
+            {
+                ByName = new Dictionary<string, SimplePoco>
+                {
+                    { "", new SimplePoco { Name = "unnamed", Count = 1 } },
+                    { "b", new SimplePoco { Name = "named", Count = 2 } },
+                },
+            };
+
+            Json json = JsonHelper.BuildJsonForObject(source);
+            Assert.IsFalse(json.HasErrors, json.GetErrorReport());
+
+            string serialized = json.ToString();
+            Json reparsed = JsonHelper.ParseText(serialized);
+            Assert.IsFalse(reparsed.HasErrors, "Reparse errors:\n  " + String.Join("\n  ", reparsed.Errors));
+
+            DocumentDictPoco round = JsonHelper.BuildObjectForJson<DocumentDictPoco>(reparsed);
+            Assert.IsNotNull(round.ByName);
+            Assert.AreEqual(2, round.ByName.Count, serialized);
+            Assert.AreEqual("unnamed", round.ByName[""].Name);
+            Assert.AreEqual(1, round.ByName[""].Count);
+            Assert.AreEqual("named", round.ByName["b"].Name);
         }
 
         [TestMethod]

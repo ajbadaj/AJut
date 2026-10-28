@@ -107,6 +107,11 @@
                         <StackPanel Margin="12,0,12,12" Spacing="4" Opacity="0.8">
                             <TextBlock Text="App theme" FontSize="12" FontStyle="Italic"/>
                             <ajut:EnumComboBox SelectedItem="{x:Bind Path=Application.ThemeManager.ThemeConfiguration, Mode=TwoWay}"/>
+                            <ToggleSwitch Header="Touch focused" FontSize="12" IsOn="{x:Bind Path=Application.ThemeManager.IsTouchFocused, Mode=TwoWay}"
+                                          ToolTipService.ToolTip="The touch palette: lifted button surfaces and no button borders, for touch with no hover"/>
+                            <ToggleSwitch Header="Follow Windows touch" FontSize="12" IsOn="{x:Bind Path=Application.TouchFocus.FollowsWindows, Mode=TwoWay}"
+                                          ToolTipService.ToolTip="Set Touch focused from Windows' touch preference (Windows 11 24H2 and later), the way an app opts in"/>
+                            <TextBlock FontSize="12" FontStyle="Italic" TextWrapping="Wrap" Text="{x:Bind Path=Application.TouchFocus.WindowsPreferenceText, Mode=OneWay}"/>
                             <TextBlock FontSize="12" Margin="0,8,0,0" Text="ajut.core"/>
                             <TextBlock FontSize="12" FontFamily="Consolas" Text="{x:Bind Application.AJut_Core_Version}"/>
                             <TextBlock FontSize="12" Text="ajut.ux.winui3"/>

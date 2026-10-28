@@ -3,6 +3,7 @@ namespace AJut.UX.Docking
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using AJut.Storage;
     using AJut.Tree;
@@ -172,9 +173,18 @@ namespace AJut.UX.Docking
             this.InternalClearAllSilently();
             zoneVm.InternalClearAllSilently();
 
-            // 3. Populate destination
-            locallyDockedElementsCopy.ForEach(c => zoneVm.AddDockedContent(c));
-            childZonesCopy.ForEach(c => zoneVm.AddChild(c));
+            // 3. Populate destination. A split takes its orientation before its children, since a zone
+            //    only takes children once it is a split.
+            if (IsSplit(orientation))
+            {
+                zoneVm.Orientation = orientation;
+                childZonesCopy.ForEach(c => zoneVm.AddChild(c));
+            }
+            else
+            {
+                locallyDockedElementsCopy.ForEach(c => zoneVm.AddDockedContent(c));
+            }
+
             zoneVm.Orientation = orientation;
             zoneVm.SelectedIndex = selectedIndex;
             zoneVm.StorePassAlongUISize(sizeOnParent);
@@ -182,9 +192,12 @@ namespace AJut.UX.Docking
 
         public DockZoneViewModel DuplicateAndClear ()
         {
-            var dupe = new DockZoneViewModel
+            // The dupe belongs to the same manager. A root zone torn off whole moves into it and it becomes the tearoff's
+            //  root, and a stack that only registers a tearoff root zone made for its own manager refuses one made for none.
+            var dupe = new DockZoneViewModel(this.Manager)
             {
                 Orientation = this.Orientation,
+                SelectedIndex = this.SelectedIndex,
             };
 
             dupe.StorePassAlongUISize(this.UI?.RenderSize ?? DockZoneSize.Empty);
@@ -307,7 +320,7 @@ namespace AJut.UX.Docking
 
         public bool InsertChild (int index, DockZoneViewModel child)
         {
-            if (!this.Orientation.IsFlagInGroup(eDockOrientation.AnySplitOrientation))
+            if (!IsSplit(this.Orientation))
             {
                 Logger.LogError("Attempted to add child zone to a non-split display (leaf display)");
                 return false;
@@ -435,8 +448,10 @@ namespace AJut.UX.Docking
                 {
                     // The panel was actually closed and removed (tearoff / relocation re-homes via
                     // SetNewLocation and never calls Close, so it never lands here). Release the
-                    // adapter's event subscribers now that it is permanently gone.
+                    // adapter's event subscribers now that it is permanently gone, and let the toolbar
+                    // and menu know it is gone.
                     panelAdapter.Dispose();
+                    m_manager?.UISyncVM?.RecountActiveInstances();
                 }
 
                 return removed;
@@ -501,21 +516,19 @@ namespace AJut.UX.Docking
                     // Dropped on empty zone - copy the entire source in and rescale
                     List<DockZoneSize> sizes = newSibling.Children.Select(c => c.UI?.RenderSize ?? DockZoneSize.Empty).ToList();
                     newSibling.CopyIntoAndClear(this);
-                    if (eDockOrientation.AnySplitOrientation.HasFlag(this.Orientation))
+                    if (IsSplit(this.Orientation))
                     {
                         DockZoneSize rootSize = this.UI?.RenderSize ?? DockZoneSize.Empty;
                         double minDim = this.Manager?.MinPanelDimension ?? 50.0;
                         if (this.Orientation == eDockOrientation.Horizontal)
                         {
-                            double fullHorizontal = sizes.Sum(s => s.Width);
-                            List<double> horizontalSizes = sizes.Select(s => rootSize.Width * (s.Width / fullHorizontal)).ToList();
+                            List<double> horizontalSizes = ProportionalShares(sizes.Select(s => s.Width).ToList(), rootSize.Width);
                             EnforceMinPanelDimensions(horizontalSizes, rootSize.Width, minDim);
                             this.UI?.SetTargetSizeAsync(horizontalSizes);
                         }
                         else
                         {
-                            double fullVertical = sizes.Sum(s => s.Height);
-                            List<double> verticalSizes = sizes.Select(s => rootSize.Height * (s.Height / fullVertical)).ToList();
+                            List<double> verticalSizes = ProportionalShares(sizes.Select(s => s.Height).ToList(), rootSize.Height);
                             EnforceMinPanelDimensions(verticalSizes, rootSize.Height, minDim);
                             this.UI?.SetTargetSizeAsync(verticalSizes);
                         }
@@ -591,7 +604,7 @@ namespace AJut.UX.Docking
         /// <summary>
         /// Build a new display element of type <typeparamref name="T"/> via the manager's factory and add it to this zone.
         /// </summary>
-        public void GenerateAndAdd<T> (object state = null) where T : IDockableDisplayElement
+        public void GenerateAndAdd<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T> (object state = null) where T : IDockableDisplayElement
         {
             if (this.Manager.BuildNewDisplayElement(typeof(T)) is T panel)
             {
@@ -641,6 +654,8 @@ namespace AJut.UX.Docking
 
             if (data.ChildZones.IsNotNullOrEmpty())
             {
+                // A zone only takes children once it is a split
+                this.Orientation = data.Orientation;
                 foreach (DockZoneSerializationData childData in data.ChildZones)
                 {
                     var child = new DockZoneViewModel(this.Manager);
@@ -652,16 +667,24 @@ namespace AJut.UX.Docking
             }
             else if (data.DisplayState.IsNotNullOrEmpty())
             {
-                foreach (DockDisplaySerializationData displayData in data.DisplayState)
+                // A panel the factory can't build (its type id resolves to nothing) is skipped. The saved selection is an
+                // index among every panel the state named, so it follows the selected panel to where it landed, or falls
+                // on the nearest panel before it that loaded when the selected one was skipped.
+                int selectedIndex = 0;
+                for (int savedIndex = 0; savedIndex < data.DisplayState.Length; ++savedIndex)
                 {
-                    DockingContentAdapterModel adapter = displayFactory(displayData);
+                    DockingContentAdapterModel adapter = displayFactory(data.DisplayState[savedIndex]);
                     if (adapter != null)
                     {
                         this.AddDockedContent(adapter);
+                        if (savedIndex <= data.SelectedIndex)
+                        {
+                            selectedIndex = this.DockedContent.Count - 1;
+                        }
                     }
                 }
 
-                this.SelectedIndex = data.SelectedIndex;
+                this.SelectedIndex = selectedIndex;
             }
 
             this.Orientation = data.Orientation;
@@ -721,6 +744,24 @@ namespace AJut.UX.Docking
                     : new DockZoneSize(parent.UI?.RenderSize.Width ?? 0, average)
                 );
             }
+        }
+
+        // Horizontal or vertical. Empty is 0, so a flag group test (HasFlag) would count it as part of
+        // every group, which is never what a split check means.
+        private static bool IsSplit (eDockOrientation orientation)
+            => orientation == eDockOrientation.Horizontal || orientation == eDockOrientation.Vertical;
+
+        // Each measured size's share of total. With nothing measured yet (every size 0), each gets an
+        // equal share rather than 0/0.
+        private static List<double> ProportionalShares (List<double> measured, double total)
+        {
+            double measuredTotal = measured.Sum();
+            if (measuredTotal <= 0.0)
+            {
+                return measured.Select(_ => measured.Count > 0 ? total / measured.Count : 0.0).ToList();
+            }
+
+            return measured.Select(m => total * (m / measuredTotal)).ToList();
         }
 
         private void InternallyReparentAndCleanup (DockZoneViewModel newParent)
@@ -808,9 +849,15 @@ namespace AJut.UX.Docking
                     break;
             }
 
+            // Keep the same tab selected: one before it going shifts it down, and the selected one going
+            // selects the tab before it
             if (currentIndex == this.SelectedIndex)
             {
                 this.SelectedIndex = Math.Max(0, currentIndex - 1);
+            }
+            else if (currentIndex >= 0 && currentIndex < this.SelectedIndex)
+            {
+                this.SelectedIndex = this.SelectedIndex - 1;
             }
 
             return result;

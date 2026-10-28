@@ -122,8 +122,8 @@
     <!--
     ===[ ColorEditIngressControl - AJut-themed override ]===
     Redefines EditingStates border brush keys. No template duplication needed.
-    AJut_ColorEditIngressControl_HighlightBorderBrush → AJut_Brush_PrimaryHighlight
-    AJut_ColorEditIngressControl_NormalBorderBrush    → AJut_Brush_BorderCommon
+    AJut_ColorEditIngressControl_HighlightBorderBrush -> AJut_Brush_PrimaryHighlight
+    AJut_ColorEditIngressControl_NormalBorderBrush    -> AJut_Brush_BorderCommon
     -->
     <Style TargetType="local:ColorEditIngressControl">
         <Setter Property="BorderBrush" Value="{ThemeResource AJut_Brush_BorderCommon}"/>
@@ -135,7 +135,7 @@
     -->
     <Style TargetType="local:PopupMenuButton">
         <Setter Property="HorizontalAlignment" Value="Left"/>
-        <Setter Property="BorderBrush" Value="{ThemeResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="BorderBrush" Value="{ThemeResource AJut_Brush_ButtonBorder}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Padding" Value="6,4"/>
     </Style>

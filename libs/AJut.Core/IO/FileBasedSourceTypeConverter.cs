@@ -70,7 +70,8 @@
         {
             if (uri.Scheme == Uri.UriSchemeFile && uri.LocalPath is string path)
             {
-                path = PathHelpers.NormalizePath(path);
+                // The path as given. NormalizePath is for comparing paths: its result is lowercased with '\' separators,
+                //  which names no file where case matters or '\' isn't a separator (macOS, iOS, Android, Linux).
                 if (!File.Exists(path))
                 {
                     _RuhRoh();

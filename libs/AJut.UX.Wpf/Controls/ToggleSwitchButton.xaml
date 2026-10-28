@@ -37,7 +37,7 @@
         <Setter Property="SwitchBorderBrushHover" Value="#333"/>
         <Setter Property="SwitchPadding" Value="-2"/>
 
-        <Setter Property="ContentForeground" Value="{DynamicResource AJut_Brush_NormalText}"/>
+        <Setter Property="ContentForeground" Value="Black"/>
         <Setter Property="ContentPadding" Value="0,0,5,0"/>
 
         <Setter Property="Template">

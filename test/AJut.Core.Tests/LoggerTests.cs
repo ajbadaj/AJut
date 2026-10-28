@@ -1387,6 +1387,13 @@ namespace AJut.Core.UnitTests
         [TestInitialize]
         public void TestSetup ()
         {
+            // The crash host is a Windows exe and each death is checked by its Windows exit code, so off Windows these
+            //  are skipped (inconclusive) rather than failed
+            if (!OperatingSystem.IsWindows())
+            {
+                Assert.Inconclusive("Windows only: the crash host is a Windows exe, checked by Windows exit codes");
+            }
+
             m_tempDir = Path.Combine(Path.GetTempPath(), $"AJut_LoggerCrashTests_{Guid.NewGuid():N}");
         }
 

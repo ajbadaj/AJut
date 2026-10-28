@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    LightTouchThemeColorsBase.xaml
+    ==============================
+    The light palette for touch. Touch has no hover, so a button has to read as one from its fill alone: button
+    surfaces are a neutral gray a clear step darker than the panels (a disabled button's sits at the panels), and
+    button borders come off. The step is in lightness, not hue, so it holds against the darker and the lighter panels
+    alike: a pale tint at the panels' own lightness only stood out by its hue.
+    Everything not stated here is the light palette's, merged in below.
+
+    A key changed here is stated in full here, and so is any brush in the light palette that takes its color from it,
+    since a brush defined in the merged light palette looks its color up there and not here.
+
+    TouchThemeColors.xaml puts this in an app's light theme when AppThemeManager.IsTouchFocused is on. AJut.UX's
+    AJutPalette.LightTouch mirrors this file, and a test keeps the two in step.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="ms-appx:///AJut.UX.WinUI3/Resources/LightThemeColorsBase.xaml"/>
+    </ResourceDictionary.MergedDictionaries>
+
+    <!-- ================[ Button surfaces ]====================== -->
+    <SolidColorBrush x:Key="AJut_Brush_ControlBackground" Color="#B8B8B8"/>
+    <LinearGradientBrush x:Key="AJut_Brush_PopOutControlBackground" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Offset="0.00" Color="#F0F0F0" />
+        <GradientStop Offset="0.10" Color="#C8C8C8" />
+        <GradientStop Offset="0.90" Color="#ACACAC" />
+        <GradientStop Offset="1.00" Color="#6A6A6A" />
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="AJut_Brush_ControlBackgroundHover" Color="#C9C9C9"/>
+    <SolidColorBrush x:Key="AJut_Brush_ButtonBackgroundPressed" Color="#8E8E8E"/>
+    <!-- Close to the panels, so a disabled button does not read as a tap target -->
+    <SolidColorBrush x:Key="AJut_Brush_ControlBackgroundDisabled" Color="#E3E3E3"/>
+
+    <!-- ================[ Button borders ]====================== -->
+    <Color x:Key="AJut_Color_ButtonBorder">#00000000</Color>
+    <SolidColorBrush x:Key="AJut_Brush_ButtonBorder" Color="{ThemeResource AJut_Color_ButtonBorder}"/>
+    <SolidColorBrush x:Key="AJut_Brush_ButtonBorderHover" Color="#00000000"/>
+    <SolidColorBrush x:Key="AJut_Brush_ButtonBorderPressed" Color="#00000000"/>
+</ResourceDictionary>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    AJutCustomControlStylingDefaults_HighContrast.xaml
+    ===================================================
+    The unthemed defaults that follow WinUI's own theme colors, for high contrast, where WinUI takes
+    them from the system's high contrast colors. AJutCustomControlStylingDefaults.xaml's HighContrast
+    theme dictionary merges it. See AJutCustomControlStylingDefaults_Dark.xaml for why these copy
+    WinUI's definitions rather than point at its brushes.
+-->
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ===========[ FlatTree ListViewItem ]================================ -->
+    <!-- WinUI's SystemControlHighlightListAccentHighBrush, ListAccentLowBrush, ListAccentMediumBrush,
+         SystemControlHighlightListLowBrush and ControlStrokeColorDefaultBrush -->
+    <SolidColorBrush x:Key="AJut_FlatTree_SelectionBrush"          Color="{ThemeResource SystemColorHighlightColor}"/>
+    <SolidColorBrush x:Key="AJut_FlatTree_SelectionBackground"     Color="{ThemeResource SystemColorHighlightColor}"/>
+    <SolidColorBrush x:Key="AJut_FlatTree_SelectionBrushUnfocused" Color="{ThemeResource SystemColorHighlightColor}"/>
+    <SolidColorBrush x:Key="AJut_FlatTree_HoverBackground"         Color="{ThemeResource SystemColorHighlightColor}"/>
+    <SolidColorBrush x:Key="AJut_FlatTree_HoverBorderBrush"        Color="{ThemeResource SystemColorButtonTextColor}"/>
+
+    <!-- ===========[ GeometryButton ]====================================== -->
+    <!-- The shape's trace: WinUI's ButtonBorderBrush family in high contrast. At rest and disabled those
+         are SystemControlForegroundTransparentBrush and SystemControlDisabledTransparentBrush, which
+         despite their names WinUI's high contrast dictionary gives the button text and gray text colors;
+         only its light and dark dictionaries make them transparent. -->
+    <SolidColorBrush x:Key="AJut_GeometryButton_Trace"            Color="{ThemeResource SystemColorButtonTextColor}"/>
+    <SolidColorBrush x:Key="AJut_GeometryButton_TracePointerOver" Color="{ThemeResource SystemColorHighlightColor}"/>
+    <SolidColorBrush x:Key="AJut_GeometryButton_TracePressed"     Color="{ThemeResource SystemColorHighlightTextColor}"/>
+    <SolidColorBrush x:Key="AJut_GeometryButton_TraceDisabled"    Color="{ThemeResource SystemColorGrayTextColor}"/>
+
+</ResourceDictionary>

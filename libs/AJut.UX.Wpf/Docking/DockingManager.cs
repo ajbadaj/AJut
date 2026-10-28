@@ -2,46 +2,39 @@
 {
     using AJut.Storage;
     using AJut.Tree;
-    using AJut.TypeManagement;
     using AJut.UX.AttachedProperties;
     using AJut.UX.Controls;
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Collections.Specialized;
     using System.ComponentModel;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Input;
     using System.Windows.Media;
     using System.Windows.Media.Imaging;
+    using System.Windows.Threading;
 
-    /* TODO: Auto save
-     * Notes...
-     * Enable auto save (bool, notify property changed)
-     * Auto save on add/remove/resize panels
-     * The one tricky part, this will be affected by window size, so saving that might be important as well, how to do that?
-     */
-
+    // ===========[ DockingManager ]==========================================
+    // The registry, the display factory, tearoff bookkeeping and every close path live in
+    // DockingManagerBase in AJut.UX, shared with the other toolkits. This adds the WPF parts:
+    //   - System.Windows.Window tearoffs, placed by Left / Top / Width / Height
+    //   - Window.Closing (cancelable) for tearoff close interception
+    //   - The WindowManager that tracks tearoffs and routes commands back to their sources
+    //   - RunDragSearch, the managed MenuItem and auto-save on zone size changes
+    //   - WPF's own layout file (DockingSerialization), and where a hidden panel re-shows from
     /// <summary>
     /// The centralized manager for a single docking experience
     /// </summary>
-    public class DockingManager : NotifyPropertyChanged, IDockingManager, IDisposable
+    public class DockingManager : DockingManagerBase<Window, DockZone>
     {
-        private readonly Dictionary<Type, DisplayBuilder> m_factory = new Dictionary<Type, DisplayBuilder>();
-        private readonly ObservableCollection<DockZone> m_rootDockZones = new ObservableCollection<DockZone>();
-        private readonly MultiMap<Window, DockZone> m_dockZoneMapping = new MultiMap<Window, DockZone>();
-        private bool m_isZoneDragDropUnderway;
-        private bool m_isReadyToTrackAutoSave = false;
-        private bool m_isDisposed;
-
-        private readonly List<Window> m_currentlyClosingWindows = new List<Window>();
-        private readonly List<Window> m_windowsToCloseSilently = new List<Window>();
         private readonly List<UIElement> m_commandSources = new List<UIElement>();
         private MenuItem m_managedMenuItem;
 
+        // ===========[ Setup/Construction/Teardown ]===========================
         /// <summary>
         /// Construct a new <see cref="DockingManager"/> instance.
         /// </summary>
@@ -50,30 +43,15 @@
         /// <param name="persistentStorageFilePath">The (optionally specified) path to the default state save for the docking experience in which this manager represents</param>
         /// <param name="autoSaveMethod">How should the manager auto save to the default state storage path as layout changes occur (default = <see cref="eDockingAutoSaveMethod.None"/>)</param>
         public DockingManager (Window rootWindow, string uniqueId, string persistentStorageFilePath = null, eDockingAutoSaveMethod autoSaveMethod = eDockingAutoSaveMethod.None)
+            : base(rootWindow, uniqueId, persistentStorageFilePath, autoSaveMethod)
         {
-            this.UISyncVM = new DockPanelAddRemoveUISync();
-            this.UISyncVM.SetManager(this);
             this.CreateNewTearoffWindowHandler = () => new DefaultDockTearoffWindow(this);
             this.ShowTearoffWindowHandler = w => w.Show();
             this.Windows = new WindowManager(rootWindow);
-            this.UniqueId = uniqueId;
-            this.DockLayoutPersistentStorageFile = persistentStorageFilePath ?? DockingSerialization.CreateApplicationPath(this.UniqueId);
-            this.AutoSaveMethod = autoSaveMethod;
         }
 
-        public void Dispose ()
+        protected override void OnDisposing ()
         {
-            if (m_isDisposed)
-            {
-                return;
-            }
-
-            m_isDisposed = true;
-
-            // Force-close all tearoff windows before pulling subs out. The close paths
-            // already call DetachTearoffSubscriptions per window.
-            this.CloseAll(force: true);
-
             // Drop the menu bar subs (if any) - they capture the MenuItem which lives on
             // the root window, so they outlive everything else if not unhooked.
             if (m_managedMenuItem != null)
@@ -81,77 +59,40 @@
                 this.UISyncVM.PanelStateChanged -= this.OnUISyncVMPanelStateChanged;
                 ((INotifyCollectionChanged)this.UISyncVM.PanelTypeEntries).CollectionChanged -= this.OnUISyncVMPanelTypeEntriesChanged;
 
+                // Each MenuItem RebuildMenuItems added has a Click handler whose target is this manager. Drop them now
+                // or they pin this manager for as long as the menu stays alive.
+                this.DetachAndRemoveManagedMenuItems(m_managedMenuItem);
                 m_managedMenuItem = null;
             }
 
-            // Symmetric -= for every TrackSizingChanges. Walks every reachable zone -
-            // root zones plus every descendant - so split / tabbed hierarchies are covered.
-            foreach (var rootZone in m_rootDockZones.ToList())
-            {
-                foreach (var zone in TreeTraversal<DockZone>.All(rootZone))
-                {
-                    if (zone != null)
-                    {
-                        this.StopTrackingSizingChanges(zone);
-                    }
-                }
-
-                // Terminal teardown of the view-model tree: drop Manager/Parent/UI on every zone VM so a
-                // zone whose UI peer outlives this manager can't re-root the (now disposed) manager. The
-                // VM tree is still intact here - CloseAll(force) above only closed tearoff windows.
-                rootZone.ViewModel?.Teardown();
-            }
-
             // Without this Dispose call the window manager's subs to root window events
-            // (StateChanged / Activated / Closed) keep RootWindow → WindowManager →
+            // (StateChanged / Activated / Closed) keep RootWindow -> WindowManager ->
             // DockingManager pinned for the life of the application.
-            this.Windows?.Dispose();
+            this.Windows.Dispose();
 
             this.CreateNewTearoffWindowHandler = null;
             this.ShowTearoffWindowHandler = null;
-
-            m_rootDockZones.Clear();
-            foreach (var kv in m_dockZoneMapping.ToList())
-            {
-                m_dockZoneMapping.RemoveAllFor(kv.Key);
-            }
-
-            m_windowsToCloseSilently.Clear();
-            m_currentlyClosingWindows.Clear();
             m_commandSources.Clear();
-            m_factory.Clear();
         }
 
-        // ======================[ Properties ]=======================
+        // Symmetric -= for every TrackSizingChanges. Walks every reachable zone - the root zone
+        // plus every descendant - so split / tabbed hierarchies are covered.
+        protected override void OnRootZoneDisposing (DockZone zone)
+        {
+            foreach (DockZone treeZone in TreeTraversal<DockZone>.All(zone))
+            {
+                if (treeZone != null)
+                {
+                    this.StopTrackingSizingChanges(treeZone);
+                }
+            }
+        }
 
-        /// <summary>
-        /// The unique id (human readability is optional, it will form the default layout storage file path if none is specified, so it should also be file safe)
-        /// </summary>
-        public string UniqueId { get; }
-
-        /// <summary>
-        /// The (optionally specified) path to the default state save for the docking experience in which this manager represents
-        /// </summary>
-        public string DockLayoutPersistentStorageFile { get; set; }
-
-        /// <summary>
-        /// The method by which this manager auto saves (if any)
-        /// </summary>
-        public eDockingAutoSaveMethod AutoSaveMethod { get; set; }
-
+        // ===========[ Properties ]============================================
         /// <summary>
         /// The window tracking for all tearoff and associated docking windows
         /// </summary>
         public WindowManager Windows { get; }
-
-        /// <summary>
-        /// Indicates if a zone is actively being drag/dropped within this docking experience
-        /// </summary>
-        public bool IsZoneDragDropUnderway
-        {
-            get => m_isZoneDragDropUnderway;
-            private set => this.SetAndRaiseIfChanged(ref m_isZoneDragDropUnderway, value);
-        }
 
         /// <summary>
         /// An (optional) method for specifying creation of a tearoff window (default is null which will create a <see cref="DefaultDockTearoffWindow"/>)
@@ -163,32 +104,21 @@
         /// </summary>
         public Action<Window> ShowTearoffWindowHandler { get; set; }
 
-        /// <summary>
-        /// Indicates if the manager is loading from a layout file (so as to stop other layout based actions from happening, like triggering auto-save)
-        /// </summary>
-        public bool IsLoadingFromLayout { get; internal set; } = false;
-
-        public DockPanelAddRemoveUISync UISyncVM { get; }
-
-        /// <summary>Minimum pixel dimension for dock zone panels during size recalculation. Default: 50.</summary>
-        public double MinPanelDimension { get; set; } = 50.0;
-
-        // ======================[ Menu Management ]=========================
-
+        // ===========[ Menu Management ]=======================================
         /// <summary>
         /// Populate a <see cref="MenuItem"/> with toggle entries for each registered
         /// panel type. Checked items indicate visible panels; clicking a toggle item
         /// shows/hides the panel.
         /// </summary>
-        public void ManageMenu (System.Windows.Controls.MenuItem menuItem)
+        public void ManageMenu (MenuItem menuItem)
         {
             // Drop prior subs if the caller hands us a different menu so the old one isn't
             // held captive and we don't accumulate stale handlers.
             if (m_managedMenuItem != null && m_managedMenuItem != menuItem)
             {
                 this.UISyncVM.PanelStateChanged -= this.OnUISyncVMPanelStateChanged;
-                ((System.Collections.Specialized.INotifyCollectionChanged)this.UISyncVM.PanelTypeEntries)
-                    .CollectionChanged -= this.OnUISyncVMPanelTypeEntriesChanged;
+                ((INotifyCollectionChanged)this.UISyncVM.PanelTypeEntries).CollectionChanged -= this.OnUISyncVMPanelTypeEntriesChanged;
+                this.DetachAndRemoveManagedMenuItems(m_managedMenuItem);
             }
 
             m_managedMenuItem = menuItem;
@@ -198,7 +128,7 @@
             this.UISyncVM.PanelStateChanged -= this.OnUISyncVMPanelStateChanged;
             this.UISyncVM.PanelStateChanged += this.OnUISyncVMPanelStateChanged;
 
-            var entries = (System.Collections.Specialized.INotifyCollectionChanged)this.UISyncVM.PanelTypeEntries;
+            var entries = (INotifyCollectionChanged)this.UISyncVM.PanelTypeEntries;
             entries.CollectionChanged -= this.OnUISyncVMPanelTypeEntriesChanged;
             entries.CollectionChanged += this.OnUISyncVMPanelTypeEntriesChanged;
         }
@@ -220,7 +150,7 @@
             }
         }
 
-        private void OnUISyncVMPanelTypeEntriesChanged (object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        private void OnUISyncVMPanelTypeEntriesChanged (object sender, NotifyCollectionChangedEventArgs e)
         {
             if (m_managedMenuItem != null)
             {
@@ -228,12 +158,29 @@
             }
         }
 
-        private void RebuildMenuItems (System.Windows.Controls.MenuItem menuItem)
+        // Drops every menu item that RebuildMenuItems added, unsubscribing each Click handler before removing the item.
+        // Without the -= step, a removed item still holds a strong ref back to this manager through its handler, for as
+        // long as anything holds the item. Used by Dispose, ManageMenu (when handed a different menu), and
+        // RebuildMenuItems (which wipes before rebuilding).
+        private void DetachAndRemoveManagedMenuItems (MenuItem menuItem)
         {
-            menuItem.Items.Clear();
+            for (int i = menuItem.Items.Count - 1; i >= 0; --i)
+            {
+                if (menuItem.Items[i] is MenuItem item)
+                {
+                    item.Click -= this.OnManagedMenuItemClicked;
+                }
+
+                menuItem.Items.RemoveAt(i);
+            }
+        }
+
+        private void RebuildMenuItems (MenuItem menuItem)
+        {
+            this.DetachAndRemoveManagedMenuItems(menuItem);
             foreach (var desc in this.UISyncVM.GenerateMenuDescriptors())
             {
-                var item = new System.Windows.Controls.MenuItem
+                var item = new MenuItem
                 {
                     Header = desc.IsToggle ? desc.DisplayName : $"Add {desc.DisplayName}",
                     Tag = desc.PanelType,
@@ -246,11 +193,11 @@
             }
         }
 
-        private void UpdateMenuCheckedStates (System.Windows.Controls.MenuItem menuItem)
+        private void UpdateMenuCheckedStates (MenuItem menuItem)
         {
             foreach (var item in menuItem.Items)
             {
-                if (item is System.Windows.Controls.MenuItem mi && mi.Tag is Type panelType)
+                if (item is MenuItem mi && mi.Tag is Type panelType)
                 {
                     DockPanelTypeEntry entry = this.UISyncVM.FindEntry(panelType);
                     if (entry != null)
@@ -261,9 +208,9 @@
             }
         }
 
-        private void OnManagedMenuItemClicked (object sender, System.Windows.RoutedEventArgs e)
+        private void OnManagedMenuItemClicked (object sender, RoutedEventArgs e)
         {
-            if (sender is System.Windows.Controls.MenuItem mi && mi.Tag is Type panelType)
+            if (sender is MenuItem mi && mi.Tag is Type panelType)
             {
                 DockPanelTypeEntry entry = this.UISyncVM.FindEntry(panelType);
                 if (entry != null && entry.IsSingleInstance)
@@ -277,14 +224,13 @@
             }
         }
 
-        // ======================[ Interface Methods ]=======================
-
+        // ===========[ Public Interface Methods ]==============================
         /// <summary>
         /// Register root <see cref="DockZone"/>(s) that are fixed dock locations. Each DockingManager requires at least one root level zone.
         /// </summary>
         public void RegisterRootDockZones (params DockZone[] dockZones)
         {
-            this.RegisterRootDockZones(this.Windows.Root, dockZones);
+            this.RegisterRootDockZones(this.RootWindow, dockZones);
         }
 
         /// <summary>
@@ -304,207 +250,12 @@
                     zone.Manager?.DeRegisterRootDockZones(zone);
                 }
 
-                m_rootDockZones.Add(zone);
+                this.RecordRootZone(window, zone);
                 zone.Manager = this;
                 if (zone.ViewModel == null)
                 {
                     zone.ViewModel = new DockZoneViewModel(this);
                 }
-
-                m_dockZoneMapping.Add(window, zone);
-            }
-        }
-
-        /// <summary>
-        /// Deregister a root <see cref="DockZone"/>.
-        /// </summary>
-        public void DeRegisterRootDockZones (params DockZone[] dockZones)
-        {
-            foreach (var zone in dockZones)
-            {
-                m_rootDockZones.Remove(zone);
-                zone.Manager = null;
-                m_dockZoneMapping.RemoveAllValues(zone);
-            }
-        }
-
-        /// <summary>
-        /// Sets up the manager, providing a fallback layout should the default file be non-existant or invalid
-        /// </summary>
-        /// <param name="fallbackLayoutFilePath">The file path (local file, embedded asset, or path of file from the interwebs)</param>
-        /// <returns><c>true</c> if something is loaded (including fallback) or <c>false</c> otherwise</returns>
-        public bool SetupDefaultAndFallbackTo (string fallbackLayoutFilePath)
-        {
-            if (this.ReloadDockLayoutFromPersistentStorage())
-            {
-                this.UISyncVM.EnforceGuaranteedOnStart();
-                m_isReadyToTrackAutoSave = true;
-                return true;
-            }
-            else if (fallbackLayoutFilePath != null && this.LoadDockLayoutFromFile(fallbackLayoutFilePath))
-            {
-                this.UISyncVM.EnforceGuaranteedOnStart();
-                this.SaveDockLayoutToPersistentStorage();
-                m_isReadyToTrackAutoSave = true;
-                return true;
-            }
-
-            this.UISyncVM.EnforceGuaranteedOnStart();
-            return false;
-        }
-
-        /// <summary>
-        /// Load the default state (at path: <see cref="DockLayoutPersistentStorageFile"/>), closes all (without prompting) and
-        /// builds displays with the given state and the given layouts of the file.
-        /// </summary>
-        public bool ReloadDockLayoutFromPersistentStorage ()
-        {
-            try
-            {
-                return DockingSerialization.ResetFromState(this.DockLayoutPersistentStorageFile, this);
-            }
-            catch (Exception e)
-            {
-                Logger.LogError($"Docking: Error loading from default dock layout at '{DockLayoutPersistentStorageFile ?? "<null>"}'", e);
-                return false;
-            }
-        }
-
-        /// <summary>
-        /// Loads the state from the given path, closes all (without prompting) and
-        /// builds displays with the given state and the given layouts of the file.
-        /// </summary>
-        public bool LoadDockLayoutFromFile (string filePath)
-        {
-            return DockingSerialization.ResetFromState(filePath, this);
-        }
-
-        /// <summary>
-        /// Saves to a file the current docking layout + display state for each display
-        /// </summary>
-        public bool SaveDockLayoutToPersistentStorage ()
-        {
-            return this.SaveDockLayoutToFile(this.DockLayoutPersistentStorageFile);
-        }
-
-        /// <summary>
-        /// Saves to a file the current docking layout + display state for each display
-        /// </summary>
-        public bool SaveDockLayoutToFile (string filePath = null)
-        {
-            return DockingSerialization.SerializeStateTo(filePath, this);
-        }
-
-        /// <summary>
-        /// Generates the auto save temp path (should only used if <see cref="AutoSaveMethod"/> == <see cref="eDockingAutoSaveMethod.AutoSaveToTemp"/>)
-        /// </summary>
-        public string GenerateDefaultStateStorageAutoSaveTempPath () => this.DockLayoutPersistentStorageFile + "~";
-
-        /// <summary>
-        /// Register a factory method called to build displays (implenetations of <see cref="IDockableDisplayElement"/>)
-        /// </summary>
-        /// <typeparam name="T">The type of display (an implenetation of <see cref="IDockableDisplayElement"/>)</typeparam>
-        /// <param name="customFactory">The factory method</param>
-        /// <param name="singleInstanceOnly">Indicates if only one instance of the display should allowed to be created (default false)</param>
-        public void RegisterDisplayFactory<T> (Func<T> customFactory = null, bool singleInstanceOnly = false)
-            where T : IDockableDisplayElement
-        {
-            this.RegisterDisplayFactory<T>(
-                new DockPanelRegistrationRules { SingleInstanceOnly = singleInstanceOnly },
-                customFactory
-            );
-        }
-
-        public void RegisterDisplayFactory<T> (DockPanelRegistrationRules rules, Func<T> customFactory = null)
-            where T : IDockableDisplayElement
-        {
-            m_factory[typeof(T)] = new DisplayBuilder
-            {
-                Rules = rules,
-                Builder = customFactory != null ? () => customFactory() as IDockableDisplayElement : () => BuildDefaultDisplayFor(typeof(T))
-            };
-
-            this.UISyncVM.AddEntry(typeof(T), rules);
-        }
-
-        /// <summary>
-        /// Use the factory and internal setup methods to build a new <see cref="IDockableDisplayElement"/> of type <see cref="T"/>
-        /// </summary>
-        /// <typeparam name="T">The type of display (an implenetation of <see cref="IDockableDisplayElement"/>)</typeparam>
-        public T BuildNewDisplayElement<T> () where T : IDockableDisplayElement
-        {
-            return (T)this.BuildNewDisplayElement(typeof(T));
-        }
-
-        /// <summary>
-        /// Use the factory and internal setup methods to build a new <see cref="IDockableDisplayElement"/> of type <see cref="T"/>
-        /// </summary>
-        /// <typeparam name="T">The type of display (an implenetation of <see cref="IDockableDisplayElement"/>)</typeparam>
-        public IDockableDisplayElement BuildNewDisplayElement (Type elementType)
-        {
-            DockPanelRegistrationRules rules = default;
-            IDockableDisplayElement displayElement;
-            if (m_factory.TryGetValue(elementType, out var b))
-            {
-                displayElement = b.Builder();
-                rules = b.Rules;
-            }
-            else
-            {
-                displayElement = BuildDefaultDisplayFor(elementType);
-            }
-
-            return this.SetupAndReturnNew(displayElement, rules);
-        }
-
-
-        public IEnumerable<DockZoneViewModel> GetAllRoots()
-        {
-            return m_rootDockZones.Select(z => z.ViewModel);
-        }
-
-        /// <summary>
-        /// Close all zones out, going through the effort first of asking them if that's ok prior to closing them
-        /// </summary>
-        /// <returns>True if all zones successfully closed, false otherwise</returns>
-        public bool CloseAll (bool force = false)
-        {
-            if (force)
-            {
-                m_windowsToCloseSilently.AddRange(this.Windows);
-            }
-            else
-            {
-                List<DockingContentAdapterModel> all = m_rootDockZones.SelectMany(z => TreeTraversal<DockZone>.All(z)).SelectMany(z => _DockedContentOrEmptyFor(z?.ViewModel)).ToList();
-
-                bool anyDissenters = false;
-                foreach (var adapter in all)
-                {
-                    if (!adapter.CheckCanClose())
-                    {
-                        var closeSupression = new RoutedEventArgs(DockZone.NotifyCloseSupressionEvent);
-                        ((DockZone)adapter.Location.UI).RaiseEvent(closeSupression);
-                        anyDissenters = true;
-                    }
-                }
-
-                if (anyDissenters)
-                {
-                    return false;
-                }
-            }
-
-            this.Windows.CloseAllChildWindows();
-            return true;
-
-            IEnumerable<DockingContentAdapterModel> _DockedContentOrEmptyFor (DockZoneViewModel vm)
-            {
-                if ((vm?.DockedContent?.Count ?? 0) == 0)
-                {
-                    return Enumerable.Empty<DockingContentAdapterModel>();
-                }
-
-                return vm.DockedContent;
             }
         }
 
@@ -514,21 +265,49 @@
         /// </summary>
         /// <param name="dragSourceWindow">The window which will be dragged</param>
         /// <param name="sourceDockZone">The dock zone on that window which will be dragged</param>
-        public async Task RunDragSearch (Window dragSourceWindow, DockZone sourceDockZone)
+        public Task RunDragSearch (Window dragSourceWindow, DockZone sourceDockZone)
+            => this.RunDragSearch(dragSourceWindow, sourceDockZone, screenCursorOffset: null, origin: null);
+
+        // screenCursorOffset: where the pointer sits within the dragged window, which it keeps when the drag ends. Null leaves
+        //  the window's top-left corner on the pointer.
+        // origin: where what the drag tore off came from, which a canceled drag (Escape) puts it back to. Null when the drag
+        //  moves a tearoff that already existed, where Escape only stops the drag.
+        internal async Task RunDragSearch (Window dragSourceWindow, DockZone sourceDockZone, DockPoint? screenCursorOffset, DockDragOrigin origin)
         {
             const double kMouseOffset = 20.0;
-            DockZone currentDropTarget = null;
-            DockZone lastDropTarget = null;
-            DockDropInsertionDriverWidget lastInsertionDriver = null;
+
+            // WinUI3's drag polls every 16ms, and the session counts its timing (how long the pointer rests on a window) in
+            //  those ticks
+            const int kTickMilliseconds = 16;
+
+            // The drag's other windows, frontmost first: the window manager keeps them in activation order. Snapshot once, so
+            //  a raise during the drag (which activates nothing) can move a window up in it.
+            List<Window> windowOrder = this.Windows.Where(w => w != dragSourceWindow).ToList();
+
+            // The shared session decides which zone's overlay shows, which widget is engaged, when the ghost dims, and when
+            //  a window the pointer rests on flashes and is raised; the host does each of those on the WPF windows and controls
+            var host = new DragSearchHost(windowOrder);
+            var session = new DockDragSession<DockZone, DockDropInsertionDriverWidget, Window>(host);
+
+            // The ghost follows the mouse through AsyncDragMove, which moves it as mouse moves arrive. The session wants one
+            //  update per tick whether the mouse moves or not, so a timer at WinUI3's poll rate hit tests under the pointer
+            //  and hands that over, and watches for Escape, which cancels the move.
+            var escape = new CancellationTokenSource();
+            var tickTimer = new DispatcherTimer(DispatcherPriority.Normal) { Interval = TimeSpan.FromMilliseconds(kTickMilliseconds) };
+            Window draggerWindow = null;
             try
             {
                 this.IsZoneDragDropUnderway = true;
 
-                Window draggerWindow = new Window();
+                // The ghost starts at full opacity and dims over a drop target. It stays topmost, above any window the drag
+                //  raises.
+                draggerWindow = new Window();
                 draggerWindow.WindowStyle = WindowStyle.None;
                 draggerWindow.AllowsTransparency = true;
-                draggerWindow.Opacity = 0.45;
+                draggerWindow.Opacity = 1.0;
+                draggerWindow.Topmost = true;
                 draggerWindow.Style = null;
+                host.Ghost = draggerWindow;
 
                 Point mouseLoc = Mouse.GetPosition(dragSourceWindow);
                 mouseLoc.X += dragSourceWindow.Left;
@@ -560,63 +339,58 @@
                 try
                 {
                     dragSourceWindow.Visibility = Visibility.Collapsed;
-                    await draggerWindow.AsyncDragMove(onMove: _WindowLocationChanged);
+                    tickTimer.Tick += _OnDragTick;
+                    tickTimer.Start();
+                    await draggerWindow.AsyncDragMove(escape.Token, onMove: _OnGhostMoved);
+                }
+                catch (OperationCanceledException)
+                {
+                    session.Cancel();
                 }
                 finally
                 {
+                    tickTimer.Stop();
+                    tickTimer.Tick -= _OnDragTick;
                     draggerWindow.Close();
-                    dragSourceWindow.Left = draggerWindow.Left - kMouseOffset;
-                    dragSourceWindow.Top = draggerWindow.Top - kMouseOffset;
-                    dragSourceWindow.Visibility = Visibility.Visible;
+
+                    // A drag canceled with somewhere to go back to shows nothing more of the tearoff it made
+                    if (!session.IsCanceled || (origin == null))
+                    {
+                        _ShowSourceWhereTheGhostIs();
+                    }
                 }
 
-                if (currentDropTarget != null && lastInsertionDriver != null)
+                // Canceled: what the drag tore off is dropped back where it came from, which closes the tearoff the drag
+                //  made, then gets its tab position, selection and split sizes back. With nowhere to go back to, the
+                //  tearoff stays where the drag left it.
+                if (session.IsCanceled)
+                {
+                    if ((origin != null) && !this.ReturnCanceledDrag(origin, sourceDockZone.ViewModel, dragSourceWindow))
+                    {
+                        _ShowSourceWhereTheGhostIs();
+                    }
+
+                    return;
+                }
+
+                DockDropInsertionDriverWidget engagedWidget = session.EngagedWidget;
+                if (engagedWidget != null)
                 {
                     // Ensure no bugs will inadvertently cause a break
-                    if (lastInsertionDriver.InsertionZone.ViewModel == null)
-                    {
-                        lastInsertionDriver = null;
-                    }
-                    else
+                    if (engagedWidget.InsertionZone?.ViewModel != null)
                     {
                         // Do the drop
-                        lastInsertionDriver.InsertionZone.ViewModel.DropAddSiblingIntoDock(sourceDockZone.ViewModel, lastInsertionDriver.Direction);
+                        engagedWidget.InsertionZone.ViewModel.DropAddSiblingIntoDock(sourceDockZone.ViewModel, engagedWidget.Direction);
 
-                        // If it's a docking tearoff window and this was the last thing, close it
+                        // If it's a docking tearoff window and this was the last thing, close it. Unlike the shared
+                        //  drop commit, which always closes the drag source, a source tearoff holding more than one
+                        //  zone stays open here (AJU-103).
                         if (DockWindowConfig.GetIsDockingTearoffWindow(dragSourceWindow))
                         {
                             int numZones = dragSourceWindow.GetVisualChildren().OfType<DockZone>().Count();
-                            if (numZones == 0 || numZones == 1)
+                            if ((numZones == 0) || (numZones == 1))
                             {
-                                m_windowsToCloseSilently.Add(dragSourceWindow);
-                                try
-                                {
-                                    // Deregister tearoff root zones so GetAllRoots/EnumerateAdapters
-                                    // won't traverse the stale tearoff root after content was moved
-                                    var tearoffRoots = dragSourceWindow.GetVisualChildren().OfType<DockZone>().ToArray();
-                                    this.DeRegisterRootDockZones(tearoffRoots);
-
-                                    // Terminal teardown of the abandoned source root(s). A directional-split
-                                    // drop transplants the dragged VM into the live drop target (it gains a
-                                    // parent), so only tear down a genuinely-abandoned (parentless) root -
-                                    // tearing down a transplanted VM would destroy the drop target.
-                                    foreach (DockZone tearoffRoot in tearoffRoots)
-                                    {
-                                        if (tearoffRoot.ViewModel != null && tearoffRoot.ViewModel.Parent == null)
-                                        {
-                                            tearoffRoot.ViewModel.Teardown();
-                                        }
-                                    }
-
-                                    this.DetachTearoffSubscriptions(dragSourceWindow);
-                                    dragSourceWindow.Close();
-                                    m_dockZoneMapping.RemoveAllFor(dragSourceWindow);
-                                }
-                                finally
-                                {
-                                    m_windowsToCloseSilently.Remove(dragSourceWindow);
-                                }
-
+                                this.SilentlyForceCloseTearoffWindow(dragSourceWindow);
                             }
                         }
                     }
@@ -625,60 +399,86 @@
             finally
             {
                 this.IsZoneDragDropUnderway = false;
-                if (lastInsertionDriver != null)
-                {
-                    lastInsertionDriver.IsEngaged = false;
-                    lastInsertionDriver = null;
-                }
 
-                if (lastDropTarget != null)
-                {
-                    lastDropTarget.IsDirectDropTarget = false;
-                    lastDropTarget = null;
-                }
+                // Disengages the widget and hides the overlay
+                session.End();
+                escape.Dispose();
             }
 
-            void _WindowLocationChanged ()
+            // The ghost sits kMouseOffset down and right of the pointer, so the dragged window goes where the ghost puts the
+            //  pointer, at its cursor offset
+            void _ShowSourceWhereTheGhostIs ()
             {
-                currentDropTarget = null;
+                dragSourceWindow.Left = draggerWindow.Left - kMouseOffset - (screenCursorOffset?.X ?? 0.0);
+                dragSourceWindow.Top = draggerWindow.Top - kMouseOffset - (screenCursorOffset?.Y ?? 0.0);
+                dragSourceWindow.Visibility = Visibility.Visible;
+            }
 
-                foreach (DockZone rootZones in this.Windows.Where(w => w != dragSourceWindow).SelectMany(w => m_dockZoneMapping.TryGetValues(w, out List<DockZone> zones) ? zones : Enumerable.Empty<DockZone>()))
+            // The ticks do the hit testing, so a mouse move has nothing more to do once the ghost has moved
+            static void _OnGhostMoved () { }
+
+            void _OnDragTick (object sender, EventArgs e)
+            {
+                if (Keyboard.IsKeyDown(Key.Escape))
                 {
-                    var result = VisualTreeHelper.HitTest(rootZones, Mouse.PrimaryDevice.GetPosition(rootZones));
-                    if (result?.VisualHit != null)
+                    escape.Cancel();
+                    return;
+                }
+
+                _HitTestUnderThePointer();
+            }
+
+            // Hit tests the other windows' zones at the pointer, frontmost window first: the first zone found is the drop
+            //  target, and the insertion widget under the pointer in it (if it is enabled) is the one a drop would use. Also
+            //  finds the window the pointer rests on, for raising.
+            void _HitTestUnderThePointer ()
+            {
+                DockZone hitZone = null;
+                DockDropInsertionDriverWidget hitWidget = null;
+                foreach (DockZone rootZone in windowOrder.SelectMany(w => this.TryGetZonesForWindow(w, out IReadOnlyList<DockZone> zones) ? zones : Enumerable.Empty<DockZone>()))
+                {
+                    var result = VisualTreeHelper.HitTest(rootZone, Mouse.PrimaryDevice.GetPosition(rootZone));
+                    if (result?.VisualHit == null)
                     {
-                        var hitWidget = result.VisualHit as DockDropInsertionDriverWidget ?? result.VisualHit.GetFirstParentOf<DockDropInsertionDriverWidget>();
-                        if (hitWidget?.IsEnabled == true)
-                        {
-                            hitWidget.IsEngaged = true;
-                            if (lastInsertionDriver != hitWidget && lastInsertionDriver != null)
-                            {
-                                lastInsertionDriver.IsEngaged = false;
-                            }
+                        continue;
+                    }
 
-                            lastInsertionDriver = hitWidget;
-                        }
-                        else if (lastInsertionDriver != null)
-                        {
-                            lastInsertionDriver.IsEngaged = false;
-                            lastInsertionDriver = null;
-                        }
-
-                        var hitZone = result.VisualHit as DockZone ?? result.VisualHit.GetFirstParentOf<DockZone>();
-                        if (hitZone != null)
-                        {
-                            currentDropTarget = hitZone;
-                            currentDropTarget.IsDirectDropTarget = true;
-                            if (currentDropTarget != lastDropTarget && lastDropTarget != null)
-                            {
-                                lastDropTarget.IsDirectDropTarget = false;
-                            }
-
-                            lastDropTarget = currentDropTarget;
-                            return;
-                        }
+                    hitZone = result.VisualHit as DockZone ?? result.VisualHit.GetFirstParentOf<DockZone>();
+                    if (hitZone != null)
+                    {
+                        var widget = result.VisualHit as DockDropInsertionDriverWidget ?? result.VisualHit.GetFirstParentOf<DockDropInsertionDriverWidget>();
+                        hitWidget = (widget?.IsEnabled == true) ? widget : null;
+                        break;
                     }
                 }
+
+                session.Update(hitZone, hitWidget, _FindWindowToRaise());
+            }
+
+            // The frontmost window under the pointer, when it isn't already the frontmost window (resting on that one needs
+            //  no raise), as WinUI3's drag picks it. The root window is left out when it owns the tearoffs, since an owner
+            //  always sits behind the windows it owns, so raising it does nothing.
+            Window _FindWindowToRaise ()
+            {
+                var pointer = new Point(draggerWindow.Left - kMouseOffset, draggerWindow.Top - kMouseOffset);
+                Window frontmost = null;
+                foreach (Window window in windowOrder)
+                {
+                    if (!window.IsVisible
+                        || ((window == this.RootWindow) && this.Windows.SetOwnerAsRootForEachChildWindow))
+                    {
+                        continue;
+                    }
+
+                    frontmost ??= window;
+                    var bounds = new Rect(window.Left, window.Top, window.ActualWidth, window.ActualHeight);
+                    if (bounds.Contains(pointer))
+                    {
+                        return window == frontmost ? null : window;
+                    }
+                }
+
+                return null;
             }
         }
 
@@ -690,8 +490,7 @@
         public Result<Window> DoTearoff (IDockableDisplayElement element, Point newWindowOrigin)
         {
             DockZoneSize dockSize = element.DockingAdapter.Location.UI?.RenderSize ?? DockZoneSize.Empty;
-            Size previousZoneSize = new Size(dockSize.Width, dockSize.Height);
-            return this.DoTearoff(element, newWindowOrigin, previousZoneSize);
+            return this.DoTearoff(element, newWindowOrigin, new Size(dockSize.Width, dockSize.Height));
         }
 
         /// <summary>
@@ -700,41 +499,10 @@
         /// to whatever size you specify.
         /// </summary>
         public Result<Window> DoTearoff (IDockableDisplayElement element, Point newWindowOrigin, Size newWindowSize)
-        {
-            try
-            {
-                // Check if tearing off will orphan the source tearoff window
-                DockZoneViewModel sourceLocation = element.DockingAdapter.Location;
-
-                // Remove element from zone
-                if (!sourceLocation.RemoveDockedContent(element.DockingAdapter))
-                {
-                    var result = Result<Window>.Error("DockingManager: Tear off failed at panel closing");
-                    Logger.LogError(result.GetErrorReport());
-                    return result;
-                }
-
-                // Create the new dock zone & window
-                var newZone = new DockZoneViewModel(this);
-                var windowResult = this.CreateAndStockTearoffWindow(newZone, newWindowOrigin, newWindowSize);
-                if (windowResult)
-                {
-                    newZone.AddDockedContent(element);
-                }
-
-                return windowResult;
-            }
-            catch (Exception exc)
-            {
-                var result = Result<Window>.Error("DockingManager: Window tearoff failed for unknown reason");
-                result.AddError(exc.ToString());
-                Logger.LogError(result.GetErrorReport(), exc);
-                return result;
-            }
-        }
+            => this.DoTearoffCore(element, new DockWindowBounds(newWindowOrigin.X, newWindowOrigin.Y, newWindowSize.Width, newWindowSize.Height));
 
         /// <summary>
-        /// Tears off a <see cref="DockZoneViewModel"/>, which means itself, all it's docked content, and/or child zones - and places 
+        /// Tears off a <see cref="DockZoneViewModel"/>, which means itself, all it's docked content, and/or child zones - and places
         /// that into a new tearoff window, collapsing the location it was pulled from. New window is set to have the same size as the
         /// zone ui that it is made from.
         /// </summary>
@@ -747,7 +515,7 @@
         }
 
         /// <summary>
-        /// Tears off a <see cref="DockZoneViewModel"/>, which means itself, all it's docked content, and/or child zones - and places 
+        /// Tears off a <see cref="DockZoneViewModel"/>, which means itself, all it's docked content, and/or child zones - and places
         /// that into a new tearoff window, collapsing the location it was pulled from. New window has whatever size you specify.
         /// </summary>
         /// <param name="sourceZone">What zone</param>
@@ -755,138 +523,18 @@
         /// <param name="newTearoffWindowSize">The tearoff window's size</param>
         /// <returns>The result containing the window that was created and stocked</returns>
         public Result<Window> DoGroupTearoff (DockZoneViewModel sourceZone, Point newWindowOrigin, Size newTearoffWindowSize)
-        {
-            try
-            {
-                // Has a parent, standard tear off
-                if (sourceZone.Parent != null)
-                {
-                    sourceZone.UnparentAndDistributeSibling();
-                }
-                // Is a root zone
-                else
-                {
-                    // First check to see if it's the only zone in the window, if that's the case then we're good to go
-                    var window = Window.GetWindow((DockZone)sourceZone.UI);
-                    if (DockWindowConfig.GetIsDockingTearoffWindow(window))
-                    {
-                        return Result<Window>.Success(window);
-                    }
-                    else
-                    {
-                        // Otherwise we have a scenario where we're tearing off a root zone from the main window. This
-                        //  is not allowed as the root zones are the anchor points that should be expected to always exist
-                        //  (for serialization and just normal expectation purposes). So instead move all current stuff
-                        //  down into a new zone, and essentially tear that off instead
-                        sourceZone = sourceZone.DuplicateAndClear();
-                    }
-                }
-
-                return this.CreateAndStockTearoffWindow(sourceZone, newWindowOrigin, newTearoffWindowSize);
-            }
-            catch (Exception exc)
-            {
-                // There is probably more to do - but for now, at least make sure stray windows aren't left open
-                Logger.LogError("Window tearoff failed!", exc);
-                return Result<Window>.Error("DockingManager: Window tearoff failed for unknown reason");
-            }
-        }
+            => this.DoGroupTearoffCore(sourceZone, new DockWindowBounds(newWindowOrigin.X, newWindowOrigin.Y, newTearoffWindowSize.Width, newTearoffWindowSize.Height));
 
         /// <summary>
-        /// The general flow of docking expects certain layouts (like you won't have an empty zone as a sibling to other child zones),
-        /// this is so ingrained, it is assumed to be there all the while providing major benefits of code speed up and simplification.
-        /// While the system only builds layout hierarchies that are valid - manually built layouts, or layouts loaded from invalid layout
-        /// files might cause layout hierarchies to be incorrect. To combat that, this cleanup function will fix any problems of that nature
-        /// and should be considered to be called when doing any manual building/adding of <see cref="DockZoneViewModel"/>s.
+        /// Captures where a panel was hidden from, so it can be re-shown there. A panel hidden from the root window re-shows
+        /// in a tearoff of its zone's size at the root window's position.
         /// </summary>
-        public void CleanZoneLayoutHierarchies ()
+        public override HiddenPanelPlatformState CaptureHideState (DockingContentAdapterModel adapter)
         {
-            var toVisit = new Queue<DockZoneViewModel>();
-            m_rootDockZones.Select(z => z.ViewModel).ForEach(toVisit.Enqueue);
-            while (toVisit.Count != 0)
-            {
-                var parentEval = toVisit.Dequeue();
-                if (EnumerableXT.IsNullOrEmpty(parentEval?.Children))
-                {
-                    continue;
-                }
-
-                for (int index = 0; index < parentEval.Children.Count; ++index)
-                {
-                    var child = parentEval.Children[index];
-                    if (child.Orientation == parentEval.Orientation)
-                    {
-                        parentEval.RunChildZoneRemoval(child);
-                        foreach (var grandchild in child.Children.AllNonNullElements().ToList())
-                        {
-                            parentEval.InsertChild(index++, grandchild);
-                            toVisit.Enqueue(grandchild);
-                        }
-                    }
-                    else
-                    {
-                        toVisit.Enqueue(child);
-                    }
-                }
-            }
-        }
-
-        public DockZoneViewModel FindFirstAvailableDockZone ()
-        {
-            foreach (DockZoneViewModel zone in m_rootDockZones.SelectMany(z => TreeTraversal<DockZone>.All(z)).Select(z => z.ViewModel))
-            {
-                if (zone.Orientation.IsFlagInGroup(eDockOrientation.AnyLeafDisplay))
-                {
-                    return zone;
-                }
-            }
-
-            Logger.LogError($"DockingManager may be setup wrong, tried to find first available dock zone and couldn't find a leaf zone");
-            return null;
-        }
-
-        public DockZoneViewModel FindFirstAvailableDockZoneForGroup (string groupId)
-        {
-            if (groupId.IsNotNullOrEmpty())
-            {
-                foreach (DockZone rootZone in m_rootDockZones)
-                {
-                    if (DockZone.GetGroupId(rootZone) == groupId)
-                    {
-                        foreach (DockZoneViewModel zone in TreeTraversal<DockZoneViewModel>.All(rootZone.ViewModel))
-                        {
-                            if (zone.Orientation.IsFlagInGroup(eDockOrientation.AnyLeafDisplay))
-                            {
-                                return zone;
-                            }
-                        }
-                    }
-                }
-            }
-
-            return this.FindFirstAvailableDockZone();
-        }
-
-        // ===========[ Panel Add/Toggle/Hide - delegates to shared UISync logic ]====
-
-        public void AddPanel (Type panelType) => this.UISyncVM.AddPanel(panelType);
-        public void TogglePanel (Type panelType) => this.UISyncVM.ShowPanel(panelType);
-        public void RemoveOrHidePanel (DockingContentAdapterModel adapter) => this.UISyncVM.CloseOrHidePanel(adapter);
-
-        // ===========[ IDockingManager Platform Hooks ]========================
-
-        public DockPanelRegistrationRules? GetPanelRules (Type panelType)
-        {
-            return m_factory.TryGetValue(panelType, out DisplayBuilder builder) ? builder.Rules : null;
-        }
-
-        public DockZoneViewModel FindTargetZoneForGroup (string groupId)
-        {
-            return this.FindFirstAvailableDockZoneForGroup(groupId);
-        }
-
-        public HiddenPanelPlatformState CaptureHideState (DockingContentAdapterModel adapter)
-        {
+            // The shared version keeps nothing for a panel hidden from the root window, so it re-shows in a default sized
+            //  tearoff at the root window's position. WPF keeps the size of the zone it was hidden from. Where a hidden
+            //  panel should come back, ideally the spot it was hidden from, is still open (AJU-96), so WPF keeps its own
+            //  until then.
             DockZone dockZoneUI = adapter.Location?.UI as DockZone;
             Window hostWindow = dockZoneUI != null ? Window.GetWindow(dockZoneUI) : null;
             bool wasInTearoff = hostWindow != null && DockWindowConfig.GetIsDockingTearoffWindow(hostWindow);
@@ -914,257 +562,58 @@
             };
         }
 
-        public bool TryRestoreFromHideState (object hideState, DockingContentAdapterModel adapter)
+        /// <summary>
+        /// Adds an element whose command bindings every tearoff window made from here on gets too, so a command raised in a
+        /// tearoff still reaches it
+        /// </summary>
+        public void AddCommandSource (UIElement source)
         {
-            if (hideState is not HiddenPanelPlatformState state || !state.WasInTearoff)
+            if (source != null)
             {
-                return false;
-            }
-
-            // Check if the same tearoff window is still alive and tracked
-            if (state.TearoffWindowRef is Window window
-                && m_dockZoneMapping.TryGetValues(window, out List<DockZone> zones)
-                && zones.Count > 0)
-            {
-                DockZoneViewModel tearoffRoot = DockWindowConfig.GetDockingTearoffWindowRootZone(window);
-                if (tearoffRoot != null)
-                {
-                    tearoffRoot.AddDockedContent(adapter);
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        public void AfterPanelHidden (object hideState)
-        {
-            if (hideState is not HiddenPanelPlatformState state || !state.WasInTearoff)
-            {
-                return;
-            }
-
-            if (state.TearoffWindowRef is Window hostWindow)
-            {
-                // Check if the tearoff is now empty and should be closed
-                var rootZone = DockWindowConfig.GetDockingTearoffWindowRootZone(hostWindow);
-                if (rootZone != null && !rootZone.DockedContent.Any()
-                    && (rootZone.Orientation == eDockOrientation.Empty || rootZone.Orientation.IsFlagInGroup(eDockOrientation.AnyLeafDisplay)))
-                {
-                    m_windowsToCloseSilently.Add(hostWindow);
-                    try
-                    {
-                        m_dockZoneMapping.RemoveAllFor(hostWindow);
-                    }
-                    catch (Exception ex)
-                    {
-                        // Windows is very finnicky about trying to close or change properties while closing is already
-                        //  happening. We're trying to safeguard around this problem, but it also means close isn't happening
-                        //  because close is already happening, which makes this less of a worry
-                        Logger.LogError(ex);
-                    }
-                    finally
-                    {
-                        m_windowsToCloseSilently.Remove(hostWindow);
-                    }
-                }
+                m_commandSources.Add(source);
             }
         }
 
-        public bool CreateTearoffForPanel (DockingContentAdapterModel adapter, double x, double y, double width, double height)
+        // ===========[ DockingManagerBase Implementations ]====================
+        protected override DockZoneViewModel GetZoneViewModel (DockZone zone) => zone.ViewModel;
+
+        protected override string GetZoneGroupId (DockZone zone) => DockZone.GetGroupId(zone);
+
+        protected override IEnumerable<DockZone> EnumerateZoneTree (DockZone rootZone) => TreeTraversal<DockZone>.All(rootZone);
+
+        // Window placement on WPF is in device independent pixels, so creation takes the same bounds
+        protected override DockWindowBounds GetWindowBounds (Window window)
+            => new DockWindowBounds(window.Left, window.Top, window.ActualWidth, window.ActualHeight);
+
+        protected override bool IsWindowTracked (Window window) => this.Windows.Contains(window);
+
+        protected override void StopTrackingWindow (Window window) => this.Windows.StopTracking(window);
+
+        protected override void CloseWindow (Window window) => window.Close();
+
+        // Gives the window focus. Tearoffs are owned by the root window by default, which keeps the root behind them
+        //  whatever its z-order, so focus is what a tearoff closing hands back to it.
+        protected override void ActivateWindow (Window window) => window.Focus();
+
+        protected override bool TryCaptureWindowLayoutState (Window window, out DockWindowLayoutState state)
         {
-            if (x < 0)
-            {
-                x = this.Windows.Root.Left;
-            }
-            if (y < 0)
-            {
-                y = this.Windows.Root.Top;
-            }
-
-            var newZone = new DockZoneViewModel(this);
-            var windowResult = this.CreateAndStockTearoffWindow(
-                newZone, new Point(x, y), new Size(width, height)
-            );
-
-            if (windowResult)
-            {
-                newZone.AddDockedContent(adapter);
-                return true;
-            }
-
-            return false;
+            state = new DockWindowLayoutState(this.GetWindowBounds(window), window.WindowState == WindowState.Maximized, WindowXTA.GetIsFullscreen(window));
+            return true;
         }
 
-        public bool IsTearoffRootThatWouldOrphan (DockZoneViewModel zone)
+        protected override void ApplyWindowLayoutState (Window window, DockWindowLayoutState state)
         {
-            if (zone == null)
+            if (state.IsFullscreen)
             {
-                return false;
+                WindowXTA.SetIsFullscreen(window, true);
             }
-
-            foreach (var kv in m_dockZoneMapping)
+            else
             {
-                Window window = kv.Key;
-                if (!DockWindowConfig.GetIsDockingTearoffWindow(window))
-                {
-                    continue;
-                }
-
-                DockZoneViewModel rootZone = DockWindowConfig.GetDockingTearoffWindowRootZone(window);
-                if (rootZone == zone)
-                {
-                    bool hasOnlyOneContent = zone.DockedContent.Count <= 1
-                        && zone.Children.Count == 0;
-                    return hasOnlyOneContent;
-                }
-            }
-
-            return false;
-        }
-
-        public void CloseTearoffForRootZone (DockZoneViewModel rootZone)
-        {
-            foreach (var kv in m_dockZoneMapping)
-            {
-                Window window = kv.Key;
-                if (m_windowsToCloseSilently.Contains(window))
-                {
-                    continue;
-                }
-
-                DockZoneViewModel rz = DockWindowConfig.GetDockingTearoffWindowRootZone(window);
-                if (rz == rootZone)
-                {
-                    m_windowsToCloseSilently.Add(window);
-                    try
-                    {
-                        this.DetachTearoffSubscriptions(window);
-                        window.Close();
-                        m_dockZoneMapping.RemoveAllFor(window);
-                    }
-                    finally
-                    {
-                        m_windowsToCloseSilently.Remove(window);
-                    }
-
-                    return;
-                }
+                window.WindowState = WindowState.Maximized;
             }
         }
 
-        // ==============================[ Utility Methods ]======================================
-
-        internal IDockableDisplayElement BuildNewDisplayElement (string typeId)
-        {
-            return TypeIdRegistrar.TryGetType(typeId, out Type type)
-                    ? this.BuildNewDisplayElement(type)
-                    : this.SetupAndReturnNew(AJutActivator.CreateInstanceOf(typeId) as IDockableDisplayElement);
-        }
-
-        private IDockableDisplayElement SetupAndReturnNew (IDockableDisplayElement displayElement, DockPanelRegistrationRules rules = default)
-        {
-            if (displayElement == null)
-            {
-                return null;
-            }
-
-            var adapter = new DockingContentAdapterModel(this);
-            adapter.TitleContent = StringXT.ConvertToFriendlyEn(displayElement.GetType().Name);
-
-            // Apply factory defaults before panel Setup so Setup can override
-            if (rules.DefaultIsClosable.HasValue)
-            {
-                adapter.IsClosable = rules.DefaultIsClosable.Value;
-            }
-
-            if (rules.DefaultHideDontClose.HasValue)
-            {
-                adapter.HideDontClose = rules.DefaultHideDontClose.Value;
-            }
-
-            if (rules.DefaultCanTearoff.HasValue)
-            {
-                adapter.CanTearoff = rules.DefaultCanTearoff.Value;
-            }
-
-            displayElement.Setup(adapter);
-            displayElement.DockingAdapter.Display = displayElement;
-            return displayElement;
-        }
-
-        internal DockZoneViewModel GetFallbackRootZone () => m_rootDockZones.FirstOrDefault()?.ViewModel;
-
-        internal DockZoneViewModel GetRootZone (string groupId)
-        {
-            return m_rootDockZones.FirstOrDefault(z => DockZone.GetGroupId(z) == groupId)?.ViewModel;
-        }
-
-        internal void ClearForLoadingFromState ()
-        {
-            var allTearoffs = this.Windows.Where(w => w != this.Windows.Root).ToList();
-            var allTearoffRoots = m_dockZoneMapping.Where(kv => kv.Key != this.Windows.Root).SelectMany(kv => kv.Value);
-
-            m_windowsToCloseSilently.AddRange(allTearoffs);
-            foreach (var tearoff in allTearoffs)
-            {
-                m_windowsToCloseSilently.Add(tearoff);
-                this.DetachTearoffSubscriptions(tearoff);
-                tearoff.Close();
-                m_dockZoneMapping.RemoveAllFor(tearoff);
-                m_rootDockZones.RemoveAll(allTearoffRoots.Contains);
-            }
-
-            m_windowsToCloseSilently.Clear();
-
-            // Now all that's left are the root window root zones
-            foreach (var root in m_rootDockZones)
-            {
-                root.ViewModel?.ForceCloseAllAndClear();
-            }
-        }
-
-        internal DockingSerialization.CoreStorageData BuildSerializationInfoForRoot ()
-        {
-            // Core window info:
-            //  - Split by root zones w/ zone ids
-            //  - normal serialization window
-            var storage = new DockingSerialization.CoreStorageData();
-            foreach (var rootZone in m_dockZoneMapping[this.Windows.Root])
-            {
-                string groupId = DockZone.GetGroupId(rootZone) ?? String.Empty;
-                if (!storage.ZoneInfoByRoot.TryAdd(groupId, rootZone.ViewModel.GenerateSerializationState()))
-                {
-                    Logger.LogError($"Docking Serialization: Failed to build serialization data properly, as two ore more root zone groups share id of '{groupId}' - zone serialization info was SKIPPED");
-                }
-            }
-
-            return storage;
-        }
-
-        internal IEnumerable<DockingSerialization.WindowStorageData> BuildSerializationInfoForAncillaryWindows ()
-        {
-            // For each docking tearoff window...
-            //  - window location and display info (state, size, etc)
-            //  - single root zone tree info
-            foreach (var kv in m_dockZoneMapping)
-            {
-                if (kv.Key == this.Windows.Root)
-                {
-                    continue;
-                }
-
-                yield return new DockingSerialization.WindowStorageData
-                {
-                    WindowSize = kv.Key.RenderSize,
-                    WindowState = kv.Key.WindowState,
-                    WindowLocation = new Point(kv.Key.Left, kv.Key.Top),
-                    WindowIsFullscreened = WindowXTA.GetIsFullscreen(kv.Key),
-                    State = kv.Value.First().ViewModel.GenerateSerializationState()
-                };
-            }
-        }
-        internal Result<Window> CreateAndStockTearoffWindow (DockZoneViewModel rootZone, Point newWindowOrigin, Size previousZoneSize)
+        protected override Result<Window> CreateAndStockTearoffWindow (DockZoneViewModel rootZone, DockWindowBounds bounds)
         {
             Window window = null;
             try
@@ -1177,11 +626,12 @@
                 DockZone newRoot = new DockZone() { ViewModel = rootZone };
                 window.Content = newRoot;
                 window.WindowStartupLocation = WindowStartupLocation.Manual;
-                window.Left = newWindowOrigin.X;
-                window.Top = newWindowOrigin.Y;
-                window.Width = previousZoneSize.Width;
-                window.Height = previousZoneSize.Height;
+                window.Left = bounds.X;
+                window.Top = bounds.Y;
+                window.Width = bounds.Width;
+                window.Height = bounds.Height;
                 window.Closing += this.OnDockTearoffWindowClosing;
+                this.RecordTearoffRootZone(window, rootZone);
                 this.ShowTearoffWindowHandler(window);
                 this.RegisterRootDockZones(window, newRoot);
 
@@ -1190,9 +640,12 @@
             }
             catch (Exception exc)
             {
-                // There is probably more to do - but for now, at least make sure stray windows aren't left open
-                if (window != null && window.IsActive)
+                // Make sure a stray window isn't left open. Its closing handler goes first: the window was never fully
+                //  set up as a tearoff, so the user close path would refuse it and cancel the close.
+                if (window != null)
                 {
+                    this.DetachTearoffSubscriptions(window);
+                    this.Windows.StopTracking(window);
                     window.Close();
                 }
 
@@ -1201,77 +654,79 @@
             }
         }
 
-        private void OnDockTearoffWindowClosing (object sender, CancelEventArgs e)
+        // Drops the Window.Closing sub DockingManager owns on a tearoff. Without this, the
+        // window's invocation list keeps a strong ref to DockingManager until the window
+        // object itself is collected - which is non-deterministic and pins everything for
+        // the duration. The base calls this just before window.Close() on every tearoff path.
+        protected override void DetachTearoffSubscriptions (Window window)
         {
-            var window = (Window)sender;
-            if (m_windowsToCloseSilently.Contains(window))
+            if (window != null)
             {
-                return;
+                window.Closing -= this.OnDockTearoffWindowClosing;
+            }
+        }
+
+        protected override void OnRootZoneDeregistered (DockZone zone)
+        {
+            zone.Manager = null;
+        }
+
+        // Asks every panel rather than stopping at the first refusal, so each one that refuses can say so in its zone
+        protected override bool CheckPanelsCanCloseForCloseAll (IReadOnlyList<DockingContentAdapterModel> panels)
+        {
+            bool anyDissenters = false;
+            foreach (DockingContentAdapterModel adapter in panels)
+            {
+                if (!adapter.CheckCanClose())
+                {
+                    var closeSupression = new RoutedEventArgs(DockZone.NotifyCloseSupressionEvent);
+                    ((DockZone)adapter.Location.UI).RaiseEvent(closeSupression);
+                    anyDissenters = true;
+                }
             }
 
-            m_currentlyClosingWindows.Add(window);
-            try
+            return !anyDissenters;
+        }
+
+        // WPF still reads its own layout file shape, which only differs from the shared one in its tearoff entries.
+        //  Moving it onto the shared, versioned format waits on layout files with tearoffs from both showrooms to
+        //  test against (AJU-99).
+        protected override bool ResetLayoutFromFile (string filePath)
+        {
+            Logger.LogInfo($"Docking: Loading state for file '{filePath ?? "<null>"}'");
+            bool result = this.ResetLayoutFromWpfLayoutFile(filePath);
+            Logger.LogInfo($"Docking: Loading state for file '{filePath ?? "<null>"}' complete.");
+            return result;
+        }
+
+        protected override bool SaveLayoutToFile (string filePath)
+        {
+            var state = new DockingSerialization.SerializationInfo
             {
-                DockZoneViewModel root = DockWindowConfig.GetDockingTearoffWindowRootZone(window);
-                if (root.IsActivelyAttemptingClose)
-                {
-                    return;
-                }
+                Core = this.BuildWpfCoreLayout(),
+                Ancillary = this.BuildWpfTearoffLayouts().ToArray(),
+            };
 
-                // Route HideDontClose panels through RemoveOrHidePanel so they become
-                // hidden (not destroyed) and the UISyncVM toggle state stays correct.
-                // Mark this window as closing-silently first so AfterPanelHidden won't
-                // try to re-close it when the last hideable panel is removed.
-                m_windowsToCloseSilently.Add(window);
+            return DockingSerialization.WriteFile(filePath, state);
+        }
 
-                // Snapshot the VM subtree NOW: RequestCloseAllAndClear below dismantles the tree
-                // (children get detached, Parent nulled), so we must capture every zone up front to
-                // sever its Manager/Parent afterward - a walk from root would only reach the root by then.
-                var closingZoneVMs = TreeTraversal<DockZoneViewModel>.All(root).ToList();
-
-                var allAdapters = closingZoneVMs.SelectMany(z => z.DockedContent).ToList();
-                var hideable = allAdapters.Where(a => a.HideDontClose).ToList();
-                foreach (var adapter in hideable)
-                {
-                    try
-                    {
-                        this.UISyncVM.CloseOrHidePanel(adapter);
-                    }
-                    catch(Exception ex)
-                    {
-                        Logger.LogError(ex);
-                        throw;
-                    }
-                }
-
-                // Close remaining (non-hideable) panels normally
-                if (!root.RequestCloseAllAndClear())
-                {
-                    e.Cancel = true;
-                    return;
-                }
-
-                // Close is going through. Drop our Closing sub now so the window's invocation
-                // list isn't holding a strong ref to this manager while the OS finalizes the
-                // window object. Safe to -= from inside the handler - the current invocation
-                // completes regardless.
-                this.DetachTearoffSubscriptions(window);
-
-                // Terminal teardown of the (now-dismantled) VM subtree captured above. Each zone is
-                // childless at this point, so Teardown just severs its Manager/Parent/UI - the content
-                // was already closed and disposed by RequestCloseAllAndClear.
-                foreach (DockZoneViewModel vm in closingZoneVMs)
-                {
-                    vm.Teardown();
-                }
-
-                this.Windows.Root.Focus();
-            }
-            finally
+        // ===========[ Internal Helpers ]======================================
+        // Places a new tearoff for something of zoneSize pressed at pressPoint (in pressedElement's own coordinates), by the
+        //  shared placement rules: at least the minimum tearoff size, with the pointer centered across it near its top.
+        //
+        //  WPF places windows in device independent pixels (DIPs), but PointToScreen gives device pixels, and on a scaled
+        //  display the two differ by the display's scale. So the press point goes through the presentation source's
+        //  TransformFromDevice on its way in, and the placement works in DIPs throughout (a display scale of 1).
+        internal static DockTearoffPlacement PlaceTearoffFor (DockZoneSize zoneSize, UIElement pressedElement, Point pressPoint)
+        {
+            Point anchor = pressedElement.PointToScreen(pressPoint);
+            PresentationSource source = PresentationSource.FromVisual(pressedElement);
+            if (source?.CompositionTarget != null)
             {
-                m_currentlyClosingWindows.Remove(window);
-                m_windowsToCloseSilently.Remove(window);
+                anchor = source.CompositionTarget.TransformFromDevice.Transform(anchor);
             }
+
+            return DockDragRules.PlaceTearoff(zoneSize, new DockPoint(anchor.X, anchor.Y), cursorOffset: null, displayScale: 1.0);
         }
 
         internal void TrackSizingChanges (DockZone dockZone)
@@ -1285,74 +740,18 @@
             dockZone.SizeChanged -= this.DockZone_OnSizeChanged;
         }
 
-        // Drops the Window.Closing sub DockingManager owns on a tearoff. Without this, the
-        // window's invocation list keeps a strong ref to DockingManager until the window
-        // object itself is collected - which is non-deterministic and pins everything for
-        // the duration. Always call this just before window.Close() on every tearoff path.
-        private void DetachTearoffSubscriptions (Window window)
+        // ===========[ Private Helpers ]=======================================
+        private void OnDockTearoffWindowClosing (object sender, CancelEventArgs e)
         {
-            if (window != null)
+            if (!this.DoTearoffWindowClose((Window)sender))
             {
-                window.Closing -= this.OnDockTearoffWindowClosing;
-            }
-        }
-
-        internal void FindAndCloseTearoffWindowByDockRoot (DockZoneViewModel dockZoneViewModel, bool closeSilently)
-        {
-            var window = this.Windows.FirstOrDefault(w => DockWindowConfig.GetDockingTearoffWindowRootZone(w) == dockZoneViewModel);
-            if (window != null && !m_currentlyClosingWindows.Contains(window))
-            {
-                if (closeSilently)
-                {
-                    m_windowsToCloseSilently.Add(window);
-                }
-
-                try
-                {
-                    this.DetachTearoffSubscriptions(window);
-                    window.Close();
-                }
-                finally
-                {
-                    m_currentlyClosingWindows.Remove(window);
-                }
-                this.Windows.Root.Focus();
-            }
-        }
-
-        private void TriggerLayoutAutoSave ()
-        {
-            if (this.IsLoadingFromLayout || !m_isReadyToTrackAutoSave)
-            {
-                return;
-            }
-
-            if (this.AutoSaveMethod == eDockingAutoSaveMethod.AutoSaveOnAllChanges)
-            {
-                this.SaveDockLayoutToPersistentStorage();
-            }
-            else if (this.AutoSaveMethod == eDockingAutoSaveMethod.AutoSaveToTemp)
-            {
-                this.SaveDockLayoutToFile(this.GenerateDefaultStateStorageAutoSaveTempPath());
+                e.Cancel = true;
             }
         }
 
         private void DockZone_OnSizeChanged (object sender, SizeChangedEventArgs e)
         {
             this.TriggerLayoutAutoSave();
-        }
-
-        private static IDockableDisplayElement BuildDefaultDisplayFor (Type elementType)
-        {
-            return AJutActivator.CreateInstanceOf(elementType) as IDockableDisplayElement;
-        }
-
-        public void AddCommandSource (UIElement source)
-        {
-            if (source != null)
-            {
-                m_commandSources.Add(source);
-            }
         }
 
         private IEnumerable<CommandBinding> EnumerateAllCommandBindings ()
@@ -1366,14 +765,179 @@
             }
         }
 
-        // ==============================[ Sub Classes ]======================================
-
-        private class DisplayBuilder
+        private bool ResetLayoutFromWpfLayoutFile (string filePath)
         {
-            public DockPanelRegistrationRules Rules { get; init; }
-            public bool IsSingleInstanceOnly => this.Rules.SingleInstanceOnly;
-            public Func<IDockableDisplayElement> Builder { get; init; }
+            DockZoneViewModel defaultLoadZone = this.GetFallbackRootZone();
+            if (defaultLoadZone == null)
+            {
+                Logger.LogError("Dock Loading Error: Load from state failed as NO ROOT ZONES EXIST for provided manager");
+                return false;
+            }
+
+            DockingSerialization.SerializationInfo state = DockingSerialization.ReadFile(filePath);
+            if (state == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                this.ClearForLoadingFromState();
+                if (state.Core != null)
+                {
+                    foreach (string groupId in state.Core.ZoneInfoByRoot.Keys)
+                    {
+                        DockZoneViewModel zone = this.GetRootZoneForGroup(groupId);
+                        if (zone == null)
+                        {
+                            Logger.LogError($"Dock Loading Error: No zone for group id '{groupId}' found, possibly one of that name used to be registered but now is not - falling back to default to avoid data loss.");
+                            zone = defaultLoadZone;
+                        }
+
+                        this.ApplyZoneLayout(zone, state.Core.ZoneInfoByRoot[groupId]);
+                    }
+
+                    foreach (DockingSerialization.WindowStorageData ancillaryWindowData in state.Ancillary)
+                    {
+                        var zone = new DockZoneViewModel(this);
+                        this.ApplyZoneLayout(zone, ancillaryWindowData.State);
+
+                        var bounds = new DockWindowBounds(ancillaryWindowData.WindowLocation.X, ancillaryWindowData.WindowLocation.Y, ancillaryWindowData.WindowSize.Width, ancillaryWindowData.WindowSize.Height);
+                        Result<Window> windowResult = this.CreateAndStockTearoffWindow(zone, bounds);
+                        if (windowResult.HasErrors)
+                        {
+                            Logger.LogError("Dock Loading Error: Failed to intepret ancillary window state for docking");
+                            Logger.LogError(windowResult.GetErrorReport());
+                            continue;
+                        }
+
+                        if (ancillaryWindowData.WindowIsFullscreened)
+                        {
+                            WindowXTA.SetIsFullscreen(windowResult.Value, true);
+                        }
+                        else
+                        {
+                            windowResult.Value.WindowState = ancillaryWindowData.WindowState;
+                        }
+                    }
+                }
+
+                this.CleanZoneLayoutHierarchies();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("Error in docking serialization", ex);
+                return false;
+            }
         }
 
+        private DockingSerialization.CoreStorageData BuildWpfCoreLayout ()
+        {
+            // Core window info:
+            //  - Split by root zones w/ zone ids
+            //  - normal serialization window
+            var storage = new DockingSerialization.CoreStorageData();
+            if (this.TryGetZonesForWindow(this.RootWindow, out IReadOnlyList<DockZone> rootZones))
+            {
+                foreach (DockZone rootZone in rootZones)
+                {
+                    string groupId = DockZone.GetGroupId(rootZone) ?? String.Empty;
+                    if (!storage.ZoneInfoByRoot.TryAdd(groupId, rootZone.ViewModel.GenerateSerializationState()))
+                    {
+                        Logger.LogError($"Docking Serialization: Failed to build serialization data properly, as two ore more root zone groups share id of '{groupId}' - zone serialization info was SKIPPED");
+                    }
+                }
+            }
+
+            return storage;
+        }
+
+        private IEnumerable<DockingSerialization.WindowStorageData> BuildWpfTearoffLayouts ()
+        {
+            // For each docking tearoff window...
+            //  - window location and display info (state, size, etc)
+            //  - single root zone tree info
+            foreach (Window window in this.WindowsWithZones.ToList())
+            {
+                if (window == this.RootWindow
+                    || !this.TryGetZonesForWindow(window, out IReadOnlyList<DockZone> zones)
+                    || zones.Count == 0)
+                {
+                    continue;
+                }
+
+                yield return new DockingSerialization.WindowStorageData
+                {
+                    WindowSize = window.RenderSize,
+                    WindowState = window.WindowState,
+                    WindowLocation = new Point(window.Left, window.Top),
+                    WindowIsFullscreened = WindowXTA.GetIsFullscreen(window),
+                    State = zones[0].ViewModel.GenerateSerializationState()
+                };
+            }
+        }
+
+        // ===========[ Subclasses/structs ]====================================
+        // What RunDragSearch's DockDragSession asks of WPF. A drop target and an engaged widget show through the zone's and
+        //  widget's own properties. The dragged window is hidden during the drag and a ghost of it follows the pointer, so
+        //  the ghost is what dims over a drop target.
+        private sealed class DragSearchHost : IDockDragSessionHost<DockZone, DockDropInsertionDriverWidget, Window>
+        {
+            // The ghost's opacity over a drop target, so the zone shows through it: the opacity WinUI3 dims a dragged
+            //  window to
+            private const double kDimmedGhostOpacity = 0.65;
+
+            private readonly List<Window> m_windowOrder;
+
+            // windowOrder: the drag's other windows, frontmost first, which a raise moves the raised window to the front of
+            public DragSearchHost (List<Window> windowOrder)
+            {
+                m_windowOrder = windowOrder;
+            }
+
+            // The ghost following the pointer, once it exists
+            public Window Ghost { get; set; }
+
+            public void ShowDropTarget (DockZone zone, bool isTarget) => zone.IsDirectDropTarget = isTarget;
+
+            public void EngageWidget (DockDropInsertionDriverWidget widget, bool isEngaged) => widget.IsEngaged = isEngaged;
+
+            public void DimDragSource (bool isDimmed)
+            {
+                if (this.Ghost != null)
+                {
+                    this.Ghost.Opacity = isDimmed ? kDimmedGhostOpacity : 1.0;
+                }
+            }
+
+            // A WPF window's own Opacity only works on a window made with AllowsTransparency, which a tearoff or the root
+            //  window needn't be, so a flash fades the window's content instead, and needs nothing set up first
+            public void BeginHoverFlash (Window window) { }
+
+            public void SetHoverFlashOpacity (Window window, double opacity)
+            {
+                if (window.Content is UIElement content)
+                {
+                    content.Opacity = opacity;
+                }
+            }
+
+            public void EndHoverFlash (Window window) => this.SetHoverFlashOpacity(window, 1.0);
+
+            public void RaiseHoverWindow (Window window)
+            {
+                // Topmost on then off brings a window to the top of the ordinary windows without activating it, which would
+                //  take keyboard focus (and so Escape) from the ghost. The ghost is topmost for the whole drag, so it stays
+                //  above the raised window.
+                bool wasTopmost = window.Topmost;
+                window.Topmost = true;
+                window.Topmost = wasTopmost;
+
+                // Now in front, so not a window to raise again straight away
+                m_windowOrder.Remove(window);
+                m_windowOrder.Insert(0, window);
+            }
+        }
     }
 }

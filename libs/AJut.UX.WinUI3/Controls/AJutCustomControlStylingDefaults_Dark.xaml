@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    AJutCustomControlStylingDefaults_Dark.xaml
+    ===========================================
+    The unthemed defaults that follow WinUI's own theme colors, for the dark theme.
+    AJutCustomControlStylingDefaults.xaml's Default theme dictionary (WinUI's dark) merges it, so
+    it comes with that file wherever it is merged; the _Light and _HighContrast files hold the same
+    keys for the other two themes.
+
+    Each entry copies the definition WinUI 1.8 gives the stock brush it stands in for, rather than
+    pointing at that brush. A StaticResource to a WinUI theme resource resolves once, in whatever theme
+    is current when the dictionary loads, so it would keep that theme's colors after a switch, where
+    a theme dictionary entry is looked up again for each element's theme.
+
+    With the AJut theme loaded, AJutThemeMapAliasing.xaml defines these keys in App.Resources, which
+    wins over Generic.xaml, so none of this shows.
+-->
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ===========[ FlatTree ListViewItem ]================================ -->
+    <!-- WinUI's SystemControlHighlightListAccentHighBrush, ListAccentLowBrush, ListAccentMediumBrush,
+         SystemControlHighlightListLowBrush and ControlStrokeColorDefaultBrush -->
+    <SolidColorBrush x:Key="AJut_FlatTree_SelectionBrush"          Color="{ThemeResource SystemAccentColor}" Opacity="0.9"/>
+    <SolidColorBrush x:Key="AJut_FlatTree_SelectionBackground"     Color="{ThemeResource SystemAccentColor}" Opacity="0.6"/>
+    <SolidColorBrush x:Key="AJut_FlatTree_SelectionBrushUnfocused" Color="{ThemeResource SystemAccentColor}" Opacity="0.8"/>
+    <SolidColorBrush x:Key="AJut_FlatTree_HoverBackground"         Color="#19FFFFFF"/>
+    <SolidColorBrush x:Key="AJut_FlatTree_HoverBorderBrush"        Color="#12FFFFFF"/>
+
+    <!-- ===========[ GeometryButton ]====================================== -->
+    <!-- The shape's trace: WinUI's ButtonBorderBrush family, the control elevation border at rest and
+         under the pointer, and the default control stroke pressed and disabled -->
+    <LinearGradientBrush x:Key="AJut_GeometryButton_Trace" MappingMode="Absolute" StartPoint="0,0" EndPoint="0,3">
+        <LinearGradientBrush.GradientStops>
+            <GradientStop Offset="0.33" Color="#18FFFFFF"/>
+            <GradientStop Offset="1.0" Color="#12FFFFFF"/>
+        </LinearGradientBrush.GradientStops>
+    </LinearGradientBrush>
+    <StaticResource x:Key="AJut_GeometryButton_TracePointerOver" ResourceKey="AJut_GeometryButton_Trace"/>
+    <SolidColorBrush x:Key="AJut_GeometryButton_TracePressed"  Color="#12FFFFFF"/>
+    <SolidColorBrush x:Key="AJut_GeometryButton_TraceDisabled" Color="#12FFFFFF"/>
+
+</ResourceDictionary>

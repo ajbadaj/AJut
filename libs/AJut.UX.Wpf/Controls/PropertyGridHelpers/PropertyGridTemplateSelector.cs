@@ -3,6 +3,8 @@ namespace AJut.UX.Controls
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Data;
+    using AJut.UX.AttachedProperties;
+    using AJut.UX.Converters;
     using AJut.UX.PropertyInteraction;
 
     public class PropertyGridTemplateSelector : SwitchTemplateSelector
@@ -13,25 +15,17 @@ namespace AJut.UX.Controls
         private static DataTemplate s_builtInButtonTemplate;
         private static DataTemplate s_builtInListTemplate;
 
-        protected override object GetKeyForItem (object item) => ((PropertyEditTarget)item).Editor ?? "__Invalid";
+        protected override object GetKeyForItem (object item) => PropertyGridRowRules.GetEditorKey((PropertyEditTarget)item);
 
         public override DataTemplate SelectTemplate (object item, DependencyObject container)
         {
             if (item is PropertyEditTarget target)
             {
-                if (target.Editor == "Nullable" && !this.RegisteredTemplates.ContainsKey("Nullable"))
+                switch (PropertyGridRowRules.GetBuiltInEditor(target, this.RegisteredTemplates.ContainsKey))
                 {
-                    return GetOrCreateBuiltInNullableTemplate();
-                }
-
-                if (target.Editor == "Button" && !this.RegisteredTemplates.ContainsKey("Button"))
-                {
-                    return GetOrCreateBuiltInButtonTemplate();
-                }
-
-                if (target.Editor == "List" && !this.RegisteredTemplates.ContainsKey("List"))
-                {
-                    return GetOrCreateBuiltInListTemplate();
+                    case eBuiltInPropertyEditor.Nullable: return GetOrCreateBuiltInNullableTemplate();
+                    case eBuiltInPropertyEditor.Button: return GetOrCreateBuiltInButtonTemplate();
+                    case eBuiltInPropertyEditor.List: return GetOrCreateBuiltInListTemplate();
                 }
             }
 
@@ -62,6 +56,15 @@ namespace AJut.UX.Controls
                 var buttonFactory = new FrameworkElementFactory(typeof(Button));
                 buttonFactory.SetBinding(Button.ContentProperty, new Binding("EditValue"));
                 buttonFactory.SetBinding(Button.CommandProperty, new Binding("EditContext"));
+
+                // A read-only grid (Edit.IsReadOnly, inherited) runs no button rows. Button styles, AJut's themed
+                // ones included, don't follow Edit.IsReadOnly, so the button binds it itself.
+                buttonFactory.SetBinding(Button.IsEnabledProperty, new Binding
+                {
+                    RelativeSource = RelativeSource.Self,
+                    Path = new PropertyPath(Edit.IsReadOnlyProperty),
+                    Converter = new BooleanInverseConverter(),
+                });
                 buttonFactory.SetValue(Button.HorizontalAlignmentProperty, HorizontalAlignment.Stretch);
                 buttonFactory.SetValue(Button.VerticalAlignmentProperty, VerticalAlignment.Center);
                 dt.VisualTree = buttonFactory;

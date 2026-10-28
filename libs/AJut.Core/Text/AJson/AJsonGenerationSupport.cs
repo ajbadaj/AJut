@@ -1,6 +1,7 @@
 namespace AJut.Text.AJson
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
 
@@ -94,6 +95,49 @@ namespace AJut.Text.AJson
         public static void FillGetOnlyCollection (object collection, string jsonKey, JsonValue value, JsonInterpreterSettings settings, Json owner)
         {
             JsonHelper.FillCollectionInPlace(collection, jsonKey, value, settings, owner);
+        }
+
+        /// <summary>
+        /// Generated writers call this for a dictionary member, with the member's key and value types. It writes the same text
+        /// the reflection path does, a document of the entries when the keys are each a single value and an array of Key and
+        /// Value documents otherwise, but reads each pair's Key and Value in typed code, so a platform without dynamic code (an
+        /// iOS build compiled ahead of time) can write it.
+        /// </summary>
+        public static void WriteDictionary<TKey, TValue> (IEnumerable<KeyValuePair<TKey, TValue>> dictionary, JsonBuilder target)
+        {
+            JsonHelper.FillOutJsonBuilderForDictionary(dictionary, target);
+        }
+
+        /// <summary>
+        /// Generated readers call this for a dictionary member they can build: <typeparamref name="TDictionary"/> is the member's
+        /// own type, or Dictionary for a member typed as IDictionary or IReadOnlyDictionary. It reads either shape a dictionary
+        /// is written in and adds each entry in typed code, so a platform without dynamic code can read it. Anything that decides
+        /// for itself how the dictionary is read (a constructor or converter registered for its type, a generated serializer,
+        /// json naming a type of its own), and json that is neither a document nor an array, is read the way
+        /// <see cref="ReadValue{T}"/> reads it.
+        /// </summary>
+        public static TDictionary ReadDictionary<
+            [DynamicallyAccessedMembers(kReadRequirements)] TDictionary,
+            [DynamicallyAccessedMembers(kReadRequirements)] TKey,
+            [DynamicallyAccessedMembers(kReadRequirements)] TValue
+        > (JsonValue value, JsonInterpreterSettings settings, Json owner)
+            where TDictionary : IDictionary<TKey, TValue>, new()
+        {
+            return JsonHelper.ReadDictionary<TDictionary, TKey, TValue>(value, settings, owner);
+        }
+
+        /// <summary>
+        /// Generated readers call this for a get-only dictionary property or readonly dictionary field: the dictionary already
+        /// there is cleared, then filled from <paramref name="value"/> in typed code. A dictionary that is null or read-only, or
+        /// json that is neither a document nor an array, is reported to <paramref name="owner"/>, the same as
+        /// <see cref="FillGetOnlyCollection"/> reports it.
+        /// </summary>
+        public static void FillGetOnlyDictionary<
+            [DynamicallyAccessedMembers(kReadRequirements)] TKey,
+            [DynamicallyAccessedMembers(kReadRequirements)] TValue
+        > (IDictionary<TKey, TValue> dictionary, string jsonKey, JsonValue value, JsonInterpreterSettings settings, Json owner)
+        {
+            JsonHelper.FillDictionaryInPlace(dictionary, jsonKey, value, settings, owner);
         }
 
         /// <summary>

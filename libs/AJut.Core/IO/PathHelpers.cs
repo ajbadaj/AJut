@@ -15,27 +15,32 @@
 
         public const string kAnyFileFilter = "Any File (*.*)|*.*";
 
+        /// <summary>
+        /// Splits a path into its parts on <see cref="Path.DirectorySeparatorChar"/>, as <see cref="GetAllPathParts(string, char)"/> does.
+        /// </summary>
         public static IEnumerable<string> GetAllPathParts (string path)
         {
             return GetAllPathParts(path, Path.DirectorySeparatorChar);
         }
 
+        /// <summary>
+        /// Splits a path into its parts, without the separators. A root is a part of its own: a drive's (c:), the network
+        /// root's (the separator, for \\server\share), or an empty part for a path rooted at its drive's root (\a\b, or
+        /// /a/b off Windows), so joining the parts with the separator gives the path back. A relative path keeps a leading
+        /// . or .. as a part.
+        /// </summary>
         public static IEnumerable<string> GetAllPathParts (string path, char pathSeparator)
         {
             // 1. Is path rooted (ie c:\)
             // 2. Is network path (ie \\test)
-            // 3. Is relative path (ie .\here\there or here\there or ..\here\there)
-            if (path.Length < 3)
-            {
-                yield return path;
-                yield break;
-            }
-
+            // 3. Is path rooted at its drive's root (ie \test, or /test off Windows)
+            // 4. Is relative path (ie .\here\there or here\there or ..\here\there), which splits like any other and keeps a
+            //    leading . or .. as a part of its own
             int start;
             int nextSeparator;
 
             // A rooted path
-            if (path[1] == ':')
+            if (path.Length >= 2 && path[1] == ':')
             {
                 // should maybe establish that path[0] is valid
                 yield return path.Substring(0,2);
@@ -44,48 +49,20 @@
                 nextSeparator = path.IndexOf(pathSeparator, start);
             }
             // A network path
-            else if (path[0] == pathSeparator && path[1] == pathSeparator)
+            else if (path.Length >= 2 && path[0] == pathSeparator && path[1] == pathSeparator)
             {
                 yield return pathSeparator.ToString();
                 start = 2;
                 nextSeparator = path.IndexOf(pathSeparator, start);
             }
-            // A relative path
-            else if (path[0] == '.')
+            // A path rooted at its drive's root: the empty part is its root, which joining the parts gives back
+            else if (path.Length >= 1 && path[0] == pathSeparator)
             {
-                // ..\path
-                if (path[1] == '.' && path[2] == pathSeparator)
-                {
-                    start = path.IndexOf(pathSeparator, 3);
-                    if (start == -1)
-                    {
-                        yield break;
-                    }
-
-                    start += 1;
-                    nextSeparator = path.IndexOf(pathSeparator, start);
-                }
-                // .\path
-                else if (path[1] == pathSeparator)
-                {
-                    start = path.IndexOf(pathSeparator, 2);
-                    if (start < 0)
-                    {
-                        yield return path.Substring(2);
-                        yield break;
-                    }
-                    else
-                    {
-                        nextSeparator = path.IndexOf(pathSeparator, start);
-                    }
-                }
-
-                // Invalid
-                else
-                {
-                    yield break;
-                }
+                yield return String.Empty;
+                start = 1;
+                nextSeparator = path.IndexOf(pathSeparator, start);
             }
+            // A relative path
             else
             {
                 start = 0;
@@ -140,20 +117,25 @@
 
                 var invalidPathChars = Path.GetInvalidPathChars();
                 var invalidFileNameChars = Path.GetInvalidFileNameChars();
-                var allPathParts = PathHelpers.GetAllPathParts(path).ToArray();
+
+                // On Windows '/' separates as well as '\', so the path splits on either: split on '\' alone, a '/' would be
+                //  left inside a part, where it's an invalid file name char. Elsewhere both separator chars are '/', and '\'
+                //  is an ordinary character.
+                string splittablePath = path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+                var allPathParts = PathHelpers.GetAllPathParts(splittablePath).ToArray();
                 for (int index = 0; index < allPathParts.Length; ++index)
                 {
                     // If we're on the filename part (if any)
-                    if (index == allPathParts.Length - 1 && !path.EndsWith(Path.DirectorySeparatorChar))
+                    if (index == allPathParts.Length - 1 && !splittablePath.EndsWith(Path.DirectorySeparatorChar))
                     {
                         if (_ContainsChars(allPathParts[index], invalidFileNameChars, out string foundChars))
                         {
-                            return Result.Error($"File name contains invalid path chars → {foundChars}");
+                            return Result.Error($"File name contains invalid path chars: {foundChars}");
                         }
                     }
                     else if (_ContainsChars(allPathParts[index], invalidPathChars, out string foundChars))
                     {
-                        return Result.Error($"Path contains invalid path chars → {foundChars}");
+                        return Result.Error($"Path contains invalid path chars: {foundChars}");
                     }
                 }
 
@@ -188,30 +170,65 @@
         }
 
         /// <summary>
-        /// Create a version of the passed in path that is resolved, and ready for comparison.
+        /// Create a version of the passed in path that is resolved, and ready for comparison: lowercased, with '\' for every
+        /// separator, its '.' parts dropped and each '..' resolved. It is for comparing paths, not for opening one.
         /// </summary>
         /// <param name="path">The un-normalized path</param>
-        /// <returns>Either a normalized version of the path, or <c>null</c> if the path couldn't be normalized.</returns>
+        /// <returns>The normalized version of the path</returns>
+        /// <exception cref="ArgumentOutOfRangeException">A '..' climbs past the start of a path with no root</exception>
         public static string NormalizePath (string path)
         {
-            path = path.ToLower().Replace('/', '\\');
-            List<string> pathParts = GetAllPathParts(path).ToList();
+            // Split on '\', the separator the path was just converted to. The OS's separator is '/' off Windows, and
+            //  splitting on that would leave the whole path as one part. Lowercasing is invariant, so the current culture
+            //  can't change what matches (Turkish lowercases I to a dotless i).
+            path = path.ToLowerInvariant().Replace('/', '\\');
+            List<string> pathParts = GetAllPathParts(path, '\\').ToList();
+
+            // A root has nothing above it, whether a drive (c:), the network root (\) or the empty part of a path rooted
+            //  at its drive's root. So a '..' straight after one goes and the root stays, as Path.GetFullPath does. Only
+            //  an unrooted path can climb past its start, which throws.
+            bool startsAtARoot = pathParts.Count > 0
+                && ((pathParts[0].Length == 2 && pathParts[0][1] == ':') || pathParts[0] == "\\" || pathParts[0].Length == 0);
+
             for (int index = 0; index < pathParts.Count; ++index)
             {
-                if (pathParts[index] == "..")
+                // A '.' names where the path already is
+                if (pathParts[index] == ".")
+                {
+                    pathParts.RemoveAt(index);
+                    index -= 1;
+                }
+                else if (pathParts[index] == "..")
                 {
                     if (index == 0)
                     {
                         throw new ArgumentOutOfRangeException($"Relative directory specification made that goes past specified root: '{path}'");
                     }
 
-                    pathParts.RemoveAt(index);
-                    pathParts.RemoveAt(index - 1);
-                    index -= 1;
+                    if (index == 1 && startsAtARoot)
+                    {
+                        pathParts.RemoveAt(index);
+                        index -= 1;
+                    }
+                    else
+                    {
+                        // Remove the pair, then look next at what moved into its first slot, which can be another '..'
+                        pathParts.RemoveAt(index);
+                        pathParts.RemoveAt(index - 1);
+                        index -= 2;
+                    }
                 }
             }
 
-            return String.Join('\\', pathParts);
+            // Joining drops a lone root's separator (the empty part of \ gives nothing, the \ part of \\ gives one \), so
+            //  it goes back on
+            string normalized = String.Join('\\', pathParts);
+            if (pathParts.Count == 1 && (pathParts[0].Length == 0 || pathParts[0] == "\\"))
+            {
+                normalized += '\\';
+            }
+
+            return normalized;
         }
 
         /// <summary>
@@ -286,7 +303,7 @@
             int shortestSequence = Math.Min(source.Count, target.Count);
             for (int index = 0; index < shortestSequence; ++index)
             {
-                if (!source[index].Equals(target[index], StringComparison.CurrentCultureIgnoreCase))
+                if (!source[index].Equals(target[index], StringComparison.OrdinalIgnoreCase))
                 {
                     finalMatchIndex = index;
                     break;
@@ -349,7 +366,8 @@
         private static readonly Regex kExtensionParser = new Regex(@"[|;](?:[\*\.]+|[\*])([\w\d\-\.\*]+)(?:$|\||;)");
 
         /// <summary>
-        /// Provides all the extensions in format: <code>.extension</code>
+        /// Provides all the extensions in the filter, each without its dot: <c>jpg</c> for <c>*.jpg</c>, the name itself for
+        /// a filter written as a file name (<c>ajut.core.dll</c> for <c>*ajut.core.dll</c>), and <c>*</c> for <c>*.*</c>
         /// </summary>
         /// <param name="fileFilterString">Path filter of expected format: Thing (*.thing)|*.thing, with additional items separated by vertical bar (pipe)</param>
         /// <returns>Enumerable of each extension</returns>
@@ -377,9 +395,27 @@
             return FindMatchingExtensions(filePath, ParseExtensionsFrom(fileFilterString));
         }
 
+        /// <summary>
+        /// Finds which of <paramref name="extensions"/> the file has. An extension, with or without its dot, matches at a dot
+        /// or as the whole file name, so <c>jpg</c> matches photo.jpg but not notajpg, and <c>ajut.core.dll</c> matches
+        /// ajut.core.dll; <c>*</c> matches any file. Case is ignored, the same in every culture.
+        /// </summary>
         public static IEnumerable<string> FindMatchingExtensions (string filePath, params string[] extensions)
         {
-            return extensions.Where(e => e == "*" || filePath.EndsWith(e, StringComparison.CurrentCultureIgnoreCase));
+            string fileName = filePath.Substring(filePath.LastIndexOfAny(new[] { '\\', '/' }) + 1);
+            return extensions.Where(_IsMatch);
+
+            bool _IsMatch (string _extension)
+            {
+                if (_extension == "*")
+                {
+                    return true;
+                }
+
+                string _bareExtension = _extension.TrimStart('.');
+                return fileName.Equals(_bareExtension, StringComparison.OrdinalIgnoreCase)
+                    || fileName.EndsWith("." + _bareExtension, StringComparison.OrdinalIgnoreCase);
+            }
         }
 
         public static string CreateFileFilterFor (params FileType[] fileTypes)

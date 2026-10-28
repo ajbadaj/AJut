@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    AJutCustomControlStylingDefaults_Light.xaml
+    ============================================
+    The unthemed defaults that follow WinUI's own theme colors, for the light theme.
+    AJutCustomControlStylingDefaults.xaml's Light theme dictionary merges it. See
+    AJutCustomControlStylingDefaults_Dark.xaml for why these copy WinUI's definitions rather than
+    point at its brushes.
+-->
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ===========[ FlatTree ListViewItem ]================================ -->
+    <!-- WinUI's SystemControlHighlightListAccentHighBrush, ListAccentLowBrush, ListAccentMediumBrush,
+         SystemControlHighlightListLowBrush and ControlStrokeColorDefaultBrush -->
+    <SolidColorBrush x:Key="AJut_FlatTree_SelectionBrush"          Color="{ThemeResource SystemAccentColor}" Opacity="0.7"/>
+    <SolidColorBrush x:Key="AJut_FlatTree_SelectionBackground"     Color="{ThemeResource SystemAccentColor}" Opacity="0.4"/>
+    <SolidColorBrush x:Key="AJut_FlatTree_SelectionBrushUnfocused" Color="{ThemeResource SystemAccentColor}" Opacity="0.6"/>
+    <SolidColorBrush x:Key="AJut_FlatTree_HoverBackground"         Color="#19000000"/>
+    <SolidColorBrush x:Key="AJut_FlatTree_HoverBorderBrush"        Color="#0F000000"/>
+
+    <!-- ===========[ GeometryButton ]====================================== -->
+    <!-- The shape's trace: WinUI's ButtonBorderBrush family, the control elevation border at rest and
+         under the pointer (flipped in light, so the darker edge is at the bottom), and the default
+         control stroke pressed and disabled -->
+    <LinearGradientBrush x:Key="AJut_GeometryButton_Trace" MappingMode="Absolute" StartPoint="0,0" EndPoint="0,3">
+        <LinearGradientBrush.RelativeTransform>
+            <ScaleTransform ScaleY="-1" CenterY="0.5"/>
+        </LinearGradientBrush.RelativeTransform>
+        <LinearGradientBrush.GradientStops>
+            <GradientStop Offset="0.33" Color="#29000000"/>
+            <GradientStop Offset="1.0" Color="#0F000000"/>
+        </LinearGradientBrush.GradientStops>
+    </LinearGradientBrush>
+    <StaticResource x:Key="AJut_GeometryButton_TracePointerOver" ResourceKey="AJut_GeometryButton_Trace"/>
+    <SolidColorBrush x:Key="AJut_GeometryButton_TracePressed"  Color="#0F000000"/>
+    <SolidColorBrush x:Key="AJut_GeometryButton_TraceDisabled" Color="#0F000000"/>
+
+</ResourceDictionary>

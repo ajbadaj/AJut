@@ -1,12 +1,12 @@
 ﻿namespace AJut.UX.Controls
 {
     using System;
-    using System.Drawing;
     using System.IO;
     using System.Linq;
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Input;
+    using System.Windows.Media;
     using AJut.IO;
     using Microsoft.Win32;
     using DPUtils = AJut.UX.DPUtils<PathSelectionControl>;
@@ -294,6 +294,16 @@
         {
             get => (Brush)this.GetValue(ButtonPressedForegroundProperty);
             set => this.SetValue(ButtonPressedForegroundProperty, value);
+        }
+
+        public static readonly DependencyProperty TextBoxBorderBrushProperty = DPUtils.RegisterFP(_ => _.TextBoxBorderBrush, null, null, CoerceUtils.CallbackForBrush);
+        /// <summary>
+        /// The path text box's inset edge, drawn along its top and left
+        /// </summary>
+        public Brush TextBoxBorderBrush
+        {
+            get => (Brush)this.GetValue(TextBoxBorderBrushProperty);
+            set => this.SetValue(TextBoxBorderBrushProperty, value);
         }
 
         public static readonly DependencyProperty FileDialogTypeProperty = DPUtils.Register(_ => _.FileDialogType, eFileDialogType.OpenFile);

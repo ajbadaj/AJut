@@ -57,6 +57,12 @@
     <SolidColorBrush x:Key="AJut_Brush_BorderCommonHover" Color="#555"/>
     <SolidColorBrush x:Key="AJut_Brush_BorderCommonPress" Color="#888"/>
     <SolidColorBrush x:Key="AJut_Brush_BorderShadow" Color="{DynamicResource AJut_Color_Shadow}"/>
+    <!-- What outlines a button, in each of its states. The same as the common borders here; the touch overlays take
+         them off, since a tap target reads by its fill. They are keys of their own because the common borders also
+         draw scrollbars, sliders and separators. -->
+    <SolidColorBrush x:Key="AJut_Brush_ButtonBorder" Color="{DynamicResource AJut_Color_BorderCommon}"/>
+    <SolidColorBrush x:Key="AJut_Brush_ButtonBorderHover" Color="#555"/>
+    <SolidColorBrush x:Key="AJut_Brush_ButtonBorderPressed" Color="#888"/>
 
     <SolidColorBrush x:Key="AJut_Brush_RootPanelBackground" Color="#2C2C30"/>
     <SolidColorBrush x:Key="AJut_Brush_PanelBackground" Color="#18181D"/>

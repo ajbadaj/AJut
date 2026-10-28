@@ -22,6 +22,8 @@
                 <Button Content="Lamp" Click="SourceLamp_OnClick"/>
                 <Button Content="Speaker" Click="SourceSpeaker_OnClick"/>
                 <Button Content="Nothing" Click="SourceNone_OnClick"/>
+                <CheckBox Content="Read-only grid" IsChecked="{Binding ElementName=DemoGrid, Path=IsReadOnly, Mode=TwoWay}" VerticalAlignment="Center" Margin="16,0,0,0"
+                          ToolTipService.ToolTip="PropertyGrid.IsReadOnly: every editor shows its value without letting it change, and list add, remove, reorder and Set to default are off"/>
             </StackPanel>
 
             <Grid ColumnSpacing="24">
@@ -30,34 +32,37 @@
                     <ColumnDefinition Width="2*"/>
                 </Grid.ColumnDefinitions>
 
-                <ajut:PropertyGrid x:Name="DemoGrid" Height="320" LabelColumnWidth="140" RowSpacing="4" PropertyToolTipPlacement="PropertyNameAndValue">
-                    <ajut:PropertyGrid.ItemTemplateSelector>
-                        <ajut:PropertyGridTemplateSelector>
-                            <ajut:PropertyGridTemplateSelector.Default>
-                                <DataTemplate x:DataType="ajut_pg:PropertyEditTarget">
-                                    <TextBlock Text="{Binding Path=EditValue}" VerticalAlignment="Center" Opacity="0.7"/>
-                                </DataTemplate>
-                            </ajut:PropertyGridTemplateSelector.Default>
-                            <ajut:PropertyGridTemplateSelector.RegisteredTemplates>
-                                <DataTemplate x:Key="String" x:DataType="ajut_pg:PropertyEditTarget">
-                                    <TextBox Text="{Binding Path=EditValue, Mode=TwoWay}"/>
-                                </DataTemplate>
-                                <DataTemplate x:Key="Boolean" x:DataType="ajut_pg:PropertyEditTarget">
-                                    <CheckBox IsChecked="{Binding Path=EditValue, Mode=TwoWay}" VerticalAlignment="Center"/>
-                                </DataTemplate>
-                                <DataTemplate x:Key="Int32" x:DataType="ajut_pg:PropertyEditTarget">
-                                    <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}" TextBoxHeight="24"/>
-                                </DataTemplate>
-                                <DataTemplate x:Key="Single" x:DataType="ajut_pg:PropertyEditTarget">
-                                    <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}" TextBoxHeight="24"/>
-                                </DataTemplate>
-                                <DataTemplate x:Key="eLampMode" x:DataType="ajut_pg:PropertyEditTarget">
-                                    <ajut:EnumComboBox SelectedItem="{Binding Path=EditValue, Mode=TwoWay}" VerticalAlignment="Center"/>
-                                </DataTemplate>
-                            </ajut:PropertyGridTemplateSelector.RegisteredTemplates>
-                        </ajut:PropertyGridTemplateSelector>
-                    </ajut:PropertyGrid.ItemTemplateSelector>
-                </ajut:PropertyGrid>
+                <!-- The grid draws no frame of its own, so the page gives it one to show where it is -->
+                <Border BorderThickness="1" BorderBrush="{ThemeResource SystemControlForegroundBaseMediumBrush}" Background="{ThemeResource LayerFillColorDefaultBrush}" CornerRadius="4" Padding="4">
+                    <ajut:PropertyGrid x:Name="DemoGrid" Height="320" LabelColumnWidth="140" RowSpacing="4" PropertyToolTipPlacement="PropertyNameAndValue">
+                        <ajut:PropertyGrid.ItemTemplateSelector>
+                            <ajut:PropertyGridTemplateSelector>
+                                <ajut:PropertyGridTemplateSelector.Default>
+                                    <DataTemplate x:DataType="ajut_pg:PropertyEditTarget">
+                                        <TextBlock Text="{Binding Path=EditValue}" VerticalAlignment="Center" Opacity="0.7"/>
+                                    </DataTemplate>
+                                </ajut:PropertyGridTemplateSelector.Default>
+                                <ajut:PropertyGridTemplateSelector.RegisteredTemplates>
+                                    <DataTemplate x:Key="String" x:DataType="ajut_pg:PropertyEditTarget">
+                                        <TextBox Text="{Binding Path=EditValue, Mode=TwoWay}"/>
+                                    </DataTemplate>
+                                    <DataTemplate x:Key="Boolean" x:DataType="ajut_pg:PropertyEditTarget">
+                                        <CheckBox IsChecked="{Binding Path=EditValue, Mode=TwoWay}" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                    <DataTemplate x:Key="Int32" x:DataType="ajut_pg:PropertyEditTarget">
+                                        <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}" TextBoxHeight="24"/>
+                                    </DataTemplate>
+                                    <DataTemplate x:Key="Single" x:DataType="ajut_pg:PropertyEditTarget">
+                                        <ajut:NumericEditor Value="{Binding Path=EditValue, Mode=TwoWay}" TextBoxHeight="24"/>
+                                    </DataTemplate>
+                                    <DataTemplate x:Key="eLampMode" x:DataType="ajut_pg:PropertyEditTarget">
+                                        <ajut:EnumComboBox SelectedItem="{Binding Path=EditValue, Mode=TwoWay}" VerticalAlignment="Center"/>
+                                    </DataTemplate>
+                                </ajut:PropertyGridTemplateSelector.RegisteredTemplates>
+                            </ajut:PropertyGridTemplateSelector>
+                        </ajut:PropertyGrid.ItemTemplateSelector>
+                    </ajut:PropertyGrid>
+                </Border>
 
                 <Border Grid.Column="1" BorderThickness="1" BorderBrush="{ThemeResource SystemControlForegroundBaseMediumBrush}" CornerRadius="4" Padding="12" VerticalAlignment="Top">
                     <StackPanel Spacing="4">

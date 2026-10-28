@@ -121,6 +121,26 @@
             set => this.SetValue(MenuBackgroundProperty, value);
         }
 
+        public static readonly DependencyProperty MenuShadowColorProperty = DPUtils.Register(_ => _.MenuShadowColor, Colors.Black);
+        /// <summary>
+        /// The color of the drop shadow under the open menu
+        /// </summary>
+        public Color MenuShadowColor
+        {
+            get => (Color)this.GetValue(MenuShadowColorProperty);
+            set => this.SetValue(MenuShadowColorProperty, value);
+        }
+
+        public static readonly DependencyProperty MenuShadowOpacityProperty = DPUtils.Register(_ => _.MenuShadowOpacity, 1.0);
+        /// <summary>
+        /// How strong the drop shadow under the open menu is, from 0 to 1
+        /// </summary>
+        public double MenuShadowOpacity
+        {
+            get => (double)this.GetValue(MenuShadowOpacityProperty);
+            set => this.SetValue(MenuShadowOpacityProperty, value);
+        }
+
         // ===================[Display Dependency Properties]===================
         public static readonly DependencyProperty MenuPopupAlignmentProperty = DPUtils.Register(_ => _.MenuPopupAlignment, HorizontalAlignment.Left);
         public HorizontalAlignment MenuPopupAlignment

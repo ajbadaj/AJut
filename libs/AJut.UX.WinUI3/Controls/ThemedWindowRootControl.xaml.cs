@@ -61,7 +61,7 @@ namespace AJut.UX.Controls
         private const double kFallbackCaptionButtonHeight = 32;
         private const int kCaptionButtonCount = 3;
 
-        private eWindowState m_cachedWindowState = eWindowState.Unknown;
+        private readonly WindowChromeStateTracker m_chrome = new WindowChromeStateTracker();
         private Window m_owner;
         private AppWindow m_ownerAppWindow;
         private InputNonClientPointerSource m_nonClientPointerSource;
@@ -526,24 +526,15 @@ namespace AJut.UX.Controls
 
         private void RefreshTitleBarBorderForWindowState()
         {
-            eWindowState currentWindowState = m_owner.GetWindowState();
-            if (currentWindowState == m_cachedWindowState || currentWindowState == eWindowState.Unknown)
+            // The tracker ignores Unknown, so an unchanged state here means nothing to redo
+            eWindowState previousWindowState = m_chrome.WindowState;
+            m_chrome.WindowState = m_owner.GetWindowState();
+            if (m_chrome.WindowState == previousWindowState)
             {
                 return;
             }
 
-            m_cachedWindowState = currentWindowState;
-            switch (m_cachedWindowState)
-            {
-                case eWindowState.Maximized:
-                case eWindowState.FullScreened:
-                    this.PART_TitleBarBorder.BorderThickness = new Thickness(0);
-                    break;
-
-                default:
-                    this.PART_TitleBarBorder.BorderThickness = this.TargetBorderThickness;
-                    break;
-            }
+            this.PART_TitleBarBorder.BorderThickness = m_chrome.ShowsWindowBorder ? this.TargetBorderThickness : new Thickness(0);
         }
         bool ITitleBarDragSizer.IsReadyToGenerateTitleBarDragRectangles() => m_owner?.AppWindow?.TitleBar != null && this.PART_CustomTitleBarContent != null && this.IsLoaded;
 
@@ -657,7 +648,37 @@ namespace AJut.UX.Controls
             this.LastState = state;
         }
 
-        private string ActivationState () => m_owner.IsActivated() ? kStateNormal : kStateInactive;
+        // The chrome's state is worked out by AJut.UX's WindowChromeStateTracker, shared with the other stacks' themed
+        // windows. Each input below goes to the tracker, then its result is copied into LastState and
+        // IsHoveringOverClose here, so those stay the dependency properties consumers bind to. Both are
+        // copied every time, so they always agree.
+        private void SyncChromeState ()
+        {
+            this.GoToState(ToStateName(m_chrome.State));
+            this.IsHoveringOverClose = m_chrome.IsHoveringOverClose;
+        }
+
+        private static string ToStateName (eWindowChromeState state)
+        {
+            switch (state)
+            {
+                case eWindowChromeState.Inactive: return kStateInactive;
+                case eWindowChromeState.ChromeButtonsHover: return kStateChromeButtonsHover;
+                case eWindowChromeState.CloseHover: return kStateCloseHover;
+                default: return kStateNormal;
+            }
+        }
+
+        private static eCaptionButton? ToCaptionButton (NonClientRegionKind? region)
+        {
+            switch (region)
+            {
+                case NonClientRegionKind.Close: return eCaptionButton.Close;
+                case NonClientRegionKind.Maximize: return eCaptionButton.Maximize;
+                case NonClientRegionKind.Minimize: return eCaptionButton.Minimize;
+                default: return null;
+            }
+        }
 
         /// <summary>
         /// Pushes the border and title bar brushes for the current state into the template. The brushes themselves
@@ -806,27 +827,14 @@ namespace AJut.UX.Controls
 
             if (m_owner == null)
             {
-                this.IsHoveringOverClose = false;
+                m_chrome.ReleaseCloseHover();
+                this.SyncChromeState();
                 this.RefreshCaptionButtonHighlights();
                 return;
             }
 
-            if (hovered == NonClientRegionKind.Close)
-            {
-                this.IsHoveringOverClose = true;
-                this.GoToState(kStateCloseHover);
-            }
-            else if (hovered.HasValue)
-            {
-                this.IsHoveringOverClose = false;
-                this.GoToState(kStateChromeButtonsHover);
-            }
-            else
-            {
-                this.IsHoveringOverClose = false;
-                this.GoToState(this.ActivationState());
-            }
-
+            m_chrome.SetSystemCaptionButtonPointer(ToCaptionButton(hovered), ToCaptionButton(pressed));
+            this.SyncChromeState();
             this.RefreshCaptionButtonHighlights();
         }
 
@@ -838,7 +846,8 @@ namespace AJut.UX.Controls
 
         private void OwnerWindow_OnActivated(object sender, WindowActivatedEventArgs args)
         {
-            this.GoToState(args.WindowActivationState != WindowActivationState.Deactivated ? kStateNormal : kStateInactive);
+            m_chrome.IsActivated = args.WindowActivationState != WindowActivationState.Deactivated;
+            this.SyncChromeState();
         }
 
         private void OnActualThemeChanged (FrameworkElement sender, object args)
@@ -946,13 +955,15 @@ namespace AJut.UX.Controls
         {
             if (this.PART_WindowRoot == null || m_owner == null)
             {
-                this.IsHoveringOverClose = false;
+                m_chrome.ReleaseCloseHover();
+                this.SyncChromeState();
                 return;
             }
 
             if (m_owner.IsFullScreened())
             {
-                this.IsHoveringOverClose = false;
+                m_chrome.ReleaseCloseHover();
+                this.SyncChromeState();
                 return;
             }
 
@@ -968,49 +979,45 @@ namespace AJut.UX.Controls
             {
                 if (point.X > this.ActualWidth - 46)
                 {
-                    this.IsHoveringOverClose = true;
-                    this.GoToState(kStateCloseHover);
+                    m_chrome.SetTitleBarHover(eChromeHover.Close);
                 }
                 else if (point.X > this.ActualWidth - kBuiltInChromeButtonsWidth
                             || this.PART_EnterFullscreenButton.IsPointerOver
                             || this.PART_ExitFullscreenButton.IsPointerOver)
                 {
-                    this.IsHoveringOverClose = false;
-                    this.GoToState(kStateChromeButtonsHover);
+                    m_chrome.SetTitleBarHover(eChromeHover.ChromeButtons);
                 }
                 else
                 {
-                    this.IsHoveringOverClose = false;
-                    this.GoToState(this.ActivationState());
+                    m_chrome.SetTitleBarHover(eChromeHover.None);
                 }
             }
             else
             {
-                this.GoToState(this.ActivationState());
-                this.IsHoveringOverClose = false;
+                m_chrome.SetTitleBarHover(eChromeHover.None);
             }
+
+            this.SyncChromeState();
         }
 
         private void OnPointerExited (object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
         {
-            this.IsHoveringOverClose = false;
-
             // Same null guard HandlePointerMoved above carries, and for the same reason: the pointer
             // leaves the window on its way out, so this handler runs after OwnerWindow_OnClosed has
             // already sent DisconnectFromOwnerWindow through and nulled the owner. There is no
-            // activation state to reflect once the window is gone, so there is nothing to do here.
+            // activation state to reflect once the window is gone, so only close hover goes.
             if (m_owner == null)
             {
+                m_chrome.ReleaseCloseHover();
+                this.SyncChromeState();
                 return;
             }
 
             // Leaving the client area for the caption strip arrives as an exit here and an enter in the non-client
-            // handlers, in that order, so this only steps back to the activation state when no caption button holds
-            // the pointer.
-            if (m_hoveredCaptionRegion == null)
-            {
-                this.GoToState(this.ActivationState());
-            }
+            // handlers, in that order, so the tracker only steps back to the activation state when no caption button
+            // holds the pointer.
+            m_chrome.ClearTitleBarHover();
+            this.SyncChromeState();
         }
     }
 }

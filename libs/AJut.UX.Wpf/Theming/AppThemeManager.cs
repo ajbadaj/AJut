@@ -6,20 +6,25 @@
     using System.Windows.Media;
     using Microsoft.Win32;
 
-    public enum eAppTheme { Dark, Light }
-    public enum eAppThemeConfiguration { Dark, Light, UseSameAsOS }
-
     /// <summary>
     /// A theme management object to use in your App, to set manually or to provide user bindable options for app configuration
     /// </summary>
+    /// <remarks>
+    /// Which theme is in effect is decided by AJut.UX's <see cref="AppThemeResolver"/>, shared with every other stack.
+    /// This class reads the OS theme from the registry, and applies a theme by swapping the app's theme colors dictionary.
+    /// </remarks>
     public class AppThemeManager : NotifyPropertyChanged, IDisposable
     {
         private static readonly APUtilsRegistrationHelper APUtils = new APUtilsRegistrationHelper(typeof(AppThemeManager));
         private const string kRegistryThemeRootKey = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
         private const string kRegistryIsLightThemeValue = "AppsUseLightTheme";
+        private const string kLightTouchOverlayUriPath = "/AJut.UX.Wpf;component/Resources/LightTouchThemeColorsOverlay.xaml";
+        private const string kDarkTouchOverlayUriPath = "/AJut.UX.Wpf;component/Resources/DarkTouchThemeColorsOverlay.xaml";
 
         private readonly Application m_targetApplication;
         private readonly int m_themeColorsInsertionIndex;
+        private readonly RegistryThemeSource m_osSource;
+        private readonly AppThemeResolver m_resolver;
         private ResourceDictionary m_lightThemeColors;
         private ResourceDictionary m_darkThemeColors;
 
@@ -27,8 +32,16 @@
         private Func<ResourceDictionary> m_lightThemeLoader;
         private Func<ResourceDictionary> m_darkThemeLoader;
 
-        private eAppThemeConfiguration m_themeConfiguration;
+        // The theme whose colors are loaded now. The resolver decides which theme is in effect; this is what has been applied.
         private eAppTheme m_currentTheme;
+
+        // The touch overlays, loaded the first time each is needed, and the one laid over the theme colors now, if any
+        private readonly Uri m_lightTouchOverlayUri;
+        private readonly Uri m_darkTouchOverlayUri;
+        private ResourceDictionary m_lightTouchOverlay;
+        private ResourceDictionary m_darkTouchOverlay;
+        private ResourceDictionary m_appliedTouchOverlay;
+        private bool m_isTouchFocused;
 
         // =========================[ Construction / Setup ]=============================
 
@@ -38,10 +51,14 @@
         /// <param name="lightThemeXamlUriPath">The xaml uri for the light theme, usually in the format of: "/$AppName;component/Themes/LightThemeColors.xaml" - if the entry assembly is the target, and the path lives in Themes/LightThemeColors.xaml you can leave this null</param>
         /// <param name="darkThemeXamlUriPath">The xaml uri for the dark theme, usually in the format of: "/$AppName;component/Themes/DarkThemeColors.xaml" - if the entry assembly is the target, and the path lives in Themes/DarkThemeColors.xaml you can leave this null</param>
         /// <param name="themeColorsInsertionIndex">At what index do we insert the current theme color xaml, default is index zero</param>
-        public AppThemeManager (Application target = null, string lightThemeXamlUriPath = null, string darkThemeXamlUriPath = null, int themeColorsInsertionIndex = 0)
+        /// <param name="lightTouchOverlayXamlUriPath">The xaml uri laid over the light theme colors when <see cref="IsTouchFocused"/> is on. Leave it null for AJut's own (Resources/LightTouchThemeColorsOverlay.xaml in AJut.UX.Wpf); pass one when the app changes the colors the touch overlay sets.</param>
+        /// <param name="darkTouchOverlayXamlUriPath">The xaml uri laid over the dark theme colors when <see cref="IsTouchFocused"/> is on. Leave it null for AJut's own (Resources/DarkTouchThemeColorsOverlay.xaml in AJut.UX.Wpf); pass one when the app changes the colors the touch overlay sets.</param>
+        public AppThemeManager (Application target = null, string lightThemeXamlUriPath = null, string darkThemeXamlUriPath = null, int themeColorsInsertionIndex = 0, string lightTouchOverlayXamlUriPath = null, string darkTouchOverlayXamlUriPath = null)
         {
             m_targetApplication = target ?? Application.Current;
             m_themeColorsInsertionIndex = themeColorsInsertionIndex;
+            m_lightTouchOverlayUri = new Uri(lightTouchOverlayXamlUriPath ?? kLightTouchOverlayUriPath, UriKind.Relative);
+            m_darkTouchOverlayUri = new Uri(darkTouchOverlayXamlUriPath ?? kDarkTouchOverlayUriPath, UriKind.Relative);
 
             var lightThemeXamlUri = new Uri(lightThemeXamlUriPath ?? $"Themes/LightThemeColors.xaml", UriKind.Relative);
             var darkThemeXamlUri = new Uri(darkThemeXamlUriPath ?? $"Themes/DarkThemeColors.xaml", UriKind.Relative);
@@ -51,34 +68,52 @@
             m_lightThemeLoader = () => Application.LoadComponent(lightThemeXamlUri) as ResourceDictionary;
             m_darkThemeLoader = () => Application.LoadComponent(darkThemeXamlUri) as ResourceDictionary;
 
+            // The starting choice is whichever theme's colors the app already has loaded, dark when it is neither
+            eAppThemeConfiguration startingConfiguration;
+            bool isStartingThemeLoaded = true;
             ResourceDictionary currentThemeColors = m_targetApplication.Resources.MergedDictionaries[m_themeColorsInsertionIndex];
             if (currentThemeColors.Source == lightThemeXamlUri)
             {
                 m_lightThemeColors = currentThemeColors;
                 m_currentTheme = eAppTheme.Light;
-                m_themeConfiguration = eAppThemeConfiguration.Light;
+                startingConfiguration = eAppThemeConfiguration.Light;
             }
             else if (currentThemeColors.Source == darkThemeXamlUri)
             {
                 m_darkThemeColors = currentThemeColors;
                 m_currentTheme = eAppTheme.Dark;
-                m_themeConfiguration = eAppThemeConfiguration.Dark;
+                startingConfiguration = eAppThemeConfiguration.Dark;
             }
             else
             {
                 m_darkThemeColors = m_darkThemeLoader();
-                m_themeConfiguration = eAppThemeConfiguration.Dark;
-                AlterApplicationTheme(eAppTheme.Dark);
+                startingConfiguration = eAppThemeConfiguration.Dark;
+                isStartingThemeLoaded = false;
+            }
+
+            m_osSource = new RegistryThemeSource();
+            m_resolver = new AppThemeResolver(m_osSource, store: null, fallback: startingConfiguration);
+            m_resolver.ThemeChanged += this.OnResolverThemeChanged;
+            m_resolver.PropertyChanged += this.OnResolverPropertyChanged;
+
+            if (!isStartingThemeLoaded)
+            {
+                this.AlterApplicationTheme(eAppTheme.Dark);
             }
         }
 
         public void Dispose ()
         {
-            this.StopWatchingOSForUserThemeChange();
+            m_resolver.ThemeChanged -= this.OnResolverThemeChanged;
+            m_resolver.PropertyChanged -= this.OnResolverPropertyChanged;
+            m_resolver.Dispose();
+            m_osSource.Dispose();
             m_lightThemeColors = null;
             m_darkThemeColors = null;
             m_lightThemeLoader = null;
             m_darkThemeLoader = null;
+            m_lightTouchOverlay = null;
+            m_darkTouchOverlay = null;
         }
 
         [Conditional("DEBUG")]
@@ -102,37 +137,31 @@
         /// </summary>
         public eAppThemeConfiguration ThemeConfiguration
         {
-            get => m_themeConfiguration;
-            set
-            {
-                if (this.SetAndRaiseIfChanged(ref m_themeConfiguration, value))
-                {
-                    switch (value)
-                    {
-                        case eAppThemeConfiguration.UseSameAsOS:
-                            this.AlterApplicationTheme(GetWindowsUserAppThemeSetting());
-                            this.EnsureOsMonitoringUnderwayForUserThemeChange();
-                            break;
-
-                        case eAppThemeConfiguration.Light:
-                            this.AlterApplicationTheme(eAppTheme.Light);
-                            break;
-
-                        case eAppThemeConfiguration.Dark:
-                            this.AlterApplicationTheme(eAppTheme.Dark);
-                            break;
-                    }
-                }
-            }
+            get => m_resolver.ThemeConfiguration;
+            set => m_resolver.ThemeConfiguration = value;
         }
 
         /// <summary>
         /// The current app theme, this is readonly - to alter the theme set the ThemeConfiguration instead
         /// </summary>
-        public eAppTheme CurrentTheme
+        public eAppTheme CurrentTheme => m_currentTheme;
+
+        /// <summary>
+        /// Whether the theme is touch focused: the AJut touch palette's changes laid over the current theme colors, so
+        /// buttons read as buttons without hover (lifted surfaces, no borders). Off by default, and AJut never turns it
+        /// on by itself. An app can follow a 2-in-1's touch use by setting this from a <see cref="TouchPreferenceWatcher"/>,
+        /// or offer it as a setting.
+        /// </summary>
+        public bool IsTouchFocused
         {
-            get => m_currentTheme;
-            private set => this.SetAndRaiseIfChanged(ref m_currentTheme, value);
+            get => m_isTouchFocused;
+            set
+            {
+                if (this.SetAndRaiseIfChanged(ref m_isTouchFocused, value))
+                {
+                    this.ApplyTouchOverlay();
+                }
+            }
         }
 
         /// <summary>
@@ -167,8 +196,10 @@
 
             Logger.LogInfo($"Changing theme to: {theme}");
             m_targetApplication.Resources.MergedDictionaries.RemoveAt(m_themeColorsInsertionIndex);
-            m_targetApplication.Resources.MergedDictionaries.Insert(0, theme == eAppTheme.Dark ? _GetDarkThemeColors() : _GetLightThemeColors());
+            m_targetApplication.Resources.MergedDictionaries.Insert(m_themeColorsInsertionIndex, theme == eAppTheme.Dark ? _GetDarkThemeColors() : _GetLightThemeColors());
             m_currentTheme = theme;
+            this.ApplyTouchOverlay();
+            this.RaisePropertiesChanged(nameof(CurrentTheme));
 
             ResourceDictionary _GetLightThemeColors ()
             {
@@ -193,40 +224,91 @@
             }
         }
 
-        private void EnsureOsMonitoringUnderwayForUserThemeChange ()
+        // Lays the current theme's touch overlay over everything when touch focused, as the last merged dictionary, and
+        // takes any other off. The last merged dictionary wins a lookup, so the overlay's few keys override the theme
+        // colors' while every other key, the app's own included, still comes from where it did. Going last also leaves
+        // every other dictionary at the index it had, for an app that places its own by index.
+        private void ApplyTouchOverlay ()
         {
-            try
+            if (m_appliedTouchOverlay != null)
             {
-                SystemEvents.UserPreferenceChanged -= this.OnUserPreferenceChanged;
-                SystemEvents.UserPreferenceChanged += this.OnUserPreferenceChanged;
+                m_targetApplication.Resources.MergedDictionaries.Remove(m_appliedTouchOverlay);
+                m_appliedTouchOverlay = null;
             }
-            catch (Exception ex)
+
+            if (!m_isTouchFocused)
             {
-                Logger.LogError("Theming error - starting up OS user preference monitoring is failing (likely a machine problem)", ex);
+                return;
             }
+
+            if (m_currentTheme == eAppTheme.Dark)
+            {
+                m_darkTouchOverlay ??= (ResourceDictionary)Application.LoadComponent(m_darkTouchOverlayUri);
+                m_appliedTouchOverlay = m_darkTouchOverlay;
+            }
+            else
+            {
+                m_lightTouchOverlay ??= (ResourceDictionary)Application.LoadComponent(m_lightTouchOverlayUri);
+                m_appliedTouchOverlay = m_lightTouchOverlay;
+            }
+
+            m_targetApplication.Resources.MergedDictionaries.Add(m_appliedTouchOverlay);
         }
 
-        private void StopWatchingOSForUserThemeChange ()
+        private void OnResolverThemeChanged (object sender, EventArgs<eAppTheme> e)
         {
-            try
-            {
-                SystemEvents.UserPreferenceChanged -= this.OnUserPreferenceChanged;
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError("Theming error - stopping OS user preference monitoring is failing (likely a machine problem)", ex);
-            }
+            this.AlterApplicationTheme(e.Value);
         }
 
-        private void OnUserPreferenceChanged (object sender, UserPreferenceChangedEventArgs e)
+        private void OnResolverPropertyChanged (object sender, System.ComponentModel.PropertyChangedEventArgs e)
         {
-            if (m_themeConfiguration == eAppThemeConfiguration.UseSameAsOS)
+            if (e.PropertyName == nameof(AppThemeResolver.ThemeConfiguration))
             {
-                this.AlterApplicationTheme(GetWindowsUserAppThemeSetting());
+                this.RaisePropertiesChanged(nameof(ThemeConfiguration));
             }
         }
 
         // =========================[ Utility Classes ]=============================
+        // The OS theme from the registry, and its changes from SystemEvents.UserPreferenceChanged. SystemEvents raises
+        // on the thread that first used it when that thread pumps messages, which in a WPF app is the UI thread.
+        private sealed class RegistryThemeSource : IOSThemeSource, IDisposable
+        {
+            public RegistryThemeSource ()
+            {
+                try
+                {
+                    SystemEvents.UserPreferenceChanged += this.OnUserPreferenceChanged;
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError("Theming error - starting up OS user preference monitoring is failing (likely a machine problem)", ex);
+                }
+            }
+
+            public void Dispose ()
+            {
+                try
+                {
+                    SystemEvents.UserPreferenceChanged -= this.OnUserPreferenceChanged;
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError("Theming error - stopping OS user preference monitoring is failing (likely a machine problem)", ex);
+                }
+
+                this.OSThemeChanged = null;
+            }
+
+            public event EventHandler OSThemeChanged;
+
+            public eAppTheme GetOSTheme () => GetWindowsUserAppThemeSetting();
+
+            private void OnUserPreferenceChanged (object sender, UserPreferenceChangedEventArgs e)
+            {
+                this.OSThemeChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
         public class Flags : NotifyPropertyChanged
         {
             private bool m_listItemsShowHover = true;
@@ -236,28 +318,5 @@
                 set => this.SetAndRaiseIfChanged(ref m_listItemsShowHover, value);
             }
         }
-    }
-}
-
-namespace AJut.UX.Themeing
-{
-    using System;
-    using System.Windows;
-
-    [Obsolete("This was a naming error, please use AppThemeManager from AJut.Ux.Theming (not this class from AJut.UX.Themeing) - this version will be removed in future updates")]
-    public enum eAppTheme { Dark, Light }
-
-    [Obsolete("This was a naming error, please use AppThemeManager from AJut.Ux.Theming (not this class from AJut.UX.Themeing) - this version will be removed in future updates")]
-    public enum eAppThemeConfiguration { Dark, Light, UseSameAsOS }
-
-    [Obsolete("This was a naming error, please use AppThemeManager from AJut.Ux.Theming (not this class from AJut.UX.Themeing) - this version will be removed in future updates")]
-    public class AppThemeManager : Theming.AppThemeManager
-    {
-        public AppThemeManager (Application target = null, string lightThemeXamlUriPath = null, string darkThemeXamlUriPath = null, int themeColorsInsertionIndex = 0)
-            : base(target, lightThemeXamlUriPath, darkThemeXamlUriPath, themeColorsInsertionIndex)
-        {
-
-        }
-
     }
 }

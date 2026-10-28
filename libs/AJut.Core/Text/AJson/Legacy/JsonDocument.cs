@@ -3,6 +3,7 @@ namespace AJut.Text.AJson.Legacy
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using AJut;
     using AJut.Text;
@@ -255,6 +256,7 @@ namespace AJut.Text.AJson.Legacy
             return value;
         }
 
+        [RequiresUnreferencedCode("AJson V1 writes an object value through reflection, and trimming can remove the members it reaches. AJson V2 with [OptimizeAJson] is trim safe.")]
         public JsonValue AppendNew(string key, object value, JsonBuilder.Settings settings = null)
         {
             return AppendNew(key, JsonHelper.MakeValueBuilder(value, settings));
@@ -303,6 +305,8 @@ namespace AJut.Text.AJson.Legacy
             return m_memberStorage.Where(kvp => kvp.Value.StringValue == value).Select(kvp => kvp.Key).FirstOrDefault();
         }
 
+        [RequiresUnreferencedCode("AJson V1 reads the value into a T through reflection, and trimming can remove the members it reaches. AJson V2 with [OptimizeAJson] is trim safe.")]
+        [RequiresDynamicCode("AJson V1 makes generic collection types at runtime, which an ahead of time compiled build (iOS, NativeAOT) may never have compiled. AJson V2 with [OptimizeAJson] does not.")]
         public bool TryGetValue<T> (string key, out T foundValue)
         {
             JsonValue value = this.ValueFor(key);

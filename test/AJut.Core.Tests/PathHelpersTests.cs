@@ -1,5 +1,7 @@
 ﻿namespace AJut.Core.UnitTests
 {
+    using System;
+    using System.Globalization;
     using System.Linq;
     using AJut.IO;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -29,6 +31,36 @@
             Assert.AreEqual(@"c:\test", PathHelpers.NormalizePath(@"C:\bob\..\test\"));
             Assert.AreEqual(@"\\test", PathHelpers.NormalizePath(@"\\bob\..\test"));
             Assert.AreEqual(@"\\test", PathHelpers.NormalizePath(@"\\bob\..\test\"));
+        }
+
+        [TestMethod]
+        public void PathHelpers_Normalize_UpTwoDirsInARow ()
+        {
+            Assert.AreEqual(@"c", PathHelpers.NormalizePath(@"a\b\..\..\c"));
+            Assert.AreEqual(@"c:\c", PathHelpers.NormalizePath(@"C:\a\b\..\..\c"));
+            Assert.AreEqual(@"\\c", PathHelpers.NormalizePath(@"\\a\b\..\..\c"));
+        }
+
+        [TestMethod]
+        public void PathHelpers_Normalize_UpPastADriveOrNetworkRoot_StopsAtTheRoot ()
+        {
+            Assert.AreEqual(@"c:\x", PathHelpers.NormalizePath(@"C:\..\x"));
+            Assert.AreEqual(@"c:\c", PathHelpers.NormalizePath(@"C:\a\..\..\c"));
+            Assert.AreEqual(@"c:\x", PathHelpers.NormalizePath(@"C:\..\..\x"));
+            Assert.AreEqual(@"\\x", PathHelpers.NormalizePath(@"\\..\x"));
+        }
+
+        [TestMethod]
+        public void PathHelpers_Normalize_UpPastTheStartOfARelativePath_Throws ()
+        {
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => PathHelpers.NormalizePath(@"a\..\..\c"));
+        }
+
+        [TestMethod]
+        public void PathHelpers_Normalize_RelativeStart ()
+        {
+            Assert.AreEqual(@".git\config", PathHelpers.NormalizePath(@".git\config"));
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => PathHelpers.NormalizePath(@"..\a\b"));
         }
 
         [TestMethod]
@@ -102,6 +134,12 @@
         [TestMethod]
         public void PathHelpers_GetAllPathParts_Basic ()
         {
+            // Splits on the OS's own separator, and this is a Windows path
+            if (!OperatingSystem.IsWindows())
+            {
+                Assert.Inconclusive("Windows only: splits a Windows path on the OS's separator");
+            }
+
             string[] parts = PathHelpers.GetAllPathParts(@"C:\test\125\log.txt").ToArray();
             Assert.AreEqual(4, parts.Length);
             Assert.AreEqual("C:", parts[0]);
@@ -123,6 +161,15 @@
         }
 
         [TestMethod]
+        public void PathHelpers_GetAllPathParts_RelativeStart_KeepsEveryPart ()
+        {
+            CollectionAssert.AreEqual(new[] { ".", "a", "b" }, PathHelpers.GetAllPathParts(@".\a\b", '\\').ToArray());
+            CollectionAssert.AreEqual(new[] { "..", "a", "b" }, PathHelpers.GetAllPathParts(@"..\a\b", '\\').ToArray());
+            CollectionAssert.AreEqual(new[] { "..", "a" }, PathHelpers.GetAllPathParts(@"..\a", '\\').ToArray());
+            CollectionAssert.AreEqual(new[] { ".git", "config" }, PathHelpers.GetAllPathParts(@".git\config", '\\').ToArray());
+        }
+
+        [TestMethod]
         public void PathHelpers_GetAllPathParts_EdgeCases ()
         {
             string test = "longstringnoseparators";
@@ -134,6 +181,12 @@
         [TestMethod]
         public void PathHelpers_PathValidityTester ()
         {
+            // Which characters a path can hold is the OS's call: '|' is invalid on Windows but valid on macOS and Linux
+            if (!OperatingSystem.IsWindows())
+            {
+                Assert.Inconclusive("Windows only: path validity follows the OS, and these are Windows paths");
+            }
+
             _EvalExpectValid(@"C:\test\test.txt");
             _EvalExpectValid(@"C:\test\test2\");
             _EvalExpectValid(@"C:\test\test2");
@@ -197,6 +250,98 @@
             Assert.IsTrue(PathHelpers.ArePathsMatching(@"c:\bob", @"c:\test\..\bob"));
             Assert.IsTrue(PathHelpers.ArePathsMatching(@"c:\bob\", @"c:\test\..\bob"));
             Assert.IsTrue(PathHelpers.ArePathsMatching(@"\\bob\", @"\\test\..\bob"));
+        }
+
+        [TestMethod]
+        public void PathHelpers_GetAllPathParts_RootOfTheDrive_KeepsAnEmptyRootPart ()
+        {
+            CollectionAssert.AreEqual(new[] { "", "a", "b" }, PathHelpers.GetAllPathParts(@"\a\b", '\\').ToArray());
+            CollectionAssert.AreEqual(new[] { "", "users", "x" }, PathHelpers.GetAllPathParts("/users/x", '/').ToArray());
+        }
+
+        [TestMethod]
+        public void PathHelpers_Normalize_RootOfTheDrive_KeepsItsRoot ()
+        {
+            Assert.AreEqual(@"\a\b", PathHelpers.NormalizePath(@"\a\b"));
+            Assert.AreEqual(@"\users\x", PathHelpers.NormalizePath("/Users/x"));
+            Assert.AreEqual(@"\x", PathHelpers.NormalizePath(@"\..\x"));
+            Assert.IsFalse(PathHelpers.ArePathsMatching("/x/y", "x/y"));
+        }
+
+        [TestMethod]
+        public void PathHelpers_GetAllPathParts_ShortPaths ()
+        {
+            CollectionAssert.AreEqual(new[] { "x" }, PathHelpers.GetAllPathParts(@"x\", '\\').ToArray());
+            CollectionAssert.AreEqual(Array.Empty<string>(), PathHelpers.GetAllPathParts("", '\\').ToArray());
+            CollectionAssert.AreEqual(new[] { "" }, PathHelpers.GetAllPathParts(@"\", '\\').ToArray());
+            CollectionAssert.AreEqual(new[] { @"\" }, PathHelpers.GetAllPathParts(@"\\", '\\').ToArray());
+            CollectionAssert.AreEqual(new[] { "c:" }, PathHelpers.GetAllPathParts("c:", '\\').ToArray());
+        }
+
+        [TestMethod]
+        public void PathHelpers_Normalize_ShortPaths ()
+        {
+            Assert.AreEqual("x", PathHelpers.NormalizePath(@"x\"));
+            Assert.AreEqual(@"\", PathHelpers.NormalizePath(@"\"));
+            Assert.AreEqual(@"\\", PathHelpers.NormalizePath(@"\\"));
+            Assert.AreEqual(@"\", PathHelpers.NormalizePath(@"\a\.."));
+            Assert.AreEqual("", PathHelpers.NormalizePath(""));
+        }
+
+        [TestMethod]
+        public void PathHelpers_Normalize_DropsDotParts ()
+        {
+            Assert.AreEqual(@"a\b", PathHelpers.NormalizePath(@"a\.\b"));
+            Assert.AreEqual(@"a\b", PathHelpers.NormalizePath(@".\a\b"));
+            Assert.AreEqual(@"c:\x", PathHelpers.NormalizePath(@"C:\.\x"));
+            Assert.AreEqual("b", PathHelpers.NormalizePath(@"a\.\..\b"));
+            Assert.IsTrue(PathHelpers.ArePathsMatching(@"a\.\b", @"a\b"));
+        }
+
+        [TestMethod]
+        public void PathHelpers_ArePathsMatching_IgnoresTheCurrentCulture ()
+        {
+            // Turkish lowercases I to a dotless i, so lowercasing by the current culture tells BIN from bin
+            RunUnderCulture("tr-TR", () => Assert.IsTrue(PathHelpers.ArePathsMatching(@"C:\BIN", @"c:\bin")));
+        }
+
+        [TestMethod]
+        public void PathHelpers_RelativeDirectory_IgnoresTheCurrentCulture ()
+        {
+            RunUnderCulture("tr-TR", () => Assert.AreEqual("x.txt", PathHelpers.GenerateRelativePath(@"C:\Bin\", @"C:\BIN\x.txt")));
+        }
+
+        [TestMethod]
+        public void PathHelpers_IsValidAsPath_TakesEitherSeparator ()
+        {
+            Assert.IsTrue(PathHelpers.IsValidAsPath(@"c:/a/b.txt"));
+            Assert.IsTrue(PathHelpers.IsValidAsPath(@"c:\a/b/"));
+            Assert.AreEqual(@"First\thing.xml", PathHelpers.GenerateRelativePath(@"C:/Test/", @"C:/Test/First/thing.xml"));
+        }
+
+        [TestMethod]
+        public void PathHelpers_FindMatchingExtensions_MatchesAtADot ()
+        {
+            Assert.IsFalse(PathHelpers.FindMatchingExtensions(@"C:\notajpg", "jpg").Any());
+            Assert.IsFalse(PathHelpers.FindMatchingExtensions(@"C:\a.xbmp", "bmp").Any());
+            Assert.IsTrue(PathHelpers.FindMatchingExtensions(@"C:\photo.JPG", "jpg").Any());
+            Assert.IsTrue(PathHelpers.FindMatchingExtensions(@"C:\photo.jpg", ".jpg").Any());
+            Assert.IsTrue(PathHelpers.FindMatchingExtensions(@"C:\bin\ajut.core.dll", "ajut.core.dll").Any());
+            Assert.IsTrue(PathHelpers.FindMatchingExtensions(@"C:\anything", "*").Any());
+        }
+
+        private static void RunUnderCulture (string cultureName, Action test)
+        {
+            CultureInfo original = CultureInfo.CurrentCulture;
+            CultureInfo.CurrentCulture = new CultureInfo(cultureName);
+            try
+            {
+                test();
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = original;
+            }
         }
     }
 }

@@ -31,7 +31,7 @@
         <StackPanel Spacing="12" MaxWidth="1000" HorizontalAlignment="Left">
             <TextBlock Text="What do we have here?" FontSize="22" FontWeight="SemiBold"/>
             <TextBlock TextWrapping="Wrap"
-                       Text="This app shows most of what AJut.UX.WinUI3 can do, with the markup and code beside each example, and it is the testing ground for the library: the probes that found real defects live in the Debug area and stay runnable."/>
+                       Text="This app shows most of what AJut.UX.WinUI3 can do, with the markup and code beside each example, and it's the testing ground for the library: the probes that found real defects live in the Debug area and stay runnable."/>
             <TextBlock TextWrapping="Wrap" Text="Pick an area on the left, or from the cards below. The WPF showroom has the same areas and the same page names, so what you find here you can find there."/>
 
             <Border BorderThickness="1" BorderBrush="{ThemeResource AccentFillColorDefaultBrush}" Background="{ThemeResource LayerFillColorAltBrush}" CornerRadius="4" Padding="14" Margin="0,8,0,8">
