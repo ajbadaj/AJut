@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Every control the AJut theme paints on Android, once per state, side by side. A sample's android:tag names a state
+     the page pins it to that a layout cannot set: hovered, pressed, focused, error, read-only, step-pressed (a
+     NumericEditor's plus button held), disabled (an EnumComboBox's Spinner), pin-items (a strip's items, each pinned
+     to the state it is named for), or scroll-middle (a Scroll strip scrolled halfway). -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:id="@+id/theme_tester_samples"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Every control the AJut theme paints, in each state it can show. Pick the look with the bar at the top." />
+
+        <TextView
+            style="@style/ThemeTesterNote"
+            android:text="Hovered and pressed samples are held in that state for display, so they do not respond to taps. Focused is the page's one real focus." />
+
+        <!-- ====[ BrushButton ]==== -->
+        <TextView
+            style="@style/ThemeTesterSection"
+            android:text="BrushButton" />
+
+        <TextView
+            style="@style/ThemeTesterNote"
+            android:text="The standard button colors (ButtonBackground, ButtonForeground and ButtonBorderBrush) in each state. Android shows no focus on it." />
+
+        <LinearLayout style="@style/ThemeTesterRow">
+
+            <ajut.ux.controls.BrushButton
+                style="@style/ThemeTesterSample"
+                android:text="Rest" />
+
+            <ajut.ux.controls.BrushButton
+                style="@style/ThemeTesterSample"
+                android:tag="hovered"
+                android:text="Hovered" />
+
+            <ajut.ux.controls.BrushButton
+                style="@style/ThemeTesterSample"
+                android:tag="pressed"
+                android:text="Pressed" />
+
+            <ajut.ux.controls.BrushButton
+                style="@style/ThemeTesterSample"
+                android:enabled="false"
+                android:text="Disabled" />
+        </LinearLayout>
+
+        <!-- ====[ GeometryButton ]==== -->
+        <TextView
+            style="@style/ThemeTesterSection"
+            android:text="GeometryButton" />
+
+        <TextView
+            style="@style/ThemeTesterNote"
+            android:text="The button colors fill the shape, and the GeometryButton trace keys (the common border) draw around it, so the trace stays on touch." />
+
+        <LinearLayout style="@style/ThemeTesterRow">
+
+            <ajut.ux.controls.GeometryButton
+                style="@style/ThemeTesterSample"
+                android:layout_height="52dp"
+                android:text="Rest"
+                app:ajutBackgroundGeometry="M 10,0 H 90 L 100,10 V 40 L 90,50 H 10 L 0,40 V 10 Z"
+                app:ajutGeometryStretch="fill"
+                app:ajutTraceThickness="2dp" />
+
+            <ajut.ux.controls.GeometryButton
+                style="@style/ThemeTesterSample"
+                android:layout_height="52dp"
+                android:tag="hovered"
+                android:text="Hovered"
+                app:ajutBackgroundGeometry="M 10,0 H 90 L 100,10 V 40 L 90,50 H 10 L 0,40 V 10 Z"
+                app:ajutGeometryStretch="fill"
+                app:ajutTraceThickness="2dp" />
+
+            <ajut.ux.controls.GeometryButton
+                style="@style/ThemeTesterSample"
+                android:layout_height="52dp"
+                android:tag="pressed"
+                android:text="Pressed"
+                app:ajutBackgroundGeometry="M 10,0 H 90 L 100,10 V 40 L 90,50 H 10 L 0,40 V 10 Z"
+                app:ajutGeometryStretch="fill"
+                app:ajutTraceThickness="2dp" />
+
+            <ajut.ux.controls.GeometryButton
+                style="@style/ThemeTesterSample"
+                android:layout_height="52dp"
+                android:enabled="false"
+                android:text="Disabled"
+                app:ajutBackgroundGeometry="M 10,0 H 90 L 100,10 V 40 L 90,50 H 10 L 0,40 V 10 Z"
+                app:ajutGeometryStretch="fill"
+                app:ajutTraceThickness="2dp" />
+        </LinearLayout>
+
+        <!-- ====[ AutoBrushButton ]==== -->
+        <TextView
+            style="@style/ThemeTesterSection"
+            android:text="AutoBrushButton" />
+
+        <TextView
+            style="@style/ThemeTesterNote"
+            android:text="Every state derived from one accent. With none set, as here, that is the theme's accent (SystemAccentColor), or the device's accent with the AJut theme off. An accent set on the button wins over both." />
+
+        <LinearLayout style="@style/ThemeTesterRow">
+
+            <ajut.ux.controls.AutoBrushButton
+                style="@style/ThemeTesterSample"
+                android:text="Rest" />
+
+            <ajut.ux.controls.AutoBrushButton
+                style="@style/ThemeTesterSample"
+                android:tag="hovered"
+                android:text="Hovered" />
+
+            <ajut.ux.controls.AutoBrushButton
+                style="@style/ThemeTesterSample"
+                android:tag="pressed"
+                android:text="Pressed" />
+
+            <ajut.ux.controls.AutoBrushButton
+                style="@style/ThemeTesterSample"
+                android:enabled="false"
+                android:text="Disabled" />
+        </LinearLayout>
+
+        <!-- ====[ ToggleStrip ]==== -->
+        <TextView
+            style="@style/ThemeTesterSection"
+            android:text="ToggleStrip" />
+
+        <TextView
+            style="@style/ThemeTesterNote"
+            android:text="Each item is named for its state. The strip is ControlFillColorDefaultBrush, and its outline and dividers ControlStrokeColorDefaultBrush; the items are the ToggleStripButton keys. EnumToggleStrip is this strip over an enum, and the theme bar at the top is one. Android shows no disabled or focus look on a strip." />
+
+        <ajut.ux.controls.ToggleStrip
+            style="@style/ThemeTesterLine"
+            android:layout_width="wrap_content"
+            android:tag="pin-items"
+            app:ajutAllowMultiSelect="true"
+            app:ajutAllowNoSelection="true"
+            app:ajutItems="@array/theme_tester_strip_unchecked" />
+
+        <ajut.ux.controls.ToggleStrip
+            android:id="@+id/theme_tester_strip_checked"
+            style="@style/ThemeTesterLine"
+            android:layout_width="wrap_content"
+            android:tag="pin-items"
+            app:ajutAllowMultiSelect="true"
+            app:ajutAllowNoSelection="true"
+            app:ajutItems="@array/theme_tester_strip_checked" />
+
+        <TextView
+            style="@style/ThemeTesterNote"
+            android:layout_marginTop="12dp"
+            android:text="Scrolling, a strip shows a dot past each end it can still scroll toward, in the symbol color (AJut_Brush_SymbolForeground). The first is at its start, the second scrolled to its middle." />
+
+        <ajut.ux.controls.ToggleStrip
+            style="@style/ThemeTesterLine"
+            android:layout_width="220dp"
+            app:ajutItems="@array/theme_tester_strip_scroll"
+            app:ajutOverflowBehavior="scroll" />
+
+        <ajut.ux.controls.ToggleStrip
+            style="@style/ThemeTesterLine"
+            android:layout_width="220dp"
+            android:tag="scroll-middle"
+            app:ajutItems="@array/theme_tester_strip_scroll"
+            app:ajutOverflowBehavior="scroll" />
+
+        <!-- ====[ NumericEditor ]==== -->
+        <TextView
+            style="@style/ThemeTesterSection"
+            android:text="NumericEditor" />
+
+        <TextView
+            style="@style/ThemeTesterNote"
+            android:text="The frame is the NumericEditor border keys: normal, focused, and the error color out of bounds. A held step button is NumericEditor_IncreasePointerOverBackground, and the number is TextControlForeground. The focused sample takes no typing, so no keyboard comes up for it." />
+
+        <ajut.ux.controls.NumericEditor
+            style="@style/ThemeTesterLine"
+            app:ajutLabel="Rest"
+            app:ajutMaximum="10" />
+
+        <ajut.ux.controls.NumericEditor
+            style="@style/ThemeTesterLine"
+            android:tag="focused"
+            app:ajutLabel="Focused"
+            app:ajutMaximum="10" />
+
+        <ajut.ux.controls.NumericEditor
+            style="@style/ThemeTesterLine"
+            android:tag="error"
+            app:ajutLabel="Error, over 10"
+            app:ajutMaximum="10" />
+
+        <ajut.ux.controls.NumericEditor
+            style="@style/ThemeTesterLine"
+            android:tag="read-only"
+            app:ajutLabel="Read-only"
+            app:ajutMaximum="10" />
+
+        <ajut.ux.controls.NumericEditor
+            style="@style/ThemeTesterLine"
+            android:tag="step-pressed"
+            app:ajutLabel="Plus held"
+            app:ajutMaximum="10" />
+
+        <!-- ====[ ColorEditIngressControl ]==== -->
+        <TextView
+            style="@style/ThemeTesterSection"
+            android:text="ColorEditIngressControl" />
+
+        <TextView
+            style="@style/ThemeTesterNote"
+            android:text="Only its border is themed: ColorEditIngressControl_NormalBorderBrush, and HighlightBorderBrush while the picker is open. Pressed dims the swatch. Android shows no disabled or focus look on it." />
+
+        <LinearLayout style="@style/ThemeTesterRow">
+
+            <LinearLayout style="@style/ThemeTesterLabeledSample">
+
+                <ajut.ux.controls.ColorEditIngressControl
+                    android:layout_width="match_parent"
+                    android:layout_height="36dp"
+                    app:ajutEditColor="#3A86C8" />
+
+                <TextView
+                    style="@style/ThemeTesterLabel"
+                    android:text="Rest" />
+            </LinearLayout>
+
+            <LinearLayout style="@style/ThemeTesterLabeledSample">
+
+                <ajut.ux.controls.ColorEditIngressControl
+                    android:layout_width="match_parent"
+                    android:layout_height="36dp"
+                    android:tag="pressed"
+                    app:ajutEditColor="#3A86C8" />
+
+                <TextView
+                    style="@style/ThemeTesterLabel"
+                    android:text="Pressed" />
+            </LinearLayout>
+
+            <LinearLayout style="@style/ThemeTesterLabeledSample">
+
+                <ajut.ux.controls.ColorEditIngressControl
+                    android:layout_width="match_parent"
+                    android:layout_height="36dp"
+                    app:ajutEditColor="#3A86C8" />
+
+                <TextView
+                    style="@style/ThemeTesterLabel"
+                    android:text="Tap: picker open" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- ====[ Stock Android widgets ]==== -->
+        <TextView
+            style="@style/ThemeTesterSection"
+            android:text="Android's own widgets" />
+
+        <TextView
+            style="@style/ThemeTesterNote"
+            android:text="Not themed by AJut: these follow the device's light or dark through Android's DeviceDefault theme, so they show what the AJut controls sit beside. EnumComboBox is a Spinner underneath, so it is one of them." />
+
+        <LinearLayout style="@style/ThemeTesterRow">
+
+            <ajut.ux.controls.EnumComboBox
+                android:id="@+id/theme_tester_combo"
+                style="@style/ThemeTesterSample" />
+
+            <ajut.ux.controls.EnumComboBox
+                android:id="@+id/theme_tester_combo_disabled"
+                style="@style/ThemeTesterSample"
+                android:tag="disabled" />
+        </LinearLayout>
+
+        <LinearLayout style="@style/ThemeTesterRow">
+
+            <CheckBox
+                style="@style/ThemeTesterSample"
+                android:text="Off" />
+
+            <CheckBox
+                style="@style/ThemeTesterSample"
+                android:checked="true"
+                android:text="On" />
+
+            <CheckBox
+                style="@style/ThemeTesterSample"
+                android:checked="true"
+                android:enabled="false"
+                android:text="Disabled" />
+        </LinearLayout>
+
+        <LinearLayout style="@style/ThemeTesterRow">
+
+            <Switch
+                style="@style/ThemeTesterSample"
+                android:text="Off" />
+
+            <Switch
+                style="@style/ThemeTesterSample"
+                android:checked="true"
+                android:text="On" />
+
+            <Switch
+                style="@style/ThemeTesterSample"
+                android:checked="true"
+                android:enabled="false"
+                android:text="Disabled" />
+        </LinearLayout>
+
+        <LinearLayout style="@style/ThemeTesterRow">
+
+            <EditText
+                style="@style/ThemeTesterSample"
+                android:inputType="text"
+                android:text="Text" />
+
+            <EditText
+                style="@style/ThemeTesterSample"
+                android:enabled="false"
+                android:inputType="text"
+                android:text="Disabled" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

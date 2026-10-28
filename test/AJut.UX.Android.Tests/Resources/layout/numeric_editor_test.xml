@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <ajut.ux.controls.NumericEditor
+        android:id="@+id/numeric_editor"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:ajutMinimum="-5"
+        app:ajutMaximum="50"
+        app:ajutNudge="2.5"
+        app:ajutDecimalPlacesAllowed="1"
+        app:ajutLabel="Volume"
+        app:ajutOutOfBoundsResponse="fixOnCommit"
+        app:ajutEnforceNumericType="Int32" />
+</FrameLayout>

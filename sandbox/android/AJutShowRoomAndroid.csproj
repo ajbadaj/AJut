@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>29</SupportedOSPlatformVersion>
+    <RootNamespace>AJutShowRoomAndroid</RootNamespace>
+    <ApplicationId>dev.ajut.showroom.android</ApplicationId>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <ApplicationTitle>AJut Showroom</ApplicationTitle>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\libs\AJut.UX.Android\AJut.UX.Android.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Each control page shows its own layout as the markup beside the demo. A layout is compiled to binary when
+         it is packaged, so every demo layout is also packaged untouched as a raw resource, named <layout>_source,
+         and the page reads that. -->
+    <AndroidResource Include="Resources\layout\demo_*.xml">
+      <LogicalName>raw\%(Filename)_source.xml</LogicalName>
+    </AndroidResource>
+  </ItemGroup>
+</Project>

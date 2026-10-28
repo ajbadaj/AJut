@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="GeometryButton"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:alpha="0.7"
+        android:text="A button whose background is a path geometry instead of a rectangle. ajutBackgroundGeometry takes path markup, the same as a XAML Path's Data, and ajutTraceThickness outlines it." />
+
+    <ajut.ux.controls.GeometryButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Geometry Button"
+        app:ajutBackgroundGeometry="M 0,0 20,20 40,0 150,0 150,100 100,90 0,100 Z"
+        app:ajutTraceThickness="1dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="Curves, arcs and stretch"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textStyle="bold" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:orientation="horizontal">
+
+        <ajut.ux.controls.GeometryButton
+            android:layout_width="110dp"
+            android:layout_height="110dp"
+            android:text="Uniform"
+            app:ajutBackgroundGeometry="M 50,0 A 50,50 0 1 1 49.99,0 Z"
+            app:ajutGeometryStretch="uniform"
+            app:ajutTraceThickness="2dp" />
+
+        <ajut.ux.controls.GeometryButton
+            android:layout_width="160dp"
+            android:layout_height="110dp"
+            android:layout_marginStart="12dp"
+            android:text="Fill"
+            app:ajutBackgroundGeometry="M 0,20 C 30,-10 70,50 100,20 L 100,80 C 70,110 30,50 0,80 Z"
+            app:ajutGeometryStretch="fill"
+            app:ajutTraceThickness="2dp" />
+    </LinearLayout>
+
+    <ajut.ux.controls.GeometryButton
+        android:layout_width="220dp"
+        android:layout_height="60dp"
+        android:layout_marginTop="12dp"
+        android:enabled="false"
+        android:text="Disabled"
+        app:ajutBackgroundGeometry="M 10,0 H 90 L 100,10 V 40 L 90,50 H 10 L 0,40 V 10 Z"
+        app:ajutGeometryStretch="fill"
+        app:ajutTraceThickness="1dp" />
+</LinearLayout>

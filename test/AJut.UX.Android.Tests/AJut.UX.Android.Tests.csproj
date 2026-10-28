@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Android Views only exist on a device, so these tests are an app: it runs every [TestMethod] on the main
+       thread at launch and logs the results under the AJutTests tag. run-android-tests.ps1 installs it on a
+       device or emulator through adb, launches it and reads the results back from logcat. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>26</SupportedOSPlatformVersion>
+    <RootNamespace>AJut.UX.Tests</RootNamespace>
+    <ApplicationId>dev.ajut.ux.android.tests</ApplicationId>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <ApplicationTitle>AJut Android Tests</ApplicationTitle>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="MSTest.TestFramework" Version="3.6.4" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\libs\AJut.UX.Android\AJut.UX.Android.csproj" />
+  </ItemGroup>
+</Project>

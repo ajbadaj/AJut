@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Keeps every AJut view a layout can name, with its constructors, when an app's Release build trims this assembly.
+     A layout names a view by its registered Java name only, so the trimmer never sees it used. Without this, a view
+     that no code mentions is trimmed away with its Java wrapper, and inflating the layout fails with
+     ClassNotFoundException. Android creates an inflated view through its (Context, IAttributeSet) constructor, and
+     wraps an existing Java object through its (IntPtr, JniHandleOwnership) one, so every constructor is kept.
+     A new view registered with [Register] goes in this list too. -->
+<linker>
+  <assembly fullname="AJut.UX.Android">
+    <type fullname="AJut.UX.Controls.AutoBrushButton"><method name=".ctor" /></type>
+    <type fullname="AJut.UX.Controls.BrushButton"><method name=".ctor" /></type>
+    <type fullname="AJut.UX.Controls.ColorEditIngressControl"><method name=".ctor" /></type>
+    <type fullname="AJut.UX.Controls.EnumComboBox"><method name=".ctor" /></type>
+    <type fullname="AJut.UX.Controls.EnumToggleStrip"><method name=".ctor" /></type>
+    <type fullname="AJut.UX.Controls.GeometryButton"><method name=".ctor" /></type>
+    <type fullname="AJut.UX.Controls.HsvColorPicker"><method name=".ctor" /></type>
+    <type fullname="AJut.UX.Controls.NumericEditor"><method name=".ctor" /></type>
+    <type fullname="AJut.UX.Controls.ToggleStrip"><method name=".ctor" /></type>
+  </assembly>
+</linker>

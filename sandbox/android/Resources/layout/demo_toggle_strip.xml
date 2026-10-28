@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="ToggleStrip"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:alpha="0.7"
+        android:text="A row of toggle buttons, one per item. One at a time by default, and the last one stays on. The selection rules are shared with every AJut toolkit's ToggleStrip." />
+
+    <ajut.ux.controls.ToggleStrip
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        app:ajutItems="@array/demo_alignment" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="Multi-select, uniform size"
+        android:textStyle="bold" />
+
+    <ajut.ux.controls.ToggleStrip
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:ajutAllowMultiSelect="true"
+        app:ajutAllowNoSelection="true"
+        app:ajutEnsureUniformSize="true"
+        app:ajutItems="@array/demo_toppings" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="Too many to fit: scroll"
+        android:textStyle="bold" />
+
+    <ajut.ux.controls.ToggleStrip
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:ajutItems="@array/demo_months"
+        app:ajutOverflowBehavior="scroll" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="Too many to fit: overflow popup"
+        android:textStyle="bold" />
+
+    <ajut.ux.controls.ToggleStrip
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:ajutItems="@array/demo_months"
+        app:ajutOverflowBehavior="overflowPopup" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="Vertical: plain, uniform size, and 160dp tall scroll and overflow popup"
+        android:textStyle="bold" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal">
+
+        <ajut.ux.controls.ToggleStrip
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="12dp"
+            app:ajutItems="@array/demo_alignment"
+            app:ajutOrientation="vertical" />
+
+        <ajut.ux.controls.ToggleStrip
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="12dp"
+            app:ajutAllowMultiSelect="true"
+            app:ajutAllowNoSelection="true"
+            app:ajutEnsureUniformSize="true"
+            app:ajutItems="@array/demo_toppings"
+            app:ajutOrientation="vertical" />
+
+        <ajut.ux.controls.ToggleStrip
+            android:layout_width="wrap_content"
+            android:layout_height="160dp"
+            android:layout_marginEnd="12dp"
+            app:ajutItems="@array/demo_months"
+            app:ajutOverflowBehavior="scroll"
+            app:ajutOrientation="vertical" />
+
+        <ajut.ux.controls.ToggleStrip
+            android:layout_width="wrap_content"
+            android:layout_height="160dp"
+            app:ajutItems="@array/demo_months"
+            app:ajutOverflowBehavior="overflowPopup"
+            app:ajutOrientation="vertical" />
+    </LinearLayout>
+</LinearLayout>

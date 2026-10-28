@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="What do we have here?"
+            android:textAppearance="?android:attr/textAppearanceLarge" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="This app shows what AJut.UX.Android can do, with the markup beside each example. The WinUI3 and WPF showrooms have the same areas and the same page names, so what you find here you can find there. A phone gets the controls that make sense on a phone." />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="The bar at the top picks the look on every page:" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:alpha="0.7"
+            android:text="Dark and Light force a dark or light look. System follows the device's own, and Android's answer for touch, which is on." />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:alpha="0.7"
+            android:text="Touch picks the AJut theme's touch palette, where buttons stand out from the page with no borders since touch has no hover, or its desktop palette. It is set by System, and means nothing with the AJut theme off." />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:alpha="0.7"
+            android:text="AJut paints the AJut palette, the same one the WinUI3 showroom uses. Off, the controls paint plain defaults that follow light and dark." />
+
+        <ajut.ux.controls.AutoBrushButton
+            android:id="@+id/home_controls"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Controls"
+            app:ajutPropagatedAccentColor="#0D83D8" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="The standalone controls, one page each." />
+
+        <ajut.ux.controls.AutoBrushButton
+            android:id="@+id/home_debug"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Debug"
+            app:ajutPropagatedAccentColor="#0D83D8" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Checks rather than demos, starting with the Theme Tester: every control the AJut theme paints, in each of its states." />
+    </LinearLayout>
+</ScrollView>

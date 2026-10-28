@@ -9,6 +9,7 @@
     <Project Path="libs/AJut.Core/AJut.Core.csproj">
       <Platform Solution="*|x64" Project="x64" />
     </Project>
+    <Project Path="libs/AJut.UX.Android/AJut.UX.Android.csproj" />
     <Project Path="libs/AJut.UX.AppKit/AJut.UX.AppKit.csproj" />
     <Project Path="libs/AJut.UX.UIKit/AJut.UX.UIKit.csproj" />
     <Project Path="libs/AJut.UX.WinUI3/AJut.UX.WinUI3.csproj" />
@@ -18,6 +19,9 @@
     <Project Path="libs/AJut.UX/AJut.UX.csproj" />
   </Folder>
   <Folder Name="/sandbox/">
+    <Project Path="sandbox/android/AJutShowRoomAndroid.csproj">
+      <Deploy />
+    </Project>
     <Project Path="sandbox/appkit/AJutShowRoomAppKit.csproj" />
     <Project Path="sandbox/uikit/AJutShowRoomUIKit.csproj">
       <Deploy />
@@ -38,6 +42,9 @@
       <Platform Solution="*|x64" Project="x64" />
     </Project>
     <Project Path="test/AJut.Trimming.Probe/AJut.Trimming.Probe.csproj" />
+    <Project Path="test/AJut.UX.Android.Tests/AJut.UX.Android.Tests.csproj">
+      <Deploy />
+    </Project>
     <Project Path="test/AJut.UX.Tests/AJut.UX.Tests.csproj" />
     <Project Path="test/AJut.UX.Wpf.Tests/AJut.UX.Wpf.Tests.csproj" />
     <Project Path="test/AJut.UX.WinUI3.Tests/AJut.UX.WinUI3.Tests.csproj">

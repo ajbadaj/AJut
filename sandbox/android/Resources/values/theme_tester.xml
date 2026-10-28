@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Theme Tester page's styles and strip items. -->
+<resources>
+  <style name="ThemeTesterSection">
+    <item name="android:layout_width">match_parent</item>
+    <item name="android:layout_height">wrap_content</item>
+    <item name="android:layout_marginTop">24dp</item>
+    <item name="android:textAppearance">?android:attr/textAppearanceMedium</item>
+    <item name="android:textStyle">bold</item>
+  </style>
+
+  <style name="ThemeTesterNote">
+    <item name="android:layout_width">match_parent</item>
+    <item name="android:layout_height">wrap_content</item>
+    <item name="android:layout_marginTop">4dp</item>
+    <item name="android:alpha">0.7</item>
+  </style>
+
+  <!-- A row of one control in its states, side by side -->
+  <style name="ThemeTesterRow">
+    <item name="android:layout_width">match_parent</item>
+    <item name="android:layout_height">wrap_content</item>
+    <item name="android:layout_marginTop">8dp</item>
+    <item name="android:orientation">horizontal</item>
+  </style>
+
+  <!-- One sample in a row: the samples share the row's width evenly -->
+  <style name="ThemeTesterSample">
+    <item name="android:layout_width">0dp</item>
+    <item name="android:layout_height">wrap_content</item>
+    <item name="android:layout_weight">1</item>
+    <item name="android:layout_marginEnd">6dp</item>
+  </style>
+
+  <!-- A sample with no text of its own (a color swatch) and a label under it -->
+  <style name="ThemeTesterLabeledSample" parent="ThemeTesterSample">
+    <item name="android:orientation">vertical</item>
+    <item name="android:gravity">center_horizontal</item>
+  </style>
+
+  <style name="ThemeTesterLabel">
+    <item name="android:layout_width">wrap_content</item>
+    <item name="android:layout_height">wrap_content</item>
+    <item name="android:layout_marginTop">4dp</item>
+    <item name="android:alpha">0.7</item>
+    <item name="android:textSize">12sp</item>
+  </style>
+
+  <!-- A full width sample, one per line -->
+  <style name="ThemeTesterLine">
+    <item name="android:layout_width">match_parent</item>
+    <item name="android:layout_height">wrap_content</item>
+    <item name="android:layout_marginTop">8dp</item>
+  </style>
+
+  <!-- Strip items are named for the state each is pinned to -->
+  <string-array name="theme_tester_strip_unchecked">
+    <item>Rest</item>
+    <item>Hovered</item>
+    <item>Pressed</item>
+  </string-array>
+
+  <string-array name="theme_tester_strip_checked">
+    <item>Checked</item>
+    <item>Checked, pressed</item>
+  </string-array>
+
+  <!-- More than a short Scroll strip shows, so it has somewhere to scroll -->
+  <string-array name="theme_tester_strip_scroll">
+    <item>One</item>
+    <item>Two</item>
+    <item>Three</item>
+    <item>Four</item>
+    <item>Five</item>
+    <item>Six</item>
+    <item>Seven</item>
+    <item>Eight</item>
+  </string-array>
+</resources>
