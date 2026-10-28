@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-macos</TargetFramework>
+    <RootNamespace>AJut.UX</RootNamespace>
+    <Description>C# / dotnet 10 / AppKit (macOS) controls &amp; utility library, created by AJ Badarni</Description>
+    <Authors>AJ Badarni</Authors>
+    <Company />
+    <PackageProjectUrl>https://www.ajut.dev/</PackageProjectUrl>
+    <PackageIcon>ajut-logo-128.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/ajbadaj/AJut</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>c#;dotnet;macos;appkit;theming;controls;app;utilities</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <!-- Turns on the trim, single-file and AOT analyzers and marks the package trimmable, so a macOS app that trims -->
+    <!-- sees any hazard at its own call into the package rather than finding it missing at runtime                  -->
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\.editorconfig" Link=".editorconfig" />
+    <None Include="..\..\ajut-logo-128.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\..\license.txt" Link="license.txt">
+      <PackagePath>
+      </PackagePath>
+      <Pack>True</Pack>
+    </None>
+    <None Update="README.md">
+      <PackagePath>\</PackagePath>
+      <Pack>True</Pack>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AJut.Core\AJut.Core.csproj" />
+    <ProjectReference Include="..\AJut.UX\AJut.UX.csproj" />
+  </ItemGroup>
+
+</Project>
