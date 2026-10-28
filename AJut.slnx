@@ -10,6 +10,7 @@
       <Platform Solution="*|x64" Project="x64" />
     </Project>
     <Project Path="libs/AJut.UX.AppKit/AJut.UX.AppKit.csproj" />
+    <Project Path="libs/AJut.UX.UIKit/AJut.UX.UIKit.csproj" />
     <Project Path="libs/AJut.UX.WinUI3/AJut.UX.WinUI3.csproj" />
     <Project Path="libs/AJut.UX.Wpf/AJut.UX.Wpf.csproj">
       <Platform Solution="*|x64" Project="x64" />
@@ -18,6 +19,9 @@
   </Folder>
   <Folder Name="/sandbox/">
     <Project Path="sandbox/appkit/AJutShowRoomAppKit.csproj" />
+    <Project Path="sandbox/uikit/AJutShowRoomUIKit.csproj">
+      <Deploy />
+    </Project>
     <Project Path="sandbox/winui/AJutShowRoomWinUI.csproj">
       <Platform Solution="*|Any CPU" Project="x64" />
       <Platform Solution="*|x64" Project="x64" />
