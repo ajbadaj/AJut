@@ -8,8 +8,10 @@ namespace AJut.UX.Controls
     /// <summary>
     /// A button you color with a single accent. Hand it one PropagatedAccentColor and it derives a
     /// coherent, readable palette - a foreground that contrasts the accent, a visible border, and the
-    /// pointer over / pressed / disabled variants - with no per state colors. The derivation lives in
-    /// <see cref="InteractiveSurfaceColors.BuildFromAccent"/>.
+    /// pointer over / pressed / disabled variants - with no per state colors. The derivation is
+    /// <see cref="InteractiveSurfaceColors.BuildFromAccent"/>'s, through <see cref="MobileLook.AutoBrushButton.BuildFromAccent"/>,
+    /// which Android's AutoBrushButton takes too: it pushes the pressed border further off the fill, since a press is the
+    /// only highlight touch has.
     /// </summary>
     public class AutoBrushButton : _ManagedBrushButton
     {
@@ -82,8 +84,8 @@ namespace AJut.UX.Controls
 
             // The derivation is byte math on one fixed color, so a dynamic accent is resolved for each
             // appearance and derived separately, then the pairs are joined back into dynamic colors.
-            InteractiveSurfaceColors light = InteractiveSurfaceColors.BuildFromAccent(accent.ToColorArgb(UIUserInterfaceStyle.Light));
-            InteractiveSurfaceColors dark = InteractiveSurfaceColors.BuildFromAccent(accent.ToColorArgb(UIUserInterfaceStyle.Dark));
+            InteractiveSurfaceColors light = MobileLook.AutoBrushButton.BuildFromAccent(accent.ToColorArgb(UIUserInterfaceStyle.Light));
+            InteractiveSurfaceColors dark = MobileLook.AutoBrushButton.BuildFromAccent(accent.ToColorArgb(UIUserInterfaceStyle.Dark));
 
             m_normal = _Join(light.Normal, dark.Normal);
             m_pointerOver = _Join(light.PointerOver, dark.PointerOver);

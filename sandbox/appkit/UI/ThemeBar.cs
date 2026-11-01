@@ -26,7 +26,7 @@ namespace AJutShowRoomAppKit.UI
         public ThemeBar ()
         {
             ShowroomStyle.EnsureRegistered();
-            this.BackgroundColorKey = ShowroomStyle.SidebarBackground;
+            this.BackgroundColorKey = ShowroomStyle.ShellBackground;
             m_touchChoice = AppDelegate.ThemeManager.IsTouchFocused;
 
             m_themeStrip = new ToggleStrip

@@ -38,6 +38,14 @@ namespace AJutShowRoomUIKit.UI
         {
             base.ViewDidLoad();
             this.TableView.RegisterClassForCellReuse(typeof(UITableViewCell), kCellId);
+
+            // Themed, the list sits on the navigation level, as the Android showroom's page list and the WinUI3 showroom's
+            // area page lists do
+            UIColor navigation = ShowroomSettings.NavigationBackground;
+            if (navigation != null)
+            {
+                this.TableView.BackgroundColor = navigation;
+            }
         }
 
         public override nint RowsInSection (UITableView tableView, nint section) => m_entries.Count;
@@ -49,6 +57,13 @@ namespace AJutShowRoomUIKit.UI
             content.Text = m_entries[indexPath.Row].Title;
             cell.ContentConfiguration = content;
             cell.Accessory = UITableViewCellAccessory.DisclosureIndicator;
+
+            UIColor navigation = ShowroomSettings.NavigationBackground;
+            if (navigation != null)
+            {
+                cell.BackgroundColor = navigation;
+            }
+
             return cell;
         }
 

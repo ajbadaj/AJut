@@ -9,7 +9,11 @@ namespace AJutShowRoomUIKit.UI
     /// </summary>
     public static class ShowroomSettings
     {
+        // The showroom's surfaces, stepping one level at a time from the title bar the way every AJut showroom's do
         private const string kPanelBackgroundKey = "AJut_Brush_PanelBackground";
+        private const string kNavigationBackgroundKey = "AJut_Brush_NavigationPanelBackground";
+        private const string kTitleBarBackgroundKey = "AJut_Brush_TitleBarBackground";
+        private const string kTitleBarForegroundKey = "AJut_Brush_TitleBarForeground";
 
         // iOS's own answer for touch, read before the showroom changes it: an iOS UI is touch first
         private static readonly bool kSystemIsTouchFocused = ThemedColors.IsTouchFocused;
@@ -55,11 +59,24 @@ namespace AJutShowRoomUIKit.UI
         public static bool CanChooseTouch => ThemedColors.IsThemeLoaded && (g_themeMode != eThemeMode.System);
 
         /// <summary>
-        /// What the pages and the theme bar sit on: the AJut panel background with the theme loaded, the way a themed
-        /// WinUI3 window does, so the controls are judged against the surface the theme puts them on. Without the theme
-        /// (the palette key has no unthemed default) it is the system background.
+        /// What the pages sit on: with the AJut theme loaded, the panel color the controls sit on in every AJut showroom,
+        /// so they are judged against the surface the theme puts them on. Without the theme (the palette key has no
+        /// unthemed default) it is the system background.
         /// </summary>
         public static UIColor PageBackground => ThemedColors.Get(kPanelBackgroundKey) ?? UIColor.SystemBackground;
+
+        /// <summary>
+        /// What the theme bar and the lists of areas and pages sit on with the AJut theme loaded: the navigation level, one
+        /// step back from the pages, as the Android showroom's theme bar and page list are. Null without the theme, which
+        /// keeps the system's.
+        /// </summary>
+        public static UIColor NavigationBackground => ThemedColors.Get(kNavigationBackgroundKey);
+
+        /// <summary>The navigation bar's fill with the AJut theme loaded, the same fill as the WPF showroom's title bar; null without it.</summary>
+        public static UIColor TitleBarBackground => ThemedColors.Get(kTitleBarBackgroundKey);
+
+        /// <summary>The navigation bar's title color with the AJut theme loaded; null without it.</summary>
+        public static UIColor TitleBarForeground => ThemedColors.Get(kTitleBarForegroundKey);
 
         /// <summary>The window's interface style for <see cref="ThemeMode"/>.</summary>
         public static UIUserInterfaceStyle InterfaceStyle => g_themeMode switch

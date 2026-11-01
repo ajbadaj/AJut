@@ -26,8 +26,8 @@ namespace AJutShowRoomAppKit.UI
             this.ContentMinSize = new CGSize(800, 500);
             ShowroomStyle.EnsureRegistered();
 
-            // 1. Area list: Home first, then the shared areas
-            m_areaNav = new NavColumn();
+            // 1. Area list: Home first, then the shared areas, on the shell's level with the theme bar above it
+            m_areaNav = new NavColumn(ShowroomStyle.ShellBackground);
             m_areaNav.AddItem(kHomeTitle);
             foreach (ShowroomArea area in ShowroomAreas.All)
             {

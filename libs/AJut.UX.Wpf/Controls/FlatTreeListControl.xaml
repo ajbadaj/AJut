@@ -19,6 +19,7 @@
                                     <MultiDataTrigger>
                                         <MultiDataTrigger.Conditions>
                                             <Condition Binding="{Binding Path=IsSelectable}" Value="True" />
+                                            <Condition Binding="{ajut:TemplateBinding Path=IsSelected}" Value="True" />
                                             <Condition Binding="{ajut:TemplateBinding Path=(Selector.IsSelectionActive)}" Value="True" />
                                         </MultiDataTrigger.Conditions>
                                         <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType=local:FlatTreeListControl}, Path=SelectionBrush}"/>

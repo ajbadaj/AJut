@@ -20,6 +20,8 @@ namespace AJutShowRoomWinUI.UI.Controls
             this.ToggleStripUniform.ItemsSource = new[] { "S", "Medium", "Extra Large" };
             this.ToggleStripOverflow.ItemsSource = new[] { "One", "Two", "Three", "Four", "Five", "Six", "Seven" };
             this.ToggleStripScroll.ItemsSource = new[] { "One", "Two", "Three", "Four", "Five", "Six", "Seven" };
+            this.ToggleStripDisabled.ItemsSource = new[] { "Selected", "Not selected", "Neither" };
+            this.ToggleStripDisabledScroll.ItemsSource = new[] { "One", "Two", "Three", "Four", "Five", "Six", "Seven" };
 
             // Vertical demo items: the uniform one mixes line counts so the even heights show
             this.ToggleStripVertical.ItemsSource = new[] { "Top", "Middle", "Bottom" };
@@ -27,6 +29,7 @@ namespace AJutShowRoomWinUI.UI.Controls
             this.ToggleStripVerticalClip.ItemsSource = new[] { "One", "Two", "Three", "Four", "Five", "Six", "Seven" };
             this.ToggleStripVerticalOverflow.ItemsSource = new[] { "One", "Two", "Three", "Four", "Five", "Six", "Seven" };
             this.ToggleStripVerticalScroll.ItemsSource = new[] { "One", "Two", "Three", "Four", "Five", "Six", "Seven" };
+            this.ToggleStripVerticalSwitched.ItemsSource = new[] { "One", "Two", "Three", "Four", "Five", "Six", "Seven" };
         }
 
         public string DemoCode { get; } = @"<ajut:ToggleStrip x:Name=""ToggleStripSingle""/>

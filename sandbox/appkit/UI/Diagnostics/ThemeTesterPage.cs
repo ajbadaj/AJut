@@ -69,9 +69,10 @@ namespace AJutShowRoomAppKit.UI.Diagnostics
             this.AddStates(
                 new StateSample("Rest, with Two picked", new ToggleStrip { ItemsSource = kStripItems, SelectedItem = kStripItems[1] }),
                 new StateSample("OverflowPopup (the chevron)", MakeNarrowStrip(eToggleStripOverflow.OverflowPopup)),
-                new StateSample("Scroll (the end dots)", MakeNarrowStrip(eToggleStripOverflow.Scroll))
+                new StateSample("Scroll (the end dots)", MakeNarrowStrip(eToggleStripOverflow.Scroll)),
+                new StateSample("Disabled, with Two picked", new ToggleStrip { ItemsSource = kStripItems, SelectedItem = kStripItems[1], Enabled = false })
             );
-            this.AddText("A strip draws its own items, so their pointer over and pressed looks can't be pinned on AppKit: move over and press the items above. No stack has a disabled or focused look for a strip.");
+            this.AddText("A strip draws its own items, so their pointer over and pressed looks can't be pinned on AppKit: move over and press the items above. Disabled, a strip looks like a disabled ComboBox, as on every stack: AJut_Brush_ControlBackgroundDisabled, outlined and divided with AJut_Brush_TextBoxBorder, with its items' fills kept and their names dimmed. No stack has a focused look for a strip.");
 
             // 3. NumericEditor
             this.AddHeading("NumericEditor");

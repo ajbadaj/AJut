@@ -144,6 +144,12 @@ namespace AJut.UX.Theming
                         return true;
                     }
 
+                    if ((entry.ThemedStops != null) && this.TryResolveStops(entry.ThemedStops, out AJutGradientStop[]? stops))
+                    {
+                        paint = new AJutThemePaint(stops).WithOpacity(opacity);
+                        return true;
+                    }
+
                     break;
                 }
 
@@ -170,6 +176,27 @@ namespace AJut.UX.Theming
             {
                 return m_entries.TryGetValue(key, out entry)
                     || AJutThemeKeys.TryGetEntry(key, out entry);
+            }
+
+            // A gradient whose stops name palette colors takes each one's color in this theme, the way a GradientStop's
+            // {ThemeResource} color does in the WinUI3 XAML
+            private bool TryResolveStops (IReadOnlyList<AJutThemeStop> themedStops, [NotNullWhen(true)] out AJutGradientStop[]? stops)
+            {
+                stops = new AJutGradientStop[themedStops.Count];
+                for (int index = 0; index < stops.Length; ++index)
+                {
+                    AJutThemeStop stop = themedStops[index];
+                    ColorArgb color = stop.Color;
+                    if ((stop.ColorKey != null) && !this.TryGetColor(stop.ColorKey, out color))
+                    {
+                        stops = null;
+                        return false;
+                    }
+
+                    stops[index] = new AJutGradientStop(stop.Offset, color);
+                }
+
+                return true;
             }
         }
     }
@@ -235,6 +262,12 @@ namespace AJut.UX.Theming
     public readonly record struct AJutGradientStop (double Offset, ColorArgb Color);
 
     /// <summary>
+    /// One gradient stop as a themed key defines it: a color, or the palette color named by <see cref="ColorKey"/>,
+    /// which each theme resolves to its own value.
+    /// </summary>
+    internal readonly record struct AJutThemeStop (double Offset, ColorArgb Color, string? ColorKey);
+
+    /// <summary>
     /// One themed key's definition, the way the XAML states it: a value (a paint or a number), or an alias to
     /// another key with an opacity applied on top. The palette tables and <see cref="AJutThemeKeys"/> are built
     /// from these, through the static helpers below, which read the same as the XAML they mirror.
@@ -242,16 +275,20 @@ namespace AJut.UX.Theming
     internal sealed class AJutThemeEntry
     {
         // ===========[ Setup/Construction/Teardown ]===================================
-        private AJutThemeEntry (AJutThemePaint? paint, string? aliasKey, double opacity, double? number)
+        private AJutThemeEntry (AJutThemePaint? paint, string? aliasKey, double opacity, double? number, AJutThemeStop[]? themedStops = null)
         {
             this.Paint = paint;
             this.AliasKey = aliasKey;
             this.Opacity = opacity;
             this.Number = number;
+            this.ThemedStops = themedStops;
         }
 
         // ===========[ Properties ]===================================
         public AJutThemePaint? Paint { get; }
+
+        /// <summary>A gradient with stops that name palette colors, which a table resolves in its own theme; null otherwise.</summary>
+        public IReadOnlyList<AJutThemeStop>? ThemedStops { get; }
 
         public string? AliasKey { get; }
 
@@ -263,11 +300,27 @@ namespace AJut.UX.Theming
         /// <summary>A solid color, from 0xAARRGGBB.</summary>
         public static AJutThemeEntry Solid (uint argb, double opacity = 1.0) => new AJutThemeEntry(new AJutThemePaint(_Unpack(argb)), null, opacity, null);
 
-        /// <summary>A top to bottom gradient.</summary>
-        public static AJutThemeEntry Gradient (params AJutGradientStop[] stops) => new AJutThemeEntry(new AJutThemePaint(stops), null, 1.0, null);
+        /// <summary>A top to bottom gradient. One whose stops all have their own colors is the same in every theme.</summary>
+        public static AJutThemeEntry Gradient (params AJutThemeStop[] stops)
+        {
+            bool takesThePalette = false;
+            var colors = new AJutGradientStop[stops.Length];
+            for (int index = 0; index < stops.Length; ++index)
+            {
+                takesThePalette |= (stops[index].ColorKey != null);
+                colors[index] = new AJutGradientStop(stops[index].Offset, stops[index].Color);
+            }
+
+            return takesThePalette
+                ? new AJutThemeEntry(null, null, 1.0, null, stops)
+                : new AJutThemeEntry(new AJutThemePaint(colors), null, 1.0, null);
+        }
 
         /// <summary>One gradient stop, its color from 0xAARRGGBB.</summary>
-        public static AJutGradientStop Stop (double offset, uint argb) => new AJutGradientStop(offset, _Unpack(argb));
+        public static AJutThemeStop Stop (double offset, uint argb) => new AJutThemeStop(offset, _Unpack(argb), null);
+
+        /// <summary>One gradient stop in the palette color <paramref name="colorKey"/>, whatever it is in the theme resolving it.</summary>
+        public static AJutThemeStop Stop (double offset, string colorKey) => new AJutThemeStop(offset, default, colorKey);
 
         /// <summary>Whatever <paramref name="key"/> resolves to, with <paramref name="opacity"/> applied on top.</summary>
         public static AJutThemeEntry Alias (string key, double opacity = 1.0) => new AJutThemeEntry(null, key, opacity, null);

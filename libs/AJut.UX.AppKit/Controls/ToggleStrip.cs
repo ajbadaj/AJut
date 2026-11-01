@@ -62,6 +62,7 @@ namespace AJut.UX.Controls
         private NSEdgeInsets m_itemPadding = new NSEdgeInsets(4, 8, 4, 8);
         private bool m_ensureUniformSize;
         private double m_cornerRadius = 2.0;
+        private bool m_isEnabled = true;
         private NSFont m_font = NSFont.SystemFontOfSize(NSFont.SystemFontSize);
         private readonly List<int> m_overflowIndices = new List<int>();
         private readonly ToggleStripDragScroll m_dragScroll = new ToggleStripDragScroll();
@@ -176,6 +177,9 @@ namespace AJut.UX.Controls
 
         // ===========[ Properties ]============================================
         public override bool IsFlipped => true;
+
+        // The outline's key, and the separators': a disabled ComboBox's border while the strip is disabled
+        private string BorderKey => m_isEnabled ? ThemedColorKeys.ToggleStrip_Border : ThemedColorKeys.ToggleStrip_DisabledBorder;
 
         /// <summary>The items to show. An INotifyCollectionChanged source is followed as it changes.</summary>
         public IEnumerable ItemsSource
@@ -344,6 +348,33 @@ namespace AJut.UX.Controls
             }
         }
 
+        /// <summary>
+        /// Whether the strip takes clicks. Disabled, it looks like a disabled ComboBox, as on every other stack: the flat
+        /// disabled fill, and its border for the outline and the lines between items. Its items and overflow chevron are
+        /// disabled with it and their names dim, while their fills stay so the selection still shows.
+        /// </summary>
+        public bool Enabled
+        {
+            get => m_isEnabled;
+            set
+            {
+                if (m_isEnabled == value)
+                {
+                    return;
+                }
+
+                m_isEnabled = value;
+                foreach (ItemButton button in m_buttons)
+                {
+                    button.Enabled = value;
+                    button.NeedsDisplay = true;
+                }
+
+                m_overflowButton.Enabled = value;
+                this.NeedsDisplay = true;
+            }
+        }
+
         public override CGSize IntrinsicContentSize
         {
             get
@@ -403,21 +434,22 @@ namespace AJut.UX.Controls
             nfloat halfBorder = (nfloat)(m_separatorThickness / 2.0);
             NSBezierPath outline = NSBezierPath.FromRoundedRect(this.Bounds.Inset(halfBorder, halfBorder), (nfloat)m_cornerRadius, (nfloat)m_cornerRadius);
 
-            NSGradient gradient = ThemedColors.GetThemedGradient(ThemedColorKeys.ToggleStrip_Background, this.EffectiveAppearance);
+            string backgroundKey = m_isEnabled ? ThemedColorKeys.ToggleStrip_Background : ThemedColorKeys.ToggleStrip_DisabledBackground;
+            NSGradient gradient = ThemedColors.GetThemedGradient(backgroundKey, this.EffectiveAppearance);
             if (gradient != null)
             {
                 gradient.DrawInBezierPath(outline, (nfloat)90);
             }
             else
             {
-                ThemedColors.Get(ThemedColorKeys.ToggleStrip_Background).SetFill();
+                ThemedColors.Get(backgroundKey).SetFill();
                 outline.Fill();
             }
 
             if (m_separatorThickness > 0.0)
             {
                 outline.LineWidth = (nfloat)m_separatorThickness;
-                ThemedColors.Get(ThemedColorKeys.ToggleStrip_Border).SetStroke();
+                ThemedColors.Get(this.BorderKey).SetStroke();
                 outline.Stroke();
             }
         }
@@ -475,7 +507,7 @@ namespace AJut.UX.Controls
             NSView host = m_overflowBehavior == eToggleStripOverflow.Scroll ? m_scrollDocument : this;
             foreach (ToggleStripItem item in m_items)
             {
-                var button = new ItemButton(this, item);
+                var button = new ItemButton(this, item) { Enabled = m_isEnabled };
                 button.Activated += this.OnItemButtonActivated;
                 m_buttons.Add(button);
                 host.AddSubview(button);
@@ -1098,7 +1130,7 @@ namespace AJut.UX.Controls
                 }
 
                 // 2. Separators, on the edges that have one
-                ThemedColors.Get(ThemedColorKeys.ToggleStrip_Border).SetFill();
+                ThemedColors.Get(m_owner.BorderKey).SetFill();
                 if (separator.Left > 0)
                 {
                     NSBezierPath.FillRect(new CGRect(bounds.X, bounds.Y, separator.Left, bounds.Height));
@@ -1120,8 +1152,7 @@ namespace AJut.UX.Controls
                 }
 
                 // 3. Name
-                string foregroundKey = m_item.IsSelected ? ThemedColorKeys.ToggleStripButton_CheckedForeground : ThemedColorKeys.ToggleStripButton_Foreground;
-                NSColor foreground = ThemedColors.Get(foregroundKey);
+                NSColor foreground = ThemedColors.Get(this.ForegroundKeyForState());
                 if (!this.Enabled)
                 {
                     const double kDisabledTextAlpha = 0.5;
@@ -1148,6 +1179,24 @@ namespace AJut.UX.Controls
                 {
                     NSAccessibility.PostNotification(this, NSView.ValueChangedNotification);
                 }
+            }
+
+            // Over the pointer-over and pressed fills the name takes the highlight text: with the AJut theme those fills are the
+            // primary highlight's solid colors and the text is the light one that reads on them; unthemed, an unselected
+            // item's fills are faint and its highlight text is the normal control text. A selected item unthemed stays on the
+            // accent color in every state, so it keeps its own white text.
+            private string ForegroundKeyForState ()
+            {
+                eManagedButtonState state = this.CurrentState;
+                bool isOnHighlightFill = (state == eManagedButtonState.PointerOver) || (state == eManagedButtonState.Pressed);
+                if (m_item.IsSelected)
+                {
+                    return (isOnHighlightFill && ThemedColors.IsThemeLoaded)
+                        ? ThemedColorKeys.ToggleStripButton_HighlightForeground
+                        : ThemedColorKeys.ToggleStripButton_CheckedForeground;
+                }
+
+                return isOnHighlightFill ? ThemedColorKeys.ToggleStripButton_HighlightForeground : ThemedColorKeys.ToggleStripButton_Foreground;
             }
 
             private string BackgroundKeyForState ()

@@ -189,6 +189,94 @@ namespace AJut.UX.Tests
         }
 
         [TestMethod]
+        public void BindView_AnyView_BothWaysWithoutEcho ()
+        {
+            var rating = new RatingBar(TestHost.RequiredContext) { NumStars = 5, StepSize = 0.5f };
+            int writes = 0;
+            BindingSet.TwoWayChannel channel = m_bindings.BindView<RatingBar, RatingBar.RatingBarChangeEventArgs, float>(
+                rating, _HookRatingChange, _UnhookRatingChange, _ReadRating, _WriteRating,
+                m_model, nameof(Model.Stars), () => m_model.Stars, v => { ++writes; m_model.Stars = v; }
+            );
+
+            Assert.IsNotNull(channel);
+            Assert.AreEqual(2f, rating.Rating, "The opening push shows the model");
+            Assert.IsFalse(rating.SaveEnabled, "And turns off the view's own saved state, as every two-way bind does");
+
+            m_model.Stars = 3.5f;
+            Assert.AreEqual(3.5f, rating.Rating);
+            Assert.AreEqual(0, writes, "A model push does not echo back through the edit event");
+
+            rating.Rating = 4f;
+            Assert.AreEqual(4f, m_model.Stars, "The view's edit event writes the model");
+            Assert.AreEqual(1, writes);
+
+            m_bindings.Dispose();
+            rating.Rating = 1f;
+            Assert.AreEqual(4f, m_model.Stars, "Disposed, the edit event is unhooked");
+
+            static void _HookRatingChange (RatingBar view, EventHandler<RatingBar.RatingBarChangeEventArgs> handler) => view.RatingBarChange += handler;
+            static void _UnhookRatingChange (RatingBar view, EventHandler<RatingBar.RatingBarChangeEventArgs> handler) => view.RatingBarChange -= handler;
+            static float _ReadRating (RatingBar view) => view.Rating;
+            static void _WriteRating (RatingBar view, float value) => view.Rating = value;
+        }
+
+        [TestMethod]
+        public void BindProgress_SeekBar_BothWaysWithoutEcho ()
+        {
+            var seekBar = new SeekBar(TestHost.RequiredContext) { Max = 10 };
+            int writes = 0;
+            m_bindings.BindProgress(seekBar, m_model, nameof(Model.Level), () => m_model.Level, v => { ++writes; m_model.Level = v; });
+            Assert.AreEqual(3, seekBar.Progress);
+
+            m_model.Level = 7;
+            Assert.AreEqual(7, seekBar.Progress);
+            Assert.AreEqual(0, writes);
+
+            seekBar.Progress = 2;
+            Assert.AreEqual(2, m_model.Level);
+            Assert.AreEqual(1, writes);
+        }
+
+        [TestMethod]
+        public async Task BindSelectedPosition_Spinner_BothWays ()
+        {
+            var spinner = new Spinner(TestHost.RequiredContext)
+            {
+                Adapter = new ArrayAdapter<string>(TestHost.RequiredContext, Android.Resource.Layout.SimpleSpinnerItem, new[] { "Low", "Medium", "High" }),
+            };
+            using IDisposable attached = TestHost.Attach(spinner);
+            m_bindings.BindSelectedPosition(spinner, m_model, nameof(Model.Index), () => m_model.Index, v => m_model.Index = v);
+            Assert.AreEqual(1, spinner.SelectedItemPosition);
+
+            m_model.Index = 2;
+            Assert.AreEqual(2, spinner.SelectedItemPosition);
+
+            // A spinner reports a pick when it lays it out
+            const int kPickReportedWithinSeconds = 3;
+            const int kPollEveryMilliseconds = 10;
+            spinner.SetSelection(0);
+            DateTime deadline = DateTime.UtcNow + TimeSpan.FromSeconds(kPickReportedWithinSeconds);
+            while ((m_model.Index != 0) && (DateTime.UtcNow < deadline))
+            {
+                await Task.Delay(kPollEveryMilliseconds);
+            }
+
+            Assert.AreEqual(0, m_model.Index);
+
+            m_model.Index = 7;
+            Assert.AreEqual(0, spinner.SelectedItemPosition, "A position outside its items leaves it as it is");
+        }
+
+        [TestMethod]
+        public void TwoWayBinds_HandBackTheirChannel ()
+        {
+            Assert.IsNotNull(m_bindings.BindText(new EditText(TestHost.RequiredContext), m_model, nameof(Model.Text), () => m_model.Text, v => m_model.Text = v));
+            Assert.IsNotNull(m_bindings.BindChecked(new CheckBox(TestHost.RequiredContext), m_model, nameof(Model.IsOn), () => m_model.IsOn, v => m_model.IsOn = v));
+            Assert.IsNotNull(m_bindings.BindEditColor(new ColorEditIngressControl(TestHost.RequiredContext), m_model, nameof(Model.Accent), () => m_model.Accent, v => m_model.Accent = v));
+            Assert.IsNotNull(m_bindings.BindCommand(new Button(TestHost.RequiredContext), new TestCommand()));
+        }
+
+        [TestMethod]
         public async Task Watch_ChangeOffTheMainThreadPushesOnTheMainThread ()
         {
             var pushedOnMainThread = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -225,6 +313,9 @@ namespace AJut.UX.Tests
             private string m_text = "start";
             private bool m_isOn;
             private ColorArgb m_accent = new ColorArgb(255, 13, 131, 216);
+            private float m_stars = 2f;
+            private int m_level = 3;
+            private int m_index = 1;
 
             public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -263,6 +354,45 @@ namespace AJut.UX.Tests
                     {
                         m_accent = value;
                         this.Raise(nameof(Accent));
+                    }
+                }
+            }
+
+            public float Stars
+            {
+                get => m_stars;
+                set
+                {
+                    if (m_stars != value)
+                    {
+                        m_stars = value;
+                        this.Raise(nameof(Stars));
+                    }
+                }
+            }
+
+            public int Level
+            {
+                get => m_level;
+                set
+                {
+                    if (m_level != value)
+                    {
+                        m_level = value;
+                        this.Raise(nameof(Level));
+                    }
+                }
+            }
+
+            public int Index
+            {
+                get => m_index;
+                set
+                {
+                    if (m_index != value)
+                    {
+                        m_index = value;
+                        this.Raise(nameof(Index));
                     }
                 }
             }

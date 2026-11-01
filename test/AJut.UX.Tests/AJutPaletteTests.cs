@@ -70,10 +70,8 @@ namespace AJut.UX.Tests
             "ToggleButtonBorderBrush", "ToggleButtonBorderBrushPointerOver", "ToggleButtonBorderBrushPressed", "ToggleButtonBorderBrushDisabled",
             "ToggleButtonBorderBrushChecked", "ToggleButtonBorderBrushCheckedPointerOver", "ToggleButtonBorderBrushCheckedPressed", "ToggleButtonBorderBrushCheckedDisabled",
 
-            // RepeatButton: BumpStack's bump buttons
-            "RepeatButtonBackground", "RepeatButtonBackgroundPointerOver", "RepeatButtonBackgroundPressed", "RepeatButtonBackgroundDisabled",
-            "RepeatButtonForeground", "RepeatButtonForegroundPointerOver", "RepeatButtonForegroundPressed", "RepeatButtonForegroundDisabled",
-            "RepeatButtonBorderBrush", "RepeatButtonBorderBrushPointerOver", "RepeatButtonBorderBrushPressed", "RepeatButtonBorderBrushDisabled",
+            // RepeatButton: the outline WinUI3's BumpStack bump buttons start from; they template their own states
+            "RepeatButtonBorderBrush",
 
             // Text boxes: the ones NumericEditor and PathSelectionControl template on WinUI3, the stock TextBox in the
             // ColorPicker that ColorEditIngressControl opens, and UIKit's NumericEditor field
@@ -122,6 +120,8 @@ namespace AJut.UX.Tests
             "MenuFlyoutSubItemChevronSubMenuOpened", "MenuFlyoutSubItemChevronDisabled",
             "ToggleMenuFlyoutItemKeyboardAcceleratorTextForeground", "ToggleMenuFlyoutItemKeyboardAcceleratorTextForegroundPointerOver",
             "ToggleMenuFlyoutItemKeyboardAcceleratorTextForegroundPressed", "ToggleMenuFlyoutItemKeyboardAcceleratorTextForegroundDisabled",
+            "ToggleMenuFlyoutItemCheckGlyphForeground", "ToggleMenuFlyoutItemCheckGlyphForegroundPointerOver",
+            "ToggleMenuFlyoutItemCheckGlyphForegroundPressed", "ToggleMenuFlyoutItemCheckGlyphForegroundDisabled",
 
             // Tool tips on PathSelectionControl's buttons and the PropertyGrid's row and list buttons
             "ToolTipBackgroundBrush", "ToolTipForegroundBrush", "ToolTipBorderBrush",
@@ -217,10 +217,19 @@ namespace AJut.UX.Tests
             "MenuBarItemBackgroundPointerOver", "MenuBarItemBorderBrushPointerOver", "MenuBarItemBackgroundPressed", "MenuBarItemBorderBrushPressed",
             "MenuBarItemBackgroundSelected", "MenuBarItemBorderBrushSelected",
 
+            // RepeatButton: at rest, pointer over, pressed and disabled, for an app's own and NumberBox's spin buttons. Its
+            // outline at rest is in the read list, as the one WinUI3's BumpStack bump buttons start from.
+            "RepeatButtonBackground", "RepeatButtonBackgroundPointerOver", "RepeatButtonBackgroundPressed", "RepeatButtonBackgroundDisabled",
+            "RepeatButtonForeground", "RepeatButtonForegroundPointerOver", "RepeatButtonForegroundPressed", "RepeatButtonForegroundDisabled",
+            "RepeatButtonBorderBrushPointerOver", "RepeatButtonBorderBrushPressed", "RepeatButtonBorderBrushDisabled",
+
             // NumberBox, beyond the text box and repeat button keys it shares: its disabled header and placeholder, its
             // description, and its spin button popup
             "TextControlHeaderForegroundDisabled", "TextControlPlaceholderForegroundDisabled", "SystemControlDescriptionTextForegroundBrush",
             "NumberBoxPopupBackground", "NumberBoxPopupBorderBrush", "NumberBoxPopupIndicatorForeground",
+
+            // NavigationView: the selected item, at rest, under the pointer and pressed
+            "NavigationViewItemBackgroundSelected", "NavigationViewItemBackgroundSelectedPointerOver", "NavigationViewItemBackgroundSelectedPressed",
 
             // TabView, as AJut's own template draws it: the strip, its add and scroll buttons, and each tab with its close button
             "TabViewBorderBrush", "TabViewItemSeparator", "TabViewSelectedItemBorderBrush",
@@ -317,6 +326,10 @@ namespace AJut.UX.Tests
             new UnthemedOnlyKey("SolidBackgroundFillColorBaseBrush", "AllControlThemeOverrides.xaml", "BumpStack", "ButtonBackground"),
             new UnthemedOnlyKey("LayerOnMicaBaseAltFillColorTransparentBrush", "AJut.UX_Overrides.xaml", "ThemedWindowRootControl", "ActiveTitleBarBackground"),
             new UnthemedOnlyKey("LayerOnMicaBaseAltFillColorTransparentBrush", "AJut.UX_Overrides.xaml", "ThemedWindowRootControl", "InactiveTitlebarBackground"),
+            new UnthemedOnlyKey("ControlFillColorDisabledBrush", "AllControlThemeOverrides.xaml", "ToggleStrip", "DisabledBackground"),
+            new UnthemedOnlyKey("ControlFillColorDisabledBrush", "AllControlThemeOverrides.xaml", "EnumToggleStrip", "DisabledBackground"),
+            new UnthemedOnlyKey("TextFillColorDisabledBrush", "AllControlThemeOverrides.xaml", "ToggleStrip", "DisabledForeground"),
+            new UnthemedOnlyKey("TextFillColorDisabledBrush", "AllControlThemeOverrides.xaml", "EnumToggleStrip", "DisabledForeground"),
         ];
 
         // Windows' high contrast system colors, which the high contrast unthemed defaults take the way WinUI's own high
@@ -324,15 +337,6 @@ namespace AJut.UX.Tests
         private static readonly string[] kWinUI3UnthemedHighContrastKeys =
         [
             "SystemColorButtonTextColor", "SystemColorGrayTextColor", "SystemColorHighlightColor", "SystemColorHighlightTextColor",
-        ];
-
-        // GeometryButton's trace in each state, and the button border key it used to take in that state
-        private static readonly TraceKey[] kGeometryButtonTraceKeys =
-        [
-            new TraceKey("AJut_GeometryButton_Trace", "ButtonBorderBrush"),
-            new TraceKey("AJut_GeometryButton_TracePointerOver", "ButtonBorderBrushPointerOver"),
-            new TraceKey("AJut_GeometryButton_TracePressed", "ButtonBorderBrushPressed"),
-            new TraceKey("AJut_GeometryButton_TraceDisabled", "ButtonBorderBrushDisabled"),
         ];
 
         // ===========[ Values ]===================================
@@ -428,44 +432,18 @@ namespace AJut.UX.Tests
 
         // ===========[ Lookup behavior ]===================================
         [TestMethod]
-        public void TryGetColor_FollowsAControlKeyToTheThemeValue ()
-        {
-            Assert.IsTrue(AJutPalette.Dark.TryGetColor(AJutThemeKeys.NumericEditor_FocusBorderBrush, out ColorArgb dark));
-            Assert.IsTrue(AJutPalette.Dark.TryGetColor("AJut_Color_PrimaryHighlight", out ColorArgb darkHighlight));
-            Assert.AreEqual(darkHighlight, dark);
-
-            Assert.IsTrue(AJutPalette.Light.TryGetColor(AJutThemeKeys.NumericEditor_FocusBorderBrush, out ColorArgb light));
-            Assert.IsTrue(AJutPalette.Light.TryGetColor("AJut_Color_PrimaryHighlight", out ColorArgb lightHighlight));
-            Assert.AreEqual(lightHighlight, light);
-        }
-
-        [TestMethod]
-        public void TryGetColor_AppliesBrushOpacity ()
-        {
-            // The XAML gives the drag connector half the highlight's opacity.
-            Assert.IsTrue(AJutPalette.Dark.TryGetColor(AJutThemeKeys.FlatTree_DragParentConnector, out ColorArgb connector));
-            Assert.IsTrue(AJutPalette.Dark.TryGetColor("AJut_Color_PrimaryHighlight", out ColorArgb highlight));
-            Assert.AreEqual(highlight.WithAlpha((byte)Math.Round(highlight.A * 0.5)), connector);
-        }
-
-        [TestMethod]
         public void TryGetColor_IsFalseForGradientsUnknownKeysAndNumbers ()
         {
-            Assert.IsFalse(AJutPalette.Dark.TryGetColor(AJutThemeKeys.ToggleStripButton_CheckedBackground, out _), "A gradient is not a solid color");
-            Assert.IsTrue(AJutPalette.Dark.TryGetPaint(AJutThemeKeys.ToggleStripButton_CheckedBackground, out AJutThemePaint? gradient));
-            Assert.IsTrue(gradient!.IsGradient);
-            Assert.AreEqual(3, gradient.GradientStops.Count);
+            AJutPalette.Table table = AJutPalette.Dark;
+            string[] gradientKeys = table.Keys.Where(key => table.TryGetPaint(key, out AJutThemePaint? paint) && paint.IsGradient).ToArray();
+            Assert.IsTrue(gradientKeys.Length > 0, "TryGetPaint gives a gradient for some of the palette's keys");
+            foreach (string key in gradientKeys)
+            {
+                Assert.IsFalse(table.TryGetColor(key, out _), $"{key} is a gradient, not a solid color");
+            }
 
-            Assert.IsFalse(AJutPalette.Dark.TryGetColor("AJut_NoSuchKey", out _));
-            Assert.IsFalse(AJutPalette.Dark.TryGetColor("AJut_Double_StandardDisabledOpacity", out _));
-        }
-
-        [TestMethod]
-        public void StockKeys_ResolveThroughTheTheme ()
-        {
-            Assert.IsTrue(AJutPalette.Dark.TryGetColor("ButtonBackground", out ColorArgb button));
-            Assert.IsTrue(AJutPalette.Dark.TryGetColor("AJut_Brush_ControlBackground", out ColorArgb control));
-            Assert.AreEqual(control, button);
+            Assert.IsFalse(table.TryGetColor("AJut_NoSuchKey", out _));
+            Assert.IsFalse(table.TryGetColor("AJut_Double_StandardDisabledOpacity", out _));
         }
 
         // ===========[ What AJut controls read ]===================================
@@ -706,71 +684,36 @@ namespace AJut.UX.Tests
             AssertNoGaps(gaps, "Touch palette keys that are not their base palette's");
         }
 
+        /// <summary>
+        /// A GeometryButton draws a glyph that is only a stroke with its trace, so a trace that goes clear makes the glyph
+        /// vanish, with nothing to say so. Touch takes button borders off, which is why the trace has keys of its own.
+        /// </summary>
         [TestMethod]
-        public void TouchPalettes_TakeTheBordersOffButtons ()
+        public void GeometryButtonTraces_AreVisibleInEveryTheme ()
         {
-            string[] buttonBorderKeys =
+            string[] traceKeys =
             [
-                "ButtonBorderBrush", "ButtonBorderBrushPointerOver", "ButtonBorderBrushPressed", "ButtonBorderBrushDisabled",
-                "ToggleButtonBorderBrush", "ToggleButtonBorderBrushChecked",
-                AJutThemeKeys.PathSelectionControl_ButtonBorderBrush, AJutThemeKeys.DockPanelAddButton_NormalBorderBrush,
+                AJutThemeKeys.GeometryButton_Trace, AJutThemeKeys.GeometryButton_TracePointerOver,
+                AJutThemeKeys.GeometryButton_TracePressed, AJutThemeKeys.GeometryButton_TraceDisabled,
             ];
 
-            foreach (bool isDark in new[] { false, true })
+            var gaps = new List<string>();
+            foreach (string theme in kThemes)
             {
-                foreach (string key in buttonBorderKeys)
+                foreach (string key in traceKeys)
                 {
-                    Assert.IsTrue(AJutPalette.For(isDark, isTouch: true).TryGetColor(key, out ColorArgb touch), $"{key} resolves on touch");
-                    Assert.AreEqual(0, touch.A, $"{key} is see through on touch (dark: {isDark})");
-                    Assert.IsTrue(AJutPalette.For(isDark, isTouch: false).TryGetColor(key, out ColorArgb normal), $"{key} resolves without touch");
-                    Assert.AreEqual(byte.MaxValue, normal.A, $"{key} still draws without touch (dark: {isDark})");
+                    if (!TableFor(theme).TryGetColor(key, out ColorArgb trace))
+                    {
+                        gaps.Add($"{theme} {key}: not one color");
+                    }
+                    else if (trace.A == 0)
+                    {
+                        gaps.Add($"{theme} {key}: clear");
+                    }
                 }
             }
-        }
 
-        [TestMethod]
-        public void TouchPalettes_KeepTheCommonBorders ()
-        {
-            // Splitters, scrollbar thumbs and separators draw with the common border, so touch leaves it as it is
-            foreach (bool isDark in new[] { false, true })
-            {
-                Assert.IsTrue(AJutPalette.For(isDark, isTouch: false).TryGetColor("AJut_Brush_BorderCommon", out ColorArgb normal));
-                Assert.IsTrue(AJutPalette.For(isDark, isTouch: true).TryGetColor("AJut_Brush_BorderCommon", out ColorArgb touch));
-                Assert.AreEqual(normal, touch, $"The common border is the same on touch (dark: {isDark})");
-            }
-        }
-
-        [TestMethod]
-        public void TouchPalettes_KeepGeometryButtonTraces ()
-        {
-            // A GeometryButton's trace outlines its shape, so it is part of the glyph rather than a button frame. Touch
-            // takes button borders off, and has to leave the trace showing, or a shape drawn as a stroke alone vanishes.
-            // Without touch, each trace state looks the way it did when the trace took the button border keys.
-            foreach (bool isDark in new[] { false, true })
-            {
-                foreach (TraceKey trace in kGeometryButtonTraceKeys)
-                {
-                    Assert.IsTrue(AJutPalette.For(isDark, isTouch: false).TryGetColor(trace.Key, out ColorArgb normal), $"{trace.Key} resolves without touch (dark: {isDark})");
-                    Assert.IsTrue(AJutPalette.For(isDark, isTouch: false).TryGetColor(trace.ButtonBorderKey, out ColorArgb buttonBorder));
-                    Assert.AreEqual(buttonBorder, normal, $"{trace.Key} matches {trace.ButtonBorderKey} without touch (dark: {isDark})");
-
-                    Assert.IsTrue(AJutPalette.For(isDark, isTouch: true).TryGetColor(trace.Key, out ColorArgb touch), $"{trace.Key} resolves on touch (dark: {isDark})");
-                    Assert.AreEqual(normal, touch, $"{trace.Key} is the same on touch (dark: {isDark})");
-                }
-            }
-        }
-
-        [TestMethod]
-        public void GeometryButton_WinUI3Template_TracesWithTheTraceKeys ()
-        {
-            string template = File.ReadAllText(Path.Combine(ResourcesRoot(Path.Combine("libs", "AJut.UX.WinUI3", "Controls")), "GeometryButton.xaml"));
-            HashSet<string> taken = kAnyMarkupReference.Matches(template).Select(reference => reference.Groups[1].Value).ToHashSet();
-
-            string[] missing = kGeometryButtonTraceKeys.Select(trace => trace.Key).Where(key => !taken.Contains(key)).ToArray();
-            Assert.AreEqual(0, missing.Length, "GeometryButton.xaml does not take " + string.Join(", ", missing));
-
-            string[] buttonBorders = taken.Where(key => key.StartsWith("ButtonBorderBrush", StringComparison.Ordinal)).OrderBy(k => k).ToArray();
-            Assert.AreEqual(0, buttonBorders.Length, "GeometryButton.xaml traces with button border keys, which touch takes off: " + string.Join(", ", buttonBorders));
+            AssertNoGaps(gaps, "GeometryButton traces that do not show");
         }
 
         [TestMethod]
@@ -902,6 +845,67 @@ namespace AJut.UX.Tests
             }
 
             AssertNoGaps(gaps, $"AJut keys visual states read that {kUnthemedDefaultsFile} does not provide");
+        }
+
+        // ===========[ WPF palettes ]===================================
+        /// <summary>
+        /// WPF's palettes are written by hand beside WinUI3's, and the shared palette mirrors WinUI3's, so nothing but this
+        /// keeps the two stacks' colors the same. Every key WPF defines that the shared palette also has must give the
+        /// shared palette's value, unless it is listed here as a difference kept on purpose. A key only WPF defines is its
+        /// own and is not compared.
+        /// </summary>
+        [TestMethod]
+        public void WpfPalettes_EveryKeyTheSharedPaletteHas_GivesItsValue ()
+        {
+            WpfPaletteDifference[] kept =
+            [
+                new WpfPaletteDifference("Light", "AJut_Brush_TitleBarBackground", "WPF's light title bar stays its blue, where WinUI3's is gray"),
+            ];
+
+            var gaps = new List<string>();
+            foreach (string theme in kBaseThemes)
+            {
+                AJutPalette.Table table = TableFor(theme);
+                HashSet<string> sharedKeys = table.Keys.ToHashSet();
+                Dictionary<string, XamlEntry> wpf = ReadEntries(Path.Combine(ResourcesRoot(kWpfResourcesFolder), $"{theme}ThemeColorsBase.xaml"), out _);
+                var layers = new List<PaletteLayer> { new PaletteLayer("wpf", wpf) };
+                KeyValuePair<string, XamlEntry>[] compared = wpf.Where(p => sharedKeys.Contains(p.Key)).OrderBy(p => p.Key).ToArray();
+                Assert.IsTrue(compared.Length > 0, $"{theme}: WPF's palette and the shared palette have keys in common to compare");
+                foreach (KeyValuePair<string, XamlEntry> pair in compared)
+                {
+                    WpfPaletteDifference? difference = kept.FirstOrDefault(d => (d.Theme == theme) && (d.Key == pair.Key));
+                    if (difference != null)
+                    {
+                        // A difference kept on purpose has to still be one, or the list says something that is not so
+                        string sharedValue = table.TryGetPaint(pair.Key, out AJutThemePaint? sharedPaint) ? Describe(sharedPaint) : "unresolved";
+                        if (sharedValue == ResolveFromXaml(pair.Key, layers, new Dictionary<string, XamlEntry>()))
+                        {
+                            gaps.Add($"{theme} {pair.Key}: listed as kept different ({difference.Why}), but WPF now gives the shared value");
+                        }
+
+                        continue;
+                    }
+
+                    if (pair.Value.Number.HasValue)
+                    {
+                        if (!table.TryGetDouble(pair.Key, out double number) || (number != pair.Value.Number.Value))
+                        {
+                            gaps.Add($"{theme} {pair.Key}: WPF gives {pair.Value.Number.Value.ToString(CultureInfo.InvariantCulture)}, the shared palette {(table.TryGetDouble(pair.Key, out double shared) ? shared.ToString(CultureInfo.InvariantCulture) : "no number")}");
+                        }
+
+                        continue;
+                    }
+
+                    string expected = table.TryGetPaint(pair.Key, out AJutThemePaint? paint) ? Describe(paint) : "unresolved";
+                    string actual = ResolveFromXaml(pair.Key, layers, new Dictionary<string, XamlEntry>());
+                    if (expected != actual)
+                    {
+                        gaps.Add($"{theme} {pair.Key}: WPF gives {actual}, the shared palette {expected}");
+                    }
+                }
+            }
+
+            AssertNoGaps(gaps, "WPF palette values that differ from the shared palette");
         }
 
         // ===========[ WPF touch overlays ]===================================
@@ -1100,7 +1104,31 @@ namespace AJut.UX.Tests
 
                 if (entry.Stops != null)
                 {
-                    return DescribeGradient(entry.Stops.Select(s => new AJutGradientStop(s.Offset, ApplyOpacity(s.Color, opacity))));
+                    // A stop naming a palette color takes it from the theme, starting at the outermost palette the way a
+                    // key map entry does
+                    var stops = new List<AJutGradientStop>();
+                    foreach (XamlStop stop in entry.Stops)
+                    {
+                        ColorArgb color;
+                        if (stop.ColorKey != null)
+                        {
+                            string stopColor = ResolveFromXaml(stop.ColorKey, layers, keyMap);
+                            if (!stopColor.StartsWith('#'))
+                            {
+                                return "unresolved";
+                            }
+
+                            color = ParseColor(stopColor);
+                        }
+                        else
+                        {
+                            color = stop.Color!.Value;
+                        }
+
+                        stops.Add(new AJutGradientStop(stop.Offset, ApplyOpacity(color, opacity)));
+                    }
+
+                    return DescribeGradient(stops);
                 }
 
                 return "unresolved";
@@ -1257,9 +1285,7 @@ namespace AJut.UX.Tests
                     case "LinearGradientBrush":
                         Assert.AreEqual("0,0", element.Attribute("StartPoint")?.Value, $"{key} must run top to bottom, the only direction the palette tables carry");
                         Assert.AreEqual("0,1", element.Attribute("EndPoint")?.Value, $"{key} must run top to bottom, the only direction the palette tables carry");
-                        AJutGradientStop[] stops = element.Elements()
-                            .Select(stop => new AJutGradientStop(ParseNumber(stop.Attribute("Offset")!.Value), ParseColor(stop.Attribute("Color")!.Value)))
-                            .ToArray();
+                        XamlStop[] stops = element.Elements().Select(ReadStop).ToArray();
                         AddEntry(entries, fileName, key!, XamlEntry.Gradient(stops));
                         break;
 
@@ -1301,6 +1327,17 @@ namespace AJut.UX.Tests
             }
         }
 
+        // A stop's color is its own, or a {ThemeResource} reference to a palette color that each theme gives its own value
+        private static XamlStop ReadStop (XElement stop)
+        {
+            double offset = ParseNumber(stop.Attribute("Offset")!.Value);
+            string color = stop.Attribute("Color")!.Value;
+            Match reference = kMarkupReference.Match(color);
+            return reference.Success
+                ? new XamlStop(offset, null, reference.Groups[1].Value)
+                : new XamlStop(offset, ParseColor(color), null);
+        }
+
         private static ColorArgb ParseColor (string text)
         {
             text = text.Trim();
@@ -1337,8 +1374,8 @@ namespace AJut.UX.Tests
         // A color a WinUI3 template takes with no theme loaded, and the themed style that sets the property it fills
         private sealed record UnthemedOnlyKey (string Key, string ThemedStyleFile, string Control, string Property);
 
-        // A GeometryButton trace key, and the button border key whose desktop look it keeps
-        private sealed record TraceKey (string Key, string ButtonBorderKey);
+        // A key WPF's palette gives a value of its own on purpose, in one theme, and why
+        private sealed record WpfPaletteDifference (string Theme, string Key, string Why);
 
         // One palette file's own entries, outermost first in a list of layers
         private sealed class PaletteLayer
@@ -1354,10 +1391,13 @@ namespace AJut.UX.Tests
             public Dictionary<string, XamlEntry> Entries { get; }
         }
 
+        // One gradient stop as the XAML states it: its own color, or the palette color it names
+        private sealed record XamlStop (double Offset, ColorArgb? Color, string? ColorKey);
+
         // One key's definition as the XAML states it, read independently of AJut.UX's own table types.
         private sealed class XamlEntry
         {
-            private XamlEntry (ColorArgb? color, AJutGradientStop[]? stops, string? aliasKey, double opacity, double? number)
+            private XamlEntry (ColorArgb? color, XamlStop[]? stops, string? aliasKey, double opacity, double? number)
             {
                 this.Color = color;
                 this.Stops = stops;
@@ -1368,7 +1408,7 @@ namespace AJut.UX.Tests
 
             public ColorArgb? Color { get; }
 
-            public AJutGradientStop[]? Stops { get; }
+            public XamlStop[]? Stops { get; }
 
             public string? AliasKey { get; }
 
@@ -1378,7 +1418,7 @@ namespace AJut.UX.Tests
 
             public static XamlEntry Solid (ColorArgb color, double opacity = 1.0) => new XamlEntry(color, null, null, opacity, null);
 
-            public static XamlEntry Gradient (AJutGradientStop[] stops) => new XamlEntry(null, stops, null, 1.0, null);
+            public static XamlEntry Gradient (XamlStop[] stops) => new XamlEntry(null, stops, null, 1.0, null);
 
             public static XamlEntry Alias (string key, double opacity) => new XamlEntry(null, null, key, opacity, null);
 

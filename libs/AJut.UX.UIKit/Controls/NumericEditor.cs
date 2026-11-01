@@ -1,8 +1,11 @@
 namespace AJut.UX.Controls
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using CoreAnimation;
     using CoreGraphics;
+    using AJut.UX.Helpers;
     using AJut.UX.Theming;
     using Foundation;
     using ObjCRuntime;
@@ -14,9 +17,15 @@ namespace AJut.UX.Controls
     // out of bounds text exactly the way the WinUI3 and WPF NumericEditors do. This control only lays out the views
     // and routes their events in.
     //
-    // Layout, leading to trailing: the label ("#" unless LabelText or LabelView says otherwise), the text field, the
-    // warning glyph (shown while the out of bounds error is), and the decrease / increase buttons, which repeat
-    // while held.
+    // Layout, leading to trailing, as Android's: the label (none unless LabelText or LabelView gives one), then the frame,
+    // holding the decrease button, the text field in its well, the warning glyph (shown while the out of bounds error
+    // is) and the increase button. The buttons repeat while held.
+    //
+    // Look: MobileLook.NumericEditor's, which Android's NumericEditor draws too, so the keys, sizes and shading all come
+    // from there and only the unthemed defaults (in ThemedColorKeys) are UIKit's own. The frame is one rounded rect on the
+    // pop-out surface, outlined with the NumericEditor border keys; the number sits in a well of the text box color, inset
+    // from the frame's top and bottom and shaded at its edges; and the nudge buttons have no fill of their own, so they
+    // read as part of the frame, until pressed, when they fill with the bright highlight.
     //
     // Nudge tiers: a tap steps by Nudge. With a hardware keyboard (iPad), holding Shift steps by SmallNudge and
     // holding Command or Control steps by BigNudge, on the buttons and on the Up / Down arrow keys alike.
@@ -29,15 +38,39 @@ namespace AJut.UX.Controls
 
     public class NumericEditor : UIControl, INumericEditorHost
     {
+        // Themed, the frame is the pop-out surface AJut's themed NumericEditor style gives it on WinUI3. Unthemed, the
+        // stock control fill Android's falls back to.
+        private static readonly ThemedGradient kSurface = new ThemedGradient(
+            MobileLook.NumericEditor.FrameSurface,
+            new[] { ThemedGradient.Stop(0.0, 0xFFFDFDFD), ThemedGradient.Stop(1.0, 0xFFFDFDFD) },
+            new[] { ThemedGradient.Stop(0.0, 0xFF2B2B2B), ThemedGradient.Stop(1.0, 0xFF2B2B2B) }
+        );
+
         // ===========[ Instance Fields ]===================================
         private readonly NumericEditorController m_controller;
+        private readonly CAGradientLayer m_surface = new CAGradientLayer
+        {
+            StartPoint = new CGPoint(0.5, 0.0),
+            EndPoint = new CGPoint(0.5, 1.0),
+            ZPosition = -1,
+        };
+        // The label, then the frame
+        private readonly UIStackView m_outerRow = new UIStackView
+        {
+            Axis = UILayoutConstraintAxis.Horizontal,
+            Alignment = UIStackViewAlignment.Center,
+            TranslatesAutoresizingMaskIntoConstraints = false,
+        };
+        private readonly UIView m_frame = new UIView { ClipsToBounds = true };
+
+        // The buttons and the well, inside the frame
         private readonly UIStackView m_row = new UIStackView
         {
             Axis = UILayoutConstraintAxis.Horizontal,
             Alignment = UIStackViewAlignment.Fill,
             TranslatesAutoresizingMaskIntoConstraints = false,
         };
-        private readonly UILabel m_defaultLabel = new UILabel { Text = "#" };
+        private readonly UILabel m_label = new UILabel { Hidden = true };
         private readonly UITextField m_textField = new UITextField
         {
             KeyboardType = UIKeyboardType.NumbersAndPunctuation,
@@ -46,6 +79,7 @@ namespace AJut.UX.Controls
         };
         private readonly UIImageView m_warningGlyph = new UIImageView { Hidden = true, ContentMode = UIViewContentMode.Center };
         private readonly UIToolTipInteraction m_warningToolTip = new UIToolTipInteraction();
+        private readonly FieldWell m_well;
         private readonly NudgeButton m_decreaseButton;
         private readonly NudgeButton m_increaseButton;
         private UIView m_labelView;
@@ -65,6 +99,7 @@ namespace AJut.UX.Controls
         public NumericEditor () : base(CGRect.Empty)
         {
             m_controller = new NumericEditorController(this);
+            m_well = new FieldWell(m_textField);
             m_decreaseButton = new NudgeButton(this, positive: false, "minus");
             m_increaseButton = new NudgeButton(this, positive: true, "plus");
             this.Setup();
@@ -74,6 +109,7 @@ namespace AJut.UX.Controls
         protected NumericEditor (NativeHandle handle) : base(handle)
         {
             m_controller = new NumericEditorController(this);
+            m_well = new FieldWell(m_textField);
             m_decreaseButton = new NudgeButton(this, positive: false, "minus");
             m_increaseButton = new NudgeButton(this, positive: true, "plus");
             this.Setup();
@@ -81,41 +117,50 @@ namespace AJut.UX.Controls
 
         private void Setup ()
         {
-            const float kCornerRadius = 6f;
-            const float kBorderWidth = 1f;
-            const float kLeadingPadding = 8f;
-            const float kSpacing = 4f;
+            // 1. The frame: rounded, outlined, on the surface. The surface sits under every subview (a negative
+            //  zPosition), and the layer's border is drawn over it. The row inside is inset by the border, so a pressed
+            //  button fills inside the outline rather than over it.
+            m_frame.Layer.CornerRadius = MobileLook.NumericEditor.CornerRadius;
+            m_frame.Layer.BorderWidth = MobileLook.NumericEditor.BorderThickness;
+            m_frame.Layer.InsertSublayer(m_surface, 0);
+            m_frame.AddSubview(m_row);
+            nfloat border = MobileLook.NumericEditor.BorderThickness;
+            NSLayoutConstraint.ActivateConstraints(new[]
+            {
+                m_row.LeadingAnchor.ConstraintEqualTo(m_frame.LeadingAnchor, border),
+                m_row.TrailingAnchor.ConstraintEqualTo(m_frame.TrailingAnchor, -border),
+                m_row.TopAnchor.ConstraintEqualTo(m_frame.TopAnchor, border),
+                m_row.BottomAnchor.ConstraintEqualTo(m_frame.BottomAnchor, -border),
+            });
 
-            this.Layer.CornerRadius = kCornerRadius;
-            this.Layer.BorderWidth = kBorderWidth;
-            this.ClipsToBounds = true;
-
-            m_row.Spacing = kSpacing;
-            m_row.LayoutMargins = new UIEdgeInsets(0, kLeadingPadding, 0, 0);
-            m_row.LayoutMarginsRelativeArrangement = true;
-            m_defaultLabel.SetContentHuggingPriority((float)UILayoutPriority.Required, UILayoutConstraintAxis.Horizontal);
+            // 2. Decrease, the well, the warning glyph, increase
+            m_well.SetContentHuggingPriority((float)UILayoutPriority.DefaultLow, UILayoutConstraintAxis.Horizontal);
             m_textField.SetContentHuggingPriority((float)UILayoutPriority.DefaultLow, UILayoutConstraintAxis.Horizontal);
-
+            m_textField.TextColor = ThemedColors.Get(MobileLook.NumericEditor.Number);
             m_warningGlyph.Image = UIImage.GetSystemImage("exclamationmark.triangle.fill");
-            m_warningGlyph.TintColor = ThemedColors.Get(ThemedColorKeys.NumericEditor_ErrorBrush);
-            m_textField.TextColor = ThemedColors.Get(ThemedColorKeys.TextControlForeground);
-            m_defaultLabel.TextColor = ThemedColors.Get(ThemedColorKeys.NumericEditor_Label);
+            m_warningGlyph.TintColor = ThemedColors.Get(MobileLook.NumericEditor.FrameBorderError);
             m_warningGlyph.SetContentHuggingPriority((float)UILayoutPriority.Required, UILayoutConstraintAxis.Horizontal);
             m_warningGlyph.AddInteraction(m_warningToolTip);
-
-            m_row.AddArrangedSubview(m_defaultLabel);
-            m_row.AddArrangedSubview(m_textField);
-            m_row.AddArrangedSubview(m_warningGlyph);
             m_row.AddArrangedSubview(m_decreaseButton);
+            m_row.AddArrangedSubview(m_well);
+            m_row.AddArrangedSubview(m_warningGlyph);
             m_row.AddArrangedSubview(m_increaseButton);
-            this.AddSubview(m_row);
+
+            // 3. The label in front of the frame, hidden until it is given text
+            m_label.TextColor = ThemedColors.Get(MobileLook.NumericEditor.Label);
+            m_label.SetContentHuggingPriority((float)UILayoutPriority.Required, UILayoutConstraintAxis.Horizontal);
+            m_frame.SetContentHuggingPriority((float)UILayoutPriority.DefaultLow, UILayoutConstraintAxis.Horizontal);
+            m_outerRow.Spacing = MobileLook.NumericEditor.LabelSpacing;
+            m_outerRow.AddArrangedSubview(m_label);
+            m_outerRow.AddArrangedSubview(m_frame);
+            this.AddSubview(m_outerRow);
 
             NSLayoutConstraint.ActivateConstraints(new[]
             {
-                m_row.LeadingAnchor.ConstraintEqualTo(this.LeadingAnchor),
-                m_row.TrailingAnchor.ConstraintEqualTo(this.TrailingAnchor),
-                m_row.TopAnchor.ConstraintEqualTo(this.TopAnchor),
-                m_row.BottomAnchor.ConstraintEqualTo(this.BottomAnchor),
+                m_outerRow.LeadingAnchor.ConstraintEqualTo(this.LeadingAnchor),
+                m_outerRow.TrailingAnchor.ConstraintEqualTo(this.TrailingAnchor),
+                m_outerRow.TopAnchor.ConstraintEqualTo(this.TopAnchor),
+                m_outerRow.BottomAnchor.ConstraintEqualTo(this.BottomAnchor),
             });
         }
 
@@ -243,6 +288,9 @@ namespace AJut.UX.Controls
         /// <summary>The step for a tap on a nudge button, or an arrow key with no modifier.</summary>
         public double Nudge { get; set; } = 1.0;
 
+        /// <summary>How many decimal places the value may have; -1 (the default) for any. As Android's.</summary>
+        public int DecimalPlacesAllowed { get; set; } = -1;
+
         /// <summary>The step while Command or Control is held on a hardware keyboard.</summary>
         public double BigNudge { get; set; } = 5.0;
 
@@ -278,7 +326,7 @@ namespace AJut.UX.Controls
                 }
 
                 m_textField.Enabled = !value;
-                m_textField.TextColor = ThemedColors.Get(value ? ThemedColorKeys.TextControlForegroundDisabled : ThemedColorKeys.TextControlForeground);
+                m_textField.TextColor = ThemedColors.Get(value ? MobileLook.NumericEditor.ReadOnlyText : MobileLook.NumericEditor.Number);
                 m_decreaseButton.Enabled = !value;
                 m_increaseButton.Enabled = !value;
                 if (value)
@@ -292,14 +340,18 @@ namespace AJut.UX.Controls
         /// <summary>The out of bounds message while the error is shown, otherwise null.</summary>
         public string ErrorMessage { get; private set; }
 
-        /// <summary>The text of the default label, "#" unless set. Ignored while <see cref="LabelView"/> is set.</summary>
+        /// <summary>The label shown in front of the frame, as Android's Label is; null or empty (the default) for none. Ignored while <see cref="LabelView"/> is set.</summary>
         public string LabelText
         {
-            get => m_defaultLabel.Text;
-            set => m_defaultLabel.Text = value;
+            get => m_label.Text;
+            set
+            {
+                m_label.Text = value;
+                this.UpdateLabelVisibility();
+            }
         }
 
-        /// <summary>A view shown in place of the default label, the way WinUI3's LabelContent replaces its "#" glyph. Null brings the default back.</summary>
+        /// <summary>A view shown in front of the frame in place of the text label, the way WinUI3's LabelContent replaces its "#" glyph. Null brings the text label back.</summary>
         public UIView LabelView
         {
             get => m_labelView;
@@ -307,11 +359,12 @@ namespace AJut.UX.Controls
             {
                 m_labelView?.RemoveFromSuperview();
                 m_labelView = value;
-                m_defaultLabel.Hidden = value != null;
                 if (value != null)
                 {
-                    m_row.InsertArrangedSubview(value, 0);
+                    m_outerRow.InsertArrangedSubview(value, 0);
                 }
+
+                this.UpdateLabelVisibility();
             }
         }
 
@@ -360,17 +413,39 @@ namespace AJut.UX.Controls
             UIColor border;
             if (this.ErrorMessage != null)
             {
-                border = ThemedColors.Get(ThemedColorKeys.NumericEditor_ErrorBrush);
+                border = ThemedColors.Get(MobileLook.NumericEditor.FrameBorderError);
             }
             else if (m_textField.IsEditing)
             {
-                border = ThemedColors.Get(ThemedColorKeys.NumericEditor_FocusBorderBrush) ?? this.TintColor;
+                border = ThemedColors.Get(MobileLook.NumericEditor.FrameBorderFocused) ?? this.TintColor;
             }
             else
             {
-                border = ThemedColors.Get(ThemedColorKeys.NumericEditor_NormalBorderBrush);
+                border = ThemedColors.Get(MobileLook.NumericEditor.FrameBorder);
             }
-            this.Layer.BorderColor = border.GetResolvedColor(this.TraitCollection).CGColor;
+            m_frame.Layer.BorderColor = border.GetResolvedColor(this.TraitCollection).CGColor;
+
+            // The surface's colors are CGColors as well, so they are worked out here for the same reason
+            IReadOnlyList<AJutGradientStop> stops = kSurface.Resolve(this.TraitCollection.UserInterfaceStyle);
+            var colors = new CGColor[stops.Count];
+            var locations = new NSNumber[stops.Count];
+            for (int index = 0; index < stops.Count; ++index)
+            {
+                colors[index] = stops[index].Color.ToUIColor().CGColor;
+                locations[index] = new NSNumber(stops[index].Offset);
+            }
+
+            // The frame is an arranged view of the outer row, and a stack view places its arranged views in its own
+            // LayoutSubviews, which runs after this one. Read now, its bounds would be the last pass's: empty the first
+            // time, and a size behind after a rotation or a split view resize. Laying the row out first gives this pass's.
+            m_outerRow.LayoutIfNeeded();
+
+            CATransaction.Begin();
+            CATransaction.DisableActions = true;
+            m_surface.Frame = m_frame.Bounds;
+            m_surface.Colors = colors;
+            m_surface.Locations = locations;
+            CATransaction.Commit();
         }
 
         public override void TintColorDidChange ()
@@ -386,7 +461,7 @@ namespace AJut.UX.Controls
         private void NudgeDownCommand (UIKeyCommand command) => this.DoNudge(positive: false, command.ModifierFlags);
 
         // ===========[ INumericEditorSettings ]===================================
-        int INumericEditorSettings.DecimalPlacesAllowed => -1;
+        int INumericEditorSettings.DecimalPlacesAllowed => this.DecimalPlacesAllowed;
         object INumericEditorSettings.Minimum => NumericEditorController.ToMinimumBound(m_minimum);
         object INumericEditorSettings.Maximum => NumericEditorController.ToMaximumBound(m_maximum);
         eOutOfBoundsResponse INumericEditorSettings.OutOfBoundsResponse => m_outOfBoundsResponse;
@@ -443,6 +518,9 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ Helper Methods ]===================================
+        // The text label shows only with text to show, and never while a LabelView stands in for it
+        private void UpdateLabelVisibility () => m_label.Hidden = (m_labelView != null) || string.IsNullOrEmpty(m_label.Text);
+
         private void HookTextField ()
         {
             if (m_isFieldHooked)
@@ -497,9 +575,6 @@ namespace AJut.UX.Controls
         // reference back would be a cycle across native objects.
         private sealed class NudgeButton : UIButton
         {
-            private const double kRepeatDelaySeconds = 0.4;
-            private const double kRepeatIntervalSeconds = 0.08;
-
             private readonly WeakReference<NumericEditor> m_editor;
             private readonly bool m_positive;
             private UIKeyModifierFlags m_modifiers;
@@ -507,46 +582,43 @@ namespace AJut.UX.Controls
 
             public NudgeButton (NumericEditor editor, bool positive, string symbolName) : base(CGRect.Empty)
             {
-                const float kButtonWidth = 36f;
-
                 m_editor = new WeakReference<NumericEditor>(editor);
                 m_positive = positive;
 
                 UIButtonConfiguration configuration = UIButtonConfiguration.PlainButtonConfiguration;
                 configuration.Image = UIImage.GetSystemImage(symbolName);
-                configuration.BaseForegroundColor = ThemedColors.Get(ThemedColorKeys.ButtonForeground);
+                configuration.BaseForegroundColor = ThemedColors.Get(MobileLook.NumericEditor.StepGlyph);
                 UIBackgroundConfiguration background = configuration.Background;
-                background.BackgroundColor = ThemedColors.Get(ThemedColorKeys.ButtonBackground);
+                background.BackgroundColor = UIColor.Clear;
                 background.CornerRadius = 0;
                 configuration.Background = background;
                 this.Configuration = configuration;
                 this.AccessibilityLabel = positive ? "Increase" : "Decrease";
 
                 this.TranslatesAutoresizingMaskIntoConstraints = false;
-                this.WidthAnchor.ConstraintEqualTo(kButtonWidth).Active = true;
+                this.WidthAnchor.ConstraintEqualTo(MobileLook.NumericEditor.StepButtonWidth).Active = true;
             }
 
             public override void UpdateConfiguration ()
             {
-                // While pressed the button fills with the primary highlight, so a press reads clearly where touch has no
-                // hover to lead into it, and disabled (a read only editor) it takes the theme's disabled button colors.
-                // UIKit asks for this on every state change; base.UpdateConfiguration is skipped so the system lays no
-                // dimmed highlight of its own over it.
-                string backgroundKey = ThemedColorKeys.ButtonBackground;
-                string foregroundKey = ThemedColorKeys.ButtonForeground;
+                // The button is the editor's frame showing through until pressed, when it fills with the bright
+                // highlight, so a press reads clearly where touch has no hover to lead into it. Disabled (a read only
+                // editor) its glyph dims as the number does. UIKit asks for this on every state change;
+                // base.UpdateConfiguration is skipped so the system lays no dimmed highlight of its own over it.
+                UIColor fill = UIColor.Clear;
+                string foregroundKey = MobileLook.NumericEditor.StepGlyph;
                 if (!this.Enabled)
                 {
-                    backgroundKey = ThemedColorKeys.ButtonBackgroundDisabled;
-                    foregroundKey = ThemedColorKeys.ButtonForegroundDisabled;
+                    foregroundKey = MobileLook.NumericEditor.ReadOnlyText;
                 }
                 else if (this.Highlighted)
                 {
-                    backgroundKey = ThemedColorKeys.NumericEditor_NudgePressedBackground;
+                    fill = ThemedColors.Get(MobileLook.NumericEditor.StepPressedFill);
                 }
 
                 UIButtonConfiguration configuration = this.Configuration ?? UIButtonConfiguration.PlainButtonConfiguration;
                 UIBackgroundConfiguration background = configuration.Background;
-                background.BackgroundColor = ThemedColors.Get(backgroundKey);
+                background.BackgroundColor = fill;
                 background.CornerRadius = 0;
                 configuration.Background = background;
                 configuration.BaseForegroundColor = ThemedColors.Get(foregroundKey);
@@ -558,7 +630,7 @@ namespace AJut.UX.Controls
                 m_modifiers = uievent?.ModifierFlags ?? 0;
                 this.Step();
                 this.StopRepeating();
-                m_timer = NSTimer.CreateScheduledTimer(TimeSpan.FromSeconds(kRepeatDelaySeconds), this.OnRepeatDelayElapsed);
+                m_timer = NSTimer.CreateScheduledTimer(MobileLook.NumericEditor.RepeatDelay, this.OnRepeatDelayElapsed);
                 return base.BeginTracking(uitouch, uievent);
             }
 
@@ -592,7 +664,7 @@ namespace AJut.UX.Controls
 
             private void OnRepeatDelayElapsed (NSTimer timer)
             {
-                m_timer = NSTimer.CreateRepeatingScheduledTimer(TimeSpan.FromSeconds(kRepeatIntervalSeconds), this.OnRepeatTick);
+                m_timer = NSTimer.CreateRepeatingScheduledTimer(MobileLook.NumericEditor.RepeatInterval, this.OnRepeatTick);
             }
 
             private void OnRepeatTick (NSTimer timer) => this.Step();
@@ -607,6 +679,66 @@ namespace AJut.UX.Controls
                 {
                     this.StopRepeating();
                 }
+            }
+        }
+
+        // The text field's well: the text box color, inset from the frame's top and bottom so the frame shows around it,
+        // and sunk into it by the edge lighting WinUI3's NumericEditor draws with two nested borders, a shadow along the
+        // top and left and a light line along the bottom and right. The lighting is the same literal shading over any
+        // theme, as it is there. A view that draws itself is drawn again when the appearance changes, so the themed fill
+        // follows light and dark with nothing to refresh.
+        private sealed class FieldWell : UIView
+        {
+            private const float kInset = MobileLook.NumericEditor.WellInset;
+            private const float kShadowThickness = MobileLook.NumericEditor.WellShadowThickness;
+            private const float kLightThickness = MobileLook.NumericEditor.WellLightThickness;
+            private const float kTextPadding = MobileLook.NumericEditor.WellTextPadding;
+            private static readonly UIColor kShadow = MobileLook.NumericEditor.WellShadow.ToUIColor();
+            private static readonly UIColor kLight = MobileLook.NumericEditor.WellLight.ToUIColor();
+
+            public FieldWell (UITextField field) : base(CGRect.Empty)
+            {
+                this.BackgroundColor = UIColor.Clear;
+                this.Opaque = false;
+                this.ContentMode = UIViewContentMode.Redraw;
+
+                field.TranslatesAutoresizingMaskIntoConstraints = false;
+                this.AddSubview(field);
+                NSLayoutConstraint.ActivateConstraints(new[]
+                {
+                    field.LeadingAnchor.ConstraintEqualTo(this.LeadingAnchor, kShadowThickness + kTextPadding),
+                    field.TrailingAnchor.ConstraintEqualTo(this.TrailingAnchor, -(kLightThickness + kTextPadding)),
+                    field.TopAnchor.ConstraintEqualTo(this.TopAnchor, kInset + kShadowThickness),
+                    field.BottomAnchor.ConstraintEqualTo(this.BottomAnchor, -(kInset + kLightThickness)),
+                });
+            }
+
+            public override void Draw (CGRect rect)
+            {
+                CGRect bounds = this.Bounds;
+                nfloat left = bounds.X;
+                nfloat top = bounds.Y + kInset;
+                nfloat right = bounds.X + bounds.Width;
+                nfloat bottom = bounds.Y + bounds.Height - kInset;
+
+                // The light line runs the whole right side and the whole bottom, and the shadow the rest of the top and
+                // left, the way the outer border (bottom and right) holds the inner one (top and left) on WinUI3
+                Fill(kLight, right - kLightThickness, top, right, bottom);
+                Fill(kLight, left, bottom - kLightThickness, right - kLightThickness, bottom);
+                Fill(kShadow, left, top, right - kLightThickness, top + kShadowThickness);
+                Fill(kShadow, left, top + kShadowThickness, left + kShadowThickness, bottom - kLightThickness);
+                Fill(ThemedColors.Get(MobileLook.NumericEditor.WellSurface), left + kShadowThickness, top + kShadowThickness, right - kLightThickness, bottom - kLightThickness);
+            }
+
+            private static void Fill (UIColor color, nfloat left, nfloat top, nfloat right, nfloat bottom)
+            {
+                if ((color == null) || (right <= left) || (bottom <= top))
+                {
+                    return;
+                }
+
+                color.SetFill();
+                UIGraphics.RectFill(new CGRect(left, top, right - left, bottom - top));
             }
         }
     }

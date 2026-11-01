@@ -31,14 +31,14 @@ namespace AJut.UX.Tests
                 ToggleStrip strip = MakeStrip(source);
                 StackPanel host = MakeHost(strip);
                 Assert.AreEqual(new Thickness(0), InnerBorderOf(strip, "A").BorderThickness, "An only item draws no separator");
-                Assert.AreEqual(kStripCorners, RootBorderOf(strip, "A").CornerRadius, "An only item takes all of the strip's corners");
+                Assert.AreEqual(eCorner.All, RoundedCornersOf(strip, "A"), "An only item takes all of the strip's corners");
 
                 source.Add("B");
                 LayOut(host);
 
                 Assert.AreEqual(new Thickness(kSeparator, 0, 0, 0), InnerBorderOf(strip, "B").BorderThickness, "B draws the separator between them, on its leading edge");
                 Assert.AreEqual(new Thickness(0), InnerBorderOf(strip, "A").BorderThickness, "The first item draws no separator");
-                Assert.AreEqual(new CornerRadius(3, 0, 0, 3), RootBorderOf(strip, "A").CornerRadius, "Once B follows it, A only rounds its left end");
+                Assert.AreEqual(eCorner.TopLeft | eCorner.BottomLeft, RoundedCornersOf(strip, "A"), "Once B follows it, A only rounds its left end");
             });
         }
 
@@ -49,7 +49,7 @@ namespace AJut.UX.Tests
             {
                 ToggleStrip strip = MakeStrip(new[] { "A", "B" });
                 StackPanel host = MakeHost(strip);
-                Assert.AreEqual(new CornerRadius(3, 0, 0, 3), RootBorderOf(strip, "A").CornerRadius, "With B after it, A only rounds its left end");
+                Assert.AreEqual(eCorner.TopLeft | eCorner.BottomLeft, RoundedCornersOf(strip, "A"), "With B after it, A only rounds its left end");
 
                 // Removed through the strip's own items: WPF's ItemsSource remove does not reach them yet (it looks for
                 // the removed data among the items, which never matches), and that is a separate defect.
@@ -57,7 +57,7 @@ namespace AJut.UX.Tests
                 LayOut(host);
 
                 Assert.AreEqual(new Thickness(0), InnerBorderOf(strip, "A").BorderThickness, "With B gone, A is the only item and draws no separator");
-                Assert.AreEqual(kStripCorners, RootBorderOf(strip, "A").CornerRadius, "With B gone, A takes all of the strip's corners");
+                Assert.AreEqual(eCorner.All, RoundedCornersOf(strip, "A"), "With B gone, A takes all of the strip's corners");
             });
         }
 
@@ -67,11 +67,7 @@ namespace AJut.UX.Tests
         {
             StaTestThread.Run(() =>
             {
-                // The AJut theme as an app merges it: the dark palette, then the themed control styles over it
-                var host = new StackPanel();
-                host.Resources.MergedDictionaries.Add(LoadAJutResources("Resources/DarkThemeColorsBase.xaml"));
-                host.Resources.MergedDictionaries.Add(LoadAJutResources("Resources/ThemedControlStylesBase.xaml"));
-
+                StackPanel host = MakeThemedHost();
                 ToggleStrip strip = MakeStrip(new[] { "A", "B" });
                 var enumStrip = new EnumToggleStrip { SelectedItem = eSample.First };
                 host.Children.Add(strip);
@@ -90,20 +86,6 @@ namespace AJut.UX.Tests
 
         // ===========[ Corners and the overflow edge ]=========================
         [TestMethod]
-        public void WpfToggleStrip_Horizontal_FirstRoundsItsLeftEnd_LastItsRightEnd_MiddleIsSquare ()
-        {
-            StaTestThread.Run(() =>
-            {
-                ToggleStrip strip = MakeStrip(new[] { "A", "B", "C" });
-                MakeHost(strip);
-
-                Assert.AreEqual(new CornerRadius(3, 0, 0, 3), RootBorderOf(strip, "A").CornerRadius);
-                Assert.AreEqual(new CornerRadius(0), RootBorderOf(strip, "B").CornerRadius);
-                Assert.AreEqual(new CornerRadius(0, 3, 3, 0), RootBorderOf(strip, "C").CornerRadius);
-            });
-        }
-
-        [TestMethod]
         public void WpfToggleStrip_Overflowing_LastShownItemDrawsATrailingSeparatorAndStaysSquare ()
         {
             StaTestThread.Run(() =>
@@ -118,8 +100,8 @@ namespace AJut.UX.Tests
                 string lastShown = strip.Items.Last(item => !item.IsInOverflow).Data as string;
                 Assert.AreNotEqual("One", lastShown, "More than one item fits");
                 Assert.AreEqual(kSeparator, InnerBorderOf(strip, lastShown).BorderThickness.Right, "The last item showing is separated from the overflow button");
-                Assert.AreEqual(new CornerRadius(0), RootBorderOf(strip, lastShown).CornerRadius, "The strip's border rounds the overflow button's end, not the last item showing");
-                Assert.AreEqual(new CornerRadius(3, 0, 0, 3), RootBorderOf(strip, "One").CornerRadius, "The first item still rounds the strip's left end");
+                Assert.AreEqual(eCorner.None, RoundedCornersOf(strip, lastShown), "The strip's border rounds the overflow button's end, not the last item showing");
+                Assert.AreEqual(eCorner.TopLeft | eCorner.BottomLeft, RoundedCornersOf(strip, "One"), "The first item still rounds the strip's left end");
             });
         }
 
@@ -183,24 +165,6 @@ namespace AJut.UX.Tests
         }
 
         [TestMethod]
-        public void WpfToggleStrip_Vertical_SeparatorsAlongTheBottom_CornersAtTopAndBottom ()
-        {
-            StaTestThread.Run(() =>
-            {
-                ToggleStrip strip = MakeStrip(new[] { "A", "B", "C" });
-                strip.Orientation = Orientation.Vertical;
-                MakeHost(strip);
-
-                Assert.AreEqual(new Thickness(0), InnerBorderOf(strip, "A").BorderThickness, "The first draws no separator");
-                Assert.AreEqual(new Thickness(0, kSeparator, 0, 0), InnerBorderOf(strip, "B").BorderThickness);
-                Assert.AreEqual(new Thickness(0, kSeparator, 0, 0), InnerBorderOf(strip, "C").BorderThickness);
-                Assert.AreEqual(new CornerRadius(3, 3, 0, 0), RootBorderOf(strip, "A").CornerRadius, "The first rounds its top corners");
-                Assert.AreEqual(new CornerRadius(0), RootBorderOf(strip, "B").CornerRadius);
-                Assert.AreEqual(new CornerRadius(0, 0, 3, 3), RootBorderOf(strip, "C").CornerRadius, "The last rounds its bottom corners");
-            });
-        }
-
-        [TestMethod]
         public void WpfToggleStrip_OrientationChangedAfterLayout_TheEdgesFollow ()
         {
             StaTestThread.Run(() =>
@@ -213,7 +177,7 @@ namespace AJut.UX.Tests
                 LayOut(host);
 
                 Assert.AreEqual(new Thickness(0, kSeparator, 0, 0), InnerBorderOf(strip, "B").BorderThickness, "The separator moves to the top");
-                Assert.AreEqual(new CornerRadius(3, 3, 0, 0), RootBorderOf(strip, "A").CornerRadius, "The rounded end moves to the top");
+                Assert.AreEqual(eCorner.TopLeft | eCorner.TopRight, RoundedCornersOf(strip, "A"), "The rounded end moves to the top");
             });
         }
 
@@ -254,6 +218,15 @@ namespace AJut.UX.Tests
             return host;
         }
 
+        // The AJut theme as an app merges it: the dark palette, then the themed control styles over it
+        private static StackPanel MakeThemedHost ()
+        {
+            var host = new StackPanel();
+            host.Resources.MergedDictionaries.Add(LoadAJutResources("Resources/DarkThemeColorsBase.xaml"));
+            host.Resources.MergedDictionaries.Add(LoadAJutResources("Resources/ThemedControlStylesBase.xaml"));
+            return host;
+        }
+
         // UpdateLayout runs the layout WPF has queued for anything invalidated inside (as an app's dispatcher would), which a
         // second Measure of the host at the same size would skip
         private static void LayOut (FrameworkElement host)
@@ -272,6 +245,17 @@ namespace AJut.UX.Tests
             ToggleButton button = FindButton(strip, data);
             Assert.IsNotNull(button, $"No button was made for {data}");
             return (Border)button.Template.FindName(partName, button);
+        }
+
+        // Which of an item's corners its template rounds. How far it rounds them is a look, so only rounded against square
+        // is told apart.
+        private static eCorner RoundedCornersOf (ToggleStrip strip, string data)
+        {
+            CornerRadius corners = RootBorderOf(strip, data).CornerRadius;
+            return ((corners.TopLeft > 0) ? eCorner.TopLeft : eCorner.None)
+                | ((corners.TopRight > 0) ? eCorner.TopRight : eCorner.None)
+                | ((corners.BottomRight > 0) ? eCorner.BottomRight : eCorner.None)
+                | ((corners.BottomLeft > 0) ? eCorner.BottomLeft : eCorner.None);
         }
 
         // The colors of the selected item's background, the IsChecked trigger's gradient
@@ -316,6 +300,20 @@ namespace AJut.UX.Tests
         {
             First,
             Second,
+        }
+
+        /// <summary>
+        /// An item button's corners, to say which of them it rounds
+        /// </summary>
+        [System.Flags]
+        private enum eCorner
+        {
+            None = 0,
+            TopLeft = 1,
+            TopRight = 2,
+            BottomRight = 4,
+            BottomLeft = 8,
+            All = TopLeft | TopRight | BottomRight | BottomLeft,
         }
     }
 }

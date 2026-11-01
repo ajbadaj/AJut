@@ -24,7 +24,9 @@ namespace AJut.UX.Controls
     /// <item>Multi-select on any other enum: <see cref="SelectedItem"/> is the most recently toggled value, and <see cref="SelectedItems"/> holds them all.</item>
     /// </list>
     /// Set SelectedItem from code to pick the enum; in a layout, ajutAllowMultiSelect, ajutAllowNoSelection,
-    /// ajutEnsureUniformSize, ajutOverflowBehavior and ajutOrientation pass through to the strip.
+    /// ajutEnsureUniformSize, ajutOverflowBehavior, ajutOrientation, android:enabled and the look's ajutCornerRadius,
+    /// ajutSeparatorThickness, ajutItemPadding, ajutItemPaddingHorizontal and ajutItemPaddingVertical pass through to the
+    /// strip.
     /// </remarks>
     [Register("ajut.ux.controls.EnumToggleStrip")]
     public class EnumToggleStrip : FrameLayout
@@ -127,7 +129,23 @@ namespace AJut.UX.Controls
             }
         }
 
-        /// <summary>The strip that shows the values, for its layout settings (EnsureUniformSize, OverflowBehavior, Orientation).</summary>
+        /// <summary>Whether the values take taps; passed on to the strip, which a ViewGroup's own Enabled does not reach.</summary>
+        public override bool Enabled
+        {
+            get => base.Enabled;
+            set
+            {
+                base.Enabled = value;
+
+                // The strip is made in Initialize, so it is not there yet when the base constructor runs
+                if (m_strip != null)
+                {
+                    m_strip.Enabled = value;
+                }
+            }
+        }
+
+        /// <summary>The strip that shows the values, for its layout settings (EnsureUniformSize, OverflowBehavior, Orientation) and its look (CornerRadius, SeparatorThickness, ItemPadding).</summary>
         public ToggleStrip Strip => m_strip;
 
         // ===========[ Helper Methods ]===================================
@@ -142,6 +160,16 @@ namespace AJut.UX.Controls
                 m_strip.EnsureUniformSize = values.GetBoolean(Resource.Styleable.AJutEnumToggleStrip_ajutEnsureUniformSize, false);
                 m_strip.OverflowBehavior = (eToggleStripOverflow)values.GetInt(Resource.Styleable.AJutEnumToggleStrip_ajutOverflowBehavior, (int)eToggleStripOverflow.Clip);
                 m_strip.Orientation = (Android.Widget.Orientation)values.GetInt(Resource.Styleable.AJutEnumToggleStrip_ajutOrientation, (int)Android.Widget.Orientation.Horizontal);
+                this.Enabled = values.GetBoolean(Resource.Styleable.AJutEnumToggleStrip_android_enabled, true);
+                m_strip.CornerRadius = values.GetDimension(Resource.Styleable.AJutEnumToggleStrip_ajutCornerRadius, m_strip.CornerRadius);
+                m_strip.SeparatorThickness = values.GetDimensionPixelSize(Resource.Styleable.AJutEnumToggleStrip_ajutSeparatorThickness, m_strip.SeparatorThickness);
+                m_strip.ItemPadding = ToggleStrip.ReadItemPadding(
+                    values,
+                    Resource.Styleable.AJutEnumToggleStrip_ajutItemPadding,
+                    Resource.Styleable.AJutEnumToggleStrip_ajutItemPaddingHorizontal,
+                    Resource.Styleable.AJutEnumToggleStrip_ajutItemPaddingVertical,
+                    m_strip.ItemPadding
+                );
                 values.Recycle();
             }
 

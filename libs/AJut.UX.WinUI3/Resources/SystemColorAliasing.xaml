@@ -44,19 +44,27 @@
     <StaticResource x:Key="TitleBarForegroundBrush" ResourceKey="AJut_Brush_TitleBarForeground"/>
     <StaticResource x:Key="TitleBarDeactivatedForegroundBrush" ResourceKey="AJut_Brush_TitleBarForegroundDesat"/>
 
+    <!-- ===[ NavigationView Colors ]=== -->
+    <!-- The selected item takes the see-through selection, so it reads on whatever level the pane is on. Hover keeps
+         WinUI's own fainter subtle fill, so the two stay apart. -->
+    <StaticResource x:Key="NavigationViewItemBackgroundSelected" ResourceKey="AJut_Brush_NavigationSelection"/>
+    <StaticResource x:Key="NavigationViewItemBackgroundSelectedPointerOver" ResourceKey="AJut_Brush_NavigationSelection"/>
+    <StaticResource x:Key="NavigationViewItemBackgroundSelectedPressed" ResourceKey="AJut_Brush_NavigationSelection"/>
+
     <!-- ===[ TabView Colors ]=== -->
     <SolidColorBrush x:Key="TabViewBackground" Color="Transparent" />
-    <SolidColorBrush x:Key="TabViewItemHeaderBackground" Color="Transparent"/>
+    <!-- As WPF's themed TabControl: unselected tabs on the navigation level, the selected tab joined to its body on the panel color -->
+    <SolidColorBrush x:Key="TabViewItemHeaderBackground" Color="{ThemeResource AJut_Color_NavigationPanelBackground}"/>
     <SolidColorBrush x:Key="TabViewItemHeaderBackgroundPointerOver" Color="{ThemeResource AJut_Color_InnerPanelBackgroundHover}"/>
-    <SolidColorBrush x:Key="TabViewItemHeaderBackgroundSelected" Color="{ThemeResource AJut_Color_InnerPanelBackground}" />
+    <SolidColorBrush x:Key="TabViewItemHeaderBackgroundSelected" Color="{ThemeResource AJut_Color_PanelBackground}" />
     <StaticResource x:Key="TabViewItemHeaderDragBackground" ResourceKey="AJut_Brush_PopupBackground" />
     <StaticResource x:Key="TabViewItemHeaderBackgroundPressed" ResourceKey="AJut_Brush_PopupBackground" />
     <SolidColorBrush x:Key="TabViewItemHeaderBackgroundDisabled" Color="Transparent" />
     <!-- AJut's TabView template: the strip border, the add and scroll buttons and the tab close buttons as glyph buttons, and the tab text and icons -->
-    <StaticResource x:Key="TabViewBorderBrush" ResourceKey="AJut_Brush_BorderCommon"/>
-    <StaticResource x:Key="TabViewItemSeparator" ResourceKey="AJut_Brush_BorderCommon"/>
-    <StaticResource x:Key="TabViewSelectedItemBorderBrush" ResourceKey="AJut_Brush_BorderCommon"/>
-    <SolidColorBrush x:Key="TabViewItemBorderBrush" Color="Transparent"/>
+    <StaticResource x:Key="TabViewBorderBrush" ResourceKey="AJut_Brush_PanelBorder"/>
+    <StaticResource x:Key="TabViewItemSeparator" ResourceKey="AJut_Brush_PanelBorder"/>
+    <StaticResource x:Key="TabViewSelectedItemBorderBrush" ResourceKey="AJut_Brush_PanelBorder"/>
+    <StaticResource x:Key="TabViewItemBorderBrush" ResourceKey="AJut_Brush_PanelBorder"/>
     <StaticResource x:Key="TabViewItemHeaderForeground" ResourceKey="AJut_Brush_InteractiveText"/>
     <SolidColorBrush x:Key="TabViewItemHeaderForegroundPointerOver" Color="{ThemeResource AJut_Color_HighlightText}"/>
     <SolidColorBrush x:Key="TabViewItemHeaderForegroundPressed" Color="{ThemeResource AJut_Color_ImportantText}"/>
@@ -201,7 +209,8 @@
     <StaticResource x:Key="ToggleButtonBorderBrushCheckedDisabled" ResourceKey="AJut_Brush_ButtonBorderPressed"/>
 
     <!-- ===[ RepeatButton ]=== -->
-    <!-- The same as Button; BumpStack's bump buttons are stock RepeatButtons -->
+    <!-- The same as Button, for an app's own RepeatButtons; BumpStack's bump buttons start from the outline and template
+         their own states -->
     <StaticResource x:Key="RepeatButtonBackground" ResourceKey="AJut_Brush_ControlBackground"/>
     <StaticResource x:Key="RepeatButtonBackgroundPointerOver" ResourceKey="AJut_Brush_ControlBackgroundHover"/>
     <StaticResource x:Key="RepeatButtonBackgroundPressed" ResourceKey="AJut_Brush_ButtonBackgroundPressed"/>
@@ -238,7 +247,7 @@
     <SolidColorBrush x:Key="ComboBoxForegroundPressed" Color="{ThemeResource AJut_Color_InteractiveText}"/>
     <SolidColorBrush x:Key="ComboBoxForegroundFocusedPressed" Color="{ThemeResource AJut_Color_InteractiveText}"/>
     <StaticResource x:Key="ComboBoxBorderBrushPressed" ResourceKey="AJut_Brush_PrimaryHighlight"/>
-    <StaticResource x:Key="ComboBoxBorderBrushDisabled" ResourceKey="AJut_Brush_TextBoxBorder"/>
+    <StaticResource x:Key="ComboBoxBorderBrushDisabled" ResourceKey="AJut_Brush_BorderCommon"/>
     <StaticResource x:Key="ComboBoxDropDownGlyphForeground" ResourceKey="AJut_Brush_SymbolForeground"/>
     <StaticResource x:Key="ComboBoxDropDownGlyphForegroundFocused" ResourceKey="AJut_Brush_SymbolForegroundHighlight"/>
     <StaticResource x:Key="ComboBoxDropDownGlyphForegroundFocusedPressed" ResourceKey="AJut_Brush_SymbolForegroundPressed"/>
@@ -249,12 +258,12 @@
     <StaticResource x:Key="ComboBoxItemBackgroundSelectedUnfocused" ResourceKey="AJut_Brush_ListSelection"/>
     <StaticResource x:Key="ComboBoxItemBackgroundSelectedPointerOver" ResourceKey="AJut_Brush_ListItemHover"/>
     <StaticResource x:Key="ComboBoxItemBackgroundSelectedPressed" ResourceKey="AJut_Brush_PrimaryHighlightDark"/>
-    <SolidColorBrush x:Key="ComboBoxItemForegroundPressed" Color="{ThemeResource AJut_Color_ImportantText}"/>
+    <SolidColorBrush x:Key="ComboBoxItemForegroundPressed" Color="{ThemeResource AJut_Color_HighContrastText}"/>
     <SolidColorBrush x:Key="ComboBoxItemForegroundSelectedUnfocused" Color="{ThemeResource AJut_Color_ImportantText}"/>
     <SolidColorBrush x:Key="ComboBoxItemForegroundSelectedPointerOver" Color="{ThemeResource AJut_Color_ImportantText}"/>
-    <SolidColorBrush x:Key="ComboBoxItemForegroundSelectedPressed" Color="{ThemeResource AJut_Color_ImportantText}"/>
+    <SolidColorBrush x:Key="ComboBoxItemForegroundSelectedPressed" Color="{ThemeResource AJut_Color_HighContrastText}"/>
     <!-- An item's outline is its fill, in each state -->
-    <StaticResource x:Key="ComboBoxItemBorderBrushPointerOver" ResourceKey="AJut_Brush_ListSelectionBackground"/>
+    <StaticResource x:Key="ComboBoxItemBorderBrushPointerOver" ResourceKey="AJut_Brush_ListItemHover"/>
     <StaticResource x:Key="ComboBoxItemBorderBrushPressed" ResourceKey="AJut_Brush_PrimaryHighlightDark"/>
     <StaticResource x:Key="ComboBoxItemBorderBrushSelected" ResourceKey="AJut_Brush_ListSelection"/>
     <StaticResource x:Key="ComboBoxItemBorderBrushSelectedUnfocused" ResourceKey="AJut_Brush_ListSelection"/>
@@ -307,16 +316,21 @@
     <Color x:Key="ToggleSwitchContainerBackgroundPressed">#00FFFFFF</Color>
     <Color x:Key="ToggleSwitchContainerBackgroundDisabled">#00FFFFFF</Color>
     <StaticResource x:Key="ToggleSwitchStrokeOffPressed" ResourceKey="AJut_Color_BorderCommon"/>
-    <StaticResource x:Key="ToggleSwitchStrokeOffDisabled" ResourceKey="AJut_Color_BorderCommon"/>
+    <!-- Disabled, the switch fades: a see-through gray outline that reads faint on any surface, and the knob and the
+         on track at under half strength, which fades light a little further than dark since the light knob starts
+         darker against its track -->
+    <Color x:Key="ToggleSwitchStrokeOffDisabled">#40808080</Color>
     <StaticResource x:Key="ToggleSwitchFillOffDisabled" ResourceKey="AJut_Color_InnerPanelBackground"/>
-    <StaticResource x:Key="ToggleSwitchKnobFillOffPointerOver" ResourceKey="AJut_Brush_SymbolForegroundHighlight"/>
-    <StaticResource x:Key="ToggleSwitchKnobFillOffPressed" ResourceKey="AJut_Brush_SymbolForegroundPressed"/>
-    <SolidColorBrush x:Key="ToggleSwitchKnobFillOffDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}"/>
+    <!-- An off switch's knob sits on the gray track, not on a highlight, so under the pointer it goes to the strongest
+         text color rather than the glyph-on-a-highlight color, which is white in light and vanishes on the track -->
+    <StaticResource x:Key="ToggleSwitchKnobFillOffPointerOver" ResourceKey="AJut_Brush_ImportantText"/>
+    <StaticResource x:Key="ToggleSwitchKnobFillOffPressed" ResourceKey="AJut_Brush_HighlightText"/>
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOffDisabled" Color="{ThemeResource AJut_Color_SymbolForeground}" Opacity="0.45"/>
     <StaticResource x:Key="ToggleSwitchStrokeOnPointerOver" ResourceKey="AJut_Brush_PrimaryHighlight"/>
     <StaticResource x:Key="ToggleSwitchStrokeOnPressed" ResourceKey="AJut_Brush_PrimaryHighlightDark"/>
-    <StaticResource x:Key="ToggleSwitchStrokeOnDisabled" ResourceKey="AJut_Brush_PrimaryHighlightDesat"/>
-    <StaticResource x:Key="ToggleSwitchFillOnDisabled" ResourceKey="AJut_Brush_PrimaryHighlightDesat"/>
-    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}"/>
+    <SolidColorBrush x:Key="ToggleSwitchStrokeOnDisabled" Color="{ThemeResource AJut_Color_PrimaryHighlight}" Opacity="0.45"/>
+    <SolidColorBrush x:Key="ToggleSwitchFillOnDisabled" Color="{ThemeResource AJut_Color_PrimaryHighlight}" Opacity="0.45"/>
+    <SolidColorBrush x:Key="ToggleSwitchKnobFillOnDisabled" Color="#FFFFFF" Opacity="0.6"/>
     <SolidColorBrush x:Key="ToggleSwitchKnobStrokeOn" Color="Transparent"/>
 
     <!-- ===[ Expander ]=== -->
@@ -345,48 +359,55 @@
 
     <!-- ===[ MenuFlyout / ContextFlyout ]=== -->
     <StaticResource x:Key="MenuFlyoutPresenterBackground" ResourceKey="AJut_Brush_InnerPanelBackground"/>
-    <StaticResource x:Key="MenuFlyoutPresenterBorderBrush" ResourceKey="AJut_Brush_ListSelection"/>
+    <StaticResource x:Key="MenuFlyoutPresenterBorderBrush" ResourceKey="AJut_Brush_BorderCommon"/>
     <SolidColorBrush x:Key="MenuFlyoutItemBackground" Color="Transparent"/>
-    <StaticResource x:Key="MenuFlyoutItemBackgroundPointerOver" ResourceKey="AJut_Brush_ListSelectionBackground"/>
+    <StaticResource x:Key="MenuFlyoutItemBackgroundPointerOver" ResourceKey="AJut_Brush_ListSelection"/>
     <StaticResource x:Key="MenuFlyoutItemBackgroundPressed" ResourceKey="AJut_Brush_PrimaryHighlightDark"/>
     <StaticResource x:Key="MenuFlyoutItemForeground" ResourceKey="AJut_Brush_NormalText"/>
     <SolidColorBrush x:Key="MenuFlyoutItemForegroundPointerOver" Color="{ThemeResource AJut_Color_HighlightText}"/>
-    <StaticResource x:Key="MenuFlyoutSubItemChevron" ResourceKey="AJut_Brush_SymbolForeground"/>
+    <!-- A sub item's chevron is dimmed until its sub menu opens, where it goes to the high contrast text -->
+    <SolidColorBrush x:Key="MenuFlyoutSubItemChevron" Color="{ThemeResource AJut_Color_SymbolForeground}" Opacity="0.6"/>
     <StaticResource x:Key="MenuFlyoutSeparatorBackground" ResourceKey="AJut_Brush_BorderCommon"/>
     <SolidColorBrush x:Key="MenuFlyoutItemBackgroundBrush" Color="Transparent"/>
     <SolidColorBrush x:Key="MenuFlyoutItemBackgroundDisabled" Color="Transparent"/>
-    <SolidColorBrush x:Key="MenuFlyoutItemForegroundPressed" Color="{ThemeResource AJut_Color_ImportantText}"/>
+    <SolidColorBrush x:Key="MenuFlyoutItemForegroundPressed" Color="{ThemeResource AJut_Color_HighContrastText}"/>
     <SolidColorBrush x:Key="MenuFlyoutItemForegroundDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}"/>
     <StaticResource x:Key="MenuFlyoutItemKeyboardAcceleratorTextForeground" ResourceKey="AJut_Brush_UnderstatedText"/>
     <SolidColorBrush x:Key="MenuFlyoutItemKeyboardAcceleratorTextForegroundPointerOver" Color="{ThemeResource AJut_Color_NormalText}"/>
-    <SolidColorBrush x:Key="MenuFlyoutItemKeyboardAcceleratorTextForegroundPressed" Color="{ThemeResource AJut_Color_HighlightText}"/>
+    <SolidColorBrush x:Key="MenuFlyoutItemKeyboardAcceleratorTextForegroundPressed" Color="{ThemeResource AJut_Color_HighContrastText}"/>
     <SolidColorBrush x:Key="MenuFlyoutItemKeyboardAcceleratorTextForegroundDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}"/>
     <!-- Sub items, and toggle items, which take the sub item keys for pressed and disabled -->
     <SolidColorBrush x:Key="MenuFlyoutSubItemBackground" Color="Transparent"/>
     <SolidColorBrush x:Key="MenuFlyoutSubItemBackgroundBrush" Color="Transparent"/>
-    <StaticResource x:Key="MenuFlyoutSubItemBackgroundPointerOver" ResourceKey="AJut_Brush_ListSelectionBackground"/>
+    <StaticResource x:Key="MenuFlyoutSubItemBackgroundPointerOver" ResourceKey="AJut_Brush_ListSelection"/>
     <StaticResource x:Key="MenuFlyoutSubItemBackgroundPressed" ResourceKey="AJut_Brush_PrimaryHighlightDark"/>
-    <StaticResource x:Key="MenuFlyoutSubItemBackgroundSubMenuOpened" ResourceKey="AJut_Brush_ListSelectionBackground"/>
+    <!-- The item whose sub menu is open is the dark primary, a step darker than the hover in the sub menu beside it -->
+    <StaticResource x:Key="MenuFlyoutSubItemBackgroundSubMenuOpened" ResourceKey="AJut_Brush_PrimaryHighlightDark"/>
     <SolidColorBrush x:Key="MenuFlyoutSubItemBackgroundDisabled" Color="Transparent"/>
     <StaticResource x:Key="MenuFlyoutSubItemForeground" ResourceKey="AJut_Brush_NormalText"/>
     <SolidColorBrush x:Key="MenuFlyoutSubItemForegroundPointerOver" Color="{ThemeResource AJut_Color_HighlightText}"/>
-    <SolidColorBrush x:Key="MenuFlyoutSubItemForegroundPressed" Color="{ThemeResource AJut_Color_ImportantText}"/>
-    <SolidColorBrush x:Key="MenuFlyoutSubItemForegroundSubMenuOpened" Color="{ThemeResource AJut_Color_HighlightText}"/>
+    <SolidColorBrush x:Key="MenuFlyoutSubItemForegroundPressed" Color="{ThemeResource AJut_Color_HighContrastText}"/>
+    <SolidColorBrush x:Key="MenuFlyoutSubItemForegroundSubMenuOpened" Color="{ThemeResource AJut_Color_HighContrastText}"/>
     <SolidColorBrush x:Key="MenuFlyoutSubItemForegroundDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}"/>
-    <StaticResource x:Key="MenuFlyoutSubItemChevronPointerOver" ResourceKey="AJut_Brush_SymbolForegroundHighlight"/>
-    <StaticResource x:Key="MenuFlyoutSubItemChevronPressed" ResourceKey="AJut_Brush_SymbolForegroundHighlight"/>
-    <StaticResource x:Key="MenuFlyoutSubItemChevronSubMenuOpened" ResourceKey="AJut_Brush_SymbolForegroundHighlight"/>
+    <SolidColorBrush x:Key="MenuFlyoutSubItemChevronPointerOver" Color="{ThemeResource AJut_Color_HighlightText}" Opacity="0.6"/>
+    <StaticResource x:Key="MenuFlyoutSubItemChevronPressed" ResourceKey="AJut_Brush_HighContrastText"/>
+    <StaticResource x:Key="MenuFlyoutSubItemChevronSubMenuOpened" ResourceKey="AJut_Brush_HighContrastText"/>
     <SolidColorBrush x:Key="MenuFlyoutSubItemChevronDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}"/>
     <StaticResource x:Key="ToggleMenuFlyoutItemKeyboardAcceleratorTextForeground" ResourceKey="AJut_Brush_UnderstatedText"/>
     <SolidColorBrush x:Key="ToggleMenuFlyoutItemKeyboardAcceleratorTextForegroundPointerOver" Color="{ThemeResource AJut_Color_NormalText}"/>
-    <SolidColorBrush x:Key="ToggleMenuFlyoutItemKeyboardAcceleratorTextForegroundPressed" Color="{ThemeResource AJut_Color_HighlightText}"/>
+    <SolidColorBrush x:Key="ToggleMenuFlyoutItemKeyboardAcceleratorTextForegroundPressed" Color="{ThemeResource AJut_Color_HighContrastText}"/>
     <SolidColorBrush x:Key="ToggleMenuFlyoutItemKeyboardAcceleratorTextForegroundDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}"/>
+    <!-- A toggle item's check mark is in its text's color in every state -->
+    <StaticResource x:Key="ToggleMenuFlyoutItemCheckGlyphForeground" ResourceKey="AJut_Brush_NormalText"/>
+    <SolidColorBrush x:Key="ToggleMenuFlyoutItemCheckGlyphForegroundPointerOver" Color="{ThemeResource AJut_Color_HighlightText}"/>
+    <SolidColorBrush x:Key="ToggleMenuFlyoutItemCheckGlyphForegroundPressed" Color="{ThemeResource AJut_Color_HighContrastText}"/>
+    <SolidColorBrush x:Key="ToggleMenuFlyoutItemCheckGlyphForegroundDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}"/>
 
     <!-- ===[ MenuBar ]=== -->
     <StaticResource x:Key="MenuBarBackground" ResourceKey="AJut_Brush_BannerBackground"/>
     <SolidColorBrush x:Key="MenuBarItemBackground" Color="Transparent"/>
-    <StaticResource x:Key="MenuBarItemBackgroundPointerOver" ResourceKey="AJut_Brush_MouseInteractionHighlight"/>
-    <StaticResource x:Key="MenuBarItemBackgroundSelected" ResourceKey="AJut_Brush_PrimaryHighlight"/>
+    <StaticResource x:Key="MenuBarItemBackgroundPointerOver" ResourceKey="AJut_Brush_ListSelection"/>
+    <StaticResource x:Key="MenuBarItemBackgroundSelected" ResourceKey="AJut_Brush_ListSelection"/>
     <StaticResource x:Key="MenuBarItemBackgroundPressed" ResourceKey="AJut_Brush_PrimaryHighlightDark"/>
     <StaticResource x:Key="MenuBarItemForeground" ResourceKey="AJut_Brush_NormalText"/>
     <!-- Item borders, which take the common border on hover and press and the highlight when selected -->
@@ -402,14 +423,16 @@
     <StaticResource x:Key="DropDownButtonForegroundSecondaryPressed" ResourceKey="AJut_Brush_SymbolForegroundPressed"/>
 
     <!-- ===[ CheckBox ]=== -->
-    <StaticResource x:Key="CheckBoxCheckBackgroundFillChecked" ResourceKey="AJut_Brush_PrimaryHighlight"/>
-    <StaticResource x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" ResourceKey="AJut_Brush_PrimaryHighlightBright"/>
-    <StaticResource x:Key="CheckBoxCheckBackgroundFillCheckedPressed" ResourceKey="AJut_Brush_PrimaryHighlightDark"/>
-    <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUnchecked" ResourceKey="AJut_Brush_BorderCommon"/>
-    <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUncheckedPointerOver" ResourceKey="AJut_Brush_BorderCommonHover"/>
-    <StaticResource x:Key="CheckBoxCheckGlyphForegroundChecked" ResourceKey="AJut_Brush_ImportantText"/>
-    <!-- Every state. The box is a text box surface until checked or indeterminate, then the highlight, muted when
-         disabled. The text lights up under the pointer, goes important when pressed and understated when disabled. -->
+    <StaticResource x:Key="CheckBoxCheckBackgroundFillChecked" ResourceKey="AJut_Brush_TextBoxBackground"/>
+    <StaticResource x:Key="CheckBoxCheckBackgroundFillCheckedPointerOver" ResourceKey="AJut_Brush_TextBoxBackground"/>
+    <StaticResource x:Key="CheckBoxCheckBackgroundFillCheckedPressed" ResourceKey="AJut_Brush_TextBoxBackground"/>
+    <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUnchecked" ResourceKey="AJut_Brush_TextBoxBorder"/>
+    <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUncheckedPointerOver" ResourceKey="AJut_Brush_PrimaryHighlight"/>
+    <StaticResource x:Key="CheckBoxCheckGlyphForegroundChecked" ResourceKey="AJut_Brush_NormalText"/>
+    <!-- Every state. The box is a text box surface whether it is checked or not, with its mark in the normal text; under
+         the pointer the empty box's outline turns primary, and so does a checked box's mark, pressed as well. Disabled, the
+         box takes the flat disabled fill and the common border. The text lights up under the pointer, goes important when
+         pressed and understated when disabled. -->
     <StaticResource x:Key="CheckBoxForegroundUnchecked" ResourceKey="AJut_Brush_NormalText"/>
     <SolidColorBrush x:Key="CheckBoxBackgroundUnchecked" Color="Transparent"/>
     <SolidColorBrush x:Key="CheckBoxBorderBrushUnchecked" Color="Transparent"/>
@@ -430,90 +453,91 @@
     <SolidColorBrush x:Key="CheckBoxBackgroundUncheckedDisabled" Color="Transparent"/>
     <SolidColorBrush x:Key="CheckBoxBorderBrushUncheckedDisabled" Color="Transparent"/>
     <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUncheckedDisabled" ResourceKey="AJut_Brush_BorderCommon"/>
-    <StaticResource x:Key="CheckBoxCheckBackgroundFillUncheckedDisabled" ResourceKey="AJut_Brush_TextBoxBackground"/>
+    <StaticResource x:Key="CheckBoxCheckBackgroundFillUncheckedDisabled" ResourceKey="AJut_Brush_ControlBackgroundDisabled"/>
     <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundUncheckedDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}"/>
     <StaticResource x:Key="CheckBoxForegroundChecked" ResourceKey="AJut_Brush_NormalText"/>
     <SolidColorBrush x:Key="CheckBoxBackgroundChecked" Color="Transparent"/>
     <SolidColorBrush x:Key="CheckBoxBorderBrushChecked" Color="Transparent"/>
-    <StaticResource x:Key="CheckBoxCheckBackgroundStrokeChecked" ResourceKey="AJut_Brush_PrimaryHighlight"/>
+    <StaticResource x:Key="CheckBoxCheckBackgroundStrokeChecked" ResourceKey="AJut_Brush_TextBoxBorder"/>
     <SolidColorBrush x:Key="CheckBoxForegroundCheckedPointerOver" Color="{ThemeResource AJut_Color_HighlightText}"/>
     <SolidColorBrush x:Key="CheckBoxBackgroundCheckedPointerOver" Color="Transparent"/>
     <SolidColorBrush x:Key="CheckBoxBorderBrushCheckedPointerOver" Color="Transparent"/>
-    <StaticResource x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" ResourceKey="AJut_Brush_PrimaryHighlightBright"/>
-    <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" ResourceKey="AJut_Brush_ImportantText"/>
+    <StaticResource x:Key="CheckBoxCheckBackgroundStrokeCheckedPointerOver" ResourceKey="AJut_Brush_TextBoxBorder"/>
+    <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedPointerOver" ResourceKey="AJut_Brush_PrimaryHighlight"/>
     <SolidColorBrush x:Key="CheckBoxForegroundCheckedPressed" Color="{ThemeResource AJut_Color_ImportantText}"/>
     <SolidColorBrush x:Key="CheckBoxBackgroundCheckedPressed" Color="Transparent"/>
     <SolidColorBrush x:Key="CheckBoxBorderBrushCheckedPressed" Color="Transparent"/>
-    <StaticResource x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" ResourceKey="AJut_Brush_PrimaryHighlightDark"/>
-    <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" ResourceKey="AJut_Brush_ImportantText"/>
+    <StaticResource x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" ResourceKey="AJut_Brush_TextBoxBorder"/>
+    <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" ResourceKey="AJut_Brush_PrimaryHighlight"/>
     <SolidColorBrush x:Key="CheckBoxForegroundCheckedDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}"/>
     <SolidColorBrush x:Key="CheckBoxBackgroundCheckedDisabled" Color="Transparent"/>
     <SolidColorBrush x:Key="CheckBoxBorderBrushCheckedDisabled" Color="Transparent"/>
-    <StaticResource x:Key="CheckBoxCheckBackgroundStrokeCheckedDisabled" ResourceKey="AJut_Brush_PrimaryHighlightDesat"/>
-    <StaticResource x:Key="CheckBoxCheckBackgroundFillCheckedDisabled" ResourceKey="AJut_Brush_PrimaryHighlightDesat"/>
+    <StaticResource x:Key="CheckBoxCheckBackgroundStrokeCheckedDisabled" ResourceKey="AJut_Brush_BorderCommon"/>
+    <StaticResource x:Key="CheckBoxCheckBackgroundFillCheckedDisabled" ResourceKey="AJut_Brush_ControlBackgroundDisabled"/>
     <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}"/>
     <StaticResource x:Key="CheckBoxForegroundIndeterminate" ResourceKey="AJut_Brush_NormalText"/>
     <SolidColorBrush x:Key="CheckBoxBackgroundIndeterminate" Color="Transparent"/>
     <SolidColorBrush x:Key="CheckBoxBorderBrushIndeterminate" Color="Transparent"/>
-    <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminate" ResourceKey="AJut_Brush_PrimaryHighlight"/>
-    <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminate" ResourceKey="AJut_Brush_PrimaryHighlight"/>
-    <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminate" ResourceKey="AJut_Brush_ImportantText"/>
+    <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminate" ResourceKey="AJut_Brush_TextBoxBorder"/>
+    <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminate" ResourceKey="AJut_Brush_TextBoxBackground"/>
+    <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminate" ResourceKey="AJut_Brush_NormalText"/>
     <SolidColorBrush x:Key="CheckBoxForegroundIndeterminatePointerOver" Color="{ThemeResource AJut_Color_HighlightText}"/>
     <SolidColorBrush x:Key="CheckBoxBackgroundIndeterminatePointerOver" Color="Transparent"/>
     <SolidColorBrush x:Key="CheckBoxBorderBrushIndeterminatePointerOver" Color="Transparent"/>
-    <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminatePointerOver" ResourceKey="AJut_Brush_PrimaryHighlightBright"/>
-    <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminatePointerOver" ResourceKey="AJut_Brush_PrimaryHighlightBright"/>
-    <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminatePointerOver" ResourceKey="AJut_Brush_ImportantText"/>
+    <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminatePointerOver" ResourceKey="AJut_Brush_TextBoxBorder"/>
+    <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminatePointerOver" ResourceKey="AJut_Brush_TextBoxBackground"/>
+    <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminatePointerOver" ResourceKey="AJut_Brush_PrimaryHighlight"/>
     <SolidColorBrush x:Key="CheckBoxForegroundIndeterminatePressed" Color="{ThemeResource AJut_Color_ImportantText}"/>
     <SolidColorBrush x:Key="CheckBoxBackgroundIndeterminatePressed" Color="Transparent"/>
     <SolidColorBrush x:Key="CheckBoxBorderBrushIndeterminatePressed" Color="Transparent"/>
-    <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminatePressed" ResourceKey="AJut_Brush_PrimaryHighlightDark"/>
-    <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminatePressed" ResourceKey="AJut_Brush_PrimaryHighlightDark"/>
-    <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminatePressed" ResourceKey="AJut_Brush_ImportantText"/>
+    <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminatePressed" ResourceKey="AJut_Brush_TextBoxBorder"/>
+    <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminatePressed" ResourceKey="AJut_Brush_TextBoxBackground"/>
+    <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminatePressed" ResourceKey="AJut_Brush_PrimaryHighlight"/>
     <SolidColorBrush x:Key="CheckBoxForegroundIndeterminateDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}"/>
     <SolidColorBrush x:Key="CheckBoxBackgroundIndeterminateDisabled" Color="Transparent"/>
     <SolidColorBrush x:Key="CheckBoxBorderBrushIndeterminateDisabled" Color="Transparent"/>
-    <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminateDisabled" ResourceKey="AJut_Brush_PrimaryHighlightDesat"/>
-    <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminateDisabled" ResourceKey="AJut_Brush_PrimaryHighlightDesat"/>
+    <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminateDisabled" ResourceKey="AJut_Brush_BorderCommon"/>
+    <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminateDisabled" ResourceKey="AJut_Brush_ControlBackgroundDisabled"/>
     <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminateDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}"/>
 
     <!-- ===[ RadioButton ]=== -->
     <StaticResource x:Key="RadioButtonForeground" ResourceKey="AJut_Brush_NormalText"/>
-    <StaticResource x:Key="RadioButtonOuterEllipseStroke" ResourceKey="AJut_Brush_BorderCommon"/>
-    <StaticResource x:Key="RadioButtonOuterEllipseStrokePointerOver" ResourceKey="AJut_Brush_BorderCommonHover"/>
-    <StaticResource x:Key="RadioButtonOuterEllipseCheckedStroke" ResourceKey="AJut_Brush_PrimaryHighlight"/>
-    <StaticResource x:Key="RadioButtonOuterEllipseCheckedFill" ResourceKey="AJut_Brush_PrimaryHighlight"/>
-    <StaticResource x:Key="RadioButtonCheckGlyphFill" ResourceKey="AJut_Brush_ImportantText"/>
-    <!-- Every state. The ring is a text box surface until checked, then the highlight; the dot's outline matches the dot -->
+    <StaticResource x:Key="RadioButtonOuterEllipseStroke" ResourceKey="AJut_Brush_TextBoxBorder"/>
+    <StaticResource x:Key="RadioButtonOuterEllipseStrokePointerOver" ResourceKey="AJut_Brush_PrimaryHighlight"/>
+    <StaticResource x:Key="RadioButtonOuterEllipseCheckedStroke" ResourceKey="AJut_Brush_TextBoxBorder"/>
+    <StaticResource x:Key="RadioButtonOuterEllipseCheckedFill" ResourceKey="AJut_Brush_TextBoxBackground"/>
+    <StaticResource x:Key="RadioButtonCheckGlyphFill" ResourceKey="AJut_Brush_NormalText"/>
+    <!-- Every state. The ring is a text box surface whether it is checked or not, with the dot in the normal text, turning
+         primary under the pointer and pressed; the dot's outline matches the dot -->
     <SolidColorBrush x:Key="RadioButtonBackground" Color="Transparent"/>
     <SolidColorBrush x:Key="RadioButtonBorderBrush" Color="Transparent"/>
     <StaticResource x:Key="RadioButtonOuterEllipseFill" ResourceKey="AJut_Brush_TextBoxBackground"/>
-    <StaticResource x:Key="RadioButtonCheckGlyphStroke" ResourceKey="AJut_Brush_ImportantText"/>
-    <StaticResource x:Key="RadioButtonCheckGlyphStrokeChecked" ResourceKey="AJut_Brush_ImportantText"/>
+    <StaticResource x:Key="RadioButtonCheckGlyphStroke" ResourceKey="AJut_Brush_NormalText"/>
+    <StaticResource x:Key="RadioButtonCheckGlyphStrokeChecked" ResourceKey="AJut_Brush_NormalText"/>
     <SolidColorBrush x:Key="RadioButtonForegroundPointerOver" Color="{ThemeResource AJut_Color_HighlightText}"/>
     <SolidColorBrush x:Key="RadioButtonBackgroundPointerOver" Color="Transparent"/>
     <SolidColorBrush x:Key="RadioButtonBorderBrushPointerOver" Color="Transparent"/>
     <StaticResource x:Key="RadioButtonOuterEllipseFillPointerOver" ResourceKey="AJut_Brush_TextBoxBackground"/>
-    <StaticResource x:Key="RadioButtonOuterEllipseCheckedStrokePointerOver" ResourceKey="AJut_Brush_PrimaryHighlightBright"/>
-    <StaticResource x:Key="RadioButtonOuterEllipseCheckedFillPointerOver" ResourceKey="AJut_Brush_PrimaryHighlightBright"/>
-    <StaticResource x:Key="RadioButtonCheckGlyphFillPointerOver" ResourceKey="AJut_Brush_ImportantText"/>
-    <StaticResource x:Key="RadioButtonCheckGlyphStrokePointerOver" ResourceKey="AJut_Brush_ImportantText"/>
+    <StaticResource x:Key="RadioButtonOuterEllipseCheckedStrokePointerOver" ResourceKey="AJut_Brush_TextBoxBorder"/>
+    <StaticResource x:Key="RadioButtonOuterEllipseCheckedFillPointerOver" ResourceKey="AJut_Brush_TextBoxBackground"/>
+    <StaticResource x:Key="RadioButtonCheckGlyphFillPointerOver" ResourceKey="AJut_Brush_PrimaryHighlight"/>
+    <StaticResource x:Key="RadioButtonCheckGlyphStrokePointerOver" ResourceKey="AJut_Brush_PrimaryHighlight"/>
     <SolidColorBrush x:Key="RadioButtonForegroundPressed" Color="{ThemeResource AJut_Color_ImportantText}"/>
     <SolidColorBrush x:Key="RadioButtonBackgroundPressed" Color="Transparent"/>
     <SolidColorBrush x:Key="RadioButtonBorderBrushPressed" Color="Transparent"/>
     <StaticResource x:Key="RadioButtonOuterEllipseStrokePressed" ResourceKey="AJut_Brush_BorderCommonPress"/>
     <StaticResource x:Key="RadioButtonOuterEllipseFillPressed" ResourceKey="AJut_Brush_ButtonBackgroundPressed"/>
-    <StaticResource x:Key="RadioButtonOuterEllipseCheckedStrokePressed" ResourceKey="AJut_Brush_PrimaryHighlightDark"/>
-    <StaticResource x:Key="RadioButtonOuterEllipseCheckedFillPressed" ResourceKey="AJut_Brush_PrimaryHighlightDark"/>
-    <StaticResource x:Key="RadioButtonCheckGlyphFillPressed" ResourceKey="AJut_Brush_ImportantText"/>
-    <StaticResource x:Key="RadioButtonCheckGlyphStrokePressed" ResourceKey="AJut_Brush_ImportantText"/>
+    <StaticResource x:Key="RadioButtonOuterEllipseCheckedStrokePressed" ResourceKey="AJut_Brush_TextBoxBorder"/>
+    <StaticResource x:Key="RadioButtonOuterEllipseCheckedFillPressed" ResourceKey="AJut_Brush_TextBoxBackground"/>
+    <StaticResource x:Key="RadioButtonCheckGlyphFillPressed" ResourceKey="AJut_Brush_PrimaryHighlight"/>
+    <StaticResource x:Key="RadioButtonCheckGlyphStrokePressed" ResourceKey="AJut_Brush_PrimaryHighlight"/>
     <SolidColorBrush x:Key="RadioButtonForegroundDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}"/>
     <SolidColorBrush x:Key="RadioButtonBackgroundDisabled" Color="Transparent"/>
     <SolidColorBrush x:Key="RadioButtonBorderBrushDisabled" Color="Transparent"/>
     <StaticResource x:Key="RadioButtonOuterEllipseStrokeDisabled" ResourceKey="AJut_Brush_BorderCommon"/>
-    <StaticResource x:Key="RadioButtonOuterEllipseFillDisabled" ResourceKey="AJut_Brush_TextBoxBackground"/>
-    <StaticResource x:Key="RadioButtonOuterEllipseCheckedStrokeDisabled" ResourceKey="AJut_Brush_PrimaryHighlightDesat"/>
-    <StaticResource x:Key="RadioButtonOuterEllipseCheckedFillDisabled" ResourceKey="AJut_Brush_PrimaryHighlightDesat"/>
+    <StaticResource x:Key="RadioButtonOuterEllipseFillDisabled" ResourceKey="AJut_Brush_ControlBackgroundDisabled"/>
+    <StaticResource x:Key="RadioButtonOuterEllipseCheckedStrokeDisabled" ResourceKey="AJut_Brush_BorderCommon"/>
+    <StaticResource x:Key="RadioButtonOuterEllipseCheckedFillDisabled" ResourceKey="AJut_Brush_ControlBackgroundDisabled"/>
     <SolidColorBrush x:Key="RadioButtonCheckGlyphFillDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}"/>
     <SolidColorBrush x:Key="RadioButtonCheckGlyphStrokeDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}"/>
 

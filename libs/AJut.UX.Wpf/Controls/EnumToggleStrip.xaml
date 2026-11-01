@@ -24,6 +24,13 @@
         <Setter Property="BackgroundHoverOverPressed" Value="{Binding RelativeSource={RelativeSource Self}, Path=BackgroundHover}"/>
         <Setter Property="ForegroundPressed" Value="{Binding RelativeSource={RelativeSource Self}, Path=Foreground}"/>
         <Setter Property="ForegroundHover" Value="{Binding RelativeSource={RelativeSource Self}, Path=Foreground}"/>
+        <Setter Property="DisabledBackground" Value="#F0F0F0"/>
+        <Setter Property="DisabledBorderBrush" Value="#D9D9D9"/>
+        <Setter Property="DisabledForeground" Value="#6D6D6D"/>
+        <Setter Property="DisabledSelectedBackground" Value="#C4CFD9"/>
+        <Setter Property="VerticalButtonBackground" Value="#DDDDDD"/>
+        <Setter Property="VerticalButtonForeground" Value="#000000"/>
+        <Setter Property="VerticalButtonBorderBrush" Value="#707070"/>
         <Setter Property="ItemTemplate">
             <Setter.Value>
                 <DataTemplate>
@@ -54,6 +61,13 @@
                                        BackgroundHover="{ajut:TemplateBinding BackgroundHover}"
                                        BackgroundHoverOverPressed="{ajut:TemplateBinding BackgroundHoverOverPressed}"
                                        ForegroundHover="{ajut:TemplateBinding ForegroundHover}"
+                                       DisabledBackground="{ajut:TemplateBinding DisabledBackground}"
+                                       DisabledBorderBrush="{ajut:TemplateBinding DisabledBorderBrush}"
+                                       DisabledForeground="{ajut:TemplateBinding DisabledForeground}"
+                                       DisabledSelectedBackground="{ajut:TemplateBinding DisabledSelectedBackground}"
+                                       VerticalButtonBackground="{ajut:TemplateBinding VerticalButtonBackground}"
+                                       VerticalButtonForeground="{ajut:TemplateBinding VerticalButtonForeground}"
+                                       VerticalButtonBorderBrush="{ajut:TemplateBinding VerticalButtonBorderBrush}"
                                        ItemPadding="{ajut:TemplateBinding ItemPadding}"
                                        ItemTemplate="{ajut:TemplateBinding ItemTemplate}"
                                        ap:BorderXTA.CornerRadius="{ajut:TemplateBinding CornerRadius}"/>

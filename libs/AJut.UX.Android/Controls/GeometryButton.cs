@@ -28,22 +28,22 @@ namespace AJut.UX.Controls
     [Register("ajut.ux.controls.GeometryButton")]
     public class GeometryButton : _ManagedBrushButton
     {
-        // The stock button keys for the fill and text, so a GeometryButton fills like a standard button in each state,
-        // the way WinUI3's GeometryButton does. The trace has keys of its own: it is part of the shape, and the touch
-        // palettes take button borders off, which would leave a shape drawn as a trace alone with nothing to show. The
-        // literals are the unthemed look, the same as BrushButton's.
-        private static readonly ThemedColor kNormalFill = ThemedColor.FromArgb("ButtonBackground", 0xFFF3F3F3, 0xFF2D2D2D);
-        private static readonly ThemedColor kNormalForeground = ThemedColor.FromArgb("ButtonForeground", 0xFF1A1A1A, 0xFFFFFFFF);
-        private static readonly ThemedColor kNormalTrace = ThemedColor.FromArgb(AJutThemeKeys.GeometryButton_Trace, 0xFFC8C8C8, 0xFF3F3F3F);
-        private static readonly ThemedColor kPointerOverFill = ThemedColor.FromArgb("ButtonBackgroundPointerOver", 0xFFE8E8E8, 0xFF363636);
-        private static readonly ThemedColor kPointerOverForeground = ThemedColor.FromArgb("ButtonForegroundPointerOver", 0xFF1A1A1A, 0xFFFFFFFF);
-        private static readonly ThemedColor kPointerOverTrace = ThemedColor.FromArgb(AJutThemeKeys.GeometryButton_TracePointerOver, 0xFFB4B4B4, 0xFF4A4A4A);
-        private static readonly ThemedColor kPressedFill = ThemedColor.FromArgb("ButtonBackgroundPressed", 0xFFDADADA, 0xFF242424);
-        private static readonly ThemedColor kPressedForeground = ThemedColor.FromArgb("ButtonForegroundPressed", 0xFF5C5C5C, 0xFFCFCFCF);
-        private static readonly ThemedColor kPressedTrace = ThemedColor.FromArgb(AJutThemeKeys.GeometryButton_TracePressed, 0xFFC8C8C8, 0xFF3F3F3F);
-        private static readonly ThemedColor kDisabledFill = ThemedColor.FromArgb("ButtonBackgroundDisabled", 0xFFF3F3F3, 0xFF2A2A2A);
-        private static readonly ThemedColor kDisabledForeground = ThemedColor.FromArgb("ButtonForegroundDisabled", 0xFFA0A0A0, 0xFF6E6E6E);
-        private static readonly ThemedColor kDisabledTrace = ThemedColor.FromArgb(AJutThemeKeys.GeometryButton_TraceDisabled, 0xFFE0E0E0, 0xFF333333);
+        // The look is MobileLook.GeometryButton's, which UIKit's GeometryButton draws too: the stock button keys for the
+        // fill and text, so a GeometryButton fills like a standard button in each state, and trace keys of its own, since
+        // the trace is part of the shape and the touch palettes take button borders off. Pressed, the trace goes to the
+        // bright highlight. The literals are the unthemed look, the same as BrushButton's, with a blue pressed trace.
+        private static readonly ThemedColor kNormalFill = ThemedColor.FromArgb(MobileLook.GeometryButton.Fill, 0xFFF3F3F3, 0xFF2D2D2D);
+        private static readonly ThemedColor kNormalForeground = ThemedColor.FromArgb(MobileLook.GeometryButton.Glyph, 0xFF1A1A1A, 0xFFFFFFFF);
+        private static readonly ThemedColor kNormalTrace = ThemedColor.FromArgb(MobileLook.GeometryButton.Trace, 0xFFC8C8C8, 0xFF3F3F3F);
+        private static readonly ThemedColor kPointerOverFill = ThemedColor.FromArgb(MobileLook.GeometryButton.PointerOverFill, 0xFFE8E8E8, 0xFF363636);
+        private static readonly ThemedColor kPointerOverForeground = ThemedColor.FromArgb(MobileLook.GeometryButton.PointerOverGlyph, 0xFF1A1A1A, 0xFFFFFFFF);
+        private static readonly ThemedColor kPointerOverTrace = ThemedColor.FromArgb(MobileLook.GeometryButton.PointerOverTrace, 0xFFB4B4B4, 0xFF4A4A4A);
+        private static readonly ThemedColor kPressedFill = ThemedColor.FromArgb(MobileLook.GeometryButton.PressedFill, 0xFFDADADA, 0xFF242424);
+        private static readonly ThemedColor kPressedForeground = ThemedColor.FromArgb(MobileLook.GeometryButton.PressedGlyph, 0xFF5C5C5C, 0xFFCFCFCF);
+        private static readonly ThemedColor kPressedTrace = ThemedColor.FromArgb(MobileLook.GeometryButton.PressedTrace, 0xFF0078D4, 0xFF4CA3E8);
+        private static readonly ThemedColor kDisabledFill = ThemedColor.FromArgb(MobileLook.GeometryButton.DisabledFill, 0xFFF3F3F3, 0xFF2A2A2A);
+        private static readonly ThemedColor kDisabledForeground = ThemedColor.FromArgb(MobileLook.GeometryButton.DisabledGlyph, 0xFFA0A0A0, 0xFF6E6E6E);
+        private static readonly ThemedColor kDisabledTrace = ThemedColor.FromArgb(MobileLook.GeometryButton.DisabledTrace, 0xFFE0E0E0, 0xFF333333);
 
         private readonly Paint m_fillPaint = new Paint(PaintFlags.AntiAlias);
         private readonly Paint m_tracePaint = new Paint(PaintFlags.AntiAlias);

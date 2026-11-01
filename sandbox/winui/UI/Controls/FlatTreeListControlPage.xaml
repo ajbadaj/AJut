@@ -24,13 +24,6 @@
 
         <!-- WinUI3's default TabView style sets VerticalAlignment Top, so without Stretch the tabs only take the height of their content instead of the page -->
         <TabView Grid.Row="2" VerticalAlignment="Stretch" CanDragTabs="False" CanReorderTabs="False" IsAddTabButtonVisible="False" TabWidthMode="SizeToContent">
-            <TabView.Resources>
-                <ResourceDictionary>
-                    <x:Double x:Key="AJut_Double_TabViewStrokeThickness">1.0</x:Double>
-                    <SolidColorBrush x:Key="TabViewBorderBrush" Color="{ThemeResource AJut_Color_Shadow}"/>
-                </ResourceDictionary>
-            </TabView.Resources>
-
             <!-- Overview -->
             <TabViewItem Header="Overview" IsClosable="False" VerticalContentAlignment="Stretch">
                 <TabViewItem.Content>

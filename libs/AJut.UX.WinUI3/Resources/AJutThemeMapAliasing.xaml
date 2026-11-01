@@ -54,6 +54,9 @@
     <SolidColorBrush x:Key="AJut_PathSelectionControl_WarningIconForeground"         Color="{ThemeResource AJut_Color_NormalText}"/>
     <SolidColorBrush x:Key="AJut_PathSelectionControl_ButtonBorderBrush"             Color="{ThemeResource AJut_Color_ButtonBorder}"/>
     <SolidColorBrush x:Key="AJut_PathSelectionControl_ButtonIconForeground"          Color="{ThemeResource AJut_Color_SymbolForeground}"/>
+    <SolidColorBrush x:Key="AJut_PathSelectionControl_ButtonPointerOverBackground"   Color="{ThemeResource AJut_Color_PrimaryHighlightBright}"/>
+    <SolidColorBrush x:Key="AJut_PathSelectionControl_ButtonPressedBackground"       Color="{ThemeResource AJut_Color_PrimaryHighlight}"/>
+    <SolidColorBrush x:Key="AJut_PathSelectionControl_ButtonHighlightForeground"     Color="{ThemeResource AJut_Color_HighlightText}"/>
     <SolidColorBrush x:Key="AJut_PathSelectionControl_FocusedTextBoxBackgroundBrush" Color="{ThemeResource AJut_Color_TextBoxBackground}"/>
 
     <!-- ===========[ FlatTreeItemRow ]===================================== -->
@@ -96,6 +99,7 @@
     <SolidColorBrush x:Key="AJut_NumericEditor_IncreasePointerOverBackground" Color="{ThemeResource AJut_Color_PrimaryHighlightBright}"/>
     <SolidColorBrush x:Key="AJut_NumericEditor_DecreasePointerOverBackground" Color="{ThemeResource AJut_Color_PrimaryHighlightBright}"/>
     <SolidColorBrush x:Key="AJut_NumericEditor_FocusBorderBrush"              Color="{ThemeResource AJut_Color_PrimaryHighlight}"/>
+    <SolidColorBrush x:Key="AJut_NumericEditor_PointerOverBorderBrush"        Color="{ThemeResource AJut_Color_PrimaryHighlightBright}"/>
     <SolidColorBrush x:Key="AJut_NumericEditor_NormalBorderBrush"             Color="{ThemeResource AJut_Color_BorderCommon}"/>
     <SolidColorBrush x:Key="AJut_NumericEditor_ErrorBrush"                    Color="{ThemeResource AJut_Color_BadStuff}"/>
 
@@ -129,6 +133,9 @@
     <SolidColorBrush x:Key="AJut_DockZone_EmptyBorderBrush"     Color="{ThemeResource AJut_Color_BorderCommon}"/>
     <SolidColorBrush x:Key="AJut_DockZone_EmptyForeground"      Color="{ThemeResource AJut_Color_NormalText}"/>
     <SolidColorBrush x:Key="AJut_DockZone_DragInsertLineBrush"  Color="{ThemeResource AJut_Color_PrimaryHighlight}"/>
+    <!-- A tab dragged to reorder carries the hovered tab's background -->
+    <SolidColorBrush x:Key="AJut_DockZone_DragGhostBackground"  Color="{ThemeResource AJut_Color_InnerPanelBackgroundHover}"/>
+    <SolidColorBrush x:Key="AJut_DockZone_DragGhostBorderBrush" Color="{ThemeResource AJut_Color_BorderCommon}"/>
 
     <!-- ===========[ GeometryButton ]====================================== -->
     <!-- The trace outlines the shape, so it is part of the glyph rather than a button frame. It takes the common
@@ -140,24 +147,20 @@
     <SolidColorBrush x:Key="AJut_GeometryButton_TraceDisabled"    Color="{ThemeResource AJut_Color_BorderCommon}"/>
 
     <!-- ===========[ ToggleStripButton ]==================================== -->
-    <!-- Unchecked hover/press: map to AJut highlight colors -->
-    <SolidColorBrush x:Key="AJut_ToggleStripButton_PointerOverBackground" Color="{ThemeResource AJut_Color_PrimaryHighlightBright}"/>
+    <!-- A selected item is pushed in under a shade along its top and tinted with the primary highlight below it, and keeps
+         the strip's text. Hover and press, selected or not, are the primary highlight's solid fills, with the light text
+         that sits on them (ToggleStripButton applies HighlightForeground in those states). -->
+    <SolidColorBrush x:Key="AJut_ToggleStripButton_PointerOverBackground" Color="{ThemeResource AJut_Color_PrimaryHighlight}"/>
     <SolidColorBrush x:Key="AJut_ToggleStripButton_PressedBackground"     Color="{ThemeResource AJut_Color_PrimaryHighlightDark}"/>
-    <!-- Checked: AJut cool-dark gradients with teal tint (#1090A0) to distinguish active state -->
     <LinearGradientBrush x:Key="AJut_ToggleStripButton_CheckedBackground" StartPoint="0,0" EndPoint="0,1">
         <GradientStop Offset="0.00" Color="#CC000000"/>
-        <GradientStop Offset="0.20" Color="#801090A0"/>
-        <GradientStop Offset="1.00" Color="#331090A0"/>
+        <GradientStop Offset="0.20" Color="{ThemeResource AJut_Color_PrimaryHighlightTint}"/>
+        <GradientStop Offset="1.00" Color="{ThemeResource AJut_Color_PrimaryHighlightTint}"/>
     </LinearGradientBrush>
-    <LinearGradientBrush x:Key="AJut_ToggleStripButton_CheckedPointerOverBackground" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Offset="0.00" Color="#CC000000"/>
-        <GradientStop Offset="0.20" Color="#991090A0"/>
-        <GradientStop Offset="1.00" Color="#551090A0"/>
-    </LinearGradientBrush>
-    <LinearGradientBrush x:Key="AJut_ToggleStripButton_CheckedPressedBackground" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Offset="0.00" Color="#EE000000"/>
-        <GradientStop Offset="0.20" Color="#AA1090A0"/>
-        <GradientStop Offset="1.00" Color="#661090A0"/>
-    </LinearGradientBrush>
+    <SolidColorBrush x:Key="AJut_ToggleStripButton_CheckedPointerOverBackground" Color="{ThemeResource AJut_Color_PrimaryHighlight}"/>
+    <SolidColorBrush x:Key="AJut_ToggleStripButton_CheckedPressedBackground"     Color="{ThemeResource AJut_Color_PrimaryHighlightDark}"/>
+    <!-- Disabled, the selection stays but muted: a faded, desaturated primary -->
+    <SolidColorBrush x:Key="AJut_ToggleStripButton_CheckedDisabledBackground"    Color="{ThemeResource AJut_Color_PrimaryHighlightDesat}" Opacity="0.55"/>
+    <SolidColorBrush x:Key="AJut_ToggleStripButton_HighlightForeground"          Color="{ThemeResource AJut_Color_HighContrastText}"/>
 
 </ResourceDictionary>

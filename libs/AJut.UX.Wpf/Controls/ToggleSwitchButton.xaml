@@ -51,7 +51,8 @@
                                           VerticalAlignment="{ajut:TemplateBinding VerticalContentAlignment}"
                                           TextElement.Foreground="{ajut:TemplateBinding ContentForeground}"
                                           Margin="{ajut:TemplateBinding ContentPadding}"/>
-                        <Border Background="{ajut:TemplateBinding Background}"
+                        <Border x:Name="Track"
+                                Background="{ajut:TemplateBinding Background}"
                                 BorderBrush="{ajut:TemplateBinding BorderBrush}"
                                 BorderThickness="{ajut:TemplateBinding BorderThickness}"
                                 CornerRadius="{ajut:TemplateBinding BorderCornerRadius}">
@@ -131,9 +132,19 @@
                             <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource Self}, Path=ForegroundWhenTrue}"/>
                             <Setter Property="TextElement.Foreground" Value="{Binding RelativeSource={RelativeSource Self}, Path=ForegroundWhenTrue}"/>
                         </Trigger>
+                        <!-- Disabled, the switch fades, its track, labels and knob together, off or on, as WinUI3's does -->
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Track" Property="Opacity" Value="0.45"/>
+                        </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+        <Style.Triggers>
+            <!-- Disabled, the text goes gray, as a stock disabled control's does -->
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="ContentForeground" Value="#6D6D6D"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
 </ResourceDictionary>

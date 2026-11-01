@@ -7,6 +7,7 @@ namespace AJut.UX.Controls
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
     using Microsoft.UI.Xaml.Markup;
+    using Microsoft.UI.Xaml.Media;
 
     using DPUtils = AJut.UX.DPUtils<EnumToggleStrip>;
 
@@ -113,6 +114,30 @@ namespace AJut.UX.Controls
             {
                 this.PART_ToggleStrip.Orientation = this.Orientation;
             }
+        }
+
+        /// <summary>The inner <see cref="ToggleStrip"/>'s <see cref="ToggleStrip.DisabledBackground"/>: its surface while disabled.</summary>
+        public static readonly DependencyProperty DisabledBackgroundProperty = DPUtils.Register(_ => _.DisabledBackground);
+        public Brush DisabledBackground
+        {
+            get => (Brush)this.GetValue(DisabledBackgroundProperty);
+            set => this.SetValue(DisabledBackgroundProperty, value);
+        }
+
+        /// <summary>The inner <see cref="ToggleStrip"/>'s <see cref="ToggleStrip.DisabledBorderBrush"/>: its outline while disabled.</summary>
+        public static readonly DependencyProperty DisabledBorderBrushProperty = DPUtils.Register(_ => _.DisabledBorderBrush);
+        public Brush DisabledBorderBrush
+        {
+            get => (Brush)this.GetValue(DisabledBorderBrushProperty);
+            set => this.SetValue(DisabledBorderBrushProperty, value);
+        }
+
+        /// <summary>The inner <see cref="ToggleStrip"/>'s <see cref="ToggleStrip.DisabledForeground"/>: every option's text while disabled.</summary>
+        public static readonly DependencyProperty DisabledForegroundProperty = DPUtils.Register(_ => _.DisabledForeground);
+        public Brush DisabledForeground
+        {
+            get => (Brush)this.GetValue(DisabledForegroundProperty);
+            set => this.SetValue(DisabledForegroundProperty, value);
         }
 
         // ===========[ Properties ]===============================================

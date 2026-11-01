@@ -151,6 +151,17 @@ namespace AJut.UX.Controls
             set => m_strip.Orientation = value;
         }
 
+        /// <summary>Whether the values take touches; passed on to the inner strip, which a UIControl's own Enabled does not reach.</summary>
+        public override bool Enabled
+        {
+            get => base.Enabled;
+            set
+            {
+                base.Enabled = value;
+                m_strip.Enabled = value;
+            }
+        }
+
         /// <summary>The inner strip, for its look; drive the selection through SelectedItem rather than through it.</summary>
         public ToggleStrip Strip => m_strip;
 

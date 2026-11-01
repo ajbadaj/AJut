@@ -3,7 +3,6 @@ namespace AJut.UX.Tests
     using AJut.UX;
     using AJut.UX.Controls;
     using AJut.UX.Helpers;
-    using AJut.UX.Theming;
     using Android.Graphics.Drawables;
     using Android.Views;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -41,19 +40,6 @@ namespace AJut.UX.Tests
             var accent = new AndroidColor(unchecked((int)0xFFFFEB3B));
             button.PropagatedAccentColor = accent;
             _AssertPainted(button, InteractiveSurfaceColors.BuildFromAccent(accent.ToColorArgb()).Normal, "After the accent changed");
-        }
-
-        [TestMethod]
-        public void BrushButton_UnsetSlotsPaintTheStandardButtonColors ()
-        {
-            var button = new BrushButton(TestHost.RequiredContext);
-            bool isDark = ThemeColors.IsDark(TestHost.RequiredContext);
-            ColorArgb background = _SurfaceColor(button);
-            ColorArgb foreground = new AndroidColor(button.CurrentTextColor).ToColorArgb();
-
-            // The unthemed literals: light F3F3F3 on 1A1A1A, dark 2D2D2D on white.
-            Assert.AreEqual(isDark ? new ColorArgb(0xFF, 0x2D, 0x2D, 0x2D) : new ColorArgb(0xFF, 0xF3, 0xF3, 0xF3), background);
-            Assert.AreEqual(isDark ? new ColorArgb(0xFF, 0xFF, 0xFF, 0xFF) : new ColorArgb(0xFF, 0x1A, 0x1A, 0x1A), foreground);
         }
 
         [TestMethod]

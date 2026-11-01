@@ -103,14 +103,18 @@ namespace AJut.UX.Theming
 
         // ===========[ ToggleStrip ]===========================================
         // The button backgrounds are shared keys (WinUI3's AJutThemeMapAliasing has them, and the
-        // checked ones are gradients). The strip's own background and border, and the name colors,
-        // are AppKit only: WinUI3 sets those through style setters rather than keys.
+        // resting checked one is a gradient), and so is the name's color over the pointer-over and
+        // pressed fills. The strip's own background and border, and the other name colors, are AppKit
+        // only: WinUI3 sets those through style setters rather than keys.
 
         public const string ToggleStripButton_PointerOverBackground = "AJut_ToggleStripButton_PointerOverBackground";
         public const string ToggleStripButton_PressedBackground = "AJut_ToggleStripButton_PressedBackground";
         public const string ToggleStripButton_CheckedBackground = "AJut_ToggleStripButton_CheckedBackground";
         public const string ToggleStripButton_CheckedPointerOverBackground = "AJut_ToggleStripButton_CheckedPointerOverBackground";
         public const string ToggleStripButton_CheckedPressedBackground = "AJut_ToggleStripButton_CheckedPressedBackground";
+
+        /// <summary>An item's name over the pointer-over and pressed fills. Shared with WinUI3.</summary>
+        public const string ToggleStripButton_HighlightForeground = "AJut_ToggleStripButton_HighlightForeground";
 
         /// <summary>An item's name while it is not selected. AppKit only.</summary>
         public const string ToggleStripButton_Foreground = "AJut_ToggleStripButton_Foreground";
@@ -123,6 +127,12 @@ namespace AJut.UX.Theming
 
         /// <summary>The strip's outline and the separators between items. AppKit only.</summary>
         public const string ToggleStrip_Border = "AJut_ToggleStrip_Border";
+
+        /// <summary>The strip's background while it is disabled: the flat fill a disabled ComboBox takes, as on every stack. AppKit only.</summary>
+        public const string ToggleStrip_DisabledBackground = "AJut_ToggleStrip_DisabledBackground";
+
+        /// <summary>The strip's outline and the separators between items while it is disabled: a disabled ComboBox's border. AppKit only.</summary>
+        public const string ToggleStrip_DisabledBorder = "AJut_ToggleStrip_DisabledBorder";
 
         /// <summary>The dots just outside a Scroll strip's ends that show it scrolls further that way. AppKit and UIKit only.</summary>
         public const string ToggleStrip_ScrollIndicator = "AJut_ToggleStrip_ScrollIndicator";
@@ -316,12 +326,15 @@ namespace AJut.UX.Theming
             ThemedColors.SetUnthemedDefault(ToggleStripButton_CheckedBackground, NSColor.ControlAccent);
             ThemedColors.SetUnthemedDefault(ToggleStripButton_CheckedPointerOverBackground, NSColor.ControlAccent);
             ThemedColors.SetUnthemedDefault(ToggleStripButton_CheckedPressedBackground, NSColor.ControlAccent);
+            ThemedColors.SetUnthemedDefault(ToggleStripButton_HighlightForeground, NSColor.ControlText);
 
             // 7. ToggleStrip, AppKit only
             RegisterAppKitOnly(ToggleStripButton_Foreground, NSColor.ControlText, "AJut_Brush_NormalText");
             RegisterAppKitOnly(ToggleStripButton_CheckedForeground, NSColor.AlternateSelectedControlText, "AJut_Brush_NormalText");
             RegisterAppKitOnly(ToggleStrip_Background, NSColor.Control, "AJut_Brush_PopOutControlBackground");
             RegisterAppKitOnly(ToggleStrip_Border, NSColor.Separator, "AJut_Brush_BorderCommon");
+            RegisterAppKitOnly(ToggleStrip_DisabledBackground, NSColor.Control, MobileLook.ToggleStrip.StripDisabledSurface);
+            RegisterAppKitOnly(ToggleStrip_DisabledBorder, NSColor.Separator, MobileLook.ToggleStrip.StripDisabledBorder);
             RegisterAppKitOnly(ToggleStrip_ScrollIndicator, NSColor.SecondaryLabel, "AJut_Brush_SymbolForeground");
 
             // 8. NumericEditor, shared keys

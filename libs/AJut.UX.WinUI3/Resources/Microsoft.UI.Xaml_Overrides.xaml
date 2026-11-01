@@ -4,7 +4,9 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:primitives="using:Microsoft.UI.Xaml.Controls.Primitives">
 
-    <x:Double x:Key="AJut_Double_TabViewStrokeThickness">0.0</x:Double>
+    <!-- A TabView is framed, as WPF's themed TabControl is: the line under the tab strip, and the body's left, right and
+         bottom edges, all on TabViewBorderBrush -->
+    <x:Double x:Key="AJut_Double_TabViewStrokeThickness">1.0</x:Double>
 
     <Style x:Key="TabScrollViewerStyle" TargetType="ScrollViewer">
         <Setter Property="Template">
@@ -213,6 +215,8 @@
         <Setter Property="Padding" Value="{ThemeResource TabViewHeaderPadding}" />
         <Setter Property="IsTabStop" Value="False" />
         <Setter Property="Background" Value="{ThemeResource TabViewItemHeaderBackgroundSelected}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource TabViewBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1,0,1,1" />
         <Setter Property="KeyboardAcceleratorPlacementMode" Value="Hidden" />
         <Setter Property="Template">
             <Setter.Value>
@@ -431,6 +435,10 @@
         <Setter Property="UseSystemFocusVisuals" Value="{StaticResource UseSystemFocusVisuals}" />
         <Setter Property="MinHeight" Value="{ThemeResource TabViewItemMinHeight}" />
         <Setter Property="CornerRadius" Value="{ThemeResource OverlayCornerRadius}" />
+        <!-- An unselected tab is outlined on TabViewItemBorderBrush, as WPF's themed TabItem is. Its bottom edge lands on
+             BottomBorderLine, which its opaque background would otherwise cover, so the tabs stay apart from the body. Each
+             tab reaches 1px under the next so neighbors share one line rather than drawing two side by side. -->
+        <Setter Property="Margin" Value="0,0,-1,0" />
         <Setter Property="BorderThickness" Value="{ThemeResource TabViewItemBorderThickness}" />
         <Setter Property="BorderBrush" Value="{ThemeResource TabViewItemBorderBrush}" />
         <Setter Property="Template">
@@ -476,6 +484,8 @@
                                     </VisualState.Setters>
                                 </VisualState>
 
+                                <!-- In every selected state SelectedBackgroundPath draws the tab, under TabContainer, so the
+                                     container stays clear there; the unselected header background is opaque in the AJut theme -->
                                 <VisualState x:Name="Selected">
                                     <VisualState.Setters>
                                         <Setter Target="BottomBorderLine.Visibility" Value="Collapsed" />
@@ -483,7 +493,7 @@
                                         <Setter Target="LeftRadiusRenderArc.Visibility" Value="Collapsed" />
                                         <Setter Target="SelectedBackgroundPath.Visibility" Value="Visible" />
                                         <Setter Target="SelectedBackgroundPath.Fill" Value="{ThemeResource TabViewItemHeaderBackgroundSelected}" />
-                                        <Setter Target="TabContainer.Background" Value="{ThemeResource TabViewItemHeaderBackground}" />
+                                        <Setter Target="TabContainer.Background" Value="Transparent" />
                                         <Setter Target="TabContainer.Margin" Value="{ThemeResource TabViewSelectedItemHeaderMargin}" />
                                         <Setter Target="TabContainer.BorderBrush" Value="{ThemeResource TabViewSelectedItemBorderBrush}" />
                                         <Setter Target="TabContainer.BorderThickness" Value="{ThemeResource TabViewSelectedItemBorderThickness}" />
@@ -505,7 +515,7 @@
                                         <Setter Target="LeftRadiusRenderArc.Visibility" Value="Visible" />
                                         <Setter Target="SelectedBackgroundPath.Visibility" Value="Visible" />
                                         <Setter Target="SelectedBackgroundPath.Fill" Value="{ThemeResource TabViewItemHeaderBackgroundSelected}" />
-                                        <Setter Target="TabContainer.Background" Value="{ThemeResource TabViewItemHeaderBackground}" />
+                                        <Setter Target="TabContainer.Background" Value="Transparent" />
                                         <Setter Target="TabContainer.Margin" Value="{ThemeResource TabViewSelectedItemHeaderMargin}" />
                                         <Setter Target="TabContainer.BorderBrush" Value="{ThemeResource TabViewSelectedItemBorderBrush}" />
                                         <Setter Target="TabContainer.BorderThickness" Value="{ThemeResource TabViewSelectedItemBorderThickness}" />
@@ -527,7 +537,7 @@
                                         <Setter Target="LeftRadiusRenderArc.Visibility" Value="Visible" />
                                         <Setter Target="SelectedBackgroundPath.Visibility" Value="Visible" />
                                         <Setter Target="SelectedBackgroundPath.Fill" Value="{ThemeResource TabViewItemHeaderBackgroundSelected}" />
-                                        <Setter Target="TabContainer.Background" Value="{ThemeResource TabViewItemHeaderBackground}" />
+                                        <Setter Target="TabContainer.Background" Value="Transparent" />
                                         <Setter Target="TabContainer.Margin" Value="{ThemeResource TabViewSelectedItemHeaderMargin}" />
                                         <Setter Target="TabContainer.BorderBrush" Value="{ThemeResource TabViewSelectedItemBorderBrush}" />
                                         <Setter Target="TabContainer.BorderThickness" Value="{ThemeResource TabViewSelectedItemBorderThickness}" />

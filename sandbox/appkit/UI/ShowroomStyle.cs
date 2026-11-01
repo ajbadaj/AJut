@@ -8,6 +8,7 @@ namespace AJutShowRoomAppKit.UI
     public static class ShowroomStyle
     {
         public const string PageBackground = "Showroom_PageBackground";
+        public const string ShellBackground = "Showroom_ShellBackground";
         public const string SidebarBackground = "Showroom_SidebarBackground";
         public const string CodeBackground = "Showroom_CodeBackground";
         public const string Divider = "Showroom_Divider";
@@ -26,8 +27,13 @@ namespace AJutShowRoomAppKit.UI
             }
 
             g_isRegistered = true;
-            Register(PageBackground, NSColor.WindowBackground, "AJut_Brush_RootPanelBackground");
-            Register(SidebarBackground, NSColor.UnderPageBackground, "AJut_Brush_PanelBackground");
+
+            // The surfaces step one level at a time from the title bar, as the WinUI3 showroom's do: the shell (the
+            // theme bar, and the area list under it) on the drawer color, an area's own page list and the panes a page
+            // sets back from itself on the navigation level, and the pages on the panel color, where the controls sit
+            Register(PageBackground, NSColor.WindowBackground, "AJut_Brush_PanelBackground");
+            Register(ShellBackground, NSColor.UnderPageBackground, "AJut_Brush_DrawerBackground");
+            Register(SidebarBackground, NSColor.UnderPageBackground, "AJut_Brush_NavigationPanelBackground");
             Register(CodeBackground, NSColor.TextBackground, "AJut_Brush_InnerPanelBackground");
             Register(Divider, NSColor.Separator, "AJut_Brush_BorderCommon");
             Register(HeaderText, NSColor.Label, "AJut_Brush_ImportantText");

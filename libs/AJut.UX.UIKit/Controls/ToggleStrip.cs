@@ -35,13 +35,41 @@ namespace AJut.UX.Controls
     // with a dot just outside each end it can still scroll toward), or OverflowPopup (the items that do not fit move into
     // a menu on a "more" button that takes the rest of the strip, its chevron at the trailing end, the right or the foot,
     // laid out by AJut.UX's ToggleStripOverflowCalculator, which keeps selected items in the strip where it can).
+    //
+    // Enabled reaches every button, which a UIControl's own Enabled does not: disabled, the strip takes a disabled
+    // ComboBox's flat fill and border, the buttons take no touches and their text dims, while their fills stay so the
+    // selection still shows.
 
     public class ToggleStrip : UIControl, IToggleStripHost
     {
         /// <summary>The least the overflow button takes along the strip, and what the overflow split saves for it.</summary>
         private const float kOverflowLength = 36f;
 
+        // The look is MobileLook.ToggleStrip's, which Android's ToggleStrip draws too: the keys, sizes and which key each
+        // state takes come from there, and only the unthemed defaults are UIKit's own. With the AJut theme loaded the
+        // strip is on the pop-out surface and its buttons are clear over it; unthemed the surface stays off and each
+        // button keeps the system toggle background, so the strip sits among stock UIKit controls.
+        private static readonly ThemedGradient kSurface = new ThemedGradient(
+            MobileLook.ToggleStrip.StripSurface,
+            new[] { ThemedGradient.Stop(0.0, 0xFFFDFDFD), ThemedGradient.Stop(1.0, 0xFFFDFDFD) },
+            new[] { ThemedGradient.Stop(0.0, 0xFF2B2B2B), ThemedGradient.Stop(1.0, 0xFF2B2B2B) }
+        );
+
+        // Disabled, the flat fill a disabled ComboBox takes. Unthemed the surface is off, so these only stand in.
+        private static readonly ThemedGradient kDisabledSurface = new ThemedGradient(
+            MobileLook.ToggleStrip.StripDisabledSurface,
+            new[] { ThemedGradient.Stop(0.0, 0xFFFDFDFD), ThemedGradient.Stop(1.0, 0xFFFDFDFD) },
+            new[] { ThemedGradient.Stop(0.0, 0xFF2B2B2B), ThemedGradient.Stop(1.0, 0xFF2B2B2B) }
+        );
+
         // ===========[ Instance Fields ]===================================
+        private readonly CAGradientLayer m_surface = new CAGradientLayer
+        {
+            StartPoint = new CGPoint(0.5, 0.0),
+            EndPoint = new CGPoint(0.5, 1.0),
+            ZPosition = -1,
+            MasksToBounds = true,
+        };
         private readonly UIScrollView m_scroller = new UIScrollView
         {
             ShowsHorizontalScrollIndicator = false,
@@ -75,11 +103,16 @@ namespace AJut.UX.Controls
         private bool m_allowNoSelection;
         private string m_displayPropertyPath;
         private Func<object, string> m_itemNameSelector;
-        private nfloat m_separatorThickness = 1f;
-        private NSDirectionalEdgeInsets m_itemPadding = new NSDirectionalEdgeInsets(6, 12, 6, 12);
+        private nfloat m_separatorThickness = MobileLook.ToggleStrip.SeparatorThickness;
+        private NSDirectionalEdgeInsets m_itemPadding = new NSDirectionalEdgeInsets(
+            MobileLook.ToggleStrip.ItemPaddingVertical,
+            MobileLook.ToggleStrip.ItemPaddingHorizontal,
+            MobileLook.ToggleStrip.ItemPaddingVertical,
+            MobileLook.ToggleStrip.ItemPaddingHorizontal
+        );
         private bool m_ensureUniformSize;
         private eToggleStripOverflow m_overflowBehavior = eToggleStripOverflow.Clip;
-        private nfloat m_cornerRadius = 6f;
+        private nfloat m_cornerRadius = MobileLook.ToggleStrip.CornerRadius;
         private bool m_isApplyingFromCode;
         private nfloat m_lastOverflowLength = -1f;
 
@@ -99,13 +132,15 @@ namespace AJut.UX.Controls
 
         private void Setup ()
         {
-            const float kBorderWidth = 1f;
-
             // The strip doesn't clip, so a Scroll strip's dots can sit just outside its ends. The stack holding the
-            // buttons clips them to the rounded border instead, and the border is drawn over them.
+            // buttons clips them to the rounded border instead, and the border is drawn over them. The surface clips
+            // itself to the same rounding, and sits under everything (a negative zPosition).
             this.ClipsToBounds = false;
-            this.Layer.BorderWidth = kBorderWidth;
+            this.Layer.BorderWidth = MobileLook.ToggleStrip.BorderThickness;
             this.Layer.CornerRadius = m_cornerRadius;
+            m_surface.CornerRadius = m_cornerRadius;
+            m_surface.Hidden = !ThemedColors.IsThemeLoaded;
+            this.Layer.InsertSublayer(m_surface, 0);
             m_outer.ClipsToBounds = true;
             m_outer.Layer.CornerRadius = m_cornerRadius;
 
@@ -116,7 +151,7 @@ namespace AJut.UX.Controls
 
             // The dots are in front of everything and take no touches, and take no layout space either: they are placed
             // by hand, past the strip's bounds, so the strip doesn't move as they come and go
-            UIColor indicatorColor = ThemedColors.Get(ThemedColorKeys.ToggleStrip_ScrollIndicator);
+            UIColor indicatorColor = ThemedColors.Get(MobileLook.ToggleStrip.ScrollIndicator);
             foreach (UIView indicator in new[] { m_scrollBackIndicator, m_scrollForwardIndicator })
             {
                 indicator.BackgroundColor = indicatorColor;
@@ -391,12 +426,38 @@ namespace AJut.UX.Controls
             {
                 m_cornerRadius = value;
                 this.Layer.CornerRadius = value;
+                m_surface.CornerRadius = value;
                 m_outer.Layer.CornerRadius = value;
                 this.ApplyItemEdges();
             }
         }
 
         public bool HasItems => this.Items.Count > 0;
+
+        /// <summary>
+        /// Whether the strip takes touches. Disabled, it looks like a disabled ComboBox: the flat disabled fill and its
+        /// border. Its buttons and its overflow button are disabled with it, and their text dims while their fills stay,
+        /// so the selection still shows.
+        /// </summary>
+        public override bool Enabled
+        {
+            get => base.Enabled;
+            set
+            {
+                // A UIControl's Enabled does not reach its subviews, so the buttons are set here, and RebuildButtons makes
+                // new ones to match. The surface, the outline and the separators are worked out in layout, so each is
+                // laid out again.
+                base.Enabled = value;
+                foreach (ToggleStripButton button in m_buttons)
+                {
+                    button.Enabled = value;
+                    button.SetNeedsLayout();
+                }
+
+                m_overflowButton.Enabled = value;
+                this.SetNeedsLayout();
+            }
+        }
 
         private bool IsVertical => m_orientation == UILayoutConstraintAxis.Vertical;
 
@@ -407,7 +468,24 @@ namespace AJut.UX.Controls
 
             // A layer border is a CGColor, which freezes a dynamic color, so it is resolved here: UIKit calls
             // LayoutSubviews again whenever the appearance (light/dark) changes.
-            this.Layer.BorderColor = ThemedColors.Get(ThemedColorKeys.Brush_BorderCommon).GetResolvedColor(this.TraitCollection).CGColor;
+            this.Layer.BorderColor = ThemedColors.Get(MobileLook.ToggleStrip.StripBorderFor(this.Enabled)).GetResolvedColor(this.TraitCollection).CGColor;
+
+            // The surface's colors are CGColors as well, so they are worked out here for the same reason
+            IReadOnlyList<AJutGradientStop> stops = (this.Enabled ? kSurface : kDisabledSurface).Resolve(this.TraitCollection.UserInterfaceStyle);
+            var colors = new CGColor[stops.Count];
+            var locations = new Foundation.NSNumber[stops.Count];
+            for (int index = 0; index < stops.Count; ++index)
+            {
+                colors[index] = stops[index].Color.ToUIColor().CGColor;
+                locations[index] = new Foundation.NSNumber(stops[index].Offset);
+            }
+
+            CATransaction.Begin();
+            CATransaction.DisableActions = true;
+            m_surface.Frame = this.Bounds;
+            m_surface.Colors = colors;
+            m_surface.Locations = locations;
+            CATransaction.Commit();
 
             nfloat length = this.IsVertical ? this.Bounds.Height : this.Bounds.Width;
             if ((m_overflowBehavior == eToggleStripOverflow.OverflowPopup) && (length != m_lastOverflowLength))
@@ -484,7 +562,7 @@ namespace AJut.UX.Controls
             m_buttons.Clear();
             foreach (ToggleStripItem item in this.Items)
             {
-                var button = new ToggleStripButton(item, m_itemPadding);
+                var button = new ToggleStripButton(item, m_itemPadding) { Enabled = this.Enabled };
                 m_buttons.Add(button);
                 m_row.AddArrangedSubview(button);
             }
@@ -656,15 +734,36 @@ namespace AJut.UX.Controls
         }
 
         // The face every button in the strip shares, the toggle buttons and the overflow button alike, so the strip reads
-        // as one piece out to its edge. It paints the way WinUI3's ToggleStripButton does: an opaque base, the toggle
-        // button background, with an overlay for the state on top. The overlay is nothing at rest and a faint wash for
-        // pointer over or pressed, unless the button picks another (a checked toggle button's gradient). It is a
-        // CAGradientLayer under the content, as WinUI3 draws its state backgrounds under the ContentPresenter.
+        // as one piece out to its edge. It paints the way WinUI3's ToggleStripButton does: a base, with an overlay for the
+        // state on top. With the AJut theme the base is clear, so the strip's pop-out surface shows through; unthemed it is
+        // the system toggle background. The overlay is the one MobileLook.ToggleStrip.ItemFill picks for the state:
+        // nothing at rest, the primary highlight's fills pointer over or pressed, a selected button's checked gradients.
+        // It is a CAGradientLayer under the content, as WinUI3 draws its state backgrounds under the ContentPresenter.
         private abstract class StripFaceButton : UIButton
         {
-            // The WinUI3 unthemed defaults (AJutCustomControlStylingDefaults.xaml); the AJut theme supplies its own
-            protected static readonly ThemedGradient kPointerOverBackground = Uniform(AJutThemeKeys.ToggleStripButton_PointerOverBackground, 0x20FFFFFF, 0x20FFFFFF);
-            protected static readonly ThemedGradient kPressedBackground = Uniform(AJutThemeKeys.ToggleStripButton_PressedBackground, 0x40000000, 0x40000000);
+            // Every overlay a button can take, by the key MobileLook.ToggleStrip.ItemFill picks for its state. The unthemed
+            // ones are WinUI3's defaults (AJutCustomControlStylingDefaults.xaml), with the light set of each checked
+            // gradient lightened, the same as the Android strip, so dark text stays readable on a light background.
+            private static readonly Dictionary<string, ThemedGradient> kOverlays = new Dictionary<string, ThemedGradient>
+            {
+                [MobileLook.ToggleStrip.ItemPointerOverFill] = Uniform(MobileLook.ToggleStrip.ItemPointerOverFill, 0x20FFFFFF, 0x20FFFFFF),
+                [MobileLook.ToggleStrip.ItemPressedFill] = Uniform(MobileLook.ToggleStrip.ItemPressedFill, 0x40000000, 0x40000000),
+                [MobileLook.ToggleStrip.ItemSelectedFill] = new ThemedGradient(
+                    MobileLook.ToggleStrip.ItemSelectedFill,
+                    new[] { ThemedGradient.Stop(0.0, 0x59000000), ThemedGradient.Stop(0.2, 0x38000000), ThemedGradient.Stop(1.0, 0x1A000000) },
+                    new[] { ThemedGradient.Stop(0.0, 0xCC000000), ThemedGradient.Stop(0.2, 0x80000000), ThemedGradient.Stop(1.0, 0x33000000) }
+                ),
+                [MobileLook.ToggleStrip.ItemSelectedPointerOverFill] = new ThemedGradient(
+                    MobileLook.ToggleStrip.ItemSelectedPointerOverFill,
+                    new[] { ThemedGradient.Stop(0.0, 0x59000000), ThemedGradient.Stop(0.2, 0x43000000), ThemedGradient.Stop(1.0, 0x26000000) },
+                    new[] { ThemedGradient.Stop(0.0, 0xCC000000), ThemedGradient.Stop(0.2, 0x99000000), ThemedGradient.Stop(1.0, 0x55000000) }
+                ),
+                [MobileLook.ToggleStrip.ItemSelectedPressedFill] = new ThemedGradient(
+                    MobileLook.ToggleStrip.ItemSelectedPressedFill,
+                    new[] { ThemedGradient.Stop(0.0, 0x73000000), ThemedGradient.Stop(0.2, 0x4D000000), ThemedGradient.Stop(1.0, 0x2E000000) },
+                    new[] { ThemedGradient.Stop(0.0, 0xEE000000), ThemedGradient.Stop(0.2, 0xAA000000), ThemedGradient.Stop(1.0, 0x66000000) }
+                ),
+            };
 
             private readonly CAGradientLayer m_overlay = new CAGradientLayer
             {
@@ -675,7 +774,7 @@ namespace AJut.UX.Controls
             protected StripFaceButton () : base(CGRect.Empty)
             {
                 this.ClipsToBounds = true;
-                this.BackgroundColor = ThemedColors.Get(ThemedColorKeys.ToggleButtonBackground);
+                this.BackgroundColor = ThemedColors.IsThemeLoaded ? UIColor.Clear : ThemedColors.Get(ThemedColorKeys.ToggleButtonBackground);
 
                 // Index 0 alone does not keep the overlay under the content: a configuration based button adds its
                 // content view (the title or image) later, at index 0 too. A negative zPosition draws the overlay behind
@@ -689,13 +788,14 @@ namespace AJut.UX.Controls
                 // The configuration only carries the content and its color; the background is the button's own color
                 // plus the overlay layer, which LayoutSubviews paints for the state. base.UpdateConfiguration is skipped
                 // so the system does not add its own highlight on top. The foreground stays the same checked or not, as
-                // on WinUI3, since the checked overlay darkens rather than replaces the background.
+                // on WinUI3, since the checked overlay darkens rather than replaces the background; over the pressed and
+                // pointer-over fills it is the highlight text that reads on them, and disabled it is the disabled text.
                 UIButtonConfiguration configuration = this.Configuration ?? UIButtonConfiguration.PlainButtonConfiguration;
                 UIBackgroundConfiguration background = configuration.Background;
                 background.CornerRadius = 0;
                 background.BackgroundColor = UIColor.Clear;
                 configuration.Background = background;
-                configuration.BaseForegroundColor = ThemedColors.Get(this.Enabled ? ThemedColorKeys.ToggleButtonForeground : ThemedColorKeys.ToggleButtonForegroundDisabled);
+                configuration.BaseForegroundColor = ThemedColors.Get(MobileLook.ToggleStrip.ItemTextFor(this.Enabled, this.Highlighted, this.Hovered));
                 this.UpdateContent(configuration);
                 this.Configuration = configuration;
                 this.SetNeedsLayout();
@@ -730,15 +830,14 @@ namespace AJut.UX.Controls
                 CATransaction.Commit();
             }
 
-            /// <summary>The overlay for the button's state, or null for none.</summary>
-            protected virtual ThemedGradient PickOverlay ()
-            {
-                if (this.Highlighted)
-                {
-                    return kPressedBackground;
-                }
+            /// <summary>Whether the button shows as selected; only a toggle button can be.</summary>
+            protected virtual bool IsSelectedForLook => false;
 
-                return this.Hovered ? kPointerOverBackground : null;
+            /// <summary>The overlay for the button's state, as MobileLook picks it, or null for none.</summary>
+            private ThemedGradient PickOverlay ()
+            {
+                string key = MobileLook.ToggleStrip.ItemFill(this.IsSelectedForLook, this.Highlighted, this.Hovered);
+                return (key != null) ? kOverlays[key] : null;
             }
 
             /// <summary>Puts the button's own content into the configuration it is about to take; nothing by default.</summary>
@@ -766,25 +865,6 @@ namespace AJut.UX.Controls
         // the separators between buttons as lines over its edges.
         private sealed class ToggleStripButton : StripFaceButton
         {
-            // The WinUI3 unthemed defaults (AJutCustomControlStylingDefaults.xaml), with the light set of each checked
-            // gradient lightened, the same as the Android strip, so dark text stays readable on a light background.
-            // The AJut theme supplies its own for every one of these keys.
-            private static readonly ThemedGradient kCheckedBackground = new ThemedGradient(
-                AJutThemeKeys.ToggleStripButton_CheckedBackground,
-                new[] { ThemedGradient.Stop(0.0, 0x59000000), ThemedGradient.Stop(0.2, 0x38000000), ThemedGradient.Stop(1.0, 0x1A000000) },
-                new[] { ThemedGradient.Stop(0.0, 0xCC000000), ThemedGradient.Stop(0.2, 0x80000000), ThemedGradient.Stop(1.0, 0x33000000) }
-            );
-            private static readonly ThemedGradient kCheckedPointerOverBackground = new ThemedGradient(
-                AJutThemeKeys.ToggleStripButton_CheckedPointerOverBackground,
-                new[] { ThemedGradient.Stop(0.0, 0x59000000), ThemedGradient.Stop(0.2, 0x43000000), ThemedGradient.Stop(1.0, 0x26000000) },
-                new[] { ThemedGradient.Stop(0.0, 0xCC000000), ThemedGradient.Stop(0.2, 0x99000000), ThemedGradient.Stop(1.0, 0x55000000) }
-            );
-            private static readonly ThemedGradient kCheckedPressedBackground = new ThemedGradient(
-                AJutThemeKeys.ToggleStripButton_CheckedPressedBackground,
-                new[] { ThemedGradient.Stop(0.0, 0x73000000), ThemedGradient.Stop(0.2, 0x4D000000), ThemedGradient.Stop(1.0, 0x2E000000) },
-                new[] { ThemedGradient.Stop(0.0, 0xEE000000), ThemedGradient.Stop(0.2, 0xAA000000), ThemedGradient.Stop(1.0, 0x66000000) }
-            );
-
             private readonly WeakReference<ToggleStripItem> m_item;
             private readonly CALayer m_leadingSeparator = new CALayer { Hidden = true };
             private readonly CALayer m_trailingSeparator = new CALayer { Hidden = true };
@@ -803,6 +883,7 @@ namespace AJut.UX.Controls
                 configuration.TitleLineBreakMode = UILineBreakMode.TailTruncation;
                 this.Configuration = configuration;
                 this.SetPadding(padding);
+                this.HeightAnchor.ConstraintGreaterThanOrEqualTo(MobileLook.ToggleStrip.ItemMinHeight).Active = true;
                 this.Layer.AddSublayer(m_leadingSeparator);
                 this.Layer.AddSublayer(m_trailingSeparator);
                 this.TouchUpInside += this.OnTouchUpInside;
@@ -874,7 +955,7 @@ namespace AJut.UX.Controls
                 CATransaction.DisableActions = true;
                 CGRect bounds = this.Bounds;
                 nfloat thickness = m_separatorThickness;
-                CGColor separatorColor = ThemedColors.Get(ThemedColorKeys.Brush_BorderCommon).GetResolvedColor(this.TraitCollection).CGColor;
+                CGColor separatorColor = ThemedColors.Get(MobileLook.ToggleStrip.StripBorderFor(this.Enabled)).GetResolvedColor(this.TraitCollection).CGColor;
                 m_leadingSeparator.Hidden = !(m_edges.SeparatorLeft || m_edges.SeparatorTop);
                 m_leadingSeparator.BackgroundColor = separatorColor;
                 m_leadingSeparator.Frame = m_edges.SeparatorTop
@@ -889,21 +970,8 @@ namespace AJut.UX.Controls
                 CATransaction.Commit();
             }
 
-            // Checked, the checked gradients; unchecked, the strip's washes, or nothing at rest (WinUI3's near clear #01000000)
-            protected override ThemedGradient PickOverlay ()
-            {
-                if (this.Item?.IsSelected ?? false)
-                {
-                    if (this.Highlighted)
-                    {
-                        return kCheckedPressedBackground;
-                    }
-
-                    return this.Hovered ? kCheckedPointerOverBackground : kCheckedBackground;
-                }
-
-                return base.PickOverlay();
-            }
+            // Selected, the checked gradients; unselected, the strip's washes, or nothing at rest (WinUI3's near clear #01000000)
+            protected override bool IsSelectedForLook => this.Item?.IsSelected ?? false;
 
             protected override void UpdateContent (UIButtonConfiguration configuration)
             {

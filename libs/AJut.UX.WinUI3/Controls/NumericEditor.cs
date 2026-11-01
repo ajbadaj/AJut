@@ -5,6 +5,7 @@ namespace AJut.UX.Controls
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
     using Microsoft.UI.Xaml.Controls.Primitives;
+    using Microsoft.UI.Xaml.Input;
     using Microsoft.UI.Xaml.Media;
     using Windows.System;
     using Windows.UI.Core;
@@ -46,6 +47,10 @@ namespace AJut.UX.Controls
 
         // Owns the view model and the re-entrancy guard; this control only routes its events in and shows what it writes back
         private readonly NumericEditorController m_controller;
+
+        // What the border shows: hover over focus over rest (UpdateBorderState)
+        private bool m_isPointerOver;
+        private bool m_hasFocus;
 
         // ===========[ Construction ]=============================================
         public NumericEditor ()
@@ -244,8 +249,8 @@ namespace AJut.UX.Controls
             this.PART_DefaultLabel = this.GetTemplateChild(nameof(PART_DefaultLabel)) as FrameworkElement;
             this.PART_LabelArea = this.GetTemplateChild(nameof(PART_LabelArea)) as ContentControl;
 
-            // 3. Seed VSM - Unfocused + NoError are the initial states (no TemplateBinding on BorderBrush)
-            VisualStateManager.GoToState(this, "Unfocused", false);
+            // 3. Seed VSM - the border state and NoError are the initial states (no TemplateBinding on BorderBrush)
+            this.UpdateBorderState(false);
             VisualStateManager.GoToState(this, "NoError", false);
 
             // 4. Wire new parts
@@ -271,9 +276,24 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ Events ]===================================================
+        protected override void OnPointerEntered (PointerRoutedEventArgs e)
+        {
+            base.OnPointerEntered(e);
+            m_isPointerOver = true;
+            this.UpdateBorderState(true);
+        }
+
+        protected override void OnPointerExited (PointerRoutedEventArgs e)
+        {
+            base.OnPointerExited(e);
+            m_isPointerOver = false;
+            this.UpdateBorderState(true);
+        }
+
         private void OnGotFocus (object sender, RoutedEventArgs e)
         {
-            VisualStateManager.GoToState(this, "Focused", true);
+            m_hasFocus = true;
+            this.UpdateBorderState(true);
 
             // Forward focus to the inner TextBox when the NumericEditor itself receives
             // focus (e.g. programmatic Focus() call). When a child already has focus
@@ -287,7 +307,8 @@ namespace AJut.UX.Controls
 
         private void OnLostFocus (object sender, RoutedEventArgs e)
         {
-            VisualStateManager.GoToState(this, "Unfocused", true);
+            m_hasFocus = false;
+            this.UpdateBorderState(true);
             this.CommitEditedText();
         }
 
@@ -330,6 +351,14 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ Helpers ]=================================================
+        // The border is one state group, so the one state it shows comes from both: the pointer over it wins, as it does
+        // on WPF, then keyboard focus anywhere inside it, then rest
+        private void UpdateBorderState (bool useTransitions)
+        {
+            string state = m_isPointerOver ? "PointerOver" : (m_hasFocus ? "Focused" : "Unfocused");
+            VisualStateManager.GoToState(this, state, useTransitions);
+        }
+
         private void CommitEditedText ()
         {
             if (this.PART_TextBox != null)

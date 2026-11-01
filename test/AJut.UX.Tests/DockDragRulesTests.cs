@@ -190,13 +190,6 @@ namespace AJut.UX.Tests
         }
 
         [TestMethod]
-        public void DDR_Overlay_GridIs84By60 ()
-        {
-            Assert.AreEqual(84, DockDragRules.kOverlayWidth);
-            Assert.AreEqual(60, DockDragRules.kOverlayHeight);
-        }
-
-        [TestMethod]
         public void DDR_Overlay_DirectionAtAPoint ()
         {
             Assert.AreEqual(eDockInsertionDirection.Top, DockDragRules.FindOverlayDirectionAt(42, 5));

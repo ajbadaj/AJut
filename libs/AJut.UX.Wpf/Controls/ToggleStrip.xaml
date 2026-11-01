@@ -83,19 +83,43 @@
                     <Setter TargetName="InnerBorder" Property="Background" Value="{Binding Path=Owner.BackgroundHover}"/>
                 </MultiDataTrigger.Setters>
             </MultiDataTrigger>
+            <!-- ======[ Strip Disabled ]====== -->
+            <!-- Last, so it wins over the selected item's text. The selected item's fill goes muted, so the selection still shows, and the
+                 lines between items take the strip's disabled border, as its frame does. -->
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="TextElement.Foreground" Value="{Binding Path=Owner.DisabledForeground}"/>
+                <Setter TargetName="InnerBorder" Property="BorderBrush" Value="{Binding Path=Owner.DisabledBorderBrush}"/>
+            </Trigger>
+            <!-- The selection stays, muted, so it still shows without reading as live -->
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="IsChecked" Value="True"/>
+                    <Condition Property="IsEnabled" Value="False"/>
+                </MultiTrigger.Conditions>
+                <Setter TargetName="RootBorder" Property="Background" Value="{Binding Path=Owner.DisabledSelectedBackground}"/>
+            </MultiTrigger>
         </ControlTemplate.Triggers>
     </ControlTemplate>
+
+    <!-- The item buttons take this style rather than any implicit ToggleButton style an app or theme defines. A style's
+         triggers outrank a template's, so an implicit style's checked and hover text colors would replace the strip's own
+         ForegroundPressed and ForegroundHover, which the template's triggers above apply. -->
+    <Style x:Key="ToggleStripItemButtonStyle" TargetType="{x:Type ToggleButton}">
+        <Setter Property="Foreground" Value="{Binding Path=Owner.Foreground}"/>
+        <Setter Property="FocusVisualStyle" Value="{Binding Path=Owner.FocusVisualStyle}"/>
+        <Setter Property="Template" Value="{StaticResource ToggleStripItemButtonTemplate}"/>
+    </Style>
 
     <!-- Strip row item: every item is realized; the panel arranges overflowed ones to a zero rect. -->
     <DataTemplate x:Key="ToggleStripStripItemTemplate">
         <ToggleButton IsChecked="{Binding Path=IsSelected, Mode=TwoWay}"
-                      Template="{StaticResource ToggleStripItemButtonTemplate}"/>
+                      Style="{StaticResource ToggleStripItemButtonStyle}"/>
     </DataTemplate>
 
     <!-- Overflow popup item: only the items currently in overflow are visible. -->
     <DataTemplate x:Key="ToggleStripOverflowItemTemplate">
         <ToggleButton IsChecked="{Binding Path=IsSelected, Mode=TwoWay}"
-                      Template="{StaticResource ToggleStripItemButtonTemplate}"
+                      Style="{StaticResource ToggleStripItemButtonStyle}"
                       Visibility="{Binding Path=IsInOverflow, Converter={conv:BooleanToVisibilityConverter}}"/>
     </DataTemplate>
 
@@ -118,6 +142,15 @@
         <Setter Property="BackgroundHoverOverPressed" Value="{Binding RelativeSource={RelativeSource Self}, Path=BackgroundHover}"/>
         <Setter Property="ForegroundPressed" Value="{Binding RelativeSource={RelativeSource Self}, Path=Foreground}"/>
         <Setter Property="ForegroundHover" Value="{Binding RelativeSource={RelativeSource Self}, Path=Foreground}"/>
+        <!-- Disabled, as a stock disabled ComboBox: a flat light fill, a light border and gray text -->
+        <Setter Property="DisabledBackground" Value="#F0F0F0"/>
+        <Setter Property="DisabledBorderBrush" Value="#D9D9D9"/>
+        <Setter Property="DisabledForeground" Value="#6D6D6D"/>
+        <Setter Property="DisabledSelectedBackground" Value="#C4CFD9"/>
+        <!-- Vertical, the scroll and overflow buttons are plain buttons: WPF's own button colors -->
+        <Setter Property="VerticalButtonBackground" Value="#DDDDDD"/>
+        <Setter Property="VerticalButtonForeground" Value="#000000"/>
+        <Setter Property="VerticalButtonBorderBrush" Value="#707070"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:ToggleStrip}">
@@ -149,24 +182,29 @@
                                 </ItemsControl>
                             </ScrollViewer>
 
-                            <!-- Overflow chevron: shown only when items overflow; opens the popup. -->
+                            <!-- Overflow chevron: shown only when items overflow; opens the popup. It and the bump buttons
+                                 below sit on the strip, so they take its Background and Foreground here, where the
+                                 strip's disabled trigger can swap them along with its frame. -->
                             <ToggleButton x:Name="PART_OverflowToggle"
                                           HorizontalAlignment="Right"
                                           VerticalAlignment="Stretch"
                                           Width="28"
                                           Tag="&#xE76C;"
                                           Focusable="False"
+                                          Background="{ajut:TemplateBinding Background}"
+                                          Foreground="{ajut:TemplateBinding Foreground}"
+                                          BorderThickness="0"
                                           Visibility="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=HasOverflow, Converter={conv:BooleanToVisibilityConverter}}">
                                 <ToggleButton.Template>
                                     <ControlTemplate TargetType="{x:Type ToggleButton}">
                                         <!-- No divider of its own: the last item showing draws the separator before the chevron. -->
-                                        <Border Background="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=Background}">
+                                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
                                             <TextBlock Text="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Tag}"
                                                        FontFamily="Segoe MDL2 Assets"
                                                        FontSize="12"
                                                        VerticalAlignment="Center"
                                                        HorizontalAlignment="Center"
-                                                       Foreground="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=Foreground}"/>
+                                                       Foreground="{TemplateBinding Foreground}"/>
                                         </Border>
                                     </ControlTemplate>
                                 </ToggleButton.Template>
@@ -189,16 +227,17 @@
 
                             <!-- Scroll-mode bump buttons: overlaid chevrons. Code shows them only in Scroll
                                  mode when there is something to scroll, enables them per end, and scrolls. -->
-                            <RepeatButton x:Name="PART_ScrollLeftButton"
+                            <RepeatButton x:Name="PART_ScrollLeftButton" Style="{x:Null}" BorderThickness="0"
                                           HorizontalAlignment="Left" VerticalAlignment="Stretch"
-                                          Width="24" Tag="&#xE76B;" Focusable="False" Visibility="Collapsed">
+                                          Width="24" Tag="&#xE76B;" Focusable="False" Visibility="Collapsed"
+                                          Background="{ajut:TemplateBinding Background}" Foreground="{ajut:TemplateBinding Foreground}">
                                 <RepeatButton.Template>
                                     <ControlTemplate TargetType="{x:Type RepeatButton}">
-                                        <Border Background="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=Background}">
+                                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
                                             <TextBlock x:Name="Chevron" Opacity="0.55"
                                                        Text="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Tag}" FontFamily="Segoe MDL2 Assets" FontSize="12"
                                                        VerticalAlignment="Center" HorizontalAlignment="Center"
-                                                       Foreground="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=Foreground}"/>
+                                                       Foreground="{TemplateBinding Foreground}"/>
                                         </Border>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
@@ -211,16 +250,17 @@
                                     </ControlTemplate>
                                 </RepeatButton.Template>
                             </RepeatButton>
-                            <RepeatButton x:Name="PART_ScrollRightButton"
+                            <RepeatButton x:Name="PART_ScrollRightButton" Style="{x:Null}" BorderThickness="0"
                                           HorizontalAlignment="Right" VerticalAlignment="Stretch"
-                                          Width="24" Tag="&#xE76C;" Focusable="False" Visibility="Collapsed">
+                                          Width="24" Tag="&#xE76C;" Focusable="False" Visibility="Collapsed"
+                                          Background="{ajut:TemplateBinding Background}" Foreground="{ajut:TemplateBinding Foreground}">
                                 <RepeatButton.Template>
                                     <ControlTemplate TargetType="{x:Type RepeatButton}">
-                                        <Border Background="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=Background}">
+                                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
                                             <TextBlock x:Name="Chevron" Opacity="0.55"
                                                        Text="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Tag}" FontFamily="Segoe MDL2 Assets" FontSize="12"
                                                        VerticalAlignment="Center" HorizontalAlignment="Center"
-                                                       Foreground="{Binding RelativeSource={RelativeSource AncestorType=local:ToggleStrip}, Path=Foreground}"/>
+                                                       Foreground="{TemplateBinding Foreground}"/>
                                         </Border>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
@@ -256,6 +296,36 @@
                             <Setter TargetName="PART_ScrollRightButton" Property="Width" Value="NaN"/>
                             <Setter TargetName="PART_ScrollRightButton" Property="Height" Value="24"/>
                             <Setter TargetName="PART_ScrollRightButton" Property="Tag" Value="&#xE70D;"/>
+                            <!-- The surface shades top to bottom, so across a vertical strip's ends these would show a slice of
+                                 it that reads as part of neither; they take plain button colors instead -->
+                            <Setter TargetName="PART_OverflowToggle" Property="Background" Value="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=VerticalButtonBackground}"/>
+                            <Setter TargetName="PART_OverflowToggle" Property="Foreground" Value="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=VerticalButtonForeground}"/>
+                            <Setter TargetName="PART_OverflowToggle" Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=VerticalButtonBorderBrush}"/>
+                            <Setter TargetName="PART_OverflowToggle" Property="BorderThickness" Value="1"/>
+                            <Setter TargetName="PART_ScrollLeftButton" Property="Background" Value="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=VerticalButtonBackground}"/>
+                            <Setter TargetName="PART_ScrollLeftButton" Property="Foreground" Value="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=VerticalButtonForeground}"/>
+                            <Setter TargetName="PART_ScrollLeftButton" Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=VerticalButtonBorderBrush}"/>
+                            <Setter TargetName="PART_ScrollLeftButton" Property="BorderThickness" Value="1"/>
+                            <Setter TargetName="PART_ScrollRightButton" Property="Background" Value="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=VerticalButtonBackground}"/>
+                            <Setter TargetName="PART_ScrollRightButton" Property="Foreground" Value="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=VerticalButtonForeground}"/>
+                            <Setter TargetName="PART_ScrollRightButton" Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=VerticalButtonBorderBrush}"/>
+                            <Setter TargetName="PART_ScrollRightButton" Property="BorderThickness" Value="1"/>
+                        </Trigger>
+                        <!-- Disabled: the strip's Disabled brushes on its frame and on the buttons that sit on it. Set
+                             here on the template's own parts so they win over a Background set on the strip itself. -->
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="StripBorder" Property="Background" Value="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=DisabledBackground}"/>
+                            <Setter TargetName="StripBorder" Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=DisabledBorderBrush}"/>
+                            <Setter TargetName="PART_OverflowToggle" Property="Background" Value="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=DisabledBackground}"/>
+                            <Setter TargetName="PART_OverflowToggle" Property="Foreground" Value="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=DisabledForeground}"/>
+                            <Setter TargetName="PART_ScrollLeftButton" Property="Background" Value="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=DisabledBackground}"/>
+                            <Setter TargetName="PART_ScrollLeftButton" Property="Foreground" Value="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=DisabledForeground}"/>
+                            <Setter TargetName="PART_ScrollRightButton" Property="Background" Value="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=DisabledBackground}"/>
+                            <Setter TargetName="PART_ScrollRightButton" Property="Foreground" Value="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=DisabledForeground}"/>
+                            <!-- Only a vertical strip's buttons draw a border, and disabled it is the strip's disabled one -->
+                            <Setter TargetName="PART_OverflowToggle" Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=DisabledBorderBrush}"/>
+                            <Setter TargetName="PART_ScrollLeftButton" Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=DisabledBorderBrush}"/>
+                            <Setter TargetName="PART_ScrollRightButton" Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=DisabledBorderBrush}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

@@ -56,6 +56,13 @@
         public static readonly DependencyProperty BackgroundHoverProperty = DPUtils.Register(_ => _.BackgroundHover);
         public static readonly DependencyProperty BackgroundHoverOverPressedProperty = DPUtils.Register(_ => _.BackgroundHoverOverPressed);
         public static readonly DependencyProperty ForegroundHoverProperty = DPUtils.Register(_ => _.ForegroundHover);
+        public static readonly DependencyProperty DisabledBackgroundProperty = DPUtils.Register(_ => _.DisabledBackground);
+        public static readonly DependencyProperty DisabledBorderBrushProperty = DPUtils.Register(_ => _.DisabledBorderBrush);
+        public static readonly DependencyProperty DisabledForegroundProperty = DPUtils.Register(_ => _.DisabledForeground);
+        public static readonly DependencyProperty DisabledSelectedBackgroundProperty = DPUtils.Register(_ => _.DisabledSelectedBackground);
+        public static readonly DependencyProperty VerticalButtonBackgroundProperty = DPUtils.Register(_ => _.VerticalButtonBackground);
+        public static readonly DependencyProperty VerticalButtonForegroundProperty = DPUtils.Register(_ => _.VerticalButtonForeground);
+        public static readonly DependencyProperty VerticalButtonBorderBrushProperty = DPUtils.Register(_ => _.VerticalButtonBorderBrush);
 
         public static readonly DependencyProperty ItemPaddingProperty = DPUtils.Register(_ => _.ItemPadding, new Thickness(6));
         public static readonly DependencyProperty CornerRadiusProperty = DPUtils.Register(_ => _.CornerRadius, (d, e) => BorderXTA.SetCornerRadius(d, e.NewValue));
@@ -335,6 +342,68 @@
         {
             get => (Brush)this.GetValue(ForegroundHoverProperty);
             set => this.SetValue(ForegroundHoverProperty, value);
+        }
+
+        /// <summary>
+        /// The strip's surface while it is disabled, in place of its Background. The AJut theme sets the disabled
+        /// ComboBox's flat fill.
+        /// </summary>
+        public Brush DisabledBackground
+        {
+            get => (Brush)this.GetValue(DisabledBackgroundProperty);
+            set => this.SetValue(DisabledBackgroundProperty, value);
+        }
+
+        /// <summary>The strip's outline while it is disabled, in place of its BorderBrush.</summary>
+        public Brush DisabledBorderBrush
+        {
+            get => (Brush)this.GetValue(DisabledBorderBrushProperty);
+            set => this.SetValue(DisabledBorderBrushProperty, value);
+        }
+
+        /// <summary>
+        /// Every item's text while the strip is disabled, the selected item's too: a disabled strip keeps its selection
+        /// shaded so it still shows, and nothing in it reads as live.
+        /// </summary>
+        public Brush DisabledForeground
+        {
+            get => (Brush)this.GetValue(DisabledForegroundProperty);
+            set => this.SetValue(DisabledForegroundProperty, value);
+        }
+
+        /// <summary>
+        /// The selected item's fill while the strip is disabled, in place of its pressed shading: muted, so the selection
+        /// still shows without reading as live. The AJut theme sets a faded, desaturated primary.
+        /// </summary>
+        public Brush DisabledSelectedBackground
+        {
+            get => (Brush)this.GetValue(DisabledSelectedBackgroundProperty);
+            set => this.SetValue(DisabledSelectedBackgroundProperty, value);
+        }
+
+        /// <summary>
+        /// The scroll and overflow buttons' fill while the strip is vertical. The strip's surface shades top to bottom, so
+        /// across a vertical strip's ends those buttons would show a slice of it that reads as part of neither; they take
+        /// plain button colors instead. A horizontal strip's buttons sit inside its shading.
+        /// </summary>
+        public Brush VerticalButtonBackground
+        {
+            get => (Brush)this.GetValue(VerticalButtonBackgroundProperty);
+            set => this.SetValue(VerticalButtonBackgroundProperty, value);
+        }
+
+        /// <summary>The scroll and overflow buttons' glyph color while the strip is vertical (see <see cref="VerticalButtonBackground"/>).</summary>
+        public Brush VerticalButtonForeground
+        {
+            get => (Brush)this.GetValue(VerticalButtonForegroundProperty);
+            set => this.SetValue(VerticalButtonForegroundProperty, value);
+        }
+
+        /// <summary>The scroll and overflow buttons' outline while the strip is vertical (see <see cref="VerticalButtonBackground"/>).</summary>
+        public Brush VerticalButtonBorderBrush
+        {
+            get => (Brush)this.GetValue(VerticalButtonBorderBrushProperty);
+            set => this.SetValue(VerticalButtonBorderBrushProperty, value);
         }
 
         public Brush OverflowPopupBackground

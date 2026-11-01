@@ -74,6 +74,10 @@ namespace AJut.UX.Controls
         private readonly List<DockCloseButton> m_activeCloseButtons = new();
         private static readonly PointerEventHandler g_suppressPointerPressedHandler = SuppressPointerPressed;
 
+        // Whether this zone's window is active, as its DockingManager last reported it. Focus stays put when a WinUI
+        // window deactivates, so this is what lets the panel header stop showing it is the panel being typed into.
+        private bool m_isWindowActive = true;
+
         // ===========[ Construction ]=========================================
         static DockZone()
         {
@@ -487,6 +491,9 @@ namespace AJut.UX.Controls
             leaf.HeaderRightTapped += this.OnHeaderRightTapped;
 
             this.PART_Root.Children.Add(leaf);
+
+            // A rebuilt leaf starts unfocused; the focus may well still be within this zone
+            this.RefreshPanelFocus();
         }
 
         // Returns the tab-navigation Grid (left scroll btn + ScrollViewer + right scroll btn).
@@ -509,7 +516,8 @@ namespace AJut.UX.Controls
 
                 // Tab border logic:
                 //   Left  : first tab and selected tab get a left border (outer edge + selected outline)
-                //   Top   : never - the open top visually connects to the content panel above
+                //   Top   : never - the selected tab's open top joins the content panel above, and the
+                //           unselected tabs sit just under the content panel's bottom border, which is their top edge
                 //   Right : every tab except those immediately left of a selected tab (selected provides its own left)
                 //   Bottom: always - visible outline at the bottom of the tab strip
                 bool nextIsSelected = (i + 1 < this.ViewModel.DockedContent.Count)
@@ -1400,12 +1408,106 @@ namespace AJut.UX.Controls
             m_dropOverlay.Visibility = Visibility.Visible;
         }
 
+        // ===========[ Panel focus ]==========================================
+        // A panel's header shows it is the one being typed into (DockLeafLayout.IsPanelFocused) while keyboard focus is
+        // within its zone and its window is active, as WPF's does. WinUI has no focus-within property, so the zone works it
+        // out from the focused element whenever focus moves through it, and its DockingManager reports window activation.
+        // A press only moves focus when it lands on something that takes focus itself, like a button, so a press on a
+        // panel's text, empty space, tabs or header would leave focus, and the header's highlight, in another panel. A
+        // press inside a panel that does not hold focus therefore gives the zone focus; anything focusable under the
+        // press has already taken it by the time the press bubbles here.
+
+        /// <summary>
+        /// Works out again whether this zone's panel is the one being typed into, and shows it on the panel header. Pass
+        /// <paramref name="isWindowActive"/> when the window's activation changed; the DockingManager does.
+        /// </summary>
+        internal void RefreshPanelFocus (bool? isWindowActive = null)
+        {
+            if (isWindowActive.HasValue)
+            {
+                m_isWindowActive = isWindowActive.Value;
+            }
+
+            if (this.PART_Root?.Children.OfType<DockLeafLayout>().FirstOrDefault() is DockLeafLayout leaf)
+            {
+                leaf.IsPanelFocused = m_isWindowActive && this.HasKeyboardFocusWithin();
+            }
+        }
+
+        // GotFocus and LostFocus bubble, so these run whenever focus moves into, out of or within this zone. Both are raised
+        // after focus has moved, so the focused element is already the new one.
+        protected override void OnGotFocus (RoutedEventArgs e)
+        {
+            base.OnGotFocus(e);
+            this.RefreshPanelFocus();
+        }
+
+        protected override void OnLostFocus (RoutedEventArgs e)
+        {
+            base.OnLostFocus(e);
+            this.RefreshPanelFocus();
+        }
+
+        // Called for a press nothing under it handled. The header's press handler marks its press handled to start a drag,
+        // so it takes focus itself (OnHeaderPointerPressed).
+        protected override void OnPointerPressed (PointerRoutedEventArgs e)
+        {
+            base.OnPointerPressed(e);
+            if (this.TakeFocusForPress())
+            {
+                // The press stops at the panel. It bubbles on otherwise, and a control further out that takes focus for a
+                // press nothing handled takes focus straight back from the panel, so its header only flashes.
+                e.Handled = true;
+            }
+        }
+
+        // Gives this zone focus for a press inside its panel, unless focus is already within it, and says whether the
+        // press was inside a panel at all. A split zone leaves this to the panel zones inside it, and an empty zone has
+        // nothing to type into.
+        private bool TakeFocusForPress ()
+        {
+            if (this.ViewModel?.Orientation is not (eDockOrientation.Single or eDockOrientation.Tabbed))
+            {
+                return false;
+            }
+
+            if (!this.HasKeyboardFocusWithin())
+            {
+                this.Focus(FocusState.Pointer);
+            }
+
+            return true;
+        }
+
+        private bool HasKeyboardFocusWithin ()
+        {
+            if (this.XamlRoot == null)
+            {
+                return false;
+            }
+
+            var element = FocusManager.GetFocusedElement(this.XamlRoot) as DependencyObject;
+            while (element != null)
+            {
+                if (element == this)
+                {
+                    return true;
+                }
+
+                element = VisualTreeHelper.GetParent(element);
+            }
+
+            return false;
+        }
+
         // ===========[ Header drag (threshold-based) ]========================
 
         // On pointer-press: record the press point and determine which zone to drag.
         // Actual drag is not initiated until PointerMoved crosses DragThresholdPixels.
         private void OnHeaderPointerPressed(object sender, PointerRoutedEventArgs e)
         {
+            this.TakeFocusForPress();
+
             var manager = m_manager as DockingManager;
             if ((manager == null) || (this.ViewModel == null))
             {

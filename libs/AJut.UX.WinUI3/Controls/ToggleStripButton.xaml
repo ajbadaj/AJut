@@ -62,9 +62,16 @@
                                         <Setter Target="PART_Root.Background" Value="{ThemeResource AJut_ToggleStripButton_CheckedPressedBackground}"/>
                                     </VisualState.Setters>
                                 </VisualState>
+                                <VisualState x:Name="CheckedDisabled">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_Root.Background" Value="{ThemeResource AJut_ToggleStripButton_CheckedDisabledBackground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
                             </VisualStateGroup>
                         </VisualStateManager.VisualStateGroups>
-                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                        <!-- PART_Content: its Foreground is set from code on the highlight states (see ToggleStripButton) -->
+                        <ContentPresenter x:Name="PART_Content"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                           VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
                     </Border>
                 </ControlTemplate>

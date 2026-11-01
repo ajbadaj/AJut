@@ -12,5 +12,8 @@
         <TabItem Header="Theme state">
             <debug:ThemeStateDisplay />
         </TabItem>
+        <TabItem Header="Standard controls">
+            <debug:StandardControlsDisplay />
+        </TabItem>
     </TabControl>
 </UserControl>

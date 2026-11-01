@@ -2,7 +2,10 @@ namespace AJutShowRoomAndroid
 {
     using System;
     using System.Collections.Generic;
+    using AJut.UX;
     using AJut.UX.CodeBinding;
+    using AJut.UX.Helpers;
+    using AJut.UX.Theming;
     using Android.Views;
     using Android.Widget;
 
@@ -90,6 +93,13 @@ namespace AJutShowRoomAndroid
 
             m_list.Adapter = new ArrayAdapter<string>(host, Android.Resource.Layout.SimpleListItem1, titles);
             m_list.ItemClick += this.OnItemClick;
+
+            // Themed, the list of pages sits on the navigation level, as an area's page list does in the WinUI3 showroom
+            if (ThemeColors.IsThemeLoaded
+                && AJutPalette.For(ThemeColors.IsDark(host), ThemeColors.IsTouchFocused).TryGetColor("AJut_Brush_NavigationPanelBackground", out ColorArgb navigation))
+            {
+                m_list.SetBackgroundColor(navigation.ToAndroidColor());
+            }
         }
 
         public AreaEntry? FindEntry (string title)

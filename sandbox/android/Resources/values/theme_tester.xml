@@ -65,6 +65,12 @@
     <item>Checked, pressed</item>
   </string-array>
 
+  <!-- A disabled strip: the first item is selected, the second not -->
+  <string-array name="theme_tester_strip_disabled">
+    <item>Disabled, checked</item>
+    <item>Disabled</item>
+  </string-array>
+
   <!-- More than a short Scroll strip shows, so it has somewhere to scroll -->
   <string-array name="theme_tester_strip_scroll">
     <item>One</item>

@@ -47,6 +47,15 @@
                     <ajut:ToggleStrip x:Name="ToggleStripCustom"
                                       CornerRadius="15"/>
                 </StackPanel>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Disabled (as a disabled ComboBox: the flat disabled fill, its border and its text; the selection still shows)" FontSize="11" Opacity="0.7"/>
+                    <ajut:ToggleStrip x:Name="ToggleStripDisabled" IsEnabled="False"/>
+                </StackPanel>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Disabled, Scroll (the bump buttons take the disabled fill too)" FontSize="11" Opacity="0.7"/>
+                    <ajut:ToggleStrip x:Name="ToggleStripDisabledScroll" Width="220" HorizontalAlignment="Left"
+                                      OverflowBehavior="Scroll" IsEnabled="False"/>
+                </StackPanel>
             </StackPanel>
 
             <TextBlock Text="Vertical" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0"/>
@@ -74,6 +83,13 @@
                     <TextBlock Text="Scroll" FontSize="11" Opacity="0.7"/>
                     <ajut:ToggleStrip x:Name="ToggleStripVerticalScroll" Orientation="Vertical" Height="120"
                                       OverflowBehavior="Scroll"/>
+                </StackPanel>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Scroll, enabled by the switch (bump buttons plain when enabled, the disabled fill when not)" FontSize="11" Opacity="0.7" MaxWidth="220" TextWrapping="Wrap"/>
+                    <ToggleSwitch x:Name="VerticalScrollEnabledSwitch" IsOn="False" OnContent="Enabled" OffContent="Disabled"/>
+                    <ajut:ToggleStrip x:Name="ToggleStripVerticalSwitched" Orientation="Vertical" Height="120"
+                                      OverflowBehavior="Scroll"
+                                      IsEnabled="{Binding ElementName=VerticalScrollEnabledSwitch, Path=IsOn}"/>
                 </StackPanel>
             </StackPanel>
 

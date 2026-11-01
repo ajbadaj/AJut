@@ -5,6 +5,7 @@ namespace AJut.UX.Controls
     using AJut.UX.Theming;
     using Android.Content;
     using Android.Content.Res;
+    using Android.Graphics;
     using Android.Graphics.Drawables;
     using Android.OS;
     using Android.Runtime;
@@ -21,34 +22,55 @@ namespace AJut.UX.Controls
     /// rules are AJut.UX's <see cref="NumericEditorController"/>, the same on every AJut toolkit.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// An edit is committed when the keyboard's Done action is pressed or the field loses focus. Out of bounds text is
     /// flagged and left for the user to fix, or snapped to the bound on commit, as <see cref="OutOfBoundsResponse"/> says.
-    /// In a layout, ajutMinimum, ajutMaximum, ajutNudge, ajutDecimalPlacesAllowed, ajutOutOfBoundsResponse,
-    /// ajutEnforceNumericType and ajutLabel set those.
+    /// In a layout, ajutMinimum, ajutMaximum, ajutNudge, ajutBigNudge, ajutSmallNudge, ajutDecimalPlacesAllowed,
+    /// ajutOutOfBoundsResponse, ajutEnforceNumericType and ajutLabel set those.
+    /// </para>
+    /// <para>
+    /// With a hardware keyboard (a Chromebook, a tablet's keyboard), holding Shift steps by <see cref="SmallNudge"/> and
+    /// holding Ctrl or Meta steps by <see cref="BigNudge"/>, on the step buttons and on the Up and Down arrow keys alike,
+    /// as on UIKit and WinUI3.
+    /// </para>
+    /// <para>
+    /// The number's alignment is the field's own: <see cref="Field"/>'s Gravity, centered by default, where UIKit's editor
+    /// has a TextAlignment. This editor is a LinearLayout, which already has View's TextAlignment (android:textAlignment),
+    /// and taking that over for the number would give it a meaning it has on no other layout.
+    /// </para>
     /// </remarks>
     [Register("ajut.ux.controls.NumericEditor")]
     public class NumericEditor : LinearLayout, INumericEditorHost
     {
-        private const float kButtonWidthDp = 44f;
-        private const float kCornerRadiusDp = 4f;
-        private const float kBorderThicknessDp = 1f;
-        private const int kRepeatDelayMs = 400;
-        private const int kRepeatIntervalMs = 80;
+        // The step sizes Shift (small) and Ctrl or Meta (big) take, until set in code or in a layout
+        private const double kDefaultBigNudge = 5.0;
+        private const double kDefaultSmallNudge = 0.5;
 
-        private static readonly ThemedColor kNormalBorder = ThemedColor.FromArgb(AJutThemeKeys.NumericEditor_NormalBorderBrush, 0xFF888888, 0xFF888888);
-        private static readonly ThemedColor kFocusBorder = ThemedColor.FromArgb(AJutThemeKeys.NumericEditor_FocusBorderBrush, 0xFF0078D4, 0xFF4CA3E8);
-        private static readonly ThemedColor kErrorBorder = ThemedColor.FromArgb(AJutThemeKeys.NumericEditor_ErrorBrush, 0xFFE0524D, 0xFFE0524D);
-        private static readonly ThemedColor kButtonPressed = ThemedColor.FromArgb(AJutThemeKeys.NumericEditor_IncreasePointerOverBackground, 0x26000000, 0x33FFFFFF);
-        private static readonly ThemedColor kForeground = ThemedColor.FromArgb("TextFillColorPrimaryBrush", 0xE4000000, 0xFFFFFFFF);
-        private static readonly ThemedColor kFieldForeground = ThemedColor.FromArgb("TextControlForeground", 0xE4000000, 0xFFFFFFFF);
-        private static readonly ThemedColor kFieldForegroundDisabled = ThemedColor.FromArgb("TextControlForegroundDisabled", 0x5C000000, 0x5DFFFFFF);
+        // The look is MobileLook.NumericEditor's, which UIKit's NumericEditor draws too: the keys and sizes come from there,
+        // and only the colors each key falls back to with no theme loaded are Android's own. Unthemed, the frame is the
+        // stock control fill, as the ToggleStrip's is, and the well a plain text box color.
+        private static readonly ThemedGradient kSurface = new ThemedGradient(
+            MobileLook.NumericEditor.FrameSurface,
+            new[] { ThemedGradient.Stop(0.0, 0xFFFDFDFD) },
+            new[] { ThemedGradient.Stop(0.0, 0xFF2B2B2B) }
+        );
+        private static readonly ThemedColor kWellBackground = ThemedColor.FromArgb(MobileLook.NumericEditor.WellSurface, 0xFFFFFFFF, 0xFF1E1E1E);
+        private static readonly ThemedColor kNormalBorder = ThemedColor.FromArgb(MobileLook.NumericEditor.FrameBorder, 0xFF888888, 0xFF888888);
+        private static readonly ThemedColor kFocusBorder = ThemedColor.FromArgb(MobileLook.NumericEditor.FrameBorderFocused, 0xFF0078D4, 0xFF4CA3E8);
+        private static readonly ThemedColor kErrorBorder = ThemedColor.FromArgb(MobileLook.NumericEditor.FrameBorderError, 0xFFE0524D, 0xFFE0524D);
+        private static readonly ThemedColor kButtonPressed = ThemedColor.FromArgb(MobileLook.NumericEditor.StepPressedFill, 0x26000000, 0x33FFFFFF);
+        private static readonly ThemedColor kForeground = ThemedColor.FromArgb(MobileLook.NumericEditor.StepGlyph, 0xE4000000, 0xFFFFFFFF);
+        private static readonly ThemedColor kFieldForeground = ThemedColor.FromArgb(MobileLook.NumericEditor.Number, 0xE4000000, 0xFFFFFFFF);
+        private static readonly ThemedColor kLabelForeground = ThemedColor.FromArgb(MobileLook.NumericEditor.Label, 0xE4000000, 0xFFFFFFFF);
+        private static readonly ThemedColor kReadOnlyForeground = ThemedColor.FromArgb(MobileLook.NumericEditor.ReadOnlyText, 0x5C000000, 0x5DFFFFFF);
 
         private readonly NumericEditorController m_controller;
-        private readonly GradientDrawable m_frame = new GradientDrawable();
+        private GradientDrawable m_frame = null!;
         private TextView m_label = null!;
         private EditText m_field = null!;
         private TextView m_decrease = null!;
         private TextView m_increase = null!;
+        private View? m_labelView;
         private Handler? m_repeatHandler;
         private RepeatNudge? m_repeat;
         private object m_value = 0.0;
@@ -59,6 +81,8 @@ namespace AJut.UX.Controls
         private double m_minimum = double.NegativeInfinity;
         private double m_maximum = double.PositiveInfinity;
         private double m_nudge = 1.0;
+        private double m_bigNudge = kDefaultBigNudge;
+        private double m_smallNudge = kDefaultSmallNudge;
         private int m_decimalPlacesAllowed = -1;
         private eOutOfBoundsResponse m_outOfBoundsResponse = eOutOfBoundsResponse.ErrorAndToolTip;
         private string? m_errorMessage;
@@ -188,6 +212,20 @@ namespace AJut.UX.Controls
             set => m_nudge = value;
         }
 
+        /// <summary>The step while Ctrl or Meta is held on a hardware keyboard. Defaults to 5.</summary>
+        public double BigNudge
+        {
+            get => m_bigNudge;
+            set => m_bigNudge = value;
+        }
+
+        /// <summary>The step while Shift is held on a hardware keyboard. Defaults to 0.5.</summary>
+        public double SmallNudge
+        {
+            get => m_smallNudge;
+            set => m_smallNudge = value;
+        }
+
         /// <summary>How many decimal places the value may have; -1 (the default) for any.</summary>
         public int DecimalPlacesAllowed
         {
@@ -209,14 +247,41 @@ namespace AJut.UX.Controls
         /// <summary>The out of bounds message being shown, or null when the text is fine.</summary>
         public string? ErrorMessage => m_errorMessage;
 
-        /// <summary>The label shown in front of the field; null or empty for none.</summary>
+        /// <summary>The label shown in front of the field; null or empty for none. Hidden while <see cref="LabelView"/> is set.</summary>
         public string? Label
         {
             get => m_label.Text;
             set
             {
                 m_label.Text = value;
-                m_label.Visibility = string.IsNullOrEmpty(value) ? ViewStates.Gone : ViewStates.Visible;
+                this.UpdateLabelVisibility();
+            }
+        }
+
+        /// <summary>
+        /// A view shown in front of the frame in place of the text label, the way WinUI3's LabelContent replaces its "#"
+        /// glyph. Unless it brings LinearLayout layout parameters of its own, it is sized to its content and set off from
+        /// the frame as the text label is. Null brings the text label back.
+        /// </summary>
+        public View? LabelView
+        {
+            get => m_labelView;
+            set
+            {
+                if (m_labelView != null)
+                {
+                    this.RemoveView(m_labelView);
+                }
+
+                m_labelView = value;
+                if (value != null)
+                {
+                    LayoutParams layout = value.LayoutParameters as LayoutParams
+                        ?? new LayoutParams(ViewGroup.LayoutParams.WrapContent, ViewGroup.LayoutParams.WrapContent) { MarginEnd = (int)(MobileLook.NumericEditor.LabelSpacing * m_density) };
+                    this.AddView(value, 0, layout);
+                }
+
+                this.UpdateLabelVisibility();
             }
         }
 
@@ -235,6 +300,29 @@ namespace AJut.UX.Controls
 
         /// <summary>The text field, for styling it the way the app styles its other fields.</summary>
         public EditText Field => m_field;
+
+        // ===========[ Public Interface Methods ]===================================
+        /// <summary>
+        /// Up and Down step the value from a hardware keyboard, by the tier the held modifiers pick. A key reaches the field
+        /// through its parents, so the editor sees it first and takes it, before a single line EditText moves focus on it.
+        /// The key's repeats while held step again, as holding a step button does.
+        /// </summary>
+        public override bool DispatchKeyEvent (KeyEvent? e)
+        {
+            if ((e != null)
+                && !m_isReadOnly
+                && ((e.KeyCode == Keycode.DpadUp) || (e.KeyCode == Keycode.DpadDown)))
+            {
+                if (e.Action == KeyEventActions.Down)
+                {
+                    this.StepOnce(e.KeyCode == Keycode.DpadUp, this.PickNudge(e.MetaState));
+                }
+
+                return true;
+            }
+
+            return base.DispatchKeyEvent(e);
+        }
 
         // ===========[ INumericEditorSettings Implementations ]===================================
         // The settings interface takes null for an unconstrained bound, though its signature does not say so.
@@ -284,34 +372,37 @@ namespace AJut.UX.Controls
 
             // 1. Label, minus, field, plus
             m_label = new TextView(context) { Visibility = ViewStates.Gone };
-            m_label.SetPadding(0, 0, (int)(8 * m_density), 0);
-            m_decrease = this.MakeStepButton(context, "-", "Decrease");
-            m_increase = this.MakeStepButton(context, "+", "Increase");
+            m_label.SetPadding(0, 0, (int)(MobileLook.NumericEditor.LabelSpacing * m_density), 0);
+            m_label.SetTextColor(ThemeColors.Resolve(context, kLabelForeground).ToAndroidColor());
+            m_decrease = this.MakeStepButton(context, "-", "Decrease", isLeading: true);
+            m_increase = this.MakeStepButton(context, "+", "Increase", isLeading: false);
             m_field = new EditText(context)
             {
                 Gravity = GravityFlags.Center,
                 ImeOptions = ImeAction.Done,
                 InputType = InputTypes.ClassNumber | InputTypes.NumberFlagSigned | InputTypes.NumberFlagDecimal,
-                Background = null,
+                Background = new FieldWell(ThemeColors.Resolve(context, kWellBackground).ToAndroidColor(), m_density),
             };
             m_field.SetSingleLine(true);
             m_field.SetMinEms(3);
 
             // The number is text control text, as on WinUI3, and dims while read-only (the field is disabled then)
-            int fieldText = ThemeColors.Resolve(context, kFieldForeground).ToAndroidColor().ToArgb();
-            int fieldTextDisabled = ThemeColors.Resolve(context, kFieldForegroundDisabled).ToAndroidColor().ToArgb();
-            m_field.SetTextColor(new ColorStateList(
-                new[] { new[] { -Android.Resource.Attribute.StateEnabled }, Array.Empty<int>() },
-                new[] { fieldTextDisabled, fieldText }
-            ));
+            m_field.SetTextColor(MakeReadOnlyDimmedText(context, kFieldForeground));
 
-            // The minus, field and plus share one bordered frame; the label sits outside it.
+            // The minus, field and plus share one bordered pop-out frame; the label sits outside it. The buttons have no
+            //  fill of their own, so they read as part of the frame, and the frame shows above and below the field's well.
+            //  The frame is padded by its border so a pressed button fills inside the outline rather than over it.
+            int border = (int)Math.Max(1f, MobileLook.NumericEditor.BorderThickness * m_density);
+            int wellInset = (int)(MobileLook.NumericEditor.WellInset * m_density);
+            int buttonWidth = (int)(MobileLook.NumericEditor.StepButtonWidth * m_density);
+            m_frame = ThemeColors.ToDrawable(ThemeColors.Resolve(context, kSurface));
+            m_frame.SetCornerRadius(MobileLook.NumericEditor.CornerRadius * m_density);
             var frame = new LinearLayout(context) { Orientation = Android.Widget.Orientation.Horizontal, Background = m_frame };
             frame.SetGravity(GravityFlags.CenterVertical);
-            m_frame.SetCornerRadius(kCornerRadiusDp * m_density);
-            frame.AddView(m_decrease, new LayoutParams((int)(kButtonWidthDp * m_density), ViewGroup.LayoutParams.MatchParent));
-            frame.AddView(m_field, new LayoutParams(0, ViewGroup.LayoutParams.WrapContent, 1f));
-            frame.AddView(m_increase, new LayoutParams((int)(kButtonWidthDp * m_density), ViewGroup.LayoutParams.MatchParent));
+            frame.SetPadding(border, border, border, border);
+            frame.AddView(m_decrease, new LayoutParams(buttonWidth, ViewGroup.LayoutParams.MatchParent));
+            frame.AddView(m_field, new LayoutParams(0, ViewGroup.LayoutParams.WrapContent, 1f) { TopMargin = wellInset, BottomMargin = wellInset });
+            frame.AddView(m_increase, new LayoutParams(buttonWidth, ViewGroup.LayoutParams.MatchParent));
 
             this.AddView(m_label, new LayoutParams(ViewGroup.LayoutParams.WrapContent, ViewGroup.LayoutParams.WrapContent));
             this.AddView(frame, new LayoutParams(0, ViewGroup.LayoutParams.WrapContent, 1f));
@@ -324,6 +415,8 @@ namespace AJut.UX.Controls
                 m_minimum = values.GetFloat(Resource.Styleable.AJutNumericEditor_ajutMinimum, float.NegativeInfinity);
                 m_maximum = values.GetFloat(Resource.Styleable.AJutNumericEditor_ajutMaximum, float.PositiveInfinity);
                 m_nudge = values.GetFloat(Resource.Styleable.AJutNumericEditor_ajutNudge, 1f);
+                m_bigNudge = values.GetFloat(Resource.Styleable.AJutNumericEditor_ajutBigNudge, (float)kDefaultBigNudge);
+                m_smallNudge = values.GetFloat(Resource.Styleable.AJutNumericEditor_ajutSmallNudge, (float)kDefaultSmallNudge);
                 m_decimalPlacesAllowed = values.GetInt(Resource.Styleable.AJutNumericEditor_ajutDecimalPlacesAllowed, -1);
                 m_outOfBoundsResponse = (eOutOfBoundsResponse)values.GetInt(Resource.Styleable.AJutNumericEditor_ajutOutOfBoundsResponse, (int)eOutOfBoundsResponse.ErrorAndToolTip);
                 this.Label = values.GetString(Resource.Styleable.AJutNumericEditor_ajutLabel);
@@ -363,7 +456,9 @@ namespace AJut.UX.Controls
             _ => null,
         };
 
-        private TextView MakeStepButton (Context context, string glyph, string description)
+        // A step button is the frame's own surface until pressed, when it fills with the bright highlight. The fill is
+        //  rounded on the frame's outer side, just inside the outline's rounded corners, so it does not poke past them.
+        private TextView MakeStepButton (Context context, string glyph, string description, bool isLeading)
         {
             var button = new TextView(context)
             {
@@ -375,9 +470,16 @@ namespace AJut.UX.Controls
                 TextSize = 20,
             };
 
-            button.SetTextColor(ThemeColors.Resolve(context, kForeground).ToAndroidColor());
+            // Its glyph dims while read-only (the button is disabled then), as the number does
+            button.SetTextColor(MakeReadOnlyDimmedText(context, kForeground));
             var pressed = new GradientDrawable();
             pressed.SetColor(ThemeColors.Resolve(context, kButtonPressed).ToAndroidColor());
+            float radius = Math.Max(0f, (MobileLook.NumericEditor.CornerRadius - MobileLook.NumericEditor.BorderThickness) * m_density);
+            pressed.SetCornerRadii(isLeading
+                ? new[] { radius, radius, 0f, 0f, 0f, 0f, radius, radius }
+                : new[] { 0f, 0f, radius, radius, radius, radius, 0f, 0f }
+            );
+
             var states = new StateListDrawable();
             states.AddState(new[] { Android.Resource.Attribute.StatePressed }, pressed);
             button.Background = states;
@@ -388,15 +490,44 @@ namespace AJut.UX.Controls
         {
             Context context = this.Context!;
             ThemedColor border = (m_errorMessage != null) ? kErrorBorder : (m_field.HasFocus ? kFocusBorder : kNormalBorder);
-            m_frame.SetStroke((int)Math.Max(1f, kBorderThicknessDp * m_density), ThemeColors.Resolve(context, border).ToAndroidColor());
+            m_frame.SetStroke((int)Math.Max(1f, MobileLook.NumericEditor.BorderThickness * m_density), ThemeColors.Resolve(context, border).ToAndroidColor());
         }
 
-        private void StepOnce (bool positive)
+        // A text color for a view that is disabled while the editor is read-only: the given color, and the read-only one
+        //  while disabled
+        private static ColorStateList MakeReadOnlyDimmedText (Context context, ThemedColor normal)
+        {
+            return new ColorStateList(
+                new[] { new[] { -Android.Resource.Attribute.StateEnabled }, Array.Empty<int>() },
+                new[] { ThemeColors.Resolve(context, kReadOnlyForeground).ToAndroidColor().ToArgb(), ThemeColors.Resolve(context, normal).ToAndroidColor().ToArgb() }
+            );
+        }
+
+        private void StepOnce (bool positive, double amount)
         {
             if (!m_isReadOnly)
             {
-                m_controller.Nudge(positive, m_nudge);
+                m_controller.Nudge(positive, amount);
             }
+        }
+
+        // The tier the held modifiers pick: Ctrl or Meta (a Mac keyboard's Command) for the big step, Shift for the small one
+        private double PickNudge (MetaKeyStates modifiers)
+        {
+            return NumericEditorController.PickNudgeAmount(
+                (modifiers & (MetaKeyStates.CtrlOn | MetaKeyStates.MetaOn)) != 0,
+                (modifiers & MetaKeyStates.ShiftOn) != 0,
+                m_nudge,
+                m_bigNudge,
+                m_smallNudge
+            );
+        }
+
+        // The text label shows only with text to show, and never while a LabelView stands in for it
+        private void UpdateLabelVisibility ()
+        {
+            bool isShown = (m_labelView == null) && !string.IsNullOrEmpty(m_label.Text);
+            m_label.Visibility = isShown ? ViewStates.Visible : ViewStates.Gone;
         }
 
         private void StopRepeating ()
@@ -430,7 +561,8 @@ namespace AJut.UX.Controls
             this.PaintFrame();
         }
 
-        // A tap steps once; holding steps again after a short delay, then repeatedly until the finger lifts.
+        // A tap steps once; holding steps again after a short delay, then repeatedly until the finger lifts. The step is the
+        // tier the keyboard modifiers held at the press pick, for the whole hold.
         private void OnStepButtonTouch (object? sender, View.TouchEventArgs e)
         {
             e.Handled = false;
@@ -443,11 +575,12 @@ namespace AJut.UX.Controls
             switch (e.Event.ActionMasked)
             {
                 case MotionEventActions.Down:
+                    double amount = this.PickNudge(e.Event.MetaState);
                     this.StopRepeating();
-                    this.StepOnce(positive);
+                    this.StepOnce(positive, amount);
                     m_repeatHandler ??= new Handler(Looper.MainLooper!);
-                    m_repeat = new RepeatNudge(this, positive);
-                    m_repeatHandler.PostDelayed(m_repeat, kRepeatDelayMs);
+                    m_repeat = new RepeatNudge(this, positive, amount);
+                    m_repeatHandler.PostDelayed(m_repeat, (long)MobileLook.NumericEditor.RepeatDelay.TotalMilliseconds);
                     break;
 
                 case MotionEventActions.Up:
@@ -463,11 +596,13 @@ namespace AJut.UX.Controls
         {
             private readonly NumericEditor m_owner;
             private readonly bool m_positive;
+            private readonly double m_amount;
 
-            public RepeatNudge (NumericEditor owner, bool positive)
+            public RepeatNudge (NumericEditor owner, bool positive, double amount)
             {
                 m_owner = owner;
                 m_positive = positive;
+                m_amount = amount;
             }
 
             public void Run ()
@@ -477,8 +612,67 @@ namespace AJut.UX.Controls
                     return;
                 }
 
-                m_owner.StepOnce(m_positive);
-                m_owner.m_repeatHandler?.PostDelayed(this, kRepeatIntervalMs);
+                m_owner.StepOnce(m_positive, m_amount);
+                m_owner.m_repeatHandler?.PostDelayed(this, (long)MobileLook.NumericEditor.RepeatInterval.TotalMilliseconds);
+            }
+        }
+
+        // The field's background: the text box color, sunk into the frame by the edge lighting WinUI3's NumericEditor
+        //  draws with two nested borders, a shadow along the top and left and a light line along the bottom and right.
+        //  The lighting is the same literal shading over any theme, as it is there.
+        private sealed class FieldWell : Drawable
+        {
+            private static readonly Color kShadow = MobileLook.NumericEditor.WellShadow.ToAndroidColor();
+            private static readonly Color kLight = MobileLook.NumericEditor.WellLight.ToAndroidColor();
+
+            private readonly Paint m_paint = new Paint();
+            private readonly Color m_fill;
+            private readonly float m_shadowThickness;
+            private readonly float m_lightThickness;
+            private int m_alpha = 255;
+
+            public FieldWell (Color fill, float density)
+            {
+                m_fill = fill;
+                m_shadowThickness = Math.Max(1f, MobileLook.NumericEditor.WellShadowThickness * density);
+                m_lightThickness = Math.Max(1f, MobileLook.NumericEditor.WellLightThickness * density);
+            }
+
+            public override int Opacity => (int)Format.Translucent;
+
+            public override void Draw (Canvas canvas)
+            {
+                Rect bounds = this.Bounds;
+                float left = bounds.Left;
+                float top = bounds.Top;
+                float right = bounds.Right;
+                float bottom = bounds.Bottom;
+
+                // The light line runs the whole right side and the whole bottom, and the shadow the rest of the top and
+                //  left, the way the outer border (bottom and right) holds the inner one (top and left) on WinUI3
+                this.Fill(canvas, kLight, right - m_lightThickness, top, right, bottom);
+                this.Fill(canvas, kLight, left, bottom - m_lightThickness, right - m_lightThickness, bottom);
+                this.Fill(canvas, kShadow, left, top, right - m_lightThickness, top + m_shadowThickness);
+                this.Fill(canvas, kShadow, left, top + m_shadowThickness, left + m_shadowThickness, bottom - m_lightThickness);
+                this.Fill(canvas, m_fill, left + m_shadowThickness, top + m_shadowThickness, right - m_lightThickness, bottom - m_lightThickness);
+            }
+
+            public override void SetAlpha (int alpha)
+            {
+                m_alpha = alpha;
+                this.InvalidateSelf();
+            }
+
+            public override void SetColorFilter (ColorFilter? colorFilter)
+            {
+                m_paint.SetColorFilter(colorFilter);
+                this.InvalidateSelf();
+            }
+
+            private void Fill (Canvas canvas, Color color, float left, float top, float right, float bottom)
+            {
+                m_paint.Color = new Color(color.R, color.G, color.B, (byte)(color.A * m_alpha / 255));
+                canvas.DrawRect(left, top, right, bottom, m_paint);
             }
         }
     }

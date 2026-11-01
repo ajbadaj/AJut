@@ -6,6 +6,8 @@
     <Color x:Key="AJut_Color_PrimaryHighlightDark">#01417C</Color>
     <Color x:Key="AJut_Color_PrimaryHighlightBright">#0284FF</Color>
     <Color x:Key="AJut_Color_PrimaryHighlightDesat">#4D8ECC</Color>
+    <!-- The primary highlight at about a fifth, a tint for what is selected without being the highlight itself -->
+    <Color x:Key="AJut_Color_PrimaryHighlightTint">#370167BC</Color>
     <Color x:Key="AJut_Color_SecondaryHighlight">#CC7000</Color>
     <Color x:Key="AJut_Color_SecondaryHighlightDark">#995100</Color>
     <Color x:Key="AJut_Color_SecondaryHighlightBright">#FF8800</Color>
@@ -27,7 +29,8 @@
     <SolidColorBrush x:Key="AJut_Brush_Rimlighting" Color="{ThemeResource AJut_Color_RimLighting}"/>
     <SolidColorBrush x:Key="AJut_Brush_Shadow" Color="{ThemeResource AJut_Color_Shadow}"/>
 
-    <Color x:Key="AJut_Color_MouseInteractionHighlight">#D181A1</Color>
+    <!-- What a glyph button fills with under the pointer: the muted primary, which white glyphs and the normal text both read on -->
+    <StaticResource x:Key="AJut_Color_MouseInteractionHighlight" ResourceKey="AJut_Color_PrimaryHighlightDesat"/>
     <SolidColorBrush x:Key="AJut_Brush_MouseInteractionHighlight" Color="{ThemeResource AJut_Color_MouseInteractionHighlight}"/>
 
     <!-- ================[ Text & Glyphs ]====================== -->
@@ -39,8 +42,9 @@
     <Color x:Key="AJut_Color_InteractiveTextUnfocused">#E000</Color>
     <Color x:Key="AJut_Color_HighContrastText">#CCC</Color>
     <Color x:Key="AJut_Color_SymbolForeground">#202020</Color>
-    <Color x:Key="AJut_Color_SymbolForegroundPressed">#E000</Color>
-    <Color x:Key="AJut_Color_SymbolForegroundHighlight">#CCC</Color>
+    <!-- Pressed and over a highlight, a glyph sits on the blue, so it is light, as WPF's are -->
+    <Color x:Key="AJut_Color_SymbolForegroundPressed">#DDD</Color>
+    <Color x:Key="AJut_Color_SymbolForegroundHighlight">#FFF</Color>
 
     <SolidColorBrush x:Key="AJut_Brush_ImportantText" Color="{ThemeResource AJut_Color_ImportantText}" />
     <SolidColorBrush x:Key="AJut_Brush_NormalText" Color="{ThemeResource AJut_Color_NormalText}" />
@@ -59,7 +63,8 @@
     <!-- ================[ Lists ]====================== -->
     <Color x:Key="AJut_Color_ListBackground">#EAEAEA</Color>
     <Color x:Key="AJut_Color_ListBorder">#555</Color>
-    <StaticResource x:Key="AJut_Color_ListSelection" ResourceKey="AJut_Color_PrimaryHighlight"/>
+    <!-- The bright primary, which the dark text a selected item keeps reads on; the plain primary is too dark for it -->
+    <StaticResource x:Key="AJut_Color_ListSelection" ResourceKey="AJut_Color_PrimaryHighlightBright"/>
     <Color x:Key="AJut_Color_ListSelectionBackground">#190284FF</Color>
     <StaticResource x:Key="AJut_Color_TreeSelection" ResourceKey="AJut_Color_PrimaryHighlight"/>
     <StaticResource x:Key="AJut_Color_ListItemHover" ResourceKey="AJut_Color_PrimaryHighlightBright"/>
@@ -87,13 +92,21 @@
     <StaticResource x:Key="AJut_Brush_ButtonBorderHover" ResourceKey="AJut_Brush_BorderCommonHover"/>
     <StaticResource x:Key="AJut_Brush_ButtonBorderPressed" ResourceKey="AJut_Brush_BorderCommonPress"/>
 
-    <Color x:Key="AJut_Color_PanelBackground">#EDF0F3</Color>
+    <Color x:Key="AJut_Color_PanelBackground">#FCFDFE</Color>
     <SolidColorBrush x:Key="AJut_Brush_RootPanelBackground" Color="#DDD"/>
     <SolidColorBrush x:Key="AJut_Brush_PanelBackground" Color="{ThemeResource AJut_Color_PanelBackground}"/>
     <Color x:Key="AJut_Color_InnerPanelBackground">#E6E6E6</Color>
     <Color x:Key="AJut_Color_InnerPanelBackgroundHover">#EEE</Color>
     <SolidColorBrush x:Key="AJut_Brush_InnerPanelBackground" Color="{ThemeResource AJut_Color_InnerPanelBackground}"/>
-    <SolidColorBrush x:Key="AJut_Brush_PanelBorder" Color="#5000"/>
+    <!-- The level between the drawer and the panels: a page list, or a tab strip's unselected tabs -->
+    <Color x:Key="AJut_Color_NavigationPanelBackground">#E6E6E6</Color>
+    <SolidColorBrush x:Key="AJut_Brush_NavigationPanelBackground" Color="{ThemeResource AJut_Color_NavigationPanelBackground}"/>
+    <!-- The selected item in a list on one of those levels (a drawer's or a page list's). See-through, so one value
+         reads on every level: it shades whatever is under it a step darker. -->
+    <Color x:Key="AJut_Color_NavigationSelection">#16000000</Color>
+    <SolidColorBrush x:Key="AJut_Brush_NavigationSelection" Color="{ThemeResource AJut_Color_NavigationSelection}"/>
+    <Color x:Key="AJut_Color_PanelBorder">#CECECE</Color>
+    <SolidColorBrush x:Key="AJut_Brush_PanelBorder" Color="{ThemeResource AJut_Color_PanelBorder}"/>
 
     <SolidColorBrush x:Key="AJut_Brush_PopupBackground" Color="#BCBCBC"/>
 
@@ -123,12 +136,13 @@
     <Color x:Key="AJut_Color_ChromeButtonBackground">Transparent</Color>
     <Color x:Key="AJut_Color_ChromeButtonForeground">#333</Color>
     
-    <Color x:Key="AJut_Color_ChromeButtonHoverForeground">#202020</Color>
+    <!-- On the primary highlight under the pointer or pressed, a title bar button's glyph is white -->
+    <Color x:Key="AJut_Color_ChromeButtonHoverForeground">#FFF</Color>
     <StaticResource x:Key="AJut_Color_ChromeButtonHoverBackground" ResourceKey="AJut_Color_PrimaryHighlightDark"/>
     <SolidColorBrush x:Key="AJut_Brush_ChromeButtonHoverBackground" Color="{ThemeResource AJut_Color_ChromeButtonHoverBackground}"/>
     
     <StaticResource x:Key="AJut_Color_ChromeButtonPressedBackground" ResourceKey="AJut_Color_PrimaryHighlight"/>
-    <Color x:Key="AJut_Color_ChromeButtonPressedForeground">#202020</Color>
+    <Color x:Key="AJut_Color_ChromeButtonPressedForeground">#FFF</Color>
     <SolidColorBrush x:Key="AJut_Brush_ChromeButtonPressedBackground" Color="{ThemeResource AJut_Color_ChromeButtonPressedBackground}"/>
 
     <Color x:Key="AJut_Color_ChromeButtonInactiveBackground">Transparent</Color>
@@ -151,10 +165,10 @@
     <SolidColorBrush x:Key="AJut_Brush_WindowOuterBorder" Color="{ThemeResource AJut_Color_PrimaryHighlightBright}"/>
     <SolidColorBrush x:Key="AJut_Brush_SecondaryWindowOuterBorder" Color="#223"/>
     <SolidColorBrush x:Key="AJut_Brush_WindowGlowBorder" Color="#00A3F5"/>
-    <SolidColorBrush x:Key="AJut_Brush_WindowGlowBorderInactive" Color="{ThemeResource AJut_Color_PrimaryHighlightDark}"/>
+    <SolidColorBrush x:Key="AJut_Brush_WindowGlowBorderInactive" Color="{ThemeResource AJut_Color_BorderCommon}"/>
 
     <Color x:Key="AJut_Color_TitleBarBackground">#CCC</Color>
-    <StaticResource x:Key="AJut_Color_TitleBarBackgroundInactive" ResourceKey="AJut_Color_PrimaryHighlightDesat"/>
+    <Color x:Key="AJut_Color_TitleBarBackgroundInactive">#E6E6E6</Color>
 
     <SolidColorBrush x:Key="AJut_Brush_TitleBarBackground" Color="{ThemeResource AJut_Color_TitleBarBackground}"/>
     <SolidColorBrush x:Key="AJut_Brush_TitleBarBackgroundInactive" Color="{ThemeResource AJut_Color_TitleBarBackgroundInactive}"/>
@@ -164,7 +178,8 @@
     <SolidColorBrush x:Key="AJut_Brush_TitleBarForegroundImportant" Color="#000" />
     <SolidColorBrush x:Key="AJut_Brush_TitleBarGlyphHighlight" Color="#CCC" />
 
-    <SolidColorBrush x:Key="AJut_Brush_DrawerBackground" Color="#CCC"/>
+    <Color x:Key="AJut_Color_DrawerBackground">#CCC</Color>
+    <SolidColorBrush x:Key="AJut_Brush_DrawerBackground" Color="{ThemeResource AJut_Color_DrawerBackground}"/>
     <SolidColorBrush x:Key="AJut_Brush_DrawerForeground" Color="#333" />
     <SolidColorBrush x:Key="AJut_Brush_DrawerForegroundImportant" Color="#000" />
 

@@ -11,7 +11,10 @@ namespace AJutShowRoomAndroid
     using Android.App;
     using Android.Content;
     using Android.Content.Res;
+    using Android.Graphics.Drawables;
     using Android.OS;
+    using Android.Text;
+    using Android.Text.Style;
     using Android.Views;
     using Android.Widget;
     using Android.Window;
@@ -34,6 +37,7 @@ namespace AJutShowRoomAndroid
         private BackCallback? m_backCallback;
         private bool m_isBackCallbackRegistered;
         private eThemeMode m_appliedThemeMode = eThemeMode.System;
+        private ColorArgb? m_titleForeground;
 
         // ===========[ Setup/Construction/Teardown ]===================================
         protected override void AttachBaseContext (Context? @base)
@@ -92,11 +96,31 @@ namespace AJutShowRoomAndroid
             root.SetOnApplyWindowInsetsListener(new SystemBarsPadding());
             m_content = this.FindViewById<FrameLayout>(Resource.Id.shell_content)!;
 
-            // Themed, the theme bar and the pages sit on the AJut panel background, the way a themed WinUI3 window does.
-            if (ThemeColors.IsThemeLoaded
-                && AJutPalette.For(ThemeColors.IsDark(this), ThemeColors.IsTouchFocused).TryGetColor("AJut_Brush_PanelBackground", out ColorArgb panel))
+            // Themed, the shell steps down the surfaces from the title bar as the desktop showrooms do: the title bar's
+            // colors on the action bar, the navigation level behind the theme bar, and the panel color behind the pages,
+            // where the controls sit. Unthemed, all three keep the device theme's own.
+            if (ThemeColors.IsThemeLoaded)
             {
-                root.SetBackgroundColor(panel.ToAndroidColor());
+                AJutPalette.Table palette = AJutPalette.For(ThemeColors.IsDark(this), ThemeColors.IsTouchFocused);
+                if (palette.TryGetColor("AJut_Brush_PanelBackground", out ColorArgb panel))
+                {
+                    root.SetBackgroundColor(panel.ToAndroidColor());
+                }
+
+                if (palette.TryGetColor("AJut_Brush_NavigationPanelBackground", out ColorArgb navigation))
+                {
+                    this.FindViewById(Resource.Id.theme_bar)!.SetBackgroundColor(navigation.ToAndroidColor());
+                }
+
+                if ((this.ActionBar != null) && palette.TryGetColor("AJut_Brush_TitleBarBackground", out ColorArgb titleBar))
+                {
+                    this.ActionBar.SetBackgroundDrawable(new ColorDrawable(titleBar.ToAndroidColor()));
+                }
+
+                if (palette.TryGetColor("AJut_Brush_TitleBarForeground", out ColorArgb titleText))
+                {
+                    m_titleForeground = titleText;
+                }
             }
 
             if (OperatingSystem.IsAndroidVersionAtLeast(33))
@@ -312,7 +336,7 @@ namespace AJutShowRoomAndroid
             bool canGoBack = m_pages.Count > 1;
             if (this.ActionBar != null)
             {
-                this.ActionBar.Title = page.Title;
+                this.ActionBar.TitleFormatted = this.MakeTitle(page.Title);
                 this.ActionBar.SetDisplayHomeAsUpEnabled(canGoBack);
             }
 
@@ -348,6 +372,18 @@ namespace AJutShowRoomAndroid
             }
 
             m_isBackCallbackRegistered = shouldRegister;
+        }
+
+        // Themed, the title is in the title bar's text color; unthemed, the action bar's own
+        private SpannableString MakeTitle (string title)
+        {
+            var text = new SpannableString(title);
+            if (m_titleForeground.HasValue)
+            {
+                text.SetSpan(new ForegroundColorSpan(m_titleForeground.Value.ToAndroidColor()), 0, title.Length, SpanTypes.ExclusiveExclusive);
+            }
+
+            return text;
         }
 
         private string ReadRawText (int rawResourceId)

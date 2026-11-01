@@ -19,6 +19,37 @@
         app:ajutItems="@array/toggle_strip_test_items"
         app:ajutOrientation="vertical" />
 
+    <ajut.ux.controls.ToggleStrip
+        android:id="@+id/toggle_strip_disabled"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:enabled="false"
+        app:ajutItems="@array/toggle_strip_test_items" />
+
+    <ajut.ux.controls.ToggleStrip
+        android:id="@+id/toggle_strip_look"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:ajutCornerRadius="10dp"
+        app:ajutSeparatorThickness="3dp"
+        app:ajutItemPadding="6dp"
+        app:ajutItemPaddingVertical="2dp" />
+
+    <ajut.ux.controls.EnumToggleStrip
+        android:id="@+id/enum_toggle_strip_look"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:ajutCornerRadius="10dp"
+        app:ajutSeparatorThickness="3dp"
+        app:ajutItemPadding="6dp"
+        app:ajutItemPaddingVertical="2dp" />
+
+    <ajut.ux.controls.EnumToggleStrip
+        android:id="@+id/enum_toggle_strip_disabled"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:enabled="false" />
+
     <ajut.ux.controls.EnumToggleStrip
         android:id="@+id/enum_toggle_strip_vertical"
         android:layout_width="wrap_content"

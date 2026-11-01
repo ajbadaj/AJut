@@ -22,6 +22,7 @@ namespace AJutShowRoomUIKit.UI.Diagnostics
         private const string kDisabled = "Disabled";
         private const string kChecked = "Checked";
         private const string kCheckedPressed = "Checked, pressed";
+        private const string kDisabledChecked = "Disabled, checked";
         private const string kShape = "M 10,0 H 90 L 100,10 V 40 L 90,50 H 10 L 0,40 V 10 Z";
 
         private readonly List<UIControl> m_pressedSamples = new List<UIControl>();
@@ -84,7 +85,7 @@ namespace AJutShowRoomUIKit.UI.Diagnostics
 
             // 2. The strips
             this.AddHeading("ToggleStrip");
-            this.AddText("Each item is named for its state. The items are the ToggleStripButton keys over ToggleButtonBackground, and the outline and the lines between them are the common border. Hover only shows under an iPad pointer, so Hovered is left live for one. A strip has no disabled or focus look. EnumToggleStrip is this strip over an enum, and the theme bar at the top is one.");
+            this.AddText("Each item is named for its state. The strip is AJut_Brush_PopOutControlBackground, and its outline and the lines between items are the common border; the items are the ToggleStripButton keys, each over the system toggle background with the AJut theme off. Hover only shows under an iPad pointer, so Hovered is left live for one. Disabled, a strip looks like a disabled ComboBox: AJut_Brush_ControlBackgroundDisabled, outlined and divided with AJut_Brush_TextBoxBorder, and its items keep their fills and dim their text (ToggleButtonForegroundDisabled). A strip has no focus look. EnumToggleStrip is this strip over an enum, and the theme bar at the top is one.");
             m_uncheckedStrip.ItemsSource = new[] { kRest, kHovered, kPressed };
             m_checkedStrip.ItemsSource = new[] { kChecked, kCheckedPressed };
             foreach (ToggleStripItem item in m_checkedStrip.Items)
@@ -95,13 +96,16 @@ namespace AJutShowRoomUIKit.UI.Diagnostics
             this.AddDemo(m_uncheckedStrip);
             this.AddDemo(m_checkedStrip);
 
+            // The first item is selected, the second not
+            this.AddDemo(new ToggleStrip { ItemsSource = new[] { kDisabledChecked, kDisabled }, Enabled = false });
+
             this.AddText("With more items than fit: OverflowPopup moves the rest into a menu on a chevron button that takes the rest of the strip, and Scroll scrolls, with a dot past each end it can still scroll toward.");
             this.AddDemo(_Months(eToggleStripOverflow.OverflowPopup));
             this.AddDemo(_Months(eToggleStripOverflow.Scroll));
 
             // 3. The editors
             this.AddHeading("NumericEditor");
-            this.AddText("The frame is the NumericEditor border keys: normal, focused, and the error color out of bounds. The label is NumericEditor_Label, the number TextControlForeground (TextControlForegroundDisabled while read-only), and a held step button NumericEditor_NudgePressedBackground. Read-only buttons take the disabled button colors.");
+            this.AddText("The frame is AJut_Brush_PopOutControlBackground, outlined with the NumericEditor border keys: normal, focused, and the error color out of bounds. The number sits in a well of AJut_Brush_TextBoxBackground. The label in front of the frame is TextControlHeaderForeground, the number TextControlForeground, and a held step button NumericEditor_IncreasePointerOverBackground, the bright highlight. Read-only, the number and the step glyphs both take TextControlForegroundDisabled.");
             this.AddWide(_Sized(new NumericEditor { Value = 5, Maximum = 10, LabelText = kRest }));
             this.AddWide(_Sized(m_focusedEditor));
             this.AddWide(_Sized(m_errorEditor));

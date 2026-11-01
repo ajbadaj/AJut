@@ -118,6 +118,13 @@ namespace AJut.UX.Controls
             set => this.SetValue(ButtonForegroundProperty, value);
         }
 
+        public static readonly DependencyProperty ButtonBorderProperty = DPUtils.Register(_ => _.ButtonBorder);
+        public Brush ButtonBorder
+        {
+            get => (Brush)this.GetValue(ButtonBorderProperty);
+            set => this.SetValue(ButtonBorderProperty, value);
+        }
+
         public static readonly DependencyProperty ButtonFontSizeProperty = DPUtils.Register(_ => _.ButtonFontSize, 12.0);
         public double ButtonFontSize
         {

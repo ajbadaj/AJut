@@ -1,6 +1,7 @@
 namespace AJut.UX.CodeBinding
 {
     using System;
+    using System.Collections.Generic;
     using System.ComponentModel;
     using System.Windows.Input;
     using AJut.UX.Controls;
@@ -30,10 +31,65 @@ namespace AJut.UX.CodeBinding
     /// model's value; the restore then lands as a user edit and writes the old value over the model. With the model
     /// bound, it is the one place the value lives.
     /// </para>
+    /// <para>
+    /// Any view binds two ways through <see cref="BindView{TView, TArgs, T}"/>, the way UIKit's BindControl takes any
+    /// control. Android has no one event every view raises for an edit, as UIKit's ValueChanged is, so the caller names
+    /// the view's edit event with a hook and an unhook. Every two-way bind hands back its channel, as UIKit's do.
+    /// </para>
     /// </remarks>
     public static class BindingSetXT
     {
         // ===========[ Public Interface Methods ]===================================
+        /// <summary>
+        /// Binds a view property both ways: the view shows the source now and on every change, and its edit event writes
+        /// the user's edit back. <paramref name="hookEdited"/> and <paramref name="unhookEdited"/> add and remove the
+        /// handler they are given on that event (<c>(view, handler) => view.ProgressChanged += handler</c>, and the same
+        /// with <c>-=</c>); the set unhooks it on Dispose. The type arguments are given in full, since nothing passed in
+        /// names the event's argument type: <c>BindView&lt;SeekBar, SeekBar.ProgressChangedEventArgs, int&gt;</c>.
+        /// </summary>
+        public static BindingSet.TwoWayChannel BindView<TView, TArgs, T> (
+            this BindingSet set, TView view,
+            Action<TView, EventHandler<TArgs>> hookEdited, Action<TView, EventHandler<TArgs>> unhookEdited,
+            Func<TView, T> readTarget, Action<TView, T> writeTarget,
+            INotifyPropertyChanged source, string propertyName, Func<T> read, Action<T> write,
+            IEqualityComparer<T>? targetComparer = null)
+            where TView : View
+        {
+            // The channel pushes the model's value as it is made, before the edit event is hooked, so that first push's
+            // own edit event goes nowhere; after it, the channel's guard ignores the edit event each push raises.
+            view.SaveEnabled = false;
+            BindingSet.TwoWayChannel channel = set.TwoWay(
+                source, propertyName,
+                read, write,
+                () => readTarget(view), value => writeTarget(view, value),
+                targetComparer
+            );
+
+            set.Add(new ViewEditLink<TView, TArgs>(view, hookEdited, unhookEdited, channel));
+            return channel;
+        }
+
+        /// <summary>Binds a view property both ways through a conversion, for a view that shows a different type than the source holds.</summary>
+        public static BindingSet.TwoWayChannel BindView<TView, TArgs, TSource, TTarget> (
+            this BindingSet set, TView view,
+            Action<TView, EventHandler<TArgs>> hookEdited, Action<TView, EventHandler<TArgs>> unhookEdited,
+            Func<TView, TTarget> readTarget, Action<TView, TTarget> writeTarget,
+            INotifyPropertyChanged source, string propertyName, Func<TSource> read, Action<TSource> write,
+            BindingConversion<TSource, TTarget> conversion)
+            where TView : View
+        {
+            view.SaveEnabled = false;
+            BindingSet.TwoWayChannel channel = set.TwoWay(
+                source, propertyName,
+                read, write,
+                () => readTarget(view), value => writeTarget(view, value),
+                conversion
+            );
+
+            set.Add(new ViewEditLink<TView, TArgs>(view, hookEdited, unhookEdited, channel));
+            return channel;
+        }
+
         /// <summary>Runs <paramref name="action"/> whenever <paramref name="view"/> is clicked, until the set is disposed.</summary>
         public static void OnClick (this BindingSet set, View view, Action action)
         {
@@ -41,23 +97,27 @@ namespace AJut.UX.CodeBinding
         }
 
         /// <summary>Clicking <paramref name="view"/> executes <paramref name="command"/>, and the view's Enabled follows its CanExecute.</summary>
-        public static void BindCommand (this BindingSet set, View view, ICommand command, object? parameter = null)
+        public static BindingSet.CommandChannel BindCommand (this BindingSet set, View view, ICommand command, object? parameter = null)
         {
             BindingSet.CommandChannel channel = set.Command(command, parameter, canExecute => view.Enabled = canExecute);
             set.Add(new CommandClickLink(view, channel));
+            return channel;
         }
 
         /// <summary>A text field edits a string property as the user types, and shows it when it changes elsewhere.</summary>
-        public static void BindText (this BindingSet set, EditText field, INotifyPropertyChanged source, string propertyName, Func<string?> read, Action<string> write)
+        public static BindingSet.TwoWayChannel BindText (this BindingSet set, EditText field, INotifyPropertyChanged source, string propertyName, Func<string?> read, Action<string> write)
         {
             field.SaveEnabled = false;
             var link = new TextEditLink(field);
             set.Add(link);
-            link.Channel = set.TwoWay<string>(
+            BindingSet.TwoWayChannel channel = set.TwoWay<string>(
                 source, propertyName,
                 () => read() ?? string.Empty, write,
                 () => field.Text ?? string.Empty, link.Push
             );
+
+            link.Channel = channel;
+            return channel;
         }
 
         /// <summary>A text view shows a string property.</summary>
@@ -67,15 +127,60 @@ namespace AJut.UX.CodeBinding
         }
 
         /// <summary>A check box, switch or toggle edits a bool property.</summary>
-        public static void BindChecked (this BindingSet set, CompoundButton check, INotifyPropertyChanged source, string propertyName, Func<bool> read, Action<bool> write)
+        public static BindingSet.TwoWayChannel BindChecked (this BindingSet set, CompoundButton check, INotifyPropertyChanged source, string propertyName, Func<bool> read, Action<bool> write)
         {
             check.SaveEnabled = false;
             var link = new CheckedLink(check);
             set.Add(link);
-            link.Channel = set.TwoWay<bool>(
+            BindingSet.TwoWayChannel channel = set.TwoWay<bool>(
                 source, propertyName,
                 read, write,
                 () => check.Checked, value => check.Checked = value
+            );
+
+            link.Channel = channel;
+            return channel;
+        }
+
+        /// <summary>
+        /// A seek bar's progress edits an int property, continuously while it is dragged, as a UISlider bound on UIKit
+        /// does. The property's range is the seek bar's to set (Min and Max).
+        /// </summary>
+        public static BindingSet.TwoWayChannel BindProgress (this BindingSet set, SeekBar seekBar, INotifyPropertyChanged source, string propertyName, Func<int> read, Action<int> write)
+        {
+            return set.BindView<SeekBar, SeekBar.ProgressChangedEventArgs, int>(
+                seekBar,
+                _HookProgressChanged,
+                _UnhookProgressChanged,
+                _ReadProgress,
+                _WriteProgress,
+                source,
+                propertyName,
+                read,
+                write
+            );
+        }
+
+        /// <summary>
+        /// A spinner's selected position edits an index property, as a UISegmentedControl bound on UIKit does. An empty
+        /// spinner reads back -1 (no selection), and a position outside its items leaves it as it is.
+        /// </summary>
+        /// <remarks>
+        /// A spinner reports a selection when it next lays one out, one set from code included, so a model push comes back
+        /// as an edit after the push has finished. It writes the position the model already holds, which changes nothing.
+        /// </remarks>
+        public static BindingSet.TwoWayChannel BindSelectedPosition (this BindingSet set, Spinner spinner, INotifyPropertyChanged source, string propertyName, Func<int> read, Action<int> write)
+        {
+            return set.BindView<Spinner, AdapterView.ItemSelectedEventArgs, int>(
+                spinner,
+                _HookItemSelected,
+                _UnhookItemSelected,
+                _ReadSelectedPosition,
+                _WriteSelectedPosition,
+                source,
+                propertyName,
+                read,
+                write
             );
         }
 
@@ -92,75 +197,107 @@ namespace AJut.UX.CodeBinding
         }
 
         /// <summary>A <see cref="ColorEditIngressControl"/> edits a color property, live as the picker moves, and shows it when it changes elsewhere.</summary>
-        public static void BindEditColor (this BindingSet set, ColorEditIngressControl control, INotifyPropertyChanged source, string propertyName, Func<ColorArgb> read, Action<ColorArgb> write)
+        public static BindingSet.TwoWayChannel BindEditColor (this BindingSet set, ColorEditIngressControl control, INotifyPropertyChanged source, string propertyName, Func<ColorArgb> read, Action<ColorArgb> write)
         {
             var link = new EditColorLink(control);
             set.Add(link);
-            link.Channel = set.TwoWay<ColorArgb>(
+            BindingSet.TwoWayChannel channel = set.TwoWay<ColorArgb>(
                 source, propertyName,
                 read, write,
                 () => control.EditColor, value => control.EditColor = value
             );
+
+            link.Channel = channel;
+            return channel;
         }
 
         /// <summary>A <see cref="ToggleStrip"/>'s selected item edits a property, and follows it when it changes elsewhere.</summary>
-        public static void BindSelectedItem (this BindingSet set, ToggleStrip strip, INotifyPropertyChanged source, string propertyName, Func<object?> read, Action<object?> write)
+        public static BindingSet.TwoWayChannel BindSelectedItem (this BindingSet set, ToggleStrip strip, INotifyPropertyChanged source, string propertyName, Func<object?> read, Action<object?> write)
         {
             var link = new ToggleStripSelectionLink(strip);
             set.Add(link);
-            link.Channel = set.TwoWay<object?>(
+            BindingSet.TwoWayChannel channel = set.TwoWay<object?>(
                 source, propertyName,
                 read, write,
                 () => strip.SelectedItem, value => strip.SelectedItem = value
             );
+
+            link.Channel = channel;
+            return channel;
         }
 
         /// <summary>An <see cref="EnumToggleStrip"/>'s selected value edits an enum property (the combined value, for a multi-select [Flags] strip).</summary>
-        public static void BindSelectedValue<TEnum> (this BindingSet set, EnumToggleStrip strip, INotifyPropertyChanged source, string propertyName, Func<TEnum> read, Action<TEnum> write)
+        public static BindingSet.TwoWayChannel BindSelectedValue<TEnum> (this BindingSet set, EnumToggleStrip strip, INotifyPropertyChanged source, string propertyName, Func<TEnum> read, Action<TEnum> write)
             where TEnum : struct, Enum
         {
             var link = new SelectedItemLink(strip);
             set.Add(link);
-            link.Channel = set.TwoWay(
+            BindingSet.TwoWayChannel channel = set.TwoWay(
                 source, propertyName,
                 read, write,
                 () => strip.SelectedItem, value => strip.SelectedItem = value,
                 new BindingConversion<TEnum, object?>(_Box, _TryUnbox)
             );
+
+            link.Channel = channel;
+            return channel;
         }
 
         /// <summary>An <see cref="EnumComboBox"/>'s selected value edits an enum property.</summary>
-        public static void BindSelectedValue<TEnum> (this BindingSet set, EnumComboBox comboBox, INotifyPropertyChanged source, string propertyName, Func<TEnum> read, Action<TEnum> write)
+        public static BindingSet.TwoWayChannel BindSelectedValue<TEnum> (this BindingSet set, EnumComboBox comboBox, INotifyPropertyChanged source, string propertyName, Func<TEnum> read, Action<TEnum> write)
             where TEnum : struct, Enum
         {
             var link = new SelectedItemLink(comboBox);
             set.Add(link);
-            link.Channel = set.TwoWay(
+            BindingSet.TwoWayChannel channel = set.TwoWay(
                 source, propertyName,
                 read, write,
                 () => comboBox.SelectedItem, value => comboBox.SelectedItem = value,
                 new BindingConversion<TEnum, object?>(_Box, _TryUnbox)
             );
+
+            link.Channel = channel;
+            return channel;
         }
 
         /// <summary>
         /// A <see cref="NumericEditor"/> edits a numeric property of type <typeparamref name="T"/>, and shows it when it
         /// changes elsewhere. The editor works in <typeparamref name="T"/>, so an int property steps and caps as an int.
         /// </summary>
-        public static void BindValue<T> (this BindingSet set, NumericEditor editor, INotifyPropertyChanged source, string propertyName, Func<T> read, Action<T> write)
+        public static BindingSet.TwoWayChannel BindValue<T> (this BindingSet set, NumericEditor editor, INotifyPropertyChanged source, string propertyName, Func<T> read, Action<T> write)
             where T : struct, IConvertible
         {
             var link = new NumericValueLink(editor);
             set.Add(link);
-            link.Channel = set.TwoWay(
+            BindingSet.TwoWayChannel channel = set.TwoWay(
                 source, propertyName,
                 read, write,
                 () => editor.Value, value => editor.Value = value!,
                 new BindingConversion<T, object?>(_BoxNumber, _TryConvertNumber)
             );
+
+            link.Channel = channel;
+            return channel;
         }
 
         // ===========[ Helper Methods ]===================================
+        private static void _HookProgressChanged (SeekBar seekBar, EventHandler<SeekBar.ProgressChangedEventArgs> handler) => seekBar.ProgressChanged += handler;
+        private static void _UnhookProgressChanged (SeekBar seekBar, EventHandler<SeekBar.ProgressChangedEventArgs> handler) => seekBar.ProgressChanged -= handler;
+        private static int _ReadProgress (SeekBar seekBar) => seekBar.Progress;
+        private static void _WriteProgress (SeekBar seekBar, int value) => seekBar.Progress = value;
+
+        private static void _HookItemSelected (Spinner spinner, EventHandler<AdapterView.ItemSelectedEventArgs> handler) => spinner.ItemSelected += handler;
+        private static void _UnhookItemSelected (Spinner spinner, EventHandler<AdapterView.ItemSelectedEventArgs> handler) => spinner.ItemSelected -= handler;
+        private static int _ReadSelectedPosition (Spinner spinner) => spinner.SelectedItemPosition;
+
+        private static void _WriteSelectedPosition (Spinner spinner, int value)
+        {
+            if ((value >= 0) && (value < (spinner.Adapter?.Count ?? 0)))
+            {
+                spinner.SetSelection(value, false);
+            }
+        }
+
         private static object? _BoxNumber<T> (T value) where T : struct, IConvertible => value;
 
         private static bool _TryConvertNumber<T> (object? target, out T value) where T : struct, IConvertible
@@ -201,6 +338,28 @@ namespace AJut.UX.CodeBinding
         }
 
         // ===========[ Subclasses/structs ]===================================
+        // Owns the one view event subscription for a BindView: the hook and unhook it is given add and remove its own
+        // handler on the view's edit event, so the += and its -= are both here.
+        private sealed class ViewEditLink<TView, TArgs> : IDisposable
+            where TView : View
+        {
+            private readonly TView m_view;
+            private readonly Action<TView, EventHandler<TArgs>> m_unhookEdited;
+            private readonly BindingSet.TwoWayChannel m_channel;
+
+            public ViewEditLink (TView view, Action<TView, EventHandler<TArgs>> hookEdited, Action<TView, EventHandler<TArgs>> unhookEdited, BindingSet.TwoWayChannel channel)
+            {
+                m_view = view;
+                m_unhookEdited = unhookEdited;
+                m_channel = channel;
+                hookEdited(m_view, this.OnEdited);
+            }
+
+            public void Dispose () => m_unhookEdited(m_view, this.OnEdited);
+
+            private void OnEdited (object? sender, TArgs e) => m_channel.OnTargetEdited();
+        }
+
         private sealed class ClickLink : IDisposable
         {
             private readonly View m_view;

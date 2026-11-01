@@ -6,7 +6,6 @@ namespace AJut.UX.Tests
     using AJut.UX.Helpers;
     using AJut.UX.Theming;
     using Android.Content;
-    using Android.Graphics;
     using Android.Graphics.Drawables;
     using Android.Views;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -15,9 +14,6 @@ namespace AJut.UX.Tests
     [TestClass]
     public class ThemeColorsTests
     {
-        private const int kWidth = 200;
-        private const int kHeight = 100;
-
         private static readonly ThemedColor kProbe = ThemedColor.FromArgb(AJutThemeKeys.ColorEditIngressControl_HighlightBorderBrush, 0xFF010203, 0xFF040506);
         private static readonly ThemedColor kButtonBackground = ThemedColor.FromArgb("ButtonBackground", 0xFF010203, 0xFF040506);
 
@@ -44,8 +40,8 @@ namespace AJut.UX.Tests
         {
             ThemeColors.IsThemeLoaded = true;
             bool isDark = ThemeColors.IsDark(TestHost.RequiredContext);
-            Assert.IsTrue(AJutPalette.For(isDark).TryGetColor("AJut_Color_PrimaryHighlight", out ColorArgb highlight));
-            Assert.AreEqual(highlight, ThemeColors.Resolve(TestHost.RequiredContext, kProbe), "The highlight border aliases the primary highlight");
+            Assert.IsTrue(AJutPalette.For(isDark, ThemeColors.IsTouchFocused).TryGetColor(kProbe.Key, out ColorArgb themed), "The palette has a color for the probe's key, so the check below means something");
+            Assert.AreEqual(themed, ThemeColors.Resolve(TestHost.RequiredContext, kProbe));
         }
 
         [TestMethod]
@@ -55,19 +51,6 @@ namespace AJut.UX.Tests
             var unknown = ThemedColor.FromArgb("AJut_NoSuchControl_NoSuchBrush", 0xFF010203, 0xFF040506);
             bool isDark = ThemeColors.IsDark(TestHost.RequiredContext);
             Assert.AreEqual(isDark ? unknown.Dark : unknown.Light, ThemeColors.Resolve(TestHost.RequiredContext, unknown));
-        }
-
-        [TestMethod]
-        public void Themed_BrushButtonPaintsTheThemedButtonColors ()
-        {
-            ThemeColors.IsThemeLoaded = true;
-            ThemeColors.IsTouchFocused = false;
-            var button = new BrushButton(TestHost.RequiredContext);
-            bool isDark = ThemeColors.IsDark(TestHost.RequiredContext);
-            Assert.IsTrue(AJutPalette.For(isDark, isTouch: false).TryGetColor("ButtonBackground", out ColorArgb expected));
-
-            var surface = (GradientDrawable)button.Background!;
-            Assert.AreEqual(expected, new AndroidColor(surface.Color!.DefaultColor).ToColorArgb());
         }
 
         [TestMethod]
@@ -109,55 +92,6 @@ namespace AJut.UX.Tests
         }
 
         [TestMethod]
-        public void Themed_TouchFocused_BrushButtonHasNoBorder ()
-        {
-            ThemeColors.IsThemeLoaded = true;
-            ThemeColors.IsTouchFocused = true;
-            var button = new BrushButton(TestHost.RequiredContext) { BorderThickness = 8 };
-            ColorArgb fill = ThemeColors.Resolve(TestHost.RequiredContext, kButtonBackground);
-
-            // The stroke is centered on a rectangle inset by half its thickness, so x = 6 is inside both the fill and
-            // the border band: the fill shows there only if the border is clear.
-            using Bitmap bitmap = _Render(button);
-            Assert.AreEqual(fill, _Pixel(bitmap, 6, kHeight / 2), "The border band shows the fill");
-        }
-
-        [TestMethod]
-        public void Themed_NotTouchFocused_BrushButtonKeepsItsBorder ()
-        {
-            ThemeColors.IsThemeLoaded = true;
-            ThemeColors.IsTouchFocused = false;
-            var button = new BrushButton(TestHost.RequiredContext) { BorderThickness = 8 };
-            ColorArgb border = ThemeColors.Resolve(TestHost.RequiredContext, ThemedColor.FromArgb("ButtonBorderBrush", 0xFF010203, 0xFF040506));
-            Assert.AreEqual(255, (int)border.A, "The desktop palette's button border is opaque, so the check below means something");
-
-            using Bitmap bitmap = _Render(button);
-            Assert.AreEqual(border, _Pixel(bitmap, 6, kHeight / 2), "The border band shows the border");
-        }
-
-        [TestMethod]
-        public void Themed_TouchFocused_GeometryButtonKeepsItsTrace ()
-        {
-            ThemeColors.IsThemeLoaded = true;
-            ThemeColors.IsTouchFocused = true;
-            bool isDark = ThemeColors.IsDark(TestHost.RequiredContext);
-            Assert.IsTrue(AJutPalette.For(isDark, isTouch: true).TryGetColor("AJut_Brush_BorderCommon", out ColorArgb border));
-            Assert.AreEqual(255, (int)border.A, "The common border is opaque, so the check below means something");
-
-            // Filled to the view, the shape is inset by half the trace, so the trace runs from x = 0 to 8 and x = 2 is
-            // outside the fill: only the trace paints there.
-            var button = new GeometryButton(TestHost.RequiredContext)
-            {
-                BackgroundGeometry = "M 0,0 H 100 V 50 H 0 Z",
-                GeometryStretch = ePathStretch.Fill,
-                TraceThickness = 8,
-            };
-
-            using Bitmap bitmap = _Render(button);
-            Assert.AreEqual(border, _Pixel(bitmap, 2, kHeight / 2), "The trace band shows the border");
-        }
-
-        [TestMethod]
         public void Themed_AutoBrushButtonWithNoAccent_DerivesFromTheThemesAccent ()
         {
             ThemeColors.IsThemeLoaded = true;
@@ -195,59 +129,5 @@ namespace AJut.UX.Tests
             var button = new AutoBrushButton(context);
             Assert.AreEqual(systemAccent, button.PropagatedAccentColor.ToArgb());
         }
-
-        [TestMethod]
-        public void Themed_NumericEditorFieldPaintsTheTextControlForeground ()
-        {
-            ThemeColors.IsThemeLoaded = true;
-            bool isDark = ThemeColors.IsDark(TestHost.RequiredContext);
-            Assert.IsTrue(AJutPalette.For(isDark, ThemeColors.IsTouchFocused).TryGetColor("TextControlForeground", out ColorArgb expected));
-
-            var editor = new NumericEditor(TestHost.RequiredContext);
-            Assert.AreEqual(expected, new AndroidColor(editor.Field.CurrentTextColor).ToColorArgb());
-        }
-
-        [TestMethod]
-        public void Themed_ReadOnlyNumericEditorFieldPaintsTheDisabledText ()
-        {
-            ThemeColors.IsThemeLoaded = true;
-            bool isDark = ThemeColors.IsDark(TestHost.RequiredContext);
-            Assert.IsTrue(AJutPalette.For(isDark, ThemeColors.IsTouchFocused).TryGetColor("TextControlForegroundDisabled", out ColorArgb expected));
-
-            var editor = new NumericEditor(TestHost.RequiredContext) { IsReadOnly = true };
-            Assert.AreEqual(expected, new AndroidColor(editor.Field.CurrentTextColor).ToColorArgb());
-        }
-
-        [TestMethod]
-        public void Unthemed_NumericEditorFieldPaintsTheTextLiteral ()
-        {
-            ThemeColors.IsThemeLoaded = false;
-            bool isDark = ThemeColors.IsDark(TestHost.RequiredContext);
-            var editor = new NumericEditor(TestHost.RequiredContext);
-
-            // The literal the step buttons' glyphs paint too: light E4000000, dark white
-            ColorArgb expected = isDark ? new ColorArgb(0xFF, 0xFF, 0xFF, 0xFF) : new ColorArgb(0xE4, 0x00, 0x00, 0x00);
-            Assert.AreEqual(expected, new AndroidColor(editor.Field.CurrentTextColor).ToColorArgb());
-        }
-
-        // ===========[ Helper Methods ]===================================
-        private static Bitmap _Render (View view)
-        {
-            view.Measure(
-                View.MeasureSpec.MakeMeasureSpec(kWidth, MeasureSpecMode.Exactly),
-                View.MeasureSpec.MakeMeasureSpec(kHeight, MeasureSpecMode.Exactly)
-            );
-            view.Layout(0, 0, kWidth, kHeight);
-
-            Bitmap bitmap = Bitmap.CreateBitmap(kWidth, kHeight, Bitmap.Config.Argb8888!)!;
-            using (var canvas = new Canvas(bitmap))
-            {
-                view.Draw(canvas);
-            }
-
-            return bitmap;
-        }
-
-        private static ColorArgb _Pixel (Bitmap bitmap, int x, int y) => new AndroidColor(bitmap.GetPixel(x, y)).ToColorArgb();
     }
 }

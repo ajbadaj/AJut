@@ -89,8 +89,15 @@
     -->
     <Style TargetType="local:DockLeafLayout">
         <Setter Property="Foreground"           Value="{ThemeResource AJut_Brush_NormalText}"/>
+        <!-- The header and the unselected tabs frame the panel on the navigation level; the
+             panel and its selected tab are on the panel color -->
+        <Setter Property="HeaderBackground"     Value="{ThemeResource AJut_Brush_NavigationPanelBackground}"/>
+        <!-- The panel being typed into: its header fills with the dark primary highlight, with the light text the theme
+             puts on its highlight, as on WPF -->
+        <Setter Property="HeaderFocusedBackground" Value="{ThemeResource AJut_Brush_PrimaryHighlightDark}"/>
+        <Setter Property="HeaderFocusedForeground" Value="{ThemeResource AJut_Brush_HighContrastText}"/>
         <Setter Property="PanelBackground"      Value="{ThemeResource AJut_Brush_PanelBackground}"/>
-        <Setter Property="PanelBorderBrush"     Value="{ThemeResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="PanelBorderBrush"     Value="{ThemeResource AJut_Brush_PanelBorder}"/>
         <Setter Property="PanelBorderThickness" Value="1"/>
         <Setter Property="TabStripBackground"   Value="Transparent"/>
         <!-- TopLeft=0, TopRight=0: flat top merges with header bar.
@@ -104,8 +111,9 @@
     No template redefinition - only DP setters.
     -->
     <Style TargetType="local:DockTabItem">
-        <Setter Property="Background"   Value="{ThemeResource AJut_Brush_PanelBackground}"/>
-        <Setter Property="BorderBrush"  Value="{ThemeResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="Background"           Value="{ThemeResource AJut_Brush_NavigationPanelBackground}"/>
+        <Setter Property="SelectedBackground"   Value="{ThemeResource AJut_Brush_PanelBackground}"/>
+        <Setter Property="BorderBrush"          Value="{ThemeResource AJut_Brush_PanelBorder}"/>
     </Style>
 
     <!--
@@ -141,6 +149,25 @@
     </Style>
 
     <!--
+    ===[ ComboBoxItem - AJut-themed override ]===
+    As WPF's themed drop-down: an item draws an outline, so the one under the pointer is outlined in the list hover
+    color over its faint fill (ComboBoxItemBorderBrushPointerOver). The stock items draw no border at all.
+    -->
+    <Style TargetType="ComboBoxItem">
+        <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+
+    <!--
+    ===[ ListBox - AJut-themed override ]===
+    As WPF's themed ListBox: the list background, outlined with the list border
+    -->
+    <Style TargetType="ListBox">
+        <Setter Property="Background" Value="{ThemeResource AJut_Brush_ListBackground}"/>
+        <Setter Property="BorderBrush" Value="{ThemeResource AJut_Brush_ListBorder}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+
+    <!--
     ===[ ToggleStrip - AJut-themed override ]===
     ToggleStripButton controls handle all button-level visual states via ThemeResource
     keys (redirected in AJutThemeMapAliasing.xaml). The strip container only needs
@@ -152,6 +179,10 @@
         <Setter Property="BorderBrush" Value="{ThemeResource AJut_Brush_BorderCommon}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="ItemPadding" Value="8,4"/>
+        <!-- Disabled, as the themed ComboBox: the brushes its disabled keys alias -->
+        <Setter Property="DisabledBackground" Value="{ThemeResource AJut_Brush_ControlBackgroundDisabled}"/>
+        <Setter Property="DisabledBorderBrush" Value="{ThemeResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="DisabledForeground" Value="{ThemeResource AJut_Brush_UnderstatedText}"/>
     </Style>
 
     <!--
@@ -164,6 +195,9 @@
         <Setter Property="BorderBrush" Value="{ThemeResource AJut_Brush_BorderCommon}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="ItemPadding" Value="8,4"/>
+        <Setter Property="DisabledBackground" Value="{ThemeResource AJut_Brush_ControlBackgroundDisabled}"/>
+        <Setter Property="DisabledBorderBrush" Value="{ThemeResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="DisabledForeground" Value="{ThemeResource AJut_Brush_UnderstatedText}"/>
     </Style>
 
     <!--
@@ -176,6 +210,7 @@
     <Style TargetType="local:BumpStack">
         <Setter Property="ButtonBackground" Value="{ThemeResource AJut_Brush_ControlBackground}"/>
         <Setter Property="ButtonForeground" Value="{ThemeResource AJut_Brush_SymbolForeground}"/>
+        <Setter Property="ButtonBorder" Value="{ThemeResource AJut_Brush_ButtonBorder}"/>
     </Style>
 
 </ResourceDictionary>

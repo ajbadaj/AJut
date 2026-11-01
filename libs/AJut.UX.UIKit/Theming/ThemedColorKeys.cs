@@ -38,6 +38,13 @@ namespace AJut.UX.Theming
         public const string ToggleButtonForegroundDisabled = "ToggleButtonForegroundDisabled";
 
         /// <summary>
+        /// A ToggleStrip item's text over its pressed and pointer-over fills, which with the AJut theme are the primary
+        /// highlight's solid colors: the light text that reads on them, as on WinUI3, AppKit and Android. Unthemed the
+        /// fills are faint washes, so it is the normal toggle text.
+        /// </summary>
+        public const string ToggleStripButton_HighlightForeground = "AJut_ToggleStripButton_HighlightForeground";
+
+        /// <summary>
         /// The common border, which ToggleStrip draws its outline and separators with. Not ToggleButtonBorderBrush, which
         /// is a button's own border: the touch palettes take that off, while a strip keeps its outline and separators.
         /// </summary>
@@ -51,29 +58,13 @@ namespace AJut.UX.Theming
         public const string TextControlForeground = "TextControlForeground";
         public const string TextControlForegroundDisabled = "TextControlForegroundDisabled";
 
+        /// <summary>The text box color, which NumericEditor's number sits in a well of, as WinUI3's TextBoxBackground does.</summary>
+        public const string Brush_TextBoxBackground = "AJut_Brush_TextBoxBackground";
+
         // ===========[ AJut control keys ]===================================================
         public const string NumericEditor_NormalBorderBrush = "AJut_NumericEditor_NormalBorderBrush";
         public const string NumericEditor_FocusBorderBrush = "AJut_NumericEditor_FocusBorderBrush";
         public const string NumericEditor_ErrorBrush = "AJut_NumericEditor_ErrorBrush";
-
-        /// <summary>
-        /// NumericEditor's default "#" label. A key only the UIKit package has, which the shared palette doesn't know, so
-        /// RegisterAll gives it a themed alias (understated text) as well as its unthemed default.
-        /// </summary>
-        public const string NumericEditor_Label = "AJut_NumericEditor_Label";
-
-        /// <summary>
-        /// A NumericEditor nudge button's fill while it is pressed, so a press reads clearly with no hover leading into
-        /// it. A key only the UIKit package has, so RegisterAll gives it a themed alias (the primary highlight) as well as
-        /// its unthemed default.
-        /// </summary>
-        public const string NumericEditor_NudgePressedBackground = "AJut_NumericEditor_NudgePressedBackground";
-
-        /// <summary>
-        /// The dots just outside a Scroll ToggleStrip's ends, one at each end it can still scroll toward. A key only the
-        /// UIKit package has, so RegisterAll gives it a themed alias (the symbol color) as well as its unthemed default.
-        /// </summary>
-        public const string ToggleStrip_ScrollIndicator = "AJut_ToggleStrip_ScrollIndicator";
 
         public const string ColorEditIngressControl_NormalBorderBrush = "AJut_ColorEditIngressControl_NormalBorderBrush";
         public const string ColorEditIngressControl_HighlightBorderBrush = "AJut_ColorEditIngressControl_HighlightBorderBrush";
@@ -114,6 +105,7 @@ namespace AJut.UX.Theming
             ThemedColors.SetUnthemedDefault(ToggleButtonBackground, UIColor.SecondarySystemBackground);
             ThemedColors.SetUnthemedDefault(ToggleButtonForeground, UIColor.Label);
             ThemedColors.SetUnthemedDefault(ToggleButtonForegroundDisabled, UIColor.TertiaryLabel);
+            ThemedColors.SetUnthemedDefault(ToggleStripButton_HighlightForeground, UIColor.Label);
             ThemedColors.SetUnthemedDefault(Brush_BorderCommon, UIColor.Separator);
 
             // 3. Combo box
@@ -123,21 +115,26 @@ namespace AJut.UX.Theming
             // 4. Text
             ThemedColors.SetUnthemedDefault(TextControlForeground, UIColor.Label);
             ThemedColors.SetUnthemedDefault(TextControlForegroundDisabled, UIColor.TertiaryLabel);
+            ThemedColors.SetUnthemedDefault(Brush_TextBoxBackground, UIColor.SystemBackground);
 
-            // 5. NumericEditor, ColorEditIngressControl and the ToggleStrip scroll indicators
+            // 5. NumericEditor and ColorEditIngressControl
             ThemedColors.SetUnthemedDefault(NumericEditor_NormalBorderBrush, UIColor.Separator);
             ThemedColors.SetUnthemedDefault(NumericEditor_FocusBorderBrush, null);
             ThemedColors.SetUnthemedDefault(NumericEditor_ErrorBrush, UIColor.SystemRed);
-            ThemedColors.SetUnthemedDefault(NumericEditor_Label, UIColor.SecondaryLabel);
-            ThemedColors.SetThemedAlias(NumericEditor_Label, "AJut_Brush_UnderstatedText");
-            ThemedColors.SetUnthemedDefault(NumericEditor_NudgePressedBackground, UIColor.SystemBlue);
-            ThemedColors.SetThemedAlias(NumericEditor_NudgePressedBackground, "AJut_Brush_PrimaryHighlight");
             ThemedColors.SetUnthemedDefault(ColorEditIngressControl_NormalBorderBrush, UIColor.Separator);
             ThemedColors.SetUnthemedDefault(ColorEditIngressControl_HighlightBorderBrush, null);
-            ThemedColors.SetUnthemedDefault(ToggleStrip_ScrollIndicator, UIColor.SecondaryLabel);
-            ThemedColors.SetThemedAlias(ToggleStrip_ScrollIndicator, "AJut_Brush_SymbolForeground");
 
-            // 6. GeometryButton's trace, unthemed the same as the stock button borders above
+            // 6. The MobileLook keys no other UIKit key above already covers: what NumericEditor's label, step glyphs and
+            //  pressed step buttons, a Scroll ToggleStrip's end dots, a disabled ToggleStrip's outline, and a pressed
+            //  GeometryButton's outline fall back to with no theme loaded
+            ThemedColors.SetUnthemedDefault(MobileLook.NumericEditor.Label, UIColor.Label);
+            ThemedColors.SetUnthemedDefault(MobileLook.NumericEditor.StepGlyph, UIColor.Label);
+            ThemedColors.SetUnthemedDefault(MobileLook.NumericEditor.StepPressedFill, UIColor.SystemBlue);
+            ThemedColors.SetUnthemedDefault(MobileLook.ToggleStrip.ScrollIndicator, UIColor.SecondaryLabel);
+            ThemedColors.SetUnthemedDefault(MobileLook.ToggleStrip.StripDisabledBorder, UIColor.Separator);
+            ThemedColors.SetUnthemedDefault(MobileLook.GeometryButton.PressedTrace, UIColor.SystemBlue);
+
+            // 7. GeometryButton's trace, unthemed the same as the stock button borders above
             ThemedColors.SetUnthemedDefault(GeometryButton_Trace, UIColor.Separator);
             ThemedColors.SetUnthemedDefault(GeometryButton_TracePointerOver, UIColor.Separator);
             ThemedColors.SetUnthemedDefault(GeometryButton_TracePressed, UIColor.Separator);

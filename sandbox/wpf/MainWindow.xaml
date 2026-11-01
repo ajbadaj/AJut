@@ -33,7 +33,7 @@
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="showroom" FontSize="18" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                <TextBlock Text="{Binding}" FontSize="22" VerticalAlignment="Center" Foreground="{DynamicResource AJut_Brush_TitleBarForegroundImportant}"/>
+                                <TextBlock Text="{Binding}" FontSize="22" VerticalAlignment="Center" Style="{DynamicResource Showroom_Style_TitleEmphasis}"/>
                             </StackPanel>
                         </DataTemplate>
                     </Setter.Value>

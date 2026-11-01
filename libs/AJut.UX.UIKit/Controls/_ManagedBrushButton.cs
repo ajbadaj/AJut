@@ -14,6 +14,14 @@ namespace AJut.UX.Controls
     /// </summary>
     public abstract class _ManagedBrushButton : UIButton
     {
+        // Android's managed buttons' defaults, in dp there and points here
+        private const float kDefaultCornerRadius = 4f;
+        private const float kDefaultBorderThickness = 1f;
+
+        // ===========[ Instance Fields ]===================================
+        private nfloat m_cornerRadius = kDefaultCornerRadius;
+        private nfloat m_borderThickness = kDefaultBorderThickness;
+
         // ===========[ Setup/Construction/Teardown ]===================================
         protected _ManagedBrushButton () : base(CGRect.Empty)
         {
@@ -26,6 +34,28 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ Properties ]===================================
+        /// <summary>The surface's corner radius, in points. Defaults to 4, as Android's does in dp.</summary>
+        public nfloat CornerRadius
+        {
+            get => m_cornerRadius;
+            set
+            {
+                m_cornerRadius = value;
+                this.RefreshActiveStateColors();
+            }
+        }
+
+        /// <summary>The border's thickness, in points. Defaults to 1, as Android's does in dp.</summary>
+        public nfloat BorderThickness
+        {
+            get => m_borderThickness;
+            set
+            {
+                m_borderThickness = value;
+                this.RefreshActiveStateColors();
+            }
+        }
+
         /// <summary>The interaction state the button is painted for right now.</summary>
         public eManagedButtonState ActiveState
         {
@@ -68,6 +98,8 @@ namespace AJut.UX.Controls
             UIBackgroundConfiguration background = configuration.Background;
             background.BackgroundColor = colors.Background ?? UIColor.Clear;
             background.StrokeColor = colors.Border ?? UIColor.Clear;
+            background.CornerRadius = m_cornerRadius;
+            background.StrokeWidth = m_borderThickness;
             configuration.Background = background;
             configuration.BaseForegroundColor = colors.Foreground;
 
@@ -84,22 +116,15 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ Helper Methods ]===================================
+        // The padding a bordered system button uses; the corner and border are the button's own properties, which
+        //  UpdateConfiguration puts on
         private static UIButtonConfiguration CreateBaseConfiguration ()
         {
-            // Sized to sit with the standard UIKit controls: a 6pt corner and a hairline border, with the
-            // padding a bordered system button uses.
-            const float kCornerRadius = 6f;
-            const float kBorderWidth = 1f;
             const float kVerticalPadding = 7f;
             const float kHorizontalPadding = 12f;
 
             UIButtonConfiguration configuration = UIButtonConfiguration.PlainButtonConfiguration;
             configuration.ContentInsets = new NSDirectionalEdgeInsets(kVerticalPadding, kHorizontalPadding, kVerticalPadding, kHorizontalPadding);
-
-            UIBackgroundConfiguration background = configuration.Background;
-            background.CornerRadius = kCornerRadius;
-            background.StrokeWidth = kBorderWidth;
-            configuration.Background = background;
             return configuration;
         }
 

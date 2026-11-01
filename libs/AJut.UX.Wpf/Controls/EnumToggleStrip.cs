@@ -124,6 +124,62 @@ namespace AJut.UX.Controls
             set => this.SetValue(ForegroundHoverProperty, value);
         }
 
+        /// <summary>The inner <see cref="ToggleStrip"/>'s <see cref="ToggleStrip.DisabledBackground"/>: its surface while disabled.</summary>
+        public static readonly DependencyProperty DisabledBackgroundProperty = DPUtils.Register(_ => _.DisabledBackground);
+        public Brush DisabledBackground
+        {
+            get => (Brush)this.GetValue(DisabledBackgroundProperty);
+            set => this.SetValue(DisabledBackgroundProperty, value);
+        }
+
+        /// <summary>The inner <see cref="ToggleStrip"/>'s <see cref="ToggleStrip.DisabledBorderBrush"/>: its outline while disabled.</summary>
+        public static readonly DependencyProperty DisabledBorderBrushProperty = DPUtils.Register(_ => _.DisabledBorderBrush);
+        public Brush DisabledBorderBrush
+        {
+            get => (Brush)this.GetValue(DisabledBorderBrushProperty);
+            set => this.SetValue(DisabledBorderBrushProperty, value);
+        }
+
+        /// <summary>The inner <see cref="ToggleStrip"/>'s <see cref="ToggleStrip.DisabledForeground"/>: every option's text while disabled.</summary>
+        public static readonly DependencyProperty DisabledForegroundProperty = DPUtils.Register(_ => _.DisabledForeground);
+        public Brush DisabledForeground
+        {
+            get => (Brush)this.GetValue(DisabledForegroundProperty);
+            set => this.SetValue(DisabledForegroundProperty, value);
+        }
+
+        /// <summary>The inner <see cref="ToggleStrip"/>'s <see cref="ToggleStrip.DisabledSelectedBackground"/>: the selected option's fill while disabled.</summary>
+        public static readonly DependencyProperty DisabledSelectedBackgroundProperty = DPUtils.Register(_ => _.DisabledSelectedBackground);
+        public Brush DisabledSelectedBackground
+        {
+            get => (Brush)this.GetValue(DisabledSelectedBackgroundProperty);
+            set => this.SetValue(DisabledSelectedBackgroundProperty, value);
+        }
+
+        /// <summary>The inner <see cref="ToggleStrip"/>'s <see cref="ToggleStrip.VerticalButtonBackground"/>: its scroll and overflow buttons' fill while vertical.</summary>
+        public static readonly DependencyProperty VerticalButtonBackgroundProperty = DPUtils.Register(_ => _.VerticalButtonBackground);
+        public Brush VerticalButtonBackground
+        {
+            get => (Brush)this.GetValue(VerticalButtonBackgroundProperty);
+            set => this.SetValue(VerticalButtonBackgroundProperty, value);
+        }
+
+        /// <summary>The inner <see cref="ToggleStrip"/>'s <see cref="ToggleStrip.VerticalButtonForeground"/>: its scroll and overflow buttons' glyph color while vertical.</summary>
+        public static readonly DependencyProperty VerticalButtonForegroundProperty = DPUtils.Register(_ => _.VerticalButtonForeground);
+        public Brush VerticalButtonForeground
+        {
+            get => (Brush)this.GetValue(VerticalButtonForegroundProperty);
+            set => this.SetValue(VerticalButtonForegroundProperty, value);
+        }
+
+        /// <summary>The inner <see cref="ToggleStrip"/>'s <see cref="ToggleStrip.VerticalButtonBorderBrush"/>: its scroll and overflow buttons' outline while vertical.</summary>
+        public static readonly DependencyProperty VerticalButtonBorderBrushProperty = DPUtils.Register(_ => _.VerticalButtonBorderBrush);
+        public Brush VerticalButtonBorderBrush
+        {
+            get => (Brush)this.GetValue(VerticalButtonBorderBrushProperty);
+            set => this.SetValue(VerticalButtonBorderBrushProperty, value);
+        }
+
         public static readonly DependencyProperty ItemPaddingProperty = DPUtils.Register(_ => _.ItemPadding, new Thickness(6));
         public Thickness ItemPadding
         {

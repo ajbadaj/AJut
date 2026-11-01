@@ -11,6 +11,53 @@
                      TextBoxFocusStates (TextBoxUnfocused/TextBoxFocused),
                      WarningDisplayStates (WarningHidden/WarningShown),
                      ExplorerButtonStates (ExplorerButtonHidden/ExplorerButtonShown). -->
+    <!-- The browse and show-in-Explorer buttons: no border and nothing behind them at rest, so they read as part of the
+         control, then the highlight fills under the pointer and while pressed. ButtonBase drives CommonStates; every state
+         sets both properties, since WinUI3 setters do not revert on their own. -->
+    <Style x:Key="AJut_Style_PathSelectionControlButton" TargetType="Button">
+        <Setter Property="Padding" Value="10,6"/>
+        <Setter Property="VerticalAlignment" Value="Stretch"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="ButtonRoot" Background="Transparent" CornerRadius="{TemplateBinding CornerRadius}" Padding="{TemplateBinding Padding}">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal">
+                                    <VisualState.Setters>
+                                        <Setter Target="ButtonRoot.Background" Value="Transparent"/>
+                                        <Setter Target="ButtonContent.Foreground" Value="{ThemeResource AJut_PathSelectionControl_ButtonIconForeground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="ButtonRoot.Background" Value="{ThemeResource AJut_PathSelectionControl_ButtonPointerOverBackground}"/>
+                                        <Setter Target="ButtonContent.Foreground" Value="{ThemeResource AJut_PathSelectionControl_ButtonHighlightForeground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="ButtonRoot.Background" Value="{ThemeResource AJut_PathSelectionControl_ButtonPressedBackground}"/>
+                                        <Setter Target="ButtonContent.Foreground" Value="{ThemeResource AJut_PathSelectionControl_ButtonHighlightForeground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Disabled">
+                                    <VisualState.Setters>
+                                        <Setter Target="ButtonRoot.Background" Value="Transparent"/>
+                                        <Setter Target="ButtonContent.Foreground" Value="{ThemeResource AJut_PathSelectionControl_ButtonIconForeground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <ContentPresenter x:Name="ButtonContent" Content="{TemplateBinding Content}"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          Foreground="{ThemeResource AJut_PathSelectionControl_ButtonIconForeground}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style TargetType="local:PathSelectionControl">
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
         <Setter Property="Background" Value="{ThemeResource TextControlBackground}"/>
@@ -103,33 +150,26 @@
                             </Border>
 
                             <!-- Show in Explorer button (hidden until IsOpenInExplorerButtonAllowed and IsPathValid) -->
+                            <!-- The glyphs take their color from the button's states (AJut_Style_PathSelectionControlButton) -->
                             <Button x:Name="PART_ShowInExplorerButton"
                                     Grid.Column="2"
                                     Visibility="Collapsed"
-                                    Padding="10,6"
-                                    BorderThickness="0"
-                                    BorderBrush="{ThemeResource AJut_PathSelectionControl_ButtonBorderBrush}"
-                                    Background="Transparent"
+                                    Style="{StaticResource AJut_Style_PathSelectionControlButton}"
                                     ToolTipService.ToolTip="Show in Explorer">
                                 <FontIcon Glyph="{TemplateBinding OpenInExplorerMDL2Icon}"
                                           FontFamily="Segoe Fluent Icons"
-                                          FontSize="14"
-                                          Foreground="{ThemeResource AJut_PathSelectionControl_ButtonIconForeground}"/>
+                                          FontSize="14"/>
                             </Button>
 
-                            <!-- Browse button -->
+                            <!-- Browse button: rounds the control's right end -->
                             <Button x:Name="PART_BrowseButton"
                                     Grid.Column="3"
-                                    Padding="10,6"
-                                    BorderThickness="0,0,0,0"
-                                    Margin="0,0,3,0"
-                                    BorderBrush="{ThemeResource AJut_PathSelectionControl_ButtonBorderBrush}"
-                                    Background="Transparent"
+                                    CornerRadius="0,2,2,0"
+                                    Style="{StaticResource AJut_Style_PathSelectionControlButton}"
                                     ToolTipService.ToolTip="{TemplateBinding BrowsePrompt}">
                                 <FontIcon Glyph="{TemplateBinding DefaultButtonMDL2Icon}"
                                           FontFamily="Segoe Fluent Icons"
-                                          FontSize="14"
-                                          Foreground="{ThemeResource AJut_PathSelectionControl_ButtonIconForeground}"/>
+                                          FontSize="14"/>
                             </Button>
 
                         </Grid>

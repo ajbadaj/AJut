@@ -7,7 +7,8 @@ namespace AJutShowRoomAppKit.UI
     using AppKit;
 
     // A column of navigation buttons, one selected at a time, with room for header and footer
-    // views. The window's area list and each area's page list are both one of these.
+    // views. The window's area list and each area's page list are both one of these, each on
+    // its own level of the showroom's surfaces.
     public sealed class NavColumn : ThemedView
     {
         private const double kColumnWidth = 210.0;
@@ -19,10 +20,11 @@ namespace AJutShowRoomAppKit.UI
         private int m_selectedIndex = -1;
 
         // ===========[ Setup/Construction/Teardown ]===========================
-        public NavColumn ()
+        /// <summary>A column on <paramref name="backgroundColorKey"/>, one of ShowroomStyle's surface keys</summary>
+        public NavColumn (string backgroundColorKey)
         {
             ShowroomStyle.EnsureRegistered();
-            this.BackgroundColorKey = ShowroomStyle.SidebarBackground;
+            this.BackgroundColorKey = backgroundColorKey;
             this.TranslatesAutoresizingMaskIntoConstraints = false;
             this.WidthAnchor.ConstraintEqualTo((nfloat)kColumnWidth).Active = true;
 

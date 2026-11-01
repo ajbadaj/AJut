@@ -789,6 +789,7 @@ namespace AJut.UX.Docking
                     (int)(bounds.Height * dpiScale)));
                 appWindow.Move(new Windows.Graphics.PointInt32((int)bounds.X, (int)bounds.Y));
                 appWindow.Closing += this.TearoffWindowAppWindow_EXTERNAL_OnClosing;
+                window.Activated += this.OnTearoffWindowActivated;
 
                 this.RecordTearoffRootZone(window, rootZone);
                 this.ShowTearoffWindowHandler(window);
@@ -812,8 +813,8 @@ namespace AJut.UX.Docking
             }
         }
 
-        // Drops the three subs DockingManager owns on a tearoff (AppWindow.Closing plus the
-        // two panel-level events). Without this, the AppWindow's invocation list keeps a
+        // Drops the four subs DockingManager owns on a tearoff (AppWindow.Closing, Window.Activated
+        // and the two panel-level events). Without this, the window's invocation lists keep a
         // strong ref to DockingManager until the OS finalizes the window object - which is
         // never deterministic and pins everything for the duration. Always call this just
         // before the window.Close() (or before the panel/window is otherwise abandoned).
@@ -823,6 +824,8 @@ namespace AJut.UX.Docking
             {
                 return;
             }
+
+            window.Activated -= this.OnTearoffWindowActivated;
 
             // AppWindow can be null late in teardown; guard so this is safe to call from
             // any of the close paths.
@@ -968,6 +971,7 @@ namespace AJut.UX.Docking
         // last to stay on top of all tearoffs.
         private void OnRootWindowActivated(object sender, WindowActivatedEventArgs e)
         {
+            this.RefreshPanelFocusInWindow(this.RootWindow, e.WindowActivationState != WindowActivationState.Deactivated);
             if (e.WindowActivationState == WindowActivationState.Deactivated)
             {
                 return;
@@ -989,6 +993,32 @@ namespace AJut.UX.Docking
             // Keep root window on top (it was just activated by the user).
             try { this.RootWindow.AppWindow?.MoveInZOrderAtTop(); }
             catch { }
+        }
+
+        private void OnTearoffWindowActivated(object sender, WindowActivatedEventArgs e)
+        {
+            if (sender is Window window)
+            {
+                this.RefreshPanelFocusInWindow(window, e.WindowActivationState != WindowActivationState.Deactivated);
+            }
+        }
+
+        // A WinUI window keeps its focused element when it deactivates, so the zones are told, and the panel being typed
+        // into stops showing it while its window is not the active one, as it does on WPF
+        private void RefreshPanelFocusInWindow(Window window, bool isActive)
+        {
+            if (!this.TryGetZonesForWindow(window, out IReadOnlyList<DockZone> rootZones))
+            {
+                return;
+            }
+
+            foreach (DockZone rootZone in rootZones)
+            {
+                foreach (DockZone zone in TreeTraversal<DockZone>.All(rootZone))
+                {
+                    zone.RefreshPanelFocus(isActive);
+                }
+            }
         }
 
         // ===========[ Sub-classes ]===========================================

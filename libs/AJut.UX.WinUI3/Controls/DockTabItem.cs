@@ -4,6 +4,7 @@ namespace AJut.UX.Controls
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
     using Microsoft.UI.Xaml.Input;
+    using Microsoft.UI.Xaml.Media;
     using System;
     using Windows.Foundation;
     using DPUtils = AJut.UX.DPUtils<DockTabItem>;
@@ -17,10 +18,11 @@ namespace AJut.UX.Controls
     // Drag state lives here rather than in DockZone closures, eliminating the
     // anonymous-closure event-handler leak pattern.
     //
-    // Template visual states (group: SelectionStates):
-    //   Normal              - unselected, resting   (opacity 0.35, slight vertical inset)
-    //   PointerOver         - unselected, hovered   (opacity 0.80, slightly raised)
-    //   Selected            - selected              (opacity 1.00, -2px top margin bleeds into content)
+    // Template visual states (group: SelectionStates). The opacity is the tab's label only; its
+    // background and border stay solid, Background when unselected and SelectedBackground when selected:
+    //   Normal              - unselected, resting   (label opacity 0.35, slight inset at the bottom)
+    //   PointerOver         - unselected, hovered   (label opacity 0.80, reaching the strip's bottom)
+    //   Selected            - selected              (label opacity 1.00, -2px top margin bleeds into content)
     //   SelectedPointerOver - selected + hovered    (same as Selected)
 
     [TemplateVisualState(Name = "Normal",              GroupName = "SelectionStates")]
@@ -109,6 +111,17 @@ namespace AJut.UX.Controls
         {
             get => (bool)this.GetValue(IsDraggingProperty);
             set => this.SetValue(IsDraggingProperty, value);
+        }
+
+        public static readonly DependencyProperty SelectedBackgroundProperty = DPUtils.Register(_ => _.SelectedBackground);
+        /// <summary>
+        /// The tab's background while it is selected, where Background is its background while it is not. The selected
+        /// tab joins the panel it shows, so this is usually the panel's background.
+        /// </summary>
+        public Brush SelectedBackground
+        {
+            get => (Brush)this.GetValue(SelectedBackgroundProperty);
+            set => this.SetValue(SelectedBackgroundProperty, value);
         }
 
         // ===========[ Properties ]============================================

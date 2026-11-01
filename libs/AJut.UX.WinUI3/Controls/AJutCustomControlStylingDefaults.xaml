@@ -98,6 +98,10 @@
     <SolidColorBrush x:Key="AJut_PathSelectionControl_ButtonBorderBrush"   Color="#888888"/>
     <!-- Button icon glyph foreground -->
     <SolidColorBrush x:Key="AJut_PathSelectionControl_ButtonIconForeground" Color="#DDDDDD"/>
+    <!-- Buttons under the pointer and pressed, and their glyphs then: the blues WPF's unthemed buttons take -->
+    <SolidColorBrush x:Key="AJut_PathSelectionControl_ButtonPointerOverBackground" Color="#3399E4"/>
+    <SolidColorBrush x:Key="AJut_PathSelectionControl_ButtonPressedBackground"     Color="#3388CC"/>
+    <SolidColorBrush x:Key="AJut_PathSelectionControl_ButtonHighlightForeground"   Color="#FFFFFF"/>
     <!-- Focused background (of the textbox) -->
     <SolidColorBrush x:Key="AJut_PathSelectionControl_FocusedTextBoxBackgroundBrush" Color="#888"/>
 
@@ -137,6 +141,8 @@
         <GradientStop Offset="0.20" Color="#AA000000"/>
         <GradientStop Offset="1.00" Color="#66000000"/>
     </LinearGradientBrush>
+    <!-- Selected while the strip is disabled: a faint flat overlay, so the selection shows without reading as live -->
+    <SolidColorBrush x:Key="AJut_ToggleStripButton_CheckedDisabledBackground" Color="#26000000"/>
 
     <!-- ===========[ ColorEditIngressControl ]============================== -->
     <!-- Highlight border while flyout is open -->
@@ -190,6 +196,8 @@
     <SolidColorBrush x:Key="AJut_DockZone_EmptyBorderBrush"     Color="#FF4A4A4A"/>
     <SolidColorBrush x:Key="AJut_DockZone_EmptyForeground"      Color="#FFCCCCCC"/>
     <SolidColorBrush x:Key="AJut_DockZone_DragInsertLineBrush"  Color="#FF0078D4"/>
+    <SolidColorBrush x:Key="AJut_DockZone_DragGhostBackground"  Color="#FF2B2B2B"/>
+    <SolidColorBrush x:Key="AJut_DockZone_DragGhostBorderBrush" Color="#FF4A4A4A"/>
 
     <!-- ===========[ GeometryButton ]====================================== -->
     <!-- The shape's trace follows WinUI's button borders, so it is per theme, in the _Dark, _Light and
@@ -211,6 +219,7 @@
     
     <!-- Focus/Unfocus border brushes (FocusStates VSM group on PART_Root) -->
     <SolidColorBrush x:Key="AJut_NumericEditor_FocusBorderBrush"  Color="#0078D4"/>
+    <SolidColorBrush x:Key="AJut_NumericEditor_PointerOverBorderBrush" Color="#429CE3"/>
     <SolidColorBrush x:Key="AJut_NumericEditor_NormalBorderBrush" Color="#888888"/>
 
     <!-- Out of bounds error rim + warning glyph (ErrorStates VSM group). Themed builds alias this to

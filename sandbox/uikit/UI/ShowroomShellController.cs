@@ -40,7 +40,22 @@ namespace AJutShowRoomUIKit.UI
             const float kPairSpacing = 14f;
             const float kSeparatorThickness = 1f;
 
-            this.View = new UIView { BackgroundColor = ShowroomSettings.PageBackground };
+            // Only the theme bar shows the shell's own background, the navigation level; the pages cover the rest
+            this.View = new UIView { BackgroundColor = ShowroomSettings.NavigationBackground ?? UIColor.SystemBackground };
+
+            // Themed, the navigation bar takes the title bar colors, the level the others step from; unthemed, it keeps the
+            // system's
+            UIColor titleBar = ShowroomSettings.TitleBarBackground;
+            if (titleBar != null)
+            {
+                var appearance = new UINavigationBarAppearance();
+                appearance.ConfigureWithOpaqueBackground();
+                appearance.BackgroundColor = titleBar;
+                appearance.TitleTextAttributes = new UIStringAttributes { ForegroundColor = ShowroomSettings.TitleBarForeground ?? UIColor.Label };
+                m_navigation.NavigationBar.StandardAppearance = appearance;
+                m_navigation.NavigationBar.ScrollEdgeAppearance = appearance;
+                m_navigation.NavigationBar.CompactAppearance = appearance;
+            }
 
             m_modeStrip.SelectedItem = ShowroomSettings.ThemeMode;
             m_modeStrip.Strip.EnsureUniformSize = true;

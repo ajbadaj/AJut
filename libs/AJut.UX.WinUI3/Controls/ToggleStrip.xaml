@@ -16,10 +16,15 @@
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="ItemPadding" Value="8,4"/>
         <Setter Property="CornerRadius" Value="2"/>
+        <!-- Disabled, as WinUI's own ComboBox: its disabled fill, its border and its disabled text -->
+        <Setter Property="DisabledBackground" Value="{ThemeResource ControlFillColorDisabledBrush}"/>
+        <Setter Property="DisabledBorderBrush" Value="{ThemeResource ControlStrokeColorDefaultBrush}"/>
+        <Setter Property="DisabledForeground" Value="{ThemeResource TextFillColorDisabledBrush}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:ToggleStrip">
-                    <Border Background="{TemplateBinding Background}"
+                    <Border x:Name="StripBorder"
+                            Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="{TemplateBinding CornerRadius}">
@@ -53,6 +58,50 @@
                                     </VisualState.Setters>
                                 </VisualState>
                             </VisualStateGroup>
+                            <!-- CommonStates: code goes to Disabled while the strip's IsEnabled is false. The strip's own
+                                 Disabled brushes go on the frame and on the items' text, which inherits from the BumpStack
+                                 that holds them. The items keep their fills, so the selection still shows. -->
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal"/>
+                                <VisualState x:Name="Disabled">
+                                    <VisualState.Setters>
+                                        <Setter Target="StripBorder.Background" Value="{Binding Path=DisabledBackground, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                        <Setter Target="StripBorder.BorderBrush" Value="{Binding Path=DisabledBorderBrush, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                        <Setter Target="PART_ScrollHost.Foreground" Value="{Binding Path=DisabledForeground, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                            <!-- ButtonColorStates: the colors of the bump buttons and the overflow button, which hang on both
+                                 the orientation and IsEnabled, so code picks the state from the two together. They live in a
+                                 group of their own because two groups that set one property leave it to whichever state was
+                                 entered last, so a strip turned while disabled would get its live colors back.
+                                 InStrip (horizontal, enabled) leaves them on the strip's own colors, inside its shading.
+                                 Plain (vertical, enabled) takes the plain button colors: the strip's surface shades top to
+                                 bottom, so across a vertical strip's ends the buttons would show a slice of it that reads as
+                                 part of neither.
+                                 DisabledButtons takes the strip's Disabled brushes, with the outline on the fill as InStrip
+                                 has it. -->
+                            <VisualStateGroup x:Name="ButtonColorStates">
+                                <VisualState x:Name="InStrip"/>
+                                <VisualState x:Name="Plain">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_ScrollHost.ButtonBackground" Value="{ThemeResource ButtonBackground}"/>
+                                        <Setter Target="PART_ScrollHost.ButtonBorder" Value="{ThemeResource ButtonBorderBrush}"/>
+                                        <Setter Target="PART_ScrollHost.ButtonForeground" Value="{ThemeResource ButtonForeground}"/>
+                                        <Setter Target="PART_OverflowButton.Background" Value="{ThemeResource ButtonBackground}"/>
+                                        <Setter Target="PART_OverflowButton.Foreground" Value="{ThemeResource ButtonForeground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="DisabledButtons">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_ScrollHost.ButtonBackground" Value="{Binding Path=DisabledBackground, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                        <Setter Target="PART_ScrollHost.ButtonBorder" Value="{Binding Path=DisabledBackground, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                        <Setter Target="PART_ScrollHost.ButtonForeground" Value="{Binding Path=DisabledForeground, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                        <Setter Target="PART_OverflowButton.Background" Value="{Binding Path=DisabledBackground, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                        <Setter Target="PART_OverflowButton.Foreground" Value="{Binding Path=DisabledForeground, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
                         </VisualStateManager.VisualStateGroups>
 
                         <!-- Single overlay cell: the BumpStack hosts the items and (in Scroll mode)
@@ -60,10 +109,13 @@
                              the trailing edge (right, or bottom when vertical) so it never consumes
                              layout length (which would otherwise feed back into the overflow calculation). -->
                         <Grid>
+                            <!-- The bump buttons are part of the strip, inside its own frame, so their outline is
+                                 their fill rather than a second frame -->
                             <local:BumpStack x:Name="PART_ScrollHost"
                                              ScrollingEnabled="False"
                                              ButtonBackground="{TemplateBinding Background}"
-                                             ButtonForeground="{TemplateBinding Foreground}">
+                                             ButtonForeground="{TemplateBinding Foreground}"
+                                             ButtonBorder="{TemplateBinding Background}">
                                 <StackPanel x:Name="PART_ItemsPanel"
                                             Orientation="Horizontal"/>
                             </local:BumpStack>

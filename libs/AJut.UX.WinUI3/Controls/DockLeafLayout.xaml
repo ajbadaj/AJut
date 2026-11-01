@@ -8,10 +8,14 @@
          redefining the Template).  TemplateBinding handles most brush/radius props;
          IsTabbed-dependent BorderThickness suppression is handled in code.
 
-         Tab overlap: PART_TabStripWrapper sits in row 2.  The selected DockTabItem
-         uses Margin="0,-2,0,0" in its Selected VSM state to bleed slightly into the
-         content area, giving the appearance the tab connects to the content panel.
-         Grid children are not clipped, so negative margins render correctly. -->
+         Tab overlap: PART_TabStripWrapper sits in row 2, pulled up 2px so it starts above
+         the content panel's 1px bottom border.  The selected DockTabItem fills from the
+         strip's top, covering that border, giving the appearance the tab connects to the
+         content panel.  An unselected DockTabItem starts 2px down, just under the border,
+         which serves as its top edge.  The strip's scroll viewer clips the tabs to it, so
+         the overlap has to come from the strip; and it is a whole pixel past the border
+         rather than exactly on it, so at a display scale where 1px is not a whole number
+         of screen pixels the selected tab still covers the whole border. -->
 
     <Style TargetType="local:DockLeafLayout">
         <Setter Property="HorizontalAlignment"  Value="Stretch"/>
@@ -19,10 +23,27 @@
         <Setter Property="IsTabStop"            Value="False"/>
         <Setter Property="UseSystemFocusVisuals" Value="False"/>
 
-        <!-- Default colors - override in a theme Style (no template redefinition needed) -->
+        <!-- Default colors - override in a theme Style (no template redefinition needed). The
+             header sits a level darker than the panel, with the unselected tabs. -->
         <Setter Property="Foreground">
             <Setter.Value>
                 <SolidColorBrush Color="#FFF0F0F0"/>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="HeaderBackground">
+            <Setter.Value>
+                <SolidColorBrush Color="#FF1E1E1E"/>
+            </Setter.Value>
+        </Setter>
+        <!-- The panel being typed into: its header turns blue, with white text -->
+        <Setter Property="HeaderFocusedBackground">
+            <Setter.Value>
+                <SolidColorBrush Color="#FF264F78"/>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="HeaderFocusedForeground">
+            <Setter.Value>
+                <SolidColorBrush Color="#FFFFFFFF"/>
             </Setter.Value>
         </Setter>
         <Setter Property="PanelBackground">
@@ -47,6 +68,26 @@
             <Setter.Value>
                 <ControlTemplate TargetType="local:DockLeafLayout">
                     <Grid UseLayoutRounding="True">
+                        <!-- The header's background and text color come only from these states (see
+                             ApplyPanelFocusState): PanelFocused while keyboard focus is within the panel
+                             and its window is active, which the hosting DockZone sets as IsPanelFocused -->
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="PanelFocusStates">
+                                <VisualState x:Name="PanelUnfocused">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_HeaderBar.Background" Value="{Binding Path=HeaderBackground, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                        <Setter Target="PART_HeaderPresenter.Foreground" Value="{Binding Path=Foreground, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="PanelFocused">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_HeaderBar.Background" Value="{Binding Path=HeaderFocusedBackground, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                        <Setter Target="PART_HeaderPresenter.Foreground" Value="{Binding Path=HeaderFocusedForeground, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+
                         <Grid.RowDefinitions>
                             <!-- Row 0: header bar (panel title + optional close button) -->
                             <RowDefinition Height="Auto"/>
@@ -59,11 +100,14 @@
                         <!-- Row 0: Header bar -->
                         <Border x:Name="PART_HeaderBar"
                                 Grid.Row="0"
-                                Background="{TemplateBinding PanelBackground}"
                                 BorderBrush="{TemplateBinding PanelBorderBrush}"
                                 BorderThickness="1"
                                 Margin="0,0,0,-2"
-                                UseLayoutRounding="True"/>
+                                UseLayoutRounding="True">
+                            <ContentPresenter x:Name="PART_HeaderPresenter"
+                                              HorizontalContentAlignment="Stretch"
+                                              VerticalContentAlignment="Stretch"/>
+                        </Border>
 
                         <!-- Row 1: Content panel.
                              Background / BorderBrush / BorderThickness / CornerRadius /
@@ -84,15 +128,13 @@
                         </Border>
 
                         <!-- Row 2: Tab strip.
-                             Margin="0,-1,0,0": pulls the strip 1px up so its top border
-                             sits exactly at the content panel's bottom edge.  The outer
-                             Grid does not clip, so the -1px offset renders correctly.
-                             BorderThickness="0,1,0,0": the 1px top border is the only
-                             visual separation between content and tabs.
+                             Margin top -2: pulls the strip up past the content panel's
+                             bottom border (see the tab overlap note above).  The outer Grid
+                             does not clip, so the -2px offset renders correctly.
                              Visibility is toggled by ApplyTabbedState() in code. -->
                         <Border x:Name="PART_TabStripWrapper"
                                 Grid.Row="2"
-                                Margin="5,-1.5,5,5"
+                                Margin="5,-2,5,5"
                                 BorderThickness="0,0,0,0"
                                 Padding="2,0,2,2"
                                 Background="{TemplateBinding TabStripBackground}"

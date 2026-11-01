@@ -10,6 +10,7 @@ namespace AJut.UX.Tests
     using AJut.UX.CodeBinding;
     using AJut.UX.Controls;
     using Android.Graphics;
+    using Android.Graphics.Drawables;
     using Android.Views;
     using Android.Widget;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -180,6 +181,110 @@ namespace AJut.UX.Tests
             Assert.AreEqual(Orientation.Vertical, root.FindViewById<EnumToggleStrip>(Resource.Id.enum_toggle_strip_vertical)!.Strip.Orientation);
         }
 
+        [TestMethod]
+        public void Disabled_EveryButtonIsDisabled_IncludingOnesMadeAfter ()
+        {
+            var strip = new ToggleStrip(TestHost.RequiredContext) { OverflowBehavior = eToggleStripOverflow.OverflowPopup, ItemsSource = new[] { "A", "B" } };
+            using IDisposable attached = TestHost.Attach(strip);
+
+            // A ViewGroup's Enabled does not reach its children, and a button left enabled still takes a tap
+            strip.Enabled = false;
+            Assert.IsTrue((_Buttons(strip).Count > 0) && _Buttons(strip).All(button => !button.Enabled), "Disabling the strip disables its buttons");
+            Assert.IsFalse(strip.GetChildAt(1)!.Enabled, "And its overflow button");
+
+            strip.ItemsSource = new[] { "C", "D", "E" };
+            Assert.IsTrue((_Buttons(strip).Count > 0) && _Buttons(strip).All(button => !button.Enabled), "Buttons made while it is disabled start disabled");
+
+            strip.Enabled = true;
+            Assert.IsTrue(_Buttons(strip).All(button => button.Enabled), "Enabling the strip enables them again");
+            Assert.IsTrue(strip.GetChildAt(1)!.Enabled, "And its overflow button");
+        }
+
+        [TestMethod]
+        public void Disabled_FromItsLayout_DisablesItsButtons ()
+        {
+            View root = LayoutInflater.From(TestHost.RequiredContext)!.Inflate(Resource.Layout.toggle_strip_test, null)!;
+            var strip = root.FindViewById<ToggleStrip>(Resource.Id.toggle_strip_disabled)!;
+            var enumStrip = root.FindViewById<EnumToggleStrip>(Resource.Id.enum_toggle_strip_disabled)!;
+            enumStrip.SelectedItem = eSize.Small;
+            using IDisposable attached = TestHost.Attach(root);
+
+            // Android reads android:enabled in TextView and the widgets built on it, and a ViewGroup ignores it, so a strip
+            // reads it itself
+            Assert.IsFalse(strip.Enabled, "android:enabled=\"false\" in its layout disables the strip");
+            Assert.IsTrue((_Buttons(strip).Count > 0) && _Buttons(strip).All(button => !button.Enabled), "And its buttons");
+            Assert.IsFalse(enumStrip.Strip.Enabled, "android:enabled=\"false\" in its layout disables an EnumToggleStrip's strip");
+        }
+
+        // ===========[ Look ]===================================
+        [TestMethod]
+        public void ItemPadding_PadsEveryItem_AndTheOverflowButtonAlongTheStrip ()
+        {
+            var strip = new ToggleStrip(TestHost.RequiredContext) { ItemsSource = new[] { "A", "B" } };
+            using IDisposable attached = TestHost.Attach(strip);
+
+            strip.ItemPadding = new Rect(3, 5, 7, 11);
+            foreach (TextView button in _Buttons(strip))
+            {
+                Assert.AreEqual("3, 5, 7, 11", _Sides(button.PaddingLeft, button.PaddingTop, button.PaddingRight, button.PaddingBottom));
+            }
+
+            var overflowButton = (TextView)strip.GetChildAt(1)!;
+            Assert.AreEqual("3, 0, 7, 0", _Sides(overflowButton.PaddingLeft, overflowButton.PaddingTop, overflowButton.PaddingRight, overflowButton.PaddingBottom), "The overflow button is padded along the strip");
+
+            strip.ItemsSource = new[] { "C" };
+            Assert.AreEqual(11, _Buttons(strip)[0].PaddingBottom, "An item made later takes it too");
+
+            Rect read = strip.ItemPadding;
+            read.Left = 99;
+            Assert.AreEqual(3, strip.ItemPadding.Left, "Reading it gives a copy");
+        }
+
+        [TestMethod]
+        public void SeparatorThickness_IsTheLineBetweenItems ()
+        {
+            var strip = new ToggleStrip(TestHost.RequiredContext) { ItemsSource = new[] { "A", "B" }, SeparatorThickness = 6 };
+            Assert.AreEqual(6, _Row(strip).DividerDrawable!.IntrinsicWidth, "Along a horizontal strip it is the line's width");
+
+            strip.Orientation = Orientation.Vertical;
+            Assert.AreEqual(6, _Row(strip).DividerDrawable!.IntrinsicHeight, "Along a vertical strip it is the line's height");
+        }
+
+        [TestMethod]
+        public async Task CornerRadius_RoundsTheStrip_AndOnlyItsEndItemsOuterCorners ()
+        {
+            var strip = new ToggleStrip(TestHost.RequiredContext) { ItemsSource = new[] { "A", "B", "C" } };
+            using IDisposable attached = TestHost.Attach(strip);
+
+            strip.CornerRadius = 20f;
+            await _WaitUntilAsync(() => _TopLeftRadius(_Buttons(strip)[0]) == 20f);
+
+            Assert.AreEqual(20f, ((GradientDrawable)strip.Background!).CornerRadius, "The strip's surface");
+            Assert.AreEqual(20f, _TopLeftRadius(_Buttons(strip)[0]), "The first item rounds the strip's top left");
+            Assert.AreEqual(0f, _TopLeftRadius(_Buttons(strip)[1]), "An item between stays square");
+
+            static float _TopLeftRadius (TextView button) => ((GradientDrawable)button.Background!).GetCornerRadii()?[0] ?? -1f;
+        }
+
+        [TestMethod]
+        public void LookAttributes_InflateFromLayout_ForBothStrips ()
+        {
+            View root = LayoutInflater.From(TestHost.RequiredContext)!.Inflate(Resource.Layout.toggle_strip_test, null)!;
+            float density = TestHost.RequiredContext.Resources!.DisplayMetrics!.Density;
+
+            // ajutItemPadding sets all four sides and ajutItemPaddingVertical overrides the top and bottom
+            string expectedPadding = _Sides(_Dp(6f), _Dp(2f), _Dp(6f), _Dp(2f));
+            var strip = root.FindViewById<ToggleStrip>(Resource.Id.toggle_strip_look)!;
+            Assert.AreEqual(10f * density, strip.CornerRadius, 0.5f);
+            Assert.AreEqual(_Dp(3f), strip.SeparatorThickness);
+            Assert.AreEqual(expectedPadding, _Sides(strip.ItemPadding));
+
+            var enumStrip = root.FindViewById<EnumToggleStrip>(Resource.Id.enum_toggle_strip_look)!;
+            Assert.AreEqual(10f * density, enumStrip.Strip.CornerRadius, 0.5f);
+            Assert.AreEqual(_Dp(3f), enumStrip.Strip.SeparatorThickness);
+            Assert.AreEqual(expectedPadding, _Sides(enumStrip.Strip.ItemPadding));
+        }
+
         // ===========[ Scroll mode end dots ]===================================
         [TestMethod]
         public async Task Scroll_ShowsADotPastEachEndItCanScrollToward ()
@@ -252,6 +357,17 @@ namespace AJut.UX.Tests
             Assert.AreEqual(1, raised);
 
             void _OnChanged (object? sender, EventArgs<object?> e) => ++raised;
+        }
+
+        [TestMethod]
+        public void EnumToggleStrip_Disabled_DisablesItsStripsButtons ()
+        {
+            var strip = new EnumToggleStrip(TestHost.RequiredContext) { SelectedItem = eSize.Small };
+            using IDisposable attached = TestHost.Attach(strip);
+
+            strip.Enabled = false;
+            Assert.IsFalse(strip.Strip.Enabled, "The inner strip is disabled with it");
+            Assert.IsTrue((_Buttons(strip.Strip).Count > 0) && _Buttons(strip.Strip).All(button => !button.Enabled), "And so are its buttons");
         }
 
         [TestMethod]
@@ -356,8 +472,7 @@ namespace AJut.UX.Tests
         // ===========[ Helper Methods ]===================================
         private static List<TextView> _Buttons (ToggleStrip strip)
         {
-            // The strip is a scroller around a row of item buttons, with the overflow button beside it.
-            var row = (ViewGroup)((ViewGroup)strip.GetChildAt(0)!).GetChildAt(0)!;
+            LinearLayout row = _Row(strip);
             var buttons = new List<TextView>();
             for (int index = 0; index < row.ChildCount; ++index)
             {
@@ -368,6 +483,14 @@ namespace AJut.UX.Tests
         }
 
         private static string[] _ButtonTexts (ToggleStrip strip) => _Buttons(strip).Select(button => button.Text ?? string.Empty).ToArray();
+
+        // The strip is a scroller around a row of item buttons, with the overflow button beside it
+        private static LinearLayout _Row (ToggleStrip strip) => (LinearLayout)((ViewGroup)strip.GetChildAt(0)!).GetChildAt(0)!;
+
+        // A managed Rect's Equals does not compare its sides, so paddings are compared as their four sides in order
+        private static string _Sides (int left, int top, int right, int bottom) => $"{left}, {top}, {right}, {bottom}";
+
+        private static string _Sides (Rect padding) => _Sides(padding.Left, padding.Top, padding.Right, padding.Bottom);
 
         // Runs a measure and layout pass on the strip directly, so the tests read real positions and sizes
         private static void _LayOut (View view, MeasureSpecMode widthMode, int width, MeasureSpecMode heightMode, int height)

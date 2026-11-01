@@ -23,17 +23,18 @@
     <SolidColorBrush x:Key="AJut_Brush_NormalText" Color="{ThemeResource AJut_Color_NormalText}" />
 
     <!-- ================[ Button surfaces ]====================== -->
-    <SolidColorBrush x:Key="AJut_Brush_ControlBackground" Color="#2E4157"/>
+    <!-- The dark palette's own gray, in its hue, lifted so a button stands off the panels; only a press is blue -->
+    <SolidColorBrush x:Key="AJut_Brush_ControlBackground" Color="#34343C"/>
     <LinearGradientBrush x:Key="AJut_Brush_PopOutControlBackground" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Offset="0.00" Color="#7A8AA0" />
-        <GradientStop Offset="0.05" Color="#3D5168" />
-        <GradientStop Offset="0.90" Color="#2E4157" />
-        <GradientStop Offset="1.00" Color="#141C26" />
+        <GradientStop Offset="0.00" Color="#76768A" />
+        <GradientStop Offset="0.05" Color="#45454F" />
+        <GradientStop Offset="0.90" Color="#34343C" />
+        <GradientStop Offset="1.00" Color="#18181D" />
     </LinearGradientBrush>
-    <SolidColorBrush x:Key="AJut_Brush_ControlBackgroundHover" Color="#38506B"/>
+    <SolidColorBrush x:Key="AJut_Brush_ControlBackgroundHover" Color="#3E3E48"/>
     <SolidColorBrush x:Key="AJut_Brush_ButtonBackgroundPressed" Color="#0B4F80"/>
-    <!-- Not lifted: the dark palette's own control surface, so a disabled button does not read as a tap target -->
-    <SolidColorBrush x:Key="AJut_Brush_ControlBackgroundDisabled" Color="#111117"/>
+    <!-- Not lifted: the dark palette's own disabled surface, so a disabled button does not read as a tap target -->
+    <SolidColorBrush x:Key="AJut_Brush_ControlBackgroundDisabled" Color="#2B2B2E"/>
 
     <!-- ================[ Button borders ]====================== -->
     <Color x:Key="AJut_Color_ButtonBorder">#00000000</Color>

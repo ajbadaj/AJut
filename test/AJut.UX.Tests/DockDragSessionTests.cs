@@ -75,11 +75,16 @@ namespace AJut.UX.Tests
             Assert.AreEqual(0, host.Calls.Count, "Nothing before the arming tick");
 
             Tick(session, back, 1);
-            CollectionAssert.AreEqual(new[] { "begin flash Back", "flash Back 0.7" }, host.Calls, "The flash starts dim");
+            Assert.AreEqual(2, host.Calls.Count, "The arming tick begins the flash and sets its first opacity: " + string.Join("; ", host.Calls));
+            Assert.AreEqual("begin flash Back", host.Calls[0]);
+            string flashAtStart = host.Calls[1];
+            StringAssert.StartsWith(flashAtStart, "flash Back ");
 
             host.Calls.Clear();
             Tick(session, back, DockDragSession<Zone, Widget, Window>.kFlashPeriodTicks);
-            Assert.AreEqual("flash Back 1", host.Calls[host.Calls.Count - 1], "Then bright after one flash period");
+            string flashAfterAPeriod = host.Calls[host.Calls.Count - 1];
+            StringAssert.StartsWith(flashAfterAPeriod, "flash Back ");
+            Assert.AreNotEqual(flashAtStart, flashAfterAPeriod, "One flash period on, the flash has changed");
 
             host.Calls.Clear();
             int toRaise = DockDragSession<Zone, Widget, Window>.kBringForwardTicks

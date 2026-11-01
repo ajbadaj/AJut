@@ -123,24 +123,25 @@ namespace AJut.UX.Controls
             return m_backgroundGeometry.ToBezierPath(fit).CGPath;
         }
 
-        // The keys WinUI3's GeometryButton uses: the stock button keys for the fill (the background) and the foreground,
-        // so it sits with an untouched BrushButton, themed or not, and its own trace keys for the outline. The trace keys
-        // take the common borders, so the outline stays on touch, where the touch palettes take button borders off.
+        // MobileLook.GeometryButton's keys, which Android's GeometryButton draws too: the stock button keys for the fill
+        // (the background) and the foreground, so it sits with an untouched BrushButton, themed or not, and its own trace
+        // keys for the outline. The trace keys take the common borders, so the outline stays on touch, where the touch
+        // palettes take button borders off; pressed, the outline goes to the bright highlight.
         private StateColors GetStateColors ()
         {
             if (!this.Enabled)
             {
-                return _Colors(ThemedColorKeys.ButtonBackgroundDisabled, ThemedColorKeys.GeometryButton_TraceDisabled, ThemedColorKeys.ButtonForegroundDisabled);
+                return _Colors(MobileLook.GeometryButton.DisabledFill, MobileLook.GeometryButton.DisabledTrace, MobileLook.GeometryButton.DisabledGlyph);
             }
 
             if (this.Highlighted)
             {
-                return _Colors(ThemedColorKeys.ButtonBackgroundPressed, ThemedColorKeys.GeometryButton_TracePressed, ThemedColorKeys.ButtonForegroundPressed);
+                return _Colors(MobileLook.GeometryButton.PressedFill, MobileLook.GeometryButton.PressedTrace, MobileLook.GeometryButton.PressedGlyph);
             }
 
             return this.Hovered
-                ? _Colors(ThemedColorKeys.ButtonBackgroundPointerOver, ThemedColorKeys.GeometryButton_TracePointerOver, ThemedColorKeys.ButtonForegroundPointerOver)
-                : _Colors(ThemedColorKeys.ButtonBackground, ThemedColorKeys.GeometryButton_Trace, ThemedColorKeys.ButtonForeground);
+                ? _Colors(MobileLook.GeometryButton.PointerOverFill, MobileLook.GeometryButton.PointerOverTrace, MobileLook.GeometryButton.PointerOverGlyph)
+                : _Colors(MobileLook.GeometryButton.Fill, MobileLook.GeometryButton.Trace, MobileLook.GeometryButton.Glyph);
 
             static StateColors _Colors (string fill, string stroke, string foreground)
             {

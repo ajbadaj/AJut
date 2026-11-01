@@ -3,13 +3,66 @@
                     xmlns:local="using:AJut.UX.Controls"
                     xmlns:prim="using:Microsoft.UI.Xaml.Controls.Primitives">
 
+    <!-- ===[ BumpStack bump button ]=== -->
+    <!-- A bump button keeps the fill, glyph and outline its BumpStack gives it in every state, and shows its state by
+         opacity alone, as WPF's do: brighter under the pointer, dimmed when it cannot bump any further. The stock
+         RepeatButton's states swap in the stock brushes instead, which made a disabled bump button hardly change, and
+         a ToggleStrip's, which takes the strip's own colors, turn into an unrelated dark button. -->
+    <Style x:Key="AJut_Style_BumpStackBumpButton" TargetType="prim:RepeatButton">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="prim:RepeatButton">
+                    <Border x:Name="Root"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Padding="{TemplateBinding Padding}"
+                            Opacity="0.8">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Opacity" Value="0.8"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Opacity" Value="1.0"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Opacity" Value="1.0"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Disabled">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Opacity" Value="0.4"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          Foreground="{TemplateBinding Foreground}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ===[ BumpStack ]=== -->
     <!-- A scroll container with a chevron bump button at each end instead of a scrollbar. The chevron
          content/alignment and the show/hide/enable/clearance behavior are driven from code-behind; the
-         template just lays out the ScrollViewer + the two overlaid bump buttons. -->
+         template just lays out the ScrollViewer + the two overlaid bump buttons. A bump button sits over
+         the scrolling content, so it is outlined to stand apart from whatever is behind it. -->
     <Style TargetType="local:BumpStack">
         <Setter Property="ButtonBackground" Value="{ThemeResource SolidBackgroundFillColorBaseBrush}"/>
         <Setter Property="ButtonForeground" Value="{ThemeResource TextFillColorSecondaryBrush}"/>
+        <Setter Property="ButtonBorder" Value="{ThemeResource RepeatButtonBorderBrush}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="local:BumpStack">
@@ -28,24 +81,28 @@
                             </ScrollViewer>
 
                             <prim:RepeatButton x:Name="PART_AnteriorBumpButton"
+                                               Style="{StaticResource AJut_Style_BumpStackBumpButton}"
                                                HorizontalAlignment="Left"
                                                VerticalAlignment="Stretch"
                                                Background="{TemplateBinding ButtonBackground}"
                                                Foreground="{TemplateBinding ButtonForeground}"
                                                FontSize="{TemplateBinding ButtonFontSize}"
                                                Padding="{TemplateBinding ButtonPadding}"
-                                               BorderThickness="0"
+                                               BorderBrush="{TemplateBinding ButtonBorder}"
+                                               BorderThickness="1"
                                                Delay="{TemplateBinding BumpDelay}"
                                                Interval="{TemplateBinding BumpInterval}"
                                                Visibility="Collapsed"/>
                             <prim:RepeatButton x:Name="PART_PosteriorBumpButton"
+                                               Style="{StaticResource AJut_Style_BumpStackBumpButton}"
                                                HorizontalAlignment="Right"
                                                VerticalAlignment="Stretch"
                                                Background="{TemplateBinding ButtonBackground}"
                                                Foreground="{TemplateBinding ButtonForeground}"
                                                FontSize="{TemplateBinding ButtonFontSize}"
                                                Padding="{TemplateBinding ButtonPadding}"
-                                               BorderThickness="0"
+                                               BorderBrush="{TemplateBinding ButtonBorder}"
+                                               BorderThickness="1"
                                                Delay="{TemplateBinding BumpDelay}"
                                                Interval="{TemplateBinding BumpInterval}"
                                                Visibility="Collapsed"/>

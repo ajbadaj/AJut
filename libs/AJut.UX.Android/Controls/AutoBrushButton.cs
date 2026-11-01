@@ -12,8 +12,10 @@ namespace AJut.UX.Controls
     /// <summary>
     /// A button you color with a single accent. Hand it one PropagatedAccentColor and it derives a coherent,
     /// readable palette - a foreground that contrasts the accent, a visible border, and the pointer over, pressed
-    /// and disabled variants - with no per state colors. The derivation lives in
-    /// <see cref="InteractiveSurfaceColors.BuildFromAccent"/>, shared with the other AJut stacks.
+    /// and disabled variants - with no per state colors. The derivation is <see cref="InteractiveSurfaceColors.BuildFromAccent"/>'s,
+    /// shared with the other AJut stacks, through <see cref="MobileLook.AutoBrushButton.BuildFromAccent"/>, which UIKit's
+    /// AutoBrushButton takes too: it pushes the pressed border further off the fill, since a press is the only highlight
+    /// touch has.
     /// </summary>
     /// <remarks>
     /// With no accent set it uses the AJut accent (SystemAccentColor) when the AJut theme is loaded, as WinUI3's does.
@@ -113,7 +115,7 @@ namespace AJut.UX.Controls
 
         private void RebuildPalette ()
         {
-            m_palette = InteractiveSurfaceColors.BuildFromAccent(m_propagatedAccentColor.ToColorArgb());
+            m_palette = MobileLook.AutoBrushButton.BuildFromAccent(m_propagatedAccentColor.ToColorArgb());
         }
 
         private static AndroidColor _FindDefaultAccent (Context context)

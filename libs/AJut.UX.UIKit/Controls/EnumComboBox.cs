@@ -2,8 +2,11 @@ namespace AJut.UX.Controls
 {
     using System;
     using System.Collections.Generic;
-    using AJut.UX.Theming;
+    using CoreAnimation;
     using CoreGraphics;
+    using AJut.UX.Helpers;
+    using AJut.UX.Theming;
+    using Foundation;
     using ObjCRuntime;
     using UIKit;
 
@@ -16,11 +19,29 @@ namespace AJut.UX.Controls
     // enum type rebuilds the menu. The options are AJut.UX's EnumSelectionOptions, so a value marked
     // [Browsable(false)] or [ExcludeFromSelection] is left out, the same as on every other stack. Picking a value
     // sends ValueChanged; a SelectedItem set from code does not.
+    //
+    // With the AJut theme loaded it takes MobileLook.EnumComboBox's look, which Android's EnumComboBox draws too: a face on
+    // the pop-out surface outlined with the text box border, the pressed fill while held, and a down chevron. The menu
+    // itself is the system's, so it stays the system's look. Unthemed, the button keeps the system fill.
 
     public class EnumComboBox : UIControl
     {
+        // Only painted with the AJut theme loaded, so the literals are what a key the palette lacks falls back to
+        private static readonly ThemedGradient kSurface = new ThemedGradient(
+            MobileLook.EnumComboBox.Surface,
+            new[] { ThemedGradient.Stop(0.0, 0xFFFDFDFD), ThemedGradient.Stop(1.0, 0xFFFDFDFD) },
+            new[] { ThemedGradient.Stop(0.0, 0xFF2B2B2B), ThemedGradient.Stop(1.0, 0xFF2B2B2B) }
+        );
+
         // ===========[ Instance Fields ]===================================
-        private readonly UIButton m_button = new UIButton(CGRect.Empty) { TranslatesAutoresizingMaskIntoConstraints = false };
+        private readonly ComboButton m_button = new ComboButton { TranslatesAutoresizingMaskIntoConstraints = false };
+        private readonly CAGradientLayer m_surface = new CAGradientLayer
+        {
+            StartPoint = new CGPoint(0.5, 0.0),
+            EndPoint = new CGPoint(0.5, 1.0),
+            ZPosition = -1,
+            MasksToBounds = true,
+        };
         private Type m_itemType;
         private IReadOnlyList<Enum> m_options = Array.Empty<Enum>();
         private object m_selectedItem;
@@ -39,20 +60,31 @@ namespace AJut.UX.Controls
 
         private void Setup ()
         {
-            const float kCornerRadius = 6f;
-            const float kVerticalPadding = 7f;
-            const float kHorizontalPadding = 12f;
+            // Unthemed the button keeps UIKit's own rounding and pop-up chevron, among the system's other pull-downs
+            const float kUnthemedCornerRadius = 6f;
 
+            bool isThemed = ThemedColors.IsThemeLoaded;
+            float paddingHorizontal = MobileLook.EnumComboBox.PaddingHorizontal;
+            float paddingVertical = MobileLook.EnumComboBox.PaddingVertical;
             UIButtonConfiguration configuration = UIButtonConfiguration.PlainButtonConfiguration;
-            configuration.Image = UIImage.GetSystemImage("chevron.up.chevron.down");
+            configuration.Image = UIImage.GetSystemImage(isThemed ? "chevron.down" : "chevron.up.chevron.down");
             configuration.ImagePlacement = NSDirectionalRectEdge.Trailing;
-            configuration.ImagePadding = kHorizontalPadding / 2f;
-            configuration.ContentInsets = new NSDirectionalEdgeInsets(kVerticalPadding, kHorizontalPadding, kVerticalPadding, kHorizontalPadding);
-            configuration.BaseForegroundColor = ThemedColors.Get(ThemedColorKeys.ComboBoxForeground);
+            configuration.ImagePadding = paddingHorizontal / 2f;
+            configuration.ContentInsets = new NSDirectionalEdgeInsets(paddingVertical, paddingHorizontal, paddingVertical, paddingHorizontal);
+            configuration.BaseForegroundColor = ThemedColors.Get(MobileLook.EnumComboBox.Text);
             UIBackgroundConfiguration background = configuration.Background;
-            background.BackgroundColor = ThemedColors.Get(ThemedColorKeys.ComboBoxBackground);
-            background.CornerRadius = kCornerRadius;
+            background.BackgroundColor = isThemed ? UIColor.Clear : ThemedColors.Get(ThemedColorKeys.ComboBoxBackground);
+            background.CornerRadius = isThemed ? MobileLook.EnumComboBox.CornerRadius : kUnthemedCornerRadius;
             configuration.Background = background;
+            if (isThemed)
+            {
+                // The face is drawn behind the button, which is clear over it, and outlined on this control's own layer
+                this.Layer.CornerRadius = MobileLook.EnumComboBox.CornerRadius;
+                this.Layer.BorderWidth = MobileLook.EnumComboBox.BorderThickness;
+                m_surface.CornerRadius = MobileLook.EnumComboBox.CornerRadius;
+                this.Layer.InsertSublayer(m_surface, 0);
+            }
+
             m_button.Configuration = configuration;
             m_button.ShowsMenuAsPrimaryAction = true;
             m_button.HorizontalAlignment = UIControlContentHorizontalAlignment.Leading;
@@ -79,8 +111,40 @@ namespace AJut.UX.Controls
             }
         }
 
+        /// <summary>The values offered, in order, as Android's EnumComboBox gives them.</summary>
+        public IReadOnlyList<Enum> Options => m_options;
+
         /// <summary>The button the menu hangs off, for anything this control does not surface (its configuration, font).</summary>
         public UIButton Button => m_button;
+
+        // ===========[ Public Interface Methods ]===================================
+        public override void LayoutSubviews ()
+        {
+            base.LayoutSubviews();
+            if (!ThemedColors.IsThemeLoaded)
+            {
+                return;
+            }
+
+            // The border and the face's colors are CGColors, which freeze a dynamic color, so they are resolved here: UIKit
+            // calls LayoutSubviews again whenever the appearance (light/dark) changes
+            this.Layer.BorderColor = ThemedColors.Get(MobileLook.EnumComboBox.Border).GetResolvedColor(this.TraitCollection).CGColor;
+            IReadOnlyList<AJutGradientStop> stops = kSurface.Resolve(this.TraitCollection.UserInterfaceStyle);
+            var colors = new CGColor[stops.Count];
+            var locations = new NSNumber[stops.Count];
+            for (int index = 0; index < stops.Count; ++index)
+            {
+                colors[index] = stops[index].Color.ToUIColor().CGColor;
+                locations[index] = new NSNumber(stops[index].Offset);
+            }
+
+            CATransaction.Begin();
+            CATransaction.DisableActions = true;
+            m_surface.Frame = this.Bounds;
+            m_surface.Colors = colors;
+            m_surface.Locations = locations;
+            CATransaction.Commit();
+        }
 
         // ===========[ Helper Methods ]===================================
         private void Refresh ()
@@ -164,6 +228,31 @@ namespace AJut.UX.Controls
                 {
                     owner.OnPicked(m_value);
                 }
+            }
+        }
+
+        // The button the menu hangs off. With the AJut theme loaded it is clear over the face until held, when it takes
+        // the pressed fill, as Android's face does; base.UpdateConfiguration is skipped then so the system lays no dimmed
+        // highlight of its own over it. Unthemed it is a stock button.
+        private sealed class ComboButton : UIButton
+        {
+            public ComboButton () : base(CGRect.Empty)
+            {
+            }
+
+            public override void UpdateConfiguration ()
+            {
+                if (!ThemedColors.IsThemeLoaded)
+                {
+                    base.UpdateConfiguration();
+                    return;
+                }
+
+                UIButtonConfiguration configuration = this.Configuration ?? UIButtonConfiguration.PlainButtonConfiguration;
+                UIBackgroundConfiguration background = configuration.Background;
+                background.BackgroundColor = this.Highlighted ? ThemedColors.Get(MobileLook.EnumComboBox.SurfacePressed) : UIColor.Clear;
+                configuration.Background = background;
+                this.Configuration = configuration;
             }
         }
     }

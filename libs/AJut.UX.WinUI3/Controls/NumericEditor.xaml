@@ -70,6 +70,14 @@
                                                 Value="{ThemeResource AJut_NumericEditor_NormalBorderBrush}"/>
                                     </VisualState.Setters>
                                 </VisualState>
+                                <!-- The pointer over the editor, focused or not: brighter than the focused border, so the two
+                                     read apart -->
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_Root.BorderBrush"
+                                                Value="{ThemeResource AJut_NumericEditor_PointerOverBorderBrush}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
                             </VisualStateGroup>
                             <!-- ErrorStates: a separate rim border + warning glyph so it never fights
                                  FocusStates over PART_Root.BorderBrush. Only Visibility is toggled here. -->

@@ -33,11 +33,22 @@ namespace AJut.UX.Controls
     // BumpStack and the overflow button, and code turns the items panel. Everything measured along the strip
     // (natural sizes, uniform sizing, the overflow budget) is widths for a horizontal strip
     // and heights for a vertical one.
+    //
+    // Disabled: the template's CommonStates group (Normal / Disabled) puts DisabledBackground,
+    // DisabledBorderBrush and DisabledForeground on the strip while IsEnabled is false.
+    //
+    // The bump and overflow buttons' colors hang on both, so a third group, ButtonColorStates (InStrip / Plain /
+    // DisabledButtons), owns them and is picked from the orientation and IsEnabled together.
 
     [TemplatePart(Name = nameof(PART_ScrollHost), Type = typeof(BumpStack))]
     [TemplatePart(Name = nameof(PART_OverflowButton), Type = typeof(Button))]
     [TemplateVisualState(GroupName = kOrientationStatesGroup, Name = kHorizontalState)]
     [TemplateVisualState(GroupName = kOrientationStatesGroup, Name = kVerticalState)]
+    [TemplateVisualState(GroupName = kCommonStatesGroup, Name = kNormalState)]
+    [TemplateVisualState(GroupName = kCommonStatesGroup, Name = kDisabledState)]
+    [TemplateVisualState(GroupName = kButtonColorStatesGroup, Name = kInStripButtonsState)]
+    [TemplateVisualState(GroupName = kButtonColorStatesGroup, Name = kPlainButtonsState)]
+    [TemplateVisualState(GroupName = kButtonColorStatesGroup, Name = kDisabledButtonsState)]
     public class ToggleStrip : Control, IToggleStripHost
     {
         // ===========[ Const-like ]===============================================
@@ -46,9 +57,17 @@ namespace AJut.UX.Controls
         private const string kOrientationStatesGroup = "OrientationStates";
         private const string kHorizontalState = "Horizontal";
         private const string kVerticalState = "Vertical";
+        private const string kCommonStatesGroup = "CommonStates";
+        private const string kNormalState = "Normal";
+        private const string kDisabledState = "Disabled";
+        private const string kButtonColorStatesGroup = "ButtonColorStates";
+        private const string kInStripButtonsState = "InStrip";
+        private const string kPlainButtonsState = "Plain";
+        private const string kDisabledButtonsState = "DisabledButtons";
         private static readonly PropertyPath kIsSelectedPath = new PropertyPath("IsSelected");
         private static readonly PropertyPath kNamePath = new PropertyPath("Name");
         private static readonly PropertyPath kBorderBrushPath = new PropertyPath("BorderBrush");
+        private static readonly PropertyPath kDisabledBorderBrushPath = new PropertyPath("DisabledBorderBrush");
 
         // ===========[ Instance fields ]==========================================
         // PART_ScrollHost is a BumpStack that hosts PART_ItemsPanel (its single child) and provides the
@@ -84,6 +103,7 @@ namespace AJut.UX.Controls
             this.Items = new ToggleItemsCollection(this);
             this.Items.CollectionChanged += this.Items_OnCollectionChanged;
             this.SizeChanged += this.OnSizeChanged;
+            this.IsEnabledChanged += this.OnIsEnabledChanged;
         }
 
         // ===========[ Events ]===================================================
@@ -227,6 +247,36 @@ namespace AJut.UX.Controls
             this.RebuildItems();
         }
 
+        /// <summary>
+        /// The strip's surface while it is disabled, in place of its Background. Also fills the bump buttons and the
+        /// overflow button, which sit on the strip. The AJut theme sets the disabled ComboBox's flat fill.
+        /// </summary>
+        public static readonly DependencyProperty DisabledBackgroundProperty = DPUtils.Register(_ => _.DisabledBackground);
+        public Brush DisabledBackground
+        {
+            get => (Brush)this.GetValue(DisabledBackgroundProperty);
+            set => this.SetValue(DisabledBackgroundProperty, value);
+        }
+
+        /// <summary>The strip's outline while it is disabled, in place of its BorderBrush.</summary>
+        public static readonly DependencyProperty DisabledBorderBrushProperty = DPUtils.Register(_ => _.DisabledBorderBrush);
+        public Brush DisabledBorderBrush
+        {
+            get => (Brush)this.GetValue(DisabledBorderBrushProperty);
+            set => this.SetValue(DisabledBorderBrushProperty, value);
+        }
+
+        /// <summary>
+        /// Every item's text while the strip is disabled, the selected item's too: a disabled strip keeps its selection
+        /// shaded so it still shows, and nothing in it reads as live.
+        /// </summary>
+        public static readonly DependencyProperty DisabledForegroundProperty = DPUtils.Register(_ => _.DisabledForeground);
+        public Brush DisabledForeground
+        {
+            get => (Brush)this.GetValue(DisabledForegroundProperty);
+            set => this.SetValue(DisabledForegroundProperty, value);
+        }
+
         // ===========[ Properties ]===============================================
         private bool IsVertical => this.Orientation == Orientation.Vertical;
 
@@ -263,7 +313,37 @@ namespace AJut.UX.Controls
             this.PART_OverflowPanel = (this.PART_OverflowButton?.Flyout as Flyout)?.Content as StackPanel;
 
             this.ApplyOrientationState();
+            this.ApplyCommonState(false);
             this.RebuildItems();
+        }
+
+        private void ApplyCommonState (bool useTransitions)
+        {
+            VisualStateManager.GoToState(this, this.IsEnabled ? kNormalState : kDisabledState, useTransitions);
+            this.ApplyButtonColorState(useTransitions);
+            foreach (ToggleStripButton button in m_buttons)
+            {
+                this.BindItemOutline(button);
+            }
+        }
+
+        private void ApplyButtonColorState (bool useTransitions)
+        {
+            string state = !this.IsEnabled ? kDisabledButtonsState : (this.IsVertical ? kPlainButtonsState : kInStripButtonsState);
+            VisualStateManager.GoToState(this, state, useTransitions);
+        }
+
+        // An item's outline draws the lines between items, so it takes the strip's border: DisabledBorderBrush while the
+        // strip is disabled, as the Disabled state gives the frame, and BorderBrush otherwise. It is bound from here rather
+        // than set by the state, since the items are made in code and the state can only name parts of the template.
+        private void BindItemOutline (ToggleStripButton button)
+        {
+            button.SetBinding(Control.BorderBrushProperty, new Binding
+            {
+                Source = this,
+                Path = this.IsEnabled ? kBorderBrushPath : kDisabledBorderBrushPath,
+                Mode = BindingMode.OneWay,
+            });
         }
 
         // The template turns its BumpStack and overflow button for the orientation; this picks the state. The
@@ -278,9 +358,12 @@ namespace AJut.UX.Controls
             }
 
             VisualStateManager.GoToState(this, this.IsVertical ? kVerticalState : kHorizontalState, false);
+            this.ApplyButtonColorState(false);
         }
 
         // ===========[ Events ]===================================================
+        private void OnIsEnabledChanged (object sender, DependencyPropertyChangedEventArgs e) => this.ApplyCommonState(true);
+
         private void OnSizeChanged (object sender, SizeChangedEventArgs e)
         {
             // Re-run in every mode: OverflowPopup repartitions, and Clip/Scroll need the pass too -
@@ -516,13 +599,7 @@ namespace AJut.UX.Controls
             }
 
             btn.Padding = this.ItemPadding;
-
-            btn.SetBinding(Control.BorderBrushProperty, new Binding
-            {
-                Source = this,
-                Path = kBorderBrushPath,
-                Mode = BindingMode.OneWay,
-            });
+            this.BindItemOutline(btn);
 
             // IsSelected <-> IsSelected (TwoWay so clicking drives selection logic)
             btn.SetBinding(ToggleStripButton.IsSelectedProperty, new Binding

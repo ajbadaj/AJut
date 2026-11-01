@@ -18,7 +18,7 @@ namespace AJutShowRoomAppKit.UI.Pages
         {
             m_area = area;
 
-            m_nav = new NavColumn();
+            m_nav = new NavColumn(ShowroomStyle.SidebarBackground);
             m_nav.AddHeader(ShowroomStyle.Heading(area.Title));
             m_nav.AddHeader(ShowroomStyle.Understated(area.Blurb));
             foreach (ShowroomPageEntry page in area.Pages)

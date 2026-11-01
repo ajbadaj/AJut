@@ -44,8 +44,8 @@
                             <ColumnDefinition Width="3*"/>
                             <ColumnDefinition Width="1*"/>
                         </Grid.ColumnDefinitions>
-                        <ajut:BumpStack Grid.Column="1" Orientation="Horizontal" MaxWidth="1000" Height="250" BorderBrush="{DynamicResource AJut_Brush_PrimaryHighlightDesat}" BorderThickness="2"
-                                        ajut_ap:BorderXTA.CornerRadius="5" Background="{DynamicResource AJut_Brush_PopupBackground}" Padding="10"
+                        <ajut:BumpStack Grid.Column="1" Orientation="Horizontal" MaxWidth="1000" Height="250" Style="{DynamicResource Showroom_Style_LandingBumpStack}" BorderThickness="2"
+                                        ajut_ap:BorderXTA.CornerRadius="5" Padding="10"
                                         ButtonFontSize="32" ButtonPadding="40">
                             <StackPanel VerticalAlignment="Center">
                                 <Viewbox Width="120">

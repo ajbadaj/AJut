@@ -26,7 +26,8 @@
     <SolidColorBrush x:Key="AJut_Brush_Rimlighting" Color="{DynamicResource AJut_Color_RimLighting}"/>
     <SolidColorBrush x:Key="AJut_Brush_Shadow" Color="{DynamicResource AJut_Color_Shadow}"/>
 
-    <Color x:Key="AJut_Color_MouseInteractionHighlight">#D181A1</Color>
+    <!-- What a glyph button fills with under the pointer: the muted primary's value (AJut_Color_PrimaryHighlightDesat), which white glyphs and the normal text both read on -->
+    <Color x:Key="AJut_Color_MouseInteractionHighlight">#4D8ECC</Color>
     <SolidColorBrush x:Key="AJut_Brush_MouseInteractionHighlight" Color="{DynamicResource AJut_Color_MouseInteractionHighlight}"/>
 
     <SolidColorBrush x:Key="AJut_Brush_ImportantText" Color="#000003" />
@@ -46,7 +47,8 @@
 
     <SolidColorBrush x:Key="AJut_Brush_ListBackground" Color="#EAEAEA" />
     <SolidColorBrush x:Key="AJut_Brush_ListBorder" Color="#555" />
-    <SolidColorBrush x:Key="AJut_Brush_ListSelection" Color="{DynamicResource AJut_Color_PrimaryHighlight}" />
+    <!-- The bright primary, which the dark text a selected item keeps reads on; the plain primary is too dark for it -->
+    <SolidColorBrush x:Key="AJut_Brush_ListSelection" Color="{DynamicResource AJut_Color_PrimaryHighlightBright}" />
     <SolidColorBrush x:Key="AJut_Brush_ListSelectionBackground" Color="#190284FF" />
     <SolidColorBrush x:Key="AJut_Brush_TreeSelection" Color="{DynamicResource AJut_Color_PrimaryHighlight}" />
     <SolidColorBrush x:Key="AJut_Brush_ListItemHover" Color="{DynamicResource AJut_Color_PrimaryHighlightBright}" />
@@ -65,9 +67,15 @@
     <SolidColorBrush x:Key="AJut_Brush_ButtonBorderPressed" Color="#333"/>
 
     <SolidColorBrush x:Key="AJut_Brush_RootPanelBackground" Color="#DDD"/>
-    <SolidColorBrush x:Key="AJut_Brush_PanelBackground" Color="#EDF0F3"/>
+    <SolidColorBrush x:Key="AJut_Brush_PanelBackground" Color="#FCFDFE"/>
     <SolidColorBrush x:Key="AJut_Brush_InnerPanelBackground" Color="#E6E6E6"/>
-    <SolidColorBrush x:Key="AJut_Brush_PanelBorder" Color="#5000"/>
+    <!-- The level between the drawer and the panels: a page list, or a tab strip's unselected tabs -->
+    <SolidColorBrush x:Key="AJut_Brush_NavigationPanelBackground" Color="#E6E6E6"/>
+    <!-- The selected item in a list on one of those levels. See-through, so one value reads on every level: it shades
+         whatever is under it a step darker. -->
+    <Color x:Key="AJut_Color_NavigationSelection">#16000000</Color>
+    <SolidColorBrush x:Key="AJut_Brush_NavigationSelection" Color="{DynamicResource AJut_Color_NavigationSelection}"/>
+    <SolidColorBrush x:Key="AJut_Brush_PanelBorder" Color="#CECECE"/>
 
     <SolidColorBrush x:Key="AJut_Brush_PopupBackground" Color="#BCBCBC"/>
 
@@ -80,6 +88,9 @@
     </LinearGradientBrush>
     <SolidColorBrush x:Key="AJut_Brush_ControlBackgroundHover" Color="#EEE"/>
     <SolidColorBrush x:Key="AJut_Brush_ButtonBackgroundPressed" Color="#CCC"/>
+    <!-- A disabled control's surface. The same as at rest here; the touch overlays lift the rest surface so a button
+         reads as one from its fill, and keep this one flat, since a disabled button should not. -->
+    <StaticResource x:Key="AJut_Brush_ControlBackgroundDisabled" ResourceKey="AJut_Brush_ControlBackground"/>
     <SolidColorBrush x:Key="AJut_Brush_TextBoxBackground" Color="#FFF"/>
     <SolidColorBrush x:Key="AJut_Brush_TextBoxBorder" Color="#222"/>
 
@@ -90,19 +101,21 @@
 
     <!-- ===================[ Specialty Brushes ]========================= -->
     <SolidColorBrush x:Key="AJut_Brush_ChromeButtonHoverBackground" Color="{DynamicResource AJut_Color_PrimaryHighlightDark}"/>
-    <SolidColorBrush x:Key="AJut_Brush_ChromeButtonHoverForeground" Color="#202020" />
+    <!-- On the primary highlight under the pointer or pressed, a title bar button's glyph is white -->
+    <SolidColorBrush x:Key="AJut_Brush_ChromeButtonHoverForeground" Color="#FFF" />
     <SolidColorBrush x:Key="AJut_Brush_ChromeButtonPressedBackground" Color="{DynamicResource AJut_Color_PrimaryHighlight}"/>
-    <SolidColorBrush x:Key="AJut_Brush_ChromeButtonPressedForeground" Color="#202020" />
-    <SolidColorBrush x:Key="AJut_Brush_ChromeCloseButtonHighlight" Color="#D31515"/>
+    <SolidColorBrush x:Key="AJut_Brush_ChromeButtonPressedForeground" Color="#FFF" />
+    <SolidColorBrush x:Key="AJut_Brush_ChromeCloseButtonHighlight" Color="#E81123"/>
     <Color x:Key="AJut_Color_ChromeCloseButtonComplement">#892630</Color>
     <SolidColorBrush x:Key="AJut_Brush_ChromeCloseButtonComplement" Color="{DynamicResource AJut_Color_ChromeCloseButtonComplement}"/>
     
     <SolidColorBrush x:Key="AJut_Brush_WindowOuterBorder" Color="{DynamicResource AJut_Color_PrimaryHighlightBright}"/>
     <SolidColorBrush x:Key="AJut_Brush_SecondaryWindowOuterBorder" Color="#223"/>
     <SolidColorBrush x:Key="AJut_Brush_WindowGlowBorder" Color="#00A3F5"/>
-    <SolidColorBrush x:Key="AJut_Brush_WindowGlowBorderInactive" Color="{DynamicResource AJut_Color_PrimaryHighlightDark}"/>
+    <SolidColorBrush x:Key="AJut_Brush_WindowGlowBorderInactive" Color="{DynamicResource AJut_Color_BorderCommon}"/>
 
     <SolidColorBrush x:Key="AJut_Brush_TitleBarBackground" Color="#0273D1"/>
+    <SolidColorBrush x:Key="AJut_Brush_TitleBarBackgroundInactive" Color="#E6E6E6"/>
     <SolidColorBrush x:Key="AJut_Brush_TitleBarForeground" Color="#333" />
     <SolidColorBrush x:Key="AJut_Brush_TitleBarForegroundImportant" Color="#000" />
     <SolidColorBrush x:Key="AJut_Brush_TitleBarGlyphHighlight" Color="#CCC" />

@@ -11,6 +11,8 @@
         app:ajutMinimum="-5"
         app:ajutMaximum="50"
         app:ajutNudge="2.5"
+        app:ajutBigNudge="10"
+        app:ajutSmallNudge="0.25"
         app:ajutDecimalPlacesAllowed="1"
         app:ajutLabel="Volume"
         app:ajutOutOfBoundsResponse="fixOnCommit"

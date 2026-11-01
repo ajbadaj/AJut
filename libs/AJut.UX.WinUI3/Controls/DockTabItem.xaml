@@ -4,13 +4,14 @@
 
     <!-- ===========[ DockTabItem: Default Style ]============================= -->
     <!-- Tab header item used by DockZone.BuildTabNavContent.
-         Background and BorderBrush come from Style Setters below (override in a theme
-         Style without redefining the template). BorderThickness is computed per-tab by
-         DockZone code (index-aware left/right borders) and pushed in OnApplyTemplate.
-         The VSM SelectionStates group drives opacity and vertical position:
-           Normal              - 0.35 opacity, slight inset margin
-           PointerOver         - 0.80 opacity, raised slightly
-           Selected            - 1.00 opacity, -2px top margin bleeds into content panel
+         Background (unselected), SelectedBackground and BorderBrush come from Style Setters
+         below (override in a theme Style without redefining the template). BorderThickness is
+         computed per-tab by DockZone code (index-aware borders) and pushed in OnApplyTemplate.
+         The VSM SelectionStates group drives the label's opacity, which fill shows, and the
+         vertical position:
+           Normal              - label 0.35 opacity, unselected fill, inset at the bottom
+           PointerOver         - label 0.80 opacity, unselected fill, reaching the strip's bottom
+           Selected            - label 1.00 opacity, selected fill, -2px top margin bleeds into content panel
            SelectedPointerOver - same as Selected (hover does not disturb the overlap) -->
     <Style TargetType="local:DockTabItem">
         <Setter Property="IsTabStop" Value="False"/>
@@ -18,8 +19,14 @@
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         <Setter Property="VerticalContentAlignment" Value="Stretch"/>
 
-        <!-- Default colors - override in a theme Style (no template redefinition needed) -->
+        <!-- Default colors - override in a theme Style (no template redefinition needed). The
+             selected tab takes the panel's color so it joins the panel; the others sit a level darker. -->
         <Setter Property="Background">
+            <Setter.Value>
+                <SolidColorBrush Color="#FF1E1E1E"/>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="SelectedBackground">
             <Setter.Value>
                 <SolidColorBrush Color="#FF2B2B2B"/>
             </Setter.Value>
@@ -34,42 +41,54 @@
             <Setter.Value>
                 <ControlTemplate TargetType="local:DockTabItem">
                     <!-- Root: carries the per-tab BorderThickness (set from DockZone code) and
-                         VSM state changes (opacity/margin). BorderBrush uses TemplateBinding;
+                         the VSM margin changes. BorderBrush uses TemplateBinding;
                          BorderThickness is index-aware and pushed in OnApplyTemplate. -->
                     <Border x:Name="Root"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             Padding="{TemplateBinding Padding}">
-                        <!-- InnerBorder: holds the actual tab background color so opacity
-                             transitions on Root don't affect the content rendering. -->
-                        <Border x:Name="InnerBorder"
-                                Background="{TemplateBinding Background}">
-                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                        <!-- The two fills sit under the label, and the selection states show one or the
+                             other, so fading the label never shows what is behind the tab -->
+                        <Grid>
+                            <Border x:Name="InnerBorder"
+                                    Background="{TemplateBinding Background}"/>
+                            <Border x:Name="SelectedFill"
+                                    Background="{TemplateBinding SelectedBackground}"
+                                    Opacity="0"/>
+                            <ContentPresenter x:Name="TabContent"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
-                        </Border>
+                        </Grid>
 
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="SelectionStates">
-                                <!-- Normal: explicit revert so returning from Selected/PointerOver always restores -->
+                                <!-- Normal: explicit revert so returning from Selected/PointerOver always restores.
+                                     The 2px top margin starts the tab just under the panel's bottom border,
+                                     which serves as its top edge (DockLeafLayout pulls the strip up 2px). -->
                                 <VisualState x:Name="Normal">
                                     <VisualState.Setters>
-                                        <Setter Target="Root.Opacity" Value="0.35"/>
+                                        <Setter Target="TabContent.Opacity" Value="0.35"/>
+                                        <Setter Target="SelectedFill.Opacity" Value="0"/>
                                         <Setter Target="Root.Margin" Value="0,2,0,2"/>
                                         <Setter Target="Root.(Canvas.ZIndex)" Value="0"/>
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="PointerOver">
                                     <VisualState.Setters>
-                                        <Setter Target="Root.Opacity" Value="0.80"/>
-                                        <Setter Target="Root.Margin" Value="0,1,0,0"/>
+                                        <Setter Target="TabContent.Opacity" Value="0.80"/>
+                                        <Setter Target="SelectedFill.Opacity" Value="0"/>
+                                        <Setter Target="Root.Margin" Value="0,2,0,0"/>
                                         <Setter Target="Root.(Canvas.ZIndex)" Value="1"/>
                                     </VisualState.Setters>
                                 </VisualState>
                                 <!-- Selected: -2px top margin so the tab bleeds into the
-                                     content panel above (matching DockLeafLayout's 1px strip
-                                     offset); ZIndex=5 renders it above the strip border. -->
+                                     content panel above; the strip's scroll viewer clips it at the
+                                     strip's top, which DockLeafLayout puts above the panel's bottom
+                                     border, so the tab covers that border.
+                                     ZIndex=5 renders it above the strip border. -->
                                 <VisualState x:Name="Selected">
                                     <VisualState.Setters>
-                                        <Setter Target="Root.Opacity" Value="1.0"/>
+                                        <Setter Target="TabContent.Opacity" Value="1.0"/>
+                                        <Setter Target="SelectedFill.Opacity" Value="1.0"/>
                                         <Setter Target="Root.Margin" Value="0,-2,0,0"/>
                                         <Setter Target="Root.(Canvas.ZIndex)" Value="5"/>
                                     </VisualState.Setters>
@@ -78,15 +97,18 @@
                                      visually disconnect the selected tab from the content. -->
                                 <VisualState x:Name="SelectedPointerOver">
                                     <VisualState.Setters>
-                                        <Setter Target="Root.Opacity" Value="1.0"/>
+                                        <Setter Target="TabContent.Opacity" Value="1.0"/>
+                                        <Setter Target="SelectedFill.Opacity" Value="1.0"/>
                                         <Setter Target="Root.Margin" Value="0,-2,0,0"/>
                                         <Setter Target="Root.(Canvas.ZIndex)" Value="5"/>
                                     </VisualState.Setters>
                                 </VisualState>
                             </VisualStateGroup>
                             <VisualStateGroup x:Name="DraggingStates">
+                                <!-- NotDragging reverts Root's opacity, which only Dragging changes -->
                                 <VisualState x:Name="NotDragging">
                                     <VisualState.Setters>
+                                        <Setter Target="Root.Opacity" Value="1.0"/>
                                         <Setter Target="Root.(Canvas.ZIndex)" Value="0"/>
                                     </VisualState.Setters>
                                 </VisualState>

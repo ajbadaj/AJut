@@ -11,6 +11,9 @@
     <NavigationView x:Name="AreaNav" PaneDisplayMode="Left" IsPaneOpen="True" OpenPaneLength="240" CompactModeThresholdWidth="0" ExpandedModeThresholdWidth="0"
                     IsSettingsVisible="False" IsBackButtonVisible="Collapsed" IsPaneToggleButtonVisible="False"
                     SelectionChanged="AreaNav_OnSelectionChanged" Loaded="AreaNav_OnLoaded">
+        <NavigationView.Resources>
+            <ResourceDictionary Source="ms-appx:///Themes/AreaNavigationSurfaces.xaml"/>
+        </NavigationView.Resources>
         <NavigationView.PaneHeader>
             <StackPanel Margin="12,8,12,4">
                 <TextBlock Text="Strategies" FontSize="18" FontWeight="SemiBold"/>
