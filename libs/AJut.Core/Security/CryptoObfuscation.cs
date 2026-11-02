@@ -59,8 +59,16 @@
             return String.Join("", charList);
         }
 
-        private static Rfc2898DeriveBytes CreateCryptoBytes (string key, int? iterationCountOverride, HashAlgorithmName? hashAlgorithmOverride)
+        /// <summary>
+        /// Sets <paramref name="aes"/>'s key and IV, derived from <paramref name="key"/> (or the seeded default key when it is
+        /// null) the way the strings this class has made were derived.
+        /// </summary>
+        private static void ApplyDerivedKeyAndIV (Aes aes, string key, int? iterationCountOverride, HashAlgorithmName? hashAlgorithmOverride)
         {
+            // AES-256 takes a 32 byte key, and CBC mode a 16 byte IV
+            const int kKeyByteCount = 32;
+            const int kIVByteCount = 16;
+
             if (key == null)
             {
                 key = g_key;
@@ -76,7 +84,31 @@
             Random rng = new Random(GenerateBitnessIndependentHashCode(key));
             byte[] crytpoSalt = new byte[rng.Next(8, 16)];
             rng.NextBytes(crytpoSalt);
-            return new Rfc2898DeriveBytes(key, crytpoSalt, iterations, hashAlgorithm);
+
+            // The strings this class has made were keyed by an Rfc2898DeriveBytes object asked for 32 bytes and then 16.
+            //  .NET 10 makes that constructor obsolete (SYSLIB0060) in favor of the one-shot Rfc2898DeriveBytes.Pbkdf2, and
+            //  the one-shot has to give the very same bytes, or no stored string decrypts:
+            // * PBKDF2's output is one stream that the object's GetBytes calls read in order, so the first 32 bytes of a
+            //   single 48 byte Pbkdf2 call are the old key, and the next 16 are the old IV.
+            // * The old constructor encoded the key with Encoding.UTF8, which writes the replacement character for a lone
+            //   surrogate. Pbkdf2's string overloads encode with a UTF-8 encoder that throws on one instead. RandomizeAndSalt
+            //   shuffles the key's characters, so a key holding an emoji (a surrogate pair) can come out with lone
+            //   surrogates, and the string overload would throw for it. So the key is encoded here with Encoding.UTF8, as it
+            //   always was, and handed to the byte overload.
+            // Changing any of it (the sizes, their order, the encoding, the salt) breaks every string already stored.
+            //  StoredObfuscatedStringTests pins strings made the old way, and runs on Windows, Android and macOS.
+            // https://aka.ms/dotnet-warnings/SYSLIB0060
+            // https://github.com/dotnet/runtime/blob/main/src/libraries/System.Security.Cryptography/src/System/Security/Cryptography/Rfc2898DeriveBytes.OneShot.cs
+            byte[] keyAndIV = Rfc2898DeriveBytes.Pbkdf2(
+                Encoding.UTF8.GetBytes(key),
+                crytpoSalt,
+                iterations,
+                hashAlgorithm,
+                kKeyByteCount + kIVByteCount
+            );
+
+            aes.Key = keyAndIV[..kKeyByteCount];
+            aes.IV = keyAndIV[kKeyByteCount..];
         }
 
         /// <summary>
@@ -90,13 +122,11 @@
         /// <returns></returns>
         public static string Encrypt (string toEncrypt, string encryptionKey = null, Encoding encodingOverride = null, int? iterationCountOverride = null, HashAlgorithmName? hashAlgorithmOverride = null)
         {
-            Rfc2898DeriveBytes cryptoBytes = CreateCryptoBytes(encryptionKey, iterationCountOverride, hashAlgorithmOverride);
             byte[] bytesToEncode = (encodingOverride ?? DefaultEncoding).GetBytes(toEncrypt);
 
             using Aes encryptor = Aes.Create();
             encryptor.Padding = PaddingMode.PKCS7;
-            encryptor.Key = cryptoBytes.GetBytes(32);
-            encryptor.IV = cryptoBytes.GetBytes(16);
+            ApplyDerivedKeyAndIV(encryptor, encryptionKey, iterationCountOverride, hashAlgorithmOverride);
             using var ms = new MemoryStream();
             using CryptoStream cs = new CryptoStream(ms, encryptor.CreateEncryptor(), CryptoStreamMode.Write);
             cs.Write(bytesToEncode, 0, bytesToEncode.Length);
@@ -108,13 +138,10 @@
 
         public static string Decrypt (string toDecrypt, string decryptionKey = null, Encoding encodingOverride = null, int? iterationCountOverride = null, HashAlgorithmName? hashAlgorithmOverride = null)
         {
-            Rfc2898DeriveBytes cryptoBytes = CreateCryptoBytes(decryptionKey, iterationCountOverride, hashAlgorithmOverride);
-
             byte[] encodedBytes = Convert.FromBase64String(toDecrypt);
             using Aes decryptor = Aes.Create();
             decryptor.Padding = PaddingMode.PKCS7;
-            decryptor.Key = cryptoBytes.GetBytes(32);
-            decryptor.IV = cryptoBytes.GetBytes(16);
+            ApplyDerivedKeyAndIV(decryptor, decryptionKey, iterationCountOverride, hashAlgorithmOverride);
             using var memoryStreamOfEncodedBytes = new MemoryStream(encodedBytes);
             using var cryptographicStreamToRead = new CryptoStream(memoryStreamOfEncodedBytes, decryptor.CreateDecryptor(), CryptoStreamMode.Read);
             using StreamReader reader = new StreamReader(cryptographicStreamToRead, encodingOverride ?? DefaultEncoding);
