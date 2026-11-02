@@ -7,20 +7,20 @@ namespace AJut.Bench.Benchmarks
     using BenchmarkDotNet.Attributes;
     using BenchmarkDotNet.Configs;
 
-    // TermExpression against the same check written out by hand, for membership in a handful of tags and for searching a
+    // TermMatcher against the same check written out by hand, for membership in a handful of tags and for searching a
     //  list of records. The hand written rows are the floor: whatever the expression costs on top of them is the price of
     //  reading the check from text instead of compiling it in.
     [MemoryDiagnoser]
     [GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]
     [CategoriesColumn]
-    public class TermExpressionBench
+    public class TermMatcherBench
     {
         private const string kTagExpression = "code & (frontend | ui) & !legacy";
         private const string kSearchExpression = "jill spill | (ghost & !pilly)";
         private const int kRecordCount = 1000;
 
-        private TermExpression m_tagExpression;
-        private TermExpression m_searchExpression;
+        private TermMatcher m_tagExpression;
+        private TermMatcher m_searchExpression;
         private string[] m_tags;
         private HashSet<string> m_tagSet;
         private List<SearchRecord> m_records;
@@ -28,8 +28,8 @@ namespace AJut.Bench.Benchmarks
         [GlobalSetup]
         public void Setup ()
         {
-            m_tagExpression = TermExpression.Parse(kTagExpression).Value;
-            m_searchExpression = TermExpression.Parse(kSearchExpression).Value;
+            m_tagExpression = TermExpression.ParseMatcher(kTagExpression).Value;
+            m_searchExpression = TermExpression.ParseMatcher(kSearchExpression).Value;
             m_tags = new[] { "code", "backend", "ui", "docs" };
             m_tagSet = new HashSet<string>(m_tags, StringComparer.OrdinalIgnoreCase);
             m_records = BuildRecords();
@@ -37,7 +37,7 @@ namespace AJut.Bench.Benchmarks
 
         // ===========[ Parse ]===================================
         [BenchmarkCategory("Parse"), Benchmark(Description = "Parse")]
-        public TermExpression Parse () => TermExpression.Parse(kTagExpression).Value;
+        public TermMatcher Parse () => TermExpression.ParseMatcher(kTagExpression).Value;
 
         // ===========[ Evaluate ]===================================
         [BenchmarkCategory("Evaluate"), Benchmark(Baseline = true, Description = "By hand")]

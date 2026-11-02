@@ -5,23 +5,14 @@ namespace AJut.Text
     using System.Text;
 
     // Reading text into an expression, plus the term rules that rendering shares with it
-    public sealed partial class TermExpression
+    public sealed partial class TermMatcher
     {
         // ===========[ Public Interface Methods ]=============================
 
-        /// <summary>
-        /// Parses <paramref name="text"/> into an expression. When the text isn't one, the result's error says what's wrong in
-        /// words and where, ready to show whoever typed it, and <see cref="ParseResult.ErrorIndex"/> points at the spot.
-        /// </summary>
-        /// <exception cref="ArgumentOutOfRangeException">When <see cref="TermParseOptions.MaxDepth"/> is negative, or
-        /// <see cref="TermParseOptions.InnerWhitespace"/> isn't one of <see cref="eTermWhitespace"/>'s values</exception>
-        public static ParseResult Parse (string text, TermParseOptions options = default)
+        // TermExpression.ParseMatcher is the public way in, and says what this does
+        internal static TermParseResult<TermMatcher> Parse (string text, TermParseOptions options)
         {
-            if (options.MaxDepth < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(options), options.MaxDepth, "MaxDepth can't be negative");
-            }
-
+            TermParseOptions.ThrowIfOutOfRange(options);
             if (options.InnerWhitespace is not (eTermWhitespace.CollapseToSingleSpace or eTermWhitespace.Preserve))
             {
                 throw new ArgumentOutOfRangeException(
@@ -31,7 +22,7 @@ namespace AJut.Text
                 );
             }
 
-            int maxDepth = options.MaxDepth == 0 ? TermParseOptions.kDefaultMaxDepth : options.MaxDepth;
+            int maxDepth = options.MaxDepthOrDefault;
             bool collapseWhitespace = options.InnerWhitespace == eTermWhitespace.CollapseToSingleSpace;
             return new Parser(text ?? String.Empty, maxDepth, collapseWhitespace).Run();
         }
@@ -259,12 +250,12 @@ namespace AJut.Text
 
             // ===========[ Public Interface Methods ]=============================
 
-            public ParseResult Run ()
+            public TermParseResult<TermMatcher> Run ()
             {
                 ParsedNode root = this.ReadGroup(depth: 0, openIndex: -1);
                 return root == null
-                    ? new ParseResult(m_error, m_errorIndex)
-                    : new ParseResult(new TermExpression(LayOut(root), m_terms.ToArray()));
+                    ? new TermParseResult<TermMatcher>(new TermError(m_error, m_errorIndex))
+                    : new TermParseResult<TermMatcher>(new TermMatcher(LayOut(root), m_terms.ToArray()));
             }
 
             // ===========[ Helpers ]==============================================
@@ -605,7 +596,7 @@ namespace AJut.Text
 
                 eNodeKind looser = tighter == eNodeKind.And ? eNodeKind.Or : eNodeKind.And;
                 ParsedNode reading = ParsedNode.ForGroup(looser, runs);
-                return new TermExpression(LayOut(reading), m_terms.ToArray()).ToString();
+                return new TermMatcher(LayOut(reading), m_terms.ToArray()).ToString();
 
                 ParsedNode _RunAsOperand (List<ParsedNode> runOperands)
                 {
@@ -665,7 +656,7 @@ namespace AJut.Text
                 return null;
             }
 
-            // Errors count positions from 1, for whoever's reading them. ParseResult.ErrorIndex stays an index from 0.
+            // Errors count positions from 1, for whoever's reading them. TermParseResult.ErrorIndex stays an index from 0.
             private static string At (int index) => $"position {index + 1}";
 
             // ===========[ Subclasses/structs ]===================================

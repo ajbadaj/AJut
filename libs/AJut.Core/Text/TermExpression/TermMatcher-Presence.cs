@@ -8,7 +8,7 @@ namespace AJut.Text
     using System.Text;
 
     // The ways a term can count as present: held by a collection, found in text, or whatever the caller says
-    public sealed partial class TermExpression
+    public sealed partial class TermMatcher
     {
         // ===========[ Helpers ]==============================================
 

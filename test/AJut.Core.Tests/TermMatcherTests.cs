@@ -7,7 +7,7 @@ namespace AJut.Core.UnitTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class TermExpressionTests
+    public class TermMatcherTests
     {
         private static readonly TermMatchOptions kMatchCase = new TermMatchOptions { MatchCase = true };
         private static readonly TermMatchOptions kWholeWords = new TermMatchOptions { WholeWords = true };
@@ -46,23 +46,23 @@ namespace AJut.Core.UnitTests
         [DataRow("Jill Spill | (Ghost & Pilly)", new[] { "Jill Spill" }, true)]
         [DataRow("Jill Spill | (Ghost & Pilly)", new[] { "Ghost", "Pilly" }, true)]
         [DataRow("Jill Spill | (Ghost & Pilly)", new[] { "Ghost", "Jill", "Spill" }, false)]
-        public void TermExpression_Evaluate_TestsMembership (string expression, string[] terms, bool expected)
+        public void TermMatcher_Evaluate_TestsMembership (string expression, string[] terms, bool expected)
         {
             Assert.AreEqual(expected, MustParse(expression).Evaluate(terms));
         }
 
         [TestMethod]
-        public void TermExpression_Evaluate_MatchCaseComparesExactly ()
+        public void TermMatcher_Evaluate_MatchCaseComparesExactly ()
         {
-            TermExpression expression = MustParse("Code");
+            TermMatcher expression = MustParse("Code");
             Assert.IsFalse(expression.Evaluate(new[] { "code" }, kMatchCase));
             Assert.IsTrue(expression.Evaluate(new[] { "Code" }, kMatchCase));
         }
 
         [TestMethod]
-        public void TermExpression_Evaluate_AnyCollectionWorks ()
+        public void TermMatcher_Evaluate_AnyCollectionWorks ()
         {
-            TermExpression expression = MustParse("code & ui");
+            TermMatcher expression = MustParse("code & ui");
             Assert.IsTrue(expression.Evaluate(new List<string> { "code", "ui" }));
             Assert.IsFalse(expression.Evaluate(new List<string> { "code" }));
 
@@ -72,9 +72,9 @@ namespace AJut.Core.UnitTests
         }
 
         [TestMethod]
-        public void TermExpression_Evaluate_SetsAnswerByTheOptionsNotTheirOwnComparer ()
+        public void TermMatcher_Evaluate_SetsAnswerByTheOptionsNotTheirOwnComparer ()
         {
-            TermExpression expression = MustParse("Code");
+            TermMatcher expression = MustParse("Code");
 
             // Sets that compare the way the options ask
             Assert.IsTrue(expression.Evaluate(new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "code" }));
@@ -88,7 +88,7 @@ namespace AJut.Core.UnitTests
         }
 
         [TestMethod]
-        public void TermExpression_Evaluate_AsksEachTermOnceAndOnlyWhenReached ()
+        public void TermMatcher_Evaluate_AsksEachTermOnceAndOnlyWhenReached ()
         {
             var asked = new List<string>();
             bool result = MustParse("a & (b | a) & c").Evaluate(term =>
@@ -118,10 +118,10 @@ namespace AJut.Core.UnitTests
         }
 
         [TestMethod]
-        public void TermExpression_Evaluate_CallerDecidesWhatTermsMean ()
+        public void TermMatcher_Evaluate_CallerDecidesWhatTermsMean ()
         {
             // ':' and '>' aren't reserved, so these are ordinary terms, and HasTrait decides what each one means
-            TermExpression query = MustParse("class:bard & (level>3 | name:Jill Spill)");
+            TermMatcher query = MustParse("class:bard & (level>3 | name:Jill Spill)");
             CollectionAssert.AreEqual(new[] { "class:bard", "level>3", "name:Jill Spill" }, query.Terms.ToArray());
 
             var party = new[]
@@ -137,12 +137,12 @@ namespace AJut.Core.UnitTests
         }
 
         [TestMethod]
-        public void TermExpression_Evaluate_ManyTermsWorkLikeFew ()
+        public void TermMatcher_Evaluate_ManyTermsWorkLikeFew ()
         {
             string[] terms = Enumerable.Range(0, 300).Select(n => $"t{n}").ToArray();
             string anyOfText = String.Join(" | ", terms);
-            TermExpression anyOf = MustParse(anyOfText);
-            TermExpression allOf = MustParse(String.Join(" & ", terms));
+            TermMatcher anyOf = MustParse(anyOfText);
+            TermMatcher allOf = MustParse(String.Join(" & ", terms));
 
             Assert.AreEqual(300, anyOf.Terms.Count);
             Assert.IsTrue(anyOf.Evaluate("t299"));
@@ -153,7 +153,7 @@ namespace AJut.Core.UnitTests
             // Every term twice, and more of them than fit on the stack, so the evaluation remembers its answers in a rented
             //  buffer. A buffer that kept the last evaluation's answers would still say t299 is present.
             var asked = new List<string>();
-            TermExpression twice = MustParse($"({anyOfText}) & ({anyOfText})");
+            TermMatcher twice = MustParse($"({anyOfText}) & ({anyOfText})");
             Assert.IsTrue(twice.Evaluate(term =>
             {
                 asked.Add(term);
@@ -178,7 +178,7 @@ namespace AJut.Core.UnitTests
         [DataRow("(one | two) & (three | four)", "one and two", false)]
         [DataRow("\"This & That\"", "all of this & that", true)]
         [DataRow("x", "", false)]
-        public void TermExpression_IsMatch_FindsTermsAnywhere (string expression, string text, bool expected)
+        public void TermMatcher_IsMatch_FindsTermsAnywhere (string expression, string text, bool expected)
         {
             Assert.AreEqual(expected, MustParse(expression).IsMatch(text));
         }
@@ -195,24 +195,24 @@ namespace AJut.Core.UnitTests
         [DataRow("pill", "pill\U0001D400", false)]
         [DataRow("pill", "\U0001D400pill", false)]
         [DataRow("pill box", "a pill box!", true)]
-        public void TermExpression_IsMatch_WholeWordsOnlyCountsWholeWords (string expression, string text, bool expected)
+        public void TermMatcher_IsMatch_WholeWordsOnlyCountsWholeWords (string expression, string text, bool expected)
         {
             Assert.AreEqual(expected, MustParse(expression).IsMatch(text, kWholeWords));
         }
 
         [TestMethod]
-        public void TermExpression_IsMatch_MatchCaseComparesExactly ()
+        public void TermMatcher_IsMatch_MatchCaseComparesExactly ()
         {
-            TermExpression expression = MustParse("Ghost");
+            TermMatcher expression = MustParse("Ghost");
             Assert.IsFalse(expression.IsMatch("a ghost", kMatchCase));
             Assert.IsTrue(expression.IsMatch("a Ghost", kMatchCase));
             Assert.IsFalse(expression.IsMatch("a Ghostly figure", new TermMatchOptions { MatchCase = true, WholeWords = true }));
         }
 
         [TestMethod]
-        public void TermExpression_IsMatch_SearchesSeveralTextsAsOne ()
+        public void TermMatcher_IsMatch_SearchesSeveralTextsAsOne ()
         {
-            TermExpression expression = MustParse("jill & ghost");
+            TermMatcher expression = MustParse("jill & ghost");
             Assert.IsTrue(expression.IsMatch("Jill", "saw a ghost"));
             Assert.IsFalse(expression.IsMatch("Jill"));
             Assert.IsFalse(expression.IsMatch((string)null));
@@ -220,7 +220,7 @@ namespace AJut.Core.UnitTests
         }
 
         [TestMethod]
-        public void TermExpression_IsMatch_FiltersRecordsByTheirFields ()
+        public void TermMatcher_IsMatch_FiltersRecordsByTheirFields ()
         {
             var records = new[]
             {
@@ -230,7 +230,7 @@ namespace AJut.Core.UnitTests
                 new SearchRecord("Pilly", "Wrote it down"),
             };
 
-            TermExpression expression = MustParse("Jill Spill | (Ghost & Pilly)");
+            TermMatcher expression = MustParse("Jill Spill | (Ghost & Pilly)");
             SearchRecord[] found = records.Where(r => expression.IsMatch(r.Name, r.Body)).ToArray();
 
             CollectionAssert.AreEqual(new[] { records[0], records[1] }, found);
@@ -277,9 +277,9 @@ namespace AJut.Core.UnitTests
         [DataRow("x & (a & b | c)", 11, "'&' and '|' meet without parentheses at position 12. Write the group at position 5 as ((a & b) | c) or (a & (b | c)).")]
         [DataRow("!a & b | c", 7, "'&' and '|' meet without parentheses at position 8. Write it as (!a & b) | c or !a & (b | c).")]
         [DataRow("a & b | (c", 8, "The '(' at position 9 is never closed.")]
-        public void TermExpression_Parse_RefusesWithPositionAndReason (string expression, int errorIndex, string error)
+        public void TermMatcher_Parse_RefusesWithPositionAndReason (string expression, int errorIndex, string error)
         {
-            TermExpression.ParseResult parsed = TermExpression.Parse(expression);
+            TermParseResult<TermMatcher> parsed = TermExpression.ParseMatcher(expression);
             Assert.IsTrue(parsed.HasErrors, $"'{expression}' parsed as '{parsed.Value}'");
             Assert.AreEqual(errorIndex, parsed.ErrorIndex);
             Assert.AreEqual(error, parsed.Errors.Single());
@@ -287,24 +287,24 @@ namespace AJut.Core.UnitTests
         }
 
         [TestMethod]
-        public void TermExpression_Parse_NullIsEmpty ()
+        public void TermMatcher_Parse_NullIsEmpty ()
         {
-            TermExpression.ParseResult parsed = TermExpression.Parse(null);
+            TermParseResult<TermMatcher> parsed = TermExpression.ParseMatcher(null);
             Assert.AreEqual(0, parsed.ErrorIndex);
             Assert.AreEqual("The expression is empty.", parsed.GetErrorReport());
         }
 
         [TestMethod]
-        public void TermExpression_Parse_ResultWorksLikeAnyResult ()
+        public void TermMatcher_Parse_ResultWorksLikeAnyResult ()
         {
-            TermExpression.ParseResult parsed = TermExpression.Parse("code");
+            TermParseResult<TermMatcher> parsed = TermExpression.ParseMatcher("code");
             Assert.IsTrue(parsed);
             Assert.AreEqual(-1, parsed.ErrorIndex);
 
-            TermExpression expression = parsed;
+            TermMatcher expression = parsed;
             Assert.AreSame(parsed.Value, expression);
 
-            Assert.IsFalse(TermExpression.Parse("("));
+            Assert.IsFalse(TermExpression.ParseMatcher("("));
         }
 
         [DataTestMethod]
@@ -320,9 +320,9 @@ namespace AJut.Core.UnitTests
         [DataRow("@smoke")]
         [DataRow("rock'n'roll")]
         [DataRow("Mr Toot")]
-        public void TermExpression_Parse_BareTermsTakeAnythingUnreserved (string term)
+        public void TermMatcher_Parse_BareTermsTakeAnythingUnreserved (string term)
         {
-            TermExpression expression = MustParse(term);
+            TermMatcher expression = MustParse(term);
             Assert.AreEqual(term, expression.Terms.Single());
             Assert.AreEqual(term, expression.ToString());
         }
@@ -334,21 +334,21 @@ namespace AJut.Core.UnitTests
         [DataRow("!wpf & !(winui | wpf)", "wpf, winui")]
         [DataRow("Mr Toot | Tommy Boy", "Mr Toot, Tommy Boy")]
         [DataRow("Mr  Toot | Mr Toot | Mr\tToot", "Mr Toot")]
-        public void TermExpression_Parse_ListsEachTermOnceInOrder (string expression, string expectedTerms)
+        public void TermMatcher_Parse_ListsEachTermOnceInOrder (string expression, string expectedTerms)
         {
             Assert.AreEqual(expectedTerms, String.Join(", ", MustParse(expression).Terms));
         }
 
         [TestMethod]
-        public void TermExpression_Parse_InnerWhitespaceCollapsesUnlessPreserved ()
+        public void TermMatcher_Parse_InnerWhitespaceCollapsesUnlessPreserved ()
         {
             const string kText = "Mr  Toot | Mr Toot | Mr\tToot";
 
-            TermExpression collapsed = MustParse(kText);
+            TermMatcher collapsed = MustParse(kText);
             Assert.AreEqual("Mr Toot", collapsed.Terms.Single());
             Assert.AreEqual("Mr Toot | Mr Toot | Mr Toot", collapsed.ToString());
 
-            TermExpression preserved = MustParse(kText, kPreserveWhitespace);
+            TermMatcher preserved = MustParse(kText, kPreserveWhitespace);
             CollectionAssert.AreEqual(new[] { "Mr  Toot", "Mr Toot", "Mr\tToot" }, preserved.Terms.ToArray());
 
             // A term whose whitespace a collapsing parse would change is quoted, so the canonical text reads back the same
@@ -364,35 +364,35 @@ namespace AJut.Core.UnitTests
         }
 
         [TestMethod]
-        public void TermExpression_Parse_NestsUpToTheLimit ()
+        public void TermMatcher_Parse_NestsUpToTheLimit ()
         {
             int limit = TermParseOptions.kDefaultMaxDepth;
             string atTheLimit = new string('(', limit) + "a" + new string(')', limit);
             Assert.AreEqual("a", MustParse(atTheLimit).ToString());
 
             string pastTheLimit = "(" + atTheLimit + ")";
-            TermExpression.ParseResult parsed = TermExpression.Parse(pastTheLimit);
+            TermParseResult<TermMatcher> parsed = TermExpression.ParseMatcher(pastTheLimit);
             Assert.AreEqual(limit, parsed.ErrorIndex);
             Assert.AreEqual($"Parentheses nest more than {limit} deep at position {limit + 1}.", parsed.GetErrorReport());
         }
 
         [TestMethod]
-        public void TermExpression_Parse_MaxDepthCanBeSet ()
+        public void TermMatcher_Parse_MaxDepthCanBeSet ()
         {
             var shallow = new TermParseOptions { MaxDepth = 2 };
-            Assert.IsTrue(TermExpression.Parse("((a))", shallow));
+            Assert.IsTrue(TermExpression.ParseMatcher("((a))", shallow));
 
-            TermExpression.ParseResult parsed = TermExpression.Parse("(((a)))", shallow);
+            TermParseResult<TermMatcher> parsed = TermExpression.ParseMatcher("(((a)))", shallow);
             Assert.AreEqual(2, parsed.ErrorIndex);
             Assert.AreEqual("Parentheses nest more than 2 deep at position 3.", parsed.GetErrorReport());
         }
 
         [TestMethod]
-        public void TermExpression_Parse_RefusesOptionsOutOfRange ()
+        public void TermMatcher_Parse_RefusesOptionsOutOfRange ()
         {
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => TermExpression.Parse("a", new TermParseOptions { MaxDepth = -1 }));
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => TermExpression.ParseMatcher("a", new TermParseOptions { MaxDepth = -1 }));
             Assert.ThrowsException<ArgumentOutOfRangeException>(
-                () => TermExpression.Parse("a", new TermParseOptions { InnerWhitespace = (eTermWhitespace)7 })
+                () => TermExpression.ParseMatcher("a", new TermParseOptions { InnerWhitespace = (eTermWhitespace)7 })
             );
         }
 
@@ -426,7 +426,7 @@ namespace AJut.Core.UnitTests
         [DataRow("\"-\"", "\"-\"")]
         [DataRow("\" padded \"", "\" padded \"")]
         [DataRow("café & naïve", "café & naïve")]
-        public void TermExpression_ToString_RendersTheCanonicalForm (string expression, string expected)
+        public void TermMatcher_ToString_RendersTheCanonicalForm (string expression, string expected)
         {
             string rendered = MustParse(expression).ToString();
             Assert.AreEqual(expected, rendered);
@@ -436,7 +436,7 @@ namespace AJut.Core.UnitTests
         }
 
         [TestMethod]
-        public void TermExpression_ToString_UnescapesQuotedTerms ()
+        public void TermMatcher_ToString_UnescapesQuotedTerms ()
         {
             Assert.AreEqual("say \"hi\"", MustParse("\"say \\\"hi\\\"\"").Terms.Single());
             Assert.AreEqual("back\\slash", MustParse("\"back\\\\slash\"").Terms.Single());
@@ -446,7 +446,7 @@ namespace AJut.Core.UnitTests
         // ===========[ MapTerms ]=============================================
 
         [TestMethod]
-        public void TermExpression_MapTerms_RoundTripsThroughIds ()
+        public void TermMatcher_MapTerms_RoundTripsThroughIds ()
         {
             string[] names = { "code", "frontend", "user interface", "legacy" };
             Dictionary<string, string> idByName = names.ToDictionary(
@@ -456,8 +456,8 @@ namespace AJut.Core.UnitTests
             );
             Dictionary<string, string> nameById = idByName.ToDictionary(entry => entry.Value, entry => entry.Key);
 
-            TermExpression byName = MustParse("code & (frontend | user interface) & !legacy");
-            TermExpression byId = byName.MapTerms(name => idByName[name]);
+            TermMatcher byName = MustParse("code & (frontend | user interface) & !legacy");
+            TermMatcher byId = byName.MapTerms(name => idByName[name]);
 
             CollectionAssert.AreEqual(names.Select(name => idByName[name]).ToArray(), byId.Terms.ToArray());
             string code = idByName["code"];
@@ -472,9 +472,9 @@ namespace AJut.Core.UnitTests
         }
 
         [TestMethod]
-        public void TermExpression_MapTerms_FoldsTermsThatMapTogether ()
+        public void TermMatcher_MapTerms_FoldsTermsThatMapTogether ()
         {
-            TermExpression folded = MustParse("Code | (code & !CODE)").MapTerms(term => term.ToLowerInvariant());
+            TermMatcher folded = MustParse("Code | (code & !CODE)").MapTerms(term => term.ToLowerInvariant());
             Assert.AreEqual("code", folded.Terms.Single());
             Assert.AreEqual("code | (code & !code)", folded.ToString());
             Assert.IsTrue(folded.Evaluate("code"));
@@ -482,7 +482,7 @@ namespace AJut.Core.UnitTests
         }
 
         [TestMethod]
-        public void TermExpression_MapTerms_MapsEachTermOnce ()
+        public void TermMatcher_MapTerms_MapsEachTermOnce ()
         {
             var mapped = new List<string>();
             MustParse("a & (a | b) & !b").MapTerms(term =>
@@ -495,28 +495,28 @@ namespace AJut.Core.UnitTests
         }
 
         [TestMethod]
-        public void TermExpression_MapTerms_QuotesTermsThatNeedIt ()
+        public void TermMatcher_MapTerms_QuotesTermsThatNeedIt ()
         {
             var replacements = new Dictionary<string, string> { ["a"] = "this & that", ["b"] = "-", ["c"] = "two words" };
-            TermExpression mapped = MustParse("a & b & c").MapTerms(term => replacements[term]);
+            TermMatcher mapped = MustParse("a & b & c").MapTerms(term => replacements[term]);
 
             Assert.AreEqual("\"this & that\" & \"-\" & two words", mapped.ToString());
             CollectionAssert.AreEqual(mapped.Terms.ToArray(), MustParse(mapped.ToString()).Terms.ToArray());
         }
 
         [TestMethod]
-        public void TermExpression_MapTerms_RefusesEmptyTerms ()
+        public void TermMatcher_MapTerms_RefusesEmptyTerms ()
         {
-            TermExpression expression = MustParse("a & b");
+            TermMatcher expression = MustParse("a & b");
             Assert.ThrowsException<ArgumentException>(() => expression.MapTerms(term => null));
             Assert.ThrowsException<ArgumentException>(() => expression.MapTerms(term => String.Empty));
         }
 
         // ===========[ Helpers ]==============================================
 
-        private static TermExpression MustParse (string text, TermParseOptions options = default)
+        private static TermMatcher MustParse (string text, TermParseOptions options = default)
         {
-            TermExpression.ParseResult parsed = TermExpression.Parse(text, options);
+            TermParseResult<TermMatcher> parsed = TermExpression.ParseMatcher(text, options);
             Assert.IsFalse(parsed.HasErrors, parsed.GetErrorReport());
             return parsed.Value;
         }
