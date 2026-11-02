@@ -8,7 +8,9 @@ param (
 #  AJut.Core.Tests and AJut.Core.SourceGenerators.Tests run for AJut.Core, and AJut.UX.WinUI3.Tests
 #  runs for AJut.UX.WinUI3 rather than AJut.UX. A suite runs when its library or any library that one is
 #  built on is a target. Folders under test/ not named *.Tests (the bench, the
-#  crash host, the trim probe) are tools, not suites, and never run here.
+#  crash host, the trim probe) are tools, not suites, and never run here. Neither does a suite that targets Android, iOS,
+#  macOS or Mac Catalyst: that is an app run on a device or a Mac (the Android suite installs itself through adb), not a
+#  project dotnet test can run, and building it needs workloads the runner doesn't have.
 #
 # Every suite runs even after one fails, and the script exits 1 if any failed, so a failing test
 #  fails the check. dotnet test builds each test project itself: the build step only builds the
@@ -79,6 +81,14 @@ try {
     $failed = @()
     foreach ($testProject in $testProjects) {
         $testName = [System.IO.Path]::GetFileNameWithoutExtension($testProject)
+
+        [xml]$testCsproj = Get-Content -Raw -Path $testProject
+        $frameworks = @($testCsproj.SelectNodes("//TargetFramework | //TargetFrameworks") | ForEach-Object { $_.InnerText })
+        if (@($frameworks | Where-Object { $_ -match '-(android|ios|macos|maccatalyst)' }).Count -gt 0) {
+            Write-Host "$testName targets $($frameworks -join ', '), so it runs on a device or a Mac, not here. Skipping."
+            continue
+        }
+
         $owner = $projectOrder |
             Where-Object { $testName.StartsWith("$_.") } |
             Sort-Object -Property Length -Descending |

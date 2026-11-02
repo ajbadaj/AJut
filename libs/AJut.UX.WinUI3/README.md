@@ -1,5 +1,5 @@
 # AJut.UX.WinUI3
-C# / WinUI3 / dotnet 8 utility library, created by AJ Badarni
+C# / WinUI3 / dotnet 10 utility library, created by AJ Badarni
 
 ## Greetings
 I hope you enjoy using ajut.ux. AJut is short for AJ Utilities, (pronounced like the dipping sauce Au Jus). This ux library contains controls, converters, extensions, content navigation, theming helpers, dark and light themes, utilities - and much more. I've been building these up since I first started developing - through the many side projects I've done over the years. The goal was to provide a simple project reference (ajut.core + ajut.ux.wpf) that will allow you to build and innovate without having to start completely from scratch or to have to bring in many many libraries to get things done.
@@ -19,9 +19,9 @@ build targets detect and merge it into your app's PRI automatically - no `.targe
 `ExcludeAssets` workarounds, no manual build steps (like it used to).
 
 This works in all reference scenarios:
-- **Direct** `PackageReference` in a WinExe app ✓
-- **NuGet → NuGet** chain (your app references a library that references AJut.UX.WinUI3) ✓
-- **NuGet → ProjectReference** chain (your app has a ProjectReference to a library that has a PackageReference to AJut.UX.WinUI3) ✓
+- **Direct** `PackageReference` in a WinExe app
+- **NuGet -> NuGet** chain (your app references a library that references AJut.UX.WinUI3)
+- **NuGet -> ProjectReference** chain (your app has a ProjectReference to a library that has a PackageReference to AJut.UX.WinUI3)
 
 ### App.xaml Setup - Required
 
@@ -96,8 +96,8 @@ so `AJutCustomControlStylingDefaults.xaml` is **not** needed separately.
 If you're curious why adding `XamlControlsResources` and nothing else causes a crash:
 
 WinUI3's `{ThemeResource}` lookup behaves differently depending on *when* it runs:
-- **XAML parse time** (control template instantiation): searches Generic.xaml ✓
-- **Runtime** via `VisualStateManager.GoToState` (called from `OnApplyTemplate` in C#): only searches App.Resources ✗
+- **XAML parse time** (control template instantiation): searches Generic.xaml, so the keys are found
+- **Runtime** via `VisualStateManager.GoToState` (called from `OnApplyTemplate` in C#): only searches App.Resources, so keys only in Generic.xaml are not found
 
 AJut control templates call `GoToState` in `OnApplyTemplate` to establish their initial visual state.
 If the `AJut_*` keys aren't in App.Resources at that point, you'll see a `MissingKeyException` with

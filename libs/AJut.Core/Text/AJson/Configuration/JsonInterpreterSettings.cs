@@ -58,6 +58,8 @@ namespace AJut.Text.AJson
                 Justification = "KeyValuePair<,> ctor is intrinsic and always preserved; the FindBaseTypeOrInterface return is a constructed KeyValuePair<,> by definition of the call site.")]
             [UnconditionalSuppressMessage("Trimming", "IL2067",
                 Justification = "KVP element types come from generic arguments of the KeyValuePair<,> the consumer requested - keeping members of those is the consumer's responsibility per AJson reflection-path contract.")]
+            [UnconditionalSuppressMessage("Trimming", "IL2062",
+                Justification = "KVP element types come from generic arguments of the KeyValuePair<,> the consumer requested - keeping members of those is the consumer's responsibility per AJson reflection-path contract.")]
             object _CreateKeyValuePairFor (Type fullTarget, JsonValue json, JsonInterpreterSettings settings, Json owner)
             {
                 Type kvpType = fullTarget.FindBaseTypeOrInterface(typeof(KeyValuePair<,>));
@@ -113,7 +115,11 @@ namespace AJut.Text.AJson
             //  read as its type argument and passed to the constructor. A missing item is its type's default.
             [UnconditionalSuppressMessage("Trimming", "IL2075",
                 Justification = "Tuple<> constructors are intrinsic and always preserved; the type is a constructed Tuple<> by definition of the registration.")]
+            [UnconditionalSuppressMessage("Trimming", "IL2070",
+                Justification = "Tuple<> constructors are intrinsic and always preserved; the type is a constructed Tuple<> by definition of the registration.")]
             [UnconditionalSuppressMessage("Trimming", "IL2072",
+                Justification = "Tuple item types come from the generic arguments of the Tuple<> the consumer requested - keeping members of those is the consumer's responsibility per AJson reflection-path contract.")]
+            [UnconditionalSuppressMessage("Trimming", "IL2062",
                 Justification = "Tuple item types come from the generic arguments of the Tuple<> the consumer requested - keeping members of those is the consumer's responsibility per AJson reflection-path contract.")]
             object _CreateTupleFor (Type fullTarget, JsonValue json, JsonInterpreterSettings settings, Json owner)
             {

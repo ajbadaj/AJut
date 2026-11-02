@@ -323,6 +323,7 @@ namespace AJut.Text.AJson
         // ===============================[ Object-from-Json Implementation ]===========================
         [UnconditionalSuppressMessage("Trimming", "IL2062", Justification = kNestedTypeJustification)]
         [UnconditionalSuppressMessage("Trimming", "IL2072", Justification = kNestedTypeJustification)]
+        [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = kNestedTypeJustification)]
         internal static object BuildObjectForJson ([DynamicallyAccessedMembers(kReflectionRequirements)] Type type, JsonValue sourceJsonValue, JsonInterpreterSettings settings, Json owner)
         {
             // No resolvable target type. Happens for a polymorphic (object-typed) value that carries
@@ -519,6 +520,7 @@ namespace AJut.Text.AJson
         [UnconditionalSuppressMessage("Trimming", "IL2062", Justification = kNestedTypeJustification)]
         [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = kInterfaceCheckJustification)]
         [UnconditionalSuppressMessage("Trimming", "IL2072", Justification = kNestedTypeJustification)]
+        [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = kNestedTypeJustification)]
         private static void FillOutObjectWithJson (ref object targetItem, [DynamicallyAccessedMembers(kReflectionRequirements)] Type targetType, JsonValue sourceJsonValue, JsonInterpreterSettings settings, Json owner, IReadOnlySet<string> keysConsumedByConstructor = null)
         {
             if (targetItem != null)
@@ -1345,6 +1347,7 @@ namespace AJut.Text.AJson
         /// as the marker. Any other dictionary is written as an array of Key and Value documents.
         /// </summary>
         /// <param name="entries">The dictionary's entries, when the caller has them typed; found from the dictionary when not given</param>
+        [UnconditionalSuppressMessage("Trimming", "IL2072", Justification = kInterfaceCheckJustification)]
         private static bool IsDictionaryWrittenAsDocument (object value, JsonBuilderSettings settings, out Type dictionaryInterface, out JsonStringMaker keyMaker, IEnumerable<KeyValuePair<object, object>> entries = null)
         {
             keyMaker = null;

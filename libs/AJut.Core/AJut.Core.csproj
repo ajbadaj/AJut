@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>AJut</RootNamespace>
     <Authors>AJ Badarni</Authors>
     <Company />
@@ -13,7 +13,7 @@
     <RepositoryUrl>https://github.com/ajbadaj/AJut</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>c#;dotnet;logger;json;tree;extensions;math;</PackageTags>
-    <Description>C# / dotnet 8 utility library, created by AJ Badarni. Logger, Json parsing/building, extensions, undo/redo, math, tree logic, and more.</Description>
+    <Description>C# / dotnet 10 utility library, created by AJ Badarni. Logger, Json parsing/building, extensions, undo/redo, math, tree logic, and more.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
     <Version>1.6.1.146</Version>

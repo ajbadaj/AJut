@@ -17,14 +17,13 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: '8.0.x'
+        dotnet-version: '10.0.x'
 
     - name: Check for C# dynamic
       run: ./.github/scripts/check-no-dynamic.ps1
 
-    - name: Restore dependencies
-      run: dotnet restore
-
+    # No solution-wide restore: AJut.slnx holds the Android, iOS and macOS projects, whose workloads this runner doesn't
+    #  have. The build and test scripts build one project at a time, and each restores just what that project needs.
     - name: Build AJut Libraries
       run: ./.github/scripts/build-targets.ps1
     

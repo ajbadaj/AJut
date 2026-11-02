@@ -1,6 +1,6 @@
 # The AJut Libraries
-C# / dotnet 8 / wpf & winui - utility libraries, created by AJ Badarni
-<!-- 👇 nuget package table -->
+C# / dotnet 10 / wpf & winui - utility libraries, created by AJ Badarni
+<!-- nuget package table -->
 | | |
 |-|-|
 |AJut.Core|[![NuGet version (AJut.Core)](https://img.shields.io/nuget/v/AJut.Core.svg?style=flat-square)](https://www.nuget.org/packages/AJut.Core/) [![MIT License](https://img.shields.io/badge/license-MIT-green.svg?style=flat-square)](/LICENSE)|

@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0-windows7.0</TargetFramework>
+    <TargetFramework>net10.0-windows7.0</TargetFramework>
     <UseWPF>true</UseWPF>
     <Authors>AJ Badarni</Authors>
     <RootNamespace>AJut.UX</RootNamespace>
     <AssemblyName>AJut.UX.Wpf</AssemblyName>
-    <Description>C# / dotnet 8 / wpf controls &amp; utility library, created by AJ Badarni</Description>
+    <Description>C# / dotnet 10 / wpf controls &amp; utility library, created by AJ Badarni</Description>
     <Copyright>AJ Badarni</Copyright>
     <PackageProjectUrl>https://www.ajut.dev/</PackageProjectUrl>
     <PackageIcon>ajut-logo-128.png</PackageIcon>
@@ -17,9 +17,6 @@
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <Version>1.5.16.146</Version>
   </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="System.Drawing.Common" Version="8.0.8" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Update="Controls\BumpStack.cs">
       <DependentUpon>BumpStack.xaml</DependentUpon>

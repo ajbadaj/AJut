@@ -22,11 +22,6 @@ namespace AJut.Text.AJson
         private static readonly string[] kIso8601DateTimeFormats = { "o", "yyyy-MM-ddTHH:mm:ss.FFFFFFFK" };
         private static readonly string[] kIso8601DateTimeOffsetFormats = { "o", "yyyy-MM-ddTHH:mm:ss.FFFFFFFzzz" };
 
-        private static readonly MethodInfo kTryParseWithMethod = typeof(JsonBuiltInConverters).GetMethod(
-            nameof(TryParseWith),
-            BindingFlags.NonPublic | BindingFlags.Static
-        );
-
         // ===========================[ Public Interface Methods ]===========================
         /// <summary>
         /// A converter table holding every built-in converter, keyed by the type each converts
@@ -356,7 +351,14 @@ namespace AJut.Text.AJson
                         return false;
                     }
 
-                    m_tryParse = kTryParseWithMethod.MakeGenericMethod(this.TargetType).CreateDelegate<TryParseText>();
+                    // Looked up here rather than held in a static field: the trim analyzer can't follow a MethodInfo out of a
+                    //  field, so MakeGenericMethod on one warns (IL2060). From a typeof(...).GetMethod it can see the method
+                    //  is TryParseWith<T>, whose T asks nothing of the trimmer. It runs once per converter, on its first read.
+                    MethodInfo tryParseWith = typeof(JsonBuiltInConverters).GetMethod(
+                        nameof(TryParseWith),
+                        BindingFlags.NonPublic | BindingFlags.Static
+                    );
+                    m_tryParse = tryParseWith.MakeGenericMethod(this.TargetType).CreateDelegate<TryParseText>();
                 }
 
                 return m_tryParse(text, out value);

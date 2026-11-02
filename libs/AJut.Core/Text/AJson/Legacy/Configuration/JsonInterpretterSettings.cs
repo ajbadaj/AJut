@@ -49,6 +49,8 @@ namespace AJut.Text.AJson.Legacy
 
             [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Only called through ConstructInstanceFor, on the AJson V1 reflection path that carries RequiresUnreferencedCode and RequiresDynamicCode.")]
             [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Only called through ConstructInstanceFor, on the AJson V1 reflection path that carries RequiresUnreferencedCode and RequiresDynamicCode.")]
+            [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "Only called through ConstructInstanceFor, on the AJson V1 reflection path that carries RequiresUnreferencedCode and RequiresDynamicCode.")]
+            [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "Only called through ConstructInstanceFor, on the AJson V1 reflection path that carries RequiresUnreferencedCode and RequiresDynamicCode.")]
             object _CreateKeyValuePairFor (Type fullTarget, JsonValue json, JsonInterpretterSettings settings)
             {
                 if (!json.IsDocument)
