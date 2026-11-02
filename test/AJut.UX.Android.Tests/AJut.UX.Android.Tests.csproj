@@ -21,4 +21,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\libs\AJut.UX.Android\AJut.UX.Android.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- AJut.Core's stored obfuscated strings, checked on the device too: the AES and PBKDF2 under them are Android's -->
+    <Compile Include="..\AJut.Core.Tests\StoredObfuscatedStringTests.cs" Link="StoredObfuscatedStringTests.cs" />
+  </ItemGroup>
 </Project>
