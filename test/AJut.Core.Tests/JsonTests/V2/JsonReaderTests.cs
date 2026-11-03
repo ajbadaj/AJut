@@ -223,6 +223,26 @@ namespace AJut.Core.UnitTests.AJsonV2
             Assert.AreEqual("left right", ((JsonDocument)json.Data).ValueFor("a")?.StringValue);
         }
 
+        /// <summary>
+        /// A comment marker the caller adds is stripped the same way the default ones are, here a '#' line comment
+        /// standing between members and on lines of its own.
+        /// </summary>
+        [TestMethod]
+        public void Read_CustomLineCommentIndicator_StrippedLikeTheDefaults ()
+        {
+            const string kText = "{\n    #==========\n    # Settings\n    #==========\n    prop : \"Yay\",\n\n    # Common\n    afterComment : true\n}";
+            var rules = new ParserRules();
+            rules.CommentIndicators.Add(new Tuple<string, string>("#", "\n"));
+
+            Json json = JsonHelper.ParseText(kText, rules);
+            AssertNoErrors(json);
+            JsonDocument doc = (JsonDocument)json.Data;
+            string[] keys = doc.Select(kvp => kvp.Key).ToArray();
+            CollectionAssert.AreEqual(new[] { "prop", "afterComment" }, keys, "Keys: " + String.Join(", ", keys));
+            Assert.AreEqual("Yay", doc.ValueFor("prop")?.StringValue);
+            Assert.AreEqual("true", doc.ValueFor("afterComment")?.StringValue);
+        }
+
         // ===============================[ Errors-or-Value Contract ]===========================
         [TestMethod]
         public void Read_NullText_ProducesError_NoThrow ()

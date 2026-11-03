@@ -193,12 +193,13 @@ namespace AJutShowRoomAndroid
             return true;
         }
 
-        // Before Android 13 the system back gesture arrives here; from 13 on it goes to the registered callback.
+        // Android 10 to 12 send the system back gesture here. From 13 on it goes to the registered callback instead, because
+        // the manifest sets enableOnBackInvokedCallback; without that, 13 to 15 refuse the callback and still send back here.
         public override void OnBackPressed ()
         {
             if (!this.GoBack())
             {
-#pragma warning disable CA1422 // The obsolete path is the point: this override only runs where it is not obsolete
+#pragma warning disable CA1422 // With enableOnBackInvokedCallback set, this only runs on Android 12 and earlier, where it isn't obsolete
                 base.OnBackPressed();
 #pragma warning restore CA1422
             }

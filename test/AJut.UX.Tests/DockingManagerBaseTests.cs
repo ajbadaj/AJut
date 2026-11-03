@@ -741,7 +741,7 @@ namespace AJut.UX.Tests
 
         // A panel whose type id resolves to nothing (trimmed away, renamed, or from another app) is skipped, and the rest
         // of the layout loads around it
-        [DataTestMethod]
+        [TestMethod]
         [DataRow("\"ajut-tests-panel-from-another-app\"", DisplayName = "An id nothing registered")]
         [DataRow("\"Some.Missing.Panel, Some.Missing.Assembly\"", DisplayName = "A type name whose assembly is missing")]
         [DataRow("\"Some.Panel, [not an assembly name\"", DisplayName = "A malformed type name")]

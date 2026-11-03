@@ -1,6 +1,5 @@
 namespace AJut.Security
 {
-    using System;
     using System.Diagnostics;
 
     /// <summary>
@@ -16,12 +15,6 @@ namespace AJut.Security
         public ObfuscatedString (string value)
         {
             m_str = value;
-        }
-
-        [Obsolete("Obfuscation is now bitness-independent; the x64 variant is ignored. Use ObfuscatedString(string) instead.")]
-        public ObfuscatedString (string str, string x64str)
-        {
-            m_str = str;
         }
 
         /// <summary>

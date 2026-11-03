@@ -64,7 +64,7 @@ namespace AJut.Core.UnitTests
             Assert.IsFalse(capMax);
         }
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow(300, typeof(byte), (byte)255, false, true)]
         [DataRow(-5, typeof(byte), (byte)0, true, false)]
         [DataRow(-1, typeof(uint), 0u, true, false)]
@@ -81,7 +81,7 @@ namespace AJut.Core.UnitTests
             Assert.AreEqual(expectCapMax, capMax);
         }
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow(2.5, typeof(int), 2)]
         [DataRow(3.5, typeof(int), 4)]
         [DataRow(-2.5, typeof(int), -2)]

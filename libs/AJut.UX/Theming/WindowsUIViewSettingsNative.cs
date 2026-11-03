@@ -49,9 +49,10 @@ namespace AJut.UX.Theming
             //   IUIViewSettingsInterop.GetForWindow, asking for the 24H2 interface directly, so a Windows without it
             //   just answers E_NOINTERFACE.
             //
-            // The C#/WinRT projection would make this a few lines, but the one the .NET SDK picks for net8 predates the
-            // 24H2 members, and pinning a newer one makes every app using AJut pin it too or fail to load AJut. WPF has
-            // no projection at all, and taking one on costs every WPF app a 25 MB dependency.
+            // The C#/WinRT projection would make this a few lines, but the one the .NET SDK picks by default predates the
+            // 24H2 members, even for a 10.0.26100 target (10.0.26100.57; 10.0.26100.71 and later have them), and pinning
+            // a newer one makes every app using AJut pin it too or fail to load AJut. WPF has no projection at all, and
+            // taking one on costs every WPF app a 25 MB dependency.
             //
             // So the calls are made through the vtable, with the interface ids and the method order from
             // Windows.UI.winmd, and the settings object is held as a plain COM pointer rather than a ComWrappers wrapper,

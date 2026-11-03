@@ -8,7 +8,7 @@ namespace AJut.Core.UnitTests
     using System.Linq;
     using System.Reflection;
     using AJut.Storage;
-    using AJut.Text.AJson.Legacy;
+    using AJut.Text.AJson;
     using AJut.TypeManagement;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -623,7 +623,7 @@ namespace AJut.Core.UnitTests
                 data.Points.Add(new UnregisteredStrataPoint { X = 1 });
 
                 Stratabase sb = new Stratabase(1);
-                var error = Assert.ThrowsException<InvalidOperationException>(() => sb.SetBaselineFromPropertiesOf(data));
+                var error = Assert.ThrowsExactly<InvalidOperationException>(() => sb.SetBaselineFromPropertiesOf(data));
                 StringAssert.Contains(error.Message, nameof(Stratabase.RegisterListElementType));
                 StringAssert.Contains(error.Message, nameof(UnregisteredStrataPoint));
             }
@@ -1833,7 +1833,7 @@ namespace AJut.Core.UnitTests
             Assert.AreEqual(5, value);
         }
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow(false)]
         [DataRow(true)]
         public void Stratabase_EnsureListElementType_SucceedsWhenRestablishedWithCastableType (bool clearFirst)

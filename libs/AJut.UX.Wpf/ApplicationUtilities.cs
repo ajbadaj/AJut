@@ -7,11 +7,11 @@
     using AJut;
     using AJut.Security;
 
-    public delegate bool ExceptionProcessor (Exception e);
     public static class ApplicationUtilities
     {
-        // What WPF setup has always rooted app data in, used when a config does not say
-        private const Environment.SpecialFolder kDefaultStorageRoot = Environment.SpecialFolder.ApplicationData;
+        // What WPF setup roots app data in when a config does not say: local, never roaming, the same as WinUI3. Before
+        //  AJut 2.0 it was roaming (ApplicationData), which a config asks for to keep reading what an app stored there.
+        private const Environment.SpecialFolder kDefaultStorageRoot = Environment.SpecialFolder.LocalApplicationData;
 
         private static bool g_isSetup = false;
         private static bool g_blockReentrancy = false;
@@ -99,50 +99,6 @@
                 {
                     Logger.ForceFlushToFile();
                 }
-            }
-        }
-
-        /// <summary>
-        /// Sets up your application with standard project setup mechanisms including optionally logging, exception processing, and configuration of the <see cref="AppDataRoot"/>
-        /// </summary>
-        /// <param name="projectName">The name of the project, used for context in logging and potentially elsewhere</param>
-        /// <param name="setupLogging">Should logging be setup, will default to a project name specific appdata location</param>
-        /// <param name="onExceptionRecieved">Something to handle unhandled exceptions</param>
-        /// <param name="ageMaxInDaysToKeepLogs">The max age (in days) to keep logs - this will auto purge logs with this call for all logs older than specified. Pass in -1 to skip log purging (not recommended). Default = 10.</param>
-        /// <param name="sharedProjectName">A shared project name so two or more projects can share a root location (ie CoolProj is the shared project name, but individually the projects are: CoolProjClient, CoolProjServer)</param>
-        /// <param name="applicationStorageRoot">What <see cref="Environment.SpecialFolder"/> do you want to keep things like logs in? This will seed the <see cref="AppDataRoot"/> location which is commonly used in establishing app storage info, including in <see cref="BuildAppDataProjectPath"/>. Ignored entirely if a <paramref name="storageRootOverride"/> is passed in.</param>
-        /// <param name="storageRootOverride">The exact folder to use as the <see cref="AppDataRoot"/>. This wins over <paramref name="applicationStorageRoot"/>, and unlike that parameter it is taken verbatim - no project name is appended to it. That is deliberate: the reason to pass this is to land on a storage root somebody else already picked (say a packaged parent app whose child process you are), and appending a project name would put you next to that root instead of on it.</param>
-        /// <remarks>
-        /// What this overload does with crypto obfuscation, since it is the part that does not survive a careless conversion:
-        /// it seeds from <paramref name="projectName"/> alone, ignoring <paramref name="sharedProjectName"/> entirely. To keep
-        /// that exactly as it is, convert to the config overload with <see cref="ApplicationSetupConfig.CryptoSeedSource"/> set
-        /// to <see cref="eCryptoSeedSource.ProjectNameOnly"/>.
-        /// <para>
-        /// Either way the seeding happens during this call, so to seed with something else entirely, call
-        /// <see cref="AJut.Security.CryptoObfuscation.SeedDefaults"/> yourself once setup has run - the last call wins.
-        /// </para>
-        /// </remarks>
-        [Obsolete("Use the ApplicationSetupConfig overload, which takes the same config type the WinUI3 surface takes. Mind the crypto obfuscation seed on the way across: this overload seeds from projectName alone and ignores sharedProjectName, so to keep that exactly, set ApplicationSetupConfig.CryptoSeedSource to eCryptoSeedSource.ProjectNameOnly.")]
-        public static void RunOnetimeSetup (string projectName, bool setupLogging = true, ExceptionProcessor onExceptionRecieved = null, int ageMaxInDaysToKeepLogs = 10, string sharedProjectName = null, Environment.SpecialFolder applicationStorageRoot = Environment.SpecialFolder.ApplicationData, string storageRootOverride = null)
-        {
-            RunOnetimeSetup(new ApplicationSetupConfig(projectName)
-            {
-                SharedProjectName = sharedProjectName,
-                SetupLogging = setupLogging,
-                AgeMaxInDaysToKeepLogs = ageMaxInDaysToKeepLogs,
-                OnExceptionReceived = onExceptionRecieved == null ? null : _ForwardToProcessor,
-                ApplicationStorageRoot = applicationStorageRoot,
-                StorageRootOverride = storageRootOverride,
-
-                // This overload has always seeded from the project name alone, shared project name or not, and anything
-                //  calling it may well have obfuscated data written under that key. Moving it would leave that data
-                //  unreadable without a word, so the seed stays put and the config overload is where the choice lives.
-                CryptoSeedSource = eCryptoSeedSource.ProjectNameOnly,
-            });
-
-            bool _ForwardToProcessor (UnhandledExceptionReport report)
-            {
-                return onExceptionRecieved(report.Exception);
             }
         }
 

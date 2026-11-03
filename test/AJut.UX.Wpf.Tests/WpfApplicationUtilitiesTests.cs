@@ -39,16 +39,16 @@ namespace AJut.UX.Tests
         // ===========[ App Data Root ]===================================
 
         [TestMethod]
-        public void AppUtils_NoOverride_UsesRoamingAppDataWithProjectNameAppended ()
+        public void AppUtils_NoOverride_UsesLocalAppDataWithProjectNameAppended ()
         {
-            string expected = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), kProjectName);
+            string expected = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), kProjectName);
             Assert.AreEqual(expected, ApplicationUtilities.DetermineAppDataRoot(new ApplicationSetupConfig(kProjectName)));
         }
 
         [TestMethod]
         public void AppUtils_NoOverrideWithSharedProjectName_UsesTheSharedNameInstead ()
         {
-            string expected = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), kSharedProjectName);
+            string expected = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), kSharedProjectName);
             string actual = ApplicationUtilities.DetermineAppDataRoot(new ApplicationSetupConfig(kProjectName)
             {
                 SharedProjectName = kSharedProjectName,
@@ -60,10 +60,11 @@ namespace AJut.UX.Tests
         [TestMethod]
         public void AppUtils_NoOverride_HonorsTheRequestedSpecialFolder ()
         {
-            string expected = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), kProjectName);
+            // Roaming is what WPF setup used before local became the default, so it is the folder an app asks for to keep its old data
+            string expected = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), kProjectName);
             string actual = ApplicationUtilities.DetermineAppDataRoot(new ApplicationSetupConfig(kProjectName)
             {
-                ApplicationStorageRoot = Environment.SpecialFolder.LocalApplicationData,
+                ApplicationStorageRoot = Environment.SpecialFolder.ApplicationData,
             });
 
             Assert.AreEqual(expected, actual);
@@ -72,7 +73,7 @@ namespace AJut.UX.Tests
         [TestMethod]
         public void AppUtils_PackageVirtualizationIsolation_UsesTheSpecialFolderAsIs ()
         {
-            string expected = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            string expected = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             string actual = ApplicationUtilities.DetermineAppDataRoot(new ApplicationSetupConfig(kProjectName)
             {
                 SharedProjectName = kSharedProjectName,
@@ -85,10 +86,10 @@ namespace AJut.UX.Tests
         [TestMethod]
         public void AppUtils_PackageVirtualizationIsolation_StillHonorsTheRequestedSpecialFolder ()
         {
-            string expected = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            string expected = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             string actual = ApplicationUtilities.DetermineAppDataRoot(new ApplicationSetupConfig(kProjectName)
             {
-                ApplicationStorageRoot = Environment.SpecialFolder.LocalApplicationData,
+                ApplicationStorageRoot = Environment.SpecialFolder.ApplicationData,
                 StorageRootIsolation = eStorageRootIsolation.PackageVirtualization,
             });
 
@@ -110,10 +111,10 @@ namespace AJut.UX.Tests
         [TestMethod]
         public void AppUtils_OverrideGiven_WinsOverTheSpecialFolder ()
         {
-            string specialFolderResult = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), kProjectName);
+            string specialFolderResult = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), kProjectName);
             string actual = ApplicationUtilities.DetermineAppDataRoot(new ApplicationSetupConfig(kProjectName)
             {
-                ApplicationStorageRoot = Environment.SpecialFolder.LocalApplicationData,
+                ApplicationStorageRoot = Environment.SpecialFolder.ApplicationData,
                 StorageRootOverride = m_overrideRoot,
             });
 
@@ -200,7 +201,7 @@ namespace AJut.UX.Tests
                 SharedProjectName = kSharedProjectName,
             };
 
-            Assert.ThrowsException<InvalidOperationException>(() => ApplicationUtilities.DetermineCryptoSeed(config));
+            Assert.ThrowsExactly<InvalidOperationException>(() => ApplicationUtilities.DetermineCryptoSeed(config));
         }
 
         [TestMethod]

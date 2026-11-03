@@ -301,7 +301,7 @@ namespace AJut.UX.Tests
         {
             // A hookup adds to the set's own lists, which the main thread reads, so the set refuses one from a worker
             var label = new TextView(TestHost.RequiredContext);
-            await Assert.ThrowsExceptionAsync<InvalidOperationException>(
+            await Assert.ThrowsExactlyAsync<InvalidOperationException>(
                 () => Task.Run(() => m_bindings.BindLabel(label, m_model, nameof(Model.Text), () => m_model.Text))
             );
             Assert.AreEqual(0, m_model.PropertyChangedSubscriberCount, "The refused hookup subscribed nothing");

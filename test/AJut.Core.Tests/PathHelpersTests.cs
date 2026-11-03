@@ -53,14 +53,14 @@
         [TestMethod]
         public void PathHelpers_Normalize_UpPastTheStartOfARelativePath_Throws ()
         {
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => PathHelpers.NormalizePath(@"a\..\..\c"));
+            Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => PathHelpers.NormalizePath(@"a\..\..\c"));
         }
 
         [TestMethod]
         public void PathHelpers_Normalize_RelativeStart ()
         {
             Assert.AreEqual(@".git\config", PathHelpers.NormalizePath(@".git\config"));
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => PathHelpers.NormalizePath(@"..\a\b"));
+            Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => PathHelpers.NormalizePath(@"..\a\b"));
         }
 
         [TestMethod]

@@ -3,6 +3,8 @@
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Reflection;
+    using AJut.TypeManagement;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -77,6 +79,70 @@
         }
 
         [TestMethod]
+        public void ReflectionXT_RunStaticTemplatedMethod_WithoutDynamicCode_StillRunsWhereTheRuntimeHasTheCode ()
+        {
+            using (DynamicCodeAvailability.SimulateUnsupported())
+            {
+                object result = ReflectionXT.RunStaticTemplatedMethod(typeof(TemplatedStatics), nameof(TemplatedStatics.Describe), typeof(int), 5);
+                Assert.AreEqual("Int32:5", result, "A platform without dynamic code can still have the code for an instantiation, so the call is made");
+            }
+        }
+
+        [TestMethod]
+        public void ReflectionXT_RunStaticTemplatedMethod_WithoutDynamicCode_MissingCompiledCode_ThrowsPlatformNotSupported ()
+        {
+            using (DynamicCodeAvailability.SimulateUnsupported())
+            {
+                var error = Assert.ThrowsExactly<PlatformNotSupportedException>(() => ReflectionXT.RunStaticTemplatedMethod(typeof(TemplatedFailures), nameof(TemplatedFailures.FailLikeAnAotOnlyRuntime), typeof(int), 5));
+                StringAssert.Contains(error.Message, nameof(TemplatedFailures.FailLikeAnAotOnlyRuntime));
+                StringAssert.Contains(error.Message, nameof(Int32));
+                Assert.IsNotNull(error.InnerException, "The runtime's own failure should come along with it");
+            }
+        }
+
+        [TestMethod]
+        public void ReflectionXT_InvokeTemplatedMethod_WithoutDynamicCode_MissingCompiledCode_ThrowsPlatformNotSupported ()
+        {
+            var target = new TemplatedInstanceFailures();
+            using (DynamicCodeAvailability.SimulateUnsupported())
+            {
+                var error = Assert.ThrowsExactly<PlatformNotSupportedException>(() => target.InvokeTemplatedMethod(nameof(TemplatedInstanceFailures.FailLikeAnAotOnlyRuntime), typeof(string), "five"));
+                StringAssert.Contains(error.Message, nameof(TemplatedInstanceFailures.FailLikeAnAotOnlyRuntime));
+            }
+        }
+
+        [TestMethod]
+        public void ReflectionXT_RunStaticTemplatedMethod_WithoutDynamicCode_TheTargetsOwnFailure_IsLeftAlone ()
+        {
+            using (DynamicCodeAvailability.SimulateUnsupported())
+            {
+                var error = Assert.ThrowsExactly<TargetInvocationException>(() => ReflectionXT.RunStaticTemplatedMethod(typeof(TemplatedFailures), nameof(TemplatedFailures.FailOnItsOwn), typeof(int), 5));
+                Assert.IsInstanceOfType(error.InnerException, typeof(NotSupportedException));
+            }
+        }
+
+        [TestMethod]
+        public void ReflectionXT_IsMissingCompiledCode_KnowsBothRuntimesShapes_AndNothingElse ()
+        {
+            // NativeAOT: bare, straight out of MakeGenericMethod or Invoke
+            Assert.IsTrue(ReflectionXT.IsMissingCompiledCode(new NotSupportedException("'Describe<Int32>' is missing native code.")));
+
+            // Mono: from Invoke, wrapped like anything else the call throws
+            Assert.IsTrue(ReflectionXT.IsMissingCompiledCode(new TargetInvocationException(TemplatedFailureMaker.MakeAotOnlyFailure("Describe<Int32>"))));
+
+            // The target's own failures come back wrapped, and are the target's to report
+            Assert.IsFalse(ReflectionXT.IsMissingCompiledCode(new TargetInvocationException(new NotSupportedException("The target's own failure"))));
+            Assert.IsFalse(ReflectionXT.IsMissingCompiledCode(new ArgumentException("A type argument breaks a constraint")));
+        }
+
+        [TestMethod]
+        public void ReflectionXT_RunStaticTemplatedMethod_WithDynamicCode_AFailureIsLeftAlone ()
+        {
+            // Where code can be made at runtime there is no missing code to report, whatever the target throws
+            Assert.ThrowsExactly<TargetInvocationException>(() => ReflectionXT.RunStaticTemplatedMethod(typeof(TemplatedFailures), nameof(TemplatedFailures.FailLikeAnAotOnlyRuntime), typeof(int), 5));
+        }
+
+        [TestMethod]
         public void EnumerableXT_CastToArrayOfType_MakesATypedArray ()
         {
             Array result = new object[] { 1, 2, 3 }.CastToArrayOfType(typeof(int));
@@ -99,6 +165,37 @@
     public static class TemplatedStatics
     {
         public static string Describe<T> (T value) => $"{typeof(T).Name}:{value}";
+    }
+
+    /// <summary>
+    /// Templated targets that fail the two ways a templated call can fail on a platform without dynamic code
+    /// </summary>
+    public static class TemplatedFailures
+    {
+        /// <summary>
+        /// Throws what Mono raises in an ahead of time compiled build (iOS) when it has no compiled code for a generic method
+        /// and can't JIT one, which reflection then hands back inside a TargetInvocationException
+        /// </summary>
+        public static string FailLikeAnAotOnlyRuntime<T> (T value) => throw TemplatedFailureMaker.MakeAotOnlyFailure($"FailLikeAnAotOnlyRuntime<{typeof(T).Name}>");
+
+        /// <summary>A failure of the target's own, which has nothing to do with compiled code</summary>
+        public static string FailOnItsOwn<T> (T value) => throw new NotSupportedException("The target's own failure");
+    }
+
+    public class TemplatedInstanceFailures
+    {
+        public string FailLikeAnAotOnlyRuntime<T> (T value) => throw TemplatedFailureMaker.MakeAotOnlyFailure($"FailLikeAnAotOnlyRuntime<{typeof(T).Name}>");
+    }
+
+    internal static class TemplatedFailureMaker
+    {
+        public static Exception MakeAotOnlyFailure (string methodName)
+        {
+            // ExecutionEngineException is obsolete because CoreCLR no longer raises it, but Mono still does, for exactly this
+#pragma warning disable CS0618
+            return new ExecutionEngineException($"Attempting to JIT compile method '{methodName}' while running in aot-only mode.");
+#pragma warning restore CS0618
+        }
     }
 
     public class SimpleSetTest

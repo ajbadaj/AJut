@@ -92,28 +92,6 @@ namespace AJut.Text.AJson
         public char PropertyValueQuoteChars { get; set; }
 
         /// <summary>
-        /// No longer does anything, and using it is a compile error. It converted DateTimes to UTC
-        /// before writing, back when the text carried no offset or Kind and UTC was the only way
-        /// to pin down the instant. Each DateTime is now written with its own Kind and reads back
-        /// the same, so anything that wants UTC stored converts in its own model.
-        /// </summary>
-        /// <remarks>
-        /// An error rather than a plain removal, so a project that set it is told why. Delete it
-        /// in a later release.
-        /// </remarks>
-        [Obsolete(
-            "AJson now writes each DateTime as round-trip ISO 8601 with its own Kind, and it reads back the "
-            + "same, so this setting no longer does anything. To store UTC, convert in your own model with "
-            + "ToUniversalTime().",
-            error: true
-        )]
-        public bool MakeDateTimesUTC
-        {
-            get => false;
-            set { }
-        }
-
-        /// <summary>
         /// Whether text written from json built with these settings carries the AJson version
         /// marker. Null, the default, follows <see cref="JsonHelper.WriteAJsonVersion"/>.
         /// </summary>

@@ -98,9 +98,9 @@
             // The sums add in the element type, so a sum past its range has to throw (as Enumerable.Sum does) rather than
             // wrap around: two bytes of 200 would otherwise sum to 144.
             byte[] bytes = { 200, 200 };
-            Assert.ThrowsException<OverflowException>(() => Calculate.SumAndCount(bytes, out int _));
-            Assert.ThrowsException<OverflowException>(() => Calculate.Mean(bytes));
-            Assert.ThrowsException<OverflowException>(() => Calculate.SumAndCount(new[] { int.MaxValue, 1 }, out int _));
+            Assert.ThrowsExactly<OverflowException>(() => Calculate.SumAndCount(bytes, out int _));
+            Assert.ThrowsExactly<OverflowException>(() => Calculate.Mean(bytes));
+            Assert.ThrowsExactly<OverflowException>(() => Calculate.SumAndCount(new[] { int.MaxValue, 1 }, out int _));
         }
 
         [TestMethod]

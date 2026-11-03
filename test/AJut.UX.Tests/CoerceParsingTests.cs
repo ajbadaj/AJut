@@ -35,14 +35,14 @@ namespace AJut.UX.Tests
         [TestMethod]
         public void CoerceParsing_ThreeValues_IsAFormatErrorExplainingTheCounts ()
         {
-            var error = Assert.ThrowsException<FormatException>(() => CoerceParsing.ParseSides("1,2,3"));
+            var error = Assert.ThrowsExactly<FormatException>(() => CoerceParsing.ParseSides("1,2,3"));
             Assert.IsInstanceOfType(error.InnerException, typeof(InvalidOperationException));
         }
 
         [TestMethod]
         public void CoerceParsing_NotANumber_IsAFormatError ()
         {
-            Assert.ThrowsException<FormatException>(() => CoerceParsing.ParseCorners("1,x"));
+            Assert.ThrowsExactly<FormatException>(() => CoerceParsing.ParseCorners("1,x"));
         }
 
         [TestMethod]

@@ -6,15 +6,10 @@
     <IsPackable>false</IsPackable>
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
-
-    <!-- The bench project deliberately references AJut.Text.AJson.Legacy (V1) so the V1-vs-V2 -->
-    <!-- comparison numbers stay measurable. Suppress CS0618 so the Obsolete-marker noise does -->
-    <!-- not drown the build output. Remove this once the bench is migrated entirely to V2.    -->
-    <NoWarn>$(NoWarn);CS0618</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BenchmarkDotNet" Version="0.14.0" />
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 

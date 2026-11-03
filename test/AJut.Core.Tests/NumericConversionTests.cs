@@ -9,7 +9,7 @@
     [TestClass]
     public class NumericConversionTests
     {
-        [DataTestMethod]
+        [TestMethod]
         [DataRow("sdfasdf-5a.0", -5, typeof(int))]
         public void NumericConversion_InterestingStringParsing_IntTypes(string toParse, object expectedValue, Type expectedType)
         {
@@ -17,7 +17,7 @@
             Assert.AreEqual(Convert.ChangeType(expectedValue, expectedType), castedValue);
         }
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow("43.5", typeof(int))]
         [DataRow("-43.5", typeof(int))]
         [DataRow("-43.5", typeof(long))]
@@ -31,7 +31,7 @@
             Assert.IsFalse(NumericConversion.TryParseString(toParse, integerType, out object _));
         }
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow("sdfasdf-5a.0", -5f, typeof(float))]
         [DataRow("sdfasdf-3.332a.0", -3.332, typeof(double))]
         public void NumericConversion_InterestingStringParsing_FloatTypes (string toParse, object expectedValue, Type expectedType)

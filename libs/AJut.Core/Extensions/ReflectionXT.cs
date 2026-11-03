@@ -13,7 +13,7 @@
     {
         private const string kNamedMethodMessage = "Finds a method by name on a type known only at runtime, and trimming can remove a method nothing else calls. Call the method directly where the type is known.";
         private const string kPropertyPathMessage = "Reaches properties by name, or creates a property's value, on types known only at runtime, and trimming can remove a property or constructor nothing else uses.";
-        private const string kGenericMethodMessage = "Makes a generic method for type arguments known only at runtime, which an ahead of time compiled build (iOS, NativeAOT) may never have compiled.";
+        private const string kGenericMethodMessage = "Makes a generic method for type arguments known only at runtime, which an ahead of time compiled build (iOS, NativeAOT) may never have compiled. Where it wasn't, the call throws PlatformNotSupportedException.";
 
         /// <summary>
         /// Tests to see if the type is an anonymous type
@@ -386,15 +386,30 @@
                 return null;
             }
 
-            method = method.MakeGenericMethod(templateArgs);
-
-            if (staticMethodOwner != null)
+            // A runtime that can't make code at runtime (an iOS build compiled ahead of time, or NativeAOT) can still have
+            //  the code for this instantiation. Shared code serves any reference type arguments, Mono's iOS builds usually
+            //  share code for value types too, iOS with the interpreter runs anything trimming kept, and NativeAOT has
+            //  whichever instantiations its compiler could see. There's no way to ask ahead of time, and nothing else makes a generic method for type
+            //  arguments known only at runtime, so the call is always made. Only a failure that means the code is missing
+            //  is turned into one that says what was asked for, and the two runtimes report that differently:
+            //  * NativeAOT throws NotSupportedException ("... is missing native code") straight out of MakeGenericMethod
+            //    (.NET 8 and 9) or Invoke (.NET 10), never wrapped, since none of the target has run yet. A target's own
+            //    NotSupportedException always comes back wrapped in a TargetInvocationException, so a bare one is the runtime's.
+            //  * Mono throws ExecutionEngineException ("Attempting to JIT compile method ... while running in aot-only
+            //    mode") from Invoke, wrapped in a TargetInvocationException like anything the call throws. That can't be
+            //    told apart from the same failure somewhere inside the target, so the message allows for either.
+            //  Where code can be made at runtime, neither means missing code, so nothing is changed there.
+            //  The runtime source behind this, in dotnet/runtime: NativeAOT's CreateNonInvokabilityException in
+            //  src/coreclr/nativeaot/System.Private.Reflection.Execution/src/Internal/Reflection/Execution/ExecutionEnvironmentImplementation.Runtime.cs,
+            //  and Mono's mono_jit_compile_method_with_opt in src/mono/mono/mini/mini-runtime.c.
+            try
             {
-                return method.Invoke(null, methodArgs);
+                MethodInfo instantiated = method.MakeGenericMethod(templateArgs);
+                return instantiated.Invoke(staticMethodOwner != null ? null : instanceToRunOn, methodArgs);
             }
-            else
+            catch (Exception failure) when (!DynamicCodeAvailability.IsSupported && IsMissingCompiledCode(failure))
             {
-                return method.Invoke(instanceToRunOn, methodArgs);
+                throw new PlatformNotSupportedException(MakeMissingCompiledCodeMessage(method, templateArgs), failure);
             }
 
             bool _Filter(MethodInfo _method)
@@ -429,6 +444,28 @@
                 // This actually could lead to incorrect results as you might have two methods with the same number of generics - but different constraints
                 return _method.GetGenericArguments().Length == templateArgs.Length;
             }
+        }
+
+        /// <summary>
+        /// Whether a templated call failed for want of compiled code, the way NativeAOT or Mono reports it (see the comment
+        /// in RunTemplatedMethod). Internal so the NativeAOT shape, which a runtime with a JIT never produces, can be tested.
+        /// </summary>
+        internal static bool IsMissingCompiledCode (Exception failure)
+        {
+            if (failure is NotSupportedException)
+            {
+                return true;
+            }
+
+            // Matched by name, since the type is obsolete everywhere but Mono, the one runtime that still raises it
+            return (failure is TargetInvocationException)
+                && (failure.InnerException?.GetType().FullName == "System.ExecutionEngineException");
+        }
+
+        private static string MakeMissingCompiledCodeMessage (MethodInfo method, Type[] templateArgs)
+        {
+            string typeArgs = String.Join(", ", templateArgs.Select(t => t.Name));
+            return $"{method.DeclaringType?.Name}.{method.Name}<{typeArgs}> has no compiled code here, and this platform can't make code at runtime (an iOS build compiled ahead of time, or NativeAOT). Call it directly where these type arguments are known, so its code is compiled ahead of time. The missing code may also be in something it calls.";
         }
 
         [RequiresUnreferencedCode(kNamedMethodMessage)]

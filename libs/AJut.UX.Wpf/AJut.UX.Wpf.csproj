@@ -102,6 +102,9 @@
     <Compile Update="Controls\PropertyGridListEditor.cs">
       <DependentUpon>PropertyGridListEditor.xaml</DependentUpon>
     </Compile>
+    <Compile Update="Controls\PropertyGridHelpers\PropertyGridBuiltInTemplates.cs">
+      <DependentUpon>PropertyGridBuiltInTemplates.xaml</DependentUpon>
+    </Compile>
     <Compile Update="Controls\StackNavDisplayElements\StackNavPopoverOverlay.cs">
       <DependentUpon>StackNavPopoverOverlay.xaml</DependentUpon>
     </Compile>

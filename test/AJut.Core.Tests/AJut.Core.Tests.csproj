@@ -3,11 +3,6 @@
     <TargetFramework>net10.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <Platforms>AnyCPU;x64</Platforms>
-
-    <!-- Test fixture covers both V1 (Legacy, [Obsolete]) and V2. Suppress CS0618 so the    -->
-    <!-- intentional Legacy references in JsonTests/* and adjacent helpers do not drown the -->
-    <!-- build. V2 tests are scoped to JsonTests/V2/. Remove once Legacy is deleted.        -->
-    <NoWarn>$(NoWarn);CS0618</NoWarn>
   </PropertyGroup>
   <!-- AnyCPU runs as x86 on Windows, so a plain run and an x64 run between them cover both process bitnesses (string -->
   <!-- hashing and crypto obfuscation must agree across them); macOS and Linux have no x86 runtime                    -->
@@ -19,10 +14,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.0" />
-    <PackageReference Include="MSTest" Version="3.5.2" />
-    <PackageReference Include="MSTest.TestAdapter" Version="3.5.2" />
-    <PackageReference Include="MSTest.TestFramework" Version="3.5.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
+    <PackageReference Include="MSTest" Version="4.5.2" />
+    <PackageReference Include="MSTest.TestAdapter" Version="4.5.2" />
+    <PackageReference Include="MSTest.TestFramework" Version="4.5.2" />
     <PackageReference Include="coverlet.collector" Version="6.0.2">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -42,12 +37,5 @@
 
   <ItemGroup>
     <EmbeddedResource Include="_TestData\Basic.json" />
-    <EmbeddedResource Include="_TestData\Complex.json" />
-    <EmbeddedResource Include="_TestData\Large.json" />
-    <EmbeddedResource Include="_TestData\WithComments.json" />
-    <EmbeddedResource Include="_TestData\Failure_6-1-17.json" />
-    <EmbeddedResource Include="_TestData\WithBlockComments.json" />
-    <EmbeddedResource Include="_TestData\Failure_2-17-20.json" />
-    <EmbeddedResource Include="_TestData\Failure_5-26-20.json" />
   </ItemGroup>
 </Project>

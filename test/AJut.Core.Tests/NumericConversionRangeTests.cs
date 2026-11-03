@@ -9,7 +9,7 @@ namespace AJut.Core.UnitTests
     {
         // ===[ short and sbyte are signed ]===
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow(-5, typeof(short), (short)-5)]
         [DataRow(-5, typeof(sbyte), (sbyte)-5)]
         [DataRow(-5.0, typeof(short), (short)-5)]
@@ -23,7 +23,7 @@ namespace AJut.Core.UnitTests
             Assert.IsFalse(capMax);
         }
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow(-40000, typeof(short), short.MinValue)]
         [DataRow(-200, typeof(sbyte), sbyte.MinValue)]
         public void NCR_SignedSmallTypes_CapAtTheirOwnMinimum (int value, Type target, object expected)
@@ -34,7 +34,7 @@ namespace AJut.Core.UnitTests
             Assert.IsTrue(capMin);
         }
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow(typeof(short), (short)-12)]
         [DataRow(typeof(sbyte), (sbyte)-12)]
         public void NCR_SignedSmallTypes_ParseANegativeFromText (Type target, object expected)
@@ -46,7 +46,7 @@ namespace AJut.Core.UnitTests
 
         // ===[ Values beyond the largest container cap instead of overflowing ]===
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow(typeof(long))]
         [DataRow(typeof(int))]
         [DataRow(typeof(short))]
@@ -64,7 +64,7 @@ namespace AJut.Core.UnitTests
             Assert.IsTrue(capMax);
         }
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow(typeof(long))]
         [DataRow(typeof(int))]
         [DataRow(typeof(short))]

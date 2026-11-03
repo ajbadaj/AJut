@@ -52,7 +52,7 @@ namespace AJut.UX.Tests
         [TestMethod]
         public void PathMarkup_Parse_ThrowsFormatExceptionOnBadMarkup ()
         {
-            Assert.ThrowsException<FormatException>(() => PathMarkup.Parse("M0 0 X1 1"));
+            Assert.ThrowsExactly<FormatException>(() => PathMarkup.Parse("M0 0 X1 1"));
         }
 
         [TestMethod]

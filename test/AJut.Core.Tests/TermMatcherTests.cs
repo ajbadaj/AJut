@@ -15,7 +15,7 @@ namespace AJut.Core.UnitTests
 
         // ===========[ Evaluate ]=============================================
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow("code", new[] { "code" }, true)]
         [DataRow("code", new[] { "ui" }, false)]
         [DataRow("code", new string[] { }, false)]
@@ -166,7 +166,7 @@ namespace AJut.Core.UnitTests
 
         // ===========[ IsMatch ]==============================================
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow("pill", "Pilly is here", true)]
         [DataRow("pill", "Polly is here", false)]
         [DataRow("ghost & !pilly", "a ghost story", true)]
@@ -183,7 +183,7 @@ namespace AJut.Core.UnitTests
             Assert.AreEqual(expected, MustParse(expression).IsMatch(text));
         }
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow("pill", "Pilly", false)]
         [DataRow("pill", "a pill.", true)]
         [DataRow("pill", "pills, then a pill", true)]
@@ -238,7 +238,7 @@ namespace AJut.Core.UnitTests
 
         // ===========[ Parse ]================================================
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow("", 0, "The expression is empty.")]
         [DataRow("   ", 0, "The expression is empty.")]
         [DataRow("code &", 5, "'&' at position 6 has nothing after it.")]
@@ -307,7 +307,7 @@ namespace AJut.Core.UnitTests
             Assert.IsFalse(TermExpression.ParseMatcher("("));
         }
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow("-code")]
         [DataRow("1st")]
         [DataRow("snake_case")]
@@ -327,7 +327,7 @@ namespace AJut.Core.UnitTests
             Assert.AreEqual(term, expression.ToString());
         }
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow("code & (frontend | ui | code)", "code, frontend, ui")]
         [DataRow("Code & code", "Code, code")]
         [DataRow("\"code\" | code", "code")]
@@ -390,15 +390,15 @@ namespace AJut.Core.UnitTests
         [TestMethod]
         public void TermMatcher_Parse_RefusesOptionsOutOfRange ()
         {
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => TermExpression.ParseMatcher("a", new TermParseOptions { MaxDepth = -1 }));
-            Assert.ThrowsException<ArgumentOutOfRangeException>(
+            Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => TermExpression.ParseMatcher("a", new TermParseOptions { MaxDepth = -1 }));
+            Assert.ThrowsExactly<ArgumentOutOfRangeException>(
                 () => TermExpression.ParseMatcher("a", new TermParseOptions { InnerWhitespace = (eTermWhitespace)7 })
             );
         }
 
         // ===========[ Rendering ]============================================
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow("code&&(frontend||ui)", "code & (frontend | ui)")]
         [DataRow("code&(frontend|ui)", "code & (frontend | ui)")]
         [DataRow("  code   &   ui  ", "code & ui")]
@@ -508,8 +508,8 @@ namespace AJut.Core.UnitTests
         public void TermMatcher_MapTerms_RefusesEmptyTerms ()
         {
             TermMatcher expression = MustParse("a & b");
-            Assert.ThrowsException<ArgumentException>(() => expression.MapTerms(term => null));
-            Assert.ThrowsException<ArgumentException>(() => expression.MapTerms(term => String.Empty));
+            Assert.ThrowsExactly<ArgumentException>(() => expression.MapTerms(term => null));
+            Assert.ThrowsExactly<ArgumentException>(() => expression.MapTerms(term => String.Empty));
         }
 
         // ===========[ Helpers ]==============================================

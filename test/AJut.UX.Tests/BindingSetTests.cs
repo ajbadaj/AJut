@@ -40,7 +40,7 @@ namespace AJut.UX.Tests
         public void BS_Construct_NoContextOnThread_Throws ()
         {
             SynchronizationContext.SetSynchronizationContext(null);
-            Assert.ThrowsException<InvalidOperationException>(() => new BindingSet());
+            Assert.ThrowsExactly<InvalidOperationException>(() => new BindingSet());
         }
 
         [TestMethod]
@@ -733,13 +733,13 @@ namespace AJut.UX.Tests
             var set = new BindingSet();
             set.Dispose();
 
-            Assert.ThrowsException<ObjectDisposedException>(() => set.Watch(source, nameof(TestSource.Name), Nothing));
-            Assert.ThrowsException<ObjectDisposedException>(() => set.Watch(source, new[] { nameof(TestSource.Name) }, Nothing));
-            Assert.ThrowsException<ObjectDisposedException>(() => set.WatchCollection(new TestCollection(), Nothing));
-            Assert.ThrowsException<ObjectDisposedException>(() => set.WatchNested(source, nameof(TestSource.Child), () => source.Child, (childSet, bound) => { }));
-            Assert.ThrowsException<ObjectDisposedException>(() => set.TwoWay(source, nameof(TestSource.Name), () => source.Name, value => source.Name = value, () => "", value => { }));
-            Assert.ThrowsException<ObjectDisposedException>(() => set.Command(new TestCommand(), null, Nothing));
-            Assert.ThrowsException<ObjectDisposedException>(() => set.Add(new RecordingLink("late", new List<string>())));
+            Assert.ThrowsExactly<ObjectDisposedException>(() => set.Watch(source, nameof(TestSource.Name), Nothing));
+            Assert.ThrowsExactly<ObjectDisposedException>(() => set.Watch(source, new[] { nameof(TestSource.Name) }, Nothing));
+            Assert.ThrowsExactly<ObjectDisposedException>(() => set.WatchCollection(new TestCollection(), Nothing));
+            Assert.ThrowsExactly<ObjectDisposedException>(() => set.WatchNested(source, nameof(TestSource.Child), () => source.Child, (childSet, bound) => { }));
+            Assert.ThrowsExactly<ObjectDisposedException>(() => set.TwoWay(source, nameof(TestSource.Name), () => source.Name, value => source.Name = value, () => "", value => { }));
+            Assert.ThrowsExactly<ObjectDisposedException>(() => set.Command(new TestCommand(), null, Nothing));
+            Assert.ThrowsExactly<ObjectDisposedException>(() => set.Add(new RecordingLink("late", new List<string>())));
             Assert.AreEqual(0, source.SubscriberCount);
         }
 

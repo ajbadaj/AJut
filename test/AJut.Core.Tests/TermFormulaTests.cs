@@ -159,7 +159,7 @@ namespace AJut.Core.UnitTests
 
         // ===========[ Numbers and printing ]=================================
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow("0.1 + 0.2", "0.3")]
         [DataRow("10 / 3", "3.33333333333333")]
         [DataRow("7 / 1", "7")]
@@ -653,7 +653,7 @@ namespace AJut.Core.UnitTests
             AssertEvaluationFails(declarations, huge, "$a + 1", 3, "too big to hold exactly");
             Assert.IsTrue(MustParse("$a / 1 * $b", declarations).Evaluate(huge));
             AssertRefused(TermExpression.ParseFormula("9007199254740992", declarations), 0, "too big");
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => TermValue.Int(9007199254740992L));
+            Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => TermValue.Int(9007199254740992L));
         }
 
         [TestMethod]
@@ -780,14 +780,14 @@ namespace AJut.Core.UnitTests
             TermDeclarations declarations = new TermDeclarations().Int("score").Float("chance").IntList("scores");
             TermValues values = declarations.CreateValues();
 
-            Assert.ThrowsException<ArgumentException>(() => values.Set("nope", 1));
-            Assert.ThrowsException<ArgumentException>(() => values.Set("score", "seven"));
-            Assert.ThrowsException<ArgumentException>(() => values.Set("score", 7.5));
-            Assert.ThrowsException<ArgumentException>(() => values.Set("scores", 1));
-            Assert.ThrowsException<ArgumentException>(() => values.Set("score", new[] { 1, 2 }));
-            Assert.ThrowsException<InvalidOperationException>(() => declarations.Int("later"));
-            Assert.ThrowsException<ArgumentException>(() => new TermDeclarations().Int("two words"));
-            Assert.ThrowsException<ArgumentException>(() => new TermDeclarations().Int("same").Int("same"));
+            Assert.ThrowsExactly<ArgumentException>(() => values.Set("nope", 1));
+            Assert.ThrowsExactly<ArgumentException>(() => values.Set("score", "seven"));
+            Assert.ThrowsExactly<ArgumentException>(() => values.Set("score", 7.5));
+            Assert.ThrowsExactly<ArgumentException>(() => values.Set("scores", 1));
+            Assert.ThrowsExactly<ArgumentException>(() => values.Set("score", new[] { 1, 2 }));
+            Assert.ThrowsExactly<InvalidOperationException>(() => declarations.Int("later"));
+            Assert.ThrowsExactly<ArgumentException>(() => new TermDeclarations().Int("two words"));
+            Assert.ThrowsExactly<ArgumentException>(() => new TermDeclarations().Int("same").Int("same"));
 
             // A whole number is fine where a number is declared
             values.Set("chance", 1);
@@ -799,9 +799,9 @@ namespace AJut.Core.UnitTests
         {
             TermDeclarations declarations = new TermDeclarations().IntList("scores");
             TermFormula formula = MustParse("$high = count($scores >= 5)\n$high", declarations, eTermKind.Int);
-            Assert.ThrowsException<ArgumentException>(() => formula.DeclarationsWithResult("scores"));
+            Assert.ThrowsExactly<ArgumentException>(() => formula.DeclarationsWithResult("scores"));
             Assert.AreSame(formula.DeclarationsWithResult("total"), formula.DeclarationsWithResult("total"));
-            Assert.ThrowsException<InvalidOperationException>(() => MustParse("1 / count($scores)", declarations).Evaluate(declarations.CreateValues().Set("scores", Array.Empty<int>())).ValuesWithResult("total"));
+            Assert.ThrowsExactly<InvalidOperationException>(() => MustParse("1 / count($scores)", declarations).Evaluate(declarations.CreateValues().Set("scores", Array.Empty<int>())).ValuesWithResult("total"));
         }
 
         // ===========[ Helpers ]==============================================

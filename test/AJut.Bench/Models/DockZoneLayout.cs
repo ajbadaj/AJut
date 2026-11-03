@@ -4,8 +4,8 @@ namespace AJut.Bench.Models
     using AJut.Text.AJson;
 
     // Docking layout shape - nested 3-4 deep with mixed primitives + arrays. Models the AJut docking
-    // layout serialization case. [OptimizeAJson] is on the V2-source-gen variants below; the
-    // unannotated types here back the V1 + V2-reflection rows.
+    // layout serialization case. [OptimizeAJson] is on the source-gen variants below; the
+    // unannotated types here back the AJson reflection rows.
     public enum eDockOrientation
     {
         Horizontal,
