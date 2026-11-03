@@ -12,7 +12,7 @@ namespace AJutShowRoomAppKit.UI
         private const double kCodeFontSize = 12.0;
 
         private readonly string m_code;
-        private readonly NSButton m_copyButton;
+        private readonly BrushButton m_copyButton;
 
         // ===========[ Setup/Construction/Teardown ]===========================
         public ShowroomCodeDisplay (string code)
@@ -38,8 +38,7 @@ namespace AJutShowRoomAppKit.UI
                 stack.TrailingAnchor.ConstraintEqualTo(this.TrailingAnchor),
             });
 
-            m_copyButton = new NSButton { Title = "Copy" };
-            m_copyButton.BezelStyle = NSBezelStyle.Rounded;
+            m_copyButton = new BrushButton { Title = "Copy" };
             m_copyButton.Activated += this.OnCopyActivated;
             stack.Add(m_copyButton, alignment: eFillStackCrossAlignment.End);
 

@@ -1,7 +1,10 @@
 namespace AJut.UX.Theming
 {
+    using System.Collections.Generic;
     using AppKit;
     using CoreAnimation;
+    using CoreGraphics;
+    using Foundation;
     using ObjCRuntime;
 
     // ===========[ ThemedView ]=================================================
@@ -16,12 +19,23 @@ namespace AJut.UX.Theming
     //
     // Derived controls override ApplyLayerColors to push more than background and border, and
     // call base first.
+    //
+    // A background key can resolve to a gradient (the pop-out surface, AJut_Brush_PopOutControlBackground,
+    // is one). A layer's background is one color, so a gradient goes in a CAGradientLayer kept as the
+    // backing layer's first sublayer, under every subview's layer and under the border, which a layer
+    // draws over its sublayers. It takes the layer's bounds, corners and corner mask after
+    // ApplyLayerColors, so a subclass that rounds only some corners rounds the gradient the same way.
+    // Its stops run top to bottom wherever the layer tree puts the origin: contentsAreFlipped says
+    // whether the gradient layer is drawn y down, which decides the end its first stop goes at.
+    // Implicit animations are off for it, or it would fade on a theme change and trail a resize.
     public class ThemedView : NSView
     {
         private string m_backgroundColorKey;
         private string m_borderColorKey;
         private double m_borderThickness;
         private double m_cornerRadius;
+        private IReadOnlyList<AJutGradientStop> m_backgroundStops;
+        private CAGradientLayer m_backgroundGradient;
 
         // ===========[ Setup/Construction/Teardown ]===========================
         public ThemedView ()
@@ -96,7 +110,9 @@ namespace AJut.UX.Theming
             CALayer layer = this.Layer;
             if (layer != null)
             {
+                m_backgroundStops = (m_backgroundColorKey != null) ? ThemedColors.GetThemedGradientStops(m_backgroundColorKey, this.EffectiveAppearance) : null;
                 this.ApplyLayerColors(layer);
+                this.SyncBackgroundGradient(layer);
             }
         }
 
@@ -106,17 +122,76 @@ namespace AJut.UX.Theming
             this.NeedsDisplay = true;
         }
 
+        // The gradient keeps to the view's size between redraws, which a resize doesn't always ask for
+        public override void SetFrameSize (CGSize newSize)
+        {
+            base.SetFrameSize(newSize);
+            if ((m_backgroundGradient != null) && (this.Layer != null))
+            {
+                CATransaction.Begin();
+                CATransaction.DisableActions = true;
+                m_backgroundGradient.Frame = this.Layer.Bounds;
+                CATransaction.Commit();
+            }
+        }
+
         // ===========[ Helper Methods ]========================================
         /// <summary>
         /// Pushes this view's colors into its layer. Only called from <see cref="UpdateLayer"/>, where the
-        /// drawing appearance is this view's, so a CGColor taken here is the right one for it.
+        /// drawing appearance is this view's, so a CGColor taken here is the right one for it. A background
+        /// key that resolves to a gradient leaves the layer's own background clear (the gradient layer under
+        /// the subviews paints it).
         /// </summary>
         protected virtual void ApplyLayerColors (CALayer layer)
         {
-            layer.BackgroundColor = m_backgroundColorKey != null ? ThemedColors.Get(m_backgroundColorKey).CGColor : null;
+            layer.BackgroundColor = ((m_backgroundColorKey != null) && (m_backgroundStops == null)) ? ThemedColors.Get(m_backgroundColorKey).CGColor : null;
             layer.BorderColor = m_borderColorKey != null ? ThemedColors.Get(m_borderColorKey).CGColor : null;
             layer.BorderWidth = m_borderColorKey != null ? (nfloat)m_borderThickness : (nfloat)0.0;
             layer.CornerRadius = (nfloat)m_cornerRadius;
+        }
+
+        // Adds, updates or removes the gradient layer for the background (see the class comment)
+        private void SyncBackgroundGradient (CALayer layer)
+        {
+            if (m_backgroundStops == null)
+            {
+                if (m_backgroundGradient != null)
+                {
+                    m_backgroundGradient.RemoveFromSuperLayer();
+                    m_backgroundGradient = null;
+                }
+
+                return;
+            }
+
+            CATransaction.Begin();
+            CATransaction.DisableActions = true;
+            if (m_backgroundGradient == null)
+            {
+                m_backgroundGradient = new CAGradientLayer();
+                layer.InsertSublayer(m_backgroundGradient, 0);
+            }
+
+            var colors = new CGColor[m_backgroundStops.Count];
+            var locations = new NSNumber[m_backgroundStops.Count];
+            for (int i = 0; i < colors.Length; ++i)
+            {
+                colors[i] = m_backgroundStops[i].Color.ToNSColor().CGColor;
+                locations[i] = NSNumber.FromDouble(m_backgroundStops[i].Offset);
+            }
+
+            m_backgroundGradient.Colors = colors;
+            m_backgroundGradient.Locations = locations;
+            m_backgroundGradient.Frame = layer.Bounds;
+            m_backgroundGradient.CornerRadius = layer.CornerRadius;
+            m_backgroundGradient.MaskedCorners = layer.MaskedCorners;
+            m_backgroundGradient.MasksToBounds = true;
+
+            // The first stop goes at the top as it is drawn: y = 0 is the top only where the gradient layer is drawn flipped
+            bool isDrawnFlipped = m_backgroundGradient.ContentsAreFlipped;
+            m_backgroundGradient.StartPoint = new CGPoint(0.5, isDrawnFlipped ? 0.0 : 1.0);
+            m_backgroundGradient.EndPoint = new CGPoint(0.5, isDrawnFlipped ? 1.0 : 0.0);
+            CATransaction.Commit();
         }
     }
 }

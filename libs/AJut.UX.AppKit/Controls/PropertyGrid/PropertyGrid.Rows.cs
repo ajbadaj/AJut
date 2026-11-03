@@ -68,10 +68,10 @@ namespace AJut.UX.Controls
                 m_labelColumn = new FillStack(NSUserInterfaceLayoutOrientation.Vertical);
                 m_nameLabel = new RowNameLabel(this);
                 m_nameLabel.TextColor = ThemedColors.Get(ThemedColorKeys.PropertyGridRow_LabelForeground);
-                m_nameLabel.LineBreakMode = NSLineBreakMode.TruncatingTail;
                 m_labelColumn.Add(m_nameLabel);
 
                 m_subtitle = NSTextField.CreateLabel(String.Empty);
+                m_subtitle.LineBreakMode = NSLineBreakMode.TruncatingTail;
                 m_subtitle.Font = NSFontManager.SharedFontManager.ConvertFont(NSFont.SystemFontOfSize((nfloat)kSubtitleFontSize), NSFontTraitMask.Italic);
                 m_subtitle.TextColor = ThemedColors.Get(ThemedColorKeys.PropertyGridRow_LabelForeground);
                 m_subtitle.AlphaValue = (nfloat)kSecondaryTextOpacity;
@@ -82,7 +82,7 @@ namespace AJut.UX.Controls
                 m_labelFrame.AddSubview(m_labelColumn);
                 NSLayoutConstraint.ActivateConstraints(new[]
                 {
-                    m_labelColumn.LeadingAnchor.ConstraintEqualTo(m_labelFrame.LeadingAnchor, (nfloat)LabelFrameView.kLeadingEdgeThickness),
+                    m_labelColumn.LeadingAnchor.ConstraintEqualTo(m_labelFrame.LeadingAnchor, (nfloat)(LabelFrameView.kLeadingEdgeThickness + LabelFrameView.kTextInset)),
                     m_labelColumn.TrailingAnchor.ConstraintEqualTo(m_labelFrame.TrailingAnchor, (nfloat)(-LabelFrameView.kEdgeThickness)),
                     m_labelColumn.CenterYAnchor.ConstraintEqualTo(m_labelFrame.CenterYAnchor),
                     m_labelColumn.TopAnchor.ConstraintGreaterThanOrEqualTo(m_labelFrame.TopAnchor, (nfloat)LabelFrameView.kEdgeThickness),
@@ -271,7 +271,7 @@ namespace AJut.UX.Controls
                     labelWidth = Math.Max(labelWidth, (double)m_subtitle.IntrinsicContentSize.Width);
                 }
 
-                labelWidth += LabelFrameView.kLeadingEdgeThickness + LabelFrameView.kEdgeThickness;
+                labelWidth += LabelFrameView.kLeadingEdgeThickness + LabelFrameView.kTextInset + LabelFrameView.kEdgeThickness;
                 return PropertyGridRowRules.ToLabelColumnWidth(labelWidth, m_item.IndentWidth, kExpanderColumnWidth);
             }
 
@@ -310,7 +310,14 @@ namespace AJut.UX.Controls
                 this.Bordered = false;
                 this.DrawsBackground = false;
                 this.Font = NSFont.SystemFontOfSize(NSFont.SystemFontSize);
+
+                // A field made with init has a scrollable cell, which slides text past its edge instead of truncating
+                // it, whatever its line break mode says; a cell only draws the ellipsis once it stops scrolling. The
+                // label factory's cell isn't scrollable, which is why only this label needed it.
+                this.Cell.Scrollable = false;
                 this.Cell.Wraps = false;
+                this.Cell.LineBreakMode = NSLineBreakMode.TruncatingTail;
+                this.UsesSingleLineMode = true;
             }
 
             // For a peer the runtime makes over an existing native label, which has no row to tell
@@ -342,6 +349,9 @@ namespace AJut.UX.Controls
 
             /// <summary>The outline's width on the other three edges</summary>
             public const double kEdgeThickness = 1.0;
+
+            /// <summary>The space between the nub and the name, so the name doesn't sit against the nub when the row is selected</summary>
+            public const double kTextInset = 4.0;
 
             private bool m_isSelected;
 

@@ -39,16 +39,16 @@ namespace AJutShowRoomAppKit.UI.ContentFlows
         {
             const double kValueFieldWidth = 140.0;
 
-            this.BackgroundColorKey = ShowroomStyle.SidebarBackground;
+            // No background of its own: the zone's panel background shows through, as it does under the WinUI3 showroom's
+            // panels, the same color as the selected tab
 
             NSTextField label = ShowroomStyle.Heading(String.Empty);
             m_bindings.BindLabel(label, m_model, nameof(PanelModel.Label), this.ReadLabel);
 
-            var value = new NSTextField { PlaceholderString = "Value (double)" };
+            var value = new ThemedTextField { PlaceholderText = "Value (double)" };
             m_bindings.BindText(value, m_model, nameof(PanelModel.ValueText), this.ReadValueText, this.WriteValueText, commitOnly: true);
 
-            var blockClose = new NSButton { Title = "Block close" };
-            blockClose.SetButtonType(NSButtonType.Switch);
+            var blockClose = new ThemedCheckBox { Title = "Block close" };
             m_bindings.BindChecked(blockClose, m_model, nameof(PanelModel.IsBlockingClose), this.ReadIsBlockingClose, this.WriteIsBlockingClose);
 
             var stack = new FillStack(NSUserInterfaceLayoutOrientation.Vertical, spacing: 6.0);

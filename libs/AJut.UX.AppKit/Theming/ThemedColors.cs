@@ -203,6 +203,27 @@ namespace AJut.UX.Theming
         }
 
         /// <summary>
+        /// Gets the stops of the gradient a key resolves to under <paramref name="appearance"/>, top to bottom, when a theme
+        /// is loaded and the key's palette entry is a gradient; null otherwise, the same as <see cref="GetThemedGradient"/>.
+        /// For a layer that draws the gradient itself (a CAGradientLayer), where an NSGradient can't go.
+        /// </summary>
+        public static IReadOnlyList<AJutGradientStop> GetThemedGradientStops (string key, NSAppearance appearance)
+        {
+            lock (g_lock)
+            {
+                if (!g_isThemeLoaded)
+                {
+                    return null;
+                }
+
+                string paletteKey = g_themedAliases.TryGetValue(key, out string alias) ? alias : key;
+                bool isGradient = AJutPalette.For(IsDark(appearance), g_usesTouchVariant).TryGetPaint(paletteKey, out AJutThemePaint paint)
+                    && paint.IsGradient;
+                return isGradient ? paint.GradientStops : null;
+            }
+        }
+
+        /// <summary>
         /// Is the given appearance a dark one. Covers darkAqua, vibrantDark and the high contrast dark
         /// variants, which all carry "Dark" in their name; Apple's bestMatchFromAppearancesWithNames is
         /// the formal check, and gives the same answer for the system appearances.

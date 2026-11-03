@@ -53,7 +53,7 @@
                                     <VisualState.Setters>
                                         <Setter Target="Root.Background" Value="{ThemeResource AJut_DockPanelAddButton_PressedBackground}"/>
                                         <Setter Target="Root.BorderBrush" Value="{ThemeResource AJut_DockPanelAddButton_NormalBorderBrush}"/>
-                                        <Setter Target="ContentArea.Foreground" Value="{ThemeResource AJut_DockPanelAddButton_NormalForeground}"/>
+                                        <Setter Target="ContentArea.Foreground" Value="{ThemeResource AJut_DockPanelAddButton_PressedForeground}"/>
                                         <Setter Target="PlusOverlay.Foreground" Value="{ThemeResource AJut_DockPanelAddButton_PlusOverlayForeground}"/>
                                     </VisualState.Setters>
                                 </VisualState>

@@ -143,9 +143,9 @@ docking.Dispose();"
             }
         }
 
-        private NSButton MakeButton (string title, Action action)
+        private BrushButton MakeButton (string title, Action action)
         {
-            var button = new NSButton { Title = title, BezelStyle = NSBezelStyle.Rounded };
+            var button = new BrushButton { Title = title };
             m_bindings.BindCommand(button, new ActionCommand(action));
             return button;
         }

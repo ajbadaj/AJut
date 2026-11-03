@@ -403,9 +403,24 @@ namespace AJut.UX.Controls
                 DividerColorKey = null,
             };
 
+            // A split places its panes by frame, so a pane's frame becomes required constraints on it, while the leaf inside
+            //  needs room for its header, tabs and panel. Each pane starts at its share of this zone rather than the empty
+            //  frame a new view has, or until the split first sizes them those can't both hold and AppKit has to search for
+            //  constraints to break (see the tab row in TabStrip). The stored pane sizes still apply on the next layout.
+            double minPane = m_zone.Manager?.MinPanelDimension ?? kFallbackMinPanelSize;
+            bool isSideBySide = m_zone.Orientation == eDockOrientation.Horizontal;
+            int paneCount = Math.Max(1, m_zone.Children.Count);
+            CGRect zoneBounds = this.Bounds;
+            double paneWidth = Math.Max(minPane, isSideBySide ? (double)zoneBounds.Width / paneCount : (double)zoneBounds.Width);
+            double paneHeight = Math.Max(minPane, isSideBySide ? (double)zoneBounds.Height : (double)zoneBounds.Height / paneCount);
+
             foreach (DockZoneViewModel child in m_zone.Children)
             {
-                var childView = new DockZoneView(child);
+                var childView = new DockZoneView(child)
+                {
+                    Frame = new CGRect(0, 0, (nfloat)paneWidth, (nfloat)paneHeight),
+                };
+
                 m_childViews.Add(childView);
                 m_split.AddArrangedSubview(childView);
             }
@@ -907,6 +922,22 @@ namespace AJut.UX.Controls
 
                 m_scrollBack = this.MakeScrollButton(DockGlyphButton.eGlyph.ScrollBack, "Scroll tabs back", this.ScrollBack);
                 m_scrollForward = this.MakeScrollButton(DockGlyphButton.eGlyph.ScrollForward, "Scroll tabs forward", this.ScrollForward);
+
+                // The row of tabs is placed by frame (in Layout), so its frame is turned into required constraints, and the
+                // tabs inside it are held by required ones of their own (insets, the close button, the gaps). Left at the
+                // empty frame it is made with until the first Layout, the two can't both hold, and AppKit has to pick
+                // constraints to break: a costly search through the window's constraints, which on .NET calls into every
+                // managed view it compares and grew with the tab count until a click took seconds. So it starts at the size
+                // its tabs want.
+                double rowWidth = 0.0;
+                foreach (NSView tab in m_tabs.Children)
+                {
+                    rowWidth += (tab is TabView tabView) ? tabView.MeasureWidth() : 0.0;
+                }
+
+                var rowFrame = new CGRect(0, 0, (nfloat)rowWidth, (nfloat)(kTabHeight + kEdgeThickness));
+                m_clip.Frame = rowFrame;
+                m_tabs.Frame = rowFrame;
             }
 
             // For a peer the runtime makes over an existing native strip, which has no owner to tell
@@ -926,12 +957,15 @@ namespace AJut.UX.Controls
                     return;
                 }
 
-                // 1. Each tab is as wide as it wants to be, and the tabs sit edge to edge
+                // 1. Each tab is as wide as it wants to be, and the tabs sit edge to edge. A tab works its width out from its
+                //    title (TabView.MeasureWidth) rather than being asked its FittingSize: that is a whole constraint solve of
+                //    the tab, AppKit runs this layout several times a pass, and with every tab asked each time the docking
+                //    page slowed with the square of its tab count, nearly two seconds a click at seven tabs.
                 m_tabWidths.Clear();
                 double contentWidth = 0.0;
                 foreach (NSView tab in m_tabs.Children)
                 {
-                    double tabWidth = (double)tab.FittingSize.Width;
+                    double tabWidth = (tab is TabView tabView) ? tabView.MeasureWidth() : (double)tab.FittingSize.Width;
                     m_tabWidths.Add(tabWidth);
                     contentWidth += tabWidth;
                 }
@@ -1484,6 +1518,17 @@ namespace AJut.UX.Controls
             // For a peer the runtime makes over an existing native tab, which has no owner to tell
             private TabView (NativeHandle handle) : base(handle)
             {
+            }
+
+            /// <summary>
+            /// The width this tab wants: the title's inset, the title, then the close button and its gaps (or the title's
+            /// inset again), the same chain its constraints lay out, worked out without a constraint solve
+            /// </summary>
+            public double MeasureWidth ()
+            {
+                double titleWidth = Math.Max(0.0, (double)m_title.IntrinsicContentSize.Width);
+                double trailing = (m_close != null) ? (kTabCloseGap + kTabCloseSize + kTabCloseGap) : kTabTitleInset;
+                return kTabTitleInset + titleWidth + trailing;
             }
 
             public override bool IsFlipped => true;

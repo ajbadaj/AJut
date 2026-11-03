@@ -10,9 +10,9 @@ namespace AJutShowRoomAppKit.UI.Controls
     {
         private const double kOverlayPanelHeight = 160.0;
 
-        private readonly NSButton m_spinningCheck;
-        private readonly NSButton m_busyCheck;
-        private readonly NSButton m_pressMe;
+        private readonly ThemedCheckBox m_spinningCheck;
+        private readonly ThemedCheckBox m_busyCheck;
+        private readonly BrushButton m_pressMe;
         private readonly NSTextField m_pressCount;
         private readonly BusyWait m_right = new BusyWait { Text = "Loading, spinner on the right" };
         private readonly BusyWait m_left = new BusyWait { Text = "Spinner on the left", SpinnerDock = eBusyWaitSpinnerDock.Left };
@@ -23,8 +23,7 @@ namespace AJutShowRoomAppKit.UI.Controls
         public BusyWaitPage ()
             : base("BusyWait", "The system's own spinner beside a line of text. SpinnerDock puts the spinner on any side, and stopped, the spinner hides but keeps its room.")
         {
-            m_spinningCheck = new NSButton { Title = "Spinning", State = NSCellStateValue.On };
-            m_spinningCheck.SetButtonType(NSButtonType.Switch);
+            m_spinningCheck = new ThemedCheckBox { Title = "Spinning", State = NSCellStateValue.On };
             m_spinningCheck.Activated += this.OnSpinningActivated;
             this.AddDemo(m_spinningCheck, eFillStackCrossAlignment.Start);
             this.AddLabeledDemo("Right (the default)", m_right);
@@ -42,13 +41,11 @@ busy.IsSpinning = false;"
 
             this.AddHeading("As an overlay");
             this.AddText("IsOverlay lays it over what it covers. While busy it covers the panel and takes every click and scroll, so the button under it can't be pressed; stopped, it draws nothing and the button works.");
-            m_busyCheck = new NSButton { Title = "Busy" };
-            m_busyCheck.SetButtonType(NSButtonType.Switch);
+            m_busyCheck = new ThemedCheckBox { Title = "Busy" };
             m_busyCheck.Activated += this.OnBusyActivated;
             this.AddDemo(m_busyCheck, eFillStackCrossAlignment.Start);
 
-            m_pressMe = new NSButton { Title = "Press me" };
-            m_pressMe.BezelStyle = NSBezelStyle.Rounded;
+            m_pressMe = new BrushButton { Title = "Press me" };
             m_pressMe.Activated += this.OnPressMeActivated;
             m_pressCount = ShowroomStyle.Body("Pressed 0 times");
             this.AddDemo(this.MakeOverlayPanel());

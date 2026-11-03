@@ -7,9 +7,9 @@ namespace AJut.UX.Controls
     using ObjCRuntime;
 
     // ===========[ EnumComboBox ]===============================================
-    // A pop-up button listing an enum's values. Set SelectedItem to any value of the enum and the
-    // list fills with that enum's values; picking one sets SelectedItem and raises
-    // SelectedItemChanged.
+    // A pop-up button listing an enum's values, drawn as WinUI3's ComboBox (see ThemedPopUpButton).
+    // Set SelectedItem to any value of the enum and the list fills with that enum's values; picking
+    // one sets SelectedItem and raises SelectedItemChanged.
     //
     // Which values are listed, and what each is called, come from AJut.UX's EnumSelectionOptions,
     // the same as every other stack: values marked [Browsable(false)] or [ExcludeFromSelection]
@@ -17,7 +17,7 @@ namespace AJut.UX.Controls
     //
     // It handles its own action to keep SelectedItem in step, so listen to SelectedItemChanged
     // rather than setting a Target and Action on it, which would replace that.
-    public class EnumComboBox : NSPopUpButton
+    public class EnumComboBox : ThemedPopUpButton
     {
         private readonly List<object> m_values = new List<object>();
         private Type m_enumType;

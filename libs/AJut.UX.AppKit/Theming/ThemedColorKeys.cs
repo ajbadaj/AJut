@@ -1,5 +1,6 @@
 namespace AJut.UX.Theming
 {
+    using System;
     using AJut.UX.Helpers;
     using AppKit;
 
@@ -161,7 +162,7 @@ namespace AJut.UX.Theming
         public const string ToggleStrip_DisabledBorder = "AJut_ToggleStrip_DisabledBorder";
 
         // ===========[ NumericEditor ]=========================================
-        // The look MobileLook.NumericEditor sets out for every mobile and Mac editor. The AppKit only keys alias its keys.
+        // WinUI3's NumericEditor look. The AppKit only keys alias the palette keys WinUI3's template and themed style read.
 
         /// <summary>The frame's border while the field has focus. Shared key.</summary>
         public const string NumericEditor_FocusBorder = "AJut_NumericEditor_FocusBorderBrush";
@@ -170,34 +171,40 @@ namespace AJut.UX.Theming
         public const string NumericEditor_NormalBorder = "AJut_NumericEditor_NormalBorderBrush";
 
         /// <summary>The frame's border while the mouse is over it, focused or not. Shared key.</summary>
-        public const string NumericEditor_PointerOverBorder = MobileLook.NumericEditor.FrameBorderPointerOver;
+        public const string NumericEditor_PointerOverBorder = AJutThemeKeys.NumericEditor_PointerOverBorderBrush;
 
         /// <summary>The frame's border, and the warning glyph beside the number, while the text is out of range. Shared key.</summary>
         public const string NumericEditor_ErrorBorder = "AJut_NumericEditor_ErrorBrush";
 
-        /// <summary>The frame's surface, a gradient themed. AppKit only, as MobileLook.NumericEditor.FrameSurface.</summary>
+        /// <summary>The frame's surface, a gradient themed: WinUI3's themed Background, the pop-out surface. AppKit only.</summary>
         public const string NumericEditor_FrameBackground = "AJut_NumericEditor_FrameBackground";
 
-        /// <summary>The well the number sits in. AppKit only, as MobileLook.NumericEditor.WellSurface.</summary>
+        /// <summary>The frame's surface while the editor is read-only, its disabled look: a disabled control's background. AppKit only.</summary>
+        public const string NumericEditor_ReadOnlyFrameBackground = "AJut_NumericEditor_ReadOnlyFrameBackground";
+
+        /// <summary>The frame's border while the editor is read-only, with no hover or focus change: a text box's border. Shared key, the one MobileLook.NumericEditor.FrameBorderFor gives read-only.</summary>
+        public const string NumericEditor_ReadOnlyBorder = MobileLook.NumericEditor.FrameBorderDisabled;
+
+        /// <summary>The well the number sits in: WinUI3's themed TextBoxBackground. AppKit only.</summary>
         public const string NumericEditor_TextBoxBackground = "AJut_NumericEditor_TextBoxBackground";
 
-        /// <summary>The typed text. AppKit only, as MobileLook.NumericEditor.Number.</summary>
+        /// <summary>The typed text. AppKit only.</summary>
         public const string NumericEditor_Text = "AJut_NumericEditor_Text";
 
-        /// <summary>The number, and the step glyphs, while the editor is read-only. AppKit only, as MobileLook.NumericEditor.ReadOnlyText.</summary>
+        /// <summary>The number, and the "#" mark, while the editor is read-only. AppKit only.</summary>
         public const string NumericEditor_ReadOnlyText = "AJut_NumericEditor_ReadOnlyText";
 
-        /// <summary>The label in front of the frame, when one is given. AppKit only, as MobileLook.NumericEditor.Label.</summary>
+        /// <summary>The label in front of the frame, when one is given. AppKit only.</summary>
         public const string NumericEditor_Label = "AJut_NumericEditor_Label";
 
-        /// <summary>The step buttons' minus and plus. AppKit only, as MobileLook.NumericEditor.StepGlyph.</summary>
-        public const string NumericEditor_StepGlyph = "AJut_NumericEditor_StepGlyph";
+        /// <summary>The "#" mark under the step buttons, which WinUI3 draws in the editor's foreground. AppKit only.</summary>
+        public const string NumericEditor_Mark = "AJut_NumericEditor_Mark";
 
-        /// <summary>A step button's fill under the mouse, drawn at MobileLook.NumericEditor.StepPointerOverOpacity. Shared key.</summary>
-        public const string NumericEditor_StepPointerOverFill = MobileLook.NumericEditor.StepPointerOverFill;
+        /// <summary>The increase button's fill under the mouse, drawn at the button's 0.7 opacity. Shared key.</summary>
+        public const string NumericEditor_IncreasePointerOverFill = AJutThemeKeys.NumericEditor_IncreasePointerOverBackground;
 
-        /// <summary>A step button's fill while pressed. Shared key.</summary>
-        public const string NumericEditor_StepPressedFill = MobileLook.NumericEditor.StepPressedFill;
+        /// <summary>The decrease button's fill under the mouse, drawn at the button's 0.7 opacity. Shared key.</summary>
+        public const string NumericEditor_DecreasePointerOverFill = AJutThemeKeys.NumericEditor_DecreasePointerOverBackground;
 
         // ===========[ FlatTreeListView ]======================================
         /// <summary>A selected row's leading strip and outline while its window is key. Shared key.</summary>
@@ -353,6 +360,7 @@ namespace AJut.UX.Theming
         public const string DockPanelAddButton_NormalForeground = "AJut_DockPanelAddButton_NormalForeground";
         public const string DockPanelAddButton_PointerOverBackground = "AJut_DockPanelAddButton_PointerOverBackground";
         public const string DockPanelAddButton_PressedBackground = "AJut_DockPanelAddButton_PressedBackground";
+        public const string DockPanelAddButton_PressedForeground = "AJut_DockPanelAddButton_PressedForeground";
 
         /// <summary>The small plus marking an add button</summary>
         public const string DockPanelAddButton_PlusOverlayForeground = "AJut_DockPanelAddButton_PlusOverlayForeground";
@@ -362,12 +370,16 @@ namespace AJut.UX.Theming
         public const string DockPanelToggleButton_NormalForeground = "AJut_DockPanelToggleButton_NormalForeground";
         public const string DockPanelToggleButton_PointerOverBackground = "AJut_DockPanelToggleButton_PointerOverBackground";
         public const string DockPanelToggleButton_PressedBackground = "AJut_DockPanelToggleButton_PressedBackground";
+        public const string DockPanelToggleButton_PressedForeground = "AJut_DockPanelToggleButton_PressedForeground";
         public const string DockPanelToggleButton_CheckedBackground = "AJut_DockPanelToggleButton_CheckedBackground";
         public const string DockPanelToggleButton_CheckedBorder = "AJut_DockPanelToggleButton_CheckedBorderBrush";
+        public const string DockPanelToggleButton_CheckedForeground = "AJut_DockPanelToggleButton_CheckedForeground";
         public const string DockPanelToggleButton_CheckedPointerOverBackground = "AJut_DockPanelToggleButton_CheckedPointerOverBackground";
         public const string DockPanelToggleButton_CheckedPointerOverBorder = "AJut_DockPanelToggleButton_CheckedPointerOverBorderBrush";
+        public const string DockPanelToggleButton_CheckedPointerOverForeground = "AJut_DockPanelToggleButton_CheckedPointerOverForeground";
         public const string DockPanelToggleButton_CheckedPressedBackground = "AJut_DockPanelToggleButton_CheckedPressedBackground";
         public const string DockPanelToggleButton_CheckedPressedBorder = "AJut_DockPanelToggleButton_CheckedPressedBorderBrush";
+        public const string DockPanelToggleButton_CheckedPressedForeground = "AJut_DockPanelToggleButton_CheckedPressedForeground";
 
         // ===========[ DockTabScrollButton ]===================================
         // The arrows at either end of a dock tab strip with more tabs than fit. The fills are shared keys, the WinUI3
@@ -515,6 +527,67 @@ namespace AJut.UX.Theming
         /// <summary>A bump button's outline, which sets it apart from what scrolls under it</summary>
         public const string BumpStack_ButtonBorder = "AJut_BumpStack_ButtonBorder";
 
+        // ===========[ ThemedTextField ]=======================================
+        // Shared keys, the stock keys WinUI3's TextBox reads
+
+        public const string TextControl_Background = "TextControlBackground";
+        public const string TextControl_BackgroundPointerOver = "TextControlBackgroundPointerOver";
+        public const string TextControl_BackgroundFocused = "TextControlBackgroundFocused";
+        public const string TextControl_BackgroundDisabled = "TextControlBackgroundDisabled";
+        public const string TextControl_Border = "TextControlBorderBrush";
+        public const string TextControl_BorderPointerOver = "TextControlBorderBrushPointerOver";
+        public const string TextControl_BorderFocused = "TextControlBorderBrushFocused";
+        public const string TextControl_BorderDisabled = "TextControlBorderBrushDisabled";
+        public const string TextControl_Foreground = "TextControlForeground";
+        public const string TextControl_ForegroundFocused = "TextControlForegroundFocused";
+        public const string TextControl_ForegroundDisabled = "TextControlForegroundDisabled";
+        public const string TextControl_PlaceholderForeground = "TextControlPlaceholderForeground";
+        public const string TextControl_PlaceholderForegroundDisabled = "TextControlPlaceholderForegroundDisabled";
+
+        /// <summary>Behind selected text while editing</summary>
+        public const string TextControl_SelectionHighlight = "TextControlSelectionHighlightColor";
+
+        // ===========[ ThemedPopUpButton ]=====================================
+        // Shared keys, the stock keys WinUI3's ComboBox reads for its closed button
+
+        public const string ComboBox_Background = "ComboBoxBackground";
+        public const string ComboBox_BackgroundPointerOver = "ComboBoxBackgroundPointerOver";
+        public const string ComboBox_BackgroundPressed = "ComboBoxBackgroundPressed";
+        public const string ComboBox_BackgroundFocused = "ComboBoxBackgroundFocused";
+        public const string ComboBox_BackgroundDisabled = "ComboBoxBackgroundDisabled";
+        public const string ComboBox_Border = "ComboBoxBorderBrush";
+        public const string ComboBox_BorderPointerOver = "ComboBoxBorderBrushPointerOver";
+        public const string ComboBox_BorderPressed = "ComboBoxBorderBrushPressed";
+        public const string ComboBox_BorderFocused = "ComboBoxBackgroundBorderBrushFocused";
+        public const string ComboBox_BorderDisabled = "ComboBoxBorderBrushDisabled";
+        public const string ComboBox_Foreground = "ComboBoxForeground";
+        public const string ComboBox_ForegroundPointerOver = "ComboBoxForegroundPointerOver";
+        public const string ComboBox_ForegroundPressed = "ComboBoxForegroundPressed";
+        public const string ComboBox_ForegroundFocused = "ComboBoxForegroundFocused";
+        public const string ComboBox_ForegroundDisabled = "ComboBoxForegroundDisabled";
+
+        /// <summary>The chevron at the right of the closed button</summary>
+        public const string ComboBox_Glyph = "ComboBoxDropDownGlyphForeground";
+        public const string ComboBox_GlyphFocused = "ComboBoxDropDownGlyphForegroundFocused";
+        public const string ComboBox_GlyphDisabled = "ComboBoxDropDownGlyphForegroundDisabled";
+
+        // ===========[ ThemedCheckBox ]========================================
+        // Shared keys, the stock keys WinUI3's CheckBox reads. Each is one of these parts, then Unchecked, Checked or
+        // Indeterminate, then nothing at rest or PointerOver, Pressed or Disabled: CheckBoxCheckBackgroundFillCheckedPointerOver.
+        // CheckBoxKey puts one together.
+
+        /// <summary>The box's fill</summary>
+        public const string CheckBox_BoxFillPart = "CheckBoxCheckBackgroundFill";
+
+        /// <summary>The box's outline</summary>
+        public const string CheckBox_BoxStrokePart = "CheckBoxCheckBackgroundStroke";
+
+        /// <summary>The tick, or the bar for indeterminate</summary>
+        public const string CheckBox_GlyphPart = "CheckBoxCheckGlyphForeground";
+
+        /// <summary>The title beside the box</summary>
+        public const string CheckBox_ForegroundPart = "CheckBoxForeground";
+
         // ===========[ Public Interface Methods ]==============================
         /// <summary>
         /// Registers every key above with <see cref="ThemedColors"/>. Runs once, from ThemedColors' static
@@ -589,7 +662,10 @@ namespace AJut.UX.Theming
             ThemedColors.SetUnthemedDefault(NumericEditor_NormalBorder, NSColor.Separator);
             ThemedColors.SetUnthemedDefault(NumericEditor_PointerOverBorder, NSColor.ControlAccent);
             ThemedColors.SetUnthemedDefault(NumericEditor_ErrorBorder, NSColor.SystemRed);
-            ThemedColors.SetUnthemedDefault(NumericEditor_StepPointerOverFill, NSColor.ControlAccent);
+            // WinUI3's unthemed step hover is a pale blue gradient at 0.6; unthemed here it is the accent at the same strength
+            const double kStepPointerOverOpacity = 0.6;
+            ThemedColors.SetUnthemedDefault(NumericEditor_IncreasePointerOverFill, NSColor.ControlAccent.ColorWithAlphaComponent((nfloat)kStepPointerOverOpacity));
+            ThemedColors.SetUnthemedDefault(NumericEditor_DecreasePointerOverFill, NSColor.ControlAccent.ColorWithAlphaComponent((nfloat)kStepPointerOverOpacity));
 
             // 9. FlatTreeListView, shared keys
             ThemedColors.SetUnthemedDefault(FlatTree_Selection, NSColor.ControlAccent);
@@ -650,15 +726,18 @@ namespace AJut.UX.Theming
             ThemedColors.SetUnthemedDefault(DockZone_TabStripBackground, NSColor.Clear);
 
             // 13. NumericEditor, AppKit only
-            RegisterAppKitOnly(NumericEditor_FrameBackground, NSColor.ControlBackground, MobileLook.NumericEditor.FrameSurface);
-            RegisterAppKitOnly(NumericEditor_TextBoxBackground, NSColor.TextBackground, MobileLook.NumericEditor.WellSurface);
-            RegisterAppKitOnly(NumericEditor_Text, NSColor.Text, MobileLook.NumericEditor.Number);
-            RegisterAppKitOnly(NumericEditor_ReadOnlyText, NSColor.DisabledControlText, MobileLook.NumericEditor.ReadOnlyText);
-            RegisterAppKitOnly(NumericEditor_Label, NSColor.SecondaryLabel, MobileLook.NumericEditor.Label);
-            RegisterAppKitOnly(NumericEditor_StepGlyph, NSColor.Label, MobileLook.NumericEditor.StepGlyph);
+            RegisterAppKitOnly(NumericEditor_FrameBackground, NSColor.ControlBackground, "AJut_Brush_PopOutControlBackground");
+            RegisterAppKitOnly(NumericEditor_ReadOnlyFrameBackground, NSColor.UnderPageBackground, MobileLook.NumericEditor.FrameSurfaceDisabled);
+            ThemedColors.SetUnthemedDefault(NumericEditor_ReadOnlyBorder, NSColor.Separator);
+            RegisterAppKitOnly(NumericEditor_TextBoxBackground, NSColor.TextBackground, "AJut_Brush_TextBoxBackground");
+            RegisterAppKitOnly(NumericEditor_Text, NSColor.Text, "TextControlForeground");
+            RegisterAppKitOnly(NumericEditor_ReadOnlyText, NSColor.DisabledControlText, "TextControlForegroundDisabled");
+            RegisterAppKitOnly(NumericEditor_Label, NSColor.SecondaryLabel, "TextControlHeaderForeground");
+            RegisterAppKitOnly(NumericEditor_Mark, NSColor.Label, "AJut_Brush_NormalText");
 
             // 14. DockPanelToolbarView, shared keys. Unthemed the buttons are macOS control colors,
-            //     checked is the accent, and hover and pressed are translucent label grays.
+            //     checked is the accent with the text macOS puts on it, and hover and pressed are
+            //     translucent label grays under the control text.
             ThemedColors.SetUnthemedDefault(DockPanelToolbar_Background, NSColor.UnderPageBackground);
             ThemedColors.SetUnthemedDefault(DockPanelToolbar_Border, NSColor.Separator);
             ThemedColors.SetUnthemedDefault(DockPanelAddButton_NormalBackground, NSColor.Control);
@@ -666,18 +745,23 @@ namespace AJut.UX.Theming
             ThemedColors.SetUnthemedDefault(DockPanelAddButton_NormalForeground, NSColor.ControlText);
             ThemedColors.SetUnthemedDefault(DockPanelAddButton_PointerOverBackground, NSColor.QuaternaryLabel);
             ThemedColors.SetUnthemedDefault(DockPanelAddButton_PressedBackground, NSColor.TertiaryLabel);
+            ThemedColors.SetUnthemedDefault(DockPanelAddButton_PressedForeground, NSColor.ControlText);
             ThemedColors.SetUnthemedDefault(DockPanelAddButton_PlusOverlayForeground, NSColor.ControlAccent);
             ThemedColors.SetUnthemedDefault(DockPanelToggleButton_NormalBackground, NSColor.Control);
             ThemedColors.SetUnthemedDefault(DockPanelToggleButton_NormalBorder, NSColor.Separator);
             ThemedColors.SetUnthemedDefault(DockPanelToggleButton_NormalForeground, NSColor.ControlText);
             ThemedColors.SetUnthemedDefault(DockPanelToggleButton_PointerOverBackground, NSColor.QuaternaryLabel);
             ThemedColors.SetUnthemedDefault(DockPanelToggleButton_PressedBackground, NSColor.TertiaryLabel);
+            ThemedColors.SetUnthemedDefault(DockPanelToggleButton_PressedForeground, NSColor.ControlText);
             ThemedColors.SetUnthemedDefault(DockPanelToggleButton_CheckedBackground, NSColor.ControlAccent);
             ThemedColors.SetUnthemedDefault(DockPanelToggleButton_CheckedBorder, NSColor.ControlAccent);
+            ThemedColors.SetUnthemedDefault(DockPanelToggleButton_CheckedForeground, NSColor.AlternateSelectedControlText);
             ThemedColors.SetUnthemedDefault(DockPanelToggleButton_CheckedPointerOverBackground, NSColor.ControlAccent);
             ThemedColors.SetUnthemedDefault(DockPanelToggleButton_CheckedPointerOverBorder, NSColor.ControlAccent);
+            ThemedColors.SetUnthemedDefault(DockPanelToggleButton_CheckedPointerOverForeground, NSColor.AlternateSelectedControlText);
             ThemedColors.SetUnthemedDefault(DockPanelToggleButton_CheckedPressedBackground, NSColor.ControlAccent);
             ThemedColors.SetUnthemedDefault(DockPanelToggleButton_CheckedPressedBorder, NSColor.ControlAccent);
+            ThemedColors.SetUnthemedDefault(DockPanelToggleButton_CheckedPressedForeground, NSColor.AlternateSelectedControlText);
 
             // 15. DockDropOverlayView, shared keys. Unthemed a widget is a control face with a label
             //     glyph, and engaged it is the accent with the glyph that reads on the accent.
@@ -754,6 +838,86 @@ namespace AJut.UX.Theming
             RegisterAppKitOnly(BumpStack_ButtonBackground, NSColor.WindowBackground, "AJut_Brush_ControlBackground");
             RegisterAppKitOnly(BumpStack_ButtonForeground, NSColor.SecondaryLabel, "AJut_Brush_SymbolForeground");
             RegisterAppKitOnly(BumpStack_ButtonBorder, NSColor.Separator, "AJut_Brush_ButtonBorder");
+
+            // 24. ThemedTextField, shared keys. Unthemed it is a Mac text field's colors: the text background, a separator
+            //     outline that darkens under the pointer, and the keyboard focus color while editing.
+            ThemedColors.SetUnthemedDefault(TextControl_Background, NSColor.TextBackground);
+            ThemedColors.SetUnthemedDefault(TextControl_BackgroundPointerOver, NSColor.TextBackground);
+            ThemedColors.SetUnthemedDefault(TextControl_BackgroundFocused, NSColor.TextBackground);
+            ThemedColors.SetUnthemedDefault(TextControl_BackgroundDisabled, NSColor.ControlBackground);
+            ThemedColors.SetUnthemedDefault(TextControl_Border, NSColor.Separator);
+            ThemedColors.SetUnthemedDefault(TextControl_BorderPointerOver, NSColor.TertiaryLabel);
+            ThemedColors.SetUnthemedDefault(TextControl_BorderFocused, NSColor.KeyboardFocusIndicator);
+            ThemedColors.SetUnthemedDefault(TextControl_BorderDisabled, NSColor.Separator);
+            ThemedColors.SetUnthemedDefault(TextControl_Foreground, NSColor.Text);
+            ThemedColors.SetUnthemedDefault(TextControl_ForegroundFocused, NSColor.Text);
+            ThemedColors.SetUnthemedDefault(TextControl_ForegroundDisabled, NSColor.DisabledControlText);
+            ThemedColors.SetUnthemedDefault(TextControl_PlaceholderForeground, NSColor.PlaceholderText);
+            ThemedColors.SetUnthemedDefault(TextControl_PlaceholderForegroundDisabled, NSColor.DisabledControlText);
+            ThemedColors.SetUnthemedDefault(TextControl_SelectionHighlight, NSColor.SelectedTextBackground);
+
+            // 25. ThemedPopUpButton, shared keys. Unthemed it is a Mac control face, outlined, with the accent while pressed
+            ThemedColors.SetUnthemedDefault(ComboBox_Background, NSColor.Control);
+            ThemedColors.SetUnthemedDefault(ComboBox_BackgroundPointerOver, NSColor.Control);
+            ThemedColors.SetUnthemedDefault(ComboBox_BackgroundPressed, NSColor.QuaternaryLabel);
+            ThemedColors.SetUnthemedDefault(ComboBox_BackgroundFocused, NSColor.Control);
+            ThemedColors.SetUnthemedDefault(ComboBox_BackgroundDisabled, NSColor.ControlBackground);
+            ThemedColors.SetUnthemedDefault(ComboBox_Border, NSColor.Separator);
+            ThemedColors.SetUnthemedDefault(ComboBox_BorderPointerOver, NSColor.TertiaryLabel);
+            ThemedColors.SetUnthemedDefault(ComboBox_BorderPressed, NSColor.ControlAccent);
+            ThemedColors.SetUnthemedDefault(ComboBox_BorderFocused, NSColor.KeyboardFocusIndicator);
+            ThemedColors.SetUnthemedDefault(ComboBox_BorderDisabled, NSColor.Separator);
+            ThemedColors.SetUnthemedDefault(ComboBox_Foreground, NSColor.ControlText);
+            ThemedColors.SetUnthemedDefault(ComboBox_ForegroundPointerOver, NSColor.ControlText);
+            ThemedColors.SetUnthemedDefault(ComboBox_ForegroundPressed, NSColor.ControlText);
+            ThemedColors.SetUnthemedDefault(ComboBox_ForegroundFocused, NSColor.ControlText);
+            ThemedColors.SetUnthemedDefault(ComboBox_ForegroundDisabled, NSColor.DisabledControlText);
+            ThemedColors.SetUnthemedDefault(ComboBox_Glyph, NSColor.SecondaryLabel);
+            ThemedColors.SetUnthemedDefault(ComboBox_GlyphFocused, NSColor.SecondaryLabel);
+            ThemedColors.SetUnthemedDefault(ComboBox_GlyphDisabled, NSColor.TertiaryLabel);
+
+            // 26. ThemedCheckBox, shared keys, every part in every check and interaction. Unthemed it is a Mac check box's
+            //     colors: a control face outlined in the separator, the accent with white glyph when checked or mixed, and
+            //     disabled dimmed.
+            foreach (eCheckBoxCheck check in new[] { eCheckBoxCheck.Unchecked, eCheckBoxCheck.Checked, eCheckBoxCheck.Indeterminate })
+            {
+                bool isMarked = check != eCheckBoxCheck.Unchecked;
+                foreach (eCheckBoxInteraction interaction in new[] { eCheckBoxInteraction.Rest, eCheckBoxInteraction.PointerOver, eCheckBoxInteraction.Pressed, eCheckBoxInteraction.Disabled })
+                {
+                    bool isDisabled = interaction == eCheckBoxInteraction.Disabled;
+                    NSColor markFill = isDisabled ? NSColor.TertiaryLabel : NSColor.ControlAccent;
+                    ThemedColors.SetUnthemedDefault(CheckBoxKey(CheckBox_BoxFillPart, check, interaction), isMarked ? markFill : NSColor.Control);
+                    ThemedColors.SetUnthemedDefault(CheckBoxKey(CheckBox_BoxStrokePart, check, interaction), isMarked ? markFill : NSColor.Separator);
+                    ThemedColors.SetUnthemedDefault(CheckBoxKey(CheckBox_GlyphPart, check, interaction), NSColor.AlternateSelectedControlText);
+                    ThemedColors.SetUnthemedDefault(CheckBoxKey(CheckBox_ForegroundPart, check, interaction), isDisabled ? NSColor.DisabledControlText : NSColor.ControlText);
+                }
+            }
+        }
+
+        /// <summary>
+        /// One of WinUI3's CheckBox keys: <paramref name="part"/> (one of the CheckBox_*Part keys), then the check, then the
+        /// interaction, with nothing for <see cref="eCheckBoxInteraction.Rest"/>
+        /// </summary>
+        internal static string CheckBoxKey (string part, eCheckBoxCheck check, eCheckBoxInteraction interaction)
+        {
+            string checkName;
+            switch (check)
+            {
+                case eCheckBoxCheck.Checked: checkName = "Checked"; break;
+                case eCheckBoxCheck.Indeterminate: checkName = "Indeterminate"; break;
+                default: checkName = "Unchecked"; break;
+            }
+
+            string interactionName;
+            switch (interaction)
+            {
+                case eCheckBoxInteraction.PointerOver: interactionName = "PointerOver"; break;
+                case eCheckBoxInteraction.Pressed: interactionName = "Pressed"; break;
+                case eCheckBoxInteraction.Disabled: interactionName = "Disabled"; break;
+                default: interactionName = String.Empty; break;
+            }
+
+            return part + checkName + interactionName;
         }
 
         // ===========[ Helper Methods ]========================================
@@ -767,6 +931,24 @@ namespace AJut.UX.Theming
         internal static NSColor Srgb (uint argb)
         {
             return new ColorArgb((byte)(argb >> 24), (byte)(argb >> 16), (byte)(argb >> 8), (byte)argb).ToNSColor();
+        }
+
+        // ===========[ Subclasses/structs ]====================================
+        /// <summary>Which of WinUI3's CheckBox key sets a box draws from</summary>
+        internal enum eCheckBoxCheck
+        {
+            Unchecked,
+            Checked,
+            Indeterminate,
+        }
+
+        /// <summary>What the pointer is doing with a box, or that it is disabled, which picks the key within a set</summary>
+        internal enum eCheckBoxInteraction
+        {
+            Rest,
+            PointerOver,
+            Pressed,
+            Disabled,
         }
     }
 }

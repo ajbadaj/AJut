@@ -156,13 +156,13 @@
             const int kSecondBatchCount = 2000;
             const int kThirdBatchCount = 200;
 
-            // 100% increase from batch 1 → 2 - this due to reallocations of OC - it's meant as an acceptable maximum
+            // 100% increase from batch 1 to 2 - this due to reallocations of OC - it's meant as an acceptable maximum
             const double kAcceptablePercentIncrease_1_to_2 = 1.0;
 
-            // 75% increase from batch 2 → 3
+            // 75% increase from batch 2 to 3
             const double kAcceptablePercentIncrease_2_to_3 = 0.75;
 
-            // 100% increase from batch 1 → 3
+            // 100% increase from batch 1 to 3
             const double kAcceptablePercentIncrease_1_to_3 = 1.00;
 
             Stopwatch timer = Stopwatch.StartNew();

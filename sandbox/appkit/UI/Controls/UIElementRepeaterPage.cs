@@ -15,10 +15,10 @@ namespace AJutShowRoomAppKit.UI.Controls
 
         private readonly ObservableCollection<NSView> m_tiles = new ObservableCollection<NSView>();
         private readonly NSTextField m_count;
-        private readonly NSButton m_add;
-        private readonly NSButton m_remove;
-        private readonly NSButton m_move;
-        private readonly NSButton m_clear;
+        private readonly BrushButton m_add;
+        private readonly BrushButton m_remove;
+        private readonly BrushButton m_move;
+        private readonly BrushButton m_clear;
         private int m_tilesMade;
 
         public UIElementRepeaterPage ()
@@ -135,9 +135,9 @@ tiles.Add(tile);"
             m_tiles.Add(tile);
         }
 
-        private static NSButton MakeButton (string title)
+        private static BrushButton MakeButton (string title)
         {
-            return new NSButton { Title = title, BezelStyle = NSBezelStyle.Rounded };
+            return new BrushButton { Title = title };
         }
     }
 }

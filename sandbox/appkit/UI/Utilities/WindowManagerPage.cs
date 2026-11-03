@@ -18,10 +18,10 @@ namespace AJutShowRoomAppKit.UI.Utilities
         private const double kToolWindowStagger = 28.0;
 
         private readonly EnumToggleStrip m_coordination;
-        private readonly NSButton m_openToolWindow;
-        private readonly NSButton m_hideToolWindows;
-        private readonly NSButton m_showToolWindows;
-        private readonly NSButton m_closeToolWindows;
+        private readonly BrushButton m_openToolWindow;
+        private readonly BrushButton m_hideToolWindows;
+        private readonly BrushButton m_showToolWindows;
+        private readonly BrushButton m_closeToolWindows;
         private readonly NSTextField m_order = ShowroomStyle.Understated(String.Empty);
         private WindowManager m_manager;
         private int m_toolWindowCount;
@@ -156,6 +156,6 @@ windows.Dispose();           // when the app is done with it"
 
         private string NameOf (NSWindow window) => (window == m_manager?.Root) ? "Showroom" : window.Title;
 
-        private static NSButton MakeButton (string title) => new NSButton { Title = title, BezelStyle = NSBezelStyle.Rounded };
+        private static BrushButton MakeButton (string title) => new BrushButton { Title = title };
     }
 }

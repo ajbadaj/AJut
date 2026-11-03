@@ -82,7 +82,9 @@ namespace AJut.UX.Controls
 
         private static NSView CreateStringEditor (PropertyEditTarget target, BindingSet bindings, bool isReadOnly)
         {
-            var field = new NSTextField { Editable = !isReadOnly };
+            // Read-only is disabled, as WinUI3's row disables its editor, so it shows dimmed rather than as a field that
+            // only refuses typing
+            var field = new ThemedTextField { Editable = !isReadOnly, Enabled = !isReadOnly };
 
             // Commit on Return or leaving the field, the way a XAML TextBox's default binding does,
             // rather than writing the source on every keystroke
@@ -95,8 +97,7 @@ namespace AJut.UX.Controls
 
         private static NSView CreateBooleanEditor (PropertyEditTarget target, BindingSet bindings, bool isReadOnly)
         {
-            var check = new NSButton { Title = String.Empty, Enabled = !isReadOnly };
-            check.SetButtonType(NSButtonType.Switch);
+            var check = new ThemedCheckBox(String.Empty) { Enabled = !isReadOnly };
             bindings.BindChecked(check, target, nameof(PropertyEditTarget.EditValue), _Read, _Write);
             return check;
 

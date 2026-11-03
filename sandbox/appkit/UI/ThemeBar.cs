@@ -18,8 +18,9 @@ namespace AJutShowRoomAppKit.UI
         private static readonly eAppThemeConfiguration[] kThemeChoices = new[] { eAppThemeConfiguration.Dark, eAppThemeConfiguration.Light, eAppThemeConfiguration.UseSameAsOS };
 
         private readonly ToggleStrip m_themeStrip;
-        private readonly NSButton m_useThemesCheck;
-        private readonly NSButton m_touchCheck;
+        private readonly ThemedCheckBox m_useThemesCheck;
+        private readonly ThemedCheckBox m_touchCheck;
+        private readonly BrushButton m_readoutButton;
         private bool m_touchChoice;
 
         // ===========[ Setup/Construction/Teardown ]===========================
@@ -37,14 +38,15 @@ namespace AJutShowRoomAppKit.UI
             };
             m_themeStrip.SelectionChanged += this.OnThemeStripSelectionChanged;
 
-            m_useThemesCheck = new NSButton { Title = "AJut theme", ToolTip = "Off shows every control unthemed, in the macOS system colors" };
-            m_useThemesCheck.SetButtonType(NSButtonType.Switch);
+            m_useThemesCheck = new ThemedCheckBox { Title = "AJut theme", ToolTip = "Off shows every control unthemed, in the macOS system colors" };
             m_useThemesCheck.State = AppDelegate.UseThemes ? NSCellStateValue.On : NSCellStateValue.Off;
             m_useThemesCheck.Activated += this.OnUseThemesActivated;
 
-            m_touchCheck = new NSButton { Title = "Touch", ToolTip = "The touch palette: lifted button surfaces and no button borders, for touch with no hover" };
-            m_touchCheck.SetButtonType(NSButtonType.Switch);
+            m_touchCheck = new ThemedCheckBox { Title = "Touch", ToolTip = "The touch palette: lifted button surfaces and no button borders, for touch with no hover" };
             m_touchCheck.Activated += this.OnTouchActivated;
+
+            m_readoutButton = new BrushButton { Title = "Copy theme readout", ToolTip = "Copies what every themed surface in this window resolves and paints, as text to paste into a report" };
+            m_readoutButton.Activated += this.OnReadoutActivated;
 
             var row = new FillStack(NSUserInterfaceLayoutOrientation.Horizontal, spacing: 14.0)
             {
@@ -55,6 +57,7 @@ namespace AJutShowRoomAppKit.UI
             row.Add(m_useThemesCheck, alignment: eFillStackCrossAlignment.Center);
             row.Add(m_touchCheck, alignment: eFillStackCrossAlignment.Center);
             row.Add(new NSView(), grows: true);
+            row.Add(m_readoutButton, alignment: eFillStackCrossAlignment.Center);
             row.TranslatesAutoresizingMaskIntoConstraints = false;
             this.AddSubview(row);
             NSLayoutConstraint.ActivateConstraints(new[]
@@ -82,6 +85,7 @@ namespace AJutShowRoomAppKit.UI
             m_themeStrip.SelectionChanged -= this.OnThemeStripSelectionChanged;
             m_useThemesCheck.Activated -= this.OnUseThemesActivated;
             m_touchCheck.Activated -= this.OnTouchActivated;
+            m_readoutButton.Activated -= this.OnReadoutActivated;
         }
 
         // ===========[ Events ]================================================
@@ -104,6 +108,11 @@ namespace AJutShowRoomAppKit.UI
         {
             m_touchChoice = m_touchCheck.State == NSCellStateValue.On;
             this.ApplyTouch();
+        }
+
+        private void OnReadoutActivated (object sender, EventArgs e)
+        {
+            ThemeReadout.CopyFor(this.Window);
         }
 
         // ===========[ Helper Methods ]========================================

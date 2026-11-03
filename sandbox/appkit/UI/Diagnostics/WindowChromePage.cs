@@ -12,7 +12,7 @@ namespace AJutShowRoomAppKit.UI.Diagnostics
     public sealed class WindowChromePage : ShowroomPage
     {
         private readonly NSTextField m_stateText;
-        private readonly NSButton m_openSecondWindow;
+        private readonly BrushButton m_openSecondWindow;
         private WindowChromeStateTracker m_trackedChrome;
         private ThemedWindow m_secondWindow;
 
@@ -22,8 +22,7 @@ namespace AJutShowRoomAppKit.UI.Diagnostics
             m_stateText = ShowroomStyle.Body(String.Empty);
             this.AddDemo(m_stateText);
 
-            m_openSecondWindow = new NSButton { Title = "Open a second ThemedWindow" };
-            m_openSecondWindow.BezelStyle = NSBezelStyle.Rounded;
+            m_openSecondWindow = new BrushButton { Title = "Open a second ThemedWindow" };
             m_openSecondWindow.Activated += this.OnOpenSecondWindowActivated;
             this.AddDemo(m_openSecondWindow, eFillStackCrossAlignment.Start);
 

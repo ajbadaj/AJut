@@ -641,17 +641,19 @@
                 <Setter Property="Background" Value="{DynamicResource AJut_Brush_ButtonBackgroundPressed}"/>
                 <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommonPress}"/>
             </Trigger>
+            <!-- Shown: the dark highlight under the light text, which reads in both themes, with the highlight as its
+                 border; under the pointer the border brightens and the fill holds, as on WinUI3 and AppKit -->
             <Trigger Property="IsChecked" Value="True">
-                <Setter Property="Background" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_PrimaryHighlightDark}"/>
                 <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
-                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_ImportantText}"/>
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_HighContrastText}"/>
             </Trigger>
             <MultiTrigger>
                 <MultiTrigger.Conditions>
                     <Condition Property="IsChecked" Value="True"/>
                     <Condition Property="IsMouseOver" Value="True"/>
                 </MultiTrigger.Conditions>
-                <Setter Property="Background" Value="{DynamicResource AJut_Brush_PrimaryHighlightBright}"/>
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_PrimaryHighlightDark}"/>
                 <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightBright}"/>
             </MultiTrigger>
         </Style.Triggers>

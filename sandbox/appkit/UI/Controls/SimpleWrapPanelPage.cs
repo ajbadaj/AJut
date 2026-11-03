@@ -17,7 +17,7 @@ namespace AJutShowRoomAppKit.UI.Controls
         private const double kCornerRadius = 4.0;
 
         private readonly SimpleWrapPanel m_chips = new SimpleWrapPanel();
-        private readonly NSButton m_toggle;
+        private readonly BrushButton m_toggle;
         private NSView m_epsilon;
 
         public SimpleWrapPanelPage ()
@@ -32,7 +32,7 @@ namespace AJutShowRoomAppKit.UI.Controls
             this.AddHeading("Chips in a fixed width");
             this.AddText("Epsilon starts hidden: the button brings it back into the flow between Delta and Zeta. AppKit tells no parent when a subview hides or shows, so the button sets NeedsLayout on the panel.");
 
-            m_toggle = new NSButton { Title = "Show or hide Epsilon", BezelStyle = NSBezelStyle.Rounded };
+            m_toggle = new BrushButton { Title = "Show or hide Epsilon" };
             m_toggle.Activated += this.OnToggleEpsilon;
             this.AddDemo(m_toggle, eFillStackCrossAlignment.Start);
 
@@ -54,13 +54,12 @@ namespace AJutShowRoomAppKit.UI.Controls
             this.AddHeading("Stock controls across the page");
             this.AddText("Each control at its own size, spaced by its visible edges: push buttons, a checkbox, a switch, a pop-up button, a label, and a plain view given a 24 point frame. Narrow the window and the line wraps.");
             var stock = new SimpleWrapPanel { HorizontalSpacing = kStockHorizontalSpacing, VerticalSpacing = kStockVerticalSpacing };
-            stock.AddSubview(new NSButton { Title = "Push button", BezelStyle = NSBezelStyle.Rounded });
-            stock.AddSubview(new NSButton { Title = "A longer push button", BezelStyle = NSBezelStyle.Rounded });
-            var checkbox = new NSButton { Title = "Checkbox" };
-            checkbox.SetButtonType(NSButtonType.Switch);
+            stock.AddSubview(new BrushButton { Title = "Push button" });
+            stock.AddSubview(new BrushButton { Title = "A longer push button" });
+            var checkbox = new ThemedCheckBox { Title = "Checkbox" };
             stock.AddSubview(checkbox);
             stock.AddSubview(new NSSwitch());
-            var popUp = new NSPopUpButton();
+            var popUp = new ThemedPopUpButton();
             popUp.AddItems(new[] { "Pop-up button", "Second choice" });
             stock.AddSubview(popUp);
             NSTextField label = NSTextField.CreateLabel("A label");

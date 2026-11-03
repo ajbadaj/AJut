@@ -115,7 +115,7 @@ namespace AJutShowRoomAppKit.UI.Controls
         private const double kGridHeight = 420.0;
 
         private readonly PropertyGrid m_grid;
-        private readonly NSButton m_readOnlyCheck;
+        private readonly ThemedCheckBox m_readOnlyCheck;
 
         // SetSingleItemSource keeps PropertyGridSample's members; Offset's type is a sub-object the grid expands, which
         // the generic doesn't reach, so it is kept here. Without it a fully trimmed build shows Offset with no X or Y.
@@ -123,8 +123,7 @@ namespace AJutShowRoomAppKit.UI.Controls
         public PropertyGridPage ()
             : base("PropertyGrid", "Give it an object and it shows a row per public property, with an editor picked by the property's type or a [PGEditor] key. Sub-objects expand, lists can add, remove and drag to reorder, and the PG* attributes label, group, order, hide and show rows.")
         {
-            m_readOnlyCheck = new NSButton { Title = "Read-only grid" };
-            m_readOnlyCheck.SetButtonType(NSButtonType.Switch);
+            m_readOnlyCheck = new ThemedCheckBox { Title = "Read-only grid" };
             m_readOnlyCheck.Activated += this.OnReadOnlyActivated;
             this.AddDemo(m_readOnlyCheck, eFillStackCrossAlignment.Start);
 

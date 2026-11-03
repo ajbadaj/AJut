@@ -96,18 +96,23 @@ namespace AJut.UX.Theming
         public const string DockPanelToggleButton_NormalForeground = "AJut_DockPanelToggleButton_NormalForeground";
         public const string DockPanelToggleButton_PointerOverBackground = "AJut_DockPanelToggleButton_PointerOverBackground";
         public const string DockPanelToggleButton_PressedBackground = "AJut_DockPanelToggleButton_PressedBackground";
+        public const string DockPanelToggleButton_PressedForeground = "AJut_DockPanelToggleButton_PressedForeground";
         public const string DockPanelToggleButton_CheckedBackground = "AJut_DockPanelToggleButton_CheckedBackground";
         public const string DockPanelToggleButton_CheckedBorderBrush = "AJut_DockPanelToggleButton_CheckedBorderBrush";
+        public const string DockPanelToggleButton_CheckedForeground = "AJut_DockPanelToggleButton_CheckedForeground";
         public const string DockPanelToggleButton_CheckedPointerOverBackground = "AJut_DockPanelToggleButton_CheckedPointerOverBackground";
         public const string DockPanelToggleButton_CheckedPointerOverBorderBrush = "AJut_DockPanelToggleButton_CheckedPointerOverBorderBrush";
+        public const string DockPanelToggleButton_CheckedPointerOverForeground = "AJut_DockPanelToggleButton_CheckedPointerOverForeground";
         public const string DockPanelToggleButton_CheckedPressedBackground = "AJut_DockPanelToggleButton_CheckedPressedBackground";
         public const string DockPanelToggleButton_CheckedPressedBorderBrush = "AJut_DockPanelToggleButton_CheckedPressedBorderBrush";
+        public const string DockPanelToggleButton_CheckedPressedForeground = "AJut_DockPanelToggleButton_CheckedPressedForeground";
 
         public const string DockPanelAddButton_NormalBackground = "AJut_DockPanelAddButton_NormalBackground";
         public const string DockPanelAddButton_NormalBorderBrush = "AJut_DockPanelAddButton_NormalBorderBrush";
         public const string DockPanelAddButton_NormalForeground = "AJut_DockPanelAddButton_NormalForeground";
         public const string DockPanelAddButton_PointerOverBackground = "AJut_DockPanelAddButton_PointerOverBackground";
         public const string DockPanelAddButton_PressedBackground = "AJut_DockPanelAddButton_PressedBackground";
+        public const string DockPanelAddButton_PressedForeground = "AJut_DockPanelAddButton_PressedForeground";
         public const string DockPanelAddButton_PlusOverlayForeground = "AJut_DockPanelAddButton_PlusOverlayForeground";
 
         public const string DockPanelToolbar_NormalBackground = "AJut_DockPanelToolbar_NormalBackground";
@@ -232,17 +237,22 @@ namespace AJut.UX.Theming
                 { "AJut_DockPanelToggleButton_NormalForeground", Alias("AJut_Color_NormalText") },
                 { "AJut_DockPanelToggleButton_PointerOverBackground", Alias("AJut_Color_MouseInteractionHighlight") },
                 { "AJut_DockPanelToggleButton_PressedBackground", Alias("AJut_Color_PrimaryHighlightDark") },
-                { "AJut_DockPanelToggleButton_CheckedBackground", Alias("AJut_Color_PrimaryHighlight") },
+                { "AJut_DockPanelToggleButton_PressedForeground", Alias("AJut_Color_HighContrastText") },
+                { "AJut_DockPanelToggleButton_CheckedBackground", Alias("AJut_Color_PrimaryHighlightDark") },
                 { "AJut_DockPanelToggleButton_CheckedBorderBrush", Alias("AJut_Color_PrimaryHighlight") },
-                { "AJut_DockPanelToggleButton_CheckedPointerOverBackground", Alias("AJut_Color_PrimaryHighlightBright") },
+                { "AJut_DockPanelToggleButton_CheckedForeground", Alias("AJut_Color_HighContrastText") },
+                { "AJut_DockPanelToggleButton_CheckedPointerOverBackground", Alias("AJut_Color_PrimaryHighlightDark") },
                 { "AJut_DockPanelToggleButton_CheckedPointerOverBorderBrush", Alias("AJut_Color_PrimaryHighlightBright") },
+                { "AJut_DockPanelToggleButton_CheckedPointerOverForeground", Alias("AJut_Color_HighContrastText") },
                 { "AJut_DockPanelToggleButton_CheckedPressedBackground", Alias("AJut_Color_PrimaryHighlightDark") },
                 { "AJut_DockPanelToggleButton_CheckedPressedBorderBrush", Alias("AJut_Color_PrimaryHighlightDark") },
+                { "AJut_DockPanelToggleButton_CheckedPressedForeground", Alias("AJut_Color_HighContrastText") },
                 { "AJut_DockPanelAddButton_NormalBackground", Alias("AJut_Color_InnerPanelBackground") },
                 { "AJut_DockPanelAddButton_NormalBorderBrush", Alias("AJut_Color_ButtonBorder") },
                 { "AJut_DockPanelAddButton_NormalForeground", Alias("AJut_Color_NormalText") },
                 { "AJut_DockPanelAddButton_PointerOverBackground", Alias("AJut_Color_MouseInteractionHighlight") },
                 { "AJut_DockPanelAddButton_PressedBackground", Alias("AJut_Color_PrimaryHighlightDark") },
+                { "AJut_DockPanelAddButton_PressedForeground", Alias("AJut_Color_HighContrastText") },
                 { "AJut_DockPanelAddButton_PlusOverlayForeground", Alias("AJut_Color_PrimaryHighlightBright") },
                 { "AJut_DockPanelToolbar_NormalBackground", Alias("AJut_Color_PanelBackground") },
                 { "AJut_DockPanelToolbar_NormalBorderBrush", Alias("AJut_Color_BorderCommon") },

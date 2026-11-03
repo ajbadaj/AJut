@@ -87,7 +87,7 @@ namespace AJutShowRoomAppKit.UI.Diagnostics
                 new StateSample("Read-only", MakeEditorSized(new NumericEditor { Value = 42, IsReadOnly = true })),
                 new StateSample("With a label", MakeEditorSized(new NumericEditor { Value = 42, Label = "Size" }))
             );
-            this.AddText("The editor is the look the iOS and Android editors share: one frame on the pop-out surface with the number in a shaded well between its minus and plus. Focused holds while the page keeps its focus; click another sample's field to move it. Move over a frame to see its border brighten, over a minus or plus for its wash of the bright highlight, and press one for the full highlight.");
+            this.AddText("The editor is the flagship look, WinUI3's: a frame on the pop-out surface with the number in a sunk well, and a column on the right that is increase over its top half and decrease over its bottom half, with a # under both. Focused holds while the page keeps its focus; click another sample's field to move it. Move over a frame to see its border brighten, over the top or bottom of the column for the bright highlight, and press one for the dark sheen.");
 
             // 4. ColorEditIngressControl
             this.AddHeading("ColorEditIngressControl");
@@ -97,13 +97,13 @@ namespace AJutShowRoomAppKit.UI.Diagnostics
             );
             this.AddText("While its Colors panel is open, the swatch's border takes the highlight.");
 
-            // 5. The macOS controls AJut leaves alone, for comparison
-            this.AddHeading("macOS's own controls, not themed by AJut (they follow the system appearance only)");
+            // 5. The stock macOS controls, drawn the AJut way by AJut's themed versions
+            this.AddHeading("ThemedCheckBox, ThemedTextField and EnumComboBox (a ThemedPopUpButton)");
             this.AddStates(
                 new StateSample("Check box, on", MakeCheckBox(isOn: true, isEnabled: true)),
                 new StateSample("Check box, off", MakeCheckBox(isOn: false, isEnabled: true)),
                 new StateSample("Check box, disabled", MakeCheckBox(isOn: true, isEnabled: false)),
-                new StateSample("Text field", MakeTextFieldSized(new NSTextField { StringValue = "Text" })),
+                new StateSample("Text field", MakeTextFieldSized(new ThemedTextField { StringValue = "Text" })),
                 new StateSample("EnumComboBox (a pop-up button)", new EnumComboBox { SelectedItem = eAppThemeConfiguration.Dark })
             );
 
@@ -125,10 +125,14 @@ class PressedBrushButton : BrushButton
         }
 
         // ===========[ Helper Methods ]========================================
-        // One heading's samples in a row, each over its label
+        // One heading's samples in a row, each over its label. The row wraps: a row as wide as all its samples set the page's
+        // smallest width, and so the window's, which a long row put past the screen's edge with nothing left to shrink.
         private void AddStates (params StateSample[] samples)
         {
-            var row = new FillStack(NSUserInterfaceLayoutOrientation.Horizontal, spacing: 18.0);
+            const double kSampleSpacing = 18.0;
+            const double kLineSpacing = 12.0;
+
+            var row = new SimpleWrapPanel { HorizontalSpacing = kSampleSpacing, VerticalSpacing = kLineSpacing };
             foreach (StateSample sample in samples)
             {
                 var column = new FillStack(NSUserInterfaceLayoutOrientation.Vertical, spacing: 6.0);
@@ -144,10 +148,10 @@ class PressedBrushButton : BrushButton
                 NSLayoutConstraint hugContent = column.WidthAnchor.ConstraintEqualTo((nfloat)0);
                 hugContent.Priority = caption.GetContentCompressionResistancePriority(NSLayoutConstraintOrientation.Horizontal) - 1f;
                 hugContent.Active = true;
-                row.Add(column);
+                row.AddSubview(column);
             }
 
-            this.AddDemo(row, eFillStackCrossAlignment.Start);
+            this.AddDemo(row);
         }
 
         private static GeometryButton MakeShape (GeometryButton button)
@@ -207,10 +211,9 @@ class PressedBrushButton : BrushButton
             NSNotificationCenter.DefaultCenter.PostNotificationName(NSControl.TextDidChangeNotification, editor.TextField);
         }
 
-        private static NSButton MakeCheckBox (bool isOn, bool isEnabled)
+        private static ThemedCheckBox MakeCheckBox (bool isOn, bool isEnabled)
         {
-            var check = new NSButton { Title = "Check box", Enabled = isEnabled };
-            check.SetButtonType(NSButtonType.Switch);
+            var check = new ThemedCheckBox { Title = "Check box", Enabled = isEnabled };
             check.State = isOn ? NSCellStateValue.On : NSCellStateValue.Off;
             return check;
         }

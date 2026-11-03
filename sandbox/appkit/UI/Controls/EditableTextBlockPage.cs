@@ -15,7 +15,7 @@ namespace AJutShowRoomAppKit.UI.Controls
         private readonly BindingSet m_bindings = new BindingSet();
         private readonly EditableTextBlock m_bound = new EditableTextBlock();
         private readonly EditableTextBlock m_manual = new EditableTextBlock { Text = "Only code starts this one", EditTextInstigatorAction = eEditTextInstigator.Manually };
-        private readonly NSButton m_editFromCode;
+        private readonly BrushButton m_editFromCode;
 
         public EditableTextBlockPage ()
             : base("EditableTextBlock", "Text that reads as a label until it is double-clicked, then edits in place. Return keeps the edit, Escape puts back what was there, and the edit follows into the model as it is typed. Giving up focus, with Tab or a click into something else, ends the edit the LostFocusEditClose way.")
@@ -30,13 +30,11 @@ namespace AJutShowRoomAppKit.UI.Controls
             m_bindings.BindLabel(readout, m_settings, nameof(DemoSettings.Name), this.ReadNameText);
             this.AddLabeledDemo("Model says", readout);
 
-            var readOnlyCheck = new NSButton { Title = "Read only (the text can still be selected)" };
-            readOnlyCheck.SetButtonType(NSButtonType.Switch);
+            var readOnlyCheck = new ThemedCheckBox { Title = "Read only (the text can still be selected)" };
             m_bindings.BindChecked(readOnlyCheck, m_settings, nameof(DemoSettings.IsReadOnly), this.ReadIsReadOnly, this.WriteIsReadOnly);
             this.AddDemo(readOnlyCheck, eFillStackCrossAlignment.Start);
 
-            var enabledCheck = new NSButton { Title = "Enabled" };
-            enabledCheck.SetButtonType(NSButtonType.Switch);
+            var enabledCheck = new ThemedCheckBox { Title = "Enabled" };
             m_bindings.BindChecked(enabledCheck, m_settings, nameof(DemoSettings.IsEnabled), this.ReadIsEnabled, this.WriteIsEnabled);
             this.AddDemo(enabledCheck, eFillStackCrossAlignment.Start);
 
@@ -65,8 +63,7 @@ bindings.BindText(
             this.AddLabeledDemo("Wrapping", Sized(new EditableTextBlock { Text = "A longer name that wraps onto a second line when the control is narrower than the text", IsTextWrapping = true }));
 
             this.AddLabeledDemo("Manually", Sized(m_manual));
-            m_editFromCode = new NSButton { Title = "IsEditing = true" };
-            m_editFromCode.BezelStyle = NSBezelStyle.Rounded;
+            m_editFromCode = new BrushButton { Title = "IsEditing = true" };
             m_editFromCode.Activated += this.OnEditFromCodeActivated;
             this.AddLabeledDemo("Start it from code", m_editFromCode);
         }

@@ -192,7 +192,7 @@ namespace AJut.UX.Controls
             switch (state)
             {
                 case eManagedButtonState.PointerOver: return new SurfaceColors(ThemedColors.Get(ThemedColorKeys.DockPanelAddButton_PointerOverBackground), foreground, border);
-                case eManagedButtonState.Pressed: return new SurfaceColors(ThemedColors.Get(ThemedColorKeys.DockPanelAddButton_PressedBackground), foreground, border);
+                case eManagedButtonState.Pressed: return new SurfaceColors(ThemedColors.Get(ThemedColorKeys.DockPanelAddButton_PressedBackground), ThemedColors.Get(ThemedColorKeys.DockPanelAddButton_PressedForeground), border);
                 default: return new SurfaceColors(ThemedColors.Get(ThemedColorKeys.DockPanelAddButton_NormalBackground), foreground, border);
             }
         }
@@ -245,27 +245,39 @@ namespace AJut.UX.Controls
 
         protected override SurfaceColors GetColorsForState (eManagedButtonState state)
         {
-            NSColor foreground = ThemedColors.Get(ThemedColorKeys.DockPanelToggleButton_NormalForeground);
             if (m_isChecked)
             {
                 switch (state)
                 {
                     case eManagedButtonState.PointerOver:
-                        return new SurfaceColors(ThemedColors.Get(ThemedColorKeys.DockPanelToggleButton_CheckedPointerOverBackground), foreground, ThemedColors.Get(ThemedColorKeys.DockPanelToggleButton_CheckedPointerOverBorder));
+                        return new SurfaceColors(
+                            ThemedColors.Get(ThemedColorKeys.DockPanelToggleButton_CheckedPointerOverBackground),
+                            ThemedColors.Get(ThemedColorKeys.DockPanelToggleButton_CheckedPointerOverForeground),
+                            ThemedColors.Get(ThemedColorKeys.DockPanelToggleButton_CheckedPointerOverBorder)
+                        );
 
                     case eManagedButtonState.Pressed:
-                        return new SurfaceColors(ThemedColors.Get(ThemedColorKeys.DockPanelToggleButton_CheckedPressedBackground), foreground, ThemedColors.Get(ThemedColorKeys.DockPanelToggleButton_CheckedPressedBorder));
+                        return new SurfaceColors(
+                            ThemedColors.Get(ThemedColorKeys.DockPanelToggleButton_CheckedPressedBackground),
+                            ThemedColors.Get(ThemedColorKeys.DockPanelToggleButton_CheckedPressedForeground),
+                            ThemedColors.Get(ThemedColorKeys.DockPanelToggleButton_CheckedPressedBorder)
+                        );
 
                     default:
-                        return new SurfaceColors(ThemedColors.Get(ThemedColorKeys.DockPanelToggleButton_CheckedBackground), foreground, ThemedColors.Get(ThemedColorKeys.DockPanelToggleButton_CheckedBorder));
+                        return new SurfaceColors(
+                            ThemedColors.Get(ThemedColorKeys.DockPanelToggleButton_CheckedBackground),
+                            ThemedColors.Get(ThemedColorKeys.DockPanelToggleButton_CheckedForeground),
+                            ThemedColors.Get(ThemedColorKeys.DockPanelToggleButton_CheckedBorder)
+                        );
                 }
             }
 
+            NSColor foreground = ThemedColors.Get(ThemedColorKeys.DockPanelToggleButton_NormalForeground);
             NSColor border = ThemedColors.Get(ThemedColorKeys.DockPanelToggleButton_NormalBorder);
             switch (state)
             {
                 case eManagedButtonState.PointerOver: return new SurfaceColors(ThemedColors.Get(ThemedColorKeys.DockPanelToggleButton_PointerOverBackground), foreground, border);
-                case eManagedButtonState.Pressed: return new SurfaceColors(ThemedColors.Get(ThemedColorKeys.DockPanelToggleButton_PressedBackground), foreground, border);
+                case eManagedButtonState.Pressed: return new SurfaceColors(ThemedColors.Get(ThemedColorKeys.DockPanelToggleButton_PressedBackground), ThemedColors.Get(ThemedColorKeys.DockPanelToggleButton_PressedForeground), border);
                 default: return new SurfaceColors(ThemedColors.Get(ThemedColorKeys.DockPanelToggleButton_NormalBackground), foreground, border);
             }
         }

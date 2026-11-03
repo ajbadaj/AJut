@@ -26,18 +26,18 @@ namespace AJutShowRoomAppKit.UI.Diagnostics
         private const double kProbeHeight = 200.0;
 
         private readonly NSView m_probeArea;
-        private readonly NSButton m_probeGrid;
-        private readonly NSButton m_probeTree;
-        private readonly NSButton m_probePopupMenuButton;
-        private readonly NSButton m_probeEditableTextBlock;
-        private readonly NSButton m_probeBusyWait;
-        private readonly NSButton m_probeSvg;
-        private readonly NSButton m_probeWrapPanel;
-        private readonly NSButton m_probePathSelection;
-        private readonly NSButton m_probeBumpStack;
-        private readonly NSButton m_probeWindowManager;
-        private readonly NSButton m_probeAutoGrid;
-        private readonly NSButton m_probeRepeater;
+        private readonly BrushButton m_probeGrid;
+        private readonly BrushButton m_probeTree;
+        private readonly BrushButton m_probePopupMenuButton;
+        private readonly BrushButton m_probeEditableTextBlock;
+        private readonly BrushButton m_probeBusyWait;
+        private readonly BrushButton m_probeSvg;
+        private readonly BrushButton m_probeWrapPanel;
+        private readonly BrushButton m_probePathSelection;
+        private readonly BrushButton m_probeBumpStack;
+        private readonly BrushButton m_probeWindowManager;
+        private readonly BrushButton m_probeAutoGrid;
+        private readonly BrushButton m_probeRepeater;
 
         // Outlives every repeater probed, as a view model's collection outlives its view
         private readonly ObservableCollection<NSView> m_repeatedViews = new ObservableCollection<NSView>
@@ -54,63 +54,51 @@ namespace AJutShowRoomAppKit.UI.Diagnostics
         public LeakProbePage ()
             : base("Leak Probe", "Shows a control in this window with its rows on screen, takes it out, drops it without Dispose, and says whether it was collected. Collected is the pass; still alive means something it holds leads back to it.")
         {
-            m_probeGrid = new NSButton { Title = "Probe a PropertyGrid" };
-            m_probeGrid.BezelStyle = NSBezelStyle.Rounded;
+            m_probeGrid = new BrushButton { Title = "Probe a PropertyGrid" };
             m_probeGrid.Activated += this.OnProbeGridActivated;
             this.AddDemo(m_probeGrid, eFillStackCrossAlignment.Start);
 
-            m_probeTree = new NSButton { Title = "Probe a FlatTreeListView" };
-            m_probeTree.BezelStyle = NSBezelStyle.Rounded;
+            m_probeTree = new BrushButton { Title = "Probe a FlatTreeListView" };
             m_probeTree.Activated += this.OnProbeTreeActivated;
             this.AddDemo(m_probeTree, eFillStackCrossAlignment.Start);
 
-            m_probePopupMenuButton = new NSButton { Title = "Probe a PopupMenuButton" };
-            m_probePopupMenuButton.BezelStyle = NSBezelStyle.Rounded;
+            m_probePopupMenuButton = new BrushButton { Title = "Probe a PopupMenuButton" };
             m_probePopupMenuButton.Activated += this.OnProbePopupMenuButtonActivated;
             this.AddDemo(m_probePopupMenuButton, eFillStackCrossAlignment.Start);
 
-            m_probeEditableTextBlock = new NSButton { Title = "Probe an EditableTextBlock, mid edit" };
-            m_probeEditableTextBlock.BezelStyle = NSBezelStyle.Rounded;
+            m_probeEditableTextBlock = new BrushButton { Title = "Probe an EditableTextBlock, mid edit" };
             m_probeEditableTextBlock.Activated += this.OnProbeEditableTextBlockActivated;
             this.AddDemo(m_probeEditableTextBlock, eFillStackCrossAlignment.Start);
 
-            m_probeBusyWait = new NSButton { Title = "Probe a spinning BusyWait overlay" };
-            m_probeBusyWait.BezelStyle = NSBezelStyle.Rounded;
+            m_probeBusyWait = new BrushButton { Title = "Probe a spinning BusyWait overlay" };
             m_probeBusyWait.Activated += this.OnProbeBusyWaitActivated;
             this.AddDemo(m_probeBusyWait, eFillStackCrossAlignment.Start);
 
-            m_probeSvg = new NSButton { Title = "Probe an Svg" };
-            m_probeSvg.BezelStyle = NSBezelStyle.Rounded;
+            m_probeSvg = new BrushButton { Title = "Probe an Svg" };
             m_probeSvg.Activated += this.OnProbeSvgActivated;
             this.AddDemo(m_probeSvg, eFillStackCrossAlignment.Start);
 
-            m_probeWrapPanel = new NSButton { Title = "Probe a SimpleWrapPanel" };
-            m_probeWrapPanel.BezelStyle = NSBezelStyle.Rounded;
+            m_probeWrapPanel = new BrushButton { Title = "Probe a SimpleWrapPanel" };
             m_probeWrapPanel.Activated += this.OnProbeWrapPanelActivated;
             this.AddDemo(m_probeWrapPanel, eFillStackCrossAlignment.Start);
 
-            m_probePathSelection = new NSButton { Title = "Probe a PathSelectionControl, with both buttons" };
-            m_probePathSelection.BezelStyle = NSBezelStyle.Rounded;
+            m_probePathSelection = new BrushButton { Title = "Probe a PathSelectionControl, with both buttons" };
             m_probePathSelection.Activated += this.OnProbePathSelectionActivated;
             this.AddDemo(m_probePathSelection, eFillStackCrossAlignment.Start);
 
-            m_probeBumpStack = new NSButton { Title = "Probe a BumpStack, scrolling" };
-            m_probeBumpStack.BezelStyle = NSBezelStyle.Rounded;
+            m_probeBumpStack = new BrushButton { Title = "Probe a BumpStack, scrolling" };
             m_probeBumpStack.Activated += this.OnProbeBumpStackActivated;
             this.AddDemo(m_probeBumpStack, eFillStackCrossAlignment.Start);
 
-            m_probeWindowManager = new NSButton { Title = "Probe a WindowManager" };
-            m_probeWindowManager.BezelStyle = NSBezelStyle.Rounded;
+            m_probeWindowManager = new BrushButton { Title = "Probe a WindowManager" };
             m_probeWindowManager.Activated += this.OnProbeWindowManagerActivated;
             this.AddDemo(m_probeWindowManager, eFillStackCrossAlignment.Start);
 
-            m_probeAutoGrid = new NSButton { Title = "Probe an AutoGrid" };
-            m_probeAutoGrid.BezelStyle = NSBezelStyle.Rounded;
+            m_probeAutoGrid = new BrushButton { Title = "Probe an AutoGrid" };
             m_probeAutoGrid.Activated += this.OnProbeAutoGridActivated;
             this.AddDemo(m_probeAutoGrid, eFillStackCrossAlignment.Start);
 
-            m_probeRepeater = new NSButton { Title = "Probe a UIElementRepeater, its collection kept" };
-            m_probeRepeater.BezelStyle = NSBezelStyle.Rounded;
+            m_probeRepeater = new BrushButton { Title = "Probe a UIElementRepeater, its collection kept" };
             m_probeRepeater.Activated += this.OnProbeRepeaterActivated;
             this.AddDemo(m_probeRepeater, eFillStackCrossAlignment.Start);
 
@@ -332,7 +320,7 @@ namespace AJutShowRoomAppKit.UI.Diagnostics
             var panel = new SimpleWrapPanel();
             foreach (string text in new[] { "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight" })
             {
-                panel.AddSubview(new NSButton { Title = text, BezelStyle = NSBezelStyle.Rounded });
+                panel.AddSubview(new BrushButton { Title = text });
             }
 
             return panel;
@@ -358,7 +346,7 @@ namespace AJutShowRoomAppKit.UI.Diagnostics
             var stack = new BumpStack { Frame = new CGRect(0, 0, (nfloat)kProbeWidth, (nfloat)kProbeHeight) };
             foreach (string text in new[] { "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten" })
             {
-                stack.Children.Add(new NSButton { Title = text, BezelStyle = NSBezelStyle.Rounded });
+                stack.Children.Add(new BrushButton { Title = text });
             }
 
             stack.LayoutSubtreeIfNeeded();

@@ -9,7 +9,7 @@ namespace AJutShowRoomAppKit.UI.Controls
     {
         private readonly List<PopupMenuItem> m_followedItems = new List<PopupMenuItem>();
         private readonly PopupMenuButton m_options;
-        private readonly NSButton m_openFromCode;
+        private readonly BrushButton m_openFromCode;
         private readonly NSTextField m_picked;
         private readonly NSTextField m_menuState;
 
@@ -40,8 +40,7 @@ namespace AJutShowRoomAppKit.UI.Controls
             m_menuState = ShowroomStyle.Understated("Closed");
             this.AddLabeledDemo("The menu is", m_menuState);
 
-            m_openFromCode = new NSButton { Title = "Open it from code" };
-            m_openFromCode.BezelStyle = NSBezelStyle.Rounded;
+            m_openFromCode = new BrushButton { Title = "Open it from code" };
             m_openFromCode.Activated += this.OnOpenFromCodeActivated;
             this.AddLabeledDemo("IsOpen = true", m_openFromCode);
 

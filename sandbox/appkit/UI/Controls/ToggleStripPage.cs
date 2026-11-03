@@ -14,7 +14,7 @@ namespace AJutShowRoomAppKit.UI.Controls
         private readonly ToggleStrip m_single;
         private readonly NSTextField m_singleSelection;
         private readonly ObservableCollection<string> m_growingItems = new ObservableCollection<string> { "One", "Two" };
-        private readonly NSButton m_addItem;
+        private readonly BrushButton m_addItem;
 
         public ToggleStripPage ()
             : base("ToggleStrip", "Mutually exclusive options, laid out as a strip of toggle buttons. Use it instead of a combo box for two to four choices. AllowMultiSelect and AllowNoSelection loosen the rules, and OverflowBehavior decides what happens when the items do not fit.")
@@ -39,8 +39,7 @@ namespace AJutShowRoomAppKit.UI.Controls
 
             this.AddHeading("Following its source");
             this.AddLabeledDemo("Observable source", new ToggleStrip { ItemsSource = m_growingItems });
-            m_addItem = new NSButton { Title = "Add an item" };
-            m_addItem.BezelStyle = NSBezelStyle.Rounded;
+            m_addItem = new BrushButton { Title = "Add an item" };
             m_addItem.Activated += this.OnAddItemActivated;
             this.AddLabeledDemo(String.Empty, m_addItem);
 

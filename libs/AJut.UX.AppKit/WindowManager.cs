@@ -19,6 +19,7 @@ namespace AJut.UX
     //    and keeps copying as the root's changes.
     //  - RootActivationDeactivation hides the children (orders them out) once no tracked window is key, which is when the
     //    app goes to the background or another of its windows takes over, and shows them when the root is key again.
+    //  - The children stay above the root in every style, as owned windows do on Windows (see RaiseToFront).
     //  - RootMinimizationRestoration follows the root into and out of the Dock.
     //  - There are no global accelerators to hand out (WinUI3's GlobalAccelerators) and no commands to retarget (WPF's):
     //    the app's main menu and its key equivalents already reach whichever window is key, through the responder chain.
@@ -150,12 +151,34 @@ namespace AJut.UX
         protected override void PresentWindow (NSWindow window) => window.MakeKeyAndOrderFront(null);
 
         // A window that just became key is already in front; this keeps the order when the base raises the root over the
-        //  children it just showed
+        //  children it just showed.
+        //
+        // The children stay above the root, as owned windows stay above their owner on Windows. There, raising the root
+        //  can't cover its children; here they are ordinary windows, and the root raised over them hid them behind it: in
+        //  RootActivationDeactivation, coming back to the app by clicking the root showed the hidden children and then put
+        //  the root over them. So raising the root raises its visible children back over it, each just above the root,
+        //  front most child first, which leaves them in their activation order. Clicking the root comes through here too
+        //  (the base raises a window as it activates), so the children come back up over it.
         protected override void RaiseToFront (NSWindow window)
         {
-            if (window.IsVisible)
+            if (!window.IsVisible)
             {
-                window.OrderFront(null);
+                return;
+            }
+
+            window.OrderFront(null);
+            if (window != this.Root)
+            {
+                return;
+            }
+
+            nint rootNumber = window.WindowNumber;
+            foreach (NSWindow child in this.Items)
+            {
+                if ((child != window) && this.IsWindowVisible(child))
+                {
+                    child.OrderWindow(NSWindowOrderingMode.Above, rootNumber);
+                }
             }
         }
 

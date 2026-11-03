@@ -47,7 +47,7 @@ namespace AJut.UX.Controls
     public class PathSelectionControl : ThemedView
     {
         private const double kButtonWidth = 26.0;
-        private const double kCornerRadius = 3.0;
+        private const double kCornerRadius = 5.0;
         private const double kBorderThickness = 1.0;
         private const double kWarningGlyphWidth = 22.0;
         private const double kFontSize = 12.0;
@@ -82,7 +82,7 @@ namespace AJut.UX.Controls
         private bool m_isOpenInExplorerButtonAllowed;
         private string m_textBoxHeader;
         private double m_textBoxHeight = 22.0;
-        private NSEdgeInsets m_textBoxPadding = new NSEdgeInsets(2, 2, 2, 2);
+        private NSEdgeInsets m_textBoxPadding = new NSEdgeInsets(2, 7, 2, 7);
         private bool m_isEnabled = true;
         private bool m_isFocused;
         private PathSelectionRules.Evaluation m_evaluation;
@@ -408,7 +408,7 @@ namespace AJut.UX.Controls
             }
         }
 
-        /// <summary>The space between the field's well and its text</summary>
+        /// <summary>The space between the field's well and its text: 2 above and below and 7 across by default, which keeps the text clear of the pop-out frame</summary>
         public NSEdgeInsets TextBoxPadding
         {
             get => m_textBoxPadding;
@@ -681,6 +681,11 @@ namespace AJut.UX.Controls
 
         // Shows a file selected in its Finder window, or opens a folder in one. A package (an app, a bundle) is a folder on
         //  disk that Finder shows as a file, and opening one launches it, so it is shown selected, as a file is.
+        //
+        // A folder is opened with openURL, which opens a folder in Finder and takes nothing that can be null. The
+        //  Objective-C idiom for it, selectFile:nil inFileViewerRootedAtPath:, passes a nil file, and a .NET binding can
+        //  refuse a null where the Objective-C method takes nil (NSControl.SendAction's does), which is a press that
+        //  does nothing.
         private void RevealInFinder ()
         {
             if (!m_evaluation.IsPathValid || !m_evaluation.DoesPathExist)
@@ -696,7 +701,7 @@ namespace AJut.UX.Controls
             }
             else
             {
-                workspace.SelectFile(null, path);
+                workspace.OpenUrl(NSUrl.FromFilename(path));
             }
         }
 
@@ -880,7 +885,8 @@ namespace AJut.UX.Controls
         //  pointer and while pressed, with the glyph lit on it. The browse button rounds the control's right end.
         private sealed class PathButton : ManagedButton
         {
-            private const double kEndCornerRadius = 2.0;
+            // Inside the frame's 1 point border, so 1 under its corners and the fill meets the border's curve
+            private const double kEndCornerRadius = 4.0;
             private const double kGlyphLineWidth = 1.2;
 
             private readonly WeakReference<PathSelectionControl> m_owner;

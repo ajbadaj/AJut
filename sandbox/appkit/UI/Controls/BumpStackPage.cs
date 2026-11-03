@@ -14,7 +14,7 @@ namespace AJutShowRoomAppKit.UI.Controls
         private const double kChipMargin = 3.0;
 
         private readonly BumpStack m_horizontal;
-        private readonly NSButton m_bringEightIntoView;
+        private readonly BrushButton m_bringEightIntoView;
 
         public BumpStackPage ()
             : base("BumpStack", "A scroll container with a chevron bump button at each end instead of a scroll bar. The buttons appear only when the content overflows, disable at each end, and repeat while held, and the content is inset so scrolling all the way parks a button over empty space. A mouse wheel scrolls a horizontal stack.")
@@ -33,7 +33,7 @@ namespace AJutShowRoomAppKit.UI.Controls
 
             this.AddLabeledDemo("Horizontal (resize narrower to see more)", m_horizontal);
 
-            m_bringEightIntoView = new NSButton { Title = "Bring Eight into view", BezelStyle = NSBezelStyle.Rounded };
+            m_bringEightIntoView = new BrushButton { Title = "Bring Eight into view" };
             m_bringEightIntoView.Activated += this.OnBringEightIntoViewActivated;
             this.AddLabeledDemo("ScrollFirstElementIntoView", m_bringEightIntoView);
 

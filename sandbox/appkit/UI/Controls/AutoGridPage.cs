@@ -15,15 +15,15 @@ namespace AJutShowRoomAppKit.UI.Controls
 
         private readonly AutoGrid m_grid = new AutoGrid { FixedColumnCount = 3 };
         private readonly NSSegmentedControl m_order;
-        private readonly NSStepper m_rows;
-        private readonly NSStepper m_columns;
+        private readonly NumericEditor m_rows;
+        private readonly NumericEditor m_columns;
         private readonly NSTextField m_counts;
-        private readonly NSButton m_shrink;
-        private readonly NSButton m_rowResizers;
-        private readonly NSButton m_columnResizers;
-        private readonly NSButton m_border;
-        private readonly NSButton m_add;
-        private readonly NSButton m_remove;
+        private readonly ThemedCheckBox m_shrink;
+        private readonly ThemedCheckBox m_rowResizers;
+        private readonly ThemedCheckBox m_columnResizers;
+        private readonly ThemedCheckBox m_border;
+        private readonly BrushButton m_add;
+        private readonly BrushButton m_remove;
         private int m_tileCount;
 
         public AutoGridPage ()
@@ -36,11 +36,11 @@ namespace AJutShowRoomAppKit.UI.Controls
             m_order.Activated += this.OnSettingChanged;
             this.AddLabeledDemo("Fill order", m_order);
 
-            m_rows = MakeStepper(-1);
-            m_rows.Activated += this.OnSettingChanged;
+            m_rows = MakeCountEditor(-1);
+            m_rows.ValueChanged += this.OnSettingChanged;
             this.AddLabeledDemo("Fixed rows", m_rows);
-            m_columns = MakeStepper(3);
-            m_columns.Activated += this.OnSettingChanged;
+            m_columns = MakeCountEditor(3);
+            m_columns.ValueChanged += this.OnSettingChanged;
             this.AddLabeledDemo("Fixed columns", m_columns);
             m_counts = ShowroomStyle.Body(string.Empty);
             this.AddDemo(m_counts);
@@ -58,10 +58,10 @@ namespace AJutShowRoomAppKit.UI.Controls
             m_border.Activated += this.OnSettingChanged;
             this.AddDemo(m_border, eFillStackCrossAlignment.Start);
 
-            m_add = new NSButton { Title = "Add a tile", BezelStyle = NSBezelStyle.Rounded };
+            m_add = new BrushButton { Title = "Add a tile" };
             m_add.Activated += this.OnAddTile;
             this.AddDemo(m_add, eFillStackCrossAlignment.Start);
-            m_remove = new NSButton { Title = "Take one away", BezelStyle = NSBezelStyle.Rounded };
+            m_remove = new BrushButton { Title = "Take one away" };
             m_remove.Activated += this.OnRemoveTile;
             this.AddDemo(m_remove, eFillStackCrossAlignment.Start);
 
@@ -88,8 +88,8 @@ bool shown = grid.GetIsInRange(tile);"
         protected override void OnTeardown ()
         {
             m_order.Activated -= this.OnSettingChanged;
-            m_rows.Activated -= this.OnSettingChanged;
-            m_columns.Activated -= this.OnSettingChanged;
+            m_rows.ValueChanged -= this.OnSettingChanged;
+            m_columns.ValueChanged -= this.OnSettingChanged;
             m_shrink.Activated -= this.OnSettingChanged;
             m_rowResizers.Activated -= this.OnSettingChanged;
             m_columnResizers.Activated -= this.OnSettingChanged;
@@ -125,14 +125,16 @@ bool shown = grid.GetIsInRange(tile);"
         private void ApplySettings ()
         {
             m_grid.AutoPopulationOrder = (eAutoPopulationOrder)(int)m_order.SelectedSegment;
-            m_grid.FixedRowCount = m_rows.IntValue;
-            m_grid.FixedColumnCount = m_columns.IntValue;
+            int fixedRows = CountOf(m_rows);
+            int fixedColumns = CountOf(m_columns);
+            m_grid.FixedRowCount = fixedRows;
+            m_grid.FixedColumnCount = fixedColumns;
             m_grid.ShrinkRowColumnsToUtilizedElementCount = m_shrink.State == NSCellStateValue.On;
             m_grid.AddRowResizers = m_rowResizers.State == NSCellStateValue.On;
             m_grid.AddColumnResizers = m_columnResizers.State == NSCellStateValue.On;
             nfloat border = (m_border.State == NSCellStateValue.On) ? 2 : 0;
             m_grid.BorderThickness = new NSEdgeInsets(border, border, border, border);
-            m_counts.StringValue = $"Fixed rows {m_rows.IntValue}, fixed columns {m_columns.IntValue}";
+            m_counts.StringValue = $"Fixed rows {fixedRows}, fixed columns {fixedColumns}";
 
             // A tile with no cell is hidden, as WPF's demo hides one through AutoGrid.IsInRange
             foreach (NSView tile in m_grid.GridChildren)
@@ -161,15 +163,22 @@ bool shown = grid.GetIsInRange(tile);"
             m_grid.AddSubview(tile);
         }
 
-        private static NSStepper MakeStepper (int value)
+        // A count as the flagship pages take one, a NumericEditor kept to an int, from -1 (no fixed count) up
+        private static NumericEditor MakeCountEditor (int value)
         {
-            return new NSStepper { MinValue = -1, MaxValue = kMaxCount, Increment = 1, IntValue = value, ValueWraps = false };
+            const double kEditorWidth = 90.0;
+
+            var editor = new NumericEditor { EnforceNumericType = typeof(int), Minimum = -1, Maximum = kMaxCount, Value = value };
+            editor.TranslatesAutoresizingMaskIntoConstraints = false;
+            editor.WidthAnchor.ConstraintEqualTo((nfloat)kEditorWidth).Active = true;
+            return editor;
         }
 
-        private static NSButton MakeCheckbox (string title)
+        private static int CountOf (NumericEditor editor) => (editor.Value is int count) ? count : -1;
+
+        private static ThemedCheckBox MakeCheckbox (string title)
         {
-            var checkbox = new NSButton { Title = title };
-            checkbox.SetButtonType(NSButtonType.Switch);
+            var checkbox = new ThemedCheckBox { Title = title };
             return checkbox;
         }
     }

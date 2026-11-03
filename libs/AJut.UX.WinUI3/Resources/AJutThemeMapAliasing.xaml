@@ -114,12 +114,16 @@
     <SolidColorBrush x:Key="AJut_DockPanelToggleButton_NormalForeground"               Color="{ThemeResource AJut_Color_NormalText}"/>
     <SolidColorBrush x:Key="AJut_DockPanelToggleButton_PointerOverBackground"          Color="{ThemeResource AJut_Color_MouseInteractionHighlight}"/>
     <SolidColorBrush x:Key="AJut_DockPanelToggleButton_PressedBackground"              Color="{ThemeResource AJut_Color_PrimaryHighlightDark}"/>
-    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_CheckedBackground"              Color="{ThemeResource AJut_Color_PrimaryHighlight}"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_PressedForeground"              Color="{ThemeResource AJut_Color_HighContrastText}"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_CheckedBackground"              Color="{ThemeResource AJut_Color_PrimaryHighlightDark}"/>
     <SolidColorBrush x:Key="AJut_DockPanelToggleButton_CheckedBorderBrush"             Color="{ThemeResource AJut_Color_PrimaryHighlight}"/>
-    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_CheckedPointerOverBackground"   Color="{ThemeResource AJut_Color_PrimaryHighlightBright}"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_CheckedForeground"              Color="{ThemeResource AJut_Color_HighContrastText}"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_CheckedPointerOverBackground"   Color="{ThemeResource AJut_Color_PrimaryHighlightDark}"/>
     <SolidColorBrush x:Key="AJut_DockPanelToggleButton_CheckedPointerOverBorderBrush"  Color="{ThemeResource AJut_Color_PrimaryHighlightBright}"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_CheckedPointerOverForeground"   Color="{ThemeResource AJut_Color_HighContrastText}"/>
     <SolidColorBrush x:Key="AJut_DockPanelToggleButton_CheckedPressedBackground"       Color="{ThemeResource AJut_Color_PrimaryHighlightDark}"/>
     <SolidColorBrush x:Key="AJut_DockPanelToggleButton_CheckedPressedBorderBrush"      Color="{ThemeResource AJut_Color_PrimaryHighlightDark}"/>
+    <SolidColorBrush x:Key="AJut_DockPanelToggleButton_CheckedPressedForeground"       Color="{ThemeResource AJut_Color_HighContrastText}"/>
 
     <!-- ===========[ DockPanelAddButton ]================================== -->
     <SolidColorBrush x:Key="AJut_DockPanelAddButton_NormalBackground"       Color="{ThemeResource AJut_Color_InnerPanelBackground}"/>
@@ -127,6 +131,7 @@
     <SolidColorBrush x:Key="AJut_DockPanelAddButton_NormalForeground"       Color="{ThemeResource AJut_Color_NormalText}"/>
     <SolidColorBrush x:Key="AJut_DockPanelAddButton_PointerOverBackground"  Color="{ThemeResource AJut_Color_MouseInteractionHighlight}"/>
     <SolidColorBrush x:Key="AJut_DockPanelAddButton_PressedBackground"      Color="{ThemeResource AJut_Color_PrimaryHighlightDark}"/>
+    <SolidColorBrush x:Key="AJut_DockPanelAddButton_PressedForeground"      Color="{ThemeResource AJut_Color_HighContrastText}"/>
     <SolidColorBrush x:Key="AJut_DockPanelAddButton_PlusOverlayForeground"  Color="{ThemeResource AJut_Color_PrimaryHighlightBright}"/>
 
     <!-- ===========[ DockPanelAddRemoveToolbar ]============================ -->
