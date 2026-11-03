@@ -2,6 +2,7 @@ namespace AJut.UX.Theming
 {
     using AppKit;
     using CoreAnimation;
+    using ObjCRuntime;
 
     // ===========[ ThemedView ]=================================================
     // A layer-backed NSView whose layer colors come from ThemedColors keys and stay right when the
@@ -26,6 +27,16 @@ namespace AJut.UX.Theming
         public ThemedView ()
         {
             this.WantsLayer = true;
+        }
+
+        /// <summary>
+        /// Used by the runtime when AppKit needs a managed peer for a native view whose peer is gone (one disposed while
+        /// still in a window, say). It only answers AppKit's calls: the native view keeps the layer it has. None of its
+        /// managed state survives a dispose, so a call that needs that state can still fail: dispose it only once AppKit
+        /// is done with it.
+        /// </summary>
+        protected ThemedView (NativeHandle handle) : base(handle)
+        {
         }
 
         // ===========[ Properties ]============================================

@@ -5,6 +5,7 @@ namespace AJut.UX.Controls
     using AJut.UX.Theming;
     using AppKit;
     using Foundation;
+    using ObjCRuntime;
 
     // ===========[ ColorEditIngressControl ]====================================
     // A color swatch that opens the color picker when clicked, the AppKit counterpart of the
@@ -82,6 +83,16 @@ namespace AJut.UX.Controls
                 this,
                 null
             ));
+        }
+
+        /// <summary>
+        /// Used by the runtime when AppKit needs a managed peer for a native view whose peer is gone (one disposed while
+        /// still in a window, say). It only answers AppKit's calls: the native view keeps the well and overlay it has.
+        /// None of its managed state survives a dispose, so a call that needs that state can still fail: dispose it only
+        /// once AppKit is done with it.
+        /// </summary>
+        protected ColorEditIngressControl (NativeHandle handle) : base(handle)
+        {
         }
 
         protected override void Dispose (bool disposing)
@@ -269,6 +280,15 @@ namespace AJut.UX.Controls
 
             private bool m_showsEditLook;
 
+            public EditOverlay ()
+            {
+            }
+
+            // For a peer the runtime makes over an existing native overlay
+            private EditOverlay (NativeHandle handle) : base(handle)
+            {
+            }
+
             public bool ShowsEditLook
             {
                 get => m_showsEditLook;
@@ -327,6 +347,11 @@ namespace AJut.UX.Controls
             public IngressWell (ColorEditIngressControl owner)
             {
                 m_owner = owner;
+            }
+
+            // For a peer the runtime makes over an existing native well, which has no owner to tell
+            private IngressWell (NativeHandle handle) : base(handle)
+            {
             }
 
             // NSColorWell only activates (and opens the panel) on a click in its bezel. A click on the swatch itself

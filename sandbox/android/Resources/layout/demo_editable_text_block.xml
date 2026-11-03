@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="EditableTextBlock"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:alpha="0.7"
+        android:text="Text that reads as a label until it is tapped, then edits in place. Done keeps the edit; the edit follows into the model as it is typed. Back with the keyboard up, or tapping another field, ends the edit the ajutLostFocusEditClose way." />
+
+    <ajut.ux.controls.EditableTextBlock
+        android:id="@+id/demo_editable_text_tap"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp" />
+
+    <TextView
+        android:id="@+id/demo_editable_text_value"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:alpha="0.7" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal">
+
+        <Switch
+            android:id="@+id/demo_editable_text_read_only"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Read only" />
+
+        <Switch
+            android:id="@+id/demo_editable_text_enabled"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:text="Enabled" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="Other gestures, and canceling"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:alpha="0.7"
+        android:text="A double tap, starting with no text: the empty message shows faded and italic, and as the hint while editing." />
+
+    <ajut.ux.controls.EditableTextBlock
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:ajutEditTextInstigatorAction="doubleTap"
+        app:ajutNoTextSetMessage="Double tap to name it" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:alpha="0.7"
+        android:text="A long press, with the caret at the end, and an edit that ends any way but Done is canceled. Edit it, press back, then long press again: the canceled edit comes back." />
+
+    <ajut.ux.controls.EditableTextBlock
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Long press to rename"
+        app:ajutEditTextInstigatorAction="longPress"
+        app:ajutEditTextInitializationBehavior="cursorAtEnd"
+        app:ajutLostFocusEditClose="cancel" />
+</LinearLayout>

@@ -11,9 +11,49 @@
     <attr name="ajutPropagatedAccentColor" format="color" />
   </declare-styleable>
 
+  <declare-styleable name="AJutBusyWait">
+    <attr name="android:text" />
+    <attr name="ajutIsSpinning" format="boolean" />
+    <attr name="ajutIsOverlay" format="boolean" />
+    <attr name="ajutSpinnerSize" format="dimension" />
+    <!-- The values match AJut.UX's eBusyWaitSpinnerDock -->
+    <attr name="ajutSpinnerDock" format="enum">
+      <enum name="left" value="0" />
+      <enum name="top" value="1" />
+      <enum name="right" value="2" />
+      <enum name="bottom" value="3" />
+    </attr>
+  </declare-styleable>
+
   <declare-styleable name="AJutColorEditIngressControl">
     <attr name="ajutEditColor" format="color" />
     <attr name="ajutIsReadOnly" format="boolean" />
+  </declare-styleable>
+
+  <declare-styleable name="AJutEditableTextBlock">
+    <attr name="android:text" />
+    <attr name="android:textSize" />
+    <!-- The framework's own attribute: a ViewGroup ignores it, so the control reads it the way a widget does -->
+    <attr name="android:enabled" />
+    <attr name="ajutIsReadOnly" />
+    <attr name="ajutNoTextSetMessage" format="string" />
+    <!-- The values match AJut.UX's eEditTextTouchInstigator -->
+    <attr name="ajutEditTextInstigatorAction" format="enum">
+      <enum name="manually" value="0" />
+      <enum name="tap" value="1" />
+      <enum name="doubleTap" value="2" />
+      <enum name="longPress" value="3" />
+    </attr>
+    <!-- The values match AJut.UX's eEditTextInitializationBehavior -->
+    <attr name="ajutEditTextInitializationBehavior" format="enum">
+      <enum name="selectAll" value="0" />
+      <enum name="cursorAtEnd" value="1" />
+    </attr>
+    <!-- The values match AJut.UX's eEditTextCloseAction -->
+    <attr name="ajutLostFocusEditClose" format="enum">
+      <enum name="cancel" value="0" />
+      <enum name="apply" value="1" />
+    </attr>
   </declare-styleable>
 
   <declare-styleable name="AJutGeometryButton">
@@ -103,6 +143,59 @@
       <enum name="Single" value="8" />
       <enum name="Double" value="9" />
       <enum name="Decimal" value="10" />
+    </attr>
+  </declare-styleable>
+
+  <declare-styleable name="AJutFlatTreeListView">
+    <attr name="ajutIncludeRoot" format="boolean" />
+    <attr name="ajutStartItemsExpanded" format="boolean" />
+    <attr name="ajutIsDragDropReorderEnabled" format="boolean" />
+    <!-- The framework's own attribute: a ViewGroup ignores it, so the tree reads it the way a widget does -->
+    <attr name="android:enabled" />
+  </declare-styleable>
+
+  <declare-styleable name="AJutPropertyGrid">
+    <attr name="ajutIsReadOnly" />
+    <attr name="android:enabled" />
+  </declare-styleable>
+
+  <declare-styleable name="AJutSimpleWrapPanel">
+    <attr name="ajutHorizontalSpacing" format="dimension" />
+    <attr name="ajutVerticalSpacing" format="dimension" />
+  </declare-styleable>
+
+  <declare-styleable name="AJutAutoGrid">
+    <!-- -1 for no limit, as AJut.UX's AutoGridLayout.kUnlimited -->
+    <attr name="ajutFixedColumnCount" format="integer" />
+    <attr name="ajutFixedRowCount" format="integer" />
+    <!-- The values match AJut.UX's eAutoPopulationOrder -->
+    <attr name="ajutAutoPopulationOrder" format="enum">
+      <enum name="columnsFirst" value="0" />
+      <enum name="rowsFirst" value="1" />
+      <enum name="auto" value="2" />
+    </attr>
+    <attr name="ajutAddColumnResizers" format="boolean" />
+    <attr name="ajutAddRowResizers" format="boolean" />
+    <attr name="ajutSizerLength" format="dimension" />
+    <attr name="ajutShrinkRowColumnsToUtilizedElementCount" format="boolean" />
+    <attr name="ajutMinElementWidth" format="dimension" />
+    <attr name="ajutMinElementHeight" format="dimension" />
+    <!-- All four sides, as android:padding is; SetBorderThickness sets each side from code -->
+    <attr name="ajutBorderThickness" />
+    <attr name="ajutBorderBrush" format="color" />
+    <!-- The framework's own attribute: a ViewGroup ignores it, so the grid reads it the way a widget does -->
+    <attr name="android:enabled" />
+  </declare-styleable>
+
+  <declare-styleable name="AJutSvg">
+    <!-- A raw resource holding the svg file, @raw/name -->
+    <attr name="ajutSvgSource" format="reference" />
+    <!-- The values match AJut.UX's ePathStretch -->
+    <attr name="ajutSvgStretch" format="enum">
+      <enum name="none" value="0" />
+      <enum name="fill" value="1" />
+      <enum name="uniform" value="2" />
+      <enum name="uniformToFill" value="3" />
     </attr>
   </declare-styleable>
 

@@ -1,7 +1,9 @@
 ﻿namespace AJut.UX
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
 
     public abstract class SvgMetadataStorage
     {
@@ -10,15 +12,25 @@
         public Dictionary<string, string>.KeyCollection Keys => m_arbitraryData.Keys;
         public Dictionary<string, string>.ValueCollection Values => m_arbitraryData.Values;
         public int ArbitraryDataCount => m_arbitraryData.Count;
-        public bool TryGetArbitraryData (string metadataKey, out string value)
+        public bool TryGetArbitraryData (string metadataKey, [MaybeNullWhen(false)] out string value)
         {
             return m_arbitraryData.TryGetValue(metadataKey, out value);
         }
 
+        /// <summary>Adds a value, throwing if <paramref name="key"/> already has one</summary>
         public virtual void Add (string key, string value)
         {
-            m_arbitraryData.Add(key, value);
+            m_arbitraryData.Add(this.ToStoredKey(key), value);
         }
+
+        /// <summary>Adds a value unless <paramref name="key"/> already has one, which it keeps. True when it was added.</summary>
+        public bool TryAdd (string key, string value)
+        {
+            return m_arbitraryData.TryAdd(this.ToStoredKey(key), value);
+        }
+
+        /// <summary>The key a value is kept under, for a storage that keeps keys differently from how they are given</summary>
+        protected virtual string ToStoredKey (string key) => key;
 
         public void SetBaselineDuplicateData (SvgMetadataStorage duplicate)
         {
@@ -50,23 +62,20 @@
     [DebuggerDisplay("xmlns:{Namespace}={SourceUrl}")]
     public class SvgNamespaceMetadataStorage : SvgMetadataStorage
     {
-        public SvgNamespaceMetadataStorage (string name, string url = null)
+        public SvgNamespaceMetadataStorage (string name, string? url = null)
         {
             this.Namespace = name;
             this.SourceUrl = url;
         }
 
         public string Namespace { get; }
-        public string SourceUrl { get; internal set; }
+        public string? SourceUrl { get; internal set; }
 
-        public override void Add (string key, string value)
+        /// <summary>A key given with this storage's namespace prefix (inkscape:label) is kept without it (label)</summary>
+        protected override string ToStoredKey (string key)
         {
-            if (key.StartsWith($"{this.Namespace}:"))
-            {
-                key = key.Substring(this.Namespace.Length + 2);
-            }
-
-            m_arbitraryData.Add(key, value);
+            string prefix = $"{this.Namespace}:";
+            return key.StartsWith(prefix, StringComparison.Ordinal) ? key.Substring(prefix.Length) : key;
         }
 
         public SvgNamespaceMetadataStorage Duplicate ()

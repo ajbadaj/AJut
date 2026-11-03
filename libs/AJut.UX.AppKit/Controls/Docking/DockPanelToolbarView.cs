@@ -7,6 +7,7 @@ namespace AJut.UX.Controls
     using AppKit;
     using CoreGraphics;
     using Foundation;
+    using ObjCRuntime;
 
     // ===========[ DockPanelToolbarView ]=======================================
     // A row of buttons for adding and showing docked panels, the AppKit counterpart of WinUI3's
@@ -47,6 +48,16 @@ namespace AJut.UX.Controls
             });
 
             m_controller = new DockPanelToolbarController(this);
+        }
+
+        /// <summary>
+        /// Used by the runtime when AppKit needs a managed peer for a native view whose peer is gone (one disposed while
+        /// still in a window, say). It only answers AppKit's calls: the native view keeps the buttons it has. None of its
+        /// managed state survives a dispose, so a call that needs that state can still fail: dispose it only once AppKit
+        /// is done with it.
+        /// </summary>
+        protected DockPanelToolbarView (NativeHandle handle) : base(handle)
+        {
         }
 
         protected override void Dispose (bool disposing)
@@ -143,6 +154,19 @@ namespace AJut.UX.Controls
         private const double kPlusFontSize = 9.0;
         private const double kPlusInset = 2.0;
 
+        public DockPanelAddButton ()
+        {
+        }
+
+        /// <summary>
+        /// Used by the runtime when AppKit needs a managed peer for a native button whose peer is gone (one disposed while
+        /// still in a window, say). It only answers AppKit's calls. None of its managed state survives a dispose, so a
+        /// call that needs that state can still fail: dispose it only once AppKit is done with it.
+        /// </summary>
+        protected DockPanelAddButton (NativeHandle handle) : base(handle)
+        {
+        }
+
         public override void DrawRect (CGRect dirtyRect)
         {
             base.DrawRect(dirtyRect);
@@ -184,6 +208,19 @@ namespace AJut.UX.Controls
     public class DockPanelShowHideToggleButton : DockPanelToolbarButton
     {
         private bool m_isChecked;
+
+        public DockPanelShowHideToggleButton ()
+        {
+        }
+
+        /// <summary>
+        /// Used by the runtime when AppKit needs a managed peer for a native button whose peer is gone (one disposed while
+        /// still in a window, say). It only answers AppKit's calls. None of its managed state survives a dispose, so a
+        /// call that needs that state can still fail: dispose it only once AppKit is done with it.
+        /// </summary>
+        protected DockPanelShowHideToggleButton (NativeHandle handle) : base(handle)
+        {
+        }
 
         /// <summary>Whether the button shows as on: its panel is showing. The toolbar sets it; a click asks the panel to show or hide.</summary>
         public bool IsChecked
@@ -245,6 +282,15 @@ namespace AJut.UX.Controls
         {
             this.Padding = new NSEdgeInsets(2, 4, 2, 4);
             this.CornerRadius = 3.0;
+        }
+
+        /// <summary>
+        /// Used by the runtime when AppKit needs a managed peer for a native button whose peer is gone (one disposed while
+        /// still in a window, say). It only answers AppKit's calls. None of its managed state survives a dispose, so a
+        /// call that needs that state can still fail: dispose it only once AppKit is done with it.
+        /// </summary>
+        protected DockPanelToolbarButton (NativeHandle handle) : base(handle)
+        {
         }
 
         public override CGSize IntrinsicContentSize

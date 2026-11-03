@@ -3,6 +3,7 @@ namespace AJut.UX.Controls
     using AJut.UX.Helpers;
     using AJut.UX.Theming;
     using AppKit;
+    using ObjCRuntime;
 
     // ===========[ AutoBrushButton ]============================================
     // A button colored from one accent color: hover, pressed and disabled are derived from it by
@@ -21,6 +22,20 @@ namespace AJut.UX.Controls
         private ColorArgb m_paletteAccent;
         private bool m_hasPalette;
         private InteractiveSurfaceColors m_palette;
+
+        // ===========[ Setup/Construction/Teardown ]===========================
+        public AutoBrushButton ()
+        {
+        }
+
+        /// <summary>
+        /// Used by the runtime when AppKit needs a managed peer for a native button whose peer is gone (one disposed while
+        /// still in a window, say). It only answers AppKit's calls. None of its managed state survives a dispose, so a
+        /// call that needs that state can still fail: dispose it only once AppKit is done with it.
+        /// </summary>
+        protected AutoBrushButton (NativeHandle handle) : base(handle)
+        {
+        }
 
         // ===========[ Properties ]============================================
         /// <summary>The color every state is derived from. By default, and when set to null, the AJut accent with the theme loaded and the system accent color without it.</summary>

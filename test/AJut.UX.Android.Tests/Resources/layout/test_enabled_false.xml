@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A tree a layout disables, for the test that its list follows it -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <ajut.ux.controls.FlatTreeListView
+        android:id="@+id/test_disabled_tree"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:enabled="false" />
+</LinearLayout>

@@ -1,10 +1,12 @@
 namespace AJut.UX.Controls
 {
+    using System;
     using System.Collections.Generic;
     using AJut.UX.PropertyInteraction;
     using AJut.UX.Theming;
     using AppKit;
     using CoreGraphics;
+    using ObjCRuntime;
 
     // ===========[ PropertyGrid: label splitter ]==============================
     // With the pointer on a row's label within PropertyGridRowRules.kLabelSplitterHitDistance of the
@@ -157,18 +159,25 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ Subclasses/structs ]====================================
-        // The splitter's line and hit area. It holds no state: presses, drags and releases go to the grid.
+        // The splitter's line and hit area. It holds no state: presses, drags, and releases go to the grid. The grid
+        // retains it natively, so it holds the grid weakly (see the grid's class comment).
         private sealed class LabelSplitterView : NSView
         {
             private const double kLineWidth = 2.0;
 
-            private readonly PropertyGrid m_owner;
+            private readonly WeakReference<PropertyGrid> m_owner;
 
             public LabelSplitterView (PropertyGrid owner)
             {
-                m_owner = owner;
+                m_owner = new WeakReference<PropertyGrid>(owner);
                 this.Hidden = true;
                 this.TranslatesAutoresizingMaskIntoConstraints = false;
+            }
+
+            // For a peer the runtime makes over an existing native splitter, which has no owner to tell
+            private LabelSplitterView (NativeHandle handle) : base(handle)
+            {
+                m_owner = new WeakReference<PropertyGrid>(null);
             }
 
             public override bool IsFlipped => true;
@@ -188,17 +197,35 @@ namespace AJut.UX.Controls
 
             public override void MouseDown (NSEvent theEvent)
             {
-                if (theEvent.ClickCount == 2)
+                if (!m_owner.TryGetTarget(out PropertyGrid owner))
                 {
-                    m_owner.FitLabelColumnWidthToShownLabels();
                     return;
                 }
 
-                m_owner.BeginLabelSplitterDrag(theEvent);
+                if (theEvent.ClickCount == 2)
+                {
+                    owner.FitLabelColumnWidthToShownLabels();
+                    return;
+                }
+
+                owner.BeginLabelSplitterDrag(theEvent);
             }
 
-            public override void MouseDragged (NSEvent theEvent) => m_owner.DragLabelSplitter(theEvent);
-            public override void MouseUp (NSEvent theEvent) => m_owner.EndLabelSplitterDrag();
+            public override void MouseDragged (NSEvent theEvent)
+            {
+                if (m_owner.TryGetTarget(out PropertyGrid owner))
+                {
+                    owner.DragLabelSplitter(theEvent);
+                }
+            }
+
+            public override void MouseUp (NSEvent theEvent)
+            {
+                if (m_owner.TryGetTarget(out PropertyGrid owner))
+                {
+                    owner.EndLabelSplitterDrag();
+                }
+            }
         }
     }
 }

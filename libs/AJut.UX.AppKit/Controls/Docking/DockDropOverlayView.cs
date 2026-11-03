@@ -4,6 +4,7 @@ namespace AJut.UX.Controls
     using AJut.UX.Theming;
     using AppKit;
     using CoreGraphics;
+    using ObjCRuntime;
 
     // ===========[ DockDropOverlayView ]========================================
     /// <summary>
@@ -51,6 +52,16 @@ namespace AJut.UX.Controls
 
             m_center.IsEnabled = DockDragRules.IsCenterWidgetEnabled(zoneOrientation);
             m_center.AlphaValue = m_center.IsEnabled ? (nfloat)1.0 : (nfloat)kDisabledAlpha;
+        }
+
+        /// <summary>
+        /// Used by the runtime when AppKit needs a managed peer for a native view whose peer is gone (one disposed while
+        /// still in a window, say). It only answers AppKit's calls: the native view keeps the widgets it has. None of its
+        /// managed state survives a dispose, so a call that needs that state can still fail: dispose it only once AppKit
+        /// is done with it.
+        /// </summary>
+        private DockDropOverlayView (NativeHandle handle) : base(handle)
+        {
         }
 
         // ===========[ Public Interface Methods ]==============================
@@ -116,6 +127,16 @@ namespace AJut.UX.Controls
                 });
 
                 this.ApplyEngagement();
+            }
+
+            /// <summary>
+            /// Used by the runtime when AppKit needs a managed peer for a native view whose peer is gone (one disposed
+            /// while still in a window, say). It only answers AppKit's calls: the native view keeps the glyph it has. None
+            /// of its managed state survives a dispose, so a call that needs that state can still fail: dispose it only
+            /// once AppKit is done with it.
+            /// </summary>
+            private InsertionWidget (NativeHandle handle) : base(handle)
+            {
             }
 
             /// <summary>Where a drop on this widget puts what is dragged</summary>

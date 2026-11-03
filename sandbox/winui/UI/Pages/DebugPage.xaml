@@ -27,6 +27,7 @@
             <NavigationViewItem Content="PropertyGrid debug" Tag="AJutShowRoomWinUI.UI.Diagnostics.PropertyGridDebugPage"/>
             <NavigationViewItem Content="Standard controls" Tag="AJutShowRoomWinUI.UI.Diagnostics.StandardControlsPage"/>
             <NavigationViewItem Content="Window Chrome" Tag="AJutShowRoomWinUI.UI.Diagnostics.WindowChromePage"/>
+            <NavigationViewItem Content="Window Manager" Tag="AJutShowRoomWinUI.UI.Diagnostics.WindowManagerPage"/>
             <NavigationViewItem Content="Leak Probe" Tag="AJutShowRoomWinUI.UI.Diagnostics.LeakProbePage"/>
             <NavigationViewItem Content="Use-Case Leak Test" Tag="AJutShowRoomWinUI.UI.Diagnostics.UseCaseLeakTestPage"/>
             <NavigationViewItem Content="Crash Filter" Tag="AJutShowRoomWinUI.UI.Diagnostics.CrashFilterPage"/>

@@ -18,17 +18,27 @@ namespace AJutShowRoomAndroid
     {
         public static AreaPage CreateControlsArea () => new AreaPage(
             "Controls",
+            new AreaEntry("AutoGrid", () => new AutoGridPage()),
             new AreaEntry("BrushButton", () => new DemoPage("BrushButton", Resource.Layout.demo_brush_button, Resource.Raw.demo_brush_button_source)),
+            new AreaEntry("BusyWait", () => new BusyWaitPage()),
             new AreaEntry("ColorEditIngressControl", () => new ColorEditIngressControlPage()),
+            new AreaEntry("EditableTextBlock", () => new EditableTextBlockPage()),
             new AreaEntry("EnumComboBox", () => new EnumComboBoxPage()),
             new AreaEntry("EnumToggleStrip", () => new EnumToggleStripPage()),
+            new AreaEntry("FlatTreeListView", () => new FlatTreeListViewPage()),
             new AreaEntry("GeometryButton", () => new DemoPage("GeometryButton", Resource.Layout.demo_geometry_button, Resource.Raw.demo_geometry_button_source)),
             new AreaEntry("NumericEditor", () => new NumericEditorPage()),
-            new AreaEntry("ToggleStrip", () => new DemoPage("ToggleStrip", Resource.Layout.demo_toggle_strip, Resource.Raw.demo_toggle_strip_source))
+            new AreaEntry("PopupMenuButton", () => new PopupMenuButtonPage()),
+            new AreaEntry("PropertyGrid", () => new PropertyGridPage()),
+            new AreaEntry("SimpleWrapPanel", () => new SimpleWrapPanelPage()),
+            new AreaEntry("Svg", () => new SvgPage()),
+            new AreaEntry("ToggleStrip", () => new DemoPage("ToggleStrip", Resource.Layout.demo_toggle_strip, Resource.Raw.demo_toggle_strip_source)),
+            new AreaEntry("UIElementRepeater", () => new UIElementRepeaterPage())
         );
 
         public static AreaPage CreateDebugArea () => new AreaPage(
             "Debug",
+            new AreaEntry("AppThemeManager", () => new AppThemeManagerPage()),
             new AreaEntry("Theme Tester", () => new ThemeTesterPage())
         );
 

@@ -4,6 +4,7 @@ namespace AJut.UX.Controls
     using AppKit;
     using CoreGraphics;
     using Foundation;
+    using ObjCRuntime;
 
     // ===========[ ManagedBrushButton ]=========================================
     // The base for buttons that pick their own colors per state, the AppKit counterpart of
@@ -17,6 +18,20 @@ namespace AJut.UX.Controls
         private double m_cornerRadius = 4.0;
         private double m_borderThickness = 1.0;
         private NSEdgeInsets m_padding = new NSEdgeInsets(4, 10, 4, 10);
+
+        // ===========[ Setup/Construction/Teardown ]===========================
+        protected ManagedBrushButton ()
+        {
+        }
+
+        /// <summary>
+        /// Used by the runtime when AppKit needs a managed peer for a native button whose peer is gone (one disposed while
+        /// still in a window, say). It only answers AppKit's calls. None of its managed state survives a dispose, so a
+        /// call that needs that state can still fail: dispose it only once AppKit is done with it.
+        /// </summary>
+        protected ManagedBrushButton (NativeHandle handle) : base(handle)
+        {
+        }
 
         // ===========[ Properties ]============================================
         /// <summary>The text shown centered on the button</summary>

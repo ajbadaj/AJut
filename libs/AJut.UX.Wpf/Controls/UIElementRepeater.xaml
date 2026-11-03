@@ -13,7 +13,8 @@
                             BorderThickness="{TemplateBinding BorderThickness}" 
                             BorderBrush="{TemplateBinding BorderBrush}"
                             Background="{TemplateBinding Background}">
-                        <ContentPresenter Content="{TemplateBinding Container}"/>
+                        <!-- The container only while the repeater is loaded, so an unloaded one lets go of it -->
+                        <ContentPresenter Content="{TemplateBinding ShownContainer}"/>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>

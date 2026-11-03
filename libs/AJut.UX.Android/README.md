@@ -52,6 +52,20 @@ A model can raise PropertyChanged from any thread; the view is always updated on
 ### Light and dark
 With no theme set up, every control uses plain defaults that follow the app's night mode, so it looks right in light and in dark.
 
+To let the user pick light, dark, or the device's own setting, make one `AppThemeManager` for the app and hand it each activity as the activity attaches:
+
+```csharp
+protected override void AttachBaseContext (Context? @base)
+{
+    base.AttachBaseContext(@base);
+    MyApp.Theme.ApplyTo(this);
+}
+```
+
+`MyApp.Theme` here is the app's one `AppThemeManager`, made from any context of the app before the first activity attaches. Setting its `ThemeConfiguration` saves the choice and recreates each activity it changes, the same way Android handles any configuration change.
+
+Android's own widgets can take the AJut look too. `Theme.AJut` is an activity theme with the AJut accent and control colors in light and dark (`[Activity(Theme = "@style/Theme.AJut")]`), for an app that always runs the AJut theme. `StockControlTint.Apply(view)` gives every `CheckBox`, `RadioButton`, `Switch` and `Spinner` under a view the AJut palette at runtime, following the AJut theme on or off; `AppThemeManager` runs it on each activity it themes as the activity starts, so only views added after that need it.
+
 ## Licensing
 This software uses an MIT License, see LICENSE - terms and conditions contained therein.
 

@@ -45,6 +45,8 @@
 !sandbox/uikit/Info.plist
 !sandbox/uikit/Entitlements.plist
 !sandbox/uikit/Assets.xcassets/**/Contents.json
+!test/AJut.UX.UIKit.Tests/Info.plist
+!test/AJut.UX.UIKit.Tests/*.sh
 
 # Android: manifests and Resources XML (layouts, values, drawables, styleable attrs)
 !libs/AJut.UX.Android/**/*.xml

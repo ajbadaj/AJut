@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="PropertyGrid"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:alpha="0.7"
+        android:text="Give it an object and it shows a row per public property, with an editor picked by the property's type or a [PGEditor] key. On a phone each property's name sits above its editor; a switch or a color swatch sits at the end of the name's line. Sub-objects expand, lists add, remove, and drag to reorder, and the PG* attributes label, group, order, hide, and show rows. Press and hold a changed value's row for Set to default." />
+
+    <Switch
+        android:id="@+id/demo_property_grid_read_only"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Read-only grid" />
+
+    <!-- A list scrolls itself, so it gets a height of its own inside the page's scrolling -->
+    <ajut.ux.controls.PropertyGrid
+        android:id="@+id/demo_property_grid"
+        android:layout_width="match_parent"
+        android:layout_height="520dp"
+        android:layout_marginTop="8dp" />
+</LinearLayout>

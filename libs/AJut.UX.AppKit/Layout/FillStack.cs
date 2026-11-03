@@ -2,6 +2,7 @@ namespace AJut.UX.Controls
 {
     using System.Collections.Generic;
     using AppKit;
+    using ObjCRuntime;
 
     /// <summary>
     /// Where a <see cref="FillStack"/> child sits across the stack (horizontally in a vertical stack,
@@ -101,6 +102,16 @@ namespace AJut.UX.Controls
             m_selfHugHeight = this.HeightAnchor.ConstraintEqualTo((nfloat)0);
             m_selfHugHeight.Priority = kSelfHugPriority;
             NSLayoutConstraint.ActivateConstraints(new[] { m_selfHugWidth, m_selfHugHeight });
+        }
+
+        /// <summary>
+        /// Used by the runtime when AppKit needs a managed peer for a native view whose peer is gone (one disposed while
+        /// still in a window, say). It only answers AppKit's calls: the native view keeps the children and constraints it
+        /// has. None of its managed state survives a dispose, so a call that needs that state can still fail: dispose it
+        /// only once AppKit is done with it.
+        /// </summary>
+        protected FillStack (NativeHandle handle) : base(handle)
+        {
         }
 
         // ===========[ Properties ]============================================

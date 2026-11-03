@@ -44,6 +44,10 @@ namespace AJut.UX.Theming
         /// <summary>The divider between split panes. Its WinUI3 counterpart is GridSplitter's background.</summary>
         public const string Splitter_Divider = "AJut_ThemedSplitView_DividerBrush";
 
+        // ===========[ AutoGrid ]==============================================
+        /// <summary>The border around an AutoGrid given a BorderThickness: the common border color, as WPF's other borders take</summary>
+        public const string AutoGrid_Border = "AJut_AutoGrid_BorderBrush";
+
         // ===========[ GeometryButton ]========================================
         // The fills are AppKit only, each aliased to the Button* key the WinUI3 GeometryButton uses
         // for that state. They are separate keys because unthemed, a Button* key means a button
@@ -155,9 +159,6 @@ namespace AJut.UX.Theming
 
         /// <summary>The strip's outline and the separators between items while it is disabled: a disabled ComboBox's border. AppKit only.</summary>
         public const string ToggleStrip_DisabledBorder = "AJut_ToggleStrip_DisabledBorder";
-
-        /// <summary>The dots just outside a Scroll strip's ends that show it scrolls further that way. AppKit and UIKit only.</summary>
-        public const string ToggleStrip_ScrollIndicator = "AJut_ToggleStrip_ScrollIndicator";
 
         // ===========[ NumericEditor ]=========================================
         // The look MobileLook.NumericEditor sets out for every mobile and Mac editor. The AppKit only keys alias its keys.
@@ -391,6 +392,129 @@ namespace AJut.UX.Theming
         /// <summary>A dock close X's fill while pressed. Shared key.</summary>
         public const string DockCloseButton_PressedBackground = "AJut_DockCloseButton_PressedBackground";
 
+        // ===========[ PopupMenuButton ]=======================================
+        // AppKit only, each aliased to the ToggleButton* key WinUI3's PART_Button (a ToggleButton) takes for that part and
+        // state, which the phones' PopupMenuButton draws too. While the menu is open the button shows checked, as WinUI3's
+        // does. The menu opens on the press and takes the mouse from there, so there is no pressed look, and no pointer
+        // over while open. Unthemed they are macOS control colors, a translucent label gray for hover, and the accent with
+        // the text that reads on it while open. The chevron is a shared key.
+
+        public const string PopupMenuButton_NormalBackground = "AJut_PopupMenuButton_NormalBackground";
+        public const string PopupMenuButton_NormalForeground = "AJut_PopupMenuButton_NormalForeground";
+        public const string PopupMenuButton_NormalBorder = "AJut_PopupMenuButton_NormalBorder";
+        public const string PopupMenuButton_PointerOverBackground = "AJut_PopupMenuButton_PointerOverBackground";
+        public const string PopupMenuButton_PointerOverForeground = "AJut_PopupMenuButton_PointerOverForeground";
+        public const string PopupMenuButton_PointerOverBorder = "AJut_PopupMenuButton_PointerOverBorder";
+        public const string PopupMenuButton_DisabledBackground = "AJut_PopupMenuButton_DisabledBackground";
+        public const string PopupMenuButton_DisabledForeground = "AJut_PopupMenuButton_DisabledForeground";
+        public const string PopupMenuButton_DisabledBorder = "AJut_PopupMenuButton_DisabledBorder";
+        public const string PopupMenuButton_OpenBackground = "AJut_PopupMenuButton_OpenBackground";
+        public const string PopupMenuButton_OpenForeground = "AJut_PopupMenuButton_OpenForeground";
+        public const string PopupMenuButton_OpenBorder = "AJut_PopupMenuButton_OpenBorder";
+
+        /// <summary>The chevron after the button's text, in every state. Shared key.</summary>
+        public const string PopupMenuButton_Chevron = AJutThemeKeys.PopupMenuButton_ChevronForeground;
+
+        // ===========[ BusyWait ]==============================================
+        // AppKit only, each aliased to the key the phones' BusyWait takes, which are WPF's (WinUI3 has no BusyWait): the
+        // normal text inline, and as an overlay the blockout fill with high contrast text over it, as WPF's stack navigation
+        // busy overlay draws. The spinner is the system's and takes no color (see BusyWait).
+
+        /// <summary>The text beside the spinner, inline</summary>
+        public const string BusyWait_Foreground = "AJut_BusyWait_Foreground";
+
+        /// <summary>An overlay's fill over everything under it, while it spins</summary>
+        public const string BusyWait_OverlayBackground = "AJut_BusyWait_OverlayBackground";
+
+        /// <summary>An overlay's text</summary>
+        public const string BusyWait_OverlayForeground = "AJut_BusyWait_OverlayForeground";
+
+        // ===========[ EditableTextBlock ]=====================================
+        // AppKit only, each aliased to the key the phones' EditableTextBlock takes, which are WPF's (WinUI3 has none): the
+        // normal text as a label, and while editing a text box well. The well's outline is the focused text box border,
+        // which the phones' well has no use for. Unthemed they are the macOS label and text field colors.
+
+        /// <summary>The text while it shows as a label</summary>
+        public const string EditableTextBlock_LabelText = "AJut_EditableTextBlock_LabelText";
+
+        /// <summary>The label's text while the control is disabled</summary>
+        public const string EditableTextBlock_LabelTextDisabled = "AJut_EditableTextBlock_LabelTextDisabled";
+
+        /// <summary>The well the text sits in while it is edited</summary>
+        public const string EditableTextBlock_FieldBackground = "AJut_EditableTextBlock_FieldBackground";
+
+        /// <summary>The well's outline while the text is edited</summary>
+        public const string EditableTextBlock_FieldBorder = "AJut_EditableTextBlock_FieldBorder";
+
+        /// <summary>The text while it is edited</summary>
+        public const string EditableTextBlock_FieldText = "AJut_EditableTextBlock_FieldText";
+
+        // ===========[ PathSelectionControl ]==================================
+        // The borders, the warning glyph, the buttons and the focused well are shared keys, the ones WinUI3's template
+        // reads. The fill, the text, and the invalid border are AppKit only, each aliased to what WinUI3 or WPF give that
+        // part: WinUI3 sets the fill through its theme style, its text box takes the stock text keys, and its invalid
+        // border is a literal where WPF's theme gives it the palette's bad-stuff color, which AppKit takes. The rim lights
+        // around the focused well are WinUI3's literals, kept unthemed.
+
+        /// <summary>The border at rest. Shared key.</summary>
+        public const string PathSelection_NormalBorder = AJutThemeKeys.PathSelectionControl_NormalBorderBrush;
+
+        /// <summary>The border while focus is inside the control. Shared key.</summary>
+        public const string PathSelection_FocusedBorder = AJutThemeKeys.PathSelectionControl_FocusedBorderBrush;
+
+        /// <summary>The warning glyph beside an invalid path. Shared key.</summary>
+        public const string PathSelection_WarningIconForeground = AJutThemeKeys.PathSelectionControl_WarningIconForeground;
+
+        /// <summary>A button's glyph at rest and disabled. Shared key.</summary>
+        public const string PathSelection_ButtonIconForeground = AJutThemeKeys.PathSelectionControl_ButtonIconForeground;
+
+        /// <summary>A button's fill with the pointer over it. Shared key.</summary>
+        public const string PathSelection_ButtonPointerOverBackground = AJutThemeKeys.PathSelectionControl_ButtonPointerOverBackground;
+
+        /// <summary>A button's fill while pressed. Shared key.</summary>
+        public const string PathSelection_ButtonPressedBackground = AJutThemeKeys.PathSelectionControl_ButtonPressedBackground;
+
+        /// <summary>A button's glyph over the pointer-over and pressed fills. Shared key.</summary>
+        public const string PathSelection_ButtonHighlightForeground = AJutThemeKeys.PathSelectionControl_ButtonHighlightForeground;
+
+        /// <summary>The well behind the text while it has focus. Shared key.</summary>
+        public const string PathSelection_FocusedWellBackground = AJutThemeKeys.PathSelectionControl_FocusedTextBoxBackgroundBrush;
+
+        /// <summary>The control's fill. AppKit only: WinUI3's theme style sets it.</summary>
+        public const string PathSelection_Background = "AJut_PathSelectionControl_Background";
+
+        /// <summary>The border while the path is invalid. AppKit only: WinUI3 paints a literal, WPF's theme the bad-stuff color.</summary>
+        public const string PathSelection_InvalidBorder = "AJut_PathSelectionControl_InvalidBorderBrush";
+
+        /// <summary>The path's text. AppKit only: WinUI3's text box takes the stock text box foreground.</summary>
+        public const string PathSelection_Text = "AJut_PathSelectionControl_Text";
+
+        /// <summary>The path's text while the control is disabled. AppKit only.</summary>
+        public const string PathSelection_DisabledText = "AJut_PathSelectionControl_DisabledText";
+
+        /// <summary>The prompt shown while no path is set. AppKit only: WinUI3's text box takes the stock placeholder color.</summary>
+        public const string PathSelection_PlaceholderText = "AJut_PathSelectionControl_PlaceholderText";
+
+        /// <summary>The light edge along the bottom and right of the focused well. AppKit only, WinUI3's literal.</summary>
+        public const string PathSelection_FocusRimBright = "AJut_PathSelectionControl_FocusRimBright";
+
+        /// <summary>The dark edge along the top and left of the focused well. AppKit only, WinUI3's literal.</summary>
+        public const string PathSelection_FocusRimDark = "AJut_PathSelectionControl_FocusRimDark";
+
+        // ===========[ BumpStack ]=============================================
+        // AppKit only, each aliased to what WinUI3's theme style gives the bump buttons (WinUI3 sets them through style
+        // setters, not keys). Unthemed they are WinUI3's unthemed choices in macOS terms: the window's base fill, a
+        // secondary label glyph, and a separator outline.
+
+        /// <summary>A bump button's fill, opaque, since content scrolls under it</summary>
+        public const string BumpStack_ButtonBackground = "AJut_BumpStack_ButtonBackground";
+
+        /// <summary>A bump button's chevron</summary>
+        public const string BumpStack_ButtonForeground = "AJut_BumpStack_ButtonForeground";
+
+        /// <summary>A bump button's outline, which sets it apart from what scrolls under it</summary>
+        public const string BumpStack_ButtonBorder = "AJut_BumpStack_ButtonBorder";
+
         // ===========[ Public Interface Methods ]==============================
         /// <summary>
         /// Registers every key above with <see cref="ThemedColors"/>. Runs once, from ThemedColors' static
@@ -411,6 +535,7 @@ namespace AJut.UX.Theming
 
             // 3. ThemedSplitView, AppKit only
             RegisterAppKitOnly(Splitter_Divider, NSColor.Separator, "AJut_Brush_BorderCommon");
+            RegisterAppKitOnly(AutoGrid_Border, NSColor.Separator, "AJut_Brush_BorderCommon");
 
             // 4. GeometryButton, AppKit only fills and shared traces
             RegisterAppKitOnly(GeometryButton_Fill, NSColor.SecondaryLabel, "ButtonBackground");
@@ -458,7 +583,6 @@ namespace AJut.UX.Theming
             RegisterAppKitOnly(ToggleStrip_Border, NSColor.Separator, "AJut_Brush_BorderCommon");
             RegisterAppKitOnly(ToggleStrip_DisabledBackground, NSColor.Control, MobileLook.ToggleStrip.StripDisabledSurface);
             RegisterAppKitOnly(ToggleStrip_DisabledBorder, NSColor.Separator, MobileLook.ToggleStrip.StripDisabledBorder);
-            RegisterAppKitOnly(ToggleStrip_ScrollIndicator, NSColor.SecondaryLabel, "AJut_Brush_SymbolForeground");
 
             // 8. NumericEditor, shared keys
             ThemedColors.SetUnthemedDefault(NumericEditor_FocusBorder, NSColor.KeyboardFocusIndicator);
@@ -576,6 +700,60 @@ namespace AJut.UX.Theming
             // 18. DockCloseButton, shared keys. Unthemed hover and pressed are translucent label grays, as BrushButton's are.
             ThemedColors.SetUnthemedDefault(DockCloseButton_HoverBackground, NSColor.QuaternaryLabel);
             ThemedColors.SetUnthemedDefault(DockCloseButton_PressedBackground, NSColor.TertiaryLabel);
+
+            // 19. PopupMenuButton, AppKit only, on the stock ToggleButton keys the phones' PopupMenuButton look names
+            RegisterAppKitOnly(PopupMenuButton_NormalBackground, NSColor.Control, MobileLook.PopupMenuButton.Fill);
+            RegisterAppKitOnly(PopupMenuButton_NormalForeground, NSColor.ControlText, MobileLook.PopupMenuButton.Text);
+            RegisterAppKitOnly(PopupMenuButton_NormalBorder, NSColor.Separator, MobileLook.PopupMenuButton.Border);
+            RegisterAppKitOnly(PopupMenuButton_PointerOverBackground, NSColor.QuaternaryLabel, MobileLook.PopupMenuButton.PointerOverFill);
+            RegisterAppKitOnly(PopupMenuButton_PointerOverForeground, NSColor.ControlText, MobileLook.PopupMenuButton.PointerOverText);
+            RegisterAppKitOnly(PopupMenuButton_PointerOverBorder, NSColor.SecondaryLabel, MobileLook.PopupMenuButton.PointerOverBorder);
+            RegisterAppKitOnly(PopupMenuButton_DisabledBackground, NSColor.Control, MobileLook.PopupMenuButton.DisabledFill);
+            RegisterAppKitOnly(PopupMenuButton_DisabledForeground, NSColor.DisabledControlText, MobileLook.PopupMenuButton.DisabledText);
+            RegisterAppKitOnly(PopupMenuButton_DisabledBorder, NSColor.QuaternaryLabel, MobileLook.PopupMenuButton.DisabledBorder);
+            RegisterAppKitOnly(PopupMenuButton_OpenBackground, NSColor.ControlAccent, MobileLook.PopupMenuButton.OpenFill);
+            RegisterAppKitOnly(PopupMenuButton_OpenForeground, NSColor.AlternateSelectedControlText, MobileLook.PopupMenuButton.OpenText);
+            RegisterAppKitOnly(PopupMenuButton_OpenBorder, NSColor.ControlAccent, MobileLook.PopupMenuButton.OpenBorder);
+            ThemedColors.SetUnthemedDefault(PopupMenuButton_Chevron, NSColor.SecondaryLabel);
+
+            // 20. BusyWait, AppKit only. Unthemed, the overlay is WPF's: a dark fill under its #DDD text, which macOS has
+            //     no system color for.
+            RegisterAppKitOnly(BusyWait_Foreground, NSColor.Label, MobileLook.BusyWait.Foreground);
+            RegisterAppKitOnly(BusyWait_OverlayBackground, Srgb(0xBF000000), MobileLook.BusyWait.OverlayBackground);
+            RegisterAppKitOnly(BusyWait_OverlayForeground, Srgb(0xFFDDDDDD), MobileLook.BusyWait.OverlayForeground);
+
+            // 21. EditableTextBlock, AppKit only. The well's outline is the stock focused text box border, the primary
+            //     highlight themed; unthemed, the system's keyboard focus color.
+            RegisterAppKitOnly(EditableTextBlock_LabelText, NSColor.Label, MobileLook.EditableTextBlock.LabelText);
+            RegisterAppKitOnly(EditableTextBlock_LabelTextDisabled, NSColor.DisabledControlText, MobileLook.EditableTextBlock.LabelTextDisabled);
+            RegisterAppKitOnly(EditableTextBlock_FieldBackground, NSColor.TextBackground, MobileLook.EditableTextBlock.FieldBackground);
+            RegisterAppKitOnly(EditableTextBlock_FieldBorder, NSColor.KeyboardFocusIndicator, "TextControlBorderBrushFocused");
+            RegisterAppKitOnly(EditableTextBlock_FieldText, NSColor.Text, MobileLook.EditableTextBlock.FieldText);
+
+            // 22. PathSelectionControl. Unthemed, the buttons light up in the accent with the text that reads on it, where
+            //     WinUI3's unthemed ones are a literal blue with white, and the invalid border and glyph are the system red.
+            ThemedColors.SetUnthemedDefault(PathSelection_NormalBorder, NSColor.Separator);
+            ThemedColors.SetUnthemedDefault(PathSelection_FocusedBorder, NSColor.KeyboardFocusIndicator);
+            ThemedColors.SetUnthemedDefault(PathSelection_WarningIconForeground, NSColor.SystemRed);
+            ThemedColors.SetUnthemedDefault(PathSelection_ButtonIconForeground, NSColor.SecondaryLabel);
+            ThemedColors.SetUnthemedDefault(PathSelection_ButtonPointerOverBackground, NSColor.ControlAccent);
+            ThemedColors.SetUnthemedDefault(PathSelection_ButtonPressedBackground, NSColor.SelectedContentBackground);
+            ThemedColors.SetUnthemedDefault(PathSelection_ButtonHighlightForeground, NSColor.AlternateSelectedControlText);
+            ThemedColors.SetUnthemedDefault(PathSelection_FocusedWellBackground, NSColor.TextBackground);
+            RegisterAppKitOnly(PathSelection_Background, NSColor.TextBackground, "AJut_Brush_PopOutControlBackground");
+            RegisterAppKitOnly(PathSelection_InvalidBorder, NSColor.SystemRed, "AJut_Brush_BadStuff");
+            RegisterAppKitOnly(PathSelection_Text, NSColor.Text, "TextControlForeground");
+            RegisterAppKitOnly(PathSelection_DisabledText, NSColor.DisabledControlText, "TextControlForegroundDisabled");
+            RegisterAppKitOnly(PathSelection_PlaceholderText, NSColor.PlaceholderText, "TextControlPlaceholderForeground");
+
+            //     The rim lights are WinUI3's literals, and stay so themed: with no alias, themed falls back to these
+            ThemedColors.SetUnthemedDefault(PathSelection_FocusRimBright, Srgb(0x55FFFFFF));
+            ThemedColors.SetUnthemedDefault(PathSelection_FocusRimDark, Srgb(0x88000000));
+
+            // 23. BumpStack, AppKit only
+            RegisterAppKitOnly(BumpStack_ButtonBackground, NSColor.WindowBackground, "AJut_Brush_ControlBackground");
+            RegisterAppKitOnly(BumpStack_ButtonForeground, NSColor.SecondaryLabel, "AJut_Brush_SymbolForeground");
+            RegisterAppKitOnly(BumpStack_ButtonBorder, NSColor.Separator, "AJut_Brush_ButtonBorder");
         }
 
         // ===========[ Helper Methods ]========================================

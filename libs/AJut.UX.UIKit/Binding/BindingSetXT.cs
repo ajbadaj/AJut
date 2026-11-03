@@ -127,6 +127,12 @@ namespace AJut.UX.CodeBinding
             return set.BindControl(editor, UIControlEvent.ValueChanged, ReadEditColor, WriteEditColor, source, propertyName, read, write);
         }
 
+        /// <summary>An EditableTextBlock edits a string property as the user types, and shows it when it changes elsewhere.</summary>
+        public static BindingSet.TwoWayChannel BindText (this BindingSet set, EditableTextBlock textBlock, INotifyPropertyChanged source, string propertyName, Func<string> read, Action<string> write)
+        {
+            return set.BindControl(textBlock, UIControlEvent.ValueChanged, ReadEditableText, WriteEditableText, source, propertyName, read, write);
+        }
+
         // ===========[ One way ]===================================
         /// <summary>A label shows a string property.</summary>
         public static void BindLabel (this BindingSet set, UILabel label, INotifyPropertyChanged source, string propertyName, Func<string> read)
@@ -204,6 +210,8 @@ namespace AJut.UX.CodeBinding
         private static void WriteEditorValue (NumericEditor editor, object value) => editor.Value = value;
         private static ColorArgb ReadEditColor (ColorEditIngressControl editor) => editor.EditColor;
         private static void WriteEditColor (ColorEditIngressControl editor, ColorArgb value) => editor.EditColor = value;
+        private static string ReadEditableText (EditableTextBlock textBlock) => textBlock.Text;
+        private static void WriteEditableText (EditableTextBlock textBlock, string value) => textBlock.Text = value;
 
         // ===========[ Subclasses/structs ]===================================
         // Owns the one UIControl subscription for a two-way binding: the control's edit event tells the channel the

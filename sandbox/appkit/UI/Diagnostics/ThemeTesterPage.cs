@@ -69,11 +69,11 @@ namespace AJutShowRoomAppKit.UI.Diagnostics
             this.AddStates(
                 new StateSample("Rest, with Two picked", new ToggleStrip { ItemsSource = kStripItems, SelectedItem = kStripItems[1] }),
                 new StateSample("OverflowPopup (the chevron)", MakeNarrowStrip(eToggleStripOverflow.OverflowPopup)),
-                new StateSample("Scroll (the end dots)", MakeNarrowStrip(eToggleStripOverflow.Scroll)),
+                new StateSample("Scroll (the end arrows)", MakeNarrowStrip(eToggleStripOverflow.Scroll)),
                 new StateSample("Disabled, with Two picked", new ToggleStrip { ItemsSource = kStripItems, SelectedItem = kStripItems[1], Enabled = false }),
                 new StateSample("EnumToggleStrip, disabled", new EnumToggleStrip { SelectedItem = eAppThemeConfiguration.Dark, Enabled = false })
             );
-            this.AddText("A strip draws its own items, so their pointer over and pressed looks can't be pinned on AppKit: move over and press the items above. Disabled, a strip looks like a disabled ComboBox, as on every stack: AJut_Brush_ControlBackgroundDisabled, outlined and divided with AJut_Brush_TextBoxBorder, with its items' fills kept and their names dimmed. No stack has a focused look for a strip.");
+            this.AddText("A strip draws its own items, so their pointer over and pressed looks can't be pinned on AppKit: move over and press the items above. Disabled, a strip looks like a disabled ComboBox, as on every stack: AJut_Brush_ControlBackgroundDisabled, outlined and divided with AJut_Brush_TextBoxBorder, with its items' fills kept and their names dimmed. No stack has a focused look for a strip. A Scroll strip on the Mac takes the desktop's bump buttons at its ends, as BumpStack's: an arrow dims at the end it can't go further toward, brightens under the pointer, and repeats while held.");
 
             // 3. NumericEditor
             this.AddHeading("NumericEditor");

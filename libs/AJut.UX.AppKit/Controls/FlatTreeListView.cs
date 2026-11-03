@@ -10,6 +10,7 @@ namespace AJut.UX.Controls
     using AppKit;
     using CoreGraphics;
     using Foundation;
+    using ObjCRuntime;
 
     /// <summary>How many rows a <see cref="FlatTreeListView"/> lets the user select</summary>
     public enum eFlatTreeSelectionMode
@@ -45,6 +46,15 @@ namespace AJut.UX.Controls
     // Row views are built fresh for each row the table asks for, never recycled. Recycling is
     // where the WinUI3 grid got stale editors from, and a PropertyGrid row holds live editors; a
     // row's content is torn down when the table drops its view.
+    //
+    // An AppKit view and its managed peer keep each other alive while anything native the view
+    // retains holds the view: the native side roots the peer, and the peer roots the native side.
+    // A shown row's view is retained by the table, and reaches the store through its tree item and
+    // whatever its content binds to, and the store and the root items reach this view through their
+    // events. So out of a window the tree shows no rows at all, its row views are removed and torn
+    // down, and it stops following the store and the root items; back in one it catches up and
+    // builds its rows again, with the selection and scroll position as they were. The table, its
+    // data source, and its delegate hold the tree weakly.
     public class FlatTreeListView : NSView
     {
         private const double kExpanderColumnWidth = 18.0;
@@ -66,7 +76,10 @@ namespace AJut.UX.Controls
         private readonly List<FlatTreeItem> m_selectedItems = new List<FlatTreeItem>();
         private IObservableTreeNode m_root;
         private IEnumerable<IObservableTreeNode> m_rootItemsSource;
+        private IObservableTreeNode[] m_builtFromRootItems;
         private INotifyCollectionChanged m_listenedRootItems;
+        private bool m_isFollowingStore;
+        private CGPoint m_scrollOffsetWhenDetached;
         private eFlatTreeSelectionMode m_selectionMode = eFlatTreeSelectionMode.Single;
         private eSiblingOrder m_siblingDisplayOrder = eSiblingOrder.Forward;
         private double m_treeDepthIndentSize = 16.0;
@@ -151,15 +164,24 @@ namespace AJut.UX.Controls
                 m_listFrame.TrailingAnchor.ConstraintEqualTo(this.TrailingAnchor),
             });
 
-            ((INotifyCollectionChanged)m_store).CollectionChanged += this.OnStoreCollectionChanged;
             this.ApplySelectionMode();
+        }
+
+        /// <summary>
+        /// Used by the runtime when AppKit needs a managed peer for a native view whose peer is gone (one disposed while
+        /// still in a window, say). It only answers AppKit's calls: the native view keeps the table it has. None of its
+        /// managed state survives a dispose, so a call that needs that state can still fail: dispose it only once AppKit
+        /// is done with it.
+        /// </summary>
+        protected FlatTreeListView (NativeHandle handle) : base(handle)
+        {
         }
 
         protected override void Dispose (bool disposing)
         {
             if (disposing)
             {
-                ((INotifyCollectionChanged)m_store).CollectionChanged -= this.OnStoreCollectionChanged;
+                this.FollowStore(false);
                 this.ListenToRootItems(null);
 
                 // The table only reports the row views it drops while it lives, so the rows still
@@ -214,6 +236,19 @@ namespace AJut.UX.Controls
             this.RebuildFromRootItems();
         }
 
+        public override void ViewDidMoveToWindow ()
+        {
+            base.ViewDidMoveToWindow();
+            if (this.Window != null)
+            {
+                this.OnAttached();
+            }
+            else
+            {
+                this.OnDetached();
+            }
+        }
+
         // ===========[ Properties ]============================================
         public override bool IsFlipped => true;
 
@@ -225,6 +260,7 @@ namespace AJut.UX.Controls
             {
                 m_root = value;
                 m_rootItemsSource = null;
+                m_builtFromRootItems = null;
                 this.ListenToRootItems(null);
                 this.ReplaceStoreRoot(value != null ? FlatTreeItem.CreateRoot(value, m_treeDepthIndentSize, this.StartItemsExpanded, this.SiblingDisplayOrder) : null);
             }
@@ -232,7 +268,7 @@ namespace AJut.UX.Controls
 
         /// <summary>
         /// Several top-level nodes, each a row at depth 0 under a hidden, always-expanded root. An observable
-        /// collection is followed: any change rebuilds the rows.
+        /// collection is followed while the tree is in a window: any change rebuilds the rows.
         /// </summary>
         public IEnumerable<IObservableTreeNode> RootItemsSource
         {
@@ -241,7 +277,7 @@ namespace AJut.UX.Controls
             {
                 m_root = null;
                 m_rootItemsSource = value;
-                this.ListenToRootItems(value as INotifyCollectionChanged);
+                this.ListenToRootItems(this.Window != null ? value as INotifyCollectionChanged : null);
                 this.RebuildFromRootItems();
             }
         }
@@ -570,12 +606,107 @@ namespace AJut.UX.Controls
         {
             if (m_rootItemsSource == null)
             {
+                m_builtFromRootItems = null;
                 this.ReplaceStoreRoot(null);
                 return;
             }
 
+            m_builtFromRootItems = new List<IObservableTreeNode>(m_rootItemsSource).ToArray();
             m_store.IncludeRoot = false;
-            this.ReplaceStoreRoot(FlatTreeItem.CreateUberRoot(m_rootItemsSource, m_treeDepthIndentSize, false, this.SiblingDisplayOrder));
+            this.ReplaceStoreRoot(FlatTreeItem.CreateUberRoot(m_builtFromRootItems, m_treeDepthIndentSize, false, this.SiblingDisplayOrder));
+        }
+
+        // Whether the top-level items, by reference and in order, are no longer what the tree was built from
+        private static bool RootItemsDiffer (IEnumerable<IObservableTreeNode> current, IObservableTreeNode[] builtFrom)
+        {
+            if (builtFrom == null)
+            {
+                return true;
+            }
+
+            int index = 0;
+            foreach (IObservableTreeNode node in current)
+            {
+                if ((index >= builtFrom.Length) || !ReferenceEquals(node, builtFrom[index]))
+                {
+                    return true;
+                }
+
+                ++index;
+            }
+
+            return index != builtFrom.Length;
+        }
+
+        private void OnAttached ()
+        {
+            this.FollowStore(true);
+            this.ListenToRootItems(m_rootItemsSource as INotifyCollectionChanged);
+
+            // While out of a window nothing followed the top-level items, so the tree is rebuilt if they changed then;
+            // otherwise the table catches up on any row changes it missed
+            if ((m_rootItemsSource != null) && RootItemsDiffer(m_rootItemsSource, m_builtFromRootItems))
+            {
+                this.RebuildFromRootItems();
+            }
+
+            this.PruneSelection();
+            m_table.ReloadData();
+            this.RestoreTableSelection();
+            m_scrollView.ContentView.ScrollToPoint(m_scrollOffsetWhenDetached);
+            m_scrollView.ReflectScrolledClipView(m_scrollView.ContentView);
+        }
+
+        // No rows out of a window (see the class comment). The rows the table was showing are removed outright, which has
+        // it let go of their views at once, rather than left to a reload that may wait for a layout pass that never comes
+        // out of a window; any view it still has is torn down here.
+        private void OnDetached ()
+        {
+            this.ClearDropIndicator();
+            m_draggedItems = null;
+            m_scrollOffsetWhenDetached = m_scrollView.ContentView.Bounds.Location;
+            int shownRows = (int)m_table.RowCount;
+            this.FollowStore(false);
+            this.ListenToRootItems(null);
+            if (shownRows > 0)
+            {
+                m_table.RemoveRows(NSIndexSet.FromNSRange(new NSRange(0, shownRows)), NSTableViewAnimation.None);
+            }
+
+            m_table.EnumerateAvailableRowViews(TeardownRowView);
+        }
+
+        private void FollowStore (bool follow)
+        {
+            if (follow == m_isFollowingStore)
+            {
+                return;
+            }
+
+            m_isFollowingStore = follow;
+            if (follow)
+            {
+                ((INotifyCollectionChanged)m_store).CollectionChanged += this.OnStoreCollectionChanged;
+            }
+            else
+            {
+                ((INotifyCollectionChanged)m_store).CollectionChanged -= this.OnStoreCollectionChanged;
+            }
+        }
+
+        // Rows that left the store while it was not followed stop being selected, as a collapse does
+        private void PruneSelection ()
+        {
+            var wanted = new List<FlatTreeItem>();
+            foreach (FlatTreeItem item in m_selectedItems)
+            {
+                if (m_store.Contains(item))
+                {
+                    wanted.Add(item);
+                }
+            }
+
+            this.ApplySelection(wanted);
         }
 
         private void ListenToRootItems (INotifyCollectionChanged rootItems)
@@ -852,13 +983,6 @@ namespace AJut.UX.Controls
             return FlatTreeDragDropManager.ValidateDropTarget(m_draggedItems, target, this.CanDropItem) ? target : FlatTreeDropTarget.Invalid;
         }
 
-        // The gap the shared drop math uses for this hover: above the row in its top half (but never above the first
-        // row), below it otherwise. Returned as the row the gap is above, the table's "above" drop row.
-        private static int GapRowFor (int hoverIndex, double yFraction)
-        {
-            return (yFraction < 0.5 && hoverIndex > 0) ? hoverIndex : hoverIndex + 1;
-        }
-
         private void CompleteDrop (FlatTreeDropTarget target)
         {
             var sources = new IObservableTreeNode[m_draggedItems.Length];
@@ -877,38 +1001,23 @@ namespace AJut.UX.Controls
 
         // The insertion line starts at the content column of the target depth, and a dashed L runs to it from the new
         // parent's chevron, which is highlighted, the same pieces and rules as the WinUI3 tree's drag overlay. The line
-        // sits in the gap under the cursor (GapRowFor), which over the first row is below it: the drop math never puts
-        // anything above the root, so neither does the line.
+        // goes where the drop lands (ComputeInsertionLine), which over the first row is below it: the drop math never
+        // puts anything above the root, so neither does the line.
         private void ShowDropIndicator (int hoverIndex, double yFraction, FlatTreeDropTarget target)
         {
             const double kChevronCenter = kExpanderColumnWidth / 2.0;
 
-            if (!target.IsValid || m_store.Count == 0)
+            FlatTreeInsertionLine line = FlatTreeDragDropManager.ComputeInsertionLine(m_store, target, hoverIndex, yFraction, this.SiblingDisplayOrder);
+            if (line == null)
             {
                 this.ClearDropIndicator();
                 return;
             }
 
-            // The line goes where the drop lands, which is not always the gap under the cursor: dragged left to a
-            // shallower depth between two deep rows (E and F under D), the drop lands after the whole open subtree
-            // (after G), so the line is drawn under the last row of the sibling it will follow
             int parentIndex = FlatTreeDragDropManager.FindParentStoreIndex(m_store, target);
-            int rowBefore = this.SiblingDisplayOrder == eSiblingOrder.Forward ? this.FindRowBeforeInsertion(target, parentIndex) : -1;
-
-            int gapRow = GapRowFor(hoverIndex, yFraction);
-            double lineY;
-            if (rowBefore >= 0)
-            {
-                lineY = (double)m_table.RectForRow(rowBefore).GetMaxY();
-            }
-            else if (gapRow >= m_store.Count)
-            {
-                lineY = (double)m_table.RectForRow(m_store.Count - 1).GetMaxY();
-            }
-            else
-            {
-                lineY = (double)m_table.RectForRow(gapRow).GetMinY() - (double)m_table.IntercellSpacing.Height / 2.0;
-            }
+            double lineY = line.IsBelowRow
+                ? (double)m_table.RectForRow(line.Row).GetMaxY()
+                : (double)m_table.RectForRow(line.Row).GetMinY() - (double)m_table.IntercellSpacing.Height / 2.0;
 
             double rowContentX = this.GetRowContentX(hoverIndex);
             double lineX = rowContentX + target.TargetDepth * m_treeDepthIndentSize + kExpanderColumnWidth;
@@ -953,46 +1062,6 @@ namespace AJut.UX.Controls
             return (double)m_table.GetCellFrame(0, row).X;
         }
 
-        // The row a drop will follow: the last visible row of the sibling before the insertion point (that sibling and
-        // its open subtree), or the parent's own row when the drop goes in first. -1 when that row is not in the list.
-        private int FindRowBeforeInsertion (FlatTreeDropTarget target, int parentIndex)
-        {
-            if (target.InsertIndex <= 0)
-            {
-                return parentIndex;
-            }
-
-            IReadOnlyList<IObservableTreeNode> siblings = target.TargetParent.Children;
-            if (target.InsertIndex > siblings.Count)
-            {
-                return -1;
-            }
-
-            IObservableTreeNode previous = siblings[target.InsertIndex - 1];
-            int row = -1;
-            for (int i = 0; i < m_store.Count; ++i)
-            {
-                if (m_store[i].Source == previous)
-                {
-                    row = i;
-                    break;
-                }
-            }
-
-            if (row < 0)
-            {
-                return -1;
-            }
-
-            int depth = m_store[row].TreeDepth;
-            while (row + 1 < m_store.Count && m_store[row + 1].TreeDepth > depth)
-            {
-                ++row;
-            }
-
-            return row;
-        }
-
         private void ClearDropIndicator ()
         {
             m_shownDropTarget = null;
@@ -1019,6 +1088,15 @@ namespace AJut.UX.Controls
             private bool m_hasConnector;
             private double m_anchorX;
             private double m_anchorY;
+
+            public DropIndicatorView ()
+            {
+            }
+
+            // For a peer the runtime makes over an existing native indicator
+            private DropIndicatorView (NativeHandle handle) : base(handle)
+            {
+            }
 
             public override bool IsFlipped => true;
 
@@ -1092,23 +1170,30 @@ namespace AJut.UX.Controls
             }
         }
 
-        // The table, for the arrow keys and the double click
+        // The table, for the arrow keys and the double click. The tree retains it natively, so it holds the tree weakly.
         private sealed class TreeTableView : NSTableView
         {
             private const ushort kLeftArrowKeyCode = 123;
             private const ushort kRightArrowKeyCode = 124;
 
-            private readonly FlatTreeListView m_owner;
+            private readonly WeakReference<FlatTreeListView> m_owner;
 
             public TreeTableView (FlatTreeListView owner)
             {
-                m_owner = owner;
+                m_owner = new WeakReference<FlatTreeListView>(owner);
+            }
+
+            // For a peer the runtime makes over an existing native table, which has no owner to tell
+            private TreeTableView (NativeHandle handle) : base(handle)
+            {
+                m_owner = new WeakReference<FlatTreeListView>(null);
             }
 
             public override void KeyDown (NSEvent theEvent)
             {
-                if ((theEvent.KeyCode == kLeftArrowKeyCode && m_owner.HandleArrowKey(true))
-                    || (theEvent.KeyCode == kRightArrowKeyCode && m_owner.HandleArrowKey(false)))
+                if (m_owner.TryGetTarget(out FlatTreeListView owner)
+                    && (((theEvent.KeyCode == kLeftArrowKeyCode) && owner.HandleArrowKey(true))
+                        || ((theEvent.KeyCode == kRightArrowKeyCode) && owner.HandleArrowKey(false))))
                 {
                     return;
                 }
@@ -1119,7 +1204,10 @@ namespace AJut.UX.Controls
             public override void DraggingExited (INSDraggingInfo sender)
             {
                 base.DraggingExited(sender);
-                m_owner.ClearDropIndicator();
+                if (m_owner.TryGetTarget(out FlatTreeListView owner))
+                {
+                    owner.ClearDropIndicator();
+                }
             }
 
             public override void MouseDown (NSEvent theEvent)
@@ -1129,27 +1217,39 @@ namespace AJut.UX.Controls
                 // returned, so a double click never found its row and never toggled it.
                 int row = (int)this.GetRow(this.ConvertPointFromView(theEvent.LocationInWindow, null));
                 base.MouseDown(theEvent);
-                if (theEvent.ClickCount == 2)
+                if ((theEvent.ClickCount == 2) && m_owner.TryGetTarget(out FlatTreeListView owner))
                 {
-                    m_owner.OnTableDoubleClicked(row);
+                    owner.OnTableDoubleClicked(row);
                 }
             }
         }
 
-        // The table's delegate: row views, their teardown, and selection
+        // The table's delegate: row views, their teardown, and selection. The table's peer keeps its delegate alive, so it
+        // holds the tree weakly.
         private sealed class TableDelegate : NSTableViewDelegate
         {
-            private readonly FlatTreeListView m_owner;
+            private readonly WeakReference<FlatTreeListView> m_owner;
 
             public TableDelegate (FlatTreeListView owner)
             {
-                m_owner = owner;
+                m_owner = new WeakReference<FlatTreeListView>(owner);
+            }
+
+            // For a peer the runtime makes over an existing native delegate, which has no owner to tell
+            private TableDelegate (NativeHandle handle) : base(handle)
+            {
+                m_owner = new WeakReference<FlatTreeListView>(null);
             }
 
             public override NSView GetViewForItem (NSTableView tableView, NSTableColumn tableColumn, nint row)
             {
-                FlatTreeItem item = m_owner.m_store[(int)row];
-                return new RowCellView(item, m_owner.MakeRowContent(item));
+                if (!m_owner.TryGetTarget(out FlatTreeListView owner) || ((int)row >= owner.m_store.Count))
+                {
+                    return new NSView();
+                }
+
+                FlatTreeItem item = owner.m_store[(int)row];
+                return new RowCellView(item, owner.MakeRowContent(item));
             }
 
             public override NSTableRowView CoreGetRowView (NSTableView tableView, nint row) => new RowBackgroundView(m_owner);
@@ -1159,7 +1259,7 @@ namespace AJut.UX.Controls
 
             public override NSIndexSet GetSelectionIndexes (NSTableView tableView, NSIndexSet proposedSelectionIndexes)
             {
-                if (m_owner.m_selectionMode == eFlatTreeSelectionMode.None)
+                if (!m_owner.TryGetTarget(out FlatTreeListView owner) || (owner.m_selectionMode == eFlatTreeSelectionMode.None))
                 {
                     return new NSIndexSet();
                 }
@@ -1170,7 +1270,7 @@ namespace AJut.UX.Controls
                 // Keyboard moves and Command or Shift clicks are left as the table proposes them.
                 NSIndexSet proposed = proposedSelectionIndexes;
                 NSEvent currentEvent = NSApplication.SharedApplication.CurrentEvent;
-                if ((m_owner.m_selectionMode == eFlatTreeSelectionMode.Multi)
+                if ((owner.m_selectionMode == eFlatTreeSelectionMode.Multi)
                     && (currentEvent?.Type == NSEventType.LeftMouseDown)
                     && ((currentEvent.ModifierFlags & (NSEventModifierMask.CommandKeyMask | NSEventModifierMask.ShiftKeyMask)) == 0)
                     && (proposedSelectionIndexes.Count == 1))
@@ -1193,7 +1293,7 @@ namespace AJut.UX.Controls
                 var allowed = new NSMutableIndexSet();
                 foreach (nuint index in proposed.ToArray())
                 {
-                    if ((int)index < m_owner.m_store.Count && m_owner.m_store[(int)index].IsSelectable)
+                    if ((int)index < owner.m_store.Count && owner.m_store[(int)index].IsSelectable)
                     {
                         allowed.Add(index);
                     }
@@ -1202,39 +1302,61 @@ namespace AJut.UX.Controls
                 return allowed;
             }
 
-            public override void SelectionDidChange (NSNotification notification) => m_owner.OnTableSelectionChanged();
+            public override void SelectionDidChange (NSNotification notification)
+            {
+                if (m_owner.TryGetTarget(out FlatTreeListView owner))
+                {
+                    owner.OnTableSelectionChanged();
+                }
+            }
         }
 
-        // The table's data source: the row count, and dragging rows to reorder them
+        // The table's data source: the row count, and dragging rows to reorder them. The table's peer keeps its data source
+        // alive, so it holds the tree weakly.
         private sealed class TableDataSource : NSTableViewDataSource
         {
-            private readonly FlatTreeListView m_owner;
+            private readonly WeakReference<FlatTreeListView> m_owner;
 
             public TableDataSource (FlatTreeListView owner)
             {
-                m_owner = owner;
+                m_owner = new WeakReference<FlatTreeListView>(owner);
             }
 
-            public override nint GetRowCount (NSTableView tableView) => m_owner.m_store.Count;
+            // For a peer the runtime makes over an existing native data source, which has no owner to tell
+            private TableDataSource (NativeHandle handle) : base(handle)
+            {
+                m_owner = new WeakReference<FlatTreeListView>(null);
+            }
+
+            // No rows while the tree isn't following its store, which is while it is out of a window
+            public override nint GetRowCount (NSTableView tableView)
+            {
+                return (m_owner.TryGetTarget(out FlatTreeListView owner) && owner.m_isFollowingStore) ? owner.m_store.Count : 0;
+            }
 
             public override INSPasteboardWriting GetPasteboardWriterForRow (NSTableView tableView, nint row)
             {
-                FlatTreeItem item = m_owner.m_store[(int)row];
-                if (!m_owner.CanStartDrag(item))
+                if (!m_owner.TryGetTarget(out FlatTreeListView owner))
+                {
+                    return null;
+                }
+
+                FlatTreeItem item = owner.m_store[(int)row];
+                if (!owner.CanStartDrag(item))
                 {
                     return null;
                 }
 
                 // A selected row drags the whole selection, another row drags alone; the table asks once
                 // per dragged row, so the list is worked out on the first
-                if (row == m_owner.m_table.SelectedRow || !item.IsSelected)
+                if (row == owner.m_table.SelectedRow || !item.IsSelected)
                 {
                     var dragged = new List<FlatTreeItem>();
                     if (item.IsSelected)
                     {
-                        foreach (FlatTreeItem selected in m_owner.m_selectedItems)
+                        foreach (FlatTreeItem selected in owner.m_selectedItems)
                         {
-                            if (m_owner.CanStartDrag(selected))
+                            if (owner.CanStartDrag(selected))
                             {
                                 dragged.Add(selected);
                             }
@@ -1245,7 +1367,7 @@ namespace AJut.UX.Controls
                         dragged.Add(item);
                     }
 
-                    m_owner.m_draggedItems = dragged.ToArray();
+                    owner.m_draggedItems = dragged.ToArray();
                 }
 
                 var pasteboardItem = new NSPasteboardItem();
@@ -1265,7 +1387,12 @@ namespace AJut.UX.Controls
 
                 // The classes are Objective-C class objects, which the managed side only reaches as an NSObject through
                 //  the runtime. Without one the table's own row images are left showing.
-                FlatTreeItem[] dragged = m_owner.m_draggedItems;
+                if (!m_owner.TryGetTarget(out FlatTreeListView owner))
+                {
+                    return;
+                }
+
+                FlatTreeItem[] dragged = owner.m_draggedItems;
                 NSWindow window = tableView.Window;
                 NSObject pasteboardItemClass = ObjCRuntime.Runtime.GetNSObject(ObjCRuntime.Class.GetHandle(typeof(NSPasteboardItem)));
                 if ((dragged == null) || (dragged.Length == 0) || (window == null) || (pasteboardItemClass == null))
@@ -1273,7 +1400,7 @@ namespace AJut.UX.Controls
                     return;
                 }
 
-                NSImage ghost = DragGhostPainter.CreateImage(m_owner.MakeDragGhostText(dragged), tableView.EffectiveAppearance);
+                NSImage ghost = DragGhostPainter.CreateImage(owner.MakeDragGhostText(dragged), tableView.EffectiveAppearance);
                 CGPoint pointer = tableView.ConvertPointFromView(window.ConvertPointFromScreen(willBeginAtScreenPoint), null);
                 var ghostFrame = new CGRect(pointer.X + (nfloat)kPointerGap, pointer.Y - (ghost.Size.Height / 2), ghost.Size.Width, ghost.Size.Height);
 
@@ -1299,17 +1426,17 @@ namespace AJut.UX.Controls
             // "above" drop, so it keeps accepting the drag
             public override NSDragOperation ValidateDrop (NSTableView tableView, INSDraggingInfo info, nint row, NSTableViewDropOperation dropOperation)
             {
-                if (m_owner.m_store.Count == 0)
+                if (!m_owner.TryGetTarget(out FlatTreeListView owner) || (owner.m_store.Count == 0))
                 {
                     return NSDragOperation.None;
                 }
 
                 CGPoint location = tableView.ConvertPointFromView(info.DraggingLocation, null);
-                m_owner.FindHoveredRow(location, out int hoverIndex, out double yFraction);
-                tableView.SetDropRowDropOperation(GapRowFor(hoverIndex, yFraction), NSTableViewDropOperation.Above);
-                FlatTreeDropTarget target = m_owner.ComputeDropTarget(hoverIndex, yFraction, (double)location.X);
-                m_owner.ShowDropIndicator(hoverIndex, yFraction, target);
-                m_owner.m_shownDropTarget = target;
+                owner.FindHoveredRow(location, out int hoverIndex, out double yFraction);
+                tableView.SetDropRowDropOperation(FlatTreeDragDropManager.ComputeGapRow(hoverIndex, yFraction), NSTableViewDropOperation.Above);
+                FlatTreeDropTarget target = owner.ComputeDropTarget(hoverIndex, yFraction, (double)location.X);
+                owner.ShowDropIndicator(hoverIndex, yFraction, target);
+                owner.m_shownDropTarget = target;
                 return target.IsValid ? NSDragOperation.Move : NSDragOperation.None;
             }
 
@@ -1318,22 +1445,30 @@ namespace AJut.UX.Controls
             // so what was shown and what was done had come apart, and the shown target is the one the user aimed with.
             public override bool AcceptDrop (NSTableView tableView, INSDraggingInfo info, nint row, NSTableViewDropOperation dropOperation)
             {
-                FlatTreeDropTarget target = m_owner.m_shownDropTarget;
-                m_owner.ClearDropIndicator();
-                if (target == null || !target.IsValid || m_owner.m_draggedItems == null)
+                if (!m_owner.TryGetTarget(out FlatTreeListView owner))
                 {
                     return false;
                 }
 
-                m_owner.CompleteDrop(target);
-                m_owner.m_draggedItems = null;
+                FlatTreeDropTarget target = owner.m_shownDropTarget;
+                owner.ClearDropIndicator();
+                if (target == null || !target.IsValid || owner.m_draggedItems == null)
+                {
+                    return false;
+                }
+
+                owner.CompleteDrop(target);
+                owner.m_draggedItems = null;
                 return true;
             }
 
             public override void DraggingSessionEnded (NSTableView tableView, NSDraggingSession draggingSession, CGPoint endedAtScreenPoint, NSDragOperation operation)
             {
-                m_owner.ClearDropIndicator();
-                m_owner.m_draggedItems = null;
+                if (m_owner.TryGetTarget(out FlatTreeListView owner))
+                {
+                    owner.ClearDropIndicator();
+                    owner.m_draggedItems = null;
+                }
             }
         }
 
@@ -1374,6 +1509,12 @@ namespace AJut.UX.Controls
 
                 m_item.PropertyChanged += this.OnItemPropertyChanged;
                 this.RefreshExpander();
+            }
+
+            // For a peer the runtime makes over an existing native cell, which has no item to follow
+            private RowCellView (NativeHandle handle) : base(handle)
+            {
+                m_isTornDown = true;
             }
 
             public override bool IsFlipped => true;
@@ -1440,6 +1581,11 @@ namespace AJut.UX.Controls
                     this,
                     null
                 ));
+            }
+
+            // For a peer the runtime makes over an existing native chevron
+            private ExpanderGlyph (NativeHandle handle) : base(handle)
+            {
             }
 
             public event EventHandler<EventArgs> Activated;
@@ -1676,18 +1822,30 @@ namespace AJut.UX.Controls
         // pointer gets the hover fill and outline, and a selected one under the pointer keeps its fill with its strip and
         // outline in the hover color. With the list's DrawsRowSelection off, selection draws nothing here and the hover
         // draws the same on every row.
+        //
+        // The table retains its row views natively, so a row view holds the tree weakly; a strong hold would keep a tree
+        // dropped without Dispose alive through its own rows (see the class comment).
         private sealed class RowBackgroundView : NSTableRowView
         {
             private const double kSelectionStripWidth = 4.0;
 
-            private readonly FlatTreeListView m_owner;
+            private readonly WeakReference<FlatTreeListView> m_owner;
             private NSTrackingArea m_trackingArea;
             private bool m_isPointerOver;
 
-            public RowBackgroundView (FlatTreeListView owner)
+            public RowBackgroundView (WeakReference<FlatTreeListView> owner)
             {
                 m_owner = owner;
             }
+
+            // For a peer the runtime makes over an existing native row, which has no owner to tell
+            private RowBackgroundView (NativeHandle handle) : base(handle)
+            {
+                m_owner = new WeakReference<FlatTreeListView>(null);
+            }
+
+            // The list's DrawsRowSelection, or the default (on) once the tree is gone
+            private bool DrawsRowSelection => !m_owner.TryGetTarget(out FlatTreeListView owner) || owner.DrawsRowSelection;
 
             // A selected row in a focused table reports Emphasized here by default, and AppKit hands that to
             // every cell, so stock labels and buttons switch to their "on a strong selection" colors (white
@@ -1698,7 +1856,7 @@ namespace AJut.UX.Controls
 
             public override void DrawSelection (CGRect dirtyRect)
             {
-                if (!m_owner.DrawsRowSelection)
+                if (!this.DrawsRowSelection)
                 {
                     return;
                 }
@@ -1720,7 +1878,7 @@ namespace AJut.UX.Controls
             public override void DrawBackground (CGRect dirtyRect)
             {
                 base.DrawBackground(dirtyRect);
-                if (m_isPointerOver && !(this.Selected && m_owner.DrawsRowSelection))
+                if (m_isPointerOver && !(this.Selected && this.DrawsRowSelection))
                 {
                     ThemedColors.Get(ThemedColorKeys.FlatTree_HoverBackground).SetFill();
                     NSBezierPath.FillRect(this.Bounds);

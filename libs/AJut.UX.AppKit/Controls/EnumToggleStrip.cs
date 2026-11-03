@@ -4,6 +4,7 @@ namespace AJut.UX.Controls
     using System.Collections;
     using System.Collections.Generic;
     using AppKit;
+    using ObjCRuntime;
 
     // ===========[ EnumToggleStrip ]============================================
     // A ToggleStrip of an enum's values. Set SelectedItem to any value of the enum and the strip
@@ -44,6 +45,16 @@ namespace AJut.UX.Controls
             });
 
             m_strip.SelectionChanged += this.OnStripSelectionChanged;
+        }
+
+        /// <summary>
+        /// Used by the runtime when AppKit needs a managed peer for a native view whose peer is gone (one disposed while
+        /// still in a window, say). It only answers AppKit's calls: the native view keeps the strip it has. None of its
+        /// managed state survives a dispose, so a call that needs that state can still fail: dispose it only once AppKit
+        /// is done with it.
+        /// </summary>
+        protected EnumToggleStrip (NativeHandle handle) : base(handle)
+        {
         }
 
         protected override void Dispose (bool disposing)

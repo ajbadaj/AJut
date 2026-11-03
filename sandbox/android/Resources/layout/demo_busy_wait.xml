@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="BusyWait"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:alpha="0.7"
+        android:text="The platform's own spinner beside a line of text. ajutSpinnerDock puts the spinner on any side, and stopped, the spinner hides but keeps its room." />
+
+    <Switch
+        android:id="@+id/demo_busy_wait_spinning"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Spinning" />
+
+    <ajut.ux.controls.BusyWait
+        android:id="@+id/demo_busy_wait_right"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Loading, spinner on the right" />
+
+    <ajut.ux.controls.BusyWait
+        android:id="@+id/demo_busy_wait_left"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Spinner on the left"
+        app:ajutSpinnerDock="left" />
+
+    <ajut.ux.controls.BusyWait
+        android:id="@+id/demo_busy_wait_top"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Spinner on top, a size up"
+        app:ajutSpinnerDock="top"
+        app:ajutSpinnerSize="40dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="As an overlay"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:alpha="0.7"
+        android:text="ajutIsOverlay lays it over what it covers. While busy it covers the panel and takes every tap, so the button under it can't be pressed; stopped, it draws nothing and the button works." />
+
+    <Switch
+        android:id="@+id/demo_busy_wait_overlay_busy"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Busy" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="160dp"
+        android:layout_marginTop="8dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <ajut.ux.controls.AutoBrushButton
+                android:id="@+id/demo_busy_wait_overlay_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Press me" />
+
+            <TextView
+                android:id="@+id/demo_busy_wait_overlay_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp" />
+        </LinearLayout>
+
+        <ajut.ux.controls.BusyWait
+            android:id="@+id/demo_busy_wait_overlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:text="Saving..."
+            app:ajutIsOverlay="true"
+            app:ajutIsSpinning="false" />
+    </FrameLayout>
+</LinearLayout>

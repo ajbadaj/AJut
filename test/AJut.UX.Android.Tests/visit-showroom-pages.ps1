@@ -24,7 +24,7 @@
 param(
     [Parameter(Mandatory = $true)]
     [string]$OutDir,
-    [string[]]$Pages = @('Home', 'Controls', 'BrushButton', 'ColorEditIngressControl', 'EnumComboBox', 'EnumToggleStrip', 'GeometryButton', 'NumericEditor', 'ToggleStrip', 'Debug', 'Theme Tester'),
+    [string[]]$Pages = @('Home', 'Controls', 'AutoGrid', 'BrushButton', 'BusyWait', 'ColorEditIngressControl', 'EditableTextBlock', 'EnumComboBox', 'EnumToggleStrip', 'FlatTreeListView', 'GeometryButton', 'NumericEditor', 'PopupMenuButton', 'PropertyGrid', 'SimpleWrapPanel', 'Svg', 'ToggleStrip', 'UIElementRepeater', 'Debug', 'AppThemeManager', 'Theme Tester'),
     [string[]]$Themes = @('plain', 'ajut'),
     # The theme bar's Dark, Light or System; left out, System, or with -Touch the light or dark the device shows
     [ValidateSet('dark', 'light', 'system')]

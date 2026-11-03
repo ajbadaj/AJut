@@ -145,6 +145,16 @@ namespace AJut.UX.Controls
             m_controller.OnValueChanged(null);
         }
 
+        /// <summary>
+        /// Used by the runtime when AppKit needs a managed peer for a native view whose peer is gone (one disposed while
+        /// still in a window, say). It only answers AppKit's calls: the native view keeps the field and buttons it has.
+        /// None of its managed state survives a dispose, so a call that needs that state can still fail: dispose it only
+        /// once AppKit is done with it.
+        /// </summary>
+        protected NumericEditor (NativeHandle handle) : base(handle)
+        {
+        }
+
         protected override void Dispose (bool disposing)
         {
             if (disposing)
@@ -642,6 +652,11 @@ namespace AJut.UX.Controls
                 this.TranslatesAutoresizingMaskIntoConstraints = false;
             }
 
+            // For a peer the runtime makes over an existing native button
+            private NudgeButton (NativeHandle handle) : base(handle)
+            {
+            }
+
             public override void DrawRect (CGRect dirtyRect)
             {
                 const double kGlyphHalfLength = 4.0;
@@ -707,6 +722,12 @@ namespace AJut.UX.Controls
                 m_owner = new WeakReference<NumericEditor>(owner);
             }
 
+            // For a peer the runtime makes over an existing native field, which has no owner to tell
+            private EditorTextField (NativeHandle handle) : base(handle)
+            {
+                m_owner = new WeakReference<NumericEditor>(null);
+            }
+
             public override bool BecomeFirstResponder ()
             {
                 bool became = base.BecomeFirstResponder();
@@ -732,6 +753,12 @@ namespace AJut.UX.Controls
             public FieldDelegate (NumericEditor owner)
             {
                 m_owner = new WeakReference<NumericEditor>(owner);
+            }
+
+            // For a peer the runtime makes over an existing native delegate, which has no owner to tell
+            private FieldDelegate (NativeHandle handle) : base(handle)
+            {
+                m_owner = new WeakReference<NumericEditor>(null);
             }
 
             public override void Changed (NSNotification notification)

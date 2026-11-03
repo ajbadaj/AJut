@@ -2,6 +2,7 @@ namespace AJut.UX.Controls
 {
     using AJut.UX.Theming;
     using AppKit;
+    using ObjCRuntime;
 
     // ===========[ BrushButton ]================================================
     // A button whose background, foreground and border colors are set per state: twelve colors,
@@ -23,6 +24,20 @@ namespace AJut.UX.Controls
         private NSColor m_disabledBackground = ThemedColors.Get(ThemedColorKeys.BrushButton_DisabledBackground);
         private NSColor m_disabledForeground = ThemedColors.Get(ThemedColorKeys.BrushButton_DisabledForeground);
         private NSColor m_disabledBorder = ThemedColors.Get(ThemedColorKeys.BrushButton_DisabledBorder);
+
+        // ===========[ Setup/Construction/Teardown ]===========================
+        public BrushButton ()
+        {
+        }
+
+        /// <summary>
+        /// Used by the runtime when AppKit needs a managed peer for a native button whose peer is gone (one disposed while
+        /// still in a window, say). It only answers AppKit's calls. None of its managed state survives a dispose, so a
+        /// call that needs that state can still fail: dispose it only once AppKit is done with it.
+        /// </summary>
+        protected BrushButton (NativeHandle handle) : base(handle)
+        {
+        }
 
         // ===========[ Properties ]============================================
         public NSColor NormalBackground { get => m_normalBackground; set => this.Set(ref m_normalBackground, value); }

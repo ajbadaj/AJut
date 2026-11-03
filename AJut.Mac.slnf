@@ -12,7 +12,8 @@
       "test\\AJut.Core.CrashHost\\AJut.Core.CrashHost.csproj",
       "test\\AJut.Core.SourceGenerators.Tests\\AJut.Core.SourceGenerators.Tests.csproj",
       "test\\AJut.Core.Tests\\AJut.Core.Tests.csproj",
-      "test\\AJut.UX.Tests\\AJut.UX.Tests.csproj"
+      "test\\AJut.UX.Tests\\AJut.UX.Tests.csproj",
+      "test\\AJut.UX.UIKit.Tests\\AJut.UX.UIKit.Tests.csproj"
     ]
   }
 }

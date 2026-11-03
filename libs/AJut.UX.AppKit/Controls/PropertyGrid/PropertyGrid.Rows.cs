@@ -7,6 +7,7 @@ namespace AJut.UX.Controls
     using AJut.UX.Theming;
     using AppKit;
     using CoreGraphics;
+    using ObjCRuntime;
 
     public partial class PropertyGrid
     {
@@ -20,7 +21,8 @@ namespace AJut.UX.Controls
         // selected, the same whether the list has focus or not.
         //
         // Every hookup goes through one BindingSet, disposed when the tree drops the row, so a row
-        // never outlives its view and never keeps listening to its target.
+        // never outlives its view and never keeps listening to its target. A row is retained natively
+        // by the table its grid retains, so it holds the grid weakly (see the grid's class comment).
         private sealed class RowView : NSView, IFlatTreeRowContent
         {
             private const double kSubtitleFontSize = 10.0;
@@ -30,7 +32,7 @@ namespace AJut.UX.Controls
             // WinUI3's subtitle and list element header text sit at this, on the label's color
             private const double kSecondaryTextOpacity = 0.85;
 
-            private readonly PropertyGrid m_owner;
+            private readonly WeakReference<PropertyGrid> m_owner;
             private readonly FlatTreeItem m_item;
             private readonly PropertyEditTarget m_target;
             private readonly BindingSet m_bindings = new BindingSet();
@@ -44,7 +46,7 @@ namespace AJut.UX.Controls
 
             public RowView (PropertyGrid owner, FlatTreeItem item)
             {
-                m_owner = owner;
+                m_owner = new WeakReference<PropertyGrid>(owner);
                 m_item = item;
                 m_target = item.Source as PropertyEditTarget;
                 var row = new FillStack(NSUserInterfaceLayoutOrientation.Horizontal, spacing: kColumnSpacing)
@@ -167,6 +169,11 @@ namespace AJut.UX.Controls
                 }
             }
 
+            // For a peer the runtime makes over an existing native row, which has no owner or item to tell
+            private RowView (NativeHandle handle) : base(handle)
+            {
+            }
+
             public override bool IsFlipped => true;
 
             // A right click goes to the view under the pointer, which is nearly always the label or the editor rather than
@@ -200,7 +207,11 @@ namespace AJut.UX.Controls
                 }
 
                 m_isTornDown = true;
-                m_owner.m_liveRows.Remove(this);
+                if (m_owner.TryGetTarget(out PropertyGrid owner))
+                {
+                    owner.m_liveRows.Remove(this);
+                }
+
                 m_bindings.Dispose();
             }
 
@@ -283,14 +294,15 @@ namespace AJut.UX.Controls
         // A row's name, as a plain label (what NSTextField.CreateLabel makes), that also gives VoiceOver the row's menu.
         // VoiceOver reads a row by its name, and its show-menu command (VO-Shift-M, or AXShowMenu) asks the element it is
         // on; a label has no menu of its own, so "Set to default" could only be reached with a mouse. This pops up the
-        // row's menu, where the row has one, under the name.
+        // row's menu, where the row has one, under the name. The row retains this label natively, so the label holds the
+        // row weakly; a strong hold would keep a row the table had dropped alive through its own label.
         private sealed class RowNameLabel : NSTextField
         {
-            private readonly NSView m_row;
+            private readonly WeakReference<NSView> m_row;
 
             public RowNameLabel (NSView row)
             {
-                m_row = row;
+                m_row = new WeakReference<NSView>(row);
                 this.StringValue = String.Empty;
                 this.Editable = false;
                 this.Selectable = false;
@@ -301,9 +313,14 @@ namespace AJut.UX.Controls
                 this.Cell.Wraps = false;
             }
 
+            // For a peer the runtime makes over an existing native label, which has no row to tell
+            private RowNameLabel (NativeHandle handle) : base(handle)
+            {
+            }
+
             public override bool AccessibilityPerformShowMenu ()
             {
-                NSMenu menu = m_row.Menu;
+                NSMenu menu = m_row.TryGetTarget(out NSView row) ? row.Menu : null;
                 if (menu == null)
                 {
                     return false;
@@ -327,6 +344,15 @@ namespace AJut.UX.Controls
             public const double kEdgeThickness = 1.0;
 
             private bool m_isSelected;
+
+            public LabelFrameView ()
+            {
+            }
+
+            // For a peer the runtime makes over an existing native frame
+            private LabelFrameView (NativeHandle handle) : base(handle)
+            {
+            }
 
             public override bool IsFlipped => true;
 
@@ -465,6 +491,11 @@ namespace AJut.UX.Controls
                 row.Add(m_unset, alignment: eFillStackCrossAlignment.Center);
 
                 bindings.Watch(outer, nameof(PropertyEditTarget.EditValue), this.OnOuterValueChanged);
+            }
+
+            // For a peer the runtime makes over an existing native editor, which has no owner to tell
+            private NullableEditorView (NativeHandle handle) : base(handle)
+            {
             }
 
             public override bool IsFlipped => true;

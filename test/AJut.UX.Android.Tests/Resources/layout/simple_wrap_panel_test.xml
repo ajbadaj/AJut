@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <ajut.ux.controls.SimpleWrapPanel
+        android:id="@+id/simple_wrap_panel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:ajutHorizontalSpacing="10px"
+        app:ajutVerticalSpacing="3px">
+
+        <View
+            android:layout_width="40px"
+            android:layout_height="20px" />
+
+        <View
+            android:layout_width="40px"
+            android:layout_height="20px" />
+    </ajut.ux.controls.SimpleWrapPanel>
+</FrameLayout>

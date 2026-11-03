@@ -280,7 +280,23 @@ namespace AJut.UX.CodeBinding
             return channel;
         }
 
+        /// <summary>An <see cref="EditableTextBlock"/> edits a string property as the user types, and shows it when it changes elsewhere.</summary>
+        public static BindingSet.TwoWayChannel BindText (this BindingSet set, EditableTextBlock textBlock, INotifyPropertyChanged source, string propertyName, Func<string?> read, Action<string?> write)
+        {
+            return set.BindView<EditableTextBlock, EventArgs<string?>, string?>(
+                textBlock,
+                _HookEditableTextChanged, _UnhookEditableTextChanged,
+                _ReadEditableText, _WriteEditableText,
+                source, propertyName, read, write
+            );
+        }
+
         // ===========[ Helper Methods ]===================================
+        private static void _HookEditableTextChanged (EditableTextBlock textBlock, EventHandler<EventArgs<string?>> handler) => textBlock.TextChanged += handler;
+        private static void _UnhookEditableTextChanged (EditableTextBlock textBlock, EventHandler<EventArgs<string?>> handler) => textBlock.TextChanged -= handler;
+        private static string? _ReadEditableText (EditableTextBlock textBlock) => textBlock.Text;
+        private static void _WriteEditableText (EditableTextBlock textBlock, string? value) => textBlock.Text = value;
+
         private static void _HookProgressChanged (SeekBar seekBar, EventHandler<SeekBar.ProgressChangedEventArgs> handler) => seekBar.ProgressChanged += handler;
         private static void _UnhookProgressChanged (SeekBar seekBar, EventHandler<SeekBar.ProgressChangedEventArgs> handler) => seekBar.ProgressChanged -= handler;
         private static int _ReadProgress (SeekBar seekBar) => seekBar.Progress;

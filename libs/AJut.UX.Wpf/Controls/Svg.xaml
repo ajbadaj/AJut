@@ -1,6 +1,7 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:ajut="clr-namespace:AJut.UX"
+                    xmlns:ajutux="clr-namespace:AJut.UX;assembly=AJut.UX"
                     xmlns:local="clr-namespace:AJut.UX.Controls">
 
     <Style TargetType="{x:Type local:Svg}">
@@ -15,7 +16,9 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type ajut:SvgTreeElement}">
+                                <!-- Joined at SVG's default miter limit, as every stack's Svg is, rather than a Path's own 10 -->
                                 <Path Data="{Binding Path=Data, Mode=OneWay}"
+                                      StrokeMiterLimit="{x:Static ajutux:SvgDocument.kStrokeMiterLimit}"
                                       Opacity="{Binding Path=Opacity, Mode=OneWay}"
                                       Fill="{Binding Path=FillBrush, Mode=OneWay}"
                                       Stroke="{Binding Path=StrokeBrush, Mode=OneWay}"

@@ -20,4 +20,9 @@
     <ProjectReference Include="..\..\libs\AJut.UX.AppKit\AJut.UX.AppKit.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The penguin the WPF showroom's Svg page draws, the same file, so the two can be held side by side -->
+    <BundleResource Include="..\wpf\Images\PenguinExample.svg" Link="PenguinExample.svg" />
+  </ItemGroup>
+
 </Project>

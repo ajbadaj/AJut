@@ -79,6 +79,15 @@ namespace AJut.UX
         public bool Handled { get; set; }
     }
 
+    // ===========[ FlatTreeInsertionLine ]=========================================
+    // Where a drop's insertion line is drawn: against which row of the flat store, and on
+    // which edge of it. Each toolkit turns that into a y from its own row rects.
+
+    /// <summary>The row a drop's insertion line is drawn against, and whether it goes along that row's bottom edge or its top</summary>
+    /// <param name="Row">The store index of the row the line is drawn against</param>
+    /// <param name="IsBelowRow">True for the row's bottom edge, false for its top</param>
+    public sealed record FlatTreeInsertionLine (int Row, bool IsBelowRow);
+
     // ===========[ FlatTreeDragDropManager ]=======================================
     // Pure computation: given a flat tree store and a cursor position, computes
     // where a drop would land. Also provides reorder execution with multi-select
@@ -294,6 +303,55 @@ namespace AJut.UX
             }
         }
 
+        // ===========[ Touch Helpers ]=============================================
+
+        /// <summary>
+        /// The cursorX to hand <see cref="ComputeDropTarget"/> for a touch drag, from how far the finger has moved sideways
+        /// since the drag began. A mouse picks a depth by where the pointer sits across the list, which a finger can't
+        /// do: a finger rests mid row, and mid row reads as the deepest depth allowed every time. So a touch drag starts
+        /// at the depth of the row under the finger, and each indent's width the finger moves right or left goes one
+        /// level deeper or shallower. The start is the middle of that depth's band, so it takes half an indent either way
+        /// to change depth, and a finger that wavers a little stays put.
+        /// </summary>
+        /// <param name="draggedDepth">The TreeDepth of the dragged row the finger lifted.</param>
+        /// <param name="fingerDeltaX">How far the finger is now from where the drag began, right positive.</param>
+        /// <param name="indentSize">Points or dp per tree depth (TreeDepthIndentSize).</param>
+        public static double ComputeTouchDragCursorX (int draggedDepth, double fingerDeltaX, double indentSize)
+        {
+            double indent = Math.Max(indentSize, 1.0);
+            return (draggedDepth + 0.5) * indent + fingerDeltaX;
+        }
+
+        /// <summary>
+        /// How far to scroll a list this frame while a dragging finger is near its top or bottom edge: negative scrolls up,
+        /// positive scrolls down, and 0 anywhere else. The step grows evenly from 0 at <paramref name="edgeSize"/> in from
+        /// an edge to <paramref name="maxStep"/> at the edge and past it. The edge zones never overlap: in a list shorter
+        /// than two of them, each is half the list.
+        /// </summary>
+        /// <param name="fingerY">The finger's y in the list's visible area, 0 at its top.</param>
+        /// <param name="viewportHeight">The height of the list's visible area.</param>
+        public static double ComputeAutoScrollStep (double fingerY, double viewportHeight, double edgeSize, double maxStep)
+        {
+            if ((viewportHeight <= 0) || (edgeSize <= 0))
+            {
+                return 0.0;
+            }
+
+            double edge = Math.Min(edgeSize, viewportHeight / 2.0);
+            if (fingerY < edge)
+            {
+                return -maxStep * Math.Min(1.0, (edge - fingerY) / edge);
+            }
+
+            double fromBottom = viewportHeight - fingerY;
+            if (fromBottom < edge)
+            {
+                return maxStep * Math.Min(1.0, (edge - fromBottom) / edge);
+            }
+
+            return 0.0;
+        }
+
         // ===========[ Visual Helpers ]============================================
 
         /// <summary>
@@ -319,7 +377,90 @@ namespace AJut.UX
             return -1;
         }
 
+        /// <summary>
+        /// The gap a hover over a row means, as <see cref="ComputeDropTarget"/> reads it: above the row in its top half
+        /// (but never above the first row), below it otherwise. Returned as the store index of the row the gap is above,
+        /// so the gap after the last row is the store's count.
+        /// </summary>
+        public static int ComputeGapRow (int hoverStoreIndex, double cursorYFraction)
+        {
+            return ((cursorYFraction < 0.5) && (hoverStoreIndex > 0)) ? hoverStoreIndex : hoverStoreIndex + 1;
+        }
+
+        /// <summary>
+        /// Where a drop's insertion line is drawn. The line goes where the drop lands, which is not always the gap under
+        /// the cursor: moved left to a shallower depth between two deep rows, the drop lands after the whole open subtree
+        /// of the sibling it follows, so the line goes under that subtree's last row; a drop as a parent's first child goes
+        /// under the parent's own row. When neither row is in the store, or siblings show in reverse, the line goes at the
+        /// gap under the cursor (<see cref="ComputeGapRow"/>). Null for an invalid target or an empty store.
+        /// </summary>
+        public static FlatTreeInsertionLine? ComputeInsertionLine (
+            ObservableFlatTreeStore<FlatTreeItem> store,
+            FlatTreeDropTarget target,
+            int hoverStoreIndex,
+            double cursorYFraction,
+            eSiblingOrder siblingOrder = eSiblingOrder.Forward)
+        {
+            if ((store == null) || (store.Count == 0) || (target == null) || !target.IsValid)
+            {
+                return null;
+            }
+
+            int rowBefore = (siblingOrder == eSiblingOrder.Forward)
+                ? FindRowBeforeInsertion(store, target, FindParentStoreIndex(store, target))
+                : -1;
+            if (rowBefore >= 0)
+            {
+                return new FlatTreeInsertionLine(rowBefore, IsBelowRow: true);
+            }
+
+            int gapRow = ComputeGapRow(hoverStoreIndex, cursorYFraction);
+            return (gapRow >= store.Count)
+                ? new FlatTreeInsertionLine(store.Count - 1, IsBelowRow: true)
+                : new FlatTreeInsertionLine(gapRow, IsBelowRow: false);
+        }
+
         // ===========[ Private Helpers ]==========================================
+
+        // The row a drop will follow: the last visible row of the sibling before the insertion point (that sibling and
+        // its open subtree), or the parent's own row when the drop goes in first. -1 when that row is not in the store.
+        private static int FindRowBeforeInsertion (ObservableFlatTreeStore<FlatTreeItem> store, FlatTreeDropTarget target, int parentIndex)
+        {
+            if (target.InsertIndex <= 0)
+            {
+                return parentIndex;
+            }
+
+            IReadOnlyList<IObservableTreeNode> siblings = target.TargetParent.Children;
+            if (target.InsertIndex > siblings.Count)
+            {
+                return -1;
+            }
+
+            IObservableTreeNode previous = siblings[target.InsertIndex - 1];
+            int row = -1;
+            for (int index = 0; index < store.Count; ++index)
+            {
+                if (store[index].Source == previous)
+                {
+                    row = index;
+                    break;
+                }
+            }
+
+            if (row < 0)
+            {
+                return -1;
+            }
+
+            int depth = store[row].TreeDepth;
+            while ((row + 1 < store.Count) && (store[row + 1].TreeDepth > depth))
+            {
+                ++row;
+            }
+
+            return row;
+        }
 
         private static FlatTreeDropTarget ComputeParentAndIndex (FlatTreeItem above, int targetDepth, eSiblingOrder siblingOrder)
         {

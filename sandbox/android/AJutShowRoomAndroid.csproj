@@ -21,5 +21,9 @@
     <AndroidResource Include="Resources\layout\demo_*.xml">
       <LogicalName>raw\%(Filename)_source.xml</LogicalName>
     </AndroidResource>
+    <!-- The penguin the WPF showroom's Svg page draws, the same file, so the two can be held side by side -->
+    <AndroidResource Include="..\wpf\Images\PenguinExample.svg">
+      <LogicalName>raw\penguin_example.svg</LogicalName>
+    </AndroidResource>
   </ItemGroup>
 </Project>

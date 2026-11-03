@@ -4,6 +4,7 @@ namespace AJut.UX.Controls
     using AppKit;
     using CoreGraphics;
     using Foundation;
+    using ObjCRuntime;
 
     // ===========[ ManagedButton ]==============================================
     // The base for AJut's AppKit buttons that draw themselves: it tracks which of the four
@@ -31,6 +32,7 @@ namespace AJut.UX.Controls
         private const double kRepeatIntervalSeconds = 0.05;
 
         private NSTimer m_repeatTimer;
+        private bool m_isRepeatingAtInterval;
         private bool m_isPointerOver;
         private bool m_isPressed;
 
@@ -55,6 +57,16 @@ namespace AJut.UX.Controls
             ));
         }
 
+        /// <summary>
+        /// Used by the runtime when AppKit needs a managed peer for a native button whose peer is gone (one disposed while
+        /// still in a window, say). It only answers AppKit's calls: the native button keeps the tracking area it has.
+        /// None of its managed state survives a dispose, so a call that needs that state can still fail: dispose it only
+        /// once AppKit is done with it.
+        /// </summary>
+        protected ManagedButton (NativeHandle handle) : base(handle)
+        {
+        }
+
         protected override void Dispose (bool disposing)
         {
             if (disposing)
@@ -75,11 +87,12 @@ namespace AJut.UX.Controls
                 return;
             }
 
-            this.SendAction(this.Action, this.Target);
-            if (timer.TimeInterval > kRepeatIntervalSeconds)
+            this.SendActionIfSet();
+            if (!m_isRepeatingAtInterval)
             {
                 this.StopRepeating();
-                m_repeatTimer = NSTimer.CreateRepeatingScheduledTimer(TimeSpan.FromSeconds(kRepeatIntervalSeconds), this.OnRepeatTick);
+                m_isRepeatingAtInterval = true;
+                m_repeatTimer = NSTimer.CreateRepeatingScheduledTimer(this.RepeatInterval, this.OnRepeatTick);
             }
         }
 
@@ -90,6 +103,12 @@ namespace AJut.UX.Controls
 
         /// <summary>Activates on press and keeps activating while held, like a stepper arrow, instead of once on release</summary>
         public bool IsRepeating { get; set; }
+
+        /// <summary>With <see cref="IsRepeating"/>, how long a held button waits after its first activation before it repeats</summary>
+        public TimeSpan RepeatDelay { get; set; } = TimeSpan.FromSeconds(kRepeatDelaySeconds);
+
+        /// <summary>With <see cref="IsRepeating"/>, how often a held button activates once it is repeating</summary>
+        public TimeSpan RepeatInterval { get; set; } = TimeSpan.FromSeconds(kRepeatIntervalSeconds);
 
         /// <summary>
         /// The state the button is drawn in right now. A subclass can override it to draw one fixed state, which is how
@@ -160,7 +179,7 @@ namespace AJut.UX.Controls
         {
             if (this.Enabled)
             {
-                this.SendAction(this.Action, this.Target);
+                this.SendActionIfSet();
             }
         }
 
@@ -190,9 +209,10 @@ namespace AJut.UX.Controls
             if (this.IsRepeating)
             {
                 // A repeat button acts on the press, not the release
-                this.SendAction(this.Action, this.Target);
+                this.SendActionIfSet();
                 this.StopRepeating();
-                m_repeatTimer = NSTimer.CreateRepeatingScheduledTimer(TimeSpan.FromSeconds(kRepeatDelaySeconds), this.OnRepeatTick);
+                m_isRepeatingAtInterval = false;
+                m_repeatTimer = NSTimer.CreateRepeatingScheduledTimer(this.RepeatDelay, this.OnRepeatTick);
             }
         }
 
@@ -216,7 +236,7 @@ namespace AJut.UX.Controls
 
             if (wasPressed && this.Enabled && this.IsInside(theEvent))
             {
-                this.SendAction(this.Action, this.Target);
+                this.SendActionIfSet();
             }
         }
 
@@ -249,6 +269,36 @@ namespace AJut.UX.Controls
         {
             this.StopRepeating();
             this.SetPressed(false);
+        }
+
+        /// <summary>
+        /// Reads whether the pointer is over the button now, and redraws if that changed. For after something else had the
+        /// mouse (a menu's tracking loop, say), while the button heard no entered or exited from its tracking area.
+        /// </summary>
+        protected void RefreshPointerOver ()
+        {
+            // The visible rect, not the bounds, since that is what the tracking area follows: a button partly scrolled out
+            //  of view must not take the pointer over its hidden part as over it, or no exited would ever come to undo it
+            NSWindow window = this.Window;
+            bool isPointerOver = (window != null)
+                && NSApplication.SharedApplication.Active
+                && this.VisibleRect().Contains(this.ConvertPointFromView(window.MouseLocationOutsideOfEventStream, null));
+
+            this.SetPointerOver(isPointerOver);
+        }
+
+        /// <summary>
+        /// Sends the button's action the way -[NSControl sendAction:to:] does: nothing with no action set, and up the
+        /// responder chain with no target. The bindings' NSControl.SendAction throws on a null action or target instead,
+        /// which a button with no handler, or one aimed at the responder chain, would hit on every click.
+        /// </summary>
+        protected void SendActionIfSet ()
+        {
+            Selector action = this.Action;
+            if (action != null)
+            {
+                NSApplication.SharedApplication.SendAction(action, this.Target, this);
+            }
         }
 
         private void StopRepeating ()

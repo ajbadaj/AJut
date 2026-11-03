@@ -12,6 +12,7 @@ namespace AJut.UX.Controls
     using AppKit;
     using CoreGraphics;
     using Foundation;
+    using ObjCRuntime;
 
     // ===========[ DockZoneView ]===============================================
     // The AppKit view of one AJut.UX DockZoneViewModel: the VM owns the dock tree (splits, tabs,
@@ -91,6 +92,16 @@ namespace AJut.UX.Controls
             this.AddTrackingArea(m_hoverTrackingArea);
 
             this.RebuildLayout();
+        }
+
+        /// <summary>
+        /// Used by the runtime when AppKit needs a managed peer for a native view whose peer is gone (one disposed while
+        /// still in a window, say). It only answers AppKit's calls: the native view keeps the views it has. None of its
+        /// managed state survives a dispose, so a call that needs that state can still fail: dispose it only once AppKit
+        /// is done with it.
+        /// </summary>
+        protected DockZoneView (NativeHandle handle) : base(handle)
+        {
         }
 
         /// <summary>
@@ -759,6 +770,11 @@ namespace AJut.UX.Controls
                 string _ReadTitle () => owner.ReadTitle(shown);
             }
 
+            // For a peer the runtime makes over an existing native header, which has no owner to tell
+            private HeaderView (NativeHandle handle) : base(handle)
+            {
+            }
+
             /// <summary>Shows the panel as the one being typed into: the focused fill, with the title and close X in the text that reads on it</summary>
             public bool IsPanelFocused
             {
@@ -891,6 +907,11 @@ namespace AJut.UX.Controls
 
                 m_scrollBack = this.MakeScrollButton(DockGlyphButton.eGlyph.ScrollBack, "Scroll tabs back", this.ScrollBack);
                 m_scrollForward = this.MakeScrollButton(DockGlyphButton.eGlyph.ScrollForward, "Scroll tabs forward", this.ScrollForward);
+            }
+
+            // For a peer the runtime makes over an existing native strip, which has no owner to tell
+            private TabStrip (NativeHandle handle) : base(handle)
+            {
             }
 
             public override void Layout ()
@@ -1219,6 +1240,11 @@ namespace AJut.UX.Controls
                 m_glyphColorKey = (glyph == eGlyph.Close) ? ThemedColorKeys.DockZone_HeaderForeground : ThemedColorKeys.DockTabScrollButton_Glyph;
             }
 
+            // For a peer the runtime makes over an existing native button
+            private DockGlyphButton (NativeHandle handle) : base(handle)
+            {
+            }
+
             /// <summary>The <see cref="ThemedColors"/> key the glyph is drawn in: the text beside it for the X, the scroll arrow key for the arrows</summary>
             public string GlyphColorKey
             {
@@ -1453,6 +1479,11 @@ namespace AJut.UX.Controls
                 }
 
                 string _ReadTitle () => owner.ReadTitle(adapter);
+            }
+
+            // For a peer the runtime makes over an existing native tab, which has no owner to tell
+            private TabView (NativeHandle handle) : base(handle)
+            {
             }
 
             public override bool IsFlipped => true;

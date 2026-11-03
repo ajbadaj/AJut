@@ -46,6 +46,9 @@
       <Deploy />
     </Project>
     <Project Path="test/AJut.UX.Tests/AJut.UX.Tests.csproj" />
+    <Project Path="test/AJut.UX.UIKit.Tests/AJut.UX.UIKit.Tests.csproj">
+      <Deploy />
+    </Project>
     <Project Path="test/AJut.UX.Wpf.Tests/AJut.UX.Wpf.Tests.csproj" />
     <Project Path="test/AJut.UX.WinUI3.Tests/AJut.UX.WinUI3.Tests.csproj">
       <Platform Project="x64" />

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="FlatTreeListView"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:alpha="0.7"
+        android:text="A tree shown as a flat list. Tap a chevron, or anywhere across a row's indent, to expand or collapse it, and tap a row to select it. Press and hold a row to lift it, then drag it to move it: slide sideways while dragging to drop it a level deeper or shallower. On the desktop stacks the control is FlatTreeListControl." />
+
+    <ajut.ux.controls.ToggleStrip
+        android:id="@+id/demo_flat_tree_modes"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        app:ajutItems="@array/demo_tree_selection_modes" />
+
+    <!-- A list scrolls itself, so it gets a height of its own inside the page's scrolling -->
+    <ajut.ux.controls.FlatTreeListView
+        android:id="@+id/demo_flat_tree"
+        android:layout_width="match_parent"
+        android:layout_height="360dp"
+        android:layout_marginTop="12dp"
+        app:ajutIsDragDropReorderEnabled="true"
+        app:ajutStartItemsExpanded="true" />
+
+    <TextView
+        android:id="@+id/demo_flat_tree_selection"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Nothing selected" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:alpha="0.7"
+        android:text="Disabled, it neither scrolls nor takes a tap, and its chevrons and row text take their disabled colors." />
+
+    <ajut.ux.controls.FlatTreeListView
+        android:id="@+id/demo_flat_tree_disabled"
+        android:layout_width="match_parent"
+        android:layout_height="160dp"
+        android:layout_marginTop="8dp"
+        android:enabled="false"
+        app:ajutStartItemsExpanded="true" />
+</LinearLayout>

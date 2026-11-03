@@ -1,6 +1,7 @@
 namespace AJut.UX.Tests
 {
     using System.Windows;
+    using System.Windows.Media;
     using AJut.UX;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -21,6 +22,22 @@ namespace AJut.UX.Tests
             Assert.AreEqual(new Thickness(1, 2, 1, 2), CoerceUtils.CoerceThicknessFrom("1,2"));
             Assert.AreEqual(new CornerRadius(5), CoerceUtils.CoerceCornerRadiusFrom(new CornerRadius(5)));
             Assert.IsNull(CoerceUtils.CoerceThicknessFrom(null));
+        }
+
+        [TestMethod]
+        public void CoerceUtils_Wpf_ColorName_ReadsInAnyCaseAndLength ()
+        {
+            Assert.IsTrue(CoerceUtils.TryGetColorFromString("Red", out Color red));
+            Assert.AreEqual(Colors.Red, red);
+            Assert.IsTrue(CoerceUtils.TryGetColorFromString("blue", out Color blue));
+            Assert.AreEqual(Colors.Blue, blue);
+            Assert.IsTrue(CoerceUtils.TryGetColorFromString("white", out Color white));
+            Assert.AreEqual(Colors.White, white);
+            Assert.IsTrue(CoerceUtils.TryGetColorFromString("DARKBLUE", out Color darkBlue));
+            Assert.AreEqual(Colors.DarkBlue, darkBlue);
+            Assert.IsFalse(CoerceUtils.TryGetColorFromString("notacolor", out _));
+            Assert.IsTrue(CoerceUtils.TryGetColorFromString("FF0000", out Color bareHex), "Hex without its # still reads");
+            Assert.AreEqual(Colors.Red, bareHex);
         }
     }
 }

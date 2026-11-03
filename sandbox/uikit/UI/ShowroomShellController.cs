@@ -8,9 +8,10 @@ namespace AJutShowRoomUIKit.UI
 
     /// <summary>
     /// The showroom window's content: the theme bar across the top, on every page, so any page can be judged in any look,
-    /// and the navigation stack of areas and pages under it. Dark, Light, and System set the window's light or dark,
-    /// which every control follows as it is. The AJut theme and touch switches change the colors controls are made with,
-    /// so they rebuild the showroom, back on the page that was showing.
+    /// and the navigation stack of areas and pages under it. Dark, Light, and System go through the app's
+    /// <see cref="AppThemeManager"/>, which sets the window's light or dark, and every control follows that as it is.
+    /// The AJut theme and touch switches change the colors controls are made with, so they rebuild the showroom, back on
+    /// the page that was showing.
     /// </summary>
     public sealed class ShowroomShellController : UIViewController
     {
@@ -143,15 +144,11 @@ namespace AJutShowRoomUIKit.UI
                 return;
             }
 
+            // The app's AppThemeManager sets every window's light or dark from the mode
             bool usedTouchVariant = ThemedColors.UsesTouchVariant;
             ShowroomSettings.ThemeMode = mode;
-            UIWindow window = this.View.Window;
-            if (window != null)
-            {
-                window.OverrideUserInterfaceStyle = ShowroomSettings.InterfaceStyle;
-            }
 
-            // Light and dark need nothing rebuilt, but System takes iOS's touch answer, which can change the palette
+            // Light and dark need nothing rebuilt, but System takes AJut's touch default, which can change the palette
             if (ThemedColors.IsThemeLoaded && (ThemedColors.UsesTouchVariant != usedTouchVariant))
             {
                 this.RebuildShowroom();
@@ -218,6 +215,10 @@ namespace AJutShowRoomUIKit.UI
             UIWindow window = this.View.Window;
             if (window != null)
             {
+                // The stock controls take the AJut colors, or the system's again with the theme off, before the views are
+                // made again. The window's tint is reset here rather than left as the app set it, since the showroom set it.
+                StockControlTint.Apply();
+                window.TintColor = StockControlTint.Accent;
                 window.RootViewController = ShowroomRoot.Create(ShowroomRoot.PathOf(m_navigation));
             }
         }

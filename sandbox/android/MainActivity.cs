@@ -10,7 +10,6 @@ namespace AJutShowRoomAndroid
     using AJut.UX.Theming;
     using Android.App;
     using Android.Content;
-    using Android.Content.Res;
     using Android.Graphics.Drawables;
     using Android.OS;
     using Android.Text;
@@ -36,7 +35,6 @@ namespace AJutShowRoomAndroid
         private BindingSet? m_themeBarBinder;
         private BackCallback? m_backCallback;
         private bool m_isBackCallbackRegistered;
-        private eThemeMode m_appliedThemeMode = eThemeMode.System;
         private ColorArgb? m_titleForeground;
 
         // ===========[ Setup/Construction/Teardown ]===================================
@@ -44,33 +42,12 @@ namespace AJutShowRoomAndroid
         {
             base.AttachBaseContext(@base);
 
-            // Forcing dark or light on this activity alone. Android picks light or dark resources (and so the dark or
-            // light half of the DayNight theme, the action bar and the stock widgets) from the configuration's night
-            // mode, and AJut's ThemeColors reads the same bit. AppCompat's AppCompatDelegate.setDefaultNightMode does
-            // this for AppCompat activities, but this is a plain Activity with no AppCompat. UiModeManager's
-            // SetApplicationNightMode works without it, but only from Android 12 (this app runs from 10), and it
-            // persists across launches, which would stop "adb shell cmd uimode night" from picking the look for a
+            // Light or dark goes in here, as the activity attaches and before anything reads its resources, which is
+            // the only time Android lets it in: the AppThemeManager gives the activity the theme bar's pick, and
+            // recreates it when the pick changes. System gives it nothing, so the device's own light or dark comes
+            // through, a change to it included, and "adb shell cmd uimode night" still picks the look for a
             // screenshot run.
-            //
-            // So the night mode goes in as an override configuration instead, the mechanism AppCompat itself falls back
-            // on (ContextThemeWrapper.applyOverrideConfiguration). It has to be applied here, before anything reads
-            // the activity's resources or theme, so a switch takes effect through a recreate, which every theme
-            // change here does anyway. A configuration made with new Configuration() starts with every field
-            // undefined, so it overrides the night bits and nothing else. System applies nothing, and the device's own
-            // light or dark comes through, a change to it included.
-            // https://developer.android.com/reference/android/view/ContextThemeWrapper#applyOverrideConfiguration(android.content.res.Configuration)
-            m_appliedThemeMode = ShowroomSettings.Instance.ThemeMode;
-            UiMode? nightMode = m_appliedThemeMode switch
-            {
-                eThemeMode.Dark => UiMode.NightYes,
-                eThemeMode.Light => UiMode.NightNo,
-                _ => null,
-            };
-
-            if (nightMode != null)
-            {
-                this.ApplyOverrideConfiguration(new Configuration { UiMode = nightMode.Value });
-            }
+            ShowroomSettings.Instance.ApplyTheme(this);
         }
 
         protected override void OnCreate (Bundle? savedInstanceState)
@@ -140,13 +117,6 @@ namespace AJutShowRoomAndroid
             if (startPage != null)
             {
                 ShowroomMap.TryOpen(this, startPage);
-            }
-
-            // A light or dark asked for by the launch extras is only applied as the activity attaches, so it takes one
-            // recreate to show it.
-            if (ShowroomSettings.Instance.ThemeMode != m_appliedThemeMode)
-            {
-                this.Recreate();
             }
         }
 
@@ -282,14 +252,11 @@ namespace AJutShowRoomAndroid
             );
         }
 
-        // Each switch recreates the activity, since views read the theme as they are made
+        // Each switch recreates the activity, since views read the theme as they are made. A light or dark switch is
+        // recreated by the AppThemeManager; the other two switches here recreate it themselves.
         private void SwitchThemeMode (eThemeMode mode)
         {
-            if (ShowroomSettings.Instance.ThemeMode != mode)
-            {
-                ShowroomSettings.Instance.ThemeMode = mode;
-                this.Recreate();
-            }
+            ShowroomSettings.Instance.ThemeMode = mode;
         }
 
         private void SwitchUsesTouchVariant (bool usesTouchVariant)
@@ -333,6 +300,10 @@ namespace AJutShowRoomAndroid
 
             m_pageBinder = new BindingSet();
             page.Bind(pageView, this, m_pageBinder);
+
+            // A page's views are made after the activity started, when the AppThemeManager tinted the stock widgets it
+            // had, so the page's own stock widgets are tinted here
+            StockControlTint.Apply(pageView);
 
             bool canGoBack = m_pages.Count > 1;
             if (this.ActionBar != null)

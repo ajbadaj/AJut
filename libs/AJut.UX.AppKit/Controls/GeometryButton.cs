@@ -6,6 +6,7 @@ namespace AJut.UX.Controls
     using AppKit;
     using CoreGraphics;
     using Foundation;
+    using ObjCRuntime;
 
     // ===========[ GeometryButton ]=============================================
     // A button that is a shape: path markup (the same string WinUI3's GeometryButton takes)
@@ -32,6 +33,20 @@ namespace AJut.UX.Controls
         private double m_traceThickness;
         private string m_title = String.Empty;
         private NSFont m_titleFont = NSFont.SystemFontOfSize(NSFont.SystemFontSize);
+
+        // ===========[ Setup/Construction/Teardown ]===========================
+        public GeometryButton ()
+        {
+        }
+
+        /// <summary>
+        /// Used by the runtime when AppKit needs a managed peer for a native button whose peer is gone (one disposed while
+        /// still in a window, say). It only answers AppKit's calls. None of its managed state survives a dispose, so a
+        /// call that needs that state can still fail: dispose it only once AppKit is done with it.
+        /// </summary>
+        protected GeometryButton (NativeHandle handle) : base(handle)
+        {
+        }
 
         // ===========[ Properties ]============================================
         /// <summary>The text drawn centered over the shape; empty, the default, draws none</summary>

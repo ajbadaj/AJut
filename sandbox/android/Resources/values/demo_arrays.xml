@@ -13,6 +13,12 @@
     <item>Peppers</item>
   </string-array>
 
+  <string-array name="demo_tree_selection_modes">
+    <item>None</item>
+    <item>Single</item>
+    <item>Multi</item>
+  </string-array>
+
   <string-array name="demo_months">
     <item>January</item>
     <item>February</item>

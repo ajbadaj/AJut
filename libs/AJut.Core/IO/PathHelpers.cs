@@ -5,7 +5,6 @@
     using System.IO;
     using System.Linq;
     using System.Text;
-    using System.Text.RegularExpressions;
     using AJut.Storage;
 
     public static class PathHelpers
@@ -412,32 +411,41 @@
         }
 
         /// <summary>
-        /// Regex Breakdown:
-        ///     1. Look for: *.
-        ///     2. Look for extension text, words, numbers,
+        /// Provides all the extensions in the filter, in the order its patterns give them, each once and without its dot:
+        /// <c>jpg</c> for <c>*.jpg</c>, the name itself for a filter written as a file name (<c>ajut.core.dll</c> for
+        /// <c>*ajut.core.dll</c>), and <c>*</c> for <c>*.*</c>. Only the patterns are read, never the descriptions beside
+        /// them, and a filter can be its patterns alone (<c>*.txt;*.md</c>). Null or empty gives none.
         /// </summary>
-        private static readonly Regex kExtensionParser = new Regex(@"[|;](?:[\*\.]+|[\*])([\w\d\-\.\*]+)(?:$|\||;)");
-
-        /// <summary>
-        /// Provides all the extensions in the filter, each without its dot: <c>jpg</c> for <c>*.jpg</c>, the name itself for
-        /// a filter written as a file name (<c>ajut.core.dll</c> for <c>*ajut.core.dll</c>), and <c>*</c> for <c>*.*</c>
-        /// </summary>
-        /// <param name="fileFilterString">Path filter of expected format: Thing (*.thing)|*.thing, with additional items separated by vertical bar (pipe)</param>
-        /// <returns>Enumerable of each extension</returns>
+        /// <param name="fileFilterString">Path filter of expected format: Thing (*.thing)|*.thing, with additional items separated by vertical bar (pipe), and a group's patterns by semicolon</param>
+        /// <returns>Each extension</returns>
         public static string[] ParseExtensionsFrom (string fileFilterString)
         {
             List<string> extensions = new List<string>();
-            for (Match match = kExtensionParser.Match(fileFilterString); match?.Success == true; match = match.NextMatch())
+            if (fileFilterString.IsNullOrEmpty())
             {
-                // Result (if successful) of the above capture will be 4 groups:
-                //  Group[0] = Entire capture, |*.extension|
-                //  Group[1] = First bar, |
-                //  Group[2] = Inside the bars, *.extension
-                //  Group[3] = Last bar, |
-                //
-                // The only time it will deviate will be if format is a bit unexpected, and we are start of line or end of line, eliminating
-                //  Group[1] or Group[3] respectively.
-                extensions.AddIfUnique(match.Groups[match.Groups.Count - 1].Value.TrimEnd(';', ' '));
+                return extensions.ToArray();
+            }
+
+            // A filter alternates description and patterns (Text (*.txt)|*.txt|Images|*.png;*.jpg), so its patterns are every
+            //  second part, starting with the second. A description is display text, and one written as "Images (*.png;*.jpg)"
+            //  must not be read as patterns too. A filter with no bar at all is nothing but patterns.
+            string[] parts = fileFilterString.Split('|');
+            int firstPatternsIndex = (parts.Length == 1) ? 0 : 1;
+            for (int index = firstPatternsIndex; index < parts.Length; index += 2)
+            {
+                foreach (string pattern in parts[index].Split(';'))
+                {
+                    // The wildcard and dot in front go (*.jpg gives jpg, *ajut.core.dll gives ajut.core.dll), and a pattern
+                    //  that is nothing but those (*.*, or *) matches any file
+                    string trimmedPattern = pattern.Trim();
+                    if (trimmedPattern.Length == 0)
+                    {
+                        continue;
+                    }
+
+                    string extension = trimmedPattern.TrimStart('*', '.');
+                    extensions.AddIfUnique(extension.Length == 0 ? "*" : extension);
+                }
             }
 
             return extensions.ToArray();

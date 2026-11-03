@@ -9,6 +9,7 @@ namespace AJut.UX.Controls
     using AJut.UX.PropertyInteraction;
     using AJut.UX.Theming;
     using AppKit;
+    using ObjCRuntime;
 
     // ===========[ PropertyGrid ]===============================================
     // Reflection-based property editor: give it an object (or several) and it shows a row per
@@ -26,6 +27,17 @@ namespace AJut.UX.Controls
     //
     // The label splitter (PropertyGrid.LabelSplitter.cs) sizes the label column the way it does on
     // the other stacks: drag the line over the label and editor boundary, or double-click it to fit.
+    //
+    // An AppKit view and its managed peer keep each other alive while anything native the view
+    // retains holds the view: the native side roots the peer, and the peer roots the native side.
+    // This grid natively retains its tree and its label splitter, so nothing they hold may lead back
+    // to the grid while it is out of a window, or a grid dropped without Dispose is never collected:
+    //  - the label splitter and each row hold the grid weakly;
+    //  - the tree's row factory and drag check go through TreeHooks, which holds the grid weakly,
+    //    and the grid listens to the tree's events only while it is in a window;
+    //  - the tree is only given the rows while the grid is in a window, since every row's target
+    //    reaches the grid through the controller following it. Back in a window the grid gives them
+    //    back, as the controller has them after catching up, with the selection kept.
     //
     // The controller is reflection based, so the grid passes its RequiresUnreferencedCode and
     // RequiresDynamicCode on to the app: an app that trims is warned where it sets SingleItemSource
@@ -51,7 +63,11 @@ namespace AJut.UX.Controls
         private double m_labelColumnWidth = double.NaN;
         private IEnumerable m_itemsSource;
         private object m_singleItemSource;
+        private bool m_isListeningToTree;
         private bool m_isDisposed;
+
+        // The row selected when the grid left its window, selected again when it comes back
+        private PropertyEditTarget m_selectedWhenDetached;
 
         // ===========[ Setup/Construction/Teardown ]===========================
         [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = PropertyGridTrimming.kSourceCarriesTheWarning)]
@@ -61,13 +77,16 @@ namespace AJut.UX.Controls
             m_controller = new PropertyGridController(this);
             m_controller.PropertyTreeChanged += this.OnControllerPropertyTreeChanged;
 
+            var hooks = new TreeHooks(this);
             m_tree = new FlatTreeListView
             {
                 SelectionMode = eFlatTreeSelectionMode.Single,
                 IsDragDropReorderEnabled = true,
-                CanDragItem = m_controller.CanDragRow,
+                CanDragItem = hooks.CanDragRow,
                 CanDropItem = PropertyGridController.CanDropItem,
-                RowContentFactory = this.CreateRowContent,
+                RowContentFactory = hooks.CreateRowContent,
+
+                // Static, so it holds nothing that leads back to the grid
                 DragGhostTextFactory = ReadDragGhostText,
                 TranslatesAutoresizingMaskIntoConstraints = false,
 
@@ -81,8 +100,6 @@ namespace AJut.UX.Controls
                 // Each row marks its own selection on its label (see RowView)
                 DrawsRowSelection = false,
             };
-            m_tree.DragDropReorderRequested += this.OnTreeDragDropReorderRequested;
-            m_tree.SelectionChanged += this.OnTreeSelectionChanged;
             this.AddSubview(m_tree);
             NSLayoutConstraint.ActivateConstraints(new[]
             {
@@ -104,6 +121,16 @@ namespace AJut.UX.Controls
             });
         }
 
+        /// <summary>
+        /// Used by the runtime when AppKit needs a managed peer for a native view whose peer is gone (one disposed while
+        /// still in a window, say). It only answers AppKit's calls: the native view keeps the tree and splitter it has.
+        /// None of its managed state survives a dispose, so a call that needs that state can still fail: dispose it only
+        /// once AppKit is done with it.
+        /// </summary>
+        protected PropertyGrid (NativeHandle handle) : base(handle)
+        {
+        }
+
         // An NSView's Dispose is also its release, so the grid's teardown (every subscription it made,
         // and the source) runs here, on the managed side going away. To empty a grid that stays in
         // use, set its sources to null instead.
@@ -114,8 +141,7 @@ namespace AJut.UX.Controls
             if (disposing && !m_isDisposed)
             {
                 m_isDisposed = true;
-                m_tree.DragDropReorderRequested -= this.OnTreeDragDropReorderRequested;
-                m_tree.SelectionChanged -= this.OnTreeSelectionChanged;
+                this.ListenToTree(false);
                 m_controller.PropertyTreeChanged -= this.OnControllerPropertyTreeChanged;
                 m_controller.Dispose();
                 this.SingleItemSource = null;
@@ -143,14 +169,28 @@ namespace AJut.UX.Controls
             base.ViewDidMoveToWindow();
 
             // Out of a window, drop the source to grid subscription so a long-lived source does not keep
-            // a grid that was dropped without Dispose; back in one, restore it and catch up
+            // a grid that was dropped without Dispose, stop listening to the tree, and take the rows out of
+            // it (see the class comment). Back in one, catch up, give the tree the rows again with the
+            // selection as it was, then listen again, so putting the rows back raises no selection events
+            // of its own.
             if (this.Window != null)
             {
                 m_controller.OnAttached();
+                this.ShowRootItemsInTree();
+                if (m_selectedWhenDetached != null)
+                {
+                    m_tree.TrySelectItemForSource(m_selectedWhenDetached, scrollIntoView: false);
+                    m_selectedWhenDetached = null;
+                }
+
+                this.ListenToTree(true);
             }
             else
             {
+                m_selectedWhenDetached = this.SelectedTarget;
+                this.ListenToTree(false);
                 m_controller.OnDetached();
+                m_tree.RootItemsSource = null;
             }
         }
 
@@ -375,16 +415,48 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ IPropertyGridHost Implementations ]=====================
+        // Out of a window the tree is given nothing (see the class comment); coming back gives it the controller's rows
         void IPropertyGridHost.ShowRootItems (IReadOnlyList<IObservableTreeNode> rootItems)
         {
-            m_tree.RootItemsSource = rootItems;
+            if (this.Window != null)
+            {
+                this.ShowRootItemsInTree();
+            }
         }
 
         // ===========[ Helper Methods ]========================================
-        private NSView CreateRowContent (FlatTreeItem item)
+        // The tree is only rebuilt when it would show something new: a catch-up that rebuilt the rows has given them already
+        private void ShowRootItemsInTree ()
         {
-            return new RowView(this, item);
+            if (!ReferenceEquals(m_tree.RootItemsSource, m_controller.RootItems))
+            {
+                m_tree.RootItemsSource = m_controller.RootItems;
+            }
         }
+
+        private void ListenToTree (bool listen)
+        {
+            if (listen == m_isListeningToTree)
+            {
+                return;
+            }
+
+            m_isListeningToTree = listen;
+            if (listen)
+            {
+                m_tree.DragDropReorderRequested += this.OnTreeDragDropReorderRequested;
+                m_tree.SelectionChanged += this.OnTreeSelectionChanged;
+            }
+            else
+            {
+                m_tree.DragDropReorderRequested -= this.OnTreeDragDropReorderRequested;
+                m_tree.SelectionChanged -= this.OnTreeSelectionChanged;
+            }
+        }
+
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = PropertyGridTrimming.kSourceCarriesTheWarning)]
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = PropertyGridTrimming.kSourceCarriesTheWarning)]
+        private bool CanDragRow (IObservableTreeNode node) => m_controller.CanDragRow(node);
 
         // A dragged list element is named by its row's name, rather than by the edit target's type
         private static string ReadDragGhostText (FlatTreeItem item) => (item.Source as PropertyEditTarget)?.DisplayName;
@@ -502,6 +574,29 @@ namespace AJut.UX.Controls
                 Title = title,
                 Padding = new NSEdgeInsets((nfloat)kPaddingVertical, (nfloat)kPaddingHorizontal, (nfloat)kPaddingVertical, (nfloat)kPaddingHorizontal),
             };
+        }
+
+        // ===========[ Subclasses/structs ]====================================
+        // What the tree calls back into the grid for. The tree is retained by the grid, so these hold the grid weakly; a
+        // strong hold would loop through native code where the GC can't see it.
+        private sealed class TreeHooks
+        {
+            private readonly WeakReference<PropertyGrid> m_grid;
+
+            public TreeHooks (PropertyGrid grid)
+            {
+                m_grid = new WeakReference<PropertyGrid>(grid);
+            }
+
+            public bool CanDragRow (IObservableTreeNode node)
+            {
+                return m_grid.TryGetTarget(out PropertyGrid grid) && grid.CanDragRow(node);
+            }
+
+            public NSView CreateRowContent (FlatTreeItem item)
+            {
+                return m_grid.TryGetTarget(out PropertyGrid grid) ? new RowView(grid, item) : new NSView();
+            }
         }
     }
 }

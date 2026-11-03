@@ -10,6 +10,7 @@ namespace AJut.UX.Controls
     using AppKit;
     using CoreGraphics;
     using Foundation;
+    using ObjCRuntime;
 
     // ===========[ ToggleStrip ]================================================
     // A row (or, with Orientation vertical, a column) of toggle buttons for picking one (or, with
@@ -26,9 +27,11 @@ namespace AJut.UX.Controls
     // OverflowBehavior, when the items do not fit along the strip:
     //  - Clip: the strip is cut off at its end.
     //  - Scroll: the strip scrolls along its length, and a newly selected item is scrolled into view.
-    //    The mouse wheel scrolls a horizontal strip sideways. There are no scrollers; instead a small
-    //    dot shows just outside each end the strip can still scroll toward (AJut.UX's
-    //    ToggleStripScrollIndicators, the same rule and sizes on every stack).
+    //    The mouse wheel scrolls a horizontal strip sideways. There are no scrollers; instead, while the
+    //    items don't fit, an arrow button sits at each end, as the Windows strips' bump buttons do (a Mac
+    //    has a mouse, where the phones show end dots for a finger). Each steps the strip its way, repeats
+    //    while held, and is disabled at an end the strip has reached (AJut.UX's
+    //    ToggleStripScrollIndicators, the same rule as every stack's).
     //  - OverflowPopup: AJut.UX's ToggleStripOverflowCalculator decides which items stay in the strip
     //    (the one just picked first, then the other selected ones, order kept), and the rest go in a
     //    menu behind a chevron at the end:
@@ -41,13 +44,17 @@ namespace AJut.UX.Controls
     {
         private const double kOverflowButtonLength = 22.0;
 
+        // Each Scroll mode arrow's length along the strip: the BumpStack's 12 point chevron with 4 either side, as the
+        // Windows strips pad their bump buttons
+        private const double kScrollArrowLength = 20.0;
+
         private readonly ToggleStripItemCollection m_items;
         private readonly List<ItemButton> m_buttons = new List<ItemButton>();
         private readonly OverflowChevronButton m_overflowButton;
         private readonly StripScrollView m_scrollView;
         private readonly FlippedDocumentView m_scrollDocument;
-        private readonly ThemedView m_scrollBackIndicator;
-        private readonly ThemedView m_scrollForwardIndicator;
+        private readonly ScrollArrowButton m_scrollBackArrow;
+        private readonly ScrollArrowButton m_scrollForwardArrow;
         private IEnumerable m_itemsSource;
         private INotifyCollectionChanged m_listenedSource;
         private object m_selectedItem;
@@ -92,12 +99,22 @@ namespace AJut.UX.Controls
             this.AddSubview(m_scrollView);
             m_scrollView.ScrolledAlong += this.OnScrolledAlong;
 
-            m_scrollBackIndicator = MakeScrollIndicator();
-            m_scrollForwardIndicator = MakeScrollIndicator();
-            this.AddSubview(m_scrollBackIndicator);
-            this.AddSubview(m_scrollForwardIndicator);
+            m_scrollBackArrow = new ScrollArrowButton(this, isForward: false) { Hidden = true };
+            m_scrollForwardArrow = new ScrollArrowButton(this, isForward: true) { Hidden = true };
+            this.AddSubview(m_scrollBackArrow);
+            this.AddSubview(m_scrollForwardArrow);
 
             this.ClipsToBounds = true;
+        }
+
+        /// <summary>
+        /// Used by the runtime when AppKit needs a managed peer for a native view whose peer is gone (one disposed while
+        /// still in a window, say). It only answers AppKit's calls: the native view keeps the buttons it has. None of its
+        /// managed state survives a dispose, so a call that needs that state can still fail: dispose it only once AppKit
+        /// is done with it.
+        /// </summary>
+        protected ToggleStrip (NativeHandle handle) : base(handle)
+        {
         }
 
         protected override void Dispose (bool disposing)
@@ -163,7 +180,7 @@ namespace AJut.UX.Controls
 
         private void OnScrolledAlong (object sender, EventArgs e)
         {
-            this.UpdateScrollIndicators();
+            this.UpdateScrollArrows();
         }
 
         private void OnOverflowMenuItemActivated (object sender, EventArgs e)
@@ -372,6 +389,9 @@ namespace AJut.UX.Controls
                 }
 
                 m_overflowButton.Enabled = value;
+                m_scrollBackArrow.NeedsDisplay = true;
+                m_scrollForwardArrow.NeedsDisplay = true;
+                this.UpdateScrollArrows();
                 this.NeedsDisplay = true;
             }
         }
@@ -530,10 +550,8 @@ namespace AJut.UX.Controls
 
             m_scrollView.Hidden = m_overflowBehavior != eToggleStripOverflow.Scroll;
             m_scrollView.IsVertical = this.IsVertical;
-
-            // Clip mode leaves items past the end that must not show, so the strip clips them. In Scroll mode the scroll
-            // view clips its own content, and the strip draws its scroll indicators just outside its ends.
-            this.ClipsToBounds = m_overflowBehavior != eToggleStripOverflow.Scroll;
+            m_scrollBackArrow.IsVertical = this.IsVertical;
+            m_scrollForwardArrow.IsVertical = this.IsVertical;
             this.RelayoutItems();
         }
 
@@ -695,63 +713,52 @@ namespace AJut.UX.Controls
                     : new CGRect((nfloat)position, 0, (nfloat)kOverflowButtonLength, (nfloat)crossSize);
             }
 
+            // 3. In Scroll mode, while the items don't fit, an arrow button at each end and the scroll view between them;
+            //    otherwise the scroll view has the whole strip. Kept off whenever the items fit, as a BumpStack's are.
+            bool showsArrows = (m_overflowBehavior == eToggleStripOverflow.Scroll) && (position > available + ToggleStripScrollIndicators.kEndTolerance);
+            m_scrollBackArrow.Hidden = !showsArrows;
+            m_scrollForwardArrow.Hidden = !showsArrows;
             if (m_overflowBehavior == eToggleStripOverflow.Scroll)
             {
-                m_scrollView.Frame = this.Bounds;
+                double arrowLength = showsArrows ? kScrollArrowLength : 0.0;
+                double viewport = Math.Max(0.0, available - (2.0 * arrowLength));
+                m_scrollView.Frame = isVertical
+                    ? new CGRect(0, (nfloat)arrowLength, (nfloat)crossSize, (nfloat)viewport)
+                    : new CGRect((nfloat)arrowLength, 0, (nfloat)viewport, (nfloat)crossSize);
                 m_scrollDocument.Frame = isVertical
                     ? new CGRect(0, 0, (nfloat)crossSize, (nfloat)position)
                     : new CGRect(0, 0, (nfloat)position, (nfloat)crossSize);
+                if (showsArrows)
+                {
+                    m_scrollBackArrow.Frame = isVertical
+                        ? new CGRect(0, 0, (nfloat)crossSize, (nfloat)kScrollArrowLength)
+                        : new CGRect(0, 0, (nfloat)kScrollArrowLength, (nfloat)crossSize);
+                    m_scrollForwardArrow.Frame = isVertical
+                        ? new CGRect(0, (nfloat)(available - kScrollArrowLength), (nfloat)crossSize, (nfloat)kScrollArrowLength)
+                        : new CGRect((nfloat)(available - kScrollArrowLength), 0, (nfloat)kScrollArrowLength, (nfloat)crossSize);
+                }
             }
 
-            this.UpdateScrollIndicators();
+            this.UpdateScrollArrows();
         }
 
-        // A Scroll strip shows a dot just outside each end it can still scroll toward, by AJut.UX's rule. The dots sit past
-        // the strip's bounds, so they take no layout space and the strip doesn't move as they come and go, and a click
-        // there never reaches them, since hit testing stops at the strip's own frame.
-        private void UpdateScrollIndicators ()
+        // Each Scroll mode arrow can be pressed while the strip can still scroll its way, by AJut.UX's rule, and while the
+        // strip itself is enabled. Disabled, it draws dimmed, as a BumpStack's does at an end.
+        private void UpdateScrollArrows ()
         {
-            if (m_overflowBehavior != eToggleStripOverflow.Scroll)
+            if (m_scrollBackArrow.Hidden)
             {
-                m_scrollBackIndicator.Hidden = true;
-                m_scrollForwardIndicator.Hidden = true;
                 return;
             }
 
-            bool isVertical = this.IsVertical;
             CGRect visible = m_scrollView.ContentView.Bounds;
             CGRect content = m_scrollDocument.Frame;
-            ToggleStripScrollIndicators indicators = isVertical
+            ToggleStripScrollIndicators reach = this.IsVertical
                 ? ToggleStripScrollIndicators.For((double)visible.Y, (double)content.Height, (double)visible.Height)
                 : ToggleStripScrollIndicators.For((double)visible.X, (double)content.Width, (double)visible.Width);
 
-            m_scrollBackIndicator.Hidden = !indicators.ShowBack;
-            m_scrollForwardIndicator.Hidden = !indicators.ShowForward;
-
-            // Each dot is centered across the strip, and its center sits the shared offset past the strip's end
-            CGRect bounds = this.Bounds;
-            double radius = ToggleStripScrollIndicators.kDotDiameter / 2.0;
-            double across = ((isVertical ? (double)bounds.Width : (double)bounds.Height) / 2.0) - radius;
-            double backAlong = -ToggleStripScrollIndicators.kDotCenterOffset - radius;
-            double forwardAlong = (isVertical ? (double)bounds.Height : (double)bounds.Width) + ToggleStripScrollIndicators.kDotCenterOffset - radius;
-            m_scrollBackIndicator.SetFrameOrigin(isVertical
-                ? new CGPoint((nfloat)across, (nfloat)backAlong)
-                : new CGPoint((nfloat)backAlong, (nfloat)across));
-            m_scrollForwardIndicator.SetFrameOrigin(isVertical
-                ? new CGPoint((nfloat)across, (nfloat)forwardAlong)
-                : new CGPoint((nfloat)forwardAlong, (nfloat)across));
-        }
-
-        private static ThemedView MakeScrollIndicator ()
-        {
-            return new ThemedView
-            {
-                BackgroundColorKey = ThemedColorKeys.ToggleStrip_ScrollIndicator,
-                CornerRadius = ToggleStripScrollIndicators.kDotDiameter / 2.0,
-                AlphaValue = (nfloat)ToggleStripScrollIndicators.kDotOpacity,
-                Frame = new CGRect(0, 0, (nfloat)ToggleStripScrollIndicators.kDotDiameter, (nfloat)ToggleStripScrollIndicators.kDotDiameter),
-                Hidden = true,
-            };
+            m_scrollBackArrow.Enabled = m_isEnabled && reach.ShowBack;
+            m_scrollForwardArrow.Enabled = m_isEnabled && reach.ShowForward;
         }
 
         // Click-and-drag scrolling in Scroll mode. AppKit sends a press's drags and release to the view that took the
@@ -904,6 +911,15 @@ namespace AJut.UX.Controls
 
         private sealed class FlippedDocumentView : NSView
         {
+            public FlippedDocumentView ()
+            {
+            }
+
+            // For a peer the runtime makes over an existing native document view
+            private FlippedDocumentView (NativeHandle handle) : base(handle)
+            {
+            }
+
             public override bool IsFlipped => true;
         }
 
@@ -920,6 +936,11 @@ namespace AJut.UX.Controls
             public OverflowChevronButton ()
             {
                 this.ToolTip = "More";
+            }
+
+            // For a peer the runtime makes over an existing native button
+            private OverflowChevronButton (NativeHandle handle) : base(handle)
+            {
             }
 
             /// <summary>Whether it sits across a vertical strip's foot, where it takes the plain button fill at rest.</summary>
@@ -989,11 +1010,140 @@ namespace AJut.UX.Controls
             }
         }
 
+        // A Scroll mode arrow: the BumpStack's chevron at a bump button's strengths, in the colors WinUI3's strip gives its
+        // bump buttons. Across a horizontal strip it draws no fill, so the strip's own surface shows, and takes the items'
+        // text; across a vertical one it takes the plain button fill, outline and text, since the strip's surface shades
+        // top to bottom and a slice of it across an end reads as part of neither; on a disabled strip, the strip's
+        // disabled fill and text. It steps the strip on press and repeats while held, and holds the strip weakly, since
+        // the strip retains it.
+        private sealed class ScrollArrowButton : ManagedButton
+        {
+            private const double kGlyphSize = 12.0;
+            private const double kBorderThickness = 1.0;
+
+            // How far one press steps the strip: a BumpStack's default bump
+            private const double kStepLength = 60.0;
+
+            private readonly WeakReference<ToggleStrip> m_owner;
+            private readonly bool m_isForward;
+            private bool m_isVertical;
+
+            public ScrollArrowButton (ToggleStrip owner, bool isForward)
+            {
+                m_owner = new WeakReference<ToggleStrip>(owner);
+                m_isForward = isForward;
+                this.IsRepeating = true;
+                this.Activated += this.OnActivated;
+                this.ApplyAccessibilityLabel();
+            }
+
+            // For a peer the runtime makes over an existing native button, which has no strip to tell
+            private ScrollArrowButton (NativeHandle handle) : base(handle)
+            {
+                m_owner = new WeakReference<ToggleStrip>(null);
+            }
+
+            protected override void Dispose (bool disposing)
+            {
+                if (disposing)
+                {
+                    this.Activated -= this.OnActivated;
+                }
+
+                base.Dispose(disposing);
+            }
+
+            /// <summary>Whether it sits at a vertical strip's top or foot, pointing up or down, rather than left or right.</summary>
+            public bool IsVertical
+            {
+                get => m_isVertical;
+                set
+                {
+                    if (m_isVertical != value)
+                    {
+                        m_isVertical = value;
+                        this.ApplyAccessibilityLabel();
+                        this.NeedsDisplay = true;
+                    }
+                }
+            }
+
+            public override void DrawRect (CGRect dirtyRect)
+            {
+                bool isStripEnabled = !m_owner.TryGetTarget(out ToggleStrip owner) || owner.m_isEnabled;
+                CGContext context = NSGraphicsContext.CurrentContext.CGContext;
+                context.SetAlpha((nfloat)BumpChevron.OpacityFor(this.CurrentState));
+                context.BeginTransparencyLayer();
+
+                // 1. The fill, and across a vertical strip the plain button outline inside the bounds
+                string glyphKey;
+                if (!isStripEnabled)
+                {
+                    ThemedColors.Get(ThemedColorKeys.ToggleStrip_DisabledBackground).SetFill();
+                    NSBezierPath.FillRect(this.Bounds);
+                    glyphKey = ThemedColorKeys.ToggleStrip_DisabledForeground;
+                }
+                else if (m_isVertical)
+                {
+                    ThemedColors.Get(ThemedColorKeys.BrushButton_NormalBackground).SetFill();
+                    NSBezierPath.FillRect(this.Bounds);
+                    NSBezierPath outline = NSBezierPath.FromRect(this.Bounds.Inset((nfloat)(kBorderThickness / 2.0), (nfloat)(kBorderThickness / 2.0)));
+                    outline.LineWidth = (nfloat)kBorderThickness;
+                    ThemedColors.Get(ThemedColorKeys.BrushButton_NormalBorder).SetStroke();
+                    outline.Stroke();
+                    glyphKey = ThemedColorKeys.BrushButton_NormalForeground;
+                }
+                else
+                {
+                    glyphKey = ThemedColorKeys.ToggleStripButton_Foreground;
+                }
+
+                // 2. The chevron, pointing the way the button scrolls
+                BumpChevron.Stroke(this.Bounds, m_isForward, !m_isVertical, kGlyphSize, ThemedColors.Get(glyphKey));
+                context.EndTransparencyLayer();
+            }
+
+            // A wheel over an arrow scrolls the strip, as it does over the items
+            public override void ScrollWheel (NSEvent theEvent)
+            {
+                if (m_owner.TryGetTarget(out ToggleStrip owner))
+                {
+                    owner.m_scrollView.ScrollWheel(theEvent);
+                    return;
+                }
+
+                base.ScrollWheel(theEvent);
+            }
+
+            private void OnActivated (object sender, EventArgs e)
+            {
+                if (m_owner.TryGetTarget(out ToggleStrip owner))
+                {
+                    owner.m_scrollView.ScrollAlong(m_isForward ? kStepLength : -kStepLength);
+                }
+            }
+
+            private void ApplyAccessibilityLabel ()
+            {
+                string direction = m_isVertical ? (m_isForward ? "down" : "up") : (m_isForward ? "right" : "left");
+                this.AccessibilityLabel = "Scroll " + direction;
+            }
+        }
+
         // The Scroll mode scroller. A mouse wheel only scrolls vertically, so on a horizontal strip it did nothing; there
         // a mostly vertical scroll is turned into a sideways one, as the WinUI3 strip's BumpStack does. A mostly
         // sideways one (a trackpad swipe) goes through as normal, and so does everything on a vertical strip.
         private sealed class StripScrollView : NSScrollView
         {
+            public StripScrollView ()
+            {
+            }
+
+            // For a peer the runtime makes over an existing native scroll view
+            private StripScrollView (NativeHandle handle) : base(handle)
+            {
+            }
+
             /// <summary>Raised whenever the content scrolls: by the wheel, a drag, or code</summary>
             public event EventHandler ScrolledAlong;
 
@@ -1062,6 +1212,11 @@ namespace AJut.UX.Controls
                 m_owner = owner;
                 m_item = item;
                 m_item.PropertyChanged += this.OnItemPropertyChanged;
+            }
+
+            // For a peer the runtime makes over an existing native button, which has no item or owner to tell
+            private ItemButton (NativeHandle handle) : base(handle)
+            {
             }
 
             public ToggleStripItem Item => m_item;

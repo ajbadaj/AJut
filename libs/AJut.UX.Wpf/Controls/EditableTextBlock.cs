@@ -1,3 +1,10 @@
+// eEditTextInitializationBehavior and eEditTextCloseAction moved to AJut.UX, in the same namespace, so the mobile
+// EditableTextBlocks share them, and eEditTextInstigator followed so the AppKit EditableTextBlock shares it. These
+// forward anything built against them here to where they are now.
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(AJut.UX.Controls.eEditTextInitializationBehavior))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(AJut.UX.Controls.eEditTextCloseAction))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(AJut.UX.Controls.eEditTextInstigator))]
+
 namespace AJut.UX.Controls
 {
     using System;
@@ -6,25 +13,6 @@ namespace AJut.UX.Controls
     using System.Windows.Input;
     using System.Windows.Threading;
     using DPUtils = DPUtils<EditableTextBlock>;
-
-    public enum eEditTextInitializationBehavior
-    {
-        SelectAll,
-        CursorAtEnd,
-    }
-
-    public enum eEditTextCloseAction
-    {
-        Cancel,
-        Apply,
-    }
-
-    public enum eEditTextInstigator
-    {
-        Manually,
-        DoubleClick,
-        MouseOver,
-    }
 
     // ===========[ EditableTextBlock ]=============================================
     // WinUI3 port: pending.

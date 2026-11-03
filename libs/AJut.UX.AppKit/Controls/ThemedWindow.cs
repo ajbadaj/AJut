@@ -6,6 +6,7 @@ namespace AJut.UX.Controls
     using AppKit;
     using CoreGraphics;
     using Foundation;
+    using ObjCRuntime;
 
     // ===========[ ThemedWindow ]===============================================
     // The AppKit sibling of ThemedWindowRootControl: a window whose chrome is drawn from AJut's
@@ -143,6 +144,16 @@ namespace AJut.UX.Controls
             this.RefreshWindowState();
             this.InstallCaptionButtonWatchers();
             this.ApplyChromeState();
+        }
+
+        /// <summary>
+        /// Used by the runtime when AppKit needs a managed peer for a native window whose peer is gone (one disposed while
+        /// still open, say). It only answers AppKit's calls: the native window keeps the views it has. None of its managed
+        /// state survives a dispose, so a call that needs that state can still fail: dispose it only once AppKit is done
+        /// with it.
+        /// </summary>
+        protected ThemedWindow (NativeHandle handle) : base(handle)
+        {
         }
 
         // Undo everything the window hooked up. Runs once, when the window closes.
@@ -453,6 +464,15 @@ namespace AJut.UX.Controls
         // that has never changed it, and unset means zoom.
         private sealed class TitleStripView : ThemedView
         {
+            public TitleStripView ()
+            {
+            }
+
+            // For a peer the runtime makes over an existing native strip
+            private TitleStripView (NativeHandle handle) : base(handle)
+            {
+            }
+
             public override bool MouseDownCanMoveWindow => false;
 
             public override void MouseDown (NSEvent theEvent)
@@ -530,6 +550,11 @@ namespace AJut.UX.Controls
                 button.AddTrackingArea(m_trackingArea);
             }
 
+            // For a peer the runtime makes over an existing native watcher, which has no owner to tell
+            private CaptionButtonWatcher (NativeHandle handle) : base(handle)
+            {
+            }
+
             public void Detach ()
             {
                 if (m_button != null && m_trackingArea != null)
@@ -561,6 +586,11 @@ namespace AJut.UX.Controls
             public ChromeDelegate (ThemedWindow owner)
             {
                 m_owner = owner;
+            }
+
+            // For a peer the runtime makes over an existing native delegate, which has no owner to tell
+            private ChromeDelegate (NativeHandle handle) : base(handle)
+            {
             }
 
             public override void DidBecomeKey (NSNotification notification) => m_owner.HandleKeyStateChanged(true);

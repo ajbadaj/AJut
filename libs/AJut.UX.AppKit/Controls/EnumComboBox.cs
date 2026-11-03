@@ -4,6 +4,7 @@ namespace AJut.UX.Controls
     using System.Collections.Generic;
     using AppKit;
     using CoreGraphics;
+    using ObjCRuntime;
 
     // ===========[ EnumComboBox ]===============================================
     // A pop-up button listing an enum's values. Set SelectedItem to any value of the enum and the
@@ -27,6 +28,16 @@ namespace AJut.UX.Controls
             : base(CGRect.Empty, false)
         {
             this.Activated += this.OnActivated;
+        }
+
+        /// <summary>
+        /// Used by the runtime when AppKit needs a managed peer for a native pop-up button whose peer is gone (one disposed
+        /// while still in a window, say). It only answers AppKit's calls: the native button keeps the items it has. None
+        /// of its managed state survives a dispose, so a call that needs that state can still fail: dispose it only once
+        /// AppKit is done with it.
+        /// </summary>
+        protected EnumComboBox (NativeHandle handle) : base(handle)
+        {
         }
 
         protected override void Dispose (bool disposing)

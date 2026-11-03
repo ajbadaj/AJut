@@ -65,6 +65,20 @@ namespace AJut.UX.CodeBinding
             return channel;
         }
 
+        /// <summary>Binds an EditableTextBlock's text both ways: an edit writes the source on every keystroke, and a change in the source shows</summary>
+        public static BindingSet.TwoWayChannel BindText (this BindingSet set, EditableTextBlock textBlock, INotifyPropertyChanged source, string propertyName, Func<string> readSource, Action<string> writeSource)
+        {
+            BindingSet.TwoWayChannel channel = set.TwoWay(
+                source, propertyName,
+                readSource, writeSource,
+                textBlock.ReadEditableText, textBlock.WriteEditableText
+            );
+
+            // The control sends its action for an edit's changes only, never for a change from code
+            set.Add(new ActivatedLink(textBlock, channel.OnTargetEdited));
+            return channel;
+        }
+
         /// <summary>Shows a source string in a label (or any text field the user does not edit)</summary>
         public static void BindLabel (this BindingSet set, NSTextField label, INotifyPropertyChanged source, string propertyName, Func<string> readSource)
         {
@@ -151,6 +165,19 @@ namespace AJut.UX.CodeBinding
             );
 
             set.Add(new NumericEditorValueLink(editor, channel.OnTargetEdited));
+            return channel;
+        }
+
+        /// <summary>Binds a PathSelectionControl's path both ways; the source sees every keystroke, a browse, and the path shortened</summary>
+        public static BindingSet.TwoWayChannel BindSelectedPath (this BindingSet set, PathSelectionControl pathControl, INotifyPropertyChanged source, string propertyName, Func<string> readSource, Action<string> writeSource)
+        {
+            BindingSet.TwoWayChannel channel = set.TwoWay(
+                source, propertyName,
+                readSource, writeSource,
+                pathControl.ReadSelectedPath, pathControl.WriteSelectedPath
+            );
+
+            set.Add(new SelectedPathLink(pathControl, channel.OnTargetEdited));
             return channel;
         }
 
@@ -257,6 +284,8 @@ namespace AJut.UX.CodeBinding
         // group rather than a lambda. BindingSet only stores and invokes these, never subscribes them.
         private static string ReadText (this NSTextField field) => field.StringValue ?? String.Empty;
         private static void WriteText (this NSTextField field, string value) => field.StringValue = value ?? String.Empty;
+        private static string ReadEditableText (this EditableTextBlock textBlock) => textBlock.Text;
+        private static void WriteEditableText (this EditableTextBlock textBlock, string value) => textBlock.Text = value;
         private static bool ReadIsOn (this NSButton button) => button.State == NSCellStateValue.On;
         private static void WriteIsOn (this NSButton button, bool isOn) => button.State = isOn ? NSCellStateValue.On : NSCellStateValue.Off;
         private static double ReadDoubleValue (this NSControl control) => control.DoubleValue;
@@ -269,6 +298,8 @@ namespace AJut.UX.CodeBinding
         private static void WriteEnabled (this NSMenuItem item, bool isEnabled) => item.Enabled = isEnabled;
         private static ColorArgb ReadEditColor (this ColorEditIngressControl swatch) => swatch.EditColor;
         private static void WriteEditColor (this ColorEditIngressControl swatch, ColorArgb value) => swatch.EditColor = value;
+        private static string ReadSelectedPath (this PathSelectionControl pathControl) => pathControl.SelectedPath;
+        private static void WriteSelectedPath (this PathSelectionControl pathControl, string path) => pathControl.SelectedPath = path;
         private static object ReadValue (this NumericEditor editor) => editor.Value;
         private static void WriteValue (this NumericEditor editor, object value) => editor.Value = value;
         private static object ReadSelectedItem (this ToggleStrip strip) => strip.SelectedItem;
@@ -329,6 +360,23 @@ namespace AJut.UX.CodeBinding
             public void Dispose () => m_swatch.EditColorChanged -= this.OnEditColorChanged;
 
             private void OnEditColorChanged (object sender, EventArgs e) => m_onChanged();
+        }
+
+        private sealed class SelectedPathLink : IDisposable
+        {
+            private readonly PathSelectionControl m_pathControl;
+            private readonly Action m_onChanged;
+
+            public SelectedPathLink (PathSelectionControl pathControl, Action onChanged)
+            {
+                m_pathControl = pathControl;
+                m_onChanged = onChanged;
+                m_pathControl.SelectedPathChanged += this.OnSelectedPathChanged;
+            }
+
+            public void Dispose () => m_pathControl.SelectedPathChanged -= this.OnSelectedPathChanged;
+
+            private void OnSelectedPathChanged (object sender, EventArgs e) => m_onChanged();
         }
 
         private sealed class NumericEditorValueLink : IDisposable

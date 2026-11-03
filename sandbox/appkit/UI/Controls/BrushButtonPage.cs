@@ -2,6 +2,7 @@ namespace AJutShowRoomAppKit.UI.Controls
 {
     using AJut.UX.Controls;
     using AppKit;
+    using ObjCRuntime;
 
     public sealed class BrushButtonPage : ShowroomPage
     {
@@ -23,6 +24,10 @@ namespace AJutShowRoomAppKit.UI.Controls
             this.AddLabeledDemo("No border", new BrushButton { Title = "Borderless", NormalBorder = null, PointerOverBorder = null, PressedBorder = null });
             this.AddLabeledDemo("Disabled", new BrushButton { Title = "Disabled", Enabled = false });
 
+            // With no target, the action goes up the responder chain, the AppKit way, to the application, which shows its
+            //  About panel
+            this.AddLabeledDemo("Up the responder chain", new BrushButton { Title = "About this app", Action = new Selector("orderFrontStandardAboutPanel:") });
+
             this.AddHeading("AutoBrushButton");
             this.AddLabeledDemo("System accent", new AutoBrushButton { Title = "Follows System Settings" });
             this.AddLabeledDemo("Green accent", new AutoBrushButton { Title = "Green", PropagatedAccentColor = NSColor.SystemGreen });
@@ -41,6 +46,13 @@ var warning = new BrushButton
     Title = ""Delete"",
     NormalBackground = NSColor.SystemRed,
     NormalForeground = NSColor.White,
+};
+
+// No target: the action goes up the responder chain
+var about = new BrushButton
+{
+    Title = ""About this app"",
+    Action = new Selector(""orderFrontStandardAboutPanel:""),
 };"
             );
         }

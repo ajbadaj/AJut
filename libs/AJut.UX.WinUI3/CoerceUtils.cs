@@ -1,8 +1,6 @@
 ﻿namespace AJut.UX
 {
     using System;
-    using System.Collections.Generic;
-    using System.Reflection;
     using System.Runtime.CompilerServices;
     using AJut.UX.Helpers;
     using Microsoft.UI;
@@ -128,18 +126,6 @@
         public static TEnum CoerceEnumFrom<TEnum> (object originalValue) where TEnum : Enum
             => CoerceParsing.CoerceEnumFrom<TEnum>(originalValue);
 
-        private static Lazy<Dictionary<string, Color>> g_allNamedColors = new Lazy<Dictionary<string, Color>>(() =>
-        {
-            Dictionary<string, Color> colorMap = new Dictionary<string, Color>();
-            var allColorProps = typeof(Colors).GetProperties(BindingFlags.Public | BindingFlags.Static);
-            foreach (PropertyInfo colorProp in allColorProps)
-            {
-                colorMap.Add(colorProp.Name, (Color)colorProp.GetValue(null));
-            }
-
-            return colorMap;
-        });
-
         /// <summary>
         /// Coercion utility for <see cref="Color"/> generation.
         /// </summary>
@@ -173,17 +159,14 @@
         public static bool TryGetColorFromString (string value, out Color color)
         {
             value = value.Trim();
-            if (AJutColorHelper.TryGetColorFromHex(value, out byte[] colorARGB))
+            if (AJutColorHelper.TryGetColorFromHex(value, out byte[] colorARGB)
+                || AJutColorHelper.TryGetNamedColor(value, out colorARGB))
             {
                 color = new Color { A = colorARGB[0], R = colorARGB[1], G = colorARGB[2], B = colorARGB[3] };
                 return true;
             }
 
-            if (g_allNamedColors.Value.TryGetValue(value, out color))
-            {
-                return true;
-            }
-
+            color = default;
             return false;
         }
 

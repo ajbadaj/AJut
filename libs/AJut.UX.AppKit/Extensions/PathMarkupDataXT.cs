@@ -49,6 +49,45 @@ namespace AJut.UX
             return path;
         }
 
+        /// <summary>
+        /// Builds a CGPath from path data, with every point run through <paramref name="fit"/> (identity when not given),
+        /// for drawing straight into a CGContext. A CGPath carries no fill rule, so fill it with the one the data has
+        /// (<see cref="PathMarkupData.FillRule"/>: EOFill for even odd). Path data is y-down, so draw it in a flipped
+        /// view, the same as <see cref="ToBezierPath"/>.
+        /// </summary>
+        public static CGPath ToCGPath (this PathMarkupData data, PathFit? fit = null)
+        {
+            PathFit transform = fit ?? PathFit.Identity;
+            var path = new CGPath();
+            foreach (PathCommand command in data.Commands)
+            {
+                switch (command.Kind)
+                {
+                    case ePathCommand.MoveTo:
+                        path.MoveToPoint(ToCGPoint(transform.Apply(command.End)));
+                        break;
+
+                    case ePathCommand.LineTo:
+                        path.AddLineToPoint(ToCGPoint(transform.Apply(command.End)));
+                        break;
+
+                    case ePathCommand.CubicTo:
+                        path.AddCurveToPoint(
+                            ToCGPoint(transform.Apply(command.Control1)),
+                            ToCGPoint(transform.Apply(command.Control2)),
+                            ToCGPoint(transform.Apply(command.End))
+                        );
+                        break;
+
+                    case ePathCommand.Close:
+                        path.CloseSubpath();
+                        break;
+                }
+            }
+
+            return path;
+        }
+
         private static CGPoint ToCGPoint (PathPoint point) => new CGPoint((nfloat)point.X, (nfloat)point.Y);
     }
 }

@@ -6,6 +6,7 @@ namespace AJut.UX.Controls
     using AJut.UX.Theming;
     using AppKit;
     using Foundation;
+    using ObjCRuntime;
 
     // ===========[ ThemedSplitView ]============================================
     // Drag-to-resize panes, the role GridSplitter fills on WinUI3. AppKit has no Grid to put a
@@ -48,6 +49,16 @@ namespace AJut.UX.Controls
             this.DividerStyle = NSSplitViewDividerStyle.Thin;
             m_delegate = new SplitDelegate(this);
             this.Delegate = m_delegate;
+        }
+
+        /// <summary>
+        /// Used by the runtime when AppKit needs a managed peer for a native split view whose peer is gone (one disposed
+        /// while still in a window, say). It only answers AppKit's calls: the native view keeps the delegate it has. None
+        /// of its managed state survives a dispose, so a call that needs that state can still fail: dispose it only once
+        /// AppKit is done with it.
+        /// </summary>
+        protected ThemedSplitView (NativeHandle handle) : base(handle)
+        {
         }
 
         // ===========[ Properties ]============================================
@@ -202,6 +213,11 @@ namespace AJut.UX.Controls
             public SplitDelegate (ThemedSplitView owner)
             {
                 m_owner = owner;
+            }
+
+            // For a peer the runtime makes over an existing native delegate, which has no owner to tell
+            private SplitDelegate (NativeHandle handle) : base(handle)
+            {
             }
 
             public override nfloat SetMinCoordinateOfSubview (NSSplitView splitView, nfloat proposedMinimumPosition, nint subviewDividerIndex)

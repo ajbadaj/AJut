@@ -1,6 +1,5 @@
 namespace AJut.UX.Controls
 {
-    using System;
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
     using Windows.Foundation;
@@ -41,85 +40,45 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ Layout ]===================================================
+        // The flow itself is AJut.UX's SimpleWrapLayout, which every stack's wrap panel shares
         protected override Size MeasureOverride (Size availableSize)
         {
-            double available = availableSize.Width;
-            bool unbounded = double.IsInfinity(available) || double.IsNaN(available);
-
-            double lineWidth = 0;
-            double lineHeight = 0;
-            double widest = 0;
-            double totalHeight = 0;
-
+            // Measure EVERY child (collapsed ones return 0x0) so the layout system keeps tracking
+            // them - that is what makes a child flipping Collapsed->Visible re-run this pass instead
+            // of only updating on the next resize. The layout gives zero-size children no slot, so
+            // a hidden group leaves no phantom spacing.
             foreach (UIElement child in this.Children)
             {
-                // Measure EVERY child (collapsed ones return 0x0) so the layout system keeps tracking
-                // them - that is what makes a child flipping Collapsed->Visible re-run this pass instead
-                // of only updating on the next resize. Skip the flow contribution for zero-size children
-                // so a hidden group leaves no phantom spacing.
                 child.Measure(availableSize);
-                Size desired = child.DesiredSize;
-                if ((desired.Width <= 0) && (desired.Height <= 0))
-                {
-                    continue;
-                }
-
-                if (!unbounded && (lineWidth > 0) && (lineWidth + this.HorizontalSpacing + desired.Width > available))
-                {
-                    // Doesn't fit - close the current line and start a new one.
-                    widest = Math.Max(widest, lineWidth);
-                    totalHeight += lineHeight + this.VerticalSpacing;
-                    lineWidth = desired.Width;
-                    lineHeight = desired.Height;
-                }
-                else
-                {
-                    lineWidth += (lineWidth > 0) ? this.HorizontalSpacing + desired.Width : desired.Width;
-                    lineHeight = Math.Max(lineHeight, desired.Height);
-                }
             }
 
-            widest = Math.Max(widest, lineWidth);
-            totalHeight += lineHeight;
-
-            return new Size(unbounded ? widest : Math.Min(widest, available), totalHeight);
+            SimpleWrapLayout layout = SimpleWrapLayout.Compute(this.GetChildSizes(), availableSize.Width, this.HorizontalSpacing, this.VerticalSpacing);
+            return new Size(layout.Width, layout.Height);
         }
 
         protected override Size ArrangeOverride (Size finalSize)
         {
-            double available = finalSize.Width;
-            double x = 0;
-            double y = 0;
-            double lineHeight = 0;
-
-            foreach (UIElement child in this.Children)
+            SimpleWrapLayout layout = SimpleWrapLayout.Compute(this.GetChildSizes(), finalSize.Width, this.HorizontalSpacing, this.VerticalSpacing);
+            for (int index = 0; index < this.Children.Count; ++index)
             {
-                Size desired = child.DesiredSize;
-                if ((desired.Width <= 0) && (desired.Height <= 0))
-                {
-                    child.Arrange(new Rect(0, 0, 0, 0));
-                    continue;
-                }
-
-                if ((x > 0) && (x + this.HorizontalSpacing + desired.Width > available))
-                {
-                    // Wrap to the next line.
-                    x = 0;
-                    y += lineHeight + this.VerticalSpacing;
-                    lineHeight = 0;
-                }
-
-                if (x > 0)
-                {
-                    x += this.HorizontalSpacing;
-                }
-
-                child.Arrange(new Rect(x, y, desired.Width, desired.Height));
-                x += desired.Width;
-                lineHeight = Math.Max(lineHeight, desired.Height);
+                SimpleWrapLayout.Slot slot = layout.Slots[index];
+                this.Children[index].Arrange(slot.IsPlaced ? new Rect(slot.X, slot.Y, slot.Width, slot.Height) : new Rect(0, 0, 0, 0));
             }
 
             return finalSize;
+        }
+
+        // ===========[ Helper Methods ]===========================================
+        private WrapItemSize[] GetChildSizes ()
+        {
+            var sizes = new WrapItemSize[this.Children.Count];
+            for (int index = 0; index < sizes.Length; ++index)
+            {
+                Size desired = this.Children[index].DesiredSize;
+                sizes[index] = new WrapItemSize(desired.Width, desired.Height);
+            }
+
+            return sizes;
         }
     }
 }
