@@ -20,7 +20,7 @@
                 <Button Content="Select random toy" Click="SelectRandomToy_OnClick"
                         ToolTip="Calls PropertyGrid.TrySelectSourceObject on a random Toys element - exercises programmatic select + scroll-into-view (and the collapsed-target path)"/>
                 <Button Content="Clear selection" Click="ClearSelection_OnClick" Margin="6,0,0,0"/>
-                <TextBlock Text="SelectedSourceObject:" VerticalAlignment="Center" Margin="16,0,6,0"/>
+                <TextBlock Text="Selected list element:" VerticalAlignment="Center" Margin="16,0,6,0"/>
                 <TextBlock x:Name="SelectedSourceReadout" Text="(none)" FontWeight="Bold" VerticalAlignment="Center"/>
                 <CheckBox Content="Read-only grid" IsChecked="{Binding ElementName=PropGrid, Path=IsReadOnly, Mode=TwoWay}" VerticalAlignment="Center" Margin="16,0,0,0"
                           ToolTip="PropertyGrid.IsReadOnly: every editor shows its value without letting it change, and list add, remove, reorder and Set to default are off"/>

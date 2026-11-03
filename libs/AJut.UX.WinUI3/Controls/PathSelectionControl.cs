@@ -160,6 +160,18 @@ namespace AJut.UX.Controls
             set => this.SetValue(UnsetTextPromptProperty, value);
         }
 
+        public static readonly DependencyProperty IsReadOnlyProperty = DPUtils.Register(_ => _.IsReadOnly, (d, e) => d.UpdateVisualState());
+        /// <summary>
+        /// Shows the path without letting it change: it takes no typing, the browse button is off, and Ctrl+Up doesn't move
+        /// to the parent folder. Showing the path in Explorer still works, since that changes nothing. A read-only
+        /// PropertyGrid disables its rows' editors outright, so this is for a path shown read-only anywhere else.
+        /// </summary>
+        public bool IsReadOnly
+        {
+            get => (bool)this.GetValue(IsReadOnlyProperty);
+            set => this.SetValue(IsReadOnlyProperty, value);
+        }
+
         public static readonly DependencyProperty IsOpenInExplorerButtonAllowedProperty = DPUtils.Register(_ => _.IsOpenInExplorerButtonAllowed, (d, e) => d.UpdateVisualState());
         public bool IsOpenInExplorerButtonAllowed
         {
@@ -336,8 +348,10 @@ namespace AJut.UX.Controls
 
         private void PathTextBox_OnKeyDown(object sender, KeyRoutedEventArgs e)
         {
-            // Ctrl+Up: navigate to parent directory (Folder mode only)
-            if (this.PathType != ePathType.Folder || e.Key != Windows.System.VirtualKey.Up)
+            // Ctrl+Up: navigate to parent directory (Folder mode only), which changes the path, so never while read-only
+            if (this.IsReadOnly
+                || (this.PathType != ePathType.Folder)
+                || (e.Key != Windows.System.VirtualKey.Up))
             {
                 return;
             }
@@ -374,6 +388,12 @@ namespace AJut.UX.Controls
         // ===========[ Button event handlers ]====================================
         private async void BrowseButton_OnClick(object sender, RoutedEventArgs e)
         {
+            // The read-only state disables the button, but a click raised from code still lands here
+            if (this.IsReadOnly)
+            {
+                return;
+            }
+
             string userSelectedPath = null;
             var hwnd = this.GetWindowHandle();
 
@@ -558,6 +578,8 @@ namespace AJut.UX.Controls
                 this.IsOpenInExplorerButtonAllowed && this.IsPathValid
                     ? "ExplorerButtonShown" : "ExplorerButtonHidden",
                 false);
+
+            VisualStateManager.GoToState(this, this.IsReadOnly ? "ReadOnly" : "Editable", false);
         }
 
         // ===========[ OS picker helpers ]=========================================

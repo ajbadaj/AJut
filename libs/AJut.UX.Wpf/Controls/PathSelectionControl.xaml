@@ -25,6 +25,7 @@
         <Setter Property="InvalidPathBorderBrush" Value="#C31"/>
         <Setter Property="InvalidForegroundSymbol" Value="#FCD"/>
         <Setter Property="FocusedBorderBrush" Value="#38C"/>
+        <Setter Property="IsReadOnly" Value="{Binding RelativeSource={RelativeSource Self}, Path=(ap:Edit.IsReadOnly), Mode=OneWay}"/>
         <Setter Property="ButtonBackground">
             <Setter.Value>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="1,1" >
@@ -90,6 +91,7 @@
                                 </Grid.ColumnDefinitions>
 
                                 <TextBox x:Name="PART_PathTextBox" Grid.Column="0" Text="{ajut:TemplateBinding Path=SelectedPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         IsReadOnly="{TemplateBinding IsReadOnly}"
                                          ap:BorderXTA.CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius), Converter={ajconv:CornerRadiusSideExtractionConverter Side=Left}}"
                                          BorderThickness="1,1,0,0" BorderBrush="{TemplateBinding TextBoxBorderBrush}" Margin="3" FontSize="12"
                                          VerticalContentAlignment="Center" Padding="{ajut:TemplateBinding Path=Padding}"/>

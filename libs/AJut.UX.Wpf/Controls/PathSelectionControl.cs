@@ -40,7 +40,7 @@
 
             void _OnCanPromptUserForNewPath (object _sender, CanExecuteRoutedEventArgs _e)
             {
-                _e.CanExecute = true;
+                _e.CanExecute = !this.IsReadOnly;
             }
 
             void _OnPromptUserForNewPathExecuted (object _sender, ExecutedRoutedEventArgs _e)
@@ -318,6 +318,19 @@
         {
             get => (string)this.GetValue(DefaultButtonMDL2IconProperty);
             set => this.SetValue(DefaultButtonMDL2IconProperty, value);
+        }
+
+        public static readonly DependencyProperty IsReadOnlyProperty = DPUtils.Register(_ => _.IsReadOnly, (d, e) => CommandManager.InvalidateRequerySuggested());
+        /// <summary>
+        /// Shows the path without letting it change: it takes no typing, and the browse button is off. Showing the path in
+        /// Explorer still works, since that changes nothing. The default style takes this from the inherited
+        /// <see cref="AJut.UX.AttachedProperties.Edit.IsReadOnlyProperty"/>, so a read-only PropertyGrid, or anything else
+        /// that sets Edit.IsReadOnly, makes the path read-only too.
+        /// </summary>
+        public bool IsReadOnly
+        {
+            get => (bool)this.GetValue(IsReadOnlyProperty);
+            set => this.SetValue(IsReadOnlyProperty, value);
         }
 
         public static readonly DependencyProperty IsOpenInExplorerButtonAllowedProperty = DPUtils.Register(_ => _.IsOpenInExplorerButtonAllowed);

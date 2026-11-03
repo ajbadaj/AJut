@@ -236,6 +236,22 @@
                                     </VisualState.Setters>
                                 </VisualState>
                             </VisualStateGroup>
+                            <!-- Read-only takes no typing and no browsing; showing the path in Explorer changes nothing,
+                                 so it stays. Editable reverts explicitly, since WinUI3 Setters do not revert on state exit. -->
+                            <VisualStateGroup x:Name="ReadOnlyStates">
+                                <VisualState x:Name="Editable">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_PathTextBox.IsReadOnly" Value="False"/>
+                                        <Setter Target="PART_BrowseButton.IsEnabled" Value="True"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="ReadOnly">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_PathTextBox.IsReadOnly" Value="True"/>
+                                        <Setter Target="PART_BrowseButton.IsEnabled" Value="False"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
                         </VisualStateManager.VisualStateGroups>
                     </Border>
                 </ControlTemplate>
