@@ -70,6 +70,7 @@
     <File Path=".gitignore" />
   </Folder>
   <Folder Name="/_global/Git and Github/CI-CD Scripts/">
+    <File Path=".github/scripts/ajut-packages.ps1" />
     <File Path=".github/scripts/build-targets.ps1" />
     <File Path=".github/scripts/check-no-dynamic.ps1" />
     <File Path=".github/scripts/check-solution-filters.ps1" />
