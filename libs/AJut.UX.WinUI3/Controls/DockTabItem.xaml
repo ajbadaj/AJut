@@ -10,9 +10,9 @@
          The VSM SelectionStates group drives the label's opacity, which fill shows, and the
          vertical position:
            Normal              - label 0.35 opacity, unselected fill, inset at the bottom
-           PointerOver         - label 0.80 opacity, unselected fill, reaching the strip's bottom
+           PointerOver         - label 0.35 opacity, unselected fill under the hover fill, reaching the strip's bottom
            Selected            - label 1.00 opacity, selected fill, -2px top margin bleeds into content panel
-           SelectedPointerOver - same as Selected (hover does not disturb the overlap) -->
+           SelectedPointerOver - as Selected, with the hover fill (hover does not disturb the overlap) -->
     <Style TargetType="local:DockTabItem">
         <Setter Property="IsTabStop" Value="False"/>
         <Setter Property="Padding" Value="0"/>
@@ -36,6 +36,11 @@
                 <SolidColorBrush Color="#FF4A4A4A"/>
             </Setter.Value>
         </Setter>
+        <Setter Property="PointerOverBackground">
+            <Setter.Value>
+                <SolidColorBrush Color="#CC1166FF"/>
+            </Setter.Value>
+        </Setter>
 
         <Setter Property="Template">
             <Setter.Value>
@@ -54,6 +59,11 @@
                             <Border x:Name="SelectedFill"
                                     Background="{TemplateBinding SelectedBackground}"
                                     Opacity="0"/>
+                            <!-- Inset 1 so the tab's own edge still frames it -->
+                            <Border x:Name="HoverFill"
+                                    Margin="1"
+                                    Background="{TemplateBinding PointerOverBackground}"
+                                    Opacity="0"/>
                             <ContentPresenter x:Name="TabContent"
                                               HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
@@ -68,14 +78,16 @@
                                     <VisualState.Setters>
                                         <Setter Target="TabContent.Opacity" Value="0.35"/>
                                         <Setter Target="SelectedFill.Opacity" Value="0"/>
+                                        <Setter Target="HoverFill.Opacity" Value="0"/>
                                         <Setter Target="Root.Margin" Value="0,2,0,2"/>
                                         <Setter Target="Root.(Canvas.ZIndex)" Value="0"/>
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="PointerOver">
                                     <VisualState.Setters>
-                                        <Setter Target="TabContent.Opacity" Value="0.80"/>
+                                        <Setter Target="TabContent.Opacity" Value="0.35"/>
                                         <Setter Target="SelectedFill.Opacity" Value="0"/>
+                                        <Setter Target="HoverFill.Opacity" Value="1.0"/>
                                         <Setter Target="Root.Margin" Value="0,2,0,0"/>
                                         <Setter Target="Root.(Canvas.ZIndex)" Value="1"/>
                                     </VisualState.Setters>
@@ -89,6 +101,7 @@
                                     <VisualState.Setters>
                                         <Setter Target="TabContent.Opacity" Value="1.0"/>
                                         <Setter Target="SelectedFill.Opacity" Value="1.0"/>
+                                        <Setter Target="HoverFill.Opacity" Value="0"/>
                                         <Setter Target="Root.Margin" Value="0,-2,0,0"/>
                                         <Setter Target="Root.(Canvas.ZIndex)" Value="5"/>
                                     </VisualState.Setters>
@@ -99,6 +112,7 @@
                                     <VisualState.Setters>
                                         <Setter Target="TabContent.Opacity" Value="1.0"/>
                                         <Setter Target="SelectedFill.Opacity" Value="1.0"/>
+                                        <Setter Target="HoverFill.Opacity" Value="1.0"/>
                                         <Setter Target="Root.Margin" Value="0,-2,0,0"/>
                                         <Setter Target="Root.(Canvas.ZIndex)" Value="5"/>
                                     </VisualState.Setters>

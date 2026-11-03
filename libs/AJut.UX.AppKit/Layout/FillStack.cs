@@ -39,11 +39,34 @@ namespace AJut.UX.Controls
     //  - On the cross axis each child follows its eFillStackCrossAlignment, Stretch by default.
     //  - Children added with grows = true are "growers": they share the leftover main-axis space
     //    equally (equal size constraints between them), and the last child is pinned to the far
-    //    padding. With no grower, the last child is only kept inside the far padding (<=), so the
-    //    stack's fitting size hugs its content and extra space is left empty at the end.
+    //    padding. With no grower, the last child is only kept inside the far padding (<=), and extra
+    //    space is left empty at the end.
     //  - A grower's main-axis hugging is dropped to 1 so it, and not a neighbor, gives way. The
     //    original hugging is restored when the child is removed. For a nested NSStackView this goes
     //    through the stack's own HuggingPriority, for the reason above.
+    //
+    // ------ Sizing to the content
+    // The chain above only keeps children inside the stack, and keeps a Start, Center or End child
+    // inside it on the cross axis, so nothing in it ties the stack's size, or a non-grower's size, to
+    // what is in them. fittingSize hugs anyway, since it asks for the smallest size that fits, but a
+    // live layout is free to pick any size that fits, and can pick a different one on the next pass
+    // (a theme switch, a resize elsewhere). A bar comes up filling most of a window, or one column in
+    // a row takes all the spare width, and which one can change from pass to pass. Two weak pulls fix
+    // that, so a FillStack sizes itself to its content wherever nothing else decides its size:
+    //  - The stack pulls its own width and height toward its padding, at the priority fittingSize
+    //    uses (NSLayoutPriority.FittingSizeCompression, 50). Its children's constraints push it out
+    //    to fit them, so it lands on its content's size: the live size is the fitting size.
+    //  - Each non-grower pulls its main-axis size toward zero, and each Start, Center or End child its
+    //    cross-axis size, one priority above the stack's own pull. A child held by its own content (a
+    //    label's compression resistance, its own constraints) stays at that size; one with no size of
+    //    its own (a plain view, a scroll view) takes none, so give it a size or make it a grower. The
+    //    extra step is what keeps the leftover space going to the growers: a non-grower that holds a
+    //    FillStack of its own would otherwise pull toward its content as hard as a grower holding one,
+    //    and the space between them would be up for grabs again.
+    // Both sit far below anything an app or a parent sets on purpose: DefaultLow (250), the 250 a
+    // wrapping label's compression resistance is often lowered to so it can wrap, and the window's
+    // own 500, so a stack that is pinned or stretched by its parent still fills, and a wrapping label
+    // inside one still wraps only as far as it has to.
     //
     // Use NSStackView when every child hugs its content and nothing needs to fill. Use FillStack
     // when something has to fill.
@@ -51,8 +74,14 @@ namespace AJut.UX.Controls
     {
         private const float kGrowerHuggingPriority = 1f;
 
+        // The two pulls toward the content's size, see "Sizing to the content" in the class comment
+        private const float kSelfHugPriority = (float)NSLayoutPriority.FittingSizeCompression;
+        private const float kChildHugPriority = kSelfHugPriority + 1f;
+
         private readonly List<Entry> m_entries = new List<Entry>();
         private readonly List<NSLayoutConstraint> m_activeConstraints = new List<NSLayoutConstraint>();
+        private readonly NSLayoutConstraint m_selfHugWidth;
+        private readonly NSLayoutConstraint m_selfHugHeight;
         private NSUserInterfaceLayoutOrientation m_orientation;
         private double m_spacing;
         private NSEdgeInsets m_padding;
@@ -66,6 +95,12 @@ namespace AJut.UX.Controls
         {
             m_orientation = orientation;
             m_spacing = spacing;
+
+            m_selfHugWidth = this.WidthAnchor.ConstraintEqualTo((nfloat)0);
+            m_selfHugWidth.Priority = kSelfHugPriority;
+            m_selfHugHeight = this.HeightAnchor.ConstraintEqualTo((nfloat)0);
+            m_selfHugHeight.Priority = kSelfHugPriority;
+            NSLayoutConstraint.ActivateConstraints(new[] { m_selfHugWidth, m_selfHugHeight });
         }
 
         // ===========[ Properties ]============================================
@@ -108,6 +143,10 @@ namespace AJut.UX.Controls
             set
             {
                 m_padding = value;
+
+                // An empty stack hugs to its padding, the way an empty StackPanel measures to its own
+                m_selfHugWidth.Constant = (nfloat)(value.Left + value.Right);
+                m_selfHugHeight.Constant = (nfloat)(value.Top + value.Bottom);
                 this.RebuildConstraints();
             }
         }
@@ -326,7 +365,7 @@ namespace AJut.UX.Controls
                     m_activeConstraints.Add(view.TopAnchor.ConstraintEqualTo(previous.BottomAnchor, (nfloat)m_spacing));
                 }
 
-                // 2. Growers share the leftover equally
+                // 2. Growers share the leftover equally, everything else pulls toward its own size
                 if (entry.Grows)
                 {
                     if (firstGrower == null)
@@ -338,8 +377,17 @@ namespace AJut.UX.Controls
                         m_activeConstraints.Add(view.HeightAnchor.ConstraintEqualTo(firstGrower.HeightAnchor));
                     }
                 }
+                else
+                {
+                    m_activeConstraints.Add(MakeChildHug(view.HeightAnchor));
+                }
 
-                // 3. Cross axis
+                // 3. Cross axis, where anything not stretched pulls toward its own size too
+                if (entry.Alignment != eFillStackCrossAlignment.Stretch)
+                {
+                    m_activeConstraints.Add(MakeChildHug(view.WidthAnchor));
+                }
+
                 switch (entry.Alignment)
                 {
                     case eFillStackCrossAlignment.Stretch:
@@ -395,7 +443,7 @@ namespace AJut.UX.Controls
                     m_activeConstraints.Add(view.LeadingAnchor.ConstraintEqualTo(previous.TrailingAnchor, (nfloat)m_spacing));
                 }
 
-                // 2. Growers share the leftover equally
+                // 2. Growers share the leftover equally, everything else pulls toward its own size
                 if (entry.Grows)
                 {
                     if (firstGrower == null)
@@ -407,8 +455,17 @@ namespace AJut.UX.Controls
                         m_activeConstraints.Add(view.WidthAnchor.ConstraintEqualTo(firstGrower.WidthAnchor));
                     }
                 }
+                else
+                {
+                    m_activeConstraints.Add(MakeChildHug(view.WidthAnchor));
+                }
 
-                // 3. Cross axis
+                // 3. Cross axis, where anything not stretched pulls toward its own size too
+                if (entry.Alignment != eFillStackCrossAlignment.Stretch)
+                {
+                    m_activeConstraints.Add(MakeChildHug(view.HeightAnchor));
+                }
+
                 switch (entry.Alignment)
                 {
                     case eFillStackCrossAlignment.Stretch:
@@ -459,6 +516,13 @@ namespace AJut.UX.Controls
                     SetHugging(entry.View, kGrowerHuggingPriority, MainAxisOf(to));
                 }
             }
+        }
+
+        private static NSLayoutConstraint MakeChildHug (NSLayoutDimension dimension)
+        {
+            NSLayoutConstraint hug = dimension.ConstraintEqualTo((nfloat)0);
+            hug.Priority = kChildHugPriority;
+            return hug;
         }
 
         private static NSLayoutConstraintOrientation MainAxisOf (NSUserInterfaceLayoutOrientation orientation)

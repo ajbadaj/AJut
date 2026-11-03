@@ -23,6 +23,7 @@
         <Setter Property="DefaultButtonMDL2Icon" Value="{StaticResource OpenDialogIcon}"/>
         <Setter Property="OpenInExplorerMDL2Icon" Value="{StaticResource OpenInExplorer}"/>
         <Setter Property="InvalidPathBorderBrush" Value="#C31"/>
+        <Setter Property="InvalidPathGlowBrush" Value="#C31"/>
         <Setter Property="InvalidForegroundSymbol" Value="#FCD"/>
         <Setter Property="FocusedBorderBrush" Value="#38C"/>
         <Setter Property="IsReadOnly" Value="{Binding RelativeSource={RelativeSource Self}, Path=(ap:Edit.IsReadOnly), Mode=OneWay}"/>
@@ -45,7 +46,7 @@
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:PathSelectionControl}">
                     <Grid>
-                        <!-- The glow around an invalid path, in the border's color. A DropShadowEffect with no offset is a glow;
+                        <!-- The glow around an invalid path, in InvalidPathGlowBrush. A DropShadowEffect with no offset is a glow;
                              WPF's BitmapEffects (OuterGlowBitmapEffect and the rest) are deprecated and no longer draw anything.
                              https://learn.microsoft.com/en-us/dotnet/api/system.windows.uielement.bitmapeffect
                              It is a border of its own behind the content, shown only while the path is invalid, rather than an
@@ -58,7 +59,7 @@
                                 CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}">
                             <Border.Effect>
                                 <DropShadowEffect ShadowDepth="0" BlurRadius="5"
-                                                  Color="{Binding ElementName=PathSelectorBorderRoot, Path=BorderBrush, Converter={ajconv:BrushColorExtractionConverter}}"/>
+                                                  Color="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PathSelectionControl}}, Path=InvalidPathGlowBrush, Converter={ajconv:BrushColorExtractionConverter}}"/>
                             </Border.Effect>
                         </Border>
                         <Border x:Name="PathSelectorBorderRoot" Background="{TemplateBinding Background}"

@@ -101,7 +101,7 @@ namespace AJutShowRoomAndroid
             // where the controls sit. Unthemed, all three keep the device theme's own.
             if (ThemeColors.IsThemeLoaded)
             {
-                AJutPalette.Table palette = AJutPalette.For(ThemeColors.IsDark(this), ThemeColors.IsTouchFocused);
+                AJutPalette.Table palette = AJutPalette.For(ThemeColors.IsDark(this), ThemeColors.UsesTouchVariant);
                 if (palette.TryGetColor("AJut_Brush_PanelBackground", out ColorArgb panel))
                 {
                     root.SetBackgroundColor(panel.ToAndroidColor());
@@ -250,7 +250,7 @@ namespace AJutShowRoomAndroid
                     settings.ThemeMode = ThemeColors.IsDark(this) ? eThemeMode.Dark : eThemeMode.Light;
                 }
 
-                settings.IsTouchFocused = string.Equals(touch, "on", StringComparison.OrdinalIgnoreCase);
+                settings.UsesTouchVariant = string.Equals(touch, "on", StringComparison.OrdinalIgnoreCase);
             }
         }
 
@@ -268,9 +268,9 @@ namespace AJutShowRoomAndroid
             var touch = this.FindViewById<Switch>(Resource.Id.theme_bar_touch)!;
             m_themeBarBinder.BindChecked(
                 touch,
-                settings, nameof(ShowroomSettings.IsTouchFocused),
-                () => settings.IsTouchFocused,
-                this.SwitchTouchFocused
+                settings, nameof(ShowroomSettings.UsesTouchVariant),
+                () => settings.UsesTouchVariant,
+                this.SwitchUsesTouchVariant
             );
             m_themeBarBinder.BindEnabled(touch, settings, nameof(ShowroomSettings.CanChooseTouch), () => settings.CanChooseTouch);
 
@@ -292,12 +292,12 @@ namespace AJutShowRoomAndroid
             }
         }
 
-        private void SwitchTouchFocused (bool isTouchFocused)
+        private void SwitchUsesTouchVariant (bool usesTouchVariant)
         {
             ShowroomSettings settings = ShowroomSettings.Instance;
-            bool before = settings.IsTouchFocused;
-            settings.IsTouchFocused = isTouchFocused;
-            if (settings.IsTouchFocused != before)
+            bool before = settings.UsesTouchVariant;
+            settings.UsesTouchVariant = usesTouchVariant;
+            if (settings.UsesTouchVariant != before)
             {
                 this.Recreate();
             }

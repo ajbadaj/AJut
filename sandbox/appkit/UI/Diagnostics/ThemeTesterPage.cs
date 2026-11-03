@@ -46,7 +46,7 @@ namespace AJutShowRoomAppKit.UI.Diagnostics
                 new StateSample("Disabled", new AutoBrushButton { Title = "Button", Enabled = false })
             );
 
-            this.AddHeading("GeometryButton, traced");
+            this.AddHeading("GeometryButton, traced, with a title");
             this.AddStates(
                 new StateSample("Rest", MakeShape(new GeometryButton())),
                 new StateSample("Pointer over", MakeShape(new PinnedGeometryButton(eManagedButtonState.PointerOver))),
@@ -70,7 +70,8 @@ namespace AJutShowRoomAppKit.UI.Diagnostics
                 new StateSample("Rest, with Two picked", new ToggleStrip { ItemsSource = kStripItems, SelectedItem = kStripItems[1] }),
                 new StateSample("OverflowPopup (the chevron)", MakeNarrowStrip(eToggleStripOverflow.OverflowPopup)),
                 new StateSample("Scroll (the end dots)", MakeNarrowStrip(eToggleStripOverflow.Scroll)),
-                new StateSample("Disabled, with Two picked", new ToggleStrip { ItemsSource = kStripItems, SelectedItem = kStripItems[1], Enabled = false })
+                new StateSample("Disabled, with Two picked", new ToggleStrip { ItemsSource = kStripItems, SelectedItem = kStripItems[1], Enabled = false }),
+                new StateSample("EnumToggleStrip, disabled", new EnumToggleStrip { SelectedItem = eAppThemeConfiguration.Dark, Enabled = false })
             );
             this.AddText("A strip draws its own items, so their pointer over and pressed looks can't be pinned on AppKit: move over and press the items above. Disabled, a strip looks like a disabled ComboBox, as on every stack: AJut_Brush_ControlBackgroundDisabled, outlined and divided with AJut_Brush_TextBoxBorder, with its items' fills kept and their names dimmed. No stack has a focused look for a strip.");
 
@@ -83,9 +84,10 @@ namespace AJutShowRoomAppKit.UI.Diagnostics
                 new StateSample("Rest", MakeEditorSized(new NumericEditor { Value = 42 })),
                 new StateSample("Focused", MakeEditorSized(m_focusedEditor)),
                 new StateSample("Out of bounds (0 to 10)", MakeEditorSized(outOfBounds)),
-                new StateSample("Read-only", MakeEditorSized(new NumericEditor { Value = 42, IsReadOnly = true }))
+                new StateSample("Read-only", MakeEditorSized(new NumericEditor { Value = 42, IsReadOnly = true })),
+                new StateSample("With a label", MakeEditorSized(new NumericEditor { Value = 42, Label = "Size" }))
             );
-            this.AddText("Focused holds while the page keeps its focus; click another sample's field to move it. The minus and plus are drawn inside the editor, so press and move over them by hand.");
+            this.AddText("The editor is the look the iOS and Android editors share: one frame on the pop-out surface with the number in a shaded well between its minus and plus. Focused holds while the page keeps its focus; click another sample's field to move it. Move over a frame to see its border brighten, over a minus or plus for its wash of the bright highlight, and press one for the full highlight.");
 
             // 4. ColorEditIngressControl
             this.AddHeading("ColorEditIngressControl");
@@ -101,7 +103,7 @@ namespace AJutShowRoomAppKit.UI.Diagnostics
                 new StateSample("Check box, on", MakeCheckBox(isOn: true, isEnabled: true)),
                 new StateSample("Check box, off", MakeCheckBox(isOn: false, isEnabled: true)),
                 new StateSample("Check box, disabled", MakeCheckBox(isOn: true, isEnabled: false)),
-                new StateSample("Text field", new NSTextField { StringValue = "Text" }),
+                new StateSample("Text field", MakeTextFieldSized(new NSTextField { StringValue = "Text" })),
                 new StateSample("EnumComboBox (a pop-up button)", new EnumComboBox { SelectedItem = eAppThemeConfiguration.Dark })
             );
 
@@ -156,6 +158,7 @@ class PressedBrushButton : BrushButton
             button.GeometryMarkup = kNotchedShape;
             button.GeometryStretch = ePathStretch.Fill;
             button.TraceThickness = 1.0;
+            button.Title = "Shape";
             button.ToolTip = "Notched shape";
             button.TranslatesAutoresizingMaskIntoConstraints = false;
             NSLayoutConstraint.ActivateConstraints(new[]
@@ -183,6 +186,17 @@ class PressedBrushButton : BrushButton
             editor.TranslatesAutoresizingMaskIntoConstraints = false;
             editor.WidthAnchor.ConstraintEqualTo((nfloat)kEditorWidth).Active = true;
             return editor;
+        }
+
+        // An editable text field has no width of its own (only a label does), and a FillStack gives a Start aligned
+        // child no more width than it holds, so the field is given one
+        private static NSTextField MakeTextFieldSized (NSTextField field)
+        {
+            const double kTextFieldWidth = 130.0;
+
+            field.TranslatesAutoresizingMaskIntoConstraints = false;
+            field.WidthAnchor.ConstraintEqualTo((nfloat)kTextFieldWidth).Active = true;
+            return field;
         }
 
         // Puts text in an editor the way typing does. The editor learns of typing from its field's text-did-change

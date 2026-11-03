@@ -10,8 +10,9 @@ namespace AJut.UX.Theming
         /// NumericEditor: one rounded frame on the pop-out surface, with the decrease button, the number and the increase
         /// button side by side in it. The number sits in a well of the text box color, inset from the frame's top and
         /// bottom and shaded at its edges the way WinUI3's two nested borders shade it. The step buttons are the frame's
-        /// own surface until pressed, when they fill with the bright highlight, since touch has no hover to lead into a
-        /// press. An optional label sits in front of the frame.
+        /// own surface at rest. Under a mouse or stylus the frame's border brightens and a step button takes a wash of the
+        /// bright highlight; pressed, the button fills with it, so a press still reads on touch, where nothing leads into
+        /// it. An optional label sits in front of the frame.
         /// </summary>
         public static class NumericEditor
         {
@@ -23,7 +24,13 @@ namespace AJut.UX.Theming
             /// <summary>The frame's border while the number is being edited.</summary>
             public const string FrameBorderFocused = AJutThemeKeys.NumericEditor_FocusBorderBrush;
 
-            /// <summary>The frame's border while the text is out of bounds, which wins over focused.</summary>
+            /// <summary>
+            /// The frame's border while a mouse or stylus is over the frame, focused or not, as on WinUI3: brighter than the
+            /// focused border, so the two read apart.
+            /// </summary>
+            public const string FrameBorderPointerOver = AJutThemeKeys.NumericEditor_PointerOverBorderBrush;
+
+            /// <summary>The frame's border while the text is out of bounds, which wins over every other state.</summary>
             public const string FrameBorderError = AJutThemeKeys.NumericEditor_ErrorBrush;
 
             /// <summary>The well the number sits in.</summary>
@@ -38,8 +45,14 @@ namespace AJut.UX.Theming
             public const string StepGlyph = "TextFillColorPrimaryBrush";
 
             /// <summary>
-            /// A step button's fill while pressed: WinUI3's step highlight under the pointer, the bright primary, since a
-            /// press is the only highlight touch has.
+            /// A step button's fill under a mouse or stylus: WinUI3's step highlight under the pointer, drawn at
+            /// <see cref="StepPointerOverOpacity"/> so the press that follows still reads.
+            /// </summary>
+            public const string StepPointerOverFill = AJutThemeKeys.NumericEditor_IncreasePointerOverBackground;
+
+            /// <summary>
+            /// A step button's fill while pressed: <see cref="StepPointerOverFill"/> at full strength, the bright primary,
+            /// since a press is the only highlight touch has.
             /// </summary>
             public const string StepPressedFill = AJutThemeKeys.NumericEditor_IncreasePointerOverBackground;
 
@@ -66,6 +79,12 @@ namespace AJut.UX.Theming
             public const float LabelSpacing = 8f;
 
             // ===========[ Shading and timing ]===================================
+            /// <summary>
+            /// How strongly <see cref="StepPointerOverFill"/> shows under a mouse or stylus, from 0 to 1. A wash rather than
+            /// the full fill, as WPF's step hover is, since on mobile a press takes the full fill.
+            /// </summary>
+            public const float StepPointerOverOpacity = 0.45f;
+
             /// <summary>The well's shadow color. The same over any theme, as on WinUI3.</summary>
             public static readonly ColorArgb WellShadow = new ColorArgb(0x80, 0x00, 0x00, 0x00);
 
@@ -77,6 +96,26 @@ namespace AJut.UX.Theming
 
             /// <summary>The time between repeats while a step button is held.</summary>
             public static readonly TimeSpan RepeatInterval = TimeSpan.FromMilliseconds(80);
+
+            // ===========[ Public Interface Methods ]===================================
+            /// <summary>
+            /// The key the frame's border takes: the error wins, then a mouse or stylus over the frame, then focus. The
+            /// pointer wins over focus as it does on WinUI3, so moving over a focused editor still shows.
+            /// </summary>
+            public static string FrameBorderFor (bool hasError, bool isPointerOver, bool isFocused)
+            {
+                if (hasError)
+                {
+                    return FrameBorderError;
+                }
+
+                if (isPointerOver)
+                {
+                    return FrameBorderPointerOver;
+                }
+
+                return isFocused ? FrameBorderFocused : FrameBorder;
+            }
         }
     }
 }

@@ -52,12 +52,23 @@ namespace AJut.UX.Theming
         public const string FlatTreeItemRow_ExpanderPointerOverBackground = "AJut_FlatTreeItemRow_ExpanderPointerOverBackground";
         public const string FlatTreeItemRow_ExpanderPressedBackground = "AJut_FlatTreeItemRow_ExpanderPressedBackground";
 
+        /// <summary>The expand and collapse chevron under the pointer and pressed: lighter than at rest, over its box's fill</summary>
+        public const string FlatTreeItemRow_ExpanderGlyphPointerOverForeground = "AJut_FlatTreeItemRow_ExpanderGlyphPointerOverForeground";
+
         public const string FlatTree_DragInsertionLine = "AJut_FlatTree_DragInsertionLine";
         public const string FlatTree_DragParentConnector = "AJut_FlatTree_DragParentConnector";
         public const string FlatTree_DragTargetHighlight = "AJut_FlatTree_DragTargetHighlight";
+        public const string FlatTree_DragGhostBackground = "AJut_FlatTree_DragGhostBackground";
+        public const string FlatTree_DragGhostBorderBrush = "AJut_FlatTree_DragGhostBorderBrush";
+        public const string FlatTree_DragGhostForeground = "AJut_FlatTree_DragGhostForeground";
         public const string FlatTree_SelectionBrush = "AJut_FlatTree_SelectionBrush";
         public const string FlatTree_SelectionBackground = "AJut_FlatTree_SelectionBackground";
         public const string FlatTree_SelectionBrushUnfocused = "AJut_FlatTree_SelectionBrushUnfocused";
+
+        /// <summary>
+        /// A selected row's strip and outline while the pointer is over it. Only those change: the selection's fill stays.
+        /// </summary>
+        public const string FlatTree_SelectionPointerOverBrush = "AJut_FlatTree_SelectionPointerOverBrush";
         public const string FlatTree_HoverBackground = "AJut_FlatTree_HoverBackground";
         public const string FlatTree_HoverBorderBrush = "AJut_FlatTree_HoverBorderBrush";
 
@@ -123,6 +134,8 @@ namespace AJut.UX.Theming
         public const string ToggleStripButton_CheckedDisabledBackground = "AJut_ToggleStripButton_CheckedDisabledBackground";
         /// <summary>An item's text over the solid highlight fills: pointer over and pressed, selected or not.</summary>
         public const string ToggleStripButton_HighlightForeground = "AJut_ToggleStripButton_HighlightForeground";
+        /// <summary>A disabled strip's text: the understated text, faded further, so it reads as disabled in Light as well as Dark.</summary>
+        public const string ToggleStrip_DisabledForeground = "AJut_ToggleStrip_DisabledForeground";
 
         public const string ThemedWindowRootControl_ActiveTitleBarBackground = "AJut_ThemedWindowRootControl_ActiveTitleBarBackground";
         public const string ThemedWindowRootControl_InactiveTitlebarBackground = "AJut_ThemedWindowRootControl_InactiveTitlebarBackground";
@@ -187,12 +200,17 @@ namespace AJut.UX.Theming
                 { "AJut_PathSelectionControl_FocusedTextBoxBackgroundBrush", Alias("AJut_Color_TextBoxBackground") },
                 { "AJut_FlatTreeItemRow_ExpanderPointerOverBackground", Alias("AJut_Color_MouseInteractionHighlight") },
                 { "AJut_FlatTreeItemRow_ExpanderPressedBackground", Alias("AJut_Color_PrimaryHighlightDark") },
+                { "AJut_FlatTreeItemRow_ExpanderGlyphPointerOverForeground", Alias("AJut_Color_SymbolForegroundHighlight") },
                 { "AJut_FlatTree_DragInsertionLine", Alias("AJut_Color_PrimaryHighlight") },
-                { "AJut_FlatTree_DragParentConnector", Alias("AJut_Color_PrimaryHighlight", 0.5) },
+                { "AJut_FlatTree_DragParentConnector", Alias("AJut_Color_PrimaryHighlightDesat") },
                 { "AJut_FlatTree_DragTargetHighlight", Alias("AJut_Color_PrimaryHighlight") },
+                { "AJut_FlatTree_DragGhostBackground", Alias("AJut_Brush_PopupBackground") },
+                { "AJut_FlatTree_DragGhostBorderBrush", Alias("AJut_Color_BorderCommon") },
+                { "AJut_FlatTree_DragGhostForeground", Alias("AJut_Color_NormalText") },
                 { "AJut_FlatTree_SelectionBrush", Alias("AJut_Color_ListSelection") },
                 { "AJut_FlatTree_SelectionBackground", Alias("AJut_Color_ListSelectionBackground") },
                 { "AJut_FlatTree_SelectionBrushUnfocused", Alias("AJut_Color_PrimaryHighlightDesat") },
+                { "AJut_FlatTree_SelectionPointerOverBrush", Alias("AJut_Color_ListItemHover") },
                 { "AJut_FlatTree_HoverBackground", Alias("AJut_Color_ListSelectionBackground") },
                 { "AJut_FlatTree_HoverBorderBrush", Alias("AJut_Color_BorderCommon") },
                 { "AJut_ColorEditIngressControl_HighlightBorderBrush", Alias("AJut_Color_PrimaryHighlight") },
@@ -245,6 +263,7 @@ namespace AJut.UX.Theming
                 { "AJut_ToggleStripButton_CheckedPressedBackground", Alias("AJut_Color_PrimaryHighlightDark") },
                 { "AJut_ToggleStripButton_CheckedDisabledBackground", Alias("AJut_Color_PrimaryHighlightDesat", 0.55) },
                 { "AJut_ToggleStripButton_HighlightForeground", Alias("AJut_Color_HighContrastText") },
+                { "AJut_ToggleStrip_DisabledForeground", Alias("AJut_Color_UnderstatedText", 0.6) },
 
                 // ------ AJut.UX_Overrides.xaml
                 { "AJut_ThemedWindowRootControl_ActiveTitleBarBackground", Alias("AJut_Brush_TitleBarBackground") },
@@ -272,6 +291,8 @@ namespace AJut.UX.Theming
                 { "SubtleFillColorSecondaryBrush", Alias("AJut_Color_HighlightText") },
                 { "DefaultTextForegroundThemeBrush", Alias("AJut_Color_NormalText") },
                 { "ControlStrokeColorDefaultBrush", Alias("AJut_Color_NormalText") },
+                { "SystemControlFocusVisualPrimaryBrush", Alias("AJut_Brush_PrimaryHighlightBright") },
+                { "SystemControlFocusVisualSecondaryBrush", Solid(0x00FFFFFF) },
                 { "SystemListAccentLowColor", Alias("AJut_Color_PrimaryHighlightDesat") },
                 { "SystemListAccentMediumColor", Alias("AJut_Color_PrimaryHighlight") },
                 { "SystemListAccentHighColor", Alias("AJut_Color_PrimaryHighlightBright") },
@@ -626,12 +647,12 @@ namespace AJut.UX.Theming
                 { "CheckBoxCheckBackgroundStrokeUncheckedPressed", Alias("AJut_Brush_BorderCommonPress") },
                 { "CheckBoxCheckBackgroundFillUncheckedPressed", Alias("AJut_Brush_ButtonBackgroundPressed") },
                 { "CheckBoxCheckGlyphForegroundUncheckedPressed", Alias("AJut_Brush_ImportantText") },
-                { "CheckBoxForegroundUncheckedDisabled", Alias("AJut_Color_UnderstatedText") },
+                { "CheckBoxForegroundUncheckedDisabled", Alias("AJut_Color_UnderstatedText", 0.45) },
                 { "CheckBoxBackgroundUncheckedDisabled", Solid(0x00FFFFFF) },
                 { "CheckBoxBorderBrushUncheckedDisabled", Solid(0x00FFFFFF) },
                 { "CheckBoxCheckBackgroundStrokeUncheckedDisabled", Alias("AJut_Brush_BorderCommon") },
                 { "CheckBoxCheckBackgroundFillUncheckedDisabled", Alias("AJut_Brush_ControlBackgroundDisabled") },
-                { "CheckBoxCheckGlyphForegroundUncheckedDisabled", Alias("AJut_Color_UnderstatedText") },
+                { "CheckBoxCheckGlyphForegroundUncheckedDisabled", Alias("AJut_Color_UnderstatedText", 0.45) },
                 { "CheckBoxForegroundChecked", Alias("AJut_Brush_NormalText") },
                 { "CheckBoxBackgroundChecked", Solid(0x00FFFFFF) },
                 { "CheckBoxBorderBrushChecked", Solid(0x00FFFFFF) },
@@ -646,12 +667,12 @@ namespace AJut.UX.Theming
                 { "CheckBoxBorderBrushCheckedPressed", Solid(0x00FFFFFF) },
                 { "CheckBoxCheckBackgroundStrokeCheckedPressed", Alias("AJut_Brush_TextBoxBorder") },
                 { "CheckBoxCheckGlyphForegroundCheckedPressed", Alias("AJut_Brush_PrimaryHighlight") },
-                { "CheckBoxForegroundCheckedDisabled", Alias("AJut_Color_UnderstatedText") },
+                { "CheckBoxForegroundCheckedDisabled", Alias("AJut_Color_UnderstatedText", 0.45) },
                 { "CheckBoxBackgroundCheckedDisabled", Solid(0x00FFFFFF) },
                 { "CheckBoxBorderBrushCheckedDisabled", Solid(0x00FFFFFF) },
                 { "CheckBoxCheckBackgroundStrokeCheckedDisabled", Alias("AJut_Brush_BorderCommon") },
                 { "CheckBoxCheckBackgroundFillCheckedDisabled", Alias("AJut_Brush_ControlBackgroundDisabled") },
-                { "CheckBoxCheckGlyphForegroundCheckedDisabled", Alias("AJut_Color_UnderstatedText") },
+                { "CheckBoxCheckGlyphForegroundCheckedDisabled", Alias("AJut_Color_UnderstatedText", 0.45) },
                 { "CheckBoxForegroundIndeterminate", Alias("AJut_Brush_NormalText") },
                 { "CheckBoxBackgroundIndeterminate", Solid(0x00FFFFFF) },
                 { "CheckBoxBorderBrushIndeterminate", Solid(0x00FFFFFF) },
@@ -670,12 +691,12 @@ namespace AJut.UX.Theming
                 { "CheckBoxCheckBackgroundStrokeIndeterminatePressed", Alias("AJut_Brush_TextBoxBorder") },
                 { "CheckBoxCheckBackgroundFillIndeterminatePressed", Alias("AJut_Brush_TextBoxBackground") },
                 { "CheckBoxCheckGlyphForegroundIndeterminatePressed", Alias("AJut_Brush_PrimaryHighlight") },
-                { "CheckBoxForegroundIndeterminateDisabled", Alias("AJut_Color_UnderstatedText") },
+                { "CheckBoxForegroundIndeterminateDisabled", Alias("AJut_Color_UnderstatedText", 0.45) },
                 { "CheckBoxBackgroundIndeterminateDisabled", Solid(0x00FFFFFF) },
                 { "CheckBoxBorderBrushIndeterminateDisabled", Solid(0x00FFFFFF) },
                 { "CheckBoxCheckBackgroundStrokeIndeterminateDisabled", Alias("AJut_Brush_BorderCommon") },
                 { "CheckBoxCheckBackgroundFillIndeterminateDisabled", Alias("AJut_Brush_ControlBackgroundDisabled") },
-                { "CheckBoxCheckGlyphForegroundIndeterminateDisabled", Alias("AJut_Color_UnderstatedText") },
+                { "CheckBoxCheckGlyphForegroundIndeterminateDisabled", Alias("AJut_Color_UnderstatedText", 0.45) },
                 { "RadioButtonForeground", Alias("AJut_Brush_NormalText") },
                 { "RadioButtonOuterEllipseStroke", Alias("AJut_Brush_TextBoxBorder") },
                 { "RadioButtonOuterEllipseStrokePointerOver", Alias("AJut_Brush_PrimaryHighlight") },
@@ -704,15 +725,15 @@ namespace AJut.UX.Theming
                 { "RadioButtonOuterEllipseCheckedFillPressed", Alias("AJut_Brush_TextBoxBackground") },
                 { "RadioButtonCheckGlyphFillPressed", Alias("AJut_Brush_PrimaryHighlight") },
                 { "RadioButtonCheckGlyphStrokePressed", Alias("AJut_Brush_PrimaryHighlight") },
-                { "RadioButtonForegroundDisabled", Alias("AJut_Color_UnderstatedText") },
+                { "RadioButtonForegroundDisabled", Alias("AJut_Color_UnderstatedText", 0.45) },
                 { "RadioButtonBackgroundDisabled", Solid(0x00FFFFFF) },
                 { "RadioButtonBorderBrushDisabled", Solid(0x00FFFFFF) },
                 { "RadioButtonOuterEllipseStrokeDisabled", Alias("AJut_Brush_BorderCommon") },
                 { "RadioButtonOuterEllipseFillDisabled", Alias("AJut_Brush_ControlBackgroundDisabled") },
                 { "RadioButtonOuterEllipseCheckedStrokeDisabled", Alias("AJut_Brush_BorderCommon") },
                 { "RadioButtonOuterEllipseCheckedFillDisabled", Alias("AJut_Brush_ControlBackgroundDisabled") },
-                { "RadioButtonCheckGlyphFillDisabled", Alias("AJut_Color_UnderstatedText") },
-                { "RadioButtonCheckGlyphStrokeDisabled", Alias("AJut_Color_UnderstatedText") },
+                { "RadioButtonCheckGlyphFillDisabled", Alias("AJut_Color_UnderstatedText", 0.45) },
+                { "RadioButtonCheckGlyphStrokeDisabled", Alias("AJut_Color_UnderstatedText", 0.45) },
                 { "ScrollViewerScrollBarSeparatorBackground", Solid(0x00FFFFFF) },
                 { "ScrollBarBackground", Solid(0x00FFFFFF) },
                 { "ScrollBarBackgroundPointerOver", Solid(0x00FFFFFF) },

@@ -11,7 +11,7 @@
     A key changed here is stated in full here, and so is any brush in the light palette that takes its color from it,
     since a brush defined in the merged light palette looks its color up there and not here.
 
-    TouchThemeColors.xaml puts this in an app's light theme when AppThemeManager.IsTouchFocused is on. AJut.UX's
+    TouchThemeColors.xaml puts this in an app's light theme when AppThemeManager.UsesTouchVariant is on. AJut.UX's
     AJutPalette.LightTouch mirrors this file, and a test keeps the two in step.
 -->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"

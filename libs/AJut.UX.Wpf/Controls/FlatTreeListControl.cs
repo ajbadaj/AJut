@@ -299,6 +299,14 @@ namespace AJut.UX.Controls
             set => this.SetValue(GlyphBackgroundHighlightBrushProperty, value);
         }
 
+        /// <summary>The fill behind the expand and collapse glyph while it is pressed, where <see cref="GlyphBackgroundHighlightBrush"/> is its fill under the pointer</summary>
+        public static readonly DependencyProperty GlyphBackgroundPressedBrushProperty = DPUtils.Register(_ => _.GlyphBackgroundPressedBrush);
+        public System.Windows.Media.Brush GlyphBackgroundPressedBrush
+        {
+            get => (System.Windows.Media.Brush)this.GetValue(GlyphBackgroundPressedBrushProperty);
+            set => this.SetValue(GlyphBackgroundPressedBrushProperty, value);
+        }
+
         public static readonly DependencyProperty GlyphPaddingProperty = DPUtils.Register(_ => _.GlyphPadding);
         public Thickness GlyphPadding
         {

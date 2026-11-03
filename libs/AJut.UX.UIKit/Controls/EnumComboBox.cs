@@ -21,8 +21,9 @@ namespace AJut.UX.Controls
     // sends ValueChanged; a SelectedItem set from code does not.
     //
     // With the AJut theme loaded it takes MobileLook.EnumComboBox's look, which Android's EnumComboBox draws too: a face on
-    // the pop-out surface outlined with the text box border, the pressed fill while held, and a down chevron. The menu
-    // itself is the system's, so it stays the system's look. Unthemed, the button keeps the system fill.
+    // the pop-out surface outlined with the text box border, and a down chevron in the symbol color; the hover fill and
+    // outline under an iPad pointer, the pressed fill and outline while held, and the flat disabled look while disabled.
+    // The menu itself is the system's, so it stays the system's look. Unthemed, the button keeps the system fill.
 
     public class EnumComboBox : UIControl
     {
@@ -114,6 +115,17 @@ namespace AJut.UX.Controls
         /// <summary>The values offered, in order, as Android's EnumComboBox gives them.</summary>
         public IReadOnlyList<Enum> Options => m_options;
 
+        /// <summary>Whether it takes touches; passed on to the button the menu hangs off, which a UIControl's own Enabled does not reach.</summary>
+        public override bool Enabled
+        {
+            get => base.Enabled;
+            set
+            {
+                base.Enabled = value;
+                m_button.Enabled = value;
+            }
+        }
+
         /// <summary>The button the menu hangs off, for anything this control does not surface (its configuration, font).</summary>
         public UIButton Button => m_button;
 
@@ -127,8 +139,10 @@ namespace AJut.UX.Controls
             }
 
             // The border and the face's colors are CGColors, which freeze a dynamic color, so they are resolved here: UIKit
-            // calls LayoutSubviews again whenever the appearance (light/dark) changes
-            this.Layer.BorderColor = ThemedColors.Get(MobileLook.EnumComboBox.Border).GetResolvedColor(this.TraitCollection).CGColor;
+            // calls LayoutSubviews again whenever the appearance (light/dark) changes, and the button asks for it again
+            // whenever its state does
+            string borderKey = MobileLook.EnumComboBox.BorderFor(this.Enabled, m_button.Highlighted, m_button.Hovered);
+            this.Layer.BorderColor = ThemedColors.Get(borderKey).GetResolvedColor(this.TraitCollection).CGColor;
             IReadOnlyList<AJutGradientStop> stops = kSurface.Resolve(this.TraitCollection.UserInterfaceStyle);
             var colors = new CGColor[stops.Count];
             var locations = new NSNumber[stops.Count];
@@ -231,9 +245,10 @@ namespace AJut.UX.Controls
             }
         }
 
-        // The button the menu hangs off. With the AJut theme loaded it is clear over the face until held, when it takes
-        // the pressed fill, as Android's face does; base.UpdateConfiguration is skipped then so the system lays no dimmed
-        // highlight of its own over it. Unthemed it is a stock button.
+        // The button the menu hangs off. With the AJut theme loaded it is clear over the face at rest, so the face's
+        // gradient shows, and takes the one-color fill MobileLook gives any other state (hover, held, disabled), as
+        // Android's face does. Its text and chevron follow the state too. base.UpdateConfiguration is skipped then so the
+        // system lays no dimmed highlight of its own over it. Unthemed it is a stock button.
         private sealed class ComboButton : UIButton
         {
             public ComboButton () : base(CGRect.Empty)
@@ -248,11 +263,44 @@ namespace AJut.UX.Controls
                     return;
                 }
 
+                bool isEnabled = this.Enabled;
+                bool isPressed = this.Highlighted;
+                bool isPointerOver = this.Hovered;
                 UIButtonConfiguration configuration = this.Configuration ?? UIButtonConfiguration.PlainButtonConfiguration;
                 UIBackgroundConfiguration background = configuration.Background;
-                background.BackgroundColor = this.Highlighted ? ThemedColors.Get(MobileLook.EnumComboBox.SurfacePressed) : UIColor.Clear;
+                string surfaceKey = MobileLook.EnumComboBox.SurfaceFor(isEnabled, isPressed, isPointerOver);
+                background.BackgroundColor = (surfaceKey == MobileLook.EnumComboBox.Surface) ? UIColor.Clear : ThemedColors.Get(surfaceKey);
                 configuration.Background = background;
+                configuration.BaseForegroundColor = ThemedColors.Get(MobileLook.EnumComboBox.TextFor(isEnabled, isPressed, isPointerOver));
+
+                // The chevron is the configuration's image, which takes the text's color unless it carries its own
+                UIColor chevronColor = ThemedColors.Get(MobileLook.EnumComboBox.ChevronFor(isEnabled));
+                configuration.Image = UIImage.GetSystemImage("chevron.down")?.ApplyTintColor(chevronColor, UIImageRenderingMode.AlwaysOriginal);
                 this.Configuration = configuration;
+
+                // The outline is on the combo box's own layer, which works it out for this state as it lays out
+                this.Superview?.SetNeedsLayout();
+
+                // Themed, keyboard focus shows as AJut's dotted rectangle in place of the system's (see FocusVisual)
+                FocusVisual.TakeOver(this);
+            }
+
+            public override void DidUpdateFocus (UIFocusUpdateContext context, UIFocusAnimationCoordinator coordinator)
+            {
+                base.DidUpdateFocus(context, coordinator);
+                if (ThemedColors.IsThemeLoaded)
+                {
+                    FocusVisual.Update(this);
+                }
+            }
+
+            public override void LayoutSubviews ()
+            {
+                base.LayoutSubviews();
+                if (ThemedColors.IsThemeLoaded)
+                {
+                    FocusVisual.Update(this);
+                }
             }
         }
     }

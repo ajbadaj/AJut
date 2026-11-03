@@ -41,7 +41,7 @@
         private ResourceDictionary m_lightTouchOverlay;
         private ResourceDictionary m_darkTouchOverlay;
         private ResourceDictionary m_appliedTouchOverlay;
-        private bool m_isTouchFocused;
+        private bool m_usesTouchVariant;
 
         // =========================[ Construction / Setup ]=============================
 
@@ -51,8 +51,8 @@
         /// <param name="lightThemeXamlUriPath">The xaml uri for the light theme, usually in the format of: "/$AppName;component/Themes/LightThemeColors.xaml" - if the entry assembly is the target, and the path lives in Themes/LightThemeColors.xaml you can leave this null</param>
         /// <param name="darkThemeXamlUriPath">The xaml uri for the dark theme, usually in the format of: "/$AppName;component/Themes/DarkThemeColors.xaml" - if the entry assembly is the target, and the path lives in Themes/DarkThemeColors.xaml you can leave this null</param>
         /// <param name="themeColorsInsertionIndex">At what index do we insert the current theme color xaml, default is index zero</param>
-        /// <param name="lightTouchOverlayXamlUriPath">The xaml uri laid over the light theme colors when <see cref="IsTouchFocused"/> is on. Leave it null for AJut's own (Resources/LightTouchThemeColorsOverlay.xaml in AJut.UX.Wpf); pass one when the app changes the colors the touch overlay sets.</param>
-        /// <param name="darkTouchOverlayXamlUriPath">The xaml uri laid over the dark theme colors when <see cref="IsTouchFocused"/> is on. Leave it null for AJut's own (Resources/DarkTouchThemeColorsOverlay.xaml in AJut.UX.Wpf); pass one when the app changes the colors the touch overlay sets.</param>
+        /// <param name="lightTouchOverlayXamlUriPath">The xaml uri laid over the light theme colors when <see cref="UsesTouchVariant"/> is on. Leave it null for AJut's own (Resources/LightTouchThemeColorsOverlay.xaml in AJut.UX.Wpf); pass one when the app changes the colors the touch overlay sets.</param>
+        /// <param name="darkTouchOverlayXamlUriPath">The xaml uri laid over the dark theme colors when <see cref="UsesTouchVariant"/> is on. Leave it null for AJut's own (Resources/DarkTouchThemeColorsOverlay.xaml in AJut.UX.Wpf); pass one when the app changes the colors the touch overlay sets.</param>
         public AppThemeManager (Application target = null, string lightThemeXamlUriPath = null, string darkThemeXamlUriPath = null, int themeColorsInsertionIndex = 0, string lightTouchOverlayXamlUriPath = null, string darkTouchOverlayXamlUriPath = null)
         {
             m_targetApplication = target ?? Application.Current;
@@ -147,17 +147,17 @@
         public eAppTheme CurrentTheme => m_currentTheme;
 
         /// <summary>
-        /// Whether the theme is touch focused: the AJut touch palette's changes laid over the current theme colors, so
+        /// Whether the theme uses its touch variant: the AJut touch palette's changes laid over the current theme colors, so
         /// buttons read as buttons without hover (lifted surfaces, no borders). Off by default, and AJut never turns it
         /// on by itself. An app can follow a 2-in-1's touch use by setting this from a <see cref="TouchPreferenceWatcher"/>,
         /// or offer it as a setting.
         /// </summary>
-        public bool IsTouchFocused
+        public bool UsesTouchVariant
         {
-            get => m_isTouchFocused;
+            get => m_usesTouchVariant;
             set
             {
-                if (this.SetAndRaiseIfChanged(ref m_isTouchFocused, value))
+                if (this.SetAndRaiseIfChanged(ref m_usesTouchVariant, value))
                 {
                     this.ApplyTouchOverlay();
                 }
@@ -224,7 +224,7 @@
             }
         }
 
-        // Lays the current theme's touch overlay over everything when touch focused, as the last merged dictionary, and
+        // Lays the current theme's touch overlay over everything while the touch variant is on, as the last merged dictionary, and
         // takes any other off. The last merged dictionary wins a lookup, so the overlay's few keys override the theme
         // colors' while every other key, the app's own included, still comes from where it did. Going last also leaves
         // every other dictionary at the index it had, for an app that places its own by index.
@@ -236,7 +236,7 @@
                 m_appliedTouchOverlay = null;
             }
 
-            if (!m_isTouchFocused)
+            if (!m_usesTouchVariant)
             {
                 return;
             }

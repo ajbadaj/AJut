@@ -7,7 +7,7 @@ namespace AJut.UX.Theming
 
     /// <summary>
     /// Follows whether Windows prefers touch for a window, on that window's UI thread, so an app can set
-    /// <see cref="AppThemeManager.IsTouchFocused"/> from it. AJut never sets that by itself: an app opts in by making one
+    /// <see cref="AppThemeManager.UsesTouchVariant"/> from it. AJut never sets that by itself: an app opts in by making one
     /// of these and handling <see cref="IsTouchPreferredChanged"/>. Dispose it when the window closes.
     /// </summary>
     /// <remarks>
@@ -82,7 +82,7 @@ namespace AJut.UX.Theming
         /// </summary>
         public bool IsAvailable => m_source != null;
 
-        /// <summary>True when the window should be touch focused, as last heard on the UI thread</summary>
+        /// <summary>True when the window should use the touch variant, as last heard on the UI thread</summary>
         public bool IsTouchPreferred
         {
             get => m_isTouchPreferred;

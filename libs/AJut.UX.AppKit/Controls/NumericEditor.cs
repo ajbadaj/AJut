@@ -14,6 +14,14 @@ namespace AJut.UX.Controls
     // Maximum, decimal places, nudging, and what to do with out-of-range text). This class only
     // shows the text, the error and the buttons, and passes the user's edits in.
     //
+    // It draws the look the iOS and Android editors share, from MobileLook.NumericEditor: one rounded
+    // frame on the pop-out surface holding the decrease button, the number in a shaded well of the
+    // text box color, and the increase button, with an optional label in front of the frame. Under
+    // the mouse the frame's border brightens and a step button takes a wash of the bright highlight;
+    // pressed, the button fills with it. As on iOS and Android, out-of-range text shows a warning
+    // glyph beside the number (its tooltip is the error) as well as the error border, and a
+    // read-only editor dims its number and its step glyphs.
+    //
     // Editing, as on the other stacks:
     //  - Every keystroke updates Value (clamped), while out-of-range text stays on screen.
     //  - Return, or leaving the field, commits: FixOnCommit snaps the text to the clamped value,
@@ -25,16 +33,27 @@ namespace AJut.UX.Controls
     // events, because the arrow keys only reach a text field through its delegate
     // (doCommandBySelector), and the C# events are a delegate under the hood: using both would
     // have one replace the other.
+    //
+    // An AppKit view and its managed peer keep each other alive while anything native holds the
+    // view: the native side roots the peer. The editor natively retains its frame, field and
+    // buttons, and the field keeps its delegate, so none of them may hold the editor strongly, or
+    // an editor dropped without Dispose is never collected. The frame, the field and its delegate
+    // hold it weakly, and the editor listens to its buttons only while it is in a window.
     public class NumericEditor : ThemedView, INumericEditorHost
     {
-        private const double kNudgeButtonWidth = 22.0;
-        private const double kNudgeButtonSpacing = 1.0;
-        private const double kFieldHeight = 24.0;
+        // MobileLook's step buttons are 44 wide, a touch target. A Mac is used with a mouse, so they keep the narrower
+        // width a desktop stepper has.
+        private const double kStepButtonWidth = 22.0;
+        private const double kMinimumHeight = 24.0;
 
         private readonly NumericEditorController m_controller;
         private readonly EditorTextField m_field;
         private readonly FieldDelegate m_fieldDelegate;
         private readonly NSTextField m_label;
+        private readonly NSImageView m_warningGlyph;
+        private readonly FillStack m_outerRow;
+        private readonly FrameView m_frame;
+        private readonly FillStack m_row;
         private readonly NudgeButton m_increaseButton;
         private readonly NudgeButton m_decreaseButton;
         private object m_value;
@@ -48,21 +67,19 @@ namespace AJut.UX.Controls
         private eOutOfBoundsResponse m_outOfBoundsResponse = eOutOfBoundsResponse.ErrorAndToolTip;
         private string m_errorMessage;
         private bool m_isFocused;
+        private bool m_isPointerOverFrame;
         private bool m_isReadOnly;
+        private bool m_isListeningToButtons;
 
         // ===========[ Setup/Construction/Teardown ]===========================
         public NumericEditor ()
         {
-            this.BorderThickness = 1.0;
-            this.CornerRadius = 3.0;
-            this.BackgroundColorKey = ThemedColorKeys.NumericEditor_TextBoxBackground;
-            this.BorderColorKey = ThemedColorKeys.NumericEditor_NormalBorder;
-
-            // 1. Label, the "#" until one is given
-            m_label = NSTextField.CreateLabel("#");
+            // 1. The label, in front of the frame only once it has text (see Label)
+            m_label = NSTextField.CreateLabel(String.Empty);
             m_label.TextColor = ThemedColors.Get(ThemedColorKeys.NumericEditor_Label);
+            m_label.SetContentHuggingPriorityForOrientation((float)NSLayoutPriority.Required, NSLayoutConstraintOrientation.Horizontal);
 
-            // 2. The field itself, borderless inside the editor's own border
+            // 2. The field itself, borderless, in the well
             m_field = new EditorTextField(this)
             {
                 Bordered = false,
@@ -74,37 +91,54 @@ namespace AJut.UX.Controls
             m_field.Cell.SetSendsActionOnEndEditing(false);
             m_fieldDelegate = new FieldDelegate(this);
             m_field.Delegate = m_fieldDelegate;
+            var well = new FieldWell(m_field);
 
-            // 3. Nudge buttons, minus then plus side by side at the trailing edge, as the UIKit editor has them.
-            //    Up and down chevrons stacked in a column read as a combo box's arrows.
+            // 3. The warning glyph, in the row only while the text is out of range (see ShowWarningGlyph)
+            m_warningGlyph = new NSImageView
+            {
+                Image = NSImage.GetSystemSymbol("exclamationmark.triangle.fill", null),
+                ContentTintColor = ThemedColors.Get(ThemedColorKeys.NumericEditor_ErrorBorder),
+            };
+            m_warningGlyph.SetContentHuggingPriorityForOrientation((float)NSLayoutPriority.Required, NSLayoutConstraintOrientation.Horizontal);
+
+            // 4. The step buttons, decrease before the number and increase after it, as the iOS and Android editors
+            //    have them. The editor listens to them only while in a window (see ViewDidMoveToWindow).
             m_decreaseButton = new NudgeButton(isPositive: false);
             m_increaseButton = new NudgeButton(isPositive: true);
-            m_increaseButton.Activated += this.OnIncreaseActivated;
-            m_decreaseButton.Activated += this.OnDecreaseActivated;
+            m_decreaseButton.WidthAnchor.ConstraintEqualTo((nfloat)kStepButtonWidth).Active = true;
+            m_increaseButton.WidthAnchor.ConstraintEqualTo((nfloat)kStepButtonWidth).Active = true;
 
-            // 4. Layout: label, field filling, then the two buttons in a row
-            var buttonRow = new FillStack(NSUserInterfaceLayoutOrientation.Horizontal, spacing: kNudgeButtonSpacing);
-            buttonRow.Add(m_decreaseButton, grows: true);
-            buttonRow.Add(m_increaseButton, grows: true);
-            buttonRow.TranslatesAutoresizingMaskIntoConstraints = false;
-            buttonRow.WidthAnchor.ConstraintEqualTo((nfloat)(kNudgeButtonWidth * 2.0 + kNudgeButtonSpacing)).Active = true;
+            // 5. The frame and the row inside it. The row is inset by the frame's border, so a pressed button fills
+            //    inside the outline rather than over it.
+            m_row = new FillStack(NSUserInterfaceLayoutOrientation.Horizontal);
+            m_row.Add(m_decreaseButton);
+            m_row.Add(well, grows: true);
+            m_row.Add(m_increaseButton);
+            m_row.TranslatesAutoresizingMaskIntoConstraints = false;
 
-            var row = new FillStack(NSUserInterfaceLayoutOrientation.Horizontal, spacing: 4.0)
-            {
-                Padding = new NSEdgeInsets(1, 6, 1, 1),
-            };
-            row.Add(m_label, alignment: eFillStackCrossAlignment.Center);
-            row.Add(m_field, grows: true, alignment: eFillStackCrossAlignment.Center);
-            row.Add(buttonRow);
-            row.TranslatesAutoresizingMaskIntoConstraints = false;
-            this.AddSubview(row);
+            m_frame = new FrameView(this) { TranslatesAutoresizingMaskIntoConstraints = false };
+            m_frame.AddSubview(m_row);
+            nfloat border = MobileLook.NumericEditor.BorderThickness;
             NSLayoutConstraint.ActivateConstraints(new[]
             {
-                row.TopAnchor.ConstraintEqualTo(this.TopAnchor),
-                row.BottomAnchor.ConstraintEqualTo(this.BottomAnchor),
-                row.LeadingAnchor.ConstraintEqualTo(this.LeadingAnchor),
-                row.TrailingAnchor.ConstraintEqualTo(this.TrailingAnchor),
-                row.HeightAnchor.ConstraintGreaterThanOrEqualTo((nfloat)kFieldHeight),
+                m_row.TopAnchor.ConstraintEqualTo(m_frame.TopAnchor, border),
+                m_row.BottomAnchor.ConstraintEqualTo(m_frame.BottomAnchor, -border),
+                m_row.LeadingAnchor.ConstraintEqualTo(m_frame.LeadingAnchor, border),
+                m_row.TrailingAnchor.ConstraintEqualTo(m_frame.TrailingAnchor, -border),
+            });
+
+            // 6. The label (once it has text) and the frame, which takes the rest of the width
+            m_outerRow = new FillStack(NSUserInterfaceLayoutOrientation.Horizontal, spacing: MobileLook.NumericEditor.LabelSpacing);
+            m_outerRow.Add(m_frame, grows: true);
+            m_outerRow.TranslatesAutoresizingMaskIntoConstraints = false;
+            this.AddSubview(m_outerRow);
+            NSLayoutConstraint.ActivateConstraints(new[]
+            {
+                m_outerRow.TopAnchor.ConstraintEqualTo(this.TopAnchor),
+                m_outerRow.BottomAnchor.ConstraintEqualTo(this.BottomAnchor),
+                m_outerRow.LeadingAnchor.ConstraintEqualTo(this.LeadingAnchor),
+                m_outerRow.TrailingAnchor.ConstraintEqualTo(this.TrailingAnchor),
+                m_outerRow.HeightAnchor.ConstraintGreaterThanOrEqualTo((nfloat)kMinimumHeight),
             });
 
             m_controller = new NumericEditorController(this);
@@ -115,12 +149,26 @@ namespace AJut.UX.Controls
         {
             if (disposing)
             {
-                m_increaseButton.Activated -= this.OnIncreaseActivated;
-                m_decreaseButton.Activated -= this.OnDecreaseActivated;
+                this.ListenToButtons(false);
                 m_field.Delegate = null;
             }
 
             base.Dispose(disposing);
+        }
+
+        /// <summary>
+        /// Out of a window the editor drops its handlers on its buttons, so the buttons it retains natively hold nothing
+        /// that leads back to it (see the class comment); back in one it hooks them again. A pointer that was over the
+        /// frame when it left can't be over it any more.
+        /// </summary>
+        public override void ViewDidMoveToWindow ()
+        {
+            base.ViewDidMoveToWindow();
+            this.ListenToButtons(this.Window != null);
+            if (this.Window == null)
+            {
+                this.SetPointerOverFrame(false);
+            }
         }
 
         // ===========[ Events ]================================================
@@ -230,7 +278,7 @@ namespace AJut.UX.Controls
         /// <summary>The step for a nudge with Shift held. On an integer value it rounds away from zero, so it is never a step of 0.</summary>
         public double SmallNudge { get; set; } = 0.5;
 
-        /// <summary>Shows the value without letting it be typed or nudged; the text can still be selected and copied</summary>
+        /// <summary>Shows the value, dimmed, without letting it be typed or nudged; the text can still be selected and copied</summary>
         public bool IsReadOnly
         {
             get => m_isReadOnly;
@@ -238,6 +286,7 @@ namespace AJut.UX.Controls
             {
                 m_isReadOnly = value;
                 m_field.Editable = !value;
+                m_field.TextColor = ThemedColors.Get(value ? ThemedColorKeys.NumericEditor_ReadOnlyText : ThemedColorKeys.NumericEditor_Text);
                 m_increaseButton.Enabled = !value;
                 m_decreaseButton.Enabled = !value;
             }
@@ -246,11 +295,18 @@ namespace AJut.UX.Controls
         /// <summary>The out-of-range message showing now, or null</summary>
         public string ErrorMessage => m_errorMessage;
 
-        /// <summary>Text shown before the field; "#" when not set</summary>
+        /// <summary>
+        /// Text shown in front of the frame, the way a field's header reads; null or empty, the default, shows none and
+        /// gives the frame the whole width
+        /// </summary>
         public string Label
         {
-            get => m_label.StringValue == "#" ? null : m_label.StringValue;
-            set => m_label.StringValue = String.IsNullOrEmpty(value) ? "#" : value;
+            get => String.IsNullOrEmpty(m_label.StringValue) ? null : m_label.StringValue;
+            set
+            {
+                m_label.StringValue = value ?? String.Empty;
+                this.ShowLabel(!String.IsNullOrEmpty(value));
+            }
         }
 
         /// <summary>How the text sits in the field</summary>
@@ -262,6 +318,10 @@ namespace AJut.UX.Controls
 
         /// <summary>The text field inside, for anything not passed through here (font, for one)</summary>
         public NSTextField TextField => m_field;
+
+        // The key the frame's border is drawn in now: the error, then the pointer, then focus, as WinUI3 orders them. Each
+        // is a shared key, registered here with its macOS default as NumericEditor_ErrorBorder and the rest.
+        private string FrameBorderKey => MobileLook.NumericEditor.FrameBorderFor(m_errorMessage != null, m_isPointerOverFrame, m_isFocused);
 
         // ===========[ INumericEditorHost Implementations ]====================
         object INumericEditorSettings.Minimum => NumericEditorController.ToMinimumBound(m_minimum);
@@ -307,10 +367,31 @@ namespace AJut.UX.Controls
         {
             m_errorMessage = errorMessage;
             this.ToolTip = errorMessage;
-            this.RefreshBorder();
+            this.ShowWarningGlyph(errorMessage);
+            m_frame.NeedsDisplay = true;
         }
 
         // ===========[ Helper Methods ]========================================
+        private void ListenToButtons (bool listen)
+        {
+            if (listen == m_isListeningToButtons)
+            {
+                return;
+            }
+
+            m_isListeningToButtons = listen;
+            if (listen)
+            {
+                m_increaseButton.Activated += this.OnIncreaseActivated;
+                m_decreaseButton.Activated += this.OnDecreaseActivated;
+            }
+            else
+            {
+                m_increaseButton.Activated -= this.OnIncreaseActivated;
+                m_decreaseButton.Activated -= this.OnDecreaseActivated;
+            }
+        }
+
         // The buttons read the modifiers held now, while they repeat; the arrow keys pass their key event's own
         private void NudgeFromInput (bool isPositive) => this.NudgeFromInput(isPositive, NSEvent.CurrentModifierFlags);
 
@@ -332,25 +413,223 @@ namespace AJut.UX.Controls
             if (m_isFocused != isFocused)
             {
                 m_isFocused = isFocused;
-                this.RefreshBorder();
+                m_frame.NeedsDisplay = true;
             }
         }
 
-        private void RefreshBorder ()
+        private void SetPointerOverFrame (bool isPointerOver)
         {
-            if (m_errorMessage != null)
+            if (m_isPointerOverFrame != isPointerOver)
             {
-                this.BorderColorKey = ThemedColorKeys.NumericEditor_ErrorBorder;
+                m_isPointerOverFrame = isPointerOver;
+                m_frame.NeedsDisplay = true;
             }
-            else
+        }
+
+        // A FillStack keeps a hidden child's space, so the label goes in front of the frame only while it has text
+        private void ShowLabel (bool show)
+        {
+            bool isShown = m_label.Superview == m_outerRow;
+            if (show && !isShown)
             {
-                this.BorderColorKey = m_isFocused ? ThemedColorKeys.NumericEditor_FocusBorder : ThemedColorKeys.NumericEditor_NormalBorder;
+                m_outerRow.Insert(0, m_label, alignment: eFillStackCrossAlignment.Center);
+            }
+            else if (!show && isShown)
+            {
+                m_outerRow.Remove(m_label);
+            }
+        }
+
+        // The same reason puts the glyph in the row, between the well and the increase button, only while there is an
+        // error, and takes it out again when it clears. VoiceOver reads the error from the image's accessibility
+        // description: an image view's AccessibilityLabel is read-only in the bindings (it comes from the image), unlike
+        // UIKit's, which the iOS editor sets directly.
+        private void ShowWarningGlyph (string errorMessage)
+        {
+            const int kGlyphIndex = 2;
+
+            m_warningGlyph.ToolTip = errorMessage;
+            m_warningGlyph.Image.AccessibilityDescription = errorMessage;
+            bool isShown = m_warningGlyph.Superview == m_row;
+            if ((errorMessage != null) && !isShown)
+            {
+                m_row.Insert(kGlyphIndex, m_warningGlyph, alignment: eFillStackCrossAlignment.Center);
+            }
+            else if ((errorMessage == null) && isShown)
+            {
+                m_row.Remove(m_warningGlyph);
             }
         }
 
         // ===========[ Subclasses/structs ]====================================
-        // A nudge button: the button background for its state, with a minus or plus stroked in the button foreground,
-        // the same colors a plain BrushButton uses. It steps on press and repeats while held.
+        // The editor's frame: the pop-out surface in a rounded rect, outlined in the border for the editor's state, with
+        // the row clipped to its corners. It reports the mouse coming and going to the editor, which picks the border.
+        // It holds the editor weakly: the editor retains it natively (see the editor's class comment).
+        private sealed class FrameView : NSView
+        {
+            private readonly WeakReference<NumericEditor> m_owner;
+
+            public FrameView (NumericEditor owner)
+            {
+                m_owner = new WeakReference<NumericEditor>(owner);
+                this.WantsLayer = true;
+                this.ClipToCorners();
+
+                // One area for the frame's life, kept in step with its visible rect by AppKit, as ManagedButton's is.
+                // The step buttons sit inside it, so the frame stays under the pointer while one of them is.
+                this.AddTrackingArea(new NSTrackingArea(
+                    CGRect.Empty,
+                    NSTrackingAreaOptions.MouseEnteredAndExited | NSTrackingAreaOptions.ActiveInActiveApp | NSTrackingAreaOptions.InVisibleRect,
+                    this,
+                    null
+                ));
+            }
+
+            // For a peer the runtime makes over an existing native view, which has no owner to tell
+            private FrameView (NativeHandle handle) : base(handle)
+            {
+                m_owner = new WeakReference<NumericEditor>(null);
+            }
+
+            public override bool IsFlipped => true;
+
+            // The backing layer can be made later than WantsLayer is set, so the clip is put on it again with each layout
+            public override void Layout ()
+            {
+                base.Layout();
+                this.ClipToCorners();
+            }
+
+            public override void MouseEntered (NSEvent theEvent)
+            {
+                if (m_owner.TryGetTarget(out NumericEditor owner))
+                {
+                    owner.SetPointerOverFrame(true);
+                }
+            }
+
+            public override void MouseExited (NSEvent theEvent)
+            {
+                if (m_owner.TryGetTarget(out NumericEditor owner))
+                {
+                    owner.SetPointerOverFrame(false);
+                }
+            }
+
+            public override void ViewDidChangeEffectiveAppearance ()
+            {
+                base.ViewDidChangeEffectiveAppearance();
+                this.NeedsDisplay = true;
+            }
+
+            public override void DrawRect (CGRect dirtyRect)
+            {
+                nfloat halfBorder = (nfloat)(MobileLook.NumericEditor.BorderThickness / 2.0f);
+                nfloat corner = MobileLook.NumericEditor.CornerRadius;
+                NSBezierPath outline = NSBezierPath.FromRoundedRect(this.Bounds.Inset(halfBorder, halfBorder), corner, corner);
+
+                // The surface is a gradient themed, and a solid control fill unthemed
+                NSGradient gradient = ThemedColors.GetThemedGradient(ThemedColorKeys.NumericEditor_FrameBackground, this.EffectiveAppearance);
+                if (gradient != null)
+                {
+                    gradient.DrawInBezierPath(outline, (nfloat)90);
+                }
+                else
+                {
+                    ThemedColors.Get(ThemedColorKeys.NumericEditor_FrameBackground).SetFill();
+                    outline.Fill();
+                }
+
+                string borderKey = m_owner.TryGetTarget(out NumericEditor owner) ? owner.FrameBorderKey : ThemedColorKeys.NumericEditor_NormalBorder;
+                outline.LineWidth = MobileLook.NumericEditor.BorderThickness;
+                ThemedColors.Get(borderKey).SetStroke();
+                outline.Stroke();
+            }
+
+            // The row inside is clipped to the frame's rounded corners, so a pressed end button doesn't fill past them
+            private void ClipToCorners ()
+            {
+                if (this.Layer != null)
+                {
+                    this.Layer.CornerRadius = MobileLook.NumericEditor.CornerRadius;
+                    this.Layer.MasksToBounds = true;
+                }
+            }
+        }
+
+        // The number's well: the text box color, inset from the frame's top and bottom so the frame shows around it, and
+        // sunk into it by the edge lighting WinUI3's NumericEditor draws with two nested borders, a shadow along the top
+        // and left and a light line along the bottom and right. The lighting is the same literal shading over any theme,
+        // as it is there and on iOS and Android.
+        private sealed class FieldWell : NSView
+        {
+            private const float kInset = MobileLook.NumericEditor.WellInset;
+            private const float kShadowThickness = MobileLook.NumericEditor.WellShadowThickness;
+            private const float kLightThickness = MobileLook.NumericEditor.WellLightThickness;
+            private const float kTextPadding = MobileLook.NumericEditor.WellTextPadding;
+            private static readonly NSColor kShadow = MobileLook.NumericEditor.WellShadow.ToNSColor();
+            private static readonly NSColor kLight = MobileLook.NumericEditor.WellLight.ToNSColor();
+
+            public FieldWell (NSTextField field)
+            {
+                this.TranslatesAutoresizingMaskIntoConstraints = false;
+                field.TranslatesAutoresizingMaskIntoConstraints = false;
+                this.AddSubview(field);
+                NSLayoutConstraint.ActivateConstraints(new[]
+                {
+                    field.LeadingAnchor.ConstraintEqualTo(this.LeadingAnchor, kShadowThickness + kTextPadding),
+                    field.TrailingAnchor.ConstraintEqualTo(this.TrailingAnchor, -(kLightThickness + kTextPadding)),
+                    field.CenterYAnchor.ConstraintEqualTo(this.CenterYAnchor),
+                    field.TopAnchor.ConstraintGreaterThanOrEqualTo(this.TopAnchor, kInset + kShadowThickness),
+                    field.BottomAnchor.ConstraintLessThanOrEqualTo(this.BottomAnchor, -(kInset + kLightThickness)),
+                });
+            }
+
+            // For a peer the runtime makes over an existing native view
+            private FieldWell (NativeHandle handle) : base(handle)
+            {
+            }
+
+            public override bool IsFlipped => true;
+
+            public override void ViewDidChangeEffectiveAppearance ()
+            {
+                base.ViewDidChangeEffectiveAppearance();
+                this.NeedsDisplay = true;
+            }
+
+            public override void DrawRect (CGRect dirtyRect)
+            {
+                CGRect bounds = this.Bounds;
+                nfloat left = bounds.X;
+                nfloat top = bounds.Y + kInset;
+                nfloat right = bounds.X + bounds.Width;
+                nfloat bottom = bounds.Y + bounds.Height - kInset;
+
+                // The light line runs the whole right side and the whole bottom, and the shadow the rest of the top and
+                // left, the way the outer border (bottom and right) holds the inner one (top and left) on WinUI3
+                Fill(kLight, right - kLightThickness, top, right, bottom);
+                Fill(kLight, left, bottom - kLightThickness, right - kLightThickness, bottom);
+                Fill(kShadow, left, top, right - kLightThickness, top + kShadowThickness);
+                Fill(kShadow, left, top + kShadowThickness, left + kShadowThickness, bottom - kLightThickness);
+                Fill(ThemedColors.Get(ThemedColorKeys.NumericEditor_TextBoxBackground), left + kShadowThickness, top + kShadowThickness, right - kLightThickness, bottom - kLightThickness);
+            }
+
+            private static void Fill (NSColor color, nfloat left, nfloat top, nfloat right, nfloat bottom)
+            {
+                if ((color == null) || (right <= left) || (bottom <= top))
+                {
+                    return;
+                }
+
+                color.SetFill();
+                NSBezierPath.FillRect(new CGRect(left, top, right - left, bottom - top));
+            }
+        }
+
+        // A step button: the frame's surface showing through at rest, a wash of the bright highlight under the mouse, and
+        // the full highlight while pressed, with a minus or plus stroked in the step glyph color (dimmed with the number
+        // while read-only). It steps on press and repeats while held.
         private sealed class NudgeButton : ManagedButton
         {
             private readonly bool m_isPositive;
@@ -360,6 +639,7 @@ namespace AJut.UX.Controls
                 m_isPositive = isPositive;
                 this.IsRepeating = true;
                 this.ToolTip = isPositive ? "Increase" : "Decrease";
+                this.TranslatesAutoresizingMaskIntoConstraints = false;
             }
 
             public override void DrawRect (CGRect dirtyRect)
@@ -367,10 +647,25 @@ namespace AJut.UX.Controls
                 const double kGlyphHalfLength = 4.0;
                 const double kGlyphLineWidth = 1.5;
 
+                // 1. The fill, only under the mouse or while pressed
                 eManagedButtonState state = this.CurrentState;
-                ThemedColors.Get(BackgroundKeyFor(state)).SetFill();
-                NSBezierPath.FillRect(this.Bounds);
+                NSColor fill = null;
+                if (state == eManagedButtonState.Pressed)
+                {
+                    fill = ThemedColors.Get(ThemedColorKeys.NumericEditor_StepPressedFill);
+                }
+                else if (state == eManagedButtonState.PointerOver)
+                {
+                    fill = WithOpacity(ThemedColors.Get(ThemedColorKeys.NumericEditor_StepPointerOverFill), MobileLook.NumericEditor.StepPointerOverOpacity);
+                }
 
+                if (fill != null)
+                {
+                    fill.SetFill();
+                    NSBezierPath.FillRect(this.Bounds);
+                }
+
+                // 2. The minus or plus
                 double centerX = (double)this.Bounds.Width / 2.0;
                 double centerY = (double)this.Bounds.Height / 2.0;
                 var glyph = new NSBezierPath
@@ -386,78 +681,74 @@ namespace AJut.UX.Controls
                     glyph.LineTo(new CGPoint(centerX, centerY + kGlyphHalfLength));
                 }
 
-                ThemedColors.Get(ForegroundKeyFor(state)).SetStroke();
+                string glyphKey = (state == eManagedButtonState.Disabled) ? ThemedColorKeys.NumericEditor_ReadOnlyText : ThemedColorKeys.NumericEditor_StepGlyph;
+                ThemedColors.Get(glyphKey).SetStroke();
                 glyph.Stroke();
             }
 
-            private static string BackgroundKeyFor (eManagedButtonState state)
+            // The color at its own alpha scaled by opacity, read under the drawing appearance, so a translucent key stays
+            // as translucent relative to itself
+            private static NSColor WithOpacity (NSColor color, double opacity)
             {
-                switch (state)
-                {
-                    case eManagedButtonState.PointerOver: return ThemedColorKeys.BrushButton_PointerOverBackground;
-                    case eManagedButtonState.Pressed: return ThemedColorKeys.BrushButton_PressedBackground;
-                    case eManagedButtonState.Disabled: return ThemedColorKeys.BrushButton_DisabledBackground;
-                    default: return ThemedColorKeys.BrushButton_NormalBackground;
-                }
-            }
-
-            private static string ForegroundKeyFor (eManagedButtonState state)
-            {
-                switch (state)
-                {
-                    case eManagedButtonState.PointerOver: return ThemedColorKeys.BrushButton_PointerOverForeground;
-                    case eManagedButtonState.Pressed: return ThemedColorKeys.BrushButton_PressedForeground;
-                    case eManagedButtonState.Disabled: return ThemedColorKeys.BrushButton_DisabledForeground;
-                    default: return ThemedColorKeys.BrushButton_NormalForeground;
-                }
+                NSColor srgb = color?.UsingColorSpace(NSColorSpace.SRGBColorSpace);
+                double alpha = (srgb != null) ? (double)srgb.AlphaComponent : 1.0;
+                return color?.ColorWithAlphaComponent((nfloat)(alpha * opacity));
             }
         }
 
-        // Knows when it takes focus. Losing focus shows up as the end of editing, in FieldDelegate.
+        // Knows when it takes focus. Losing focus shows up as the end of editing, in FieldDelegate. The editor retains it
+        // natively, so it holds the editor weakly (see the editor's class comment).
         private sealed class EditorTextField : NSTextField
         {
-            private readonly NumericEditor m_owner;
+            private readonly WeakReference<NumericEditor> m_owner;
 
             public EditorTextField (NumericEditor owner)
             {
-                m_owner = owner;
+                m_owner = new WeakReference<NumericEditor>(owner);
             }
 
             public override bool BecomeFirstResponder ()
             {
                 bool became = base.BecomeFirstResponder();
-                if (became)
+                if (became && m_owner.TryGetTarget(out NumericEditor owner))
                 {
-                    m_owner.SetFocused(true);
+                    owner.SetFocused(true);
                 }
 
                 return became;
             }
         }
 
-        // The field's one delegate: keystrokes, the end of editing, and the arrow and Return keys
+        // The field's one delegate: keystrokes, the end of editing, and the arrow and Return keys. The field keeps it, so
+        // it holds the editor weakly (see the editor's class comment).
         private sealed class FieldDelegate : NSTextFieldDelegate
         {
             // Virtual key codes (kVK_UpArrow, kVK_DownArrow), the same on every keyboard layout
             private const ushort kUpArrowKeyCode = 126;
             private const ushort kDownArrowKeyCode = 125;
 
-            private readonly NumericEditor m_owner;
+            private readonly WeakReference<NumericEditor> m_owner;
 
             public FieldDelegate (NumericEditor owner)
             {
-                m_owner = owner;
+                m_owner = new WeakReference<NumericEditor>(owner);
             }
 
             public override void Changed (NSNotification notification)
             {
-                m_owner.m_controller.OnTextEdited(m_owner.m_field.StringValue);
+                if (m_owner.TryGetTarget(out NumericEditor owner))
+                {
+                    owner.m_controller.OnTextEdited(owner.m_field.StringValue);
+                }
             }
 
             public override void EditingEnded (NSNotification notification)
             {
-                m_owner.m_controller.Commit();
-                m_owner.SetFocused(false);
+                if (m_owner.TryGetTarget(out NumericEditor owner))
+                {
+                    owner.m_controller.Commit();
+                    owner.SetFocused(false);
+                }
             }
 
             public override bool DoCommandBySelector (NSControl control, NSTextView textView, Selector commandSelector)
@@ -470,25 +761,30 @@ namespace AJut.UX.Controls
                 // do not come from an arrow key (Control+P is moveUp: in the emacs bindings) still fall through to
                 // the switch below. The modifiers come from the same event rather than NSEvent.CurrentModifierFlags,
                 // which polls the keyboard now instead of when the key was hit.
+                if (!m_owner.TryGetTarget(out NumericEditor owner))
+                {
+                    return false;
+                }
+
                 if (TryReadArrowKey(out bool isUpArrow, out NSEventModifierMask modifiers))
                 {
-                    m_owner.NudgeFromInput(isUpArrow, modifiers);
+                    owner.NudgeFromInput(isUpArrow, modifiers);
                     return true;
                 }
 
                 switch (commandSelector.Name)
                 {
                     case "moveUp:":
-                        m_owner.NudgeFromInput(true);
+                        owner.NudgeFromInput(true);
                         return true;
 
                     case "moveDown:":
-                        m_owner.NudgeFromInput(false);
+                        owner.NudgeFromInput(false);
                         return true;
 
                     case "insertNewline:":
                         // Return commits and keeps the field focused, as Enter does on the other stacks
-                        m_owner.m_controller.Commit();
+                        owner.m_controller.Commit();
                         return true;
 
                     default:

@@ -281,9 +281,12 @@ namespace AJut.UX.Tests
 
         // Stock keys the AJut theme maps on purpose although nothing in the Windows App SDK 1.8 reads them: the window
         // caption keys (WinUI has read them in other versions, and an app's own title bar may), TextBoxForegroundThemeBrush
-        // (the legacy text box foreground name), and the general system color names an app may read itself
+        // (the legacy text box foreground name), the general system color names an app may read itself, and the focus
+        // visual brushes, the defaults of every element's FocusVisualPrimaryBrush and FocusVisualSecondaryBrush, which the
+        // framework looks up itself rather than from a template
         private static readonly string[] kStockKeysMappedThoughUnread =
         [
+            "SystemControlFocusVisualPrimaryBrush", "SystemControlFocusVisualSecondaryBrush",
             "WindowCaptionBackgroundDisabled", "WindowCaptionButtonStroke",
             "CloseButtonBackgroundPointerOver", "CloseButtonStrokePointerOver", "CloseButtonBackgroundPressed", "CloseButtonStrokePressed",
             "TitleBarCaptionButtonForegroundColor", "TitleBarCaptionButtonHoverForegroundColor", "TitleBarCaptionButtonPressedForegroundColor",
@@ -719,7 +722,7 @@ namespace AJut.UX.Tests
         [TestMethod]
         public void TouchThemeColors_GivesEachThemeItsTouchPaletteAndTheStockAliasing ()
         {
-            // What AppThemeManager.IsTouchFocused adds on WinUI3: each theme dictionary carries the same pair an app's
+            // What AppThemeManager.UsesTouchVariant adds on WinUI3: each theme dictionary carries the same pair an app's
             // own does (its palette, then the stock key aliasing), with the touch palette in place of the base one
             XDocument doc = XDocument.Load(Path.Combine(ResourcesRoot(kResourcesFolder), "TouchThemeColors.xaml"));
             XNamespace presentation = doc.Root!.Name.Namespace;

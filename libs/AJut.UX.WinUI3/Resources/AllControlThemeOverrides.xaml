@@ -114,6 +114,8 @@
         <Setter Property="Background"           Value="{ThemeResource AJut_Brush_NavigationPanelBackground}"/>
         <Setter Property="SelectedBackground"   Value="{ThemeResource AJut_Brush_PanelBackground}"/>
         <Setter Property="BorderBrush"          Value="{ThemeResource AJut_Brush_PanelBorder}"/>
+        <!-- The muted primary under the pointer, as WPF's tabs: it reads as "this can be torn off" -->
+        <Setter Property="PointerOverBackground" Value="{ThemeResource AJut_Brush_PrimaryHighlightDesat}"/>
     </Style>
 
     <!--
@@ -179,10 +181,10 @@
         <Setter Property="BorderBrush" Value="{ThemeResource AJut_Brush_BorderCommon}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="ItemPadding" Value="8,4"/>
-        <!-- Disabled, as the themed ComboBox: the brushes its disabled keys alias -->
+        <!-- Disabled, as the themed ComboBox: the brushes its disabled keys alias, with the text faded further -->
         <Setter Property="DisabledBackground" Value="{ThemeResource AJut_Brush_ControlBackgroundDisabled}"/>
         <Setter Property="DisabledBorderBrush" Value="{ThemeResource AJut_Brush_BorderCommon}"/>
-        <Setter Property="DisabledForeground" Value="{ThemeResource AJut_Brush_UnderstatedText}"/>
+        <Setter Property="DisabledForeground" Value="{ThemeResource AJut_ToggleStrip_DisabledForeground}"/>
     </Style>
 
     <!--
@@ -197,7 +199,7 @@
         <Setter Property="ItemPadding" Value="8,4"/>
         <Setter Property="DisabledBackground" Value="{ThemeResource AJut_Brush_ControlBackgroundDisabled}"/>
         <Setter Property="DisabledBorderBrush" Value="{ThemeResource AJut_Brush_BorderCommon}"/>
-        <Setter Property="DisabledForeground" Value="{ThemeResource AJut_Brush_UnderstatedText}"/>
+        <Setter Property="DisabledForeground" Value="{ThemeResource AJut_ToggleStrip_DisabledForeground}"/>
     </Style>
 
     <!--

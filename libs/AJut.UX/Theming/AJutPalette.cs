@@ -18,7 +18,7 @@ namespace AJut.UX.Theming
     /// key (AJut_&lt;Control&gt;_&lt;Concept&gt;, see <see cref="AJutThemeKeys"/>), or one of the stock control keys
     /// the AJut theme overrides (ButtonBackground and the rest). What stays with each toolkit is the unthemed
     /// default for each key in its own color type, the switch that says whether the AJut theme is loaded, working
-    /// out whether the UI is light or dark, and whether it is touch focused.
+    /// out whether the UI is light or dark, and whether it uses the touch variant.
     ///
     /// The touch tables are for touch-first UI, which has no hover: a button has to read as one from its fill alone, so
     /// button surfaces stand further off the panels, a disabled button's surface does not, and button borders come off
@@ -38,10 +38,10 @@ namespace AJut.UX.Theming
         /// <summary>The AJut dark theme's values.</summary>
         public static Table Dark => g_dark;
 
-        /// <summary>The AJut light theme's values for touch-focused UI: the light values, with enabled button surfaces a neutral gray a step darker than the panels and button borders off.</summary>
+        /// <summary>The AJut light theme's touch variant: the light values, with enabled button surfaces a neutral gray a step darker than the panels and button borders off.</summary>
         public static Table LightTouch => g_lightTouch;
 
-        /// <summary>The AJut dark theme's values for touch-focused UI: the dark values, with enabled button surfaces lifted, button borders off and text brighter.</summary>
+        /// <summary>The AJut dark theme's touch variant: the dark values, with enabled button surfaces lifted, button borders off and text brighter.</summary>
         public static Table DarkTouch => g_darkTouch;
 
         // ===========[ Public Interface Methods ]===================================

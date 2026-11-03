@@ -4,6 +4,7 @@ namespace AJut.UX.Controls
     using System.Collections;
     using System.Collections.Generic;
     using System.Collections.Specialized;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Microsoft.UI.Input;
     using Microsoft.UI.Xaml;
@@ -279,6 +280,20 @@ namespace AJut.UX.Controls
 
         // ===========[ Properties ]===============================================
         private bool IsVertical => this.Orientation == Orientation.Vertical;
+
+        // ===========[ Public Interface Methods ]=================================
+        /// <summary>
+        /// Shows <paramref name="items"/>, the same as setting <see cref="ItemsSource"/>, and keeps the public properties of
+        /// <typeparamref name="T"/> in an app that trims, so <see cref="DisplayPropertyPath"/> still finds the property it
+        /// names. ItemsSource takes an IEnumerable, so the trimmer can't tell which type the path is read from, and under full
+        /// trimming it removes a property nothing else reads: the items are then named from their data, even with
+        /// [DynamicallyAccessedMembers] on the type. An item of a type derived from T isn't covered by T; keep its property
+        /// with [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(...))] on the method that calls this.
+        /// </summary>
+        public void SetItemsSource<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T> (IEnumerable<T> items)
+        {
+            this.ItemsSource = items;
+        }
 
         // ===========[ Template application ]=====================================
         protected override void OnApplyTemplate ()

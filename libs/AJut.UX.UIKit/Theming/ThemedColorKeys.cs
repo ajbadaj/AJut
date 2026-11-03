@@ -124,14 +124,19 @@ namespace AJut.UX.Theming
             ThemedColors.SetUnthemedDefault(ColorEditIngressControl_NormalBorderBrush, UIColor.Separator);
             ThemedColors.SetUnthemedDefault(ColorEditIngressControl_HighlightBorderBrush, null);
 
-            // 6. The MobileLook keys no other UIKit key above already covers: what NumericEditor's label, step glyphs and
-            //  pressed step buttons, a Scroll ToggleStrip's end dots, a disabled ToggleStrip's outline, and a pressed
-            //  GeometryButton's outline fall back to with no theme loaded
+            // 6. The MobileLook keys no other UIKit key above already covers: what NumericEditor's label, step glyphs,
+            //  frame under a pointer and pressed step buttons (whose key the step hover shares), a Scroll ToggleStrip's end
+            //  dots, a disabled ToggleStrip's outline and item text, and a pressed GeometryButton's outline fall back to
+            //  with no theme loaded. The frame under a pointer is a lighter take on the focused border's tint, so the two
+            //  read apart, as WinUI3's unthemed borders do.
+            const float kUnthemedFramePointerOverAlpha = 0.6f;
             ThemedColors.SetUnthemedDefault(MobileLook.NumericEditor.Label, UIColor.Label);
             ThemedColors.SetUnthemedDefault(MobileLook.NumericEditor.StepGlyph, UIColor.Label);
+            ThemedColors.SetUnthemedDefault(MobileLook.NumericEditor.FrameBorderPointerOver, UIColor.SystemBlue.ColorWithAlpha(kUnthemedFramePointerOverAlpha));
             ThemedColors.SetUnthemedDefault(MobileLook.NumericEditor.StepPressedFill, UIColor.SystemBlue);
             ThemedColors.SetUnthemedDefault(MobileLook.ToggleStrip.ScrollIndicator, UIColor.SecondaryLabel);
             ThemedColors.SetUnthemedDefault(MobileLook.ToggleStrip.StripDisabledBorder, UIColor.Separator);
+            ThemedColors.SetUnthemedDefault(MobileLook.ToggleStrip.ItemDisabledText, UIColor.TertiaryLabel);
             ThemedColors.SetUnthemedDefault(MobileLook.GeometryButton.PressedTrace, UIColor.SystemBlue);
 
             // 7. GeometryButton's trace, unthemed the same as the stock button borders above

@@ -159,5 +159,8 @@
             this.AddChild(newChild);
             return newChild;
         }
+
+        // A dragged row's ghost shows its item's text when the tree has no DragGhostTemplate
+        public override string ToString () => this.Title;
     }
 }

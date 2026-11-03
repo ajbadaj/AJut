@@ -1,5 +1,6 @@
 namespace AJut.UX.Controls
 {
+    using AJut.UX.Theming;
     using CoreGraphics;
     using ObjCRuntime;
     using UIKit;
@@ -26,6 +27,7 @@ namespace AJut.UX.Controls
         protected _ManagedBrushButton () : base(CGRect.Empty)
         {
             this.Configuration = CreateBaseConfiguration();
+            FocusVisual.TakeOver(this);
         }
 
         /// <summary>Used by the runtime when UIKit creates the managed peer for an existing native button.</summary>
@@ -104,6 +106,19 @@ namespace AJut.UX.Controls
             configuration.BaseForegroundColor = colors.Foreground;
 
             this.Configuration = configuration;
+        }
+
+        // Keyboard focus shows as AJut's dotted rectangle (see FocusVisual), fitted again on each layout
+        public override void DidUpdateFocus (UIFocusUpdateContext context, UIFocusAnimationCoordinator coordinator)
+        {
+            base.DidUpdateFocus(context, coordinator);
+            FocusVisual.Update(this);
+        }
+
+        public override void LayoutSubviews ()
+        {
+            base.LayoutSubviews();
+            FocusVisual.Update(this);
         }
 
         /// <summary>Subclasses answer which colors to paint for a given interaction state. Any may be null (no paint).</summary>

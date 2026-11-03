@@ -277,7 +277,7 @@
 
         <TextView
             style="@style/ThemeTesterNote"
-            android:text="Not themed by AJut: these follow the device's light or dark through Android's DeviceDefault theme, so they show what the AJut controls sit beside. EnumComboBox is a Spinner underneath, so it is one of them." />
+            android:text="Not themed by AJut: these follow the device's light or dark through Android's DeviceDefault theme, so they show what the AJut controls sit beside. EnumComboBox is a Spinner underneath, but with the AJut theme loaded it paints its own face, the pop-out surface outlined in the text box border with the pressed fill while held, as UIKit's does; unthemed it is the stock Spinner." />
 
         <LinearLayout style="@style/ThemeTesterRow">
 

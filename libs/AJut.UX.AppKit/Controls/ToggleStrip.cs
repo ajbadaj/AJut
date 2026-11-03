@@ -5,6 +5,7 @@ namespace AJut.UX.Controls
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.ComponentModel;
+    using System.Diagnostics.CodeAnalysis;
     using AJut.UX.Theming;
     using AppKit;
     using CoreGraphics;
@@ -423,6 +424,20 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ Public Interface Methods ]==============================
+        /// <summary>
+        /// Shows <paramref name="items"/>, the same as setting <see cref="ItemsSource"/>, and keeps the public properties of
+        /// <typeparamref name="T"/> in an app that trims, so <see cref="DisplayPropertyPath"/> still finds the property it
+        /// names. ItemsSource takes an IEnumerable, so the trimmer can't tell which type the path is read from, and under full
+        /// trimming it removes a property nothing else reads: the items are then named from their data, even with
+        /// [DynamicallyAccessedMembers] on the type. An item of a type derived from T isn't covered by T; name those with
+        /// <see cref="ItemNameSelector"/>, or keep the property with
+        /// [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(...))] on the method that calls this.
+        /// </summary>
+        public void SetItemsSource<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T> (IEnumerable<T> items)
+        {
+            this.ItemsSource = items;
+        }
+
         public override void Layout ()
         {
             base.Layout();
@@ -673,8 +688,10 @@ namespace AJut.UX.Controls
             m_overflowButton.Hidden = !hasOverflow;
             if (hasOverflow)
             {
+                // Across a vertical strip's foot it runs the strip's width, as the flagships' does
+                m_overflowButton.IsVertical = isVertical;
                 m_overflowButton.Frame = isVertical
-                    ? new CGRect((nfloat)((crossSize - kOverflowButtonLength) / 2.0), (nfloat)position, (nfloat)kOverflowButtonLength, (nfloat)kOverflowButtonLength)
+                    ? new CGRect(0, (nfloat)position, (nfloat)crossSize, (nfloat)kOverflowButtonLength)
                     : new CGRect((nfloat)position, 0, (nfloat)kOverflowButtonLength, (nfloat)crossSize);
             }
 
@@ -890,14 +907,33 @@ namespace AJut.UX.Controls
             public override bool IsFlipped => true;
         }
 
-        // The overflow button: a thin down chevron in the button foreground for its state, filled only while the
-        // pointer is over it or it is pressed, the way the WinUI3 strip shows a glyph on its overflow button. A
-        // GeometryButton fills and traces in button face colors, which all but vanish on the dark palette.
+        // The overflow button: a thin down chevron in the button foreground for its state, filled while the pointer is
+        // over it or it is pressed, the way the WinUI3 strip shows a glyph on its overflow button. Across a vertical
+        // strip it also takes the plain button fill at rest, since the strip's surface shades top to bottom and a slice
+        // of it across the foot reads as part of neither. Disabled, it has no fill, so the strip's disabled surface
+        // shows, and its chevron takes the items' disabled text. A GeometryButton fills and traces in button face
+        // colors, which all but vanish on the dark palette.
         private sealed class OverflowChevronButton : ManagedButton
         {
+            private bool m_isVertical;
+
             public OverflowChevronButton ()
             {
                 this.ToolTip = "More";
+            }
+
+            /// <summary>Whether it sits across a vertical strip's foot, where it takes the plain button fill at rest.</summary>
+            public bool IsVertical
+            {
+                get => m_isVertical;
+                set
+                {
+                    if (m_isVertical != value)
+                    {
+                        m_isVertical = value;
+                        this.NeedsDisplay = true;
+                    }
+                }
             }
 
             public override void DrawRect (CGRect dirtyRect)
@@ -906,9 +942,9 @@ namespace AJut.UX.Controls
                 const double kGlyphLineWidth = 1.5;
 
                 eManagedButtonState state = this.CurrentState;
-                if (state == eManagedButtonState.PointerOver || state == eManagedButtonState.Pressed)
+                string backgroundKey = BackgroundKeyFor(state, m_isVertical);
+                if (backgroundKey != null)
                 {
-                    string backgroundKey = state == eManagedButtonState.Pressed ? ThemedColorKeys.BrushButton_PressedBackground : ThemedColorKeys.BrushButton_PointerOverBackground;
                     ThemedColors.Get(backgroundKey).SetFill();
                     NSBezierPath.FillRect(this.Bounds);
                 }
@@ -930,13 +966,24 @@ namespace AJut.UX.Controls
                 glyph.Stroke();
             }
 
+            private static string BackgroundKeyFor (eManagedButtonState state, bool isVertical)
+            {
+                switch (state)
+                {
+                    case eManagedButtonState.PointerOver: return ThemedColorKeys.BrushButton_PointerOverBackground;
+                    case eManagedButtonState.Pressed: return ThemedColorKeys.BrushButton_PressedBackground;
+                    case eManagedButtonState.Disabled: return null;
+                    default: return isVertical ? ThemedColorKeys.BrushButton_NormalBackground : null;
+                }
+            }
+
             private static string ForegroundKeyFor (eManagedButtonState state)
             {
                 switch (state)
                 {
                     case eManagedButtonState.PointerOver: return ThemedColorKeys.BrushButton_PointerOverForeground;
                     case eManagedButtonState.Pressed: return ThemedColorKeys.BrushButton_PressedForeground;
-                    case eManagedButtonState.Disabled: return ThemedColorKeys.BrushButton_DisabledForeground;
+                    case eManagedButtonState.Disabled: return ThemedColorKeys.ToggleStrip_DisabledForeground;
                     default: return ThemedColorKeys.BrushButton_NormalForeground;
                 }
             }
@@ -1152,14 +1199,7 @@ namespace AJut.UX.Controls
                 }
 
                 // 3. Name
-                NSColor foreground = ThemedColors.Get(this.ForegroundKeyForState());
-                if (!this.Enabled)
-                {
-                    const double kDisabledTextAlpha = 0.5;
-                    foreground = foreground.ColorWithAlphaComponent((nfloat)kDisabledTextAlpha);
-                }
-
-                NSAttributedString name = this.MakeName(foreground);
+                NSAttributedString name = this.MakeName(ThemedColors.Get(this.ForegroundKeyForState()));
                 CGSize size = name.Size;
                 name.DrawAtPoint(new CGPoint(
                     surfaceRect.X + ((surfaceRect.Width - size.Width) / 2),
@@ -1184,9 +1224,15 @@ namespace AJut.UX.Controls
             // Over the pointer-over and pressed fills the name takes the highlight text: with the AJut theme those fills are the
             // primary highlight's solid colors and the text is the light one that reads on them; unthemed, an unselected
             // item's fills are faint and its highlight text is the normal control text. A selected item unthemed stays on the
-            // accent color in every state, so it keeps its own white text.
+            // accent color in every state, so it keeps its own white text. Disabled, every name takes the disabled strip
+            // text, as on WinUI3 and WPF.
             private string ForegroundKeyForState ()
             {
+                if (!this.Enabled)
+                {
+                    return ThemedColorKeys.ToggleStrip_DisabledForeground;
+                }
+
                 eManagedButtonState state = this.CurrentState;
                 bool isOnHighlightFill = (state == eManagedButtonState.PointerOver) || (state == eManagedButtonState.Pressed);
                 if (m_item.IsSelected)
@@ -1199,8 +1245,14 @@ namespace AJut.UX.Controls
                 return isOnHighlightFill ? ThemedColorKeys.ToggleStripButton_HighlightForeground : ThemedColorKeys.ToggleStripButton_Foreground;
             }
 
+            // Disabled, only a selected item is filled, with the muted selection, as on WinUI3 and WPF
             private string BackgroundKeyForState ()
             {
+                if (!this.Enabled)
+                {
+                    return m_item.IsSelected ? ThemedColorKeys.ToggleStripButton_CheckedDisabledBackground : null;
+                }
+
                 eManagedButtonState state = this.CurrentState;
                 if (m_item.IsSelected)
                 {

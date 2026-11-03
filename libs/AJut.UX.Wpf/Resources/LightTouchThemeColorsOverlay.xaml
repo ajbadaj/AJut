@@ -5,7 +5,7 @@
     from its fill alone: button surfaces are a neutral gray a clear step darker than the panels, and button borders
     come off.
 
-    AppThemeManager.IsTouchFocused lays this over the app's light theme colors as the application's last merged
+    AppThemeManager.UsesTouchVariant lays this over the app's light theme colors as the application's last merged
     dictionary, so the app's own colors stay for every key this doesn't name. The values are the shared light touch
     palette's (AJut.UX's AJutPalette.LightTouch), and a test keeps them in step.
 -->

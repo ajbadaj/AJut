@@ -118,12 +118,11 @@ namespace AJutShowRoomUIKit.UI.Diagnostics
             m_focusedEditor.TextField.InputAssistantItem.TrailingBarButtonGroups = Array.Empty<UIBarButtonItemGroup>();
 
             this.AddHeading("EnumComboBox");
-            this.AddText("ComboBoxBackground and ComboBoxForeground. Pressed and disabled are UIKit's own dimming of those colors.");
+            this.AddText("Themed, the face is MobileLook.EnumComboBox's: the pop-out surface outlined in the text box border, with the pressed fill while held, as Android's is. A disabled one takes no touches and, themed, keeps the rest look. Unthemed it is a stock button, and pressed and disabled are UIKit's own dimming.");
             var pressedCombo = new EnumComboBox { SelectedItem = eSample.Second };
             m_pressedSamples.Add(pressedCombo.Button);
             pressedCombo.UserInteractionEnabled = false;
-            var disabledCombo = new EnumComboBox { SelectedItem = eSample.Second };
-            disabledCombo.Button.Enabled = false;
+            var disabledCombo = new EnumComboBox { SelectedItem = eSample.Second, Enabled = false };
             this.AddStateRow(
                 _Captioned(new EnumComboBox { SelectedItem = eSample.Second }, kRest),
                 _Captioned(pressedCombo, kPressed),
@@ -167,8 +166,8 @@ namespace AJutShowRoomUIKit.UI.Diagnostics
 // At startup, before the first AJut control is made
 ThemedColors.IsThemeLoaded = true;
 
-// On by default; off for the pointer palette the desktop stacks use
-ThemedColors.IsTouchFocused = false;");
+// Off by default, as on every stack; on for the touch palette
+ThemedColors.UsesTouchVariant = true;");
 
             static T _Titled<T> (T button, string title) where T : UIButton
             {

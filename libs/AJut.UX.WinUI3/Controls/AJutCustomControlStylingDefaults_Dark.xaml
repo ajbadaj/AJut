@@ -27,6 +27,10 @@
     <SolidColorBrush x:Key="AJut_FlatTree_SelectionBrushUnfocused" Color="{ThemeResource SystemAccentColor}" Opacity="0.8"/>
     <SolidColorBrush x:Key="AJut_FlatTree_HoverBackground"         Color="#19FFFFFF"/>
     <SolidColorBrush x:Key="AJut_FlatTree_HoverBorderBrush"        Color="#12FFFFFF"/>
+    <!-- A selected row under the pointer: its strip and outline in the accent at full strength, and the chevron
+         under the pointer in WinUI's TextFillColorPrimaryBrush, a step up from the secondary text it rests in -->
+    <SolidColorBrush x:Key="AJut_FlatTree_SelectionPointerOverBrush" Color="{ThemeResource SystemAccentColor}"/>
+    <SolidColorBrush x:Key="AJut_FlatTreeItemRow_ExpanderGlyphPointerOverForeground" Color="#FFFFFFFF"/>
 
     <!-- ===========[ GeometryButton ]====================================== -->
     <!-- The shape's trace: WinUI's ButtonBorderBrush family, the control elevation border at rest and

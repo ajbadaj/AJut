@@ -21,6 +21,7 @@
             </StackPanel>
         </NavigationView.PaneHeader>
         <NavigationView.MenuItems>
+            <NavigationViewItem Content="Theme Tester" Tag="AJutShowRoomWinUI.UI.Diagnostics.ThemeTesterPage"/>
             <NavigationViewItem Content="ThemeResource resolver" Tag="AJutShowRoomWinUI.UI.Diagnostics.ThemeTestPage"/>
             <NavigationViewItem Content="Palette Doubles" Tag="AJutShowRoomWinUI.UI.Diagnostics.PaletteDoublesPage"/>
             <NavigationViewItem Content="PropertyGrid debug" Tag="AJutShowRoomWinUI.UI.Diagnostics.PropertyGridDebugPage"/>

@@ -49,6 +49,7 @@ namespace AJut.UX.Controls
     {
         private const double kExpanderColumnWidth = 18.0;
         private const double kDefaultRowHeight = 24.0;
+        private const double kListBorderThickness = 1.0;
         private const string kDragType = "dev.ajut.flattree.row";
 
         // Where the WinUI3 tree's row content starts inside its list: the ListViewItem content margin in
@@ -56,6 +57,8 @@ namespace AJut.UX.Controls
         private const double kWinUI3TreeRowContentInset = 6.0;
 
         private readonly ObservableFlatTreeStore<FlatTreeItem> m_store = new ObservableFlatTreeStore<FlatTreeItem>();
+        private readonly ThemedView m_listFrame;
+        private readonly NSLayoutConstraint[] m_scrollViewInsets;
         private readonly TreeTableView m_table;
         private readonly NSScrollView m_scrollView;
         private readonly TableDataSource m_dataSource;
@@ -69,6 +72,7 @@ namespace AJut.UX.Controls
         private double m_treeDepthIndentSize = 16.0;
         private double m_dragDepthRowOffset = kWinUI3TreeRowContentInset;
         private bool m_isSyncingSelection;
+        private bool m_drawsRowSelection = true;
         private FlatTreeItem[] m_draggedItems;
         private readonly DropIndicatorView m_dropIndicator = new DropIndicatorView();
         private FlatTreeDropTarget m_shownDropTarget;
@@ -108,6 +112,17 @@ namespace AJut.UX.Controls
             m_table.DataSource = m_dataSource;
             m_table.Delegate = m_delegate;
 
+            // The list's fill and outline, behind the rows, as WinUI3's themed FlatTreeListControl has them. The rows sit
+            //  inside the outline (see ListBorderColorKey), which a layer would otherwise draw over.
+            m_listFrame = new ThemedView
+            {
+                BackgroundColorKey = ThemedColorKeys.FlatTree_ListBackground,
+                BorderColorKey = ThemedColorKeys.FlatTree_ListBorder,
+                BorderThickness = kListBorderThickness,
+                TranslatesAutoresizingMaskIntoConstraints = false,
+            };
+            this.AddSubview(m_listFrame);
+
             m_scrollView = new NSScrollView
             {
                 HasVerticalScroller = true,
@@ -117,12 +132,23 @@ namespace AJut.UX.Controls
                 TranslatesAutoresizingMaskIntoConstraints = false,
             };
             this.AddSubview(m_scrollView);
-            NSLayoutConstraint.ActivateConstraints(new[]
+
+            // Top, bottom, leading, trailing: the order ApplyScrollViewInset sets them in
+            m_scrollViewInsets = new[]
             {
                 m_scrollView.TopAnchor.ConstraintEqualTo(this.TopAnchor),
                 m_scrollView.BottomAnchor.ConstraintEqualTo(this.BottomAnchor),
                 m_scrollView.LeadingAnchor.ConstraintEqualTo(this.LeadingAnchor),
                 m_scrollView.TrailingAnchor.ConstraintEqualTo(this.TrailingAnchor),
+            };
+            this.ApplyScrollViewInset(kListBorderThickness);
+            NSLayoutConstraint.ActivateConstraints(m_scrollViewInsets);
+            NSLayoutConstraint.ActivateConstraints(new[]
+            {
+                m_listFrame.TopAnchor.ConstraintEqualTo(this.TopAnchor),
+                m_listFrame.BottomAnchor.ConstraintEqualTo(this.BottomAnchor),
+                m_listFrame.LeadingAnchor.ConstraintEqualTo(this.LeadingAnchor),
+                m_listFrame.TrailingAnchor.ConstraintEqualTo(this.TrailingAnchor),
             });
 
             ((INotifyCollectionChanged)m_store).CollectionChanged += this.OnStoreCollectionChanged;
@@ -314,9 +340,53 @@ namespace AJut.UX.Controls
         public bool ShouldToggleExpansionOnDoubleClick { get; set; } = true;
 
         /// <summary>
+        /// The <see cref="ThemedColors"/> key the list is filled with, or null for no fill. By default the AJut list
+        /// background with the theme loaded, and clear without one.
+        /// </summary>
+        public string ListBackgroundColorKey
+        {
+            get => m_listFrame.BackgroundColorKey;
+            set => m_listFrame.BackgroundColorKey = value;
+        }
+
+        /// <summary>
+        /// The <see cref="ThemedColors"/> key of the list's 1pt outline, or null for none, which also lets the rows reach
+        /// the list's edges. By default the AJut list border with the theme loaded, and clear without one.
+        /// </summary>
+        public string ListBorderColorKey
+        {
+            get => m_listFrame.BorderColorKey;
+            set
+            {
+                m_listFrame.BorderColorKey = value;
+                this.ApplyScrollViewInset((value != null) ? kListBorderThickness : 0.0);
+            }
+        }
+
+        /// <summary>
+        /// Whether a selected row draws the tree's selection (a fill, a leading strip and an outline); on by default. A
+        /// control that marks selection its own way turns it off, the way the PropertyGrid marks only a row's label, and
+        /// the pointer-over look then draws on a selected row the same as on any other.
+        /// </summary>
+        public bool DrawsRowSelection
+        {
+            get => m_drawsRowSelection;
+            set
+            {
+                m_drawsRowSelection = value;
+                m_table.EnumerateAvailableRowViews(MarkRowViewForRedisplay);
+            }
+        }
+
+        /// <summary>The text the drag ghost shows for one dragged row; its source's ToString when not set. Several rows show "{n} items".</summary>
+        public Func<FlatTreeItem, string> DragGhostTextFactory { get; set; }
+
+        /// <summary>
         /// Builds the content of a row, right of its indent and expander. It is called each time the table needs a
         /// row's view; a returned view implementing <see cref="IFlatTreeRowContent"/> is torn down when the table
-        /// drops it. By default a row shows its source's ToString.
+        /// drops it. By default a row shows its source's ToString. The view takes the rest of the row's width and is
+        /// centered in its height at its own height, so a container needs a height of its own (its content pinned to
+        /// its top and bottom, or a height constraint): one with none is given none.
         /// </summary>
         public Func<FlatTreeItem, NSView> RowContentFactory { get; set; }
 
@@ -687,6 +757,33 @@ namespace AJut.UX.Controls
             }
         }
 
+        // Shaped as NSTableViewRowHandler too, for redrawing the rows on show after something they draw from changed
+        private static void MarkRowViewForRedisplay (NSTableRowView rowView, nint row)
+        {
+            rowView.NeedsDisplay = true;
+        }
+
+        // The rows sit inside the list's outline when it has one, and reach its edges when it has none
+        private void ApplyScrollViewInset (double inset)
+        {
+            m_scrollViewInsets[0].Constant = (nfloat)inset;
+            m_scrollViewInsets[1].Constant = (nfloat)(-inset);
+            m_scrollViewInsets[2].Constant = (nfloat)inset;
+            m_scrollViewInsets[3].Constant = (nfloat)(-inset);
+        }
+
+        // What the drag ghost says: one row's text, by DragGhostTextFactory or its source's ToString, or how many rows go
+        private string MakeDragGhostText (FlatTreeItem[] draggedItems)
+        {
+            if (draggedItems.Length != 1)
+            {
+                return $"{draggedItems.Length} items";
+            }
+
+            FlatTreeItem item = draggedItems[0];
+            return this.DragGhostTextFactory?.Invoke(item) ?? item.Source?.ToString() ?? "Item";
+        }
+
         private NSView MakeRowContent (FlatTreeItem item)
         {
             if (this.RowContentFactory != null)
@@ -958,8 +1055,10 @@ namespace AJut.UX.Controls
 
             public override void DrawRect (CGRect dirtyRect)
             {
+                // The connector is WinUI3's: 2 thick, and drawn at 0.8 on top of its key's own 0.5
                 const double kLineThickness = 3.0;
-                const double kConnectorThickness = 1.0;
+                const double kConnectorThickness = 2.0;
+                const double kConnectorOpacity = 0.8;
                 const double kLineEndInset = 4.0;
 
                 if (!m_hasLine)
@@ -977,11 +1076,18 @@ namespace AJut.UX.Controls
                     double bottomY = Math.Max(m_anchorY, m_lineY);
                     var connector = new NSBezierPath { LineWidth = (nfloat)kConnectorThickness };
                     connector.SetLineDash(kConnectorDash, 0);
+                    connector.LineJoinStyle = NSLineJoinStyle.Round;
                     connector.MoveTo(new CGPoint(m_anchorX, topY));
                     connector.LineTo(new CGPoint(m_anchorX, bottomY));
                     connector.LineTo(new CGPoint(m_lineX, bottomY));
                     ThemedColors.Get(ThemedColorKeys.FlatTree_DragParentConnector).SetStroke();
+
+                    // The context's alpha multiplies what is drawn, as an element's opacity does on WinUI3
+                    NSGraphicsContext context = NSGraphicsContext.CurrentContext;
+                    context.SaveGraphicsState();
+                    context.CGContext.SetAlpha((nfloat)kConnectorOpacity);
                     connector.Stroke();
+                    context.RestoreGraphicsState();
                 }
             }
         }
@@ -1046,7 +1152,7 @@ namespace AJut.UX.Controls
                 return new RowCellView(item, m_owner.MakeRowContent(item));
             }
 
-            public override NSTableRowView CoreGetRowView (NSTableView tableView, nint row) => new RowBackgroundView();
+            public override NSTableRowView CoreGetRowView (NSTableView tableView, nint row) => new RowBackgroundView(m_owner);
 
             // The table is done with this row's views: tear the content down so its bindings go too
             public override void DidRemoveRowView (NSTableView tableView, NSTableRowView rowView, nint row) => TeardownRowView(rowView, row);
@@ -1145,6 +1251,48 @@ namespace AJut.UX.Controls
                 var pasteboardItem = new NSPasteboardItem();
                 pasteboardItem.SetStringForType(row.ToString(), kDragType);
                 return pasteboardItem;
+            }
+
+            // The drag shows one ghost label beside the pointer in place of the table's own images of the dragged rows:
+            // WPF's themed ghost (WinUI3's is in literal colors), saying the dragged row's text or how many rows go. The
+            // table gives the session one dragging item per row, made from the writers above, so enumerating them as
+            // NSPasteboardItem reaches every one; the first takes the ghost and the rest show nothing.
+            // https://developer.apple.com/documentation/appkit/nstableviewdatasource/tableview(_:draggingsession:willbeginat:forrowindexes:)
+            // https://developer.apple.com/documentation/appkit/nsdraggingsession/enumeratedraggingitems(options:for:classes:searchoptions:using:)
+            public override void DraggingSessionWillBegin (NSTableView tableView, NSDraggingSession draggingSession, CGPoint willBeginAtScreenPoint, NSIndexSet rowIndexes)
+            {
+                const double kPointerGap = 12.0;
+
+                // The classes are Objective-C class objects, which the managed side only reaches as an NSObject through
+                //  the runtime. Without one the table's own row images are left showing.
+                FlatTreeItem[] dragged = m_owner.m_draggedItems;
+                NSWindow window = tableView.Window;
+                NSObject pasteboardItemClass = ObjCRuntime.Runtime.GetNSObject(ObjCRuntime.Class.GetHandle(typeof(NSPasteboardItem)));
+                if ((dragged == null) || (dragged.Length == 0) || (window == null) || (pasteboardItemClass == null))
+                {
+                    return;
+                }
+
+                NSImage ghost = DragGhostPainter.CreateImage(m_owner.MakeDragGhostText(dragged), tableView.EffectiveAppearance);
+                CGPoint pointer = tableView.ConvertPointFromView(window.ConvertPointFromScreen(willBeginAtScreenPoint), null);
+                var ghostFrame = new CGRect(pointer.X + (nfloat)kPointerGap, pointer.Y - (ghost.Size.Height / 2), ghost.Size.Width, ghost.Size.Height);
+
+                // The rows after the first show nothing. The binding's SetDraggingFrame throws on a null image (it takes
+                //  the native handle without a null check), so they take an empty one, which draws nothing.
+                var blank = new NSImage(new CGSize(1, 1));
+
+                draggingSession.EnumerateDraggingItems(
+                    NSDraggingItemEnumerationOptions.ClearNonenumeratedImages,
+                    tableView,
+                    NSArray.FromNSObjects(pasteboardItemClass),
+                    new NSDictionary(),
+                    _ShowGhostOnFirst
+                );
+
+                void _ShowGhostOnFirst (NSDraggingItem draggingItem, nint index, ref bool stop)
+                {
+                    draggingItem.SetDraggingFrame(ghostFrame, (index == 0) ? ghost : blank);
+                }
             }
 
             // The table's proposed row is ignored (see FindHoveredRow); it is only told the gap that was decided, as an
@@ -1271,7 +1419,8 @@ namespace AJut.UX.Controls
 
         // The expand/collapse chevron: a thin stroked glyph in the symbol color, the role the WinUI3 tree's FontIcon
         // chevron plays. A GeometryButton fills and traces in button face colors, so a chevron drawn with one is a
-        // solid triangle that all but vanishes on the dark palette.
+        // solid triangle that all but vanishes on the dark palette. Under the pointer, and while pressed, a rounded box
+        // behind the chevron fills and the chevron lightens, as the flagships' expanders do.
         private sealed class ExpanderGlyph : NSView
         {
             private const double kGlyphHalfLength = 3.5;
@@ -1279,6 +1428,19 @@ namespace AJut.UX.Controls
 
             private bool m_isExpanded;
             private bool m_isHighlighted;
+            private bool m_isPointerOver;
+            private bool m_isPressed;
+
+            public ExpanderGlyph ()
+            {
+                // One area for the chevron's life, kept in step with its visible rect by AppKit, as ManagedButton's is
+                this.AddTrackingArea(new NSTrackingArea(
+                    CGRect.Empty,
+                    NSTrackingAreaOptions.MouseEnteredAndExited | NSTrackingAreaOptions.ActiveInActiveApp | NSTrackingAreaOptions.InVisibleRect,
+                    this,
+                    null
+                ));
+            }
 
             public event EventHandler<EventArgs> Activated;
 
@@ -1338,9 +1500,28 @@ namespace AJut.UX.Controls
                 return true;
             }
 
+            // The row opens or closes on the press, as it always has; the pressed fill shows until the release
             public override void MouseDown (NSEvent theEvent)
             {
+                this.SetPressed(true);
                 this.Activated?.Invoke(this, EventArgs.Empty);
+            }
+
+            public override void MouseUp (NSEvent theEvent)
+            {
+                this.SetPressed(false);
+            }
+
+            public override void MouseEntered (NSEvent theEvent)
+            {
+                m_isPointerOver = true;
+                this.NeedsDisplay = true;
+            }
+
+            public override void MouseExited (NSEvent theEvent)
+            {
+                m_isPointerOver = false;
+                this.NeedsDisplay = true;
             }
 
             public override void ViewDidChangeEffectiveAppearance ()
@@ -1351,10 +1532,26 @@ namespace AJut.UX.Controls
 
             public override void DrawRect (CGRect dirtyRect)
             {
+                // WinUI3's toggle is its 9 point glyph padded 3 all around, with its corners rounded 2
+                const double kBoxSize = 15.0;
+                const double kBoxCornerRadius = 2.0;
+
                 double centerX = (double)this.Bounds.Width / 2.0;
                 double centerY = (double)this.Bounds.Height / 2.0;
                 double half = kGlyphHalfLength;
 
+                // 1. The box behind the chevron, only under the pointer or pressed
+                string boxKey = m_isPressed ? ThemedColorKeys.FlatTree_ExpanderPressedBackground
+                    : m_isPointerOver ? ThemedColorKeys.FlatTree_ExpanderPointerOverBackground
+                    : null;
+                if (boxKey != null)
+                {
+                    var box = new CGRect(centerX - (kBoxSize / 2.0), centerY - (kBoxSize / 2.0), kBoxSize, kBoxSize);
+                    ThemedColors.Get(boxKey).SetFill();
+                    NSBezierPath.FromRoundedRect(box, (nfloat)kBoxCornerRadius, (nfloat)kBoxCornerRadius).Fill();
+                }
+
+                // 2. The chevron
                 var path = new NSBezierPath
                 {
                     LineWidth = (nfloat)kLineWidth,
@@ -1376,19 +1573,121 @@ namespace AJut.UX.Controls
                     path.LineTo(new CGPoint(centerX - half / 2.0, centerY + half));
                 }
 
-                ThemedColors.Get(m_isHighlighted ? ThemedColorKeys.FlatTree_DragTargetHighlight : ThemedColorKeys.FlatTree_ExpanderGlyph).SetStroke();
+                string strokeKey = m_isHighlighted ? ThemedColorKeys.FlatTree_DragTargetHighlight
+                    : (m_isPressed || m_isPointerOver) ? ThemedColorKeys.FlatTree_ExpanderGlyphPointerOver
+                    : ThemedColorKeys.FlatTree_ExpanderGlyph;
+                ThemedColors.Get(strokeKey).SetStroke();
                 path.Stroke();
+            }
+
+            private void SetPressed (bool isPressed)
+            {
+                if (m_isPressed != isPressed)
+                {
+                    m_isPressed = isPressed;
+                    this.NeedsDisplay = true;
+                }
             }
         }
 
-        // Draws the row's hover and selection: a full-row fill, and for a selected row a strip down
-        // its leading edge plus an outline, in the key window's colors or the unfocused ones
+        // The image the drag ghost shows: the text on a rounded fill with an outline, the whole label at 0.65, as WPF's
+        // ghost is drawn. An NSImage made with a drawing handler is drawn whenever AppKit wants it, so the painter keeps
+        // only the text and the appearance to draw in, and resolves the ghost's dynamic colors under that appearance.
+        private sealed class DragGhostPainter
+        {
+            private const double kFontSize = 11.0;
+            private const double kPaddingX = 8.0;
+            private const double kPaddingY = 4.0;
+            private const double kBorderThickness = 1.0;
+            private const double kCornerRadius = 4.0;
+            private const double kOpacity = 0.65;
+
+            private readonly string m_text;
+            private readonly NSAppearance m_appearance;
+            private readonly CGSize m_size;
+            private CGRect m_drawRect;
+
+            private DragGhostPainter (string text, NSAppearance appearance)
+            {
+                m_text = text;
+                m_appearance = appearance;
+                CGSize textSize = this.MakeText().Size;
+                m_size = new CGSize(
+                    (nfloat)(Math.Ceiling((double)textSize.Width) + (2.0 * (kPaddingX + kBorderThickness))),
+                    (nfloat)(Math.Ceiling((double)textSize.Height) + (2.0 * (kPaddingY + kBorderThickness)))
+                );
+            }
+
+            public static NSImage CreateImage (string text, NSAppearance appearance)
+            {
+                var painter = new DragGhostPainter(text, appearance);
+                return NSImage.ImageWithSize(painter.m_size, true, painter.Draw);
+            }
+
+            private bool Draw (CGRect drawRect)
+            {
+                m_drawRect = drawRect;
+                if (m_appearance != null)
+                {
+                    m_appearance.PerformAsCurrentDrawingAppearance(this.DrawUnderAppearance);
+                }
+                else
+                {
+                    this.DrawUnderAppearance();
+                }
+
+                return true;
+            }
+
+            // A transparency layer fades the label as one, the way an element's opacity does, rather than the text and
+            // the fill each on their own
+            private void DrawUnderAppearance ()
+            {
+                CoreGraphics.CGContext context = NSGraphicsContext.CurrentContext.CGContext;
+                context.SetAlpha((nfloat)kOpacity);
+                context.BeginTransparencyLayer();
+
+                nfloat halfBorder = (nfloat)(kBorderThickness / 2.0);
+                NSBezierPath surface = NSBezierPath.FromRoundedRect(m_drawRect.Inset(halfBorder, halfBorder), (nfloat)kCornerRadius, (nfloat)kCornerRadius);
+                ThemedColors.Get(ThemedColorKeys.FlatTree_DragGhostBackground).SetFill();
+                surface.Fill();
+                surface.LineWidth = (nfloat)kBorderThickness;
+                ThemedColors.Get(ThemedColorKeys.FlatTree_DragGhostBorder).SetStroke();
+                surface.Stroke();
+
+                this.MakeText().DrawAtPoint(new CGPoint(m_drawRect.X + (nfloat)(kPaddingX + kBorderThickness), m_drawRect.Y + (nfloat)(kPaddingY + kBorderThickness)));
+                context.EndTransparencyLayer();
+            }
+
+            private NSAttributedString MakeText ()
+            {
+                var attributes = new NSStringAttributes
+                {
+                    Font = NSFont.SystemFontOfSize((nfloat)kFontSize),
+                    ForegroundColor = ThemedColors.Get(ThemedColorKeys.FlatTree_DragGhostForeground),
+                };
+
+                return new NSAttributedString(m_text ?? String.Empty, attributes);
+            }
+        }
+
+        // Draws the row's hover and selection, as the flagships' rows draw them: a selected row gets a full-row fill, a
+        // strip down its leading edge and an outline, in the focused colors or the unfocused ones. The row under the
+        // pointer gets the hover fill and outline, and a selected one under the pointer keeps its fill with its strip and
+        // outline in the hover color. With the list's DrawsRowSelection off, selection draws nothing here and the hover
+        // draws the same on every row.
         private sealed class RowBackgroundView : NSTableRowView
         {
             private const double kSelectionStripWidth = 4.0;
 
+            private readonly FlatTreeListView m_owner;
             private NSTrackingArea m_trackingArea;
             private bool m_isPointerOver;
+
+            public RowBackgroundView (FlatTreeListView owner)
+            {
+                m_owner = owner;
+            }
 
             // A selected row in a focused table reports Emphasized here by default, and AppKit hands that to
             // every cell, so stock labels and buttons switch to their "on a strong selection" colors (white
@@ -1399,11 +1698,19 @@ namespace AJut.UX.Controls
 
             public override void DrawSelection (CGRect dirtyRect)
             {
+                if (!m_owner.DrawsRowSelection)
+                {
+                    return;
+                }
+
                 CGRect bounds = this.Bounds;
                 ThemedColors.Get(ThemedColorKeys.FlatTree_SelectionBackground).SetFill();
                 NSBezierPath.FillRect(bounds);
 
-                string accentKey = this.Emphasized ? ThemedColorKeys.FlatTree_Selection : ThemedColorKeys.FlatTree_SelectionUnfocused;
+                // Selected and under the pointer, the strip and outline take the hover color and the fill stays
+                string accentKey = m_isPointerOver ? ThemedColorKeys.FlatTree_SelectionPointerOver
+                    : this.Emphasized ? ThemedColorKeys.FlatTree_Selection
+                    : ThemedColorKeys.FlatTree_SelectionUnfocused;
                 ThemedColors.Get(accentKey).SetFill();
                 NSBezierPath.FillRect(new CGRect(bounds.X, bounds.Y, (nfloat)kSelectionStripWidth, bounds.Height));
                 ThemedColors.Get(accentKey).SetStroke();
@@ -1413,7 +1720,7 @@ namespace AJut.UX.Controls
             public override void DrawBackground (CGRect dirtyRect)
             {
                 base.DrawBackground(dirtyRect);
-                if (m_isPointerOver && !this.Selected)
+                if (m_isPointerOver && !(this.Selected && m_owner.DrawsRowSelection))
                 {
                     ThemedColors.Get(ThemedColorKeys.FlatTree_HoverBackground).SetFill();
                     NSBezierPath.FillRect(this.Bounds);

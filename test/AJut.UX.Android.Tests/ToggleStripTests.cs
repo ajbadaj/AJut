@@ -327,6 +327,41 @@ namespace AJut.UX.Tests
         }
 
         [TestMethod]
+        public async Task Scroll_FillingItsParent_ShowsTheDotJustInsideItsEnd ()
+        {
+            // A strip as wide as its parent leaves the parent no room past the strip's ends, the way a match_parent strip
+            // fills a page, so the dot goes just inside the end it can scroll toward. A Clip strip laid out the same way
+            // shows what is there with no dot, so the two differ only where a dot is.
+            FrameLayout scrollingParent = _FullWidthParent(eToggleStripOverflow.Scroll, out ToggleStrip scrolling);
+            FrameLayout clippedParent = _FullWidthParent(eToggleStripOverflow.Clip, out ToggleStrip clipped);
+            var both = new LinearLayout(TestHost.RequiredContext) { Orientation = Orientation.Vertical };
+            both.AddView(scrollingParent);
+            both.AddView(clippedParent);
+            using IDisposable attached = TestHost.Attach(both);
+            await _WaitUntilAsync(() => (scrolling.Width > 0) && (clipped.Width > 0));
+
+            // The dot can fall over an item's text in the dot's own color, so the whole square it covers is compared
+            int centerY = scrolling.Top + (scrolling.Height / 2);
+            int forwardX = scrolling.Right - _DotOffset();
+            int radius = _Dp((float)(ToggleStripScrollIndicators.kDotDiameter / 2.0)) - 1;
+            using Bitmap withDot = _Render(scrollingParent);
+            using Bitmap withoutDot = _Render(clippedParent);
+            int differing = 0;
+            for (int y = centerY - radius; y <= centerY + radius; ++y)
+            {
+                for (int x = forwardX - radius; x <= forwardX + radius; ++x)
+                {
+                    if (withDot.GetPixel(x, y) != withoutDot.GetPixel(x, y))
+                    {
+                        ++differing;
+                    }
+                }
+            }
+
+            Assert.IsTrue(differing > 0, "There is more past the trailing end, but the strip's parent has no room past it, so the dot should show just inside it");
+        }
+
+        [TestMethod]
         public async Task NotScrolling_ShowsNoDots ()
         {
             var host = _DotHost();
@@ -422,6 +457,33 @@ namespace AJut.UX.Tests
             Assert.AreEqual(eSize.Medium, comboBox.SelectedItem);
         }
 
+        [TestMethod]
+        public void EnumComboBox_Disabled_DisablesItsSpinner ()
+        {
+            var comboBox = new EnumComboBox(TestHost.RequiredContext) { SelectedItem = eSize.Small };
+            using IDisposable attached = TestHost.Attach(comboBox);
+
+            // A ViewGroup's Enabled does not reach its children, and a Spinner left enabled still opens its list
+            comboBox.Enabled = false;
+            Assert.IsFalse(comboBox.Spinner.Enabled, "Disabling the combo box disables its Spinner");
+
+            comboBox.Enabled = true;
+            Assert.IsTrue(comboBox.Spinner.Enabled, "Enabling the combo box enables its Spinner again");
+        }
+
+        [TestMethod]
+        public void EnumComboBox_DisabledFromItsLayout_DisablesItsSpinner ()
+        {
+            View root = LayoutInflater.From(TestHost.RequiredContext)!.Inflate(Resource.Layout.toggle_strip_test, null)!;
+            var comboBox = root.FindViewById<EnumComboBox>(Resource.Id.enum_combo_box_disabled)!;
+            comboBox.SelectedItem = eSize.Small;
+            using IDisposable attached = TestHost.Attach(root);
+
+            // A ViewGroup ignores android:enabled in a layout, so the combo box reads it itself
+            Assert.IsFalse(comboBox.Enabled, "android:enabled=\"false\" in its layout disables the combo box");
+            Assert.IsFalse(comboBox.Spinner.Enabled, "And its Spinner");
+        }
+
         // ===========[ Binding ]===================================
         [TestMethod]
         public async Task BindSelectedValue_EnumComboBox_BothWays ()
@@ -507,6 +569,16 @@ namespace AJut.UX.Tests
             int padding = _Dp(kDotHostPaddingDp);
             host.SetPadding(padding, padding, padding, padding);
             return host;
+        }
+
+        // A parent exactly as wide as the strip it holds, so it has no room past the strip's ends
+        private static FrameLayout _FullWidthParent (eToggleStripOverflow overflow, out ToggleStrip strip)
+        {
+            var parent = new FrameLayout(TestHost.RequiredContext);
+            strip = new ToggleStrip(TestHost.RequiredContext) { OverflowBehavior = overflow, ItemsSource = kManyItems };
+            parent.AddView(strip, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.WrapContent));
+            parent.LayoutParameters = new LinearLayout.LayoutParams(_Dp(kStripLengthDp), ViewGroup.LayoutParams.WrapContent);
+            return parent;
         }
 
         private static Bitmap _Render (View view)

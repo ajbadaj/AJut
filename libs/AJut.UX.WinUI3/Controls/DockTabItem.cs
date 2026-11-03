@@ -19,11 +19,12 @@ namespace AJut.UX.Controls
     // anonymous-closure event-handler leak pattern.
     //
     // Template visual states (group: SelectionStates). The opacity is the tab's label only; its
-    // background and border stay solid, Background when unselected and SelectedBackground when selected:
+    // background and border stay solid, Background when unselected and SelectedBackground when selected.
+    // Under the pointer the tab fills with PointerOverBackground, a signal that it can be dragged off:
     //   Normal              - unselected, resting   (label opacity 0.35, slight inset at the bottom)
-    //   PointerOver         - unselected, hovered   (label opacity 0.80, reaching the strip's bottom)
+    //   PointerOver         - unselected, hovered   (label opacity 0.35, hover fill, reaching the strip's bottom)
     //   Selected            - selected              (label opacity 1.00, -2px top margin bleeds into content)
-    //   SelectedPointerOver - selected + hovered    (same as Selected)
+    //   SelectedPointerOver - selected + hovered    (as Selected, with the hover fill)
 
     [TemplateVisualState(Name = "Normal",              GroupName = "SelectionStates")]
     [TemplateVisualState(Name = "PointerOver",         GroupName = "SelectionStates")]
@@ -122,6 +123,17 @@ namespace AJut.UX.Controls
         {
             get => (Brush)this.GetValue(SelectedBackgroundProperty);
             set => this.SetValue(SelectedBackgroundProperty, value);
+        }
+
+        public static readonly DependencyProperty PointerOverBackgroundProperty = DPUtils.Register(_ => _.PointerOverBackground);
+        /// <summary>
+        /// The fill drawn over the tab's background while the pointer is over it, selected or not. It says the tab can
+        /// be picked up and dragged off, so it stands out from both backgrounds rather than lightening them.
+        /// </summary>
+        public Brush PointerOverBackground
+        {
+            get => (Brush)this.GetValue(PointerOverBackgroundProperty);
+            set => this.SetValue(PointerOverBackgroundProperty, value);
         }
 
         // ===========[ Properties ]============================================

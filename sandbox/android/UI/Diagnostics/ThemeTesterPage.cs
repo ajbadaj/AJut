@@ -60,7 +60,8 @@ namespace AJutShowRoomAndroid
             m_root.ScrollTo(0, 0);
         }
 
-        // The states that are the controls' own data: read-only, a disabled Spinner
+        // The states that are the controls' own data: read-only, a disabled EnumComboBox (its own Enabled, which it passes
+        // to its Spinner)
         private static void _SetUpValues (View view)
         {
             switch (view)
@@ -72,7 +73,7 @@ namespace AJutShowRoomAndroid
 
                 case EnumComboBox comboBox:
                     comboBox.SelectedItem = eSample.Second;
-                    comboBox.Spinner.Enabled = _TagOf(comboBox) != "disabled";
+                    comboBox.Enabled = _TagOf(comboBox) != "disabled";
                     return;
 
                 case ViewGroup group:

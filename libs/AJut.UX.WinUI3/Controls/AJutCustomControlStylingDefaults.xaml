@@ -114,6 +114,10 @@
     <SolidColorBrush x:Key="AJut_FlatTree_DragInsertionLine"           Color="#2196F3"/>
     <SolidColorBrush x:Key="AJut_FlatTree_DragParentConnector"         Color="#2196F3" Opacity="0.5"/>
     <SolidColorBrush x:Key="AJut_FlatTree_DragTargetHighlight"         Color="#2196F3"/>
+    <!-- The ghost of a dragged row: a dark plate with a light edge and light text, readable over any list -->
+    <SolidColorBrush x:Key="AJut_FlatTree_DragGhostBackground"         Color="#E0404040"/>
+    <SolidColorBrush x:Key="AJut_FlatTree_DragGhostBorderBrush"        Color="#80FFFFFF"/>
+    <SolidColorBrush x:Key="AJut_FlatTree_DragGhostForeground"         Color="#FFFFFFFF"/>
 
     <!-- ===========[ FlatTree ListViewItem ]================================ -->
     <!-- The selection and hover brushes follow WinUI's own list colors, so they are per theme, in the

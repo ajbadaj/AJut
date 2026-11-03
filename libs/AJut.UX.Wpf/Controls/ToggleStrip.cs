@@ -5,6 +5,7 @@
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Linq;
     using System.Windows;
@@ -513,6 +514,18 @@
         // Set by ToggleStripPanel when it attaches so layout-affecting changes can re-run the partition.
         internal ToggleStripPanel ItemsPanelInstance { get; set; }
 
+        // ================== [ Public Interface Methods ]================================
+        /// <summary>
+        /// Shows <paramref name="items"/>, the same as setting <see cref="ItemsSource"/>. It matches the other stacks'
+        /// ToggleStrip, where it keeps the public properties of <typeparamref name="T"/> in an app that trims so
+        /// <see cref="DisplayPropertyPath"/> still finds the property it names; WPF doesn't support trimming, so here it
+        /// only sets ItemsSource.
+        /// </summary>
+        public void SetItemsSource<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T> (IEnumerable<T> items)
+        {
+            this.ItemsSource = items;
+        }
+
         // ================== [ Private Utility Functions ]================================
         internal void SetHasOverflow (bool value)
         {
@@ -580,36 +593,156 @@
             }
         }
 
+        // Each change lands where the source made it, by the rules AJut.UX's ToggleStripItemCollection.ApplySourceChange
+        // gives the other stacks' strips: an add at the reported index (the end when there is none), a remove at the
+        // reported index when the data there lines up and by data otherwise, a replace as a remove then an add, and a move
+        // moving the existing items so they keep their selection. A reset rebuilds the items from the source, keeping the
+        // selection by value, since a source that is not an ObservableCollection reports any bulk change as a reset.
         private void ItemsSource_CollectionChanged (object sender, NotifyCollectionChangedEventArgs e)
         {
-            if (e.Action == NotifyCollectionChangedAction.Reset)
+            List<object> previousSelection = this.Items.Where(_ => _.IsSelected).Select(_ => _.Data).ToList();
+            switch (e.Action)
             {
-                this.Items.Clear();
+                case NotifyCollectionChangedAction.Reset:
+                    this.RebuildItemsFromSource(previousSelection);
+                    break;
+
+                case NotifyCollectionChangedAction.Add:
+                    this.InsertItemsFromSource(e.NewStartingIndex, e.NewItems);
+                    break;
+
+                case NotifyCollectionChangedAction.Remove:
+                    this.RemoveItemsFromSource(e.OldStartingIndex, e.OldItems);
+                    break;
+
+                case NotifyCollectionChangedAction.Replace:
+                    this.RemoveItemsFromSource(e.OldStartingIndex, e.OldItems);
+                    this.InsertItemsFromSource(e.NewStartingIndex, e.NewItems);
+                    break;
+
+                case NotifyCollectionChangedAction.Move:
+                    this.MoveItemsFromSource(e.OldStartingIndex, e.NewStartingIndex, e.OldItems?.Count ?? 0);
+                    break;
+            }
+
+            this.ReportSelectionTakenAway(previousSelection);
+        }
+
+        private void RebuildItemsFromSource (List<object> previousSelection)
+        {
+            int index = 0;
+            this.Items.ReplaceAllWith(
+                this.ItemsSource?.OfType<object>().Select(data => new ToggleItem(this, data, index++, this.DisplayPropertyPath))
+                ?? Enumerable.Empty<ToggleItem>()
+            );
+
+            // The values that were selected stay selected where the source still has them, each on its first match
+            foreach (object data in previousSelection)
+            {
+                this.Items.FirstOrDefault(item => !item.IsSelected && Equals(item.Data, data))?.RestoreSelection();
+            }
+        }
+
+        private void InsertItemsFromSource (int index, IList newItems)
+        {
+            if (newItems == null)
+            {
                 return;
             }
 
-            IEnumerable<ToggleItem> addedItems;
-            if (e.NewItems != null)
+            int insertAt = ((index >= 0) && (index <= this.Items.Count)) ? index : this.Items.Count;
+            foreach (object data in newItems)
             {
-                addedItems = e.NewItems.OfType<object>()
-                    .Select(i => new ToggleItem(this, i, -1, this.DisplayPropertyPath));
+                this.Items.Insert(insertAt, new ToggleItem(this, data, insertAt, this.DisplayPropertyPath));
+                ++insertAt;
             }
-            else
+        }
+
+        private void RemoveItemsFromSource (int index, IList oldItems)
+        {
+            if (oldItems == null)
             {
-                addedItems = Enumerable.Empty<ToggleItem>();
+                return;
             }
 
-            IEnumerable<ToggleItem> removedItems;
-            if (e.OldItems != null)
+            // At the reported index when it lines up with the data there, which keeps duplicates straight; by data otherwise
+            if ((index >= 0) && (index + oldItems.Count <= this.Items.Count)
+                && Enumerable.Range(0, oldItems.Count).All(offset => Equals(this.Items[index + offset].Data, oldItems[offset])))
             {
-                removedItems = this.Items.Where(_ => e.OldItems.Contains(_));
-            }
-            else
-            {
-                removedItems = Enumerable.Empty<ToggleItem>();
+                for (int offset = 0; offset < oldItems.Count; ++offset)
+                {
+                    this.Items.RemoveAt(index);
+                }
+
+                return;
             }
 
-            this.Items.AddAndRemove(addedItems, removedItems);
+            foreach (object data in oldItems)
+            {
+                ToggleItem match = this.Items.FirstOrDefault(item => Equals(item.Data, data));
+                if (match != null)
+                {
+                    this.Items.Remove(match);
+                }
+            }
+        }
+
+        private void MoveItemsFromSource (int oldIndex, int newIndex, int count)
+        {
+            if ((oldIndex < 0) || (newIndex < 0) || (count == 0))
+            {
+                return;
+            }
+
+            for (int offset = 0; offset < count; ++offset)
+            {
+                // A multi-item move keeps the block's order: each next item goes after the one moved before it
+                int from = (newIndex > oldIndex) ? oldIndex : (oldIndex + offset);
+                int to = (newIndex > oldIndex) ? (newIndex + count - 1) : (newIndex + offset);
+                this.Items.Move(from, to);
+            }
+        }
+
+        // A source change that took away a selected item is a selection change. A strip that needs a selection selects its
+        // first item again when none is left; otherwise the selection becomes what is left.
+        private void ReportSelectionTakenAway (List<object> previousSelection)
+        {
+            List<object> currentSelection = this.Items.Where(_ => _.IsSelected).Select(_ => _.Data).ToList();
+            if (currentSelection.Count == previousSelection.Count)
+            {
+                return;
+            }
+
+            if ((currentSelection.Count == 0) && (this.Items.Count > 0) && !this.AllowNoSelection)
+            {
+                this.Items[0].IsSelected = true;
+                return;
+            }
+
+            if ((this.SelectedItem != null) && !currentSelection.Contains(this.SelectedItem))
+            {
+                this.PerformModificationWithBlocker(ref m_isChangingSelectedItem, () => this.SelectedItem = currentSelection.LastOrDefault());
+            }
+
+            this.PerformModificationWithBlocker(ref m_isChangingSelectedItemsList,
+                () =>
+                {
+                    if (this.SelectedItems is INotifyCollectionChanged)
+                    {
+                        this.SelectedItems.Clear();
+                        foreach (object data in currentSelection)
+                        {
+                            this.SelectedItems.Add(data);
+                        }
+                    }
+                    else
+                    {
+                        this.SelectedItems = currentSelection;
+                    }
+                }
+            );
+
+            this.RaiseSelectionChanged(previousSelection, currentSelection);
         }
 
         private void PerformModificationWithBlocker (ref bool blocker, Action action)
@@ -856,6 +989,14 @@
                 this.ResetNameWithDefault();
             }
 
+            // Marks the item selected again after its strip rebuilt from the source, without the select path: the strip
+            // reports the selection that is left once the rebuild is done
+            internal void RestoreSelection ()
+            {
+                m_isSelected = true;
+                this.RaisePropertyChanged(nameof(IsSelected));
+            }
+
             internal void SetSelectionWithoutChecking (bool isSelected)
             {
                 m_isSelected = isSelected;
@@ -945,12 +1086,6 @@
             {
                 this.Clear();
                 this.AddEach(enumerable);
-            }
-
-            internal void AddAndRemove (IEnumerable<ToggleItem> addedItems, IEnumerable<ToggleItem> removedItems)
-            {
-                this.AddEach(addedItems);
-                this.RemoveEach(removedItems);
             }
         }
 

@@ -76,6 +76,22 @@ namespace AJut.UX.Theming
         /// <summary>The traced outline while disabled. Shared key.</summary>
         public const string GeometryButton_TraceDisabled = "AJut_GeometryButton_TraceDisabled";
 
+        // The title drawn over the shape, AppKit only, each aliased to the ButtonForeground* key the WinUI3
+        // GeometryButton's content takes for that state. Unthemed the shape is a label color, so the title is the
+        // window background, which reads on a label gray in light and dark alike.
+
+        /// <summary>The title at rest</summary>
+        public const string GeometryButton_Foreground = "AJut_GeometryButton_Foreground";
+
+        /// <summary>The title with the pointer over it</summary>
+        public const string GeometryButton_ForegroundPointerOver = "AJut_GeometryButton_ForegroundPointerOver";
+
+        /// <summary>The title while pressed</summary>
+        public const string GeometryButton_ForegroundPressed = "AJut_GeometryButton_ForegroundPressed";
+
+        /// <summary>The title while disabled</summary>
+        public const string GeometryButton_ForegroundDisabled = "AJut_GeometryButton_ForegroundDisabled";
+
         // ===========[ BrushButton ]===========================================
         // AppKit only, each aliased to the Button* key the WinUI3 BrushButton's default style uses
         // for that part and state. Unthemed, they are macOS control colors, with translucent label
@@ -113,8 +129,14 @@ namespace AJut.UX.Theming
         public const string ToggleStripButton_CheckedPointerOverBackground = "AJut_ToggleStripButton_CheckedPointerOverBackground";
         public const string ToggleStripButton_CheckedPressedBackground = "AJut_ToggleStripButton_CheckedPressedBackground";
 
+        /// <summary>A selected item's fill while the strip is disabled: the muted primary. Shared with WinUI3.</summary>
+        public const string ToggleStripButton_CheckedDisabledBackground = "AJut_ToggleStripButton_CheckedDisabledBackground";
+
         /// <summary>An item's name over the pointer-over and pressed fills. Shared with WinUI3.</summary>
         public const string ToggleStripButton_HighlightForeground = "AJut_ToggleStripButton_HighlightForeground";
+
+        /// <summary>Every item's name while the strip is disabled: the understated text, faded. Shared with WinUI3.</summary>
+        public const string ToggleStrip_DisabledForeground = "AJut_ToggleStrip_DisabledForeground";
 
         /// <summary>An item's name while it is not selected. AppKit only.</summary>
         public const string ToggleStripButton_Foreground = "AJut_ToggleStripButton_Foreground";
@@ -138,33 +160,56 @@ namespace AJut.UX.Theming
         public const string ToggleStrip_ScrollIndicator = "AJut_ToggleStrip_ScrollIndicator";
 
         // ===========[ NumericEditor ]=========================================
-        /// <summary>The border while the field has focus. Shared key.</summary>
+        // The look MobileLook.NumericEditor sets out for every mobile and Mac editor. The AppKit only keys alias its keys.
+
+        /// <summary>The frame's border while the field has focus. Shared key.</summary>
         public const string NumericEditor_FocusBorder = "AJut_NumericEditor_FocusBorderBrush";
 
-        /// <summary>The border at rest. Shared key.</summary>
+        /// <summary>The frame's border at rest. Shared key.</summary>
         public const string NumericEditor_NormalBorder = "AJut_NumericEditor_NormalBorderBrush";
 
-        /// <summary>The border while the text is out of range. Shared key.</summary>
+        /// <summary>The frame's border while the mouse is over it, focused or not. Shared key.</summary>
+        public const string NumericEditor_PointerOverBorder = MobileLook.NumericEditor.FrameBorderPointerOver;
+
+        /// <summary>The frame's border, and the warning glyph beside the number, while the text is out of range. Shared key.</summary>
         public const string NumericEditor_ErrorBorder = "AJut_NumericEditor_ErrorBrush";
 
-        /// <summary>The field's background. AppKit only: WinUI3 sets it through a style setter.</summary>
+        /// <summary>The frame's surface, a gradient themed. AppKit only, as MobileLook.NumericEditor.FrameSurface.</summary>
+        public const string NumericEditor_FrameBackground = "AJut_NumericEditor_FrameBackground";
+
+        /// <summary>The well the number sits in. AppKit only, as MobileLook.NumericEditor.WellSurface.</summary>
         public const string NumericEditor_TextBoxBackground = "AJut_NumericEditor_TextBoxBackground";
 
-        /// <summary>The typed text. AppKit only.</summary>
+        /// <summary>The typed text. AppKit only, as MobileLook.NumericEditor.Number.</summary>
         public const string NumericEditor_Text = "AJut_NumericEditor_Text";
 
-        /// <summary>The label before the field (the "#" by default). AppKit only.</summary>
+        /// <summary>The number, and the step glyphs, while the editor is read-only. AppKit only, as MobileLook.NumericEditor.ReadOnlyText.</summary>
+        public const string NumericEditor_ReadOnlyText = "AJut_NumericEditor_ReadOnlyText";
+
+        /// <summary>The label in front of the frame, when one is given. AppKit only, as MobileLook.NumericEditor.Label.</summary>
         public const string NumericEditor_Label = "AJut_NumericEditor_Label";
+
+        /// <summary>The step buttons' minus and plus. AppKit only, as MobileLook.NumericEditor.StepGlyph.</summary>
+        public const string NumericEditor_StepGlyph = "AJut_NumericEditor_StepGlyph";
+
+        /// <summary>A step button's fill under the mouse, drawn at MobileLook.NumericEditor.StepPointerOverOpacity. Shared key.</summary>
+        public const string NumericEditor_StepPointerOverFill = MobileLook.NumericEditor.StepPointerOverFill;
+
+        /// <summary>A step button's fill while pressed. Shared key.</summary>
+        public const string NumericEditor_StepPressedFill = MobileLook.NumericEditor.StepPressedFill;
 
         // ===========[ FlatTreeListView ]======================================
         /// <summary>A selected row's leading strip and outline while its window is key. Shared key.</summary>
         public const string FlatTree_Selection = "AJut_FlatTree_SelectionBrush";
 
-        /// <summary>A selected row's leading strip and outline while another window is key. Shared key.</summary>
+        /// <summary>A selected row's leading strip and outline while the list is not the focused control of the key window. Shared key.</summary>
         public const string FlatTree_SelectionUnfocused = "AJut_FlatTree_SelectionBrushUnfocused";
 
         /// <summary>A selected row's fill. Shared key.</summary>
         public const string FlatTree_SelectionBackground = "AJut_FlatTree_SelectionBackground";
+
+        /// <summary>A selected row's leading strip and outline while the pointer is over it; its fill stays. Shared key.</summary>
+        public const string FlatTree_SelectionPointerOver = "AJut_FlatTree_SelectionPointerOverBrush";
 
         /// <summary>The fill of the row under the pointer. Shared key.</summary>
         public const string FlatTree_HoverBackground = "AJut_FlatTree_HoverBackground";
@@ -184,18 +229,45 @@ namespace AJut.UX.Theming
         /// <summary>The expand/collapse chevron. Themed, it is the symbol foreground the WinUI3 tree's chevron uses. AppKit only.</summary>
         public const string FlatTree_ExpanderGlyph = "AJut_FlatTree_ExpanderGlyph";
 
+        /// <summary>The chevron while the pointer is over it or it is pressed, lighter than at rest. Shared key.</summary>
+        public const string FlatTree_ExpanderGlyphPointerOver = "AJut_FlatTreeItemRow_ExpanderGlyphPointerOverForeground";
+
+        /// <summary>The fill behind the chevron while the pointer is over it. Shared key.</summary>
+        public const string FlatTree_ExpanderPointerOverBackground = "AJut_FlatTreeItemRow_ExpanderPointerOverBackground";
+
+        /// <summary>The fill behind the chevron while it is pressed. Shared key.</summary>
+        public const string FlatTree_ExpanderPressedBackground = "AJut_FlatTreeItemRow_ExpanderPressedBackground";
+
+        /// <summary>The list's fill. AppKit only: WinUI3's theme style sets FlatTreeListControl's Background, clear without a theme.</summary>
+        public const string FlatTree_ListBackground = "AJut_FlatTree_ListBackground";
+
+        /// <summary>The list's outline. AppKit only: WinUI3's theme style sets FlatTreeListControl's BorderBrush, none without a theme.</summary>
+        public const string FlatTree_ListBorder = "AJut_FlatTree_ListBorder";
+
+        /// <summary>The fill of the label that follows the pointer while rows are dragged. Shared key.</summary>
+        public const string FlatTree_DragGhostBackground = "AJut_FlatTree_DragGhostBackground";
+
+        /// <summary>The outline of the label that follows the pointer while rows are dragged. Shared key.</summary>
+        public const string FlatTree_DragGhostBorder = "AJut_FlatTree_DragGhostBorderBrush";
+
+        /// <summary>The text of the label that follows the pointer while rows are dragged. Shared key.</summary>
+        public const string FlatTree_DragGhostForeground = "AJut_FlatTree_DragGhostForeground";
+
         // ===========[ PropertyGrid ]==========================================
-        /// <summary>A property row's name. Shared key.</summary>
+        /// <summary>A property row's name, and, faded, its subtitle, a list element's header text and a list's element count. Shared key.</summary>
         public const string PropertyGridRow_LabelForeground = "AJut_PropertyGridItemRow_LabelForeground";
+
+        /// <summary>The leading nub and outline around a selected row's label. Shared key.</summary>
+        public const string PropertyGridRow_SelectionBorder = "AJut_PropertyGridItemRow_SelectionBorderBrush";
 
         /// <summary>The line the label splitter shows over the label and editor boundary. Shared key.</summary>
         public const string PropertyGrid_LabelSplitter = "AJut_PropertyGrid_LabelSplitterBrush";
 
-        /// <summary>A property row's subtitle and a list element's header text. AppKit only.</summary>
-        public const string PropertyGridRow_SubtitleForeground = "AJut_PropertyGridItemRow_SubtitleForeground";
-
         /// <summary>The "Not set" text of a null nullable value. Shared key.</summary>
         public const string NullableEditor_NotSetForeground = "AJut_NullableEditor_NotSetForeground";
+
+        /// <summary>The shade over a null nullable value's dimmed editor. Shared key, the same dark shade in every theme.</summary>
+        public const string NullableEditor_OverlayBackground = "AJut_NullableEditor_OverlayBackground";
 
         // ===========[ ColorEditIngressControl ]===============================
         /// <summary>The swatch border at rest. Shared key.</summary>
@@ -217,26 +289,47 @@ namespace AJut.UX.Theming
         /// <summary>A panel zone's fill. AppKit only: WinUI3 sets it on DockLeafLayout by style.</summary>
         public const string DockZone_PanelBackground = "AJut_DockZone_PanelBackground";
 
-        /// <summary>A panel zone's outline and tab outlines. AppKit only.</summary>
+        /// <summary>A panel zone's outline, the line between its header and its content, and the tabs' edges. AppKit only: WinUI3 sets it on DockLeafLayout and DockTabItem by style.</summary>
         public const string DockZone_PanelBorder = "AJut_DockZone_PanelBorderBrush";
 
-        /// <summary>The header bar above the shown panel. AppKit only.</summary>
+        /// <summary>The header bar above the shown panel, a level apart from the panel, as the unselected tabs are. AppKit only.</summary>
         public const string DockZone_HeaderBackground = "AJut_DockZone_HeaderBackground";
 
-        /// <summary>Header and tab titles. AppKit only.</summary>
+        /// <summary>Header and tab titles, and the close X beside them. AppKit only.</summary>
         public const string DockZone_HeaderForeground = "AJut_DockZone_HeaderForeground";
 
-        /// <summary>The tab strip behind the tabs. AppKit only.</summary>
+        /// <summary>The header bar while its panel is the one being typed into. AppKit only: WinUI3 sets it on DockLeafLayout by style.</summary>
+        public const string DockZone_HeaderFocusedBackground = "AJut_DockZone_HeaderFocusedBackground";
+
+        /// <summary>The header's title and close X while its panel is the one being typed into. AppKit only.</summary>
+        public const string DockZone_HeaderFocusedForeground = "AJut_DockZone_HeaderFocusedForeground";
+
+        /// <summary>
+        /// The tab strip behind the tabs: clear themed or not, as WinUI3's TabStripBackground is, so the strip shows what
+        /// is behind the zone. AppKit only; give it a default or an alias to fill the strip.
+        /// </summary>
         public const string DockZone_TabStripBackground = "AJut_DockZone_TabStripBackground";
 
-        /// <summary>An unselected tab. AppKit only.</summary>
+        /// <summary>An unselected tab, a level apart from the panel, as the header is. AppKit only.</summary>
         public const string DockZone_TabBackground = "AJut_DockZone_TabBackground";
 
         /// <summary>The selected tab, in the panel's own fill so the tab reads as part of the panel above it. AppKit only.</summary>
         public const string DockZone_SelectedTabBackground = "AJut_DockZone_SelectedTabBackground";
 
+        /// <summary>
+        /// The fill over a tab, selected or not, while the pointer is over it: the muted primary, which says the tab can
+        /// be dragged off. AppKit only: WinUI3 sets it on DockTabItem by style.
+        /// </summary>
+        public const string DockZone_TabPointerOverBackground = "AJut_DockZone_TabPointerOverBackground";
+
         /// <summary>The line where a tab dragged along the strip will land. Shared key.</summary>
         public const string DockZone_DragInsertLine = "AJut_DockZone_DragInsertLineBrush";
+
+        /// <summary>The copy of a tab that follows the pointer while it is dragged along the strip. Shared key.</summary>
+        public const string DockZone_DragGhostBackground = "AJut_DockZone_DragGhostBackground";
+
+        /// <summary>The outline of the copy of a tab that follows the pointer along the strip. Shared key.</summary>
+        public const string DockZone_DragGhostBorder = "AJut_DockZone_DragGhostBorderBrush";
 
         // ===========[ DockDropOverlayView ]===================================
         // Shared keys, the WinUI3 DockDropInsertionDriverWidget's
@@ -275,6 +368,29 @@ namespace AJut.UX.Theming
         public const string DockPanelToggleButton_CheckedPressedBackground = "AJut_DockPanelToggleButton_CheckedPressedBackground";
         public const string DockPanelToggleButton_CheckedPressedBorder = "AJut_DockPanelToggleButton_CheckedPressedBorderBrush";
 
+        // ===========[ DockTabScrollButton ]===================================
+        // The arrows at either end of a dock tab strip with more tabs than fit. The fills are shared keys, the WinUI3
+        // DockTabScrollButton's; the arrow is AppKit only, since WinUI3's takes the dock's text color by inheritance.
+
+        /// <summary>A tab strip scroll arrow. AppKit only: WinUI3's inherits the dock's normal text.</summary>
+        public const string DockTabScrollButton_Glyph = "AJut_DockTabScrollButton_Glyph";
+
+        /// <summary>A tab strip scroll arrow's fill with the pointer over it. Shared key.</summary>
+        public const string DockTabScrollButton_HoverBackground = "AJut_DockTabScrollButton_HoverBackground";
+
+        /// <summary>A tab strip scroll arrow's fill while pressed. Shared key.</summary>
+        public const string DockTabScrollButton_PressedBackground = "AJut_DockTabScrollButton_PressedBackground";
+
+        // ===========[ DockCloseButton ]=======================================
+        // The X on a dock panel's header and on each closable tab. The fills are shared keys, the WinUI3 DockCloseButton's;
+        // the X takes the header text, DockZone_HeaderForeground, as WinUI3's inherits the text beside it.
+
+        /// <summary>A dock close X's fill with the pointer over it. Shared key.</summary>
+        public const string DockCloseButton_HoverBackground = "AJut_DockCloseButton_HoverBackground";
+
+        /// <summary>A dock close X's fill while pressed. Shared key.</summary>
+        public const string DockCloseButton_PressedBackground = "AJut_DockCloseButton_PressedBackground";
+
         // ===========[ Public Interface Methods ]==============================
         /// <summary>
         /// Registers every key above with <see cref="ThemedColors"/>. Runs once, from ThemedColors' static
@@ -301,6 +417,10 @@ namespace AJut.UX.Theming
             RegisterAppKitOnly(GeometryButton_FillPointerOver, NSColor.Label, "ButtonBackgroundPointerOver");
             RegisterAppKitOnly(GeometryButton_FillPressed, NSColor.ControlAccent, "ButtonBackgroundPressed");
             RegisterAppKitOnly(GeometryButton_FillDisabled, NSColor.TertiaryLabel, "ButtonBackgroundDisabled");
+            RegisterAppKitOnly(GeometryButton_Foreground, NSColor.WindowBackground, "ButtonForeground");
+            RegisterAppKitOnly(GeometryButton_ForegroundPointerOver, NSColor.WindowBackground, "ButtonForegroundPointerOver");
+            RegisterAppKitOnly(GeometryButton_ForegroundPressed, NSColor.WindowBackground, "ButtonForegroundPressed");
+            RegisterAppKitOnly(GeometryButton_ForegroundDisabled, NSColor.WindowBackground, "ButtonForegroundDisabled");
             ThemedColors.SetUnthemedDefault(GeometryButton_Trace, NSColor.Separator);
             ThemedColors.SetUnthemedDefault(GeometryButton_TracePointerOver, NSColor.SecondaryLabel);
             ThemedColors.SetUnthemedDefault(GeometryButton_TracePressed, NSColor.ControlAccent);
@@ -326,7 +446,10 @@ namespace AJut.UX.Theming
             ThemedColors.SetUnthemedDefault(ToggleStripButton_CheckedBackground, NSColor.ControlAccent);
             ThemedColors.SetUnthemedDefault(ToggleStripButton_CheckedPointerOverBackground, NSColor.ControlAccent);
             ThemedColors.SetUnthemedDefault(ToggleStripButton_CheckedPressedBackground, NSColor.ControlAccent);
+            const double kDisabledSelectionOpacity = 0.4;
+            ThemedColors.SetUnthemedDefault(ToggleStripButton_CheckedDisabledBackground, NSColor.ControlAccent.ColorWithAlphaComponent((nfloat)kDisabledSelectionOpacity));
             ThemedColors.SetUnthemedDefault(ToggleStripButton_HighlightForeground, NSColor.ControlText);
+            ThemedColors.SetUnthemedDefault(ToggleStrip_DisabledForeground, NSColor.DisabledControlText);
 
             // 7. ToggleStrip, AppKit only
             RegisterAppKitOnly(ToggleStripButton_Foreground, NSColor.ControlText, "AJut_Brush_NormalText");
@@ -340,12 +463,15 @@ namespace AJut.UX.Theming
             // 8. NumericEditor, shared keys
             ThemedColors.SetUnthemedDefault(NumericEditor_FocusBorder, NSColor.KeyboardFocusIndicator);
             ThemedColors.SetUnthemedDefault(NumericEditor_NormalBorder, NSColor.Separator);
+            ThemedColors.SetUnthemedDefault(NumericEditor_PointerOverBorder, NSColor.ControlAccent);
             ThemedColors.SetUnthemedDefault(NumericEditor_ErrorBorder, NSColor.SystemRed);
+            ThemedColors.SetUnthemedDefault(NumericEditor_StepPointerOverFill, NSColor.ControlAccent);
 
             // 9. FlatTreeListView, shared keys
             ThemedColors.SetUnthemedDefault(FlatTree_Selection, NSColor.ControlAccent);
             ThemedColors.SetUnthemedDefault(FlatTree_SelectionUnfocused, NSColor.SecondaryLabel);
             ThemedColors.SetUnthemedDefault(FlatTree_SelectionBackground, NSColor.UnemphasizedSelectedContentBackground);
+            ThemedColors.SetUnthemedDefault(FlatTree_SelectionPointerOver, NSColor.SelectedContentBackground);
             ThemedColors.SetUnthemedDefault(FlatTree_HoverBackground, NSColor.QuaternaryLabel);
             ThemedColors.SetUnthemedDefault(FlatTree_HoverBorder, NSColor.Separator);
             ThemedColors.SetUnthemedDefault(FlatTree_DragInsertionLine, NSColor.ControlAccent);
@@ -353,34 +479,59 @@ namespace AJut.UX.Theming
             ThemedColors.SetUnthemedDefault(FlatTree_DragParentConnector, NSColor.ControlAccent.ColorWithAlphaComponent((nfloat)kDragParentConnectorOpacity));
             ThemedColors.SetUnthemedDefault(FlatTree_DragTargetHighlight, NSColor.ControlAccent);
             RegisterAppKitOnly(FlatTree_ExpanderGlyph, NSColor.SecondaryLabel, "AJut_Brush_SymbolForeground");
+            ThemedColors.SetUnthemedDefault(FlatTree_ExpanderGlyphPointerOver, NSColor.Label);
+            ThemedColors.SetUnthemedDefault(FlatTree_ExpanderPointerOverBackground, NSColor.QuaternaryLabel);
+            ThemedColors.SetUnthemedDefault(FlatTree_ExpanderPressedBackground, NSColor.TertiaryLabel);
 
-            // 10. PropertyGrid
+            //     The list's fill and outline are WinUI3's theme style's, and clear unthemed as WinUI3's default style leaves
+            //     them. The drag ghost takes the flagships' themed ghost keys; unthemed, a control face with a label.
+            RegisterAppKitOnly(FlatTree_ListBackground, NSColor.Clear, "AJut_Brush_ListBackground");
+            RegisterAppKitOnly(FlatTree_ListBorder, NSColor.Clear, "AJut_Brush_ListBorder");
+            ThemedColors.SetUnthemedDefault(FlatTree_DragGhostBackground, NSColor.ControlBackground);
+            ThemedColors.SetUnthemedDefault(FlatTree_DragGhostBorder, NSColor.Separator);
+            ThemedColors.SetUnthemedDefault(FlatTree_DragGhostForeground, NSColor.Label);
+
+            // 10. PropertyGrid. Unthemed, the null shade is WinUI3's literal, which macOS has no system color for.
             ThemedColors.SetUnthemedDefault(PropertyGridRow_LabelForeground, NSColor.Label);
+            ThemedColors.SetUnthemedDefault(PropertyGridRow_SelectionBorder, NSColor.ControlAccent);
             ThemedColors.SetUnthemedDefault(PropertyGrid_LabelSplitter, NSColor.ControlAccent);
             ThemedColors.SetUnthemedDefault(NullableEditor_NotSetForeground, NSColor.SecondaryLabel);
-            RegisterAppKitOnly(PropertyGridRow_SubtitleForeground, NSColor.SecondaryLabel, "AJut_Brush_UnderstatedText");
+            ThemedColors.SetUnthemedDefault(NullableEditor_OverlayBackground, Srgb(0x88000000));
 
             // 11. ColorEditIngressControl, shared keys
             ThemedColors.SetUnthemedDefault(ColorEditIngress_NormalBorder, NSColor.Separator);
             ThemedColors.SetUnthemedDefault(ColorEditIngress_HighlightBorder, NSColor.ControlAccent);
 
-            // 12. DockZoneView
+            // 12. DockZoneView. The panel, header and tab keys take the palette keys WinUI3's DockLeafLayout and DockTabItem
+            //     theme styles set. Unthemed, the focused header is the system's focused selection with the text that reads
+            //     on it, as WinUI3's unthemed one is a blue with white text.
             ThemedColors.SetUnthemedDefault(DockZone_EmptyBackground, NSColor.UnderPageBackground);
             ThemedColors.SetUnthemedDefault(DockZone_EmptyBorder, NSColor.Separator);
             ThemedColors.SetUnthemedDefault(DockZone_EmptyForeground, NSColor.SecondaryLabel);
             RegisterAppKitOnly(DockZone_PanelBackground, NSColor.WindowBackground, "AJut_Brush_PanelBackground");
-            RegisterAppKitOnly(DockZone_PanelBorder, NSColor.Separator, "AJut_Brush_BorderCommon");
-            RegisterAppKitOnly(DockZone_HeaderBackground, NSColor.UnderPageBackground, "AJut_Brush_InnerPanelBackground");
+            RegisterAppKitOnly(DockZone_PanelBorder, NSColor.Separator, "AJut_Brush_PanelBorder");
+            RegisterAppKitOnly(DockZone_HeaderBackground, NSColor.UnderPageBackground, "AJut_Brush_NavigationPanelBackground");
             RegisterAppKitOnly(DockZone_HeaderForeground, NSColor.Label, "AJut_Brush_NormalText");
-            RegisterAppKitOnly(DockZone_TabStripBackground, NSColor.WindowBackground, "AJut_Brush_PanelBackground");
-            RegisterAppKitOnly(DockZone_TabBackground, NSColor.UnderPageBackground, "AJut_Brush_PanelBackground");
+            RegisterAppKitOnly(DockZone_HeaderFocusedBackground, NSColor.SelectedContentBackground, "AJut_Brush_PrimaryHighlightDark");
+            RegisterAppKitOnly(DockZone_HeaderFocusedForeground, NSColor.AlternateSelectedControlText, "AJut_Brush_HighContrastText");
+            RegisterAppKitOnly(DockZone_TabBackground, NSColor.UnderPageBackground, "AJut_Brush_NavigationPanelBackground");
             RegisterAppKitOnly(DockZone_SelectedTabBackground, NSColor.WindowBackground, "AJut_Brush_PanelBackground");
+            const double kTabPointerOverOpacity = 0.8; // WPF's unthemed tab hover fill, #C16F, is the same strength
+            RegisterAppKitOnly(DockZone_TabPointerOverBackground, NSColor.ControlAccent.ColorWithAlphaComponent((nfloat)kTabPointerOverOpacity), "AJut_Brush_PrimaryHighlightDesat");
             ThemedColors.SetUnthemedDefault(DockZone_DragInsertLine, NSColor.ControlAccent);
+            ThemedColors.SetUnthemedDefault(DockZone_DragGhostBackground, NSColor.WindowBackground);
+            ThemedColors.SetUnthemedDefault(DockZone_DragGhostBorder, NSColor.Separator);
+
+            //     The tab strip has no palette entry and no alias, so themed it falls back to this clear default too
+            ThemedColors.SetUnthemedDefault(DockZone_TabStripBackground, NSColor.Clear);
 
             // 13. NumericEditor, AppKit only
-            RegisterAppKitOnly(NumericEditor_TextBoxBackground, NSColor.TextBackground, "AJut_Brush_TextBoxBackground");
-            RegisterAppKitOnly(NumericEditor_Text, NSColor.Text, "AJut_Brush_InteractiveText");
-            RegisterAppKitOnly(NumericEditor_Label, NSColor.SecondaryLabel, "AJut_Brush_UnderstatedText");
+            RegisterAppKitOnly(NumericEditor_FrameBackground, NSColor.ControlBackground, MobileLook.NumericEditor.FrameSurface);
+            RegisterAppKitOnly(NumericEditor_TextBoxBackground, NSColor.TextBackground, MobileLook.NumericEditor.WellSurface);
+            RegisterAppKitOnly(NumericEditor_Text, NSColor.Text, MobileLook.NumericEditor.Number);
+            RegisterAppKitOnly(NumericEditor_ReadOnlyText, NSColor.DisabledControlText, MobileLook.NumericEditor.ReadOnlyText);
+            RegisterAppKitOnly(NumericEditor_Label, NSColor.SecondaryLabel, MobileLook.NumericEditor.Label);
+            RegisterAppKitOnly(NumericEditor_StepGlyph, NSColor.Label, MobileLook.NumericEditor.StepGlyph);
 
             // 14. DockPanelToolbarView, shared keys. Unthemed the buttons are macOS control colors,
             //     checked is the accent, and hover and pressed are translucent label grays.
@@ -415,6 +566,16 @@ namespace AJut.UX.Theming
 
             // 16. AutoBrushButton, shared key. Unthemed it is the macOS accent, which is itself dynamic.
             ThemedColors.SetUnthemedDefault(AutoBrushButton_Accent, NSColor.ControlAccent);
+
+            // 17. DockTabScrollButton. Unthemed the arrow is the label color, and hover and pressed are translucent
+            //     label grays, as the toolbar buttons' are.
+            RegisterAppKitOnly(DockTabScrollButton_Glyph, NSColor.Label, "AJut_Brush_NormalText");
+            ThemedColors.SetUnthemedDefault(DockTabScrollButton_HoverBackground, NSColor.QuaternaryLabel);
+            ThemedColors.SetUnthemedDefault(DockTabScrollButton_PressedBackground, NSColor.TertiaryLabel);
+
+            // 18. DockCloseButton, shared keys. Unthemed hover and pressed are translucent label grays, as BrushButton's are.
+            ThemedColors.SetUnthemedDefault(DockCloseButton_HoverBackground, NSColor.QuaternaryLabel);
+            ThemedColors.SetUnthemedDefault(DockCloseButton_PressedBackground, NSColor.TertiaryLabel);
         }
 
         // ===========[ Helper Methods ]========================================

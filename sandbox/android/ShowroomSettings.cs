@@ -9,12 +9,12 @@ namespace AJutShowRoomAndroid
     /// </summary>
     public sealed class ShowroomSettings : NotifyPropertyChanged
     {
-        // Android's own answer for touch, read before the showroom changes it: an Android UI is touch first
-        private static readonly bool kSystemIsTouchFocused = ThemeColors.IsTouchFocused;
+        // AJut's own default for the touch variant, read before the showroom changes it: off, as on every stack
+        private static readonly bool kSystemUsesTouchVariant = ThemeColors.UsesTouchVariant;
 
         private eThemeMode m_themeMode = eThemeMode.System;
         private bool m_useAJutTheme;
-        private bool m_isTouchFocusedChoice = kSystemIsTouchFocused;
+        private bool m_usesTouchVariantChoice = kSystemUsesTouchVariant;
 
         // ===========[ Properties ]===================================
         public static ShowroomSettings Instance { get; } = new ShowroomSettings();
@@ -27,8 +27,8 @@ namespace AJutShowRoomAndroid
             {
                 if (this.SetAndRaiseIfChanged(ref m_themeMode, value))
                 {
-                    ThemeColors.IsTouchFocused = this.IsTouchFocused;
-                    this.RaisePropertiesChanged(nameof(IsTouchFocused), nameof(CanChooseTouch));
+                    ThemeColors.UsesTouchVariant = this.UsesTouchVariant;
+                    this.RaisePropertiesChanged(nameof(UsesTouchVariant), nameof(CanChooseTouch));
                 }
             }
         }
@@ -51,18 +51,18 @@ namespace AJutShowRoomAndroid
         /// Whether the AJut theme paints its touch variant. Under System it is Android's answer (on); under Dark or
         /// Light it is the choice made here, and setting it while System is picked changes nothing.
         /// </summary>
-        public bool IsTouchFocused
+        public bool UsesTouchVariant
         {
-            get => (m_themeMode == eThemeMode.System) ? kSystemIsTouchFocused : m_isTouchFocusedChoice;
+            get => (m_themeMode == eThemeMode.System) ? kSystemUsesTouchVariant : m_usesTouchVariantChoice;
             set
             {
-                if ((m_themeMode == eThemeMode.System) || (m_isTouchFocusedChoice == value))
+                if ((m_themeMode == eThemeMode.System) || (m_usesTouchVariantChoice == value))
                 {
                     return;
                 }
 
-                m_isTouchFocusedChoice = value;
-                ThemeColors.IsTouchFocused = value;
+                m_usesTouchVariantChoice = value;
+                ThemeColors.UsesTouchVariant = value;
                 this.RaisePropertyChanged();
             }
         }

@@ -239,11 +239,11 @@ namespace AJut.UX.Tests
         }
 
         // ===========[ Helper Methods ]===================================
-        // The editor is a label, then a frame of minus, field and plus.
+        // The editor is a label, then a frame of minus, field, warning glyph and plus: the step buttons are its ends.
         private static TextView _StepButton (NumericEditor editor, bool increase)
         {
             var frame = (ViewGroup)editor.GetChildAt(1)!;
-            return (TextView)frame.GetChildAt(increase ? 2 : 0)!;
+            return (TextView)frame.GetChildAt(increase ? frame.ChildCount - 1 : 0)!;
         }
 
         // The text label sits just in front of the frame, whether or not a LabelView is in front of it

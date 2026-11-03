@@ -8,6 +8,7 @@ namespace AJut.UX.Tests
     using System.Windows.Controls.Primitives;
     using System.Windows.Media;
     using System.Windows.Media.Effects;
+    using System.Windows.Threading;
     using AJut.UX.Controls;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -52,11 +53,16 @@ namespace AJut.UX.Tests
 
         // ===========[ PathSelectionControl ]===================================
         [TestMethod]
-        public void WpfPathSelectionControl_InvalidPath_GlowsInTheInvalidBorderColor ()
+        public void WpfPathSelectionControl_InvalidPath_GlowsInTheInvalidGlowColor ()
         {
             StaTestThread.Run(() =>
             {
-                var path = new PathSelectionControl { TreatEmptyPathAsInvalid = true, InvalidPathBorderBrush = Brushes.OrangeRed };
+                var path = new PathSelectionControl
+                {
+                    TreatEmptyPathAsInvalid = true,
+                    InvalidPathBorderBrush = Brushes.DarkRed,
+                    InvalidPathGlowBrush = Brushes.OrangeRed,
+                };
                 MakeHost(path);
                 Assert.IsFalse(path.IsPathValid, "An empty path is invalid here");
 
@@ -67,7 +73,7 @@ namespace AJut.UX.Tests
                 Assert.AreEqual(Visibility.Visible, glowBorder.Visibility, "An invalid path draws a glow around the control");
                 var glow = glowBorder.Effect as DropShadowEffect;
                 Assert.IsNotNull(glow, "The glow is a drop shadow with no offset");
-                Assert.AreEqual(Colors.OrangeRed, glow.Color, "The glow is the invalid border's color");
+                Assert.AreEqual(Colors.OrangeRed, glow.Color, "The glow takes InvalidPathGlowBrush, not the invalid border's color");
 
                 path.TreatEmptyPathAsInvalid = false;
                 Assert.IsTrue(path.IsPathValid, "Allowed, an empty path is valid");
@@ -178,6 +184,22 @@ namespace AJut.UX.Tests
             });
         }
 
+        // ===========[ TabItem ]===================================
+        [TestMethod]
+        public void WpfThemed_TabItem_LaidOutBeforeItIsInATabControl_WaitsQuietly ()
+        {
+            StaTestThread.Run(() =>
+            {
+                // The themed TabItem works out its margins and borders from the TabControl around it, which one measured on
+                //  its own does not have yet. Its bindings settle when the dispatcher next runs data binding work, so that
+                //  work is run here, the way any later layout pass on the thread runs it.
+                var tab = new TabItem { Header = "Tab" };
+                MakeThemedHost(tab);
+                RunPendingDispatcherWork();
+                Assert.IsNotNull(tab.Template, "The themed TabItem took its template, and settled with no TabControl around it");
+            });
+        }
+
         // ===========[ Themed and unthemed ]===================================
         [TestMethod]
         public void WpfUnthemed_DockPanelButtonsToolbarAndSwitch_DrawWithTheirOwnColors ()
@@ -241,6 +263,20 @@ namespace AJut.UX.Tests
             host.Measure(kMeasureSize);
             host.Arrange(new Rect(kMeasureSize));
             host.UpdateLayout();
+        }
+
+        // Runs everything queued on this thread's dispatcher above Background, data binding work among it
+        private static void RunPendingDispatcherWork ()
+        {
+            var frame = new DispatcherFrame();
+            Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Background, new DispatcherOperationCallback(EndFrame), frame);
+            Dispatcher.PushFrame(frame);
+        }
+
+        private static object EndFrame (object frame)
+        {
+            ((DispatcherFrame)frame).Continue = false;
+            return null;
         }
 
         // MessageBoxPopover is made through its factory; everything else has a parameterless constructor

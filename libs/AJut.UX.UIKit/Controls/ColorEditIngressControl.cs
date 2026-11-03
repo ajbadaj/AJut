@@ -95,6 +95,7 @@ namespace AJut.UX.Controls
             // the two into a cycle across native objects. The handler is static and finds the control through
             // the recognizer's View instead.
             this.AddGestureRecognizer(new UIHoverGestureRecognizer(OnHover));
+            FocusVisual.TakeOver(this);
 
             this.ApplyEditColor();
         }
@@ -245,9 +246,19 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ Public Interface Methods ]===================================
+        // A keyboard can reach the swatch, as on Android, where it is focusable, and focus shows as AJut's dotted rectangle
+        public override bool CanBecomeFocused => this.Enabled;
+
+        public override void DidUpdateFocus (UIFocusUpdateContext context, UIFocusAnimationCoordinator coordinator)
+        {
+            base.DidUpdateFocus(context, coordinator);
+            FocusVisual.Update(this);
+        }
+
         public override void LayoutSubviews ()
         {
             base.LayoutSubviews();
+            FocusVisual.Update(this);
 
             const float kGlyphSize = 14f;
             const float kGlyphInset = 3f;

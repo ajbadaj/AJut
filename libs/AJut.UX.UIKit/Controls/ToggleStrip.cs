@@ -5,6 +5,7 @@ namespace AJut.UX.Controls
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.ComponentModel;
+    using System.Diagnostics.CodeAnalysis;
     using AJut.UX.Helpers;
     using AJut.UX.Theming;
     using CoreAnimation;
@@ -462,6 +463,20 @@ namespace AJut.UX.Controls
         private bool IsVertical => m_orientation == UILayoutConstraintAxis.Vertical;
 
         // ===========[ Public Interface Methods ]===================================
+        /// <summary>
+        /// Shows <paramref name="items"/>, the same as setting <see cref="ItemsSource"/>, and keeps the public properties of
+        /// <typeparamref name="T"/> in an app that trims, so <see cref="DisplayPropertyPath"/> still finds the property it
+        /// names. ItemsSource takes an IEnumerable, so the trimmer can't tell which type the path is read from, and under full
+        /// trimming it removes a property nothing else reads: the items are then named from their data, even with
+        /// [DynamicallyAccessedMembers] on the type. An item of a type derived from T isn't covered by T; name those with
+        /// <see cref="ItemNameSelector"/>, or keep the property with
+        /// [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(...))] on the method that calls this.
+        /// </summary>
+        public void SetItemsSource<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T> (IEnumerable<T> items)
+        {
+            this.ItemsSource = items;
+        }
+
         public override void LayoutSubviews ()
         {
             base.LayoutSubviews();
@@ -651,14 +666,31 @@ namespace AJut.UX.Controls
             m_scrollBackIndicator.Hidden = !indicators.ShowBack;
             m_scrollForwardIndicator.Hidden = !indicators.ShowForward;
 
+            // Along the strip, in its own space. The dots are its subviews past its bounds, so a superview that clips them
+            // (one the strip runs to the edge of, as a full-width strip does) would hide them: measured against the
+            // superview's bounds, a dot with no room past an end goes just inside it instead.
             CGRect bounds = this.Bounds;
-            double reach = ToggleStripScrollIndicators.kDotCenterOffset;
+            double boundsStart = isVertical ? (double)bounds.GetMinY() : (double)bounds.GetMinX();
+            double length = isVertical ? (double)bounds.Height : (double)bounds.Width;
+            double backAt = boundsStart - ToggleStripScrollIndicators.kDotCenterOffset;
+            double forwardAt = boundsStart + length + ToggleStripScrollIndicators.kDotCenterOffset;
+            UIView host = this.Superview;
+            if (host != null)
+            {
+                CGRect hostBounds = host.Bounds;
+                double hostStart = isVertical ? (double)hostBounds.GetMinY() : (double)hostBounds.GetMinX();
+                double hostLength = isVertical ? (double)hostBounds.Height : (double)hostBounds.Width;
+                double stripStart = (isVertical ? (double)this.Frame.GetMinY() : (double)this.Frame.GetMinX()) - hostStart;
+                backAt = ToggleStripScrollIndicators.DotCenterFor(stripStart, false, hostLength) - stripStart + boundsStart;
+                forwardAt = ToggleStripScrollIndicators.DotCenterFor(stripStart + length, true, hostLength) - stripStart + boundsStart;
+            }
+
             m_scrollBackIndicator.Center = isVertical
-                ? new CGPoint((double)bounds.GetMidX(), (double)bounds.GetMinY() - reach)
-                : new CGPoint((double)bounds.GetMinX() - reach, (double)bounds.GetMidY());
+                ? new CGPoint((double)bounds.GetMidX(), backAt)
+                : new CGPoint(backAt, (double)bounds.GetMidY());
             m_scrollForwardIndicator.Center = isVertical
-                ? new CGPoint((double)bounds.GetMidX(), (double)bounds.GetMaxY() + reach)
-                : new CGPoint((double)bounds.GetMaxX() + reach, (double)bounds.GetMidY());
+                ? new CGPoint((double)bounds.GetMidX(), forwardAt)
+                : new CGPoint(forwardAt, (double)bounds.GetMidY());
         }
 
         private void UpdateOverflowLayout ()
@@ -763,6 +795,12 @@ namespace AJut.UX.Controls
                     new[] { ThemedGradient.Stop(0.0, 0x73000000), ThemedGradient.Stop(0.2, 0x4D000000), ThemedGradient.Stop(1.0, 0x2E000000) },
                     new[] { ThemedGradient.Stop(0.0, 0xEE000000), ThemedGradient.Stop(0.2, 0xAA000000), ThemedGradient.Stop(1.0, 0x66000000) }
                 ),
+                [MobileLook.ToggleStrip.ItemSelectedDisabledFill] = Uniform(MobileLook.ToggleStrip.ItemSelectedDisabledFill, 0x26000000, 0x26000000),
+
+                // The overflow button's, which are WinUI3's stock button fills unthemed
+                [MobileLook.ToggleStrip.OverflowPointerOverFill] = Uniform(MobileLook.ToggleStrip.OverflowPointerOverFill, 0x80F9F9F9, 0x15FFFFFF),
+                [MobileLook.ToggleStrip.OverflowPressedFill] = Uniform(MobileLook.ToggleStrip.OverflowPressedFill, 0x4DF9F9F9, 0x08FFFFFF),
+                [MobileLook.ToggleStrip.OverflowVerticalFill] = Uniform(MobileLook.ToggleStrip.OverflowVerticalFill, 0xB3FFFFFF, 0x0FFFFFFF),
             };
 
             private readonly CAGradientLayer m_overlay = new CAGradientLayer
@@ -781,6 +819,14 @@ namespace AJut.UX.Controls
                 // every sibling layer whatever order they arrive in, and still over the button's own background.
                 m_overlay.ZPosition = -1;
                 this.Layer.InsertSublayer(m_overlay, 0);
+                FocusVisual.TakeOver(this);
+            }
+
+            // Keyboard focus shows as AJut's dotted rectangle (see FocusVisual)
+            public override void DidUpdateFocus (UIFocusUpdateContext context, UIFocusAnimationCoordinator coordinator)
+            {
+                base.DidUpdateFocus(context, coordinator);
+                FocusVisual.Update(this);
             }
 
             public override void UpdateConfiguration ()
@@ -795,7 +841,7 @@ namespace AJut.UX.Controls
                 background.CornerRadius = 0;
                 background.BackgroundColor = UIColor.Clear;
                 configuration.Background = background;
-                configuration.BaseForegroundColor = ThemedColors.Get(MobileLook.ToggleStrip.ItemTextFor(this.Enabled, this.Highlighted, this.Hovered));
+                configuration.BaseForegroundColor = ThemedColors.Get(this.PickTextKey());
                 this.UpdateContent(configuration);
                 this.Configuration = configuration;
                 this.SetNeedsLayout();
@@ -828,15 +874,22 @@ namespace AJut.UX.Controls
                 }
 
                 CATransaction.Commit();
+                FocusVisual.Update(this);
             }
 
             /// <summary>Whether the button shows as selected; only a toggle button can be.</summary>
             protected virtual bool IsSelectedForLook => false;
 
-            /// <summary>The overlay for the button's state, as MobileLook picks it, or null for none.</summary>
+            /// <summary>The key of the overlay for the button's state, or null for none; an item's, as MobileLook picks it, by default.</summary>
+            protected virtual string PickFillKey () => MobileLook.ToggleStrip.ItemFill(this.Enabled, this.IsSelectedForLook, this.Highlighted, this.Hovered);
+
+            /// <summary>The key of the text color for the button's state; an item's, as MobileLook picks it, by default.</summary>
+            protected virtual string PickTextKey () => MobileLook.ToggleStrip.ItemTextFor(this.Enabled, this.Highlighted, this.Hovered);
+
+            /// <summary>The overlay for the button's state, or null for none.</summary>
             private ThemedGradient PickOverlay ()
             {
-                string key = MobileLook.ToggleStrip.ItemFill(this.IsSelectedForLook, this.Highlighted, this.Hovered);
+                string key = this.PickFillKey();
                 return (key != null) ? kOverlays[key] : null;
             }
 
@@ -1000,11 +1053,14 @@ namespace AJut.UX.Controls
             }
         }
 
-        // The overflow ("more") button. It takes all of the strip past the last item showing, with the items' face and
-        // their pointer over and pressed looks, and its chevron at the trailing end (the foot, on a vertical strip), so
-        // the whole of that space is the button and the strip reads as one piece out to its edge.
+        // The overflow ("more") button. It takes all of the strip past the last item showing, with its chevron at the
+        // trailing end (the foot, on a vertical strip), so the whole of that space is the button and the strip reads as
+        // one piece out to its edge. It is a button rather than an item, so it takes MobileLook's overflow look: the
+        // button fills and text under a pointer or a press, and the plain button fill at rest across a vertical strip.
         private sealed class OverflowButton : StripFaceButton
         {
+            private bool m_isVertical;
+
             public OverflowButton ()
             {
                 const float kGlyphInset = 10f;
@@ -1025,12 +1081,18 @@ namespace AJut.UX.Controls
                 this.SetIsVertical(false);
             }
 
-            /// <summary>Puts the chevron at the trailing end of a horizontal strip, or the foot of a vertical one.</summary>
+            /// <summary>Puts the chevron at the trailing end of a horizontal strip, or the foot of a vertical one, and takes that orientation's fill at rest.</summary>
             public void SetIsVertical (bool isVertical)
             {
+                m_isVertical = isVertical;
                 this.HorizontalAlignment = isVertical ? UIControlContentHorizontalAlignment.Center : UIControlContentHorizontalAlignment.Trailing;
                 this.VerticalAlignment = isVertical ? UIControlContentVerticalAlignment.Bottom : UIControlContentVerticalAlignment.Center;
+                this.SetNeedsUpdateConfiguration();
             }
+
+            protected override string PickFillKey () => MobileLook.ToggleStrip.OverflowFill(this.Enabled, m_isVertical, this.Highlighted, this.Hovered);
+
+            protected override string PickTextKey () => MobileLook.ToggleStrip.OverflowTextFor(this.Enabled, this.Highlighted, this.Hovered);
         }
 
         // The overflow menu's actions are held by the menu, which the overflow button holds natively, and an item holds

@@ -246,6 +246,33 @@ namespace AJut.UX.Controls
             set => this.SetValue(LabelSplitterBrushProperty, value);
         }
 
+        /// <summary>
+        /// The outline around a selected row's label column: a 4px nub on its left and 1px around the rest, with no fill,
+        /// so the label keeps its own text color
+        /// </summary>
+        public static readonly DependencyProperty SelectionBorderBrushProperty = DPUtils.Register(_ => _.SelectionBorderBrush);
+        public Brush SelectionBorderBrush
+        {
+            get => (Brush)this.GetValue(SelectionBorderBrushProperty);
+            set => this.SetValue(SelectionBorderBrushProperty, value);
+        }
+
+        /// <summary>The tint across the whole row under the pointer, selected or not</summary>
+        public static readonly DependencyProperty RowHoverBackgroundProperty = DPUtils.Register(_ => _.RowHoverBackground);
+        public Brush RowHoverBackground
+        {
+            get => (Brush)this.GetValue(RowHoverBackgroundProperty);
+            set => this.SetValue(RowHoverBackgroundProperty, value);
+        }
+
+        /// <summary>The 1px outline around the whole row under the pointer, with <see cref="RowHoverBackground"/></summary>
+        public static readonly DependencyProperty RowHoverBorderBrushProperty = DPUtils.Register(_ => _.RowHoverBorderBrush);
+        public Brush RowHoverBorderBrush
+        {
+            get => (Brush)this.GetValue(RowHoverBorderBrushProperty);
+            set => this.SetValue(RowHoverBorderBrushProperty, value);
+        }
+
         /// <summary>Decides where per-property tooltips render (property name, value, both, or none).</summary>
         public static readonly DependencyProperty PropertyToolTipPlacementProperty = DPUtils.Register(_ => _.PropertyToolTipPlacement, ePropertyToolTipPlacement.PropertyNameOnly);
         public ePropertyToolTipPlacement PropertyToolTipPlacement

@@ -49,8 +49,9 @@
                                 Background="Transparent"
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Stretch"/>
-                        <!-- Hover tint: subtle background + 1px border on pointer-over.
-                             Rendered on top of SelectionHighlight so hover tint adds to selection bg. -->
+                        <!-- Hover tint: subtle background + 1px border on pointer-over of an unselected row.
+                             A selected row under the pointer shows its selection with its nub and outline
+                             in the hover color instead. -->
                         <Border x:Name="HoverTint"
                                 Background="Transparent"
                                 BorderBrush="Transparent"
@@ -170,18 +171,19 @@
                                         </ObjectAnimationUsingKeyFrames>
                                     </Storyboard>
                                 </VisualState>
-                                <!-- PointerOverSelected: nub + outline from selection, hover fill added. -->
+                                <!-- PointerOverSelected: the nub and outline take the hover color, and the selection's
+                                     fill stays, with no hover tint over it, as WPF's tree shows it. -->
                                 <VisualState x:Name="PointerOverSelected">
                                     <Storyboard>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionStrip"
                                                                        Storyboard.TargetProperty="Fill">
                                             <DiscreteObjectKeyFrame KeyTime="0"
-                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBrush}"/>
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionPointerOverBrush}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
                                                                        Storyboard.TargetProperty="BorderBrush">
                                             <DiscreteObjectKeyFrame KeyTime="0"
-                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBrush}"/>
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionPointerOverBrush}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
                                                                        Storyboard.TargetProperty="Background">
@@ -190,8 +192,7 @@
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
                                                                        Storyboard.TargetProperty="Background">
-                                            <DiscreteObjectKeyFrame KeyTime="0"
-                                                                    Value="{ThemeResource AJut_FlatTree_HoverBackground}"/>
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Transparent"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
                                                                        Storyboard.TargetProperty="BorderBrush">
@@ -205,12 +206,12 @@
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionStrip"
                                                                        Storyboard.TargetProperty="Fill">
                                             <DiscreteObjectKeyFrame KeyTime="0"
-                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBrush}"/>
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionPointerOverBrush}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
                                                                        Storyboard.TargetProperty="BorderBrush">
                                             <DiscreteObjectKeyFrame KeyTime="0"
-                                                                    Value="{ThemeResource AJut_FlatTree_SelectionBrush}"/>
+                                                                    Value="{ThemeResource AJut_FlatTree_SelectionPointerOverBrush}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="SelectionHighlight"
                                                                        Storyboard.TargetProperty="Background">
@@ -219,8 +220,7 @@
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
                                                                        Storyboard.TargetProperty="Background">
-                                            <DiscreteObjectKeyFrame KeyTime="0"
-                                                                    Value="{ThemeResource AJut_FlatTree_HoverBackground}"/>
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Transparent"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="HoverTint"
                                                                        Storyboard.TargetProperty="BorderBrush">
@@ -313,14 +313,16 @@
                                                         Background="{TemplateBinding Background}"
                                                         CornerRadius="{TemplateBinding CornerRadius}"
                                                         Padding="{TemplateBinding Padding}">
-                                                    <!-- Chevron glyph: E76C=right (collapsed), E70D=down (expanded).
-                                                         Glyph is swapped in Checked VSM states below.
-                                                         Foreground comes from ToggleButton.Foreground which
-                                                         is set to FlatTreeItemRow.ExpanderGlyphForeground above. -->
+                                                    <!-- Chevron glyph: E970=right (collapsed), E96E=down (expanded), the
+                                                         small chevrons WPF's tree uses, which draw bolder than the
+                                                         full size ones at this size. Glyph is swapped in Checked VSM
+                                                         states below. Foreground comes from ToggleButton.Foreground
+                                                         which is set to FlatTreeItemRow.ExpanderGlyphForeground above,
+                                                         and lightens under the pointer and pressed, as WPF's does. -->
                                                     <FontIcon x:Name="ExpanderIcon"
-                                                              FontFamily="Segoe Fluent Icons"
-                                                              FontSize="9"
-                                                              Glyph="&#xE76C;"
+                                                              FontFamily="Segoe MDL2 Assets"
+                                                              FontSize="10"
+                                                              Glyph="&#xE970;"
                                                               HorizontalAlignment="Center"
                                                               VerticalAlignment="Center"
                                                               Foreground="{TemplateBinding Foreground}"/>
@@ -331,34 +333,42 @@
                                                                 <VisualState.Setters>
                                                                     <Setter Target="Root.Background"
                                                                             Value="{ThemeResource AJut_FlatTreeItemRow_ExpanderPointerOverBackground}"/>
+                                                                    <Setter Target="ExpanderIcon.Foreground"
+                                                                            Value="{ThemeResource AJut_FlatTreeItemRow_ExpanderGlyphPointerOverForeground}"/>
                                                                 </VisualState.Setters>
                                                             </VisualState>
                                                             <VisualState x:Name="Pressed">
                                                                 <VisualState.Setters>
                                                                     <Setter Target="Root.Background"
                                                                             Value="{ThemeResource AJut_FlatTreeItemRow_ExpanderPressedBackground}"/>
+                                                                    <Setter Target="ExpanderIcon.Foreground"
+                                                                            Value="{ThemeResource AJut_FlatTreeItemRow_ExpanderGlyphPointerOverForeground}"/>
                                                                 </VisualState.Setters>
                                                             </VisualState>
                                                             <VisualState x:Name="Checked">
                                                                 <VisualState.Setters>
                                                                     <Setter Target="ExpanderIcon.Glyph"
-                                                                            Value="&#xE70D;"/>
+                                                                            Value="&#xE96E;"/>
                                                                 </VisualState.Setters>
                                                             </VisualState>
                                                             <VisualState x:Name="CheckedPointerOver">
                                                                 <VisualState.Setters>
                                                                     <Setter Target="Root.Background"
                                                                             Value="{ThemeResource AJut_FlatTreeItemRow_ExpanderPointerOverBackground}"/>
+                                                                    <Setter Target="ExpanderIcon.Foreground"
+                                                                            Value="{ThemeResource AJut_FlatTreeItemRow_ExpanderGlyphPointerOverForeground}"/>
                                                                     <Setter Target="ExpanderIcon.Glyph"
-                                                                            Value="&#xE70D;"/>
+                                                                            Value="&#xE96E;"/>
                                                                 </VisualState.Setters>
                                                             </VisualState>
                                                             <VisualState x:Name="CheckedPressed">
                                                                 <VisualState.Setters>
                                                                     <Setter Target="Root.Background"
                                                                             Value="{ThemeResource AJut_FlatTreeItemRow_ExpanderPressedBackground}"/>
+                                                                    <Setter Target="ExpanderIcon.Foreground"
+                                                                            Value="{ThemeResource AJut_FlatTreeItemRow_ExpanderGlyphPointerOverForeground}"/>
                                                                     <Setter Target="ExpanderIcon.Glyph"
-                                                                            Value="&#xE70D;"/>
+                                                                            Value="&#xE96E;"/>
                                                                 </VisualState.Setters>
                                                             </VisualState>
                                                         </VisualStateGroup>
@@ -472,12 +482,13 @@
                         <Border x:Name="PART_DragGhost"
                                 Visibility="Collapsed"
                                 Opacity="0.65"
-                                Background="#E0404040"
+                                Background="{ThemeResource AJut_FlatTree_DragGhostBackground}"
                                 CornerRadius="4"
                                 Padding="8,4"
-                                BorderBrush="#80FFFFFF"
+                                BorderBrush="{ThemeResource AJut_FlatTree_DragGhostBorderBrush}"
                                 BorderThickness="1">
-                            <ContentPresenter x:Name="PART_DragGhostContent"/>
+                            <ContentPresenter x:Name="PART_DragGhostContent"
+                                              Foreground="{ThemeResource AJut_FlatTree_DragGhostForeground}"/>
                         </Border>
                     </Canvas>
                     </Grid>

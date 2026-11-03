@@ -20,7 +20,8 @@ namespace AJut.UX.Controls
         /// <summary>
         /// The property of each item's data to show as its name; empty to name items by their data's ToString. It is read by
         /// reflection, so in an app that trims, a property nothing else reads can be removed and its items named from their
-        /// data instead. Use <see cref="ItemNameSelector"/> there.
+        /// data instead. Give the strip its items through its SetItemsSource&lt;T&gt;, which keeps T's public properties, or
+        /// use <see cref="ItemNameSelector"/> there.
         /// </summary>
         string? DisplayPropertyPath { get; }
 

@@ -15,7 +15,7 @@ namespace AJut.UX.Theming
         /// </summary>
         event EventHandler? PreferenceMayHaveChanged;
 
-        /// <summary>True when the UI should be touch focused right now</summary>
+        /// <summary>True when the UI should use the touch variant right now</summary>
         bool IsTouchPreferred { get; }
     }
 }

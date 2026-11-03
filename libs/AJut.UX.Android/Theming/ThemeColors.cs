@@ -53,10 +53,11 @@ namespace AJut.UX.Theming
         /// <summary>
         /// Whether the AJut palette is painted in its touch variant (<see cref="AJutPalette.LightTouch"/> or
         /// <see cref="AJutPalette.DarkTouch"/>), where buttons read as buttons from their fill alone, with no hover to
-        /// show it and no borders. On by default, since an Android UI is touch first; it only matters while
-        /// <see cref="IsThemeLoaded"/>. Set and switched the same way as <see cref="IsThemeLoaded"/>.
+        /// show it and no borders. Off by default, as on every AJut stack: an app that wants the touch variant opts in,
+        /// once at startup or as a setting. It only matters while <see cref="IsThemeLoaded"/>. Set and switched the same
+        /// way as <see cref="IsThemeLoaded"/>.
         /// </summary>
-        public static bool IsTouchFocused { get; set; } = true;
+        public static bool UsesTouchVariant { get; set; }
 
         // ===========[ Public Interface Methods ]===================================
         /// <summary>True when <paramref name="context"/> is showing a dark UI (its configuration's night mode is on).</summary>
@@ -71,7 +72,7 @@ namespace AJut.UX.Theming
         public static ColorArgb Resolve (Context context, ThemedColor color)
         {
             bool isDark = IsDark(context);
-            if (IsThemeLoaded && AJutPalette.For(isDark, IsTouchFocused).TryGetColor(color.Key, out ColorArgb themed))
+            if (IsThemeLoaded && AJutPalette.For(isDark, UsesTouchVariant).TryGetColor(color.Key, out ColorArgb themed))
             {
                 return themed;
             }
@@ -83,7 +84,7 @@ namespace AJut.UX.Theming
         public static IReadOnlyList<AJutGradientStop> Resolve (Context context, ThemedGradient gradient)
         {
             bool isDark = IsDark(context);
-            if (IsThemeLoaded && AJutPalette.For(isDark, IsTouchFocused).TryGetPaint(gradient.Key, out AJutThemePaint? themed))
+            if (IsThemeLoaded && AJutPalette.For(isDark, UsesTouchVariant).TryGetPaint(gradient.Key, out AJutThemePaint? themed))
             {
                 return themed.IsGradient ? themed.GradientStops : new[] { new AJutGradientStop(0.0, themed.Color) };
             }

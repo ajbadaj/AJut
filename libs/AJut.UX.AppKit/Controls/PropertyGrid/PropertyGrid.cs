@@ -7,6 +7,7 @@ namespace AJut.UX.Controls
     using AJut.Storage;
     using AJut.UX.CodeBinding;
     using AJut.UX.PropertyInteraction;
+    using AJut.UX.Theming;
     using AppKit;
 
     // ===========[ PropertyGrid ]===============================================
@@ -67,10 +68,18 @@ namespace AJut.UX.Controls
                 CanDragItem = m_controller.CanDragRow,
                 CanDropItem = PropertyGridController.CanDropItem,
                 RowContentFactory = this.CreateRowContent,
+                DragGhostTextFactory = ReadDragGhostText,
                 TranslatesAutoresizingMaskIntoConstraints = false,
 
                 // The WinUI3 grid's rows have no content margin, so its depth bands sit 6 right of the plain tree's
                 DragDepthRowOffset = 0.0,
+
+                // The grid's tree has no fill or outline of its own, as WinUI3's PropertyGrid template sets its tree
+                ListBackgroundColorKey = null,
+                ListBorderColorKey = null,
+
+                // Each row marks its own selection on its label (see RowView)
+                DrawsRowSelection = false,
             };
             m_tree.DragDropReorderRequested += this.OnTreeDragDropReorderRequested;
             m_tree.SelectionChanged += this.OnTreeSelectionChanged;
@@ -377,6 +386,9 @@ namespace AJut.UX.Controls
             return new RowView(this, item);
         }
 
+        // A dragged list element is named by its row's name, rather than by the edit target's type
+        private static string ReadDragGhostText (FlatTreeItem item) => (item.Source as PropertyEditTarget)?.DisplayName;
+
         // The editor for a target: a registered one wins, then a built-in one, then Default. A
         // button row or a list header has no setter of its own, so those follow the grid's
         // read-only state alone, and value editors get CanEdit's answer.
@@ -401,8 +413,7 @@ namespace AJut.UX.Controls
 
         private static NSView CreateButtonEditor (PropertyEditTarget target, BindingSet bindings, bool isGridReadOnly)
         {
-            var button = new NSButton { Title = target.EditValue?.ToString() ?? target.DisplayName ?? String.Empty };
-            button.BezelStyle = NSBezelStyle.Rounded;
+            var button = new BrushButton { Title = target.EditValue?.ToString() ?? target.DisplayName ?? String.Empty };
 
             // A bound command enables its button whenever it can execute, so a read-only grid
             // leaves it unbound and the button disabled
@@ -420,8 +431,14 @@ namespace AJut.UX.Controls
 
         private NSView CreateListEditor (PropertyEditTarget target, BindingSet bindings)
         {
+            // WinUI3's: the count in the row's text, faded, and an add button at least 24 square
+            const double kCountOpacity = 0.7;
+            const double kAddButtonMinSize = 24.0;
+
             var row = new FillStack(NSUserInterfaceLayoutOrientation.Horizontal, spacing: 6.0);
             NSTextField count = NSTextField.CreateLabel(String.Empty);
+            count.TextColor = ThemedColors.Get(ThemedColorKeys.PropertyGridRow_LabelForeground);
+            count.AlphaValue = (nfloat)kCountOpacity;
             row.Add(count, alignment: eFillStackCrossAlignment.Center);
 
             if (target.EditContext is PropertyGridListContext listContext)
@@ -430,8 +447,7 @@ namespace AJut.UX.Controls
                 bindings.BindLabel(count, listContext, nameof(PropertyGridListContext.ElementCount), _ReadCount);
                 if (listContext.CanAdd)
                 {
-                    var add = new NSButton { Title = "+" };
-                    add.BezelStyle = NSBezelStyle.Rounded;
+                    BrushButton add = CreateGlyphButton("+", "Add element", kAddButtonMinSize);
                     if (this.IsReadOnly)
                     {
                         add.Enabled = false;
@@ -448,6 +464,44 @@ namespace AJut.UX.Controls
             }
 
             return row;
+        }
+
+        // The grid's buttons are AJut's own BrushButton, on the Button keys, as the flagships' are themed Buttons; a stock
+        // NSButton takes only a tint, and no hover. A glyph button (add, remove) is padded 2 by 4 and kept at least
+        // minSize square, as WinUI3's are.
+        private static BrushButton CreateGlyphButton (string glyph, string toolTip, double minSize)
+        {
+            const double kPaddingVertical = 2.0;
+            const double kPaddingHorizontal = 4.0;
+
+            var button = new BrushButton
+            {
+                Title = glyph,
+                ToolTip = toolTip,
+                Padding = new NSEdgeInsets((nfloat)kPaddingVertical, (nfloat)kPaddingHorizontal, (nfloat)kPaddingVertical, (nfloat)kPaddingHorizontal),
+                TranslatesAutoresizingMaskIntoConstraints = false,
+            };
+
+            NSLayoutConstraint.ActivateConstraints(new[]
+            {
+                button.WidthAnchor.ConstraintGreaterThanOrEqualTo((nfloat)minSize),
+                button.HeightAnchor.ConstraintGreaterThanOrEqualTo((nfloat)minSize),
+            });
+
+            return button;
+        }
+
+        // A text button in a row, Set and Unset, padded 3 by 8 as WinUI3's NullableEditor pads them
+        private static BrushButton CreateTextButton (string title)
+        {
+            const double kPaddingVertical = 3.0;
+            const double kPaddingHorizontal = 8.0;
+
+            return new BrushButton
+            {
+                Title = title,
+                Padding = new NSEdgeInsets((nfloat)kPaddingVertical, (nfloat)kPaddingHorizontal, (nfloat)kPaddingVertical, (nfloat)kPaddingHorizontal),
+            };
         }
     }
 }

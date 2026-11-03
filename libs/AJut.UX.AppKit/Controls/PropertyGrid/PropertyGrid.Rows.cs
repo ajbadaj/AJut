@@ -15,6 +15,10 @@ namespace AJut.UX.Controls
         // value is away from its default, with an optional subtitle), then the editor, or a list
         // element's header text, then a remove button for a removable list element.
         //
+        // Selection is marked on the label alone, as WinUI3's row marks it: the grid turns the tree's
+        // own row selection off, and the label's frame draws a nub and outline while the row is
+        // selected, the same whether the list has focus or not.
+        //
         // Every hookup goes through one BindingSet, disposed when the tree drops the row, so a row
         // never outlives its view and never keeps listening to its target.
         private sealed class RowView : NSView, IFlatTreeRowContent
@@ -23,10 +27,14 @@ namespace AJut.UX.Controls
             private const double kLabelFontSize = 12.0;
             private const double kColumnSpacing = 6.0;
 
+            // WinUI3's subtitle and list element header text sit at this, on the label's color
+            private const double kSecondaryTextOpacity = 0.85;
+
             private readonly PropertyGrid m_owner;
             private readonly FlatTreeItem m_item;
             private readonly PropertyEditTarget m_target;
             private readonly BindingSet m_bindings = new BindingSet();
+            private readonly LabelFrameView m_labelFrame;
             private readonly FillStack m_labelColumn;
             private readonly NSTextField m_nameLabel;
             private readonly NSTextField m_subtitle;
@@ -53,7 +61,8 @@ namespace AJut.UX.Controls
                     row.TrailingAnchor.ConstraintEqualTo(this.TrailingAnchor),
                 });
 
-                // 1. Label column: name, then subtitle
+                // 1. Label column: name, then subtitle, inside the frame that marks the row selected. The column sits
+                //  inside the frame's edges, which are always kept for it so nothing moves when the row is selected.
                 m_labelColumn = new FillStack(NSUserInterfaceLayoutOrientation.Vertical);
                 m_nameLabel = new RowNameLabel(this);
                 m_nameLabel.TextColor = ThemedColors.Get(ThemedColorKeys.PropertyGridRow_LabelForeground);
@@ -62,8 +71,21 @@ namespace AJut.UX.Controls
 
                 m_subtitle = NSTextField.CreateLabel(String.Empty);
                 m_subtitle.Font = NSFontManager.SharedFontManager.ConvertFont(NSFont.SystemFontOfSize((nfloat)kSubtitleFontSize), NSFontTraitMask.Italic);
-                m_subtitle.TextColor = ThemedColors.Get(ThemedColorKeys.PropertyGridRow_SubtitleForeground);
+                m_subtitle.TextColor = ThemedColors.Get(ThemedColorKeys.PropertyGridRow_LabelForeground);
+                m_subtitle.AlphaValue = (nfloat)kSecondaryTextOpacity;
                 m_labelColumn.Add(m_subtitle);
+
+                m_labelFrame = new LabelFrameView();
+                m_labelColumn.TranslatesAutoresizingMaskIntoConstraints = false;
+                m_labelFrame.AddSubview(m_labelColumn);
+                NSLayoutConstraint.ActivateConstraints(new[]
+                {
+                    m_labelColumn.LeadingAnchor.ConstraintEqualTo(m_labelFrame.LeadingAnchor, (nfloat)LabelFrameView.kLeadingEdgeThickness),
+                    m_labelColumn.TrailingAnchor.ConstraintEqualTo(m_labelFrame.TrailingAnchor, (nfloat)(-LabelFrameView.kEdgeThickness)),
+                    m_labelColumn.CenterYAnchor.ConstraintEqualTo(m_labelFrame.CenterYAnchor),
+                    m_labelColumn.TopAnchor.ConstraintGreaterThanOrEqualTo(m_labelFrame.TopAnchor, (nfloat)LabelFrameView.kEdgeThickness),
+                    m_labelColumn.BottomAnchor.ConstraintLessThanOrEqualTo(m_labelFrame.BottomAnchor, (nfloat)(-LabelFrameView.kEdgeThickness)),
+                });
 
                 // A hidden view still takes its space in the stack, so an empty subtitle would leave a blank line under
                 // the name and sit the name above the row's middle, now that rows size to their content. With no
@@ -76,7 +98,9 @@ namespace AJut.UX.Controls
                 this.ApplyLabelColumnWidth(owner.LabelColumnWidth);
                 owner.m_liveRows.Add(this);
 
-                row.Add(m_labelColumn, alignment: eFillStackCrossAlignment.Center);
+                // The frame takes the row's height, as WinUI3's label border does, so the outline runs top to bottom
+                row.Add(m_labelFrame, alignment: eFillStackCrossAlignment.Stretch);
+                m_bindings.Watch(m_item, nameof(FlatTreeItem.IsSelected), this.RefreshSelection);
                 if (m_target == null)
                 {
                     return;
@@ -101,17 +125,21 @@ namespace AJut.UX.Controls
                 else
                 {
                     NSTextField header = NSTextField.CreateLabel(String.Empty);
-                    header.TextColor = ThemedColors.Get(ThemedColorKeys.PropertyGridRow_SubtitleForeground);
+                    header.TextColor = ThemedColors.Get(ThemedColorKeys.PropertyGridRow_LabelForeground);
+                    header.AlphaValue = (nfloat)kSecondaryTextOpacity;
                     m_bindings.BindLabel(header, m_target, nameof(PropertyEditTarget.ListElementHeaderText), this.ReadListElementHeader);
                     m_bindings.BindHidden(header, m_target, nameof(PropertyEditTarget.IsListElementHeaderVisible), this.IsListElementHeaderHidden);
                     row.Add(header, grows: true, alignment: eFillStackCrossAlignment.Center);
                 }
 
-                // 3. Remove, for a removable list element
+                // 3. Remove, for a removable list element: a small AJut button, faded, as WinUI3's is
                 if (PropertyGridRowRules.CanRemoveFromList(m_target, owner.IsReadOnly) && m_target.ListElementRemoveCommand != null)
                 {
-                    var remove = new NSButton { Title = "-", ToolTip = "Remove" };
-                    remove.BezelStyle = NSBezelStyle.Recessed;
+                    const double kRemoveButtonOpacity = 0.7;
+                    const double kRemoveButtonMinSize = 20.0;
+
+                    BrushButton remove = CreateGlyphButton("-", "Remove", kRemoveButtonMinSize);
+                    remove.AlphaValue = (nfloat)kRemoveButtonOpacity;
                     m_bindings.BindCommand(remove, m_target.ListElementRemoveCommand);
                     row.Add(remove, alignment: eFillStackCrossAlignment.Center);
                 }
@@ -190,10 +218,11 @@ namespace AJut.UX.Controls
                     return;
                 }
 
+                // The width is the frame's, edges included, as WinUI3 sizes its label border
                 if (m_labelWidthConstraint == null)
                 {
-                    m_labelColumn.TranslatesAutoresizingMaskIntoConstraints = false;
-                    m_labelWidthConstraint = m_labelColumn.WidthAnchor.ConstraintEqualTo((nfloat)labelWidth);
+                    m_labelFrame.TranslatesAutoresizingMaskIntoConstraints = false;
+                    m_labelWidthConstraint = m_labelFrame.WidthAnchor.ConstraintEqualTo((nfloat)labelWidth);
                 }
 
                 m_labelWidthConstraint.Constant = (nfloat)labelWidth;
@@ -214,25 +243,28 @@ namespace AJut.UX.Controls
                     return false;
                 }
 
-                var gapMiddle = new CGPoint(m_labelColumn.Bounds.Width + (nfloat)(kColumnSpacing / 2), 0);
-                boundaryX = (double)m_labelColumn.ConvertPointToView(gapMiddle, relativeTo).X;
-                shownLabelColumnWidth = PropertyGridRowRules.ToLabelColumnWidth((double)m_labelColumn.Bounds.Width, m_item.IndentWidth, kExpanderColumnWidth);
+                var gapMiddle = new CGPoint(m_labelFrame.Bounds.Width + (nfloat)(kColumnSpacing / 2), 0);
+                boundaryX = (double)m_labelFrame.ConvertPointToView(gapMiddle, relativeTo).X;
+                shownLabelColumnWidth = PropertyGridRowRules.ToLabelColumnWidth((double)m_labelFrame.Bounds.Width, m_item.IndentWidth, kExpanderColumnWidth);
                 return true;
             }
 
             /// <summary>The label column width that would show this row's whole name and subtitle</summary>
             public double MeasureFittingLabelColumnWidth ()
             {
-                // A label's intrinsic width is its whole text on one line, whatever width it is given now
+                // A label's intrinsic width is its whole text on one line, whatever width it is given now; the frame's
+                //  edges come on top
                 double labelWidth = (double)m_nameLabel.IntrinsicContentSize.Width;
                 if (!m_subtitle.Hidden)
                 {
                     labelWidth = Math.Max(labelWidth, (double)m_subtitle.IntrinsicContentSize.Width);
                 }
 
+                labelWidth += LabelFrameView.kLeadingEdgeThickness + LabelFrameView.kEdgeThickness;
                 return PropertyGridRowRules.ToLabelColumnWidth(labelWidth, m_item.IndentWidth, kExpanderColumnWidth);
             }
 
+            private void RefreshSelection () => m_labelFrame.IsSelected = m_item.IsSelected;
             private string ReadDisplayName () => m_target.DisplayName ?? String.Empty;
             private string ReadSubtitle () => m_target.Subtitle ?? String.Empty;
             private bool IsSubtitleEmpty () => String.IsNullOrEmpty(m_target.Subtitle);
@@ -283,21 +315,80 @@ namespace AJut.UX.Controls
             }
         }
 
+        // A row's label area, which marks the row selected the way WinUI3's PART_LabelBorder does: a nub
+        // down its leading edge and an outline around the rest, in the selection border color, and no
+        // fill. The label sits inside those edges whether or not they show.
+        private sealed class LabelFrameView : NSView
+        {
+            /// <summary>The nub's width, down the leading edge</summary>
+            public const double kLeadingEdgeThickness = 4.0;
+
+            /// <summary>The outline's width on the other three edges</summary>
+            public const double kEdgeThickness = 1.0;
+
+            private bool m_isSelected;
+
+            public override bool IsFlipped => true;
+
+            /// <summary>Shows the nub and outline</summary>
+            public bool IsSelected
+            {
+                get => m_isSelected;
+                set
+                {
+                    if (m_isSelected != value)
+                    {
+                        m_isSelected = value;
+                        this.NeedsDisplay = true;
+                    }
+                }
+            }
+
+            public override void ViewDidChangeEffectiveAppearance ()
+            {
+                base.ViewDidChangeEffectiveAppearance();
+                this.NeedsDisplay = true;
+            }
+
+            public override void DrawRect (CGRect dirtyRect)
+            {
+                if (!m_isSelected)
+                {
+                    return;
+                }
+
+                CGRect bounds = this.Bounds;
+                var edge = (nfloat)kEdgeThickness;
+                ThemedColors.Get(ThemedColorKeys.PropertyGridRow_SelectionBorder).SetFill();
+                NSBezierPath.FillRect(new CGRect(bounds.X, bounds.Y, (nfloat)kLeadingEdgeThickness, bounds.Height));
+                NSBezierPath.FillRect(new CGRect(bounds.X, bounds.Y, bounds.Width, edge));
+                NSBezierPath.FillRect(new CGRect(bounds.X, bounds.GetMaxY() - edge, bounds.Width, edge));
+                NSBezierPath.FillRect(new CGRect(bounds.GetMaxX() - edge, bounds.Y, edge, bounds.Height));
+            }
+        }
+
         // The built-in editor for a Nullable<T> property: the inner type's own editor, through a
-        // proxy target (AJut.UX's NullableEditorContext.BuildProxyTarget), plus Set and Unset. While
-        // the value is null the inner editor is dimmed and disabled and "Not set" shows beside it.
+        // proxy target (AJut.UX's NullableEditorContext.BuildProxyTarget), plus Set and Unset, laid out
+        // as WinUI3's NullableEditor is. While the value is null the inner editor is dimmed and
+        // disabled under a shade that takes its clicks, with "Not set" and the Set button on the shade.
+        // While it has a value, Unset sits beside the editor.
         private sealed class NullableEditorView : NSView
         {
             private const double kDimmedAlpha = 0.4;
+
+            // WinUI3's: "Not set" at 0.9, starting 8 in (its panel's margin and its own), and 8 from the Set button
+            private const double kNotSetOpacity = 0.9;
+            private const double kShadeInset = 8.0;
+            private const double kShadeSpacing = 8.0;
 
             private readonly PropertyEditTarget m_outer;
             private readonly bool m_isReadOnly;
             private readonly NullableEditorContext m_context;
             private readonly PropertyEditTarget m_proxy;
             private readonly NSView m_innerEditor;
-            private readonly NSTextField m_notSet;
-            private readonly NSButton m_set;
-            private readonly NSButton m_unset;
+            private readonly ThemedView m_nullShade;
+            private readonly BrushButton m_set;
+            private readonly BrushButton m_unset;
 
             [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = PropertyGridTrimming.kSourceCarriesTheWarning)]
             [UnconditionalSuppressMessage("AOT", "IL3050", Justification = PropertyGridTrimming.kSourceCarriesTheWarning)]
@@ -319,20 +410,57 @@ namespace AJut.UX.Controls
                     row.TrailingAnchor.ConstraintEqualTo(this.TrailingAnchor),
                 });
 
+                // 1. The inner editor, with the null shade over it: a view over another takes the clicks first, so the
+                //  shade keeps them from the dimmed editor, as WinUI3's hit-testable overlay does
+                var editorHost = new NSView();
                 m_innerEditor = owner.CreateEditor(m_proxy, bindings) ?? new NSView();
-                row.Add(m_innerEditor, grows: true, alignment: eFillStackCrossAlignment.Center);
+                m_innerEditor.TranslatesAutoresizingMaskIntoConstraints = false;
+                editorHost.AddSubview(m_innerEditor);
 
-                m_notSet = NSTextField.CreateLabel("Not set");
-                m_notSet.TextColor = ThemedColors.Get(ThemedColorKeys.NullableEditor_NotSetForeground);
-                row.Add(m_notSet, alignment: eFillStackCrossAlignment.Center);
+                m_nullShade = new ThemedView
+                {
+                    BackgroundColorKey = ThemedColorKeys.NullableEditor_OverlayBackground,
+                    TranslatesAutoresizingMaskIntoConstraints = false,
+                };
+                editorHost.AddSubview(m_nullShade);
 
-                m_set = new NSButton { Title = "Set" };
-                m_set.BezelStyle = NSBezelStyle.Recessed;
+                var shadeRow = new FillStack(NSUserInterfaceLayoutOrientation.Horizontal, spacing: kShadeSpacing)
+                {
+                    Padding = new NSEdgeInsets(0, (nfloat)kShadeInset, 0, 0),
+                    TranslatesAutoresizingMaskIntoConstraints = false,
+                };
+                m_nullShade.AddSubview(shadeRow);
+
+                NSTextField notSet = NSTextField.CreateLabel("Not set");
+                notSet.TextColor = ThemedColors.Get(ThemedColorKeys.NullableEditor_NotSetForeground);
+                notSet.AlphaValue = (nfloat)kNotSetOpacity;
+                shadeRow.Add(notSet, alignment: eFillStackCrossAlignment.Center);
+
+                m_set = CreateTextButton("Set");
                 bindings.BindCommand(m_set, new ActionCommand(this.SetToInnerDefault));
-                row.Add(m_set, alignment: eFillStackCrossAlignment.Center);
+                shadeRow.Add(m_set, alignment: eFillStackCrossAlignment.Center);
 
-                m_unset = new NSButton { Title = "Unset" };
-                m_unset.BezelStyle = NSBezelStyle.Recessed;
+                NSLayoutConstraint.ActivateConstraints(new[]
+                {
+                    m_innerEditor.TopAnchor.ConstraintEqualTo(editorHost.TopAnchor),
+                    m_innerEditor.BottomAnchor.ConstraintEqualTo(editorHost.BottomAnchor),
+                    m_innerEditor.LeadingAnchor.ConstraintEqualTo(editorHost.LeadingAnchor),
+                    m_innerEditor.TrailingAnchor.ConstraintEqualTo(editorHost.TrailingAnchor),
+                    m_nullShade.TopAnchor.ConstraintEqualTo(editorHost.TopAnchor),
+                    m_nullShade.BottomAnchor.ConstraintEqualTo(editorHost.BottomAnchor),
+                    m_nullShade.LeadingAnchor.ConstraintEqualTo(editorHost.LeadingAnchor),
+                    m_nullShade.TrailingAnchor.ConstraintEqualTo(editorHost.TrailingAnchor),
+                    shadeRow.LeadingAnchor.ConstraintEqualTo(m_nullShade.LeadingAnchor),
+                    shadeRow.TrailingAnchor.ConstraintLessThanOrEqualTo(m_nullShade.TrailingAnchor),
+                    shadeRow.CenterYAnchor.ConstraintEqualTo(m_nullShade.CenterYAnchor),
+                    shadeRow.TopAnchor.ConstraintGreaterThanOrEqualTo(m_nullShade.TopAnchor),
+                    shadeRow.BottomAnchor.ConstraintLessThanOrEqualTo(m_nullShade.BottomAnchor),
+                });
+
+                row.Add(editorHost, grows: true, alignment: eFillStackCrossAlignment.Center);
+
+                // 2. Unset, beside the editor while it has a value
+                m_unset = CreateTextButton("Unset");
                 bindings.BindCommand(m_unset, new ActionCommand(this.Unset));
                 row.Add(m_unset, alignment: eFillStackCrossAlignment.Center);
 
@@ -355,8 +483,8 @@ namespace AJut.UX.Controls
                     control.Enabled = !isNull && !m_isReadOnly;
                 }
 
-                m_notSet.Hidden = !isNull;
-                m_set.Hidden = !isNull || m_isReadOnly;
+                m_nullShade.Hidden = !isNull;
+                m_set.Hidden = m_isReadOnly;
                 m_unset.Hidden = isNull || m_isReadOnly;
             }
 

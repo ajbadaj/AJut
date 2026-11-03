@@ -60,7 +60,7 @@ namespace TheAJutShowRoom
         protected override void OnStartup (StartupEventArgs e)
         {
             ThemeTracker = new AppThemeManager();
-            TouchFocus = new TouchFocusFollower(ThemeTracker);
+            TouchVariant = new TouchVariantFollower(ThemeTracker);
 
             AJutShowroomAppConfig config = GetConfig();
             ThemeTracker.ThemeConfiguration = config.Theme;
@@ -97,7 +97,7 @@ namespace TheAJutShowRoom
         public static AppThemeManager? ThemeTracker { get; private set; }
 
         /// <summary>The drawer's "follow Windows touch" switch</summary>
-        public static TouchFocusFollower? TouchFocus { get; private set; }
+        public static TouchVariantFollower? TouchVariant { get; private set; }
 
         public bool UseThemes
         {

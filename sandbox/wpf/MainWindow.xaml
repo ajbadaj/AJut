@@ -58,13 +58,13 @@
                                                     Visibility="{Binding RelativeSource={RelativeSource Self}, Path=IsEnabled, Mode=OneWay, Converter={ajut_conv:BooleanToVisibilityConverter TrueValue=Collapsed, FalseValue=Visible}}"/>
                                     </Grid>
                                     <ajut:ToggleSwitchButton Margin="0,0,0,5" HorizontalAlignment="Center"
-                                                             IsChecked="{Binding Source={x:Static local:App.ThemeTracker}, Path=IsTouchFocused, Mode=TwoWay}"
-                                                             Content="Touch Focused: " ToolTip="The touch palette: lifted button surfaces and no button borders, for touch with no hover"/>
+                                                             IsChecked="{Binding Source={x:Static local:App.ThemeTracker}, Path=UsesTouchVariant, Mode=TwoWay}"
+                                                             Content="Touch Variant: " ToolTip="The touch palette: lifted button surfaces and no button borders, for touch with no hover"/>
                                     <ajut:ToggleSwitchButton Margin="0,0,0,5" HorizontalAlignment="Center"
-                                                             IsChecked="{Binding Source={x:Static local:App.TouchFocus}, Path=FollowsWindows, Mode=TwoWay}"
-                                                             Content="Follow Windows Touch: " ToolTip="Set Touch Focused from Windows' touch preference (Windows 11 24H2 and later), the way an app opts in"/>
+                                                             IsChecked="{Binding Source={x:Static local:App.TouchVariant}, Path=FollowsWindows, Mode=TwoWay}"
+                                                             Content="Follow Windows Touch: " ToolTip="Set the touch variant from Windows' touch preference (Windows 11 24H2 and later), the way an app opts in"/>
                                     <TextBlock HorizontalAlignment="Center" Margin="0,0,0,10" FontStyle="Italic" Opacity="0.9" TextWrapping="Wrap"
-                                               Text="{Binding Source={x:Static local:App.TouchFocus}, Path=WindowsPreferenceText, Mode=OneWay}"/>
+                                               Text="{Binding Source={x:Static local:App.TouchVariant}, Path=WindowsPreferenceText, Mode=OneWay}"/>
                                 </StackPanel>
                             </Border>
                             <TextBlock HorizontalAlignment="Right">

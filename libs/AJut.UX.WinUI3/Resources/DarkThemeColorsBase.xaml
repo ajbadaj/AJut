@@ -185,6 +185,10 @@
     <!-- ===================[ Misc ]========================= -->
     <Color x:Key="AJut_Color_BadStuff">#A31B22</Color>
     <SolidColorBrush x:Key="AJut_Brush_BadStuff" Color="{ThemeResource AJut_Color_BadStuff}"/>
+    <!-- The glow around something in error: brighter than the error color, which is too dark to glow against these
+         surfaces -->
+    <Color x:Key="AJut_Color_ErrorGlow">#E0524D</Color>
+    <SolidColorBrush x:Key="AJut_Brush_ErrorGlow" Color="{ThemeResource AJut_Color_ErrorGlow}"/>
     <SolidColorBrush x:Key="AJut_Brush_TrackBackground" Color="#444"/>
     <SolidColorBrush x:Key="AJut_Brush_ToolTipBackground" Color="#202020"/>
     <SolidColorBrush x:Key="AJut_Brush_BannerBackground" Color="#111117"/>

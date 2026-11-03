@@ -27,12 +27,12 @@
         private bool m_isForcingThemeChange;
         private Uri m_touchThemeColorsSource;
         private ResourceDictionary m_touchThemeColors;
-        private bool m_isTouchFocused;
+        private bool m_usesTouchVariant;
 
         public event EventHandler<EventArgs<ApplicationTheme>> ThemeChanged;
 
         /// <param name="touchThemeColorsSource">
-        /// The dictionary added when <see cref="IsTouchFocused"/> is on: light and dark theme dictionaries with the touch
+        /// The dictionary added when <see cref="UsesTouchVariant"/> is on: light and dark theme dictionaries with the touch
         /// palettes. Leave it null for AJut's own (Resources/TouchThemeColors.xaml in AJut.UX.WinUI3); an app that changes
         /// the AJut colors passes its own of the same shape, with its changes laid over the touch palettes.
         /// </param>
@@ -61,8 +61,8 @@
                 this.SetTheme(m_targetApplication.RequestedTheme);
             }
 
-            // Touch focus turned on before setup takes effect now
-            if (m_isTouchFocused)
+            // The touch variant turned on before setup takes effect now
+            if (m_usesTouchVariant)
             {
                 this.ApplyTouchThemeColors();
             }
@@ -118,17 +118,17 @@
         public ApplicationTheme CurrentTheme => m_currentTheme;
 
         /// <summary>
-        /// Whether the theme is touch focused: the AJut touch palettes in place of the light and dark ones, so buttons
+        /// Whether the theme uses its touch variant: the AJut touch palettes in place of the light and dark ones, so buttons
         /// read as buttons without hover (lifted surfaces, no borders). Off by default, and AJut never turns it on by
         /// itself. An app can follow a 2-in-1's touch use by setting this from a <see cref="TouchPreferenceWatcher"/>,
         /// or offer it as a setting.
         /// </summary>
-        public bool IsTouchFocused
+        public bool UsesTouchVariant
         {
-            get => m_isTouchFocused;
+            get => m_usesTouchVariant;
             set
             {
-                if (this.SetAndRaiseIfChanged(ref m_isTouchFocused, value) && m_targetApplication != null)
+                if (this.SetAndRaiseIfChanged(ref m_usesTouchVariant, value) && m_targetApplication != null)
                 {
                     this.ApplyTouchThemeColors();
                 }
@@ -139,7 +139,7 @@
         // theme dictionaries, or takes them out
         private void ApplyTouchThemeColors ()
         {
-            if (m_isTouchFocused)
+            if (m_usesTouchVariant)
             {
                 m_touchThemeColors ??= new ResourceDictionary { Source = m_touchThemeColorsSource };
                 m_targetApplication.Resources.MergedDictionaries.Remove(m_touchThemeColors);

@@ -15,11 +15,11 @@ namespace AJutShowRoomUIKit.UI
         private const string kTitleBarBackgroundKey = "AJut_Brush_TitleBarBackground";
         private const string kTitleBarForegroundKey = "AJut_Brush_TitleBarForeground";
 
-        // iOS's own answer for touch, read before the showroom changes it: an iOS UI is touch first
-        private static readonly bool kSystemIsTouchFocused = ThemedColors.IsTouchFocused;
+        // AJut's own default for the touch variant, read before the showroom changes it: off, as on every stack
+        private static readonly bool kSystemUsesTouchVariant = ThemedColors.UsesTouchVariant;
 
         private static eThemeMode g_themeMode = eThemeMode.System;
-        private static bool g_touchChoice = kSystemIsTouchFocused;
+        private static bool g_touchChoice = kSystemUsesTouchVariant;
 
         // ===========[ Properties ]===================================
         /// <summary>
@@ -32,7 +32,7 @@ namespace AJutShowRoomUIKit.UI
             set
             {
                 g_themeMode = value;
-                ThemedColors.IsTouchFocused = IsTouchFocused;
+                ThemedColors.UsesTouchVariant = UsesTouchVariant;
             }
         }
 
@@ -40,9 +40,9 @@ namespace AJutShowRoomUIKit.UI
         /// Whether the AJut theme paints its touch variant. Under System it is iOS's answer (on); under Dark or Light it
         /// is the choice made on the bar, and setting it while System is picked changes nothing.
         /// </summary>
-        public static bool IsTouchFocused
+        public static bool UsesTouchVariant
         {
-            get => (g_themeMode == eThemeMode.System) ? kSystemIsTouchFocused : g_touchChoice;
+            get => (g_themeMode == eThemeMode.System) ? kSystemUsesTouchVariant : g_touchChoice;
             set
             {
                 if (g_themeMode == eThemeMode.System)
@@ -51,7 +51,7 @@ namespace AJutShowRoomUIKit.UI
                 }
 
                 g_touchChoice = value;
-                ThemedColors.IsTouchFocused = value;
+                ThemedColors.UsesTouchVariant = value;
             }
         }
 

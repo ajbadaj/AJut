@@ -74,6 +74,14 @@ namespace AJut.UX.Controls
             set => this.SetValue(OverlayBackgroundProperty, value);
         }
 
+        public static readonly DependencyProperty NotSetForegroundProperty = DPUtils.Register(_ => _.NotSetForeground);
+        /// <summary>The "Not set" label's text, which sits on <see cref="OverlayBackground"/>, so it has to read on that shade</summary>
+        public Brush NotSetForeground
+        {
+            get => (Brush)this.GetValue(NotSetForegroundProperty);
+            set => this.SetValue(NotSetForegroundProperty, value);
+        }
+
         // ===========[ Template application ]====================================
         public override void OnApplyTemplate ()
         {

@@ -143,7 +143,7 @@ namespace AJutShowRoomUIKit.UI
                 return;
             }
 
-            bool wasTouchFocused = ThemedColors.IsTouchFocused;
+            bool usedTouchVariant = ThemedColors.UsesTouchVariant;
             ShowroomSettings.ThemeMode = mode;
             UIWindow window = this.View.Window;
             if (window != null)
@@ -152,7 +152,7 @@ namespace AJutShowRoomUIKit.UI
             }
 
             // Light and dark need nothing rebuilt, but System takes iOS's touch answer, which can change the palette
-            if (ThemedColors.IsThemeLoaded && (ThemedColors.IsTouchFocused != wasTouchFocused))
+            if (ThemedColors.IsThemeLoaded && (ThemedColors.UsesTouchVariant != usedTouchVariant))
             {
                 this.RebuildShowroom();
                 return;
@@ -169,9 +169,9 @@ namespace AJutShowRoomUIKit.UI
 
         private void TouchSwitch_OnValueChanged (object sender, EventArgs e)
         {
-            bool wasTouchFocused = ThemedColors.IsTouchFocused;
-            ShowroomSettings.IsTouchFocused = m_touchSwitch.On;
-            if (ThemedColors.IsTouchFocused != wasTouchFocused)
+            bool usedTouchVariant = ThemedColors.UsesTouchVariant;
+            ShowroomSettings.UsesTouchVariant = m_touchSwitch.On;
+            if (ThemedColors.UsesTouchVariant != usedTouchVariant)
             {
                 this.RebuildShowroom();
                 return;
@@ -207,7 +207,7 @@ namespace AJutShowRoomUIKit.UI
         {
             m_modeStrip.SelectedItem = ShowroomSettings.ThemeMode;
             m_themeSwitch.On = ThemedColors.IsThemeLoaded;
-            m_touchSwitch.On = ShowroomSettings.IsTouchFocused;
+            m_touchSwitch.On = ShowroomSettings.UsesTouchVariant;
             m_touchSwitch.Enabled = ShowroomSettings.CanChooseTouch;
         }
 

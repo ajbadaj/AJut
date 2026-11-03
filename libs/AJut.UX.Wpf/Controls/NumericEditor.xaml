@@ -184,7 +184,9 @@
                                         <ColumnDefinition />
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
+                                    <!-- The editor's own size and padding, whatever a theme gives text boxes -->
                                     <TextBox x:Name="PART_TextArea" BorderThickness="0" TextAlignment="{TemplateBinding NumberTextAlignment}" Padding="{TemplateBinding Padding}"
+                                             FontSize="{TemplateBinding FontSize}"
                                              Text="{ajut:TemplateBinding Path=DisplayValue.Text, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" IsReadOnly="{TemplateBinding IsReadOnly}" IsReadOnlyCaretVisible="True"/>
                                     <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" HorizontalAlignment="Right" 
                                                Grid.Column="1" Margin="2,4,2,2" FontSize="12"

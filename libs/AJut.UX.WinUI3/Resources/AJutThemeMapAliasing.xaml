@@ -62,11 +62,15 @@
     <!-- ===========[ FlatTreeItemRow ]===================================== -->
     <SolidColorBrush x:Key="AJut_FlatTreeItemRow_ExpanderPointerOverBackground" Color="{ThemeResource AJut_Color_MouseInteractionHighlight}"/>
     <SolidColorBrush x:Key="AJut_FlatTreeItemRow_ExpanderPressedBackground"     Color="{ThemeResource AJut_Color_PrimaryHighlightDark}"/>
+    <SolidColorBrush x:Key="AJut_FlatTreeItemRow_ExpanderGlyphPointerOverForeground" Color="{ThemeResource AJut_Color_SymbolForegroundHighlight}"/>
 
-    <!-- Drag/drop visual brushes -->
+    <!-- Drag/drop visual brushes. The ghost takes the popup surface, as WPF's does. -->
     <SolidColorBrush x:Key="AJut_FlatTree_DragInsertionLine"      Color="{ThemeResource AJut_Color_PrimaryHighlight}"/>
-    <SolidColorBrush x:Key="AJut_FlatTree_DragParentConnector"    Color="{ThemeResource AJut_Color_PrimaryHighlight}" Opacity="0.5"/>
+    <SolidColorBrush x:Key="AJut_FlatTree_DragParentConnector"    Color="{ThemeResource AJut_Color_PrimaryHighlightDesat}"/>
     <SolidColorBrush x:Key="AJut_FlatTree_DragTargetHighlight"    Color="{ThemeResource AJut_Color_PrimaryHighlight}"/>
+    <StaticResource x:Key="AJut_FlatTree_DragGhostBackground" ResourceKey="AJut_Brush_PopupBackground"/>
+    <SolidColorBrush x:Key="AJut_FlatTree_DragGhostBorderBrush"   Color="{ThemeResource AJut_Color_BorderCommon}"/>
+    <SolidColorBrush x:Key="AJut_FlatTree_DragGhostForeground"    Color="{ThemeResource AJut_Color_NormalText}"/>
 
     <!-- ===========[ FlatTree ListViewItem ]=============================== -->
     <!-- Redirects selection/hover to AJut palette colors.
@@ -74,6 +78,7 @@
     <SolidColorBrush x:Key="AJut_FlatTree_SelectionBrush"          Color="{ThemeResource AJut_Color_ListSelection}"/>
     <SolidColorBrush x:Key="AJut_FlatTree_SelectionBackground"     Color="{ThemeResource AJut_Color_ListSelectionBackground}"/>
     <SolidColorBrush x:Key="AJut_FlatTree_SelectionBrushUnfocused" Color="{ThemeResource AJut_Color_PrimaryHighlightDesat}"/>
+    <SolidColorBrush x:Key="AJut_FlatTree_SelectionPointerOverBrush" Color="{ThemeResource AJut_Color_ListItemHover}"/>
     <SolidColorBrush x:Key="AJut_FlatTree_HoverBackground"         Color="{ThemeResource AJut_Color_ListSelectionBackground}"/>
     <SolidColorBrush x:Key="AJut_FlatTree_HoverBorderBrush"        Color="{ThemeResource AJut_Color_BorderCommon}"/>
 
@@ -162,5 +167,7 @@
     <!-- Disabled, the selection stays but muted: a faded, desaturated primary -->
     <SolidColorBrush x:Key="AJut_ToggleStripButton_CheckedDisabledBackground"    Color="{ThemeResource AJut_Color_PrimaryHighlightDesat}" Opacity="0.55"/>
     <SolidColorBrush x:Key="AJut_ToggleStripButton_HighlightForeground"          Color="{ThemeResource AJut_Color_HighContrastText}"/>
+    <!-- A disabled strip's text: the understated text, faded further, so it reads as set aside in Light as well as Dark -->
+    <SolidColorBrush x:Key="AJut_ToggleStrip_DisabledForeground"                 Color="{ThemeResource AJut_Color_UnderstatedText}" Opacity="0.6"/>
 
 </ResourceDictionary>

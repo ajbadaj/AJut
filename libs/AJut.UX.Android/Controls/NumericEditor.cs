@@ -2,6 +2,7 @@ namespace AJut.UX.Controls
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
+    using AJut.UX.Helpers;
     using AJut.UX.Theming;
     using Android.Content;
     using Android.Content.Res;
@@ -57,7 +58,9 @@ namespace AJut.UX.Controls
         private static readonly ThemedColor kWellBackground = ThemedColor.FromArgb(MobileLook.NumericEditor.WellSurface, 0xFFFFFFFF, 0xFF1E1E1E);
         private static readonly ThemedColor kNormalBorder = ThemedColor.FromArgb(MobileLook.NumericEditor.FrameBorder, 0xFF888888, 0xFF888888);
         private static readonly ThemedColor kFocusBorder = ThemedColor.FromArgb(MobileLook.NumericEditor.FrameBorderFocused, 0xFF0078D4, 0xFF4CA3E8);
+        private static readonly ThemedColor kPointerOverBorder = ThemedColor.FromArgb(MobileLook.NumericEditor.FrameBorderPointerOver, 0xFF429CE3, 0xFF7AB8EA);
         private static readonly ThemedColor kErrorBorder = ThemedColor.FromArgb(MobileLook.NumericEditor.FrameBorderError, 0xFFE0524D, 0xFFE0524D);
+        private static readonly ThemedColor kButtonPointerOver = ThemedColor.FromArgb(MobileLook.NumericEditor.StepPointerOverFill, 0x26000000, 0x33FFFFFF);
         private static readonly ThemedColor kButtonPressed = ThemedColor.FromArgb(MobileLook.NumericEditor.StepPressedFill, 0x26000000, 0x33FFFFFF);
         private static readonly ThemedColor kForeground = ThemedColor.FromArgb(MobileLook.NumericEditor.StepGlyph, 0xE4000000, 0xFFFFFFFF);
         private static readonly ThemedColor kFieldForeground = ThemedColor.FromArgb(MobileLook.NumericEditor.Number, 0xE4000000, 0xFFFFFFFF);
@@ -66,10 +69,12 @@ namespace AJut.UX.Controls
 
         private readonly NumericEditorController m_controller;
         private GradientDrawable m_frame = null!;
+        private View m_frameRow = null!;
         private TextView m_label = null!;
         private EditText m_field = null!;
         private TextView m_decrease = null!;
         private TextView m_increase = null!;
+        private View m_warningGlyph = null!;
         private View? m_labelView;
         private Handler? m_repeatHandler;
         private RepeatNudge? m_repeat;
@@ -87,6 +92,7 @@ namespace AJut.UX.Controls
         private eOutOfBoundsResponse m_outOfBoundsResponse = eOutOfBoundsResponse.ErrorAndToolTip;
         private string? m_errorMessage;
         private bool m_isReadOnly;
+        private bool m_isPointerOverFrame;
         private float m_density = 1f;
 
         // ===========[ Setup/Construction/Teardown ]===================================
@@ -131,6 +137,12 @@ namespace AJut.UX.Controls
         protected override void OnDetachedFromWindow ()
         {
             this.StopRepeating();
+            if (m_isPointerOverFrame)
+            {
+                m_isPointerOverFrame = false;
+                this.PaintFrame();
+            }
+
             m_field.TextChanged -= this.OnFieldTextChanged;
             m_field.EditorAction -= this.OnFieldEditorAction;
             m_field.FocusChange -= this.OnFieldFocusChange;
@@ -324,6 +336,29 @@ namespace AJut.UX.Controls
             return base.DispatchKeyEvent(e);
         }
 
+        // A mouse or stylus over the frame brightens its border. The editor is handed every hover event inside its bounds,
+        //  entering, moving and leaving, before its parts are, so the frame is told apart from the label by where the
+        //  pointer is. A hover listener on the frame itself would not do: a layout that passes a hover on to a child that
+        //  takes it (a step button, the field) gets an exit of its own, so the border would drop while over a step button.
+        protected override bool DispatchHoverEvent (MotionEvent? e)
+        {
+            if (e != null)
+            {
+                float x = e.GetX();
+                float y = e.GetY();
+                bool isOverFrame = (e.ActionMasked != MotionEventActions.HoverExit)
+                    && (x >= m_frameRow.Left) && (x < m_frameRow.Right)
+                    && (y >= m_frameRow.Top) && (y < m_frameRow.Bottom);
+                if (isOverFrame != m_isPointerOverFrame)
+                {
+                    m_isPointerOverFrame = isOverFrame;
+                    this.PaintFrame();
+                }
+            }
+
+            return base.DispatchHoverEvent(e);
+        }
+
         // ===========[ INumericEditorSettings Implementations ]===================================
         // The settings interface takes null for an unconstrained bound, though its signature does not say so.
         object INumericEditorSettings.Minimum => NumericEditorController.ToMinimumBound(m_minimum)!;
@@ -359,7 +394,9 @@ namespace AJut.UX.Controls
         void INumericEditorHost.ShowError (string? errorMessage)
         {
             m_errorMessage = errorMessage;
-            m_field.Error = errorMessage;
+            m_warningGlyph.Visibility = (errorMessage != null) ? ViewStates.Visible : ViewStates.Gone;
+            m_warningGlyph.TooltipText = errorMessage;
+            m_warningGlyph.ContentDescription = errorMessage;
             this.PaintFrame();
         }
 
@@ -370,7 +407,10 @@ namespace AJut.UX.Controls
             this.Orientation = Android.Widget.Orientation.Horizontal;
             this.SetGravity(GravityFlags.CenterVertical);
 
-            // 1. Label, minus, field, plus
+            const float kWarningGlyphSizeDp = 16f;
+            const float kWarningGlyphSpacingDp = 4f;
+
+            // 1. Label, minus, field, warning glyph, plus
             m_label = new TextView(context) { Visibility = ViewStates.Gone };
             m_label.SetPadding(0, 0, (int)(MobileLook.NumericEditor.LabelSpacing * m_density), 0);
             m_label.SetTextColor(ThemeColors.Resolve(context, kLabelForeground).ToAndroidColor());
@@ -389,7 +429,16 @@ namespace AJut.UX.Controls
             // The number is text control text, as on WinUI3, and dims while read-only (the field is disabled then)
             m_field.SetTextColor(MakeReadOnlyDimmedText(context, kFieldForeground));
 
-            // The minus, field and plus share one bordered pop-out frame; the label sits outside it. The buttons have no
+            // The out of bounds warning is AJut's own glyph beside the number, in the error color, as UIKit's and AppKit's
+            //  are, rather than EditText's error icon and popup, which take only the platform's theme. Its tooltip (a long
+            //  press, or a pointer resting on it) and its description carry the message.
+            m_warningGlyph = new View(context)
+            {
+                Visibility = ViewStates.Gone,
+                Background = new WarningGlyphDrawable(ThemeColors.Resolve(context, kErrorBorder).ToAndroidColor()),
+            };
+
+            // The minus, field, warning glyph and plus share one bordered pop-out frame; the label sits outside it. The buttons have no
             //  fill of their own, so they read as part of the frame, and the frame shows above and below the field's well.
             //  The frame is padded by its border so a pressed button fills inside the outline rather than over it.
             int border = (int)Math.Max(1f, MobileLook.NumericEditor.BorderThickness * m_density);
@@ -402,7 +451,11 @@ namespace AJut.UX.Controls
             frame.SetPadding(border, border, border, border);
             frame.AddView(m_decrease, new LayoutParams(buttonWidth, ViewGroup.LayoutParams.MatchParent));
             frame.AddView(m_field, new LayoutParams(0, ViewGroup.LayoutParams.WrapContent, 1f) { TopMargin = wellInset, BottomMargin = wellInset });
+            int glyphSize = (int)(kWarningGlyphSizeDp * m_density);
+            int glyphSpacing = (int)(kWarningGlyphSpacingDp * m_density);
+            frame.AddView(m_warningGlyph, new LayoutParams(glyphSize, glyphSize) { LeftMargin = glyphSpacing, RightMargin = glyphSpacing });
             frame.AddView(m_increase, new LayoutParams(buttonWidth, ViewGroup.LayoutParams.MatchParent));
+            m_frameRow = frame;
 
             this.AddView(m_label, new LayoutParams(ViewGroup.LayoutParams.WrapContent, ViewGroup.LayoutParams.WrapContent));
             this.AddView(frame, new LayoutParams(0, ViewGroup.LayoutParams.WrapContent, 1f));
@@ -456,8 +509,10 @@ namespace AJut.UX.Controls
             _ => null,
         };
 
-        // A step button is the frame's own surface until pressed, when it fills with the bright highlight. The fill is
-        //  rounded on the frame's outer side, just inside the outline's rounded corners, so it does not poke past them.
+        // A step button is the frame's own surface at rest, takes a wash of the bright highlight under a mouse or stylus, and
+        //  fills with it when pressed. Each fill is rounded on the frame's outer side, just inside the outline's rounded
+        //  corners, so it does not poke past them. A clickable view is marked hovered by the framework while a pointer is
+        //  over it and it is enabled, so a read-only editor's disabled buttons show no hover.
         private TextView MakeStepButton (Context context, string glyph, string description, bool isLeading)
         {
             var button = new TextView(context)
@@ -472,24 +527,41 @@ namespace AJut.UX.Controls
 
             // Its glyph dims while read-only (the button is disabled then), as the number does
             button.SetTextColor(MakeReadOnlyDimmedText(context, kForeground));
-            var pressed = new GradientDrawable();
-            pressed.SetColor(ThemeColors.Resolve(context, kButtonPressed).ToAndroidColor());
             float radius = Math.Max(0f, (MobileLook.NumericEditor.CornerRadius - MobileLook.NumericEditor.BorderThickness) * m_density);
-            pressed.SetCornerRadii(isLeading
+            float[] radii = isLeading
                 ? new[] { radius, radius, 0f, 0f, 0f, 0f, radius, radius }
-                : new[] { 0f, 0f, radius, radius, radius, radius, 0f, 0f }
-            );
+                : new[] { 0f, 0f, radius, radius, radius, radius, 0f, 0f };
 
+            ColorArgb pointerOver = ThemeColors.Resolve(context, kButtonPointerOver);
+            pointerOver = pointerOver.WithAlpha((byte)(pointerOver.A * MobileLook.NumericEditor.StepPointerOverOpacity));
+
+            // Pressed is listed first: a state list draws the first entry the button's state matches, and a pressed button
+            //  under a stylus is hovered too
             var states = new StateListDrawable();
-            states.AddState(new[] { Android.Resource.Attribute.StatePressed }, pressed);
+            states.AddState(new[] { Android.Resource.Attribute.StatePressed }, MakeFill(ThemeColors.Resolve(context, kButtonPressed)));
+            states.AddState(new[] { Android.Resource.Attribute.StateHovered }, MakeFill(pointerOver));
             button.Background = states;
             return button;
+
+            GradientDrawable MakeFill (ColorArgb color)
+            {
+                var fill = new GradientDrawable();
+                fill.SetColor(color.ToAndroidColor());
+                fill.SetCornerRadii(radii);
+                return fill;
+            }
         }
 
         private void PaintFrame ()
         {
             Context context = this.Context!;
-            ThemedColor border = (m_errorMessage != null) ? kErrorBorder : (m_field.HasFocus ? kFocusBorder : kNormalBorder);
+            ThemedColor border = MobileLook.NumericEditor.FrameBorderFor(m_errorMessage != null, m_isPointerOverFrame, m_field.HasFocus) switch
+            {
+                MobileLook.NumericEditor.FrameBorderError => kErrorBorder,
+                MobileLook.NumericEditor.FrameBorderPointerOver => kPointerOverBorder,
+                MobileLook.NumericEditor.FrameBorderFocused => kFocusBorder,
+                _ => kNormalBorder,
+            };
             m_frame.SetStroke((int)Math.Max(1f, MobileLook.NumericEditor.BorderThickness * m_density), ThemeColors.Resolve(context, border).ToAndroidColor());
         }
 
@@ -673,6 +745,79 @@ namespace AJut.UX.Controls
             {
                 m_paint.Color = new Color(color.R, color.G, color.B, (byte)(color.A * m_alpha / 255));
                 canvas.DrawRect(left, top, right, bottom, m_paint);
+            }
+        }
+
+        // The out of bounds warning glyph: a triangle in the error color with its exclamation mark cut out of it, the way
+        //  UIKit's filled warning triangle reads, so whatever is behind the glyph shows through the mark.
+        private sealed class WarningGlyphDrawable : Drawable
+        {
+            // Each a fraction of the glyph's height (or width, for the mark's thickness and the corner rounding)
+            private const float kApex = 0.08f;
+            private const float kBase = 0.94f;
+            private const float kMarkTop = 0.38f;
+            private const float kMarkBottom = 0.64f;
+            private const float kDotCenter = 0.80f;
+            private const float kMarkThickness = 0.12f;
+            private const float kCornerRounding = 0.12f;
+
+            // The dot's radius, a fraction of the mark's thickness, so it reads a little heavier than the bar
+            private const float kDotRadius = 0.6f;
+
+            private readonly Paint m_fill = new Paint(PaintFlags.AntiAlias);
+            private readonly Paint m_cut = new Paint(PaintFlags.AntiAlias);
+            private readonly Android.Graphics.Path m_triangle = new Android.Graphics.Path();
+            private RectF m_bounds = new RectF();
+
+            public WarningGlyphDrawable (Color color)
+            {
+                m_fill.Color = color;
+                m_cut.SetXfermode(new PorterDuffXfermode(PorterDuff.Mode.Clear!));
+                m_cut.StrokeCap = Paint.Cap.Round;
+            }
+
+            public override int Opacity => (int)Format.Translucent;
+
+            public override void Draw (Canvas canvas)
+            {
+                float height = m_bounds.Height();
+                float centerX = m_bounds.CenterX();
+
+                // The mark clears what is under it, so the glyph is drawn on a layer of its own; drawn straight onto the
+                //  canvas, the cut would clear whatever was painted behind the glyph as well
+                int saved = canvas.SaveLayer(m_bounds, null);
+                canvas.DrawPath(m_triangle, m_fill);
+                canvas.DrawLine(centerX, m_bounds.Top + (height * kMarkTop), centerX, m_bounds.Top + (height * kMarkBottom), m_cut);
+                canvas.DrawCircle(centerX, m_bounds.Top + (height * kDotCenter), m_cut.StrokeWidth * kDotRadius, m_cut);
+                canvas.RestoreToCount(saved);
+            }
+
+            // The shape only changes with the size, so it is made here rather than on every draw
+            protected override void OnBoundsChange (Rect bounds)
+            {
+                base.OnBoundsChange(bounds);
+                m_bounds = new RectF(bounds);
+                float width = m_bounds.Width();
+                float height = m_bounds.Height();
+                m_triangle.Reset();
+                m_triangle.MoveTo(m_bounds.CenterX(), m_bounds.Top + (height * kApex));
+                m_triangle.LineTo(m_bounds.Right, m_bounds.Top + (height * kBase));
+                m_triangle.LineTo(m_bounds.Left, m_bounds.Top + (height * kBase));
+                m_triangle.Close();
+                m_fill.SetPathEffect(new CornerPathEffect(width * kCornerRounding));
+                m_cut.StrokeWidth = width * kMarkThickness;
+            }
+
+            public override void SetAlpha (int alpha)
+            {
+                m_fill.Alpha = alpha;
+                this.InvalidateSelf();
+            }
+
+            public override void SetColorFilter (ColorFilter? colorFilter)
+            {
+                m_fill.SetColorFilter(colorFilter);
+                this.InvalidateSelf();
             }
         }
     }

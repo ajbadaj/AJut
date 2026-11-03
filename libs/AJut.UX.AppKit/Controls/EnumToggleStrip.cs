@@ -94,6 +94,16 @@ namespace AJut.UX.Controls
         public ToggleStrip Strip => m_strip;
 
         /// <summary>
+        /// Whether the values take clicks; passed on to the inner strip, which takes its disabled look, as the Android and
+        /// UIKit EnumToggleStrips pass theirs. An NSView has no Enabled of its own to inherit one from.
+        /// </summary>
+        public bool Enabled
+        {
+            get => m_strip.Enabled;
+            set => m_strip.Enabled = value;
+        }
+
+        /// <summary>
         /// The selected value; on a [Flags] enum with multi select, every selected flag combined. Setting a
         /// value of a different enum type relists the strip. A value that is not an enum is ignored.
         /// </summary>

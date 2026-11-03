@@ -130,10 +130,15 @@
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="ForegroundHover" Value="{DynamicResource AJut_Brush_HighContrastText}"/>
         <Setter Property="ForegroundPressed" Value="{DynamicResource AJut_Brush_NormalText}"/>
-        <!-- Disabled, as the themed ComboBox: the flat disabled fill, the common border and the understated text -->
+        <!-- Disabled, as the themed ComboBox: the flat disabled fill and the common border, with the understated text
+             faded further (WinUI3's AJut_ToggleStrip_DisabledForeground), so it reads as disabled in Light as well -->
         <Setter Property="DisabledBackground" Value="{DynamicResource AJut_Brush_ControlBackgroundDisabled}"/>
         <Setter Property="DisabledBorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
-        <Setter Property="DisabledForeground" Value="{DynamicResource AJut_Brush_UnderstatedText}"/>
+        <Setter Property="DisabledForeground">
+            <Setter.Value>
+                <SolidColorBrush Color="{DynamicResource AJut_Color_UnderstatedText}" Opacity="0.6"/>
+            </Setter.Value>
+        </Setter>
         <!-- The selected item, muted: a faded, desaturated primary -->
         <Setter Property="DisabledSelectedBackground">
             <Setter.Value>
@@ -162,7 +167,11 @@
         <Setter Property="ForegroundPressed" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="DisabledBackground" Value="{DynamicResource AJut_Brush_ControlBackgroundDisabled}"/>
         <Setter Property="DisabledBorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
-        <Setter Property="DisabledForeground" Value="{DynamicResource AJut_Brush_UnderstatedText}"/>
+        <Setter Property="DisabledForeground">
+            <Setter.Value>
+                <SolidColorBrush Color="{DynamicResource AJut_Color_UnderstatedText}" Opacity="0.6"/>
+            </Setter.Value>
+        </Setter>
         <!-- The selected item, muted: a faded, desaturated primary -->
         <Setter Property="DisabledSelectedBackground">
             <Setter.Value>
@@ -183,6 +192,7 @@
         <Setter Property="GlyphBrush" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="GlyphHighlightBrush" Value="{DynamicResource AJut_Brush_SymbolForegroundHighlight}"/>
         <Setter Property="GlyphBackgroundHighlightBrush" Value="{DynamicResource AJut_Brush_MouseInteractionHighlight}"/>
+        <Setter Property="GlyphBackgroundPressedBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightDark}"/>
         <Setter Property="InsertionLineBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
         <Setter Property="ParentConnectorBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightDesat}"/>
         <Setter Property="DragTargetHighlightBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
@@ -191,6 +201,9 @@
         <Setter Property="DragGhostForeground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_ListBackground}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ListBorder}"/>
+        <!-- Outlined, as WinUI3's themed tree is. Set BorderThickness to 0 to leave it off. A PropertyGrid's tree takes the
+             grid's own BorderThickness instead, so a grid never draws two. -->
+        <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="ListBoxItemContainerStyle">
             <Setter.Value>
@@ -257,6 +270,11 @@
         <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ListBorder}" />
         <Setter Property="LabelSplitterBrush" Value="{DynamicResource AJut_Brush_ListSelection}"/>
+        <!-- The keys WinUI3's PropertyGridItemRow aliases: the label outline on the list selection, and the row hover on
+             the list's selection background with the common border -->
+        <Setter Property="SelectionBorderBrush" Value="{DynamicResource AJut_Brush_ListSelection}"/>
+        <Setter Property="RowHoverBackground" Value="{DynamicResource AJut_Brush_ListSelectionBackground}"/>
+        <Setter Property="RowHoverBorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_ListBackground}"/>
         <Setter Property="TextLabelStyle">
             <Setter.Value>
@@ -333,7 +351,10 @@
     <!-- The overlay that dims the editor while the value is null -->
     <Style TargetType="{x:Type ajut_ctrls:NullableEditor}">
         <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
-        <Setter Property="OverlayBackground" Value="{DynamicResource AJut_Brush_Shadow}"/>
+        <!-- WinUI3's themed shade is the same literal in both themes, AJut_NullableEditor_OverlayBackground, which has no
+             WPF palette entry; the label takes the theme's normal text, as WinUI3's AJut_NullableEditor_NotSetForeground -->
+        <Setter Property="OverlayBackground" Value="#8000"/>
+        <Setter Property="NotSetForeground" Value="{DynamicResource AJut_Brush_NormalText}"/>
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:PathSelectionControl}">
@@ -343,6 +364,7 @@
         <Setter Property="TextBoxBorderBrush" Value="{DynamicResource AJut_Brush_Shadow}"/>
         <Setter Property="FocusedBorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
         <Setter Property="InvalidPathBorderBrush" Value="{DynamicResource AJut_Brush_BadStuff}"/>
+        <Setter Property="InvalidPathGlowBrush" Value="{DynamicResource AJut_Brush_ErrorGlow}"/>
         <Setter Property="InvalidForegroundSymbol" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="ButtonBackground" Value="{DynamicResource AJut_Brush_PopOutControlBackground}"/>
         <Setter Property="ButtonForeground" Value="{DynamicResource AJut_Brush_SymbolForeground}"/>
@@ -359,7 +381,8 @@
         <Setter Property="PanelBackground" Value="{DynamicResource AJut_Brush_PanelBackground}"/>
         <Setter Property="PanelBorderBrush" Value="{DynamicResource AJut_Brush_PanelBorder}"/>
         <Setter Property="PanelBorderThickness" Value="1"/>
-        <Setter Property="PanelCornerRadius" Value="0,10,0,10"/>
+        <!-- Square on top, where the header meets the panel above it, and rounded at the bottom over the tabs, as on WinUI3 -->
+        <Setter Property="PanelCornerRadius" Value="0,0,8,8"/>
         <Setter Property="SeparatorBrush" Value="Transparent" />
     </Style>
 
@@ -389,7 +412,9 @@
         <Setter Property="HeaderHighlightBackground" Value="{DynamicResource AJut_Brush_PrimaryHighlightDesat}"/>
         <Setter Property="HeaderBorder" Value="{DynamicResource AJut_Brush_PanelBorder}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_HighContrastText}"/>
-        <Setter Property="TabPanelHeaderMargin" Value="8,-1,3,0"/>
+        <!-- The tabs sit 7 in from the panel's sides and a selected tab ends 7 above its bottom, as on WinUI3: with the
+             header items' own 2 at the sides and each tab's -1 overlap on the left, and a selected tab's 1 below it -->
+        <Setter Property="TabPanelHeaderMargin" Value="6,-1,5,6"/>
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:DockDropInsertionDriverWidget}">
@@ -766,8 +791,12 @@
                 <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ButtonBorderHover}"/>
                 <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_HighlightText}" />
             </Trigger>
+            <!-- Disabled, the colors WinUI3's themed Button takes (ButtonBackgroundDisabled, ButtonForegroundDisabled and
+                 ButtonBorderBrushDisabled), rather than fading the whole button -->
             <Trigger Property="IsEnabled" Value="False">
-                <Setter Property="Opacity" Value="0.3"/>
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_ControlBackgroundDisabled}"/>
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_UnderstatedText}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ButtonBorder}"/>
             </Trigger>
             <Trigger Property="IsPressed" Value="True">
                 <Setter Property="Background" Value="{DynamicResource AJut_Brush_ButtonBackgroundPressed}"/>
@@ -788,6 +817,16 @@
                 <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ButtonBorderPressed}"/>
                 <Setter Property="TextElement.Foreground" Value="{DynamicResource AJut_Brush_HighContrastText}" />
             </Trigger>
+            <!-- Checked and disabled, WinUI3's ToggleButton*CheckedDisabled colors: the muted primary with the understated text -->
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="IsChecked" Value="True"/>
+                    <Condition Property="IsEnabled" Value="False"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_PrimaryHighlightDesat}" />
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_UnderstatedText}" />
+                <Setter Property="TextElement.Foreground" Value="{DynamicResource AJut_Brush_UnderstatedText}" />
+            </MultiTrigger>
         </Style.Triggers>
     </Style>
 
@@ -1059,10 +1098,15 @@
         </Setter>
     </Style>
 
+    <!-- Text boxes and password boxes are a size up from the app's text, with room around the text, so they read as
+         places to type rather than a line of text in a box. EditableTextBlock and NumericEditor set their own text box's
+         size and padding, since their text has to stay where it already sits. -->
     <Style TargetType="{x:Type TextBox}">
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_TextBoxBackground}" />
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_TextBoxBorder}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_InteractiveTextUnfocused}" />
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Padding" Value="4,3"/>
         <Setter Property="SelectionBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
         <Setter Property="CaretBrush" Value="{DynamicResource AJut_Brush_InteractiveText}" />
         <Setter Property="IsEnabled" Value="{Binding RelativeSource={RelativeSource Self}, Path=(ajut_ap:Edit.IsEditable)}"/>
@@ -1091,6 +1135,8 @@
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_TextBoxBackground}" />
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_TextBoxBorder}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_InteractiveTextUnfocused}" />
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Padding" Value="4,3"/>
         <Setter Property="CaretBrush" Value="{DynamicResource AJut_Brush_InteractiveText}" />
         <Setter Property="SelectionBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
         <Setter Property="IsEnabled" Value="{Binding RelativeSource={RelativeSource Self}, Path=(ajut_ap:Edit.IsEditable)}"/>
@@ -1118,7 +1164,6 @@
 
     <Style TargetType="{x:Type ComboBox}">
         <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
-        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_PopOutControlBackground}" />
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_TextBoxBorder}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_InteractiveTextUnfocused}" />
@@ -1150,11 +1195,12 @@
                             </Grid>
                         </Popup>
                         <!-- The text is the ComboBox's own: a value set here outranks the implicit ToggleButton style's
-                             triggers, whose checked text would otherwise show while the drop-down is open. The opacity is
-                             set for the same reason: the button style dims a disabled button, and a disabled ComboBox
-                             shows it with its own flat disabled fill instead. -->
+                             triggers, whose checked text would otherwise show while the drop-down is open. Its weight is
+                             the ComboBox's too, where the button style draws Thin text. The opacity is set for the same
+                             reason: the button style dims a disabled button, and a disabled ComboBox shows it with its own
+                             flat disabled fill instead. -->
                         <ToggleButton x:Name="MainButton" IsChecked="{ajut:TemplateBinding Path=IsDropDownOpen, Mode=TwoWay}"
-                                      Foreground="{TemplateBinding Foreground}" Opacity="1"
+                                      Foreground="{TemplateBinding Foreground}" FontWeight="{TemplateBinding FontWeight}" Opacity="1"
                                       Content="{TemplateBinding SelectedValue}"
                                       ContentTemplate="{TemplateBinding ItemTemplate}"
                                       ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}">
@@ -1353,9 +1399,17 @@
                                            FontSize="16" Margin="0,-4,-3,0"/>
                             </Grid>
                         </Grid>
-                        <ContentPresenter VerticalAlignment="{TemplateBinding VerticalContentAlignment}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+                        <ContentPresenter x:Name="Label" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
                     </DockPanel>
                     <ControlTemplate.Triggers>
+                        <!-- Disabled, the mark and the text fade as well as going understated, as a disabled
+                             ToggleSwitchButton does: in Dark the understated text is close to the normal text, so color
+                             alone does not read as disabled. The box keeps its flat disabled fill at full strength. -->
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Check" Property="Opacity" Value="0.45"/>
+                            <Setter TargetName="IndeterminateBar" Property="Opacity" Value="0.45"/>
+                            <Setter TargetName="Label" Property="Opacity" Value="0.45"/>
+                        </Trigger>
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="Check" Property="Visibility" Value="Visible"/>
                         </Trigger>
@@ -1428,11 +1482,16 @@
                                 </Path.Data>
                             </Path>
                         </Grid>
-                        <ContentPresenter Margin="{TemplateBinding Padding}" RecognizesAccessKey="True"
+                        <ContentPresenter x:Name="Label" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True"
                                           VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
                                           HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
                     </DockPanel>
                     <ControlTemplate.Triggers>
+                        <!-- Disabled, the dot and the text fade, as the CheckBox's mark and text do -->
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="CheckDot" Property="Opacity" Value="0.45"/>
+                            <Setter TargetName="Label" Property="Opacity" Value="0.45"/>
+                        </Trigger>
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="CheckDot" Property="Visibility" Value="Visible"/>
                         </Trigger>
@@ -2174,12 +2233,15 @@
     <!-- A context menu is the same drop-down as a menu's, as on WinUI3: the inner panel color outlined in the common
          border, rounded, over a soft shadow -->
     <Style TargetType="{x:Type ContextMenu}">
+        <!-- Its items size their gutter and shortcut column together, as one menu -->
+        <Setter Property="Grid.IsSharedSizeScope" Value="True"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Padding" Value="0,4"/>
         <Setter Property="ajut_ap:BorderXTA.CornerRadius" Value="8"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_InnerPanelBackground}" />
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}" />
         <Setter Property="TextElement.FontFamily" Value="Segoe UI" />
+        <Setter Property="TextElement.FontSize" Value="14" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ContextMenu}">
@@ -2209,13 +2271,15 @@
 
     <!-- Menus take WinUI3's shape with a solid selection: a flat bar on the banner color, one drop-down surface, an item
          under the pointer or open on the list selection with the text that reads on it, a pressed item on the dark
-         primary with the high contrast text, and the item whose sub menu is open a step darker than the hover beside it -->
+         primary with the high contrast text, and the item whose sub menu is open a step darker than the hover beside it.
+         Their text is a size up from the app's, the size WinUI3's menus take. -->
     <Style TargetType="{x:Type Menu}">
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_BannerBackground}" />
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PanelBorder}" />
         <Setter Property="TextElement.FontFamily" Value="{DynamicResource AJut_Font_Default}" />
+        <Setter Property="TextElement.FontSize" Value="14" />
         <Setter Property="ItemsPanel">
             <Setter.Value>
                 <ItemsPanelTemplate>
@@ -2255,7 +2319,7 @@
     <ControlTemplate x:Key="{x:Static MenuItem.TopLevelHeaderTemplateKey}" TargetType="{x:Type MenuItem}">
         <Border x:Name="TopLevelHeaderBorder">
             <Grid>
-                <ContentPresenter Margin="6,3,6,3"
+                <ContentPresenter Margin="8,5"
                                   ContentSource="Header"
                                   ContentTemplate="{TemplateBinding HeaderTemplate}"
                                   ContentTemplateSelector="{TemplateBinding HeaderTemplateSelector}"
@@ -2317,7 +2381,7 @@
     <ControlTemplate x:Key="{x:Static MenuItem.TopLevelItemTemplateKey}" TargetType="{x:Type MenuItem}">
         <Border x:Name="TopLevelItemBorder">
             <Grid>
-                <ContentPresenter Margin="6,3"
+                <ContentPresenter Margin="8,5"
                                   ContentSource="Header"
                                   ContentTemplate="{TemplateBinding HeaderTemplate}"
                                   ContentTemplateSelector="{TemplateBinding HeaderTemplateSelector}"
@@ -2341,29 +2405,34 @@
         <Border x:Name="SubmenuItemBorder" BorderThickness="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=BorderThickness}" BorderBrush="Transparent">
             <Grid x:Name="SubmenuItemGridRoot" Background="Transparent" MinHeight="28">
                 <Grid>
+                    <!-- As on WinUI3, a menu makes room for checks and icons only when one of its items has one: the
+                         gutter column is shared by every item in the menu (the menu is a shared size scope), and only an
+                         item with a check or an icon gives it width, so names line up either way. Without it the name
+                         starts 12 in; with it, 28 in, the check or icon centered over both. The last column keeps the
+                         name or shortcut off the menu's right edge, the width a sub menu's arrow takes. -->
                     <Grid.ColumnDefinitions>
-                        <!-- A gutter of its own for the check or icon on every item, so names line up whether or not
-                             an item can be checked or has an icon -->
-                        <ColumnDefinition Width="28" />
+                        <ColumnDefinition Width="12" />
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemGutter" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" SharedSizeGroup="Shortcut" />
-                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="13" />
                     </Grid.ColumnDefinitions>
+                    <Border x:Name="GutterSpacer" Grid.Column="1" Width="16" />
                     <!-- A checkable item's mark is a check in the item's own text color, as on WinUI3 -->
-                    <Grid x:Name="CheckHolder" Grid.Column="0" Visibility="Collapsed" Width="13">
+                    <Grid x:Name="CheckHolder" Grid.Column="0" Grid.ColumnSpan="2" Visibility="Collapsed" Width="13">
                         <TextBlock x:Name="CheckMark"
                                    Text="{DynamicResource AJut_Symbol_Check}" FontFamily="Segoe MDL2 Assets" FontSize="12"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    Visibility="Hidden"
                                    Foreground="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Foreground}"/>
                     </Grid>
-                    <ContentPresenter x:Name="Icon" Grid.Column="0"
+                    <ContentPresenter x:Name="Icon" Grid.Column="0" Grid.ColumnSpan="2"
                                       HorizontalAlignment="Center" VerticalAlignment="Center"
                                       MaxWidth="20" MaxHeight="20"
                                       ContentSource="Icon"/>
 
 
-                    <ContentPresenter x:Name="HeaderHost" Grid.Column="1"
+                    <ContentPresenter x:Name="HeaderHost" Grid.Column="2"
                                       VerticalAlignment="Center"
                                       ContentSource="Header"
                                       ContentTemplate="{TemplateBinding HeaderTemplate}"
@@ -2371,11 +2440,11 @@
                                       RecognizesAccessKey="True" />
 
                     <!-- The shortcut is the item's own text faded, set well off from its name and centered with it -->
-                    <TextBlock x:Name="InputGestureText"  Grid.Column="2"
+                    <TextBlock x:Name="InputGestureText"  Grid.Column="3"
                                Text="{TemplateBinding InputGestureText}"
                                Opacity="0.65" VerticalAlignment="Center"
                                Visibility="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=InputGestureText, Converter={ajut_conv:IsTextNullOrEmptyToVisibilityConverter}}"
-                               Margin="24,2,8,2"/>
+                               Margin="24,2,0,2"/>
                 </Grid>
             </Grid>
         </Border>
@@ -2383,13 +2452,16 @@
             <Trigger Property="ButtonBase.Command" Value="{x:Null}" />
             <Trigger Property="Icon" Value="{x:Null}">
                 <Setter TargetName="Icon" Property="Visibility" Value="Hidden" />
+                <Setter TargetName="GutterSpacer" Property="Visibility" Value="Collapsed" />
             </Trigger>
             <Trigger Property="IsChecked" Value="True">
                 <Setter TargetName="CheckMark" Property="Visibility" Value="Visible" />
             </Trigger>
+            <!-- After the Icon trigger, so a checkable item keeps the gutter with or without an icon -->
             <Trigger Property="IsCheckable" Value="True">
                 <Setter TargetName="CheckHolder" Property="Visibility" Value="Visible" />
                 <Setter TargetName="Icon" Property="Visibility" Value="Hidden" />
+                <Setter TargetName="GutterSpacer" Property="Visibility" Value="Visible" />
             </Trigger>
             <!-- Under the pointer, the list selection with the text that reads on it; pressed, the dark primary with the
                  high contrast text. The shortcut text is the item's, faded, so it follows. -->
@@ -2408,30 +2480,33 @@
                      TargetType="{x:Type MenuItem}">
         <Border x:Name="SubmenuHeaderBorder" BorderThickness="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=BorderThickness}" BorderBrush="Transparent" UseLayoutRounding="True" SnapsToDevicePixels="True">
             <Grid x:Name="SubmenuHeaderGridRoot" Background="Transparent" MinHeight="28">
+                <!-- The same columns as a sub menu item's, so its name lines up with theirs, with the arrow last -->
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="28" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemGutter" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" SharedSizeGroup="Shortcut" />
                     <ColumnDefinition Width="13" />
                 </Grid.ColumnDefinitions>
-                <ContentPresenter x:Name="Icon" Grid.Column="0"
+                <Border x:Name="GutterSpacer" Grid.Column="1" Width="16" />
+                <ContentPresenter x:Name="Icon" Grid.Column="0" Grid.ColumnSpan="2"
                                   HorizontalAlignment="Center" VerticalAlignment="Center"
                                   MaxWidth="20" MaxHeight="20"
                                   ContentSource="Icon" />
                 <ContentPresenter x:Name="HeaderHost"
-                                  Grid.Column="1"
+                                  Grid.Column="2"
                                   VerticalAlignment="Center"
                                   ContentSource="Header"
                                   ContentTemplate="{TemplateBinding HeaderTemplate}"
                                   ContentTemplateSelector="{TemplateBinding HeaderTemplateSelector}"
                                   RecognizesAccessKey="True" />
                 <TextBlock x:Name="InputGestureText"
-                           Grid.Column="2"
+                           Grid.Column="3"
                            Text="{TemplateBinding InputGestureText}"
                            Opacity="0.65" VerticalAlignment="Center"
-                           Margin="24,2,8,2" />
+                           Margin="24,2,0,2" />
                 <!-- The arrow is dimmed until its sub menu opens, where it goes to the high contrast text -->
-                <Path x:Name="ArrowOverGlyph" Grid.Column="3"
+                <Path x:Name="ArrowOverGlyph" Grid.Column="4"
                       HorizontalAlignment="Center"
                       VerticalAlignment="Center"
                       Data="M 0 0 L 0 7 L 4 3.5 Z"
@@ -2456,7 +2531,8 @@
                                 Background="{DynamicResource AJut_Brush_InnerPanelBackground}"
                                 BorderBrush="{DynamicResource AJut_Brush_BorderCommon}"
                                 BorderThickness="1">
-                            <ScrollViewer CanContentScroll="True" Margin="{TemplateBinding Padding}">
+                            <!-- Its own size scope, so this sub menu's gutter and shortcut column fit its own items -->
+                            <ScrollViewer CanContentScroll="True" Margin="{TemplateBinding Padding}" Grid.IsSharedSizeScope="True">
                                 <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" RenderOptions.ClearTypeHint="Enabled"/>
                             </ScrollViewer>
                         </Border>
@@ -2467,6 +2543,7 @@
         <ControlTemplate.Triggers>
             <Trigger Property="Icon" Value="{x:Null}">
                 <Setter TargetName="Icon" Property="Visibility" Value="Hidden" />
+                <Setter TargetName="GutterSpacer" Property="Visibility" Value="Collapsed" />
             </Trigger>
             <Trigger Property="IsHighlighted" Value="True">
                 <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_HighlightText}"/>

@@ -100,8 +100,8 @@
         public AppThemeManager ThemeManager { get; } = new AppThemeManager();
 
         /// <summary>The navigation footer's "follow Windows touch" switch</summary>
-        public TouchFocusFollower TouchFocus => m_touchFocus ??= new TouchFocusFollower(this.ThemeManager);
-        private TouchFocusFollower? m_touchFocus;
+        public TouchVariantFollower TouchVariant => m_touchVariant ??= new TouchVariantFollower(this.ThemeManager);
+        private TouchVariantFollower? m_touchVariant;
         public WindowManager Windows => m_windowManager;
     }
 }

@@ -23,6 +23,12 @@
             tabControlBorderThickness = default;
             tabStripPlacement = default;
 
+            // A binding with nothing to bind to yet is not ready rather than wrong, so it waits quietly (see TabConverterInputs)
+            if (TabConverterInputs.IsAnyUnset(values))
+            {
+                return false;
+            }
+
             // Individual assertions
             int debugEvalIndex = 0;
             if (!(values[debugEvalIndex++] is TabItem found_tabItem))

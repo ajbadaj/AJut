@@ -89,14 +89,14 @@ namespace AJut.UX.Theming
 
         /// <summary>
         /// Whether the AJut palette is painted in its touch variant: lifted button surfaces and no button borders, for
-        /// touch with no hover. Off by default. This is <see cref="ThemedColors.IsTouchFocused"/>, which is where AppKit
+        /// touch with no hover. Off by default. This is <see cref="ThemedColors.UsesTouchVariant"/>, which is where AppKit
         /// switches the palette (beside <see cref="ThemedColors.IsThemeLoaded"/>, and with no theme manager needed); it is
         /// here too so an app sets it beside its theme choice, as on WPF and WinUI3.
         /// </summary>
-        public bool IsTouchFocused
+        public bool UsesTouchVariant
         {
-            get => ThemedColors.IsTouchFocused;
-            set => ThemedColors.IsTouchFocused = value;
+            get => ThemedColors.UsesTouchVariant;
+            set => ThemedColors.UsesTouchVariant = value;
         }
 
         // ===========[ Helper Methods ]========================================

@@ -2,6 +2,7 @@ namespace AJut.UX.Controls
 {
     using System;
     using AJut.UX.Helpers;
+    using AJut.UX.Theming;
     using Android.Content;
     using Android.Content.Res;
     using Android.Graphics.Drawables;
@@ -125,6 +126,7 @@ namespace AJut.UX.Controls
             base.OnConfigurationChanged(newConfig);
             this.OnThemeMayHaveChanged();
             this.RefreshActiveStateColors();
+            FocusVisual.Apply(this);
         }
 
         /// <summary>Called when the context's theme may have changed, before the repaint, for subclasses that cache themed colors.</summary>
@@ -161,6 +163,9 @@ namespace AJut.UX.Controls
             int bottom = this.PaddingBottom;
             this.Background = m_surface;
             this.SetPadding(left, top, right, bottom);
+
+            // The stock background carried the platform's focus look too, so the AJut one takes its place
+            FocusVisual.Apply(this);
         }
 
         private eManagedButtonState EvaluateState ()

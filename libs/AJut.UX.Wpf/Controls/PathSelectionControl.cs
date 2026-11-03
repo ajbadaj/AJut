@@ -243,6 +243,17 @@
             set => this.SetValue(InvalidPathBorderBrushProperty, value);
         }
 
+        /// <summary>
+        /// The glow drawn around the control while its path is invalid. Its own color rather than the invalid border's,
+        /// since a border color dark enough to read on a dark surface is too dark to glow on it.
+        /// </summary>
+        public static readonly DependencyProperty InvalidPathGlowBrushProperty = DPUtils.RegisterFP(_ => _.InvalidPathGlowBrush, null, null, CoerceUtils.CallbackForBrush);
+        public Brush InvalidPathGlowBrush
+        {
+            get => (Brush)this.GetValue(InvalidPathGlowBrushProperty);
+            set => this.SetValue(InvalidPathGlowBrushProperty, value);
+        }
+
         public static readonly DependencyProperty InvalidForegroundSymbolProperty = DPUtils.RegisterFP(_ => _.InvalidForegroundSymbol, null, null, CoerceUtils.CallbackForBrush);
         public Brush InvalidForegroundSymbol
         {

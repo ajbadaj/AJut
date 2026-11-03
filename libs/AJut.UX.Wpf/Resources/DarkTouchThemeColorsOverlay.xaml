@@ -4,7 +4,7 @@
     What the dark palette changes for touch, and nothing else. Touch has no hover, so a button has to read as one
     from its fill alone: button surfaces lift off the panels, button borders come off, and text is brighter.
 
-    AppThemeManager.IsTouchFocused lays this over the app's dark theme colors as the application's last merged
+    AppThemeManager.UsesTouchVariant lays this over the app's dark theme colors as the application's last merged
     dictionary, so the app's own colors stay for every key this doesn't name. The values are the shared dark touch
     palette's (AJut.UX's AJutPalette.DarkTouch), and a test keeps them in step.
 -->

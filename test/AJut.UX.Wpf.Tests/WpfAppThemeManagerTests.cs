@@ -8,7 +8,7 @@ namespace AJut.UX.Tests
 
     /// <summary>
     /// The WPF AppThemeManager swaps the app's theme colors dictionary in and out at the index it was given, and lays the
-    /// current theme's touch overlay over everything, as the last merged dictionary, when touch focused. These run on the
+    /// current theme's touch overlay over everything, as the last merged dictionary, while the touch variant is on. These run on the
     /// shared STA thread against the one Application a process can have, and put the app's resources back as they found
     /// them, so no other test sees a theme.
     /// </summary>
@@ -50,7 +50,7 @@ namespace AJut.UX.Tests
         }
 
         [TestMethod]
-        public void WpfAppThemeManager_IsTouchFocused_LaysTheTouchOverlayOverEverythingLast ()
+        public void WpfAppThemeManager_UsesTouchVariant_LaysTheTouchOverlayOverEverythingLast ()
         {
             StaTestThread.Run(() =>
             {
@@ -64,10 +64,10 @@ namespace AJut.UX.Tests
                 try
                 {
                     using var themes = new AppThemeManager(app, kLightColors, kDarkColors, themeColorsInsertionIndex: 1);
-                    Assert.IsFalse(themes.IsTouchFocused, "Off by default");
+                    Assert.IsFalse(themes.UsesTouchVariant, "Off by default");
                     Assert.AreEqual(3, app.Resources.MergedDictionaries.Count, "Nothing is laid over the colors while it's off");
 
-                    themes.IsTouchFocused = true;
+                    themes.UsesTouchVariant = true;
 
                     Assert.AreEqual(4, app.Resources.MergedDictionaries.Count, "The touch overlay is added");
                     Assert.AreSame(appResourcesBefore, app.Resources.MergedDictionaries[0], "The app's dictionaries keep their indexes");
@@ -75,7 +75,7 @@ namespace AJut.UX.Tests
                     CollectionAssert.AreEquivalent(OverlayKeys(kDarkTouchOverlay), app.Resources.MergedDictionaries[3].Keys, "The dark overlay is the last merged dictionary");
                     Assert.IsTrue(app.Resources.Contains("AJut_Brush_PanelBackground"), "Every key the overlay leaves alone still comes from the theme colors");
 
-                    themes.IsTouchFocused = false;
+                    themes.UsesTouchVariant = false;
 
                     Assert.AreEqual(3, app.Resources.MergedDictionaries.Count, "The overlay is taken off again");
                     Assert.AreSame(appResourcesAfter, app.Resources.MergedDictionaries[2]);
@@ -88,7 +88,7 @@ namespace AJut.UX.Tests
         }
 
         [TestMethod]
-        public void WpfAppThemeManager_ThemeSwitchWhileTouchFocused_SwapsTheOverlayToo ()
+        public void WpfAppThemeManager_ThemeSwitchWhileUsingTouchVariant_SwapsTheOverlayToo ()
         {
             StaTestThread.Run(() =>
             {
@@ -102,7 +102,7 @@ namespace AJut.UX.Tests
                 try
                 {
                     using var themes = new AppThemeManager(app, kLightColors, kDarkColors, themeColorsInsertionIndex: 1);
-                    themes.IsTouchFocused = true;
+                    themes.UsesTouchVariant = true;
                     ResourceDictionary darkOverlay = app.Resources.MergedDictionaries[3];
 
                     themes.ThemeConfiguration = eAppThemeConfiguration.Light;

@@ -64,7 +64,11 @@ namespace AJut.UX.Controls
             set => m_initialSplitRatio = value < 0.0 ? 0.0 : (value > 1.0 ? 1.0 : value);
         }
 
-        /// <summary>The <see cref="ThemedColors"/> key the divider is drawn in</summary>
+        /// <summary>
+        /// The <see cref="ThemedColors"/> key the divider is drawn in: <see cref="ThemedColorKeys.Splitter_Divider"/> by default,
+        /// so a plain split view shows its line. Null draws the divider clear, still there to grab, the way a transparent
+        /// GridSplitter is: for panes that draw their own edges, where a line between them would double up.
+        /// </summary>
         public string DividerColorKey
         {
             get => m_dividerColorKey;
@@ -87,7 +91,7 @@ namespace AJut.UX.Controls
             }
         }
 
-        public override NSColor DividerColor => ThemedColors.Get(m_dividerColorKey);
+        public override NSColor DividerColor => (m_dividerColorKey != null) ? ThemedColors.Get(m_dividerColorKey) : NSColor.Clear;
         public override nfloat DividerThickness => (nfloat)m_thickness;
 
         // ===========[ Public Interface Methods ]==============================

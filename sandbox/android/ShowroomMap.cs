@@ -96,7 +96,7 @@ namespace AJutShowRoomAndroid
 
             // Themed, the list of pages sits on the navigation level, as an area's page list does in the WinUI3 showroom
             if (ThemeColors.IsThemeLoaded
-                && AJutPalette.For(ThemeColors.IsDark(host), ThemeColors.IsTouchFocused).TryGetColor("AJut_Brush_NavigationPanelBackground", out ColorArgb navigation))
+                && AJutPalette.For(ThemeColors.IsDark(host), ThemeColors.UsesTouchVariant).TryGetColor("AJut_Brush_NavigationPanelBackground", out ColorArgb navigation))
             {
                 m_list.SetBackgroundColor(navigation.ToAndroidColor());
             }

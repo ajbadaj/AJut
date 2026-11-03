@@ -25,6 +25,14 @@
     <SolidColorBrush x:Key="DefaultTextForegroundThemeBrush" Color="{ThemeResource AJut_Color_NormalText}"/>
     <SolidColorBrush x:Key="ControlStrokeColorDefaultBrush" Color="{ThemeResource AJut_Color_NormalText}"/>
 
+    <!-- ===[ Focus Visuals ]=== -->
+    <!-- The keyboard focus rectangle in the bright primary, the color AJut's WPF focus visual and the mobile controls' take,
+         with nothing inside it. WinUI3 draws its focus visual solid, so it can't take WPF's dots. These two are the defaults
+         of every element's FocusVisualPrimaryBrush and FocusVisualSecondaryBrush, which the framework looks up itself rather
+         than through a template; generic.xaml's own FocusStroke brushes only feed them inside generic.xaml. -->
+    <StaticResource x:Key="SystemControlFocusVisualPrimaryBrush" ResourceKey="AJut_Brush_PrimaryHighlightBright" />
+    <SolidColorBrush x:Key="SystemControlFocusVisualSecondaryBrush" Color="Transparent" />
+
     <!-- ===[ List Accent Brushes ]=== -->
     <StaticResource x:Key="SystemListAccentLowColor" ResourceKey="AJut_Color_PrimaryHighlightDesat" />
     <StaticResource x:Key="SystemListAccentMediumColor" ResourceKey="AJut_Color_PrimaryHighlight" />
@@ -431,8 +439,9 @@
     <StaticResource x:Key="CheckBoxCheckGlyphForegroundChecked" ResourceKey="AJut_Brush_NormalText"/>
     <!-- Every state. The box is a text box surface whether it is checked or not, with its mark in the normal text; under
          the pointer the empty box's outline turns primary, and so does a checked box's mark, pressed as well. Disabled, the
-         box takes the flat disabled fill and the common border. The text lights up under the pointer, goes important when
-         pressed and understated when disabled. -->
+         box takes the flat disabled fill and the common border, and the mark and text go understated and fade to 0.45, as
+         WPF's do: in Dark the understated text is close to the normal text, so color alone does not read as disabled. The
+         text lights up under the pointer and goes important when pressed. -->
     <StaticResource x:Key="CheckBoxForegroundUnchecked" ResourceKey="AJut_Brush_NormalText"/>
     <SolidColorBrush x:Key="CheckBoxBackgroundUnchecked" Color="Transparent"/>
     <SolidColorBrush x:Key="CheckBoxBorderBrushUnchecked" Color="Transparent"/>
@@ -449,12 +458,12 @@
     <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUncheckedPressed" ResourceKey="AJut_Brush_BorderCommonPress"/>
     <StaticResource x:Key="CheckBoxCheckBackgroundFillUncheckedPressed" ResourceKey="AJut_Brush_ButtonBackgroundPressed"/>
     <StaticResource x:Key="CheckBoxCheckGlyphForegroundUncheckedPressed" ResourceKey="AJut_Brush_ImportantText"/>
-    <SolidColorBrush x:Key="CheckBoxForegroundUncheckedDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}"/>
+    <SolidColorBrush x:Key="CheckBoxForegroundUncheckedDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}" Opacity="0.45"/>
     <SolidColorBrush x:Key="CheckBoxBackgroundUncheckedDisabled" Color="Transparent"/>
     <SolidColorBrush x:Key="CheckBoxBorderBrushUncheckedDisabled" Color="Transparent"/>
     <StaticResource x:Key="CheckBoxCheckBackgroundStrokeUncheckedDisabled" ResourceKey="AJut_Brush_BorderCommon"/>
     <StaticResource x:Key="CheckBoxCheckBackgroundFillUncheckedDisabled" ResourceKey="AJut_Brush_ControlBackgroundDisabled"/>
-    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundUncheckedDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}"/>
+    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundUncheckedDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}" Opacity="0.45"/>
     <StaticResource x:Key="CheckBoxForegroundChecked" ResourceKey="AJut_Brush_NormalText"/>
     <SolidColorBrush x:Key="CheckBoxBackgroundChecked" Color="Transparent"/>
     <SolidColorBrush x:Key="CheckBoxBorderBrushChecked" Color="Transparent"/>
@@ -469,12 +478,12 @@
     <SolidColorBrush x:Key="CheckBoxBorderBrushCheckedPressed" Color="Transparent"/>
     <StaticResource x:Key="CheckBoxCheckBackgroundStrokeCheckedPressed" ResourceKey="AJut_Brush_TextBoxBorder"/>
     <StaticResource x:Key="CheckBoxCheckGlyphForegroundCheckedPressed" ResourceKey="AJut_Brush_PrimaryHighlight"/>
-    <SolidColorBrush x:Key="CheckBoxForegroundCheckedDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}"/>
+    <SolidColorBrush x:Key="CheckBoxForegroundCheckedDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}" Opacity="0.45"/>
     <SolidColorBrush x:Key="CheckBoxBackgroundCheckedDisabled" Color="Transparent"/>
     <SolidColorBrush x:Key="CheckBoxBorderBrushCheckedDisabled" Color="Transparent"/>
     <StaticResource x:Key="CheckBoxCheckBackgroundStrokeCheckedDisabled" ResourceKey="AJut_Brush_BorderCommon"/>
     <StaticResource x:Key="CheckBoxCheckBackgroundFillCheckedDisabled" ResourceKey="AJut_Brush_ControlBackgroundDisabled"/>
-    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}"/>
+    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundCheckedDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}" Opacity="0.45"/>
     <StaticResource x:Key="CheckBoxForegroundIndeterminate" ResourceKey="AJut_Brush_NormalText"/>
     <SolidColorBrush x:Key="CheckBoxBackgroundIndeterminate" Color="Transparent"/>
     <SolidColorBrush x:Key="CheckBoxBorderBrushIndeterminate" Color="Transparent"/>
@@ -493,12 +502,12 @@
     <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminatePressed" ResourceKey="AJut_Brush_TextBoxBorder"/>
     <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminatePressed" ResourceKey="AJut_Brush_TextBoxBackground"/>
     <StaticResource x:Key="CheckBoxCheckGlyphForegroundIndeterminatePressed" ResourceKey="AJut_Brush_PrimaryHighlight"/>
-    <SolidColorBrush x:Key="CheckBoxForegroundIndeterminateDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}"/>
+    <SolidColorBrush x:Key="CheckBoxForegroundIndeterminateDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}" Opacity="0.45"/>
     <SolidColorBrush x:Key="CheckBoxBackgroundIndeterminateDisabled" Color="Transparent"/>
     <SolidColorBrush x:Key="CheckBoxBorderBrushIndeterminateDisabled" Color="Transparent"/>
     <StaticResource x:Key="CheckBoxCheckBackgroundStrokeIndeterminateDisabled" ResourceKey="AJut_Brush_BorderCommon"/>
     <StaticResource x:Key="CheckBoxCheckBackgroundFillIndeterminateDisabled" ResourceKey="AJut_Brush_ControlBackgroundDisabled"/>
-    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminateDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}"/>
+    <SolidColorBrush x:Key="CheckBoxCheckGlyphForegroundIndeterminateDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}" Opacity="0.45"/>
 
     <!-- ===[ RadioButton ]=== -->
     <StaticResource x:Key="RadioButtonForeground" ResourceKey="AJut_Brush_NormalText"/>
@@ -508,7 +517,8 @@
     <StaticResource x:Key="RadioButtonOuterEllipseCheckedFill" ResourceKey="AJut_Brush_TextBoxBackground"/>
     <StaticResource x:Key="RadioButtonCheckGlyphFill" ResourceKey="AJut_Brush_NormalText"/>
     <!-- Every state. The ring is a text box surface whether it is checked or not, with the dot in the normal text, turning
-         primary under the pointer and pressed; the dot's outline matches the dot -->
+         primary under the pointer and pressed; the dot's outline matches the dot. Disabled, the dot and text fade as the
+         CheckBox's do. -->
     <SolidColorBrush x:Key="RadioButtonBackground" Color="Transparent"/>
     <SolidColorBrush x:Key="RadioButtonBorderBrush" Color="Transparent"/>
     <StaticResource x:Key="RadioButtonOuterEllipseFill" ResourceKey="AJut_Brush_TextBoxBackground"/>
@@ -531,15 +541,15 @@
     <StaticResource x:Key="RadioButtonOuterEllipseCheckedFillPressed" ResourceKey="AJut_Brush_TextBoxBackground"/>
     <StaticResource x:Key="RadioButtonCheckGlyphFillPressed" ResourceKey="AJut_Brush_PrimaryHighlight"/>
     <StaticResource x:Key="RadioButtonCheckGlyphStrokePressed" ResourceKey="AJut_Brush_PrimaryHighlight"/>
-    <SolidColorBrush x:Key="RadioButtonForegroundDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}"/>
+    <SolidColorBrush x:Key="RadioButtonForegroundDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}" Opacity="0.45"/>
     <SolidColorBrush x:Key="RadioButtonBackgroundDisabled" Color="Transparent"/>
     <SolidColorBrush x:Key="RadioButtonBorderBrushDisabled" Color="Transparent"/>
     <StaticResource x:Key="RadioButtonOuterEllipseStrokeDisabled" ResourceKey="AJut_Brush_BorderCommon"/>
     <StaticResource x:Key="RadioButtonOuterEllipseFillDisabled" ResourceKey="AJut_Brush_ControlBackgroundDisabled"/>
     <StaticResource x:Key="RadioButtonOuterEllipseCheckedStrokeDisabled" ResourceKey="AJut_Brush_BorderCommon"/>
     <StaticResource x:Key="RadioButtonOuterEllipseCheckedFillDisabled" ResourceKey="AJut_Brush_ControlBackgroundDisabled"/>
-    <SolidColorBrush x:Key="RadioButtonCheckGlyphFillDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}"/>
-    <SolidColorBrush x:Key="RadioButtonCheckGlyphStrokeDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}"/>
+    <SolidColorBrush x:Key="RadioButtonCheckGlyphFillDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}" Opacity="0.45"/>
+    <SolidColorBrush x:Key="RadioButtonCheckGlyphStrokeDisabled" Color="{ThemeResource AJut_Color_UnderstatedText}" Opacity="0.45"/>
 
     <!-- ===[ ScrollViewer / ScrollBar ]=== -->
     <!-- The brushes the Windows App SDK 1.8 ScrollBar template takes. The track and buttons are see through until the

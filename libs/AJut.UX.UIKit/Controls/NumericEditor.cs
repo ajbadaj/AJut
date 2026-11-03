@@ -94,6 +94,7 @@ namespace AJut.UX.Controls
         private eOutOfBoundsResponse m_outOfBoundsResponse = eOutOfBoundsResponse.ErrorAndToolTip;
         private bool m_isReadOnly;
         private bool m_isFieldHooked;
+        private bool m_isPointerOverFrame;
 
         // ===========[ Setup/Construction/Teardown ]===================================
         public NumericEditor () : base(CGRect.Empty)
@@ -162,6 +163,11 @@ namespace AJut.UX.Controls
                 m_outerRow.TopAnchor.ConstraintEqualTo(this.TopAnchor),
                 m_outerRow.BottomAnchor.ConstraintEqualTo(this.BottomAnchor),
             });
+
+            // 4. A mouse, trackpad or Pencil over the frame brightens its border. The view keeps its gesture recognizers
+            //  alive, so a handler that captured this editor would tie the two into a cycle across native objects: the
+            //  handler is static and finds the editor through the recognizer's View.
+            this.AddGestureRecognizer(new UIHoverGestureRecognizer(OnHover));
         }
 
         public override void MovedToWindow ()
@@ -181,6 +187,7 @@ namespace AJut.UX.Controls
                 this.UnhookTextField();
                 m_decreaseButton.StopRepeating();
                 m_increaseButton.StopRepeating();
+                m_isPointerOverFrame = false;
             }
         }
 
@@ -216,6 +223,23 @@ namespace AJut.UX.Controls
             // Return ends the edit, and the EditingDidEnd that follows commits it
             field.ResignFirstResponder();
             return false;
+        }
+
+        // The recognizer is on the whole editor, so the frame is told apart from the label by where the pointer is, as
+        // Android's editor does
+        private static void OnHover (UIHoverGestureRecognizer recognizer)
+        {
+            if (recognizer.View is NumericEditor owner)
+            {
+                bool isHovering = (recognizer.State == UIGestureRecognizerState.Began)
+                    || (recognizer.State == UIGestureRecognizerState.Changed);
+                bool isOverFrame = isHovering && owner.m_frame.Bounds.Contains(recognizer.LocationInView(owner.m_frame));
+                if (isOverFrame != owner.m_isPointerOverFrame)
+                {
+                    owner.m_isPointerOverFrame = isOverFrame;
+                    owner.SetNeedsLayout();
+                }
+            }
         }
 
         // ===========[ Properties ]===================================
@@ -409,20 +433,10 @@ namespace AJut.UX.Controls
             base.LayoutSubviews();
 
             // A layer border is a CGColor, which freezes a dynamic color, so it is resolved here: UIKit calls
-            // LayoutSubviews again whenever the appearance (light/dark) changes.
-            UIColor border;
-            if (this.ErrorMessage != null)
-            {
-                border = ThemedColors.Get(MobileLook.NumericEditor.FrameBorderError);
-            }
-            else if (m_textField.IsEditing)
-            {
-                border = ThemedColors.Get(MobileLook.NumericEditor.FrameBorderFocused) ?? this.TintColor;
-            }
-            else
-            {
-                border = ThemedColors.Get(MobileLook.NumericEditor.FrameBorder);
-            }
+            // LayoutSubviews again whenever the appearance (light/dark) changes. A key with no unthemed color of its own
+            // (the focused border) takes the tint.
+            string borderKey = MobileLook.NumericEditor.FrameBorderFor(this.ErrorMessage != null, m_isPointerOverFrame, m_textField.IsEditing);
+            UIColor border = ThemedColors.Get(borderKey) ?? this.TintColor;
             m_frame.Layer.BorderColor = border.GetResolvedColor(this.TraitCollection).CGColor;
 
             // The surface's colors are CGColors as well, so they are worked out here for the same reason
@@ -601,10 +615,11 @@ namespace AJut.UX.Controls
 
             public override void UpdateConfiguration ()
             {
-                // The button is the editor's frame showing through until pressed, when it fills with the bright
-                // highlight, so a press reads clearly where touch has no hover to lead into it. Disabled (a read only
-                // editor) its glyph dims as the number does. UIKit asks for this on every state change;
-                // base.UpdateConfiguration is skipped so the system lays no dimmed highlight of its own over it.
+                // The button is the editor's frame showing through at rest, takes a wash of the bright highlight under a
+                // mouse, trackpad or Pencil, and fills with it when pressed, so a press reads clearly on touch too, where
+                // nothing leads into it. Disabled (a read only editor) its glyph dims as the number does, with no hover.
+                // UIKit asks for this on every state change; base.UpdateConfiguration is skipped so the system lays no
+                // dimmed highlight of its own over it.
                 UIColor fill = UIColor.Clear;
                 string foregroundKey = MobileLook.NumericEditor.StepGlyph;
                 if (!this.Enabled)
@@ -614,6 +629,11 @@ namespace AJut.UX.Controls
                 else if (this.Highlighted)
                 {
                     fill = ThemedColors.Get(MobileLook.NumericEditor.StepPressedFill);
+                }
+                else if (this.Hovered)
+                {
+                    UIColor pointerOver = ThemedColors.Get(MobileLook.NumericEditor.StepPointerOverFill);
+                    fill = pointerOver.ColorWithAlpha(pointerOver.CGColor.Alpha * MobileLook.NumericEditor.StepPointerOverOpacity);
                 }
 
                 UIButtonConfiguration configuration = this.Configuration ?? UIButtonConfiguration.PlainButtonConfiguration;

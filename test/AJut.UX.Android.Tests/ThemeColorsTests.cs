@@ -18,13 +18,13 @@ namespace AJut.UX.Tests
         private static readonly ThemedColor kButtonBackground = ThemedColor.FromArgb("ButtonBackground", 0xFF010203, 0xFF040506);
 
         // Read before any test here changes it, so the default can be checked and put back
-        private static readonly bool kIsTouchFocusedAtStart = ThemeColors.IsTouchFocused;
+        private static readonly bool kUsesTouchVariantAtStart = ThemeColors.UsesTouchVariant;
 
         [TestCleanup]
         public void Teardown ()
         {
             ThemeColors.IsThemeLoaded = false;
-            ThemeColors.IsTouchFocused = kIsTouchFocusedAtStart;
+            ThemeColors.UsesTouchVariant = kUsesTouchVariantAtStart;
         }
 
         [TestMethod]
@@ -40,7 +40,7 @@ namespace AJut.UX.Tests
         {
             ThemeColors.IsThemeLoaded = true;
             bool isDark = ThemeColors.IsDark(TestHost.RequiredContext);
-            Assert.IsTrue(AJutPalette.For(isDark, ThemeColors.IsTouchFocused).TryGetColor(kProbe.Key, out ColorArgb themed), "The palette has a color for the probe's key, so the check below means something");
+            Assert.IsTrue(AJutPalette.For(isDark, ThemeColors.UsesTouchVariant).TryGetColor(kProbe.Key, out ColorArgb themed), "The palette has a color for the probe's key, so the check below means something");
             Assert.AreEqual(themed, ThemeColors.Resolve(TestHost.RequiredContext, kProbe));
         }
 
@@ -54,16 +54,16 @@ namespace AJut.UX.Tests
         }
 
         [TestMethod]
-        public void TouchFocused_IsOnByDefault ()
+        public void UsesTouchVariant_IsOffByDefault ()
         {
-            Assert.IsTrue(kIsTouchFocusedAtStart, "An Android UI is touch first");
+            Assert.IsFalse(kUsesTouchVariantAtStart, "The touch variant is off until an app opts in");
         }
 
         [TestMethod]
-        public void Themed_TouchFocused_PaintsTheTouchPalette ()
+        public void Themed_TouchVariant_PaintsTheTouchPalette ()
         {
             ThemeColors.IsThemeLoaded = true;
-            ThemeColors.IsTouchFocused = true;
+            ThemeColors.UsesTouchVariant = true;
             bool isDark = ThemeColors.IsDark(TestHost.RequiredContext);
             Assert.IsTrue(AJutPalette.For(isDark, isTouch: true).TryGetColor("ButtonBackground", out ColorArgb touch));
             Assert.IsTrue(AJutPalette.For(isDark, isTouch: false).TryGetColor("ButtonBackground", out ColorArgb desktop));
@@ -73,20 +73,20 @@ namespace AJut.UX.Tests
         }
 
         [TestMethod]
-        public void Themed_NotTouchFocused_PaintsTheDesktopPalette ()
+        public void Themed_NoTouchVariant_PaintsTheDesktopPalette ()
         {
             ThemeColors.IsThemeLoaded = true;
-            ThemeColors.IsTouchFocused = false;
+            ThemeColors.UsesTouchVariant = false;
             bool isDark = ThemeColors.IsDark(TestHost.RequiredContext);
             Assert.IsTrue(AJutPalette.For(isDark, isTouch: false).TryGetColor("ButtonBackground", out ColorArgb desktop));
             Assert.AreEqual(desktop, ThemeColors.Resolve(TestHost.RequiredContext, kButtonBackground));
         }
 
         [TestMethod]
-        public void Unthemed_TouchFocusedChangesNothing ()
+        public void Unthemed_TouchVariantChangesNothing ()
         {
             ThemeColors.IsThemeLoaded = false;
-            ThemeColors.IsTouchFocused = true;
+            ThemeColors.UsesTouchVariant = true;
             bool isDark = ThemeColors.IsDark(TestHost.RequiredContext);
             Assert.AreEqual(isDark ? kButtonBackground.Dark : kButtonBackground.Light, ThemeColors.Resolve(TestHost.RequiredContext, kButtonBackground));
         }
@@ -96,7 +96,7 @@ namespace AJut.UX.Tests
         {
             ThemeColors.IsThemeLoaded = true;
             bool isDark = ThemeColors.IsDark(TestHost.RequiredContext);
-            Assert.IsTrue(AJutPalette.For(isDark, ThemeColors.IsTouchFocused).TryGetColor("SystemAccentColor", out ColorArgb accent));
+            Assert.IsTrue(AJutPalette.For(isDark, ThemeColors.UsesTouchVariant).TryGetColor("SystemAccentColor", out ColorArgb accent));
 
             var button = new AutoBrushButton(TestHost.RequiredContext);
             Assert.AreEqual(accent, button.PropagatedAccentColor.ToColorArgb(), "The accent is the theme's");

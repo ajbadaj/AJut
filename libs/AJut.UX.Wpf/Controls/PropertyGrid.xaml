@@ -8,15 +8,27 @@
 
     <!-- ===[ PropertyGrid: no-selection ListBoxItem style ]=== -->
     <!-- Suppresses ListBox full-row selection highlight so the label-border selection
-         (DataTrigger on IsSelected in the ItemTemplate) is the only visual indicator. -->
+         (DataTrigger on IsSelected in the ItemTemplate) is the only visual indicator. The row
+         under the pointer, selected or not, takes the grid's RowHoverBackground and
+         RowHoverBorderBrush across its whole width, as on WinUI3. The 1px border is always there,
+         clear at rest, so the hover never moves the row's content. -->
     <Style x:Key="PropertyGrid_NoSelectionListBoxItemStyle" TargetType="{x:Type ListBoxItem}">
         <Setter Property="SnapsToDevicePixels" Value="True"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ListBoxItem}">
-                    <Border Padding="2" SnapsToDevicePixels="True" Background="Transparent">
+                    <Border x:Name="RowHoverBorder" Padding="1" SnapsToDevicePixels="True"
+                            Background="Transparent" BorderBrush="Transparent" BorderThickness="1">
                         <ContentPresenter HorizontalAlignment="Stretch"/>
                     </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="RowHoverBorder" Property="Background"
+                                    Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PropertyGrid}}, Path=RowHoverBackground}"/>
+                            <Setter TargetName="RowHoverBorder" Property="BorderBrush"
+                                    Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:PropertyGrid}}, Path=RowHoverBorderBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -96,6 +108,9 @@
         <Setter Property="LabelSubtitleStyle" Value="{StaticResource PropertyGrid_DefaultSubtitleStyle}"/>
         <Setter Property="BorderBrush" Value="Gray"/>
         <Setter Property="LabelSplitterBrush" Value="#FF2196F3"/>
+        <Setter Property="SelectionBorderBrush" Value="#FF2196F3"/>
+        <Setter Property="RowHoverBackground" Value="#1A2196F3"/>
+        <Setter Property="RowHoverBorderBrush" Value="#888888"/>
         <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
         <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
         <Setter Property="Template">
@@ -148,18 +163,24 @@
 
                                         <!-- Label with selection highlight and right-click context menu.
                                              ToolTip shows the property name (or "$Name: $ToolTip") when the
-                                             grid's PropertyToolTipPlacement includes the name. -->
+                                             grid's PropertyToolTipPlacement includes the name.
+                                             The selection is the label column's outline only: a 4px nub on the left and
+                                             1px around the rest, in the grid's SelectionBorderBrush, with no fill, so the
+                                             label keeps its own text color, as on WinUI3. The thickness never changes,
+                                             only the brush, so selecting a row never moves its label. -->
                                         <Border x:Name="PART_PropertyRowLabel"
                                                 Grid.Column="0" Margin="0,0,3,0"
+                                                Background="Transparent"
+                                                BorderThickness="4,1,1,1"
                                                 ToolTip="{Binding EffectiveToolTip}"
                                                 ToolTipService.IsEnabled="{Binding RelativeSource={RelativeSource AncestorType=local:PropertyGrid}, Path=PropertyToolTipPlacement, Converter={conv:PropertyToolTipPlacementToBoolConverter}, ConverterParameter=Name}">
                                             <Border.Style>
                                                 <Style TargetType="{x:Type Border}">
-                                                    <Setter Property="Background" Value="Transparent"/>
+                                                    <Setter Property="BorderBrush" Value="Transparent"/>
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsSelected}" Value="True">
-                                                            <Setter Property="Background"
-                                                                    Value="{Binding RelativeSource={RelativeSource AncestorType=local:FlatTreeListControl}, Path=SelectionBrush}"/>
+                                                            <Setter Property="BorderBrush"
+                                                                    Value="{Binding RelativeSource={RelativeSource AncestorType=local:PropertyGrid}, Path=SelectionBorderBrush}"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>

@@ -5,6 +5,7 @@ namespace AJut.UX.Controls
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.ComponentModel;
+    using System.Diagnostics.CodeAnalysis;
     using AJut.UX.Helpers;
     using AJut.UX.Theming;
     using Android.Content;
@@ -92,10 +93,36 @@ namespace AJut.UX.Controls
                 new[] { ThemedGradient.Stop(0.0, 0x73000000), ThemedGradient.Stop(0.2, 0x4D000000), ThemedGradient.Stop(1.0, 0x2E000000) },
                 new[] { ThemedGradient.Stop(0.0, 0xEE000000), ThemedGradient.Stop(0.2, 0xAA000000), ThemedGradient.Stop(1.0, 0x66000000) }
             ),
+
+            // Unthemed, WinUI3's flat #26000000, a quieter shade than the live selection's
+            [MobileLook.ToggleStrip.ItemSelectedDisabledFill] = new ThemedGradient(
+                MobileLook.ToggleStrip.ItemSelectedDisabledFill,
+                new[] { ThemedGradient.Stop(0.0, 0x26000000) },
+                new[] { ThemedGradient.Stop(0.0, 0x26000000) }
+            ),
         };
 
         // The Scroll strip's end dots: the AJut symbol color themed, and Android's secondary text color unthemed.
         private static readonly ThemedColor kScrollIndicator = ThemedColor.FromArgb(MobileLook.ToggleStrip.ScrollIndicator, 0x8A000000, 0xB3FFFFFF);
+
+        // Every fill and text the overflow button can take, by the key MobileLook.ToggleStrip.OverflowFill or
+        // OverflowTextFor picks for its state. Unthemed, WinUI3's stock button fills and text.
+        private static readonly Dictionary<string, ThemedColor> kOverflowColors = new Dictionary<string, ThemedColor>
+        {
+            [MobileLook.ToggleStrip.OverflowVerticalFill] = ThemedColor.FromArgb(MobileLook.ToggleStrip.OverflowVerticalFill, 0xB3FFFFFF, 0x0FFFFFFF),
+            [MobileLook.ToggleStrip.OverflowPointerOverFill] = ThemedColor.FromArgb(MobileLook.ToggleStrip.OverflowPointerOverFill, 0x80F9F9F9, 0x15FFFFFF),
+            [MobileLook.ToggleStrip.OverflowPressedFill] = ThemedColor.FromArgb(MobileLook.ToggleStrip.OverflowPressedFill, 0x4DF9F9F9, 0x08FFFFFF),
+            [MobileLook.ToggleStrip.OverflowText] = ThemedColor.FromArgb(MobileLook.ToggleStrip.OverflowText, 0xE4000000, 0xFFFFFFFF),
+            [MobileLook.ToggleStrip.OverflowPointerOverText] = ThemedColor.FromArgb(MobileLook.ToggleStrip.OverflowPointerOverText, 0xE4000000, 0xFFFFFFFF),
+            [MobileLook.ToggleStrip.OverflowPressedText] = ThemedColor.FromArgb(MobileLook.ToggleStrip.OverflowPressedText, 0x9E000000, 0xC5FFFFFF),
+            [MobileLook.ToggleStrip.ItemDisabledText] = ThemedColor.FromArgb(MobileLook.ToggleStrip.ItemDisabledText, 0x5C000000, 0x5DFFFFFF),
+        };
+
+        // The overflow button's states, in the order a StateListDrawable or ColorStateList matches them (the first match
+        // wins): a press outranks a pointer resting over it
+        private static readonly int[] kPressedState = { Android.Resource.Attribute.StatePressed };
+        private static readonly int[] kHoveredState = { Android.Resource.Attribute.StateHovered };
+        private static readonly int[] kAnyState = Array.Empty<int>();
 
         private readonly ToggleStripItemCollection m_items;
         private readonly List<ItemButton> m_buttons = new List<ItemButton>();
@@ -433,6 +460,20 @@ namespace AJut.UX.Controls
         private bool IsVertical => m_orientation == Orientation.Vertical;
 
         // ===========[ Public Interface Methods ]===================================
+        /// <summary>
+        /// Shows <paramref name="items"/>, the same as setting <see cref="ItemsSource"/>, and keeps the public properties of
+        /// <typeparamref name="T"/> in an app that trims, so <see cref="DisplayPropertyPath"/> still finds the property it
+        /// names. ItemsSource takes an IEnumerable, so the trimmer can't tell which type the path is read from, and under full
+        /// trimming it removes a property nothing else reads: the items are then named from their data, even with
+        /// [DynamicallyAccessedMembers] on the type. An item of a type derived from T isn't covered by T; name those with
+        /// <see cref="ItemNameSelector"/>, or keep the property with
+        /// [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(...))] on the method that calls this.
+        /// </summary>
+        public void SetItemsSource<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T> (IEnumerable<T> items)
+        {
+            this.ItemsSource = items;
+        }
+
         protected override void OnSizeChanged (int w, int h, int oldw, int oldh)
         {
             base.OnSizeChanged(w, h, oldw, oldh);
@@ -566,16 +607,7 @@ namespace AJut.UX.Controls
             }
 
             m_row.SetDividerDrawable(divider);
-
-            // The overflow button dims with the strip, as the items do
-            m_overflowButton.SetTextColor(new ColorStateList(
-                new[] { new[] { -Android.Resource.Attribute.StateEnabled }, Array.Empty<int>() },
-                new[]
-                {
-                    ThemeColors.Resolve(context, kItemTexts[MobileLook.ToggleStrip.ItemDisabledText]).ToAndroidColor().ToArgb(),
-                    ThemeColors.Resolve(context, kItemTexts[MobileLook.ToggleStrip.ItemText]).ToAndroidColor().ToArgb(),
-                }
-            ));
+            this.PaintOverflowButton(context, ThemeColors.Resolve(context, border).ToAndroidColor());
 
             // The shared dot opacity applies over the indicator color's own
             ColorArgb indicator = ThemeColors.Resolve(context, kScrollIndicator);
@@ -586,6 +618,53 @@ namespace AJut.UX.Controls
             m_backDot.SetColor(dotColor.ToAndroidColor());
             m_forwardDot.SetColor(dotColor.ToAndroidColor());
         }
+
+        // The overflow button takes MobileLook's overflow look, painted again with the strip whenever its orientation or
+        // Enabled changes, so only the press and the pointer are left to its own state. The row's dividers only run
+        // between items, so the button draws the line that sets it off from the last one, along its leading edge.
+        private void PaintOverflowButton (Context context, Android.Graphics.Color borderColor)
+        {
+            bool isEnabled = this.Enabled;
+            bool isVertical = this.IsVertical;
+            var fills = new StateListDrawable();
+            fills.AddState(kPressedState, MakeOverflowFill(context, MobileLook.ToggleStrip.OverflowFill(isEnabled, isVertical, true, false)));
+            fills.AddState(kHoveredState, MakeOverflowFill(context, MobileLook.ToggleStrip.OverflowFill(isEnabled, isVertical, false, true)));
+            fills.AddState(kAnyState, MakeOverflowFill(context, MobileLook.ToggleStrip.OverflowFill(isEnabled, isVertical, false, false)));
+
+            var separator = new GradientDrawable();
+            separator.SetColor(borderColor);
+            const int kSeparatorLayer = 1;
+            var layers = new LayerDrawable(new Drawable[] { fills, separator });
+            if (isVertical)
+            {
+                layers.SetLayerHeight(kSeparatorLayer, m_separatorThickness);
+                layers.SetLayerGravity(kSeparatorLayer, GravityFlags.Top | GravityFlags.FillHorizontal);
+            }
+            else
+            {
+                layers.SetLayerWidth(kSeparatorLayer, m_separatorThickness);
+                layers.SetLayerGravity(kSeparatorLayer, GravityFlags.Start | GravityFlags.FillVertical);
+            }
+
+            m_overflowButton.Background = layers;
+            FocusVisual.Apply(m_overflowButton);
+            m_overflowButton.SetTextColor(new ColorStateList(
+                new[] { kPressedState, kHoveredState, kAnyState },
+                new[]
+                {
+                    ResolveOverflowColor(context, MobileLook.ToggleStrip.OverflowTextFor(isEnabled, true, false)).ToArgb(),
+                    ResolveOverflowColor(context, MobileLook.ToggleStrip.OverflowTextFor(isEnabled, false, true)).ToArgb(),
+                    ResolveOverflowColor(context, MobileLook.ToggleStrip.OverflowTextFor(isEnabled, false, false)).ToArgb(),
+                }
+            ));
+        }
+
+        private static ColorDrawable MakeOverflowFill (Context context, string? key)
+        {
+            return new ColorDrawable(key == null ? Android.Graphics.Color.Transparent : ResolveOverflowColor(context, key));
+        }
+
+        private static Android.Graphics.Color ResolveOverflowColor (Context context, string key) => ThemeColors.Resolve(context, kOverflowColors[key]).ToAndroidColor();
 
         // A new orientation turns the row, swaps in the scroller for that axis, moves the overflow button and resizes the
         // divider, then makes the buttons again so none keeps a size or layout from the old axis.
@@ -809,10 +888,12 @@ namespace AJut.UX.Controls
         }
 
         // Shows a dot past each end a Scroll strip can still scroll toward, by AJut.UX's shared rule, centered across the
-        // strip just outside that end, in the parent's space (the overlay is the parent's). Any other strip shows none.
+        // strip just outside that end, in the parent's space (the overlay is the parent's). A parent clips its overlay to
+        // its own bounds, so where it has no room past an end (a match_parent strip), the dot goes just inside the end
+        // instead. Any other strip shows none.
         private void UpdateScrollIndicators ()
         {
-            if ((m_dotOverlay == null) || (m_scroll == null) || (m_row == null))
+            if ((m_dotOverlay == null) || (m_scroll == null) || (m_row == null) || !(this.Parent is View host))
             {
                 return;
             }
@@ -827,14 +908,16 @@ namespace AJut.UX.Controls
             }
 
             int radius = (int)Math.Round(ToggleStripScrollIndicators.kDotDiameter * m_density / 2.0);
-            int offset = (int)Math.Round(ToggleStripScrollIndicators.kDotCenterOffset * m_density);
             int centerX = this.Left + (this.Width / 2);
             int centerY = this.Top + (this.Height / 2);
+            int hostLength = isVertical ? host.Height : host.Width;
+            int backAt = (int)Math.Round(ToggleStripScrollIndicators.DotCenterFor(isVertical ? this.Top : this.Left, false, hostLength, m_density));
+            int forwardAt = (int)Math.Round(ToggleStripScrollIndicators.DotCenterFor(isVertical ? this.Bottom : this.Right, true, hostLength, m_density));
             DotPlacement back = indicators.ShowBack
-                ? new DotPlacement(isVertical ? centerX : this.Left - offset, isVertical ? this.Top - offset : centerY, radius)
+                ? new DotPlacement(isVertical ? centerX : backAt, isVertical ? backAt : centerY, radius)
                 : default;
             DotPlacement forward = indicators.ShowForward
-                ? new DotPlacement(isVertical ? centerX : this.Right + offset, isVertical ? this.Bottom + offset : centerY, radius)
+                ? new DotPlacement(isVertical ? centerX : forwardAt, isVertical ? forwardAt : centerY, radius)
                 : default;
             _PlaceDot(m_backDot, ref m_backDotPlacement, back);
             _PlaceDot(m_forwardDot, ref m_forwardDotPlacement, forward);
@@ -950,6 +1033,7 @@ namespace AJut.UX.Controls
                 m_item.PropertyChanged += this.OnItemPropertyChanged;
                 this.Click += this.OnClicked;
                 this.PaintState();
+                FocusVisual.Apply(this);
             }
 
             // Safe to call more than once: a detach unbinds, and the next rebuild unbinds again before replacing it.
@@ -968,8 +1052,12 @@ namespace AJut.UX.Controls
                 }
             }
 
-            /// <summary>Paints the item again, for a change to the strip's look (its corner radius).</summary>
-            public void Repaint () => this.PaintState();
+            /// <summary>Paints the item again, and its focus look, for a change to the strip's look (its corner radius, or the theme).</summary>
+            public void Repaint ()
+            {
+                this.PaintState();
+                FocusVisual.Apply(this);
+            }
 
             protected override void DrawableStateChanged ()
             {
@@ -992,7 +1080,7 @@ namespace AJut.UX.Controls
                 float[] radii = new[] { topLeft, topLeft, topRight, topRight, bottomRight, bottomRight, bottomLeft, bottomLeft };
 
                 // Which fill and text the item's state takes is MobileLook's call, shared with UIKit
-                string? fillKey = MobileLook.ToggleStrip.ItemFill(m_item.IsSelected, this.Pressed, this.Hovered);
+                string? fillKey = MobileLook.ToggleStrip.ItemFill(this.Enabled, m_item.IsSelected, this.Pressed, this.Hovered);
                 IReadOnlyList<AJutGradientStop> stops = (fillKey != null)
                     ? ThemeColors.Resolve(context, kItemFills[fillKey])
                     : new[] { new AJutGradientStop(0.0, new ColorArgb(0, 0, 0, 0)) };

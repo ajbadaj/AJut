@@ -2,9 +2,9 @@
 <!--
     TouchThemeColors.xaml
     =====================
-    The AJut touch palettes as theme dictionaries. AppThemeManager.IsTouchFocused adds this as the last of the
+    The AJut touch palettes as theme dictionaries. AppThemeManager.UsesTouchVariant adds this as the last of the
     application's merged dictionaries, where its keys win over the app's own light and dark theme dictionaries, and
-    takes it out again when touch focus goes off.
+    takes it out again when the touch variant goes off.
 
     Each theme carries the whole touch palette and the stock key aliasing, the same pair an app's own theme dictionary
     carries, so every key resolves from here while it is loaded. That also means an app's own changes to the AJut

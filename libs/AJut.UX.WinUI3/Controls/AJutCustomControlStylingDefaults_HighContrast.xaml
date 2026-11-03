@@ -19,6 +19,9 @@
     <SolidColorBrush x:Key="AJut_FlatTree_SelectionBrushUnfocused" Color="{ThemeResource SystemColorHighlightColor}"/>
     <SolidColorBrush x:Key="AJut_FlatTree_HoverBackground"         Color="{ThemeResource SystemColorHighlightColor}"/>
     <SolidColorBrush x:Key="AJut_FlatTree_HoverBorderBrush"        Color="{ThemeResource SystemColorButtonTextColor}"/>
+    <!-- A selected row under the pointer, and the chevron under the pointer -->
+    <SolidColorBrush x:Key="AJut_FlatTree_SelectionPointerOverBrush" Color="{ThemeResource SystemColorButtonTextColor}"/>
+    <SolidColorBrush x:Key="AJut_FlatTreeItemRow_ExpanderGlyphPointerOverForeground" Color="{ThemeResource SystemColorHighlightTextColor}"/>
 
     <!-- ===========[ GeometryButton ]====================================== -->
     <!-- The shape's trace: WinUI's ButtonBorderBrush family in high contrast. At rest and disabled those

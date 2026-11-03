@@ -33,7 +33,8 @@
     <SolidColorBrush x:Key="AJut_Brush_ImportantText" Color="#000003" />
     <SolidColorBrush x:Key="AJut_Brush_NormalText" Color="#111" />
     <SolidColorBrush x:Key="AJut_Brush_HighlightText" Color="#000" />
-    <SolidColorBrush x:Key="AJut_Brush_UnderstatedText" Color="#444" />
+    <Color x:Key="AJut_Color_UnderstatedText">#444</Color>
+    <SolidColorBrush x:Key="AJut_Brush_UnderstatedText" Color="{DynamicResource AJut_Color_UnderstatedText}" />
     <SolidColorBrush x:Key="AJut_Brush_InteractiveText" Color="#000" />
     <SolidColorBrush x:Key="AJut_Brush_InteractiveTextUnfocused" Color="#E000" />
     <SolidColorBrush x:Key="AJut_Brush_HighContrastText" Color="#CCC" />
@@ -125,6 +126,10 @@
     <SolidColorBrush x:Key="AJut_Brush_DrawerForegroundImportant" Color="#000" />
 
     <SolidColorBrush x:Key="AJut_Brush_BadStuff" Color="#E01620"/>
+    <!-- The glow around something in error. Light's is the error color itself; Dark's is brighter, since its error color is
+         too dark to glow against Dark's surfaces -->
+    <Color x:Key="AJut_Color_ErrorGlow">#E01620</Color>
+    <SolidColorBrush x:Key="AJut_Brush_ErrorGlow" Color="{DynamicResource AJut_Color_ErrorGlow}"/>
     <SolidColorBrush x:Key="AJut_Brush_TrackBackground" Color="#DDD"/>
     <SolidColorBrush x:Key="AJut_Brush_ToolTipBackground" Color="#CCC"/>
     <SolidColorBrush x:Key="AJut_Brush_BannerBackground" Color="#CFCFCF"/>

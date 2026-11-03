@@ -27,7 +27,7 @@ namespace AJutShowRoomAppKit.UI
         {
             ShowroomStyle.EnsureRegistered();
             this.BackgroundColorKey = ShowroomStyle.ShellBackground;
-            m_touchChoice = AppDelegate.ThemeManager.IsTouchFocused;
+            m_touchChoice = AppDelegate.ThemeManager.UsesTouchVariant;
 
             m_themeStrip = new ToggleStrip
             {
@@ -111,10 +111,10 @@ namespace AJutShowRoomAppKit.UI
         private void ApplyTouch ()
         {
             bool followsTheOS = AppDelegate.ThemeManager.ThemeConfiguration == eAppThemeConfiguration.UseSameAsOS;
-            bool isTouchFocused = !followsTheOS && m_touchChoice;
+            bool usesTouchVariant = !followsTheOS && m_touchChoice;
 
-            AppDelegate.ThemeManager.IsTouchFocused = isTouchFocused;
-            m_touchCheck.State = isTouchFocused ? NSCellStateValue.On : NSCellStateValue.Off;
+            AppDelegate.ThemeManager.UsesTouchVariant = usesTouchVariant;
+            m_touchCheck.State = usesTouchVariant ? NSCellStateValue.On : NSCellStateValue.Off;
             m_touchCheck.Enabled = !followsTheOS && AppDelegate.UseThemes;
         }
 

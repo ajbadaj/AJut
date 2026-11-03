@@ -14,13 +14,14 @@
         {
             this.ZeroToggleElementsSource = new ObservableCollection<string>();
             this.InitializeComponent();
+
+            // Set here rather than bound: the strip sits in a BumpStack, which holds it outside this page's logical tree,
+            // so a binding from it back to this page finds nothing
+            this.EmptyStrip.ItemsSource = this.ZeroToggleElementsSource;
         }
 
 
         public ObservableCollection<string> ZeroToggleElementsSource { get; }
-
-        // Items for the vertical strips that are too short to show them all
-        public string[] SevenItems { get; } = new[] { "One", "Two", "Three", "Four", "Five", "Six", "Seven" };
 
         public string ToggleStripExample { get; } = @"<ajut:ToggleStrip Margin=""0,0,0,5"">
     <ajut:ToggleStrip.ItemsSource>

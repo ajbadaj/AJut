@@ -16,7 +16,7 @@ namespace AJut.UX.Theming
     //     with no theme loaded looks like any other Mac control. These are AppKit's own, see
     //     ThemedColorKeys.
     //  2. Themed: AJut.UX's palette tables (AJutPalette.Light / AJutPalette.Dark, or their touch
-    //     variants while IsTouchFocused), the same keys and values the WinUI3 theme dictionaries
+    //     variants while UsesTouchVariant is on), the same keys and values the WinUI3 theme dictionaries
     //     carry. A table takes a control key directly and follows the shared aliases to the
     //     palette entry itself, so the alias layer is not repeated here. SetThemedAlias exists
     //     only to point a key somewhere else: a key only AppKit has, or a consumer restyling one.
@@ -26,7 +26,7 @@ namespace AJut.UX.Theming
     // drawing under every time the color is used, so one NSColor follows light and dark on its
     // own, per view, including a view whose window overrides the app appearance. The provider
     // decides each time whether a theme is loaded and which palette table matches the
-    // appearance, which means loading or unloading a theme, or switching touch focus, needs
+    // appearance, which means loading or unloading a theme, or switching the touch variant, needs
     // nothing more than a redraw.
     //
     // The one place this does not happen by itself is a CALayer: layer.BackgroundColor takes a
@@ -47,7 +47,7 @@ namespace AJut.UX.Theming
         private static readonly Dictionary<string, NSGradient> g_darkGradientCache = new Dictionary<string, NSGradient>();
         private static readonly HashSet<string> g_reportedMissingKeys = new HashSet<string>();
         private static bool g_isThemeLoaded;
-        private static bool g_isTouchFocused;
+        private static bool g_usesTouchVariant;
 
         // ===========[ Setup/Construction/Teardown ]===========================
         static ThemedColors ()
@@ -64,10 +64,10 @@ namespace AJut.UX.Theming
         public static event EventHandler<EventArgs> ThemeLoadedChanged;
 
         /// <summary>
-        /// Raised after <see cref="IsTouchFocused"/> changes and every window has been asked to redraw. Like
+        /// Raised after <see cref="UsesTouchVariant"/> changes and every window has been asked to redraw. Like
         /// <see cref="ThemeLoadedChanged"/>, only needed for colors pushed somewhere AppKit does not redraw on its own.
         /// </summary>
-        public static event EventHandler<EventArgs> TouchFocusedChanged;
+        public static event EventHandler<EventArgs> UsesTouchVariantChanged;
 
         // ===========[ Properties ]============================================
         /// <summary>
@@ -79,13 +79,14 @@ namespace AJut.UX.Theming
         /// <summary>
         /// Whether the AJut palette is painted in its touch variant (<see cref="AJutPalette.LightTouch"/> or
         /// <see cref="AJutPalette.DarkTouch"/>), where buttons read as buttons from their fill alone, with no hover to
-        /// show it and no borders. Off by default, since a Mac is pointer first; it only matters while
+        /// show it and no borders. Off by default, as on every AJut stack: an app that wants the touch variant opts in,
+        /// once at startup or as a setting. It only matters while
         /// <see cref="IsThemeLoaded"/>. Setting it redraws every window, the same as loading or unloading the theme.
         /// </summary>
-        public static bool IsTouchFocused
+        public static bool UsesTouchVariant
         {
-            get => g_isTouchFocused;
-            set => SetTouchFocused(value);
+            get => g_usesTouchVariant;
+            set => SetUsesTouchVariant(value);
         }
 
         // ===========[ Public Interface Methods ]==============================
@@ -182,7 +183,7 @@ namespace AJut.UX.Theming
                 }
 
                 string paletteKey = g_themedAliases.TryGetValue(key, out string alias) ? alias : key;
-                if (AJutPalette.For(isDark, g_isTouchFocused).TryGetPaint(paletteKey, out AJutThemePaint paint) && paint.IsGradient)
+                if (AJutPalette.For(isDark, g_usesTouchVariant).TryGetPaint(paletteKey, out AJutThemePaint paint) && paint.IsGradient)
                 {
                     var colors = new NSColor[paint.GradientStops.Count];
                     var locations = new double[paint.GradientStops.Count];
@@ -244,17 +245,17 @@ namespace AJut.UX.Theming
             ThemeLoadedChanged?.Invoke(null, EventArgs.Empty);
         }
 
-        private static void SetTouchFocused (bool isTouchFocused)
+        private static void SetUsesTouchVariant (bool usesTouchVariant)
         {
             lock (g_lock)
             {
-                if (g_isTouchFocused == isTouchFocused)
+                if (g_usesTouchVariant == usesTouchVariant)
                 {
                     return;
                 }
 
                 // The caches hold colors and gradients made from the other pair of palettes, so they start over
-                g_isTouchFocused = isTouchFocused;
+                g_usesTouchVariant = usesTouchVariant;
                 g_lightPaletteCache.Clear();
                 g_darkPaletteCache.Clear();
                 g_lightGradientCache.Clear();
@@ -262,7 +263,7 @@ namespace AJut.UX.Theming
             }
 
             RedrawAllWindows();
-            TouchFocusedChanged?.Invoke(null, EventArgs.Empty);
+            UsesTouchVariantChanged?.Invoke(null, EventArgs.Empty);
         }
 
         private static void MarkTreeForRedisplay (NSView view)
@@ -315,7 +316,7 @@ namespace AJut.UX.Theming
 
             // A gradient-only key answers false here and falls back to the unthemed default; the
             // controls that want a gradient ask the table for its paint themselves
-            AJutPalette.Table table = AJutPalette.For(isDark, g_isTouchFocused);
+            AJutPalette.Table table = AJutPalette.For(isDark, g_usesTouchVariant);
             if (!table.TryGetColor(paletteKey, out ColorArgb paletteColor))
             {
                 color = null;

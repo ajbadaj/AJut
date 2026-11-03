@@ -23,12 +23,18 @@ namespace AJut.UX.Controls
     //    its zone's pass-along size, and the rebuilt split gives every pane the size its zone
     //    passes along, the way WinUI3's HandleNewChildZonesAdded does. A layout load and a drop
     //    leave pass-along sizes on the zones they build the same way.
-    //  - A leaf (Single or Tabbed) is a header (the selected panel's title, and its close button),
-    //    the selected panel's display, and for Tabbed a tab strip along the bottom, as on WinUI3.
-    //  - An empty zone shows a placeholder.
+    //  - A leaf (Single or Tabbed) is laid out the way WinUI3's DockLeafLayout is: a header (the
+    //    selected panel's title, and its close button) with its own outline, over the selected
+    //    panel's display in a filled, outlined frame whose bottom corners are rounded, and for
+    //    Tabbed a tab strip below the frame, inset from the zone's edges, with no fill or outline
+    //    of its own.
+    //  - An empty zone shows a placeholder while the pointer is over it.
     //
     // A panel's display is the IDockableDisplayElement the adapter carries, which on AppKit has
     // to be an NSView. Titles and tooltips follow the adapter live.
+    //
+    // The header shows the panel being typed into (focus within the zone, in the key window) in
+    // the focused header colors, as WinUI3's and WPF's do. See "Panel focus" below for how.
     //
     // Dragging is the docking manager's: a header dragged past the threshold, or a tab dragged up
     // or down out of the strip, hands the drag to it, and it tears the zone or panel off into a
@@ -46,12 +52,20 @@ namespace AJut.UX.Controls
 
         private readonly DockZoneViewModel m_zone;
         private readonly List<DockZoneView> m_childViews = new List<DockZoneView>();
+        private readonly NSTrackingArea m_hoverTrackingArea;
         private BindingSet m_layoutBindings;
         private ThemedSplitView m_split;
+        private HeaderView m_header;
+        private NSTextField m_emptyPlaceholder;
         private DockDropOverlayView m_dropOverlay;
         private List<double> m_pendingChildSizes;
         private bool m_needsPaneSizing;
         private double m_tabScrollOffset;
+        private bool m_isPointerOver;
+        private NSWindow m_watchedWindow;
+        private IDisposable m_firstResponderWatch;
+        private NSObject m_becameKeyWatch;
+        private NSObject m_resignedKeyWatch;
         private bool m_isTornDown;
 
         // ===========[ Setup/Construction/Teardown ]===========================
@@ -62,6 +76,20 @@ namespace AJut.UX.Controls
             m_zone.PropertyChanged += this.OnZonePropertyChanged;
             ((INotifyCollectionChanged)m_zone.Children).CollectionChanged += this.OnZoneCollectionChanged;
             ((INotifyCollectionChanged)m_zone.DockedContent).CollectionChanged += this.OnZoneCollectionChanged;
+
+            // A panel takes focus for a press inside it (see TakeFocusForPress), and shows that on its header, not as a ring
+            this.FocusRingType = NSFocusRingType.None;
+
+            // For the empty placeholder, which shows only under the pointer. One area for the view's whole life, kept in
+            //  step with its visible rect by AppKit, as ManagedButton's is.
+            m_hoverTrackingArea = new NSTrackingArea(
+                CGRect.Empty,
+                NSTrackingAreaOptions.MouseEnteredAndExited | NSTrackingAreaOptions.ActiveInActiveApp | NSTrackingAreaOptions.InVisibleRect,
+                this,
+                null
+            );
+            this.AddTrackingArea(m_hoverTrackingArea);
+
             this.RebuildLayout();
         }
 
@@ -80,6 +108,7 @@ namespace AJut.UX.Controls
             m_zone.PropertyChanged -= this.OnZonePropertyChanged;
             ((INotifyCollectionChanged)m_zone.Children).CollectionChanged -= this.OnZoneCollectionChanged;
             ((INotifyCollectionChanged)m_zone.DockedContent).CollectionChanged -= this.OnZoneCollectionChanged;
+            this.WatchWindow(null);
             this.ClearLayout();
             if (m_zone.UI == this)
             {
@@ -112,6 +141,17 @@ namespace AJut.UX.Controls
             }
 
             this.RebuildLayout();
+        }
+
+        // The window's first responder moved, or the window became or stopped being key: see "Panel focus"
+        private void OnWindowFirstResponderChanged (NSObservedChange change)
+        {
+            this.RefreshPanelFocus();
+        }
+
+        private void OnWindowKeyStateChanged (object sender, NSNotificationEventArgs e)
+        {
+            this.RefreshPanelFocus();
         }
 
         // ===========[ Properties ]============================================
@@ -189,6 +229,62 @@ namespace AJut.UX.Controls
             m_needsPaneSizing = false;
         }
 
+        public override void ViewDidMoveToWindow ()
+        {
+            base.ViewDidMoveToWindow();
+            this.WatchWindow(m_isTornDown ? null : this.Window);
+            this.RefreshPanelFocus();
+        }
+
+        /// <summary>
+        /// Only a panel takes focus for itself, from a press (see TakeFocusForPress). A split leaves that to the panels in
+        /// it, and an empty zone has nothing to type into.
+        /// </summary>
+        public override bool AcceptsFirstResponder () => m_header != null;
+
+        /// <summary>
+        /// A panel takes focus from a press only, never from Tab: it draws no focus ring, so Tab stopping on it would look
+        /// like focus had gone nowhere. Tab moves between the controls inside the panels.
+        /// </summary>
+        public override bool CanBecomeKeyView => false;
+
+        /// <summary>
+        /// A press inside a panel that nothing under it took gives the panel focus and stops there, as WinUI3's does.
+        /// Anywhere else it carries on up.
+        /// </summary>
+        public override void MouseDown (NSEvent theEvent)
+        {
+            if (!this.TakeFocusForPress())
+            {
+                base.MouseDown(theEvent);
+            }
+        }
+
+        /// <summary>Only this view's own area counts: an entered or exited passed up from a view inside it is passed on.</summary>
+        public override void MouseEntered (NSEvent theEvent)
+        {
+            if (theEvent.TrackingArea == m_hoverTrackingArea)
+            {
+                this.SetPointerOver(true);
+            }
+            else
+            {
+                base.MouseEntered(theEvent);
+            }
+        }
+
+        public override void MouseExited (NSEvent theEvent)
+        {
+            if (theEvent.TrackingArea == m_hoverTrackingArea)
+            {
+                this.SetPointerOver(false);
+            }
+            else
+            {
+                base.MouseExited(theEvent);
+            }
+        }
+
         /// <summary>Shows or hides the drop overlay, centered over this zone, while a docking drag is over it</summary>
         internal void ShowDropOverlay (bool isShown)
         {
@@ -218,6 +314,8 @@ namespace AJut.UX.Controls
         // ===========[ Helper Methods ]========================================
         private void ClearLayout ()
         {
+            m_header = null;
+            m_emptyPlaceholder = null;
             m_dropOverlay = null;
             m_layoutBindings?.Dispose();
             m_layoutBindings = null;
@@ -240,6 +338,11 @@ namespace AJut.UX.Controls
             {
                 return;
             }
+
+            // Clearing takes the shown panel's views out of the window, and focus inside them goes with them (the window
+            //  takes it back). Whatever had it gets it back once the rebuild has put it back in this zone; failing that, a
+            //  panel that held focus keeps it itself, so its header stays focused.
+            NSResponder focused = this.HasFocusWithin() ? this.Window.FirstResponder : null;
 
             this.ClearLayout();
             m_layoutBindings = new BindingSet();
@@ -269,13 +372,24 @@ namespace AJut.UX.Controls
                 content.LeadingAnchor.ConstraintEqualTo(this.LeadingAnchor),
                 content.TrailingAnchor.ConstraintEqualTo(this.TrailingAnchor),
             });
+
+            if ((focused != null) && (m_header != null) && !this.HasFocusWithin())
+            {
+                bool isBackInZone = (focused is NSView focusedView) && focusedView.IsDescendantOf(this) && focusedView.AcceptsFirstResponder();
+                this.Window?.MakeFirstResponder(isBackInZone ? focused : this);
+            }
+
+            this.RefreshPanelFocus();
         }
 
         private NSView BuildSplit ()
         {
+            // Each pane draws its own outline, so a divider line between two panes would double it; the WinUI3 and WPF docks
+            //  make their splitters transparent too. The divider is still there to drag.
             m_split = new ThemedSplitView(isVertical: m_zone.Orientation == eDockOrientation.Horizontal)
             {
                 MinPanelSize = m_zone.Manager?.MinPanelDimension ?? kFallbackMinPanelSize,
+                DividerColorKey = null,
             };
 
             foreach (DockZoneViewModel child in m_zone.Children)
@@ -293,58 +407,108 @@ namespace AJut.UX.Controls
 
         private NSView BuildEmpty ()
         {
+            // Faint, and only while the pointer is over the zone, as on both flagships
+            const double kPlaceholderOpacity = 0.25;
+
             this.BackgroundColorKey = ThemedColorKeys.DockZone_EmptyBackground;
             this.BorderColorKey = ThemedColorKeys.DockZone_EmptyBorder;
             this.BorderThickness = 1.0;
 
-            NSTextField label = NSTextField.CreateLabel("Empty");
-            label.TextColor = ThemedColors.Get(ThemedColorKeys.DockZone_EmptyForeground);
-            label.Alignment = NSTextAlignment.Center;
-            return label;
+            m_emptyPlaceholder = NSTextField.CreateLabel("Empty");
+            m_emptyPlaceholder.TextColor = ThemedColors.Get(ThemedColorKeys.DockZone_EmptyForeground);
+            m_emptyPlaceholder.Alignment = NSTextAlignment.Center;
+            m_emptyPlaceholder.AlphaValue = (nfloat)kPlaceholderOpacity;
+            m_emptyPlaceholder.Hidden = !m_isPointerOver;
+            return m_emptyPlaceholder;
         }
 
+        // The leaf, as WinUI3's DockLeafLayout lays it out (see DockLeafLayout.xaml):
+        //  - The panel frame, filled and outlined, its bottom corners rounded, holding the shown panel's display. Its top
+        //    sits under the header, which covers the frame's top corners, so only the bottom ones show rounded. The
+        //    outline is the frame layer's border, which a layer draws over its sublayers, and the frame clips the display
+        //    to its rounded corners.
+        //  - The header over the frame's top, with its own outline all around, so the line between it and the display is
+        //    the header's bottom edge.
+        //  - For Tabbed, the tab strip below the frame, inset from the zone's sides and bottom, overlapping the frame's
+        //    bottom edge so the selected tab can cover it and join the panel above. The strip has no fill or outline: its
+        //    gaps show whatever is behind the zone.
         private NSView BuildLeaf ()
         {
-            this.BackgroundColorKey = ThemedColorKeys.DockZone_PanelBackground;
-            this.BorderColorKey = ThemedColorKeys.DockZone_PanelBorder;
-            this.BorderThickness = 1.0;
+            // WinUI3's themed PanelCornerRadius is 0,0,8,8 (the top two are under the header here), and its content border
+            //  pads the display by 2. Its tab strip's margin (5,-2,5,5) and padding (2,0,2,2) together put the tabs 7 in
+            //  from the zone's sides and bottom.
+            const double kPanelCornerRadius = 8.0;
+            const double kDisplayPadding = 2.0;
+            const double kTabStripInset = 7.0;
 
             int selected = Math.Clamp(m_zone.SelectedIndex, 0, m_zone.DockedContent.Count - 1);
             DockingContentAdapterModel shown = m_zone.DockedContent[selected];
+            var leaf = new NSView();
 
-            var stack = new FillStack(NSUserInterfaceLayoutOrientation.Vertical);
-            stack.Add(this.BuildHeader(shown));
+            var panel = new ThemedView
+            {
+                BackgroundColorKey = ThemedColorKeys.DockZone_PanelBackground,
+                BorderColorKey = ThemedColorKeys.DockZone_PanelBorder,
+                BorderThickness = kEdgeThickness,
+                CornerRadius = kPanelCornerRadius,
+                TranslatesAutoresizingMaskIntoConstraints = false,
+            };
 
-            var displayHost = new NSView();
+            if (panel.Layer != null)
+            {
+                panel.Layer.MasksToBounds = true;
+            }
+
+            leaf.AddSubview(panel);
+
+            var displayHost = new NSView { TranslatesAutoresizingMaskIntoConstraints = false };
+            panel.AddSubview(displayHost);
+            double displayInset = kEdgeThickness + kDisplayPadding;
+            var constraints = new List<NSLayoutConstraint>
+            {
+                panel.TopAnchor.ConstraintEqualTo(leaf.TopAnchor),
+                panel.LeadingAnchor.ConstraintEqualTo(leaf.LeadingAnchor),
+                panel.TrailingAnchor.ConstraintEqualTo(leaf.TrailingAnchor),
+                displayHost.TopAnchor.ConstraintEqualTo(panel.TopAnchor, (nfloat)(kHeaderHeight + kDisplayPadding)),
+                displayHost.BottomAnchor.ConstraintEqualTo(panel.BottomAnchor, (nfloat)(-displayInset)),
+                displayHost.LeadingAnchor.ConstraintEqualTo(panel.LeadingAnchor, (nfloat)displayInset),
+                displayHost.TrailingAnchor.ConstraintEqualTo(panel.TrailingAnchor, (nfloat)(-displayInset)),
+            };
+
             if (shown.Display is NSView display)
             {
                 display.RemoveFromSuperview();
                 display.TranslatesAutoresizingMaskIntoConstraints = false;
                 displayHost.AddSubview(display);
-                NSLayoutConstraint.ActivateConstraints(new[]
-                {
-                    display.TopAnchor.ConstraintEqualTo(displayHost.TopAnchor),
-                    display.BottomAnchor.ConstraintEqualTo(displayHost.BottomAnchor),
-                    display.LeadingAnchor.ConstraintEqualTo(displayHost.LeadingAnchor),
-                    display.TrailingAnchor.ConstraintEqualTo(displayHost.TrailingAnchor),
-                });
+                constraints.Add(display.TopAnchor.ConstraintEqualTo(displayHost.TopAnchor));
+                constraints.Add(display.BottomAnchor.ConstraintEqualTo(displayHost.BottomAnchor));
+                constraints.Add(display.LeadingAnchor.ConstraintEqualTo(displayHost.LeadingAnchor));
+                constraints.Add(display.TrailingAnchor.ConstraintEqualTo(displayHost.TrailingAnchor));
             }
 
-            stack.Add(displayHost, grows: true);
+            m_header = new HeaderView(this, shown) { TranslatesAutoresizingMaskIntoConstraints = false };
+            leaf.AddSubview(m_header);
+            constraints.Add(m_header.TopAnchor.ConstraintEqualTo(leaf.TopAnchor));
+            constraints.Add(m_header.LeadingAnchor.ConstraintEqualTo(leaf.LeadingAnchor));
+            constraints.Add(m_header.TrailingAnchor.ConstraintEqualTo(leaf.TrailingAnchor));
+            constraints.Add(m_header.HeightAnchor.ConstraintEqualTo((nfloat)kHeaderHeight));
+
             if (m_zone.DockedContent.Count > 1)
             {
-                stack.Add(new TabStrip(this, selected));
+                var tabs = new TabStrip(this, selected);
+                leaf.AddSubview(tabs);
+                constraints.Add(tabs.TopAnchor.ConstraintEqualTo(panel.BottomAnchor, (nfloat)(-kEdgeThickness)));
+                constraints.Add(tabs.BottomAnchor.ConstraintEqualTo(leaf.BottomAnchor, (nfloat)(-kTabStripInset)));
+                constraints.Add(tabs.LeadingAnchor.ConstraintEqualTo(leaf.LeadingAnchor, (nfloat)kTabStripInset));
+                constraints.Add(tabs.TrailingAnchor.ConstraintEqualTo(leaf.TrailingAnchor, (nfloat)(-kTabStripInset)));
+            }
+            else
+            {
+                constraints.Add(panel.BottomAnchor.ConstraintEqualTo(leaf.BottomAnchor));
             }
 
-            return stack;
-        }
-
-        private NSView BuildHeader (DockingContentAdapterModel shown)
-        {
-            var header = new HeaderView(this, shown);
-            header.TranslatesAutoresizingMaskIntoConstraints = false;
-            header.HeightAnchor.ConstraintEqualTo((nfloat)kHeaderHeight).Active = true;
-            return header;
+            NSLayoutConstraint.ActivateConstraints(constraints.ToArray());
+            return leaf;
         }
 
         private string ReadTitle (DockingContentAdapterModel adapter) => adapter.TitleContent?.ToString() ?? String.Empty;
@@ -435,6 +599,85 @@ namespace AJut.UX.Controls
             (m_zone.Manager as DockingManager)?.DragPanel(adapter);
         }
 
+        private void SetPointerOver (bool isPointerOver)
+        {
+            m_isPointerOver = isPointerOver;
+            if (m_emptyPlaceholder != null)
+            {
+                m_emptyPlaceholder.Hidden = !isPointerOver;
+            }
+        }
+
+        // ------ Panel focus
+        // A panel's header shows it is the one being typed into while focus is within its zone and its window is the key
+        // window, which is WinUI3's rule (DockZone.RefreshPanelFocus, there with the window being active) and WPF's
+        // (IsKeyboardFocusWithin).
+        //
+        // AppKit has no focus-within, and no event when focus moves into or out of a view. What it has is the window's
+        // first responder, which is key-value observable, and NSWindow's became-key and resigned-key notifications. So
+        // each zone watches the window it is in for both, and works out again whether the first responder is itself or a
+        // view inside it (a text field being edited has its window's field editor as first responder, and the field
+        // editor sits inside the field, so that counts). The watches move with the zone from window to window, and go
+        // when it leaves one or is torn down; each holds this zone until it is let go of.
+        // https://developer.apple.com/documentation/appkit/nswindow/firstresponder
+        //
+        // A press only moves focus when it lands on a view that takes it (a field, a button), so a press on a panel's
+        // header, tabs, labels or empty space would leave focus, and the highlight, in another panel. A leaf zone takes
+        // focus itself for such a press, as WinUI3's does; anything under the press that takes focus has already taken it
+        // by then, since AppKit makes the clicked view first responder before it gets the press.
+
+        // Gives this zone focus for a press inside its panel, unless focus is already within it, and says whether the
+        // press was inside a panel at all. A split zone leaves this to the panels inside it, and an empty zone has nothing
+        // to type into.
+        private bool TakeFocusForPress ()
+        {
+            if (m_header == null)
+            {
+                return false;
+            }
+
+            if (!this.HasFocusWithin())
+            {
+                this.Window?.MakeFirstResponder(this);
+            }
+
+            return true;
+        }
+
+        // NSView.IsDescendantOf is true for the view itself, so this zone being first responder counts
+        private bool HasFocusWithin () => (this.Window?.FirstResponder is NSView focused) && focused.IsDescendantOf(this);
+
+        private void RefreshPanelFocus ()
+        {
+            if (m_header != null)
+            {
+                m_header.IsPanelFocused = (m_watchedWindow != null) && m_watchedWindow.IsKeyWindow && this.HasFocusWithin();
+            }
+        }
+
+        private void WatchWindow (NSWindow window)
+        {
+            if (window == m_watchedWindow)
+            {
+                return;
+            }
+
+            m_firstResponderWatch?.Dispose();
+            m_firstResponderWatch = null;
+            m_becameKeyWatch?.Dispose();
+            m_becameKeyWatch = null;
+            m_resignedKeyWatch?.Dispose();
+            m_resignedKeyWatch = null;
+
+            m_watchedWindow = window;
+            if (window != null)
+            {
+                m_firstResponderWatch = window.AddObserver("firstResponder", NSKeyValueObservingOptions.New, this.OnWindowFirstResponderChanged);
+                m_becameKeyWatch = NSWindow.Notifications.ObserveDidBecomeKey(window, this.OnWindowKeyStateChanged);
+                m_resignedKeyWatch = NSWindow.Notifications.ObserveDidResignKey(window, this.OnWindowKeyStateChanged);
+            }
+        }
+
         // ===========[ Subclasses/structs ]====================================
         // A menu item's command for one panel; the BindingSet that holds it is replaced on rebuild
         private sealed class PanelAction : System.Windows.Input.ICommand
@@ -456,10 +699,14 @@ namespace AJut.UX.Controls
         }
 
         // The selected panel's title, its close button, and the panel menu on a right click. Pressing
-        // anywhere else on it and dragging past the threshold starts a header drag.
+        // anywhere else on it and dragging past the threshold starts a header drag. It has an outline all around, as
+        // WinUI3's header bar does, so its bottom edge is the line between it and the panel's display.
         private sealed class HeaderView : ThemedView
         {
             private readonly DockZoneView m_owner;
+            private readonly NSTextField m_title;
+            private readonly DockGlyphButton m_close;
+            private bool m_isPanelFocused;
             private bool m_isPressPending;
             private CGPoint m_pressInZone;
             private CGPoint m_pressOnScreen;
@@ -468,6 +715,8 @@ namespace AJut.UX.Controls
             {
                 m_owner = owner;
                 this.BackgroundColorKey = ThemedColorKeys.DockZone_HeaderBackground;
+                this.BorderColorKey = ThemedColorKeys.DockZone_PanelBorder;
+                this.BorderThickness = kEdgeThickness;
 
                 var row = new FillStack(NSUserInterfaceLayoutOrientation.Horizontal, spacing: 6.0)
                 {
@@ -483,34 +732,53 @@ namespace AJut.UX.Controls
                     row.TrailingAnchor.ConstraintEqualTo(this.TrailingAnchor),
                 });
 
-                NSTextField title = NSTextField.CreateLabel(String.Empty);
-                title.LineBreakMode = NSLineBreakMode.TruncatingTail;
-                title.TextColor = ThemedColors.Get(ThemedColorKeys.DockZone_HeaderForeground);
-                owner.m_layoutBindings.BindLabel(title, shown, nameof(DockingContentAdapterModel.TitleContent), _ReadTitle);
-                row.Add(title, grows: true, alignment: eFillStackCrossAlignment.Center);
+                m_title = NSTextField.CreateLabel(String.Empty);
+                m_title.LineBreakMode = NSLineBreakMode.TruncatingTail;
+                m_title.TextColor = ThemedColors.Get(ThemedColorKeys.DockZone_HeaderForeground);
+                owner.m_layoutBindings.BindLabel(m_title, shown, nameof(DockingContentAdapterModel.TitleContent), _ReadTitle);
+                row.Add(m_title, grows: true, alignment: eFillStackCrossAlignment.Center);
 
                 if (shown.IsClosable)
                 {
-                    var close = new GeometryButton
+                    m_close = new DockGlyphButton(DockGlyphButton.eGlyph.Close)
                     {
-                        GeometryMarkup = "M6,6 L14,14 M14,6 L6,14",
-                        GeometryStretch = AJut.UX.Helpers.ePathStretch.None,
-                        TraceThickness = 1.5,
                         ToolTip = shown.HideDontClose ? "Hide" : "Close",
                     };
-                    close.TranslatesAutoresizingMaskIntoConstraints = false;
+                    m_close.TranslatesAutoresizingMaskIntoConstraints = false;
                     NSLayoutConstraint.ActivateConstraints(new[]
                     {
-                        close.WidthAnchor.ConstraintEqualTo((nfloat)kCloseButtonSize),
-                        close.HeightAnchor.ConstraintEqualTo((nfloat)kCloseButtonSize),
+                        m_close.WidthAnchor.ConstraintEqualTo((nfloat)kCloseButtonSize),
+                        m_close.HeightAnchor.ConstraintEqualTo((nfloat)kCloseButtonSize),
                     });
-                    owner.m_layoutBindings.BindCommand(close, new PanelAction(shown, owner.ClosePanel));
-                    row.Add(close, alignment: eFillStackCrossAlignment.Center);
+                    owner.m_layoutBindings.BindCommand(m_close, new PanelAction(shown, owner.ClosePanel));
+                    row.Add(m_close, alignment: eFillStackCrossAlignment.Center);
                 }
 
                 this.Menu = owner.BuildPanelMenu(shown);
 
                 string _ReadTitle () => owner.ReadTitle(shown);
+            }
+
+            /// <summary>Shows the panel as the one being typed into: the focused fill, with the title and close X in the text that reads on it</summary>
+            public bool IsPanelFocused
+            {
+                get => m_isPanelFocused;
+                set
+                {
+                    if (m_isPanelFocused == value)
+                    {
+                        return;
+                    }
+
+                    m_isPanelFocused = value;
+                    string textKey = value ? ThemedColorKeys.DockZone_HeaderFocusedForeground : ThemedColorKeys.DockZone_HeaderForeground;
+                    this.BackgroundColorKey = value ? ThemedColorKeys.DockZone_HeaderFocusedBackground : ThemedColorKeys.DockZone_HeaderBackground;
+                    m_title.TextColor = ThemedColors.Get(textKey);
+                    if (m_close != null)
+                    {
+                        m_close.GlyphColorKey = textKey;
+                    }
+                }
             }
 
             // The title is a label, which would take the press itself; the header takes it instead so the title is
@@ -523,6 +791,7 @@ namespace AJut.UX.Controls
 
             public override void MouseDown (NSEvent theEvent)
             {
+                m_owner.TakeFocusForPress();
                 m_pressInZone = m_owner.ConvertPointFromView(theEvent.LocationInWindow, null);
                 m_pressOnScreen = this.Window?.ConvertPointToScreen(theEvent.LocationInWindow) ?? CGPoint.Empty;
                 m_isPressPending = this.Window != null;
@@ -551,9 +820,11 @@ namespace AJut.UX.Controls
             }
         }
 
-        // The tabs of a Tabbed zone, along the bottom, drawn the way WinUI3 draws them. The selected tab is in the panel's
-        // fill, full height and with no top edge, over the line the strip draws along its top, so it reads as part of the
-        // panel above it. The other tabs sit below that line, a little shorter, and dimmed.
+        // The tabs of a Tabbed zone, along the bottom, drawn the way WinUI3 draws them. The strip overlaps the panel frame's
+        // bottom edge by that edge's thickness, so the selected tab, in the panel's fill, full height and with no top edge,
+        // covers the edge and reads as part of the panel above it. The other tabs sit just below the edge, which is their
+        // top, a little shorter, with their title and close X faint; the one under the pointer reaches the strip's bottom
+        // and its title brightens.
         //
         // Tabs keep their own widths. When they don't all fit, the strip scrolls sideways: a scroll button shows at each
         // end (disabled once there is nothing further that way), and the wheel or a sideways trackpad swipe scrolls it too.
@@ -563,8 +834,8 @@ namespace AJut.UX.Controls
         // The strip takes the mouse for its tabs (a tab's close button takes its own). A click selects, and a middle click
         // closes. A press that moves past the threshold is decided once, by the shared rule: along the strip it reorders,
         // up or down out of it tears the tab's panel off, when the panel allows it. While a reorder runs, a ghost of the
-        // tab follows the pointer along the strip and a line shows where it will land; the reorder itself is the VM's, on
-        // release.
+        // tab follows the pointer along the strip, the tab itself fades a little where it is, and a line shows where it
+        // will land; the reorder itself is the VM's, on release.
         private sealed class TabStrip : ThemedView
         {
             private const double kScrollStep = 80.0;
@@ -572,11 +843,10 @@ namespace AJut.UX.Controls
 
             private readonly DockZoneView m_owner;
             private readonly int m_selectedIndex;
-            private readonly ThemedView m_topLine;
             private readonly ThemedView m_clip;
             private readonly FillStack m_tabs;
-            private readonly GeometryButton m_scrollBack;
-            private readonly GeometryButton m_scrollForward;
+            private readonly DockGlyphButton m_scrollBack;
+            private readonly DockGlyphButton m_scrollForward;
             private readonly List<double> m_tabWidths = new List<double>();
             private ThemedView m_dragGhost;
             private ThemedView m_dragInsertLine;
@@ -592,13 +862,12 @@ namespace AJut.UX.Controls
                 m_selectedIndex = selectedIndex;
                 this.BackgroundColorKey = ThemedColorKeys.DockZone_TabStripBackground;
                 this.TranslatesAutoresizingMaskIntoConstraints = false;
-                this.HeightAnchor.ConstraintEqualTo((nfloat)kTabHeight).Active = true;
 
-                // Placed by frame in Layout, back to front: the line along the top, the tabs clipped to the space between
-                //  the scroll buttons (the selected tab covers the line), then the scroll buttons
-                m_topLine = new ThemedView { BackgroundColorKey = ThemedColorKeys.DockZone_PanelBorder };
-                this.AddSubview(m_topLine);
+                // The tabs are kTabHeight below the panel; the strip's top edge's worth overlaps the panel
+                this.HeightAnchor.ConstraintEqualTo((nfloat)(kTabHeight + kEdgeThickness)).Active = true;
 
+                // Placed by frame in Layout, back to front: the tabs clipped to the space between the scroll buttons, then
+                //  the scroll buttons
                 m_clip = new ThemedView();
                 if (m_clip.Layer != null)
                 {
@@ -620,8 +889,8 @@ namespace AJut.UX.Controls
                     m_tabs.Add(new TabView(owner, i, isSelected, hasLeftEdge: (i == 0) || isSelected, hasRightEdge: (i + 1) != selectedIndex, showsClose));
                 }
 
-                m_scrollBack = this.MakeScrollButton("M10,5 L6,10 L10,15", "Scroll tabs back", this.ScrollBack);
-                m_scrollForward = this.MakeScrollButton("M6,5 L10,10 L6,15", "Scroll tabs forward", this.ScrollForward);
+                m_scrollBack = this.MakeScrollButton(DockGlyphButton.eGlyph.ScrollBack, "Scroll tabs back", this.ScrollBack);
+                m_scrollForward = this.MakeScrollButton(DockGlyphButton.eGlyph.ScrollForward, "Scroll tabs forward", this.ScrollForward);
             }
 
             public override void Layout ()
@@ -635,8 +904,6 @@ namespace AJut.UX.Controls
                 {
                     return;
                 }
-
-                m_topLine.Frame = new CGRect(0, 0, (nfloat)width, (nfloat)kEdgeThickness);
 
                 // 1. Each tab is as wide as it wants to be, and the tabs sit edge to edge
                 m_tabWidths.Clear();
@@ -677,7 +944,7 @@ namespace AJut.UX.Controls
                 offset = Math.Clamp(offset, 0.0, maxOffset);
                 m_owner.m_tabScrollOffset = offset;
 
-                // 3. Place the clipped tabs and the scroll buttons, which sit under the top line
+                // 3. Place the clipped tabs and the scroll buttons, which sit below the panel's edge
                 m_clip.Frame = new CGRect((nfloat)buttonWidth, 0, (nfloat)viewport, (nfloat)height);
                 m_tabs.Frame = new CGRect((nfloat)(-offset), 0, (nfloat)contentWidth, (nfloat)height);
 
@@ -715,6 +982,7 @@ namespace AJut.UX.Controls
 
             public override void MouseDown (NSEvent theEvent)
             {
+                m_owner.TakeFocusForPress();
                 m_dragFromIndex = this.TabIndexAt(theEvent, clampToLast: false);
                 m_dragStart = this.ConvertPointFromView(theEvent.LocationInWindow, null);
                 m_isDragging = false;
@@ -794,13 +1062,10 @@ namespace AJut.UX.Controls
                 }
             }
 
-            private GeometryButton MakeScrollButton (string markup, string toolTip, Action scroll)
+            private DockGlyphButton MakeScrollButton (DockGlyphButton.eGlyph arrow, string toolTip, Action scroll)
             {
-                var button = new GeometryButton
+                var button = new DockGlyphButton(arrow)
                 {
-                    GeometryMarkup = markup,
-                    GeometryStretch = AJut.UX.Helpers.ePathStretch.None,
-                    TraceThickness = 1.5,
                     ToolTip = toolTip,
                     Hidden = true,
                 };
@@ -838,17 +1103,19 @@ namespace AJut.UX.Controls
                 return DockDragRules.FindTabIndexAtX(m_tabWidths, x);
             }
 
-            // A copy of the dragged tab that follows the pointer along the strip, and the line where it will land
+            // A copy of the dragged tab that follows the pointer along the strip, the line where it will land, and the tab
+            // itself faded where it is, as WinUI3's Dragging state fades it
             private void BeginReorderFeedback ()
             {
                 const double kDragGhostOpacity = 0.85;
 
                 DockingContentAdapterModel adapter = m_owner.m_zone.DockedContent[m_dragFromIndex];
                 double ghostWidth = (m_dragFromIndex < m_tabWidths.Count) ? m_tabWidths[m_dragFromIndex] : kTabHeight;
+                this.SetTabDragged(m_dragFromIndex, true);
                 m_dragGhost = new ThemedView
                 {
-                    BackgroundColorKey = ThemedColorKeys.DockZone_TabBackground,
-                    BorderColorKey = ThemedColorKeys.DockZone_PanelBorder,
+                    BackgroundColorKey = ThemedColorKeys.DockZone_DragGhostBackground,
+                    BorderColorKey = ThemedColorKeys.DockZone_DragGhostBorder,
                     BorderThickness = kEdgeThickness,
                     AlphaValue = (nfloat)kDragGhostOpacity,
                     Frame = new CGRect(0, 0, (nfloat)ghostWidth, this.Bounds.Height),
@@ -909,6 +1176,11 @@ namespace AJut.UX.Controls
 
             private void EndReorderFeedback ()
             {
+                if (m_isDragging)
+                {
+                    this.SetTabDragged(m_dragFromIndex, false);
+                }
+
                 m_dragGhost?.RemoveFromSuperview();
                 m_dragGhost = null;
                 m_dragInsertLine?.RemoveFromSuperview();
@@ -916,6 +1188,134 @@ namespace AJut.UX.Controls
                 m_dragFromIndex = -1;
                 m_dragTargetIndex = -1;
                 m_isDragging = false;
+            }
+
+            private void SetTabDragged (int index, bool isDragged)
+            {
+                const double kDraggedTabOpacity = 0.9;
+
+                NSView tab = (index >= 0) ? m_tabs.Children.ElementAtOrDefault(index) : null;
+                if (tab != null)
+                {
+                    tab.AlphaValue = (nfloat)(isDragged ? kDraggedTabOpacity : 1.0);
+                }
+            }
+        }
+
+        // The dock's small glyph buttons, drawn the way WinUI3's are: the tab strip's scroll arrows (DockTabScrollButton)
+        // and the header's and tabs' close X (DockCloseButton). Clear at rest, the hover or pressed fill with its corners
+        // rounded 2, and faded while disabled (a scroll arrow with nowhere further to go). A scroll arrow is a small solid
+        // triangle in the dock's text color, as WinUI3 shows the characters U+25C2 and U+25B8; the X is stroked in the text
+        // beside it, which is the focused header text while its panel is focused. A GeometryButton would fill in the button
+        // face color and trace in the common border, which all but vanishes on the dark palette.
+        private sealed class DockGlyphButton : ManagedButton
+        {
+            private readonly eGlyph m_glyph;
+            private string m_glyphColorKey;
+
+            public DockGlyphButton (eGlyph glyph)
+            {
+                m_glyph = glyph;
+                m_glyphColorKey = (glyph == eGlyph.Close) ? ThemedColorKeys.DockZone_HeaderForeground : ThemedColorKeys.DockTabScrollButton_Glyph;
+            }
+
+            /// <summary>The <see cref="ThemedColors"/> key the glyph is drawn in: the text beside it for the X, the scroll arrow key for the arrows</summary>
+            public string GlyphColorKey
+            {
+                get => m_glyphColorKey;
+                set
+                {
+                    m_glyphColorKey = value;
+                    this.NeedsDisplay = true;
+                }
+            }
+
+            public override void DrawRect (CGRect dirtyRect)
+            {
+                const double kCornerRadius = 2.0;
+                const double kDisabledOpacity = 0.4;
+
+                CGRect bounds = this.Bounds;
+                eManagedButtonState state = this.CurrentState;
+                bool isClose = m_glyph == eGlyph.Close;
+
+                // 1. The fill, only under the pointer or pressed
+                string fillKey = null;
+                if (state == eManagedButtonState.PointerOver)
+                {
+                    fillKey = isClose ? ThemedColorKeys.DockCloseButton_HoverBackground : ThemedColorKeys.DockTabScrollButton_HoverBackground;
+                }
+                else if (state == eManagedButtonState.Pressed)
+                {
+                    fillKey = isClose ? ThemedColorKeys.DockCloseButton_PressedBackground : ThemedColorKeys.DockTabScrollButton_PressedBackground;
+                }
+
+                if (fillKey != null)
+                {
+                    ThemedColors.Get(fillKey).SetFill();
+                    NSBezierPath.FromRoundedRect(bounds, (nfloat)kCornerRadius, (nfloat)kCornerRadius).Fill();
+                }
+
+                // 2. The glyph
+                NSColor glyphColor = ThemedColors.Get(m_glyphColorKey);
+                if (state == eManagedButtonState.Disabled)
+                {
+                    glyphColor = glyphColor.ColorWithAlphaComponent((nfloat)kDisabledOpacity);
+                }
+
+                double centerX = (double)bounds.Width / 2.0;
+                double centerY = (double)bounds.Height / 2.0;
+                if (isClose)
+                {
+                    DrawCloseX(centerX, centerY, glyphColor);
+                }
+                else
+                {
+                    DrawScrollArrow(centerX, centerY, m_glyph == eGlyph.ScrollBack, glyphColor);
+                }
+            }
+
+            private static void DrawCloseX (double centerX, double centerY, NSColor color)
+            {
+                const double kHalfSpan = 4.0;
+                const double kLineWidth = 1.5;
+
+                var cross = new NSBezierPath { LineWidth = (nfloat)kLineWidth };
+                cross.MoveTo(new CGPoint(centerX - kHalfSpan, centerY - kHalfSpan));
+                cross.LineTo(new CGPoint(centerX + kHalfSpan, centerY + kHalfSpan));
+                cross.MoveTo(new CGPoint(centerX + kHalfSpan, centerY - kHalfSpan));
+                cross.LineTo(new CGPoint(centerX - kHalfSpan, centerY + kHalfSpan));
+                color.SetStroke();
+                cross.Stroke();
+            }
+
+            // Points the way it scrolls (the view is flipped, so +y is down)
+            private static void DrawScrollArrow (double centerX, double centerY, bool pointsBack, NSColor color)
+            {
+                const double kArrowWidth = 4.0;
+                const double kArrowHalfHeight = 3.5;
+
+                double tipX = pointsBack ? centerX - (kArrowWidth / 2.0) : centerX + (kArrowWidth / 2.0);
+                double baseX = pointsBack ? centerX + (kArrowWidth / 2.0) : centerX - (kArrowWidth / 2.0);
+                var arrow = new NSBezierPath();
+                arrow.MoveTo(new CGPoint(baseX, centerY - kArrowHalfHeight));
+                arrow.LineTo(new CGPoint(tipX, centerY));
+                arrow.LineTo(new CGPoint(baseX, centerY + kArrowHalfHeight));
+                arrow.ClosePath();
+                color.SetFill();
+                arrow.Fill();
+            }
+
+            public enum eGlyph
+            {
+                /// <summary>The arrow at the strip's start, pointing back</summary>
+                ScrollBack,
+
+                /// <summary>The arrow at the strip's end, pointing forward</summary>
+                ScrollForward,
+
+                /// <summary>The X that closes a panel</summary>
+                Close,
             }
         }
 
@@ -925,10 +1325,13 @@ namespace AJut.UX.Controls
         // close button is the one child it shows).
         private sealed class TabView : NSView
         {
-            // Unselected tabs sit this much short of the strip's bottom, and this faint. WinUI3 dims them further (0.35)
-            //  and brightens one under the pointer; this has no hover look, so it stays readable at rest instead.
+            // Unselected tabs sit this much short of the strip's bottom, with their title and close X this faint; the fill
+            //  and edges stay full. Under the pointer any tab takes the hover fill, the muted primary that says it can be
+            //  dragged off, inset this much inside its face, and an unselected one reaches the strip's bottom with its
+            //  label left as faint. Both flagships show the same.
             private const double kUnselectedBottomInset = 2.0;
-            private const double kUnselectedOpacity = 0.5;
+            private const double kUnselectedLabelOpacity = 0.35;
+            private const double kHoverFillInset = 1.0;
             private const double kTabCloseSize = 16.0;
             private const double kTabCloseGap = 2.0;
 
@@ -936,7 +1339,10 @@ namespace AJut.UX.Controls
             private readonly int m_index;
             private readonly bool m_isSelected;
             private readonly NSTextField m_title;
-            private readonly GeometryButton m_close;
+            private readonly DockGlyphButton m_close;
+            private readonly ThemedView m_hoverFill;
+            private readonly NSLayoutConstraint m_faceBottom;
+            private readonly NSTrackingArea m_hoverTrackingArea;
 
             public TabView (DockZoneView owner, int index, bool isSelected, bool hasLeftEdge, bool hasRightEdge, bool showsClose)
             {
@@ -951,17 +1357,34 @@ namespace AJut.UX.Controls
                 var face = new ThemedView
                 {
                     BackgroundColorKey = isSelected ? ThemedColorKeys.DockZone_SelectedTabBackground : ThemedColorKeys.DockZone_TabBackground,
-                    AlphaValue = isSelected ? (nfloat)1.0 : (nfloat)kUnselectedOpacity,
                     TranslatesAutoresizingMaskIntoConstraints = false,
                 };
 
                 this.AddSubview(face);
+                m_faceBottom = face.BottomAnchor.ConstraintEqualTo(this.BottomAnchor, (nfloat)(isSelected ? 0.0 : -kUnselectedBottomInset));
                 NSLayoutConstraint.ActivateConstraints(new[]
                 {
                     face.TopAnchor.ConstraintEqualTo(this.TopAnchor, (nfloat)(isSelected ? 0.0 : kEdgeThickness)),
-                    face.BottomAnchor.ConstraintEqualTo(this.BottomAnchor, (nfloat)(isSelected ? 0.0 : -kUnselectedBottomInset)),
+                    m_faceBottom,
                     face.LeadingAnchor.ConstraintEqualTo(this.LeadingAnchor),
                     face.TrailingAnchor.ConstraintEqualTo(this.TrailingAnchor),
+                });
+
+                // Under the title and X, so they draw over it
+                m_hoverFill = new ThemedView
+                {
+                    BackgroundColorKey = ThemedColorKeys.DockZone_TabPointerOverBackground,
+                    Hidden = true,
+                    TranslatesAutoresizingMaskIntoConstraints = false,
+                };
+
+                face.AddSubview(m_hoverFill);
+                NSLayoutConstraint.ActivateConstraints(new[]
+                {
+                    m_hoverFill.TopAnchor.ConstraintEqualTo(face.TopAnchor, (nfloat)kHoverFillInset),
+                    m_hoverFill.BottomAnchor.ConstraintEqualTo(face.BottomAnchor, (nfloat)(-kHoverFillInset)),
+                    m_hoverFill.LeadingAnchor.ConstraintEqualTo(face.LeadingAnchor, (nfloat)kHoverFillInset),
+                    m_hoverFill.TrailingAnchor.ConstraintEqualTo(face.TrailingAnchor, (nfloat)(-kHoverFillInset)),
                 });
 
                 m_title = NSTextField.CreateLabel(String.Empty);
@@ -978,11 +1401,8 @@ namespace AJut.UX.Controls
 
                 if (showsClose && adapter.IsClosable)
                 {
-                    m_close = new GeometryButton
+                    m_close = new DockGlyphButton(DockGlyphButton.eGlyph.Close)
                     {
-                        GeometryMarkup = "M4,4 L12,12 M12,4 L4,12",
-                        GeometryStretch = AJut.UX.Helpers.ePathStretch.None,
-                        TraceThickness = 1.5,
                         ToolTip = adapter.HideDontClose ? "Hide" : "Close",
                         TranslatesAutoresizingMaskIntoConstraints = false,
                     };
@@ -1014,6 +1434,24 @@ namespace AJut.UX.Controls
 
                 AddEdge(face, eTabEdge.Bottom);
 
+                // One area for the tab's life, as ManagedButton's is
+                m_hoverTrackingArea = new NSTrackingArea(
+                    CGRect.Empty,
+                    NSTrackingAreaOptions.MouseEnteredAndExited | NSTrackingAreaOptions.ActiveInActiveApp | NSTrackingAreaOptions.InVisibleRect,
+                    this,
+                    null
+                );
+                this.AddTrackingArea(m_hoverTrackingArea);
+
+                if (!isSelected)
+                {
+                    m_title.AlphaValue = (nfloat)kUnselectedLabelOpacity;
+                    if (m_close != null)
+                    {
+                        m_close.AlphaValue = (nfloat)kUnselectedLabelOpacity;
+                    }
+                }
+
                 string _ReadTitle () => owner.ReadTitle(adapter);
             }
 
@@ -1029,6 +1467,40 @@ namespace AJut.UX.Controls
             {
                 m_owner.SelectTab(m_index);
                 return true;
+            }
+
+            public override void MouseEntered (NSEvent theEvent)
+            {
+                if (theEvent.TrackingArea == m_hoverTrackingArea)
+                {
+                    this.ShowPointerOver(true);
+                }
+                else
+                {
+                    base.MouseEntered(theEvent);
+                }
+            }
+
+            public override void MouseExited (NSEvent theEvent)
+            {
+                if (theEvent.TrackingArea == m_hoverTrackingArea)
+                {
+                    this.ShowPointerOver(false);
+                }
+                else
+                {
+                    base.MouseExited(theEvent);
+                }
+            }
+
+            // The selected tab is always at full height; an unselected one reaches the strip's bottom under the pointer
+            private void ShowPointerOver (bool isPointerOver)
+            {
+                m_hoverFill.Hidden = !isPointerOver;
+                if (!m_isSelected)
+                {
+                    m_faceBottom.Constant = (nfloat)(isPointerOver ? 0.0 : -kUnselectedBottomInset);
+                }
             }
 
             // A line in the border color along one edge of the face, standing in for WinUI3's per-side border thickness

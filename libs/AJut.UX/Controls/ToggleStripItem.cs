@@ -203,13 +203,15 @@ namespace AJut.UX.Controls
         /// or <paramref name="data"/> has no such property, which is logged once for each type and path
         /// </summary>
         [UnconditionalSuppressMessage("Trimming", "IL2075",
-            Justification = "DisplayPropertyPath names a property of the item's data, whose type is only known at runtime. A trimmed app names its items with IToggleStripHost.ItemNameSelector, or keeps the property with DynamicDependency; without either, a removed property leaves the item named from its data, as no path does.")]
+            Justification = "DisplayPropertyPath names a property of the item's data, whose type is only known at runtime. A trimmed app gives the strip its items through SetItemsSource<T>, which keeps T's public properties, names them with IToggleStripHost.ItemNameSelector, or keeps the property with DynamicDependency; without any of these, a removed property leaves the item named from its data, as no path does.")]
         private static string? ReadDisplayProperty (object data, string path)
         {
             // DisplayPropertyPath names a property by a string, on data whose type is only known at runtime, so reading it
             //  takes reflection the trimmer can't follow. An app that trims can lose a property nothing else reads, and the
-            //  item is then named from its data, the same as with no path at all. That is what ItemNameSelector is for: it
-            //  reads the name in code the trimmer sees. A trimmed app that keeps using the path keeps the property with
+            //  item is then named from its data, the same as with no path at all. Each strip's SetItemsSource<T> covers the
+            //  common case: its type parameter carries [DynamicallyAccessedMembers(PublicProperties)], so the trimmer keeps
+            //  the item type's public properties from the call. ItemNameSelector reads the name in code the trimmer sees, for
+            //  a strip that can't name its item type. Otherwise the property is kept with
             //  [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(...))].
             Type dataType = data.GetType();
             PropertyInfo? property = dataType.GetProperty(path);
@@ -217,7 +219,7 @@ namespace AJut.UX.Controls
             {
                 if (g_unresolvedPathsLogged.TryAdd($"{dataType.FullName}.{path}", 0))
                 {
-                    Logger.LogError($"[ToggleStrip] '{path}' names no public property on {dataType.FullName}, so its items are named from their data. In an app that trims, a property only DisplayPropertyPath reads can be removed: set ItemNameSelector to name items without reflection.");
+                    Logger.LogError($"[ToggleStrip] '{path}' names no public property on {dataType.FullName}, so its items are named from their data. In an app that trims, a property only DisplayPropertyPath reads can be removed: give the strip its items with SetItemsSource<T>, which keeps T's public properties, or set ItemNameSelector to name items without reflection.");
                 }
 
                 return null;

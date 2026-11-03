@@ -5,6 +5,7 @@ namespace AJut.UX.Controls
     using AJut.UX.Theming;
     using AppKit;
     using CoreGraphics;
+    using Foundation;
 
     // ===========[ GeometryButton ]=============================================
     // A button that is a shape: path markup (the same string WinUI3's GeometryButton takes)
@@ -16,7 +17,10 @@ namespace AJut.UX.Controls
     // data (y-down) draw the right way up with no transform. The hit area is the whole button,
     // not only the shape.
     //
-    // Colors: the fill keys alias, when themed, to the same Button* keys the WinUI3
+    // An optional title is drawn centered over the shape, the way the WinUI3 GeometryButton shows
+    // its content on top of its geometry.
+    //
+    // Colors: the fill and title keys alias, when themed, to the same Button* keys the WinUI3
     // GeometryButton's states use, and the trace keys are the WinUI3 GeometryButton's own trace
     // keys. Unthemed, the fill is a label color rather than a button face color, so the shape
     // reads as a glyph among stock controls.
@@ -26,8 +30,34 @@ namespace AJut.UX.Controls
         private string m_geometryMarkup;
         private ePathStretch m_geometryStretch = ePathStretch.UniformToFill;
         private double m_traceThickness;
+        private string m_title = String.Empty;
+        private NSFont m_titleFont = NSFont.SystemFontOfSize(NSFont.SystemFontSize);
 
         // ===========[ Properties ]============================================
+        /// <summary>The text drawn centered over the shape; empty, the default, draws none</summary>
+        public string Title
+        {
+            get => m_title;
+            set
+            {
+                m_title = value ?? String.Empty;
+                this.InvalidateIntrinsicContentSize();
+                this.NeedsDisplay = true;
+            }
+        }
+
+        /// <summary>The title's font, the system font at its regular size by default</summary>
+        public NSFont TitleFont
+        {
+            get => m_titleFont;
+            set
+            {
+                m_titleFont = value ?? NSFont.SystemFontOfSize(NSFont.SystemFontSize);
+                this.InvalidateIntrinsicContentSize();
+                this.NeedsDisplay = true;
+            }
+        }
+
         /// <summary>
         /// The shape, as path markup (for example "M0,0 L10,5 L0,10 Z"). Setting markup that does not parse
         /// clears the shape and logs the parse error.
@@ -89,47 +119,66 @@ namespace AJut.UX.Controls
             }
         }
 
-        /// <summary>With nothing constraining it, the button is the size of its shape (plus its outline)</summary>
+        /// <summary>
+        /// With nothing constraining it, the button is the size of its shape (plus its outline), and at least big enough
+        /// for its title
+        /// </summary>
         public override CGSize IntrinsicContentSize
         {
             get
             {
-                if (m_geometry == null || m_geometry.Bounds.IsEmpty)
+                bool hasShape = (m_geometry != null) && !m_geometry.Bounds.IsEmpty;
+                if (!hasShape && (m_title.Length == 0))
                 {
                     return new CGSize(NSView.NoIntrinsicMetric, NSView.NoIntrinsicMetric);
                 }
 
-                return new CGSize(
-                    (nfloat)(m_geometry.Bounds.Width + m_traceThickness),
-                    (nfloat)(m_geometry.Bounds.Height + m_traceThickness)
-                );
+                double width = hasShape ? m_geometry.Bounds.Width + m_traceThickness : 0.0;
+                double height = hasShape ? m_geometry.Bounds.Height + m_traceThickness : 0.0;
+                if (m_title.Length > 0)
+                {
+                    CGSize titleSize = this.MakeTitle(NSColor.Black).Size;
+                    width = Math.Max(width, Math.Ceiling((double)titleSize.Width));
+                    height = Math.Max(height, Math.Ceiling((double)titleSize.Height));
+                }
+
+                return new CGSize((nfloat)width, (nfloat)height);
             }
         }
+
+        protected override string DefaultAccessibilityLabel => m_title;
 
         // ===========[ Public Interface Methods ]==============================
         public override void DrawRect (CGRect dirtyRect)
         {
-            if (m_geometry == null || m_geometry.Bounds.IsEmpty)
-            {
-                return;
-            }
-
             // UniformToFill overfills on purpose and is cut to the button, as the XAML and UIKit buttons are. From
             // macOS 14 a view no longer clips its own drawing to its bounds by default, so the clip is set here.
             CGRect bounds = this.Bounds;
             NSBezierPath.ClipRect(bounds);
-            PathFit fit = PathFit.Compute(m_geometry.Bounds, (double)bounds.Width, (double)bounds.Height, m_geometryStretch, m_traceThickness);
-            NSBezierPath path = m_geometry.ToBezierPath(fit);
-
             eManagedButtonState state = this.CurrentState;
-            ThemedColors.Get(FillKeyFor(state)).SetFill();
-            path.Fill();
-
-            if (m_traceThickness > 0.0)
+            if ((m_geometry != null) && !m_geometry.Bounds.IsEmpty)
             {
-                path.LineWidth = (nfloat)m_traceThickness;
-                ThemedColors.Get(TraceKeyFor(state)).SetStroke();
-                path.Stroke();
+                PathFit fit = PathFit.Compute(m_geometry.Bounds, (double)bounds.Width, (double)bounds.Height, m_geometryStretch, m_traceThickness);
+                NSBezierPath path = m_geometry.ToBezierPath(fit);
+                ThemedColors.Get(FillKeyFor(state)).SetFill();
+                path.Fill();
+
+                if (m_traceThickness > 0.0)
+                {
+                    path.LineWidth = (nfloat)m_traceThickness;
+                    ThemedColors.Get(TraceKeyFor(state)).SetStroke();
+                    path.Stroke();
+                }
+            }
+
+            if (m_title.Length > 0)
+            {
+                NSAttributedString title = this.MakeTitle(ThemedColors.Get(ForegroundKeyFor(state)));
+                CGSize size = title.Size;
+                title.DrawAtPoint(new CGPoint(
+                    (bounds.Width - size.Width) / 2,
+                    (bounds.Height - size.Height) / 2
+                ));
             }
         }
 
@@ -154,6 +203,22 @@ namespace AJut.UX.Controls
                 case eManagedButtonState.Disabled: return ThemedColorKeys.GeometryButton_TraceDisabled;
                 default: return ThemedColorKeys.GeometryButton_Trace;
             }
+        }
+
+        private static string ForegroundKeyFor (eManagedButtonState state)
+        {
+            switch (state)
+            {
+                case eManagedButtonState.PointerOver: return ThemedColorKeys.GeometryButton_ForegroundPointerOver;
+                case eManagedButtonState.Pressed: return ThemedColorKeys.GeometryButton_ForegroundPressed;
+                case eManagedButtonState.Disabled: return ThemedColorKeys.GeometryButton_ForegroundDisabled;
+                default: return ThemedColorKeys.GeometryButton_Foreground;
+            }
+        }
+
+        private NSAttributedString MakeTitle (NSColor foreground)
+        {
+            return new NSAttributedString(m_title, new NSStringAttributes { Font = m_titleFont, ForegroundColor = foreground });
         }
     }
 }

@@ -11,6 +11,8 @@ namespace AJut.UX.Controls
     /// <remarks>
     /// The dots sit outside the strip's bounds, so they take no layout space and the strip doesn't move as they come and
     /// go. They take no input either. Each is drawn in the strip's scroll indicator color at <see cref="kDotOpacity"/>.
+    /// Where the strip's host has no room for a dot past an end (a strip that runs to its host's edge, as a full-width one
+    /// does), <see cref="DotCenterFor"/> puts it the same distance inside that end instead, so the host never clips it away.
     /// </remarks>
     /// <param name="ShowBack">Show the dot before the strip's leading end (left, or top): it can scroll back</param>
     /// <param name="ShowForward">Show the dot past the strip's trailing end (right, or bottom): it can scroll forward</param>
@@ -46,6 +48,28 @@ namespace AJut.UX.Controls
                 ShowBack: offset > kEndTolerance,
                 ShowForward: offset < (maxOffset - kEndTolerance)
             );
+        }
+
+        /// <summary>
+        /// Where the center of the dot at one end goes, along the strip, in the space of the host it is drawn in:
+        /// <see cref="kDotCenterOffset"/> past the end when the whole dot fits inside the host there, else the same
+        /// distance inside the end. A host clips what lies past its bounds, so a dot past the end of a strip that runs to
+        /// the host's edge would never show.
+        /// </summary>
+        /// <param name="stripEnd">The strip's end, measured from the host's leading edge</param>
+        /// <param name="isTrailingEnd">True for the trailing end (right, or bottom), false for the leading one</param>
+        /// <param name="hostLength">The host's length along the strip, from its leading edge</param>
+        /// <param name="scale">Device units per unit of the sizes here, such as an Android screen density; 1 where they match</param>
+        public static double DotCenterFor (double stripEnd, bool isTrailingEnd, double hostLength, double scale = 1.0)
+        {
+            double offset = kDotCenterOffset * scale;
+            double radius = (kDotDiameter * scale) / 2.0;
+            if (isTrailingEnd)
+            {
+                return ((stripEnd + offset + radius) <= hostLength) ? stripEnd + offset : stripEnd - offset;
+            }
+
+            return ((stripEnd - offset - radius) >= 0.0) ? stripEnd - offset : stripEnd + offset;
         }
     }
 }

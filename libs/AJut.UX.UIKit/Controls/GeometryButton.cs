@@ -45,6 +45,7 @@ namespace AJut.UX.Controls
             m_shape.ZPosition = -1;
             this.Layer.InsertSublayer(m_shape, 0);
             this.Configuration = UIButtonConfiguration.PlainButtonConfiguration;
+            FocusVisual.TakeOver(this);
         }
 
         // ===========[ Properties ]===================================
@@ -109,6 +110,14 @@ namespace AJut.UX.Controls
             m_shape.FillRule = m_backgroundGeometry?.FillRule == ePathFillRule.Nonzero ? CAShapeLayer.FillRuleNonZero : CAShapeLayer.FillRuleEvenOdd;
             m_shape.Path = this.BuildShapePath();
             CATransaction.Commit();
+            FocusVisual.Update(this);
+        }
+
+        // Keyboard focus shows as AJut's dotted rectangle (see FocusVisual)
+        public override void DidUpdateFocus (UIFocusUpdateContext context, UIFocusAnimationCoordinator coordinator)
+        {
+            base.DidUpdateFocus(context, coordinator);
+            FocusVisual.Update(this);
         }
 
         // ===========[ Helper Methods ]===================================

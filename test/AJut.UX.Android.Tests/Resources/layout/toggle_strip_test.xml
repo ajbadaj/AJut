@@ -55,4 +55,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:ajutOrientation="vertical" />
+
+    <ajut.ux.controls.EnumComboBox
+        android:id="@+id/enum_combo_box_disabled"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:enabled="false" />
 </FrameLayout>

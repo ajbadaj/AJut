@@ -19,7 +19,8 @@ namespace AJut.UX.Controls
     // click outside it, a second click on the swatch, or the swatch leaving its window, so it acts
     // like a popover rather than a window left open.
     //
-    // The border shows the AJut highlight while this swatch owns the panel.
+    // The border shows the AJut highlight while this swatch owns the panel. Under the pointer, and while it owns the
+    // panel, the swatch takes the edit overlay WinUI3's and Android's take: a dim and a dog-ear in its corner.
     public class ColorEditIngressControl : ThemedView, IUserEditNotifier
     {
         private const double kDefaultSize = 24.0;
@@ -28,9 +29,11 @@ namespace AJut.UX.Controls
         private static readonly ColorArgb kDefaultColor = new ColorArgb(byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue);
 
         private readonly IngressWell m_well;
+        private readonly EditOverlay m_overlay;
         private ColorArgb m_editColor = kDefaultColor;
         private ColorArgb m_colorAtEditStart;
         private bool m_isEditing;
+        private bool m_isPointerOver;
         private bool m_isReadOnly;
         private NSObject m_clickAwayMonitor;
 
@@ -55,13 +58,30 @@ namespace AJut.UX.Controls
 #pragma warning restore CA1422
             m_well.Activated += this.OnWellActivated;
             this.AddSubview(m_well);
+
+            // Added after the well, so it draws over it; it takes no clicks, which go through to the well
+            m_overlay = new EditOverlay { TranslatesAutoresizingMaskIntoConstraints = false };
+            this.AddSubview(m_overlay);
             NSLayoutConstraint.ActivateConstraints(new[]
             {
                 m_well.TopAnchor.ConstraintEqualTo(this.TopAnchor, (nfloat)kWellInset),
                 m_well.BottomAnchor.ConstraintEqualTo(this.BottomAnchor, (nfloat)(-kWellInset)),
                 m_well.LeadingAnchor.ConstraintEqualTo(this.LeadingAnchor, (nfloat)kWellInset),
                 m_well.TrailingAnchor.ConstraintEqualTo(this.TrailingAnchor, (nfloat)(-kWellInset)),
+                m_overlay.TopAnchor.ConstraintEqualTo(m_well.TopAnchor),
+                m_overlay.BottomAnchor.ConstraintEqualTo(m_well.BottomAnchor),
+                m_overlay.LeadingAnchor.ConstraintEqualTo(m_well.LeadingAnchor),
+                m_overlay.TrailingAnchor.ConstraintEqualTo(m_well.TrailingAnchor),
             });
+
+            // One tracking area for the control's whole life, kept in step with its visible rect by AppKit, for the
+            // reasons ManagedButton gives for its own
+            this.AddTrackingArea(new NSTrackingArea(
+                CoreGraphics.CGRect.Empty,
+                NSTrackingAreaOptions.MouseEnteredAndExited | NSTrackingAreaOptions.ActiveInActiveApp | NSTrackingAreaOptions.InVisibleRect,
+                this,
+                null
+            ));
         }
 
         protected override void Dispose (bool disposing)
@@ -132,7 +152,18 @@ namespace AJut.UX.Controls
             base.ViewWillMoveToWindow(newWindow);
         }
 
+        public override void MouseEntered (NSEvent theEvent) => this.SetPointerOver(true);
+        public override void MouseExited (NSEvent theEvent) => this.SetPointerOver(false);
+
         // ===========[ Helper Methods ]========================================
+        private void SetPointerOver (bool isPointerOver)
+        {
+            m_isPointerOver = isPointerOver;
+            this.RefreshOverlay();
+        }
+
+        private void RefreshOverlay () => m_overlay.ShowsEditLook = m_isPointerOver || m_isEditing;
+
         private void SetEditColor (ColorArgb value, bool updateWell)
         {
             if (m_editColor == value)
@@ -205,6 +236,7 @@ namespace AJut.UX.Controls
             m_isEditing = true;
             m_colorAtEditStart = m_editColor;
             this.BorderColorKey = ThemedColorKeys.ColorEditIngress_HighlightBorder;
+            this.RefreshOverlay();
         }
 
         private void OnEditEnded ()
@@ -217,6 +249,7 @@ namespace AJut.UX.Controls
 
             m_isEditing = false;
             this.BorderColorKey = ThemedColorKeys.ColorEditIngress_NormalBorder;
+            this.RefreshOverlay();
             if (m_colorAtEditStart != m_editColor)
             {
                 this.UserEditComplete?.Invoke(this, new UserEditAppliedEventArgs(m_colorAtEditStart, m_editColor));
@@ -224,6 +257,68 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ Subclasses/structs ]====================================
+        // The edit overlay over the swatch, in WinUI3's literal colors: a dim over the whole swatch and a dog-ear in its
+        // bottom trailing corner, edged along its foot with a light line. It is see-through to clicks.
+        private sealed class EditOverlay : NSView
+        {
+            private const double kDogEarMax = 24.0;
+            private const double kFootLineWidth = 1.0;
+            private const uint kDim = 0x60000000;
+            private const uint kDogEarFill = 0x33505050;
+            private const uint kDogEarEdge = 0x3FFFFFFF;
+
+            private bool m_showsEditLook;
+
+            public bool ShowsEditLook
+            {
+                get => m_showsEditLook;
+                set
+                {
+                    if (m_showsEditLook != value)
+                    {
+                        m_showsEditLook = value;
+                        this.NeedsDisplay = true;
+                    }
+                }
+            }
+
+            public override bool IsFlipped => true;
+
+            public override NSView HitTest (CoreGraphics.CGPoint aPoint) => null;
+
+            public override void DrawRect (CoreGraphics.CGRect dirtyRect)
+            {
+                if (!m_showsEditLook)
+                {
+                    return;
+                }
+
+                CoreGraphics.CGRect bounds = this.Bounds;
+                ThemedColorKeys.Srgb(kDim).SetFill();
+                NSBezierPath.FillRect(bounds);
+
+                // The view is flipped, so the foot is the larger y
+                double dogEar = Math.Min(kDogEarMax, Math.Min((double)bounds.Width, (double)bounds.Height));
+                double right = (double)bounds.Right;
+                double bottom = (double)bounds.Bottom;
+                var corner = new NSBezierPath();
+                corner.MoveTo(new CoreGraphics.CGPoint(right - dogEar, bottom));
+                corner.LineTo(new CoreGraphics.CGPoint(right, bottom));
+                corner.LineTo(new CoreGraphics.CGPoint(right, bottom - dogEar));
+                corner.ClosePath();
+                ThemedColorKeys.Srgb(kDogEarFill).SetFill();
+                corner.Fill();
+
+                // Stroked along its center, so it sits half its width up from the foot to stay inside the bounds
+                double footY = bottom - (kFootLineWidth / 2.0);
+                var foot = new NSBezierPath { LineWidth = (nfloat)kFootLineWidth };
+                foot.MoveTo(new CoreGraphics.CGPoint(right - dogEar, footY));
+                foot.LineTo(new CoreGraphics.CGPoint(right, footY));
+                ThemedColorKeys.Srgb(kDogEarEdge).SetStroke();
+                foot.Stroke();
+            }
+        }
+
         // Tells its owner when it takes the color panel and when it lets it go
         private sealed class IngressWell : NSColorWell
         {

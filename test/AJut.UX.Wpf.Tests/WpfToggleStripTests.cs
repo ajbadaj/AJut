@@ -1,7 +1,9 @@
 namespace AJut.UX.Tests
 {
     using System.Collections;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Collections.Specialized;
     using System.Linq;
     using System.Windows;
     using System.Windows.Controls;
@@ -51,13 +53,146 @@ namespace AJut.UX.Tests
                 StackPanel host = MakeHost(strip);
                 Assert.AreEqual(eCorner.TopLeft | eCorner.BottomLeft, RoundedCornersOf(strip, "A"), "With B after it, A only rounds its left end");
 
-                // Removed through the strip's own items: WPF's ItemsSource remove does not reach them yet (it looks for
-                // the removed data among the items, which never matches), and that is a separate defect.
+                // Removed through the strip's own items; a remove from the source is in the tests further down
                 strip.Items.RemoveAt(1);
                 LayOut(host);
 
                 Assert.AreEqual(new Thickness(0), InnerBorderOf(strip, "A").BorderThickness, "With B gone, A is the only item and draws no separator");
                 Assert.AreEqual(eCorner.All, RoundedCornersOf(strip, "A"), "With B gone, A takes all of the strip's corners");
+            });
+        }
+
+        // ===========[ The items follow their source ]=========================
+        [TestMethod]
+        public void WpfToggleStrip_SourceRemove_TheItemLeavesTheStrip ()
+        {
+            StaTestThread.Run(() =>
+            {
+                var source = new ObservableCollection<string> { "A", "B", "C" };
+                ToggleStrip strip = MakeStrip(source);
+
+                source.Remove("B");
+
+                Assert.AreEqual("A, C", DataOf(strip), "The item taken out of the source leaves the strip");
+            });
+        }
+
+        [TestMethod]
+        public void WpfToggleStrip_SourceInsert_TheItemGoesWhereTheSourcePutIt ()
+        {
+            StaTestThread.Run(() =>
+            {
+                var source = new ObservableCollection<string> { "A", "B", "C" };
+                ToggleStrip strip = MakeStrip(source);
+
+                source.Insert(1, "X");
+
+                Assert.AreEqual("A, X, B, C", DataOf(strip), "The item inserted into the source sits at the same place in the strip");
+            });
+        }
+
+        [TestMethod]
+        public void WpfToggleStrip_SourceReplace_TheItemIsReplacedInPlace ()
+        {
+            StaTestThread.Run(() =>
+            {
+                var source = new ObservableCollection<string> { "A", "B", "C" };
+                ToggleStrip strip = MakeStrip(source);
+
+                source[1] = "Y";
+
+                Assert.AreEqual("A, Y, C", DataOf(strip), "The replaced item is swapped where it was");
+            });
+        }
+
+        [TestMethod]
+        public void WpfToggleStrip_SourceMove_TheItemsFollowWithoutDuplicates ()
+        {
+            StaTestThread.Run(() =>
+            {
+                var source = new ObservableCollection<string> { "A", "B", "C" };
+                ToggleStrip strip = MakeStrip(source);
+
+                source.Move(0, 2);
+
+                Assert.AreEqual("B, C, A", DataOf(strip), "The strip takes the source's new order, each item once");
+            });
+        }
+
+        [TestMethod]
+        public void WpfToggleStrip_SelectedItemRemovedFromSource_LeavesTheSelection ()
+        {
+            StaTestThread.Run(() =>
+            {
+                var source = new ObservableCollection<string> { "A", "B", "C" };
+                ToggleStrip strip = MakeStrip(source);
+                strip.AllowMultiSelect = true;
+                strip.AllowNoSelection = true;
+                strip.Items[1].IsSelected = true;
+                Assert.AreEqual("A, B", string.Join(", ", strip.SelectedItems.OfType<object>()), "A, selected first, and B are selected");
+
+                int selectionChanges = 0;
+                strip.SelectionChanged += _OnSelectionChanged;
+                source.Remove("B");
+                strip.SelectionChanged -= _OnSelectionChanged;
+
+                Assert.AreEqual("A", string.Join(", ", strip.SelectedItems.OfType<object>()), "B leaves the selection with its item");
+                Assert.AreEqual("A", strip.SelectedItem, "The selected item is one that is still in the strip");
+                Assert.AreEqual(1, selectionChanges, "Losing a selected item is a selection change");
+
+                void _OnSelectionChanged (object sender, ToggleStrip.ToggleStripSelectionChangedEventArgs e) => ++selectionChanges;
+            });
+        }
+
+        [TestMethod]
+        public void WpfToggleStrip_OnlySelectionRemovedFromSource_SingleSelectSelectsTheFirstAgain ()
+        {
+            StaTestThread.Run(() =>
+            {
+                var source = new ObservableCollection<string> { "A", "B", "C" };
+                ToggleStrip strip = MakeStrip(source);
+                Assert.AreEqual("A", strip.SelectedItem, "A single-select strip starts on its first item");
+
+                source.Remove("A");
+
+                Assert.AreEqual("B", strip.SelectedItem, "A strip that needs a selection selects its first item again");
+                Assert.IsTrue(strip.Items[0].IsSelected, "The new first item shows as selected");
+            });
+        }
+
+        [TestMethod]
+        public void WpfToggleStrip_SourceReset_RebuildsFromTheSource_KeepingTheSelectionByValue ()
+        {
+            StaTestThread.Run(() =>
+            {
+                var source = new ResettingSource("A", "B", "C");
+                ToggleStrip strip = MakeStrip(source);
+                strip.Items[1].IsSelected = true;
+
+                source.ReplaceAllWith("C", "B", "D");
+
+                Assert.AreEqual("C, B, D", DataOf(strip), "A reset rebuilds the items from the source");
+                Assert.AreEqual("B", strip.SelectedItem, "The value that was selected is still selected");
+                Assert.IsTrue(strip.Items[1].IsSelected, "And shows as selected where it now sits");
+            });
+        }
+
+        [TestMethod]
+        public void WpfToggleStrip_SetItemsSource_ShowsNamesAndFollowsTheItemsAsItemsSourceDoes ()
+        {
+            StaTestThread.Run(() =>
+            {
+                var source = new ObservableCollection<LabeledSample> { new LabeledSample("Red"), new LabeledSample("Blue") };
+                var strip = new ToggleStrip { DisplayPropertyPath = nameof(LabeledSample.Label) };
+
+                strip.SetItemsSource(source);
+
+                Assert.AreSame(source, strip.ItemsSource, "The items given are the strip's ItemsSource");
+                Assert.AreEqual("Red, Blue", string.Join(", ", strip.Items.Select(item => item.Name)), "Each item is named from the property DisplayPropertyPath names");
+
+                source.Add(new LabeledSample("Green"));
+
+                Assert.AreEqual("Red, Blue, Green", string.Join(", ", strip.Items.Select(item => item.Name)), "An item added to the source joins the strip");
             });
         }
 
@@ -270,6 +405,9 @@ namespace AJut.UX.Tests
             return gradient.GradientStops.Select(stop => stop.Color).ToArray();
         }
 
+        // The strip's items' data in order, so a wrong order or a duplicate shows in the failure message
+        private static string DataOf (ToggleStrip strip) => string.Join(", ", strip.Items.Select(item => item.Data));
+
         private static ResourceDictionary LoadAJutResources (string path)
         {
             return (ResourceDictionary)Application.LoadComponent(new System.Uri($"/AJut.UX.Wpf;component/{path}", System.UriKind.Relative));
@@ -302,6 +440,9 @@ namespace AJut.UX.Tests
             Second,
         }
 
+        /// <summary>An item whose ToString is not its label, so a name read from Label can only come from the path</summary>
+        public sealed record LabeledSample (string Label);
+
         /// <summary>
         /// An item button's corners, to say which of them it rounds
         /// </summary>
@@ -314,6 +455,30 @@ namespace AJut.UX.Tests
             BottomRight = 4,
             BottomLeft = 8,
             All = TopLeft | TopRight | BottomRight | BottomLeft,
+        }
+
+        /// <summary>
+        /// A source that only ever reports a Reset, the way a collection that is not an ObservableCollection reports a
+        /// bulk change
+        /// </summary>
+        private sealed class ResettingSource : IEnumerable, INotifyCollectionChanged
+        {
+            private List<string> m_items;
+
+            public ResettingSource (params string[] items)
+            {
+                m_items = new List<string>(items);
+            }
+
+            public event NotifyCollectionChangedEventHandler CollectionChanged;
+
+            public void ReplaceAllWith (params string[] items)
+            {
+                m_items = new List<string>(items);
+                this.CollectionChanged?.Invoke(this, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+            }
+
+            public IEnumerator GetEnumerator () => m_items.GetEnumerator();
         }
     }
 }

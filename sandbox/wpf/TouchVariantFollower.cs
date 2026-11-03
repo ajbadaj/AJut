@@ -7,19 +7,19 @@ namespace TheAJutShowRoom
 
     /// <summary>
     /// The showroom's "follow Windows touch" switch: while it's on, a TouchPreferenceWatcher on the main window sets the
-    /// theme's touch focus from Windows' touch preference, the way an app opts in to following it.
+    /// theme's touch variant from Windows' touch preference, the way an app opts in to following it.
     /// </summary>
-    public sealed class TouchFocusFollower : NotifyPropertyChanged
+    public sealed class TouchVariantFollower : NotifyPropertyChanged
     {
         private readonly AppThemeManager m_themes;
         private TouchPreferenceWatcher? m_watcher;
 
-        public TouchFocusFollower (AppThemeManager themes)
+        public TouchVariantFollower (AppThemeManager themes)
         {
             m_themes = themes;
         }
 
-        /// <summary>Whether the theme's touch focus follows Windows' touch preference for the main window</summary>
+        /// <summary>Whether the theme's touch variant follows Windows' touch preference for the main window</summary>
         public bool FollowsWindows
         {
             get => m_watcher != null;
@@ -68,7 +68,7 @@ namespace TheAJutShowRoom
             m_watcher.IsTouchPreferredChanged += this.OnWindowsTouchPreferredChanged;
             if (m_watcher.IsAvailable)
             {
-                m_themes.IsTouchFocused = m_watcher.IsTouchPreferred;
+                m_themes.UsesTouchVariant = m_watcher.IsTouchPreferred;
             }
         }
 
@@ -81,7 +81,7 @@ namespace TheAJutShowRoom
 
         private void OnWindowsTouchPreferredChanged (object? sender, EventArgs<bool> e)
         {
-            m_themes.IsTouchFocused = e.Value;
+            m_themes.UsesTouchVariant = e.Value;
             this.RaisePropertiesChanged(nameof(WindowsPreferenceText));
         }
     }

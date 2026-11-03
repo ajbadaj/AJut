@@ -10,7 +10,7 @@ namespace AJut.UX.Theming
     /// overrides). With no theme loaded a key gives its unthemed default, a UIKit system color that follows light and
     /// dark on its own. With the AJut theme loaded it gives the AJut palette's value, from AJut.UX's
     /// <see cref="AJutPalette"/>, joined into one dynamic color from the light and dark themes so it too follows the
-    /// appearance with nothing to refresh. While <see cref="IsTouchFocused"/> (the default) those are the touch variants
+    /// appearance with nothing to refresh. While <see cref="UsesTouchVariant"/> is on, those are the touch variants
     /// of the light and dark themes.
     /// </summary>
     /// <remarks>
@@ -24,7 +24,7 @@ namespace AJut.UX.Theming
         private static readonly Dictionary<string, UIColor> g_themedCache = new Dictionary<string, UIColor>();
         private static readonly Dictionary<string, string> g_themedAliases = new Dictionary<string, string>();
         private static bool g_isThemeLoaded;
-        private static bool g_isTouchFocused = true;
+        private static bool g_usesTouchVariant;
 
         // ===========[ Setup/Construction/Teardown ]===================================
         static ThemedColors ()
@@ -47,22 +47,22 @@ namespace AJut.UX.Theming
         /// <summary>
         /// Whether the AJut palette is painted in its touch variant (<see cref="AJutPalette.LightTouch"/> or
         /// <see cref="AJutPalette.DarkTouch"/>), where buttons read as buttons from their fill alone, with no hover to show
-        /// it and no borders. On by default, since an iOS UI is touch first; it only matters while
-        /// <see cref="IsThemeLoaded"/>. Set and switched the same way as IsThemeLoaded: at startup, or set it and rebuild
-        /// the views.
+        /// it and no borders. Off by default, as on every AJut stack: an app that wants the touch variant opts in, once at
+        /// startup or as a setting. It only matters while <see cref="IsThemeLoaded"/>. Set and switched the same way as
+        /// IsThemeLoaded: at startup, or set it and rebuild the views.
         /// </summary>
-        public static bool IsTouchFocused
+        public static bool UsesTouchVariant
         {
-            get => g_isTouchFocused;
+            get => g_usesTouchVariant;
             set
             {
-                if (g_isTouchFocused == value)
+                if (g_usesTouchVariant == value)
                 {
                     return;
                 }
 
                 // The cached colors were made from the other pair of palettes, so they start over
-                g_isTouchFocused = value;
+                g_usesTouchVariant = value;
                 g_themedCache.Clear();
             }
         }
@@ -86,7 +86,7 @@ namespace AJut.UX.Theming
         /// <summary>The AJut palette's paint for <paramref name="key"/> in the given appearance (a solid color or a gradient), or null without the theme or the key.</summary>
         public static AJutThemePaint GetThemedPaint (string key, UIUserInterfaceStyle style)
         {
-            if (g_isThemeLoaded && AJutPalette.For(style == UIUserInterfaceStyle.Dark, g_isTouchFocused).TryGetPaint(ToPaletteKey(key), out AJutThemePaint paint))
+            if (g_isThemeLoaded && AJutPalette.For(style == UIUserInterfaceStyle.Dark, g_usesTouchVariant).TryGetPaint(ToPaletteKey(key), out AJutThemePaint paint))
             {
                 return paint;
             }
@@ -134,8 +134,8 @@ namespace AJut.UX.Theming
             }
 
             string paletteKey = ToPaletteKey(key);
-            bool hasLight = AJutPalette.For(isDark: false, g_isTouchFocused).TryGetColor(paletteKey, out ColorArgb light);
-            bool hasDark = AJutPalette.For(isDark: true, g_isTouchFocused).TryGetColor(paletteKey, out ColorArgb dark);
+            bool hasLight = AJutPalette.For(isDark: false, g_usesTouchVariant).TryGetColor(paletteKey, out ColorArgb light);
+            bool hasDark = AJutPalette.For(isDark: true, g_usesTouchVariant).TryGetColor(paletteKey, out ColorArgb dark);
             if (!hasLight && !hasDark)
             {
                 themed = null;

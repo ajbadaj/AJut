@@ -121,7 +121,7 @@ namespace AJut.UX.Controls
         private static AndroidColor _FindDefaultAccent (Context context)
         {
             if (ThemeColors.IsThemeLoaded
-                && AJutPalette.For(ThemeColors.IsDark(context), ThemeColors.IsTouchFocused).TryGetColor(kThemedAccentKey, out ColorArgb themed))
+                && AJutPalette.For(ThemeColors.IsDark(context), ThemeColors.UsesTouchVariant).TryGetColor(kThemedAccentKey, out ColorArgb themed))
             {
                 return themed.ToAndroidColor();
             }

@@ -58,6 +58,7 @@
         <Setter Property="GlyphBrush" Value="#222"/>
         <Setter Property="GlyphHighlightBrush" Value="Black"/>
         <Setter Property="GlyphBackgroundHighlightBrush" Value="#CCC"/>
+        <Setter Property="GlyphBackgroundPressedBrush" Value="#AAA"/>
         <Setter Property="GlyphPadding" Value="2"/>
 
         <Setter Property="InsertionLineBrush">
@@ -135,6 +136,11 @@
                                                     <Trigger Property="IsMouseOver" Value="True">
                                                         <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=GlyphHighlightBrush}"/>
                                                         <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=GlyphBackgroundHighlightBrush}" />
+                                                    </Trigger>
+                                                    <!-- After the hover trigger, so a press shows over it -->
+                                                    <Trigger Property="IsPressed" Value="True">
+                                                        <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=GlyphHighlightBrush}"/>
+                                                        <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:FlatTreeListControl}}, Path=GlyphBackgroundPressedBrush}" />
                                                     </Trigger>
                                                 </Style.Triggers>
                                             </Style>

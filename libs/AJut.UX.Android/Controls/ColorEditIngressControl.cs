@@ -195,8 +195,9 @@ namespace AJut.UX.Controls
             canvas.DrawColor(AndroidColor.White);
             canvas.DrawColor(m_editColor.ToAndroidColor());
 
-            // 2. Gloss at rest; the edit overlay (a dim and a dog-ear) while pressed or editing
-            bool showEditOverlay = m_showEditDisplay || this.Pressed;
+            // 2. Gloss at rest; the edit overlay (a dim and a dog-ear) under a pointer (a stylus or a mouse), while pressed,
+            //    or while editing, as WinUI3 shows it on pointer over and while its flyout is open
+            bool showEditOverlay = m_showEditDisplay || this.Pressed || this.Hovered;
             if (showEditOverlay)
             {
                 canvas.DrawColor(new AndroidColor(0x60000000));
@@ -228,6 +229,14 @@ namespace AJut.UX.Controls
             this.Invalidate();
         }
 
+        // The swatch resolves its colors as it draws, but the focus look holds the ones it was made with, so a night mode
+        // switch the activity handles itself (configChanges="uiMode") makes it again
+        protected override void OnConfigurationChanged (Configuration? newConfig)
+        {
+            base.OnConfigurationChanged(newConfig);
+            FocusVisual.Apply(this);
+        }
+
         // ===========[ Helper Methods ]===================================
         private void Initialize (Context context, IAttributeSet? attrs)
         {
@@ -235,6 +244,7 @@ namespace AJut.UX.Controls
             this.Clickable = true;
             this.Focusable = true;
             this.ContentDescription = "Color";
+            FocusVisual.Apply(this);
 
             if (attrs != null)
             {

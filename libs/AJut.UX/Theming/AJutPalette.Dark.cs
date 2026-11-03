@@ -144,6 +144,8 @@ namespace AJut.UX.Theming
                 { "AJut_Brush_DrawerForegroundImportant", Solid(0xFF000000) },
                 { "AJut_Color_BadStuff", Solid(0xFFA31B22) },
                 { "AJut_Brush_BadStuff", Alias("AJut_Color_BadStuff") },
+                { "AJut_Color_ErrorGlow", Solid(0xFFE0524D) },
+                { "AJut_Brush_ErrorGlow", Alias("AJut_Color_ErrorGlow") },
                 { "AJut_Brush_TrackBackground", Solid(0xFF444444) },
                 { "AJut_Brush_ToolTipBackground", Solid(0xFF202020) },
                 { "AJut_Brush_BannerBackground", Solid(0xFF111117) },
