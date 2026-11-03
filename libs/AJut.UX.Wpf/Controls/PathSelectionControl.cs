@@ -135,14 +135,11 @@
 
             void _PreviewOnTextAreaKeyDown (object _s, KeyEventArgs _e)
             {
-                if (this.PathType == ePathType.Folder && _e.KeyboardDevice.Modifiers == ModifierKeys.Control && _e.Key == Key.Up)
+                if ((_e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+                    && (_e.Key == Key.Up)
+                    && this.TryMoveToParentFolder())
                 {
-                    DirectoryInfo dir = new DirectoryInfo(this.SelectedPath);
-                    if (dir.Parent != null)
-                    {
-                        this.SelectedPath = dir.Parent.FullName;
-                        _e.Handled = true;
-                    }
+                    _e.Handled = true;
                 }
             }
 
@@ -399,6 +396,28 @@
             }
 
             return Path.Combine(this.FixedRootPath, path);
+        }
+
+        /// <summary>
+        /// What Ctrl+Up does in the path box: a folder path moves up to its parent folder, unless it's read-only, since that
+        /// changes the path. Returns whether it moved.
+        /// </summary>
+        internal bool TryMoveToParentFolder ()
+        {
+            if (this.IsReadOnly
+                || (this.PathType != ePathType.Folder))
+            {
+                return false;
+            }
+
+            DirectoryInfo dir = new DirectoryInfo(this.SelectedPath);
+            if (dir.Parent == null)
+            {
+                return false;
+            }
+
+            this.SelectedPath = dir.Parent.FullName;
+            return true;
         }
 
         private void EvaluatePath (string path)

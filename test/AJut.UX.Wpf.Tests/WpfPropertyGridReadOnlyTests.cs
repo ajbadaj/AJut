@@ -101,6 +101,25 @@ namespace AJut.UX.Tests
             });
         }
 
+        [TestMethod]
+        public void WpfPathSelectionControl_ReadOnly_CtrlUpLeavesAFolderPathWhereItIs ()
+        {
+            StaTestThread.Run(() =>
+            {
+                const string kFolder = @"C:\AJutTest\Parent\Child";
+                var path = new PathSelectionControl { PathType = ePathType.Folder, SelectedPath = kFolder };
+                StackPanel host = MakeHost(path);
+
+                Edit.SetIsReadOnly(host, true);
+                Assert.IsFalse(path.TryMoveToParentFolder(), "A read-only folder path doesn't move up to its parent");
+                Assert.AreEqual(kFolder, path.SelectedPath);
+
+                host.ClearValue(Edit.IsReadOnlyProperty);
+                Assert.IsTrue(path.TryMoveToParentFolder(), "An editable folder path moves up to its parent");
+                Assert.AreEqual(@"C:\AJutTest\Parent", path.SelectedPath);
+            });
+        }
+
         // ===========[ Helpers ]===============================================
         // The stand-in for the grid: Edit.IsReadOnly set on it reaches the editor by inheritance, as from the grid. A
         // measure applies the editor's template.
