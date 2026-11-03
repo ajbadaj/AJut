@@ -155,6 +155,45 @@ namespace AJut.Core.UnitTests.AJsonV2
             }
         }
 
+        [TestMethod]
+        public void NoDynamicCode_DictionaryEntryWhoseKeyCannotBeWritten_IsLeftOutWhole ()
+        {
+            var source = new PlainCellKeyedGen
+            {
+                ByCell = new Dictionary<PlainGridCell, string> { { new PlainGridCell { Row = 1, Column = 2 }, "one-two" } },
+            };
+
+            using (DynamicCodeAvailability.SimulateUnsupported())
+            {
+                Json json = JsonHelper.BuildJsonForObject(source);
+                Assert.IsTrue(json.HasErrors, json.ToString());
+                StringAssert.Contains(json.GetErrorReport(), nameof(PlainGridCell));
+                Assert.IsFalse(json.ToString().Contains("one-two"), json.ToString());
+
+                // Half an entry reads back as an error of its own, a pair with no key, rather than the one the write reported
+                Json reparsed = JsonHelper.ParseText(json.ToString());
+                PlainCellKeyedGen round = JsonHelper.BuildObjectForJson<PlainCellKeyedGen>(reparsed);
+                Assert.IsFalse(reparsed.HasErrors, reparsed.GetErrorReport());
+                Assert.AreEqual(0, round.ByCell.Count, json.ToString());
+            }
+        }
+
+        [TestMethod]
+        public void NoDynamicCode_DictionaryEntryWhoseKeyCannotBeWritten_WithPairTypeIds_IsLeftOutWhole ()
+        {
+            var source = new Dictionary<PlainGridCell, string> { { new PlainGridCell { Row = 1, Column = 2 }, "one-two" } };
+            var settings = new JsonBuilderSettings { KeyValuePairKeyTypeIdToWrite = eTypeIdInfo.FullyQualifiedSystemType };
+
+            using (DynamicCodeAvailability.SimulateUnsupported())
+            {
+                Json json = JsonHelper.BuildJsonForObject(source, settings);
+
+                Assert.IsTrue(json.HasErrors, json.ToString());
+                StringAssert.Contains(json.GetErrorReport(), nameof(PlainGridCell));
+                Assert.IsFalse(json.ToString().Contains("one-two"), json.ToString());
+            }
+        }
+
         // Only a generated serializer knows a dictionary's key and value types to write its pairs with, so a dictionary
         //  written on its own, rather than as a member of an [OptimizeAJson] type, can't be written there
         [TestMethod]

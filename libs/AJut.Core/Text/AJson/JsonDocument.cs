@@ -57,7 +57,8 @@ namespace AJut.Text.AJson
 
         /// <summary>
         /// Append a new property by building its value via the JsonBuilder pipeline. V2 in-memory
-        /// mutation - the consumer re-serializes via ToString to get the updated text.
+        /// mutation - the consumer re-serializes via ToString to get the updated text. A null value
+        /// is json's null literal.
         /// </summary>
         public JsonValue AppendNew (string key, object value, JsonBuilderSettings settings = null)
         {
@@ -66,15 +67,20 @@ namespace AJut.Text.AJson
             return built;
         }
 
+        /// <summary>
+        /// Appends a property holding what <paramref name="valueBuilder"/> builds. A null builder appends json's null literal,
+        /// the same as a null value, which matters because a bare null passed to AppendNew picks this overload.
+        /// </summary>
         public JsonValue AppendNew (string key, JsonBuilder valueBuilder)
         {
-            JsonValue built = valueBuilder.BuildJsonValue();
+            JsonValue built = valueBuilder?.BuildJsonValue() ?? JsonValue.CreateNull();
             this.Add(key, built);
             return built;
         }
 
         /// <summary>
-        /// Upsert - replaces the value if the key already exists, appends otherwise. New in V2.
+        /// Upsert - replaces the value if the key already exists, appends otherwise. New in V2. A
+        /// null value is json's null literal.
         /// </summary>
         public JsonValue Set (string key, object value, JsonBuilderSettings settings = null)
         {

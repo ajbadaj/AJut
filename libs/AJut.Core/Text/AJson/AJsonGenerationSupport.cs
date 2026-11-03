@@ -60,12 +60,18 @@ namespace AJut.Text.AJson
         /// <summary>
         /// Generated readers call this to read a property whose type implements IParsable of itself. A single value with no
         /// constructor registered for the type and no converter registered for it is read with the type's own TryParse, called
-        /// directly, which keeps working under trimming where the reflection path's lookup of it may not. Anything else is
-        /// read the way <see cref="ReadValue{T}"/> reads it.
+        /// directly, which keeps working under trimming where the reflection path's lookup of it may not. Json's null literal
+        /// is the type's default. Anything else is read the way <see cref="ReadValue{T}"/> reads it.
         /// </summary>
         public static T ReadParsable<[DynamicallyAccessedMembers(kReadRequirements)] T> (JsonValue value, JsonInterpreterSettings settings, Json owner)
             where T : IParsable<T>
         {
+            // Json's null literal is the type's default, the way ReadValue reads it, not text to parse
+            if (value?.IsNull == true)
+            {
+                return default;
+            }
+
             settings = settings ?? JsonInterpreterSettings.Default;
             bool isReadByTryParse = value != null
                 && value.IsValue

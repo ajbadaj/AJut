@@ -366,7 +366,8 @@
 
         private bool TryToApplyPathShorteningIfAny (ref string target)
         {
-            if (this.FixedRootPath.IsNotNullOrEmpty() && this.ShortenPathToFixedRoot && target.StartsWith(this.FixedRootPath, StringComparison.CurrentCultureIgnoreCase))
+            // Windows, where WPF runs, ignores case in a path, the same in every culture
+            if (this.FixedRootPath.IsNotNullOrEmpty() && this.ShortenPathToFixedRoot && target.StartsWith(this.FixedRootPath, StringComparison.OrdinalIgnoreCase))
             {
                 target = target.Substring(this.FixedRootPath.Length + 1);
                 return true;
@@ -404,9 +405,10 @@
             {
                 _SetError(result.GetErrorReport());
             }
+            // Under the fixed root by any case, the way TryToApplyPathShorteningIfAny matches it
             else if (this.FixedRootPath.IsNotNullOrEmpty()
                         && Path.IsPathRooted(path)
-                        && !path.StartsWith(this.FixedRootPath, StringComparison.CurrentCulture))
+                        && !path.StartsWith(this.FixedRootPath, StringComparison.OrdinalIgnoreCase))
             {
                 _SetError($"Path does not indicate a location under the fixed root path (fixed root path is '{this.FixedRootPath}')");
             }

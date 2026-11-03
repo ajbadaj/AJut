@@ -243,6 +243,113 @@ namespace AJut.Core.UnitTests.AJsonV2
             Assert.AreEqual("true", doc.ValueFor("afterComment")?.StringValue);
         }
 
+        // ===============================[ Keys Inside an Array ]===========================
+        // An array holds no keys. A key written in one is read as a document holding that one entry, so none of its text is
+        //  lost, and it is reported in lenient mode as well as strict: lenient forgives loose syntax, not broken structure.
+        [TestMethod]
+        public void Read_Lenient_KeyInsideAnArray_ReadsAsADocumentOfThatEntry ()
+        {
+            Json json = JsonHelper.ParseText("{ list: [ a: 1, b: \"two\" ] }");
+
+            JsonArray list = (JsonArray)((JsonDocument)json.Data).ValueFor("list");
+            Assert.AreEqual(2, list.Count, json.GetErrorReport());
+
+            JsonDocument first = list[0] as JsonDocument;
+            Assert.IsNotNull(first, "A key and its unquoted value should read as a document");
+            Assert.AreEqual(1, first.Count);
+            Assert.AreEqual("1", first.ValueFor("a")?.StringValue);
+
+            JsonDocument second = list[1] as JsonDocument;
+            Assert.IsNotNull(second, "A key and its quoted value should read as a document");
+            Assert.AreEqual(1, second.Count);
+            Assert.AreEqual("two", second.ValueFor("b")?.StringValue);
+            Assert.IsTrue(second.ValueFor("b").IsQuoted);
+        }
+
+        [TestMethod]
+        public void Read_Lenient_QuotedKeyInsideAnArray_ReadsAsADocumentOfThatEntry ()
+        {
+            Json json = JsonHelper.ParseText("[ \"a\" : 1 ]");
+
+            JsonArray array = (JsonArray)json.Data;
+            Assert.AreEqual(1, array.Count, json.GetErrorReport());
+
+            JsonDocument entry = array[0] as JsonDocument;
+            Assert.IsNotNull(entry, "A quoted key should read as a document the same as an unquoted one");
+            Assert.AreEqual("1", entry.ValueFor("a")?.StringValue);
+        }
+
+        [TestMethod]
+        public void Read_Lenient_KeyBeforeANestedArray_InsideAnArray_KeepsTheKey ()
+        {
+            Json json = JsonHelper.ParseText("[ Id: 5, Paragraphs: [ \"x\", \"y\" ] ]");
+
+            JsonArray array = (JsonArray)json.Data;
+            Assert.AreEqual(2, array.Count, json.GetErrorReport());
+
+            JsonDocument entry = array[1] as JsonDocument;
+            Assert.IsNotNull(entry, "The key in front of the nested array should not be dropped");
+            JsonArray paragraphs = entry.ValueFor("Paragraphs") as JsonArray;
+            Assert.IsNotNull(paragraphs);
+            Assert.AreEqual(2, paragraphs.Count);
+            Assert.AreEqual("y", paragraphs[1].StringValue);
+        }
+
+        [TestMethod]
+        public void Read_Lenient_KeyBeforeANestedDocument_InsideAnArray_KeepsTheKey ()
+        {
+            Json json = JsonHelper.ParseText("[ Info: { a: 1 } ]");
+
+            JsonArray array = (JsonArray)json.Data;
+            Assert.AreEqual(1, array.Count, json.GetErrorReport());
+
+            JsonDocument entry = array[0] as JsonDocument;
+            Assert.IsNotNull(entry);
+            JsonDocument info = entry.ValueFor("Info") as JsonDocument;
+            Assert.IsNotNull(info, "The key in front of the nested document should not be dropped");
+            Assert.AreEqual("1", info.ValueFor("a")?.StringValue);
+        }
+
+        [TestMethod]
+        public void Read_Lenient_KeyInsideAnArray_IsReported_ByName ()
+        {
+            Json json = JsonHelper.ParseText("[ a: 1 ]");
+
+            Assert.IsTrue(json.HasErrors, "A key inside an array is broken structure, which lenient mode reports");
+            StringAssert.Contains(json.GetErrorReport(), "'a'");
+        }
+
+        [TestMethod]
+        public void Read_Strict_KeyInsideAnArray_IsReported_ByName ()
+        {
+            Json json = JsonHelper.ParseText("[ \"a\" : 1 ]", new ParserRules { StrictMode = true });
+
+            Assert.IsTrue(json.HasErrors, "Strict mode should reject a key inside an array");
+            StringAssert.Contains(json.GetErrorReport(), "'a'");
+        }
+
+        [TestMethod]
+        public void Read_Lenient_KeyInsideAnArray_ReadingCarriesOnPastTheArray ()
+        {
+            Json json = JsonHelper.ParseText("{ list: [ a: 1 ], after: 2 }");
+
+            JsonDocument root = (JsonDocument)json.Data;
+            Assert.AreEqual(2, root.Count, json.GetErrorReport());
+            Assert.AreEqual("2", root.ValueFor("after")?.StringValue);
+        }
+
+        [TestMethod]
+        public void Read_ColonInsideAQuotedArrayItem_StaysInTheString ()
+        {
+            Json json = JsonHelper.ParseText("[ \"12:30\", \"a: b\" ]", new ParserRules { StrictMode = true });
+            AssertNoErrors(json);
+
+            JsonArray array = (JsonArray)json.Data;
+            Assert.AreEqual(2, array.Count);
+            Assert.AreEqual("12:30", array[0].StringValue);
+            Assert.AreEqual("a: b", array[1].StringValue);
+        }
+
         // ===============================[ Errors-or-Value Contract ]===========================
         [TestMethod]
         public void Read_NullText_ProducesError_NoThrow ()

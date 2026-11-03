@@ -340,6 +340,13 @@ namespace AJut.Text.AJson
                 return sourceJsonValue;
             }
 
+            // Json's null literal is null whatever reads it, ahead of any converter or registered constructor. A value type
+            //  reads it as its default, and a Nullable as null.
+            if (sourceJsonValue?.IsNull == true)
+            {
+                return (type.IsValueType && (Nullable.GetUnderlyingType(type) == null)) ? Activator.CreateInstance(type) : null;
+            }
+
             if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
                 return BuildObjectForJson(type.GenericTypeArguments[0], sourceJsonValue, settings, owner);
@@ -971,27 +978,12 @@ namespace AJut.Text.AJson
                 IEnumerable enumerableValue = (IEnumerable)source;
                 foreach (object arrayItemObj in enumerableValue)
                 {
+                    // A null item is json's null literal, in a list as much as an array, so it keeps its place and every
+                    //  item after it keeps its index, and it reads back as null. An empty stand-in for the element type
+                    //  ([] or {}) reads back as an empty instance instead, and a string's [] doesn't read at all.
                     if (arrayItemObj == null)
                     {
-                        if (sourceType.IsArray)
-                        {
-                            // Preserve element order on arrays - emit a stand-in for the null slot.
-                            Type elementType = sourceType.GetElementType();
-                            if (typeof(IEnumerable).IsAssignableFrom(elementType))
-                            {
-                                JsonBuilder emptyChildArr = array.StartArray();
-                                emptyChildArr.End();
-                            }
-                            else if (elementType.IsSimpleType() || target.BuilderSettings.TryGetJsonValueStringMakerFor(elementType) != null)
-                            {
-                                array.AddArrayItem(String.Empty);
-                            }
-                            else
-                            {
-                                JsonBuilder document = array.StartDocument();
-                                document.End();
-                            }
-                        }
+                        array.AddArrayItem(null);
                         continue;
                     }
 
@@ -1016,11 +1008,15 @@ namespace AJut.Text.AJson
                 return;
             }
 
-            // KeyValuePair special case (only kicks in when KVP type-id flags are set in settings).
-            if (target.BuilderSettings.HasAnyKVPTypeIdWriteInstructions
-                && sourceType.IsGenericType
-                && typeof(KeyValuePair<,>) == sourceType.GetGenericTypeDefinition())
+            // A KeyValuePair is written the one way every pair is (WriteKeyValuePair), so its null value is written as null,
+            //  the same as a generated dictionary writer's pair. Where dynamic code isn't available that takes the KVP
+            //  type-id flags in the settings; without them, the pair is refused below, since its Key and Value are read by
+            //  reflection here.
+            if (sourceType.IsGenericType
+                && (typeof(KeyValuePair<,>) == sourceType.GetGenericTypeDefinition())
+                && (target.BuilderSettings.HasAnyKVPTypeIdWriteInstructions || DynamicCodeAvailability.IsSupported))
             {
+                JsonBuilder entry = target;
                 if (!target.IsArrayItem)
                 {
                     target = target.StartDocument();
@@ -1028,7 +1024,19 @@ namespace AJut.Text.AJson
 
                 object key = sourceType.GetProperty(nameof(KeyValuePair<object, object>.Key)).GetValue(source);
                 object value = sourceType.GetProperty(nameof(KeyValuePair<object, object>.Value)).GetValue(source);
-                WriteKeyValuePair(target, key, sourceType.GenericTypeArguments[0], value, sourceType.GenericTypeArguments[1], sourceType);
+                if (!WriteKeyValuePair(target, key, sourceType.GenericTypeArguments[0], value, sourceType.GenericTypeArguments[1], sourceType))
+                {
+                    // Its key is reported already, and the pair is left out whole, the way a refused value is left out
+                    if (entry.Parent != null)
+                    {
+                        entry.Parent.Children.Remove(entry);
+                    }
+                    else
+                    {
+                        target.Children.Clear();
+                    }
+                }
+
                 return;
             }
 
@@ -1117,9 +1125,11 @@ namespace AJut.Text.AJson
                 else
                 {
                     JsonBuilder pairDocument = array.StartDocument();
-                    if (!TryWriteWithItsOwnWriter(boxedPair, pairType, pairDocument))
+                    if (!TryWriteWithItsOwnWriter(boxedPair, pairType, pairDocument)
+                        && !WriteKeyValuePair(pairDocument, pair.Key, typeof(TKey), pair.Value, typeof(TValue), pairType))
                     {
-                        WriteKeyValuePair(pairDocument, pair.Key, typeof(TKey), pair.Value, typeof(TValue), pairType);
+                        // Its key is reported already, and the entry is left out whole
+                        array.Children.Remove(pairDocument);
                     }
                 }
             }
@@ -1197,7 +1207,12 @@ namespace AJut.Text.AJson
         /// <param name="keyType">The pair's key type, which decides how the key is written, the way a member's declared type does</param>
         /// <param name="valueType">The pair's value type, which decides how the value is written</param>
         /// <param name="pairType">The KeyValuePair type, for its own type id</param>
-        private static void WriteKeyValuePair (JsonBuilder pairDocument, object key, Type keyType, object value, Type valueType, Type pairType)
+        /// <returns>
+        /// False when the key could not be written whole, which is reported to the build, and then the value isn't written. The
+        /// caller leaves the whole pair out: a pair with no key, or part of one, reads back as an error of its own or as some
+        /// other key, never as the entry it was.
+        /// </returns>
+        private static bool WriteKeyValuePair (JsonBuilder pairDocument, object key, Type keyType, object value, Type valueType, Type pairType)
         {
             JsonBuilderSettings settings = pairDocument.BuilderSettings;
             if (settings.HasAnyKVPTypeIdWriteInstructions)
@@ -1217,8 +1232,27 @@ namespace AJut.Text.AJson
                 pairDocument.AddProperty(JsonDocument.kTypeIndicator, pairTypeId);
             }
 
+            // Whatever inside the key can't be written notes it on the build as it goes (a key type with no generated serializer
+            //  where dynamic code isn't available, or a member of one), so a change in the count is a key that didn't go in whole
+            int errorsBeforeTheKey = pairDocument.ErrorCount;
             _WriteMember(pairDocument, nameof(KeyValuePair<object, object>.Key), key, keyType);
-            _WriteMember(pairDocument, nameof(KeyValuePair<object, object>.Value), value, valueType);
+            if (pairDocument.ErrorCount != errorsBeforeTheKey)
+            {
+                return false;
+            }
+
+            // A null value is written as json's null literal, where a null member is left out: a pair with no Value is
+            //  reported when it's read, so leaving a null out would read back as an error rather than the entry it was
+            if (value == null)
+            {
+                pairDocument.AddNullProperty(nameof(KeyValuePair<object, object>.Value));
+            }
+            else
+            {
+                _WriteMember(pairDocument, nameof(KeyValuePair<object, object>.Value), value, valueType);
+            }
+
+            return true;
 
             // What ApplyDocumentMember does for a member with no AJson attributes, which Key and Value never have
             static void _WriteMember (JsonBuilder document, string name, object member, Type memberType)
@@ -1306,8 +1340,8 @@ namespace AJut.Text.AJson
 
         /// <summary>
         /// Writes <paramref name="source"/> as a document of its entries, { "key": value, ... }, when it is a dictionary
-        /// written that way (see <see cref="IsDictionaryWrittenAsDocument"/>). An entry with a null value is left out, the
-        /// same as a null member.
+        /// written that way (see <see cref="IsDictionaryWrittenAsDocument"/>). An entry with a null value is written as json's
+        /// null literal, "key" : null, where a null member is left out: an entry is data, and a member is shape.
         /// </summary>
         /// <param name="entries">The dictionary's entries, when the caller has them typed; found from the dictionary when not given</param>
         /// <returns>True if it was written, false if it is written some other way</returns>
@@ -1321,13 +1355,13 @@ namespace AJut.Text.AJson
             JsonBuilder document = (target.IsArrayItem && target.IsDocument) ? target : target.StartDocument();
             foreach (KeyValuePair<object, object> entry in entries ?? EnumerateDictionaryEntries(source, dictionaryInterface))
             {
+                string key = keyMaker(entry.Key);
                 if (entry.Value == null)
                 {
-                    continue;
+                    // Left out, the entry would be lost on a round trip, key and all
+                    document.AddNullProperty(key);
                 }
-
-                string key = keyMaker(entry.Key);
-                if (TryGetSimpleStringValue(document.BuilderSettings, entry.Value.GetType(), entry.Value, out bool isUsuallyQuoted, out _))
+                else if (TryGetSimpleStringValue(document.BuilderSettings, entry.Value.GetType(), entry.Value, out bool isUsuallyQuoted, out _))
                 {
                     document.AddProperty(key, entry.Value, isUsuallyQuoted);
                 }

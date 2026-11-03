@@ -35,6 +35,18 @@ namespace AJut.Core.UnitTests.AJsonV2
             public Dictionary<string, SimplePoco> ByName { get; set; }
         }
 
+        /// <summary>A dictionary key that is more than one value, so its dictionary is written as Key and Value pairs</summary>
+        public struct GridCell
+        {
+            public int Row { get; set; }
+            public int Column { get; set; }
+        }
+
+        public class CellKeyedPoco
+        {
+            public Dictionary<GridCell, string> ByCell { get; set; }
+        }
+
         public enum eFlavor { Vanilla, Chocolate, Strawberry }
 
         public class EnumPoco
@@ -182,6 +194,45 @@ namespace AJut.Core.UnitTests.AJsonV2
             Assert.IsNull(round["a"], "Unresolvable boxed-array value should degrade to null");
             Assert.IsTrue(reparsed.HasErrors, "The unresolvable boxed-array value must be reported via Json.HasErrors");
             Assert.IsFalse(String.IsNullOrEmpty(reparsed.GetErrorReport()), "GetErrorReport should describe the skipped value");
+        }
+
+        // A pair leaves a null value out, the way a document leaves out a null member, so reading one with no Value is reading
+        //  a null, not a fault in the json
+        [TestMethod]
+        public void Poco_DictionaryPairs_NullValue_RoundTripsWithNoError ()
+        {
+            var nullCell = new GridCell { Row = 1, Column = 2 };
+            var keptCell = new GridCell { Row = 3, Column = 4 };
+            var source = new CellKeyedPoco { ByCell = new Dictionary<GridCell, string> { { nullCell, null }, { keptCell, "kept" } } };
+
+            Json json = JsonHelper.BuildJsonForObject(source);
+            Assert.IsFalse(json.HasErrors, json.GetErrorReport());
+
+            Json reparsed = JsonHelper.ParseText(json.ToString());
+            CellKeyedPoco round = JsonHelper.BuildObjectForJson<CellKeyedPoco>(reparsed);
+            Assert.IsFalse(reparsed.HasErrors, reparsed.GetErrorReport());
+            Assert.AreEqual(2, round.ByCell.Count, json.ToString());
+            Assert.IsNull(round.ByCell[nullCell]);
+            Assert.AreEqual("kept", round.ByCell[keptCell]);
+        }
+
+        [TestMethod]
+        public void Generated_DictionaryPairs_NullValue_RoundTripsWithNoError ()
+        {
+            var nullCell = new JsonNoDynamicCodeTests.GridCellGen { Row = 1, Column = 2 };
+            var source = new JsonNoDynamicCodeTests.CellKeyedGen
+            {
+                ByCell = new Dictionary<JsonNoDynamicCodeTests.GridCellGen, string> { { nullCell, null } },
+            };
+
+            Json json = JsonHelper.BuildJsonForObject(source);
+            Assert.IsFalse(json.HasErrors, json.GetErrorReport());
+
+            Json reparsed = JsonHelper.ParseText(json.ToString());
+            var round = JsonHelper.BuildObjectForJson<JsonNoDynamicCodeTests.CellKeyedGen>(reparsed);
+            Assert.IsFalse(reparsed.HasErrors, reparsed.GetErrorReport());
+            Assert.AreEqual(1, round.ByCell.Count, json.ToString());
+            Assert.IsNull(round.ByCell[nullCell]);
         }
 
         [TestMethod]

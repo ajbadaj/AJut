@@ -1171,6 +1171,14 @@ namespace AJut.UX.Docking
         [RequiresUnreferencedCode(kLayoutPanelTypeMessage)]
         private DockingContentAdapterModel? BuildDisplayAdapterFromLayout (DockDisplaySerializationData displayData)
         {
+            // A panel saved with no type id (null in the file) names nothing to build, so it's skipped the same as one whose
+            //  id resolves to nothing, rather than failing the lookups below and with them the whole layout
+            if (String.IsNullOrEmpty(displayData.TypeId))
+            {
+                Logger.LogError("Dock Loading Error: a panel in the layout has no type id");
+                return null;
+            }
+
             IDockableDisplayElement? display = null;
             if (TypeIdRegistrar.TryGetType(displayData.TypeId, out Type type))
             {

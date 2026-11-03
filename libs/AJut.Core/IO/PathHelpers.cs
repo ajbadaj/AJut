@@ -10,8 +10,18 @@
 
     public static class PathHelpers
     {
-        public static int kMaxFullPathLength = 259;
-        public static int kMaxPathDirectoryLength = 247;
+        // Read-only rather than const, so a build compiled against these keeps reading them, and the value isn't baked into it
+        /// <summary>
+        /// The longest full path Windows takes (MAX_PATH, less its terminating null). <see cref="EvaluatePathValidity"/> holds a
+        /// path to it on Windows only.
+        /// </summary>
+        public static readonly int kMaxFullPathLength = 259;
+
+        /// <summary>
+        /// The longest directory part of a path Windows takes (MAX_PATH less room for an 8.3 file name).
+        /// <see cref="EvaluatePathValidity"/> holds a path to it on Windows only.
+        /// </summary>
+        public static readonly int kMaxPathDirectoryLength = 247;
 
         public const string kAnyFileFilter = "Any File (*.*)|*.*";
 
@@ -85,6 +95,12 @@
             }
         }
 
+        /// <summary>
+        /// Whether <paramref name="path"/> can be used as a path here, and why not when it can't: it must not be empty, must
+        /// fit Windows' length limits on Windows, must hold no character the OS refuses, must not be drive-relative (c:test,
+        /// or c: alone), and must not climb above its root with '..' (c:\..\x, \\server\share\..\x). A relative path's
+        /// leading '..' is fine.
+        /// </summary>
         public static Result EvaluatePathValidity (string path)
         {
             if (path.IsNullOrEmpty())
@@ -92,25 +108,23 @@
                 return Result.Error("Empty path");
             }
 
-            if (path.Length > kMaxFullPathLength)
+            if (IsDriveRelative(path))
+            {
+                return Result.Error($"Path is drive-relative: '{path.Substring(0, 2)}' has no separator after it");
+            }
+
+            // MAX_PATH is Windows' own limit: macOS, Linux, Android and iOS take far longer paths
+            if (PathPlatform.LimitsPathLength && path.Length > kMaxFullPathLength)
             {
                 return Result.Error("Path is too long");
             }
 
             try
             {
-                int lastPathSeparatorElement = path.LastIndexOf('\\');
-                int otherPathSep = path.LastIndexOf('/');
-                if (lastPathSeparatorElement == -1)
-                {
-                    lastPathSeparatorElement = otherPathSep;
-                }
-                else if (otherPathSep != -1 && otherPathSep > lastPathSeparatorElement)
-                {
-                    lastPathSeparatorElement = otherPathSep;
-                }
-
-                if (lastPathSeparatorElement != -1 && lastPathSeparatorElement > kMaxPathDirectoryLength)
+                int lastPathSeparatorElement = path.LastIndexOfAny(PathPlatform.Separators);
+                if (PathPlatform.LimitsPathLength
+                    && (lastPathSeparatorElement != -1)
+                    && (lastPathSeparatorElement > kMaxPathDirectoryLength))
                 {
                     return Result.Error("Path directory is too long");
                 }
@@ -119,14 +133,15 @@
                 var invalidFileNameChars = Path.GetInvalidFileNameChars();
 
                 // On Windows '/' separates as well as '\', so the path splits on either: split on '\' alone, a '/' would be
-                //  left inside a part, where it's an invalid file name char. Elsewhere both separator chars are '/', and '\'
-                //  is an ordinary character.
-                string splittablePath = path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
-                var allPathParts = PathHelpers.GetAllPathParts(splittablePath).ToArray();
+                //  left inside a part, where it's an invalid file name char. Elsewhere only '/' separates, and '\' is an
+                //  ordinary character.
+                char separator = PathPlatform.NormalizedSeparator;
+                string splittablePath = PathPlatform.TakesBackslashAsSeparator ? path.Replace('/', '\\') : path;
+                var allPathParts = PathHelpers.GetAllPathParts(splittablePath, separator).ToArray();
                 for (int index = 0; index < allPathParts.Length; ++index)
                 {
                     // If we're on the filename part (if any)
-                    if (index == allPathParts.Length - 1 && !splittablePath.EndsWith(Path.DirectorySeparatorChar))
+                    if (index == allPathParts.Length - 1 && !splittablePath.EndsWith(separator))
                     {
                         if (_ContainsChars(allPathParts[index], invalidFileNameChars, out string foundChars))
                         {
@@ -137,6 +152,11 @@
                     {
                         return Result.Error($"Path contains invalid path chars: {foundChars}");
                     }
+                }
+
+                if (ClimbsAboveItsRoot(allPathParts, separator))
+                {
+                    return Result.Error("Path climbs above its root with '..'");
                 }
 
                 return Result.Success();
@@ -162,7 +182,7 @@
 
 
         /// <summary>
-        /// Makes sure the passed in string is not null, and doesn't contain any invalid path chars
+        /// Whether <paramref name="path"/> can be used as a path here, as <see cref="EvaluatePathValidity"/> decides
         /// </summary>
         public static bool IsValidAsPath (string path)
         {
@@ -170,26 +190,61 @@
         }
 
         /// <summary>
-        /// Create a version of the passed in path that is resolved, and ready for comparison: lowercased, with '\' for every
-        /// separator, its '.' parts dropped and each '..' resolved. It is for comparing paths, not for opening one.
+        /// Create a version of the passed in path that is resolved, and ready for comparison: its '.' parts dropped, each '..'
+        /// resolved, and lowercased where the platform ignores case in a path (Windows and macOS; Android, iOS and Linux tell
+        /// 'Photos' from 'photos', so the case is kept there). On Windows every separator becomes '\', since '/' separates
+        /// there too. Elsewhere only '/' separates, and the result keeps it, with any '\' left as part of its name. It is for
+        /// comparing paths, not for opening one.
         /// </summary>
         /// <param name="path">The un-normalized path</param>
         /// <returns>The normalized version of the path</returns>
-        /// <exception cref="ArgumentOutOfRangeException">A '..' climbs past the start of a path with no root</exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// A '..' climbs above the path's root (a drive, a drive's root, or a network path's server and share: c:\..\x,
+        /// \\server\share\..\x), or past the start of a path with no root; or the path is drive-relative (c:test, or c: alone)
+        /// </exception>
         public static string NormalizePath (string path)
         {
-            // Split on '\', the separator the path was just converted to. The OS's separator is '/' off Windows, and
-            //  splitting on that would leave the whole path as one part. Lowercasing is invariant, so the current culture
-            //  can't change what matches (Turkish lowercases I to a dotless i).
-            path = path.ToLowerInvariant().Replace('/', '\\');
-            List<string> pathParts = GetAllPathParts(path, '\\').ToList();
+            return NormalizePath(path, PathPlatform.IgnoresCase);
+        }
 
-            // A root has nothing above it, whether a drive (c:), the network root (\) or the empty part of a path rooted
-            //  at its drive's root. So a '..' straight after one goes and the root stays, as Path.GetFullPath does. Only
-            //  an unrooted path can climb past its start, which throws.
-            bool startsAtARoot = pathParts.Count > 0
-                && ((pathParts[0].Length == 2 && pathParts[0][1] == ':') || pathParts[0] == "\\" || pathParts[0].Length == 0);
+        /// <summary>
+        /// <see cref="NormalizePath(string)"/>, lowercasing only when <paramref name="ignoreCase"/> says to rather than by the
+        /// platform's rule, for a caller that has to tell paths differing only by case from paths that match exactly
+        /// </summary>
+        internal static string NormalizePath (string path, bool ignoreCase)
+        {
+            // Nonsense input is refused rather than made into some other path. A drive-relative path names a place under
+            //  its drive's current folder, which the text alone can't say (c:test is not c:\test).
+            if (IsDriveRelative(path))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(path),
+                    path,
+                    $"The path is drive-relative: '{path.Substring(0, 2)}' has no separator after it"
+                );
+            }
 
+            string givenPath = path;
+
+            // On Windows every '/' becomes '\', and the path splits on that. Elsewhere it splits on '/', the only separator
+            //  there, and a '\' stays part of its name: on Linux a\b and a/b are two different paths. Lowercasing is
+            //  invariant, so the current culture can't change what matches (Turkish lowercases I to a dotless i).
+            char separator = PathPlatform.NormalizedSeparator;
+            if (ignoreCase)
+            {
+                path = path.ToLowerInvariant();
+            }
+
+            if (PathPlatform.TakesBackslashAsSeparator)
+            {
+                path = path.Replace('/', '\\');
+            }
+
+            List<string> pathParts = GetAllPathParts(path, separator).ToList();
+
+            // A root has nothing above it, so a '..' in it or straight after it climbs above the root, the same as a '..'
+            //  that climbs past the start of a path with no root. Neither is clamped to where it stops.
+            int rootPartCount = CountRootParts(pathParts, separator);
             for (int index = 0; index < pathParts.Count; ++index)
             {
                 // A '.' names where the path already is
@@ -200,32 +255,28 @@
                 }
                 else if (pathParts[index] == "..")
                 {
-                    if (index == 0)
+                    if (index <= rootPartCount)
                     {
-                        throw new ArgumentOutOfRangeException($"Relative directory specification made that goes past specified root: '{path}'");
+                        string problem = (rootPartCount == 0)
+                            ? "The path climbs past its start with '..', and has no root to resolve it against"
+                            : "The path climbs above its root with '..'";
+                        throw new ArgumentOutOfRangeException(nameof(path), givenPath, problem);
                     }
 
-                    if (index == 1 && startsAtARoot)
-                    {
-                        pathParts.RemoveAt(index);
-                        index -= 1;
-                    }
-                    else
-                    {
-                        // Remove the pair, then look next at what moved into its first slot, which can be another '..'
-                        pathParts.RemoveAt(index);
-                        pathParts.RemoveAt(index - 1);
-                        index -= 2;
-                    }
+                    // Remove the pair, then look next at what moved into its first slot, which can be another '..'
+                    pathParts.RemoveAt(index);
+                    pathParts.RemoveAt(index - 1);
+                    index -= 2;
                 }
             }
 
-            // Joining drops a lone root's separator (the empty part of \ gives nothing, the \ part of \\ gives one \), so
-            //  it goes back on
-            string normalized = String.Join('\\', pathParts);
-            if (pathParts.Count == 1 && (pathParts[0].Length == 0 || pathParts[0] == "\\"))
+            // Joining drops a lone root's separator (the empty part of a drive's root gives nothing, and the network root's
+            //  part gives one separator of the two), so it goes back on
+            string normalized = String.Join(separator, pathParts);
+            if ((pathParts.Count == 1)
+                && ((pathParts[0].Length == 0) || ((pathParts[0].Length == 1) && (pathParts[0][0] == separator))))
             {
-                normalized += '\\';
+                normalized += separator;
             }
 
             return normalized;
@@ -282,7 +333,9 @@
         }
 
         /// <summary>
-        /// Generate a relative path between the source directory and the target path
+        /// Generate a relative path between the source directory and the target path. Both split and match by the platform's
+        /// rules: '\' and '/' separate on Windows and only '/' elsewhere, and folder names ignore case on Windows and macOS
+        /// and tell it apart on Android, iOS and Linux.
         /// </summary>
         /// <param name="sourceDirectory">The source directory</param>
         /// <param name="targetPath">The target path</param>
@@ -296,14 +349,14 @@
                 return null;
             }
 
-            List<string> source = sourceDirectory.Split(new[] { '\\', '/' }, StringSplitOptions.RemoveEmptyEntries).ToList();
-            List<string> target = targetPath.Split(new[] { '\\', '/' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+            List<string> source = sourceDirectory.Split(PathPlatform.Separators, StringSplitOptions.RemoveEmptyEntries).ToList();
+            List<string> target = targetPath.Split(PathPlatform.Separators, StringSplitOptions.RemoveEmptyEntries).ToList();
 
             int finalMatchIndex = -1;
             int shortestSequence = Math.Min(source.Count, target.Count);
             for (int index = 0; index < shortestSequence; ++index)
             {
-                if (!source[index].Equals(target[index], StringComparison.OrdinalIgnoreCase))
+                if (!source[index].Equals(target[index], PathPlatform.Comparison))
                 {
                     finalMatchIndex = index;
                     break;
@@ -398,11 +451,12 @@
         /// <summary>
         /// Finds which of <paramref name="extensions"/> the file has. An extension, with or without its dot, matches at a dot
         /// or as the whole file name, so <c>jpg</c> matches photo.jpg but not notajpg, and <c>ajut.core.dll</c> matches
-        /// ajut.core.dll; <c>*</c> matches any file. Case is ignored, the same in every culture.
+        /// ajut.core.dll; <c>*</c> matches any file. Case is ignored, the same in every culture. The file name is what follows
+        /// the path's last separator: '\' or '/' on Windows, and only '/' elsewhere, where '\' is part of a name.
         /// </summary>
         public static IEnumerable<string> FindMatchingExtensions (string filePath, params string[] extensions)
         {
-            string fileName = filePath.Substring(filePath.LastIndexOfAny(new[] { '\\', '/' }) + 1);
+            string fileName = filePath.Substring(filePath.LastIndexOfAny(PathPlatform.Separators) + 1);
             return extensions.Where(_IsMatch);
 
             bool _IsMatch (string _extension)
@@ -428,6 +482,13 @@
             return $"{name}|*.{String.Join(";*.", fileTypes.SelectMany(ft => ft.Extensions))}";
         }
 
+        /// <summary>
+        /// Whether every one of <paramref name="paths"/> (nulls aside) names the same place, compared through
+        /// <see cref="NormalizePath(string)"/>, so case counts only where the platform tells it apart. It compares the text,
+        /// not the disk: a volume that differs from its platform's rule (an exFAT card on Android, a case-sensitive APFS
+        /// volume on a Mac) isn't asked.
+        /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">A path <see cref="NormalizePath(string)"/> can't normalize</exception>
         public static bool ArePathsMatching (params string[] paths)
         {
             if (paths == null)
@@ -450,6 +511,80 @@
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Whether <paramref name="path"/> is drive-relative: a drive with no separator after it (c:test, or c: alone), which
+        /// names a place under that drive's current folder rather than under its root. Off Windows, where '\' is part of a
+        /// name, c:\test is one too.
+        /// </summary>
+        private static bool IsDriveRelative (string path)
+        {
+            return (path.Length >= 2)
+                && (path[1] == ':')
+                && ((path.Length == 2) || !PathPlatform.IsSeparator(path[2]));
+        }
+
+        /// <summary>
+        /// How many of <paramref name="pathParts"/> (from <see cref="GetAllPathParts(string, char)"/>) are the path's root: none
+        /// for a path with no root, one for a drive (c:) or a drive's root (the empty part of \a\b), and for a network path its
+        /// root part (the separator), its server and its share, as Windows takes \\server\share
+        /// </summary>
+        private static int CountRootParts (IReadOnlyList<string> pathParts, char pathSeparator)
+        {
+            if (pathParts.Count == 0)
+            {
+                return 0;
+            }
+
+            string first = pathParts[0];
+            if ((first.Length == 0) || ((first.Length == 2) && (first[1] == ':')))
+            {
+                return 1;
+            }
+
+            const int kNetworkRootPartCount = 3;
+            if ((first.Length == 1) && (first[0] == pathSeparator))
+            {
+                return Math.Min(kNetworkRootPartCount, pathParts.Count);
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// Whether a '..' in <paramref name="pathParts"/> climbs above the path's root (see <see cref="CountRootParts"/>). A path
+        /// with no root never does: its leading '..' goes above wherever it's taken from, which is an ordinary relative path.
+        /// </summary>
+        private static bool ClimbsAboveItsRoot (IReadOnlyList<string> pathParts, char pathSeparator)
+        {
+            int rootPartCount = CountRootParts(pathParts, pathSeparator);
+            if (rootPartCount == 0)
+            {
+                return false;
+            }
+
+            int depthBelowTheRoot = 0;
+            for (int index = 0; index < pathParts.Count; ++index)
+            {
+                string part = pathParts[index];
+                if (part == "..")
+                {
+                    // A '..' that is a server or share name, or that has nothing below the root to climb out of
+                    if ((index < rootPartCount) || (depthBelowTheRoot == 0))
+                    {
+                        return true;
+                    }
+
+                    --depthBelowTheRoot;
+                }
+                else if ((index >= rootPartCount) && (part != "."))
+                {
+                    ++depthBelowTheRoot;
+                }
+            }
+
+            return false;
         }
     }
 }

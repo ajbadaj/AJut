@@ -142,18 +142,24 @@ namespace AJut.Core.UnitTests.AJsonV2
         /// <summary>
         /// Documents and arrays several levels deep, type ids holding assembly-qualified names (commas, spaces and equals signs
         /// inside quotes), a trailing comma after every element's last value, and a value that is a single space. Chapters also
-        /// holds keys with no document around them, which the lenient reader reads past rather than failing the whole text.
+        /// holds two keys with no document around them, Id and Paragraphs. An array holds no keys, so the reader reports each
+        /// one and reads it with its value as a document of that one entry, and every value under them still reads.
         /// </summary>
         [TestMethod]
-        public void Read_DeeplyNestedText_WithTypeIdsAndTrailingCommas_ParsesWithoutErrors ()
+        public void Read_DeeplyNestedText_WithTypeIdsAndTrailingCommas_ReadsEveryValue_AndReportsTheKeysInAnArray ()
         {
             foreach (string newline in kNewlines)
             {
                 string text = MakeNestedElementText(newline);
-                JsonDocument root = ParseDocument(text);
+                Json json = JsonHelper.ParseText(text);
+
+                Assert.AreEqual(2, json.Errors.Count, json.GetErrorReport() + "\nText:\n" + text);
+                StringAssert.Contains(json.Errors[0], "Key 'Id' inside an array", text);
+                StringAssert.Contains(json.Errors[1], "Key 'Paragraphs' inside an array", text);
+                Assert.IsInstanceOfType(json.Data, typeof(JsonDocument), text);
 
                 List<string> found = new List<string>();
-                CollectValuesFor(root, nameof(Element.Text), found);
+                CollectValuesFor(json.Data, nameof(Element.Text), found);
                 CollectionAssert.AreEqual(kElementTexts, found, text);
             }
         }
