@@ -45,7 +45,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:PathSelectionControl}">
-                    <Grid>
+                    <Grid x:Name="Frame">
                         <!-- The glow around an invalid path, in InvalidPathGlowBrush. A DropShadowEffect with no offset is a glow;
                              WPF's BitmapEffects (OuterGlowBitmapEffect and the rest) are deprecated and no longer draw anything.
                              https://learn.microsoft.com/en-us/dotnet/api/system.windows.uielement.bitmapeffect
@@ -213,6 +213,16 @@
                             <Setter TargetName="PathSelectorGlow" Property="Visibility" Value="Visible"/>
                             <Setter TargetName="PathWarningDisplay" Property="Visibility" Value="Visible"/>
                             <Setter TargetName="OpenInExplorerButton" Property="Visibility" Value="Collapsed"/>
+                        </Trigger>
+
+                        <!-- A path that can't be changed, read-only or disabled (a read-only PropertyGrid row), fades as a
+                             whole, as a read-only NumericEditor does, so it looks it. A fade rather than a brush, so the one
+                             trigger serves the themed look and the unthemed one. -->
+                        <Trigger Property="IsReadOnly" Value="True">
+                            <Setter TargetName="Frame" Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Frame" Property="Opacity" Value="0.5"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

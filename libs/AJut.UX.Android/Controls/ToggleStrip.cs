@@ -484,6 +484,14 @@ namespace AJut.UX.Controls
         protected override void OnLayout (bool changed, int left, int top, int right, int bottom)
         {
             base.OnLayout(changed, left, top, right, bottom);
+
+            // A padding set during layout asks for a second pass, which Android warns about, so a changed one is set just
+            // after, as the overflow layout is
+            if (!this.HasScrollDotRoom())
+            {
+                this.Post(this.ApplyScrollDotRoom);
+            }
+
             this.UpdateScrollIndicators();
         }
 
@@ -902,9 +910,10 @@ namespace AJut.UX.Controls
             bool isVertical = this.IsVertical;
             if ((m_overflowBehavior == eToggleStripOverflow.Scroll) && (this.Visibility == ViewStates.Visible))
             {
+                // The items scroll inside the scroller's padding (ApplyScrollDotRoom), so that is the length that shows them
                 indicators = isVertical
-                    ? ToggleStripScrollIndicators.For(m_scroll.ScrollY, m_row.Height, m_scroll.Height)
-                    : ToggleStripScrollIndicators.For(m_scroll.ScrollX, m_row.Width, m_scroll.Width);
+                    ? ToggleStripScrollIndicators.For(m_scroll.ScrollY, m_row.Height, m_scroll.Height - m_scroll.PaddingTop - m_scroll.PaddingBottom)
+                    : ToggleStripScrollIndicators.For(m_scroll.ScrollX, m_row.Width, m_scroll.Width - m_scroll.PaddingLeft - m_scroll.PaddingRight);
             }
 
             int radius = (int)Math.Round(ToggleStripScrollIndicators.kDotDiameter * m_density / 2.0);
@@ -921,6 +930,53 @@ namespace AJut.UX.Controls
                 : default;
             _PlaceDot(m_backDot, ref m_backDotPlacement, back);
             _PlaceDot(m_forwardDot, ref m_forwardDotPlacement, forward);
+        }
+
+        // Where the host has no room past an end, that end's dot goes just inside it (DotCenterFor), which would sit over
+        // the items. So the scroller is padded in at that end by the dot's room, and the items scroll clear of the dot; the
+        // scroller clips to its padding. The padding goes by the host's room, not by whether the dot shows, so the items
+        // don't shift as dots come and go. A changed padding lays the strip out again, which finds the same padding, so it
+        // settles there.
+        private void ApplyScrollDotRoom ()
+        {
+            if ((m_scroll != null) && (this.WantedScrollDotRoom() is Rect wanted) && !this.HasScrollDotRoom(wanted))
+            {
+                m_scroll.SetPadding(wanted.Left, wanted.Top, wanted.Right, wanted.Bottom);
+            }
+        }
+
+        private bool HasScrollDotRoom () => (this.WantedScrollDotRoom() is not Rect wanted) || this.HasScrollDotRoom(wanted);
+
+        private bool HasScrollDotRoom (Rect wanted)
+        {
+            return (m_scroll == null)
+                || ((m_scroll.PaddingLeft == wanted.Left) && (m_scroll.PaddingTop == wanted.Top) && (m_scroll.PaddingRight == wanted.Right) && (m_scroll.PaddingBottom == wanted.Bottom));
+        }
+
+        // The scroller's padding the host's room asks for, or null with no scroller or no host yet
+        private Rect? WantedScrollDotRoom ()
+        {
+            if ((m_scroll == null) || !(this.Parent is View host))
+            {
+                return null;
+            }
+
+            bool isVertical = this.IsVertical;
+            int backRoom = 0;
+            int forwardRoom = 0;
+            if (m_overflowBehavior == eToggleStripOverflow.Scroll)
+            {
+                int start = isVertical ? this.Top : this.Left;
+                int end = isVertical ? this.Bottom : this.Right;
+                int hostLength = isVertical ? host.Height : host.Width;
+                int room = (int)Math.Round(MobileLook.ToggleStrip.ScrollIndicatorInsideRoom * m_density);
+                backRoom = (ToggleStripScrollIndicators.DotCenterFor(start, false, hostLength, m_density) > start) ? room : 0;
+                forwardRoom = (ToggleStripScrollIndicators.DotCenterFor(end, true, hostLength, m_density) < end) ? room : 0;
+            }
+
+            return isVertical
+                ? new Rect(0, backRoom, 0, forwardRoom)
+                : new Rect(backRoom, 0, forwardRoom, 0);
         }
 
         // This runs on every scroll step, so a dot is only moved when its placement changes. A hidden dot (the default
@@ -1120,6 +1176,9 @@ namespace AJut.UX.Controls
             public ScrollToggleHost (ToggleStrip owner) : base(owner.Context)
             {
                 m_owner = owner;
+
+                // See VerticalScrollToggleHost: the same for a page that scrolls sideways
+                this.NestedScrollingEnabled = true;
             }
 
             public bool IsScrollingEnabled { get; set; }
@@ -1143,6 +1202,12 @@ namespace AJut.UX.Controls
             public VerticalScrollToggleHost (ToggleStrip owner) : base(owner.Context)
             {
                 m_owner = owner;
+
+                // On a page that scrolls the same way, the page is asked about a drag before the strip is, and takes it
+                // once it passes the touch slop, so the strip never scrolled. As a nested scrolling child the strip
+                // starts a nested scroll as the press goes down, a ScrollView page then leaves the drag to it, and what
+                // the strip can't take at its end goes on to the page.
+                this.NestedScrollingEnabled = true;
             }
 
             public bool IsScrollingEnabled { get; set; }

@@ -46,6 +46,14 @@ namespace AJut.UX.Controls
             new[] { ThemedGradient.Stop(0.0, 0xFF2B2B2B), ThemedGradient.Stop(1.0, 0xFF2B2B2B) }
         );
 
+        // Read-only, the frame is the disabled surface, so an editor that can't be edited looks disabled; unthemed, a
+        // little flatter than the rest surface. A solid key comes back as two equal stops.
+        private static readonly ThemedGradient kDisabledSurface = new ThemedGradient(
+            MobileLook.NumericEditor.FrameSurfaceDisabled,
+            new[] { ThemedGradient.Stop(0.0, 0xFFF3F3F3), ThemedGradient.Stop(1.0, 0xFFF3F3F3) },
+            new[] { ThemedGradient.Stop(0.0, 0xFF262626), ThemedGradient.Stop(1.0, 0xFF262626) }
+        );
+
         // ===========[ Instance Fields ]===================================
         private readonly NumericEditorController m_controller;
         private readonly CAGradientLayer m_surface = new CAGradientLayer
@@ -82,6 +90,7 @@ namespace AJut.UX.Controls
         private readonly FieldWell m_well;
         private readonly NudgeButton m_decreaseButton;
         private readonly NudgeButton m_increaseButton;
+        private ErrorBubble m_errorBubble;
         private UIView m_labelView;
         private object m_value;
 
@@ -138,10 +147,17 @@ namespace AJut.UX.Controls
             m_well.SetContentHuggingPriority((float)UILayoutPriority.DefaultLow, UILayoutConstraintAxis.Horizontal);
             m_textField.SetContentHuggingPriority((float)UILayoutPriority.DefaultLow, UILayoutConstraintAxis.Horizontal);
             m_textField.TextColor = ThemedColors.Get(MobileLook.NumericEditor.Number);
+            m_textField.TextAlignment = UITextAlignment.Center;
             m_warningGlyph.Image = UIImage.GetSystemImage("exclamationmark.triangle.fill");
             m_warningGlyph.TintColor = ThemedColors.Get(MobileLook.NumericEditor.FrameBorderError);
             m_warningGlyph.SetContentHuggingPriority((float)UILayoutPriority.Required, UILayoutConstraintAxis.Horizontal);
             m_warningGlyph.AddInteraction(m_warningToolTip);
+
+            // A pointer shows the message as the glyph's tooltip; a finger has no hover, so a long press on the glyph
+            // shows it in a bubble, as Android's long press tooltip does. The handler is static, for the reason the hover
+            // handler below is.
+            m_warningGlyph.UserInteractionEnabled = true;
+            m_warningGlyph.AddGestureRecognizer(new UILongPressGestureRecognizer(OnWarningGlyphLongPress));
             m_row.AddArrangedSubview(m_decreaseButton);
             m_row.AddArrangedSubview(m_well);
             m_row.AddArrangedSubview(m_warningGlyph);
@@ -188,6 +204,7 @@ namespace AJut.UX.Controls
                 m_decreaseButton.StopRepeating();
                 m_increaseButton.StopRepeating();
                 m_isPointerOverFrame = false;
+                this.HideErrorBubble();
             }
         }
 
@@ -196,6 +213,7 @@ namespace AJut.UX.Controls
             if (disposing)
             {
                 this.UnhookTextField();
+                this.HideErrorBubble();
             }
 
             base.Dispose(disposing);
@@ -223,6 +241,24 @@ namespace AJut.UX.Controls
             // Return ends the edit, and the EditingDidEnd that follows commits it
             field.ResignFirstResponder();
             return false;
+        }
+
+        // The recognizer is on the glyph, deep in the editor, so the editor is found up the glyph's superviews
+        private static void OnWarningGlyphLongPress (UILongPressGestureRecognizer recognizer)
+        {
+            if (recognizer.State != UIGestureRecognizerState.Began)
+            {
+                return;
+            }
+
+            for (UIView view = recognizer.View?.Superview; view != null; view = view.Superview)
+            {
+                if (view is NumericEditor owner)
+                {
+                    owner.ShowErrorBubble();
+                    return;
+                }
+            }
         }
 
         // The recognizer is on the whole editor, so the frame is told apart from the label by where the pointer is, as
@@ -333,8 +369,10 @@ namespace AJut.UX.Controls
         }
 
         /// <summary>
-        /// Shows the value without letting it be typed or nudged: the field and the nudge buttons are disabled, the number
-        /// takes the disabled text color, and the arrow keys do nothing. A Value set from code still shows.
+        /// Shows the value without letting it be typed or nudged, and looks disabled, as an editor that can't be edited
+        /// does: the field and the nudge buttons are disabled, the number and glyphs take the disabled text color, the
+        /// frame the disabled surface and border, and the arrow keys and the pointer do nothing. A Value set from code still
+        /// shows.
         /// </summary>
         public bool IsReadOnly
         {
@@ -342,6 +380,7 @@ namespace AJut.UX.Controls
             set
             {
                 m_isReadOnly = value;
+                this.SetNeedsLayout();
 
                 // An edit in progress ends first, which commits it the way leaving the field does
                 if (value)
@@ -392,6 +431,7 @@ namespace AJut.UX.Controls
             }
         }
 
+        /// <summary>Where the number sits in its well: centered by default, as on Android</summary>
         public UITextAlignment TextAlignment
         {
             get => m_textField.TextAlignment;
@@ -434,13 +474,14 @@ namespace AJut.UX.Controls
 
             // A layer border is a CGColor, which freezes a dynamic color, so it is resolved here: UIKit calls
             // LayoutSubviews again whenever the appearance (light/dark) changes. A key with no unthemed color of its own
-            // (the focused border) takes the tint.
-            string borderKey = MobileLook.NumericEditor.FrameBorderFor(this.ErrorMessage != null, m_isPointerOverFrame, m_textField.IsEditing);
-            UIColor border = ThemedColors.Get(borderKey) ?? this.TintColor;
+            // takes the tint (the focused border), or a dim system color (the read-only border).
+            string borderKey = MobileLook.NumericEditor.FrameBorderFor(m_isReadOnly, this.ErrorMessage != null, m_isPointerOverFrame, m_textField.IsEditing);
+            UIColor border = ThemedColors.Get(borderKey)
+                ?? ((borderKey == MobileLook.NumericEditor.FrameBorderDisabled) ? UIColor.TertiaryLabel : this.TintColor);
             m_frame.Layer.BorderColor = border.GetResolvedColor(this.TraitCollection).CGColor;
 
             // The surface's colors are CGColors as well, so they are worked out here for the same reason
-            IReadOnlyList<AJutGradientStop> stops = kSurface.Resolve(this.TraitCollection.UserInterfaceStyle);
+            IReadOnlyList<AJutGradientStop> stops = (m_isReadOnly ? kDisabledSurface : kSurface).Resolve(this.TraitCollection.UserInterfaceStyle);
             var colors = new CGColor[stops.Count];
             var locations = new NSNumber[stops.Count];
             for (int index = 0; index < stops.Count; ++index)
@@ -528,10 +569,49 @@ namespace AJut.UX.Controls
             m_warningGlyph.Hidden = errorMessage == null;
             m_warningToolTip.DefaultToolTip = errorMessage;
             m_warningGlyph.AccessibilityLabel = errorMessage;
+            this.HideErrorBubble();
             this.SetNeedsLayout();
         }
 
         // ===========[ Helper Methods ]===================================
+        // The bubble goes in the window, over everything, above the glyph (below it when there's no room above), and is
+        // kept inside the safe area. It takes no touches, so a touch under it carries on as usual.
+        private void ShowErrorBubble ()
+        {
+            const float kScreenMargin = 8f;
+
+            this.HideErrorBubble();
+            UIWindow window = this.Window;
+            if ((window == null) || (this.ErrorMessage == null))
+            {
+                return;
+            }
+
+            var bubble = new ErrorBubble(this.ErrorMessage, this.TraitCollection);
+            CGSize size = bubble.Fit(MobileLook.NumericEditor.ErrorBubbleMaxWidth);
+            CGRect glyph = m_warningGlyph.ConvertRectToView(m_warningGlyph.Bounds, window);
+            CGRect safe = window.SafeAreaLayoutGuide.LayoutFrame;
+
+            nfloat x = glyph.GetMidX() - (size.Width / 2f);
+            x = (nfloat)Math.Max((double)(safe.Left + kScreenMargin), Math.Min((double)x, (double)(safe.Right - kScreenMargin - size.Width)));
+            nfloat y = glyph.Top - MobileLook.NumericEditor.ErrorBubbleGap - size.Height;
+            if (y < safe.Top + kScreenMargin)
+            {
+                y = glyph.Bottom + MobileLook.NumericEditor.ErrorBubbleGap;
+            }
+
+            bubble.Frame = new CGRect(x, y, size.Width, size.Height);
+            window.AddSubview(bubble);
+            m_errorBubble = bubble;
+            bubble.StartExpiry();
+        }
+
+        private void HideErrorBubble ()
+        {
+            m_errorBubble?.RemoveFromSuperview();
+            m_errorBubble = null;
+        }
+
         // The text label shows only with text to show, and never while a LabelView stands in for it
         private void UpdateLabelVisibility () => m_label.Hidden = (m_labelView != null) || string.IsNullOrEmpty(m_label.Text);
 
@@ -583,6 +663,70 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ Subclasses/structs ]===================================
+        // The error message on a long press: the text in a rounded, outlined fill, in the tooltip keys. It takes no
+        // touches, VoiceOver skips it (the glyph already reads the message), and it takes itself away after
+        // ErrorBubbleDuration. The border is a CGColor, resolved for the appearance it is shown in, which it lives too
+        // briefly to see change.
+        private sealed class ErrorBubble : UIView
+        {
+            private readonly UILabel m_text;
+
+            public ErrorBubble (string message, UITraitCollection traits) : base(CGRect.Empty)
+            {
+                this.UserInteractionEnabled = false;
+                this.AccessibilityElementsHidden = true;
+                this.BackgroundColor = ThemedColors.Get(MobileLook.NumericEditor.ErrorBubbleBackground) ?? UIColor.SecondarySystemBackground;
+                this.Layer.CornerRadius = MobileLook.NumericEditor.ErrorBubbleCornerRadius;
+                this.Layer.BorderWidth = MobileLook.NumericEditor.BorderThickness;
+                this.Layer.BorderColor = (ThemedColors.Get(MobileLook.NumericEditor.ErrorBubbleBorder) ?? UIColor.Separator).GetResolvedColor(traits).CGColor;
+
+                m_text = new UILabel
+                {
+                    Text = message,
+                    Lines = 0,
+                    Font = UIFont.PreferredFootnote,
+                    TextColor = ThemedColors.Get(MobileLook.NumericEditor.ErrorBubbleText) ?? UIColor.Label,
+                };
+
+                this.AddSubview(m_text);
+            }
+
+            /// <summary>Wraps the text within <paramref name="maxWidth"/> and returns the bubble's size around it</summary>
+            public CGSize Fit (nfloat maxWidth)
+            {
+                nfloat padding = MobileLook.NumericEditor.ErrorBubblePadding;
+                CGSize text = m_text.SizeThatFits(new CGSize(maxWidth - (2f * padding), nfloat.MaxValue));
+                m_text.Frame = new CGRect(padding, padding, text.Width, text.Height);
+                return new CGSize(text.Width + (2f * padding), text.Height + (2f * padding));
+            }
+
+            /// <summary>Takes the bubble away once its time is up</summary>
+            public void StartExpiry ()
+            {
+                NSTimer.CreateScheduledTimer(MobileLook.NumericEditor.ErrorBubbleDuration, new BubbleExpiry(this).Expire);
+            }
+        }
+
+        // Removes a bubble when its time is up. It holds the bubble weakly, so the timer pins nothing, and a bubble
+        // already hidden or replaced is only removed again, which does nothing.
+        private sealed class BubbleExpiry
+        {
+            private readonly WeakReference<UIView> m_bubble;
+
+            public BubbleExpiry (UIView bubble)
+            {
+                m_bubble = new WeakReference<UIView>(bubble);
+            }
+
+            public void Expire (NSTimer timer)
+            {
+                if (m_bubble.TryGetTarget(out UIView bubble))
+                {
+                    bubble.RemoveFromSuperview();
+                }
+            }
+        }
+
         // A nudge button that steps once when pressed and keeps stepping while held, the way WinUI3's RepeatButton
         // does. It remembers the keyboard modifiers held when the press began, so Shift or Command picks the step.
         // It holds its editor weakly: the editor keeps the button alive natively as a subview, so a strong

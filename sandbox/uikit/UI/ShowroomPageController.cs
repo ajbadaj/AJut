@@ -46,6 +46,10 @@ namespace AJutShowRoomUIKit.UI
             });
 
             this.BuildPage();
+
+            // The page's stock buttons and text fields take the AJut colors while the theme is loaded, as an app passes
+            // the views it builds
+            AJut.UX.Theming.StockControlTint.Apply(this.View);
         }
 
         /// <summary>Fill the page with <see cref="AddHeading"/>, <see cref="AddText"/>, <see cref="AddDemo"/> and <see cref="AddCode"/>, in reading order.</summary>

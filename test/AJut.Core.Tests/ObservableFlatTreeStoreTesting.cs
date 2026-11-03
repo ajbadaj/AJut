@@ -374,6 +374,131 @@
         }
 
         [TestMethod]
+        public void IncludeRootFalse_AChildAddedToTheHiddenRoot_GetsARow ()
+        {
+            var root = new TreeNode("root");
+            TreeNode a = root.AddChild("a");
+            TreeNode b = a.AddChild("b");
+            var flat = new ObservableFlatTreeStore { IncludeRoot = false };
+            flat.RootNode = root;
+
+            TreeNode c = root.AddChild("c");
+
+            CollectionAssert.AreEqual(new[] { a, b, c }, flat.ToArray(), "A new top-level node shows, after the subtree before it");
+        }
+
+        [TestMethod]
+        public void IncludeRootFalse_AChildRemovedFromTheHiddenRoot_LosesItsRow ()
+        {
+            var root = new TreeNode("root");
+            TreeNode a = root.AddChild("a");
+            a.AddChild("b");
+            TreeNode c = root.AddChild("c");
+            var flat = new ObservableFlatTreeStore { IncludeRoot = false };
+            flat.RootNode = root;
+
+            root.RemoveChild(a);
+
+            CollectionAssert.AreEqual(new[] { c }, flat.ToArray(), "A removed top-level node and its subtree go");
+        }
+
+        [TestMethod]
+        public void IncludeRootFalse_SetAfter_AChildAddedToTheHiddenRoot_GetsARow ()
+        {
+            var root = new TreeNode("root");
+            TreeNode a = root.AddChild("a");
+            var flat = new ObservableFlatTreeStore();
+            flat.RootNode = root;
+            flat.IncludeRoot = false;
+
+            TreeNode c = root.AddChild("c");
+
+            CollectionAssert.AreEqual(new[] { a, c }, flat.ToArray());
+        }
+
+        [TestMethod]
+        public void IncludeRootTrueAgain_AChildAddedToTheRoot_GetsOneRow ()
+        {
+            var root = new TreeNode("root");
+            TreeNode a = root.AddChild("a");
+            var flat = new ObservableFlatTreeStore { IncludeRoot = false };
+            flat.RootNode = root;
+            flat.IncludeRoot = true;
+
+            TreeNode c = root.AddChild("c");
+
+            CollectionAssert.AreEqual(new[] { root, a, c }, flat.ToArray(), "Shown again, the root's new child shows once");
+        }
+
+        [TestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        public void RootReplaced_TheOldRootIsNoLongerFollowed (bool includeRoot)
+        {
+            var oldRoot = new TreeNode("old");
+            oldRoot.AddChild("a");
+            var newRoot = new TreeNode("new");
+            TreeNode b = newRoot.AddChild("b");
+            var flat = new ObservableFlatTreeStore { IncludeRoot = includeRoot };
+            flat.RootNode = oldRoot;
+            flat.RootNode = newRoot;
+
+            oldRoot.AddChild("late");
+
+            TreeNode[] expected = includeRoot ? new[] { newRoot, b } : new[] { b };
+            CollectionAssert.AreEqual(expected, flat.ToArray(), "A child added to a root the store let go of is not shown");
+        }
+
+        [TestMethod]
+        public void RootHiddenAfterItWasSet_ThenReplaced_TheOldRootIsNoLongerFollowed ()
+        {
+            var oldRoot = new TreeNode("old");
+            oldRoot.AddChild("a");
+            var newRoot = new TreeNode("new");
+            TreeNode b = newRoot.AddChild("b");
+            var flat = new ObservableFlatTreeStore();
+            flat.RootNode = oldRoot;
+            flat.IncludeRoot = false;
+            flat.RootNode = newRoot;
+
+            oldRoot.AddChild("late");
+
+            CollectionAssert.AreEqual(new[] { b }, flat.ToArray(), "A child added to a root the store let go of is not shown");
+        }
+
+        [TestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        public void RootSetToNull_TheOldRootIsNoLongerFollowed (bool includeRoot)
+        {
+            var oldRoot = new TreeNode("old");
+            oldRoot.AddChild("a");
+            var flat = new ObservableFlatTreeStore { IncludeRoot = includeRoot };
+            flat.RootNode = oldRoot;
+            flat.RootNode = null;
+
+            oldRoot.AddChild("late");
+
+            Assert.AreEqual(0, flat.Count, "A child added to a root the store let go of is not shown");
+        }
+
+        [TestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        public void Cleared_TheOldRootIsNoLongerFollowed (bool includeRoot)
+        {
+            var oldRoot = new TreeNode("old");
+            oldRoot.AddChild("a");
+            var flat = new ObservableFlatTreeStore { IncludeRoot = includeRoot };
+            flat.RootNode = oldRoot;
+            flat.Clear();
+
+            oldRoot.AddChild("late");
+
+            Assert.AreEqual(0, flat.Count, "A child added to a root the store let go of is not shown");
+        }
+
+        [TestMethod]
         public void RemoveChild_Works ()
         {
             /*

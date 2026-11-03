@@ -24,6 +24,8 @@ namespace AJut.UX.Controls
             public static readonly ThemedColor ListElementHeader = ThemedColor.FromArgb(MobileLook.PropertyGrid.ListElementHeader, 0xE4000000, 0xFFFFFFFF);
             public static readonly ThemedColor RemoveGlyph = ThemedColor.FromArgb(MobileLook.PropertyGrid.RemoveGlyph, 0xE4000000, 0xFFFFFFFF);
             public static readonly ThemedColor NotSet = ThemedColor.FromArgb(MobileLook.PropertyGrid.NotSet, 0x9E000000, 0xC5FFFFFF);
+            public static readonly ThemedColor Action = ThemedColor.FromArgb(MobileLook.PropertyGrid.Action, 0xFF186DBA, 0xFF4CC2FF);
+            public static readonly ThemedColor ActionDisabled = ThemedColor.FromArgb(MobileLook.PropertyGrid.ActionDisabled, 0xFFA0A0A0, 0xFF6E6E6E);
             public static readonly ThemedColor SelectionAccent = ThemedColor.FromArgb(MobileLook.PropertyGrid.SelectionAccent, 0xFF186DBA, 0xFF4CC2FF);
             public static readonly ThemedColor PressedFill = ThemedColor.FromArgb(MobileLook.PropertyGrid.PressedFill, 0x0F000000, 0x14FFFFFF);
             public static readonly ThemedColor PressedBorder = ThemedColor.FromArgb(MobileLook.PropertyGrid.PressedBorder, 0x1F000000, 0x24FFFFFF);
@@ -250,6 +252,7 @@ namespace AJut.UX.Controls
                 var button = new Button(context, null, Android.Resource.Attribute.BorderlessButtonStyle) { Text = title };
                 button.SetMinWidth(0);
                 button.SetMinimumWidth(0);
+                button.SetTextColor(ThemeColors.Resolve(context, RowColors.Action).ToAndroidColor());
                 return button;
             }
 

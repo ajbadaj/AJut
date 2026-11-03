@@ -332,9 +332,12 @@ namespace AJut.UX.Controls
 
             this.ApplyLabelTemplate();
             this.ApplySubtitle();
-            this.ApplyDeleteButton();
             this.ApplyListElementHeader();
             this.ApplyToolTips();
+
+            // Whether the row's own property can be set comes with its target, so the editor area is worked out again
+            // (and the delete button with it)
+            this.ApplyReadOnly();
         }
 
         private void OnIsSelectedChanged (object sender, System.EventArgs e)
@@ -458,16 +461,36 @@ namespace AJut.UX.Controls
         }
 
         // The whole editor area is disabled rather than each editor told, since the editors are the
-        // consumer's templates; IsEnabled flows down to every control in it. Value editors for a
-        // property with no setter are left as they always were.
+        // consumer's templates; IsEnabled flows down to every control in it, and a disabled editor looks it.
+        // A value row whose property has no setter (a get-only counter) is disabled too, as on the mobile
+        // stacks, since nothing typed into it could be kept: an editor that can't be used should look it. A
+        // button row and a list's row are left to the grid's read-only alone, since they run a command or add
+        // to the list rather than set their property, and so have no setter either.
         private void ApplyReadOnly ()
         {
             if (this.PART_EditorContent != null)
             {
-                this.PART_EditorContent.IsEnabled = !this.IsGridReadOnly;
+                this.PART_EditorContent.IsEnabled = this.IsEditorAreaEnabled();
             }
 
             this.ApplyDeleteButton();
+        }
+
+        private bool IsEditorAreaEnabled ()
+        {
+            if (this.IsGridReadOnly)
+            {
+                return false;
+            }
+
+            if (m_editTarget == null)
+            {
+                return true;
+            }
+
+            bool setsItsProperty = (m_editTarget.Editor != PropertyGridRowRules.kButtonEditorKey)
+                && !(m_editTarget.EditContext is PropertyGridListContext);
+            return !setsItsProperty || !m_editTarget.IsReadOnly;
         }
 
         private void ApplyListElementHeader ()

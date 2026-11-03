@@ -85,6 +85,37 @@ namespace AJut.UX.Tests
         }
 
         [TestMethod]
+        public void WpfPropertyGrid_AValueRowWithNoSetter_IsReadOnly_AndOneWithASetterIsNot ()
+        {
+            StaTestThread.Run(() =>
+            {
+                var grid = new PropertyGrid { ItemTemplateSelector = new PropertyGridTemplateSelector() };
+                grid.SetSingleItemSource(new CounterSource());
+                var host = new Border { Child = grid };
+                LayOut(host);
+
+                Assert.IsTrue(Edit.GetIsReadOnly(EditorAreaOf(grid, nameof(CounterSource.Clicks))), "A get-only value can't be set, so its editor is read-only");
+                Assert.IsFalse(Edit.GetIsReadOnly(EditorAreaOf(grid, nameof(CounterSource.Count))), "A value with a setter is editable");
+            });
+        }
+
+        [TestMethod]
+        public void WpfPropertyGrid_AButtonRowAndAListRow_StayUsableInAGridThatIsNotReadOnly ()
+        {
+            StaTestThread.Run(() =>
+            {
+                var grid = new PropertyGrid { ItemTemplateSelector = new PropertyGridTemplateSelector() };
+                grid.SetSingleItemSource(new CounterSource());
+                var host = new Border { Child = grid };
+                LayOut(host);
+
+                // Neither has a setter: a button runs a command, and a get-only list is added to, not set
+                Assert.IsFalse(Edit.GetIsReadOnly(EditorAreaOf(grid, nameof(CounterSource.Raise))), "A button row runs in a grid that isn't read-only");
+                Assert.IsFalse(Edit.GetIsReadOnly(EditorAreaOf(grid, nameof(CounterSource.Tags))), "A get-only list adds in a grid that isn't read-only");
+            });
+        }
+
+        [TestMethod]
         public void WpfPathSelectionControl_ReadOnly_TakesNoTypingAndNoBrowsing ()
         {
             StaTestThread.Run(() =>
@@ -168,11 +199,39 @@ namespace AJut.UX.Tests
             }
         }
 
+        // The grid's editor area for one row: the presenter that picks the row's editor through the grid's template
+        // selector (the label's presenter holds the same target), found by the property it edits
+        private static ContentPresenter EditorAreaOf (PropertyGrid grid, string propertyName)
+        {
+            ContentPresenter area = FindInVisualTree<ContentPresenter>(grid)
+                .FirstOrDefault(presenter => ReferenceEquals(presenter.ContentTemplateSelector, grid.ItemTemplateSelector)
+                    && (presenter.Content is PropertyEditTarget target)
+                    && (target.PropertyPathTarget == propertyName));
+            Assert.IsNotNull(area, $"The grid should have built the {propertyName} row");
+            return area;
+        }
+
         // ===========[ Subclasses/structs ]====================================
         private sealed class ListSource
         {
             [PGList]
             public List<string> Tags { get; set; } = new List<string> { "alpha", "beta" };
+        }
+
+        // A get-only counter beside a settable value, a button that raises it, and a get-only list
+        private sealed class CounterSource
+        {
+            [PGShowReadonly]
+            public int Clicks => 3;
+
+            public int Count { get; set; }
+
+            [PGButton("Raise")]
+            public void Raise () { }
+
+            [PGList]
+            [PGShowReadonly]
+            public List<string> Tags { get; } = new List<string> { "alpha" };
         }
     }
 }

@@ -126,6 +126,9 @@ namespace AJut.UX.Controls
                 ShouldReturn = DismissKeyboard,
             };
 
+            // Themed, the normal AJut text box, the same as a stock text field beside the grid
+            StockControlTint.ApplyToOwnTextField(field);
+
             // Commit on Return or leaving the field, the way a XAML TextBox's default binding does, rather than writing
             // the source on every keystroke
             bindings.BindControl(

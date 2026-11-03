@@ -42,6 +42,15 @@ namespace AJut.UX.Theming
 
             /// <summary>The number, and the step buttons' glyphs, while the editor is read-only.</summary>
             public const string ReadOnlyText = "TextControlForegroundDisabled";
+
+            /// <summary>
+            /// The frame's surface while the editor is read-only: the disabled surface a disabled ToggleStrip or ComboBox
+            /// takes, so an editor that can't be edited looks disabled, as every other editor in a read-only grid does.
+            /// </summary>
+            public const string FrameSurfaceDisabled = "AJut_Brush_ControlBackgroundDisabled";
+
+            /// <summary>The frame's border while the editor is read-only, which takes no pointer or focus change.</summary>
+            public const string FrameBorderDisabled = "AJut_Brush_TextBoxBorder";
             public const string StepGlyph = "TextFillColorPrimaryBrush";
 
             /// <summary>
@@ -97,6 +106,32 @@ namespace AJut.UX.Theming
             /// <summary>The time between repeats while a step button is held.</summary>
             public static readonly TimeSpan RepeatInterval = TimeSpan.FromMilliseconds(80);
 
+            // ===========[ The error message on a long press (UIKit) ]===================================
+            // Android shows the message as the warning glyph's tooltip, which the platform brings up on a long press.
+            // iOS only shows a tooltip under a pointer, so UIKit's editor shows a bubble of its own on a long press,
+            // in the tooltip keys WinUI3 gives its ToolTip.
+
+            /// <summary>The error bubble's fill.</summary>
+            public const string ErrorBubbleBackground = "ToolTipBackgroundBrush";
+
+            /// <summary>The error bubble's text.</summary>
+            public const string ErrorBubbleText = "ToolTipForegroundBrush";
+
+            /// <summary>The error bubble's outline.</summary>
+            public const string ErrorBubbleBorder = "ToolTipBorderBrush";
+
+            public const float ErrorBubbleCornerRadius = 4f;
+            public const float ErrorBubblePadding = 8f;
+
+            /// <summary>The space between the bubble and the warning glyph it points from.</summary>
+            public const float ErrorBubbleGap = 6f;
+
+            /// <summary>The widest the bubble grows before its text wraps.</summary>
+            public const float ErrorBubbleMaxWidth = 260f;
+
+            /// <summary>How long the bubble stays up, long enough to read a message of a line or two.</summary>
+            public static readonly TimeSpan ErrorBubbleDuration = TimeSpan.FromSeconds(3);
+
             // ===========[ Public Interface Methods ]===================================
             /// <summary>
             /// The key the frame's border takes: the error wins, then a mouse or stylus over the frame, then focus. The
@@ -115,6 +150,20 @@ namespace AJut.UX.Theming
                 }
 
                 return isFocused ? FrameBorderFocused : FrameBorder;
+            }
+
+            /// <summary>
+            /// The key the frame's border takes, read-only included: the error still wins, then read-only, which draws the
+            /// disabled border whatever the pointer or focus is doing, then the rest as <see cref="FrameBorderFor(bool, bool, bool)"/>.
+            /// </summary>
+            public static string FrameBorderFor (bool isReadOnly, bool hasError, bool isPointerOver, bool isFocused)
+            {
+                if (hasError)
+                {
+                    return FrameBorderError;
+                }
+
+                return isReadOnly ? FrameBorderDisabled : FrameBorderFor(false, isPointerOver, isFocused);
             }
         }
     }

@@ -59,6 +59,10 @@ namespace AJut.UX.Controls
             this.DefaultStyleKey = typeof(NumericEditor);
             this.GotFocus += this.OnGotFocus;
             this.LostFocus += this.OnLostFocus;
+
+            // Its own event, so like the focus ones it holds nothing but this editor. IsEnabled follows a disabled parent
+            // too, which is how a read-only PropertyGrid row reaches it.
+            this.IsEnabledChanged += this.OnIsEnabledChanged;
             this.IsTabStop = false;
         }
 
@@ -312,6 +316,11 @@ namespace AJut.UX.Controls
             this.CommitEditedText();
         }
 
+        private void OnIsEnabledChanged (object sender, DependencyPropertyChangedEventArgs e)
+        {
+            this.UpdateBorderState(true);
+        }
+
         private void IncreaseButton_OnClick (object sender, RoutedEventArgs e) => this.DoNudge(positive: true);
         private void DecreaseButton_OnClick (object sender, RoutedEventArgs e) => this.DoNudge(positive: false);
 
@@ -351,11 +360,13 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ Helpers ]=================================================
-        // The border is one state group, so the one state it shows comes from both: the pointer over it wins, as it does
-        // on WPF, then keyboard focus anywhere inside it, then rest
+        // The border is one state group, so the one state it shows comes from all of them: disabled wins, since it draws
+        // no pointer or focus, then the pointer over it, as on WPF, then keyboard focus anywhere inside it, then rest
         private void UpdateBorderState (bool useTransitions)
         {
-            string state = m_isPointerOver ? "PointerOver" : (m_hasFocus ? "Focused" : "Unfocused");
+            string state = !this.IsEnabled
+                ? "Disabled"
+                : (m_isPointerOver ? "PointerOver" : (m_hasFocus ? "Focused" : "Unfocused"));
             VisualStateManager.GoToState(this, state, useTransitions);
         }
 

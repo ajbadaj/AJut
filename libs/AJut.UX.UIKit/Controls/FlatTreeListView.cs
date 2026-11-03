@@ -41,8 +41,9 @@ namespace AJut.UX.Controls
     // the moment it arrives, as a single row insert or delete.
     //
     // Cells are built fresh for each row the table asks for, never reused, and their content is torn
-    // down when the table stops showing them. Reuse is where the WinUI3 grid got stale editors from,
-    // and a PropertyGrid row holds live editors.
+    // down when the table stops showing them, then built again if the table shows the same cell again
+    // (RowCell.Revive). Reuse is where the WinUI3 grid got stale editors from, and a PropertyGrid row
+    // holds live editors.
     //
     // Selection is the tree's own (FlatTreeItem.IsSelected), drawn by each row: a tap selects or
     // toggles a row and the table's own selection is never used, so the two can't disagree.
@@ -855,6 +856,14 @@ namespace AJut.UX.Controls
             }
         }
 
+        // A cell the table had stopped showing is about to show again, so it is given fresh content and takes up its
+        // item again (see RowCell.Revive)
+        private void OnCellRedisplayed (RowCell cell)
+        {
+            cell.Revive(this.MakeRowContent(cell.Item), m_look, this.IsLifted(cell.Item), m_isEnabled);
+            m_liveCells.Add(cell);
+        }
+
         // ===========[ Drag and drop ]=========================================
         private static void OnDragGesture (UILongPressGestureRecognizer recognizer)
         {
@@ -1290,6 +1299,16 @@ namespace AJut.UX.Controls
                 }
             }
 
+            // The end of a cell's display is not always its last: the table can show the same cell again without asking
+            // for it, so a cell that arrives torn down is revived before it shows (see RowCell.Revive)
+            public override void WillDisplay (UITableView tableView, UITableViewCell cell, NSIndexPath indexPath)
+            {
+                if ((cell is RowCell rowCell) && rowCell.IsTornDown && m_owner.TryGetTarget(out FlatTreeListView owner))
+                {
+                    owner.OnCellRedisplayed(rowCell);
+                }
+            }
+
             // The row's menu, if it has one and no drag is on. The menu is built when asked for, and the configuration
             // only holds that menu, nothing that leads back to the tree.
             public override UIContextMenuConfiguration GetContextMenuConfiguration (UITableView tableView, NSIndexPath indexPath, CGPoint point)
@@ -1309,47 +1328,40 @@ namespace AJut.UX.Controls
         }
 
         // One row: the selection fill, outline and strip, the pressed tint, the chevron across the indent, then the
-        // row's own content. It draws from its tree item's IsSelected and the table's press, and lets go of its item and
-        // its content in Teardown.
+        // row's own content. It draws from its tree item's IsSelected and the table's press, lets go of its item and
+        // its content in Teardown, and takes them up again in Revive if the table shows it again.
         private sealed class RowCell : UITableViewCell
         {
             private readonly FlatTreeItem m_item;
-            private readonly UIView m_content;
-            private readonly RowLook m_look;
             private readonly UIView m_selectionFill = new UIView { TranslatesAutoresizingMaskIntoConstraints = false, UserInteractionEnabled = false };
             private readonly UIView m_selectionStrip = new UIView { TranslatesAutoresizingMaskIntoConstraints = false, UserInteractionEnabled = false };
             private readonly UIView m_pressedTint = new UIView { TranslatesAutoresizingMaskIntoConstraints = false, UserInteractionEnabled = false };
             private readonly ExpanderControl m_expander;
+            private UIView m_content;
+            private RowLook m_look;
             private bool m_isTornDown;
 
             public RowCell (FlatTreeItem item, UIView content, RowLook look, double rowSpacing, bool isLifted, bool isEnabled)
                 : base(UITableViewCellStyle.Default, (string)null)
             {
                 m_item = item;
-                m_content = content;
                 m_look = look;
                 this.SelectionStyle = UITableViewCellSelectionStyle.None;
 
                 nfloat halfSpacing = (nfloat)(rowSpacing / 2.0);
                 nfloat leadingWidth = MobileLook.FlatTreeList.ContentLeadingInset + (nfloat)item.IndentWidth + MobileLook.FlatTreeList.ExpanderColumnWidth;
                 m_expander = new ExpanderControl(item, leadingWidth) { TranslatesAutoresizingMaskIntoConstraints = false, Enabled = isEnabled };
-                m_content.TranslatesAutoresizingMaskIntoConstraints = false;
 
                 UIView host = this.ContentView;
                 host.AddSubview(m_selectionFill);
                 m_selectionFill.AddSubview(m_selectionStrip);
                 host.AddSubview(m_pressedTint);
                 host.AddSubview(m_expander);
-                host.AddSubview(m_content);
 
                 // A row is at least a comfortable touch target; the content may make it taller. Both give way (999) to a
                 // FixedRowHeight shorter than either, rather than break.
                 NSLayoutConstraint minimumHeight = m_selectionFill.HeightAnchor.ConstraintGreaterThanOrEqualTo(MobileLook.FlatTreeList.MinRowHeight - (nfloat)rowSpacing);
                 minimumHeight.Priority = 999;
-                NSLayoutConstraint contentTop = m_content.TopAnchor.ConstraintGreaterThanOrEqualTo(m_selectionFill.TopAnchor);
-                contentTop.Priority = 999;
-                NSLayoutConstraint contentBottom = m_content.BottomAnchor.ConstraintLessThanOrEqualTo(m_selectionFill.BottomAnchor);
-                contentBottom.Priority = 999;
                 NSLayoutConstraint.ActivateConstraints(new[]
                 {
                     m_selectionFill.TopAnchor.ConstraintEqualTo(host.TopAnchor, halfSpacing),
@@ -1372,14 +1384,9 @@ namespace AJut.UX.Controls
                     m_expander.BottomAnchor.ConstraintEqualTo(m_selectionFill.BottomAnchor),
                     m_expander.LeadingAnchor.ConstraintEqualTo(host.LeadingAnchor),
                     m_expander.WidthAnchor.ConstraintEqualTo(leadingWidth),
-
-                    m_content.LeadingAnchor.ConstraintEqualTo(m_expander.TrailingAnchor),
-                    m_content.TrailingAnchor.ConstraintEqualTo(host.TrailingAnchor, -MobileLook.FlatTreeList.ContentTrailingInset),
-                    m_content.CenterYAnchor.ConstraintEqualTo(m_selectionFill.CenterYAnchor),
-                    contentTop,
-                    contentBottom,
                 });
 
+                this.AttachContent(content);
                 m_selectionFill.Layer.BorderWidth = MobileLook.FlatTreeList.OutlineThickness;
                 m_pressedTint.Layer.BorderWidth = MobileLook.FlatTreeList.OutlineThickness;
                 m_item.PropertyChanged += this.OnItemPropertyChanged;
@@ -1389,6 +1396,9 @@ namespace AJut.UX.Controls
             }
 
             public FlatTreeItem Item => m_item;
+
+            /// <summary>Whether Teardown has let go of the row's item and content, and nothing has revived it since</summary>
+            public bool IsTornDown => m_isTornDown;
 
             public override void SetHighlighted (bool highlighted, bool animated)
             {
@@ -1415,6 +1425,38 @@ namespace AJut.UX.Controls
                 m_item.PropertyChanged -= this.OnItemPropertyChanged;
                 m_expander.Teardown();
                 (m_content as IFlatTreeRowContent)?.Teardown();
+            }
+
+            /// <summary>
+            /// Brings a torn down row back for the table to show again: its item followed again, the chevron tappable, and
+            /// <paramref name="content"/> in place of the torn down content.
+            /// </summary>
+            public void Revive (UIView content, RowLook look, bool isLifted, bool isEnabled)
+            {
+                // Rows are torn down when the table reports it has stopped showing them, and Apple's docs read as if that
+                // is final. It isn't: the table can show that same cell again later without asking the source for it, so
+                // it comes back with its subscriptions gone. A tree row then stops drawing selection changes (it still
+                // looks right after a press or a layout, which read IsSelected afresh), and a PropertyGrid row's editors
+                // stop working, until the row scrolls far enough away for the table to really drop it. Which UIKit path
+                // does this isn't documented; cell prefetching (UITableView.PrefetchingEnabled, on by default since iOS 15)
+                // has the table prepare cells ahead of showing them, and is the likely one. The table always calls
+                // WillDisplay before a cell shows, so this runs from there, whatever the route. The old content can't be
+                // brought back (its Teardown let its bindings go), so the content is built again.
+                if (!m_isTornDown)
+                {
+                    return;
+                }
+
+                m_isTornDown = false;
+                m_look = look;
+                m_content.RemoveFromSuperview();
+                this.AttachContent(content);
+                m_expander.Revive(isEnabled);
+                m_item.PropertyChanged -= this.OnItemPropertyChanged;
+                m_item.PropertyChanged += this.OnItemPropertyChanged;
+                this.SetLifted(isLifted);
+                this.RefreshExpander();
+                this.RefreshLook();
             }
 
             public void SetLifted (bool isLifted)
@@ -1447,6 +1489,28 @@ namespace AJut.UX.Controls
                         this.RefreshLook();
                         break;
                 }
+            }
+
+            // The content takes the row's width right of the chevron, centered in its height, and a taller content makes
+            // the row taller; top and bottom give way (999) to a FixedRowHeight shorter than it, rather than break
+            private void AttachContent (UIView content)
+            {
+                m_content = content;
+                m_content.TranslatesAutoresizingMaskIntoConstraints = false;
+                this.ContentView.AddSubview(m_content);
+
+                NSLayoutConstraint contentTop = m_content.TopAnchor.ConstraintGreaterThanOrEqualTo(m_selectionFill.TopAnchor);
+                contentTop.Priority = 999;
+                NSLayoutConstraint contentBottom = m_content.BottomAnchor.ConstraintLessThanOrEqualTo(m_selectionFill.BottomAnchor);
+                contentBottom.Priority = 999;
+                NSLayoutConstraint.ActivateConstraints(new[]
+                {
+                    m_content.LeadingAnchor.ConstraintEqualTo(m_expander.TrailingAnchor),
+                    m_content.TrailingAnchor.ConstraintEqualTo(this.ContentView.TrailingAnchor, -MobileLook.FlatTreeList.ContentTrailingInset),
+                    m_content.CenterYAnchor.ConstraintEqualTo(m_selectionFill.CenterYAnchor),
+                    contentTop,
+                    contentBottom,
+                });
             }
 
             private void RefreshExpander ()
@@ -1552,6 +1616,14 @@ namespace AJut.UX.Controls
             public void Teardown ()
             {
                 this.RemoveTarget(this.OnTapped, UIControlEvent.TouchUpInside);
+            }
+
+            /// <summary>Takes taps again after Teardown, for a row the table shows again</summary>
+            public void Revive (bool isEnabled)
+            {
+                this.Enabled = isEnabled;
+                this.RemoveTarget(this.OnTapped, UIControlEvent.TouchUpInside);
+                this.AddTarget(this.OnTapped, UIControlEvent.TouchUpInside);
             }
 
             // The shape layers' colors are CGColors, which a light/dark switch does not reach on its own, so they are

@@ -71,7 +71,102 @@ namespace AJut.UX.Tests
             Assert.AreEqual(UIColor.SystemPink, window.TintColor);
         }
 
+        [TestMethod]
+        public void StockControlTint_Themed_GivesAPlainSystemButtonAButtonFace ()
+        {
+            ThemedColors.IsThemeLoaded = true;
+            UIButton button = UIButton.FromType(UIButtonType.System);
+            button.SetTitle("Go", UIControlState.Normal);
+
+            StockControlTint.Apply(Wrap(button));
+
+            Assert.IsNotNull(button.Configuration, "The face is drawn through a configuration");
+            Assert.IsNotNull(button.ConfigurationUpdateHandler, "The face follows the button's state");
+            Assert.AreEqual("Go", button.Configuration.Title, "The title carries over");
+        }
+
+        [TestMethod]
+        public void StockControlTint_Unthemed_LeavesAPlainSystemButtonAsItIs ()
+        {
+            ThemedColors.IsThemeLoaded = false;
+            UIButton button = UIButton.FromType(UIButtonType.System);
+
+            StockControlTint.Apply(Wrap(button));
+
+            Assert.IsNull(button.Configuration);
+        }
+
+        [TestMethod]
+        public void StockControlTint_Themed_LeavesAButtonWithItsOwnConfigurationAlone ()
+        {
+            ThemedColors.IsThemeLoaded = true;
+            var button = new UIButton(CoreGraphics.CGRect.Empty) { Configuration = UIButtonConfiguration.FilledButtonConfiguration };
+
+            StockControlTint.Apply(Wrap(button));
+
+            Assert.IsNull(button.ConfigurationUpdateHandler);
+        }
+
+        [TestMethod]
+        public void StockControlTint_Themed_LeavesAJutButtonsToPaintThemselves ()
+        {
+            ThemedColors.IsThemeLoaded = true;
+            var button = new AJut.UX.Controls.BrushButton();
+
+            StockControlTint.Apply(Wrap(button));
+
+            Assert.IsNull(button.ConfigurationUpdateHandler, "BrushButton is a UIButton, and AJut's own, so it keeps its own face");
+        }
+
+        [TestMethod]
+        public void StockControlTint_Themed_DrawsARoundedTextFieldAsAnAJutTextBox ()
+        {
+            ThemedColors.IsThemeLoaded = true;
+            var field = new UITextField { BorderStyle = UITextBorderStyle.RoundedRect };
+
+            StockControlTint.Apply(Wrap(field));
+
+            Assert.AreEqual(UITextBorderStyle.None, field.BorderStyle, "The system's own fill and outline give way to AJut's");
+            Assert.IsNotNull(field.BackgroundColor);
+        }
+
+        [TestMethod]
+        public void StockControlTint_Themed_AppliedTwice_TakesOverATextFieldOnce ()
+        {
+            ThemedColors.IsThemeLoaded = true;
+            var field = new UITextField { BorderStyle = UITextBorderStyle.RoundedRect };
+            UIView container = Wrap(field);
+
+            StockControlTint.Apply(container);
+            int recognizersAfterFirst = field.GestureRecognizers?.Length ?? 0;
+            StockControlTint.Apply(container);
+
+            Assert.AreEqual(recognizersAfterFirst, field.GestureRecognizers?.Length ?? 0, "A second Apply adds no second hover recognizer");
+        }
+
+        [TestMethod]
+        public void StockControlTint_Unthemed_LeavesARoundedTextFieldAsItIs ()
+        {
+            ThemedColors.IsThemeLoaded = false;
+            var field = new UITextField { BorderStyle = UITextBorderStyle.RoundedRect };
+
+            StockControlTint.Apply(Wrap(field));
+
+            Assert.IsNull(field.BackgroundColor);
+        }
+
         // ===[ Helpers ]===
+
+        private static UIView Wrap (params UIView[] children)
+        {
+            var container = new UIView();
+            foreach (UIView child in children)
+            {
+                container.AddSubview(child);
+            }
+
+            return container;
+        }
 
         private static UIWindowScene TestAppScene => TestHost.TestArea?.Window?.WindowScene ?? throw new System.InvalidOperationException("Tests only run inside the test app.");
     }

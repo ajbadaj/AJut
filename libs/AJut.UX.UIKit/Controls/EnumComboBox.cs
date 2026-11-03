@@ -71,6 +71,7 @@ namespace AJut.UX.Controls
             configuration.Image = UIImage.GetSystemImage(isThemed ? "chevron.down" : "chevron.up.chevron.down");
             configuration.ImagePlacement = NSDirectionalRectEdge.Trailing;
             configuration.ImagePadding = paddingHorizontal / 2f;
+            configuration.TitleAlignment = UIButtonConfigurationTitleAlignment.Leading;
             configuration.ContentInsets = new NSDirectionalEdgeInsets(paddingVertical, paddingHorizontal, paddingVertical, paddingHorizontal);
             configuration.BaseForegroundColor = ThemedColors.Get(MobileLook.EnumComboBox.Text);
             UIBackgroundConfiguration background = configuration.Background;
@@ -88,7 +89,11 @@ namespace AJut.UX.Controls
 
             m_button.Configuration = configuration;
             m_button.ShowsMenuAsPrimaryAction = true;
-            m_button.HorizontalAlignment = UIControlContentHorizontalAlignment.Leading;
+
+            // Fill, with the image placed trailing, stretches the title across the button and leaves the chevron at the
+            // trailing edge, as every other stack's combo box has it. Leading packs the chevron against the title, which
+            // reads wrong once the box is wider than its text (a PropertyGrid row's full width).
+            m_button.HorizontalAlignment = UIControlContentHorizontalAlignment.Fill;
 
             this.AddSubview(m_button);
             NSLayoutConstraint.ActivateConstraints(new[]

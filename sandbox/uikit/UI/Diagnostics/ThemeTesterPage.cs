@@ -139,7 +139,7 @@ namespace AJutShowRoomUIKit.UI.Diagnostics
 
             // 4. What the AJut controls sit beside
             this.AddHeading("UIKit's own controls");
-            this.AddText("Not themed by AJut: these follow the device's light or dark and the tint color, so they show what the AJut controls sit beside.");
+            this.AddText("What the AJut controls sit beside. With the theme loaded the switch takes the AJut on color (StockControlTint.Apply), and StockControlTint.Apply(view) gives a plain system button the standard button colors, the same as an untouched BrushButton, and a rounded text field the normal AJut text box: AJut_Brush_TextBoxBackground outlined in AJut_Brush_TextBoxBorder, the outline AJut_Brush_PrimaryHighlight while editing and AJut_Brush_PrimaryHighlightBright under a pointer, the text AJut_Brush_InteractiveTextUnfocused, and AJut_Brush_InteractiveText while editing. A button with a configuration of its own, like Filled and Tinted, keeps it and takes only the tint.");
             var disabledSwitch = new UISwitch { On = true, Enabled = false };
             this.AddStateRow(
                 _Captioned(new UISwitch { On = false }, "Off"),
@@ -152,6 +152,15 @@ namespace AJutShowRoomUIKit.UI.Diagnostics
                 new UITextField { Text = "Text", BorderStyle = UITextBorderStyle.RoundedRect },
                 disabledField
             );
+
+            UIButton plain = UIButton.FromType(UIButtonType.System);
+            plain.SetTitle(kRest, UIControlState.Normal);
+            UIButton plainPressed = UIButton.FromType(UIButtonType.System);
+            plainPressed.SetTitle(kPressed, UIControlState.Normal);
+            UIButton plainDisabled = UIButton.FromType(UIButtonType.System);
+            plainDisabled.SetTitle(kDisabled, UIControlState.Normal);
+            plainDisabled.Enabled = false;
+            this.AddStateRow(plain, this.Pressed(plainPressed), plainDisabled);
 
             var filled = new UIButton(CGRect.Empty) { Configuration = UIButtonConfiguration.FilledButtonConfiguration };
             filled.SetTitle("Filled", UIControlState.Normal);

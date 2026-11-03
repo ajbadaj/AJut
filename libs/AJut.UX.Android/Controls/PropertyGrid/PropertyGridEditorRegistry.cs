@@ -125,7 +125,8 @@ namespace AJut.UX.Controls
 
         private static View CreateStringEditor (Context context, PropertyEditTarget target, BindingSet bindings, bool isReadOnly)
         {
-            // A disabled field already dims its text unthemed; with the theme loaded the palette's text colors are used
+            // A disabled field already dims its text unthemed; with the theme loaded it is the normal AJut text box, the
+            // same as a stock text field beside the grid, its disabled text color for a read-only one
             var field = new EditText(context)
             {
                 Enabled = !isReadOnly,
@@ -135,10 +136,7 @@ namespace AJut.UX.Controls
             };
 
             field.SetSingleLine(true);
-            if (ThemeColors.IsThemeLoaded)
-            {
-                field.SetTextColor(ThemeColors.Resolve(context, isReadOnly ? kTextForegroundDisabled : kTextForeground).ToAndroidColor());
-            }
+            StockControlTint.ApplyToOwnTextField(field);
 
             // Commit on Done or leaving the field, the way a XAML TextBox's default binding does, rather than writing the
             // source on every keystroke

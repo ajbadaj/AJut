@@ -44,7 +44,16 @@ namespace AJut.UX.Controls
             // title. A negative zPosition draws the shape behind every sibling layer whatever order they arrive in.
             m_shape.ZPosition = -1;
             this.Layer.InsertSublayer(m_shape, 0);
-            this.Configuration = UIButtonConfiguration.PlainButtonConfiguration;
+
+            // The shape is the button's whole face, so the configuration's own rounding is taken off. With the plain
+            // configuration's default corners, shapes that reach a corner came out cut at it on the iOS 27 simulator;
+            // Fixed with no radius asks for square corners, the way the shape is drawn on every other stack.
+            UIButtonConfiguration configuration = UIButtonConfiguration.PlainButtonConfiguration;
+            configuration.CornerStyle = UIButtonConfigurationCornerStyle.Fixed;
+            UIBackgroundConfiguration background = configuration.Background;
+            background.CornerRadius = 0;
+            configuration.Background = background;
+            this.Configuration = configuration;
             FocusVisual.TakeOver(this);
         }
 
@@ -91,6 +100,7 @@ namespace AJut.UX.Controls
             UIButtonConfiguration configuration = this.Configuration ?? UIButtonConfiguration.PlainButtonConfiguration;
             configuration.BaseForegroundColor = this.GetStateColors().Foreground;
             this.Configuration = configuration;
+            this.ShowPressGrowth(this.Enabled && this.Highlighted);
             this.SetNeedsLayout();
         }
 

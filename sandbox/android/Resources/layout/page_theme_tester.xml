@@ -277,7 +277,29 @@
 
         <TextView
             style="@style/ThemeTesterNote"
-            android:text="Not themed by AJut: these follow the device's light or dark through Android's DeviceDefault theme, so they show what the AJut controls sit beside. EnumComboBox is a Spinner underneath, but with the AJut theme loaded it paints its own face, the pop-out surface outlined in the text box border with the pressed fill while held, as UIKit's does; unthemed it is the stock Spinner." />
+            android:text="What the AJut controls sit beside. Theme.AJut gives them the AJut accent, and with the AJut theme loaded StockControlTint gives check boxes, radio buttons, switches and drop-downs the AJut palette, a plain Button the standard button colors, the same as an untouched BrushButton, and an EditText the normal AJut text box: AJut_Brush_TextBoxBackground outlined in AJut_Brush_TextBoxBorder, the outline AJut_Brush_PrimaryHighlight while focused and AJut_Brush_PrimaryHighlightBright under a mouse or stylus, the text AJut_Brush_InteractiveTextUnfocused, and AJut_Brush_InteractiveText while focused. EnumComboBox is a Spinner underneath, but with the AJut theme loaded it paints its own face, the pop-out surface outlined in the text box border with the pressed fill while held, as UIKit's does; unthemed it is the stock Spinner." />
+
+        <LinearLayout style="@style/ThemeTesterRow">
+
+            <Button
+                style="@style/ThemeTesterSample"
+                android:text="Rest" />
+
+            <Button
+                style="@style/ThemeTesterSample"
+                android:tag="hovered"
+                android:text="Hovered" />
+
+            <Button
+                style="@style/ThemeTesterSample"
+                android:tag="pressed"
+                android:text="Pressed" />
+
+            <Button
+                style="@style/ThemeTesterSample"
+                android:enabled="false"
+                android:text="Disabled" />
+        </LinearLayout>
 
         <LinearLayout style="@style/ThemeTesterRow">
 

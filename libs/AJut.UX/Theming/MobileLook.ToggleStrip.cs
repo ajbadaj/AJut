@@ -85,6 +85,13 @@ namespace AJut.UX.Theming
             /// <summary>An item's least height, so it stays a comfortable touch target.</summary>
             public const float ItemMinHeight = 40f;
 
+            /// <summary>
+            /// How far a Scroll strip pads its items in at an end whose dot has to go just inside that end, because the
+            /// host has no room past it (a strip that runs to the host's edge): the dot with a gap on each side, so the
+            /// items scroll clear of the dot rather than under it. An end with room keeps its dot outside and no padding.
+            /// </summary>
+            public const float ScrollIndicatorInsideRoom = (float)((2.0 * AJut.UX.Controls.ToggleStripScrollIndicators.kDotGap) + AJut.UX.Controls.ToggleStripScrollIndicators.kDotDiameter);
+
             // ===========[ Public Interface Methods ]===================================
             /// <summary>The key the strip's surface takes: the pop-out surface, or the flat disabled fill while disabled.</summary>
             public static string StripSurfaceFor (bool isEnabled) => isEnabled ? StripSurface : StripDisabledSurface;

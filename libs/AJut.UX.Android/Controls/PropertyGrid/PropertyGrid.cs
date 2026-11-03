@@ -500,7 +500,9 @@ namespace AJut.UX.Controls
 
         private static View CreateButtonEditor (Context context, PropertyEditTarget target, BindingSet bindings, bool isLocked)
         {
+            // Themed, the same face as a stock button beside the grid; unthemed, the stock button
             var button = new Button(context) { Text = target.EditValue?.ToString() ?? target.DisplayName ?? string.Empty };
+            StockControlTint.ApplyToOwnButton(button);
 
             // A bound command enables its button whenever it can execute, so a read-only or disabled grid leaves it
             // unbound and the button disabled
@@ -529,14 +531,7 @@ namespace AJut.UX.Controls
                 bindings.BindLabel(count, listContext, nameof(PropertyGridListContext.ElementCount), _ReadCount);
                 if (listContext.CanAdd)
                 {
-                    var add = new Button(context, null, Android.Resource.Attribute.BorderlessButtonStyle)
-                    {
-                        Text = "+",
-                        ContentDescription = "Add",
-                    };
-
-                    add.SetMinWidth(0);
-                    add.SetMinimumWidth(RowView.ToPixels(context, MobileLook.PropertyGrid.RemoveButtonSize));
+                    Button add = CreateAddButton(context);
                     if (this.IsLocked)
                     {
                         add.Enabled = false;
@@ -553,6 +548,58 @@ namespace AJut.UX.Controls
             }
 
             return row;
+        }
+
+        // A list's add button: a plus in an outlined circle, in the accent, centered in a full touch target, as iOS draws
+        // its add button. A bare "+" in a borderless button read as more text beside the element count. Disabled, the
+        // plus and the circle both dim.
+        private static Button CreateAddButton (Context context)
+        {
+            int touchSize = RowView.ToPixels(context, MobileLook.PropertyGrid.RemoveButtonSize);
+            int diameter = RowView.ToPixels(context, MobileLook.PropertyGrid.AddButtonDiameter);
+            int outline = Math.Max(1, RowView.ToPixels(context, MobileLook.PropertyGrid.AddButtonOutlineThickness));
+            int inset = Math.Max(0, (touchSize - diameter) / 2);
+
+            var colors = new ColorStateList(
+                new[] { new[] { -Android.Resource.Attribute.StateEnabled }, Array.Empty<int>() },
+                new[] { ThemeColors.Resolve(context, RowColors.ActionDisabled).ToAndroidColor().ToArgb(), ThemeColors.Resolve(context, RowColors.Action).ToAndroidColor().ToArgb() }
+            );
+
+            var circle = new Android.Graphics.Drawables.GradientDrawable();
+            circle.SetShape(Android.Graphics.Drawables.ShapeType.Oval);
+            circle.SetColor(Android.Graphics.Color.Transparent);
+            circle.SetStroke(outline, colors);
+
+            // The ripple fills the circle. With no mask layer a RippleDrawable is masked by what its content draws, which
+            // here is only the outline, so a solid circle of the same size is its mask; a mask's color never shows.
+            var mask = new Android.Graphics.Drawables.GradientDrawable();
+            mask.SetShape(Android.Graphics.Drawables.ShapeType.Oval);
+            mask.SetColor(Android.Graphics.Color.White);
+            var ripple = new Android.Graphics.Drawables.RippleDrawable(
+                colors.WithAlpha((int)Math.Round(byte.MaxValue * MobileLook.PropertyGrid.AddButtonRippleOpacity)),
+                new Android.Graphics.Drawables.InsetDrawable(circle, inset),
+                new Android.Graphics.Drawables.InsetDrawable(mask, inset)
+            );
+
+            var add = new Button(context)
+            {
+                Text = "+",
+                ContentDescription = "Add",
+                Background = ripple,
+                Gravity = GravityFlags.Center,
+                StateListAnimator = null,
+            };
+
+            add.SetTextColor(colors);
+            add.SetTextSize(ComplexUnitType.Sp, MobileLook.PropertyGrid.AddButtonGlyphSize);
+            add.SetIncludeFontPadding(false);
+            add.SetPadding(0, 0, 0, 0);
+            add.SetMinWidth(0);
+            add.SetMinHeight(0);
+            add.SetMinimumWidth(touchSize);
+            add.SetMinimumHeight(touchSize);
+            add.LayoutParameters = new LinearLayout.LayoutParams(touchSize, touchSize);
+            return add;
         }
 
         // ===========[ Subclasses/structs ]====================================

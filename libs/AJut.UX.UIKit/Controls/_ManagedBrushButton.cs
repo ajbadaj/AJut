@@ -106,6 +106,7 @@ namespace AJut.UX.Controls
             configuration.BaseForegroundColor = colors.Foreground;
 
             this.Configuration = configuration;
+            this.ShowPressGrowth(this.ActiveState == eManagedButtonState.Pressed);
         }
 
         // Keyboard focus shows as AJut's dotted rectangle (see FocusVisual), fitted again on each layout

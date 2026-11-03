@@ -11,6 +11,7 @@ namespace AJut.UX.Tests
     using AJut.UX.Controls;
     using Android.Graphics;
     using Android.Graphics.Drawables;
+    using Android.OS;
     using Android.Views;
     using Android.Widget;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -362,6 +363,41 @@ namespace AJut.UX.Tests
         }
 
         [TestMethod]
+        public async Task Scroll_Vertical_InsideAScrollingPage_ScrollsItselfOnADrag ()
+        {
+            // A vertical Scroll strip on a page that scrolls the same way, as the showroom's is: a drag up over the strip
+            // is the strip's to scroll, and the page stays put
+            const float kSpacerDp = 600f;
+            const float kPageHeightDp = 400f;
+            const float kDragDp = 80f;
+            const int kDragSteps = 10;
+
+            var strip = new ToggleStrip(TestHost.RequiredContext) { Orientation = Orientation.Vertical, OverflowBehavior = eToggleStripOverflow.Scroll, ItemsSource = kManyItems };
+            var column = new LinearLayout(TestHost.RequiredContext) { Orientation = Orientation.Vertical };
+            column.AddView(strip, new LinearLayout.LayoutParams(_Dp(kStripLengthDp), _Dp(kStripLengthDp)));
+            column.AddView(new View(TestHost.RequiredContext), new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MatchParent, _Dp(kSpacerDp)));
+            var page = new ScrollView(TestHost.RequiredContext);
+            page.AddView(column);
+            using IDisposable attached = TestViews.AttachSized(page, (int)kPageHeightDp);
+            await _WaitUntilAsync(() => strip.Height > 0);
+
+            var scroller = (ScrollView)strip.GetChildAt(0)!;
+            float x = strip.Left + (strip.Width / 2f);
+            float fromY = strip.Top + (strip.Height * 0.75f);
+            long down = SystemClock.UptimeMillis();
+            _Touch(page, down, MotionEventActions.Down, x, fromY);
+            for (int step = 1; step <= kDragSteps; ++step)
+            {
+                _Touch(page, down, MotionEventActions.Move, x, fromY - (_Dp(kDragDp) * step / kDragSteps));
+            }
+
+            _Touch(page, down, MotionEventActions.Up, x, fromY - _Dp(kDragDp));
+
+            Assert.AreEqual(0, page.ScrollY, "The page stays put");
+            Assert.IsTrue(scroller.ScrollY > 0, "The strip scrolls");
+        }
+
+        [TestMethod]
         public async Task NotScrolling_ShowsNoDots ()
         {
             var host = _DotHost();
@@ -593,6 +629,14 @@ namespace AJut.UX.Tests
         }
 
         private static int _AlphaAt (Bitmap bitmap, int x, int y) => new AndroidColor(bitmap.GetPixel(x, y)).A;
+
+        // A touch event dispatched from the top, as a finger's is, so every parent on the way gets its say
+        private static void _Touch (View root, long downTime, MotionEventActions action, float x, float y)
+        {
+            MotionEvent e = MotionEvent.Obtain(downTime, SystemClock.UptimeMillis(), action, x, y, MetaKeyStates.None)!;
+            root.DispatchTouchEvent(e);
+            e.Recycle();
+        }
 
         private static int _DotOffset () => _Dp((float)ToggleStripScrollIndicators.kDotCenterOffset);
 

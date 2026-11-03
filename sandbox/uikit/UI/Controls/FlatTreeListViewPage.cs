@@ -59,9 +59,9 @@ namespace AJutShowRoomUIKit.UI.Controls
             this.AddHeading("FlatTreeListView");
             this.AddText("A tree shown as a flat list. Tap a chevron, or anywhere across a row's indent, to expand or collapse it, and tap a row to select it. Press and hold a row to lift it, then drag it to move it: slide sideways while dragging to drop it a level deeper or shallower. On the desktop stacks the control is FlatTreeListControl.");
             this.AddDemo(m_modes);
+            this.AddDemo(m_selection);
             m_tree.HeightAnchor.ConstraintEqualTo(kTreeHeight).Active = true;
             this.AddWide(m_tree);
-            this.AddDemo(m_selection);
             this.AddCode(@"
 var tree = new FlatTreeListView
 {

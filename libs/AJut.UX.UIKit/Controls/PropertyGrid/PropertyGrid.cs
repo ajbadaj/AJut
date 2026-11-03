@@ -481,9 +481,11 @@ namespace AJut.UX.Controls
 
         private static UIView CreateButtonEditor (PropertyEditTarget target, BindingSet bindings, bool isLocked)
         {
+            // Themed, the same face as a plain button beside the grid; unthemed, the system's gray button
             UIButtonConfiguration configuration = UIButtonConfiguration.GrayButtonConfiguration;
             configuration.Title = target.EditValue?.ToString() ?? target.DisplayName ?? string.Empty;
             var button = new UIButton(CGRect.Empty) { Configuration = configuration };
+            StockControlTint.ApplyToOwnButton(button);
 
             // A bound command enables its button whenever it can execute, so a read-only or disabled grid leaves it
             // unbound and the button disabled

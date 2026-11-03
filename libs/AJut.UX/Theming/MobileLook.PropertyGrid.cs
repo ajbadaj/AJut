@@ -37,6 +37,15 @@ namespace AJut.UX.Theming
             /// <summary>A nullable property's "Not set", beside its dimmed editor while it has no value.</summary>
             public const string NotSet = AJutThemeKeys.NullableEditor_NotSetForeground;
 
+            /// <summary>
+            /// A nullable property's Set and Unset, and a list's add button: the accent, as iOS tints a plain button, so
+            /// they read as buttons rather than as more text beside "Not set" or the element count.
+            /// </summary>
+            public const string Action = "SystemAccentColor";
+
+            /// <summary>The add button's glyph and outline while the grid is read-only or disabled.</summary>
+            public const string ActionDisabled = "ButtonForegroundDisabled";
+
             // ===========[ Sizes ]===================================
             /// <summary>The indent per tree depth, as on WinUI3.</summary>
             public const float TreeDepthIndentSize = 16f;
@@ -65,6 +74,21 @@ namespace AJut.UX.Theming
 
             /// <summary>The remove button's width and height, a comfortable touch target.</summary>
             public const float RemoveButtonSize = 44f;
+
+            /// <summary>
+            /// A list's add button on Android: a plus in an outlined circle this wide, centered in a touch target of
+            /// <see cref="RemoveButtonSize"/>, as iOS draws its add button.
+            /// </summary>
+            public const float AddButtonDiameter = 28f;
+
+            /// <summary>The add button's circle outline.</summary>
+            public const float AddButtonOutlineThickness = 1.5f;
+
+            /// <summary>The add button's plus, in text size units.</summary>
+            public const float AddButtonGlyphSize = 20f;
+
+            /// <summary>The add button's press ripple: the accent at this opacity, inside the circle.</summary>
+            public const float AddButtonRippleOpacity = 0.25f;
 
             /// <summary>The space between a nullable editor's editor and its "Not set" and set or unset buttons.</summary>
             public const float NullableEditorSpacing = 8f;

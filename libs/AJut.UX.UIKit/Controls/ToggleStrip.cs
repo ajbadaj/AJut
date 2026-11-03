@@ -145,6 +145,13 @@ namespace AJut.UX.Controls
             m_outer.ClipsToBounds = true;
             m_outer.Layer.CornerRadius = m_cornerRadius;
 
+            // The stack lays its items out inside its margins, which are zero but where a Scroll strip's dot has to go
+            // just inside an end (see SetScrollDotRoom); a view's default margins and the safe area would add room of
+            // their own, so both are taken off
+            m_outer.LayoutMarginsRelativeArrangement = true;
+            m_outer.InsetsLayoutMarginsFromSafeArea = false;
+            m_outer.LayoutMargins = UIEdgeInsets.Zero;
+
             m_scroller.AddSubview(m_row);
             m_outer.AddArrangedSubview(m_scroller);
             m_outer.AddArrangedSubview(m_overflowButton);
@@ -649,22 +656,11 @@ namespace AJut.UX.Controls
             {
                 m_scrollBackIndicator.Hidden = true;
                 m_scrollForwardIndicator.Hidden = true;
+                this.SetScrollDotRoom(false, false);
                 return;
             }
 
-            // The scroller's length and content size only settle once it has laid itself out
-            m_outer.LayoutIfNeeded();
-            m_scroller.LayoutIfNeeded();
-
             bool isVertical = this.IsVertical;
-            ToggleStripScrollIndicators indicators = ToggleStripScrollIndicators.For(
-                isVertical ? (double)m_scroller.ContentOffset.Y : (double)m_scroller.ContentOffset.X,
-                isVertical ? (double)m_scroller.ContentSize.Height : (double)m_scroller.ContentSize.Width,
-                isVertical ? (double)m_scroller.Bounds.Height : (double)m_scroller.Bounds.Width
-            );
-
-            m_scrollBackIndicator.Hidden = !indicators.ShowBack;
-            m_scrollForwardIndicator.Hidden = !indicators.ShowForward;
 
             // Along the strip, in its own space. The dots are its subviews past its bounds, so a superview that clips them
             // (one the strip runs to the edge of, as a full-width strip does) would hide them: measured against the
@@ -685,12 +681,46 @@ namespace AJut.UX.Controls
                 forwardAt = ToggleStripScrollIndicators.DotCenterFor(stripStart + length, true, hostLength) - stripStart + boundsStart;
             }
 
+            // A dot just inside an end would sit over the items, so the items are padded in at that end first
+            this.SetScrollDotRoom(backAt > boundsStart, forwardAt < boundsStart + length);
+
+            // The scroller's length and content size only settle once it has laid itself out
+            m_outer.LayoutIfNeeded();
+            m_scroller.LayoutIfNeeded();
+
+            ToggleStripScrollIndicators indicators = ToggleStripScrollIndicators.For(
+                isVertical ? (double)m_scroller.ContentOffset.Y : (double)m_scroller.ContentOffset.X,
+                isVertical ? (double)m_scroller.ContentSize.Height : (double)m_scroller.ContentSize.Width,
+                isVertical ? (double)m_scroller.Bounds.Height : (double)m_scroller.Bounds.Width
+            );
+
+            m_scrollBackIndicator.Hidden = !indicators.ShowBack;
+            m_scrollForwardIndicator.Hidden = !indicators.ShowForward;
             m_scrollBackIndicator.Center = isVertical
                 ? new CGPoint((double)bounds.GetMidX(), backAt)
                 : new CGPoint(backAt, (double)bounds.GetMidY());
             m_scrollForwardIndicator.Center = isVertical
                 ? new CGPoint((double)bounds.GetMidX(), forwardAt)
                 : new CGPoint(forwardAt, (double)bounds.GetMidY());
+        }
+
+        // Pads the items in at each end whose dot goes just inside it, by the dot's room, so the items scroll clear of the
+        // dot; the stack clips to its bounds, so nothing scrolls under it. The padding goes by the host's room, not by
+        // whether the dot shows, so the items don't shift as dots come and go. A changed margin lays the strip out again,
+        // which finds the same margin, so it settles there.
+        private void SetScrollDotRoom (bool atBack, bool atForward)
+        {
+            nfloat room = MobileLook.ToggleStrip.ScrollIndicatorInsideRoom;
+            nfloat back = atBack ? room : 0;
+            nfloat forward = atForward ? room : 0;
+            UIEdgeInsets margins = this.IsVertical
+                ? new UIEdgeInsets(back, 0, forward, 0)
+                : new UIEdgeInsets(0, back, 0, forward);
+
+            if (!m_outer.LayoutMargins.Equals(margins))
+            {
+                m_outer.LayoutMargins = margins;
+            }
         }
 
         private void UpdateOverflowLayout ()

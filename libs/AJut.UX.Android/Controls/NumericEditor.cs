@@ -67,8 +67,13 @@ namespace AJut.UX.Controls
         private static readonly ThemedColor kLabelForeground = ThemedColor.FromArgb(MobileLook.NumericEditor.Label, 0xE4000000, 0xFFFFFFFF);
         private static readonly ThemedColor kReadOnlyForeground = ThemedColor.FromArgb(MobileLook.NumericEditor.ReadOnlyText, 0x5C000000, 0x5DFFFFFF);
 
+        // Read-only, the frame is the disabled surface and border, so an editor that can't be edited looks disabled
+        private static readonly ThemedColor kReadOnlySurface = ThemedColor.FromArgb(MobileLook.NumericEditor.FrameSurfaceDisabled, 0xFFF3F3F3, 0xFF262626);
+        private static readonly ThemedColor kReadOnlyBorder = ThemedColor.FromArgb(MobileLook.NumericEditor.FrameBorderDisabled, 0xFFD0D0D0, 0xFF3A3A3A);
+
         private readonly NumericEditorController m_controller;
         private GradientDrawable m_frame = null!;
+        private GradientDrawable m_readOnlyFrame = null!;
         private View m_frameRow = null!;
         private TextView m_label = null!;
         private EditText m_field = null!;
@@ -297,7 +302,10 @@ namespace AJut.UX.Controls
             }
         }
 
-        /// <summary>Stops edits and steps; the value still shows.</summary>
+        /// <summary>
+        /// Stops edits and steps, and looks disabled, as an editor that can't be edited does: the number and glyphs dim,
+        /// and the frame takes the disabled surface and border, which no pointer or focus changes. The value still shows.
+        /// </summary>
         public bool IsReadOnly
         {
             get => m_isReadOnly;
@@ -307,6 +315,7 @@ namespace AJut.UX.Controls
                 m_field.Enabled = !value;
                 m_decrease.Enabled = !value;
                 m_increase.Enabled = !value;
+                this.PaintFrame();
             }
         }
 
@@ -446,6 +455,9 @@ namespace AJut.UX.Controls
             int buttonWidth = (int)(MobileLook.NumericEditor.StepButtonWidth * m_density);
             m_frame = ThemeColors.ToDrawable(ThemeColors.Resolve(context, kSurface));
             m_frame.SetCornerRadius(MobileLook.NumericEditor.CornerRadius * m_density);
+            m_readOnlyFrame = new GradientDrawable();
+            m_readOnlyFrame.SetColor(ThemeColors.Resolve(context, kReadOnlySurface).ToAndroidColor());
+            m_readOnlyFrame.SetCornerRadius(MobileLook.NumericEditor.CornerRadius * m_density);
             var frame = new LinearLayout(context) { Orientation = Android.Widget.Orientation.Horizontal, Background = m_frame };
             frame.SetGravity(GravityFlags.CenterVertical);
             frame.SetPadding(border, border, border, border);
@@ -554,15 +566,35 @@ namespace AJut.UX.Controls
 
         private void PaintFrame ()
         {
+            // Called from the setters, which can run before the frame is built
+            if ((m_frameRow == null) || (m_frame == null))
+            {
+                return;
+            }
+
             Context context = this.Context!;
-            ThemedColor border = MobileLook.NumericEditor.FrameBorderFor(m_errorMessage != null, m_isPointerOverFrame, m_field.HasFocus) switch
+            ThemedColor border = MobileLook.NumericEditor.FrameBorderFor(m_isReadOnly, m_errorMessage != null, m_isPointerOverFrame, m_field.HasFocus) switch
             {
                 MobileLook.NumericEditor.FrameBorderError => kErrorBorder,
+                MobileLook.NumericEditor.FrameBorderDisabled => kReadOnlyBorder,
                 MobileLook.NumericEditor.FrameBorderPointerOver => kPointerOverBorder,
                 MobileLook.NumericEditor.FrameBorderFocused => kFocusBorder,
                 _ => kNormalBorder,
             };
-            m_frame.SetStroke((int)Math.Max(1f, MobileLook.NumericEditor.BorderThickness * m_density), ThemeColors.Resolve(context, border).ToAndroidColor());
+
+            // Read-only, the frame is the disabled surface; a swapped background keeps the frame's padding
+            GradientDrawable face = m_isReadOnly ? m_readOnlyFrame : m_frame;
+            if (!ReferenceEquals(m_frameRow.Background, face))
+            {
+                int left = m_frameRow.PaddingLeft;
+                int top = m_frameRow.PaddingTop;
+                int right = m_frameRow.PaddingRight;
+                int bottom = m_frameRow.PaddingBottom;
+                m_frameRow.Background = face;
+                m_frameRow.SetPadding(left, top, right, bottom);
+            }
+
+            face.SetStroke((int)Math.Max(1f, MobileLook.NumericEditor.BorderThickness * m_density), ThemeColors.Resolve(context, border).ToAndroidColor());
         }
 
         // A text color for a view that is disabled while the editor is read-only: the given color, and the read-only one

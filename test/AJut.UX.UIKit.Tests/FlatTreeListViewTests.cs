@@ -8,7 +8,9 @@ namespace AJut.UX.Tests
     using AJut.UX;
     using AJut.UX.Controls;
     using CoreGraphics;
+    using Foundation;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using ObjCRuntime;
     using UIKit;
 
     [TestClass]
@@ -191,8 +193,77 @@ namespace AJut.UX.Tests
             }
         }
 
+        [TestMethod]
+        public async Task Tree_RowShownAgainAfterItsDisplayEnded_DrawsTheSelectionItIsGiven ()
+        {
+            var tree = new FlatTreeListView { RootItemsSource = new[] { TestNode.Make("A"), TestNode.Make("B") } };
+            using (TestHost.Attach(tree))
+            {
+                await TestHost.LayOutAsync(tree);
+                UITableView table = TableOf(tree);
+                NSIndexPath firstRow = NSIndexPath.FromRowSection(0, 0);
+                UITableViewCell cell = table.CellAt(firstRow);
+                Assert.IsNotNull(cell, "The first row is shown");
+
+                EndDisplayThenShowAgain(table, cell, firstRow);
+
+                // Nothing lays the row out in between, so only the row following its item can draw this
+                tree.SelectedItem = tree.Items[0];
+                Assert.IsTrue(
+                    cell.AccessibilityTraits.HasFlag(UIAccessibilityTrait.Selected),
+                    "A row the table shows again draws the selection it is given"
+                );
+            }
+        }
+
+        [TestMethod]
+        public async Task Tree_RowShownAgainAfterItsDisplayEnded_HasContentThatIsNotTornDown ()
+        {
+            var made = new List<CountedContent>();
+            var tree = new FlatTreeListView
+            {
+                RootItemsSource = new[] { TestNode.Make("A"), TestNode.Make("B") },
+                RowContentFactory = item =>
+                {
+                    var content = new CountedContent();
+                    made.Add(content);
+                    return content;
+                },
+            };
+
+            using (TestHost.Attach(tree))
+            {
+                await TestHost.LayOutAsync(tree);
+                UITableView table = TableOf(tree);
+                NSIndexPath firstRow = NSIndexPath.FromRowSection(0, 0);
+                UITableViewCell cell = table.CellAt(firstRow);
+                Assert.IsNotNull(cell, "The first row is shown");
+
+                EndDisplayThenShowAgain(table, cell, firstRow);
+
+                // A PropertyGrid row's content is its editors: torn down, they no longer reach their property
+                Assert.IsTrue(
+                    made.Any(c => !c.IsTornDown && c.IsDescendantOfView(cell)),
+                    "A row the table shows again has content that is not torn down"
+                );
+            }
+        }
+
         // ===========[ Helper Methods ]===================================
         private static UITableView TableOf (UIView view) => TestHost.Descendants<UITableView>(view).First();
+
+        // UIKit can end a cell's display and later show that same cell again without asking the source for it. This
+        // plays that through the table's source the way UIKit calls it: the end of display, then willDisplay, which
+        // UIKit only sends to a source that answers it.
+        private static void EndDisplayThenShowAgain (UITableView table, UITableViewCell cell, NSIndexPath indexPath)
+        {
+            var source = (UITableViewSource)table.Source;
+            source.CellDisplayingEnded(table, cell, indexPath);
+            if (source.RespondsToSelector(new Selector("tableView:willDisplayCell:forRowAtIndexPath:")))
+            {
+                source.WillDisplay(table, cell, indexPath);
+            }
+        }
 
         // ===========[ Subclasses/structs ]===================================
         private sealed class CountedContent : UIView, IFlatTreeRowContent
