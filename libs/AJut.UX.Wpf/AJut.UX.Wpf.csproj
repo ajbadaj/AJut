@@ -15,7 +15,6 @@
     <PackageTags>c#;dotnet;wpf;theming;controls;converters;app;utilities</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <Version>1.5.16.146</Version>
   </PropertyGroup>
   <ItemGroup>
     <Compile Update="Controls\BumpStack.cs">

@@ -31,6 +31,7 @@
 !*.pubxml
 !*.ps1
 !*.targets
+!Directory.Build.props
 
 # Bench sample payloads (deterministic, committed for inspection)
 !test/AJut.Bench/Payloads/*.json

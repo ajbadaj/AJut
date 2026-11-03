@@ -1,0 +1,59 @@
+<Project>
+
+  <!-- MSBuild imports the nearest Directory.Build.props above a project, so this one reaches every project under libs\
+       and nothing in sandbox\ or test\. A project here that ever needs a Directory.Build.props of its own has to import
+       this one from it, or it silently drops back to version 1.0.0. -->
+
+  <!-- ===========[ The AJut version ]=========================================================================
+
+       Every AJut package shares this one version, and every publish moves the whole set together: the minor for
+       features, the patch for fixes, the major for breaks. No package keeps a number of its own, so AJut.Core 2.1.0
+       goes with AJut.UX.Wpf 2.1.0 and nothing needs looking up to know which builds belong together.
+
+       There is no build or PR number in it. Which commit a package was built from is recorded in the package itself
+       (SourceLink) and by the v<version> git tag on that commit.
+
+       .github/scripts/set-version-numbers.ps1 bumps or sets it. -->
+  <PropertyGroup>
+    <Version>2.0.0</Version>
+  </PropertyGroup>
+
+  <!-- ===========[ SourceLink ]================================================================================
+
+       SourceLink writes a map into each PDB from the build's source paths to the same files on GitHub at the commit
+       that was built, so a debugger stepping into an AJut package fetches the exact source it was compiled from. The
+       .NET SDK has done the map by default since .NET 8, and puts the commit in the package's nuspec and in the
+       assembly's informational version (2.0.0+<commit>). See https://github.com/dotnet/sourcelink.
+
+       What the SDK leaves out, and the settings below add:
+
+       * The PDB itself. The map lives in the PDB, and a package without one gives a debugger nothing to step with,
+         so every package gets a symbol package (.snupkg) beside it, which nuget.org serves from its symbol server.
+         dotnet nuget push uploads the .snupkg from beside the .nupkg on its own. On the consuming side, Visual Studio
+         steps in once the NuGet.org symbol server is enabled in its symbol settings and Just My Code is off.
+       * Untracked sources. Assembly info, XAML .g.cs, and source generator output (the AJson serializers) are in no
+         commit, so SourceLink can't fetch them; EmbedUntrackedSources puts them in the PDB instead. The SDK already
+         turns this on for every project here (it holds it back only for .NET Framework WPF, whose generated #line
+         directives are wrong, dotnet/sdk#36585), and it's stated here so the packages don't rely on that default.
+       * Publishing the repository. PublishRepositoryUrl is the opt-in for putting repository details in a package:
+         the nuspec's repository entry gets the branch beside the URL and commit, and the URL keeps coming from git if
+         a project ever drops its RepositoryUrl.
+       * Deterministic paths. ContinuousIntegrationBuild maps the repository root to /_/ in the PDB and the assembly,
+         so nothing in a package depends on which machine or workspace folder built it, and two builds of one commit
+         with the same SDK come out the same. It's on only under GitHub Actions: on a dev machine the mapped paths
+         stop the debugger finding local, uncommitted source. A pack for a publish passes
+         -p:ContinuousIntegrationBuild=true itself.
+
+       SourceLink points at whatever commit is checked out, and the map is only right if that commit is on GitHub and
+       the working tree matches it. So a publish packs from a clean checkout of a pushed commit. -->
+  <PropertyGroup>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+</Project>

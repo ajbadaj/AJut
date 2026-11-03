@@ -5,6 +5,7 @@
     <Platform Name="x86" />
   </Configurations>
   <Folder Name="/libs/">
+    <File Path="libs/Directory.Build.props" />
     <Project Path="libs/AJut.Core.SourceGenerators/AJut.Core.SourceGenerators.csproj" />
     <Project Path="libs/AJut.Core/AJut.Core.csproj">
       <Platform Solution="*|x64" Project="x64" />
