@@ -9,6 +9,9 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    # A healthy run takes a fraction of this. The cap is there so a stall that the steps' own limits miss can't hold the
+    #  runner for the six hours GitHub allows by default.
+    timeout-minutes: 60
 
     steps:
     - name: Checkout code
@@ -19,6 +22,21 @@ jobs:
       with:
         dotnet-version: '10.0.x'
 
+    # AJut.Core.Tests, AJut.UX.Tests and AJut.UX.Wpf.Tests build AnyCPU as x86 on Windows, so their test hosts need x86
+    #  .NET runtimes, and setup-dotnet installed only x64. This installs just the runtimes, in a folder of their own.
+    #  setup-dotnet's own x86 install isn't used for it: that points PATH and DOTNET_ROOT at the x86 folder, and every
+    #  x64 step after it would pick that up. DOTNET_ROOT stays on the x64 install, and an x86 test host finds these
+    #  through DOTNET_ROOT_X86, which it checks first.
+    - name: Install x86 .NET runtimes
+      run: |
+        $installer = Join-Path $env:RUNNER_TEMP "dotnet-install.ps1"
+        $installDir = Join-Path $env:RUNNER_TEMP "dotnet-x86"
+        Invoke-WebRequest -Uri "https://dot.net/v1/dotnet-install.ps1" -OutFile $installer
+        & $installer -Runtime dotnet -Channel 10.0 -Architecture x86 -InstallDir $installDir -NoPath
+        & $installer -Runtime windowsdesktop -Channel 10.0 -Architecture x86 -InstallDir $installDir -NoPath
+        "DOTNET_ROOT_X86=$installDir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+        & (Join-Path $installDir "dotnet.exe") --list-runtimes
+
     - name: Check for C# dynamic
       run: ./.github/scripts/check-no-dynamic.ps1
 
@@ -26,6 +44,14 @@ jobs:
     #  have. The build and test scripts build one project at a time, and each restores just what that project needs.
     - name: Build AJut Libraries
       run: ./.github/scripts/build-targets.ps1
-    
+
+    # The WinUI3 tests run unpackaged against the Windows App Runtime, which this runner doesn't have. Windows
+    #  PowerShell, since Add-AppxPackage doesn't reliably load in PowerShell 7.
+    - name: Install Windows App Runtime
+      shell: powershell
+      timeout-minutes: 10
+      run: ./.github/scripts/install-windows-app-runtime.ps1
+
     - name: Test AJut Libraries
+      timeout-minutes: 30
       run: ./.github/scripts/test-targets.ps1

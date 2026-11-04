@@ -7,6 +7,12 @@
 		<PlatformTarget>x64</PlatformTarget>
 		<WindowsPackageType>None</WindowsPackageType>
 		<IsPackable>false</IsPackable>
+		<!-- Unpackaged and not self-contained, so the Windows App SDK compiles in a module initializer that finds the
+		     Windows App Runtime before any test runs. By default it asks to install the runtime when it is missing, and on a
+		     machine nobody is watching, like CI, that prompt waits forever. With no options it fails instead, and the test
+		     host exits with the bootstrapper's error code. CI installs the runtime first: see
+		     .github/scripts/install-windows-app-runtime.ps1. -->
+		<WindowsAppSDKBootstrapAutoInitializeOptions_None>true</WindowsAppSDKBootstrapAutoInitializeOptions_None>
 	</PropertyGroup>
 
 	<ItemGroup>

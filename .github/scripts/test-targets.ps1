@@ -109,7 +109,11 @@ try {
         }
 
         Write-Host "--> Running $testName (tests for $owner)..."
-        dotnet test $testProject --configuration Release --verbosity normal
+
+        # A suite that goes five minutes without a test starting or finishing (a deadlock, or a test host waiting on a
+        #  prompt nobody sees) has its test host killed and fails, instead of holding the run until the job times out.
+        #  No dump: nothing here keeps one.
+        dotnet test $testProject --configuration Release --verbosity normal --blame-hang-timeout 5m --blame-hang-dump-type none
         $ran += $testName
         if ($LASTEXITCODE -ne 0) {
             $failed += $testName
