@@ -13,6 +13,13 @@ namespace AJut.Text.AJson
     public sealed class JsonBuilder
     {
         private string m_value;
+        private bool m_isDocumentProperty;
+
+        // Set on a value builder that is json's null literal: a null property value, array item, or value built on its own
+        private bool m_isNull;
+
+        // Only the root's is used: what the build could not write, for Finalize to put on its Json
+        private List<string> m_errors;
 
         // ===============================[ Construction ]===========================
         internal JsonBuilder (JsonBuilderSettings settings)
@@ -37,6 +44,10 @@ namespace AJut.Text.AJson
             // FillOutJsonBuilderForObject can StartDocument / StartArray on it. Flagging IsValue
             // unconditionally here was the "start a document inside a value" bug.
             this.IsValue = value == null || JsonHelper.IsValueData(value, this.BuilderSettings);
+
+            // A null is json's null literal. A value with no text is written as nothing at all: a key with nothing after
+            //  it, which a read drops, or an empty array slot.
+            m_isNull = value == null;
             JsonHelper.FillOutJsonBuilderForObject(value, this);
         }
 
@@ -64,7 +75,12 @@ namespace AJut.Text.AJson
         public bool IsArray { get; private set; }
         public bool IsValue { get; private set; }
 
-        public bool IsDocumentKVP => this.Key != String.Empty;
+        /// <summary>
+        /// Set if this builder is a document key/value pair entry: one <see cref="StartProperty"/> or <see cref="AddProperty"/>
+        /// made, or one given a <see cref="Key"/>. An empty string is a valid key, so a pair made under one is still a pair, and
+        /// puts its value in <see cref="DocumentKVPValue"/> like any other; going by the key alone left it out of its document.
+        /// </summary>
+        public bool IsDocumentKVP => m_isDocumentProperty || (this.Key != String.Empty);
         public bool IsArrayItem => this.ArrayIndex != -1;
 
         public string Value
@@ -94,6 +110,7 @@ namespace AJut.Text.AJson
             {
                 JsonBuilder child = new JsonBuilder(this);
                 child.Key = propertyName;
+                child.m_isDocumentProperty = true;
                 this.Children.Add(child);
                 return child;
             }
@@ -169,6 +186,7 @@ namespace AJut.Text.AJson
                 {
                     JsonBuilder child = new JsonBuilder(this);
                     child.Key = propertyName;
+                    child.m_isDocumentProperty = true;
                     child.DocumentKVPValue = new JsonBuilder(child);
                     child.DocumentKVPValue.IsValueUsualQuoteTarget = isUsuallyQuoted;
 
@@ -186,6 +204,10 @@ namespace AJut.Text.AJson
             throw new InvalidOperationException("AddProperty can only be called on documents");
         }
 
+        /// <summary>
+        /// Adds an item to this array: a scalar as a value, null as json's null literal, and a document or an array the way
+        /// <see cref="JsonHelper.FillOutJsonBuilderForObject"/> writes one
+        /// </summary>
         public JsonBuilder AddArrayItem (object arrayValue)
         {
             if (this.IsArray)
@@ -199,8 +221,10 @@ namespace AJut.Text.AJson
                     return this;
                 }
 
+                // A null keeps its slot as the null literal, rather than a value with no text, which is written as nothing
                 JsonBuilder child = new JsonBuilder(this);
                 child.IsValue = true;
+                child.m_isNull = arrayValue == null;
                 JsonHelper.FillOutJsonBuilderForObject(arrayValue, child);
 
                 this.Children.Add(child);
@@ -251,10 +275,60 @@ namespace AJut.Text.AJson
             output.Data = data;
             output.AJsonVersion = JsonHelper.kCurrentAJsonVersion;
             output.BuiltWith = root.BuilderSettings;
+            if (root.m_errors != null)
+            {
+                foreach (string error in root.m_errors)
+                {
+                    output.AddError(error);
+                }
+            }
+
             return output;
         }
 
         // ===============================[ Helper Methods ]===========================
+        /// <summary>
+        /// Notes something the build could not write. It is kept on the root builder, and <see cref="Finalize"/> puts it on the
+        /// <see cref="Json"/> it makes, so a value left out of the json is reported rather than missing quietly.
+        /// </summary>
+        internal void AddError (string error)
+        {
+            JsonBuilder root = this.FindRoot();
+            if (root.m_errors == null)
+            {
+                root.m_errors = new List<string>();
+            }
+
+            root.m_errors.Add(error);
+        }
+
+        /// <summary>
+        /// Adds a property whose value is json's null literal (<see cref="JsonValue.CreateNull"/>). <see cref="AddProperty"/>
+        /// leaves a null out instead, the way a null member is left out; this is for where a null has to be written.
+        /// </summary>
+        internal JsonBuilder AddNullProperty (string propertyName)
+        {
+            if (!this.IsDocument)
+            {
+                throw new InvalidOperationException("AddNullProperty can only be called on documents");
+            }
+
+            JsonBuilder child = new JsonBuilder(this);
+            child.Key = propertyName;
+            child.m_isDocumentProperty = true;
+            child.DocumentKVPValue = new JsonBuilder(child);
+            child.DocumentKVPValue.IsValue = true;
+            child.DocumentKVPValue.m_isNull = true;
+            this.Children.Add(child);
+            return this;
+        }
+
+        /// <summary>
+        /// How many things the build has noted it could not write so far (see <see cref="AddError"/>), so a writer can tell
+        /// whether what it just wrote went in whole
+        /// </summary>
+        internal int ErrorCount => this.FindRoot().m_errors?.Count ?? 0;
+
         internal JsonValue BuildJsonValue ()
         {
             if (this.IsDocument)
@@ -286,7 +360,7 @@ namespace AJut.Text.AJson
 
             if (this.IsValue)
             {
-                return new JsonValue(this.Value, isQuoted: this.IsValueUsualQuoteTarget);
+                return m_isNull ? JsonValue.CreateNull() : new JsonValue(this.Value, isQuoted: this.IsValueUsualQuoteTarget);
             }
 
             // Empty / unset builder - represent as an empty value rather than throwing.

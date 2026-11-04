@@ -1,0 +1,98 @@
+{
+	"Core" : 
+	{
+		"ZoneInfoByRoot" : 
+		[
+			{
+				"Key" : "RootZone",
+				"Value" : 
+				{
+					"ChildZones" : 
+					[
+						{
+							"ChildZones" : 
+							[
+							],
+							"SizeOnParent" : 
+							{
+								"Width" : 1938,
+								"Height" : 1364,
+								"IsEmpty" : false
+							},
+							"Orientation" : "Single",
+							"DisplayState" : 
+							[
+								{
+									"TypeId" : "ColorController"
+								}
+							],
+							"SelectedIndex" : 0
+						},
+						{
+							"ChildZones" : 
+							[
+								{
+									"ChildZones" : 
+									[
+									],
+									"SizeOnParent" : 
+									{
+										"Width" : 584.6666666666666,
+										"Height" : 148,
+										"IsEmpty" : false
+									},
+									"Orientation" : "Single",
+									"DisplayState" : 
+									[
+										{
+											"TypeId" : "ColorController"
+										}
+									],
+									"SelectedIndex" : 0
+								},
+								{
+									"ChildZones" : 
+									[
+									],
+									"SizeOnParent" : 
+									{
+										"Width" : 584.6666666666666,
+										"Height" : 1216,
+										"IsEmpty" : false
+									},
+									"Orientation" : "Single",
+									"DisplayState" : 
+									[
+										{
+											"TypeId" : "CommandSender"
+										}
+									],
+									"SelectedIndex" : 0
+								}
+							],
+							"SizeOnParent" : 
+							{
+								"Width" : 584.6666666666666,
+								"Height" : 1364,
+								"IsEmpty" : false
+							},
+							"Orientation" : "Vertical",
+							"SelectedIndex" : 0
+						}
+					],
+					"SizeOnParent" : 
+					{
+						"Width" : 2522.6666666666665,
+						"Height" : 1364,
+						"IsEmpty" : false
+					},
+					"Orientation" : "Horizontal",
+					"SelectedIndex" : 0
+				}
+			}
+		]
+	},
+	"Ancillary" : 
+	[
+	]
+}

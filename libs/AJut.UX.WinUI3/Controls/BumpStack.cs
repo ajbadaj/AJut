@@ -118,6 +118,13 @@ namespace AJut.UX.Controls
             set => this.SetValue(ButtonForegroundProperty, value);
         }
 
+        public static readonly DependencyProperty ButtonBorderProperty = DPUtils.Register(_ => _.ButtonBorder);
+        public Brush ButtonBorder
+        {
+            get => (Brush)this.GetValue(ButtonBorderProperty);
+            set => this.SetValue(ButtonBorderProperty, value);
+        }
+
         public static readonly DependencyProperty ButtonFontSizeProperty = DPUtils.Register(_ => _.ButtonFontSize, 12.0);
         public double ButtonFontSize
         {
@@ -198,6 +205,18 @@ namespace AJut.UX.Controls
                 : 0.0;
 
             return this.PART_ScrollViewer.ScrollFirstElementIntoView(predicate, inset, inset);
+        }
+
+        /// <summary>
+        /// Scrolls by <paramref name="delta"/> along the stack's orientation, at once (no animation), clamped to the
+        /// scrollable range: for a host following a drag. Does nothing while scrolling is off.
+        /// </summary>
+        public void ScrollBy (double delta)
+        {
+            if (this.ScrollingEnabled)
+            {
+                this.Nudge(delta, disableAnimation: true);
+            }
         }
 
         // ===========[ Events ]===================================================
@@ -375,7 +394,7 @@ namespace AJut.UX.Controls
             }
         }
 
-        private void Nudge (double delta)
+        private void Nudge (double delta, bool disableAnimation = false)
         {
             if (this.PART_ScrollViewer == null)
             {
@@ -385,12 +404,12 @@ namespace AJut.UX.Controls
             if (m_isHorizontal)
             {
                 double target = Math.Max(0.0, Math.Min(this.PART_ScrollViewer.ScrollableWidth, this.PART_ScrollViewer.HorizontalOffset + delta));
-                this.PART_ScrollViewer.ChangeView(target, null, null);
+                this.PART_ScrollViewer.ChangeView(target, null, null, disableAnimation);
             }
             else
             {
                 double target = Math.Max(0.0, Math.Min(this.PART_ScrollViewer.ScrollableHeight, this.PART_ScrollViewer.VerticalOffset + delta));
-                this.PART_ScrollViewer.ChangeView(null, target, null);
+                this.PART_ScrollViewer.ChangeView(null, target, null, disableAnimation);
             }
         }
 

@@ -1075,12 +1075,12 @@ namespace AJut.UX.Controls
                 }
                 else
                 {
-                    // Fallback: plain text label
+                    // Fallback: plain text label, in the ghost's foreground (the presenter's, which it inherits)
                     string label = m_dragItems.Length == 1
                         ? (m_dragItems[0].Source?.ToString() ?? "Item")
                         : $"{m_dragItems.Length} items";
                     this.PART_DragGhostContent.ContentTemplate = null;
-                    this.PART_DragGhostContent.Content = new TextBlock { Text = label, Foreground = new SolidColorBrush(Microsoft.UI.Colors.White), FontSize = 11 };
+                    this.PART_DragGhostContent.Content = new TextBlock { Text = label, FontSize = 11 };
                 }
 
                 this.PART_DragGhost.Visibility = Visibility.Visible;

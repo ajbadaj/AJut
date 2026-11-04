@@ -1,9 +1,9 @@
 namespace AJut.Text
 {
     /// <summary>
-    /// How <see cref="TermExpression"/> decides a term is present, for both
-    /// <see cref="TermExpression.Evaluate(System.Collections.Generic.IReadOnlyCollection{string}, TermMatchOptions)"/> and
-    /// <see cref="TermExpression.IsMatch(string, TermMatchOptions)"/>. Both options are off by default, so
+    /// How <see cref="TermMatcher"/> decides a term is present, for both
+    /// <see cref="TermMatcher.Evaluate(System.Collections.Generic.IReadOnlyCollection{string}, TermMatchOptions)"/> and
+    /// <see cref="TermMatcher.IsMatch(string, TermMatchOptions)"/>. Both options are off by default, so
     /// <c>default(TermMatchOptions)</c> ignores case and finds a term anywhere, the way most find boxes start out.
     /// </summary>
     /// <remarks>

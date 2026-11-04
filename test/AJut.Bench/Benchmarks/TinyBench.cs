@@ -5,11 +5,10 @@ namespace AJut.Bench.Benchmarks
     using BenchmarkDotNet.Configs;
     using SystemTextJson = System.Text.Json.JsonSerializer;
     using NewtonsoftJson = Newtonsoft.Json.JsonConvert;
-    using AJsonV1 = AJut.Text.AJson.Legacy.JsonHelper;
     using AJsonV2 = AJut.Text.AJson.JsonHelper;
 
-    // Wire-message-shaped object, ~10 properties, primitives only. Models the Call Familiar
-    // high-volume case.
+    // Wire-message-shaped object, ~10 properties, primitives only. Models an app sending many
+    // small messages.
     [MemoryDiagnoser]
     [GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]
     [CategoriesColumn]
@@ -40,9 +39,6 @@ namespace AJut.Bench.Benchmarks
         [BenchmarkCategory("Serialize"), Benchmark(Description = "Newtonsoft")]
         public string Serialize_Newtonsoft () => NewtonsoftJson.SerializeObject(m_model);
 
-        [BenchmarkCategory("Serialize"), Benchmark(Description = "AJson V1")]
-        public string Serialize_AJsonV1 () => AJsonV1.BuildJsonForObject(m_model).ToString();
-
         [BenchmarkCategory("Serialize"), Benchmark(Description = "AJson V2 (reflection)")]
         public string Serialize_AJsonV2_Reflection () => AJsonV2.BuildJsonForObject(m_modelReflection).ToString();
 
@@ -58,9 +54,6 @@ namespace AJut.Bench.Benchmarks
 
         [BenchmarkCategory("Deserialize"), Benchmark(Description = "Newtonsoft")]
         public TinyMessage Deserialize_Newtonsoft () => NewtonsoftJson.DeserializeObject<TinyMessage>(m_json);
-
-        [BenchmarkCategory("Deserialize"), Benchmark(Description = "AJson V1")]
-        public TinyMessage Deserialize_AJsonV1 () => AJsonV1.BuildObjectForJson<TinyMessage>(AJsonV1.ParseText(m_json));
 
         [BenchmarkCategory("Deserialize"), Benchmark(Description = "AJson V2 (reflection)")]
         public TinyMessageReflection Deserialize_AJsonV2_Reflection () => AJsonV2.BuildObjectForJson<TinyMessageReflection>(AJsonV2.ParseText(m_json));

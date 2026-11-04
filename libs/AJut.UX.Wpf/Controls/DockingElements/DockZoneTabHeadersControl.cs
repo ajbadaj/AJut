@@ -261,9 +261,12 @@
             }
         }
 
+        // A tab dragged up or down out of the strip tears its panel off, unless the panel can't tear off
         private void CanInitiateTearoff (object sender, CanExecuteRoutedEventArgs e)
         {
-            if (e.Parameter is ActiveDragTracking)
+            if ((e.Parameter is ActiveDragTracking tracking)
+                && (tracking.SenderContext is HeaderItem header)
+                && header.Adapter.CanTearoff)
             {
                 e.CanExecute = true;
             }
@@ -272,16 +275,18 @@
         private async void OnInitiateTearOff (object sender, ExecutedRoutedEventArgs e)
         {
             var tracking = (ActiveDragTracking)e.Parameter;
-
-            var window = Window.GetWindow(tracking.DragOwner);
-            Point desktopMouseLocation = (Point)((Vector)window.PointToScreen(tracking.DragOwner.TranslatePoint(tracking.StartPoint, window)) - (Vector)tracking.StartPoint);
-
             DockingContentAdapterModel target = ((HeaderItem)tracking.SenderContext).Adapter;
             var dockingManager = (DockingManager)target.DockingOwner;
-            var result = dockingManager.DoTearoff(target.Display, desktopMouseLocation);
+
+            DockZoneSize zoneSize = target.Location?.UI?.RenderSize ?? DockDragRules.kFallbackPanelSize;
+            DockTearoffPlacement placement = DockingManager.PlaceTearoffFor(zoneSize, tracking.DragOwner, tracking.StartPoint);
+
+            // Captured before the tearoff changes where the panel is, so Escape can put it back
+            DockDragOrigin origin = DockDragOrigin.ForPanel(target);
+            var result = dockingManager.DoTearoff(target.Display, new Point(placement.Origin.X, placement.Origin.Y), new Size(placement.Width, placement.Height));
             if (result)
             {
-                await dockingManager.RunDragSearch(result.Value, (DockZone)target.Location.UI).ConfigureAwait(false);
+                await dockingManager.RunDragSearch(result.Value, (DockZone)target.Location.UI, placement.ScreenCursorOffset, origin).ConfigureAwait(false);
             }
         }
 

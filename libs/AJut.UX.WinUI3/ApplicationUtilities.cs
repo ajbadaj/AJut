@@ -1,6 +1,5 @@
 ﻿namespace AJut.UX
 {
-    using AJut.OS.Windows;
     using AJut.Security;
     using Microsoft.UI.Xaml;
     using System;
@@ -8,55 +7,17 @@
     using System.Linq;
     using System.Runtime.InteropServices;
 
-    public delegate bool ExceptionProcessor(object exceptionObject);
     public static class ApplicationUtilities
     {
-        // What WinUI3 setup roots app data in when a config does not say: local app data on Windows, roaming elsewhere
-        private static readonly Environment.SpecialFolder kDefaultStorageRoot = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-            ? Environment.SpecialFolder.LocalApplicationData
-            : Environment.SpecialFolder.ApplicationData;
+        // What WinUI3 setup roots app data in when a config does not say: local, never roaming, the same as WPF
+        private const Environment.SpecialFolder kDefaultStorageRoot = Environment.SpecialFolder.LocalApplicationData;
 
         private static bool g_isSetup = false;
         private static bool g_blockReentrancy = false;
         public static string g_sharedProjectName = null;
         public static string ProjectName { get; private set; }
-        public static string AppDataRoot { get; private set; }
-
-        /// <summary>
-        /// Sets up your application with standard project setup mechanisms including optionally logging, exception processing, and configuration of the <see cref="AppDataRoot"/>
-        /// </summary>
-        /// <param name="projectName">The name of the project, used for context in logging and potentially elsewhere</param>
-        /// <param name="setupLogging">Should logging be setup, will default to a project name specific appdata location</param>
-        /// <param name="onExceptionRecieved">Something to handle unhandled exceptions</param>
-        /// <param name="ageMaxInDaysToKeepLogs">The max age (in days) to keep logs - this will auto purge logs with this call for all logs older than specified. Pass in -1 to skip log purging (not recommended). Default = 10.</param>
-        /// <param name="sharedProjectName">A shared project name so two or more projects can share a root location (ie CoolProj is the shared project name, but individually the projects are: CoolProjClient, CoolProjServer)</param>
-        /// <param name="storageRootOverride">Override to the root of logs and your "app data" folder? This will seed the <see cref="AppDataRoot"/> location which is commonly used in establishing app storage info, including in <see cref="BuildAppDataProjectPath"/></param>
-        /// <remarks>
-        /// This overload seeds crypto obfuscation from <paramref name="sharedProjectName"/> when there is one and
-        /// <paramref name="projectName"/> otherwise, which is what <see cref="eCryptoSeedSource.SharedProjectNameFirst"/> does
-        /// and what the config overload defaults to - so conversion leaves the seed where it is.
-        /// <para>
-        /// Either way the seeding happens during this call, so to seed with something else entirely, call
-        /// <see cref="AJut.Security.CryptoObfuscation.SeedDefaults"/> yourself once setup has run - the last call wins.
-        /// </para>
-        /// </remarks>
-        [Obsolete("Use the ApplicationSetupConfig overload, which takes the same config type the WPF surface takes.")]
-        public static void RunOnetimeSetup(string projectName, Application application, bool setupLogging = true, ExceptionProcessor onExceptionRecieved = null, int ageMaxInDaysToKeepLogs = 10, string sharedProjectName = null, string storageRootOverride = null)
-        {
-            RunOnetimeSetup(application, new ApplicationSetupConfig(projectName)
-            {
-                SharedProjectName = sharedProjectName,
-                SetupLogging = setupLogging,
-                AgeMaxInDaysToKeepLogs = ageMaxInDaysToKeepLogs,
-                OnExceptionReceived = onExceptionRecieved == null ? null : _ForwardToProcessor,
-                StorageRootOverride = storageRootOverride,
-            });
-
-            bool _ForwardToProcessor(UnhandledExceptionReport report)
-            {
-                return onExceptionRecieved(report.ExceptionObject);
-            }
-        }
+        /// <summary>The folder this app may write to, kept in <see cref="AppStorage.AppDataRoot"/> and set by setup</summary>
+        public static string AppDataRoot => AppStorage.AppDataRoot;
 
         /// <summary>
         /// Sets up your application with standard project setup mechanisms including optionally logging, exception processing, and configuration of the <see cref="AppDataRoot"/>
@@ -78,7 +39,7 @@
             g_sharedProjectName = config.SharedProjectName;
             ProjectName = config.ProjectName;
 
-            AppDataRoot = DetermineAppDataRoot(config);
+            AppStorage.SetAppDataRoot(DetermineAppDataRoot(config));
             CryptoObfuscation.SeedDefaults(config.DetermineCryptoSeed());
 
             TypeXT.RegisterSpecialDouble<GridLength>(gl => gl.Value);
@@ -200,57 +161,17 @@
         /// Split out of <see cref="RunOnetimeSetup(Application, ApplicationSetupConfig)"/> so the precedence and the verbatim handling can be tested without standing up an <see cref="Application"/>.
         /// </remarks>
         internal static string DetermineAppDataRoot(ApplicationSetupConfig config)
-        {
-            // An override is the root, exactly as given. Appending the project name the way the special folder path
-            //  below does would defeat the entire point of setting one - you would end up in a subfolder of the root
-            //  you were handed, and quietly disagree with whoever handed it to you.
-            if (config.StorageRootOverride != null)
-            {
-                Directory.CreateDirectory(config.StorageRootOverride);
-                return config.StorageRootOverride;
-            }
-
-            Environment.SpecialFolder specialFolder = config.ApplicationStorageRoot ?? kDefaultStorageRoot;
-
-            // Packaging alone does not isolate the special folder. GetFolderPath hands a packaged app the plain shared
-            //  folder, and only MSIX write virtualization makes it app specific, so the project folder goes on unless the
-            //  config says virtualization is on. Nothing detects that - the config states it.
-            if (config.StorageRootIsolation == eStorageRootIsolation.PackageVirtualization)
-            {
-                return WindowsEnvironmentHelper.EstablishSpecialFolderLocation(specialFolder);
-            }
-
-            return WindowsEnvironmentHelper.EstablishSpecialFolderLocation(specialFolder, config.StorageRootProjectName);
-        }
+            => AppStorage.DetermineSpecialFolderRoot(config, kDefaultStorageRoot);
 
         /// <summary>
         /// Works out where logs go under the app data root: a folder per project whenever that root is shared, straight
         /// into Logs otherwise.
         /// </summary>
         internal static string DetermineLogsDirectory(string appDataRoot, string projectName, string sharedProjectName, eStorageRootIsolation storageRootIsolation)
-        {
-            // Projects sharing a root each get their own logs folder. A virtualized package root is shared by everything
-            //  in the package (and by every app on the machine if the setting is wrong), so it gets one too.
-            if ((sharedProjectName != null)
-                || (storageRootIsolation == eStorageRootIsolation.PackageVirtualization))
-            {
-                return Path.Combine(appDataRoot, "Logs", projectName);
-            }
-
-            return Path.Combine(appDataRoot, "Logs");
-        }
+            => AppStorage.DetermineLogsDirectory(appDataRoot, projectName, sharedProjectName, storageRootIsolation);
 
         private static void PurgeAllLogsOlderThan(TimeSpan age, string logsDir)
-        {
-            DirectoryInfo logsFolder = new DirectoryInfo(logsDir);
-            foreach (FileInfo file in logsFolder.EnumerateFiles().ToList())
-            {
-                if (DateTime.Now - file.LastWriteTime > age)
-                {
-                    file.Delete();
-                }
-            }
-        }
+            => AppStorage.PurgeLogsOlderThan(age, logsDir);
 
         private static class NativeCrashHandler
         {

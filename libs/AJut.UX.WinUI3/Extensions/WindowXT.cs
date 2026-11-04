@@ -8,15 +8,6 @@
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
 
-    public enum eWindowState
-    {
-        Unknown,
-        Maximized,
-        Minimized,
-        Restored,
-        FullScreened,
-    }
-
     /// <summary>
     /// Window extensions
     /// </summary>

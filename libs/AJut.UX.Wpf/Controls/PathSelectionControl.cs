@@ -1,27 +1,18 @@
-﻿namespace AJut.UX.Controls
+﻿// ePathType and eFileDialogType moved to AJut.UX, in the same namespace, so every stack's PathSelectionControl and the
+// rules they share use one of each. These forward anything built against them here to where they are now.
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(AJut.UX.Controls.ePathType))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(AJut.UX.Controls.eFileDialogType))]
+
+namespace AJut.UX.Controls
 {
     using System;
-    using System.Drawing;
-    using System.IO;
-    using System.Linq;
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Input;
+    using System.Windows.Media;
     using AJut.IO;
     using Microsoft.Win32;
     using DPUtils = AJut.UX.DPUtils<PathSelectionControl>;
-
-    public enum ePathType
-    {
-        File,
-        Folder
-    }
-
-    public enum eFileDialogType
-    {
-        OpenFile,
-        SaveFile
-    }
 
     [TemplatePart(Name = nameof(PART_PathTextBox), Type = typeof(TextBox))]
     public class PathSelectionControl : Control
@@ -40,18 +31,14 @@
 
             void _OnCanPromptUserForNewPath (object _sender, CanExecuteRoutedEventArgs _e)
             {
-                _e.CanExecute = true;
+                _e.CanExecute = !this.IsReadOnly;
             }
 
             void _OnPromptUserForNewPathExecuted (object _sender, ExecutedRoutedEventArgs _e)
             {
-                //string browseRootFolder = this.FixedBrowseRoot
+                string _root = PathSelectionRules.FindBrowseStartFolder(this.SelectedPath, this.PathType, this.InitialBrowseRoot, this.FixedRootPath);
                 if (this.PathType == ePathType.File)
                 {
-                    string _root = string.Empty;
-                    try { 
-                        _root = _FirstExistingValidDiretory(this.FixedRootPath, this.SelectedPath.IsNullOrEmpty() ? this.InitialBrowseRoot : Path.GetDirectoryName(this.GetFullyExpandedPath())); 
-                    } catch { }
                     string userSelectedPath =
                         this.FileDialogType == eFileDialogType.OpenFile
                             ? PathHelpersUI.PromptUserToPickAFile<OpenFileDialog>(this.BrowsePrompt, _root, this.FileFilter)
@@ -61,29 +48,8 @@
                 }
                 else
                 {
-                    string _root = string.Empty;
-                    try { 
-                        _root = _FirstExistingValidDiretory(this.FixedRootPath, this.SelectedPath.IsNullOrEmpty() ? this.InitialBrowseRoot : this.GetFullyExpandedPath());
-                    } catch { }
                     string userSelectedPath = PathHelpersUI.PromptUserToPickADirectory(this.BrowsePrompt, _root);
                     _SetText(userSelectedPath);
-                }
-
-                string _FirstExistingValidDiretory (params string[] _paths)
-                {
-                    foreach (string _path in _paths.Where(_p => _p.IsNotNullOrEmpty()))
-                    {
-                        try
-                        {
-                            string _fullPath = Path.GetFullPath(_path);
-                            if (Directory.Exists(_fullPath))
-                            {
-                                return _fullPath;
-                            }
-                        }
-                        catch { }
-                    }
-                    return null;
                 }
             }
 
@@ -123,36 +89,36 @@
         {
             base.OnApplyTemplate();
 
+            // Named handlers rather than local functions, so a template applied again takes the old text box's handlers off it
             if (this.PART_PathTextBox != null)
             {
-                this.PART_PathTextBox.PreviewKeyDown -= _PreviewOnTextAreaKeyDown;
+                this.PART_PathTextBox.PreviewKeyDown -= this.PathTextBox_OnPreviewKeyDown;
+                this.PART_PathTextBox.LostFocus -= this.PathTextBox_OnLostFocus;
                 this.PART_PathTextBox = null;
             }
 
             this.PART_PathTextBox = (TextBox)this.GetTemplateChild(nameof(PART_PathTextBox));
-            this.PART_PathTextBox.PreviewKeyDown += _PreviewOnTextAreaKeyDown;
-            this.PART_PathTextBox.LostFocus += _TextBoxOnLostFocus;
+            this.PART_PathTextBox.PreviewKeyDown += this.PathTextBox_OnPreviewKeyDown;
+            this.PART_PathTextBox.LostFocus += this.PathTextBox_OnLostFocus;
+        }
 
-            void _PreviewOnTextAreaKeyDown (object _s, KeyEventArgs _e)
+        private void PathTextBox_OnPreviewKeyDown (object sender, KeyEventArgs e)
+        {
+            // Ctrl+Up steps out to the folder above
+            if ((e.KeyboardDevice.Modifiers == ModifierKeys.Control)
+                && (e.Key == Key.Up)
+                && this.TryMoveToParentFolder())
             {
-                if (this.PathType == ePathType.Folder && _e.KeyboardDevice.Modifiers == ModifierKeys.Control && _e.Key == Key.Up)
-                {
-                    DirectoryInfo dir = new DirectoryInfo(this.SelectedPath);
-                    if (dir.Parent != null)
-                    {
-                        this.SelectedPath = dir.Parent.FullName;
-                        _e.Handled = true;
-                    }
-                }
+                e.Handled = true;
             }
+        }
 
-            void _TextBoxOnLostFocus (object sender, RoutedEventArgs e)
+        private void PathTextBox_OnLostFocus (object sender, RoutedEventArgs e)
+        {
+            string path = this.SelectedPath;
+            if (this.TryToApplyPathShorteningIfAny(ref path))
             {
-                string path = this.SelectedPath;
-                if (this.TryToApplyPathShorteningIfAny(ref path))
-                {
-                    this.SelectedPath = path;
-                }    
+                this.SelectedPath = path;
             }
         }
 
@@ -246,6 +212,17 @@
             set => this.SetValue(InvalidPathBorderBrushProperty, value);
         }
 
+        /// <summary>
+        /// The glow drawn around the control while its path is invalid. Its own color rather than the invalid border's,
+        /// since a border color dark enough to read on a dark surface is too dark to glow on it.
+        /// </summary>
+        public static readonly DependencyProperty InvalidPathGlowBrushProperty = DPUtils.RegisterFP(_ => _.InvalidPathGlowBrush, null, null, CoerceUtils.CallbackForBrush);
+        public Brush InvalidPathGlowBrush
+        {
+            get => (Brush)this.GetValue(InvalidPathGlowBrushProperty);
+            set => this.SetValue(InvalidPathGlowBrushProperty, value);
+        }
+
         public static readonly DependencyProperty InvalidForegroundSymbolProperty = DPUtils.RegisterFP(_ => _.InvalidForegroundSymbol, null, null, CoerceUtils.CallbackForBrush);
         public Brush InvalidForegroundSymbol
         {
@@ -296,6 +273,16 @@
             set => this.SetValue(ButtonPressedForegroundProperty, value);
         }
 
+        public static readonly DependencyProperty TextBoxBorderBrushProperty = DPUtils.RegisterFP(_ => _.TextBoxBorderBrush, null, null, CoerceUtils.CallbackForBrush);
+        /// <summary>
+        /// The path text box's inset edge, drawn along its top and left
+        /// </summary>
+        public Brush TextBoxBorderBrush
+        {
+            get => (Brush)this.GetValue(TextBoxBorderBrushProperty);
+            set => this.SetValue(TextBoxBorderBrushProperty, value);
+        }
+
         public static readonly DependencyProperty FileDialogTypeProperty = DPUtils.Register(_ => _.FileDialogType, eFileDialogType.OpenFile);
         public eFileDialogType FileDialogType
         {
@@ -308,6 +295,19 @@
         {
             get => (string)this.GetValue(DefaultButtonMDL2IconProperty);
             set => this.SetValue(DefaultButtonMDL2IconProperty, value);
+        }
+
+        public static readonly DependencyProperty IsReadOnlyProperty = DPUtils.Register(_ => _.IsReadOnly, (d, e) => CommandManager.InvalidateRequerySuggested());
+        /// <summary>
+        /// Shows the path without letting it change: it takes no typing, and the browse button is off. Showing the path in
+        /// Explorer still works, since that changes nothing. The default style takes this from the inherited
+        /// <see cref="AJut.UX.AttachedProperties.Edit.IsReadOnlyProperty"/>, so a read-only PropertyGrid, or anything else
+        /// that sets Edit.IsReadOnly, makes the path read-only too.
+        /// </summary>
+        public bool IsReadOnly
+        {
+            get => (bool)this.GetValue(IsReadOnlyProperty);
+            set => this.SetValue(IsReadOnlyProperty, value);
         }
 
         public static readonly DependencyProperty IsOpenInExplorerButtonAllowedProperty = DPUtils.Register(_ => _.IsOpenInExplorerButtonAllowed);
@@ -356,9 +356,9 @@
 
         private bool TryToApplyPathShorteningIfAny (ref string target)
         {
-            if (this.FixedRootPath.IsNotNullOrEmpty() && this.ShortenPathToFixedRoot && target.StartsWith(this.FixedRootPath, StringComparison.CurrentCultureIgnoreCase))
+            if (this.ShortenPathToFixedRoot && PathSelectionRules.TryShortenToFixedRoot(target, this.FixedRootPath, out string shortenedPath))
             {
-                target = target.Substring(this.FixedRootPath.Length + 1);
+                target = shortenedPath;
                 return true;
             }
 
@@ -367,90 +367,33 @@
 
         public string GetFullyExpandedPath (string path = null)
         {
-            path = path ?? this.SelectedPath;
-            if (this.FixedRootPath.IsNullOrEmpty()
-                || Path.IsPathRooted(path))
-            {
-                return path;
-            }
-
-            return Path.Combine(this.FixedRootPath, path);
+            return PathSelectionRules.GetFullyExpandedPath(path ?? this.SelectedPath, this.FixedRootPath);
         }
 
+        /// <summary>
+        /// What Ctrl+Up does in the path box: a folder path moves up to its parent folder, unless it's read-only, since that
+        /// changes the path. Returns whether it moved.
+        /// </summary>
+        internal bool TryMoveToParentFolder ()
+        {
+            if (this.IsReadOnly
+                || (this.PathType != ePathType.Folder)
+                || !PathSelectionRules.TryGetParentFolder(this.SelectedPath, this.FixedRootPath, out string parentFolder))
+            {
+                return false;
+            }
+
+            this.SelectedPath = parentFolder;
+            return true;
+        }
+
+        // The rules are every stack's, so the same path gets the same answer and reason on each one
         private void EvaluatePath (string path)
         {
-            if (!this.TreatEmptyPathAsInvalid && path.IsNullOrEmpty())
-            {
-                // The path is null or empty - since that's explicitly allowed, early outing here
-                //  will help make the other tests easier to perform.
-                this.IsPathValid = true;
-                this.InvalidPathReason = null;
-                this.DoesPathExist = false;
-                return;
-            }
-
-            var result = PathHelpers.EvaluatePathValidity(path);
-            if (!result)
-            {
-                _SetError(result.GetErrorReport());
-            }
-            else if (this.FixedRootPath.IsNotNullOrEmpty()
-                        && Path.IsPathRooted(path)
-                        && !path.StartsWith(this.FixedRootPath, StringComparison.CurrentCulture))
-            {
-                _SetError($"Path does not indicate a location under the fixed root path (fixed root path is '{this.FixedRootPath}')");
-            }
-            else if (this.PathType == ePathType.File && !PathHelpers.FindMatchingExtensionsFromFilter(path, this.FileFilter).Any())
-            {
-                int extensionsDisplayLength = (int)(Math.Max(path.Length, 75) * 1.3);
-                _SetError($"{this.SelectedPath}\r\nIndicated file path does not use one of the allowed file extensions:\r\n{string.Join(", ", PathHelpers.ParseExtensionsFrom(this.FileFilter)).Shorten(extensionsDisplayLength, eStringShortening.TakeFromEnd)}");
-            }
-            else
-            {
-                bool existsAsFile = false;
-                bool existsAsDirectory = false;
-                try
-                {
-                    existsAsFile = File.Exists(this.GetFullyExpandedPath(path));
-                } catch { }
-                try
-                {
-                    existsAsDirectory = Directory.Exists(this.GetFullyExpandedPath(path));
-                }
-                catch { }
-
-                // If it exists as a file but you're looking for a directory, or vice-versa - then we have a problem
-                if (this.PathType == ePathType.File && existsAsDirectory)
-                {
-                    _SetError("Looking for a file, path is an existing directory");
-                    return;
-                }
-                if (this.PathType == ePathType.Folder && existsAsFile)
-                {
-                    _SetError("Looking for a directory, path is an existing file");
-                    return;
-                }
-
-                this.DoesPathExist = this.PathType == ePathType.File ? existsAsFile : existsAsDirectory;
-                if (!this.DoesPathExist && this.TreatNonExistentPathAsInvalid)
-                {
-                    // Ignoring _SetError which sets DoesPathExist
-                    this.IsPathValid = false;
-                    this.InvalidPathReason = $"{this.PathType} does not exist";
-                }
-                else
-                {
-                    this.IsPathValid = true;
-                    this.InvalidPathReason = null;
-                }
-            }
-
-            void _SetError (string _error)
-            {
-                this.DoesPathExist = false;
-                this.IsPathValid = false;
-                this.InvalidPathReason = _error;
-            }
+            PathSelectionRules.Evaluation evaluation = PathSelectionRules.Evaluate(path, this.PathType, this.FileFilter, this.FixedRootPath, this.TreatEmptyPathAsInvalid, this.TreatNonExistentPathAsInvalid);
+            this.DoesPathExist = evaluation.DoesPathExist;
+            this.IsPathValid = evaluation.IsPathValid;
+            this.InvalidPathReason = evaluation.InvalidPathReason;
         }
     }
 }

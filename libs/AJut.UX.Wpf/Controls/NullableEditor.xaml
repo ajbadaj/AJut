@@ -5,6 +5,9 @@
     <Style TargetType="{x:Type local:NullableEditor}">
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <!-- WinUI3's: a shade dark enough that the light "Not set" reads on it, over any background -->
+        <Setter Property="OverlayBackground" Value="#8000"/>
+        <Setter Property="NotSetForeground" Value="#DDDDDD"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:NullableEditor}">
@@ -30,17 +33,19 @@
                              The darkening Border + "Not set" label + [Set] button together
                              prevent interaction with the editor beneath. -->
                         <Grid x:Name="PART_NullOverlay" Grid.Column="0" IsHitTestVisible="True">
-                            <Border Background="#3000"/>
+                            <Border Background="{TemplateBinding OverlayBackground}"/>
                             <StackPanel Orientation="Horizontal"
                                         HorizontalAlignment="Left"
-                                        VerticalAlignment="Center">
+                                        VerticalAlignment="Center"
+                                        Margin="4,0">
                                 <TextBlock Text="Not set"
                                            VerticalAlignment="Center"
-                                           Margin="6,0,6,0"
-                                           Opacity="0.9"/>
+                                           Margin="4,0,6,0"
+                                           Opacity="0.9"
+                                           Foreground="{TemplateBinding NotSetForeground}"/>
                                 <Button x:Name="PART_SetButton"
-                                        Content="[Set]"
-                                        Padding="6,2"
+                                        Content="Set"
+                                        Padding="8,3"
                                         Margin="2,0"/>
                             </StackPanel>
                         </Grid>
@@ -48,8 +53,8 @@
                         <!-- [Unset] button: shown when EditValue is non-null. -->
                         <Button x:Name="PART_UnsetButton"
                                 Grid.Column="1"
-                                Content="[Unset]"
-                                Padding="6,2"
+                                Content="Unset"
+                                Padding="8,3"
                                 Margin="3,0,0,0"
                                 Visibility="Collapsed"/>
 

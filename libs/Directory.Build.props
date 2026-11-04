@@ -1,0 +1,102 @@
+<Project InitialTargets="AJutRequireVersionPatch">
+
+  <!-- MSBuild imports the nearest Directory.Build.props above a project, so this one reaches every project under libs\
+       and nothing in sandbox\ or test\. A project here that ever needs a Directory.Build.props of its own has to import
+       this one from it, or it silently drops back to version 1.0.0. -->
+
+  <!-- ===========[ The AJut versions ]========================================================================
+
+       Every AJut package shares the major and minor, and each one keeps its own patch.
+
+       * A minor (features) or a major (breaks) moves the whole set to <major>.<minor>.0 together, so packages with
+         the same major and minor belong together whatever their patches.
+       * A fix bumps the patch of the package it is in, and of every package built on that one: an AJut.Core fix moves
+         all seven, an AJut.UX fix moves AJut.UX and the five platform packages, and a fix to one platform package
+         moves only that one. The packages above have to move because a package's dependency on another AJut package
+         is that package's version when it was packed, as a minimum, and NuGet restores the lowest version a minimum
+         allows. Somebody who references only AJut.UX.Wpf gets an AJut.Core fix once an AJut.UX.Wpf goes out that asks
+         for it, and not before.
+
+       There is no build or PR number in a version. Which commit a package was built from is recorded in the package
+       itself (SourceLink) and by git tags on that commit: <PackageId>/v<version> for every package version published,
+       and v<major>.<minor>.0 for a release of the whole set.
+
+       .github/scripts/set-version-numbers.ps1 makes the bumps, and works out which packages a fix moves. It edits only
+       the numbers below, so keep each patch on a line of its own in the shape the others are in. -->
+  <PropertyGroup>
+    <AJutVersionMajorMinor>2.0</AJutVersionMajorMinor>
+  </PropertyGroup>
+
+  <!-- Each project is versioned as the folder it's in, libs\<Name>\, which is also its package's name. Not as
+       MSBuildProjectName: WPF compiles XAML that references the project's own types by building a temporary copy of
+       the project, <Name>_<random>_wpftmp.csproj, beside the real one, and that copy has to find its patch here too.
+       The folder is the same for both.
+
+       The source generator isn't a package of its own: it ships inside AJut.Core, so it builds with AJut.Core's
+       version. -->
+  <PropertyGroup>
+    <AJutVersionedAs>$([System.IO.Path]::GetFileName('$(MSBuildProjectDirectory)'))</AJutVersionedAs>
+    <AJutVersionedAs Condition="'$(AJutVersionedAs)' == 'AJut.Core.SourceGenerators'">AJut.Core</AJutVersionedAs>
+  </PropertyGroup>
+
+  <!-- Each package's patch. A new library under libs\ needs a line here, and its build stops with an error until it
+       has one. -->
+  <PropertyGroup>
+    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.Core'">0</AJutVersionPatch>
+    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX'">0</AJutVersionPatch>
+    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX.Wpf'">0</AJutVersionPatch>
+    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX.WinUI3'">0</AJutVersionPatch>
+    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX.AppKit'">0</AJutVersionPatch>
+    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX.UIKit'">0</AJutVersionPatch>
+    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX.Android'">0</AJutVersionPatch>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(AJutVersionPatch)' != ''">
+    <Version>$(AJutVersionMajorMinor).$(AJutVersionPatch)</Version>
+  </PropertyGroup>
+
+  <!-- Without a patch the project would quietly build as 1.0.0, the SDK's default, so this stops it instead. It runs
+       ahead of whatever target the project is asked for (InitialTargets above). -->
+  <Target Name="AJutRequireVersionPatch" Condition="'$(AJutVersionPatch)' == ''">
+    <Error Text="$(AJutVersionedAs) has no patch number in libs/Directory.Build.props. Add an AJutVersionPatch line for it there, beside the other packages." />
+  </Target>
+
+  <!-- ===========[ SourceLink ]================================================================================
+
+       SourceLink writes a map into each PDB from the build's source paths to the same files on GitHub at the commit
+       that was built, so a debugger stepping into an AJut package fetches the exact source it was compiled from. The
+       .NET SDK has done the map by default since .NET 8, and puts the commit in the package's nuspec and in the
+       assembly's informational version (2.0.0+<commit>). See https://github.com/dotnet/sourcelink.
+
+       What the SDK leaves out, and the settings below add:
+
+       * The PDB itself. The map lives in the PDB, and a package without one gives a debugger nothing to step with,
+         so every package gets a symbol package (.snupkg) beside it, which nuget.org serves from its symbol server.
+         dotnet nuget push uploads the .snupkg from beside the .nupkg on its own. On the consuming side, Visual Studio
+         steps in once the NuGet.org symbol server is enabled in its symbol settings and Just My Code is off.
+       * Untracked sources. Assembly info, XAML .g.cs, and source generator output (the AJson serializers) are in no
+         commit, so SourceLink can't fetch them; EmbedUntrackedSources puts them in the PDB instead. The SDK already
+         turns this on for every project here (it holds it back only for .NET Framework WPF, whose generated #line
+         directives are wrong, dotnet/sdk#36585), and it's stated here so the packages don't rely on that default.
+       * Publishing the repository. PublishRepositoryUrl is the opt-in for putting repository details in a package:
+         the nuspec's repository entry gets the branch beside the URL and commit, and the URL keeps coming from git if
+         a project ever drops its RepositoryUrl.
+       * Deterministic paths. ContinuousIntegrationBuild maps the repository root to /_/ in the PDB and the assembly,
+         so nothing in a package depends on which machine or workspace folder built it, and two builds of one commit
+         with the same SDK come out the same. It's on only under GitHub Actions: on a dev machine the mapped paths
+         stop the debugger finding local, uncommitted source. A pack for a publish passes
+         -p:ContinuousIntegrationBuild=true itself.
+
+       SourceLink points at whatever commit is checked out, and the map is only right if that commit is on GitHub and
+       the working tree matches it. So a publish packs from a clean checkout of a pushed commit. -->
+  <PropertyGroup>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+</Project>

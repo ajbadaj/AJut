@@ -19,21 +19,19 @@ namespace AJut.UX.Converters
 
         protected override object Convert (object objValue)
         {
-            if (objValue.GetType().IsEnum)
+            if (!NumericConverterMath.TryRelate(objValue, this.To, out NumericConverterMath.Relation relation))
             {
-                objValue = (int)objValue;
+                return this.CompFalseValue;
             }
 
-            dynamic sourceValue = (dynamic)objValue;
-            dynamic toValue = (dynamic)System.Convert.ChangeType(this.To, objValue.GetType());
             switch (this.Comp)
             {
-                case eComparison.NotEqual: return sourceValue != toValue ? this.CompTrueValue : this.CompFalseValue;
-                case eComparison.Equal: return sourceValue == toValue ? this.CompTrueValue : this.CompFalseValue;
-                case eComparison.GreaterThan: return sourceValue > toValue ? this.CompTrueValue : this.CompFalseValue;
-                case eComparison.LessThan: return sourceValue < toValue ? this.CompTrueValue : this.CompFalseValue;
-                case eComparison.GreaterThanOrEqual: return sourceValue >= toValue ? this.CompTrueValue : this.CompFalseValue;
-                case eComparison.LessThanOrEqual: return sourceValue <= toValue ? this.CompTrueValue : this.CompFalseValue;
+                case eComparison.NotEqual: return !relation.IsEqual ? this.CompTrueValue : this.CompFalseValue;
+                case eComparison.Equal: return relation.IsEqual ? this.CompTrueValue : this.CompFalseValue;
+                case eComparison.GreaterThan: return relation.IsGreater ? this.CompTrueValue : this.CompFalseValue;
+                case eComparison.LessThan: return relation.IsLess ? this.CompTrueValue : this.CompFalseValue;
+                case eComparison.GreaterThanOrEqual: return (relation.IsGreater || relation.IsEqual) ? this.CompTrueValue : this.CompFalseValue;
+                case eComparison.LessThanOrEqual: return (relation.IsLess || relation.IsEqual) ? this.CompTrueValue : this.CompFalseValue;
             }
 
             return false;

@@ -98,6 +98,10 @@
         public static App? Instance { get; private set; }
 
         public AppThemeManager ThemeManager { get; } = new AppThemeManager();
+
+        /// <summary>The navigation footer's "follow Windows touch" switch</summary>
+        public TouchVariantFollower TouchVariant => m_touchVariant ??= new TouchVariantFollower(this.ThemeManager);
+        private TouchVariantFollower? m_touchVariant;
         public WindowManager Windows => m_windowManager;
     }
 }

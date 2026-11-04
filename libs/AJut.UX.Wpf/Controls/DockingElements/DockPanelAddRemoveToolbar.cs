@@ -1,7 +1,7 @@
 namespace AJut.UX.Controls
 {
     using System;
-    using System.Collections.Specialized;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Windows;
     using System.Windows.Controls;
@@ -10,11 +10,12 @@ namespace AJut.UX.Controls
     using AJut.UX.Docking;
     using DPUtils = AJut.UX.DPUtils<DockPanelAddRemoveToolbar>;
 
-    public class DockPanelAddRemoveToolbar : Control
+    public class DockPanelAddRemoveToolbar : Control, IDockPanelToolbarHost
     {
         // ===========[ Fields ]===============================================
+        // Which buttons exist and what they do is shared with every toolkit's toolbar; this control makes the views
+        private readonly DockPanelToolbarController m_controller;
         private StackPanel m_buttonPanel;
-        private DockPanelAddRemoveUISync m_subscribedSync;
 
         // ===========[ Construction ]=========================================
         static DockPanelAddRemoveToolbar ()
@@ -22,12 +23,22 @@ namespace AJut.UX.Controls
             DefaultStyleKeyProperty.OverrideMetadata(typeof(DockPanelAddRemoveToolbar), new FrameworkPropertyMetadata(typeof(DockPanelAddRemoveToolbar)));
         }
 
+        public DockPanelAddRemoveToolbar ()
+        {
+            m_controller = new DockPanelToolbarController(this);
+
+            // The toolbar follows the manager only while it is in a window, so a toolbar dropped from its window
+            // is not kept alive by a manager that outlives it. Its own events, so they need no unhooking.
+            this.Loaded += this.OnLoaded;
+            this.Unloaded += this.OnUnloaded;
+        }
+
         // ===========[ Dependency Properties ]================================
 
         public static readonly DependencyProperty DockingManagerProperty = DPUtils.Register(_ => _.DockingManager, (d, e) => d.OnDockingManagerChanged());
-        public DockingManager DockingManager
+        public IDockingManager DockingManager
         {
-            get => (DockingManager)this.GetValue(DockingManagerProperty);
+            get => (IDockingManager)this.GetValue(DockingManagerProperty);
             set => this.SetValue(DockingManagerProperty, value);
         }
 
@@ -37,88 +48,87 @@ namespace AJut.UX.Controls
         {
             base.OnApplyTemplate();
             m_buttonPanel = this.GetTemplateChild("PART_ButtonPanel") as StackPanel;
-            this.RebuildButtons();
+            m_controller.RebuildButtons();
         }
 
-        // ===========[ Private Methods ]======================================
+        // ===========[ IDockPanelToolbarHost ]================================
 
-        private void OnDockingManagerChanged ()
-        {
-            if (m_subscribedSync != null)
-            {
-                ((INotifyCollectionChanged)m_subscribedSync.PanelTypeEntries).CollectionChanged -= this.OnEntriesChanged;
-                m_subscribedSync.PanelStateChanged -= this.OnPanelStateChanged;
-                m_subscribedSync = null;
-            }
-
-            if (this.DockingManager?.UISyncVM != null)
-            {
-                m_subscribedSync = this.DockingManager.UISyncVM;
-                ((INotifyCollectionChanged)m_subscribedSync.PanelTypeEntries).CollectionChanged += this.OnEntriesChanged;
-                m_subscribedSync.PanelStateChanged += this.OnPanelStateChanged;
-            }
-
-            this.RebuildButtons();
-        }
-
-        private void OnEntriesChanged (object sender, NotifyCollectionChangedEventArgs e)
-        {
-            this.RebuildButtons();
-        }
-
-        private void OnPanelStateChanged (object sender, DockPanelAddRemoveUISync.PanelStateChangedEventArgs e)
-        {
-            if (e.IsStructuralChange)
-            {
-                this.RebuildButtons();
-            }
-            else
-            {
-                this.UpdateButtonStates();
-            }
-        }
-
-        private void RebuildButtons ()
+        void IDockPanelToolbarHost.ShowButtons (IReadOnlyList<DockPanelToolbarController.Button> buttons)
         {
             if (m_buttonPanel == null)
             {
                 return;
             }
 
-            m_buttonPanel.Children.Clear();
-
-            if (m_subscribedSync == null)
+            this.ReleaseButtons();
+            foreach (DockPanelToolbarController.Button button in buttons)
             {
-                return;
-            }
-
-            foreach (DockPanelTypeEntry entry in m_subscribedSync.PanelTypeEntries)
-            {
-                if (entry.IsHiddenFromToolbar)
-                {
-                    continue;
-                }
-
-                if (entry.IsSingleInstance)
+                if (button.IsToggle)
                 {
                     var btn = new DockPanelShowHideToggleButton();
-                    btn.Tag = entry;
-                    this.ConfigureButtonContent(btn, entry);
-                    btn.IsChecked = entry.HasActiveInstance;
-                    btn.Click += this.OnToggleButtonClicked;
+                    btn.Tag = button;
+                    this.ConfigureButtonContent(btn, button.Entry);
+                    btn.IsChecked = button.IsChecked;
+                    btn.Click += this.OnToolbarButtonClicked;
                     m_buttonPanel.Children.Add(btn);
                 }
                 else
                 {
                     var btn = new DockPanelAddButton();
-                    btn.Tag = entry;
-                    this.ConfigureButtonContent(btn, entry);
-                    btn.Click += this.OnAddButtonClicked;
+                    btn.Tag = button;
+                    this.ConfigureButtonContent(btn, button.Entry);
+                    btn.Click += this.OnToolbarButtonClicked;
                     m_buttonPanel.Children.Add(btn);
                 }
             }
         }
 
+        void IDockPanelToolbarHost.RefreshButtonStates ()
+        {
+            if (m_buttonPanel == null)
+            {
+                return;
+            }
+
+            foreach (var child in m_buttonPanel.Children)
+            {
+                if (child is DockPanelShowHideToggleButton toggle && toggle.Tag is DockPanelToolbarController.Button button)
+                {
+                    toggle.IsChecked = button.IsChecked;
+                }
+            }
+        }
+
+        // ===========[ Private Methods ]======================================
+
+        // Drops the buttons, unhooking each one's Click first so a dropped button can't hold the toolbar
+        private void ReleaseButtons ()
+        {
+            foreach (var child in m_buttonPanel.Children)
+            {
+                if (child is ButtonBase button)
+                {
+                    button.Click -= this.OnToolbarButtonClicked;
+                }
+            }
+
+            m_buttonPanel.Children.Clear();
+        }
+
+        private void OnLoaded (object sender, RoutedEventArgs e)
+        {
+            m_controller.OnAttached();
+        }
+
+        private void OnUnloaded (object sender, RoutedEventArgs e)
+        {
+            m_controller.OnDetached();
+        }
+
+        private void OnDockingManagerChanged ()
+        {
+            m_controller.DockingManager = this.DockingManager;
+        }
         private void ConfigureButtonContent (ContentControl btn, DockPanelTypeEntry entry)
         {
             bool hasIcon = entry.IconPath.IsNotNullOrEmpty();
@@ -159,35 +169,11 @@ namespace AJut.UX.Controls
             btn.ToolTip = entry.DisplayName ?? entry.PanelType.Name;
         }
 
-        private void UpdateButtonStates ()
+        private void OnToolbarButtonClicked (object sender, RoutedEventArgs e)
         {
-            if (m_buttonPanel == null)
+            if (sender is FrameworkElement element && element.Tag is DockPanelToolbarController.Button button)
             {
-                return;
-            }
-
-            foreach (var child in m_buttonPanel.Children)
-            {
-                if (child is DockPanelShowHideToggleButton toggle && toggle.Tag is DockPanelTypeEntry entry)
-                {
-                    toggle.IsChecked = entry.HasActiveInstance;
-                }
-            }
-        }
-
-        private void OnToggleButtonClicked (object sender, RoutedEventArgs e)
-        {
-            if (sender is DockPanelShowHideToggleButton btn && btn.Tag is DockPanelTypeEntry entry)
-            {
-                m_subscribedSync?.RequestSetToggleState(entry.PanelType);
-            }
-        }
-
-        private void OnAddButtonClicked (object sender, RoutedEventArgs e)
-        {
-            if (sender is DockPanelAddButton btn && btn.Tag is DockPanelTypeEntry entry)
-            {
-                m_subscribedSync?.RequestAdd(entry.PanelType);
+                m_controller.OnButtonActivated(button);
             }
         }
     }

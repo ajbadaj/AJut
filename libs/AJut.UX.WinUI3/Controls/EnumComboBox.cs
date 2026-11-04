@@ -74,7 +74,7 @@
 
             if (m_determenedItemType != itemType)
             {
-                this.PART_ComboBox.ItemsSource = Enum.GetValues(itemType).OfType<Enum>().Select(o => new EnumItemStorage(o)).ToArray();
+                this.PART_ComboBox.ItemsSource = EnumItemStorage.BuildOptions(itemType);
                 m_determenedItemType = itemType;
             }
 
@@ -90,6 +90,14 @@
             }
             public object Value { get; }
             public string Name { get; }
+
+            // The options the combo box lists for an enum type: AJut.UX's EnumSelectionOptions, which leaves out values
+            // marked [Browsable(false)] or [ExcludeFromSelection], the same as EnumToggleStrip. It lives here rather than
+            // on EnumComboBox so the list can be checked without making a control.
+            internal static EnumItemStorage[] BuildOptions (Type enumType)
+            {
+                return EnumSelectionOptions.GetSelectableValues(enumType).Select(o => new EnumItemStorage(o)).ToArray();
+            }
         }
     }
 }

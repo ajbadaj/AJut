@@ -1,9 +1,11 @@
 namespace AJut.UX.Controls
 {
+    using System;
     using Microsoft.UI.Input;
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
     using Microsoft.UI.Xaml.Controls.Primitives;
+    using Microsoft.UI.Xaml.Input;
     using Microsoft.UI.Xaml.Media;
     using Windows.System;
     using Windows.UI.Core;
@@ -33,7 +35,7 @@ namespace AJut.UX.Controls
     [TemplatePart(Name = nameof(PART_TextBox), Type = typeof(TextBox))]
     [TemplatePart(Name = nameof(PART_DefaultLabel), Type = typeof(FrameworkElement))]
     [TemplatePart(Name = nameof(PART_LabelArea), Type = typeof(ContentControl))]
-    public class NumericEditor : Control, INumericEditorSettings
+    public class NumericEditor : Control, INumericEditorHost
     {
         // ===========[ Instance fields ]==========================================
         private Border PART_Root;
@@ -43,26 +45,55 @@ namespace AJut.UX.Controls
         private FrameworkElement PART_DefaultLabel;
         private ContentControl PART_LabelArea;
 
-        private NumericEditorViewModel m_vm;
-        private bool m_blockReentrancy;
+        // Owns the view model and the re-entrancy guard; this control only routes its events in and shows what it writes back
+        private readonly NumericEditorController m_controller;
+
+        // What the border shows: hover over focus over rest (UpdateBorderState)
+        private bool m_isPointerOver;
+        private bool m_hasFocus;
 
         // ===========[ Construction ]=============================================
         public NumericEditor ()
         {
+            m_controller = new NumericEditorController(this);
             this.DefaultStyleKey = typeof(NumericEditor);
             this.GotFocus += this.OnGotFocus;
             this.LostFocus += this.OnLostFocus;
+
+            // Its own event, so like the focus ones it holds nothing but this editor. IsEnabled follows a disabled parent
+            // too, which is how a read-only PropertyGrid row reaches it.
+            this.IsEnabledChanged += this.OnIsEnabledChanged;
             this.IsTabStop = false;
         }
 
         // ===========[ INumericEditorSettings ]===================================
         int INumericEditorSettings.DecimalPlacesAllowed => -1;
 
-        object INumericEditorSettings.Minimum => double.IsNegativeInfinity(this.Minimum) ? null : (object)this.Minimum;
+        object INumericEditorSettings.Minimum => NumericEditorController.ToMinimumBound(this.Minimum);
 
-        object INumericEditorSettings.Maximum => double.IsPositiveInfinity(this.Maximum) ? null : (object)this.Maximum;
+        object INumericEditorSettings.Maximum => NumericEditorController.ToMaximumBound(this.Maximum);
 
         eOutOfBoundsResponse INumericEditorSettings.OutOfBoundsResponse => this.OutOfBoundsResponse;
+
+        // ===========[ INumericEditorHost ]=======================================
+        void INumericEditorHost.ShowText (string text)
+        {
+            if (this.PART_TextBox != null)
+            {
+                this.PART_TextBox.Text = text;
+            }
+        }
+
+        void INumericEditorHost.ShowValue (object value)
+        {
+            this.Value = value;
+        }
+
+        void INumericEditorHost.ShowError (string errorMessage)
+        {
+            this.ErrorMessage = errorMessage;
+            VisualStateManager.GoToState(this, errorMessage != null ? "HasError" : "NoError", true);
+        }
 
         // ===========[ Dependency Properties ]====================================
 
@@ -72,6 +103,15 @@ namespace AJut.UX.Controls
         {
             get => this.GetValue(ValueProperty);
             set => this.SetValue(ValueProperty, value);
+        }
+
+        // EnforceNumericType: the type Value is kept in however it arrives. A XAML literal such as Value="42" arrives as text,
+        //  which parses as a float without one. Null detects the type from each value.
+        public static readonly DependencyProperty EnforceNumericTypeProperty = DPUtils.Register(_ => _.EnforceNumericType, (d, e) => d.m_controller.OnEnforcedTypeChanged(e.NewValue));
+        public Type EnforceNumericType
+        {
+            get => (Type)this.GetValue(EnforceNumericTypeProperty);
+            set => this.SetValue(EnforceNumericTypeProperty, value);
         }
 
         // Minimum / Maximum (±∞ sentinels = unconstrained).
@@ -167,7 +207,7 @@ namespace AJut.UX.Controls
         }
 
         // How the editor responds to text outside the min/max bounds (default: ErrorAndToolTip).
-        public static readonly DependencyProperty OutOfBoundsResponseProperty = DPUtils.Register(_ => _.OutOfBoundsResponse, eOutOfBoundsResponse.ErrorAndToolTip, (d, e) => d.RefreshErrorState());
+        public static readonly DependencyProperty OutOfBoundsResponseProperty = DPUtils.Register(_ => _.OutOfBoundsResponse, eOutOfBoundsResponse.ErrorAndToolTip, (d, e) => d.m_controller.RefreshErrorState());
         public eOutOfBoundsResponse OutOfBoundsResponse
         {
             get => (eOutOfBoundsResponse)this.GetValue(OutOfBoundsResponseProperty);
@@ -213,8 +253,8 @@ namespace AJut.UX.Controls
             this.PART_DefaultLabel = this.GetTemplateChild(nameof(PART_DefaultLabel)) as FrameworkElement;
             this.PART_LabelArea = this.GetTemplateChild(nameof(PART_LabelArea)) as ContentControl;
 
-            // 3. Seed VSM - Unfocused + NoError are the initial states (no TemplateBinding on BorderBrush)
-            VisualStateManager.GoToState(this, "Unfocused", false);
+            // 3. Seed VSM - the border state and NoError are the initial states (no TemplateBinding on BorderBrush)
+            this.UpdateBorderState(false);
             VisualStateManager.GoToState(this, "NoError", false);
 
             // 4. Wire new parts
@@ -232,24 +272,32 @@ namespace AJut.UX.Controls
             {
                 this.PART_TextBox.TextChanged += this.TextBox_OnTextChanged;
                 this.PART_TextBox.KeyDown += this.TextBox_OnKeyDown;
-
-                // Push current value into the text box (template-before-data case).
-                if (m_vm != null)
-                {
-                    m_blockReentrancy = true;
-                    try { this.PART_TextBox.Text = m_vm.Text; }
-                    finally { m_blockReentrancy = false; }
-                }
             }
 
+            // Push the current text and error state into the new parts (template-before-data case)
+            m_controller.RefreshDisplay();
             this.UpdateLabelVisibility();
-            this.RefreshErrorState();
         }
 
         // ===========[ Events ]===================================================
+        protected override void OnPointerEntered (PointerRoutedEventArgs e)
+        {
+            base.OnPointerEntered(e);
+            m_isPointerOver = true;
+            this.UpdateBorderState(true);
+        }
+
+        protected override void OnPointerExited (PointerRoutedEventArgs e)
+        {
+            base.OnPointerExited(e);
+            m_isPointerOver = false;
+            this.UpdateBorderState(true);
+        }
+
         private void OnGotFocus (object sender, RoutedEventArgs e)
         {
-            VisualStateManager.GoToState(this, "Focused", true);
+            m_hasFocus = true;
+            this.UpdateBorderState(true);
 
             // Forward focus to the inner TextBox when the NumericEditor itself receives
             // focus (e.g. programmatic Focus() call). When a child already has focus
@@ -263,8 +311,14 @@ namespace AJut.UX.Controls
 
         private void OnLostFocus (object sender, RoutedEventArgs e)
         {
-            VisualStateManager.GoToState(this, "Unfocused", true);
+            m_hasFocus = false;
+            this.UpdateBorderState(true);
             this.CommitEditedText();
+        }
+
+        private void OnIsEnabledChanged (object sender, DependencyPropertyChangedEventArgs e)
+        {
+            this.UpdateBorderState(true);
         }
 
         private void IncreaseButton_OnClick (object sender, RoutedEventArgs e) => this.DoNudge(positive: true);
@@ -293,124 +347,49 @@ namespace AJut.UX.Controls
 
         private void TextBox_OnTextChanged (object sender, TextChangedEventArgs e)
         {
-            if (m_blockReentrancy || this.PART_TextBox == null)
+            if (this.PART_TextBox != null)
             {
-                return;
+                m_controller.OnTextEdited(this.PART_TextBox.Text);
             }
-
-            // m_vm may be null if text is typed before Value was ever set.
-            if (m_vm == null)
-            {
-                m_vm = new NumericEditorViewModel(this, 0.0);
-            }
-
-            // Route text through the view model (handles parse, capping, type-preservation).
-            m_vm.Text = this.PART_TextBox.Text;
-
-            m_blockReentrancy = true;
-            try { this.Value = m_vm.SourceValue; }
-            finally { m_blockReentrancy = false; }
-
-            this.RefreshErrorState();
         }
 
         // ===========[ Property change handlers ]=================================
         private void OnValueChanged (object newValue)
         {
-            if (m_blockReentrancy)
-            {
-                return;
-            }
-
-            // Rebuild view model so type detection runs on the new value.
-            m_vm = new NumericEditorViewModel(this, newValue ?? 0.0);
-
-            if (this.PART_TextBox == null)
-            {
-                return;
-            }
-
-            m_blockReentrancy = true;
-            try { this.PART_TextBox.Text = m_vm.Text; }
-            finally { m_blockReentrancy = false; }
-
-            this.RefreshErrorState();
+            m_controller.OnValueChanged(newValue);
         }
 
         // ===========[ Helpers ]=================================================
+        // The border is one state group, so the one state it shows comes from all of them: disabled wins, since it draws
+        // no pointer or focus, then the pointer over it, as on WPF, then keyboard focus anywhere inside it, then rest
+        private void UpdateBorderState (bool useTransitions)
+        {
+            string state = !this.IsEnabled
+                ? "Disabled"
+                : (m_isPointerOver ? "PointerOver" : (m_hasFocus ? "Focused" : "Unfocused"));
+            VisualStateManager.GoToState(this, state, useTransitions);
+        }
+
         private void CommitEditedText ()
         {
-            if (m_vm == null || this.PART_TextBox == null)
+            if (this.PART_TextBox != null)
             {
-                return;
+                m_controller.Commit();
             }
-
-            // The source value is already capped as text is typed. CommitEdit decides what to do with
-            // the out of range text per OutOfBoundsResponse: FixOnCommit snaps it back to the clamped
-            // value (e.g. 5500 against a max of 10 becomes 10); ErrorAndToolTip leaves it flagged.
-            m_vm.CommitEdit();
-
-            m_blockReentrancy = true;
-            try
-            {
-                this.PART_TextBox.Text = m_vm.Text;
-                this.Value = m_vm.SourceValue;
-            }
-            finally
-            {
-                m_blockReentrancy = false;
-            }
-
-            this.RefreshErrorState();
         }
 
         private void DoNudge (bool positive)
         {
-            if (m_vm == null)
-            {
-                m_vm = new NumericEditorViewModel(this, 0.0);
-            }
+            // CTRL means BigNudge, SHIFT means SmallNudge, otherwise the normal Nudge
+            double amount = NumericEditorController.PickNudgeAmount(
+                IsKeyDown(VirtualKey.Control),
+                IsKeyDown(VirtualKey.Shift),
+                this.Nudge,
+                this.BigNudge,
+                this.SmallNudge
+            );
 
-            // CTRL → BigNudge, SHIFT → SmallNudge, otherwise normal SmallChange.
-            double amount;
-            if (IsKeyDown(VirtualKey.Control))
-            {
-                amount = this.BigNudge;
-            }
-            else if (IsKeyDown(VirtualKey.Shift))
-            {
-                amount = this.SmallNudge;
-            }
-            else
-            {
-                amount = this.Nudge;
-            }
-
-            m_vm.Nudge(positive, amount);
-
-            m_blockReentrancy = true;
-            try
-            {
-                if (this.PART_TextBox != null)
-                {
-                    this.PART_TextBox.Text = m_vm.Text;
-                }
-
-                this.Value = m_vm.SourceValue;
-            }
-            finally
-            {
-                m_blockReentrancy = false;
-            }
-
-            this.RefreshErrorState();
-        }
-
-        private void RefreshErrorState ()
-        {
-            bool showError = m_vm != null && m_vm.ShouldShowError;
-            this.ErrorMessage = showError ? m_vm.TextErrorMessage : null;
-            VisualStateManager.GoToState(this, showError ? "HasError" : "NoError", true);
+            m_controller.Nudge(positive, amount);
         }
 
         private static bool IsKeyDown (VirtualKey key)

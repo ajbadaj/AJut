@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Theme.AJut, the light half: an activity theme that gives Android's own widgets (check boxes, radio buttons,
+     switches, drop-downs, text fields) the AJut accent and control colors, set once in the manifest or an [Activity]'s
+     Theme. The dark half is under values-night, picked by the night mode, which AppThemeManager sets.
+     The colors are the shared AJut palette's values (AJutPalette.Light here; the touch variant is off by default), for the
+     keys in MobileLook.StockControls; AndroidAJutThemeTests in AJut.UX.Tests fails on any that drifts from it. -->
+<resources>
+  <color name="ajut_accent">#FF0167BC</color>
+  <color name="ajut_control_normal">#FF444444</color>
+  <color name="ajut_text_selection">#660167BC</color>
+
+  <style name="Theme.AJut" parent="@android:style/Theme.DeviceDefault.Light">
+    <item name="android:colorAccent">@color/ajut_accent</item>
+    <item name="android:colorControlActivated">@color/ajut_accent</item>
+    <item name="android:colorControlNormal">@color/ajut_control_normal</item>
+    <item name="android:textColorHighlight">@color/ajut_text_selection</item>
+  </style>
+</resources>

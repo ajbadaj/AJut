@@ -1,7 +1,7 @@
 namespace AJut.UX.Controls
 {
     using System;
-    using System.Collections.Specialized;
+    using System.Collections.Generic;
     using System.Linq;
     using AJut.UX.Docking;
     using Microsoft.UI.Xaml;
@@ -10,8 +10,8 @@ namespace AJut.UX.Controls
     using DPUtils = AJut.UX.DPUtils<DockPanelAddRemoveToolbar>;
 
     // ===========[ DockPanelAddRemoveToolbar ]=================================
-    // Toolbar that creates toggle/add buttons based on the DockingManager's
-    // UISyncVM panel type entries. Buttons are dynamically created when entries
+    // Toolbar that creates toggle/add buttons for the DockingManager's panel types, as worked out by
+    // AJut.UX's DockPanelToolbarController. Buttons are dynamically created when entries
     // change - this is structural (what buttons exist), not visual (how they look).
     // Each button is a proper Control with its own XAML template.
     //
@@ -19,23 +19,30 @@ namespace AJut.UX.Controls
     //   PART_ButtonPanel - StackPanel hosting the dynamically created buttons
 
     [TemplatePart(Name = "PART_ButtonPanel", Type = typeof(StackPanel))]
-    public sealed class DockPanelAddRemoveToolbar : Control
+    public sealed class DockPanelAddRemoveToolbar : Control, IDockPanelToolbarHost
     {
         // ===========[ Fields ]===============================================
-        private DockPanelAddRemoveUISync m_subscribedSync;
+        // Which buttons exist and what they do is shared with every toolkit's toolbar; this control makes the views
+        private readonly DockPanelToolbarController m_controller;
 
         // ===========[ Construction ]=========================================
         public DockPanelAddRemoveToolbar ()
         {
             this.DefaultStyleKey = typeof(DockPanelAddRemoveToolbar);
+            m_controller = new DockPanelToolbarController(this);
+
+            // The toolbar follows the manager only while it is in a window, so a toolbar dropped from its window
+            // is not kept alive by a manager that outlives it. Its own events, so they need no unhooking.
+            this.Loaded += this.OnLoaded;
+            this.Unloaded += this.OnUnloaded;
         }
 
         // ===========[ Dependency Properties ]================================
 
         public static readonly DependencyProperty DockingManagerProperty = DPUtils.Register(_ => _.DockingManager, (d, e) => d.OnDockingManagerChanged());
-        public DockingManager DockingManager
+        public IDockingManager DockingManager
         {
-            get => (DockingManager)this.GetValue(DockingManagerProperty);
+            get => (IDockingManager)this.GetValue(DockingManagerProperty);
             set => this.SetValue(DockingManagerProperty, value);
         }
 
@@ -50,95 +57,44 @@ namespace AJut.UX.Controls
             base.OnApplyTemplate();
             this.PART_ButtonPanel = this.GetTemplateChild(nameof(this.PART_ButtonPanel)) as StackPanel;
             VisualStateManager.GoToState(this, "Normal", false);
-            this.RebuildButtons();
+            m_controller.RebuildButtons();
         }
 
-        // ===========[ Private Methods ]======================================
+        // ===========[ IDockPanelToolbarHost ]================================
 
-        private void OnDockingManagerChanged ()
-        {
-            // Unsubscribe old
-            if (m_subscribedSync != null)
-            {
-                ((INotifyCollectionChanged)m_subscribedSync.PanelTypeEntries).CollectionChanged -= this.OnEntriesChanged;
-                m_subscribedSync.PanelStateChanged -= this.OnPanelStateChanged;
-                m_subscribedSync = null;
-            }
-
-            // Subscribe new
-            if (this.DockingManager?.UISyncVM != null)
-            {
-                m_subscribedSync = this.DockingManager.UISyncVM;
-                ((INotifyCollectionChanged)m_subscribedSync.PanelTypeEntries).CollectionChanged += this.OnEntriesChanged;
-                m_subscribedSync.PanelStateChanged += this.OnPanelStateChanged;
-            }
-
-            this.RebuildButtons();
-        }
-
-        private void OnEntriesChanged (object sender, NotifyCollectionChangedEventArgs e)
-        {
-            this.RebuildButtons();
-        }
-
-        private void OnPanelStateChanged (object sender, DockPanelAddRemoveUISync.PanelStateChangedEventArgs e)
-        {
-            if (e.IsStructuralChange)
-            {
-                this.RebuildButtons();
-            }
-            else
-            {
-                this.UpdateButtonStates();
-            }
-        }
-
-        private void RebuildButtons ()
+        void IDockPanelToolbarHost.ShowButtons (IReadOnlyList<DockPanelToolbarController.Button> buttons)
         {
             if (this.PART_ButtonPanel == null)
             {
                 return;
             }
 
-            this.PART_ButtonPanel.Children.Clear();
-
-            if (m_subscribedSync == null)
+            this.ReleaseButtons();
+            foreach (DockPanelToolbarController.Button button in buttons)
             {
-                return;
-            }
-
-            foreach (DockPanelTypeEntry entry in m_subscribedSync.PanelTypeEntries)
-            {
-                if (entry.IsHiddenFromToolbar)
-                {
-                    continue;
-                }
-
-                string displayName = entry.DisplayName ?? entry.PanelType.Name;
-
-                if (entry.IsSingleInstance)
+                if (button.IsToggle)
                 {
                     var btn = new DockPanelShowHideToggleButton();
-                    btn.Tag = entry;
-                    btn.Content = displayName;
-                    btn.IsChecked = entry.HasActiveInstance;
-                    btn.Click += this.OnToggleButtonClicked;
-                    ToolTipService.SetToolTip(btn, displayName);
+                    btn.Tag = button;
+                    btn.Content = button.Label;
+                    btn.IsChecked = button.IsChecked;
+                    btn.Click += this.OnToolbarButtonClicked;
+                    ToolTipService.SetToolTip(btn, button.Label);
                     this.PART_ButtonPanel.Children.Add(btn);
                 }
                 else
                 {
                     var btn = new DockPanelAddButton();
-                    btn.Tag = entry;
-                    btn.Content = displayName;
-                    btn.Click += this.OnAddButtonClicked;
-                    ToolTipService.SetToolTip(btn, displayName);
+                    btn.Tag = button;
+                    btn.Content = button.Label;
+                    btn.Click += this.OnToolbarButtonClicked;
+                    ToolTipService.SetToolTip(btn, button.Label);
                     this.PART_ButtonPanel.Children.Add(btn);
                 }
             }
         }
 
-        private void UpdateButtonStates ()
+        void IDockPanelToolbarHost.RefreshButtonStates ()
         {
             if (this.PART_ButtonPanel == null)
             {
@@ -147,26 +103,49 @@ namespace AJut.UX.Controls
 
             foreach (var child in this.PART_ButtonPanel.Children)
             {
-                if (child is DockPanelShowHideToggleButton toggle && toggle.Tag is DockPanelTypeEntry entry)
+                if (child is DockPanelShowHideToggleButton toggle && toggle.Tag is DockPanelToolbarController.Button button)
                 {
-                    toggle.IsChecked = entry.HasActiveInstance;
+                    toggle.IsChecked = button.IsChecked;
                 }
             }
         }
 
-        private void OnToggleButtonClicked (object sender, RoutedEventArgs e)
+        // ===========[ Private Methods ]======================================
+
+        // Drops the buttons, unhooking each one's Click first so a dropped button can't hold the toolbar
+        private void ReleaseButtons ()
         {
-            if (sender is DockPanelShowHideToggleButton btn && btn.Tag is DockPanelTypeEntry entry)
+            foreach (var child in this.PART_ButtonPanel.Children)
             {
-                m_subscribedSync?.RequestSetToggleState(entry.PanelType);
+                if (child is ButtonBase button)
+                {
+                    button.Click -= this.OnToolbarButtonClicked;
+                }
             }
+
+            this.PART_ButtonPanel.Children.Clear();
         }
 
-        private void OnAddButtonClicked (object sender, RoutedEventArgs e)
+        private void OnLoaded (object sender, RoutedEventArgs e)
         {
-            if (sender is DockPanelAddButton btn && btn.Tag is DockPanelTypeEntry entry)
+            m_controller.OnAttached();
+        }
+
+        private void OnUnloaded (object sender, RoutedEventArgs e)
+        {
+            m_controller.OnDetached();
+        }
+
+        private void OnDockingManagerChanged ()
+        {
+            m_controller.DockingManager = this.DockingManager;
+        }
+
+        private void OnToolbarButtonClicked (object sender, RoutedEventArgs e)
+        {
+            if (sender is FrameworkElement element && element.Tag is DockPanelToolbarController.Button button)
             {
-                m_subscribedSync?.RequestAdd(entry.PanelType);
+                m_controller.OnButtonActivated(button);
             }
         }
     }

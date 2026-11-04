@@ -4,7 +4,6 @@ namespace AJut.Storage
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
-    using AJut.TypeManagement;
 
     public sealed partial class Stratabase
     {
@@ -295,7 +294,10 @@ namespace AJut.Storage
         {
             if (value is IList list && IsStoreEditedListType(value.GetType()))
             {
-                var copy = (IList)AJutActivator.CreateInstanceOf(value.GetType());
+                // Made from its element type, the way the store makes every list it holds, rather than by activating
+                //  value.GetType(), which needs a parameterless constructor the trimmer can't see is used
+                Type elementType = value.GetType().GetGenericArguments()[0];
+                IList copy = StrataListElementType.For(elementType).CreateList();
                 for (int index = 0; index < list.Count; ++index)
                 {
                     copy.Add(list[index]);

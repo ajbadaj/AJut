@@ -29,6 +29,16 @@ namespace AJut.UX.Tests
         }
 
         [TestMethod]
+        public void CH_ColorFromStr_NotHexDigits_IsNoColor ()
+        {
+            // A color name read as hex is the usual way these come in: "#" plus "red" is the right length for #RGB
+            foreach (string text in new[] { "#red", "#blue", "#orange", "#darkblue", "#GGHHII", "#12345z" })
+            {
+                Assert.IsFalse(AJutColorHelper.TryGetColorFromHex(text, out _), $"'{text}' is not hex");
+            }
+        }
+
+        [TestMethod]
         public void CH_SmallestHex_Basic()
         {
             _DoAssert("#ABC", 255, 170, 187, 204);
@@ -60,7 +70,7 @@ namespace AJut.UX.Tests
                 new(0f, "#FF0000"), new(1f, "#0000FF")
             );
 
-            // Direction keyword → to right = 90°
+            // Direction keyword -> to right = 90°
             _DoAssert(
                 "linear-gradient(to right, #FF0000, #0000FF)",
                 eBrushGradientType.Linear, 90f,

@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Reflection;
     using System.Threading;
@@ -58,6 +59,7 @@
         /// </summary>
         /// <param name="assembly">The assembly to search</param>
         /// <param name="forceSearch">Whether or not to search again if the assembly has already been searched (cached by name)</param>
+        [RequiresUnreferencedCode("Scans the assembly for [TypeId] types, and trimming can remove a type nothing else uses, so its id is never registered. Register a type with RegisterTypeId<T> to keep it.")]
         public static void RegisterAllTypeIds (Assembly assembly, bool forceSearch = false)
         {
             lock (g_assemblyScanLock)

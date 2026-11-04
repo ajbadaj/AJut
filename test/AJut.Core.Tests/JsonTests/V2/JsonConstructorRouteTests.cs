@@ -288,7 +288,7 @@ namespace AJut.Core.UnitTests.AJsonV2
             Json parsed = JsonHelper.ParseText("{ \"Count\": 1 }");
 
             // With no constructor to choose, it is built like any type with no parameterless constructor, which throws
-            Assert.ThrowsException<MissingMethodException>(() => JsonHelper.BuildObjectForJson<TwoMarked>(parsed));
+            Assert.ThrowsExactly<MissingMethodException>(() => JsonHelper.BuildObjectForJson<TwoMarked>(parsed));
             StringAssert.Contains(parsed.GetErrorReport(), "more than one constructor marked [AJsonConstructor]");
         }
 

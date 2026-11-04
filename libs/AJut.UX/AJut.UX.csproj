@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Description>C# / dotnet 8 - common lib for Wpf / WinUI3 utility libraries, created by AJ Badarni</Description>
+    <Description>C# / dotnet 10 - the shared UI logic under AJut's WPF, WinUI3, AppKit, UIKit, and Android libraries, created by AJ Badarni</Description>
     <Authors>AJ Badarni</Authors>
     <Company />
     <PackageProjectUrl>https://www.ajut.dev/</PackageProjectUrl>
@@ -14,7 +14,11 @@
     <PackageTags>c#;dotnet;theming;controls;converters;app;utilities</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <Version>1.1.19.146</Version>
+    <!-- Turns on the trim, single-file and AOT analyzers, so code that would break in a trimmed or AOT build (iOS, -->
+    <!-- Android, NativeAOT) warns here rather than failing at runtime on a device                                    -->
+    <IsAotCompatible>true</IsAotCompatible>
+    <!-- The source generated COM and P/Invoke code behind WindowsTouchPreferenceSource uses pointers -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <None Include="..\..\ajut-logo-128.png">
@@ -26,10 +30,24 @@
       </PackagePath>
       <Pack>True</Pack>
     </None>
-    <ProjectReference Include="..\AJut.Core\AJut.Core.csproj" />
+    <!-- By default a dependency's analyzers don't reach this package's consumers, and AJut.Core ships the AJson source
+         generator as one. Holding back only build and content files lets it reach an app that gets AJut.Core through
+         this package. -->
+    <ProjectReference Include="..\AJut.Core\AJut.Core.csproj" PrivateAssets="build;contentfiles" />
     <None Update="README.md">
       <PackagePath>\</PackagePath>
       <Pack>True</Pack>
     </None>
+  </ItemGroup>
+
+  <!-- The AJson source generator writes the serializers for this library's own [OptimizeAJson] types (the docking layout   -->
+  <!-- file). An analyzer doesn't flow through a project reference, so AJut.Core's wiring of it doesn't reach here, and       -->
+  <!-- without this those types are read and written by reflection, which a trimmed or ahead of time compiled app can't     -->
+  <!-- count on. PrivateAssets=all keeps the generator out of this package's dependencies.                                   -->
+  <ItemGroup>
+    <ProjectReference Include="..\AJut.Core.SourceGenerators\AJut.Core.SourceGenerators.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all" />
   </ItemGroup>
 </Project>

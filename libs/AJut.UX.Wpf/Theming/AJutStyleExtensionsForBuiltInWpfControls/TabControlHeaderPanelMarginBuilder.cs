@@ -20,6 +20,12 @@
             tabControlBorderPlacement = default;
             tabControlBorderThickness = default;
 
+            // A binding with nothing to bind to yet is not ready rather than wrong, so it waits quietly (see TabConverterInputs)
+            if (TabConverterInputs.IsAnyUnset(values))
+            {
+                return false;
+            }
+
             // Individual assertions
             if (!(values[debugEvalIndex++] is Dock found_tabStripPlacement))
             {

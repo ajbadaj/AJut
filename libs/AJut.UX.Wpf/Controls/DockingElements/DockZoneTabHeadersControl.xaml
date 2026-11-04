@@ -119,7 +119,7 @@
                                                             <Setter Property="Margin" Value="3,1"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding Path=IsSelected}" Value="False">
-                                                                    <Setter Property="Opacity" Value="0.4"/>
+                                                                    <Setter Property="Opacity" Value="0.35"/>
                                                                     <Setter Property="Margin" Value="3,2,3,1"/>
                                                                 </DataTrigger>
                                                             </Style.Triggers>

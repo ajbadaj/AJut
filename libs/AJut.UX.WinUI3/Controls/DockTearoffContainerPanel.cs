@@ -1,6 +1,7 @@
 namespace AJut.UX.Controls
 {
     using System;
+    using AJut.UX.Docking;
     using Microsoft.UI.Windowing;
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
@@ -45,7 +46,6 @@ namespace AJut.UX.Controls
     public sealed class DockTearoffContainerPanel : Control
     {
         // ===========[ Constants ]============================================
-        private const double kDefaultDragThresholdPixels = 8.0;
         private const string kGlyphMaximize = "\uE922";
         private const string kGlyphRestore  = "\uE923";
 
@@ -61,7 +61,7 @@ namespace AJut.UX.Controls
         public DockTearoffContainerPanel()
         {
             this.DefaultStyleKey = typeof(DockTearoffContainerPanel);
-            this.DragThresholdPixels = kDefaultDragThresholdPixels;
+            this.DragThresholdPixels = DockDragRules.kDefaultDragThreshold;
         }
 
         // ===========[ Events ]===============================================
@@ -244,7 +244,7 @@ namespace AJut.UX.Controls
             double dy = cur.Y - m_localPressPt.Y;
             double threshold = this.DragThresholdPixels;
 
-            if ((dx * dx + dy * dy) > (threshold * threshold))
+            if (DockDragRules.HasMovedPastThreshold(dx, dy, threshold))
             {
                 m_dragPending = false;
                 m_titleBarArea.ReleasePointerCapture(e.Pointer);

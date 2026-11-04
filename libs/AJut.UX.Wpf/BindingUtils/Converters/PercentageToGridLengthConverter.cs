@@ -54,7 +54,7 @@ namespace AJut.UX.Converters
     /// </summary>
     public class LabelWidthAfterIndentConverter : SimpleMultiValueConverter<GridLength>
     {
-        private const double kExpanderColumnWidth = 18.0;
+        internal const double kExpanderColumnWidth = 18.0;
 
         protected override GridLength Convert (object[] values)
         {

@@ -377,6 +377,9 @@ namespace AJut.Text.AJson
             int lastStart = startIndex + 1;
             int insideQuoteStart = -1;
 
+            // A key written inside the array, waiting for the value after it (see AddToArray)
+            string pendingKey = null;
+
             // The last comma, while no item has started after it. Strict mode reports it as a
             //  trailing comma if the array closes first.
             int openCommaPos = -1;
@@ -407,7 +410,7 @@ namespace AJut.Text.AJson
                                 {
                                     owner.AddError($"Strict mode violation - unquoted string array element at position {sepPos}");
                                 }
-                                arr.Add(tail);
+                                AddToArray(arr, ref pendingKey, tail);
                             }
                             else
                             {
@@ -438,7 +441,7 @@ namespace AJut.Text.AJson
                                 break;
                             }
 
-                            arr.Add(child);
+                            AddToArray(arr, ref pendingKey, child);
 
                             // Skip past optional comma after nested doc.
                             if (index.TryNext(childEnd + 1, out int peekPos, out eSeparatorKind peekKind)
@@ -475,7 +478,7 @@ namespace AJut.Text.AJson
                                 break;
                             }
 
-                            arr.Add(child);
+                            AddToArray(arr, ref pendingKey, child);
 
                             if (index.TryNext(childEnd + 1, out int peekPos, out eSeparatorKind peekKind)
                                 && peekKind == eSeparatorKind.Comma)
@@ -508,23 +511,62 @@ namespace AJut.Text.AJson
                                 {
                                     owner.AddError($"Strict mode violation - unquoted string array element at position {sepPos}");
                                 }
-                                arr.Add(itemValue);
+                                AddToArray(arr, ref pendingKey, itemValue);
                             }
+
+                            // A key with nothing after it has no value to go with, and was reported when it was found
+                            pendingKey = null;
                         }
 
                         openCommaPos = sepPos;
+                        break;
+
+                    case eSeparatorKind.Colon:
+                        if (insideQuoteStart != -1)
+                        {
+                            consumed = false;
+                            break;
+                        }
+
+                        // The text in front of it is an unquoted key, read the way a document reads one
+                        {
+                            string keyChunk = TrimUnquoted(text, index, lastStart, sepPos - 1);
+                            if (keyChunk.Length == 0)
+                            {
+                                owner.AddError($"Empty key at position {sepPos}");
+                                consumed = false;
+                                break;
+                            }
+
+                            ReportKeyInsideArray(owner, keyChunk, sepPos);
+                            pendingKey = keyChunk;
+                            openCommaPos = -1;
+                        }
                         break;
 
                     case eSeparatorKind.Quote:
                         if (insideQuoteStart != -1)
                         {
                             string strValue = ReadQuoted(text, insideQuoteStart, sepPos, quotedTextIsOld);
-                            arr.Add(new JsonValue(strValue, isQuoted: true));
                             insideQuoteStart = -1;
+                            bool gotPeek = index.TryNext(sepPos + 1, out int peekPos, out eSeparatorKind peekKind);
+
+                            // A colon right after it makes the quoted text a key, the same as in a document
+                            if (gotPeek && peekKind == eSeparatorKind.Colon)
+                            {
+                                CheckStrictStrayText(text, index, owner, rules, sepPos + 1, peekPos - 1);
+                                ReportKeyInsideArray(owner, strValue, peekPos);
+                                pendingKey = strValue;
+                                openCommaPos = -1;
+                                searchPos = peekPos + 1;
+                                lastStart = peekPos + 1;
+                                continue;
+                            }
+
+                            AddToArray(arr, ref pendingKey, new JsonValue(strValue, isQuoted: true));
 
                             // Skip past optional comma.
-                            if (index.TryNext(sepPos + 1, out int peekPos, out eSeparatorKind peekKind)
-                                && peekKind == eSeparatorKind.Comma)
+                            if (gotPeek && peekKind == eSeparatorKind.Comma)
                             {
                                 CheckStrictStrayText(text, index, owner, rules, sepPos + 1, peekPos - 1);
                                 openCommaPos = peekPos;
@@ -565,6 +607,32 @@ namespace AJut.Text.AJson
             }
 
             return arr;
+        }
+
+        // Adds an item read from an array. A key found in the array in front of it (pendingKey) takes the item as its value,
+        //  and the two go in as a document holding that one entry: read as a string, or passed over, the key or its value
+        //  would be lost, and a string can't hold a nested array or document anyway. Keys in a row are not gathered into one
+        //  document, since nothing in the text says which of them belong together.
+        private static void AddToArray (JsonArray arr, ref string pendingKey, JsonValue item)
+        {
+            if (pendingKey == null)
+            {
+                arr.Add(item);
+                return;
+            }
+
+            JsonDocument entry = new JsonDocument();
+            entry.Add(pendingKey, item);
+            arr.Add(entry);
+            pendingKey = null;
+        }
+
+        // An array holds no keys, so a key written in one is broken structure, not the loose syntax lenient mode forgives
+        //  (comments, trailing commas, unquoted strings), and it's reported whichever mode reads it. The read keeps going, and
+        //  keeps the key with its value (see AddToArray), so nothing in the text is dropped without a word.
+        private static void ReportKeyInsideArray (Json owner, string key, int position)
+        {
+            owner.AddError($"Key '{key}' inside an array at position {position}: an array holds no keys, so the key and its value are read as a document holding that one entry");
         }
 
         // The writer puts the version marker as the root document's first key, so that is the only
@@ -633,11 +701,17 @@ namespace AJut.Text.AJson
                 : JsonStringEscaping.UnescapeLenient(quoted);
         }
 
-        // Trim leading/trailing whitespace and produce a JsonValue, or null if the chunk is empty.
+        // Trim leading/trailing whitespace and produce a JsonValue, or null if the chunk is empty. An unquoted null is json's
+        //  null literal, in a lenient parse as much as a strict one; a quoted "null" never reaches here, and stays the string.
         private static JsonValue ReadUnquotedValue (ReadOnlySpan<char> text, SeparatorIndex index, int startPos, int endPos)
         {
             string raw = TrimUnquoted(text, index, startPos, endPos);
-            return raw.Length == 0 ? null : new JsonValue(raw, isQuoted: false);
+            if (raw.Length == 0)
+            {
+                return null;
+            }
+
+            return (raw == JsonValue.kNullText) ? JsonValue.CreateNull() : new JsonValue(raw, isQuoted: false);
         }
 
         private static string TrimUnquoted (ReadOnlySpan<char> text, SeparatorIndex index, int startPos, int endPos)

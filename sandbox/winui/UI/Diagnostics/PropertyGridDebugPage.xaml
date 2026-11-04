@@ -85,7 +85,7 @@
                 <Button Content="Select random element" Click="PGSelect_OnRandomElementClicked"
                         ToolTipService.ToolTip="Complex A/B: TrySelectSourceObject on a random ListWithElevation element - exercises programmatic select + scroll, verifies no Single-mode COMException, and the collapsed-target expand path"/>
                 <Button Content="Clear selection" Click="PGSelect_OnClearClicked"/>
-                <TextBlock Text="SelectedSourceObject:" VerticalAlignment="Center"/>
+                <TextBlock Text="Selected list element:" VerticalAlignment="Center"/>
                 <TextBlock x:Name="PGSelectionReadout" Text="(none)" FontWeight="SemiBold" VerticalAlignment="Center"/>
             </ajut:SimpleWrapPanel>
             <TextBlock Grid.Row="2" Grid.Column="2" Text="Live source object (JSON)" FontStyle="Italic" Margin="0,0,0,8"/>

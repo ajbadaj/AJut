@@ -5,8 +5,6 @@
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
     using System.Linq;
-    using System.Reflection.Emit;
-    using System.Xml.Linq;
 
     /// <summary>
     /// Represents a property access for a list. You could just store a list manually, but every override layer would essentially be a 100% override of the entire list.
@@ -21,6 +19,9 @@
         internal StrataPropertyListAccess (Stratabase.ObjectDataAccessManager owner, string propertyName)
             : base(owner, propertyName)
         {
+            // Named here, so Stratabase can make lists of it on a platform without dynamic code
+            StrataListElementType.Register<TElement>();
+
             this.ODAM.LayerListElementsChanged += this.OnLayerListElementsChanged;
             this.ODAM.LayerListElementsCleared += this.OnLayerListCleared;
             this.ReloadElementsFromActiveLayer();
@@ -54,12 +55,12 @@
                 return;
             }
 
+            // Becoming active reloads the cache from the layer, which already holds this change, so it is not applied again
             if (this.ActiveLayerIndex == kUnsetLayerIndex)
             {
                 this.ActiveLayerIndex = e.IsBaseline ? kBaselineLayerIndex : e.LayerIndex;
             }
-
-            if (e.LayerIndex > this.ActiveLayerIndex)
+            else if (e.LayerIndex > this.ActiveLayerIndex)
             {
                 this.ActiveLayerIndex = e.LayerIndex;
             }

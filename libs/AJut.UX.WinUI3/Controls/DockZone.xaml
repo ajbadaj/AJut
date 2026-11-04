@@ -53,22 +53,18 @@
                         </Border>
 
                         <!-- Tab reorder drag ghost: floats above content during tab reorder.
-                             Background/BorderBrush match DockTabItem defaults so the ghost
-                             looks like a tab without code setting brush properties. -->
+                             Its brushes are theme keys, so the ghost reads as a tab in light and
+                             dark without code setting brush properties. -->
                         <Border x:Name="PART_DragGhost"
                                 IsHitTestVisible="False"
                                 HorizontalAlignment="Left"
                                 VerticalAlignment="Top"
                                 Opacity="0.85"
                                 Padding="6,3,6,3"
+                                Background="{ThemeResource AJut_DockZone_DragGhostBackground}"
+                                BorderBrush="{ThemeResource AJut_DockZone_DragGhostBorderBrush}"
                                 BorderThickness="1"
                                 Visibility="Collapsed">
-                            <Border.Background>
-                                <SolidColorBrush Color="#FF2B2B2B"/>
-                            </Border.Background>
-                            <Border.BorderBrush>
-                                <SolidColorBrush Color="#FF4A4A4A"/>
-                            </Border.BorderBrush>
                             <Border.RenderTransform>
                                 <TranslateTransform/>
                             </Border.RenderTransform>

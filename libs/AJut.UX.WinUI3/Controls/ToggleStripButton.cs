@@ -1,15 +1,18 @@
 namespace AJut.UX.Controls
 {
+    using AJut.UX.Theming;
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
     using Microsoft.UI.Xaml.Input;
+    using Microsoft.UI.Xaml.Media;
     using DPUtils = AJut.UX.DPUtils<ToggleStripButton>;
 
     // ===========[ ToggleStripButton ]===========================================
     // A single selectable button within a ToggleStrip. Manages CommonStates VSM
     // transitions via IsSelected DP and pointer event overrides. All background
-    // visuals are XAML-driven through ThemeResource keys - no visual properties
-    // are set in code.
+    // visuals are XAML-driven through ThemeResource keys; the one property set in
+    // code is the content's text color over the highlight fills, which has to be
+    // cleared again at rest (UpdateContentForeground).
     //
     // BorderThickness and CornerRadius are set by ToggleStrip code (index-aware,
     // structural assignments) before template application. They are pushed to
@@ -17,8 +20,10 @@ namespace AJut.UX.Controls
     // not backfill pre-template local values.
     //
     // Template parts:
-    //   PART_Root  - the root Border; carries BorderThickness/CornerRadius and
-    //                owns the CommonStates VSM background transitions.
+    //   PART_Root    - the root Border; carries BorderThickness/CornerRadius and
+    //                  owns the CommonStates VSM background transitions.
+    //   PART_Content - the content; takes the theme's highlight text over the
+    //                  solid hover and pressed fills (set in code, see below).
     //
     // Template visual states (group: CommonStates):
     //   Normal             - unselected, resting
@@ -29,12 +34,14 @@ namespace AJut.UX.Controls
     //   CheckedPressed     - selected + pressed
 
     [TemplatePart(Name = nameof(PART_Root), Type = typeof(Border))]
+    [TemplatePart(Name = nameof(PART_Content), Type = typeof(ContentPresenter))]
     [TemplateVisualState(Name = "Normal",             GroupName = "CommonStates")]
     [TemplateVisualState(Name = "PointerOver",        GroupName = "CommonStates")]
     [TemplateVisualState(Name = "Pressed",            GroupName = "CommonStates")]
     [TemplateVisualState(Name = "Checked",            GroupName = "CommonStates")]
     [TemplateVisualState(Name = "CheckedPointerOver", GroupName = "CommonStates")]
     [TemplateVisualState(Name = "CheckedPressed",     GroupName = "CommonStates")]
+    [TemplateVisualState(Name = "CheckedDisabled",    GroupName = "CommonStates")]
     public sealed class ToggleStripButton : ContentControl
     {
         // ===========[ Fields ]================================================
@@ -53,6 +60,10 @@ namespace AJut.UX.Controls
             // VSM does not touch these, so push them to PART_Root whenever they change.
             this.RegisterPropertyChangedCallback(BorderThicknessProperty, this.OnStructuralStyleChanged);
             this.RegisterPropertyChangedCallback(CornerRadiusProperty, this.OnStructuralStyleChanged);
+
+            // A disabled button gets no pointer events, so a pointer that was over it or pressing it when its strip was
+            // disabled would otherwise leave it showing the highlight fill and text until the strip came back
+            this.RegisterPropertyChangedCallback(IsEnabledProperty, this.OnIsEnabledChanged);
         }
 
         protected override void OnApplyTemplate ()
@@ -60,6 +71,7 @@ namespace AJut.UX.Controls
             base.OnApplyTemplate();
 
             this.PART_Root = this.GetTemplateChild(nameof(PART_Root)) as Border;
+            this.PART_Content = this.GetTemplateChild(nameof(PART_Content)) as ContentPresenter;
             this.PushStructuralStyleToRoot();
             this.UpdateVisualState(false);
         }
@@ -74,6 +86,7 @@ namespace AJut.UX.Controls
 
         // ===========[ Properties ]============================================
         private Border PART_Root { get; set; }
+        private ContentPresenter PART_Content { get; set; }
 
         // ===========[ Pointer event overrides ]===============================
         protected override void OnPointerEntered (PointerRoutedEventArgs e)
@@ -115,6 +128,17 @@ namespace AJut.UX.Controls
         // ===========[ Private helpers ]=======================================
         private void OnStructuralStyleChanged (DependencyObject sender, DependencyProperty dp) => this.PushStructuralStyleToRoot();
 
+        private void OnIsEnabledChanged (DependencyObject sender, DependencyProperty dp)
+        {
+            if (!this.IsEnabled)
+            {
+                m_isPointerOver = false;
+                m_isPointerPressed = false;
+            }
+
+            this.UpdateVisualState(false);
+        }
+
         private void PushStructuralStyleToRoot ()
         {
             if (this.PART_Root != null)
@@ -129,7 +153,8 @@ namespace AJut.UX.Controls
             string state;
             if (this.IsSelected)
             {
-                state = m_isPointerPressed ? "CheckedPressed" : m_isPointerOver ? "CheckedPointerOver" : "Checked";
+                // A disabled strip keeps its selection showing, muted, so it does not read as live
+                state = !this.IsEnabled ? "CheckedDisabled" : (m_isPointerPressed ? "CheckedPressed" : (m_isPointerOver ? "CheckedPointerOver" : "Checked"));
             }
             else
             {
@@ -137,6 +162,31 @@ namespace AJut.UX.Controls
             }
 
             VisualStateManager.GoToState(this, state, useTransitions);
+            this.UpdateContentForeground(m_isPointerPressed || m_isPointerOver);
+        }
+
+        // Over the themed hover and pressed fills, which are the primary highlight's solid colors, the text takes the
+        // theme's HighlightForeground, the light text that reads on them. This is done here rather than by the visual
+        // states because at rest the text has to go back to inheriting the strip's Foreground, and a state setter can only
+        // put a value in place, never take one away. With no AJut theme loaded the key isn't defined and the fills are
+        // faint, so the text keeps inheriting.
+        private void UpdateContentForeground (bool isOnHighlightFill)
+        {
+            if (this.PART_Content == null)
+            {
+                return;
+            }
+
+            if (isOnHighlightFill
+                && this.TryFindThemedResource(AJutThemeKeys.ToggleStripButton_HighlightForeground, out object found)
+                && (found is Brush highlightForeground))
+            {
+                this.PART_Content.Foreground = highlightForeground;
+            }
+            else
+            {
+                this.PART_Content.ClearValue(ContentPresenter.ForegroundProperty);
+            }
         }
     }
 }

@@ -342,8 +342,8 @@ namespace AJut.Core.UnitTests
                 new StratumEntry(a, "", 3),
             };
 
-            Assert.ThrowsException<ArgumentException>(() => target.ImportIntoOverrideLayer(kCommitted, import, eStratumImportMode.Replace));
-            Assert.ThrowsException<ArgumentException>(() => target.ImportIntoBaseline(new[] { new StratumEntry(a, null, 3) }));
+            Assert.ThrowsExactly<ArgumentException>(() => target.ImportIntoOverrideLayer(kCommitted, import, eStratumImportMode.Replace));
+            Assert.ThrowsExactly<ArgumentException>(() => target.ImportIntoBaseline(new[] { new StratumEntry(a, null, 3) }));
 
             // Nothing was written, and nothing was removed by the Replace
             Dictionary<string, object> committed = _ToLookup(target.GetAllOverrideEntries(kCommitted));
@@ -357,12 +357,12 @@ namespace AJut.Core.UnitTests
         {
             Stratabase sb = new Stratabase(kLayerCount);
 
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => sb.GetAllOverrideEntries(kLayerCount));
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => sb.GetAllOverrideEntries(-1));
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => sb.GetAllOverridePropertiesFor(kLayerCount, Guid.NewGuid()));
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => sb.ExportOverrideLayer(kLayerCount));
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => sb.ImportIntoOverrideLayer(kLayerCount, Array.Empty<StratumEntry>()));
-            Assert.ThrowsException<ArgumentNullException>(() => sb.ImportIntoOverrideLayer(0, null));
+            Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => sb.GetAllOverrideEntries(kLayerCount));
+            Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => sb.GetAllOverrideEntries(-1));
+            Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => sb.GetAllOverridePropertiesFor(kLayerCount, Guid.NewGuid()));
+            Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => sb.ExportOverrideLayer(kLayerCount));
+            Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => sb.ImportIntoOverrideLayer(kLayerCount, Array.Empty<StratumEntry>()));
+            Assert.ThrowsExactly<ArgumentNullException>(() => sb.ImportIntoOverrideLayer(0, null));
         }
 
         [TestMethod]

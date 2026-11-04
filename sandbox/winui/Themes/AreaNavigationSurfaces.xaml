@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The surfaces of an area page's own navigation, merged into each area page's NavigationView. The page list shows the
+     level behind it (MainWindow's content background, the navigation level); the page sits on the panel color. Brushes
+     take their colors through ThemeResource so they follow a light and dark switch. -->
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="Transparent"/>
+    <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="Transparent"/>
+    <SolidColorBrush x:Key="NavigationViewContentBackground" Color="{ThemeResource AJut_Color_PanelBackground}"/>
+    <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="{ThemeResource AJut_Color_PanelBorder}"/>
+</ResourceDictionary>

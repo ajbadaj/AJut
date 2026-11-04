@@ -11,6 +11,8 @@
     /// </summary>
     public static class EnumerableXT
     {
+        private const string kRuntimeArrayMessage = "Makes an array of an element type known only at runtime, which a NativeAOT build can only do for an array type the app uses elsewhere. Use Cast<T> and ToArray<T> where the type is known.";
+
         public static IEnumerable<TSource> AllNonNullElements<TSource> (this IEnumerable<TSource> source) => source.Where(x => x != null);
 
         public static bool IsEmpty<T> (this IEnumerable<T> This)
@@ -29,24 +31,35 @@
         {
             return This != null && This.Any();
         }
-        public static IEnumerable Cast (this IEnumerable This, Type type)
-        {
-            return This.InvokeTemplatedExtensionMethod(typeof(Enumerable), "Cast", type) as IEnumerable;
-        }
+        /// <summary>The elements as <paramref name="type"/>: an array of it, which is also an IEnumerable of it. An element that can't be stored as one throws; a primitive that widens to it (an int into a double array) is stored widened.</summary>
+        [RequiresDynamicCode(kRuntimeArrayMessage)]
+        public static IEnumerable Cast (this IEnumerable This, Type type) => This.ToArray(type);
+
+        /// <summary>The elements in a new array of <paramref name="type"/>. An element that can't be stored as one throws; a primitive that widens to it (an int into a double array) is stored widened.</summary>
+        [RequiresDynamicCode(kRuntimeArrayMessage)]
         public static Array ToArray (this IEnumerable This, Type type)
         {
-            return This.InvokeTemplatedExtensionMethod(typeof(Enumerable), "ToArray", type) as Array;
-        }
-        public static Array CastToArrayOfType (this IEnumerable This, Type type)
-        {
-            IEnumerable result = This.Cast(type);
-            if (result == null)
+            // The array is made for the element type and filled through Array.SetValue, rather than through LINQ's
+            //  Cast<T> and ToArray<T>. Those would need the generic methods made for the type at runtime, which an
+            //  ahead of time compiled build (iOS) cannot do for a value type it never compiled them for.
+            var elements = new List<object>();
+            foreach (object element in This)
             {
-                return null;
+                elements.Add(element);
             }
 
-            return result.ToArray(type);
+            Array result = Array.CreateInstance(type, elements.Count);
+            for (int index = 0; index < elements.Count; ++index)
+            {
+                result.SetValue(elements[index], index);
+            }
+
+            return result;
         }
+
+        /// <summary>The elements in a new array of <paramref name="type"/>, the same as <see cref="ToArray(IEnumerable, Type)"/></summary>
+        [RequiresDynamicCode(kRuntimeArrayMessage)]
+        public static Array CastToArrayOfType (this IEnumerable This, Type type) => This.ToArray(type);
 
         public static string ConcatToString (this IEnumerable This, string separator)
         {

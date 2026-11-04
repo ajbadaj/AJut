@@ -2,10 +2,9 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
+    using System.Globalization;
     using System.Linq;
     using System.Text;
-    using System.Text.RegularExpressions;
     using System.Windows;
     using System.Windows.Media;
     using System.Windows.Shapes;
@@ -21,12 +20,6 @@
     public static class SvgSerialization
     {
         private const double mm_per_inch = 25.4;
-        private static readonly Regex kAllTransformCapture = new Regex(@"(\w+[ ]?\([\. \d\-,mmpxdeg]+\))");
-        private static readonly Regex kJsTranslateCapture = new Regex(@"translatex?[ ]?\(([\-\d\., pxmm]*)\)");
-        private static readonly Regex kJsRotateCapture = new Regex(@"rotate[ ]?\(([\-\d\. deg]*)\)");
-        private static readonly Regex kJsScaleCapture = new Regex(@"scalex?[ ]?\(([\-\d\., pxmm]*)\)");
-        private static readonly Regex kJsSkewCapture = new Regex(@"skewx?[ ]?\(([\-\d\., deg]*)\)");
-        private static readonly Regex kJsColorCapture = new Regex(@"rgba?\(([\w, #]+)\)");
 
         // ==================== [ Main Interface ] ========================
 
@@ -70,173 +63,8 @@
             catch { }
 
 
-            SvgMetadata metadata;
-            XmlDocument doc = new XmlDocument();
-            try
-            {
-                doc.Load(stream);
-            }
-            catch (Exception exc)
-            {
-                Logger.LogError("Failed to load svg from stream", exc);
-                return null;
-            }
-
-            XmlElement svg = doc.DocumentElement;
-            if (svg.Name == "svg")
-            {
-                metadata = new SvgMetadata(
-                    svg.Attributes["id"]?.Value,
-                    _AttrOrDefault(svg, "width", _TryParseHorJSUnitStringToPixels, Double.NaN),
-                    _AttrOrDefault(svg, "height", _TryParseVerJSUnitStringToPixels, Double.NaN)
-                );
-
-                foreach (XmlAttribute attr in svg.Attributes)
-                {
-                    if (attr.Name.StartsWith("xmlns:"))
-                    {
-                        metadata.GetOrGenerateNamespace(attr.Name.Substring("xmlns:".Length), attr.Value);
-                    }
-                    else
-                    {
-                        metadata.AddMetadata(attr.Name, attr.Value);
-                    }
-                }
-
-                foreach (XmlElement child in svg.ChildNodes)
-                {
-                    if (child.Name != "g" && child.Name != "path")
-                    {
-                        metadata.AddMetadata(child.Name, child.OuterXml);
-                    }
-                }
-
-                var node = _ReadPathsFromGeomContainer(svg);
-                if (node != null)
-                {
-                    return new SvgSource(node, metadata);
-                }
-            }
-
-            return null;
-
-            bool _TryParseHorJSUnitStringToPixels (string _value, out double _pixelSize) => TryParseJSUnitStringToPixels(_value, dpiX, out _pixelSize);
-            bool _TryParseVerJSUnitStringToPixels (string _value, out double _pixelSize) => TryParseJSUnitStringToPixels(_value, dpiY, out _pixelSize);
-
-
-            T _AttrOrDefault<T> (XmlElement _src, string _attr, TryParser<T> _converter, T _default)
-            {
-                if (_src.Attributes[_attr]?.Value is string _strAttrValue && _converter(_strAttrValue, out T _found))
-                {
-                    return _found;
-                }
-
-                return _default;
-            }
-
-            SvgTreeElement _ReadPathsFromGeomContainer (XmlNode _geomNode)
-            {
-                string geomId = String.Empty;
-                Transform localTransform = null;
-
-                if (_geomNode.Attributes["id"].Value is string idStr)
-                {
-                    geomId = idStr;
-                }
-
-                if (geomId.IsNullOrEmpty())
-                {
-                    geomId = $"__unnamed_{_geomNode.Name}_{Guid.NewGuid()}";
-                }
-
-                foreach (XmlAttribute _attr in _geomNode.Attributes)
-                {
-                    metadata.AddMetadata(geomId, _attr.Name, _attr.Value);
-                }
-
-                if (_geomNode.Attributes["transform"]?.Value is string transformData)
-                {
-                    localTransform = ParseJsStringToTransform(transformData, dpiX, dpiY);
-                }
-
-                var currentNode = new SvgTreeElement(geomId, null);// localTransform);
-
-                foreach (XmlNode _childNode in _geomNode.ChildNodes)
-                {
-                    if (_childNode.Name == "g")
-                    {
-                        currentNode.AddChild(_ReadPathsFromGeomContainer(_childNode));
-                    }
-                    else if (_childNode.Name == "path")
-                    {
-                        Geometry geom;
-                        Brush fillBrush = null;
-                        Brush strokeBrush = null;
-                        double strokeWidth = 1.0;
-                        double opacity = 1.0;
-                        string id = null;
-
-
-                        if (_childNode.Attributes["d"]?.Value is string geometryText)
-                        {
-                            PathGeometry pathGeom = new PathGeometry();
-                            pathGeom.AddGeometry(Geometry.Parse(geometryText));
-                            try
-                            {
-                                if (localTransform != null)
-                                {
-                                    pathGeom.Transform = localTransform;
-                                }
-                            }
-                            catch { }
-
-                            geom = pathGeom;
-                        }
-                        else
-                        {
-                            continue;
-                        }
-
-
-                        if (_childNode.Attributes["id"]?.Value is string pathId)
-                        {
-                            id = pathId;
-                        }
-
-                        if (_childNode.Attributes["style"]?.Value is string style)
-                        {
-                            foreach (string stylePart in style.Split(';', StringSplitOptions.RemoveEmptyEntries))
-                            {
-                                string[] styleElement = stylePart.Split(':');
-                                Debug.Assert(styleElement.Length == 2);
-                                switch (styleElement[0].ToLower())
-                                {
-                                    case "fill":
-                                        TryParseJsBrushFrom(styleElement[1], out fillBrush);
-                                        break;
-
-                                    case "stroke-width":
-                                        // TODO: Can be em, or % - otherwise it's px
-                                        double.TryParse(styleElement[1], out strokeWidth);
-                                        break;
-
-                                    case "stroke":
-                                        strokeBrush = CoerceUtils.CoerceBrushFrom(styleElement[1]);
-                                        break;
-
-                                    case "opacity":
-                                        double.TryParse(styleElement[1], out opacity);
-                                        break;
-                                }
-                            }
-                        }
-
-                        currentNode.AddChild(new SvgTreeElement(id, geom, fillBrush, strokeWidth, strokeBrush, opacity));
-                    }
-                }
-
-                return currentNode;
-            }
+            SvgDocument document = SvgParsing.Parse(stream, dpiX, dpiY);
+            return document == null ? null : new SvgSource(ToTreeElement(document.Root), document.Metadata);
         }
 
         /// <summary>
@@ -300,9 +128,10 @@
 
             int width = (int)rectCollector.Width;
             int height = (int)rectCollector.Height;
-            _AddAttr(svg, "width", $"{source.Metadata.Width}px");
-            _AddAttr(svg, "height", $"{source.Metadata.Height}px");
-            _AddAttr(svg, "viewBox", $"{_RoundForViewbox(rectCollector.Left)} {_RoundForViewbox(rectCollector.Top)} {_RoundForViewbox(rectCollector.Width)} {_RoundForViewbox(rectCollector.Height)}");
+            // Every number is written culture-invariant: svg numbers use a period whatever culture the app runs in
+            _AddAttr(svg, "width", FormattableString.Invariant($"{source.Metadata.Width}px"));
+            _AddAttr(svg, "height", FormattableString.Invariant($"{source.Metadata.Height}px"));
+            _AddAttr(svg, "viewBox", FormattableString.Invariant($"{_RoundForViewbox(rectCollector.Left)} {_RoundForViewbox(rectCollector.Top)} {_RoundForViewbox(rectCollector.Width)} {_RoundForViewbox(rectCollector.Height)}"));
             _AddAttr(svg, "version", "1.1");
 
             double _RoundForViewbox (double _part) => Math.Round(_part, 6, MidpointRounding.ToZero);
@@ -319,7 +148,15 @@
                 if (evalTarget.Element.Data != null)
                 {
                     buildTargetNode = doc.CreateNode(XmlNodeType.Element, "path", "http://www.w3.org/2000/svg");
-                    writeLast = () => _AddAttr(buildTargetNode, "d", evalTarget.Element.Data);
+                    writeLast = () => _AddAttr(buildTargetNode, "d", ((IFormattable)evalTarget.Element.Data).ToString(null, CultureInfo.InvariantCulture));
+
+                    // The data is written as the geometry's own figures, and a read puts a path's transforms (its own,
+                    //  its groups' and the viewBox's) on the geometry, so they go with it or the path comes back moved
+                    Transform geometryTransform = evalTarget.Element.Data.Transform;
+                    if ((geometryTransform != null) && !geometryTransform.Value.IsIdentity)
+                    {
+                        _AddAttr(buildTargetNode, "transform", TransformToJsString(geometryTransform));
+                    }
                 }
                 // Geom unique stuff
                 else
@@ -339,6 +176,11 @@
                 {
                     fill = $"fill:{brushTxt};";
                 }
+                else if (evalTarget.Element.Data != null)
+                {
+                    // SVG fills a path that names no fill black, so a path with none says so
+                    fill = "fill:none;";
+                }
 
                 string stroke = "";
                 if (BrushToJSString(evalTarget.Element.StrokeBrush) is string strokeTxt)
@@ -349,13 +191,13 @@
                 string opacity = "";
                 if (evalTarget.Element.Opacity < 1.0)
                 {
-                    opacity = $"opacity:{evalTarget.Element.Opacity:0.0000}";
+                    opacity = FormattableString.Invariant($"opacity:{evalTarget.Element.Opacity:0.0000}");
                 }
 
                 string strokeWidth = "";
                 if (evalTarget.Element.StrokeWidth > 0.0)
                 {
-                    strokeWidth = $"stroke-width:{evalTarget.Element.StrokeWidth}px;";
+                    strokeWidth = FormattableString.Invariant($"stroke-width:{evalTarget.Element.StrokeWidth}px;");
                 }
 
                 string style = $"{fill}{stroke}{strokeWidth}{opacity}";
@@ -384,8 +226,14 @@
                 doc.Save(writer);
             }
 
+            // A value there is none of (a path the document gave no id) writes no attribute
             void _AddAttr (XmlNode _target, string _key, object _value)
             {
+                if (_value == null)
+                {
+                    return;
+                }
+
                 var _attr = doc.CreateAttribute(_key);
                 _attr.Value = _value.ToString();
                 _target.Attributes.Append(_attr);
@@ -408,32 +256,41 @@
                 dir.Normalize();
                 double angle = Vector.AngleBetween(up, dir);
 
-                _AppendWithGradientText(sb, "linear", $"{angle:0.00000}deg", lgb.GradientStops);
+                _AppendWithGradientText(sb, "linear", FormattableString.Invariant($"{angle:0.00000}deg"), lgb.GradientStops);
                 return sb.ToString();
             }
             else if (brush is RadialGradientBrush rgb)
             {
                 StringBuilder sb = new StringBuilder();
-                _AppendWithGradientText(sb, "radial", $"at {rgb.Center.X:0.000}px {rgb.Center.Y:0.000}px", rgb.GradientStops);
+                _AppendWithGradientText(sb, "radial", FormattableString.Invariant($"at {rgb.Center.X:0.000}px {rgb.Center.Y:0.000}px"), rgb.GradientStops);
                 return sb.ToString();
             }
 
             return null;
 
+            // A stop's offset runs 0 to 1 and a gradient's text gives it as a percent
             void _AppendWithGradientText (StringBuilder _target, string _type, string _starter, GradientStopCollection _stops)
             {
                 _target.Append($"{_type}-gradient(");
                 _target.Append(_starter);
                 foreach (GradientStop stop in _stops)
                 {
-                    _target.Append($", {_ColorStr(stop.Color)} {stop.Offset:0.00}%");
+                    _target.Append(FormattableString.Invariant($", {_ColorStr(stop.Color)} {stop.Offset * 100.0:0.####}%"));
                 }
                 _target.Append(")");
             }
 
-            string _ColorStr (Color _color)
+            // An alpha short of opaque is written as rgba's 0 to 1, rounded up at the sixth place, so reading it back
+            //  (which truncates to a byte) and any tool that rounds both come back to the same byte
+            static string _ColorStr (Color _color)
             {
-                return $"rgb({_color.R},{_color.G},{_color.B})";
+                if (_color.A == 255)
+                {
+                    return $"rgb({_color.R},{_color.G},{_color.B})";
+                }
+
+                double alpha = Math.Ceiling((_color.A / 255.0) * 1e6) / 1e6;
+                return FormattableString.Invariant($"rgba({_color.R},{_color.G},{_color.B},{alpha:0.######})");
             }
         }
 
@@ -446,223 +303,81 @@
 
             if (transform is TranslateTransform translate)
             {
-                return $"translate({translate.X:0.00000000}, {translate.Y:0.00000000})";
+                return FormattableString.Invariant($"translate({translate.X:0.00000000}, {translate.Y:0.00000000})");
             }
             else if (transform is ScaleTransform scale)
             {
-                return $"scale({scale.ScaleX:0.00000000}, {scale.ScaleY:0.00000000})";
+                return FormattableString.Invariant($"scale({scale.ScaleX:0.00000000}, {scale.ScaleY:0.00000000})");
             }
             else if (transform is RotateTransform rot)
             {
-                return $"rotate({rot.Angle:0.00000000}deg)";
+                if ((rot.CenterX != 0.0) || (rot.CenterY != 0.0))
+                {
+                    return FormattableString.Invariant($"rotate({rot.Angle:0.00000000} {rot.CenterX:0.00000000} {rot.CenterY:0.00000000})");
+                }
+
+                return FormattableString.Invariant($"rotate({rot.Angle:0.00000000}deg)");
             }
             else if (transform is SkewTransform skew)
             {
-                return $"skew({skew.AngleX:0.00000000}deg, {skew.AngleY:0.00000000}deg)";
+                return FormattableString.Invariant($"skew({skew.AngleX:0.00000000}deg, {skew.AngleY:0.00000000}deg)");
+            }
+            else if (transform is MatrixTransform matrixTransform)
+            {
+                Matrix m = matrixTransform.Matrix;
+                return FormattableString.Invariant($"matrix({m.M11:0.########} {m.M12:0.########} {m.M21:0.########} {m.M22:0.########} {m.OffsetX:0.########} {m.OffsetY:0.########})");
             }
             else if (transform is TransformGroup group)
             {
-                return String.Join(" ", group.Children.Select(TransformToJsString));
+                // WPF's group applies its first child first and SVG's list applies its last entry first, so the children
+                //  are written backwards, the mirror of how they are read
+                return String.Join(" ", group.Children.Reverse().Select(TransformToJsString));
             }
 
             return "";
         }
 
-        private static Transform ParseJsStringToTransform (string transformData, double dpiX, double dpiY)
+        // The shared read, in WPF's types. WPF parses the path data itself, as it always has, and the transform goes
+        //  on the geometry, never on the element, so the template, which also applies each element's FinalTransform,
+        //  does not apply it twice.
+        private static SvgTreeElement ToTreeElement (SvgNode node)
         {
-            transformData = transformData.ToLower();
-
-            // =========[ Gather Outputs ]===========
-            List<Transform> outputs = new List<Transform>();
-
-            string[] allTransforms = kAllTransformCapture.Matches(transformData).Select(r => r.Groups[r.Groups.Count - 1].Value).ToArray();
-            foreach (string transform in allTransforms)
+            if (!node.IsDrawn)
             {
-                // == Translate
-                string translate = TryGetRegexMatch(kJsTranslateCapture, transform);
-                if (translate != null)
+                var group = new SvgTreeElement(node.Id, null);
+                foreach (SvgNode child in node.Children)
                 {
-                    string[] numbers = translate.Trim().Split(',');
-                    Debug.Assert(numbers.Length == 1 || numbers.Length == 2);
-                    double y = 0.0;
-                    if (TryParseJSUnitStringToPixels(numbers[0], dpiX, out double x)
-                            && (numbers.Length == 1 || TryParseJSUnitStringToPixels(numbers[1], dpiY, out y)))
-                    {
-                        outputs.Add(new TranslateTransform(x, y));
-                    }
-
-                    continue;
+                    group.AddChild(ToTreeElement(child));
                 }
 
-                // == Rotate
-                string rotate = TryGetRegexMatch(kJsRotateCapture, transform);
-                if (rotate != null)
-                {
-                    if (_TryParseDegrees(rotate, out double angle))
-                    {
-                        outputs.Add(new RotateTransform(angle));
-                    }
-
-                    continue;
-                }
-
-                // == Scale
-                string scale = TryGetRegexMatch(kJsScaleCapture, transform);
-                if (scale != null)
-                {
-                    string[] numbers = scale.Trim().Split(',');
-                    Debug.Assert(numbers.Length == 1 || numbers.Length == 2);
-                    double y = 0.0;
-                    if (double.TryParse(numbers[0], out double x)
-                            && (numbers.Length == 1 || double.TryParse(numbers[1], out y)))
-                    {
-                        outputs.Add(new ScaleTransform(x, y));
-                    }
-
-                    continue;
-                }
-
-                // == Skew
-                string skew = TryGetRegexMatch(kJsSkewCapture, transform);
-                if (skew != null)
-                {
-                    string[] numbers = skew.Trim().Split(',');
-                    Debug.Assert(numbers.Length == 1 || numbers.Length == 2);
-                    double skewY = 0.0;
-                    if (_TryParseDegrees(numbers[0], out double skewX)
-                            && (numbers.Length == 1 || _TryParseDegrees(numbers[1], out skewY)))
-                    {
-                        outputs.Add(new SkewTransform(skewX, skewY));
-                    }
-
-                    continue;
-                }
+                return group;
             }
 
-            // Return
-            switch (outputs.Count)
+            PathGeometry geometry = new PathGeometry();
+            geometry.AddGeometry(Geometry.Parse(node.PathText));
+            if (!node.Transform.IsIdentity)
             {
-                case 0:
-                    return Transform.Identity;
-                
-                case 1:
-                    return outputs[0];
-
-                default:
-                    var group = new TransformGroup();
-                    group.Children.AddEach(outputs);
-                    return group;
+                SvgMatrix m = node.Transform;
+                geometry.Transform = new MatrixTransform(new Matrix(m.M11, m.M12, m.M21, m.M22, m.OffsetX, m.OffsetY));
             }
 
-            
-            bool _TryParseDegrees (string _target, out double _degrees)
-            {
-                return double.TryParse(_target.EndsWith("deg") ? _target.Substring(0, _target.Length - 3) : _target, out _degrees);
-            }
-
-            /*
-
-            if (transformData.StartsWith("translate"))
-            {
-                string[] numbers = transformData.Substring("translate".Length).Trim('(', ')', ' ').Split(',');
-                Debug.Assert(numbers.Length == 1 || numbers.Length == 2);
-
-                double y = 0.0;
-                if (double.TryParse(numbers[0], out double x) && (numbers.Length == 1 || double.TryParse(numbers[1], out y)))
-                {
-                    localTransform = new TranslateTransform(x, y);
-                }
-            }
-            else if (transformData.StartsWith("scale"))
-            {
-                string[] numbers = transformData.Substring("scale".Length).Trim('(', ')', ' ').Split(',');
-                Debug.Assert(numbers.Length == 1 || numbers.Length == 2);
-
-                double y = 0.0;
-                if (double.TryParse(numbers[0], out double x) && (numbers.Length == 1 || double.TryParse(numbers[1], out y)))
-                {
-                    localTransform = new ScaleTransform(x, y);
-                }
-            }
-            
-             */
+            return new SvgTreeElement(node.Id, geometry, ToBrush(node.Fill), node.StrokeWidth, ToBrush(node.Stroke), node.Opacity);
         }
 
-        private static bool TryParseJSUnitStringToPixels (string value, double dpiForAxis, out double pixelSize)
+        private static Brush ToBrush (SvgPaint paint)
         {
-            // Check the suffix
-            string unitsPart = value.Substring(value.Length - 2, 2);
-            double multiplier;
-            switch (unitsPart)
+            if (paint == null)
             {
-                case "mm": // millimeters
-                    multiplier = dpiForAxis / 25.4;
-                    break;
-
-                case "cm": // centimeters
-                    multiplier = dpiForAxis / 2.54;
-                    break;
-
-                case "px": // pixels (already what we want)
-                    multiplier = 1.0;
-                    break;
-
-                default: // Either no suffix or unparasable
-                    return double.TryParse(value, out pixelSize);
+                return null;
             }
 
-            if (double.TryParse(value.Substring(0, value.Length-2), out double units))
+            if (paint.Kind == eSvgPaintKind.Gradient)
             {
-                pixelSize = units * multiplier;
-                return true;
+                return CoerceUtils.CoerceBrushFrom(paint.Text);
             }
 
-            pixelSize = double.NaN;
-            return false;
+            return new SolidColorBrush(Color.FromArgb(paint.Color.A, paint.Color.R, paint.Color.G, paint.Color.B));
         }
-
-        private static bool TryParseJsBrushFrom (string brushValue, out Brush brush)
-        {
-            brush = null;
-
-            if (TryGetRegexMatch(kJsColorCapture, brushValue) is string rgb)
-            {
-                string[] numbers = rgb.Trim().Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                Debug.Assert(numbers.Length == 3 || numbers.Length == 4);
-                double opacity = 1.0;
-                if (byte.TryParse(numbers[0], out byte r)
-                        && byte.TryParse(numbers[1], out byte g)
-                        && byte.TryParse(numbers[2], out byte b)
-                        && (numbers.Length == 3 || double.TryParse(numbers[3], out opacity)))
-                {
-                    brush = new SolidColorBrush(Color.FromArgb((byte)(opacity * 255), r, g, b));
-                    return true;
-                }
-
-                return false;
-            }
-            
-            if (CoerceUtils.TryGetColorFromString(brushValue, out Color parsedColor))
-            {
-                brush = new SolidColorBrush(parsedColor);
-                return true;
-            }
-
-            return false;
-        }
-
-        private static string TryGetRegexMatch (Regex eval, string input)
-        {
-            var _result = eval.Match(input);
-            if (_result.Success)
-            {
-                return _result.Groups[_result.Groups.Count - 1].Value;
-            }
-
-            return null;
-        }
-
-        private delegate bool TryParser<T> (string source, out T value);
 
         private class SvgWriteElement
         {

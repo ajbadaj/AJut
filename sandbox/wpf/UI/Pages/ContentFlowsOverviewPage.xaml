@@ -51,7 +51,7 @@
                         <Grid Margin="0,60,0,0">
                             <Image Source="/Images/StackNavExample.png" Stretch="Uniform" Margin="20" MaxWidth="512" MinWidth="128"/>
                         </Grid>
-                        <Border Grid.Row="1" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource AJut_Brush_Rimlighting}" Background="{DynamicResource AJut_Brush_BannerBackground}">
+                        <Border Grid.Row="1" BorderThickness="0,1,0,0" Style="{DynamicResource Showroom_Style_CardBanner}">
                             <Grid Margin="5,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -87,7 +87,7 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <Border Grid.Row="1" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource AJut_Brush_Rimlighting}" Background="{DynamicResource AJut_Brush_BannerBackground}">
+                        <Border Grid.Row="1" BorderThickness="0,1,0,0" Style="{DynamicResource Showroom_Style_CardBanner}">
                             <Grid Margin="5,0">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>

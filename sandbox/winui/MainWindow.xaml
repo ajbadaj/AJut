@@ -22,9 +22,6 @@
                                   InactiveTitlebarBackground="{ThemeResource AJut_Brush_TitleBarBackgroundInactive}"
                                   CornerRadius="{Binding ElementName=Root, Path=IsMaximizedOrFullScreened, Converter={ajut_conv:BooleanToCornerRadiusConverter TrueValue='0', FalseValue='5'}}"
                                   BorderThickness="{Binding ElementName=Root, Path=IsMaximizedOrFullScreened, Converter={ajut_conv:BooleanToThicknessConverter TrueValue='0', FalseValue='3'}}">
-        <ajut:ThemedWindowRootControl.ActiveTitleBarBackground>
-            <AcrylicBrush TintColor="{ThemeResource AJut_Color_TitleBarBackground}" TintLuminosityOpacity="1" TintOpacity="0.3" Opacity="0.8"/>
-        </ajut:ThemedWindowRootControl.ActiveTitleBarBackground>
         <ajut:ThemedWindowRootControl.CustomTilteBar>
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -83,6 +80,14 @@
                 <NavigationView x:Name="AreaNav" PaneDisplayMode="Left" IsPaneOpen="True" OpenPaneLength="170" CompactModeThresholdWidth="0" ExpandedModeThresholdWidth="0"
                                 IsSettingsVisible="False" IsBackButtonVisible="Collapsed" IsPaneToggleButtonVisible="False"
                                 SelectionChanged="AreaNav_OnSelectionChanged" Loaded="AreaNav_OnLoaded">
+                    <!-- The showroom's surfaces step up one level at a time from the title bar: the area list on the
+                         drawer color, an area's own page list one step lighter, and the page itself on the panel color -->
+                    <NavigationView.Resources>
+                        <SolidColorBrush x:Key="NavigationViewDefaultPaneBackground" Color="{ThemeResource AJut_Color_DrawerBackground}"/>
+                        <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="{ThemeResource AJut_Color_DrawerBackground}"/>
+                        <SolidColorBrush x:Key="NavigationViewContentBackground" Color="{ThemeResource AJut_Color_NavigationPanelBackground}"/>
+                        <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="{ThemeResource AJut_Color_PanelBorder}"/>
+                    </NavigationView.Resources>
                     <NavigationView.MenuItems>
                         <NavigationViewItem Content="Home" Tag="AJutShowRoomWinUI.UI.Pages.HomePage">
                             <NavigationViewItem.Icon><FontIcon Glyph="&#xE80F;"/></NavigationViewItem.Icon>
@@ -107,6 +112,11 @@
                         <StackPanel Margin="12,0,12,12" Spacing="4" Opacity="0.8">
                             <TextBlock Text="App theme" FontSize="12" FontStyle="Italic"/>
                             <ajut:EnumComboBox SelectedItem="{x:Bind Path=Application.ThemeManager.ThemeConfiguration, Mode=TwoWay}"/>
+                            <ToggleSwitch Header="Touch variant" FontSize="12" IsOn="{x:Bind Path=Application.ThemeManager.UsesTouchVariant, Mode=TwoWay}"
+                                          ToolTipService.ToolTip="The touch palette: lifted button surfaces and no button borders, for touch with no hover"/>
+                            <ToggleSwitch Header="Follow Windows touch" FontSize="12" IsOn="{x:Bind Path=Application.TouchVariant.FollowsWindows, Mode=TwoWay}"
+                                          ToolTipService.ToolTip="Set the touch variant from Windows' touch preference (Windows 11 24H2 and later), the way an app opts in"/>
+                            <TextBlock FontSize="12" FontStyle="Italic" TextWrapping="Wrap" Text="{x:Bind Path=Application.TouchVariant.WindowsPreferenceText, Mode=OneWay}"/>
                             <TextBlock FontSize="12" Margin="0,8,0,0" Text="ajut.core"/>
                             <TextBlock FontSize="12" FontFamily="Consolas" Text="{x:Bind Application.AJut_Core_Version}"/>
                             <TextBlock FontSize="12" Text="ajut.ux.winui3"/>

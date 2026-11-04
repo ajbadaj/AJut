@@ -3,6 +3,7 @@ namespace AJut.UX.PropertyInteraction
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using AJut;
     using AJut.Storage;
@@ -15,6 +16,8 @@ namespace AJut.UX.PropertyInteraction
         public object SingleItemSource { get; }
     }
 
+    [RequiresUnreferencedCode(PropertyGridTrimming.kMessage)]
+    [RequiresDynamicCode(PropertyGridTrimming.kListMessage)]
     public class PropertyGridManager : IDisposable
     {
         // ===========[ Instance fields ]==========================================

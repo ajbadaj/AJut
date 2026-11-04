@@ -1,0 +1,121 @@
+{
+	"__ajson" : 2,
+	"Core" : {
+		"ZoneInfoByRoot" : {
+			"RootZone" : {
+				"ChildZones" : [
+					{
+						"ChildZones" : [],
+						"SizeOnParent" : {
+							"Width" : 1938,
+							"Height" : 1364
+						},
+						"Orientation" : "Single",
+						"DisplayState" : [
+							{
+								"TypeId" : "ColorController"
+							}
+						],
+						"SelectedIndex" : 0
+					},
+					{
+						"ChildZones" : [
+							{
+								"ChildZones" : [],
+								"SizeOnParent" : {
+									"Width" : 584.6666666666666,
+									"Height" : 148
+								},
+								"Orientation" : "Single",
+								"DisplayState" : [
+									{
+										"TypeId" : "ColorController"
+									}
+								],
+								"SelectedIndex" : 0
+							},
+							{
+								"ChildZones" : [],
+								"SizeOnParent" : {
+									"Width" : 584.6666666666666,
+									"Height" : 1216
+								},
+								"Orientation" : "Single",
+								"DisplayState" : [
+									{
+										"TypeId" : "CommandSender"
+									}
+								],
+								"SelectedIndex" : 0
+							}
+						],
+						"SizeOnParent" : {
+							"Width" : 584.6666666666666,
+							"Height" : 1364
+						},
+						"Orientation" : "Vertical",
+						"SelectedIndex" : 0
+					}
+				],
+				"SizeOnParent" : {
+					"Width" : 2522.6666666666665,
+					"Height" : 1364
+				},
+				"Orientation" : "Horizontal",
+				"SelectedIndex" : 0
+			}
+		}
+	},
+	"Ancillary" : [
+		{
+			"WindowSize" : {
+				"Width" : 900,
+				"Height" : 700
+			},
+			"WindowState" : "Maximized",
+			"State" : {
+				"ChildZones" : [
+					{
+						"ChildZones" : [],
+						"SizeOnParent" : {
+							"Width" : 584.6666666666666,
+							"Height" : 148
+						},
+						"Orientation" : "Single",
+						"DisplayState" : [
+							{
+								"TypeId" : "ColorController"
+							}
+						],
+						"SelectedIndex" : 0
+					},
+					{
+						"ChildZones" : [],
+						"SizeOnParent" : {
+							"Width" : 584.6666666666666,
+							"Height" : 1216
+						},
+						"Orientation" : "Single",
+						"DisplayState" : [
+							{
+								"TypeId" : "CommandSender"
+							}
+						],
+						"SelectedIndex" : 0
+					}
+				],
+				"SizeOnParent" : {
+					"Width" : 584.6666666666666,
+					"Height" : 1364
+				},
+				"Orientation" : "Vertical",
+				"SelectedIndex" : 0
+			},
+			"WindowLocation" : {
+				"X" : 120,
+				"Y" : 80
+			},
+			"WindowIsFullscreened" : true
+		}
+	]
+}

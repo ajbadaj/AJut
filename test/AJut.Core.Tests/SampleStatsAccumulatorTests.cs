@@ -126,7 +126,7 @@ namespace AJut.Core.UnitTests
         [TestMethod]
         public void Threshold_NaN_Throws ()
         {
-            Assert.ThrowsException<ArgumentException>(() => new SampleStatsAccumulator(threshold: Double.NaN));
+            Assert.ThrowsExactly<ArgumentException>(() => new SampleStatsAccumulator(threshold: Double.NaN));
         }
 
         // ---- Percentiles ----
@@ -215,9 +215,9 @@ namespace AJut.Core.UnitTests
             stats.Record(1.0);
             SampleStatsAccumulator.Snapshot snapshot = stats.TakeSnapshot();
 
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => snapshot.GetPercentile(-1.0));
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => snapshot.GetPercentile(100.1));
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => snapshot.GetPercentile(Double.NaN));
+            Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => snapshot.GetPercentile(-1.0));
+            Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => snapshot.GetPercentile(100.1));
+            Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => snapshot.GetPercentile(Double.NaN));
         }
 
         // ---- Resetting ----

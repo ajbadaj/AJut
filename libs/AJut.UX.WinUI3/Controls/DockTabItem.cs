@@ -1,8 +1,10 @@
 namespace AJut.UX.Controls
 {
+    using AJut.UX.Docking;
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
     using Microsoft.UI.Xaml.Input;
+    using Microsoft.UI.Xaml.Media;
     using System;
     using Windows.Foundation;
     using DPUtils = AJut.UX.DPUtils<DockTabItem>;
@@ -16,11 +18,13 @@ namespace AJut.UX.Controls
     // Drag state lives here rather than in DockZone closures, eliminating the
     // anonymous-closure event-handler leak pattern.
     //
-    // Template visual states (group: SelectionStates):
-    //   Normal              - unselected, resting   (opacity 0.35, slight vertical inset)
-    //   PointerOver         - unselected, hovered   (opacity 0.80, slightly raised)
-    //   Selected            - selected              (opacity 1.00, -2px top margin bleeds into content)
-    //   SelectedPointerOver - selected + hovered    (same as Selected)
+    // Template visual states (group: SelectionStates). The opacity is the tab's label only; its
+    // background and border stay solid, Background when unselected and SelectedBackground when selected.
+    // Under the pointer the tab fills with PointerOverBackground, a signal that it can be dragged off:
+    //   Normal              - unselected, resting   (label opacity 0.35, slight inset at the bottom)
+    //   PointerOver         - unselected, hovered   (label opacity 0.35, hover fill, reaching the strip's bottom)
+    //   Selected            - selected              (label opacity 1.00, -2px top margin bleeds into content)
+    //   SelectedPointerOver - selected + hovered    (as Selected, with the hover fill)
 
     [TemplateVisualState(Name = "Normal",              GroupName = "SelectionStates")]
     [TemplateVisualState(Name = "PointerOver",         GroupName = "SelectionStates")]
@@ -31,7 +35,7 @@ namespace AJut.UX.Controls
     public sealed class DockTabItem : ContentControl
     {
         // ===========[ Constants ]============================================
-        internal const double kDefaultDragThresholdPixels = 8.0;
+        internal const double kDefaultDragThresholdPixels = DockDragRules.kDefaultDragThreshold;
 
         // ===========[ Fields ]===============================================
         private bool m_isPointerOver;
@@ -110,10 +114,35 @@ namespace AJut.UX.Controls
             set => this.SetValue(IsDraggingProperty, value);
         }
 
+        public static readonly DependencyProperty SelectedBackgroundProperty = DPUtils.Register(_ => _.SelectedBackground);
+        /// <summary>
+        /// The tab's background while it is selected, where Background is its background while it is not. The selected
+        /// tab joins the panel it shows, so this is usually the panel's background.
+        /// </summary>
+        public Brush SelectedBackground
+        {
+            get => (Brush)this.GetValue(SelectedBackgroundProperty);
+            set => this.SetValue(SelectedBackgroundProperty, value);
+        }
+
+        public static readonly DependencyProperty PointerOverBackgroundProperty = DPUtils.Register(_ => _.PointerOverBackground);
+        /// <summary>
+        /// The fill drawn over the tab's background while the pointer is over it, selected or not. It says the tab can
+        /// be picked up and dragged off, so it stands out from both backgrounds rather than lightening them.
+        /// </summary>
+        public Brush PointerOverBackground
+        {
+            get => (Brush)this.GetValue(PointerOverBackgroundProperty);
+            set => this.SetValue(PointerOverBackgroundProperty, value);
+        }
+
         // ===========[ Properties ]============================================
 
         // Position of this tab in the strip. Set by DockZone before adding to the panel.
         public int Index { get; set; }
+
+        // The docked panel this tab stands for, which decides what a drag on it can do. Set by DockZone with Index.
+        internal DockingContentAdapterModel Adapter { get; set; }
 
         // Drag threshold in pixels. Set by DockZone to match DockingManager.DragThresholdPixels.
         public double DragThresholdPixels { get; set; } = kDefaultDragThresholdPixels;
@@ -138,7 +167,7 @@ namespace AJut.UX.Controls
         {
             base.OnPointerPressed(e);
 
-            // Middle-click → close request (DockZone checks AllowMiddleMouseClose before acting)
+            // Middle-click -> close request (DockZone checks AllowMiddleMouseClose before acting)
             if (e.GetCurrentPoint(this).Properties.IsMiddleButtonPressed)
             {
                 e.Handled = true;
@@ -169,17 +198,25 @@ namespace AJut.UX.Controls
 
             if (!m_isDragModeDecided)
             {
-                if ((dx * dx + dy * dy) < (threshold * threshold))
+                // The strip was rebuilt under a press still in progress: this tab stands for nothing now
+                if (this.Adapter == null)
+                {
+                    this.ResetDragState();
+                    return;
+                }
+
+                eTabDragKind dragKind = DockDragRules.DecideTabDrag(this.Adapter, dx, dy, threshold);
+                if (dragKind == eTabDragKind.None)
                 {
                     return;
                 }
 
                 m_isDragModeDecided = true;
-                m_isReorderDrag = Math.Abs(dx) > Math.Abs(dy);
+                m_isReorderDrag = dragKind == eTabDragKind.Reorder;
 
                 if (!m_isReorderDrag)
                 {
-                    // Vertical drag → tearoff. Reset state before releasing capture so
+                    // Vertical drag -> tearoff. Reset state before releasing capture so
                     // OnPointerCaptureLost does not incorrectly fire TabDragCancelled.
                     this.ResetDragState();
                     this.ReleasePointerCapture(e.Pointer);

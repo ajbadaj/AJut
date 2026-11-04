@@ -11,6 +11,20 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800"
              x:Name="Self">
+    <!-- The examples sit in a BumpStack, which holds them outside the page's logical tree, so bindings that look for the
+         page from inside it come back empty. Shared items are a resource instead, and the empty strip's collection is set
+         from code. -->
+    <UserControl.Resources>
+        <x:Array x:Key="SevenItems" Type="{x:Type sys:String}">
+            <sys:String>One</sys:String>
+            <sys:String>Two</sys:String>
+            <sys:String>Three</sys:String>
+            <sys:String>Four</sys:String>
+            <sys:String>Five</sys:String>
+            <sys:String>Six</sys:String>
+            <sys:String>Seven</sys:String>
+        </x:Array>
+    </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition />
@@ -68,7 +82,8 @@
                     </GroupBox>
                     <GroupBox Header="Fancy Background" Margin="0,0,20,0" Padding="10">
                         <DockPanel>
-                            <ajut:ToggleStrip DockPanel.Dock="Top">
+                            <!-- The background is light in any theme, so the text is set dark to read on it -->
+                            <ajut:ToggleStrip DockPanel.Dock="Top" Foreground="#202020">
                                 <ajut:ToggleStrip.Background>
                                     <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
                                         <GradientStop Offset="0.00" Color="#FFFFFF" />
@@ -206,6 +221,95 @@
                         </DockPanel>
                     </GroupBox>
 
+                    <GroupBox Header="Disabled" Margin="0,0,20,0" Padding="10" ToolTip="IsEnabled=False">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Bottom" Margin="0,5,0,0" FontStyle="Italic" Opacity="0.8" TextWrapping="WrapWithOverflow" MaxWidth="300">
+                                <TextBlock.Inlines>
+                                    <Run Text="A disabled strip takes the flat disabled fill, its border, and faded text, and mutes its selected item so the selection still shows. The vertical one is switched by the check box, to show it going between the two."/>
+                                </TextBlock.Inlines>
+                            </TextBlock>
+                            <StackPanel Orientation="Horizontal">
+                                <StackPanel Margin="0,0,15,0">
+                                    <TextBlock Text="Disabled" Opacity="0.7"/>
+                                    <ajut:ToggleStrip IsEnabled="False" VerticalAlignment="Top">
+                                        <ajut:ToggleStrip.ItemsSource>
+                                            <x:Array Type="{x:Type sys:String}">
+                                                <sys:String>Selected</sys:String>
+                                                <sys:String>Not selected</sys:String>
+                                                <sys:String>Neither</sys:String>
+                                            </x:Array>
+                                        </ajut:ToggleStrip.ItemsSource>
+                                    </ajut:ToggleStrip>
+                                    <TextBlock Text="Disabled, Scroll" Opacity="0.7" Margin="0,10,0,0"/>
+                                    <ajut:ToggleStrip IsEnabled="False" Width="220" HorizontalAlignment="Left" OverflowBehavior="Scroll"
+                                                      ItemsSource="{StaticResource SevenItems}"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,15,0">
+                                    <CheckBox x:Name="VerticalStripEnabled" Content="Enabled" IsChecked="False"/>
+                                    <ajut:ToggleStrip Orientation="Vertical" Height="120" VerticalAlignment="Top" Margin="0,5,0,0"
+                                                      OverflowBehavior="Scroll"
+                                                      IsEnabled="{Binding Source={x:Reference VerticalStripEnabled}, Path=IsChecked}"
+                                                      ItemsSource="{StaticResource SevenItems}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </DockPanel>
+                    </GroupBox>
+
+                    <GroupBox Header="Vertical" Margin="0,0,20,0" Padding="10" ToolTip="Orientation=Vertical">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Bottom" Margin="0,5,0,0" FontStyle="Italic" Opacity="0.8" TextWrapping="WrapWithOverflow" MaxWidth="400">
+                                <TextBlock.Inlines>
+                                    <Run Text="Setting"/>
+                                    <Run Text="Orientation=Vertical" FontWeight="Bold" FontFamily="Consolas" FontStyle="Normal"/>
+                                    <Run Text="stacks the items top to bottom, each as wide as the widest. Uniform sizing, overflow and scrolling all work along the height, so the last three are 120 tall, too short for their seven items."/>
+                                </TextBlock.Inlines>
+                            </TextBlock>
+                            <StackPanel Orientation="Horizontal">
+                                <StackPanel Margin="0,0,15,0">
+                                    <TextBlock Text="Plain" Opacity="0.7"/>
+                                    <ajut:ToggleStrip Orientation="Vertical" ajutap:BorderXTA.CornerRadius="6">
+                                        <ajut:ToggleStrip.ItemsSource>
+                                            <x:Array Type="{x:Type sys:String}">
+                                                <sys:String>Top</sys:String>
+                                                <sys:String>Middle</sys:String>
+                                                <sys:String>Bottom</sys:String>
+                                            </x:Array>
+                                        </ajut:ToggleStrip.ItemsSource>
+                                    </ajut:ToggleStrip>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,15,0">
+                                    <TextBlock Text="EnsureUniformSize" Opacity="0.7"/>
+                                    <ajut:ToggleStrip Orientation="Vertical" EnsureUniformSize="True">
+                                        <ajut:ToggleStrip.ItemsSource>
+                                            <x:Array Type="{x:Type sys:String}">
+                                                <sys:String>One line</sys:String>
+                                                <sys:String xml:space="preserve">Two&#x0a;lines</sys:String>
+                                                <sys:String>Three</sys:String>
+                                            </x:Array>
+                                        </ajut:ToggleStrip.ItemsSource>
+                                    </ajut:ToggleStrip>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,15,0">
+                                    <TextBlock Text="Clip" Opacity="0.7"/>
+                                    <ajut:ToggleStrip Orientation="Vertical" Height="120" VerticalAlignment="Top"
+                                                      ItemsSource="{StaticResource SevenItems}"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,15,0">
+                                    <TextBlock Text="OverflowPopup" Opacity="0.7"/>
+                                    <ajut:ToggleStrip Orientation="Vertical" Height="120" VerticalAlignment="Top"
+                                                      OverflowBehavior="OverflowPopup"
+                                                      ItemsSource="{StaticResource SevenItems}"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,15,0">
+                                    <TextBlock Text="Scroll" Opacity="0.7"/>
+                                    <ajut:ToggleStrip Orientation="Vertical" Height="120" VerticalAlignment="Top"
+                                                      OverflowBehavior="Scroll"
+                                                      ItemsSource="{StaticResource SevenItems}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </DockPanel>
+                    </GroupBox>
+
                     <GroupBox Header="No-select" Margin="0,0,20,0" Padding="10" ToolTip="AllowNoSelection">
                         <DockPanel>
                             <ajut:ToggleStrip AllowNoSelection="True" DockPanel.Dock="Top">
@@ -329,9 +433,10 @@
                     <GroupBox Header="No Items" Margin="0,0,20,0" Padding="10" ToolTip="No items">
                         <DockPanel>
                             <Grid DockPanel.Dock="Top" Margin="5">
-                                <ajut:ToggleStrip x:Name="EmptyStrip" AllowNoSelection="True" ItemsSource="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:ToggleStripExampleDisplay}}, Path=ZeroToggleElementsSource, Mode=OneWay}"/>
+                                <!-- Its items are set from code (see the note at the top) -->
+                                <ajut:ToggleStrip x:Name="EmptyStrip" AllowNoSelection="True"/>
                                 <TextBlock TextWrapping="WrapWithOverflow" Width="250" FontStyle="Italic" Opacity="0.4"
-                                           Visibility="{Binding ElementName=EmptyStrip, Path=HasItems, Mode=OneWay, Converter={ajutconv:BooleanToVisibilityConverter TrueValue=Collapsed, FalseValue=Visible}, FallbackValue=Collapsed, TargetNullValue=Collapsed}">
+                                           Visibility="{Binding Source={x:Reference EmptyStrip}, Path=HasItems, Mode=OneWay, Converter={ajutconv:BooleanToVisibilityConverter TrueValue=Collapsed, FalseValue=Visible}, FallbackValue=Collapsed, TargetNullValue=Collapsed}">
                                     <TextBlock.Inlines>
                                         <Run Text="This text is not inside the toggle strip, just showing that the ToggleStrip is transparent when "/>
                                         <Run Text="HasItems" FontWeight="Bold" FontFamily="Consolas" FontStyle="Normal"/>

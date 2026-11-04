@@ -6,8 +6,11 @@ param (
 # Test projects live under test/, one folder each, named <Name>.Tests with <Name>.Tests.csproj inside.
 #  Each belongs to the longest library in ProjectOrder.json its name starts with, so
 #  AJut.Core.Tests and AJut.Core.SourceGenerators.Tests run for AJut.Core, and AJut.UX.WinUI3.Tests
-#  runs for AJut.UX.WinUI3 rather than AJut.UX. Folders under test/ not named *.Tests (the bench, the
-#  crash host, the trim probe) are tools, not suites, and never run here.
+#  runs for AJut.UX.WinUI3 rather than AJut.UX. A suite runs when its library or any library that one is
+#  built on is a target. Folders under test/ not named *.Tests (the bench, the
+#  crash host, the trim probe) are tools, not suites, and never run here. Neither does a suite that targets Android, iOS,
+#  macOS or Mac Catalyst: that is an app run on a device or a Mac (the Android suite installs itself through adb), not a
+#  project dotnet test can run, and building it needs workloads the runner doesn't have.
 #
 # Every suite runs even after one fails, and the script exits 1 if any failed, so a failing test
 #  fails the check. dotnet test builds each test project itself: the build step only builds the
@@ -17,6 +20,27 @@ param (
 #  as its elements in PowerShell 7. Unrolling it here gives the same flat list in both.
 function ConvertTo-FlatList ([string]$json) {
     (ConvertFrom-Json $json) | ForEach-Object { $_ }
+}
+
+# The libraries in ProjectOrder.json that a library is built on, directly or through another one, read from the
+#  ProjectReferences in its csproj
+function Get-LibraryDependencies ([string]$library, [string[]]$libraries) {
+    $found = @()
+    $pending = @($library)
+    while ($pending.Count -gt 0) {
+        $current = $pending[0]
+        $pending = @($pending | Select-Object -Skip 1)
+        [xml]$project = Get-Content -Raw -Path "libs/$current/$current.csproj"
+        foreach ($reference in @($project.SelectNodes("//ProjectReference"))) {
+            $name = [System.IO.Path]::GetFileNameWithoutExtension($reference.Include)
+            if (($libraries -contains $name) -and ($found -notcontains $name)) {
+                $found += $name
+                $pending += $name
+            }
+        }
+    }
+
+    $found
 }
 
 try {
@@ -57,6 +81,14 @@ try {
     $failed = @()
     foreach ($testProject in $testProjects) {
         $testName = [System.IO.Path]::GetFileNameWithoutExtension($testProject)
+
+        [xml]$testCsproj = Get-Content -Raw -Path $testProject
+        $frameworks = @($testCsproj.SelectNodes("//TargetFramework | //TargetFrameworks") | ForEach-Object { $_.InnerText })
+        if (@($frameworks | Where-Object { $_ -match '-(android|ios|macos|maccatalyst)' }).Count -gt 0) {
+            Write-Host "$testName targets $($frameworks -join ', '), so it runs on a device or a Mac, not here. Skipping."
+            continue
+        }
+
         $owner = $projectOrder |
             Where-Object { $testName.StartsWith("$_.") } |
             Sort-Object -Property Length -Descending |
@@ -67,13 +99,21 @@ try {
             continue
         }
 
-        if (-not ($targetProjects -contains $owner)) {
-            Write-Host "$testName tests $owner, which is not a target. Skipping."
+        # A suite also runs when a library its owner is built on is a target: AJut.UX.Wpf.Tests runs for a change to
+        #  AJut.UX, since the WPF controls sit on AJut.UX's models
+        $covered = @($owner) + @(Get-LibraryDependencies $owner $projectOrder)
+        $changedCovered = @($covered | Where-Object { $targetProjects -contains $_ })
+        if ($changedCovered.Count -eq 0) {
+            Write-Host "$testName tests $($covered -join ', '), none of which is a target. Skipping."
             continue
         }
 
         Write-Host "--> Running $testName (tests for $owner)..."
-        dotnet test $testProject --configuration Release --verbosity normal
+
+        # A suite that goes five minutes without a test starting or finishing (a deadlock, or a test host waiting on a
+        #  prompt nobody sees) has its test host killed and fails, instead of holding the run until the job times out.
+        #  No dump: nothing here keeps one.
+        dotnet test $testProject --configuration Release --verbosity normal --blame-hang-timeout 5m --blame-hang-dump-type none
         $ran += $testName
         if ($LASTEXITCODE -ne 0) {
             $failed += $testName

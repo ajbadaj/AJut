@@ -61,6 +61,11 @@
                             <ComboBoxItem Content="Choice Beta"/>
                             <ComboBoxItem Content="Choice Gamma"/>
                         </ComboBox>
+                        <TextBlock Text="Disabled ComboBox" FontStyle="Italic" Opacity="0.7" Margin="0,8,0,0"/>
+                        <ComboBox SelectedIndex="1" HorizontalAlignment="Stretch" IsEnabled="False">
+                            <ComboBoxItem Content="Choice Alpha"/>
+                            <ComboBoxItem Content="Choice Beta"/>
+                        </ComboBox>
                     </StackPanel>
                     <StackPanel Spacing="4" Width="180">
                         <TextBlock Text="ListBox" FontStyle="Italic" Opacity="0.7"/>
@@ -77,14 +82,31 @@
                         <CheckBox Content="Checked" IsChecked="True"/>
                         <CheckBox Content="Indeterminate" IsChecked="{x:Null}"/>
                         <CheckBox Content="Disabled" IsEnabled="False"/>
+                        <CheckBox Content="Disabled, checked" IsChecked="True" IsEnabled="False"/>
                     </StackPanel>
                     <StackPanel Spacing="4">
                         <TextBlock Text="RadioButtons" FontStyle="Italic" Opacity="0.7"/>
                         <RadioButton Content="Option A" GroupName="Demo" IsChecked="True"/>
                         <RadioButton Content="Option B" GroupName="Demo"/>
                         <RadioButton Content="Option C" GroupName="Demo"/>
+                        <RadioButton Content="Disabled" GroupName="DemoDisabled" IsEnabled="False"/>
+                        <RadioButton Content="Disabled, checked" GroupName="DemoDisabledChecked" IsChecked="True" IsEnabled="False"/>
                     </StackPanel>
                 </StackPanel>
+
+                <!-- Tabs -->
+                <TextBlock Text="TabView" Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                <TabView HorizontalAlignment="Left" Width="420" Height="140" IsAddTabButtonVisible="False" CanDragTabs="False" CanReorderTabs="False" TabWidthMode="SizeToContent">
+                    <TabViewItem Header="Selected" IsClosable="False">
+                        <TextBlock Text="The selected tab flows into this body." Padding="8"/>
+                    </TabViewItem>
+                    <TabViewItem Header="Second" IsClosable="False">
+                        <TextBlock Text="Second tab's content." Padding="8"/>
+                    </TabViewItem>
+                    <TabViewItem Header="Closable">
+                        <TextBlock Text="A closable tab." Padding="8"/>
+                    </TabViewItem>
+                </TabView>
 
                 <!-- Toggle -->
                 <TextBlock Text="Toggle Switch" Style="{ThemeResource SubtitleTextBlockStyle}"/>
@@ -111,15 +133,15 @@
                 <TextBlock Text="MenuBar" Style="{ThemeResource SubtitleTextBlockStyle}"/>
                 <MenuBar>
                     <MenuBarItem Title="File">
-                        <MenuFlyoutItem Text="New"/>
-                        <MenuFlyoutItem Text="Open..."/>
-                        <MenuFlyoutItem Text="Save"/>
+                        <MenuFlyoutItem Text="New" Icon="Add"/>
+                        <MenuFlyoutItem Text="Open..." Icon="OpenFile" KeyboardAcceleratorTextOverride="Ctrl+O"/>
+                        <MenuFlyoutItem Text="Save" Icon="Save" KeyboardAcceleratorTextOverride="Ctrl+S"/>
                         <MenuFlyoutSeparator/>
                         <MenuFlyoutItem Text="Exit"/>
                     </MenuBarItem>
                     <MenuBarItem Title="Edit">
-                        <MenuFlyoutItem Text="Undo"/>
-                        <MenuFlyoutItem Text="Redo"/>
+                        <MenuFlyoutItem Text="Undo" Icon="Undo"/>
+                        <MenuFlyoutItem Text="Redo" Icon="Redo"/>
                         <MenuFlyoutSeparator/>
                         <MenuFlyoutItem Text="Cut"/>
                         <MenuFlyoutItem Text="Copy"/>
@@ -128,6 +150,15 @@
                     <MenuBarItem Title="View">
                         <MenuFlyoutItem Text="Zoom In"/>
                         <MenuFlyoutItem Text="Zoom Out"/>
+                        <MenuFlyoutSeparator/>
+                        <ToggleMenuFlyoutItem Text="Toggle item, checked" IsChecked="True"/>
+                        <ToggleMenuFlyoutItem Text="Toggle item, unchecked"/>
+                        <MenuFlyoutSubItem Text="Sub-menu">
+                            <MenuFlyoutItem Text="First"/>
+                            <MenuFlyoutItem Text="Second"/>
+                        </MenuFlyoutSubItem>
+                        <MenuFlyoutItem Text="Disabled item" IsEnabled="False"/>
+                        <ToggleMenuFlyoutItem Text="Disabled, checked" IsChecked="True" IsEnabled="False"/>
                     </MenuBarItem>
                 </MenuBar>
 

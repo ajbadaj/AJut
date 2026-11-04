@@ -2,15 +2,17 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:AJut.UX.Controls">
 
+    <!-- The pointer, pressed and shown looks are style triggers, not template triggers, so the themed style's triggers
+         can replace them with palette brushes -->
     <Style TargetType="{x:Type local:DockPanelShowHideToggleButton}">
         <Setter Property="MinWidth" Value="28"/>
         <Setter Property="MinHeight" Value="28"/>
         <Setter Property="Padding" Value="4,2,4,2"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
-        <Setter Property="Background" Value="{DynamicResource AJut_Brush_InnerPanelBackground}"/>
-        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="Background" Value="#E6E6E6"/>
+        <Setter Property="Foreground" Value="#111"/>
+        <Setter Property="BorderBrush" Value="#8A8A8A"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Margin" Value="2,0"/>
         <Setter Property="Template">
@@ -25,32 +27,32 @@
                         <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                           VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
                     </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Root" Property="Background" Value="{DynamicResource AJut_Brush_ControlBackgroundHover}"/>
-                            <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommonHover}"/>
-                        </Trigger>
-                        <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="Root" Property="Background" Value="{DynamicResource AJut_Brush_ButtonBackgroundPressed}"/>
-                            <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommonPress}"/>
-                        </Trigger>
-                        <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="Root" Property="Background" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
-                            <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
-                            <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_ImportantText}"/>
-                        </Trigger>
-                        <MultiTrigger>
-                            <MultiTrigger.Conditions>
-                                <Condition Property="IsChecked" Value="True"/>
-                                <Condition Property="IsMouseOver" Value="True"/>
-                            </MultiTrigger.Conditions>
-                            <Setter TargetName="Root" Property="Background" Value="{DynamicResource AJut_Brush_PrimaryHighlightBright}"/>
-                            <Setter TargetName="Root" Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightBright}"/>
-                        </MultiTrigger>
-                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="#EEE"/>
+                <Setter Property="BorderBrush" Value="#555"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="#CCC"/>
+                <Setter Property="BorderBrush" Value="#333"/>
+            </Trigger>
+            <Trigger Property="IsChecked" Value="True">
+                <Setter Property="Background" Value="#0167BC"/>
+                <Setter Property="BorderBrush" Value="#0167BC"/>
+                <Setter Property="Foreground" Value="White"/>
+            </Trigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="IsChecked" Value="True"/>
+                    <Condition Property="IsMouseOver" Value="True"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="Background" Value="#0284FF"/>
+                <Setter Property="BorderBrush" Value="#0284FF"/>
+            </MultiTrigger>
+        </Style.Triggers>
     </Style>
 
 </ResourceDictionary>

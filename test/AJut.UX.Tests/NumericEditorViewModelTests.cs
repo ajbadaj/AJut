@@ -96,6 +96,179 @@ namespace AJut.UX.Tests
             Assert.IsFalse(vm.IsTextInErrorState);
         }
 
+        // ===[ Nudging an integer type ]===
+
+        [TestMethod]
+        public void NEVM_IntegerNudge_FractionalStepRoundsAwayFromZero_NeverBelowOne ()
+        {
+            // The default SmallNudge is 0.5, so on an integer editor a Shift-nudge has to move by a whole step
+            var vm = new NumericEditorViewModel(new TestSettings(), 5);
+
+            vm.Nudge(positive: true, 0.5);
+            Assert.AreEqual(6, vm.SourceValue, "A 0.5 nudge up on an int must step by 1, not round to a zero step");
+
+            vm.Nudge(positive: false, 0.5);
+            Assert.AreEqual(5, vm.SourceValue, "A 0.5 nudge down on an int must step by 1");
+
+            vm.Nudge(positive: true, 0.2);
+            Assert.AreEqual(6, vm.SourceValue, "A step that rounds to nothing still moves an int by 1");
+
+            vm.Nudge(positive: true, 2.5);
+            Assert.AreEqual(9, vm.SourceValue, "2.5 rounds away from zero to a step of 3, not to even (2)");
+        }
+
+        [TestMethod]
+        public void NEVM_FloatNudge_FractionalStepIsKept ()
+        {
+            var vm = new NumericEditorViewModel(new TestSettings(), 5.0f);
+
+            vm.Nudge(positive: true, 0.5);
+
+            Assert.AreEqual(5.5f, vm.SourceValue);
+        }
+
+        // ===[ Types and bounds, pinned ahead of the move off dynamic ]===
+
+        [TestMethod]
+        public void NEVM_Decimal_KeepsItsType_ThroughTextAndNudge ()
+        {
+            var vm = new NumericEditorViewModel(new TestSettings { Minimum = 0.0, Maximum = 10.0 }, 2.5m);
+
+            vm.Nudge(positive: true, 0.25);
+            Assert.AreEqual(2.75m, vm.SourceValue);
+
+            vm.Text = "12.5";
+            Assert.AreEqual(10m, vm.SourceValue, "Capped to the maximum, still a decimal");
+            Assert.IsTrue(vm.IsAtMaximum);
+            Assert.IsNotNull(vm.TextErrorMessage);
+        }
+
+        [TestMethod]
+        public void NEVM_Byte_NudgePastItsOwnRange_CapsAtTheTypeBound ()
+        {
+            var vm = new NumericEditorViewModel(new TestSettings(), (byte)250);
+
+            vm.Nudge(positive: true, 10.0);
+            Assert.AreEqual((byte)255, vm.SourceValue);
+            Assert.IsTrue(vm.IsAtMaximum);
+
+            // The 300 step is itself cast to a byte (255) before it is applied, so 255 - 255 lands exactly on 0 without
+            // needing a cap, and IsAtMinimum (which means "was capped at the minimum") stays false
+            vm.Nudge(positive: false, 300.0);
+            Assert.AreEqual((byte)0, vm.SourceValue);
+            Assert.IsFalse(vm.IsAtMinimum);
+        }
+
+        [TestMethod]
+        public void NEVM_Long_TextBelowMinimum_ReportsTheError ()
+        {
+            var vm = new NumericEditorViewModel(new TestSettings { Minimum = -5.0 }, 0L);
+
+            vm.Text = "-20";
+
+            Assert.AreEqual(-5L, vm.SourceValue);
+            Assert.IsTrue(vm.IsAtMinimum);
+            Assert.IsTrue(vm.TextErrorMessage.Contains("below the min"));
+        }
+
+        [TestMethod]
+        public void NEVM_StringValue_IsParsedAsFloat ()
+        {
+            var vm = new NumericEditorViewModel(new TestSettings(), "3.5");
+
+            Assert.AreEqual(3.5f, vm.SourceValue);
+            Assert.AreEqual(typeof(float), vm.ValueType);
+        }
+
+        [TestMethod]
+        public void NEVM_EnforcedType_WinsOverTheValuesType ()
+        {
+            var vm = new NumericEditorViewModel(new TestSettings(), 4, typeof(double));
+
+            vm.Text = "4.25";
+
+            Assert.AreEqual(4.25, vm.SourceValue);
+            Assert.AreEqual(typeof(double), vm.ValueType);
+        }
+
+        [TestMethod]
+        public void NEVM_Short_NudgesBelowZero ()
+        {
+            var vm = new NumericEditorViewModel(new TestSettings(), (short)0);
+
+            vm.Nudge(positive: false, 1.0);
+
+            Assert.AreEqual((short)-1, vm.SourceValue, "A short is signed, so a step down from zero goes negative");
+            Assert.IsFalse(vm.IsAtMinimum);
+        }
+
+        // ===[ Fractional text on an integer type ]===
+
+        [TestMethod]
+        public void NEVM_Integer_FractionalText_IsRefusedLoudly ()
+        {
+            var vm = new NumericEditorViewModel(new TestSettings(), -43);
+
+            vm.Text = "-43.5";
+
+            Assert.AreEqual("-43.5", vm.Text, "The typed text stays, so the user sees what was refused");
+            Assert.IsTrue(vm.IsTextInErrorState);
+            Assert.AreEqual(-43, vm.SourceValue, "The real value does not take the text's whole part");
+        }
+
+        [TestMethod]
+        public void NEVM_Integer_FractionalText_EndingTheEditPutsBackTheRealValue ()
+        {
+            var vm = new NumericEditorViewModel(new TestSettings(), -43);
+            vm.Text = "-43.5";
+
+            vm.CommitEdit();
+
+            Assert.AreEqual("-43", vm.Text);
+            Assert.IsFalse(vm.IsTextInErrorState);
+            Assert.AreEqual(-43, vm.SourceValue);
+        }
+
+        [TestMethod]
+        public void NEVM_Integer_FractionalText_ANudgeStepsTheRealValueAndClearsTheError ()
+        {
+            var vm = new NumericEditorViewModel(new TestSettings(), -43);
+            vm.Text = "-43.5";
+
+            vm.Nudge(positive: true, 1.0);
+
+            Assert.AreEqual(-42, vm.SourceValue);
+            Assert.AreEqual("-42", vm.Text);
+            Assert.IsFalse(vm.IsTextInErrorState);
+        }
+
+        [TestMethod]
+        public void NEVM_Integer_FractionalText_ANudgeDownStepsTheRealValueToo ()
+        {
+            var vm = new NumericEditorViewModel(new TestSettings(), -43);
+            vm.Text = "-43.5";
+
+            vm.Nudge(positive: false, 1.0);
+
+            Assert.AreEqual(-44, vm.SourceValue);
+            Assert.AreEqual("-44", vm.Text);
+            Assert.IsFalse(vm.IsTextInErrorState);
+        }
+
+        [TestMethod]
+        public void NEVM_Integer_FractionalText_ANudgeThatCannotMoveStillPutsBackTheRealValue ()
+        {
+            // At the maximum, a nudge up leaves the value where it is, and the refused text still has to go
+            var vm = new NumericEditorViewModel(new TestSettings { Maximum = 10.0 }, 10);
+            vm.Text = "9.5";
+
+            vm.Nudge(positive: true, 1.0);
+
+            Assert.AreEqual(10, vm.SourceValue);
+            Assert.AreEqual("10", vm.Text);
+            Assert.IsFalse(vm.IsTextInErrorState);
+        }
+
         // ===[ Test settings ]====================================================
 
         private class TestSettings : INumericEditorSettings

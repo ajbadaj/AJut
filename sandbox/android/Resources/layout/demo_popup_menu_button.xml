@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="PopupMenuButton"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:alpha="0.7"
+        android:text="A button that opens a menu of its items when tapped, and shows itself checked while the menu is open. Separators divide the menu into groups, an item with items of its own opens a submenu, and a checkable item flips its check when picked. The items are added in code, as PopupMenuItems." />
+
+    <ajut.ux.controls.PopupMenuButton
+        android:id="@+id/demo_popup_menu"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="Options" />
+
+    <TextView
+        android:id="@+id/demo_popup_menu_value"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Nothing picked yet." />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:alpha="0.7"
+        android:text="Disabled, it shows its disabled look and opens nothing." />
+
+    <ajut.ux.controls.PopupMenuButton
+        android:id="@+id/demo_popup_menu_disabled"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:enabled="false"
+        android:text="Unavailable" />
+</LinearLayout>

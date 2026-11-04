@@ -22,7 +22,7 @@
             test.Randomize();
             Assert.AreEqual(testCopy.Count, test.Count);
             Assert.IsTrue(test.All(testCopy.Contains));
-            Assert.AreNotEqual(test, testCopy);
+            CollectionAssert.AreNotEqual(testCopy, test, "Randomize left the list in its original order");
 
             bool anyNotEqual = false;
             for (int index = 0; index < test.Count; ++index)
@@ -61,8 +61,8 @@
             Assert.IsTrue(test.All(testCopy1.Contains));
             Assert.IsTrue(test.All(testCopy2.Contains));
 
-            Assert.AreNotEqual(test, testCopy1);
-            Assert.AreNotEqual(test, testCopy2);
+            CollectionAssert.AreNotEqual(test, testCopy1, "Randomize with a seed left the list in its original order");
+            CollectionAssert.AreNotEqual(test, testCopy2, "Randomize with a seed left the list in its original order");
 
             // Did actually randomize from test
             bool anyNotEqual = false;

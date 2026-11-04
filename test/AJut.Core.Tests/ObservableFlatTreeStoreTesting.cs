@@ -4,7 +4,6 @@
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
-    using AJut.OS.Windows;
     using AJut.Storage;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -157,30 +156,30 @@
             const int kSecondBatchCount = 2000;
             const int kThirdBatchCount = 200;
 
-            // 100% increase from batch 1 → 2 - this due to reallocations of OC - it's meant as an acceptable maximum
+            // 100% increase from batch 1 to 2 - this due to reallocations of OC - it's meant as an acceptable maximum
             const double kAcceptablePercentIncrease_1_to_2 = 1.0;
 
-            // 75% increase from batch 2 → 3
+            // 75% increase from batch 2 to 3
             const double kAcceptablePercentIncrease_2_to_3 = 0.75;
 
-            // 100% increase from batch 1 → 3
+            // 100% increase from batch 1 to 3
             const double kAcceptablePercentIncrease_1_to_3 = 1.00;
 
-            Kernal32.HighAccuracyStopwatch timer = new Kernal32.HighAccuracyStopwatch();
+            Stopwatch timer = Stopwatch.StartNew();
             int itemCount = kFirstBatchCount;
 
-            timer.Reset();
+            timer.Restart();
             var leaves = this.ConstructTree(root, itemCount);
-            TimeSpan elapsed = timer.GetElapsed();
+            TimeSpan elapsed = timer.Elapsed;
 
             double averageSeconds1 = elapsed.TotalSeconds / kFirstBatchCount;
             Console.WriteLine($"Run 1 => Took {elapsed.TotalSeconds:N5} seconds to add {kFirstBatchCount}");
             Console.WriteLine($"Run 1 => Average of {averageSeconds1} seconds per item");
             Console.WriteLine("-----------------------------------------");
 
-            timer.Reset();
+            timer.Restart();
             ConstructTree(leaves, itemCount, itemCount += kSecondBatchCount);
-            elapsed = timer.GetElapsed();
+            elapsed = timer.Elapsed;
             double averageSeconds2 = elapsed.TotalSeconds / kSecondBatchCount;
             double increase_1_to_2 = (averageSeconds2 - averageSeconds1) / averageSeconds2;
 
@@ -190,9 +189,9 @@
             Console.WriteLine("-----------------------------------------");
             Assert.IsTrue(increase_1_to_2 < kAcceptablePercentIncrease_1_to_2, $"Average seconds per add increased from frist {kFirstBatchCount} by over {kAcceptablePercentIncrease_1_to_2 * 100.0}%");
 
-            timer.Reset();
+            timer.Restart();
             ConstructTree(leaves, itemCount, itemCount += kThirdBatchCount);
-            elapsed = timer.GetElapsed();
+            elapsed = timer.Elapsed;
             double averageSeconds3 = elapsed.TotalSeconds / kThirdBatchCount;
             double increase_1_to_3 = (averageSeconds3 - averageSeconds1) / averageSeconds3;
             double increase_2_to_3 = (averageSeconds3 - averageSeconds2) / averageSeconds3;
@@ -219,9 +218,9 @@
             Console.WriteLine($"Generating {kNodesPerLevel * kDepth:N0} nodes @ {kNodesPerLevel:N0} nodes going down {kDepth:N0} levels");
 
             Random rng = new Random();
-            var timer = new Kernal32.HighAccuracyStopwatch();
+            var timer = Stopwatch.StartNew();
             
-            timer.Reset();
+            timer.Restart();
             TreeNode currParent = root;
             for(int depth = 0; depth < kDepth; ++depth)
             {
@@ -239,20 +238,20 @@
                 currParent = nextParent;
             }
 
-            double genisis = timer.GetElapsed().TotalMilliseconds;
+            double genisis = timer.Elapsed.TotalMilliseconds;
             Console.WriteLine($"Tree genesis took: {genisis:N5} MS");
 
-            timer.Reset();
+            timer.Restart();
             var flat = new ObservableFlatTreeStore();
             flat.SwitchToFixedTimeIndexGeneration();
             flat.RootNode = root;
-            double buildup = timer.GetElapsed().TotalMilliseconds;
+            double buildup = timer.Elapsed.TotalMilliseconds;
             Console.WriteLine($"Flat tree store generation took: {buildup:N5} MS");
             Assert.AreEqual(kDepth * kNodesPerLevel + 1, flat.Count);
 
-            timer.Reset();
+            timer.Restart();
             var end = root.AddChild("end");
-            double addEnd = timer.GetElapsed().TotalMilliseconds;
+            double addEnd = timer.Elapsed.TotalMilliseconds;
             Console.WriteLine($"Adding to end took: {addEnd:N5} MS");
 
             int endIndex = flat.IndexOf(end);
@@ -372,6 +371,131 @@
             Assert.AreEqual("F", ((TreeNode)flat[4]).Value);
             Assert.AreEqual("G", ((TreeNode)flat[5]).Value);
             Assert.AreEqual("H", ((TreeNode)flat[6]).Value);
+        }
+
+        [TestMethod]
+        public void IncludeRootFalse_AChildAddedToTheHiddenRoot_GetsARow ()
+        {
+            var root = new TreeNode("root");
+            TreeNode a = root.AddChild("a");
+            TreeNode b = a.AddChild("b");
+            var flat = new ObservableFlatTreeStore { IncludeRoot = false };
+            flat.RootNode = root;
+
+            TreeNode c = root.AddChild("c");
+
+            CollectionAssert.AreEqual(new[] { a, b, c }, flat.ToArray(), "A new top-level node shows, after the subtree before it");
+        }
+
+        [TestMethod]
+        public void IncludeRootFalse_AChildRemovedFromTheHiddenRoot_LosesItsRow ()
+        {
+            var root = new TreeNode("root");
+            TreeNode a = root.AddChild("a");
+            a.AddChild("b");
+            TreeNode c = root.AddChild("c");
+            var flat = new ObservableFlatTreeStore { IncludeRoot = false };
+            flat.RootNode = root;
+
+            root.RemoveChild(a);
+
+            CollectionAssert.AreEqual(new[] { c }, flat.ToArray(), "A removed top-level node and its subtree go");
+        }
+
+        [TestMethod]
+        public void IncludeRootFalse_SetAfter_AChildAddedToTheHiddenRoot_GetsARow ()
+        {
+            var root = new TreeNode("root");
+            TreeNode a = root.AddChild("a");
+            var flat = new ObservableFlatTreeStore();
+            flat.RootNode = root;
+            flat.IncludeRoot = false;
+
+            TreeNode c = root.AddChild("c");
+
+            CollectionAssert.AreEqual(new[] { a, c }, flat.ToArray());
+        }
+
+        [TestMethod]
+        public void IncludeRootTrueAgain_AChildAddedToTheRoot_GetsOneRow ()
+        {
+            var root = new TreeNode("root");
+            TreeNode a = root.AddChild("a");
+            var flat = new ObservableFlatTreeStore { IncludeRoot = false };
+            flat.RootNode = root;
+            flat.IncludeRoot = true;
+
+            TreeNode c = root.AddChild("c");
+
+            CollectionAssert.AreEqual(new[] { root, a, c }, flat.ToArray(), "Shown again, the root's new child shows once");
+        }
+
+        [TestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        public void RootReplaced_TheOldRootIsNoLongerFollowed (bool includeRoot)
+        {
+            var oldRoot = new TreeNode("old");
+            oldRoot.AddChild("a");
+            var newRoot = new TreeNode("new");
+            TreeNode b = newRoot.AddChild("b");
+            var flat = new ObservableFlatTreeStore { IncludeRoot = includeRoot };
+            flat.RootNode = oldRoot;
+            flat.RootNode = newRoot;
+
+            oldRoot.AddChild("late");
+
+            TreeNode[] expected = includeRoot ? new[] { newRoot, b } : new[] { b };
+            CollectionAssert.AreEqual(expected, flat.ToArray(), "A child added to a root the store let go of is not shown");
+        }
+
+        [TestMethod]
+        public void RootHiddenAfterItWasSet_ThenReplaced_TheOldRootIsNoLongerFollowed ()
+        {
+            var oldRoot = new TreeNode("old");
+            oldRoot.AddChild("a");
+            var newRoot = new TreeNode("new");
+            TreeNode b = newRoot.AddChild("b");
+            var flat = new ObservableFlatTreeStore();
+            flat.RootNode = oldRoot;
+            flat.IncludeRoot = false;
+            flat.RootNode = newRoot;
+
+            oldRoot.AddChild("late");
+
+            CollectionAssert.AreEqual(new[] { b }, flat.ToArray(), "A child added to a root the store let go of is not shown");
+        }
+
+        [TestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        public void RootSetToNull_TheOldRootIsNoLongerFollowed (bool includeRoot)
+        {
+            var oldRoot = new TreeNode("old");
+            oldRoot.AddChild("a");
+            var flat = new ObservableFlatTreeStore { IncludeRoot = includeRoot };
+            flat.RootNode = oldRoot;
+            flat.RootNode = null;
+
+            oldRoot.AddChild("late");
+
+            Assert.AreEqual(0, flat.Count, "A child added to a root the store let go of is not shown");
+        }
+
+        [TestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        public void Cleared_TheOldRootIsNoLongerFollowed (bool includeRoot)
+        {
+            var oldRoot = new TreeNode("old");
+            oldRoot.AddChild("a");
+            var flat = new ObservableFlatTreeStore { IncludeRoot = includeRoot };
+            flat.RootNode = oldRoot;
+            flat.Clear();
+
+            oldRoot.AddChild("late");
+
+            Assert.AreEqual(0, flat.Count, "A child added to a root the store let go of is not shown");
         }
 
         [TestMethod]

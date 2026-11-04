@@ -159,8 +159,10 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
                 case ePropertyKind.Parsable:
                 case ePropertyKind.ComplexReference:
                 case ePropertyKind.Collection:
-                case ePropertyKind.Dictionary:
                     EmitWriteRecurse(cb, prop, accessor);
+                    break;
+                case ePropertyKind.Dictionary:
+                    EmitWriteDictionary(cb, prop, accessor);
                     break;
                 case ePropertyKind.Unsupported:
                     cb.AppendLine("// AJSON002: unsupported property type for source generation - skipped at emit time");
@@ -189,6 +191,13 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
         {
             cb.AppendLine($"global::AJut.Text.AJson.JsonBuilder propBuilder = doc.StartProperty(\"{Escape(prop.JsonKey)}\");");
             cb.AppendLine($"global::AJut.Text.AJson.JsonHelper.FillOutJsonBuilderForObject({accessor}, propBuilder);");
+        }
+
+        private static void EmitWriteDictionary (CodeBuilder cb, PropertyModel prop, string accessor)
+        {
+            // Written with its key and value types named here, so a pair's Key and Value are read in typed code rather than
+            //  through the reflection path, which a platform without dynamic code doesn't run. The text is the same either way.
+            cb.AppendLine($"global::AJut.Text.AJson.AJsonGenerationSupport.WriteDictionary<{prop.DictionaryKeyTypeFullName}, {prop.DictionaryValueTypeFullName}>({accessor}, doc.StartProperty(\"{Escape(prop.JsonKey)}\"));");
         }
 
         private static void EmitWriteRuntimeTypeEval (CodeBuilder cb, PropertyModel prop, string accessor)
@@ -538,6 +547,13 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
         /// </summary>
         private static void EmitFill (CodeBuilder cb, PropertyModel prop, string valueExpression)
         {
+            // A dictionary is filled in typed code, the way EmitWriteDictionary writes one
+            if (prop.Kind == ePropertyKind.Dictionary)
+            {
+                cb.AppendLine($"global::AJut.Text.AJson.AJsonGenerationSupport.FillGetOnlyDictionary<{prop.DictionaryKeyTypeFullName}, {prop.DictionaryValueTypeFullName}>(result.{prop.Name}, \"{Escape(prop.JsonKey)}\", {valueExpression}, settings, owner);");
+                return;
+            }
+
             cb.AppendLine($"global::AJut.Text.AJson.AJsonGenerationSupport.FillGetOnlyCollection(result.{prop.Name}, \"{Escape(prop.JsonKey)}\", {valueExpression}, settings, owner);");
         }
 
@@ -576,6 +592,12 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
                 //  constructor parameter of some other type is read the general way.
                 case ePropertyKind.Parsable when (readType == prop.TypeFullName) || (readType == prop.UnderlyingTypeFullName):
                     cb.AppendLine($"{assignTo} = global::AJut.Text.AJson.AJsonGenerationSupport.ReadParsable<{prop.UnderlyingTypeFullName}>(kvp.Value, settings, owner);{markFound}");
+                    break;
+
+                // Built and filled in typed code, the way EmitWriteDictionary writes it. A dictionary the reader can't build, or a
+                //  constructor parameter of some other type, is read the general way.
+                case ePropertyKind.Dictionary when (prop.DictionaryTypeToBuildFullName.Length > 0) && (readType == prop.TypeFullName):
+                    cb.AppendLine($"{assignTo} = global::AJut.Text.AJson.AJsonGenerationSupport.ReadDictionary<{prop.DictionaryTypeToBuildFullName}, {prop.DictionaryKeyTypeFullName}, {prop.DictionaryValueTypeFullName}>(kvp.Value, settings, owner);{markFound}");
                     break;
 
                 default:

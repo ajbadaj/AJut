@@ -3,6 +3,7 @@
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
@@ -10,6 +11,10 @@
 
     public static class ReflectionXT
     {
+        private const string kNamedMethodMessage = "Finds a method by name on a type known only at runtime, and trimming can remove a method nothing else calls. Call the method directly where the type is known.";
+        private const string kPropertyPathMessage = "Reaches properties by name, or creates a property's value, on types known only at runtime, and trimming can remove a property or constructor nothing else uses.";
+        private const string kGenericMethodMessage = "Makes a generic method for type arguments known only at runtime, which an ahead of time compiled build (iOS, NativeAOT) may never have compiled. Where it wasn't, the call throws PlatformNotSupportedException.";
+
         /// <summary>
         /// Tests to see if the type is an anonymous type
         /// </summary>
@@ -37,11 +42,12 @@
         /// <summary>
         /// Creates an instance of the given type, takes into account special cases
         /// </summary>
-        public static object CreateInstance (this Type type)
+        public static object CreateInstance ([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] this Type type)
         {
             return AJutActivator.CreateInstanceOf(type);
         }
 
+        [RequiresUnreferencedCode(kPropertyPathMessage)]
         public static object StockWithInstanceIn (this PropertyInfo property, object owner)
         {
             object value = property.PropertyType.CreateInstance();
@@ -60,11 +66,13 @@
             return expression.Member.Name;
         }
 
+        [RequiresUnreferencedCode(kPropertyPathMessage)]
         public static PropertyInfo GetComplexProperty (this object item, string propertyPath, out object childTarget)
         {
             return GetComplexProperty(item, propertyPath, out childTarget, false);
         }
 
+        [RequiresUnreferencedCode(kPropertyPathMessage)]
         public static PropertyInfo GetComplexProperty (this object item, string propertyPath, out object childTarget, bool ensureSubObjectPath)
         {
             if (item == null || string.IsNullOrEmpty(propertyPath))
@@ -102,11 +110,13 @@
             }
         }
 
+        [RequiresUnreferencedCode(kPropertyPathMessage)]
         public static T GetComplexPropertyValue<T> (this object item, string propertyPath)
         {
             return GetComplexPropertyValue<T>(item, propertyPath, ensureSubObjectPath: false);
         }
 
+        [RequiresUnreferencedCode(kPropertyPathMessage)]
         public static T GetComplexPropertyValue<T> (this object item, string propertyPath, bool ensureSubObjectPath)
         {
             object value = GetComplexPropertyValue(item, propertyPath, null, ensureSubObjectPath);
@@ -118,11 +128,13 @@
             return (T)value;
         }
 
+        [RequiresUnreferencedCode(kPropertyPathMessage)]
         public static T GetComplexPropertyValue<T> (this object item, string propertyPath, object[] index)
         {
             return GetComplexPropertyValue<T>(item, propertyPath, index, ensureSubObjectPath: false);
         }
 
+        [RequiresUnreferencedCode(kPropertyPathMessage)]
         public static T GetComplexPropertyValue<T> (this object item, string propertyPath, object[] index, bool ensureSubObjectPath)
         {
             object value = GetComplexPropertyValue(item, propertyPath, index);
@@ -134,19 +146,23 @@
             return (T)value;
         }
 
+        [RequiresUnreferencedCode(kPropertyPathMessage)]
         public static object GetComplexPropertyValue (this object item, string propertyPath)
         {
             return item.GetComplexPropertyValue(propertyPath, null, ensureSubObjectPath:false);
         }
+        [RequiresUnreferencedCode(kPropertyPathMessage)]
         public static object GetComplexPropertyValue (this object item, string propertyPath, bool ensureSubObjectPath)
         {
             return item.GetComplexPropertyValue(propertyPath, null);
         }
 
+        [RequiresUnreferencedCode(kPropertyPathMessage)]
         public static object GetComplexPropertyValue (this object item, string propertyPath, object[] index)
         {
             return GetComplexPropertyValue(item, propertyPath, index, ensureSubObjectPath: false);
         }
+        [RequiresUnreferencedCode(kPropertyPathMessage)]
         public static object GetComplexPropertyValue (this object item, string propertyPath, object[] index, bool ensureSubObjectPath)
         {
             if (propertyPath == "." || propertyPath == "")
@@ -199,22 +215,26 @@
             }
         }
 
+        [RequiresUnreferencedCode(kPropertyPathMessage)]
         public static bool SetPropertyByComplexPath<T> (this object item, string propertyPath, T value)
         {
             return item.SetPropertyByComplexPath(propertyPath, value, null);
         }
 
+        [RequiresUnreferencedCode(kPropertyPathMessage)]
         public static bool SetPropertyByComplexPath<T> (this object item, string propertyPath, T value, object[] index)
         {
             return item.GetComplexProperty(propertyPath, out object childTarget)
                         ?.SetValueExtended(item, propertyPath, childTarget, value, index) ?? false;
         }
 
+        [RequiresUnreferencedCode(kPropertyPathMessage)]
         public static bool SetValueExtended<T> (this PropertyInfo prop, object source, string propertyPath, object target, T value)
         {
             return prop.SetValueExtended(source, propertyPath, target, value, null);
         }
 
+        [RequiresUnreferencedCode(kPropertyPathMessage)]
         public static bool SetValueExtended<T> (this PropertyInfo prop, object source, string propertyPath, object target, T value, object[] index)
         {
             if (index != null)
@@ -252,19 +272,23 @@
         #endregion
 
         #region ======= Regular Method Invocation ===========
+        [RequiresUnreferencedCode(kNamedMethodMessage)]
         public static object InvokeMethod(this object This, string methodName)
         {
             return RunInstanceMethod(This, methodName, null);
         }
+        [RequiresUnreferencedCode(kNamedMethodMessage)]
         public static object InvokeMethod(this object This, string methodName, params object[] methodArgs)
         {
             return RunInstanceMethod(This, methodName, methodArgs);
         }
 
+        [RequiresUnreferencedCode(kNamedMethodMessage)]
         public static object InvokeExtensionMethod(this object This, Type extensionDeclarer, string methodName)
         {
             return RunStaticMethod(extensionDeclarer, methodName, This);
         }
+        [RequiresUnreferencedCode(kNamedMethodMessage)]
         public static object InvokeExtensionMethod(this object This, Type extensionDeclarer, string methodName, params object[] methodArgs)
         {
             List<object> fullMethodSet = new List<object>(methodArgs);
@@ -272,10 +296,12 @@
             return RunStaticMethod(extensionDeclarer, methodName, fullMethodSet.ToArray());
         }
 
+        [RequiresUnreferencedCode(kNamedMethodMessage)]
         public static object RunInstanceMethod(object instanceToRunOn, string methodName, object[] methodArgs)
         {
             return RunMethod(null, instanceToRunOn, methodName, methodArgs);
         }
+        [RequiresUnreferencedCode(kNamedMethodMessage)]
         public static object RunStaticMethod(Type methodOwner, string methodName, params object[] methodArgs)
         {
             return RunMethod(methodOwner, null, methodName, methodArgs);
@@ -284,29 +310,41 @@
 
         #region ================== Templated Method Invocation ==================
 
+        [RequiresUnreferencedCode(kNamedMethodMessage)]
+        [RequiresDynamicCode(kGenericMethodMessage)]
         public static object InvokeTemplatedMethod(this object This, string methodName, params Type[] templateArgs)
         {
             return RunTemplatedInstanceMethod(This, methodName, templateArgs, null);
         }
+        [RequiresUnreferencedCode(kNamedMethodMessage)]
+        [RequiresDynamicCode(kGenericMethodMessage)]
         public static object InvokeTemplatedMethod(this object This, string methodName, Type templateArg, params object[] methodArgs)
         {
             return RunTemplatedInstanceMethod(This, methodName, new Type[] { templateArg }, methodArgs);
         }
+        [RequiresUnreferencedCode(kNamedMethodMessage)]
+        [RequiresDynamicCode(kGenericMethodMessage)]
         public static object InvokeTemplatedMethod(this object This, string methodName, Type[] templateArgs, object[] methodArgs)
         {
             return RunTemplatedInstanceMethod(This, methodName, templateArgs, methodArgs);
         }
 
+        [RequiresUnreferencedCode(kNamedMethodMessage)]
+        [RequiresDynamicCode(kGenericMethodMessage)]
         public static object InvokeTemplatedExtensionMethod(this object This, Type extensionDeclarer, string methodName, Type[] templateArgs, object[] methodArgs)
         {
             List<object> fullMethodSet = new List<object>(methodArgs);
             fullMethodSet.Insert(0, This);
             return RunStaticTemplatedMethod(extensionDeclarer, methodName, templateArgs, fullMethodSet.ToArray());
         }
+        [RequiresUnreferencedCode(kNamedMethodMessage)]
+        [RequiresDynamicCode(kGenericMethodMessage)]
         public static object InvokeTemplatedExtensionMethod(this object This, Type extensionDeclarer, string methodName, params Type[] templateArgs)
         {
             return RunStaticTemplatedMethod(extensionDeclarer, methodName, templateArgs, This);
         }
+        [RequiresUnreferencedCode(kNamedMethodMessage)]
+        [RequiresDynamicCode(kGenericMethodMessage)]
         public static object InvokeTemplatedExtensionMethod(this object This, Type extensionDeclarer, string methodName, Type templateArg, params object[] methodArgs)
         {
             List<object> fullMethodSet = new List<object>(methodArgs);
@@ -314,15 +352,21 @@
             return RunStaticTemplatedMethod(extensionDeclarer, methodName, new Type[] { templateArg }, fullMethodSet.ToArray());
         }
 
+        [RequiresUnreferencedCode(kNamedMethodMessage)]
+        [RequiresDynamicCode(kGenericMethodMessage)]
         public static object RunTemplatedInstanceMethod(object instanceToRunOn, string methodName, Type[] templateArgs, object[] methodArgs)
         {
             return RunTemplatedMethod(null, instanceToRunOn, methodName, templateArgs, methodArgs);
         }
+        [RequiresUnreferencedCode(kNamedMethodMessage)]
+        [RequiresDynamicCode(kGenericMethodMessage)]
         public static object RunStaticTemplatedMethod (Type methodOwner, string methodName, Type templateArg, params object[] methodArgs)
         {
             return RunTemplatedMethod(methodOwner, null, methodName, new Type[] { templateArg }, methodArgs);
         }
 
+        [RequiresUnreferencedCode(kNamedMethodMessage)]
+        [RequiresDynamicCode(kGenericMethodMessage)]
         public static object RunStaticTemplatedMethod(Type methodOwner, string methodName, Type[] templateArgs, params object[] methodArgs)
         {
             return RunTemplatedMethod(methodOwner, null, methodName, templateArgs, methodArgs);
@@ -330,24 +374,42 @@
 
         #endregion
 
+        [RequiresUnreferencedCode(kNamedMethodMessage)]
+        [RequiresDynamicCode(kGenericMethodMessage)]
         private static object RunTemplatedMethod(Type staticMethodOwner, object instanceToRunOn, string methodName, Type[] templateArgs, object[] methodArgs)
         {
             Type methodOwner = staticMethodOwner ?? instanceToRunOn.GetType();
-            MethodInfo method = methodOwner.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).Where(_Filter).FirstOrDefault();
+            BindingFlags flags = (staticMethodOwner != null ? BindingFlags.Static : BindingFlags.Instance) | BindingFlags.Public | BindingFlags.NonPublic;
+            MethodInfo method = methodOwner.GetMethods(flags).Where(_Filter).FirstOrDefault();
             if (method == null)
             {
                 return null;
             }
 
-            method = method.MakeGenericMethod(templateArgs);
-
-            if (staticMethodOwner != null)
+            // A runtime that can't make code at runtime (an iOS build compiled ahead of time, or NativeAOT) can still have
+            //  the code for this instantiation. Shared code serves any reference type arguments, Mono's iOS builds usually
+            //  share code for value types too, iOS with the interpreter runs anything trimming kept, and NativeAOT has
+            //  whichever instantiations its compiler could see. There's no way to ask ahead of time, and nothing else makes a generic method for type
+            //  arguments known only at runtime, so the call is always made. Only a failure that means the code is missing
+            //  is turned into one that says what was asked for, and the two runtimes report that differently:
+            //  * NativeAOT throws NotSupportedException ("... is missing native code") straight out of MakeGenericMethod
+            //    (.NET 8 and 9) or Invoke (.NET 10), never wrapped, since none of the target has run yet. A target's own
+            //    NotSupportedException always comes back wrapped in a TargetInvocationException, so a bare one is the runtime's.
+            //  * Mono throws ExecutionEngineException ("Attempting to JIT compile method ... while running in aot-only
+            //    mode") from Invoke, wrapped in a TargetInvocationException like anything the call throws. That can't be
+            //    told apart from the same failure somewhere inside the target, so the message allows for either.
+            //  Where code can be made at runtime, neither means missing code, so nothing is changed there.
+            //  The runtime source behind this, in dotnet/runtime: NativeAOT's CreateNonInvokabilityException in
+            //  src/coreclr/nativeaot/System.Private.Reflection.Execution/src/Internal/Reflection/Execution/ExecutionEnvironmentImplementation.Runtime.cs,
+            //  and Mono's mono_jit_compile_method_with_opt in src/mono/mono/mini/mini-runtime.c.
+            try
             {
-                return method.Invoke(null, methodArgs);
+                MethodInfo instantiated = method.MakeGenericMethod(templateArgs);
+                return instantiated.Invoke(staticMethodOwner != null ? null : instanceToRunOn, methodArgs);
             }
-            else
+            catch (Exception failure) when (!DynamicCodeAvailability.IsSupported && IsMissingCompiledCode(failure))
             {
-                return method.Invoke(instanceToRunOn, methodArgs);
+                throw new PlatformNotSupportedException(MakeMissingCompiledCodeMessage(method, templateArgs), failure);
             }
 
             bool _Filter(MethodInfo _method)
@@ -358,9 +420,22 @@
                 }
 
                 var parameters = _method.GetParameters();
-                for(int index = 0; index < parameters.Length; ++index)
+                if (parameters.Length != (methodArgs?.Length ?? 0))
                 {
-                    if (!parameters[index].ParameterType.IsAssignableFrom(methodArgs[index].GetType()))
+                    return false;
+                }
+
+                for (int index = 0; index < parameters.Length; ++index)
+                {
+                    // A parameter typed by the method's own type arguments (a T value) isn't known until it is made
+                    //  generic, so only the others are checked against what was passed
+                    Type parameterType = parameters[index].ParameterType;
+                    if (parameterType.ContainsGenericParameters || methodArgs[index] == null)
+                    {
+                        continue;
+                    }
+
+                    if (!parameterType.IsAssignableFrom(methodArgs[index].GetType()))
                     {
                         return false;
                     }
@@ -371,6 +446,29 @@
             }
         }
 
+        /// <summary>
+        /// Whether a templated call failed for want of compiled code, the way NativeAOT or Mono reports it (see the comment
+        /// in RunTemplatedMethod). Internal so the NativeAOT shape, which a runtime with a JIT never produces, can be tested.
+        /// </summary>
+        internal static bool IsMissingCompiledCode (Exception failure)
+        {
+            if (failure is NotSupportedException)
+            {
+                return true;
+            }
+
+            // Matched by name, since the type is obsolete everywhere but Mono, the one runtime that still raises it
+            return (failure is TargetInvocationException)
+                && (failure.InnerException?.GetType().FullName == "System.ExecutionEngineException");
+        }
+
+        private static string MakeMissingCompiledCodeMessage (MethodInfo method, Type[] templateArgs)
+        {
+            string typeArgs = String.Join(", ", templateArgs.Select(t => t.Name));
+            return $"{method.DeclaringType?.Name}.{method.Name}<{typeArgs}> has no compiled code here, and this platform can't make code at runtime (an iOS build compiled ahead of time, or NativeAOT). Call it directly where these type arguments are known, so its code is compiled ahead of time. The missing code may also be in something it calls.";
+        }
+
+        [RequiresUnreferencedCode(kNamedMethodMessage)]
         private static object RunMethod(Type staticMethodOwner, object instanceToRunOn, string methodName, object[] methodArgs)
         {
             Type methodOwner;

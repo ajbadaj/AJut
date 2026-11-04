@@ -3,6 +3,7 @@ namespace AJut.UX.Docking
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
 
     /// <summary>
@@ -14,6 +15,8 @@ namespace AJut.UX.Docking
     /// </summary>
     public class DockPanelAddRemoveUISync : NotifyPropertyChanged
     {
+        private const string kRegisteredPanelJustification = "Only builds a panel type registered with RegisterDisplayFactory<T> (AddPanel refuses any other), and registering keeps its parameterless constructor.";
+
         // ===========[ Instance Fields ]===================================
         private readonly ObservableCollection<DockPanelTypeEntry> m_entries = new();
         private readonly List<HiddenPanelRecord> m_hiddenPanels = new();
@@ -44,6 +47,7 @@ namespace AJut.UX.Docking
         /// Create and dock a new panel. For single-instance types: re-shows if hidden, blocks if
         /// already active. For multi-instance types: always creates a new instance.
         /// </summary>
+        [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = kRegisteredPanelJustification)]
         public void AddPanel (Type panelType)
         {
             if (m_manager == null)
@@ -144,7 +148,7 @@ namespace AJut.UX.Docking
             }
             else
             {
-                // Close normally
+                // Close normally. The panel is gone for good, so its adapter lets go of its subscribers.
                 if (adapter.Close())
                 {
                     adapter.Location?.RemoveDockedContent(adapter);
@@ -152,6 +156,8 @@ namespace AJut.UX.Docking
                     {
                         this.NotifyInstanceRemoved(panelType, adapter);
                     }
+
+                    adapter.Dispose();
                 }
             }
         }
@@ -186,6 +192,7 @@ namespace AJut.UX.Docking
 
         // ===========[ Show Hidden Panel ]===================================
 
+        [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = kRegisteredPanelJustification)]
         private void ShowHiddenPanel (Type panelType)
         {
             DockingContentAdapterModel adapter;
@@ -209,21 +216,27 @@ namespace AJut.UX.Docking
                 return;
             }
 
-            // 2. If panel can't tearoff, dock into a zone instead
-            if (!adapter.CanTearoff)
+            // 2. A panel that can tear off goes in a tearoff window
+            if (adapter.CanTearoff && this.TryShowInTearoff(panelType, adapter, hidden))
             {
-                DockPanelRegistrationRules? fallbackRules = m_manager.GetPanelRules(panelType);
-                DockZoneViewModel targetZone = m_manager.FindTargetZoneForGroup(fallbackRules?.DefaultGroupId);
-                if (targetZone != null)
-                {
-                    targetZone.AddDockedContent(adapter);
-                    this.NotifyInstanceAdded(panelType, adapter);
-                }
-
+                this.NotifyInstanceAdded(panelType, adapter);
                 return;
             }
 
-            // 3. Create a tearoff window
+            // 3. Otherwise, or when its tearoff window could not be made, dock it into a zone instead
+            DockPanelRegistrationRules? fallbackRules = m_manager.GetPanelRules(panelType);
+            DockZoneViewModel targetZone = m_manager.FindTargetZoneForGroup(fallbackRules?.DefaultGroupId);
+            if (targetZone != null)
+            {
+                targetZone.AddDockedContent(adapter);
+                this.NotifyInstanceAdded(panelType, adapter);
+            }
+        }
+
+        // Shows a re-shown panel in a new tearoff window, where it last was if that is remembered; false when the
+        // window could not be made
+        private bool TryShowInTearoff (Type panelType, DockingContentAdapterModel adapter, HiddenPanelRecord? hidden)
+        {
             double x = -1;
             double y = -1;
             double widgth = 500;
@@ -244,8 +257,7 @@ namespace AJut.UX.Docking
                 height = Math.Max(100, maybeRules.SpawnHeight);
             }
 
-            m_manager.CreateTearoffForPanel(adapter, x, y, widgth, height);
-            this.NotifyInstanceAdded(panelType, adapter);
+            return m_manager.CreateTearoffForPanel(adapter, x, y, widgth, height);
         }
 
         // ===========[ Public Interface - UI Requests ]===================================
@@ -398,6 +410,49 @@ namespace AJut.UX.Docking
             }
 
             this.PanelStateChanged?.Invoke(this, new PanelStateChangedEventArgs(panelType, entry));
+        }
+
+        /// <summary>
+        /// Sets every panel type's active instance count from the panels docked right now, raising
+        /// <see cref="PanelStateChanged"/> for each count that changed. Paths that close or replace many panels at once
+        /// (a tearoff closing, a layout load) recount rather than tracking each panel.
+        /// </summary>
+        internal void RecountActiveInstances ()
+        {
+            if (m_manager == null)
+            {
+                return;
+            }
+
+            var countsByType = m_manager.EnumerateAdapters()
+                .Where(a => a.Display != null)
+                .GroupBy(a => a.Display.GetType())
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            foreach (DockPanelTypeEntry entry in m_entries)
+            {
+                int count = countsByType.TryGetValue(entry.PanelType, out int found) ? found : 0;
+                if (entry.ActiveInstanceCount != count)
+                {
+                    entry.ActiveInstanceCount = count;
+                    this.PanelStateChanged?.Invoke(this, new PanelStateChangedEventArgs(entry.PanelType, entry));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Closes for good every hidden panel, which sits in no zone but is still waiting to be shown again, so each
+        /// adapter lets go of its subscribers. The manager calls this from its Dispose.
+        /// </summary>
+        internal void ReleaseHiddenPanels ()
+        {
+            foreach (HiddenPanelRecord hidden in m_hiddenPanels)
+            {
+                hidden.Adapter.InternalClose(true);
+                hidden.Adapter.Dispose();
+            }
+
+            m_hiddenPanels.Clear();
         }
 
         /// <summary>Reset all counts and clear hidden panel records (e.g. before a layout reload).</summary>

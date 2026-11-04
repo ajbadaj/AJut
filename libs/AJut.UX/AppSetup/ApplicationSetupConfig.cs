@@ -86,9 +86,10 @@ namespace AJut.UX
         public ApplicationExceptionProcessor? OnExceptionReceived { get; init; }
 
         /// <summary>
-        /// What <see cref="Environment.SpecialFolder"/> to keep things like logs in, or null for the traditional default
-        /// of whichever stack is running setup (roaming app data on WPF, local app data on WinUI3). Ignored entirely
-        /// when a <see cref="StorageRootOverride"/> is set.
+        /// What <see cref="Environment.SpecialFolder"/> to keep things like logs in on WPF and WinUI3, or null for local
+        /// app data (<see cref="Environment.SpecialFolder.LocalApplicationData"/>). Set it to
+        /// <see cref="Environment.SpecialFolder.ApplicationData"/> to keep using roaming app data, where WPF kept app data
+        /// before AJut 2.0. Ignored entirely when a <see cref="StorageRootOverride"/> is set.
         /// </summary>
         public Environment.SpecialFolder? ApplicationStorageRoot { get; init; }
 

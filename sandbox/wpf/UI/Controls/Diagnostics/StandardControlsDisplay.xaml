@@ -1,0 +1,166 @@
+<UserControl x:Class="TheAJutShowRoom.UI.Controls.Diagnostics.StandardControlsDisplay"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
+             mc:Ignorable="d"
+             d:DesignHeight="900" d:DesignWidth="800"
+             x:Name="Self">
+    <UserControl.Resources>
+        <x:Array x:Key="StripItems" Type="{x:Type sys:String}">
+            <sys:String>Selected</sys:String>
+            <sys:String>Not selected</sys:String>
+            <sys:String>Neither</sys:String>
+        </x:Array>
+    </UserControl.Resources>
+    <!-- The same set as WinUI3's Debug > Standard Controls page, so the two stacks can be judged side by side, each
+         control at rest, in its other states, and disabled -->
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="20" MaxWidth="1000" HorizontalAlignment="Left">
+            <TextBlock Text="Standard controls under the theme" FontSize="18"/>
+            <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0"
+                       Text="Every standard control the AJut theme styles, at rest, in its other states, and disabled. WinUI3's showroom has the same page under Debug, for comparing the two."/>
+
+            <TextBlock Text="Buttons" FontSize="16" Margin="0,16,0,6"/>
+            <WrapPanel>
+                <Button Content="Button" Margin="0,0,8,8" Padding="8,3"/>
+                <Button Content="Disabled" IsEnabled="False" Margin="0,0,8,8" Padding="8,3"/>
+                <ToggleButton Content="ToggleButton" Margin="0,0,8,8" Padding="8,3"/>
+                <ToggleButton Content="ToggleButton, on" IsChecked="True" Margin="0,0,8,8" Padding="8,3"/>
+                <ToggleButton Content="Disabled, on" IsChecked="True" IsEnabled="False" Margin="0,0,8,8" Padding="8,3"/>
+                <RepeatButton Content="RepeatButton" Margin="0,0,8,8" Padding="8,3"/>
+            </WrapPanel>
+
+            <TextBlock Text="Text input" FontSize="16" Margin="0,16,0,6"/>
+            <WrapPanel>
+                <TextBox Text="TextBox" Width="180" Margin="0,0,8,8"/>
+                <TextBox Text="Disabled TextBox" Width="180" IsEnabled="False" Margin="0,0,8,8"/>
+                <PasswordBox Password="password" Width="180" Margin="0,0,8,8"/>
+            </WrapPanel>
+
+            <TextBlock Text="Selection" FontSize="16" Margin="0,16,0,6"/>
+            <WrapPanel>
+                <StackPanel Width="180" Margin="0,0,16,8">
+                    <TextBlock Text="ComboBox" FontStyle="Italic" Opacity="0.7" Margin="0,0,0,4"/>
+                    <ComboBox SelectedIndex="0">
+                        <ComboBoxItem Content="Choice Alpha"/>
+                        <ComboBoxItem Content="Choice Beta"/>
+                        <ComboBoxItem Content="Choice Gamma"/>
+                    </ComboBox>
+                    <TextBlock Text="Disabled ComboBox" FontStyle="Italic" Opacity="0.7" Margin="0,8,0,4"/>
+                    <ComboBox SelectedIndex="1" IsEnabled="False">
+                        <ComboBoxItem Content="Choice Alpha"/>
+                        <ComboBoxItem Content="Choice Beta"/>
+                    </ComboBox>
+                </StackPanel>
+                <StackPanel Width="180" Margin="0,0,16,8">
+                    <TextBlock Text="ListBox" FontStyle="Italic" Opacity="0.7" Margin="0,0,0,4"/>
+                    <ListBox SelectedIndex="1" Height="100">
+                        <ListBoxItem Content="Item One"/>
+                        <ListBoxItem Content="Item Two (selected)"/>
+                        <ListBoxItem Content="Item Three"/>
+                        <ListBoxItem Content="Item Four"/>
+                    </ListBox>
+                </StackPanel>
+                <StackPanel Margin="0,0,16,8">
+                    <TextBlock Text="CheckBoxes" FontStyle="Italic" Opacity="0.7" Margin="0,0,0,4"/>
+                    <CheckBox Content="Unchecked" Margin="0,0,0,4"/>
+                    <CheckBox Content="Checked" IsChecked="True" Margin="0,0,0,4"/>
+                    <CheckBox Content="Indeterminate" IsChecked="{x:Null}" IsThreeState="True" Margin="0,0,0,4"/>
+                    <CheckBox Content="Disabled" IsEnabled="False" Margin="0,0,0,4"/>
+                    <CheckBox Content="Disabled, checked" IsChecked="True" IsEnabled="False"/>
+                </StackPanel>
+                <StackPanel Margin="0,0,16,8">
+                    <TextBlock Text="RadioButtons" FontStyle="Italic" Opacity="0.7" Margin="0,0,0,4"/>
+                    <RadioButton Content="Option A" GroupName="Demo" IsChecked="True" Margin="0,0,0,4"/>
+                    <RadioButton Content="Option B" GroupName="Demo" Margin="0,0,0,4"/>
+                    <RadioButton Content="Option C" GroupName="Demo" Margin="0,0,0,4"/>
+                    <RadioButton Content="Disabled" GroupName="DemoDisabled" IsEnabled="False" Margin="0,0,0,4"/>
+                    <RadioButton Content="Disabled, checked" GroupName="DemoDisabledChecked" IsChecked="True" IsEnabled="False"/>
+                </StackPanel>
+            </WrapPanel>
+
+            <TextBlock Text="AJut toggles beside them" FontSize="16" Margin="0,16,0,6"/>
+            <WrapPanel>
+                <StackPanel Margin="0,0,16,8">
+                    <TextBlock Text="ToggleStrip" FontStyle="Italic" Opacity="0.7" Margin="0,0,0,4"/>
+                    <ajut:ToggleStrip ItemsSource="{StaticResource StripItems}"/>
+                    <TextBlock Text="Disabled ToggleStrip" FontStyle="Italic" Opacity="0.7" Margin="0,8,0,4"/>
+                    <ajut:ToggleStrip ItemsSource="{StaticResource StripItems}" IsEnabled="False"/>
+                </StackPanel>
+                <StackPanel Margin="0,0,16,8">
+                    <TextBlock Text="ToggleSwitchButton" FontStyle="Italic" Opacity="0.7" Margin="0,0,0,4"/>
+                    <ajut:ToggleSwitchButton HorizontalAlignment="Left" Margin="0,0,0,4">Off:</ajut:ToggleSwitchButton>
+                    <ajut:ToggleSwitchButton HorizontalAlignment="Left" IsChecked="True" Margin="0,0,0,4">On:</ajut:ToggleSwitchButton>
+                    <ajut:ToggleSwitchButton HorizontalAlignment="Left" IsEnabled="False" Margin="0,0,0,4">Disabled, off:</ajut:ToggleSwitchButton>
+                    <ajut:ToggleSwitchButton HorizontalAlignment="Left" IsEnabled="False" IsChecked="True">Disabled, on:</ajut:ToggleSwitchButton>
+                </StackPanel>
+            </WrapPanel>
+
+            <TextBlock Text="Range" FontSize="16" Margin="0,16,0,6"/>
+            <WrapPanel>
+                <Slider Width="200" Minimum="0" Maximum="100" Value="40" Margin="0,0,16,8"/>
+                <Slider Width="200" Minimum="0" Maximum="100" Value="60" IsEnabled="False" Margin="0,0,16,8"/>
+                <ProgressBar Width="200" Height="12" Value="55" Margin="0,0,16,8"/>
+            </WrapPanel>
+
+            <TextBlock Text="TabControl" FontSize="16" Margin="0,16,0,6"/>
+            <TabControl Height="110" Width="420" HorizontalAlignment="Left">
+                <TabItem Header="First">
+                    <TextBlock Text="The selected tab flows into this body." Margin="8"/>
+                </TabItem>
+                <TabItem Header="Second">
+                    <TextBlock Text="Second tab's content." Margin="8"/>
+                </TabItem>
+                <TabItem Header="Disabled" IsEnabled="False"/>
+            </TabControl>
+
+            <TextBlock Text="Expander" FontSize="16" Margin="0,16,0,6"/>
+            <Expander Header="Expanded on load" IsExpanded="True" Width="420" HorizontalAlignment="Left" Margin="0,0,0,8">
+                <TextBlock Text="The expander's content area." Margin="8"/>
+            </Expander>
+            <Expander Header="Collapsed" Width="420" HorizontalAlignment="Left">
+                <TextBlock Text="Hidden until expanded." Margin="8"/>
+            </Expander>
+
+            <TextBlock Text="Menu" FontSize="16" Margin="0,16,0,6"/>
+            <Menu HorizontalAlignment="Left">
+                <MenuItem Header="File">
+                    <MenuItem Header="New">
+                        <MenuItem.Icon><TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets"/></MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="Open..." InputGestureText="Ctrl+O">
+                        <MenuItem.Icon><TextBlock Text="&#xE8E5;" FontFamily="Segoe MDL2 Assets"/></MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="Save" InputGestureText="Ctrl+S">
+                        <MenuItem.Icon><TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets"/></MenuItem.Icon>
+                    </MenuItem>
+                </MenuItem>
+                <MenuItem Header="View">
+                    <MenuItem Header="Zoom In"/>
+                    <MenuItem Header="Zoom Out"/>
+                    <Separator/>
+                    <MenuItem Header="Toggle item, checked" IsCheckable="True" IsChecked="True"/>
+                    <MenuItem Header="Toggle item, unchecked" IsCheckable="True"/>
+                    <MenuItem Header="Sub-menu">
+                        <MenuItem Header="First"/>
+                        <MenuItem Header="Second"/>
+                    </MenuItem>
+                    <MenuItem Header="Disabled item" IsEnabled="False"/>
+                    <MenuItem Header="Disabled, checked" IsCheckable="True" IsChecked="True" IsEnabled="False"/>
+                </MenuItem>
+                <MenuItem Header="Edit">
+                    <MenuItem Header="Undo">
+                        <MenuItem.Icon><TextBlock Text="&#xE7A7;" FontFamily="Segoe MDL2 Assets"/></MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="Redo">
+                        <MenuItem.Icon><TextBlock Text="&#xE7A6;" FontFamily="Segoe MDL2 Assets"/></MenuItem.Icon>
+                    </MenuItem>
+                </MenuItem>
+                <MenuItem Header="Disabled" IsEnabled="False"/>
+            </Menu>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

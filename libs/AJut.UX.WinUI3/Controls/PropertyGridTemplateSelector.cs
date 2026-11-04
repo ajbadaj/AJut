@@ -22,25 +22,17 @@ namespace AJut.UX.Controls
         private static DataTemplate s_builtInListTemplate;
 
         protected override object GetKeyForItem (object item)
-            => ((PropertyEditTarget)item).Editor ?? "__Invalid";
+            => PropertyGridRowRules.GetEditorKey((PropertyEditTarget)item);
 
         protected override DataTemplate SelectTemplateCore (object item)
         {
             if (item is PropertyEditTarget target)
             {
-                if (target.Editor == "Nullable" && !this.RegisteredTemplates.ContainsKey("Nullable"))
+                switch (PropertyGridRowRules.GetBuiltInEditor(target, this.RegisteredTemplates.ContainsKey))
                 {
-                    return GetOrCreateBuiltInNullableTemplate();
-                }
-
-                if (target.Editor == "Button" && !this.RegisteredTemplates.ContainsKey("Button"))
-                {
-                    return GetOrCreateBuiltInButtonTemplate();
-                }
-
-                if (target.Editor == "List" && !this.RegisteredTemplates.ContainsKey("List"))
-                {
-                    return GetOrCreateBuiltInListTemplate();
+                    case eBuiltInPropertyEditor.Nullable: return GetOrCreateBuiltInNullableTemplate();
+                    case eBuiltInPropertyEditor.Button: return GetOrCreateBuiltInButtonTemplate();
+                    case eBuiltInPropertyEditor.List: return GetOrCreateBuiltInListTemplate();
                 }
             }
 

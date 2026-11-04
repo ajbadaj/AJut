@@ -56,6 +56,23 @@ namespace AJut.UX.Controls
             private set => this.SetValue(EffectiveBorderBrushPropertyKey, value);
         }
 
+        // ===========[ Properties ]===================================
+        /// <summary>
+        /// The interaction state the button paints: disabled, then pressed, then pointer over, then normal. A subclass
+        /// can override it to paint one state with no pointer, as a showroom's state sampler does (the AppKit buttons'
+        /// CurrentState is the same hook), and calls <see cref="RefreshActiveStateBrushes"/> when its answer changes.
+        /// </summary>
+        protected virtual eManagedButtonState CurrentState
+        {
+            get
+            {
+                if (!this.IsEnabled) { return eManagedButtonState.Disabled; }
+                if (this.IsPressed) { return eManagedButtonState.Pressed; }
+                if (this.IsMouseOver) { return eManagedButtonState.PointerOver; }
+                return eManagedButtonState.Normal;
+            }
+        }
+
         // ===========[ Public Interface Methods ]===================================
         public override void OnApplyTemplate ()
         {
@@ -66,7 +83,7 @@ namespace AJut.UX.Controls
         /// <summary>Recomputes the effective brushes for the current interaction state. Call when a brush source changes.</summary>
         protected void RefreshActiveStateBrushes ()
         {
-            SurfaceBrushes brushes = this.GetBrushesForState(this.GetActiveState());
+            SurfaceBrushes brushes = this.GetBrushesForState(this.CurrentState);
             this.EffectiveBackground = brushes.Background;
             this.EffectiveForeground = brushes.Foreground;
             this.EffectiveBorderBrush = brushes.Border;
@@ -87,25 +104,8 @@ namespace AJut.UX.Controls
             }
         }
 
-        // ===========[ Helper Methods ]===================================
-        private eManagedButtonState GetActiveState ()
-        {
-            if (!this.IsEnabled) { return eManagedButtonState.Disabled; }
-            if (this.IsPressed) { return eManagedButtonState.Pressed; }
-            if (this.IsMouseOver) { return eManagedButtonState.PointerOver; }
-            return eManagedButtonState.Normal;
-        }
-
         // ===========[ Subclasses/structs ]===================================
         /// <summary>The resolved brushes to paint for one interaction state. Any may be null (no paint).</summary>
         protected readonly record struct SurfaceBrushes (Brush Background, Brush Foreground, Brush Border);
-    }
-
-    public enum eManagedButtonState
-    {
-        Normal,
-        PointerOver,
-        Pressed,
-        Disabled,
     }
 }

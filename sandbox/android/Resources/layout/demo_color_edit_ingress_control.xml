@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="ColorEditIngressControl"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:alpha="0.7"
+        android:text="A swatch that edits its color. Tap it for the picker: hue, saturation and value, alpha, and a hex field. The swatch follows the picker live, and closing the picker completes one user edit." />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ajut.ux.controls.ColorEditIngressControl
+            android:id="@+id/demo_color_edit"
+            android:layout_width="120dp"
+            android:layout_height="40dp"
+            app:ajutEditColor="#FF0D83D8" />
+
+        <ajut.ux.controls.AutoBrushButton
+            android:id="@+id/demo_color_follower"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:text="Follows the swatch" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/demo_color_last_edit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:fontFamily="monospace"
+        android:text="No edit yet" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:text="Translucent and read only"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textStyle="bold" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:orientation="horizontal">
+
+        <ajut.ux.controls.ColorEditIngressControl
+            android:layout_width="80dp"
+            android:layout_height="32dp"
+            app:ajutEditColor="#80C0392B" />
+
+        <ajut.ux.controls.ColorEditIngressControl
+            android:layout_width="80dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="16dp"
+            app:ajutEditColor="#FF2ECC71"
+            app:ajutIsReadOnly="true" />
+    </LinearLayout>
+</LinearLayout>

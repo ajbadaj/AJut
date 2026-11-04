@@ -1,6 +1,7 @@
 ﻿namespace AJut.Storage
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// Use this as a way to adapt property values stored in the stratabase to a converted, adapted value. You might store
@@ -15,6 +16,7 @@
         public delegate TAdaptedValue ConvertAccessToOutput (Stratabase sb, TStrataValue accessValue);
 
         private readonly ConvertAccessToOutput m_factory;
+        [UnconditionalSuppressMessage("Trimming", "IL2091", Justification = "Lazy<T> needs T's parameterless constructor only for its own parameterless constructor, and this one is always made with a factory.")]
         private Lazy<TAdaptedValue> m_instanceStorage;
 
         public StrataPropertyAdapter (Stratabase sb, Guid itemId, string propertyName, ConvertAccessToOutput factory)
@@ -57,6 +59,7 @@
             }
         }
 
+        [UnconditionalSuppressMessage("Trimming", "IL2091", Justification = "Lazy<T> needs T's parameterless constructor only for its own parameterless constructor, and this one is always made with a factory.")]
         private void Reset()
         {
             this.ClearInstanceStorage();

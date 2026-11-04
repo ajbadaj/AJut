@@ -96,6 +96,9 @@
         public string? OwnerName { get; set; } = "Unknown Owner";
         [PGEditor("Number")]
         public int OwnerAge { get; set; } = 30;
+
+        // Null to start, so the grid shows its "Not set" editor
+        public float? OptionalWeight { get; set; }
     }
 
     /// <summary>List element with stable identity - the selection tester resolves a selected row (the
@@ -143,7 +146,7 @@
     {
         private string m_dogsName = string.Empty;
         [PGEditor("Text")]
-        [PGLabel("Name", IconSource = "Images/PenguinExample.png", IconMargin = 4)]
+        [PGLabel("Name", "Shown on the dog's tag", IconSource = "Images/PenguinExample.png", IconMargin = 4)]
         [PGToolTip("The dog's call sign")]
         public string DogsName
         {

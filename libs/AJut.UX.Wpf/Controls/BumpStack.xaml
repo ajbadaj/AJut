@@ -11,10 +11,12 @@
     <sys:String x:Key="AJut_Symbol_UpChevron"   >&#xE70E;</sys:String>
     <sys:String x:Key="AJut_Symbol_DownChevron" >&#xE70D;</sys:String>
 
+    <!-- Unthemed, the bump buttons take a stock light button's fill and dark glyphs, the way WinUI3's take its
+         solid base fill -->
     <Style TargetType="{x:Type local:BumpStack}">
-        <Setter Property="ButtonBackground" Value="#000"/>
-        <Setter Property="ButtonBorder" Value="#000"/>
-        <Setter Property="ButtonForeground" Value="#888"/>
+        <Setter Property="ButtonBackground" Value="#DDD"/>
+        <Setter Property="ButtonBorder" Value="#707070"/>
+        <Setter Property="ButtonForeground" Value="#333"/>
         <Setter Property="EdgeClearanceOffset" Value="3"/>
         <Setter Property="ap:BorderXTA.CornerRadius" Value="0"/>
         <Setter Property="Template">
@@ -59,14 +61,18 @@
                             <!-- ====================[ Bump Buttons ]==================== -->
                             <Grid Margin="0,0,0,0">
                                 <Grid.Resources>
+                                    <!-- A bump button sits over the scrolling content, so it is outlined to stand apart from
+                                         whatever is behind it -->
                                     <Style x:Key="AJut_Style_ButtonHoverRepeat" TargetType="{x:Type RepeatButton}">
                                         <Setter Property="Delay" Value="1" />
                                         <Setter Property="Interval" Value="1" />
                                         <Setter Property="Opacity" Value="0.8" />
+                                        <Setter Property="BorderThickness" Value="1" />
                                         <Setter Property="Template">
                                             <Setter.Value>
                                                 <ControlTemplate TargetType="{x:Type RepeatButton}">
                                                     <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                                            BorderThickness="{TemplateBinding BorderThickness}"
                                                             CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}">
                                                         <TextBlock FontFamily="Segoe MDL2 Assets" Text="{TemplateBinding Content}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
                                                     </Border>

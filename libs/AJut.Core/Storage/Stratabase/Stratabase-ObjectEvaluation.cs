@@ -3,6 +3,7 @@
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Reflection;
     using AJut.TypeManagement;
@@ -37,18 +38,14 @@
                 }
 
                 Type elementType = listProp.Value.ElementType ?? listProp.Value.Elements[0].GetType();
-                Type listAccessType = typeof(StrataPropertyListAccess<>).MakeGenericType(elementType);
-
-                // In order to keep some kind of strong access of the method (for refactoring & compiling errors), using object
-                //  as a sort of unknown sinceit's just to get nameof.
-                string methodName = nameof(StrataPropertyListAccess<object>.GenerateStorageForBaselineListAccess);
-                object storage = ReflectionXT.RunStaticMethod(listAccessType, methodName, (object)(listProp.Value.Elements));
+                IList storage = StrataListElementType.For(elementType).CreateBaselineStorage(listProp.Value.Elements);
                 this.SetBaselinePropertyValue(objectEvaluation.Id, listProp.Key, storage);
             }
         }
 
         // ===========================[ Utility Classes ]======================================
 
+        [RequiresUnreferencedCode(kObjectReflectionMessage)]
         internal class ObjectEvaluation
         {
             private ObjectEvaluation (Guid id, Dictionary<string, object> simpleProps, Dictionary<string, ObjectEvaluation> validSubObjects, Dictionary<string, ListInfo> insertGenerationLists, List<ObjectEvaluation> ancillaryElements)

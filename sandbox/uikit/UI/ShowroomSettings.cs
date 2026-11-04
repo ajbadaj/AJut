@@ -1,0 +1,114 @@
+namespace AJutShowRoomUIKit.UI
+{
+    using AJut.UX.Theming;
+    using UIKit;
+
+    /// <summary>
+    /// The look the theme bar picks, kept here rather than on the bar, since a theme or touch switch rebuilds the bar
+    /// along with every other view. The AJut theme itself is <see cref="ThemedColors.IsThemeLoaded"/>.
+    /// </summary>
+    public static class ShowroomSettings
+    {
+        // The showroom's surfaces, stepping one level at a time from the title bar the way every AJut showroom's do
+        private const string kPanelBackgroundKey = "AJut_Brush_PanelBackground";
+        private const string kNavigationBackgroundKey = "AJut_Brush_NavigationPanelBackground";
+        private const string kTitleBarBackgroundKey = "AJut_Brush_TitleBarBackground";
+        private const string kTitleBarForegroundKey = "AJut_Brush_TitleBarForeground";
+
+        // AJut's own default for the touch variant, read before the showroom changes it: off, as on every stack
+        private static readonly bool kSystemUsesTouchVariant = ThemedColors.UsesTouchVariant;
+
+        private static eThemeMode g_themeMode = eThemeMode.System;
+        private static bool g_touchChoice = kSystemUsesTouchVariant;
+
+        // The light or dark the theme bar picks goes through an AppThemeManager, the way every AJut showroom picks it. It
+        // keeps nothing between launches, so the showroom always starts on System.
+        private static readonly AppThemeManager g_theme = new AppThemeManager(eAppThemeConfiguration.UseSameAsOS, persistInUserDefaults: false);
+
+        // ===========[ Properties ]===================================
+        /// <summary>The app's theme manager, which the theme bar's mode drives.</summary>
+        public static AppThemeManager Theme => g_theme;
+
+        /// <summary>
+        /// Dark or Light forces the showroom window's light or dark; System follows the device's, with AJut's touch
+        /// default.
+        /// </summary>
+        public static eThemeMode ThemeMode
+        {
+            get => g_themeMode;
+            set
+            {
+                g_themeMode = value;
+                ThemedColors.UsesTouchVariant = UsesTouchVariant;
+                g_theme.ThemeConfiguration = ToConfiguration(value);
+            }
+        }
+
+        /// <summary>
+        /// Whether the AJut theme paints its touch variant. Under System it is AJut's default (off); under Dark or Light it
+        /// is the choice made on the bar, and setting it while System is picked changes nothing.
+        /// </summary>
+        public static bool UsesTouchVariant
+        {
+            get => (g_themeMode == eThemeMode.System) ? kSystemUsesTouchVariant : g_touchChoice;
+            set
+            {
+                if (g_themeMode == eThemeMode.System)
+                {
+                    return;
+                }
+
+                g_touchChoice = value;
+                ThemedColors.UsesTouchVariant = value;
+            }
+        }
+
+        /// <summary>The touch switch only means something with the AJut theme loaded and a light or dark picked.</summary>
+        public static bool CanChooseTouch => ThemedColors.IsThemeLoaded && (g_themeMode != eThemeMode.System);
+
+        /// <summary>
+        /// What the pages sit on: with the AJut theme loaded, the panel color the controls sit on in every AJut showroom,
+        /// so they are judged against the surface the theme puts them on. Without the theme (the palette key has no
+        /// unthemed default) it is the system background.
+        /// </summary>
+        public static UIColor PageBackground => ThemedColors.Get(kPanelBackgroundKey) ?? UIColor.SystemBackground;
+
+        /// <summary>
+        /// What the theme bar and the lists of areas and pages sit on with the AJut theme loaded: the navigation level, one
+        /// step back from the pages, as the Android showroom's theme bar and page list are. Null without the theme, which
+        /// keeps the system's.
+        /// </summary>
+        public static UIColor NavigationBackground => ThemedColors.Get(kNavigationBackgroundKey);
+
+        /// <summary>The navigation bar's fill with the AJut theme loaded, the same fill as the WPF showroom's title bar; null without it.</summary>
+        public static UIColor TitleBarBackground => ThemedColors.Get(kTitleBarBackgroundKey);
+
+        /// <summary>The navigation bar's title color with the AJut theme loaded; null without it.</summary>
+        public static UIColor TitleBarForeground => ThemedColors.Get(kTitleBarForegroundKey);
+
+        // ===========[ Helper Methods ]===================================
+        private static eAppThemeConfiguration ToConfiguration (eThemeMode mode)
+        {
+            switch (mode)
+            {
+                case eThemeMode.Dark: return eAppThemeConfiguration.Dark;
+                case eThemeMode.Light: return eAppThemeConfiguration.Light;
+                default: return eAppThemeConfiguration.UseSameAsOS;
+            }
+        }
+
+        // ===========[ Subclasses/structs ]===================================
+        /// <summary>The light or dark the showroom shows, in the order the theme bar offers them.</summary>
+        public enum eThemeMode
+        {
+            /// <summary>Dark, whatever the device is set to</summary>
+            Dark,
+
+            /// <summary>Light, whatever the device is set to</summary>
+            Light,
+
+            /// <summary>The device's own light or dark, with AJut's touch default</summary>
+            System,
+        }
+    }
+}

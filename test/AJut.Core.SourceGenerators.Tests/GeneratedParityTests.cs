@@ -120,6 +120,103 @@ namespace ParityRouteNs
     }
 }";
 
+        // A dictionary whose keys are each one value is written as a document of its entries, and any other as an array of Key and
+        //  Value documents, which is also what a key matching one of AJson's own markers, or a KeyValuePair type id asked for,
+        //  makes of a dictionary of string keys
+        private const string kDictionaryFixture = @"
+using System.Collections.Generic;
+using AJut.Text.AJson;
+namespace ParityDictionaryNs
+{
+    public enum eShade { Light, Dark }
+
+    public struct Cell
+    {
+        public int Row { get; set; }
+        public int Column { get; set; }
+    }
+
+    [OptimizeAJson]
+    public class Dictionaries
+    {
+        public Dictionary<Cell, string> ByCell { get; set; }
+        public Dictionary<string, Cell> ByName { get; set; }
+        public SortedDictionary<int, eShade> ByNumber { get; set; }
+        public Dictionary<string, int> WithMarkerKey { get; set; }
+        public IDictionary<Cell, int> ThroughInterface { get; set; }
+        public IReadOnlyDictionary<Cell, int> ReadOnlyView { get; set; }
+        public Dictionary<Cell, int> GetOnly { get; } = new Dictionary<Cell, int>();
+        public Dictionary<Cell, int> LeftNull { get; set; }
+    }
+}";
+
+        [TestMethod]
+        public void Generated_Dictionaries_WriteAndReadTheSameTextAsReflection ()
+        {
+            Assembly generated = FixtureAssemblies.LoadWithGeneratedSerializers(kDictionaryFixture, "Parity_Generated_Dictionaries");
+            Assembly reflection = FixtureAssemblies.LoadWithoutGenerator(kDictionaryFixture, "Parity_Reflection_Dictionaries");
+
+            object fromGenerated = _BuildDictionaries(generated);
+            object fromReflection = _BuildDictionaries(reflection);
+            Assert.IsTrue(AJsonGeneratedDispatch.TryGet(fromGenerated.GetType(), out _), "the generated fixture registered its serializer");
+
+            JsonBuilderSettings withPairTypeIds = new JsonBuilderSettings
+            {
+                KeyValuePairKeyTypeIdToWrite = eTypeIdInfo.SystemTypeName,
+                KeyValuePairValueTypeIdToWrite = eTypeIdInfo.SystemTypeName,
+            };
+
+            foreach (JsonBuilderSettings settings in new[] { new JsonBuilderSettings(), withPairTypeIds })
+            {
+                string reflectionText = JsonHelper.BuildJsonForObject(fromReflection, settings).ToString();
+                Assert.AreEqual(reflectionText, JsonHelper.BuildJsonForObject(fromGenerated, settings).ToString());
+
+                // Each reads the reflection path's text back into something that writes the same text again
+                foreach (object source in new[] { fromGenerated, fromReflection })
+                {
+                    Json reparsed = JsonHelper.ParseText(reflectionText);
+                    object readBack = JsonHelper.BuildObjectForJson(source.GetType(), reparsed);
+                    Assert.IsFalse(reparsed.HasErrors, reparsed.GetErrorReport());
+                    Assert.AreEqual(reflectionText, JsonHelper.BuildJsonForObject(readBack, settings).ToString(), $"Read back by {source.GetType().Assembly.GetName().Name}");
+                }
+            }
+
+            static object _BuildDictionaries (Assembly _fixture)
+            {
+                Type cellType = _fixture.GetType("ParityDictionaryNs.Cell", throwOnError: true)!;
+                Type shadeType = _fixture.GetType("ParityDictionaryNs.eShade", throwOnError: true)!;
+                object _Cell (int _row, int _column)
+                {
+                    object cell = Activator.CreateInstance(cellType)!;
+                    SetProperty(cell, "Row", _row);
+                    SetProperty(cell, "Column", _column);
+                    return cell;
+                }
+
+                IDictionary _MakeDictionary (Type _definition, Type _key, Type _value, params object[] _keysAndValues)
+                {
+                    IDictionary dictionary = (IDictionary)Activator.CreateInstance(_definition.MakeGenericType(_key, _value))!;
+                    for (int index = 0; index < _keysAndValues.Length; index += 2)
+                    {
+                        dictionary.Add(_keysAndValues[index], _keysAndValues[index + 1]);
+                    }
+
+                    return dictionary;
+                }
+
+                object dictionaries = Activator.CreateInstance(_fixture.GetType("ParityDictionaryNs.Dictionaries", throwOnError: true)!)!;
+                SetProperty(dictionaries, "ByCell", _MakeDictionary(typeof(Dictionary<,>), cellType, typeof(string), _Cell(1, 2), "one-two", _Cell(3, 4), "three-four"));
+                SetProperty(dictionaries, "ByName", _MakeDictionary(typeof(Dictionary<,>), typeof(string), cellType, "first", _Cell(5, 6)));
+                SetProperty(dictionaries, "ByNumber", _MakeDictionary(typeof(SortedDictionary<,>), typeof(int), shadeType, 2, Enum.ToObject(shadeType, 1), 1, Enum.ToObject(shadeType, 0)));
+                SetProperty(dictionaries, "WithMarkerKey", new Dictionary<string, int> { { "__type", 1 }, { "plain", 2 } });
+                SetProperty(dictionaries, "ThroughInterface", _MakeDictionary(typeof(Dictionary<,>), cellType, typeof(int), _Cell(7, 8), 78));
+                SetProperty(dictionaries, "ReadOnlyView", _MakeDictionary(typeof(Dictionary<,>), cellType, typeof(int), _Cell(9, 10), 910));
+                IDictionary getOnly = (IDictionary)dictionaries.GetType().GetProperty("GetOnly")!.GetValue(dictionaries)!;
+                getOnly.Add(_Cell(11, 12), 1112);
+                return dictionaries;
+            }
+        }
+
         [TestMethod]
         public void Generated_WritesAndReadsTheSameAsReflection ()
         {

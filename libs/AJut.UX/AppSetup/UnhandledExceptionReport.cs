@@ -7,9 +7,7 @@ namespace AJut.UX
     /// the app should try to carry on, false to let it go the way it was going.
     /// </summary>
     /// <remarks>
-    /// This is the shared replacement for the per-stack ExceptionProcessor delegates, which have the same name in the
-    /// same namespace with different signatures and so cannot both be satisfied by one handler. Anything targeting both
-    /// WPF and WinUI3 wants this one.
+    /// Every stack's setup takes this same delegate, so one handler serves an app that targets more than one of them.
     /// </remarks>
     public delegate bool ApplicationExceptionProcessor (UnhandledExceptionReport report);
 

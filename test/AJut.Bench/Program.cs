@@ -32,7 +32,8 @@ namespace AJut.Bench
                 typeof(TinyBench),
                 typeof(MediumBench),
                 typeof(LargeBench),
-                typeof(TermExpressionBench),
+                typeof(TermMatcherBench),
+                typeof(TermFormulaBench),
             }).Run(args);
         }
 

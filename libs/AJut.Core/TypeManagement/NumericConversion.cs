@@ -3,20 +3,25 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Security.Permissions;
-    using System.Text;
+    using System.Numerics;
     using System.Text.RegularExpressions;
-    using System.Threading.Tasks;
 
     /// <summary>
     /// It's not always so straightforward to convert numbers between numeric types. These utilities help to ensure this is done safely.
     /// </summary>
+    /// <remarks>
+    /// Values whose numeric type is only known at runtime travel as boxed objects and are converted with
+    /// <see cref="Convert"/>, never through C# dynamic: dynamic needs the runtime binder, which compiles code at runtime,
+    /// and an ahead of time compiled app (iOS, and any NativeAOT build) has no compiler at runtime, so dynamic throws
+    /// there. Where a comparison has to happen in the value's own type, it goes through typed generic math
+    /// (<see cref="INumber{TSelf}"/>), which compiles ahead of time like any other generic code.
+    /// </remarks>
     public static class NumericConversion
     {
         // ===================================
         // Delegate Types
         // ===================================
-        private delegate bool AdvancedStringParser (string text, out dynamic value);
+        private delegate bool BoxedStringParser (string text, out object value);
         private delegate bool TypedNumericStringParser<T> (string text, out T value);
 
         // ===================================
@@ -26,19 +31,19 @@
         private static readonly Regex kNumericUnsignedIntegerPointParser = new Regex(@"\d+");
         private static readonly Regex kNumericSignedIntegerPointParser = new Regex(@"\-?\d+");
 
-        private static readonly Dictionary<Type, (dynamic Min, dynamic Max)> kMinMaxes = new Dictionary<Type, (dynamic Min, dynamic Max)>
+        private static readonly Dictionary<Type, NumericBounds> kMinMaxes = new Dictionary<Type, NumericBounds>
         {
-            { typeof(byte), (byte.MinValue, byte.MaxValue) },
-            { typeof(short), (short.MinValue, short.MaxValue) },
-            { typeof(int), (int.MinValue, int.MaxValue) },
-            { typeof(long), (long.MinValue, long.MaxValue) },
-            { typeof(float), (float.MinValue, float.MaxValue) },
-            { typeof(double), (double.MinValue, double.MaxValue) },
-            { typeof(decimal), (decimal.MinValue, decimal.MaxValue) },
-            { typeof(sbyte), (sbyte.MinValue, sbyte.MaxValue) },
-            { typeof(uint), (uint.MinValue, uint.MaxValue) },
-            { typeof(ushort), (ushort.MinValue, ushort.MaxValue) },
-            { typeof(ulong), (ulong.MinValue, ulong.MaxValue) },
+            { typeof(byte), new NumericBounds(byte.MinValue, byte.MaxValue) },
+            { typeof(short), new NumericBounds(short.MinValue, short.MaxValue) },
+            { typeof(int), new NumericBounds(int.MinValue, int.MaxValue) },
+            { typeof(long), new NumericBounds(long.MinValue, long.MaxValue) },
+            { typeof(float), new NumericBounds(float.MinValue, float.MaxValue) },
+            { typeof(double), new NumericBounds(double.MinValue, double.MaxValue) },
+            { typeof(decimal), new NumericBounds(decimal.MinValue, decimal.MaxValue) },
+            { typeof(sbyte), new NumericBounds(sbyte.MinValue, sbyte.MaxValue) },
+            { typeof(uint), new NumericBounds(uint.MinValue, uint.MaxValue) },
+            { typeof(ushort), new NumericBounds(ushort.MinValue, ushort.MaxValue) },
+            { typeof(ulong), new NumericBounds(ulong.MinValue, ulong.MaxValue) },
         };
 
         private static readonly Dictionary<Type, bool> kIsFloatingPointBasedNumericType = new Dictionary<Type, bool>
@@ -59,19 +64,19 @@
         private static readonly Dictionary<Type, bool> kIsUnsignedNumericType = new Dictionary<Type, bool>
         {
             { typeof(byte), true },
-            { typeof(short), true },
+            { typeof(short), false },
             { typeof(int), false },
             { typeof(long), false },
-            { typeof(float), true },
-            { typeof(double), true },
-            { typeof(decimal), true },
-            { typeof(sbyte), true },
+            { typeof(float), false },
+            { typeof(double), false },
+            { typeof(decimal), false },
+            { typeof(sbyte), false },
             { typeof(uint), true },
             { typeof(ushort), true },
             { typeof(ulong), true },
         };
 
-        private static readonly Dictionary<Type, AdvancedStringParser> kParsers = new Dictionary<Type, AdvancedStringParser>
+        private static readonly Dictionary<Type, BoxedStringParser> kParsers = new Dictionary<Type, BoxedStringParser>
         {
             { typeof(byte), BuildTypedNumericStringParser<byte>(byte.TryParse) },
             { typeof(short), BuildTypedNumericStringParser<short>(short.TryParse) },
@@ -91,13 +96,21 @@
         // ===================================
         public static bool IsSupportedNumericType (Type type) => kParsers.Keys.Contains(type);
 
-        public static T MinFor<T> () => kMinMaxes[typeof(T)].Min;
-        public static dynamic MinFor (Type targetNumericType) => kMinMaxes[targetNumericType].Min;
+        public static T MinFor<T> () => (T)kMinMaxes[typeof(T)].Min;
 
-        public static T MaxFor<T> () => kMinMaxes[typeof(T)].Max;
-        public static dynamic MaxFor (Type targetNumericType) => kMinMaxes[targetNumericType].Max;
+        /// <summary>The smallest value of <paramref name="targetNumericType"/>, boxed in that type.</summary>
+        public static object MinFor (Type targetNumericType) => kMinMaxes[targetNumericType].Min;
 
-        public static dynamic PerformSafeNumericCastToTarget (dynamic value, Type targetType, out bool didCapToNumericBoundaryMin, out bool didCapToNumericBoundaryMax)
+        public static T MaxFor<T> () => (T)kMinMaxes[typeof(T)].Max;
+
+        /// <summary>The largest value of <paramref name="targetNumericType"/>, boxed in that type.</summary>
+        public static object MaxFor (Type targetNumericType) => kMinMaxes[targetNumericType].Max;
+
+        /// <summary>
+        /// Converts a boxed number to <paramref name="targetType"/>, capping it to that type's range rather than letting it
+        /// overflow, and returns it boxed in <paramref name="targetType"/>. The flags say whether it had to be capped.
+        /// </summary>
+        public static object PerformSafeNumericCastToTarget (object value, Type targetType, out bool didCapToNumericBoundaryMin, out bool didCapToNumericBoundaryMax)
         {
             didCapToNumericBoundaryMin = false;
             didCapToNumericBoundaryMax = false;
@@ -108,104 +121,95 @@
                 return value;
             }
 
-            // Otherwise we're going to follow three simple steps:
-            //  1. Convert the value, minimum, and maximum to their respective "largest container" (to avoid overflow)
-            //  2. Compare and cap the largest container value with the largest container minimum and maximum
-            //  3. Return the capped value
-            //
-            // In this case by "largest container", I mean numeric type that can hold the biggest and smallest numbers. This is important
-            //  because otherwise you may cast an int of 5,000,000 to byte which would cause an overflow exception. So step one of byte would
-            //  be to put the byte's value and byte.Minimum & byte.Maximum all expressed as ulong (the largest comperable container possible)
-            //  then make the comparison & cap with the ulong values, then finally cast back the ulong to a byte.
+            // Otherwise the value is compared against the target's bounds in a type that holds the value, the minimum and the
+            //  maximum without overflowing, and either capped to a bound or converted. Converting first is not safe: an int of
+            //  5,000,000 converted to a byte overflows before there is anything to cap.
 
-            var minMaxOfTarget = kMinMaxes[targetType];
+            NumericBounds minMaxOfTarget = kMinMaxes[targetType];
 
             // If we're a floating point based target
             if (kIsFloatingPointBasedNumericType[targetType])
             {
-                // .. then double hold the largest minimum and maximum values
-                double valueInLargestContainer = DoNumericCast<double>(value);
-                double targetMinInLargestContainer = DoNumericCast<double>(minMaxOfTarget.Min);
-                double targetMaxInLargestContainer = DoNumericCast<double>(minMaxOfTarget.Max);
+                // .. then double holds the largest minimum and maximum values
+                double valueAsDouble = Convert.ToDouble(value);
+                double targetMinAsDouble = Convert.ToDouble(minMaxOfTarget.Min);
+                double targetMaxAsDouble = Convert.ToDouble(minMaxOfTarget.Max);
 
-                if (valueInLargestContainer < targetMinInLargestContainer)
+                if (valueAsDouble < targetMinAsDouble)
                 {
-                    valueInLargestContainer = targetMinInLargestContainer;
+                    valueAsDouble = targetMinAsDouble;
                     didCapToNumericBoundaryMin = true;
                 }
-                else if (valueInLargestContainer > targetMaxInLargestContainer)
+                else if (valueAsDouble > targetMaxAsDouble)
                 {
-                    valueInLargestContainer = targetMaxInLargestContainer;
+                    valueAsDouble = targetMaxAsDouble;
                     didCapToNumericBoundaryMax = true;
                 }
 
-                return Convert.ChangeType(valueInLargestContainer, targetType);
+                return Convert.ChangeType(valueAsDouble, targetType);
             }
-            // If it's an integer type, then we can only determine min/max after we decide if it's an unsigned type or not
-            else if (kIsUnsignedNumericType[targetType])
+
+            // An integer target. Any negative value caps an unsigned target at zero, even one that would round to zero.
+            if (kIsUnsignedNumericType[targetType] && IsNegative(value))
             {
-                // ... largest/smallest unsigned integer is ulong
-                if (value < 0)
-                {
-                    didCapToNumericBoundaryMin = true;
-                    value = 0ul;
-                }
+                didCapToNumericBoundaryMin = true;
+                return minMaxOfTarget.Min;
+            }
 
-                ulong valueInLargestContainer = DoNumericCast<ulong>(value);
-                ulong targetMinInLargestContainer = DoNumericCast<ulong>(minMaxOfTarget.Min);
-                ulong targetMaxInLargestContainer = DoNumericCast<ulong>(minMaxOfTarget.Max);
+            // The value is rounded half to even first, which is how Convert rounds, so a value that rounds onto a bound
+            //  converts rather than caps. A float or double is compared as a double, since it can be far beyond what decimal
+            //  holds, and anything else as a decimal, which holds every integer type exactly.
+            bool isBelowMin;
+            bool isAboveMax;
+            if (value is double || value is float)
+            {
+                double rounded = Math.Round(Convert.ToDouble(value));
 
-                if (valueInLargestContainer < targetMinInLargestContainer)
-                {
-                    valueInLargestContainer = targetMinInLargestContainer;
-                    didCapToNumericBoundaryMin = true;
-                }
-                else if (valueInLargestContainer > targetMaxInLargestContainer)
-                {
-                    valueInLargestContainer = targetMaxInLargestContainer;
-                    didCapToNumericBoundaryMax = true;
-                }
-
-                return Convert.ChangeType(valueInLargestContainer, targetType);
+                // Every integer type's minimum is exact as a double. long's and ulong's maximums are not: they round up to
+                //  the next power of two, which is itself out of range. One past the maximum rounds to that same power of
+                //  two, and is exact for every smaller type, so the test is whether the value reaches one past the maximum.
+                isBelowMin = rounded < Convert.ToDouble(minMaxOfTarget.Min);
+                isAboveMax = rounded >= Convert.ToDouble(minMaxOfTarget.Max) + 1.0;
             }
             else
             {
-                // ... largest/smallest signed integer is long
-                long valueInLargestContainer = DoNumericCast<long>(value);
-                long targetMinInLargestContainer = DoNumericCast<long>(minMaxOfTarget.Min);
-                long targetMaxInLargestContainer = DoNumericCast<long>(minMaxOfTarget.Max);
-
-                if (valueInLargestContainer < targetMinInLargestContainer)
-                {
-                    valueInLargestContainer = targetMinInLargestContainer;
-                    didCapToNumericBoundaryMin = true;
-                }
-                else if (valueInLargestContainer > targetMaxInLargestContainer)
-                {
-                    valueInLargestContainer = targetMaxInLargestContainer;
-                    didCapToNumericBoundaryMax = true;
-                }
-
-                return Convert.ChangeType(valueInLargestContainer, targetType);
+                decimal rounded = Math.Round(Convert.ToDecimal(value));
+                isBelowMin = rounded < Convert.ToDecimal(minMaxOfTarget.Min);
+                isAboveMax = rounded > Convert.ToDecimal(minMaxOfTarget.Max);
             }
 
-            T DoNumericCast<T> (dynamic inputValue)
+            if (isBelowMin)
             {
-                return (T)Convert.ChangeType(inputValue, typeof(T));
+                didCapToNumericBoundaryMin = true;
+                return minMaxOfTarget.Min;
             }
+
+            if (isAboveMax)
+            {
+                didCapToNumericBoundaryMax = true;
+                return minMaxOfTarget.Max;
+            }
+
+            return Convert.ChangeType(value, targetType);
         }
 
-        public static T PerformNumericTypeSafeCapping<T> (dynamic value, dynamic min, dynamic max, out bool hadToCapAtMin, out bool hadToCapAtMax)
+        /// <summary>
+        /// Converts a boxed number to <typeparamref name="T"/> (capped to its range, see
+        /// <see cref="PerformSafeNumericCastToTarget"/>), then caps it to <paramref name="min"/> and <paramref name="max"/>,
+        /// which may be boxed in any numeric type, or null for the type's own bound.
+        /// </summary>
+        public static T PerformNumericTypeSafeCapping<T> (object value, object min, object max, out bool hadToCapAtMin, out bool hadToCapAtMax)
+            where T : INumber<T>
         {
             // First cap value to be within the numeric bounds
             Type targetType = typeof(T);
 
             // This will ensure value is expressed in terms of the numeric boundaries (ie an int of 5,000,00 will be cast to a byte of 255)
-            dynamic castedValue = PerformSafeNumericCastToTarget(value, targetType, out hadToCapAtMin, out hadToCapAtMax);
+            T castedValue = (T)PerformSafeNumericCastToTarget(value, targetType, out hadToCapAtMin, out hadToCapAtMax);
 
-            var targetTypedMinMax = kMinMaxes[targetType];
-            dynamic castedMin = min == null ? targetTypedMinMax.Min : PerformSafeNumericCastToTarget(min, targetType, out bool _, out bool _);
-            dynamic castedMax = max == null ? targetTypedMinMax.Max : PerformSafeNumericCastToTarget(max, targetType, out bool _, out bool _);
+            NumericBounds targetTypedMinMax = kMinMaxes[targetType];
+            T castedMin = (T)(min == null ? targetTypedMinMax.Min : PerformSafeNumericCastToTarget(min, targetType, out bool _, out bool _));
+            T castedMax = (T)(max == null ? targetTypedMinMax.Max : PerformSafeNumericCastToTarget(max, targetType, out bool _, out bool _));
 
             // Next to ensure our value is within the user set boundaries
             if (castedValue < castedMin)
@@ -222,9 +226,9 @@
             return castedValue;
         }
 
-        public static bool TryParseString<T>(string stringValue, out T typedNumericValue)
+        public static bool TryParseString<T> (string stringValue, out T typedNumericValue)
         {
-            if (kParsers[typeof(T)](stringValue, out dynamic value))
+            if (kParsers[typeof(T)](stringValue, out object value))
             {
                 typedNumericValue = (T)value;
                 return true;
@@ -234,9 +238,14 @@
             return false;
         }
 
-        public static bool TryParseString (string stringValue, Type numericType, out dynamic numericValue)
+        /// <summary>
+        /// Parses <paramref name="stringValue"/> as <paramref name="numericType"/>, boxed in that type. When the type's own
+        /// parse fails, the first run of digits in the text that suits the type is parsed instead, except that an integer
+        /// type refuses text whose first number has a fraction ("43.5" is not an int).
+        /// </summary>
+        public static bool TryParseString (string stringValue, Type numericType, out object numericValue)
         {
-            if (kParsers[numericType](stringValue, out dynamic value))
+            if (kParsers[numericType](stringValue, out object value))
             {
                 numericValue = value;
                 return true;
@@ -246,10 +255,17 @@
             return false;
         }
 
-        private static AdvancedStringParser BuildTypedNumericStringParser<T> (TypedNumericStringParser<T> typedParser)
+        // ===================================
+        // Helpers
+        // ===================================
+        // Whether a boxed number is below zero, read in its own type. Every supported type converts to double exactly
+        // enough for a sign test, and a NaN reads as not negative, as a comparison in its own type would.
+        private static bool IsNegative (object value) => Convert.ToDouble(value) < 0;
+
+        private static BoxedStringParser BuildTypedNumericStringParser<T> (TypedNumericStringParser<T> typedParser)
         {
             Type targetType = typeof(T);
-            return (string stringValue, out dynamic parsedOutputValue) =>
+            return (string stringValue, out object parsedOutputValue) =>
             {
                 // First try the normal string parser
                 if (typedParser(stringValue, out T parsedValueTyped))
@@ -270,10 +286,24 @@
                 return false;
             };
 
-            bool _TryGetSubstringFor(string _toSearch, out string _subString)
+            bool _TryGetSubstringFor (string _toSearch, out string _subString)
             {
+                // An integer type cannot hold a number with a fraction, so text whose first number has one ("43.5") is
+                // refused rather than read as its whole part, which would hand back a different number than the text
+                // says with nothing to show for it
+                bool isFloatingPoint = kIsFloatingPointBasedNumericType[targetType];
+                if (!isFloatingPoint)
+                {
+                    Match firstNumber = kNumericWithFloatPointParser.Match(_toSearch);
+                    if (firstNumber.Success && firstNumber.Value.Contains('.'))
+                    {
+                        _subString = null;
+                        return false;
+                    }
+                }
+
                 Regex toUse;
-                if (kIsFloatingPointBasedNumericType[targetType])
+                if (isFloatingPoint)
                 {
                     toUse = kNumericWithFloatPointParser;
                 }
@@ -297,5 +327,9 @@
                 return false;
             }
         }
+
+        // ===========[ Subclasses/structs ]===================================
+        // A numeric type's own minimum and maximum, each boxed in that type
+        private sealed record NumericBounds (object Min, object Max);
     }
 }

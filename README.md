@@ -1,6 +1,6 @@
 # The AJut Libraries
-C# / dotnet 8 / wpf & winui - utility libraries, created by AJ Badarni
-<!-- 👇 nuget package table -->
+C# / dotnet 10 / wpf & winui - utility libraries, created by AJ Badarni
+<!-- nuget package table -->
 | | |
 |-|-|
 |AJut.Core|[![NuGet version (AJut.Core)](https://img.shields.io/nuget/v/AJut.Core.svg?style=flat-square)](https://www.nuget.org/packages/AJut.Core/) [![MIT License](https://img.shields.io/badge/license-MIT-green.svg?style=flat-square)](/LICENSE)|
@@ -27,7 +27,7 @@ As a matter of attribution, several of these utilities I have refined some with 
 
 `AJut.Core` ships AJson V2 in `AJut.Text.AJson`. V2 keeps the same shape and entry points as V1 but drops the editing-tracker overhead, replaces per-call heap allocations with pooled buffers, and adds a Roslyn source generator for trimming-friendly compile-time-emitted serialization helpers.
 
-V1 lives in `AJut.Text.AJson.Legacy`, `[Obsolete]` for one release cycle. To migrate: change `using AJut.Text.AJson.Legacy;` -> `using AJut.Text.AJson;`. The fix the typo on the way: `JsonInterpretterSettings` (V1) -> `JsonInterpreterSettings` (V2). API shape is otherwise the same.
+AJson V1 (`AJut.Text.AJson.Legacy`) is gone as of AJut 2.0. To move across, change `using AJut.Text.AJson.Legacy;` to `using AJut.Text.AJson;` and rename `JsonInterpretterSettings` to `JsonInterpreterSettings`. Everything else keeps its shape.
 
 ### Source generator (`[OptimizeAJson]`)
 

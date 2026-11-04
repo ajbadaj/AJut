@@ -166,6 +166,61 @@ namespace TestNs
             Assert.AreEqual(ePropertyKind.Dictionary, prop.Kind);
         }
 
+        // A member typed as one of the dictionary interfaces is a dictionary too, read and written by its key and value types
+        [TestMethod]
+        public void DictionaryInterfaceProperties_ClassifiedAsDictionary ()
+        {
+            const string src = @"
+using System.Collections.Generic;
+using AJut.Text.AJson;
+namespace TestNs
+{
+    [OptimizeAJson]
+    public class HasDictInterfaces
+    {
+        public IDictionary<string, int> Editable { get; set; }
+        public IReadOnlyDictionary<int, string> ReadOnly { get; set; }
+    }
+}";
+            CSharpCompilation compilation = TestCompilation.Build(src);
+            INamedTypeSymbol? type = TestCompilation.GetType(compilation, "TestNs.HasDictInterfaces");
+            TypeAnalyzer.AnalysisResult result = TypeAnalyzer.Analyze(type!);
+
+            PropertyModel editable = result.Model.Properties.Single(p => p.Name == "Editable");
+            Assert.AreEqual(ePropertyKind.Dictionary, editable.Kind, "IDictionary");
+            Assert.AreEqual("string", editable.DictionaryKeyTypeFullName);
+            Assert.AreEqual("int", editable.DictionaryValueTypeFullName);
+
+            PropertyModel readOnly = result.Model.Properties.Single(p => p.Name == "ReadOnly");
+            Assert.AreEqual(ePropertyKind.Dictionary, readOnly.Kind, "IReadOnlyDictionary");
+            Assert.AreEqual("int", readOnly.DictionaryKeyTypeFullName);
+            Assert.AreEqual("string", readOnly.DictionaryValueTypeFullName);
+        }
+
+        // A type of its own that is a dictionary, with no type arguments left to give, is still written and read as one
+        [TestMethod]
+        public void DictionarySubclassProperty_ClassifiedAsDictionary ()
+        {
+            const string src = @"
+using System.Collections.Generic;
+using AJut.Text.AJson;
+namespace TestNs
+{
+    public class Scores : Dictionary<string, int> { }
+
+    [OptimizeAJson]
+    public class HasScores { public Scores ByName { get; set; } }
+}";
+            CSharpCompilation compilation = TestCompilation.Build(src);
+            INamedTypeSymbol? type = TestCompilation.GetType(compilation, "TestNs.HasScores");
+            TypeAnalyzer.AnalysisResult result = TypeAnalyzer.Analyze(type!);
+
+            PropertyModel prop = result.Model.Properties.Single(p => p.Name == "ByName");
+            Assert.AreEqual(ePropertyKind.Dictionary, prop.Kind);
+            Assert.AreEqual("string", prop.DictionaryKeyTypeFullName);
+            Assert.AreEqual("int", prop.DictionaryValueTypeFullName);
+        }
+
         // ===========================[ Omit-if-default ]===========================
         [TestMethod]
         public void OmitIfDefault_NoArg_HasOmitButNoExplicit ()

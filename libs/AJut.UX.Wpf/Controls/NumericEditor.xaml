@@ -27,6 +27,8 @@
         <Setter Property="LabelForeground" Value="Black"/>
         <Setter Property="SnapsToDevicePixels" Value="True"/>
         <Setter Property="ErrorBrush" Value="#920"/>
+        <Setter Property="InsetShadowBrush" Value="#8000"/>
+        <Setter Property="InsetHighlightBrush" Value="#5FFF"/>
         <Setter Property="Background">
             <Setter.Value>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" >
@@ -77,7 +79,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:NumericEditor}">
-                    <Border Background="{TemplateBinding Background}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}">
+                    <Border x:Name="Frame" Background="{TemplateBinding Background}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}">
                         <Border.Style>
                             <Style TargetType="{x:Type Border}">
                                 <Setter Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:NumericEditor}}, Path=BorderBrush}"/>
@@ -182,19 +184,33 @@
                                         <ColumnDefinition />
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
+                                    <!-- The editor's own size and padding, whatever a theme gives text boxes -->
                                     <TextBox x:Name="PART_TextArea" BorderThickness="0" TextAlignment="{TemplateBinding NumberTextAlignment}" Padding="{TemplateBinding Padding}"
+                                             FontSize="{TemplateBinding FontSize}"
                                              Text="{ajut:TemplateBinding Path=DisplayValue.Text, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}" IsReadOnly="{TemplateBinding IsReadOnly}" IsReadOnlyCaretVisible="True"/>
                                     <TextBlock Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets" VerticalAlignment="Center" HorizontalAlignment="Right" 
                                                Grid.Column="1" Margin="2,4,2,2" FontSize="12"
                                                Foreground="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:NumericEditor}}, Path=ErrorBrush}"
                                                Visibility="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:NumericEditor}}, Path=DisplayValue.ShouldShowError, Converter={conv:BooleanToVisibilityConverter}}"/>
-                                    <Border BorderBrush="#8000" BorderThickness="1.4,1.4,0,0">
-                                        <Border BorderBrush="#5FFF" BorderThickness="0,0,1,1"/>
+                                    <Border BorderBrush="{TemplateBinding InsetShadowBrush}" BorderThickness="1.4,1.4,0,0">
+                                        <Border BorderBrush="{TemplateBinding InsetHighlightBrush}" BorderThickness="0,0,1,1"/>
                                     </Border>
                                 </Grid>
                             </DockPanel>
                         </Grid>
                     </Border>
+
+                    <!-- An editor that can't be edited, read-only or disabled (a read-only PropertyGrid row), fades as a
+                         whole, as a disabled WPF text box does, so it looks it. A fade rather than a brush, so the one
+                         trigger serves the themed look and the unthemed one. -->
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsReadOnly" Value="True">
+                            <Setter TargetName="Frame" Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Frame" Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

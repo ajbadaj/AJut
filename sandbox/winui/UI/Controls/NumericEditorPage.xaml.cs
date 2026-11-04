@@ -1,5 +1,6 @@
 namespace AJutShowRoomWinUI.UI.Controls
 {
+    using System;
     using Microsoft.UI.Xaml.Controls;
 
     /// <summary>
@@ -12,8 +13,14 @@ namespace AJutShowRoomWinUI.UI.Controls
             this.InitializeComponent();
         }
 
-        public string DemoCode { get; } = @"<ajut:NumericEditor Value=""42""/>
-<ajut:NumericEditor Value=""3.14""/>
+        /// <summary>The types the Integer, Float and Double rows keep their values in</summary>
+        public Type IntegerType { get; } = typeof(int);
+        public Type FloatType { get; } = typeof(float);
+        public Type DoubleType { get; } = typeof(double);
+
+        public string DemoCode { get; } = @"<!-- A literal arrives as text, so EnforceNumericType says what type to keep it in -->
+<ajut:NumericEditor Value=""42"" EnforceNumericType=""{x:Bind IntegerType}""/>
+<ajut:NumericEditor Value=""3.14"" EnforceNumericType=""{x:Bind FloatType}""/>
 <ajut:NumericEditor Value=""50"" Minimum=""0"" Maximum=""100""/>
 <ajut:NumericEditor Value=""1.5"" Nudge=""0.5""/>
 

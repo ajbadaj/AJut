@@ -1,5 +1,5 @@
 # AJut.Core
-C# / dotnet 5 utility library, created by AJ Badarni
+C# / dotnet 10 utility library, created by AJ Badarni
 
 ## Greetings
 I hope you enjoy using ajut.core. AJut is short for AJ Utilities, (pronounced like the dipping sauce Au Jus). This core library represents some dot net utilities that I have been building up since I first started developing - through the many side projects I've done over the years. The goal was to provide a simple project reference that will allow you to build and innovate without having to start completely from scratch or to have to bring in many many libraries to get things done.

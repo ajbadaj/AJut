@@ -31,6 +31,16 @@
                     </StackPanel>
                 </GroupBox>
 
+                <!-- ======[ Vertical ]====== -->
+                <GroupBox Header="Vertical" Margin="0,15,0,0" Padding="10">
+                    <StackPanel>
+                        <ajut:EnumToggleStrip Orientation="Vertical" SelectedItem="{Binding ElementName=Self, Path=DisplayMode, Mode=TwoWay}" HorizontalAlignment="Left"/>
+                        <TextBlock FontStyle="Italic" Opacity="0.8" Margin="0,5,0,0" TextWrapping="WrapWithOverflow">
+                            <Run Text="The same eDisplayMode with Orientation=Vertical, bound to the same value as the strip above, so picking in either moves both."/>
+                        </TextBlock>
+                    </StackPanel>
+                </GroupBox>
+
                 <!-- ======[ Multi select with [Flags] ]====== -->
                 <GroupBox Header="Multi-select on a [Flags] enum" Margin="0,15,0,0" Padding="10">
                     <StackPanel>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <ajut.ux.controls.EditableTextBlock
+        android:id="@+id/editable_text_block"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Kestrel"
+        android:enabled="false"
+        app:ajutIsReadOnly="true"
+        app:ajutNoTextSetMessage="Name it"
+        app:ajutEditTextInstigatorAction="doubleTap"
+        app:ajutEditTextInitializationBehavior="cursorAtEnd"
+        app:ajutLostFocusEditClose="cancel" />
+</FrameLayout>

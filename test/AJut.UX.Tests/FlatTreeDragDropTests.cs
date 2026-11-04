@@ -453,6 +453,175 @@ namespace AJut.UX.Tests
             Assert.AreEqual(1, target.InsertIndex);
         }
 
+        // ===========[ Touch drag Tests ]==========================================
+
+        [TestMethod]
+        public void TouchDrag_FingerStill_DropsAtTheDraggedRowsDepth ()
+        {
+            var t = BuildTestTree();
+            // Child C (depth 1) over the top half of GC A1: the gap under Child A takes depth 1 or 2. A finger that has not
+            // moved sideways keeps depth 1, a sibling of Child A, where an absolute x mid row would read as depth 2.
+            int gcA1Index = t.Store.IndexOf(FindFlatItem(t.Store, t.GcA1));
+            var draggedItems = new[] { FindFlatItem(t.Store, t.ChildC) };
+
+            double cursorX = FlatTreeDragDropManager.ComputeTouchDragCursorX(1, 0.0, kIndentSize);
+            var target = FlatTreeDragDropManager.ComputeDropTarget(t.Store, draggedItems, gcA1Index, 0.25, cursorX, kIndentSize);
+
+            Assert.IsTrue(target.IsValid);
+            Assert.AreEqual(1, target.TargetDepth);
+            Assert.AreEqual(t.Root, target.TargetParent);
+            Assert.AreEqual(1, target.InsertIndex);
+        }
+
+        [TestMethod]
+        public void TouchDrag_FingerOneIndentRight_DropsOneLevelDeeper ()
+        {
+            var t = BuildTestTree();
+            int gcA1Index = t.Store.IndexOf(FindFlatItem(t.Store, t.GcA1));
+            var draggedItems = new[] { FindFlatItem(t.Store, t.ChildC) };
+
+            double cursorX = FlatTreeDragDropManager.ComputeTouchDragCursorX(1, kIndentSize, kIndentSize);
+            var target = FlatTreeDragDropManager.ComputeDropTarget(t.Store, draggedItems, gcA1Index, 0.25, cursorX, kIndentSize);
+
+            Assert.IsTrue(target.IsValid);
+            Assert.AreEqual(2, target.TargetDepth);
+            Assert.AreEqual(t.ChildA, target.TargetParent);
+            Assert.AreEqual(0, target.InsertIndex);
+        }
+
+        [TestMethod]
+        public void TouchDrag_FingerOneIndentLeft_DropsOneLevelShallower ()
+        {
+            var t = BuildTestTree();
+            // GC A2 (depth 2) over the bottom half of GC B1: the gap above Child C takes depth 1 or 2
+            int gcB1Index = t.Store.IndexOf(FindFlatItem(t.Store, t.GcB1));
+            var draggedItems = new[] { FindFlatItem(t.Store, t.GcA2) };
+
+            double stillX = FlatTreeDragDropManager.ComputeTouchDragCursorX(2, 0.0, kIndentSize);
+            var still = FlatTreeDragDropManager.ComputeDropTarget(t.Store, draggedItems, gcB1Index, 0.75, stillX, kIndentSize);
+            double leftX = FlatTreeDragDropManager.ComputeTouchDragCursorX(2, -kIndentSize, kIndentSize);
+            var left = FlatTreeDragDropManager.ComputeDropTarget(t.Store, draggedItems, gcB1Index, 0.75, leftX, kIndentSize);
+
+            Assert.AreEqual(t.ChildB, still.TargetParent);
+            Assert.AreEqual(1, still.InsertIndex);
+            Assert.AreEqual(t.Root, left.TargetParent);
+            Assert.AreEqual(2, left.InsertIndex);
+        }
+
+        [TestMethod]
+        public void TouchDrag_FingerUnderHalfAnIndentEitherWay_KeepsItsDepth ()
+        {
+            const double kJustUnderHalf = kIndentSize / 2.0 - 0.1;
+            var t = BuildTestTree();
+            int gcA1Index = t.Store.IndexOf(FindFlatItem(t.Store, t.GcA1));
+            var draggedItems = new[] { FindFlatItem(t.Store, t.ChildC) };
+
+            foreach (double delta in new[] { kJustUnderHalf, -kJustUnderHalf })
+            {
+                double cursorX = FlatTreeDragDropManager.ComputeTouchDragCursorX(1, delta, kIndentSize);
+                var target = FlatTreeDragDropManager.ComputeDropTarget(t.Store, draggedItems, gcA1Index, 0.25, cursorX, kIndentSize);
+                Assert.AreEqual(1, target.TargetDepth, $"A finger {delta} sideways");
+            }
+        }
+
+        [TestMethod]
+        public void AutoScroll_AwayFromTheEdges_DoesNotScroll ()
+        {
+            Assert.AreEqual(0.0, FlatTreeDragDropManager.ComputeAutoScrollStep(200.0, 400.0, 48.0, 12.0));
+            Assert.AreEqual(0.0, FlatTreeDragDropManager.ComputeAutoScrollStep(48.0, 400.0, 48.0, 12.0));
+            Assert.AreEqual(0.0, FlatTreeDragDropManager.ComputeAutoScrollStep(352.0, 400.0, 48.0, 12.0));
+        }
+
+        [TestMethod]
+        public void AutoScroll_NearTheTop_ScrollsUpFasterTowardTheEdge ()
+        {
+            Assert.AreEqual(-6.0, FlatTreeDragDropManager.ComputeAutoScrollStep(24.0, 400.0, 48.0, 12.0), 1e-9);
+            Assert.AreEqual(-12.0, FlatTreeDragDropManager.ComputeAutoScrollStep(0.0, 400.0, 48.0, 12.0), 1e-9);
+            Assert.AreEqual(-12.0, FlatTreeDragDropManager.ComputeAutoScrollStep(-30.0, 400.0, 48.0, 12.0), 1e-9);
+        }
+
+        [TestMethod]
+        public void AutoScroll_NearTheBottom_ScrollsDownFasterTowardTheEdge ()
+        {
+            Assert.AreEqual(6.0, FlatTreeDragDropManager.ComputeAutoScrollStep(376.0, 400.0, 48.0, 12.0), 1e-9);
+            Assert.AreEqual(12.0, FlatTreeDragDropManager.ComputeAutoScrollStep(400.0, 400.0, 48.0, 12.0), 1e-9);
+            Assert.AreEqual(12.0, FlatTreeDragDropManager.ComputeAutoScrollStep(450.0, 400.0, 48.0, 12.0), 1e-9);
+        }
+
+        [TestMethod]
+        public void AutoScroll_InAListShorterThanBothEdges_SplitsItInHalf ()
+        {
+            // 60 tall with 48 edges: each zone is 30, so the middle is still and a quarter in scrolls at half speed
+            Assert.AreEqual(0.0, FlatTreeDragDropManager.ComputeAutoScrollStep(30.0, 60.0, 48.0, 12.0), 1e-9);
+            Assert.AreEqual(-6.0, FlatTreeDragDropManager.ComputeAutoScrollStep(15.0, 60.0, 48.0, 12.0), 1e-9);
+            Assert.AreEqual(6.0, FlatTreeDragDropManager.ComputeAutoScrollStep(45.0, 60.0, 48.0, 12.0), 1e-9);
+        }
+
+        // ===========[ Insertion line Tests ]======================================
+        // The rows, with the tree all expanded: 0 Child A, 1 GC A1, 2 GC A2, 3 Child B, 4 GC B1, 5 Child C
+
+        [TestMethod]
+        public void GapRow_TopHalfOfARow_IsThatRow_AndNeverAboveTheFirst ()
+        {
+            Assert.AreEqual(2, FlatTreeDragDropManager.ComputeGapRow(2, 0.25));
+            Assert.AreEqual(3, FlatTreeDragDropManager.ComputeGapRow(2, 0.75));
+            Assert.AreEqual(1, FlatTreeDragDropManager.ComputeGapRow(0, 0.25), "The gap over the first row's top half is below it");
+        }
+
+        [TestMethod]
+        public void InsertionLine_DropAfterASibling_GoesUnderThatSiblingsLastOpenRow ()
+        {
+            var t = BuildTestTree();
+            var target = new FlatTreeDropTarget(t.Root, 2, 1);
+
+            FlatTreeInsertionLine line = FlatTreeDragDropManager.ComputeInsertionLine(t.Store, target, 4, 0.75);
+
+            Assert.AreEqual(new FlatTreeInsertionLine(4, IsBelowRow: true), line, "Under GC B1, the last open row of Child B");
+        }
+
+        [TestMethod]
+        public void InsertionLine_ShallowerDropBetweenDeepRows_GoesUnderTheWholeSubtreeRatherThanAtTheGap ()
+        {
+            var t = BuildTestTree();
+            // The finger is between GC A1 and GC A2, moved left to depth 1: the drop lands after all of Child A
+            var target = new FlatTreeDropTarget(t.Root, 1, 1);
+
+            FlatTreeInsertionLine line = FlatTreeDragDropManager.ComputeInsertionLine(t.Store, target, 1, 0.75);
+
+            Assert.AreEqual(new FlatTreeInsertionLine(2, IsBelowRow: true), line, "Under GC A2, not over it");
+        }
+
+        [TestMethod]
+        public void InsertionLine_FirstChild_GoesUnderTheParentsRow ()
+        {
+            var t = BuildTestTree();
+            var target = new FlatTreeDropTarget(t.ChildB, 0, 2);
+
+            FlatTreeInsertionLine line = FlatTreeDragDropManager.ComputeInsertionLine(t.Store, target, 3, 0.75);
+
+            Assert.AreEqual(new FlatTreeInsertionLine(3, IsBelowRow: true), line);
+        }
+
+        [TestMethod]
+        public void InsertionLine_SiblingsReversed_GoesAtTheGapUnderTheFinger ()
+        {
+            var t = BuildTestTree();
+            var target = new FlatTreeDropTarget(t.Root, 1, 1);
+
+            FlatTreeInsertionLine overARow = FlatTreeDragDropManager.ComputeInsertionLine(t.Store, target, 2, 0.25, eSiblingOrder.Reversed);
+            FlatTreeInsertionLine pastTheEnd = FlatTreeDragDropManager.ComputeInsertionLine(t.Store, target, 5, 0.75, eSiblingOrder.Reversed);
+
+            Assert.AreEqual(new FlatTreeInsertionLine(2, IsBelowRow: false), overARow);
+            Assert.AreEqual(new FlatTreeInsertionLine(5, IsBelowRow: true), pastTheEnd, "The gap after the last row is under it");
+        }
+
+        [TestMethod]
+        public void InsertionLine_InvalidTarget_IsNull ()
+        {
+            var t = BuildTestTree();
+            Assert.IsNull(FlatTreeDragDropManager.ComputeInsertionLine(t.Store, FlatTreeDropTarget.Invalid, 2, 0.25));
+        }
+
         // ===========[ Helpers ]===================================================
 
         private static FlatTreeItem FindFlatItem (ObservableFlatTreeStore<FlatTreeItem> store, IObservableTreeNode source)

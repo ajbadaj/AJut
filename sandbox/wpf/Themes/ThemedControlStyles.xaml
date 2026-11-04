@@ -8,4 +8,26 @@
     <Style TargetType="{x:Type ajut:DefaultDockTearoffWindow}" BasedOn="{StaticResource AJut_Style_DefaultDockTearoffWindow}">
         <Setter Property="Title" Value="Showroom Child Window"/>
     </Style>
+
+    <!-- ====[ Showroom surfaces on the AJut palette ]====
+         With themes off the palette is still loaded but the themed styles are not, so a page that set a palette
+         surface itself would keep it while its text went to the unthemed default (black on a dark palette surface).
+         Pages take these by DynamicResource instead; with themes off the keys are missing and each element falls
+         back to its own default look. -->
+    <Style x:Key="Showroom_Style_TitleEmphasis" TargetType="{x:Type TextBlock}" BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_TitleBarForegroundImportant}"/>
+    </Style>
+    <Style x:Key="Showroom_Style_LandingBumpStack" TargetType="{x:Type ajut:BumpStack}" BasedOn="{StaticResource {x:Type ajut:BumpStack}}">
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_PopupBackground}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightDesat}"/>
+    </Style>
+    <Style x:Key="Showroom_Style_CardBanner" TargetType="{x:Type Border}" BasedOn="{StaticResource {x:Type Border}}">
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_Rimlighting}"/>
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_BannerBackground}"/>
+        <Setter Property="TextElement.Foreground" Value="{DynamicResource AJut_Brush_BannerForeground}"/>
+    </Style>
+    <Style x:Key="Showroom_Style_InfoPane" TargetType="{x:Type Border}" BasedOn="{StaticResource {x:Type Border}}">
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_PanelBackground}"/>
+    </Style>
 </ResourceDictionary>

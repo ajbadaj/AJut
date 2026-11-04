@@ -39,19 +39,25 @@
         /// Create an instance of the given type, avoiding common <see cref="Activator.CreateInstance"/> issues, and
         /// including the custom type factories registered.
         /// </summary>
-        public static object CreateInstanceOfArray ([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type arrayType, int arrayCount)
+        public static object CreateInstanceOfArray ([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type arrayType, int arrayCount)
         {
             if (arrayType.IsArray)
             {
-                return Activator.CreateInstance(arrayType, new object[] { arrayCount });
+                return CreateArray(arrayType, arrayCount);
             }
 
             return Activator.CreateInstance(arrayType);
+
+            // An array's constructors are made by the runtime for its array type rather than written in IL, so there is
+            //  nothing on one for the trimmer to remove, and the trimmer's analysis can't say so itself.
+            [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "An array type's constructors come from the runtime, not from IL the trimmer could remove.")]
+            static object CreateArray (Type arrayType, int arrayCount) => Activator.CreateInstance(arrayType, new object[] { arrayCount });
         }
 
         /// <summary>
         /// Create an instance of the type associated to the given type identifier
         /// </summary>
+        [RequiresUnreferencedCode("Falls back to finding the type by name when its id isn't registered, and trimming can remove a type nothing else uses. Register the type with TypeIdRegistrar to keep it.")]
         public static object CreateInstanceOf (string typeIdentifier)
         {
             if (TypeIdRegistrar.TryGetType(typeIdentifier, out Type type))

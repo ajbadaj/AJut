@@ -31,6 +31,20 @@
     <PathGeometry x:Key="AJut_PathGeom_SliderLeftRightFacing" Figures="M0.5,0.5L18.5,0.5 18.5,11.5 0.5,11.5z"/>
 
 
+    <!-- What keyboard focus draws on a control: the stock dotted outline's shape, in the palette's bright highlight.
+         Every themed style of a control that can take keyboard focus sets it, since WPF looks the default one up in
+         the system theme only, past the app's resources. -->
+    <Style x:Key="AJut_Style_FocusVisual">
+        <Setter Property="Control.Template">
+            <Setter.Value>
+                <ControlTemplate>
+                    <Rectangle Margin="2" StrokeThickness="1" StrokeDashArray="1 2" SnapsToDevicePixels="True"
+                               Stroke="{DynamicResource AJut_Brush_PrimaryHighlightBright}"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style x:Key="AJut_Style_DefaultTextBlock" TargetType="{x:Type TextBlock}">
         <Setter Property="FontFamily" Value="{Binding RelativeSource={RelativeSource Self}, Path=(TextElement.FontFamily)}"/>
         <Style.Triggers>
@@ -52,6 +66,7 @@
 
     <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource AJut_Style_DefaultTextBlock}"/>
     <Style TargetType="{x:Type ajut_ctrls:EditableTextBlock}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
     </Style>
 
@@ -65,60 +80,135 @@
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:NumericEditor}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_PopOutControlBackground}" />
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_TextBoxBorder}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_SymbolForeground}"/>
         <Setter Property="ErrorBrush" Value="{DynamicResource AJut_Brush_BadStuff}"/>
+        <!-- The nudge buttons sit over the label, so the hover fill is a wash of the bright highlight the label shows
+             through. Pressed keeps the default style's pushed-in gradient: it is translucent shading rather than a color, so
+             it suits either palette and the label still shows through it, the same as WinUI3's. -->
+        <Setter Property="IncreaseHoverHighlight">
+            <Setter.Value>
+                <SolidColorBrush Color="{DynamicResource AJut_Color_PrimaryHighlightBright}" Opacity="0.45"/>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="DecreaseHoverHighlight">
+            <Setter.Value>
+                <SolidColorBrush Color="{DynamicResource AJut_Color_PrimaryHighlightBright}" Opacity="0.45"/>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="InsetShadowBrush" Value="{DynamicResource AJut_Brush_Shadow}"/>
+        <Setter Property="InsetHighlightBrush" Value="{DynamicResource AJut_Brush_Rimlighting}"/>
         <Setter Property="Padding" Value="1"/>
         <Setter Property="LabelPadding" Value="4"/>
         <Setter Property="FontFamily" Value="Consolas"/>
+        <!-- Focus and hover show on the border only; the label glyph keeps its color -->
         <Style.Triggers>
             <Trigger Property="IsKeyboardFocusWithin" Value="True">
-                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_SymbolForegroundHighlight}"/>
                 <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
             </Trigger>
             <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_SymbolForegroundHighlight}"/>
-                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightBrightBright}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightBright}" />
             </Trigger>
         </Style.Triggers>
     </Style>
 
+    <!-- The selected item is tinted with the primary highlight and keeps the strip's text color. Hover, over any item, is
+         the full primary highlight with the light text that sits on it, so hover and selection read as one color. -->
     <Style TargetType="{x:Type ajut_ctrls:ToggleStrip}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="OverflowPopupBackground" Value="{DynamicResource AJut_Brush_PopupBackground}"/>
         <Setter Property="OverflowPopupBorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_OverlayBlockoutBackground}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_PopOutControlBackground}" />
-        <Setter Property="BackgroundPressedColorBase" Value="{DynamicResource AJut_Color_SecondaryHighlightBright}"/>
-        <Setter Property="BackgroundHover" Value="{DynamicResource AJut_Brush_SecondaryHighlight}" />
-        <Setter Property="BackgroundHoverOverPressed">
-            <Setter.Value>
-                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                    <GradientStop Offset="0.0" Color="{DynamicResource AJut_Color_SecondaryHighlightDark}" />
-                    <GradientStop Offset="0.3" Color="{DynamicResource AJut_Color_SecondaryHighlightBright}" />
-                    <GradientStop Offset="1" Color="{DynamicResource AJut_Color_SecondaryHighlightBright}" />
-                </LinearGradientBrush>
-            </Setter.Value>
-        </Setter>
+        <Setter Property="BackgroundPressedColorBase" Value="{DynamicResource AJut_Color_PrimaryHighlight}"/>
+        <Setter Property="BackgroundHover" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+        <Setter Property="BackgroundHoverOverPressed" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
         <Setter Property="SeparatorThickness" Value="1"/>
         <Setter Property="SeparatorBrush" Value="{DynamicResource AJut_Brush_OverlayBlockoutBackground}" />
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
-        <Setter Property="ForegroundHover" Value="{DynamicResource AJut_Brush_ImportantText}"/>
-        <Setter Property="ForegroundPressed" Value="{DynamicResource AJut_Brush_ImportantText}"/>
+        <Setter Property="ForegroundHover" Value="{DynamicResource AJut_Brush_HighContrastText}"/>
+        <Setter Property="ForegroundPressed" Value="{DynamicResource AJut_Brush_NormalText}"/>
+        <!-- Disabled, as the themed ComboBox: the flat disabled fill and the common border, with the understated text
+             faded further (WinUI3's AJut_ToggleStrip_DisabledForeground), so it reads as disabled in Light as well -->
+        <Setter Property="DisabledBackground" Value="{DynamicResource AJut_Brush_ControlBackgroundDisabled}"/>
+        <Setter Property="DisabledBorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="DisabledForeground">
+            <Setter.Value>
+                <SolidColorBrush Color="{DynamicResource AJut_Color_UnderstatedText}" Opacity="0.6"/>
+            </Setter.Value>
+        </Setter>
+        <!-- The selected item, muted: a faded, desaturated primary -->
+        <Setter Property="DisabledSelectedBackground">
+            <Setter.Value>
+                <SolidColorBrush Color="{DynamicResource AJut_Color_PrimaryHighlightDesat}" Opacity="0.55"/>
+            </Setter.Value>
+        </Setter>
+        <!-- Vertical, the scroll and overflow buttons take the plain button colors, as WinUI3's do -->
+        <Setter Property="VerticalButtonBackground" Value="{DynamicResource AJut_Brush_ControlBackground}"/>
+        <Setter Property="VerticalButtonForeground" Value="{DynamicResource AJut_Brush_NormalText}"/>
+        <Setter Property="VerticalButtonBorderBrush" Value="{DynamicResource AJut_Brush_ButtonBorder}"/>
+    </Style>
+
+    <!-- EnumToggleStrip hands its own brushes to its inner ToggleStrip as local values, which win over the themed
+         ToggleStrip style above, so it needs the same themed brushes itself. Keep the two in step. -->
+    <Style TargetType="{x:Type ajut_ctrls:EnumToggleStrip}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_OverlayBlockoutBackground}"/>
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_PopOutControlBackground}" />
+        <Setter Property="BackgroundPressedColorBase" Value="{DynamicResource AJut_Color_PrimaryHighlight}"/>
+        <Setter Property="BackgroundHover" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+        <Setter Property="BackgroundHoverOverPressed" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+        <Setter Property="SeparatorThickness" Value="1"/>
+        <Setter Property="SeparatorBrush" Value="{DynamicResource AJut_Brush_OverlayBlockoutBackground}" />
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
+        <Setter Property="ForegroundHover" Value="{DynamicResource AJut_Brush_HighContrastText}"/>
+        <Setter Property="ForegroundPressed" Value="{DynamicResource AJut_Brush_NormalText}"/>
+        <Setter Property="DisabledBackground" Value="{DynamicResource AJut_Brush_ControlBackgroundDisabled}"/>
+        <Setter Property="DisabledBorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="DisabledForeground">
+            <Setter.Value>
+                <SolidColorBrush Color="{DynamicResource AJut_Color_UnderstatedText}" Opacity="0.6"/>
+            </Setter.Value>
+        </Setter>
+        <!-- The selected item, muted: a faded, desaturated primary -->
+        <Setter Property="DisabledSelectedBackground">
+            <Setter.Value>
+                <SolidColorBrush Color="{DynamicResource AJut_Color_PrimaryHighlightDesat}" Opacity="0.55"/>
+            </Setter.Value>
+        </Setter>
+        <!-- Vertical, the scroll and overflow buttons take the plain button colors, as WinUI3's do -->
+        <Setter Property="VerticalButtonBackground" Value="{DynamicResource AJut_Brush_ControlBackground}"/>
+        <Setter Property="VerticalButtonForeground" Value="{DynamicResource AJut_Brush_NormalText}"/>
+        <Setter Property="VerticalButtonBorderBrush" Value="{DynamicResource AJut_Brush_ButtonBorder}"/>
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:FlatTreeListControl}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="SelectionBrush" Value="{DynamicResource AJut_Brush_TreeSelection}"/>
         <Setter Property="SelectionInactiveBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightDesat}"/>
         <Setter Property="ExpandCollapseGlyphSize" Value="10"/>
         <Setter Property="GlyphBrush" Value="{DynamicResource AJut_Brush_NormalText}"/>
-        <Setter Property="GlyphHighlightBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+        <Setter Property="GlyphHighlightBrush" Value="{DynamicResource AJut_Brush_SymbolForegroundHighlight}"/>
+        <Setter Property="GlyphBackgroundHighlightBrush" Value="{DynamicResource AJut_Brush_MouseInteractionHighlight}"/>
+        <Setter Property="GlyphBackgroundPressedBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightDark}"/>
+        <Setter Property="InsertionLineBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+        <Setter Property="ParentConnectorBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightDesat}"/>
+        <Setter Property="DragTargetHighlightBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+        <Setter Property="DragGhostBackground" Value="{DynamicResource AJut_Brush_PopupBackground}"/>
+        <Setter Property="DragGhostBorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="DragGhostForeground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_ListBackground}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ListBorder}"/>
+        <!-- Outlined, as WinUI3's themed tree is. Set BorderThickness to 0 to leave it off. A PropertyGrid's tree takes the
+             grid's own BorderThickness instead, so a grid never draws two. -->
+        <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="ListBoxItemContainerStyle">
             <Setter.Value>
                 <Style TargetType="{x:Type ListBoxItem}">
+                    <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
                     <Setter Property="SnapsToDevicePixels" Value="True" />
                     <Setter Property="BorderBrush" Value="Transparent"/>
                     <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
@@ -177,7 +267,14 @@
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:PropertyGrid}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ListBorder}" />
+        <Setter Property="LabelSplitterBrush" Value="{DynamicResource AJut_Brush_ListSelection}"/>
+        <!-- The keys WinUI3's PropertyGridItemRow aliases: the label outline on the list selection, and the row hover on
+             the list's selection background with the common border -->
+        <Setter Property="SelectionBorderBrush" Value="{DynamicResource AJut_Brush_ListSelection}"/>
+        <Setter Property="RowHoverBackground" Value="{DynamicResource AJut_Brush_ListSelectionBackground}"/>
+        <Setter Property="RowHoverBorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_ListBackground}"/>
         <Setter Property="TextLabelStyle">
             <Setter.Value>
@@ -194,140 +291,246 @@
         </Style.Triggers>
     </Style>
 
+    <!-- The color controls' swatch shows a translucent color over a backing striped with lines, so its transparency
+         reads. Themed, the stripes are the palette's shadow over the text box fill. -->
     <Style TargetType="{x:Type ajut_ctrls:ColorEditIngressControl}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
         <Setter Property="HighlightBorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
         <Setter Property="PopupWidth" Value="275"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_InnerPanelBackground}"/>
+        <Setter Property="BackingFillBrush" Value="{DynamicResource AJut_Brush_TextBoxBackground}"/>
+        <Setter Property="TransparencyLinesBrush">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="5,5" MappingMode="Absolute" SpreadMethod="Reflect">
+                    <GradientStop Offset="0.00" Color="{DynamicResource AJut_Color_Shadow}" />
+                    <GradientStop Offset="0.10" Color="{DynamicResource AJut_Color_Shadow}" />
+                    <GradientStop Offset="0.10" Color="Transparent" />
+                    <GradientStop Offset="0.90" Color="Transparent" />
+                    <GradientStop Offset="0.90" Color="{DynamicResource AJut_Color_Shadow}" />
+                    <GradientStop Offset="1.00" Color="{DynamicResource AJut_Color_Shadow}" />
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+        <!-- Shadow over the top half, rim light over the bottom, faded down to a sheen. Each half fades from clear of
+             its own shade (clear black, then clear white), so neither picks up a gray haze on the way. -->
+        <Setter Property="CoverGlossBrush">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1" Opacity="0.3">
+                    <GradientStop Offset="0.00" Color="#00000000" />
+                    <GradientStop Offset="0.50" Color="{DynamicResource AJut_Color_Shadow}" />
+                    <GradientStop Offset="0.50" Color="{DynamicResource AJut_Color_RimLighting}" />
+                    <GradientStop Offset="1.00" Color="Transparent" />
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="CornerBannerForeground" Value="{DynamicResource AJut_Brush_SymbolForegroundHighlight}"/>
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:ColorValueEditControl}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_InnerPanelBackground}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="BackingFillBrush" Value="{DynamicResource AJut_Brush_TextBoxBackground}"/>
+        <Setter Property="TransparencyLinesBrush">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="5,5" MappingMode="Absolute" SpreadMethod="Reflect">
+                    <GradientStop Offset="0.00" Color="{DynamicResource AJut_Color_Shadow}" />
+                    <GradientStop Offset="0.10" Color="{DynamicResource AJut_Color_Shadow}" />
+                    <GradientStop Offset="0.10" Color="Transparent" />
+                    <GradientStop Offset="0.90" Color="Transparent" />
+                    <GradientStop Offset="0.90" Color="{DynamicResource AJut_Color_Shadow}" />
+                    <GradientStop Offset="1.00" Color="{DynamicResource AJut_Color_Shadow}" />
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- The overlay that dims the editor while the value is null -->
+    <Style TargetType="{x:Type ajut_ctrls:NullableEditor}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
+        <!-- WinUI3's themed shade is the same literal in both themes, AJut_NullableEditor_OverlayBackground, which has no
+             WPF palette entry; the label takes the theme's normal text, as WinUI3's AJut_NullableEditor_NotSetForeground -->
+        <Setter Property="OverlayBackground" Value="#8000"/>
+        <Setter Property="NotSetForeground" Value="{DynamicResource AJut_Brush_NormalText}"/>
+    </Style>
+
+    <Style TargetType="{x:Type ajut_ctrls:PathSelectionControl}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_PopOutControlBackground}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_TextBoxBorder}"/>
+        <Setter Property="TextBoxBorderBrush" Value="{DynamicResource AJut_Brush_Shadow}"/>
+        <Setter Property="FocusedBorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+        <Setter Property="InvalidPathBorderBrush" Value="{DynamicResource AJut_Brush_BadStuff}"/>
+        <Setter Property="InvalidPathGlowBrush" Value="{DynamicResource AJut_Brush_ErrorGlow}"/>
+        <Setter Property="InvalidForegroundSymbol" Value="{DynamicResource AJut_Brush_NormalText}"/>
+        <Setter Property="ButtonBackground" Value="{DynamicResource AJut_Brush_PopOutControlBackground}"/>
+        <Setter Property="ButtonForeground" Value="{DynamicResource AJut_Brush_SymbolForeground}"/>
+        <Setter Property="ButtonHoverBackground" Value="{DynamicResource AJut_Brush_PrimaryHighlightBright}"/>
+        <Setter Property="ButtonHoverForeground" Value="{DynamicResource AJut_Brush_HighlightText}"/>
+        <Setter Property="ButtonPressedBackground" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+        <Setter Property="ButtonPressedForeground" Value="{DynamicResource AJut_Brush_HighlightText}"/>
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:DockZone}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
         <Setter Property="PanelBackground" Value="{DynamicResource AJut_Brush_PanelBackground}"/>
-        <Setter Property="PanelBorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="PanelBorderBrush" Value="{DynamicResource AJut_Brush_PanelBorder}"/>
         <Setter Property="PanelBorderThickness" Value="1"/>
-        <Setter Property="PanelCornerRadius" Value="0,10,0,10"/>
+        <!-- Square on top, where the header meets the panel above it, and rounded at the bottom over the tabs, as on WinUI3 -->
+        <Setter Property="PanelCornerRadius" Value="0,0,8,8"/>
         <Setter Property="SeparatorBrush" Value="Transparent" />
     </Style>
 
+    <!-- The panel header and the unselected panel tabs frame a dock panel on the navigation level; the
+         panel and its selected tab are on the panel color -->
     <Style TargetType="{x:Type ajut_ctrls:DockZoneSelectedHeaderControl}">
-        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
-        <Setter Property="HeaderBackground" Value="{DynamicResource AJut_Brush_BannerBackground}"/>
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PanelBorder}"/>
+        <Setter Property="HeaderBackground" Value="{DynamicResource AJut_Brush_NavigationPanelBackground}"/>
         <Setter Property="HeaderHighlightBackground" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
         <Setter Property="HeaderFocusedBackground" Value="{DynamicResource AJut_Brush_PrimaryHighlightDark}"/>
 
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_BannerForeground}"/>
-        <Setter Property="HeaderHighlightedForeground" Value="{DynamicResource AJut_Brush_HighlightText}"/>
-        <Setter Property="HeaderFocusedForeground" Value="{DynamicResource AJut_Brush_ImportantText}"/>
+        <!-- Under the pointer and while its panel has focus the header fills with the primary highlight, so its title
+             takes the light text the theme puts on that highlight -->
+        <Setter Property="HeaderHighlightedForeground" Value="{DynamicResource AJut_Brush_HighContrastText}"/>
+        <Setter Property="HeaderFocusedForeground" Value="{DynamicResource AJut_Brush_HighContrastText}"/>
 
         <Setter Property="FontSize" Value="18"/>
     </Style>
     
     <Style TargetType="{x:Type ajut_ctrls:DockZoneTabHeadersControl}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="HeaderBackground" Value="{DynamicResource AJut_Brush_InnerPanelBackground}"/>
+        <Setter Property="HeaderBackground" Value="{DynamicResource AJut_Brush_NavigationPanelBackground}"/>
         <Setter Property="HeaderSelectedBackground" Value="{DynamicResource AJut_Brush_PanelBackground}"/>
         <Setter Property="HeaderHighlightBackground" Value="{DynamicResource AJut_Brush_PrimaryHighlightDesat}"/>
-        <Setter Property="HeaderBorder" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="HeaderBorder" Value="{DynamicResource AJut_Brush_PanelBorder}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_HighContrastText}"/>
-        <Setter Property="TabPanelHeaderMargin" Value="8,-1,3,0"/>
+        <!-- The tabs sit 7 in from the panel's sides and a selected tab ends 7 above its bottom, as on WinUI3: with the
+             header items' own 2 at the sides and each tab's -1 overlap on the left, and a selected tab's 1 below it -->
+        <Setter Property="TabPanelHeaderMargin" Value="6,-1,5,6"/>
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:DockDropInsertionDriverWidget}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_InnerPanelBackground}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
         <Setter Property="GlyphBrush" Value="{DynamicResource AJut_Brush_TitleBarForeground}"/>
         <Setter Property="GlyphBorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
 
         <Setter Property="BackgroundHighlighted" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+        <Setter Property="BorderHighlighted" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
         <Setter Property="GlyphHighlightedBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightDark}"/>
         <Setter Property="GlyphHighlightedBorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightDesat}"/>
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:DockWholeWindowDragStartControl}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="GlyphBrush" Value="{DynamicResource AJut_Brush_SymbolForeground}"/>
         <Setter Property="GlyphBrushHighlighted" Value="{DynamicResource AJut_Brush_SymbolForegroundHighlight}"/>
+        <Setter Property="BackgroundBrushHighlighted" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+        <Setter Property="BorderBrushHighlighted" Value="{DynamicResource AJut_Brush_Shadow}"/>
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:WindowChromeButtonStrip}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="ButtonPadding" Value="12" />
         <Setter Property="ButtonGlyphFontSize" Value="10" />
         <Setter Property="ButtonBorder" Value="Transparent"/>
         <Setter Property="ButtonBackground" Value="#01000000"/>
         <Setter Property="ButtonGlyphForeground" Value="{DynamicResource AJut_Brush_TitleBarForeground}"/>
-        <Setter Property="ButtonCornerRadius" Value="0,0,3,3"/>
+        <!-- Square, as Windows' own caption buttons and WinUI3's are -->
+        <Setter Property="ButtonCornerRadius" Value="0"/>
 
+        <!-- Under the pointer a button sinks into shadow, and pressed it catches the light -->
         <Setter Property="ButtonHoverBackground" Value="{DynamicResource AJut_Brush_ChromeButtonHoverBackground}"/>
-        <Setter Property="ButtonHoverBorder" Value="#C000"/>
+        <Setter Property="ButtonHoverBorder" Value="{DynamicResource AJut_Brush_Shadow}"/>
         <Setter Property="ButtonHoverGlyphForeground" Value="{DynamicResource AJut_Brush_ChromeButtonHoverForeground}"/>
 
         <Setter Property="ButtonPressedBackground" Value="{DynamicResource AJut_Brush_ChromeButtonPressedBackground}"/>
-        <Setter Property="ButtonPressedBorder" Value="#3FFF"/>
+        <Setter Property="ButtonPressedBorder" Value="{DynamicResource AJut_Brush_Rimlighting}"/>
         <Setter Property="ButtonPressedGlyphForeground" Value="{DynamicResource AJut_Brush_ChromeButtonPressedForeground}"/>
 
-        <Setter Property="ButtonBorder" Value="Transparent"/>
-        <Setter Property="ButtonHoverBorder" Value="#C000"/>
-        <Setter Property="ButtonPressedBorder" Value="#3FFF"/>
-        <Setter Property="CloseButtonHoverBorder" Value="#5FFF"/>
-
         <!--Special case for close-->
-        <Setter Property="CloseButtonHoverGlyphForeground" Value="#DDD"/>
+        <Setter Property="CloseButtonHoverGlyphForeground" Value="{DynamicResource AJut_Brush_ChromeButtonHoverForeground}"/>
         <Setter Property="CloseButtonHoverBackground" Value="{DynamicResource AJut_Brush_ChromeCloseButtonHighlight}"/>
-        <Setter Property="CloseButtonHoverBorder" Value="#5FFF"/>
+        <Setter Property="CloseButtonHoverBorder" Value="{DynamicResource AJut_Brush_Rimlighting}"/>
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:PopupMenuButton}">
-        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ButtonBorder}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_PopupBackground}"/>
         <Setter Property="MenuBackground" Value="{DynamicResource AJut_Brush_ListBackground}"/>
+        <Setter Property="MenuShadowColor" Value="{DynamicResource AJut_Color_Shadow}"/>
+        <Setter Property="MenuShadowOpacity" Value="{DynamicResource AJut_Double_StandardShadowOpacity}"/>
         <Setter Property="ButtonStyle" Value="{DynamicResource AJut_Style_ToggleButton}"/>
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:StackNavActiveHeaderPresenter}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_TitleBarBackground}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_TitleBarForeground}"/>
         <Setter Property="NavButtonForeground" Value="{DynamicResource AJut_Brush_TitleBarForeground}"/>
-        <Setter Property="NavButtonForegroundHighlight" Value="{DynamicResource AJut_Brush_TitleBarForegroundImportant}"/>
-        <Setter Property="NavButtonBackgroundHover" Value="{DynamicResource AJut_Brush_PrimaryHighlightDark}"/>
-        <Setter Property="NavButtonBackgroundPressed" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+        <!-- The back and drawer buttons are title bar buttons, so they take the chrome buttons' hover and press, as the
+             window's own buttons beside them do -->
+        <Setter Property="NavButtonForegroundHighlight" Value="{DynamicResource AJut_Brush_ChromeButtonHoverForeground}"/>
+        <Setter Property="NavButtonBackgroundHover" Value="{DynamicResource AJut_Brush_ChromeButtonHoverBackground}"/>
+        <Setter Property="NavButtonBackgroundPressed" Value="{DynamicResource AJut_Brush_ChromeButtonPressedBackground}"/>
+        <Style.Triggers>
+            <!-- The header is the title bar of a window built on a StackNavDisplay, so it goes to the inactive title bar
+                 color with its window, as the themed window's frame does -->
+            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type Window}}, Path=IsActive}" Value="False">
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_TitleBarBackgroundInactive}"/>
+            </DataTrigger>
+        </Style.Triggers>
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:StackNavActiveDrawerPresenter}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_DrawerBackground}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_DrawerForeground}"/>
         <Setter Property="InsetBorderBrush" Value="{DynamicResource AJut_Brush_BorderShadow}"/>
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:StackNavActiveContentPresenter}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderShadow}"/>
+        <Setter Property="CoverBackgroundBrush" Value="{DynamicResource AJut_Brush_OverlayBlockoutBackground}"/>
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:StackNavBusyWaitOverlay}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_HighContrastText}"/>
     </Style>
     
     <Style TargetType="{x:Type ajut_ctrls:StackNavPopoverOverlay}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_RootPanelBackground}"/>
+        <Setter Property="HighlightBorderBrush" Value="{DynamicResource AJut_Brush_Shadow}"/>
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:BumpStack}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="ButtonBackground" Value="{DynamicResource AJut_Brush_ControlBackground}"/>
         <Setter Property="ButtonForeground" Value="{DynamicResource AJut_Brush_NormalText}"/>
+        <Setter Property="ButtonBorder" Value="{DynamicResource AJut_Brush_ButtonBorder}"/>
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:MessageBoxPopover}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="OptionButtonStyle" Value="{DynamicResource AJut_Style_MessageBoxButton}"/>
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:ToggleSwitchButton}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_InnerPanelBackground}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
@@ -353,25 +556,112 @@
         <Setter Property="SwitchBackgroundHover" Value="{DynamicResource AJut_Brush_ControlBackgroundHover}"/>
         <Setter Property="SwitchBorderBrushHover" Value="{DynamicResource AJut_Brush_BorderCommonHover}"/>
         <Setter Property="SwitchPadding" Value="-2"/>
+        <Setter Property="ContentForeground" Value="{DynamicResource AJut_Brush_NormalText}"/>
+        <!-- Disabled, the text goes understated and an on switch drops its shaded blue for the dark primary; the template
+             fades the switch itself -->
+        <Style.Triggers>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="ContentForeground" Value="{DynamicResource AJut_Brush_UnderstatedText}"/>
+                <Setter Property="BackgroundWhenTrue" Value="{DynamicResource AJut_Brush_PrimaryHighlightDark}"/>
+                <Setter Property="BorderBrushWhenTrue" Value="{DynamicResource AJut_Brush_PrimaryHighlightDark}"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:BrushButton}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="NormalBackground" Value="{DynamicResource AJut_Brush_ControlBackground}"/>
         <Setter Property="NormalForeground" Value="{DynamicResource AJut_Brush_NormalText}"/>
-        <Setter Property="NormalBorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="NormalBorderBrush" Value="{DynamicResource AJut_Brush_ButtonBorder}"/>
         <Setter Property="PointerOverBackground" Value="{DynamicResource AJut_Brush_ControlBackgroundHover}"/>
         <Setter Property="PointerOverForeground" Value="{DynamicResource AJut_Brush_HighlightText}"/>
-        <Setter Property="PointerOverBorderBrush" Value="{DynamicResource AJut_Brush_BorderCommonHover}"/>
+        <Setter Property="PointerOverBorderBrush" Value="{DynamicResource AJut_Brush_ButtonBorderHover}"/>
         <Setter Property="PressedBackground" Value="{DynamicResource AJut_Brush_ButtonBackgroundPressed}"/>
         <Setter Property="PressedForeground" Value="{DynamicResource AJut_Brush_HighlightText}"/>
-        <Setter Property="PressedBorderBrush" Value="{DynamicResource AJut_Brush_BorderCommonPress}"/>
+        <Setter Property="PressedBorderBrush" Value="{DynamicResource AJut_Brush_ButtonBorderPressed}"/>
         <Setter Property="DisabledBackground" Value="{DynamicResource AJut_Brush_ControlBackground}"/>
         <Setter Property="DisabledForeground" Value="{DynamicResource AJut_Brush_InteractiveTextUnfocused}"/>
-        <Setter Property="DisabledBorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="DisabledBorderBrush" Value="{DynamicResource AJut_Brush_ButtonBorder}"/>
     </Style>
 
     <Style TargetType="{x:Type ajut_ctrls:AutoBrushButton}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="PropagatedAccentColor" Value="{DynamicResource AJut_Color_PrimaryHighlight}"/>
+    </Style>
+
+    <!-- Controls with nothing else to theme, which still take the theme's focus visual -->
+    <Style TargetType="{x:Type ajut_ctrls:BusyWait}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
+    </Style>
+    <Style TargetType="{x:Type ajut_ctrls:EnumComboBox}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
+    </Style>
+    <Style TargetType="{x:Type ajut_ctrls:PropertyGridListEditor}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
+    </Style>
+    <Style TargetType="{x:Type ajut_ctrls:StackNavDisplay}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
+    </Style>
+    <Style TargetType="{x:Type ajut_ctrls:Svg}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
+    </Style>
+    <Style TargetType="{x:Type ajut_ctrls:UIElementRepeater}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
+    </Style>
+    <!-- The docking toolbar's buttons. These triggers replace the default style's literal pointer, pressed and shown
+         looks, since a themed style's triggers outrank the default style's. -->
+    <Style TargetType="{x:Type ajut_ctrls:DockPanelAddButton}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_InnerPanelBackground}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="PlusOverlayForeground" Value="{DynamicResource AJut_Brush_PrimaryHighlightBright}"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_ControlBackgroundHover}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommonHover}"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_ButtonBackgroundPressed}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommonPress}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+    <Style TargetType="{x:Type ajut_ctrls:DockPanelShowHideToggleButton}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_InnerPanelBackground}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_ControlBackgroundHover}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommonHover}"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_ButtonBackgroundPressed}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommonPress}"/>
+            </Trigger>
+            <!-- Shown: the dark highlight under the light text, which reads in both themes, with the highlight as its
+                 border; under the pointer the border brightens and the fill holds, as on WinUI3 and AppKit -->
+            <Trigger Property="IsChecked" Value="True">
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_PrimaryHighlightDark}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_HighContrastText}"/>
+            </Trigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="IsChecked" Value="True"/>
+                    <Condition Property="IsMouseOver" Value="True"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_PrimaryHighlightDark}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightBright}"/>
+            </MultiTrigger>
+        </Style.Triggers>
+    </Style>
+    <Style TargetType="{x:Type ajut_ctrls:DockPanelAddRemoveToolbar}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_PanelBackground}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
     </Style>
 
     <Style TargetType="{x:Type TextBlock}" x:Key="AJut_SymbolText">
@@ -388,6 +678,7 @@
     </Style>
 
     <Style TargetType="{x:Type ButtonBase}" x:Key="AJut_Style_SymbolButtonBase">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_SymbolForeground}"/>
         <Setter Property="Padding" Value="9" />
         <Setter Property="FontSize" Value="22"/>
@@ -471,8 +762,9 @@
     </Style>
 
     <Style x:Key="AJut_Style_ButtonBase" TargetType="{x:Type ButtonBase}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_ControlBackground}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ButtonBorder}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}" />
         <Setter Property="TextElement.FontFamily" Value="Segoe UI" />
         <Setter Property="TextElement.FontWeight" Value="Thin" />
@@ -498,27 +790,45 @@
         <Style.Triggers>
             <Trigger Property="IsMouseOver" Value="True">
                 <Setter Property="Background" Value="{DynamicResource AJut_Brush_ControlBackgroundHover}" />
-                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommonHover}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ButtonBorderHover}"/>
                 <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_HighlightText}" />
             </Trigger>
+            <!-- Disabled, the colors WinUI3's themed Button takes (ButtonBackgroundDisabled, ButtonForegroundDisabled and
+                 ButtonBorderBrushDisabled), rather than fading the whole button -->
             <Trigger Property="IsEnabled" Value="False">
-                <Setter Property="Opacity" Value="0.3"/>
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_ControlBackgroundDisabled}"/>
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_UnderstatedText}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ButtonBorder}"/>
             </Trigger>
             <Trigger Property="IsPressed" Value="True">
                 <Setter Property="Background" Value="{DynamicResource AJut_Brush_ButtonBackgroundPressed}"/>
-                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ButtonBorder}"/>
             </Trigger>
         </Style.Triggers>
     </Style>
 
     <Style TargetType="{x:Type Button}" BasedOn="{StaticResource AJut_Style_ButtonBase}"/>
+    <!-- A RepeatButton is a button that repeats, so it takes the themed button look. The scroll bar and slider track
+         RepeatButtons inside the theme's own templates opt out with Style="{x:Null}", since they draw as part of those
+         controls; the scroll bar's arrow buttons name AJut_Style_ButtonBase themselves. -->
+    <Style TargetType="{x:Type RepeatButton}" BasedOn="{StaticResource AJut_Style_ButtonBase}"/>
     <Style x:Key="AJut_Style_ToggleButton" TargetType="{x:Type ToggleButton}" BasedOn="{StaticResource AJut_Style_ButtonBase}">
         <Style.Triggers>
             <Trigger Property="IsChecked" Value="True">
                 <Setter Property="Background" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
-                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommonPress}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ButtonBorderPressed}"/>
                 <Setter Property="TextElement.Foreground" Value="{DynamicResource AJut_Brush_HighContrastText}" />
             </Trigger>
+            <!-- Checked and disabled, WinUI3's ToggleButton*CheckedDisabled colors: the muted primary with the understated text -->
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="IsChecked" Value="True"/>
+                    <Condition Property="IsEnabled" Value="False"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_PrimaryHighlightDesat}" />
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_UnderstatedText}" />
+                <Setter Property="TextElement.Foreground" Value="{DynamicResource AJut_Brush_UnderstatedText}" />
+            </MultiTrigger>
         </Style.Triggers>
     </Style>
 
@@ -539,6 +849,7 @@
     </Style>
 
     <Style TargetType="{x:Type ListBoxItem}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="TextElement.FontFamily" Value="Segoe UI" />
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="Template">
@@ -549,9 +860,13 @@
                             <DockPanel>
                                 <Grid DockPanel.Dock="Left" Background="{DynamicResource AJut_Brush_ListSelection}" Width="10"
                                       Visibility="{Binding Path=IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Converter={ajut_conv:BooleanToVisibilityConverter TrueValue=Visible, FalseValue=Hidden}}"/>
-                                <ContentPresenter Content="{Binding}" 
-                                                  ContentTemplate="{Binding RelativeSource={RelativeSource AncestorType=ListBox}, Path=ItemTemplate}" 
-                                                  ContentTemplateSelector="{Binding RelativeSource={RelativeSource AncestorType=ListBox}, Path=ItemTemplateSelector}" 
+                                <!-- The item's own Content: a ListBox gives each container it makes for bound data that data,
+                                     with its ItemTemplate as the ContentTemplate, and an item written in the list has its own.
+                                     Its DataContext would only show the first kind. -->
+                                <ContentPresenter Content="{TemplateBinding Content}"
+                                                  ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                  ContentTemplateSelector="{TemplateBinding ContentTemplateSelector}"
+                                                  ContentStringFormat="{TemplateBinding ContentStringFormat}"
                                                   Margin="{TemplateBinding Padding}"
                                                   HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
                                                   VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
@@ -578,6 +893,7 @@
         </Style.Triggers>
     </Style>
     <Style TargetType="{x:Type ListBox}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}" />
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_ListBackground}" />
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ListBorder}" />
@@ -611,9 +927,10 @@
     </Style>
 
     <Style TargetType="{x:Type TabControl}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}" />
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_PanelBackground}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PanelBorder}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="ajut_ap:BorderXTA.CornerRadius" Value="0"/>
         <Setter Property="SnapsToDevicePixels" Value="True"/>
@@ -655,9 +972,10 @@
     </Style>
 
     <Style TargetType="{x:Type TabItem}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type TabControl}}, Path=Background, Mode=OneWay}" />
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PanelBorder}"/>
         <Setter Property="ajut_ap:BorderXTA.CornerRadius" Value="0"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Template">
@@ -720,7 +1038,6 @@
                                 </Border>
                             </Grid>
                         </Border>
-                        <Grid x:Name="AJutTabItem_UnselectedCover"  Background="{DynamicResource AJut_Brush_Shadow}" Opacity="{DynamicResource AJut_Double_StandardShadowOpacity}" Visibility="Collapsed"/>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <!-- ========================================[ Is Selected: True ]======================================== -->
@@ -766,7 +1083,7 @@
                         </MultiDataTrigger>
                         <Trigger Property="IsSelected" Value="False">
                             <Setter TargetName="AJutTabItemThemed_HeaderPresenter" Property="Opacity" Value="0.6" />
-                            <Setter TargetName="AJutTabItem_UnselectedCover" Property="Visibility" Value="Visible"/>
+                            <Setter TargetName="AJutTabItem_BackgroundGrid" Property="Background" Value="{DynamicResource AJut_Brush_NavigationPanelBackground}"/>
                         </Trigger>
                         <MultiTrigger>
                             <MultiTrigger.Conditions>
@@ -783,10 +1100,17 @@
         </Setter>
     </Style>
 
+    <!-- Text boxes and password boxes are a size up from the app's text, with room around the text, so they read as
+         places to type rather than a line of text in a box. EditableTextBlock and NumericEditor set their own text box's
+         size and padding, since their text has to stay where it already sits. -->
     <Style TargetType="{x:Type TextBox}">
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_TextBoxBackground}" />
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_TextBoxBorder}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_InteractiveTextUnfocused}" />
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Padding" Value="4,3"/>
+        <Setter Property="SelectionBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
+        <Setter Property="CaretBrush" Value="{DynamicResource AJut_Brush_InteractiveText}" />
         <Setter Property="IsEnabled" Value="{Binding RelativeSource={RelativeSource Self}, Path=(ajut_ap:Edit.IsEditable)}"/>
         <Setter Property="Template">
             <Setter.Value>
@@ -813,7 +1137,10 @@
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_TextBoxBackground}" />
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_TextBoxBorder}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_InteractiveTextUnfocused}" />
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Padding" Value="4,3"/>
         <Setter Property="CaretBrush" Value="{DynamicResource AJut_Brush_InteractiveText}" />
+        <Setter Property="SelectionBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
         <Setter Property="IsEnabled" Value="{Binding RelativeSource={RelativeSource Self}, Path=(ajut_ap:Edit.IsEditable)}"/>
         <Setter Property="Template">
             <Setter.Value>
@@ -838,7 +1165,7 @@
     </Style>
 
     <Style TargetType="{x:Type ComboBox}">
-        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_PopOutControlBackground}" />
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_TextBoxBorder}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_InteractiveTextUnfocused}" />
@@ -853,7 +1180,7 @@
                                MaxHeight="{TemplateBinding MaxDropDownHeight}" MinWidth="{Binding ElementName=ComboBoxRootGrid, Path=ActualWidth, Mode=OneWay}"
                                AllowsTransparency="True">
                             <Grid>
-                                <Border BorderBrush="Black" BorderThickness="0,0,4,4" Margin="10,5,0,0" Opacity="{DynamicResource AJut_Double_StandardShadowOpacity}">
+                                <Border BorderBrush="{DynamicResource AJut_Brush_Shadow}" BorderThickness="0,0,4,4" Margin="10,5,0,0" Opacity="{DynamicResource AJut_Double_StandardShadowOpacity}">
                                     <Border.Effect>
                                         <BlurEffect Radius="4"/>
                                     </Border.Effect>
@@ -869,7 +1196,13 @@
                                 </Border>
                             </Grid>
                         </Popup>
+                        <!-- The text is the ComboBox's own: a value set here outranks the implicit ToggleButton style's
+                             triggers, whose checked text would otherwise show while the drop-down is open. Its weight is
+                             the ComboBox's too, where the button style draws Thin text. The opacity is set for the same
+                             reason: the button style dims a disabled button, and a disabled ComboBox shows it with its own
+                             flat disabled fill instead. -->
                         <ToggleButton x:Name="MainButton" IsChecked="{ajut:TemplateBinding Path=IsDropDownOpen, Mode=TwoWay}"
+                                      Foreground="{TemplateBinding Foreground}" FontWeight="{TemplateBinding FontWeight}" Opacity="1"
                                       Content="{TemplateBinding SelectedValue}"
                                       ContentTemplate="{TemplateBinding ItemTemplate}"
                                       ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}">
@@ -938,12 +1271,18 @@
                                                 </Grid>
 
                                             </Grid>
-                                            <TextBlock Grid.Column="1" Style="{DynamicResource AJut_SymbolText}"
+                                            <TextBlock x:Name="DropDownGlyph" Grid.Column="1" Style="{DynamicResource AJut_SymbolText}"
                                                        Text="{DynamicResource AJut_Symbol_DownChevron}"
                                                        FontSize="11" Margin="0,5,5,5" FontWeight="Heavy"
                                                        VerticalAlignment="Center" HorizontalAlignment="Center"/>
                                         </Grid>
                                     </Border>
+                                    <ControlTemplate.Triggers>
+                                        <!-- The chevron is a glyph in the symbol color, which stays bright unless it is told -->
+                                        <Trigger Property="IsEnabled" Value="False">
+                                            <Setter TargetName="DropDownGlyph" Property="Foreground" Value="{DynamicResource AJut_Brush_UnderstatedText}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
                                 </ControlTemplate>
                             </ToggleButton.Template>
                         </ToggleButton>
@@ -959,10 +1298,67 @@
             <Trigger Property="IsMouseOver" Value="True">
                 <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlightBright}" />
             </Trigger>
+            <!-- As on WinUI3: the flat disabled fill in place of the pop-out surface, the common border, and the
+                 understated text and chevron -->
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_ControlBackgroundDisabled}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}" />
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_UnderstatedText}" />
+            </Trigger>
         </Style.Triggers>
     </Style>
 
+    <!-- A drop-down's items: the list item hover look under the pointer or keyboard, the list selection when selected.
+         Text at rest is the ComboBox's own, inherited. -->
+    <Style TargetType="{x:Type ComboBoxItem}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="4,2"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ComboBoxItem}">
+                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="{TemplateBinding Padding}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsHighlighted" Value="True">
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_ListSelectionBackground}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_ListItemHover}"/>
+            </Trigger>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_ListSelection}"/>
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_ImportantText}"/>
+            </Trigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="IsSelected" Value="True"/>
+                    <Condition Property="IsHighlighted" Value="True"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_ListItemHover}"/>
+            </MultiTrigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_UnderstatedText}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- A plain separator line, such as the one MessageBoxPopover draws between its message and its options. Menu
+         separators take MenuItem.SeparatorStyleKey instead. -->
+    <Style TargetType="{x:Type Separator}">
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+    </Style>
+
     <Style TargetType="{x:Type CheckBox}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="Background" Value="{DynamicResource AJut_Brush_TextBoxBackground}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_TextBoxBorder}"/>
         <Setter Property="Padding" Value="0,0,5,0"/>
@@ -979,6 +1375,14 @@
                                     ClipToBounds="False">
                                 <Grid Background="#01000000" ClipToBounds="False"/>
                             </Border>
+                            <!-- The indeterminate mark is drawn rather than a dash glyph, so it sits in the middle of the box:
+                                 the same size and alignment as the box, so layout rounding moves both alike -->
+                            <Path x:Name="IndeterminateBar" Width="12" Height="12" Visibility="Collapsed"
+                                  Fill="{Binding ElementName=Check, Path=Foreground}">
+                                <Path.Data>
+                                    <RectangleGeometry Rect="3,5,6,2"/>
+                                </Path.Data>
+                            </Path>
                             <Grid>
                                 <!-- Blurred bkg effect -->
                                 <TextBlock x:Name="CheckBkg" Text="{DynamicResource AJut_Symbol_Check}" FontFamily="Segoe MDL2 Assets"
@@ -997,9 +1401,17 @@
                                            FontSize="16" Margin="0,-4,-3,0"/>
                             </Grid>
                         </Grid>
-                        <ContentPresenter VerticalAlignment="{TemplateBinding VerticalContentAlignment}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+                        <ContentPresenter x:Name="Label" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
                     </DockPanel>
                     <ControlTemplate.Triggers>
+                        <!-- Disabled, the mark and the text fade as well as going understated, as a disabled
+                             ToggleSwitchButton does: in Dark the understated text is close to the normal text, so color
+                             alone does not read as disabled. The box keeps its flat disabled fill at full strength. -->
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Check" Property="Opacity" Value="0.45"/>
+                            <Setter TargetName="IndeterminateBar" Property="Opacity" Value="0.45"/>
+                            <Setter TargetName="Label" Property="Opacity" Value="0.45"/>
+                        </Trigger>
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="Check" Property="Visibility" Value="Visible"/>
                         </Trigger>
@@ -1008,7 +1420,8 @@
                         </Trigger>
                         <Trigger Property="IsChecked" Value="{x:Null}">
                             <Setter TargetName="CheckBkg" Property="Text" Value="{DynamicResource AJut_Symbol_Dash}"/>
-                            <Setter TargetName="Check" Property="Text" Value="{DynamicResource AJut_Symbol_Dash}"/>
+                            <Setter TargetName="Check" Property="Visibility" Value="Hidden"/>
+                            <Setter TargetName="IndeterminateBar" Property="Visibility" Value="Visible"/>
                             <Setter TargetName="CheckBorder" Property="BorderThickness" Value="2" />
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
@@ -1033,10 +1446,85 @@
             <Trigger Property="IsMouseOver" Value="True">
                 <Setter Property="Background" Value="{DynamicResource AJut_Brush_TextBoxBackground}"/>
             </Trigger>
+            <!-- Disabled, the box takes the flat disabled fill and the common border, as WinUI3's does, so it no longer
+                 looks like a live box, and the text and mark go understated -->
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_ControlBackgroundDisabled}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_UnderstatedText}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- The themed CheckBox's look on a circle: the text box surface and border with the dot in the text color, the dot
+         (or an unchecked outline) on the primary highlight under the pointer and pressed, and the flat disabled fill and
+         common border when disabled. WinUI3's themed RadioButton takes the same. -->
+    <Style TargetType="{x:Type RadioButton}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_TextBoxBackground}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_TextBoxBorder}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
+        <Setter Property="Padding" Value="5,0,0,0"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type RadioButton}">
+                    <DockPanel Background="#01000000">
+                        <!-- The circle and its dot are two geometries on one center, so they stay concentric at any
+                             display scale; two ellipses laid out by size get their offsets rounded apart -->
+                        <Grid DockPanel.Dock="Left" Width="12" Height="12" VerticalAlignment="Center">
+                            <Path x:Name="OuterEllipse" Fill="{TemplateBinding Background}" Stroke="{TemplateBinding BorderBrush}" StrokeThickness="1">
+                                <Path.Data>
+                                    <EllipseGeometry Center="6,6" RadiusX="5.5" RadiusY="5.5"/>
+                                </Path.Data>
+                            </Path>
+                            <Path x:Name="CheckDot" Fill="{TemplateBinding Foreground}" Visibility="Hidden">
+                                <Path.Data>
+                                    <EllipseGeometry Center="6,6" RadiusX="3" RadiusY="3"/>
+                                </Path.Data>
+                            </Path>
+                        </Grid>
+                        <ContentPresenter x:Name="Label" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+                    </DockPanel>
+                    <ControlTemplate.Triggers>
+                        <!-- Disabled, the dot and the text fade, as the CheckBox's mark and text do -->
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="CheckDot" Property="Opacity" Value="0.45"/>
+                            <Setter TargetName="Label" Property="Opacity" Value="0.45"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="CheckDot" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="CheckDot" Property="Fill" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                                <Condition Property="IsChecked" Value="False"/>
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="OuterEllipse" Property="Stroke" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+                        </MultiTrigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="CheckDot" Property="Fill" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_ControlBackgroundDisabled}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_UnderstatedText}"/>
+            </Trigger>
         </Style.Triggers>
     </Style>
 
     <Style TargetType="{x:Type Slider}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="IsEnabled" Value="{Binding RelativeSource={RelativeSource Self}, Path=(ajut_ap:Edit.IsEditable)}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
@@ -1069,7 +1557,7 @@
                                 </Border>
                                 <Track x:Name="PART_Track">
                                     <Track.DecreaseRepeatButton>
-                                        <RepeatButton Background="Transparent" BorderThickness="0" Command="{Binding Source={x:Static Slider.DecreaseLarge}}">
+                                        <RepeatButton Style="{x:Null}" Background="Transparent" BorderThickness="0" Command="{Binding Source={x:Static Slider.DecreaseLarge}}">
                                             <RepeatButton.Template>
                                                 <ControlTemplate TargetType="{x:Type RepeatButton}">
                                                     <Grid Background="#01000000"/>
@@ -1078,7 +1566,7 @@
                                         </RepeatButton>
                                     </Track.DecreaseRepeatButton>
                                     <Track.IncreaseRepeatButton>
-                                        <RepeatButton Background="Transparent" BorderThickness="0" Command="{Binding Source={x:Static Slider.IncreaseLarge}}">
+                                        <RepeatButton Style="{x:Null}" Background="Transparent" BorderThickness="0" Command="{Binding Source={x:Static Slider.IncreaseLarge}}">
                                             <RepeatButton.Template>
                                                 <ControlTemplate TargetType="{x:Type RepeatButton}">
                                                     <Grid Background="#01000000"/>
@@ -1258,77 +1746,118 @@
         </Setter>
     </Style>
 
+    <!-- WinUI3's Expander shape: the header is a bar on the banner color inside the common border, and the content sits
+         under it on the panel color, framed on the other three sides, so the header's bottom edge is the line between
+         them. The chevron stays on the left, where WPF's own Expander has it, pointing right when closed and down when
+         open. -->
     <Style TargetType="{x:Type Expander}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
-        <Setter Property="Background" Value="{DynamicResource AJut_Brush_InnerPanelBackground}" />
-        <Setter Property="ajut_ap:BorderXTA.CornerRadius" Value="8,8,0,0" />
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_BannerBackground}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="16"/>
+        <Setter Property="ajut_ap:BorderXTA.CornerRadius" Value="4" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type Expander}">
-                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" 
-                            CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}">
-                        <DockPanel Margin="{TemplateBinding Padding}">
-                            <ToggleButton x:Name="PART_Expander"
-                                          DockPanel.Dock="Top"
-                                          ajut_ap:BorderXTA.CornerRadius="3" FontSize="13" Padding="5"
-                                          IsChecked="{ajut:TemplateBinding Path=IsExpanded, Mode=TwoWay}"
-                                          Margin="5">
-                                <ToggleButton.Template>
-                                    <ControlTemplate TargetType="{x:Type ToggleButton}">
-                                        <ContentPresenter />
-                                    </ControlTemplate>
-                                </ToggleButton.Template>
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition />
-                                    </Grid.ColumnDefinitions>
-                                    <Border CornerRadius="4" 
-                                            VerticalAlignment="Center" BorderThickness="1,1,0,0"
-                                            Margin="0,0,5,0">
-                                        <Border.Style>
-                                            <Style TargetType="{x:Type Border}">
-                                                <Setter Property="TextElement.Foreground" Value="{DynamicResource AJut_Brush_SymbolForeground}" />
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ToggleButton}, Path=IsChecked}" Value="True">
-                                                        <Setter Property="Background" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
-                                                        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderShadow}"/>
-                                                        <Setter Property="TextElement.Foreground" Value="{DynamicResource AJut_Brush_SymbolForegroundPressed}" />
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ToggleButton}, Path=IsMouseOver}" Value="True">
-                                                        <Setter Property="Background" Value="{DynamicResource AJut_Brush_PrimaryHighlight}" />
-                                                        <Setter Property="TextElement.Foreground" Value="{DynamicResource AJut_Brush_SymbolForegroundHighlight}" />
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Border.Style>
-                                        <TextBlock Grid.Column="0" Margin="3">
-                                            <TextBlock.Style>
-                                                <Style TargetType="{x:Type TextBlock}">
-                                                    <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type Border}}, Path=(TextElement.Foreground)}"/>
-                                                    <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
-                                                    <Setter Property="Text" Value="{DynamicResource AJut_Symbol_RightChevron}" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ToggleButton}, Path=IsChecked}" Value="True">
-                                                            <Setter Property="Text" Value="{DynamicResource AJut_Symbol_DownChevron}" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
+                    <DockPanel>
+                        <!-- The header text is the Expander's own, set here so the implicit ToggleButton style's checked
+                             text doesn't replace it while expanded. The header's states color the text inside it instead. -->
+                        <ToggleButton x:Name="PART_Expander"
+                                      DockPanel.Dock="Top"
+                                      Foreground="{TemplateBinding Foreground}"
+                                      Background="{TemplateBinding Background}"
+                                      BorderBrush="{TemplateBinding BorderBrush}"
+                                      BorderThickness="{TemplateBinding BorderThickness}"
+                                      ajut_ap:BorderXTA.CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}"
+                                      IsChecked="{ajut:TemplateBinding Path=IsExpanded, Mode=TwoWay}"
+                                      Content="{TemplateBinding Header}"
+                                      ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                      ContentTemplateSelector="{TemplateBinding HeaderTemplateSelector}"
+                                      ContentStringFormat="{TemplateBinding HeaderStringFormat}"
+                                      VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="{x:Type ToggleButton}">
+                                    <Border x:Name="HeaderBorder" MinHeight="48"
+                                            Background="{TemplateBinding Background}"
+                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                            BorderThickness="{TemplateBinding BorderThickness}"
+                                            CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}"
+                                            TextElement.Foreground="{TemplateBinding Foreground}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition />
+                                            </Grid.ColumnDefinitions>
+                                            <Border x:Name="ChevronBox" Width="32" Height="32" Margin="8,0" CornerRadius="4" Background="Transparent">
+                                                <TextBlock x:Name="Chevron"
+                                                           FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                                           Text="{DynamicResource AJut_Symbol_RightChevron}"
+                                                           Foreground="{DynamicResource AJut_Brush_SymbolForeground}"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <ContentPresenter Grid.Column="1" Margin="0,0,16,0" RecognizesAccessKey="True"
+                                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                        </Grid>
                                     </Border>
-                                    <ContentControl Grid.Column="1" Content="{TemplateBinding Header}" 
-                                                    ContentTemplate="{TemplateBinding HeaderTemplate}" 
-                                                    ContentTemplateSelector="{TemplateBinding HeaderTemplateSelector}" 
-                                                    ContentStringFormat="{TemplateBinding HeaderStringFormat}"
-                                                    VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
-                                </Grid>
-                            </ToggleButton>
-                            <ContentControl Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" ContentTemplateSelector="{TemplateBinding ContentTemplateSelector}" ContentStringFormat="{TemplateBinding ContentStringFormat}"
-                                            Visibility="{ajut:TemplateBinding Path=IsExpanded, Converter={ajut_conv:BooleanToVisibilityConverter}}"/>
-                        </DockPanel>
-                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <!-- Open, the header's bottom corners go square to meet the content -->
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter TargetName="Chevron" Property="Text" Value="{DynamicResource AJut_Symbol_DownChevron}"/>
+                                            <Setter TargetName="HeaderBorder" Property="CornerRadius">
+                                                <Setter.Value>
+                                                    <ajut:CornerRadiusBuilder BindingParts="TopLeft,TopRight">
+                                                        <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="(ajut_ap:BorderXTA.CornerRadius).TopLeft"/>
+                                                        <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="(ajut_ap:BorderXTA.CornerRadius).TopRight"/>
+                                                    </ajut:CornerRadiusBuilder>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Trigger>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="HeaderBorder" Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommonHover}"/>
+                                            <Setter TargetName="HeaderBorder" Property="TextElement.Foreground" Value="{DynamicResource AJut_Brush_HighlightText}"/>
+                                            <Setter TargetName="ChevronBox" Property="Background" Value="{DynamicResource AJut_Brush_MouseInteractionHighlight}"/>
+                                            <Setter TargetName="Chevron" Property="Foreground" Value="{DynamicResource AJut_Brush_SymbolForegroundHighlight}"/>
+                                        </Trigger>
+                                        <Trigger Property="IsPressed" Value="True">
+                                            <Setter TargetName="HeaderBorder" Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommonPress}"/>
+                                            <Setter TargetName="HeaderBorder" Property="TextElement.Foreground" Value="{DynamicResource AJut_Brush_ImportantText}"/>
+                                            <Setter TargetName="ChevronBox" Property="Background" Value="{DynamicResource AJut_Brush_PrimaryHighlightDark}"/>
+                                            <Setter TargetName="Chevron" Property="Foreground" Value="{DynamicResource AJut_Brush_SymbolForegroundPressed}"/>
+                                        </Trigger>
+                                        <Trigger Property="IsEnabled" Value="False">
+                                            <Setter TargetName="HeaderBorder" Property="TextElement.Foreground" Value="{DynamicResource AJut_Brush_UnderstatedText}"/>
+                                            <Setter TargetName="Chevron" Property="Foreground" Value="{DynamicResource AJut_Brush_UnderstatedText}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
+                        </ToggleButton>
+                        <Border x:Name="ContentBorder"
+                                Background="{DynamicResource AJut_Brush_PanelBackground}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                Visibility="{ajut:TemplateBinding Path=IsExpanded, Converter={ajut_conv:BooleanToVisibilityConverter}}">
+                            <Border.BorderThickness>
+                                <ajut:ThicknessBuilder BindingParts="Left,Right,Bottom">
+                                    <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="BorderThickness.Left"/>
+                                    <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="BorderThickness.Right"/>
+                                    <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="BorderThickness.Bottom"/>
+                                </ajut:ThicknessBuilder>
+                            </Border.BorderThickness>
+                            <Border.CornerRadius>
+                                <ajut:CornerRadiusBuilder BindingParts="BottomRight,BottomLeft">
+                                    <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="(ajut_ap:BorderXTA.CornerRadius).BottomRight"/>
+                                    <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="(ajut_ap:BorderXTA.CornerRadius).BottomLeft"/>
+                                </ajut:CornerRadiusBuilder>
+                            </Border.CornerRadius>
+                            <ContentPresenter Margin="{TemplateBinding Padding}"
+                                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                                              ContentTemplateSelector="{TemplateBinding ContentTemplateSelector}"
+                                              ContentStringFormat="{TemplateBinding ContentStringFormat}"/>
+                        </Border>
+                    </DockPanel>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -1440,11 +1969,11 @@
 
                                     <Track x:Name="PART_Track" Grid.Row="1" IsDirectionReversed="True" Orientation="Vertical">
                                         <Track.IncreaseRepeatButton>
-                                            <RepeatButton Command="{Binding Source={x:Static ScrollBar.LineDownCommand}}"
+                                            <RepeatButton Style="{x:Null}" Command="{Binding Source={x:Static ScrollBar.LineDownCommand}}"
                                                           Background="Transparent" BorderBrush="Transparent"/>
                                         </Track.IncreaseRepeatButton>
                                         <Track.DecreaseRepeatButton>
-                                            <RepeatButton Command="{Binding Source={x:Static ScrollBar.LineUpCommand}}"
+                                            <RepeatButton Style="{x:Null}" Command="{Binding Source={x:Static ScrollBar.LineUpCommand}}"
                                                           Background="Transparent" BorderBrush="Transparent"/>
                                         </Track.DecreaseRepeatButton>
                                         <Track.Thumb>
@@ -1545,11 +2074,11 @@
 
                                     <Track x:Name="PART_Track" Grid.Column="1" IsDirectionReversed="False" Orientation="Horizontal">
                                         <Track.IncreaseRepeatButton>
-                                            <RepeatButton Command="{Binding Source={x:Static ScrollBar.LineLeftCommand}}"
+                                            <RepeatButton Style="{x:Null}" Command="{Binding Source={x:Static ScrollBar.LineLeftCommand}}"
                                                           Background="Transparent" BorderBrush="Transparent"/>
                                         </Track.IncreaseRepeatButton>
                                         <Track.DecreaseRepeatButton>
-                                            <RepeatButton Command="{Binding Source={x:Static ScrollBar.LineRightCommand}}"
+                                            <RepeatButton Style="{x:Null}" Command="{Binding Source={x:Static ScrollBar.LineRightCommand}}"
                                                           Background="Transparent" BorderBrush="Transparent"/>
                                         </Track.DecreaseRepeatButton>
                                         <Track.Thumb>
@@ -1698,15 +2227,23 @@
     <Style TargetType="{x:Type Border}">
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
     </Style>
+    <!-- Splitters draw in the common border, as every other line between panels does -->
     <Style TargetType="{x:Type GridSplitter}">
-        <Setter Property="Background" Value="{DynamicResource AJut_Brush_MouseInteractionHighlight}"/>
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
     </Style>
 
+    <!-- A context menu is the same drop-down as a menu's, as on WinUI3: the inner panel color outlined in the common
+         border, rounded, over a soft shadow -->
     <Style TargetType="{x:Type ContextMenu}">
-        <Setter Property="BorderThickness" Value="9,4,3,3"/>
-        <Setter Property="Background" Value="{DynamicResource AJut_Brush_ListBackground}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_GroupBorder}" />
+        <!-- Its items size their gutter and shortcut column together, as one menu -->
+        <Setter Property="Grid.IsSharedSizeScope" Value="True"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="0,4"/>
+        <Setter Property="ajut_ap:BorderXTA.CornerRadius" Value="8"/>
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_InnerPanelBackground}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}" />
         <Setter Property="TextElement.FontFamily" Value="Segoe UI" />
+        <Setter Property="TextElement.FontSize" Value="14" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ContextMenu}">
@@ -1721,7 +2258,8 @@
 
                         <!-- =======[ Content ]====== -->
                         <Border Background="{TemplateBinding Background}" CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}"
-                                BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}" Margin="0,0,5,7">
+                                BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}" Margin="0,0,5,7"
+                                Padding="{TemplateBinding Padding}">
                             <ScrollViewer>
                                 <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" RenderOptions.ClearTypeHint="Enabled"
                                             SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
@@ -1733,12 +2271,17 @@
         </Setter>
     </Style>
 
+    <!-- Menus take WinUI3's shape with a solid selection: a flat bar on the banner color, one drop-down surface, an item
+         under the pointer or open on the list selection with the text that reads on it, a pressed item on the dark
+         primary with the high contrast text, and the item whose sub menu is open a step darker than the hover beside it.
+         Their text is a size up from the app's, the size WinUI3's menus take. -->
     <Style TargetType="{x:Type Menu}">
-        <Setter Property="BorderThickness" Value="3"/>
+        <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
-        <Setter Property="Background" Value="{DynamicResource AJut_Brush_PopOutControlBackground}" />
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_BannerBackground}" />
         <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_PanelBorder}" />
         <Setter Property="TextElement.FontFamily" Value="{DynamicResource AJut_Font_Default}" />
+        <Setter Property="TextElement.FontSize" Value="14" />
         <Setter Property="ItemsPanel">
             <Setter.Value>
                 <ItemsPanelTemplate>
@@ -1764,12 +2307,11 @@
     <Style x:Key="{x:Static MenuItem.SeparatorStyleKey}" TargetType="{x:Type Separator}">
         <Setter Property="Height" Value="1" />
         <Setter Property="Margin" Value="0,4" />
-        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_SymbolForeground}"/>
-        <Setter Property="Opacity" Value="0.2"/>
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type Separator}">
-                    <Border BorderThickness="1" BorderBrush="{TemplateBinding Foreground}"/>
+                    <Border BorderThickness="0,1,0,0" BorderBrush="{TemplateBinding Foreground}"/>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -1779,7 +2321,7 @@
     <ControlTemplate x:Key="{x:Static MenuItem.TopLevelHeaderTemplateKey}" TargetType="{x:Type MenuItem}">
         <Border x:Name="TopLevelHeaderBorder">
             <Grid>
-                <ContentPresenter Margin="6,3,6,3"
+                <ContentPresenter Margin="8,5"
                                   ContentSource="Header"
                                   ContentTemplate="{TemplateBinding HeaderTemplate}"
                                   ContentTemplateSelector="{TemplateBinding HeaderTemplateSelector}"
@@ -1790,16 +2332,26 @@
                        AllowsTransparency="True"
                        Focusable="False"
                        PopupAnimation="Fade">
-                    <Border x:Name="SubmenuBorder"
-                            SnapsToDevicePixels="True"
-                            BorderThickness="1"
-                            BorderBrush="{DynamicResource AJut_Brush_BorderCommon}"
-                            Background="{DynamicResource AJut_Brush_PopupBackground}"
-                            TextElement.Foreground="{DynamicResource AJut_Brush_NormalText}">
-                        <ScrollViewer CanContentScroll="True" Margin="{TemplateBinding Padding}">
-                            <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" RenderOptions.ClearTypeHint="Enabled"/>
-                        </ScrollViewer>
-                    </Border>
+                    <!-- The drop-down every menu shares: the inner panel color outlined in the common border, rounded,
+                         over a soft shadow -->
+                    <Grid>
+                        <Border CornerRadius="8" Margin="4,6,0,0" Background="{DynamicResource AJut_Brush_Shadow}" Opacity="{DynamicResource AJut_Double_StandardShadowOpacity}">
+                            <Border.Effect>
+                                <BlurEffect Radius="5"/>
+                            </Border.Effect>
+                        </Border>
+                        <Border x:Name="SubmenuBorder"
+                                SnapsToDevicePixels="True"
+                                Margin="0,0,4,6" Padding="0,4" CornerRadius="8"
+                                BorderThickness="1"
+                                BorderBrush="{DynamicResource AJut_Brush_BorderCommon}"
+                                Background="{DynamicResource AJut_Brush_InnerPanelBackground}"
+                                TextElement.Foreground="{DynamicResource AJut_Brush_NormalText}">
+                            <ScrollViewer CanContentScroll="True" Margin="{TemplateBinding Padding}">
+                                <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" RenderOptions.ClearTypeHint="Enabled"/>
+                            </ScrollViewer>
+                        </Border>
+                    </Grid>
                 </Popup>
             </Grid>
         </Border>
@@ -1810,13 +2362,16 @@
                         Value="None" />
             </Trigger>
             <Trigger Property="IsHighlighted" Value="True">
-                <Setter TargetName="TopLevelHeaderBorder" Property="BorderBrush" Value="Transparent" />
-                <Setter Property="Background" TargetName="TopLevelHeaderBorder" Value="{DynamicResource AJut_Brush_TreeSelection}"/>
+                <Setter Property="Background" TargetName="TopLevelHeaderBorder" Value="{DynamicResource AJut_Brush_ListSelection}"/>
                 <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_HighlightText}"/>
             </Trigger>
-            <Trigger SourceName="Popup" Property="AllowsTransparency" Value="True">
-                <Setter TargetName="SubmenuBorder" Property="CornerRadius" Value="0,0,4,4" />
-                <Setter TargetName="SubmenuBorder" Property="Padding" Value="0,0,0,3" />
+            <Trigger Property="IsSubmenuOpen" Value="True">
+                <Setter Property="Background" TargetName="TopLevelHeaderBorder" Value="{DynamicResource AJut_Brush_ListSelection}"/>
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_HighlightText}"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Background" TargetName="TopLevelHeaderBorder" Value="{DynamicResource AJut_Brush_PrimaryHighlightDark}"/>
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_HighContrastText}"/>
             </Trigger>
             <Trigger Property="IsEnabled" Value="False">
                 <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_UnderstatedText}"/>
@@ -1828,7 +2383,7 @@
     <ControlTemplate x:Key="{x:Static MenuItem.TopLevelItemTemplateKey}" TargetType="{x:Type MenuItem}">
         <Border x:Name="TopLevelItemBorder">
             <Grid>
-                <ContentPresenter Margin="6,3"
+                <ContentPresenter Margin="8,5"
                                   ContentSource="Header"
                                   ContentTemplate="{TemplateBinding HeaderTemplate}"
                                   ContentTemplateSelector="{TemplateBinding HeaderTemplateSelector}"
@@ -1838,7 +2393,11 @@
         <ControlTemplate.Triggers>
             <Trigger Property="IsHighlighted" Value="True">
                 <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_HighlightText}"/>
-                <Setter Property="Background" TargetName="TopLevelItemBorder" Value="{DynamicResource AJut_Brush_TreeSelection}"/>
+                <Setter Property="Background" TargetName="TopLevelItemBorder" Value="{DynamicResource AJut_Brush_ListSelection}"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_HighContrastText}"/>
+                <Setter Property="Background" TargetName="TopLevelItemBorder" Value="{DynamicResource AJut_Brush_PrimaryHighlightDark}"/>
             </Trigger>
         </ControlTemplate.Triggers>
     </ControlTemplate>
@@ -1846,57 +2405,48 @@
     <!-- SubmenuItem -->
     <ControlTemplate x:Key="{x:Static MenuItem.SubmenuItemTemplateKey}" TargetType="{x:Type MenuItem}">
         <Border x:Name="SubmenuItemBorder" BorderThickness="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=BorderThickness}" BorderBrush="Transparent">
-            <Grid x:Name="SubmenuItemGridRoot" Background="Transparent">
-                <Grid x:Name="SelectionIndicatorBkg" Opacity="0.2" Visibility="Collapsed">
-                    <Grid.Background>
-                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                            <GradientStop Offset="0" Color="{DynamicResource AJut_Color_PrimaryHighlight}"/>
-                            <GradientStop Offset="0.6" Color="{DynamicResource AJut_Color_PrimaryHighlight}"/>
-                            <GradientStop Offset="1" Color="{DynamicResource AJut_Color_PrimaryHighlightDark}"/>
-                        </LinearGradientBrush>
-                    </Grid.Background>
-                </Grid>
+            <Grid x:Name="SubmenuItemGridRoot" Background="Transparent" MinHeight="28">
                 <Grid>
+                    <!-- As on WinUI3, a menu makes room for checks and icons only when one of its items has one: the
+                         gutter column is shared by every item in the menu (the menu is a shared size scope), and only an
+                         item with a check or an icon gives it width, so names line up either way. Without it the name
+                         starts 12 in; with it, 28 in, the check or icon centered over both. The last column keeps the
+                         name or shortcut off the menu's right edge, the width a sub menu's arrow takes. -->
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" SharedSizeGroup="Icon" />
+                        <ColumnDefinition Width="12" />
+                        <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemGutter" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" SharedSizeGroup="Shortcut" />
-                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="13" />
                     </Grid.ColumnDefinitions>
-                    <Grid x:Name="CheckHolder" Grid.Column="0" Visibility="Collapsed"
-                          Margin="6,0,6,0">
-                        <Border x:Name="Check"
-                                Width="13"
-                                Height="13"
-                                Visibility="Collapsed"
-                                BorderThickness="1" BorderBrush="{DynamicResource AJut_Brush_BorderCommon}" 
-                                Background="{DynamicResource AJut_Brush_PanelBackground}"/>
-                        <Path x:Name="CheckMark"
-                              Width="7"
-                              Height="7"
-                              HorizontalAlignment="Center" VerticalAlignment="Center"
-                              Visibility="Hidden"
-                              SnapsToDevicePixels="False"
-                              StrokeThickness="2"
-                              Data="M 0 0 L 7 7 M 0 7 L 7 0"
-                              Stroke="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+                    <Border x:Name="GutterSpacer" Grid.Column="1" Width="16" />
+                    <!-- A checkable item's mark is a check in the item's own text color, as on WinUI3 -->
+                    <Grid x:Name="CheckHolder" Grid.Column="0" Grid.ColumnSpan="2" Visibility="Collapsed" Width="13">
+                        <TextBlock x:Name="CheckMark"
+                                   Text="{DynamicResource AJut_Symbol_Check}" FontFamily="Segoe MDL2 Assets" FontSize="12"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Visibility="Hidden"
+                                   Foreground="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Foreground}"/>
                     </Grid>
-                    <ContentPresenter x:Name="Icon" Grid.Column="0"
-                                      Margin="6,0,6,0"
-                                      VerticalAlignment="Center"
+                    <ContentPresenter x:Name="Icon" Grid.Column="0" Grid.ColumnSpan="2"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"
+                                      MaxWidth="20" MaxHeight="20"
                                       ContentSource="Icon"/>
 
 
-                    <ContentPresenter x:Name="HeaderHost" Grid.Column="1"
+                    <ContentPresenter x:Name="HeaderHost" Grid.Column="2"
+                                      VerticalAlignment="Center"
                                       ContentSource="Header"
                                       ContentTemplate="{TemplateBinding HeaderTemplate}"
                                       ContentTemplateSelector="{TemplateBinding HeaderTemplateSelector}"
                                       RecognizesAccessKey="True" />
 
-                    <TextBlock x:Name="InputGestureText"  Grid.Column="2"
+                    <!-- The shortcut is the item's own text faded, set well off from its name and centered with it -->
+                    <TextBlock x:Name="InputGestureText"  Grid.Column="3"
                                Text="{TemplateBinding InputGestureText}"
+                               Opacity="0.65" VerticalAlignment="Center"
                                Visibility="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=InputGestureText, Converter={ajut_conv:IsTextNullOrEmptyToVisibilityConverter}}"
-                               Margin="5,2,0,2"/>
+                               Margin="24,2,0,2"/>
                 </Grid>
             </Grid>
         </Border>
@@ -1904,19 +2454,26 @@
             <Trigger Property="ButtonBase.Command" Value="{x:Null}" />
             <Trigger Property="Icon" Value="{x:Null}">
                 <Setter TargetName="Icon" Property="Visibility" Value="Hidden" />
+                <Setter TargetName="GutterSpacer" Property="Visibility" Value="Collapsed" />
             </Trigger>
             <Trigger Property="IsChecked" Value="True">
                 <Setter TargetName="CheckMark" Property="Visibility" Value="Visible" />
             </Trigger>
+            <!-- After the Icon trigger, so a checkable item keeps the gutter with or without an icon -->
             <Trigger Property="IsCheckable" Value="True">
                 <Setter TargetName="CheckHolder" Property="Visibility" Value="Visible" />
                 <Setter TargetName="Icon" Property="Visibility" Value="Hidden" />
+                <Setter TargetName="GutterSpacer" Property="Visibility" Value="Visible" />
             </Trigger>
+            <!-- Under the pointer, the list selection with the text that reads on it; pressed, the dark primary with the
+                 high contrast text. The shortcut text is the item's, faded, so it follows. -->
             <Trigger Property="IsHighlighted" Value="True">
                 <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_HighlightText}"/>
-                <Setter Property="BorderBrush" TargetName="SubmenuItemBorder" Value="{DynamicResource AJut_Brush_BorderShadow}"/>
-                <Setter Property="Background" TargetName="SubmenuItemBorder" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
-                <Setter Property="Visibility" TargetName="SelectionIndicatorBkg" Value="Visible"/>
+                <Setter Property="Background" TargetName="SubmenuItemBorder" Value="{DynamicResource AJut_Brush_ListSelection}"/>
+            </Trigger>
+            <Trigger Property="IsPressed" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_HighContrastText}"/>
+                <Setter Property="Background" TargetName="SubmenuItemBorder" Value="{DynamicResource AJut_Brush_PrimaryHighlightDark}"/>
             </Trigger>
         </ControlTemplate.Triggers>
     </ControlTemplate>
@@ -1924,69 +2481,83 @@
     <ControlTemplate x:Key="{x:Static MenuItem.SubmenuHeaderTemplateKey}"
                      TargetType="{x:Type MenuItem}">
         <Border x:Name="SubmenuHeaderBorder" BorderThickness="{Binding RelativeSource={RelativeSource AncestorType={x:Type MenuItem}}, Path=BorderThickness}" BorderBrush="Transparent" UseLayoutRounding="True" SnapsToDevicePixels="True">
-            <Grid x:Name="SubmenuHeaderGridRoot" Background="Transparent">
+            <Grid x:Name="SubmenuHeaderGridRoot" Background="Transparent" MinHeight="28">
+                <!-- The same columns as a sub menu item's, so its name lines up with theirs, with the arrow last -->
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" SharedSizeGroup="Icon" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="Auto" SharedSizeGroup="MenuItemGutter" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" SharedSizeGroup="Shortcut" />
                     <ColumnDefinition Width="13" />
                 </Grid.ColumnDefinitions>
-                <ContentPresenter x:Name="Icon" Grid.Column="0"
-                                  Margin="6,0,6,0" Visibility="Collapsed"
-                                  VerticalAlignment="Center"
+                <Border x:Name="GutterSpacer" Grid.Column="1" Width="16" />
+                <ContentPresenter x:Name="Icon" Grid.Column="0" Grid.ColumnSpan="2"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                                  MaxWidth="20" MaxHeight="20"
                                   ContentSource="Icon" />
                 <ContentPresenter x:Name="HeaderHost"
-                                  Grid.Column="1"
+                                  Grid.Column="2"
+                                  VerticalAlignment="Center"
                                   ContentSource="Header"
                                   ContentTemplate="{TemplateBinding HeaderTemplate}"
                                   ContentTemplateSelector="{TemplateBinding HeaderTemplateSelector}"
                                   RecognizesAccessKey="True" />
                 <TextBlock x:Name="InputGestureText"
-                           Grid.Column="2"
+                           Grid.Column="3"
                            Text="{TemplateBinding InputGestureText}"
-                           Margin="5,2,2,2"
-                           DockPanel.Dock="Right" />
-                <Path x:Name="ArrowOverGlyph" Grid.Column="3"
+                           Opacity="0.65" VerticalAlignment="Center"
+                           Margin="24,2,0,2" />
+                <!-- The arrow is dimmed until its sub menu opens, where it goes to the high contrast text -->
+                <Path x:Name="ArrowOverGlyph" Grid.Column="4"
                       HorizontalAlignment="Center"
                       VerticalAlignment="Center"
                       Data="M 0 0 L 0 7 L 4 3.5 Z"
+                      Opacity="0.6"
                       Fill="{DynamicResource AJut_Brush_SymbolForeground}"/>
+                <!-- Set 5px off the menu it opens from, so the two don't crowd -->
                 <Popup x:Name="Popup" Placement="Right"
-                       HorizontalOffset="-4"
+                       HorizontalOffset="1"
                        IsOpen="{TemplateBinding IsSubmenuOpen}"
                        AllowsTransparency="True"
                        Focusable="False"
                        PopupAnimation="Fade">
-                    <Border x:Name="SubmenuBorder"
-                            SnapsToDevicePixels="True"
-                            Background="{DynamicResource AJut_Brush_InnerPanelBackground}"
-                            BorderBrush="{DynamicResource AJut_Brush_BorderCommon}"
-                            BorderThickness="1">
-                        <ScrollViewer CanContentScroll="True" Margin="{TemplateBinding Padding}">
-                            <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" RenderOptions.ClearTypeHint="Enabled"/>
-                        </ScrollViewer>
-                    </Border>
+                    <Grid>
+                        <Border CornerRadius="8" Margin="4,6,0,0" Background="{DynamicResource AJut_Brush_Shadow}" Opacity="{DynamicResource AJut_Double_StandardShadowOpacity}">
+                            <Border.Effect>
+                                <BlurEffect Radius="5"/>
+                            </Border.Effect>
+                        </Border>
+                        <Border x:Name="SubmenuBorder"
+                                SnapsToDevicePixels="True"
+                                Margin="0,0,4,6" Padding="0,4" CornerRadius="8"
+                                Background="{DynamicResource AJut_Brush_InnerPanelBackground}"
+                                BorderBrush="{DynamicResource AJut_Brush_BorderCommon}"
+                                BorderThickness="1">
+                            <!-- Its own size scope, so this sub menu's gutter and shortcut column fit its own items -->
+                            <ScrollViewer CanContentScroll="True" Margin="{TemplateBinding Padding}" Grid.IsSharedSizeScope="True">
+                                <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" RenderOptions.ClearTypeHint="Enabled"/>
+                            </ScrollViewer>
+                        </Border>
+                    </Grid>
                 </Popup>
             </Grid>
         </Border>
         <ControlTemplate.Triggers>
             <Trigger Property="Icon" Value="{x:Null}">
                 <Setter TargetName="Icon" Property="Visibility" Value="Hidden" />
+                <Setter TargetName="GutterSpacer" Property="Visibility" Value="Collapsed" />
             </Trigger>
             <Trigger Property="IsHighlighted" Value="True">
-                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_ImportantText}"/>
-                <Setter Property="BorderBrush" TargetName="SubmenuHeaderBorder" Value="{DynamicResource AJut_Brush_BorderShadow}"/>
-                <Setter Property="Background" TargetName="SubmenuHeaderBorder" Value="{DynamicResource AJut_Brush_PrimaryHighlightDesat}"/>
-                <Setter Property="Fill" TargetName="ArrowOverGlyph" Value="{DynamicResource AJut_Brush_SecondaryHighlight}"/>
-                <Setter Property="Effect" TargetName="ArrowOverGlyph">
-                    <Setter.Value>
-                        <DropShadowEffect Color="{DynamicResource AJut_Color_Shadow}" BlurRadius="6" ShadowDepth="0"/>
-                    </Setter.Value>
-                </Setter>
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_HighlightText}"/>
+                <Setter Property="Background" TargetName="SubmenuHeaderBorder" Value="{DynamicResource AJut_Brush_ListSelection}"/>
+                <Setter Property="Fill" TargetName="ArrowOverGlyph" Value="{DynamicResource AJut_Brush_HighlightText}"/>
             </Trigger>
-            <Trigger SourceName="Popup" Property="AllowsTransparency" Value="True">
-                <Setter TargetName="SubmenuBorder" Property="CornerRadius" Value="4" />
-                <Setter TargetName="SubmenuBorder" Property="Padding" Value="0,3,0,3" />
+            <!-- Open, the item is a step darker than the hover in the sub menu beside it, so it reads as the one it came from -->
+            <Trigger Property="IsSubmenuOpen" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_HighContrastText}"/>
+                <Setter Property="Background" TargetName="SubmenuHeaderBorder" Value="{DynamicResource AJut_Brush_PrimaryHighlightDark}"/>
+                <Setter Property="Fill" TargetName="ArrowOverGlyph" Value="{DynamicResource AJut_Brush_HighContrastText}"/>
+                <Setter Property="Opacity" TargetName="ArrowOverGlyph" Value="1"/>
             </Trigger>
         </ControlTemplate.Triggers>
     </ControlTemplate>
@@ -1994,7 +2565,7 @@
     <!-- MenuItem Style -->
     <Style x:Key="{x:Type MenuItem}" TargetType="{x:Type MenuItem}">
         <Setter Property="Padding" Value="3"/>
-        <Setter Property="BorderThickness" Value="2,2,0,0"/>
+        <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
         <Setter Property="HeaderTemplateSelector">
             <Setter.Value>
@@ -2054,9 +2625,9 @@
                 <Setter Property="Template" Value="{DynamicResource {x:Static MenuItem.SubmenuItemTemplateKey}}" />
                 <Setter Property="MinWidth" Value="85"/>
             </Trigger>
+            <!-- Disabled by color alone, as on WinUI3 -->
             <Trigger Property="IsEnabled" Value="False">
                 <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_UnderstatedText}"/>
-                <Setter Property="Opacity" Value="{DynamicResource AJut_Double_StandardDisabledOpacity}"/>
             </Trigger>
         </Style.Triggers>
     </Style>
@@ -2165,6 +2736,7 @@
         <Style.Triggers>
             <Trigger Property="IsActive" Value="False">
                 <Setter Property="ajut_theme:AppThemeManager.WindowBorderGlowBrush" Value="{DynamicResource AJut_Brush_WindowGlowBorderInactive}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_TitleBarBackgroundInactive}"/>
             </Trigger>
         </Style.Triggers>
     </Style>
@@ -2300,6 +2872,8 @@
         <Style.Triggers>
             <Trigger Property="IsActive" Value="False">
                 <Setter Property="ajut_theme:AppThemeManager.WindowBorderGlowBrush" Value="{DynamicResource AJut_Brush_WindowGlowBorderInactive}"/>
+                <Setter Property="Background" Value="{DynamicResource AJut_Brush_TitleBarBackgroundInactive}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_TitleBarBackgroundInactive}"/>
             </Trigger>
         </Style.Triggers>
     </Style>

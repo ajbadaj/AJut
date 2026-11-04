@@ -107,6 +107,13 @@ namespace AJut.Text.AJson.SourceGenerators.Model
         public string DictionaryValueTypeFullName { get; init; } = string.Empty;
 
         /// <summary>
+        /// For a dictionary, the type the generated reader builds and fills in typed code: the member's own type when it has a
+        /// public parameterless constructor, or Dictionary for a member typed as IDictionary or IReadOnlyDictionary. Empty when
+        /// the reader can't build it, and reads it the general way.
+        /// </summary>
+        public string DictionaryTypeToBuildFullName { get; init; } = string.Empty;
+
+        /// <summary>
         /// For [JsonRuntimeTypeEval] - the eTypeIdInfo flag literal to emit ("AJut.Text.AJson.eTypeIdInfo.Any" by default).
         /// </summary>
         public string RuntimeTypeEvalFlagLiteral { get; init; } = string.Empty;

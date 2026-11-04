@@ -44,6 +44,14 @@ namespace AJut.Text.AJson.SourceGenerators
             {
                 foreach (INamedTypeSymbol type in candidates)
                 {
+                    string unreachableReason = DescribeWhyGeneratedCodeCannotReach(type);
+                    if (unreachableReason != null)
+                    {
+                        Location location = type.Locations.Length > 0 ? type.Locations[0] : Location.None;
+                        spc.ReportDiagnostic(Diagnostic.Create(Diagnostics.UnreachableType, location, type.ToDisplayString(), unreachableReason));
+                        continue;
+                    }
+
                     TypeAnalyzer.AnalysisResult analysis = TypeAnalyzer.Analyze(type);
 
                     foreach (Diagnostic diag in analysis.Diagnostics)
@@ -93,6 +101,41 @@ namespace AJut.Text.AJson.SourceGenerators
                 return rec.AttributeLists.Count > 0;
             }
             return false;
+        }
+
+        /// <summary>
+        /// Why a generated serializer, an internal class of its own, can't name this type: the type, or a type it is nested in,
+        /// is private, protected, or private protected. Null when generated code can reach it.
+        /// </summary>
+        private static string DescribeWhyGeneratedCodeCannotReach (INamedTypeSymbol type)
+        {
+            for (INamedTypeSymbol current = type; current != null; current = current.ContainingType)
+            {
+                string access = AccessibilityGeneratedCodeCannotReach(current.DeclaredAccessibility);
+                if (access != null)
+                {
+                    return SymbolEqualityComparer.Default.Equals(current, type)
+                        ? access
+                        : $"nested in {access} '{current.ToDisplayString()}'";
+                }
+            }
+
+            return null;
+        }
+
+        private static string AccessibilityGeneratedCodeCannotReach (Accessibility accessibility)
+        {
+            switch (accessibility)
+            {
+                case Accessibility.Private:
+                    return "private";
+                case Accessibility.Protected:
+                    return "protected";
+                case Accessibility.ProtectedAndInternal:
+                    return "private protected";
+                default:
+                    return null;
+            }
         }
 
         private static INamedTypeSymbol GetTypeSymbolIfAnnotated (GeneratorSyntaxContext gsc)

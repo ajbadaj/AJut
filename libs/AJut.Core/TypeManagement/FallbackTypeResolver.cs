@@ -2,6 +2,7 @@ namespace AJut.TypeManagement
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Reflection;
 
     /// <summary>
@@ -29,6 +30,7 @@ namespace AJut.TypeManagement
         /// is matched). Returns the single match, or null when there is no match or more than one - an
         /// ambiguous match logs and resolves to null rather than guessing.
         /// </summary>
+        [RequiresUnreferencedCode("Finds a type by name in the given assemblies, and trimming can remove a type nothing else uses.")]
         internal static Type ResolveByName (string typeNameOrAssemblyQualifiedName, IReadOnlyList<Assembly> assemblies)
         {
             if (String.IsNullOrEmpty(typeNameOrAssemblyQualifiedName) || assemblies == null)

@@ -13,7 +13,7 @@
         <StackPanel Spacing="12" MaxWidth="1000" HorizontalAlignment="Left">
             <TextBlock Text="NumericEditor" FontSize="20" FontWeight="SemiBold"/>
             <TextBlock TextWrapping="Wrap" Opacity="0.8"
-                       Text="Gradient background, Consolas font, rim-lighting border, focus highlight, AJut-themed spin buttons. Minimum and Maximum clamp, Nudge sets the spin step, and LabelContent puts anything you like in front of the value."/>
+                       Text="Gradient background, Consolas font, rim-lighting border, focus highlight, AJut-themed spin buttons. EnforceNumericType keeps the value in one type however it arrives (a XAML literal arrives as text), Minimum and Maximum clamp, Nudge sets the spin step, and LabelContent puts anything you like in front of the value."/>
 
             <Grid MaxWidth="420" HorizontalAlignment="Left">
                 <Grid.ColumnDefinitions>
@@ -30,13 +30,13 @@
                 </Grid.RowDefinitions>
 
                 <TextBlock Grid.Row="0" Grid.Column="0" Text="Integer" VerticalAlignment="Center" Margin="0,4"/>
-                <ajut:NumericEditor Grid.Row="0" Grid.Column="1" Value="42" Margin="0,4"/>
+                <ajut:NumericEditor Grid.Row="0" Grid.Column="1" Value="42" EnforceNumericType="{x:Bind IntegerType}" Margin="0,4"/>
 
                 <TextBlock Grid.Row="1" Grid.Column="0" Text="Float" VerticalAlignment="Center" Margin="0,4"/>
-                <ajut:NumericEditor Grid.Row="1" Grid.Column="1" Value="3.14" Margin="0,4"/>
+                <ajut:NumericEditor Grid.Row="1" Grid.Column="1" Value="3.14" EnforceNumericType="{x:Bind FloatType}" Margin="0,4"/>
 
                 <TextBlock Grid.Row="2" Grid.Column="0" Text="Double" VerticalAlignment="Center" Margin="0,4"/>
-                <ajut:NumericEditor Grid.Row="2" Grid.Column="1" Value="2.71828" Margin="0,4"/>
+                <ajut:NumericEditor Grid.Row="2" Grid.Column="1" Value="2.71828" EnforceNumericType="{x:Bind DoubleType}" Margin="0,4"/>
 
                 <TextBlock Grid.Row="3" Grid.Column="0" Text="Clamped (0-100)" VerticalAlignment="Center" Margin="0,4"/>
                 <ajut:NumericEditor Grid.Row="3" Grid.Column="1" Value="50" Minimum="0" Maximum="100" Margin="0,4"/>

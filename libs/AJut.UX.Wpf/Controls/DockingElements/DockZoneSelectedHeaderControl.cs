@@ -17,7 +17,7 @@
 
         public DockZoneSelectedHeaderControl ()
         {
-            this.CommandBindings.Add(new CommandBinding(DragDropElement.DragInitiatedCommand, OnTearoffRequested));
+            this.CommandBindings.Add(new CommandBinding(DragDropElement.DragInitiatedCommand, OnTearoffRequested, CanTearoff));
             this.PreviewMouseRightButtonUp += this.OnPreviewMouseRightButtonUp;
         }
 
@@ -47,20 +47,59 @@
             }
         }
 
+        // A header drag tears its zone off when every panel in it can tear off. WPF departs from the shared rule in one
+        //  case: dragging the header of a tearoff's root zone drags the whole tearoff (the shared rule leaves that to the
+        //  tearoff's title bar), and moving a tearoff that already exists tears nothing off, so what its panels allow
+        //  doesn't matter there.
+        private void CanTearoff (object sender, CanExecuteRoutedEventArgs e)
+        {
+            DockZoneViewModel zone = this.Target?.Location;
+            if (zone == null)
+            {
+                return;
+            }
+
+            Window window = Window.GetWindow(this);
+            bool isInTearoff = (window != null) && DockWindowConfig.GetIsDockingTearoffWindow(window);
+            DockZoneViewModel tearoffRoot = isInTearoff ? DockWindowConfig.GetDockingTearoffWindowRootZone(window) : null;
+            if (isInTearoff && (zone == tearoffRoot))
+            {
+                e.CanExecute = true;
+                return;
+            }
+
+            e.CanExecute = DockDragRules.ChooseHeaderDragSubject(zone, isInTearoff, tearoffRoot) != eHeaderDragSubject.None;
+        }
+
         private void OnTearoffRequested (object sender, ExecutedRoutedEventArgs e)
         {
             var target = this.Target;
             var dragTracking = (ActiveDragTracking)e.Parameter;
             var castedSource = (UIElement)e.OriginalSource;
 
-            var window = Window.GetWindow(castedSource);
-            Point desktopMouseLocation = (Point)((Vector)window.PointToScreen(castedSource.TranslatePoint(dragTracking.StartPoint, window)) - (Vector)dragTracking.StartPoint);
+            DockZoneSize zoneSize = target.Location.UI?.RenderSize ?? DockZoneSize.Empty;
+            DockTearoffPlacement placement = DockingManager.PlaceTearoffFor(zoneSize, castedSource, dragTracking.StartPoint);
 
             var dockingManager = (DockingManager)target.DockingOwner;
-            var result = dockingManager.DoGroupTearoff(target.Location, desktopMouseLocation);
+            Window hostWindow = Window.GetWindow(castedSource);
+            bool isExistingTearoffRoot = (hostWindow != null)
+                && DockWindowConfig.GetIsDockingTearoffWindow(hostWindow)
+                && (DockWindowConfig.GetDockingTearoffWindowRootZone(hostWindow) == target.Location);
+
+            // Captured before the tearoff changes where the zone is, so Escape can put it back. Moving a tearoff that already
+            //  exists tears nothing off, so Escape only stops that drag.
+            DockDragOrigin origin = isExistingTearoffRoot ? null : DockDragOrigin.ForZone(target.Location);
+            var result = dockingManager.DoGroupTearoff(target.Location, new Point(placement.Origin.X, placement.Origin.Y), new Size(placement.Width, placement.Height));
             if (result)
             {
-                window = result.Value;
+                // A tearoff's root zone moves the tearoff it is already in, which keeps its place and size, so the pointer
+                //  stays where the header was pressed in it rather than where a new tearoff would put it
+                DockPoint cursorOffset = placement.ScreenCursorOffset;
+                if (isExistingTearoffRoot)
+                {
+                    Point pressInWindow = castedSource.TranslatePoint(dragTracking.StartPoint, hostWindow);
+                    cursorOffset = new DockPoint(pressInWindow.X, pressInWindow.Y);
+                }
 
                 // Wait a tick to ensure that we have had enough time for all new UI to populate
                 this.Dispatcher.InvokeAsync(_DoDragMoveSafe);
@@ -68,7 +107,7 @@
                 {
                     if (MouseXT.GetPrimaryButtonState() == MouseButtonState.Pressed)
                     {
-                        await dockingManager.RunDragSearch(result.Value, (DockZone)target.Location.UI).ConfigureAwait(false);
+                        await dockingManager.RunDragSearch(result.Value, (DockZone)target.Location.UI, cursorOffset, origin).ConfigureAwait(false);
                     }
                 }
             }

@@ -10,6 +10,9 @@
         <Setter Property="BorderBrush" Value="{ThemeResource ControlStrokeColorDefaultBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="CornerRadius" Value="2"/>
+        <Setter Property="DisabledBackground" Value="{ThemeResource ControlFillColorDisabledBrush}"/>
+        <Setter Property="DisabledBorderBrush" Value="{ThemeResource ControlStrokeColorDefaultBrush}"/>
+        <Setter Property="DisabledForeground" Value="{ThemeResource TextFillColorDisabledBrush}"/>
         <Setter Property="ItemTemplate">
             <Setter.Value>
                 <DataTemplate>
@@ -35,7 +38,10 @@
                                        SeparatorThickness="{TemplateBinding SeparatorThickness}"
                                        ItemPadding="{TemplateBinding ItemPadding}"
                                        ItemTemplate="{TemplateBinding ItemTemplate}"
-                                       ToggleButtonItemStyle="{TemplateBinding ToggleButtonItemStyle}"/>
+                                       ToggleButtonItemStyle="{TemplateBinding ToggleButtonItemStyle}"
+                                       DisabledBackground="{TemplateBinding DisabledBackground}"
+                                       DisabledBorderBrush="{TemplateBinding DisabledBorderBrush}"
+                                       DisabledForeground="{TemplateBinding DisabledForeground}"/>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

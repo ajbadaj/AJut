@@ -46,6 +46,10 @@ namespace AJut.Text.AJson
 
         public void RemoveAt (int index) => m_values.RemoveAt(index);
 
+        /// <summary>
+        /// Appends <paramref name="value"/>, built the way <see cref="JsonHelper.BuildJsonForObject(object, JsonBuilderSettings)"/>
+        /// builds one. A null value is json's null literal.
+        /// </summary>
         public JsonValue AppendNew (object value, JsonBuilderSettings settings = null)
         {
             JsonValue built = JsonHelper.MakeValueBuilder(value, settings).BuildJsonValue();
@@ -53,9 +57,13 @@ namespace AJut.Text.AJson
             return built;
         }
 
+        /// <summary>
+        /// Appends what <paramref name="valueBuilder"/> builds. A null builder appends json's null literal, the same as a null
+        /// value, which matters because a bare null passed to AppendNew picks this overload.
+        /// </summary>
         public JsonValue AppendNew (JsonBuilder valueBuilder)
         {
-            JsonValue built = valueBuilder.BuildJsonValue();
+            JsonValue built = valueBuilder?.BuildJsonValue() ?? JsonValue.CreateNull();
             this.Add(built);
             return built;
         }

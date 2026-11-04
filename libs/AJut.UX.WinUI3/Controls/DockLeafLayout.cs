@@ -16,7 +16,8 @@ namespace AJut.UX.Controls
     // padding) live in the template rather than in DockZone code-behind.
     //
     // Template parts:
-    //   PART_HeaderBar        - Border hosting the panel title / close button
+    //   PART_HeaderBar        - Border behind the panel title / close button, taking the header's pointer events
+    //   PART_HeaderPresenter  - ContentPresenter for HeaderContent, inside PART_HeaderBar
     //   PART_ContentBorder    - Border framing the docked content presenter
     //   PART_ContentPresenter - ContentPresenter for PanelContent
     //   PART_TabStripWrapper  - Border hosting the tab navigation row
@@ -24,17 +25,23 @@ namespace AJut.UX.Controls
     //
     // TemplateBinding handles PanelBackground, PanelBorderBrush,
     // PanelBorderThickness and TabStripBackground reactively after template
-    // application.  PanelCornerRadius has no TemplateBinding path to the
+    // application.  The header's background and text color follow the
+    // PanelFocusStates visual states instead (HeaderBackground and Foreground, or
+    // HeaderFocusedBackground and HeaderFocusedForeground while IsPanelFocused).
+    // PanelCornerRadius has no TemplateBinding path to the
     // nested PART_ContentBorder, so it is pushed from code in OnApplyTemplate
     // and its DP change handler.  Content DPs (HeaderContent, PanelContent,
-    // TabNavContent) are pushed from code because they target .Child/.Content
+    // TabNavContent) are pushed from code because they target .Content
     // properties rather than DPs exposed for binding.
 
     [TemplatePart(Name = nameof(PART_HeaderBar), Type = typeof(Border))]
+    [TemplatePart(Name = nameof(PART_HeaderPresenter), Type = typeof(ContentPresenter))]
     [TemplatePart(Name = nameof(PART_ContentBorder), Type = typeof(Border))]
     [TemplatePart(Name = nameof(PART_ContentPresenter), Type = typeof(ContentPresenter))]
     [TemplatePart(Name = nameof(PART_TabStripWrapper), Type = typeof(Border))]
     [TemplatePart(Name = nameof(PART_TabNavPresenter), Type = typeof(ContentPresenter))]
+    [TemplateVisualState(Name = "PanelUnfocused", GroupName = "PanelFocusStates")]
+    [TemplateVisualState(Name = "PanelFocused", GroupName = "PanelFocusStates")]
     public sealed class DockLeafLayout : Control
     {
         // ===========[ Construction ]=========================================
@@ -54,15 +61,47 @@ namespace AJut.UX.Controls
 
         // ===========[ Template Properties ]===================================
         public Border PART_HeaderBar { get; private set; }
+        public ContentPresenter PART_HeaderPresenter { get; private set; }
         public Border PART_ContentBorder { get; private set; }
         public ContentPresenter PART_ContentPresenter { get; private set; }
         public Border PART_TabStripWrapper { get; private set; }
         public ContentPresenter PART_TabNavPresenter { get; private set; }
 
         // ===========[ Dependency Properties - Styling ]======================
-        // PanelBackground / PanelBorderBrush / PanelBorderThickness / TabStripBackground:
-        // no DP change callbacks - TemplateBinding in DockLeafLayout.xaml keeps
-        // the template parts in sync after template application.
+        // HeaderBackground / HeaderFocusedBackground / HeaderFocusedForeground / PanelBackground / PanelBorderBrush /
+        // PanelBorderThickness / TabStripBackground: no DP change callbacks - TemplateBinding, or the PanelFocusStates
+        // setters' bindings, in DockLeafLayout.xaml keep the template parts in sync after template application.
+
+        public static readonly DependencyProperty HeaderBackgroundProperty = DPUtils.Register(_ => _.HeaderBackground);
+        /// <summary>
+        /// The background of the header bar above the panel, which holds the panel's title. It sits a level apart from
+        /// PanelBackground, the way the unselected tabs do, so the header reads as the panel's frame rather than its content.
+        /// </summary>
+        public Brush HeaderBackground
+        {
+            get => (Brush)this.GetValue(HeaderBackgroundProperty);
+            set => this.SetValue(HeaderBackgroundProperty, value);
+        }
+
+        public static readonly DependencyProperty HeaderFocusedBackgroundProperty = DPUtils.Register(_ => _.HeaderFocusedBackground);
+        /// <summary>
+        /// The header bar's background while <see cref="IsPanelFocused"/>, marking the panel being typed into
+        /// </summary>
+        public Brush HeaderFocusedBackground
+        {
+            get => (Brush)this.GetValue(HeaderFocusedBackgroundProperty);
+            set => this.SetValue(HeaderFocusedBackgroundProperty, value);
+        }
+
+        public static readonly DependencyProperty HeaderFocusedForegroundProperty = DPUtils.Register(_ => _.HeaderFocusedForeground);
+        /// <summary>
+        /// The header's text color while <see cref="IsPanelFocused"/>, on <see cref="HeaderFocusedBackground"/>
+        /// </summary>
+        public Brush HeaderFocusedForeground
+        {
+            get => (Brush)this.GetValue(HeaderFocusedForegroundProperty);
+            set => this.SetValue(HeaderFocusedForegroundProperty, value);
+        }
 
         public static readonly DependencyProperty PanelBackgroundProperty = DPUtils.Register(_ => _.PanelBackground);
         public Brush PanelBackground
@@ -118,9 +157,9 @@ namespace AJut.UX.Controls
         }
         private void OnHeaderContentChanged (DependencyPropertyChangedEventArgs<UIElement> e)
         {
-            if (this.PART_HeaderBar != null)
+            if (this.PART_HeaderPresenter != null)
             {
-                this.PART_HeaderBar.Child = e.NewValue;
+                this.PART_HeaderPresenter.Content = e.NewValue;
             }
         }
 
@@ -163,6 +202,18 @@ namespace AJut.UX.Controls
             set => this.SetValue(IsTabbedProperty, value);
         }
 
+        public static readonly DependencyProperty IsPanelFocusedProperty = DPUtils.Register(_ => _.IsPanelFocused, (d, e) => d.ApplyPanelFocusState());
+        /// <summary>
+        /// Is this the panel being typed into: keyboard focus is within it and its window is active. The header shows it
+        /// on <see cref="HeaderFocusedBackground"/> and <see cref="HeaderFocusedForeground"/>. Set by the DockZone that
+        /// hosts this layout.
+        /// </summary>
+        public bool IsPanelFocused
+        {
+            get => (bool)this.GetValue(IsPanelFocusedProperty);
+            set => this.SetValue(IsPanelFocusedProperty, value);
+        }
+
         // ===========[ Template application ]=================================
         protected override void OnApplyTemplate ()
         {
@@ -179,6 +230,7 @@ namespace AJut.UX.Controls
             base.OnApplyTemplate();
 
             this.PART_HeaderBar = (Border)this.GetTemplateChild(nameof(this.PART_HeaderBar));
+            this.PART_HeaderPresenter = (ContentPresenter)this.GetTemplateChild(nameof(this.PART_HeaderPresenter));
             this.PART_ContentBorder = (Border)this.GetTemplateChild(nameof(this.PART_ContentBorder));
             this.PART_ContentPresenter = (ContentPresenter)this.GetTemplateChild(nameof(this.PART_ContentPresenter));
             this.PART_TabStripWrapper = (Border)this.GetTemplateChild(nameof(this.PART_TabStripWrapper));
@@ -212,9 +264,9 @@ namespace AJut.UX.Controls
                 {
                     this.PART_ContentBorder.CornerRadius = this.PanelCornerRadius;
                 }
-                if (this.PART_HeaderBar != null && this.HeaderContent != null)
+                if (this.PART_HeaderPresenter != null && this.HeaderContent != null)
                 {
-                    this.PART_HeaderBar.Child = this.HeaderContent;
+                    this.PART_HeaderPresenter.Content = this.HeaderContent;
                 }
                 if (this.PART_ContentPresenter != null && this.PanelContent != null)
                 {
@@ -226,11 +278,19 @@ namespace AJut.UX.Controls
                 }
 
                 this.ApplyTabbedState();
+                this.ApplyPanelFocusState();
             }
             catch (Exception ex)
             {
                 Logger.LogError("Error in DockLeafLayout::ApplyAll", ex);
             }
+        }
+
+        // The header's background and text color are set only by these states (their setters bind to the brush DPs), not
+        // by TemplateBinding as well, which would overwrite the state's value whenever the template re-applied
+        private void ApplyPanelFocusState ()
+        {
+            VisualStateManager.GoToState(this, this.IsPanelFocused ? "PanelFocused" : "PanelUnfocused", false);
         }
 
         private void ApplyTabbedState ()

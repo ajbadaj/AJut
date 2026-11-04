@@ -1,0 +1,211 @@
+<UserControl x:Class="TheAJutShowRoom.UI.Controls.Diagnostics.ThemeTesterDisplay"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
+             xmlns:debug="clr-namespace:TheAJutShowRoom.UI.Controls.Diagnostics"
+             mc:Ignorable="d"
+             d:DesignHeight="900" d:DesignWidth="800"
+             x:Name="Self">
+    <UserControl.Resources>
+        <x:Array x:Key="StripItems" Type="{x:Type sys:String}">
+            <sys:String>One</sys:String>
+            <sys:String>Two</sys:String>
+            <sys:String>Three</sys:String>
+        </x:Array>
+        <x:Array x:Key="ManyItems" Type="{x:Type sys:String}">
+            <sys:String>January</sys:String>
+            <sys:String>February</sys:String>
+            <sys:String>March</sys:String>
+            <sys:String>April</sys:String>
+            <sys:String>May</sys:String>
+            <sys:String>June</sys:String>
+            <sys:String>July</sys:String>
+        </x:Array>
+        <Style x:Key="SampleColumn" TargetType="StackPanel">
+            <Setter Property="Margin" Value="0,0,18,12"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
+        </Style>
+        <Style x:Key="SampleCaption" TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,6,0,0"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Opacity" Value="0.7"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="MaxWidth" Value="160"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+        </Style>
+        <Style x:Key="SectionHeading" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Margin" Value="0,16,0,6"/>
+        </Style>
+        <Style x:Key="SectionNote" TargetType="TextBlock">
+            <Setter Property="TextWrapping" Value="WrapWithOverflow"/>
+            <Setter Property="Opacity" Value="0.8"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+    </UserControl.Resources>
+    <!-- Every control the AJut theme styles, each state side by side, the same sections as the WinUI3, AppKit, Android
+         and UIKit showrooms' Theme Tester. The managed brush buttons' held states come from HeldStateBrushButton and
+         HeldStateAutoBrushButton, which override CurrentState; WPF has no way to hold the pointer over anything else. -->
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="20" MaxWidth="1000" HorizontalAlignment="Left">
+            <TextBlock Text="Theme Tester" FontSize="18"/>
+            <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0"
+                       Text="Every control the AJut theme styles, in each of its states side by side. Switch Dark, Light, Touch and the AJut theme from the drawer and judge every state at once. The Rest samples are live: move over and press them too. A held state takes neither the mouse nor focus, so nothing moves it out of that state."/>
+
+            <!-- ====[ Buttons ]==== -->
+            <TextBlock Text="BrushButton" Style="{StaticResource SectionHeading}"/>
+            <WrapPanel>
+                <StackPanel Style="{StaticResource SampleColumn}">
+                    <ajut:BrushButton Content="Button" Padding="8,3" HorizontalAlignment="Left"/>
+                    <TextBlock Text="Rest" Style="{StaticResource SampleCaption}"/>
+                </StackPanel>
+                <StackPanel Style="{StaticResource SampleColumn}">
+                    <debug:HeldStateBrushButton Content="Button" Padding="8,3" HorizontalAlignment="Left" HeldState="PointerOver" IsHitTestVisible="False" Focusable="False"
+                                                Style="{DynamicResource {x:Type ajut:BrushButton}}"/>
+                    <TextBlock Text="Pointer over" Style="{StaticResource SampleCaption}"/>
+                </StackPanel>
+                <StackPanel Style="{StaticResource SampleColumn}">
+                    <debug:HeldStateBrushButton Content="Button" Padding="8,3" HorizontalAlignment="Left" HeldState="Pressed" IsHitTestVisible="False" Focusable="False"
+                                                Style="{DynamicResource {x:Type ajut:BrushButton}}"/>
+                    <TextBlock Text="Pressed" Style="{StaticResource SampleCaption}"/>
+                </StackPanel>
+                <StackPanel Style="{StaticResource SampleColumn}">
+                    <ajut:BrushButton Content="Button" Padding="8,3" HorizontalAlignment="Left" IsEnabled="False"/>
+                    <TextBlock Text="Disabled" Style="{StaticResource SampleCaption}"/>
+                </StackPanel>
+            </WrapPanel>
+
+            <TextBlock Text="AutoBrushButton, no accent of its own (the AJut accent when themed)" Style="{StaticResource SectionHeading}"/>
+            <WrapPanel>
+                <StackPanel Style="{StaticResource SampleColumn}">
+                    <ajut:AutoBrushButton Content="Button" Padding="8,3" HorizontalAlignment="Left"/>
+                    <TextBlock Text="Rest" Style="{StaticResource SampleCaption}"/>
+                </StackPanel>
+                <StackPanel Style="{StaticResource SampleColumn}">
+                    <debug:HeldStateAutoBrushButton Content="Button" Padding="8,3" HorizontalAlignment="Left" HeldState="PointerOver" IsHitTestVisible="False" Focusable="False"
+                                                    Style="{DynamicResource {x:Type ajut:AutoBrushButton}}"/>
+                    <TextBlock Text="Pointer over" Style="{StaticResource SampleCaption}"/>
+                </StackPanel>
+                <StackPanel Style="{StaticResource SampleColumn}">
+                    <debug:HeldStateAutoBrushButton Content="Button" Padding="8,3" HorizontalAlignment="Left" HeldState="Pressed" IsHitTestVisible="False" Focusable="False"
+                                                    Style="{DynamicResource {x:Type ajut:AutoBrushButton}}"/>
+                    <TextBlock Text="Pressed" Style="{StaticResource SampleCaption}"/>
+                </StackPanel>
+                <StackPanel Style="{StaticResource SampleColumn}">
+                    <ajut:AutoBrushButton Content="Button" Padding="8,3" HorizontalAlignment="Left" IsEnabled="False"/>
+                    <TextBlock Text="Disabled" Style="{StaticResource SampleCaption}"/>
+                </StackPanel>
+            </WrapPanel>
+
+            <TextBlock Text="Docking toolbar buttons" Style="{StaticResource SectionHeading}"/>
+            <WrapPanel>
+                <StackPanel Style="{StaticResource SampleColumn}">
+                    <ajut:DockPanelAddButton Content="Add Panel" HorizontalAlignment="Left"/>
+                    <TextBlock Text="Add, rest" Style="{StaticResource SampleCaption}"/>
+                </StackPanel>
+                <StackPanel Style="{StaticResource SampleColumn}">
+                    <ajut:DockPanelAddButton Content="Add Panel" HorizontalAlignment="Left" IsEnabled="False"/>
+                    <TextBlock Text="Add, disabled" Style="{StaticResource SampleCaption}"/>
+                </StackPanel>
+                <StackPanel Style="{StaticResource SampleColumn}">
+                    <ajut:DockPanelShowHideToggleButton Content="Panel" HorizontalAlignment="Left"/>
+                    <TextBlock Text="Toggle, off" Style="{StaticResource SampleCaption}"/>
+                </StackPanel>
+                <StackPanel Style="{StaticResource SampleColumn}">
+                    <ajut:DockPanelShowHideToggleButton Content="Panel" HorizontalAlignment="Left" IsChecked="True"/>
+                    <TextBlock Text="Toggle, on" Style="{StaticResource SampleCaption}"/>
+                </StackPanel>
+            </WrapPanel>
+            <TextBlock Style="{StaticResource SectionNote}"
+                       Text="The docking buttons take their pointer over and pressed looks from the mouse itself, which WPF can't hold: move over and press the samples above."/>
+
+            <!-- ====[ ToggleStrip: its items are inside the strip, so only selection and the strip itself are set here ]==== -->
+            <TextBlock Text="ToggleStrip" Style="{StaticResource SectionHeading}"/>
+            <WrapPanel>
+                <StackPanel Style="{StaticResource SampleColumn}">
+                    <ajut:ToggleStrip ItemsSource="{StaticResource StripItems}" SelectedItem="{Binding Source={StaticResource StripItems}, Path=[1], Mode=OneTime}" HorizontalAlignment="Left"/>
+                    <TextBlock Text="Rest, with Two picked" Style="{StaticResource SampleCaption}"/>
+                </StackPanel>
+                <StackPanel Style="{StaticResource SampleColumn}">
+                    <ajut:ToggleStrip ItemsSource="{StaticResource ManyItems}" SelectedItem="{Binding Source={StaticResource ManyItems}, Path=[0], Mode=OneTime}" OverflowBehavior="OverflowPopup" Width="150" HorizontalAlignment="Left"/>
+                    <TextBlock Text="OverflowPopup (the chevron)" Style="{StaticResource SampleCaption}"/>
+                </StackPanel>
+                <StackPanel Style="{StaticResource SampleColumn}">
+                    <ajut:ToggleStrip ItemsSource="{StaticResource ManyItems}" SelectedItem="{Binding Source={StaticResource ManyItems}, Path=[0], Mode=OneTime}" OverflowBehavior="Scroll" Width="150" HorizontalAlignment="Left"/>
+                    <TextBlock Text="Scroll (the bump buttons)" Style="{StaticResource SampleCaption}"/>
+                </StackPanel>
+                <StackPanel Style="{StaticResource SampleColumn}">
+                    <ajut:ToggleStrip ItemsSource="{StaticResource StripItems}" SelectedItem="{Binding Source={StaticResource StripItems}, Path=[1], Mode=OneTime}" IsEnabled="False" HorizontalAlignment="Left"/>
+                    <TextBlock Text="Disabled, with Two picked" Style="{StaticResource SampleCaption}"/>
+                </StackPanel>
+            </WrapPanel>
+            <TextBlock Style="{StaticResource SectionNote}"
+                       Text="A strip makes its own item buttons, so their pointer over and pressed looks can't be held from here: move over and press the items above. Disabled, a strip looks like a disabled ComboBox, with its selected item muted and its names understated."/>
+
+            <!-- ====[ NumericEditor ]==== -->
+            <TextBlock Text="NumericEditor" Style="{StaticResource SectionHeading}"/>
+            <WrapPanel>
+                <StackPanel Style="{StaticResource SampleColumn}">
+                    <ajut:NumericEditor Value="42" Width="130" HorizontalAlignment="Left"/>
+                    <TextBlock Text="Rest (click in for focus)" Style="{StaticResource SampleCaption}"/>
+                </StackPanel>
+                <StackPanel Style="{StaticResource SampleColumn}">
+                    <ajut:NumericEditor Value="10" Minimum="0" Maximum="10" OutOfBoundsResponse="ErrorAndToolTip" Width="130" HorizontalAlignment="Left"/>
+                    <TextBlock Text="Bounded 0 to 10: type 42 for the error" Style="{StaticResource SampleCaption}"/>
+                </StackPanel>
+                <StackPanel Style="{StaticResource SampleColumn}">
+                    <ajut:NumericEditor Value="42" Width="130" HorizontalAlignment="Left" IsReadOnly="True"/>
+                    <TextBlock Text="Read-only" Style="{StaticResource SampleCaption}"/>
+                </StackPanel>
+                <StackPanel Style="{StaticResource SampleColumn}">
+                    <ajut:NumericEditor Value="42" Width="130" HorizontalAlignment="Left" IsEnabled="False"/>
+                    <TextBlock Text="Disabled" Style="{StaticResource SampleCaption}"/>
+                </StackPanel>
+            </WrapPanel>
+            <TextBlock Style="{StaticResource SectionNote}"
+                       Text="The editor's hover, focus and error looks come from the mouse, the keyboard and typing, which WPF can't hold, so they are tried by hand on the samples above, the minus and plus included."/>
+
+            <!-- ====[ ColorEditIngressControl ]==== -->
+            <TextBlock Text="ColorEditIngressControl" Style="{StaticResource SectionHeading}"/>
+            <WrapPanel>
+                <StackPanel Style="{StaticResource SampleColumn}">
+                    <ajut:ColorEditIngressControl Width="60" Height="40" EditColor="#2196F3" HorizontalAlignment="Left"/>
+                    <TextBlock Text="Rest (click: open)" Style="{StaticResource SampleCaption}"/>
+                </StackPanel>
+                <StackPanel Style="{StaticResource SampleColumn}">
+                    <ajut:ColorEditIngressControl Width="60" Height="40" EditColor="#2196F3" HorizontalAlignment="Left" IsReadOnly="True"/>
+                    <TextBlock Text="Read-only" Style="{StaticResource SampleCaption}"/>
+                </StackPanel>
+            </WrapPanel>
+
+            <!-- ====[ ToggleSwitchButton, WPF's own AJut control ]==== -->
+            <TextBlock Text="ToggleSwitchButton" Style="{StaticResource SectionHeading}"/>
+            <WrapPanel>
+                <StackPanel Style="{StaticResource SampleColumn}">
+                    <ajut:ToggleSwitchButton HorizontalAlignment="Left"/>
+                    <TextBlock Text="Off" Style="{StaticResource SampleCaption}"/>
+                </StackPanel>
+                <StackPanel Style="{StaticResource SampleColumn}">
+                    <ajut:ToggleSwitchButton HorizontalAlignment="Left" IsChecked="True"/>
+                    <TextBlock Text="On" Style="{StaticResource SampleCaption}"/>
+                </StackPanel>
+                <StackPanel Style="{StaticResource SampleColumn}">
+                    <ajut:ToggleSwitchButton HorizontalAlignment="Left" IsEnabled="False"/>
+                    <TextBlock Text="Disabled, off" Style="{StaticResource SampleCaption}"/>
+                </StackPanel>
+                <StackPanel Style="{StaticResource SampleColumn}">
+                    <ajut:ToggleSwitchButton HorizontalAlignment="Left" IsChecked="True" IsEnabled="False"/>
+                    <TextBlock Text="Disabled, on" Style="{StaticResource SampleCaption}"/>
+                </StackPanel>
+            </WrapPanel>
+
+            <!-- ====[ WPF's own controls ]==== -->
+            <TextBlock Text="WPF's own controls" Style="{StaticResource SectionHeading}"/>
+            <TextBlock Style="{StaticResource SectionNote}"
+                       Text="The AJut theme styles WPF's own controls too (buttons, text boxes, ComboBox, CheckBox, RadioButton, menus, TabControl, Expander). They are all on the Standard controls tab, enabled and disabled."/>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

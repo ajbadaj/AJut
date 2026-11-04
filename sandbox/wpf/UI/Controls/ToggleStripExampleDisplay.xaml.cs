@@ -14,6 +14,10 @@
         {
             this.ZeroToggleElementsSource = new ObservableCollection<string>();
             this.InitializeComponent();
+
+            // Set here rather than bound: the strip sits in a BumpStack, which holds it outside this page's logical tree,
+            // so a binding from it back to this page finds nothing
+            this.EmptyStrip.ItemsSource = this.ZeroToggleElementsSource;
         }
 
 

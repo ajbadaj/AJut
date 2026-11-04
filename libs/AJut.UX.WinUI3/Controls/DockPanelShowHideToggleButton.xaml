@@ -40,28 +40,28 @@
                                     <VisualState.Setters>
                                         <Setter Target="Root.Background" Value="{ThemeResource AJut_DockPanelToggleButton_PressedBackground}"/>
                                         <Setter Target="Root.BorderBrush" Value="{ThemeResource AJut_DockPanelToggleButton_NormalBorderBrush}"/>
-                                        <Setter Target="ContentArea.Foreground" Value="{ThemeResource AJut_DockPanelToggleButton_NormalForeground}"/>
+                                        <Setter Target="ContentArea.Foreground" Value="{ThemeResource AJut_DockPanelToggleButton_PressedForeground}"/>
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="Checked">
                                     <VisualState.Setters>
                                         <Setter Target="Root.Background" Value="{ThemeResource AJut_DockPanelToggleButton_CheckedBackground}"/>
                                         <Setter Target="Root.BorderBrush" Value="{ThemeResource AJut_DockPanelToggleButton_CheckedBorderBrush}"/>
-                                        <Setter Target="ContentArea.Foreground" Value="{ThemeResource AJut_DockPanelToggleButton_NormalForeground}"/>
+                                        <Setter Target="ContentArea.Foreground" Value="{ThemeResource AJut_DockPanelToggleButton_CheckedForeground}"/>
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="CheckedPointerOver">
                                     <VisualState.Setters>
                                         <Setter Target="Root.Background" Value="{ThemeResource AJut_DockPanelToggleButton_CheckedPointerOverBackground}"/>
                                         <Setter Target="Root.BorderBrush" Value="{ThemeResource AJut_DockPanelToggleButton_CheckedPointerOverBorderBrush}"/>
-                                        <Setter Target="ContentArea.Foreground" Value="{ThemeResource AJut_DockPanelToggleButton_NormalForeground}"/>
+                                        <Setter Target="ContentArea.Foreground" Value="{ThemeResource AJut_DockPanelToggleButton_CheckedPointerOverForeground}"/>
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="CheckedPressed">
                                     <VisualState.Setters>
                                         <Setter Target="Root.Background" Value="{ThemeResource AJut_DockPanelToggleButton_CheckedPressedBackground}"/>
                                         <Setter Target="Root.BorderBrush" Value="{ThemeResource AJut_DockPanelToggleButton_CheckedPressedBorderBrush}"/>
-                                        <Setter Target="ContentArea.Foreground" Value="{ThemeResource AJut_DockPanelToggleButton_NormalForeground}"/>
+                                        <Setter Target="ContentArea.Foreground" Value="{ThemeResource AJut_DockPanelToggleButton_CheckedPressedForeground}"/>
                                     </VisualState.Setters>
                                 </VisualState>
                             </VisualStateGroup>

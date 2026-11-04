@@ -11,6 +11,16 @@
              d:DesignHeight="450" d:DesignWidth="800"
              x:Name="Self">
     <StackPanel Margin="20">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,5">
+            <StackPanel.Resources>
+                <DataTemplate x:Key="FriendlyEnumName">
+                    <TextBlock Text="{Binding Converter={conv:FriendlyTextEnConverter}}"/>
+                </DataTemplate>
+            </StackPanel.Resources>
+            <ajut:EnumToggleStrip x:Name="PathType" SelectedItem="{x:Static ajut:ePathType.File}" ItemTemplate="{StaticResource FriendlyEnumName}" Margin="0,0,5,0"/>
+            <ajut:EnumToggleStrip x:Name="FileOpenType" SelectedItem="{x:Static ajut:eFileDialogType.OpenFile}" ItemTemplate="{StaticResource FriendlyEnumName}"
+                                  Visibility="{Binding ElementName=PathType, Path=SelectedItem, Converter={conv:NumericComparisonToVisibilityConverter Comp=Equal, To=0, CompTrueValue=Visible, CompFalseValue=Collapsed}}"/>
+        </StackPanel>
         <ajut:PathSelectionControl VerticalAlignment="Center" MaxWidth="300" PathType="{Binding ElementName=PathType, Path=SelectedItem}"
                                    FileDialogType="{Binding ElementName=FileOpenType, Path=SelectedItem}"
                                    FileFilter="{Binding ElementName=FileFilter, Path=Text, UpdateSourceTrigger=PropertyChanged}"
@@ -26,9 +36,6 @@
             <CheckBox x:Name="EmptyAsError" Content="Treat empty as error" Margin="0,0,5,5" VerticalAlignment="Center"/>
             <CheckBox x:Name="ShowOpenInExplorer" Content="Show 'Open In Explorer' button"/>
             <CheckBox x:Name="ShortenPath" Content="Shorten path relative to Fixed Root?"/>
-            <ajut:EnumComboBox x:Name="PathType" SelectedItem="{x:Static ajut:ePathType.File}" Margin="0,0,5,5" VerticalAlignment="Center"/>
-            <ajut:EnumComboBox x:Name="FileOpenType" SelectedItem="{x:Static ajut:eFileDialogType.OpenFile}" Margin="0,0,5,5" VerticalAlignment="Center"
-                               Visibility="{Binding ElementName=PathType, Path=SelectedItem, Converter={conv:NumericComparisonToVisibilityConverter Comp=Equal, To=0, CompTrueValue=Visible, CompFalseValue=Collapsed}}"/>
             <DockPanel>
                 <TextBlock Text="Initial Root Dir" VerticalAlignment="Center" Margin="0,0,5,0"/>
                 <ajut:PathSelectionControl x:Name="InitialRootDir" PathType="Folder"/>

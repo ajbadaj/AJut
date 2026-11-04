@@ -62,6 +62,14 @@
                 {
                     this.Items.Add(this.Observe(child));
                 }
+
+                // The root is followed whether it's shown or not: a hidden root's own children are the top level of the
+                // list, and their rows come and go with its ChildInserted and ChildRemoved like any other parent's. The
+                // full tree above only takes the root in when it's shown, so a hidden one is followed here.
+                if (!m_includeRoot)
+                {
+                    this.Observe(m_rootNode);
+                }
             }
         }
 
@@ -99,6 +107,7 @@
                     return;
                 }
 
+                // The root is followed shown or hidden (see RootNode), so this only moves it in or out of the list
                 if (m_includeRoot)
                 {
                     if (!this.Items.Contains(this.RootNode))
@@ -117,6 +126,12 @@
             foreach (TNode item in this.Items)
             {
                 this.Disregard(item);
+            }
+
+            // A hidden root isn't in the list, but is followed all the same (see RootNode), so it's let go of too
+            if ((m_rootNode != null) && !m_includeRoot)
+            {
+                this.Disregard(m_rootNode);
             }
 
             m_rootNode = null;

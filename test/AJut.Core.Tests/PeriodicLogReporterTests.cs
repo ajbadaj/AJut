@@ -158,9 +158,9 @@ namespace AJut.Core.UnitTests
         public void Register_NullArguments_Throw ()
         {
             using var reporter = new PeriodicLogReporter();
-            Assert.ThrowsException<ArgumentNullException>(() => reporter.Register(null, () => "x"));
-            Assert.ThrowsException<ArgumentNullException>(() => reporter.Register("name", (Func<string>)null));
-            Assert.ThrowsException<ArgumentNullException>(() => reporter.Register("name", (SampleStatsAccumulator)null));
+            Assert.ThrowsExactly<ArgumentNullException>(() => reporter.Register(null, () => "x"));
+            Assert.ThrowsExactly<ArgumentNullException>(() => reporter.Register("name", (Func<string>)null));
+            Assert.ThrowsExactly<ArgumentNullException>(() => reporter.Register("name", (SampleStatsAccumulator)null));
         }
 
         // ---- Timer ----
@@ -250,8 +250,8 @@ namespace AJut.Core.UnitTests
         public void Period_ZeroOrNegative_Throws ()
         {
             using var reporter = new PeriodicLogReporter();
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => reporter.Period = TimeSpan.Zero);
-            Assert.ThrowsException<ArgumentOutOfRangeException>(() => reporter.Period = TimeSpan.FromSeconds(-1));
+            Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => reporter.Period = TimeSpan.Zero);
+            Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => reporter.Period = TimeSpan.FromSeconds(-1));
         }
 
         // ---- SampleStatsAccumulator reports ----
@@ -333,8 +333,8 @@ namespace AJut.Core.UnitTests
             var reporter = new PeriodicLogReporter();
             reporter.Dispose();
 
-            Assert.ThrowsException<ObjectDisposedException>(() => reporter.Register("late", () => "LATE_REPORT"));
-            Assert.ThrowsException<ObjectDisposedException>(() => reporter.Register("late-stats", new SampleStatsAccumulator()));
+            Assert.ThrowsExactly<ObjectDisposedException>(() => reporter.Register("late", () => "LATE_REPORT"));
+            Assert.ThrowsExactly<ObjectDisposedException>(() => reporter.Register("late-stats", new SampleStatsAccumulator()));
             Assert.IsFalse(reporter.IsTimerRunning);
         }
     }

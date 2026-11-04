@@ -154,6 +154,8 @@ namespace AJut.UX.Controls
 
         private void MenuItems_OnCollectionChanged (object sender, NotifyCollectionChangedEventArgs e) => this.RebuildFlyout();
 
+        private void MenuItem_OnClick (object sender, RoutedEventArgs e) => this.CloseFlyout();
+
         // ===========[ Property change handlers ]=================================
         private void OnIsOpenChanged (bool newValue)
         {
@@ -186,12 +188,24 @@ namespace AJut.UX.Controls
             m_flyout?.Hide();
         }
 
+        // The items outlive each flyout made for them, so every rebuild unhooks the items the last flyout held (a removed
+        //  item included) and empties it, before the new flyout takes the current items. Without that each rebuild left
+        //  another Click handler on every item that stayed, and the old flyout kept holding them.
         private void RebuildFlyout ()
         {
             if (m_flyout != null)
             {
                 m_flyout.Opened -= this.Flyout_OnOpened;
                 m_flyout.Closed -= this.Flyout_OnClosed;
+                foreach (MenuFlyoutItemBase item in m_flyout.Items)
+                {
+                    if (item is MenuFlyoutItem flyoutItem)
+                    {
+                        flyoutItem.Click -= this.MenuItem_OnClick;
+                    }
+                }
+
+                m_flyout.Items.Clear();
             }
 
             m_flyout = new MenuFlyout { Placement = FlyoutPlacementMode.Bottom };
@@ -205,7 +219,8 @@ namespace AJut.UX.Controls
                 // Auto-close the flyout when a leaf item is clicked.
                 if (item is MenuFlyoutItem flyoutItem)
                 {
-                    flyoutItem.Click += (s, e) => this.CloseFlyout();
+                    flyoutItem.Click -= this.MenuItem_OnClick;
+                    flyoutItem.Click += this.MenuItem_OnClick;
                 }
             }
         }

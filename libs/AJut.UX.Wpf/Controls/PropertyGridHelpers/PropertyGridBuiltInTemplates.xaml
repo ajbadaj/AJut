@@ -1,0 +1,33 @@
+<ResourceDictionary x:Class="AJut.UX.Controls.PropertyGridBuiltInTemplates"
+                    x:ClassModifier="internal"
+                    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:AJut.UX.Controls"
+                    xmlns:ap="clr-namespace:AJut.UX.AttachedProperties"
+                    xmlns:conv="clr-namespace:AJut.UX.Converters"
+                    xmlns:pi="clr-namespace:AJut.UX.PropertyInteraction;assembly=AJut.UX">
+
+    <!-- ===[ PropertyGrid built-in editors ]=== -->
+    <!-- The row templates PropertyGridTemplateSelector falls back to for the Nullable, Button and List editor keys
+         when the grid has no template of its own registered for them. Each DataContext is the row's
+         PropertyEditTarget. This dictionary is built by the selector itself rather than merged into the theme, so
+         the selector works with no application resources around it. -->
+
+    <DataTemplate x:Key="NullableTemplate" DataType="{x:Type pi:PropertyEditTarget}">
+        <local:NullableEditor/>
+    </DataTemplate>
+
+    <!-- A read-only grid (Edit.IsReadOnly, inherited) runs no button rows. Button styles, AJut's themed ones
+         included, don't follow Edit.IsReadOnly, so the button binds it itself. -->
+    <DataTemplate x:Key="ButtonTemplate" DataType="{x:Type pi:PropertyEditTarget}">
+        <Button Content="{Binding Path=EditValue}"
+                Command="{Binding Path=EditContext}"
+                IsEnabled="{Binding RelativeSource={RelativeSource Self}, Path=(ap:Edit.IsReadOnly), Converter={conv:BooleanInverseConverter}}"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Center"/>
+    </DataTemplate>
+
+    <DataTemplate x:Key="ListTemplate" DataType="{x:Type pi:PropertyEditTarget}">
+        <local:PropertyGridListEditor/>
+    </DataTemplate>
+</ResourceDictionary>

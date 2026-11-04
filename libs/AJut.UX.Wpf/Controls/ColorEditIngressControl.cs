@@ -113,6 +113,26 @@
             set => this.SetValue(TransparencyLinesBrushProperty, value);
         }
 
+        public static readonly DependencyProperty CoverGlossBrushProperty = DPUtils.Register(_ => _.CoverGlossBrush);
+        /// <summary>
+        /// The sheen over the color swatch at rest, taken away while the pointer is over it
+        /// </summary>
+        public Brush CoverGlossBrush
+        {
+            get => (Brush)this.GetValue(CoverGlossBrushProperty);
+            set => this.SetValue(CoverGlossBrushProperty, value);
+        }
+
+        public static readonly DependencyProperty CornerBannerForegroundProperty = DPUtils.Register(_ => _.CornerBannerForeground);
+        /// <summary>
+        /// The edit (or read-only) glyph on the corner banner shown on hover and while editing
+        /// </summary>
+        public Brush CornerBannerForeground
+        {
+            get => (Brush)this.GetValue(CornerBannerForegroundProperty);
+            set => this.SetValue(CornerBannerForegroundProperty, value);
+        }
+
 
         private void OnShowEditDisplayChanged (DependencyPropertyChangedEventArgs<bool> e)
         {

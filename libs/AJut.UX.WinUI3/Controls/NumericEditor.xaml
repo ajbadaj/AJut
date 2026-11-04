@@ -62,12 +62,34 @@
                                     <VisualState.Setters>
                                         <Setter Target="PART_Root.BorderBrush"
                                                 Value="{ThemeResource AJut_NumericEditor_FocusBorderBrush}"/>
+                                        <Setter Target="PART_Root.Opacity" Value="1"/>
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="Unfocused">
                                     <VisualState.Setters>
                                         <Setter Target="PART_Root.BorderBrush"
                                                 Value="{ThemeResource AJut_NumericEditor_NormalBorderBrush}"/>
+                                        <Setter Target="PART_Root.Opacity" Value="1"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <!-- The pointer over the editor, focused or not: brighter than the focused border, so the two
+                                     read apart -->
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_Root.BorderBrush"
+                                                Value="{ThemeResource AJut_NumericEditor_PointerOverBorderBrush}"/>
+                                        <Setter Target="PART_Root.Opacity" Value="1"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <!-- Disabled, by its own IsEnabled or a disabled parent (a read-only PropertyGrid row): the
+                                     whole editor fades, as WPF's does, so a number that can't be edited looks it, and the
+                                     border takes no pointer or focus. It is in this group, not one of its own, since it sets
+                                     the border the other states set. -->
+                                <VisualState x:Name="Disabled">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_Root.BorderBrush"
+                                                Value="{ThemeResource AJut_NumericEditor_NormalBorderBrush}"/>
+                                        <Setter Target="PART_Root.Opacity" Value="0.5"/>
                                     </VisualState.Setters>
                                 </VisualState>
                             </VisualStateGroup>

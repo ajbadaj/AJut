@@ -4,6 +4,7 @@
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Reflection;
     using System.Security.Cryptography.X509Certificates;
@@ -27,6 +28,8 @@
     public sealed partial class Stratabase
     {
         public const string kTypeIdStorage = "__type";
+        private const string kObjectReflectionMessage = "Reads or writes an object's properties through reflection, and trimming can remove a property or constructor nothing else uses.";
+        private const string kObjectListMessage = "Makes the array or list for a list property from its type at runtime, which an ahead of time compiled build (iOS, NativeAOT) may never have compiled.";
 
         /// <summary>
         /// Used with <see cref="ObjectDataAccessManager.TryFindActiveLayer(int, string, out int)"/>, index that indicates the baseline layer
@@ -212,6 +215,7 @@
         /// Extract the properties of <paramref name="data"/> and set baseline values with the result. Id must be specified by the object via
         /// the <see cref="StratabaseIdAttribute"/> or the operation will fail.
         /// </summary>
+        [RequiresUnreferencedCode(kObjectReflectionMessage)]
         public bool SetBaselineFromPropertiesOf (object data)
         {
             return this.SetBaselineFromPropertiesOf(null, data);
@@ -221,6 +225,7 @@
         /// Extract the properties of <paramref name="data"/> and set baseline values with the result. Id must be specified in the parameter or must be 
         /// specified by the object via the <see cref="StratabaseIdAttribute"/> or the operation will fail.
         /// </summary>
+        [RequiresUnreferencedCode(kObjectReflectionMessage)]
         public bool SetBaselineFromPropertiesOf (Guid? id, object data)
         {
             var objectEvaluation = ObjectEvaluation.Generate(id, null, data);
@@ -242,12 +247,16 @@
         /// <summary>
         /// Pull properties from the Stratabase from the object with the matching <paramref name="objectId"/> and set the passed in object's properties with the highest order stratabase values
         /// </summary>
+        [RequiresUnreferencedCode(kObjectReflectionMessage)]
+        [RequiresDynamicCode(kObjectListMessage)]
         public void SetObjectWithProperties<T> (Guid objectId, ref T source)
         {
             object objCasted = source;
             SetObjectWithProperties(objectId, ref objCasted);
         }
 
+        [RequiresUnreferencedCode(kObjectReflectionMessage)]
+        [RequiresDynamicCode(kObjectListMessage)]
         private object CreateAndSetObjectWith (Type targetPropType, Guid targetId)
         {
             object childObj = null;
@@ -293,6 +302,8 @@
         /// <summary>
         /// Pull properties from the Stratabase from the object with the matching <paramref name="objectId"/> and set the passed in object's properties with the highest order stratabase values
         /// </summary>
+        [RequiresUnreferencedCode(kObjectReflectionMessage)]
+        [RequiresDynamicCode(kObjectListMessage)]
         public void SetObjectWithProperties (Guid objectId, ref object source)
         {
             // Read from storage rather than through an access manager: a freshly deserialized store holds values before any
@@ -356,12 +367,9 @@
                     if (strataListConfig != null
                         && storedType.IsGenericType && storedType.GetGenericTypeDefinition() == typeof(List<>))
                     {
-                        // Ok it is, now use reflection to generate a StrataPropertyListAccess
+                        // Ok it is, now generate a StrataPropertyListAccess of the stored element type
                         Type itemType = storedType.GenericTypeArguments[0];
-                        var listAccess = (IDisposable)this.InvokeTemplatedMethod(
-                            nameof(GenerateListPropertyAccess),
-                            itemType, objectId, propPath
-                        );
+                        IDisposable listAccess = StrataListElementType.For(itemType).CreateListAccess(this, objectId, propPath);
 
                         // If we succeeded in making a list access, then grab the cache and try to set the value
                         if (listAccess != null)
@@ -373,7 +381,7 @@
                                 //  activator.create instance can make for us, is an IList, which we can then add the items to.
                                 if (targetProp.PropertyType.IsArray)
                                 {
-                                    Type elementType = targetProp.PropertyType.GenericTypeArguments[0];
+                                    Type elementType = targetProp.PropertyType.GetElementType();
                                     Array final = Array.CreateInstance(elementType, elements.Count);
                                     for (int index = 0; index < elements.Count; ++index)
                                     {
@@ -420,9 +428,10 @@
                                 }
                             }
 
-                            // Don't forget to dispose of hte list access
+                            // Don't forget to dispose of the list access. Then on to the next property: this one is done,
+                            //  but returning here would leave every property stored after it unset.
                             listAccess.Dispose();
-                            return;
+                            continue;
                         }
                     }
                 }
@@ -443,6 +452,8 @@
         /// <summary>
         /// Determine the object id as you would serializtion from the passed in object, then pull properties from the Stratabase with the matching id and set the passed in object's properties with the highest order stratabase values.
         /// </summary>
+        [RequiresUnreferencedCode(kObjectReflectionMessage)]
+        [RequiresDynamicCode(kObjectListMessage)]
         public void SetObjectWithProperties<T> (ref T source)
         {
             if (source == null)
@@ -510,7 +521,22 @@
         /// <returns>bool indicating if the list type is correct (can be false if <paramref name="clearIfIncorrectElementsExist"/> is <c>false</c> and elements of a different type are already established).</returns>
         public bool EstablishListElementType<TElement> (Guid id, string property, bool clearIfIncorrectElementsExist = true)
         {
+            StrataListElementType.Register<TElement>();
             return this.EstablishListElementType(id, property, typeof(TElement), clearIfIncorrectElementsExist);
+        }
+
+        /// <summary>
+        /// Lets Stratabase store lists of <typeparamref name="TElement"/> on a platform without dynamic code (an iOS build
+        /// compiled ahead of time). Stratabase stores a list as a List of its element type, and where it only has that type at
+        /// runtime (a list property found on an object, the first element added) it cannot make that List for a value type it
+        /// was never compiled for. The common built-in value types are registered already, and using a
+        /// <see cref="StrataPropertyListAccess{TElement}"/> or <see cref="EstablishListElementType{TElement}"/> registers
+        /// its element type. Call this at startup for any other struct a list holds. Registering one twice is harmless, and
+        /// a platform with a JIT never needs it.
+        /// </summary>
+        public static void RegisterListElementType<TElement> ()
+        {
+            StrataListElementType.Register<TElement>();
         }
 
         /// <summary>
@@ -1534,8 +1560,7 @@
 
                 IList _DoListCreation ()
                 {
-                    Type _finalListType = typeof(List<>).MakeGenericType(targetElementType);
-                    IList _listTracker = (IList)AJutActivator.CreateInstanceOf(_finalListType);
+                    IList _listTracker = StrataListElementType.For(targetElementType).CreateList();
                     m_storage.Add(propertyName, _listTracker);
                     return _listTracker;
                 }
@@ -1562,8 +1587,7 @@
                         return false;
                     }
 
-                    var finalListType = typeof(List<>).MakeGenericType(elementType);
-                    listTracker = (IList)AJutActivator.CreateInstanceOf(finalListType);
+                    listTracker = StrataListElementType.For(elementType).CreateList();
                     m_storage.Add(propertyName, listTracker);
                 }
 
@@ -1591,9 +1615,16 @@
                         return false;
                     }
 
-                    Type elementType = newElement.GetType();
-                    var finalListType = typeof(List<>).MakeGenericType(elementType);
-                    listTracker = (IList)AJutActivator.CreateInstanceOf(finalListType);
+                    // The list is of the element type set for the property, as InsertElement makes it, and only of the
+                    //  element's own type when none is set. A list access of a base class whose first add is derived
+                    //  would otherwise store a list of the derived type, which it can't read back as its own.
+                    if (!m_propertyListElementTypeRestriction.TryGetValue(propertyName, out Type elementType) || elementType == null)
+                    {
+                        elementType = newElement.GetType();
+                        m_propertyListElementTypeRestriction[propertyName] = elementType;
+                    }
+
+                    listTracker = StrataListElementType.For(elementType).CreateList();
                     m_storage.Add(propertyName, listTracker);
                 }
 

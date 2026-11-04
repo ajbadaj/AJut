@@ -1,0 +1,707 @@
+namespace AJut.UX.Tests
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.ComponentModel;
+    using System.Linq;
+    using System.Threading.Tasks;
+    using AJut;
+    using AJut.UX.CodeBinding;
+    using AJut.UX.Controls;
+    using Android.Graphics;
+    using Android.Graphics.Drawables;
+    using Android.OS;
+    using Android.Views;
+    using Android.Widget;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using AndroidColor = Android.Graphics.Color;
+
+    /// <summary>
+    /// The Android ToggleStrip, EnumToggleStrip and EnumComboBox on real views. Their selection rules are AJut.UX's and
+    /// are tested headless there; these cover the Android side: the buttons, taps, the source subscription's lifetime,
+    /// layout attributes, and the binding adapters.
+    /// </summary>
+    [TestClass]
+    public class ToggleStripTests
+    {
+        private const float kStripLengthDp = 150f;
+        private const float kDotHostPaddingDp = 20f;
+        private static readonly string[] kManyItems = new[] { "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight" };
+
+        // ===========[ ToggleStrip ]===================================
+        [TestMethod]
+        public void ItemsSource_MakesOneButtonPerItem_AndSelectsTheFirst ()
+        {
+            var strip = new ToggleStrip(TestHost.RequiredContext) { ItemsSource = new[] { "A", "B", "C" } };
+            using IDisposable attached = TestHost.Attach(strip);
+
+            CollectionAssert.AreEqual(new[] { "A", "B", "C" }, _ButtonTexts(strip));
+            Assert.AreEqual("A", strip.SelectedItem);
+        }
+
+        [TestMethod]
+        public void TappingAButton_SelectsItsItem_AndRaisesOneChange ()
+        {
+            var strip = new ToggleStrip(TestHost.RequiredContext) { ItemsSource = new[] { "A", "B", "C" } };
+            using IDisposable attached = TestHost.Attach(strip);
+            var changes = new List<ToggleStripSelectionChange>();
+            strip.SelectionChanged += _OnChanged;
+
+            _Buttons(strip)[1].PerformClick();
+            strip.SelectionChanged -= _OnChanged;
+
+            Assert.AreEqual("B", strip.SelectedItem);
+            Assert.AreEqual(1, changes.Count);
+            CollectionAssert.AreEqual(new[] { "A" }, changes[0].PreviousSelection);
+
+            void _OnChanged (object? sender, ToggleStripSelectionChange e) => changes.Add(e);
+        }
+
+        [TestMethod]
+        public void SettingSelectedItem_SelectsThatItem ()
+        {
+            var strip = new ToggleStrip(TestHost.RequiredContext) { ItemsSource = new[] { "A", "B", "C" } };
+            strip.SelectedItem = "C";
+            Assert.IsTrue(strip.Items[2].IsSelected);
+            Assert.IsFalse(strip.Items[0].IsSelected);
+        }
+
+        [TestMethod]
+        public void ObservableSource_InsertShowsAtItsIndex ()
+        {
+            var source = new ObservableCollection<string> { "A", "B" };
+            var strip = new ToggleStrip(TestHost.RequiredContext) { ItemsSource = source };
+            using IDisposable attached = TestHost.Attach(strip);
+
+            source.Insert(1, "X");
+
+            CollectionAssert.AreEqual(new[] { "A", "X", "B" }, _ButtonTexts(strip));
+        }
+
+        [TestMethod]
+        public void Detached_TheSourceIsNotHeld_AndReattachCatchesUp ()
+        {
+            var source = new ObservableCollection<string> { "A", "B" };
+            var strip = new ToggleStrip(TestHost.RequiredContext) { ItemsSource = source };
+            IDisposable attached = TestHost.Attach(strip);
+            attached.Dispose();
+
+            source.Add("C");
+            Assert.AreEqual(2, strip.Items.Count, "A detached strip is not listening");
+
+            using IDisposable reattached = TestHost.Attach(strip);
+            CollectionAssert.AreEqual(new[] { "A", "B", "C" }, _ButtonTexts(strip), "Attaching again catches up");
+        }
+
+        [TestMethod]
+        public void InflatesFromLayoutWithItsAttributes ()
+        {
+            View root = LayoutInflater.From(TestHost.RequiredContext)!.Inflate(Resource.Layout.toggle_strip_test, null)!;
+            var strip = root.FindViewById<ToggleStrip>(Resource.Id.toggle_strip)!;
+            Assert.IsTrue(strip.AllowMultiSelect);
+            Assert.AreEqual(eToggleStripOverflow.Scroll, strip.OverflowBehavior);
+            CollectionAssert.AreEqual(new object[] { "Low", "Medium", "High" }, strip.Items.Select(item => item.Data).ToArray());
+        }
+
+        [TestMethod]
+        public void Vertical_StacksTheButtonsTopToBottom_EachAsWideAsTheWidest ()
+        {
+            var strip = new ToggleStrip(TestHost.RequiredContext) { Orientation = Orientation.Vertical, ItemsSource = new[] { "A", "A much longer one", "C" } };
+            using IDisposable attached = TestHost.Attach(strip);
+            _LayOut(strip, MeasureSpecMode.Unspecified, 0, MeasureSpecMode.Unspecified, 0);
+
+            List<TextView> buttons = _Buttons(strip);
+            Assert.IsTrue(buttons[0].Top < buttons[1].Top && buttons[1].Top < buttons[2].Top, "The buttons run top to bottom");
+            Assert.AreEqual(buttons[1].Width, buttons[0].Width, "A short button stretches to the widest");
+            Assert.AreEqual(buttons[1].Width, buttons[2].Width, "A short button stretches to the widest");
+            Assert.AreEqual(buttons[0].Left, buttons[2].Left, "Every button starts at the same left edge");
+        }
+
+        [TestMethod]
+        public void Vertical_EnsureUniformSize_MakesEveryButtonAsTallAsTheTallest ()
+        {
+            var strip = new ToggleStrip(TestHost.RequiredContext) { Orientation = Orientation.Vertical, EnsureUniformSize = true, ItemsSource = new[] { "One", "Two\nlines\nhere", "Three" } };
+            using IDisposable attached = TestHost.Attach(strip);
+            _LayOut(strip, MeasureSpecMode.Unspecified, 0, MeasureSpecMode.Unspecified, 0);
+
+            List<TextView> buttons = _Buttons(strip);
+            Assert.AreEqual(buttons[1].Height, buttons[0].Height);
+            Assert.AreEqual(buttons[1].Height, buttons[2].Height);
+        }
+
+        [TestMethod]
+        public async Task Vertical_OverflowPopup_MovesWhatDoesNotFitItsHeight ()
+        {
+            var strip = new ToggleStrip(TestHost.RequiredContext) { Orientation = Orientation.Vertical, OverflowBehavior = eToggleStripOverflow.OverflowPopup, ItemsSource = new[] { "1", "2", "3", "4", "5", "6", "7" } };
+            using IDisposable attached = TestHost.Attach(strip);
+            _LayOut(strip, MeasureSpecMode.Unspecified, 0, MeasureSpecMode.Unspecified, 0);
+            int oneButton = _Buttons(strip)[0].Height;
+
+            // Room for three buttons along the height, and plenty across it. The height goes in the layout params too, so
+            // the window's own layout pass keeps it while the test waits.
+            strip.LayoutParameters = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MatchParent, oneButton * 3);
+            _LayOut(strip, MeasureSpecMode.Exactly, 400, MeasureSpecMode.Exactly, oneButton * 3);
+            await _WaitUntilAsync(() => _Buttons(strip).Any(button => button.Visibility == ViewStates.Gone));
+
+            List<TextView> buttons = _Buttons(strip);
+            Assert.AreEqual(ViewStates.Visible, buttons[0].Visibility, "The selected first item stays in the strip");
+            Assert.AreEqual(ViewStates.Gone, buttons[6].Visibility, "The last item does not fit the height");
+            var overflowButton = (TextView)strip.GetChildAt(1)!;
+            Assert.AreEqual(ViewStates.Visible, overflowButton.Visibility);
+            Assert.AreEqual(GravityFlags.Bottom, ((FrameLayout.LayoutParams)overflowButton.LayoutParameters!).Gravity, "The overflow button sits along the bottom");
+        }
+
+        [TestMethod]
+        public async Task MultiSelectOverflowing_AnItemPickedFromTheMenuComesIntoTheStrip ()
+        {
+            var strip = new ToggleStrip(TestHost.RequiredContext) { Orientation = Orientation.Vertical, AllowMultiSelect = true, OverflowBehavior = eToggleStripOverflow.OverflowPopup, ItemsSource = new[] { "1", "2", "3", "4", "5", "6", "7" } };
+            using IDisposable attached = TestHost.Attach(strip);
+            _LayOut(strip, MeasureSpecMode.Unspecified, 0, MeasureSpecMode.Unspecified, 0);
+            int oneButton = _Buttons(strip)[0].Height;
+            strip.LayoutParameters = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MatchParent, oneButton * 4);
+            _LayOut(strip, MeasureSpecMode.Exactly, 400, MeasureSpecMode.Exactly, oneButton * 4);
+            strip.Items[1].IsSelected = true;
+            strip.Items[2].IsSelected = true;
+            await _WaitUntilAsync(() => _Buttons(strip)[6].Visibility == ViewStates.Gone);
+            Assert.AreEqual(ViewStates.Gone, _Buttons(strip)[6].Visibility, "The seventh starts in the menu");
+
+            // What a pick from the overflow menu does
+            strip.Items[6].IsSelected = true;
+            await _WaitUntilAsync(() => _Buttons(strip)[6].Visibility == ViewStates.Visible);
+
+            Assert.AreEqual(ViewStates.Visible, _Buttons(strip)[6].Visibility, "The item just picked comes into the strip, ahead of the ones selected before it");
+        }
+
+        [TestMethod]
+        public void Vertical_InflatesFromLayout_AndEnumToggleStripPassesItOn ()
+        {
+            View root = LayoutInflater.From(TestHost.RequiredContext)!.Inflate(Resource.Layout.toggle_strip_test, null)!;
+            Assert.AreEqual(Orientation.Horizontal, root.FindViewById<ToggleStrip>(Resource.Id.toggle_strip)!.Orientation, "Horizontal is the default");
+            Assert.AreEqual(Orientation.Vertical, root.FindViewById<ToggleStrip>(Resource.Id.toggle_strip_vertical)!.Orientation);
+            Assert.AreEqual(Orientation.Vertical, root.FindViewById<EnumToggleStrip>(Resource.Id.enum_toggle_strip_vertical)!.Strip.Orientation);
+        }
+
+        [TestMethod]
+        public void Disabled_EveryButtonIsDisabled_IncludingOnesMadeAfter ()
+        {
+            var strip = new ToggleStrip(TestHost.RequiredContext) { OverflowBehavior = eToggleStripOverflow.OverflowPopup, ItemsSource = new[] { "A", "B" } };
+            using IDisposable attached = TestHost.Attach(strip);
+
+            // A ViewGroup's Enabled does not reach its children, and a button left enabled still takes a tap
+            strip.Enabled = false;
+            Assert.IsTrue((_Buttons(strip).Count > 0) && _Buttons(strip).All(button => !button.Enabled), "Disabling the strip disables its buttons");
+            Assert.IsFalse(strip.GetChildAt(1)!.Enabled, "And its overflow button");
+
+            strip.ItemsSource = new[] { "C", "D", "E" };
+            Assert.IsTrue((_Buttons(strip).Count > 0) && _Buttons(strip).All(button => !button.Enabled), "Buttons made while it is disabled start disabled");
+
+            strip.Enabled = true;
+            Assert.IsTrue(_Buttons(strip).All(button => button.Enabled), "Enabling the strip enables them again");
+            Assert.IsTrue(strip.GetChildAt(1)!.Enabled, "And its overflow button");
+        }
+
+        [TestMethod]
+        public void Disabled_FromItsLayout_DisablesItsButtons ()
+        {
+            View root = LayoutInflater.From(TestHost.RequiredContext)!.Inflate(Resource.Layout.toggle_strip_test, null)!;
+            var strip = root.FindViewById<ToggleStrip>(Resource.Id.toggle_strip_disabled)!;
+            var enumStrip = root.FindViewById<EnumToggleStrip>(Resource.Id.enum_toggle_strip_disabled)!;
+            enumStrip.SelectedItem = eSize.Small;
+            using IDisposable attached = TestHost.Attach(root);
+
+            // Android reads android:enabled in TextView and the widgets built on it, and a ViewGroup ignores it, so a strip
+            // reads it itself
+            Assert.IsFalse(strip.Enabled, "android:enabled=\"false\" in its layout disables the strip");
+            Assert.IsTrue((_Buttons(strip).Count > 0) && _Buttons(strip).All(button => !button.Enabled), "And its buttons");
+            Assert.IsFalse(enumStrip.Strip.Enabled, "android:enabled=\"false\" in its layout disables an EnumToggleStrip's strip");
+        }
+
+        // ===========[ Look ]===================================
+        [TestMethod]
+        public void ItemPadding_PadsEveryItem_AndTheOverflowButtonAlongTheStrip ()
+        {
+            var strip = new ToggleStrip(TestHost.RequiredContext) { ItemsSource = new[] { "A", "B" } };
+            using IDisposable attached = TestHost.Attach(strip);
+
+            strip.ItemPadding = new Rect(3, 5, 7, 11);
+            foreach (TextView button in _Buttons(strip))
+            {
+                Assert.AreEqual("3, 5, 7, 11", _Sides(button.PaddingLeft, button.PaddingTop, button.PaddingRight, button.PaddingBottom));
+            }
+
+            var overflowButton = (TextView)strip.GetChildAt(1)!;
+            Assert.AreEqual("3, 0, 7, 0", _Sides(overflowButton.PaddingLeft, overflowButton.PaddingTop, overflowButton.PaddingRight, overflowButton.PaddingBottom), "The overflow button is padded along the strip");
+
+            strip.ItemsSource = new[] { "C" };
+            Assert.AreEqual(11, _Buttons(strip)[0].PaddingBottom, "An item made later takes it too");
+
+            Rect read = strip.ItemPadding;
+            read.Left = 99;
+            Assert.AreEqual(3, strip.ItemPadding.Left, "Reading it gives a copy");
+        }
+
+        [TestMethod]
+        public void SeparatorThickness_IsTheLineBetweenItems ()
+        {
+            var strip = new ToggleStrip(TestHost.RequiredContext) { ItemsSource = new[] { "A", "B" }, SeparatorThickness = 6 };
+            Assert.AreEqual(6, _Row(strip).DividerDrawable!.IntrinsicWidth, "Along a horizontal strip it is the line's width");
+
+            strip.Orientation = Orientation.Vertical;
+            Assert.AreEqual(6, _Row(strip).DividerDrawable!.IntrinsicHeight, "Along a vertical strip it is the line's height");
+        }
+
+        [TestMethod]
+        public async Task CornerRadius_RoundsTheStrip_AndOnlyItsEndItemsOuterCorners ()
+        {
+            var strip = new ToggleStrip(TestHost.RequiredContext) { ItemsSource = new[] { "A", "B", "C" } };
+            using IDisposable attached = TestHost.Attach(strip);
+
+            strip.CornerRadius = 20f;
+            await _WaitUntilAsync(() => _TopLeftRadius(_Buttons(strip)[0]) == 20f);
+
+            Assert.AreEqual(20f, ((GradientDrawable)strip.Background!).CornerRadius, "The strip's surface");
+            Assert.AreEqual(20f, _TopLeftRadius(_Buttons(strip)[0]), "The first item rounds the strip's top left");
+            Assert.AreEqual(0f, _TopLeftRadius(_Buttons(strip)[1]), "An item between stays square");
+
+            static float _TopLeftRadius (TextView button) => ((GradientDrawable)button.Background!).GetCornerRadii()?[0] ?? -1f;
+        }
+
+        [TestMethod]
+        public void LookAttributes_InflateFromLayout_ForBothStrips ()
+        {
+            View root = LayoutInflater.From(TestHost.RequiredContext)!.Inflate(Resource.Layout.toggle_strip_test, null)!;
+            float density = TestHost.RequiredContext.Resources!.DisplayMetrics!.Density;
+
+            // ajutItemPadding sets all four sides and ajutItemPaddingVertical overrides the top and bottom
+            string expectedPadding = _Sides(_Dp(6f), _Dp(2f), _Dp(6f), _Dp(2f));
+            var strip = root.FindViewById<ToggleStrip>(Resource.Id.toggle_strip_look)!;
+            Assert.AreEqual(10f * density, strip.CornerRadius, 0.5f);
+            Assert.AreEqual(_Dp(3f), strip.SeparatorThickness);
+            Assert.AreEqual(expectedPadding, _Sides(strip.ItemPadding));
+
+            var enumStrip = root.FindViewById<EnumToggleStrip>(Resource.Id.enum_toggle_strip_look)!;
+            Assert.AreEqual(10f * density, enumStrip.Strip.CornerRadius, 0.5f);
+            Assert.AreEqual(_Dp(3f), enumStrip.Strip.SeparatorThickness);
+            Assert.AreEqual(expectedPadding, _Sides(enumStrip.Strip.ItemPadding));
+        }
+
+        // ===========[ Scroll mode end dots ]===================================
+        [TestMethod]
+        public async Task Scroll_ShowsADotPastEachEndItCanScrollToward ()
+        {
+            var host = _DotHost();
+            var strip = new ToggleStrip(TestHost.RequiredContext) { OverflowBehavior = eToggleStripOverflow.Scroll, ItemsSource = kManyItems };
+            host.AddView(strip, new FrameLayout.LayoutParams(_Dp(kStripLengthDp), ViewGroup.LayoutParams.WrapContent));
+            using IDisposable attached = TestHost.Attach(host);
+            await _WaitUntilAsync(() => strip.Width > 0);
+
+            int centerY = strip.Top + (strip.Height / 2);
+            using (Bitmap atStart = _Render(host))
+            {
+                Assert.AreEqual(0, _AlphaAt(atStart, strip.Left - _DotOffset(), centerY), "At the start there is nothing back to scroll to");
+                Assert.IsTrue(_AlphaAt(atStart, strip.Right + _DotOffset(), centerY) > 0, "There is more past the trailing end");
+            }
+
+            // HorizontalScrollView clamps a scroll to its content, so this is the far end
+            ((HorizontalScrollView)strip.GetChildAt(0)!).ScrollTo(int.MaxValue / 2, 0);
+            using (Bitmap atEnd = _Render(host))
+            {
+                Assert.IsTrue(_AlphaAt(atEnd, strip.Left - _DotOffset(), centerY) > 0, "At the end there is more back toward the start");
+                Assert.AreEqual(0, _AlphaAt(atEnd, strip.Right + _DotOffset(), centerY), "And nothing past the trailing end");
+            }
+        }
+
+        [TestMethod]
+        public async Task Scroll_Vertical_PutsTheDotsAboveAndBelow ()
+        {
+            var host = _DotHost();
+            var strip = new ToggleStrip(TestHost.RequiredContext) { Orientation = Orientation.Vertical, OverflowBehavior = eToggleStripOverflow.Scroll, ItemsSource = kManyItems };
+            host.AddView(strip, new FrameLayout.LayoutParams(_Dp(kStripLengthDp), _Dp(kStripLengthDp)));
+            using IDisposable attached = TestHost.Attach(host);
+            await _WaitUntilAsync(() => strip.Height > 0);
+
+            int centerX = strip.Left + (strip.Width / 2);
+            using Bitmap atStart = _Render(host);
+            Assert.AreEqual(0, _AlphaAt(atStart, centerX, strip.Top - _DotOffset()), "Nothing above at the start");
+            Assert.IsTrue(_AlphaAt(atStart, centerX, strip.Bottom + _DotOffset()) > 0, "More below the bottom");
+        }
+
+        [TestMethod]
+        public async Task Scroll_FillingItsParent_ShowsTheDotJustInsideItsEnd ()
+        {
+            // A strip as wide as its parent leaves the parent no room past the strip's ends, the way a match_parent strip
+            // fills a page, so the dot goes just inside the end it can scroll toward. A Clip strip laid out the same way
+            // shows what is there with no dot, so the two differ only where a dot is.
+            FrameLayout scrollingParent = _FullWidthParent(eToggleStripOverflow.Scroll, out ToggleStrip scrolling);
+            FrameLayout clippedParent = _FullWidthParent(eToggleStripOverflow.Clip, out ToggleStrip clipped);
+            var both = new LinearLayout(TestHost.RequiredContext) { Orientation = Orientation.Vertical };
+            both.AddView(scrollingParent);
+            both.AddView(clippedParent);
+            using IDisposable attached = TestHost.Attach(both);
+            await _WaitUntilAsync(() => (scrolling.Width > 0) && (clipped.Width > 0));
+
+            // The dot can fall over an item's text in the dot's own color, so the whole square it covers is compared
+            int centerY = scrolling.Top + (scrolling.Height / 2);
+            int forwardX = scrolling.Right - _DotOffset();
+            int radius = _Dp((float)(ToggleStripScrollIndicators.kDotDiameter / 2.0)) - 1;
+            using Bitmap withDot = _Render(scrollingParent);
+            using Bitmap withoutDot = _Render(clippedParent);
+            int differing = 0;
+            for (int y = centerY - radius; y <= centerY + radius; ++y)
+            {
+                for (int x = forwardX - radius; x <= forwardX + radius; ++x)
+                {
+                    if (withDot.GetPixel(x, y) != withoutDot.GetPixel(x, y))
+                    {
+                        ++differing;
+                    }
+                }
+            }
+
+            Assert.IsTrue(differing > 0, "There is more past the trailing end, but the strip's parent has no room past it, so the dot should show just inside it");
+        }
+
+        [TestMethod]
+        public async Task Scroll_Vertical_InsideAScrollingPage_ScrollsItselfOnADrag ()
+        {
+            // A vertical Scroll strip on a page that scrolls the same way, as the showroom's is: a drag up over the strip
+            // is the strip's to scroll, and the page stays put
+            const float kSpacerDp = 600f;
+            const float kPageHeightDp = 400f;
+            const float kDragDp = 80f;
+            const int kDragSteps = 10;
+
+            var strip = new ToggleStrip(TestHost.RequiredContext) { Orientation = Orientation.Vertical, OverflowBehavior = eToggleStripOverflow.Scroll, ItemsSource = kManyItems };
+            var column = new LinearLayout(TestHost.RequiredContext) { Orientation = Orientation.Vertical };
+            column.AddView(strip, new LinearLayout.LayoutParams(_Dp(kStripLengthDp), _Dp(kStripLengthDp)));
+            column.AddView(new View(TestHost.RequiredContext), new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MatchParent, _Dp(kSpacerDp)));
+            var page = new ScrollView(TestHost.RequiredContext);
+            page.AddView(column);
+            using IDisposable attached = TestViews.AttachSized(page, (int)kPageHeightDp);
+            await _WaitUntilAsync(() => strip.Height > 0);
+
+            var scroller = (ScrollView)strip.GetChildAt(0)!;
+            float x = strip.Left + (strip.Width / 2f);
+            float fromY = strip.Top + (strip.Height * 0.75f);
+            long down = SystemClock.UptimeMillis();
+            _Touch(page, down, MotionEventActions.Down, x, fromY);
+            for (int step = 1; step <= kDragSteps; ++step)
+            {
+                _Touch(page, down, MotionEventActions.Move, x, fromY - (_Dp(kDragDp) * step / kDragSteps));
+            }
+
+            _Touch(page, down, MotionEventActions.Up, x, fromY - _Dp(kDragDp));
+
+            Assert.AreEqual(0, page.ScrollY, "The page stays put");
+            Assert.IsTrue(scroller.ScrollY > 0, "The strip scrolls");
+        }
+
+        [TestMethod]
+        public async Task NotScrolling_ShowsNoDots ()
+        {
+            var host = _DotHost();
+            var strip = new ToggleStrip(TestHost.RequiredContext) { ItemsSource = kManyItems };
+            host.AddView(strip, new FrameLayout.LayoutParams(_Dp(kStripLengthDp), ViewGroup.LayoutParams.WrapContent));
+            using IDisposable attached = TestHost.Attach(host);
+            await _WaitUntilAsync(() => strip.Width > 0);
+
+            using Bitmap rendered = _Render(host);
+            int centerY = strip.Top + (strip.Height / 2);
+            Assert.AreEqual(0, _AlphaAt(rendered, strip.Right + _DotOffset(), centerY), "A clipped strip shows no dot, even with more past its end");
+        }
+
+        // ===========[ EnumToggleStrip ]===================================
+        [TestMethod]
+        public void EnumToggleStrip_OffersTheSelectableValues_AndFollowsATap ()
+        {
+            var strip = new EnumToggleStrip(TestHost.RequiredContext) { SelectedItem = eSize.Small };
+            using IDisposable attached = TestHost.Attach(strip);
+            int raised = 0;
+            strip.SelectedItemChanged += _OnChanged;
+
+            CollectionAssert.AreEqual(new[] { "Small", "Medium", "Large" }, _ButtonTexts(strip.Strip), "The hidden value is left out");
+            _Buttons(strip.Strip)[2].PerformClick();
+            strip.SelectedItemChanged -= _OnChanged;
+
+            Assert.AreEqual(eSize.Large, strip.SelectedItem);
+            Assert.AreEqual(1, raised);
+
+            void _OnChanged (object? sender, EventArgs<object?> e) => ++raised;
+        }
+
+        [TestMethod]
+        public void EnumToggleStrip_Disabled_DisablesItsStripsButtons ()
+        {
+            var strip = new EnumToggleStrip(TestHost.RequiredContext) { SelectedItem = eSize.Small };
+            using IDisposable attached = TestHost.Attach(strip);
+
+            strip.Enabled = false;
+            Assert.IsFalse(strip.Strip.Enabled, "The inner strip is disabled with it");
+            Assert.IsTrue((_Buttons(strip.Strip).Count > 0) && _Buttons(strip.Strip).All(button => !button.Enabled), "And so are its buttons");
+        }
+
+        [TestMethod]
+        public void EnumToggleStrip_MultiSelectFlags_CombinesTheSelection ()
+        {
+            var strip = new EnumToggleStrip(TestHost.RequiredContext) { AllowMultiSelect = true };
+            strip.SelectedItem = eParts.Head | eParts.Tail;
+            using IDisposable attached = TestHost.Attach(strip);
+
+            CollectionAssert.AreEqual(new object[] { eParts.Head, eParts.Tail }, strip.SelectedItems.Cast<object>().ToArray());
+
+            // The options are None, Head, Body and Tail: a [Flags] enum's None is offered too, the same as on WinUI3.
+            _Buttons(strip.Strip)[2].PerformClick();
+            Assert.AreEqual(eParts.Head | eParts.Body | eParts.Tail, strip.SelectedItem);
+        }
+
+        [TestMethod]
+        public void EnumToggleStrip_MultiSelectFlags_PickingNoneTurnsTheRestOff ()
+        {
+            var strip = new EnumToggleStrip(TestHost.RequiredContext) { AllowMultiSelect = true };
+            strip.SelectedItem = eParts.Head | eParts.Tail;
+            using IDisposable attached = TestHost.Attach(strip);
+
+            // None is the first option
+            _Buttons(strip.Strip)[0].PerformClick();
+            Assert.AreEqual(eParts.None, strip.SelectedItem);
+            CollectionAssert.AreEqual(new object[] { eParts.None }, strip.SelectedItems.Cast<object>().ToArray(), "Only None is left picked");
+
+            _Buttons(strip.Strip)[2].PerformClick();
+            Assert.AreEqual(eParts.Body, strip.SelectedItem);
+            CollectionAssert.AreEqual(new object[] { eParts.Body }, strip.SelectedItems.Cast<object>().ToArray(), "Picking a flag turns None off");
+        }
+
+        // ===========[ EnumComboBox ]===================================
+        [TestMethod]
+        public void EnumComboBox_OffersTheSelectableValues_AndShowsTheSelection ()
+        {
+            var comboBox = new EnumComboBox(TestHost.RequiredContext) { SelectedItem = eSize.Large };
+            CollectionAssert.AreEqual(new Enum[] { eSize.Small, eSize.Medium, eSize.Large }, comboBox.Options.ToArray());
+            Assert.AreEqual(2, comboBox.Spinner.SelectedItemPosition);
+        }
+
+        [TestMethod]
+        public async Task EnumComboBox_APickInTheSpinner_SetsSelectedItem ()
+        {
+            var comboBox = new EnumComboBox(TestHost.RequiredContext) { SelectedItem = eSize.Small };
+            using IDisposable attached = TestHost.Attach(comboBox);
+            await Task.Delay(50);
+
+            comboBox.Spinner.SetSelection(1);
+            await _WaitUntilAsync(() => Equals(comboBox.SelectedItem, eSize.Medium));
+            Assert.AreEqual(eSize.Medium, comboBox.SelectedItem);
+        }
+
+        [TestMethod]
+        public void EnumComboBox_Disabled_DisablesItsSpinner ()
+        {
+            var comboBox = new EnumComboBox(TestHost.RequiredContext) { SelectedItem = eSize.Small };
+            using IDisposable attached = TestHost.Attach(comboBox);
+
+            // A ViewGroup's Enabled does not reach its children, and a Spinner left enabled still opens its list
+            comboBox.Enabled = false;
+            Assert.IsFalse(comboBox.Spinner.Enabled, "Disabling the combo box disables its Spinner");
+
+            comboBox.Enabled = true;
+            Assert.IsTrue(comboBox.Spinner.Enabled, "Enabling the combo box enables its Spinner again");
+        }
+
+        [TestMethod]
+        public void EnumComboBox_DisabledFromItsLayout_DisablesItsSpinner ()
+        {
+            View root = LayoutInflater.From(TestHost.RequiredContext)!.Inflate(Resource.Layout.toggle_strip_test, null)!;
+            var comboBox = root.FindViewById<EnumComboBox>(Resource.Id.enum_combo_box_disabled)!;
+            comboBox.SelectedItem = eSize.Small;
+            using IDisposable attached = TestHost.Attach(root);
+
+            // A ViewGroup ignores android:enabled in a layout, so the combo box reads it itself
+            Assert.IsFalse(comboBox.Enabled, "android:enabled=\"false\" in its layout disables the combo box");
+            Assert.IsFalse(comboBox.Spinner.Enabled, "And its Spinner");
+        }
+
+        // ===========[ Binding ]===================================
+        [TestMethod]
+        public async Task BindSelectedValue_EnumComboBox_BothWays ()
+        {
+            var model = new Model();
+            var comboBox = new EnumComboBox(TestHost.RequiredContext);
+            using IDisposable attached = TestHost.Attach(comboBox);
+            using var bindings = new BindingSet();
+            bindings.BindSelectedValue(comboBox, model, nameof(Model.Size), () => model.Size, v => model.Size = v);
+            Assert.AreEqual(eSize.Medium, comboBox.SelectedItem);
+
+            model.Size = eSize.Large;
+            Assert.AreEqual(eSize.Large, comboBox.SelectedItem);
+
+            comboBox.Spinner.SetSelection(0);
+            await _WaitUntilAsync(() => model.Size == eSize.Small);
+            Assert.AreEqual(eSize.Small, model.Size);
+        }
+
+        [TestMethod]
+        public void BindSelectedValue_EnumToggleStrip_BothWays ()
+        {
+            var model = new Model();
+            var strip = new EnumToggleStrip(TestHost.RequiredContext);
+            using IDisposable attached = TestHost.Attach(strip);
+            using var bindings = new BindingSet();
+            bindings.BindSelectedValue(strip, model, nameof(Model.Size), () => model.Size, v => model.Size = v);
+            Assert.AreEqual(eSize.Medium, strip.SelectedItem);
+
+            _Buttons(strip.Strip)[0].PerformClick();
+            Assert.AreEqual(eSize.Small, model.Size);
+        }
+
+        [TestMethod]
+        public void BindSelectedItem_ToggleStrip_BothWays ()
+        {
+            var model = new Model();
+            var strip = new ToggleStrip(TestHost.RequiredContext) { ItemsSource = new[] { "A", "B", "C" } };
+            using IDisposable attached = TestHost.Attach(strip);
+            using var bindings = new BindingSet();
+            bindings.BindSelectedItem(strip, model, nameof(Model.Letter), () => model.Letter, v => model.Letter = (string?)v);
+            Assert.AreEqual("B", strip.SelectedItem);
+
+            _Buttons(strip)[2].PerformClick();
+            Assert.AreEqual("C", model.Letter);
+        }
+
+        // ===========[ Helper Methods ]===================================
+        private static List<TextView> _Buttons (ToggleStrip strip)
+        {
+            LinearLayout row = _Row(strip);
+            var buttons = new List<TextView>();
+            for (int index = 0; index < row.ChildCount; ++index)
+            {
+                buttons.Add((TextView)row.GetChildAt(index)!);
+            }
+
+            return buttons;
+        }
+
+        private static string[] _ButtonTexts (ToggleStrip strip) => _Buttons(strip).Select(button => button.Text ?? string.Empty).ToArray();
+
+        // The strip is a scroller around a row of item buttons, with the overflow button beside it
+        private static LinearLayout _Row (ToggleStrip strip) => (LinearLayout)((ViewGroup)strip.GetChildAt(0)!).GetChildAt(0)!;
+
+        // A managed Rect's Equals does not compare its sides, so paddings are compared as their four sides in order
+        private static string _Sides (int left, int top, int right, int bottom) => $"{left}, {top}, {right}, {bottom}";
+
+        private static string _Sides (Rect padding) => _Sides(padding.Left, padding.Top, padding.Right, padding.Bottom);
+
+        // Runs a measure and layout pass on the strip directly, so the tests read real positions and sizes
+        private static void _LayOut (View view, MeasureSpecMode widthMode, int width, MeasureSpecMode heightMode, int height)
+        {
+            view.Measure(View.MeasureSpec.MakeMeasureSpec(width, widthMode), View.MeasureSpec.MakeMeasureSpec(height, heightMode));
+            view.Layout(0, 0, view.MeasuredWidth, view.MeasuredHeight);
+        }
+
+        // The dots draw in the strip's parent's overlay, past the strip's ends, so the strip sits inside a padded parent
+        // that has room for them, and the parent is what gets rendered.
+        private static FrameLayout _DotHost ()
+        {
+            var host = new FrameLayout(TestHost.RequiredContext);
+            int padding = _Dp(kDotHostPaddingDp);
+            host.SetPadding(padding, padding, padding, padding);
+            return host;
+        }
+
+        // A parent exactly as wide as the strip it holds, so it has no room past the strip's ends
+        private static FrameLayout _FullWidthParent (eToggleStripOverflow overflow, out ToggleStrip strip)
+        {
+            var parent = new FrameLayout(TestHost.RequiredContext);
+            strip = new ToggleStrip(TestHost.RequiredContext) { OverflowBehavior = overflow, ItemsSource = kManyItems };
+            parent.AddView(strip, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.WrapContent));
+            parent.LayoutParameters = new LinearLayout.LayoutParams(_Dp(kStripLengthDp), ViewGroup.LayoutParams.WrapContent);
+            return parent;
+        }
+
+        private static Bitmap _Render (View view)
+        {
+            Bitmap bitmap = Bitmap.CreateBitmap(view.Width, view.Height, Bitmap.Config.Argb8888!)!;
+            using (var canvas = new Canvas(bitmap))
+            {
+                view.Draw(canvas);
+            }
+
+            return bitmap;
+        }
+
+        private static int _AlphaAt (Bitmap bitmap, int x, int y) => new AndroidColor(bitmap.GetPixel(x, y)).A;
+
+        // A touch event dispatched from the top, as a finger's is, so every parent on the way gets its say
+        private static void _Touch (View root, long downTime, MotionEventActions action, float x, float y)
+        {
+            MotionEvent e = MotionEvent.Obtain(downTime, SystemClock.UptimeMillis(), action, x, y, MetaKeyStates.None)!;
+            root.DispatchTouchEvent(e);
+            e.Recycle();
+        }
+
+        private static int _DotOffset () => _Dp((float)ToggleStripScrollIndicators.kDotCenterOffset);
+
+        private static int _Dp (float dp) => (int)Math.Round(dp * TestHost.RequiredContext.Resources!.DisplayMetrics!.Density);
+
+        private static async Task _WaitUntilAsync (Func<bool> condition)
+        {
+            DateTime deadline = DateTime.UtcNow + TimeSpan.FromSeconds(3);
+            while (!condition() && (DateTime.UtcNow < deadline))
+            {
+                await Task.Delay(10);
+            }
+        }
+
+        // ===========[ Subclasses/structs ]===================================
+        public enum eSize
+        {
+            Small,
+            [System.ComponentModel.Browsable(false)]
+            Unlisted,
+            Medium,
+            Large,
+        }
+
+        [Flags]
+        public enum eParts
+        {
+            None = 0,
+            Head = 1,
+            Body = 2,
+            Tail = 4,
+        }
+
+        private sealed class Model : INotifyPropertyChanged
+        {
+            private eSize m_size = eSize.Medium;
+            private string? m_letter = "B";
+
+            public event PropertyChangedEventHandler? PropertyChanged;
+
+            public eSize Size
+            {
+                get => m_size;
+                set
+                {
+                    if (m_size != value)
+                    {
+                        m_size = value;
+                        this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Size)));
+                    }
+                }
+            }
+
+            public string? Letter
+            {
+                get => m_letter;
+                set
+                {
+                    if (m_letter != value)
+                    {
+                        m_letter = value;
+                        this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Letter)));
+                    }
+                }
+            }
+        }
+    }
+}

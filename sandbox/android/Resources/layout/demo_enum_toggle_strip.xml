@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="EnumToggleStrip"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:alpha="0.7"
+        android:text="Offers an enum's values, picked up from the type of the value it is given. Multi-select over a [Flags] enum combines the toggles into one value; otherwise the value is the most recent toggle." />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Single-select, with Unknown left out by [ExcludeFromSelection]"
+        android:textStyle="bold" />
+
+    <ajut.ux.controls.EnumToggleStrip
+        android:id="@+id/demo_enum_strip"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp" />
+
+    <TextView
+        android:id="@+id/demo_enum_value"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:fontFamily="monospace" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="A [Flags] enum, multi-select"
+        android:textStyle="bold" />
+
+    <ajut.ux.controls.EnumToggleStrip
+        android:id="@+id/demo_flags_strip"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:ajutAllowMultiSelect="true"
+        app:ajutAllowNoSelection="true" />
+
+    <TextView
+        android:id="@+id/demo_flags_value"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:fontFamily="monospace" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="Vertical, bound to the same weather as the first strip"
+        android:textStyle="bold" />
+
+    <ajut.ux.controls.EnumToggleStrip
+        android:id="@+id/demo_enum_strip_vertical"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:ajutOrientation="vertical" />
+</LinearLayout>

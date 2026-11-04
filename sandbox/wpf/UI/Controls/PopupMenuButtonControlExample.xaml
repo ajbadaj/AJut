@@ -47,8 +47,8 @@
                         <MenuItem Header="_File">
                             <MenuItem Header="_Load"/>
                             <Separator />
-                            <MenuItem Header="_Save"/>
-                            <MenuItem Header="Save _As"/>
+                            <MenuItem Header="_Save" InputGestureText="Ctrl+S"/>
+                            <MenuItem Header="Save _As" InputGestureText="Ctrl+Shift+S"/>
                             <Separator />
                             <MenuItem Header="E_xit" IsEnabled="False"/>
                         </MenuItem>

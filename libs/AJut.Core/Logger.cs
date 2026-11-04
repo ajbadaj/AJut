@@ -139,17 +139,6 @@
         }
 
         /// <summary>
-        /// Indicates if the logger flushes after each line. Setting true means <see cref="eLogFlushMode.FlushToDisk"/>, and false
-        /// means <see cref="eLogFlushMode.Buffered"/> (leaving it up to manual calls to <see cref="ForceFlushToFile"/>).
-        /// </summary>
-        [Obsolete("Use FlushMode, which can also hand each line to the OS without waiting on the disk.")]
-        public static bool FlushToFileAfterEach
-        {
-            get => FlushMode != eLogFlushMode.Buffered;
-            set => FlushMode = value ? eLogFlushMode.FlushToDisk : eLogFlushMode.Buffered;
-        }
-
-        /// <summary>
         /// When getting a line into the log file takes at least this long - counting both the wait for the write lock and the
         /// write itself - the logger adds a line of its own saying so, at <see cref="eLogVerbosity.Force"/>, with the time split
         /// between the two and the thread it happened on. <see cref="TimeSpan.Zero"/> (the default) turns this off.

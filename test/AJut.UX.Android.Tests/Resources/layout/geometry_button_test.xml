@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <ajut.ux.controls.GeometryButton
+        android:id="@+id/geometry_button"
+        android:layout_width="200px"
+        android:layout_height="100px"
+        app:ajutBackgroundGeometry="M 0,0 L 10,0 0,10 Z"
+        app:ajutGeometryStretch="uniform"
+        app:ajutTraceThickness="4px" />
+</FrameLayout>

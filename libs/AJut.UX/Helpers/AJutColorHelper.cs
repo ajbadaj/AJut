@@ -27,6 +27,17 @@ namespace AJut.UX.Helpers
                     return true;
                 }
 
+                // Anything that is not a hex digit is not hex: callers hand this a color name with a # in front to find
+                //  out which it is, and "#red" is the length of #RGB
+                for (int index = 1; index < hex.Length; ++index)
+                {
+                    if (!char.IsAsciiHexDigit(hex[index]))
+                    {
+                        argb = [0, 255, 0, 255];
+                        return false;
+                    }
+                }
+
                 switch (hex.Length)
                 {
                     // #RGB -> #RRGGBB (no alpha, not affected by colorOrder)
@@ -119,6 +130,26 @@ namespace AJut.UX.Helpers
 
                 return bytes;
             }
+        }
+
+        /// <summary>
+        /// Reads a color by name, in any case: the CSS and XAML color names (red, DarkBlue, Transparent and the rest), which
+        /// are the same list with the same values. <paramref name="argb"/> is [A, R, G, B].
+        /// </summary>
+        public static bool TryGetNamedColor (string name, out byte[] argb)
+        {
+            // System.Drawing's known colors are the web color names, looked up without regard to case, plus the system
+            //  colors (Control, Highlight and so on), which are left out: they are the OS's current colors, not names
+            //  XAML or CSS know
+            Color known = Color.FromName(name.Trim());
+            if (known.IsKnownColor && !known.IsSystemColor)
+            {
+                argb = [known.A, known.R, known.G, known.B];
+                return true;
+            }
+
+            argb = [0, 255, 0, 255];
+            return false;
         }
 
         /// <summary>

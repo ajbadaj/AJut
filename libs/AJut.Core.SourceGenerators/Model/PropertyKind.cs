@@ -31,8 +31,9 @@ namespace AJut.Text.AJson.SourceGenerators.Model
         ComplexReference,
 
         /// <summary>
-        /// Array / List / IEnumerable. Generated code emits explicit StartArray + per-element
-        /// recursion.
+        /// Array / List / IEnumerable. Generated code hands it to JsonHelper whole, writing it with
+        /// FillOutJsonBuilderForObject and reading it with AJsonGenerationSupport.ReadValue, so its
+        /// elements are written and read by the same code as on the reflection path.
         /// </summary>
         Collection,
 

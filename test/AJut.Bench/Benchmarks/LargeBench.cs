@@ -2,7 +2,7 @@ namespace AJut.Bench.Benchmarks
 {
     using System.Collections.Generic;
     using AJut.Bench.Models;
-    using AJut.Text.AJson.Legacy;
+    using AJut.Text.AJson;
     using BenchmarkDotNet.Attributes;
     using BenchmarkDotNet.Configs;
     using SystemTextJson = System.Text.Json.JsonSerializer;
@@ -34,8 +34,8 @@ namespace AJut.Bench.Benchmarks
         [BenchmarkCategory("Serialize"), Benchmark(Description = "Newtonsoft")]
         public string Serialize_Newtonsoft () => NewtonsoftJson.SerializeObject(m_model);
 
-        [BenchmarkCategory("Serialize"), Benchmark(Description = "AJson V1")]
-        public string Serialize_AJsonV1 () => JsonHelper.BuildJsonForObject(m_model).ToString();
+        [BenchmarkCategory("Serialize"), Benchmark(Description = "AJson V2 (reflection)")]
+        public string Serialize_AJsonV2_Reflection () => JsonHelper.BuildJsonForObject(m_model).ToString();
 
         // ===========[ Deserialize ]===================================
         [BenchmarkCategory("Deserialize"), Benchmark(Baseline = true, Description = "STJ Reflection")]
@@ -47,7 +47,7 @@ namespace AJut.Bench.Benchmarks
         [BenchmarkCategory("Deserialize"), Benchmark(Description = "Newtonsoft")]
         public List<DockZoneLayout> Deserialize_Newtonsoft () => NewtonsoftJson.DeserializeObject<List<DockZoneLayout>>(m_json);
 
-        [BenchmarkCategory("Deserialize"), Benchmark(Description = "AJson V1")]
-        public List<DockZoneLayout> Deserialize_AJsonV1 () => JsonHelper.BuildObjectForJson<List<DockZoneLayout>>(JsonHelper.ParseText(m_json));
+        [BenchmarkCategory("Deserialize"), Benchmark(Description = "AJson V2 (reflection)")]
+        public List<DockZoneLayout> Deserialize_AJsonV2_Reflection () => JsonHelper.BuildObjectForJson<List<DockZoneLayout>>(JsonHelper.ParseText(m_json));
     }
 }

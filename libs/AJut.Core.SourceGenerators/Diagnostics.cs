@@ -60,5 +60,18 @@ namespace AJut.Text.AJson.SourceGenerators
             category: kCategory,
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
+
+        /// <summary>
+        /// A generated serializer is an internal class of its own, so it can't name a private, protected, or private protected
+        /// type, or anything nested inside one. Such a type gets no serializer and stays on the reflection path, rather than
+        /// getting generated code that fails the build with CS0122.
+        /// </summary>
+        public static readonly DiagnosticDescriptor UnreachableType = new DiagnosticDescriptor(
+            id: "AJSON008",
+            title: "AJson optimized type can't be reached by generated code",
+            messageFormat: "Type '{0}' is opted into AJson optimization but is {1}, which generated code can't reach, so it is read and written by reflection - make it internal or public to have it generated",
+            category: kCategory,
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
     }
 }

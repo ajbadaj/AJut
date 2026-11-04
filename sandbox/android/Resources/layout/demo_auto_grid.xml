@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="AutoGrid"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:alpha="0.7"
+        android:text="A grid that adds rows and columns as children come in, putting each in the next cell and wrapping at a fixed column or row count (-1 for none). With both counts fixed, a tile past the last cell has no cell and is not shown. With resizers on, drag one to trade space between the two rows or columns beside it." />
+
+    <ajut.ux.controls.EnumComboBox
+        android:id="@+id/demo_auto_grid_order"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:orientation="horizontal">
+
+        <ajut.ux.controls.NumericEditor
+            android:id="@+id/demo_auto_grid_rows"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            app:ajutLabel="Rows"
+            app:ajutMinimum="-1"
+            app:ajutMaximum="6"
+            app:ajutEnforceNumericType="Int32" />
+
+        <ajut.ux.controls.NumericEditor
+            android:id="@+id/demo_auto_grid_columns"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            app:ajutLabel="Columns"
+            app:ajutMinimum="-1"
+            app:ajutMaximum="6"
+            app:ajutEnforceNumericType="Int32" />
+    </LinearLayout>
+
+    <CheckBox
+        android:id="@+id/demo_auto_grid_shrink"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Shrink to the tiles used" />
+
+    <CheckBox
+        android:id="@+id/demo_auto_grid_row_resizers"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Row resizers" />
+
+    <CheckBox
+        android:id="@+id/demo_auto_grid_column_resizers"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Column resizers" />
+
+    <CheckBox
+        android:id="@+id/demo_auto_grid_border"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Border (2dp, the theme's border color)" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/demo_auto_grid_add"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Add a tile" />
+
+        <Button
+            android:id="@+id/demo_auto_grid_remove"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Take one away" />
+    </LinearLayout>
+
+    <ajut.ux.controls.AutoGrid
+        android:id="@+id/demo_auto_grid"
+        android:layout_width="match_parent"
+        android:layout_height="240dp"
+        android:layout_marginTop="12dp"
+        app:ajutFixedColumnCount="3" />
+</LinearLayout>

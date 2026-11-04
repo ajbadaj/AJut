@@ -1135,13 +1135,13 @@ namespace AJut.Core.UnitTests
             bool logToTrace = !m_defaultLogToTrace;
             Logger.ShouldLogToConsole = logToConsole;
             Logger.ShouldLogToTrace = logToTrace;
-            Logger.FlushToFileAfterEach = false;
+            Logger.FlushMode = eLogFlushMode.Buffered;
 
             Logger.CreateAndStartWritingToLogFileIn(m_tempDir);
 
             Assert.AreEqual(logToConsole, Logger.ShouldLogToConsole, "Starting a log file reset ShouldLogToConsole.");
             Assert.AreEqual(logToTrace, Logger.ShouldLogToTrace, "Starting a log file reset ShouldLogToTrace.");
-            Assert.IsFalse(Logger.FlushToFileAfterEach, "Starting a log file reset FlushToFileAfterEach.");
+            Assert.AreEqual(eLogFlushMode.Buffered, Logger.FlushMode, "Starting a log file reset FlushMode.");
         }
 
         // ---- Reading the live log ----
@@ -1211,19 +1211,6 @@ namespace AJut.Core.UnitTests
         public void FlushMode_DefaultsToFlushToDisk ()
         {
             Assert.AreEqual(eLogFlushMode.FlushToDisk, Logger.FlushMode);
-        }
-
-        [TestMethod]
-        public void FlushToFileAfterEach_MapsOntoFlushMode ()
-        {
-            Logger.FlushToFileAfterEach = false;
-            Assert.AreEqual(eLogFlushMode.Buffered, Logger.FlushMode);
-
-            Logger.FlushToFileAfterEach = true;
-            Assert.AreEqual(eLogFlushMode.FlushToDisk, Logger.FlushMode);
-
-            Logger.FlushMode = eLogFlushMode.FlushToOS;
-            Assert.IsTrue(Logger.FlushToFileAfterEach, "FlushToOS still flushes after each line.");
         }
 
         [TestMethod]
@@ -1387,6 +1374,13 @@ namespace AJut.Core.UnitTests
         [TestInitialize]
         public void TestSetup ()
         {
+            // The crash host is a Windows exe and each death is checked by its Windows exit code, so off Windows these
+            //  are skipped (inconclusive) rather than failed
+            if (!OperatingSystem.IsWindows())
+            {
+                Assert.Inconclusive("Windows only: the crash host is a Windows exe, checked by Windows exit codes");
+            }
+
             m_tempDir = Path.Combine(Path.GetTempPath(), $"AJut_LoggerCrashTests_{Guid.NewGuid():N}");
         }
 
@@ -1403,7 +1397,7 @@ namespace AJut.Core.UnitTests
             catch { }
         }
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow(eCrashHostDeath.FailFast)]
         [DataRow(eCrashHostDeath.StackOverflow)]
         [DataRow(eCrashHostDeath.UnhandledException)]
@@ -1413,7 +1407,7 @@ namespace AJut.Core.UnitTests
             this.AssertEveryLineSurvives(death, eLogFlushMode.FlushToOS);
         }
 
-        [DataTestMethod]
+        [TestMethod]
         [DataRow(eCrashHostDeath.FailFast)]
         [DataRow(eCrashHostDeath.StackOverflow)]
         [DataRow(eCrashHostDeath.UnhandledException)]

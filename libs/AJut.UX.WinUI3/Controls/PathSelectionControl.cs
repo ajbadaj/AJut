@@ -1,3 +1,8 @@
+// ePathType and eFileDialogType moved to AJut.UX, in the same namespace, so every stack's PathSelectionControl and the
+// rules they share use one of each. These forward anything built against them here to where they are now.
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(AJut.UX.Controls.ePathType))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(AJut.UX.Controls.eFileDialogType))]
+
 namespace AJut.UX.Controls
 {
     using AJut;
@@ -7,7 +12,6 @@ namespace AJut.UX.Controls
     using Microsoft.UI.Xaml.Input;
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using Windows.Storage.Pickers;
     using DPUtils = AJut.UX.DPUtils<PathSelectionControl>;
 
@@ -17,15 +21,14 @@ namespace AJut.UX.Controls
     //
     // Visual feedback: the outer border turns red when the path is invalid and
     // accent-colored when the control is focused (using VSM BorderStates group).
+    // The text box's own focused look is a separate group (TextBoxFocusStates),
+    // so it stays while focus is inside, even with an invalid path.
     //
     // Template parts:
     //   PART_Root              - outer Border (receives border-brush VSM changes)
     //   PART_PathTextBox       - inner TextBox (path entry + Ctrl+Up in Folder mode)
     //   PART_BrowseButton      - Button that opens the OS picker
     //   PART_ShowInExplorerButton - Button that opens Explorer at the path (optional)
-
-    public enum ePathType { File, Folder }
-    public enum eFileDialogType { OpenFile, SaveFile }
 
     [TemplatePart(Name = nameof(PART_Root), Type = typeof(Border))]
     [TemplatePart(Name = nameof(PART_PathTextBox), Type = typeof(TextBox))]
@@ -158,6 +161,18 @@ namespace AJut.UX.Controls
             set => this.SetValue(UnsetTextPromptProperty, value);
         }
 
+        public static readonly DependencyProperty IsReadOnlyProperty = DPUtils.Register(_ => _.IsReadOnly, (d, e) => d.UpdateVisualState());
+        /// <summary>
+        /// Shows the path without letting it change: it takes no typing, the browse button is off, and Ctrl+Up doesn't move
+        /// to the parent folder. Showing the path in Explorer still works, since that changes nothing. A read-only
+        /// PropertyGrid disables its rows' editors outright, so this is for a path shown read-only anywhere else.
+        /// </summary>
+        public bool IsReadOnly
+        {
+            get => (bool)this.GetValue(IsReadOnlyProperty);
+            set => this.SetValue(IsReadOnlyProperty, value);
+        }
+
         public static readonly DependencyProperty IsOpenInExplorerButtonAllowedProperty = DPUtils.Register(_ => _.IsOpenInExplorerButtonAllowed, (d, e) => d.UpdateVisualState());
         public bool IsOpenInExplorerButtonAllowed
         {
@@ -269,13 +284,7 @@ namespace AJut.UX.Controls
         // ===========[ Public helpers ]============================================
         public string GetFullyExpandedPath(string path = null)
         {
-            path = path ?? this.SelectedPath ?? string.Empty;
-            if (this.FixedRootPath?.Length == 0 || Path.IsPathRooted(path))
-            {
-                return path;
-            }
-
-            return Path.Combine(this.FixedRootPath, path);
+            return PathSelectionRules.GetFullyExpandedPath(path ?? this.SelectedPath ?? string.Empty, this.FixedRootPath);
         }
 
         // ===========[ Property change handlers ]================================
@@ -334,8 +343,10 @@ namespace AJut.UX.Controls
 
         private void PathTextBox_OnKeyDown(object sender, KeyRoutedEventArgs e)
         {
-            // Ctrl+Up: navigate to parent directory (Folder mode only)
-            if (this.PathType != ePathType.Folder || e.Key != Windows.System.VirtualKey.Up)
+            // Ctrl+Up: navigate to parent directory (Folder mode only), which changes the path, so never while read-only
+            if (this.IsReadOnly
+                || (this.PathType != ePathType.Folder)
+                || (e.Key != Windows.System.VirtualKey.Up))
             {
                 return;
             }
@@ -348,16 +359,11 @@ namespace AJut.UX.Controls
                 return;
             }
 
-            try
+            if (PathSelectionRules.TryGetParentFolder(this.SelectedPath, this.FixedRootPath, out string parentFolder))
             {
-                var dir = new DirectoryInfo(this.SelectedPath ?? "");
-                if (dir.Parent != null)
-                {
-                    this.SelectedPath = dir.Parent.FullName;
-                    e.Handled = true;
-                }
+                this.SelectedPath = parentFolder;
+                e.Handled = true;
             }
-            catch { }
         }
 
         private void PathTextBox_OnLostFocus(object sender, RoutedEventArgs e)
@@ -372,6 +378,12 @@ namespace AJut.UX.Controls
         // ===========[ Button event handlers ]====================================
         private async void BrowseButton_OnClick(object sender, RoutedEventArgs e)
         {
+            // The read-only state disables the button, but a click raised from code still lands here
+            if (this.IsReadOnly)
+            {
+                return;
+            }
+
             string userSelectedPath = null;
             var hwnd = this.GetWindowHandle();
 
@@ -422,101 +434,19 @@ namespace AJut.UX.Controls
 
         // ===========[ Path evaluation ]==========================================
 
+        // The rules are every stack's, so the same path gets the same answer and reason on each one
         private void EvaluatePath(string path)
         {
-            // Empty path handling
-            if (string.IsNullOrEmpty(path))
-            {
-                if (this.TreatEmptyPathAsInvalid)
-                {
-                    this.SetInvalid("No path specified");
-                }
-                else
-                {
-                    this.IsPathValid = true;
-                    this.InvalidPathReason = null;
-                    this.DoesPathExist = false;
-                    this.UpdateVisualState();
-                }
-
-                return;
-            }
-
-            // Basic path syntax check
-            string expandedPath;
-            try
-            {
-                expandedPath = this.GetFullyExpandedPath(path);
-                Path.GetFullPath(expandedPath); // throws on invalid chars
-            }
-            catch (Exception ex)
-            {
-                this.SetInvalid($"Invalid path: {ex.Message}");
-                return;
-            }
-
-            // FixedRootPath constraint
-            if (this.FixedRootPath?.Length > 0
-                && Path.IsPathRooted(path)
-                && !expandedPath.StartsWith(this.FixedRootPath, StringComparison.OrdinalIgnoreCase))
-            {
-                this.SetInvalid($"Path must be under: {this.FixedRootPath}");
-                return;
-            }
-
-            // File extension filter check (File mode only)
-            if (this.PathType == ePathType.File
-                && this.FileFilter?.Length > 0
-                && this.FileFilter != "*.*"
-                && this.FileFilter != "*"
-                && !DoesFileMatchFilter(path, this.FileFilter))
-            {
-                this.SetInvalid("File extension is not in the allowed filter");
-                return;
-            }
-
-            // Existence checks
-            bool existsAsFile = false;
-            bool existsAsDir = false;
-            try { existsAsFile = File.Exists(expandedPath); } catch { }
-            try { existsAsDir = Directory.Exists(expandedPath); } catch { }
-
-            if (this.PathType == ePathType.File && existsAsDir)
-            {
-                this.SetInvalid("Expected a file but path points to a directory");
-                return;
-            }
-
-            if (this.PathType == ePathType.Folder && existsAsFile)
-            {
-                this.SetInvalid("Expected a directory but path points to a file");
-                return;
-            }
-
-            this.DoesPathExist = this.PathType == ePathType.File ? existsAsFile : existsAsDir;
-
-            if (!this.DoesPathExist && this.TreatNonExistentPathAsInvalid)
-            {
-                this.IsPathValid = false;
-                this.InvalidPathReason = $"{this.PathType} does not exist";
-            }
-            else
-            {
-                this.IsPathValid = true;
-                this.InvalidPathReason = null;
-            }
-
-            this.UpdateVisualState();
-        }
-
-        private void SetInvalid(string reason)
-        {
-            this.DoesPathExist = false;
-            this.IsPathValid = false;
-            this.InvalidPathReason = reason;
+            PathSelectionRules.Evaluation evaluation = PathSelectionRules.Evaluate(path, this.PathType, this.FileFilter, this.FixedRootPath, this.TreatEmptyPathAsInvalid, this.TreatNonExistentPathAsInvalid);
+            this.DoesPathExist = evaluation.DoesPathExist;
+            this.IsPathValid = evaluation.IsPathValid;
+            this.InvalidPathReason = evaluation.InvalidPathReason;
             this.UpdateVisualState();
 
-            this.CurrentToolTip = reason;
+            if (!evaluation.IsPathValid)
+            {
+                this.CurrentToolTip = evaluation.InvalidPathReason;
+            }
         }
 
         // ===========[ Visual state management ]===================================
@@ -541,6 +471,10 @@ namespace AJut.UX.Controls
                 : m_isFocused ? "Focused" : "Normal";
             VisualStateManager.GoToState(this, borderState, false);
 
+            // The text box keeps its focused look while focus is inside it, valid or not, so the error border above
+            // shows on top of it instead of replacing it mid-edit
+            VisualStateManager.GoToState(this, m_isFocused ? "TextBoxFocused" : "TextBoxUnfocused", false);
+
             // Warning icon
             VisualStateManager.GoToState(this,
                 !this.IsPathValid && !string.IsNullOrEmpty(this.SelectedPath)
@@ -552,6 +486,8 @@ namespace AJut.UX.Controls
                 this.IsOpenInExplorerButtonAllowed && this.IsPathValid
                     ? "ExplorerButtonShown" : "ExplorerButtonHidden",
                 false);
+
+            VisualStateManager.GoToState(this, this.IsReadOnly ? "ReadOnly" : "Editable", false);
         }
 
         // ===========[ OS picker helpers ]=========================================
@@ -601,34 +537,10 @@ namespace AJut.UX.Controls
         // ===========[ Path helpers ]=============================================
         private bool TryToApplyPathShorteningIfAny(ref string target)
         {
-            if (this.FixedRootPath?.Length > 0
-                && this.ShortenPathToFixedRoot
-                && target != null
-                && target.StartsWith(this.FixedRootPath, StringComparison.OrdinalIgnoreCase))
+            if (this.ShortenPathToFixedRoot && PathSelectionRules.TryShortenToFixedRoot(target, this.FixedRootPath, out string shortenedPath))
             {
-                target = target.Substring(this.FixedRootPath.Length).TrimStart('\\', '/');
+                target = shortenedPath;
                 return true;
-            }
-
-            return false;
-        }
-
-        private static bool DoesFileMatchFilter(string path, string filter)
-        {
-            string ext = Path.GetExtension(path)?.ToLowerInvariant() ?? "";
-
-            // Support both "*.ext" and "|"-separated WPF-style filters
-            foreach (string part in filter.Split('|'))
-            {
-                string p = part.Trim().ToLowerInvariant();
-                if (p == "*.*" || p == "*") return true;
-                // WPF pattern segment like "*.cs;*.txt"
-                foreach (string pattern in p.Split(';'))
-                {
-                    string trimmed = pattern.Trim();
-                    if (trimmed == "*.*" || trimmed == "*") return true;
-                    if (trimmed.StartsWith("*.") && trimmed.Substring(1) == ext) return true;
-                }
             }
 
             return false;

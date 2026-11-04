@@ -517,6 +517,7 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
             string elementFqn = string.Empty;
             string dictKeyFqn = string.Empty;
             string dictValueFqn = string.Empty;
+            string dictToBuildFqn = string.Empty;
             string runtimeFlagLiteral = string.Empty;
 
             if (runtimeAttr != null)
@@ -526,7 +527,7 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
             }
             else
             {
-                kind = ClassifyType(underlying, out elementFqn, out dictKeyFqn, out dictValueFqn);
+                kind = ClassifyType(underlying, out elementFqn, out dictKeyFqn, out dictValueFqn, out dictToBuildFqn);
                 if (kind == ePropertyKind.Unsupported)
                 {
                     diagnostics.Add(Diagnostic.Create(
@@ -597,6 +598,7 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                 ElementTypeFullName = elementFqn,
                 DictionaryKeyTypeFullName = dictKeyFqn,
                 DictionaryValueTypeFullName = dictValueFqn,
+                DictionaryTypeToBuildFullName = dictToBuildFqn,
                 RuntimeTypeEvalFlagLiteral = runtimeFlagLiteral,
             };
         }
@@ -606,11 +608,13 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
             ITypeSymbol type,
             out string elementFqn,
             out string dictKeyFqn,
-            out string dictValueFqn)
+            out string dictValueFqn,
+            out string dictToBuildFqn)
         {
             elementFqn = string.Empty;
             dictKeyFqn = string.Empty;
             dictValueFqn = string.Empty;
+            dictToBuildFqn = string.Empty;
 
             if (type.TypeKind == TypeKind.Enum)
             {
@@ -634,18 +638,29 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                 return ePropertyKind.Collection;
             }
 
-            // Generic collections / dictionaries
-            if (type is INamedTypeSymbol named && named.IsGenericType)
+            // Dictionaries, including a type of its own that derives from one, then other generic collections
+            if (type is INamedTypeSymbol named)
             {
+                // A member typed as one of the dictionary interfaces is built as the Dictionary the reflection path builds for it
+                if ((named.TypeKind == TypeKind.Interface)
+                    && (IsGenericCollectionsType(named, "IDictionary`2") || IsGenericCollectionsType(named, "IReadOnlyDictionary`2")))
+                {
+                    dictKeyFqn = ToFullyQualified(named.TypeArguments[0]);
+                    dictValueFqn = ToFullyQualified(named.TypeArguments[1]);
+                    dictToBuildFqn = $"global::System.Collections.Generic.Dictionary<{dictKeyFqn}, {dictValueFqn}>";
+                    return ePropertyKind.Dictionary;
+                }
+
                 INamedTypeSymbol dictIface = FindConstructedInterface(named, "System.Collections.Generic.IDictionary`2");
                 if (dictIface != null)
                 {
                     dictKeyFqn = ToFullyQualified(dictIface.TypeArguments[0]);
                     dictValueFqn = ToFullyQualified(dictIface.TypeArguments[1]);
+                    dictToBuildFqn = CanBeBuiltWithNew(named) ? ToFullyQualified(named) : string.Empty;
                     return ePropertyKind.Dictionary;
                 }
 
-                INamedTypeSymbol enumerableIface = FindConstructedInterface(named, "System.Collections.Generic.IEnumerable`1");
+                INamedTypeSymbol enumerableIface = named.IsGenericType ? FindConstructedInterface(named, "System.Collections.Generic.IEnumerable`1") : null;
                 if (enumerableIface != null)
                 {
                     elementFqn = ToFullyQualified(enumerableIface.TypeArguments[0]);
@@ -664,6 +679,31 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
             }
 
             return ePropertyKind.Unsupported;
+        }
+
+        /// <summary>
+        /// Whether <paramref name="type"/> is made from the System.Collections.Generic type of that metadata name ("IDictionary`2")
+        /// </summary>
+        private static bool IsGenericCollectionsType (INamedTypeSymbol type, string metadataName)
+        {
+            INamedTypeSymbol definition = type.OriginalDefinition;
+            return (definition.MetadataName == metadataName)
+                && (definition.ContainingNamespace?.ToDisplayString() == "System.Collections.Generic");
+        }
+
+        /// <summary>
+        /// Whether generated code can build <paramref name="type"/> with new(): a struct, or a class that is not abstract and has
+        /// a public parameterless constructor
+        /// </summary>
+        private static bool CanBeBuiltWithNew (INamedTypeSymbol type)
+        {
+            if (type.IsAbstract)
+            {
+                return false;
+            }
+
+            return (type.TypeKind == TypeKind.Struct)
+                || ((type.TypeKind == TypeKind.Class) && type.InstanceConstructors.Any(c => c.Parameters.Length == 0 && c.DeclaredAccessibility == Accessibility.Public));
         }
 
         private static bool IsSimpleSpecialType (SpecialType st)

@@ -144,6 +144,13 @@ namespace AJut.Text.AJson
 
         private static void WriteSimpleValue (StringBuilder sb, JsonValue value, JsonBuilderSettings settings)
         {
+            // Json's null literal is never quoted, whatever the settings say: quoted, it's the string "null"
+            if (value.IsNull)
+            {
+                sb.Append(JsonValue.kNullText);
+                return;
+            }
+
             string raw = value.StringValue;
             if (raw == null)
             {

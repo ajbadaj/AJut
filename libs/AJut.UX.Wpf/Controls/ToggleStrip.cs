@@ -5,11 +5,14 @@
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.Linq;
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Controls.Primitives;
     using System.Windows.Data;
+    using System.Windows.Input;
     using System.Windows.Media;
     using AJut.UX.AttachedProperties;
     using AJut.UX.Converters;
@@ -19,11 +22,12 @@
     {
         // ================== [ Fields ]================================
 
-        // Matches the Scroll-mode bump button Width in ToggleStrip.xaml; used as content clearance and as
-        // the scroll-into-view inset so a selected item lands clear of the bump buttons.
+        // Matches the Scroll-mode bump button Width (its Height when vertical) in ToggleStrip.xaml; used as content
+        // clearance and as the scroll-into-view inset so a selected item lands clear of the bump buttons.
         private const double kScrollButtonClearance = 24.0;
         private const double kScrollStep = 48.0;
 
+        private readonly ToggleStripDragScroll m_dragScroll = new ToggleStripDragScroll();
         private bool m_isChangingSelectedItem;
         private bool m_isChangingSelectedItemsList;
         private ScrollViewer m_scrollHost;
@@ -53,6 +57,13 @@
         public static readonly DependencyProperty BackgroundHoverProperty = DPUtils.Register(_ => _.BackgroundHover);
         public static readonly DependencyProperty BackgroundHoverOverPressedProperty = DPUtils.Register(_ => _.BackgroundHoverOverPressed);
         public static readonly DependencyProperty ForegroundHoverProperty = DPUtils.Register(_ => _.ForegroundHover);
+        public static readonly DependencyProperty DisabledBackgroundProperty = DPUtils.Register(_ => _.DisabledBackground);
+        public static readonly DependencyProperty DisabledBorderBrushProperty = DPUtils.Register(_ => _.DisabledBorderBrush);
+        public static readonly DependencyProperty DisabledForegroundProperty = DPUtils.Register(_ => _.DisabledForeground);
+        public static readonly DependencyProperty DisabledSelectedBackgroundProperty = DPUtils.Register(_ => _.DisabledSelectedBackground);
+        public static readonly DependencyProperty VerticalButtonBackgroundProperty = DPUtils.Register(_ => _.VerticalButtonBackground);
+        public static readonly DependencyProperty VerticalButtonForegroundProperty = DPUtils.Register(_ => _.VerticalButtonForeground);
+        public static readonly DependencyProperty VerticalButtonBorderBrushProperty = DPUtils.Register(_ => _.VerticalButtonBorderBrush);
 
         public static readonly DependencyProperty ItemPaddingProperty = DPUtils.Register(_ => _.ItemPadding, new Thickness(6));
         public static readonly DependencyProperty CornerRadiusProperty = DPUtils.Register(_ => _.CornerRadius, (d, e) => BorderXTA.SetCornerRadius(d, e.NewValue));
@@ -64,6 +75,7 @@
 
         public static readonly DependencyProperty EnsureUniformSizeProperty = DPUtils.Register(_ => _.EnsureUniformSize, false, (d, e) => d.OnLayoutModeChanged());
         public static readonly DependencyProperty OverflowBehaviorProperty = DPUtils.Register(_ => _.OverflowBehavior, eToggleStripOverflow.Clip, (d, e) => d.OnLayoutModeChanged());
+        public static readonly DependencyProperty OrientationProperty = DPUtils.Register(_ => _.Orientation, Orientation.Horizontal, (d, e) => d.OnOrientationChanged());
         private static readonly DependencyPropertyKey HasOverflowPropertyKey = DPUtils.RegisterReadOnly(_ => _.HasOverflow);
         public static readonly DependencyProperty HasOverflowProperty = HasOverflowPropertyKey.DependencyProperty;
 
@@ -100,6 +112,9 @@
             {
                 m_scrollHost.SizeChanged -= this.OnScrollHostSizeChanged;
                 m_scrollHost.ScrollChanged -= this.OnScrollHostScrollChanged;
+                m_scrollHost.PreviewMouseLeftButtonDown -= this.OnScrollHostPreviewMouseDown;
+                m_scrollHost.PreviewMouseMove -= this.OnScrollHostPreviewMouseMove;
+                m_scrollHost.PreviewMouseLeftButtonUp -= this.OnScrollHostPreviewMouseUp;
             }
 
             if (this.PART_ScrollLeftButton != null)
@@ -121,6 +136,9 @@
             {
                 m_scrollHost.SizeChanged += this.OnScrollHostSizeChanged;
                 m_scrollHost.ScrollChanged += this.OnScrollHostScrollChanged;
+                m_scrollHost.PreviewMouseLeftButtonDown += this.OnScrollHostPreviewMouseDown;
+                m_scrollHost.PreviewMouseMove += this.OnScrollHostPreviewMouseMove;
+                m_scrollHost.PreviewMouseLeftButtonUp += this.OnScrollHostPreviewMouseUp;
             }
 
             if (this.PART_ScrollLeftButton != null)
@@ -143,6 +161,51 @@
         }
 
         private void OnScrollHostScrollChanged (object sender, ScrollChangedEventArgs e) => this.UpdateScrollButtons();
+
+        // Click-and-drag scrolling in Scroll mode, by AJut.UX's shared ToggleStripDragScroll. The preview events see the
+        // press before the item button under it does. Past the threshold the scroll host takes the mouse capture, which
+        // takes it from the button, so the button never clicks; the strip then follows the pointer until the release.
+        private void OnScrollHostPreviewMouseDown (object sender, MouseButtonEventArgs e)
+        {
+            if (this.OverflowBehavior == eToggleStripOverflow.Scroll)
+            {
+                m_dragScroll.Begin(this.PositionAlongStrip(e.GetPosition(m_scrollHost)));
+            }
+        }
+
+        private void OnScrollHostPreviewMouseMove (object sender, MouseEventArgs e)
+        {
+            if (e.LeftButton != MouseButtonState.Pressed)
+            {
+                return;
+            }
+
+            double delta = m_dragScroll.Move(this.PositionAlongStrip(e.GetPosition(m_scrollHost)));
+            if (!m_dragScroll.IsDragging)
+            {
+                return;
+            }
+
+            if (Mouse.Captured != m_scrollHost)
+            {
+                m_scrollHost.CaptureMouse();
+            }
+
+            this.NudgeScroll(-delta);
+            e.Handled = true;
+        }
+
+        private void OnScrollHostPreviewMouseUp (object sender, MouseButtonEventArgs e)
+        {
+            if (m_dragScroll.End())
+            {
+                m_scrollHost.ReleaseMouseCapture();
+                e.Handled = true;
+            }
+        }
+
+        private double PositionAlongStrip (Point point) => this.IsVertical ? point.Y : point.X;
+
         private void OnScrollLeftClick (object sender, RoutedEventArgs e) => this.NudgeScroll(-kScrollStep);
         private void OnScrollRightClick (object sender, RoutedEventArgs e) => this.NudgeScroll(kScrollStep);
 
@@ -156,9 +219,13 @@
                 return;
             }
 
-            // Scroll mode hides the scrollbar (Hidden keeps the content scrollable); other modes clip.
+            // Scroll mode hides the scrollbar along the strip (Hidden keeps the content scrollable); other modes
+            // clip. Across the strip it is always Disabled, so the items get the strip's real cross size.
             bool scroll = this.OverflowBehavior == eToggleStripOverflow.Scroll;
-            m_scrollHost.HorizontalScrollBarVisibility = scroll ? ScrollBarVisibility.Hidden : ScrollBarVisibility.Disabled;
+            ScrollBarVisibility alongStrip = scroll ? ScrollBarVisibility.Hidden : ScrollBarVisibility.Disabled;
+            bool isVertical = this.IsVertical;
+            m_scrollHost.HorizontalScrollBarVisibility = isVertical ? ScrollBarVisibility.Disabled : alongStrip;
+            m_scrollHost.VerticalScrollBarVisibility = isVertical ? alongStrip : ScrollBarVisibility.Disabled;
             this.UpdateScrollButtons();
         }
 
@@ -169,7 +236,12 @@
                 return;
             }
 
-            double scrollable = m_scrollHost?.ScrollableWidth ?? 0.0;
+            // Everything here runs along the strip: left/right when horizontal, up/down when vertical. The
+            // template's Orientation trigger moves the two buttons to the top and bottom edges.
+            bool isVertical = this.IsVertical;
+            double scrollable = isVertical
+                ? (m_scrollHost?.ScrollableHeight ?? 0.0)
+                : (m_scrollHost?.ScrollableWidth ?? 0.0);
             bool show = this.OverflowBehavior == eToggleStripOverflow.Scroll && scrollable > 0.5;
 
             this.PART_ScrollLeftButton.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
@@ -178,14 +250,15 @@
             // Inset the items so scrolling to an end parks a button over empty padding, not an item.
             if (this.PART_ItemsHost != null)
             {
-                this.PART_ItemsHost.Margin = show
-                    ? new Thickness(kScrollButtonClearance, 0, kScrollButtonClearance, 0)
-                    : new Thickness(0);
+                double clearance = show ? kScrollButtonClearance : 0.0;
+                this.PART_ItemsHost.Margin = isVertical
+                    ? new Thickness(0, clearance, 0, clearance)
+                    : new Thickness(clearance, 0, clearance, 0);
             }
 
             if (show)
             {
-                double offset = m_scrollHost.HorizontalOffset;
+                double offset = isVertical ? m_scrollHost.VerticalOffset : m_scrollHost.HorizontalOffset;
                 this.PART_ScrollLeftButton.IsEnabled = offset > 0.5;
                 this.PART_ScrollRightButton.IsEnabled = offset < scrollable - 0.5;
             }
@@ -198,8 +271,16 @@
                 return;
             }
 
-            double target = Math.Max(0.0, Math.Min(m_scrollHost.ScrollableWidth, m_scrollHost.HorizontalOffset + delta));
-            m_scrollHost.ScrollToHorizontalOffset(target);
+            if (this.IsVertical)
+            {
+                double target = Math.Max(0.0, Math.Min(m_scrollHost.ScrollableHeight, m_scrollHost.VerticalOffset + delta));
+                m_scrollHost.ScrollToVerticalOffset(target);
+            }
+            else
+            {
+                double target = Math.Max(0.0, Math.Min(m_scrollHost.ScrollableWidth, m_scrollHost.HorizontalOffset + delta));
+                m_scrollHost.ScrollToHorizontalOffset(target);
+            }
         }
 
         // ================== [ Events ]================================
@@ -264,6 +345,68 @@
             set => this.SetValue(ForegroundHoverProperty, value);
         }
 
+        /// <summary>
+        /// The strip's surface while it is disabled, in place of its Background. The AJut theme sets the disabled
+        /// ComboBox's flat fill.
+        /// </summary>
+        public Brush DisabledBackground
+        {
+            get => (Brush)this.GetValue(DisabledBackgroundProperty);
+            set => this.SetValue(DisabledBackgroundProperty, value);
+        }
+
+        /// <summary>The strip's outline while it is disabled, in place of its BorderBrush.</summary>
+        public Brush DisabledBorderBrush
+        {
+            get => (Brush)this.GetValue(DisabledBorderBrushProperty);
+            set => this.SetValue(DisabledBorderBrushProperty, value);
+        }
+
+        /// <summary>
+        /// Every item's text while the strip is disabled, the selected item's too: a disabled strip keeps its selection
+        /// shaded so it still shows, and nothing in it reads as live.
+        /// </summary>
+        public Brush DisabledForeground
+        {
+            get => (Brush)this.GetValue(DisabledForegroundProperty);
+            set => this.SetValue(DisabledForegroundProperty, value);
+        }
+
+        /// <summary>
+        /// The selected item's fill while the strip is disabled, in place of its pressed shading: muted, so the selection
+        /// still shows without reading as live. The AJut theme sets a faded, desaturated primary.
+        /// </summary>
+        public Brush DisabledSelectedBackground
+        {
+            get => (Brush)this.GetValue(DisabledSelectedBackgroundProperty);
+            set => this.SetValue(DisabledSelectedBackgroundProperty, value);
+        }
+
+        /// <summary>
+        /// The scroll and overflow buttons' fill while the strip is vertical. The strip's surface shades top to bottom, so
+        /// across a vertical strip's ends those buttons would show a slice of it that reads as part of neither; they take
+        /// plain button colors instead. A horizontal strip's buttons sit inside its shading.
+        /// </summary>
+        public Brush VerticalButtonBackground
+        {
+            get => (Brush)this.GetValue(VerticalButtonBackgroundProperty);
+            set => this.SetValue(VerticalButtonBackgroundProperty, value);
+        }
+
+        /// <summary>The scroll and overflow buttons' glyph color while the strip is vertical (see <see cref="VerticalButtonBackground"/>).</summary>
+        public Brush VerticalButtonForeground
+        {
+            get => (Brush)this.GetValue(VerticalButtonForegroundProperty);
+            set => this.SetValue(VerticalButtonForegroundProperty, value);
+        }
+
+        /// <summary>The scroll and overflow buttons' outline while the strip is vertical (see <see cref="VerticalButtonBackground"/>).</summary>
+        public Brush VerticalButtonBorderBrush
+        {
+            get => (Brush)this.GetValue(VerticalButtonBorderBrushProperty);
+            set => this.SetValue(VerticalButtonBorderBrushProperty, value);
+        }
+
         public Brush OverflowPopupBackground
         {
             get => (Brush)this.GetValue(OverflowPopupBackgroundProperty);
@@ -324,22 +467,42 @@
             private set => this.SetValue(ItemsPropertyKey, value);
         }
 
-        // EnsureUniformSize: when true every item is widened to the widest item's natural size, so the
-        // buttons read as an even row rather than each hugging its own content.
+        /// <summary>
+        /// When true every item is grown to the largest item's natural length along the strip (the widest when
+        /// horizontal, the tallest when vertical), so the buttons read as an even row or column rather than each
+        /// hugging its own content.
+        /// </summary>
         public bool EnsureUniformSize
         {
             get => (bool)this.GetValue(EnsureUniformSizeProperty);
             set => this.SetValue(EnsureUniformSizeProperty, value);
         }
 
-        // OverflowBehavior: how the strip reacts when its items do not all fit (default Clip). Scroll
-        // and OverflowPopup only do anything when the strip is width constrained
-        // (HorizontalContentAlignment=Stretch or an explicit Width) - a content sized strip never overflows.
+        /// <summary>
+        /// How the strip reacts when its items do not all fit (default Clip). Scroll and OverflowPopup only do
+        /// anything when the strip is constrained along its own axis: a horizontal strip by width
+        /// (HorizontalContentAlignment=Stretch or an explicit Width), a vertical one by height
+        /// (VerticalContentAlignment=Stretch or an explicit Height). A content sized strip never overflows.
+        /// </summary>
         public eToggleStripOverflow OverflowBehavior
         {
             get => (eToggleStripOverflow)this.GetValue(OverflowBehaviorProperty);
             set => this.SetValue(OverflowBehaviorProperty, value);
         }
+
+        /// <summary>
+        /// Lays the buttons out left to right (Horizontal, the default) or top to bottom (Vertical). A vertical
+        /// strip stretches each button across its width, so it is as wide as its widest button unless sized
+        /// otherwise; overflow, scrolling, uniform sizing and stretch fill (VerticalContentAlignment=Stretch) all
+        /// work along its height instead of its width.
+        /// </summary>
+        public Orientation Orientation
+        {
+            get => (Orientation)this.GetValue(OrientationProperty);
+            set => this.SetValue(OrientationProperty, value);
+        }
+
+        internal bool IsVertical => this.Orientation == Orientation.Vertical;
 
         // HasOverflow: true while one or more items are tucked into the overflow popup.
         public bool HasOverflow
@@ -350,6 +513,18 @@
 
         // Set by ToggleStripPanel when it attaches so layout-affecting changes can re-run the partition.
         internal ToggleStripPanel ItemsPanelInstance { get; set; }
+
+        // ================== [ Public Interface Methods ]================================
+        /// <summary>
+        /// Shows <paramref name="items"/>, the same as setting <see cref="ItemsSource"/>. It matches the other stacks'
+        /// ToggleStrip, where it keeps the public properties of <typeparamref name="T"/> in an app that trims so
+        /// <see cref="DisplayPropertyPath"/> still finds the property it names; WPF doesn't support trimming, so here it
+        /// only sets ItemsSource.
+        /// </summary>
+        public void SetItemsSource<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T> (IEnumerable<T> items)
+        {
+            this.ItemsSource = items;
+        }
 
         // ================== [ Private Utility Functions ]================================
         internal void SetHasOverflow (bool value)
@@ -367,6 +542,9 @@
             this.ApplyScrollMode();
             this.ItemsPanelInstance?.InvalidateMeasure();
         }
+
+        // The items panel lays the items out again for the new axis, and gives each item its edges for it
+        private void OnOrientationChanged () => this.OnLayoutModeChanged();
         private void OnDisplayPropertyPathChanged (string newPath)
         {
             this.Items.ForEach(_ => _.ResetName(newPath));
@@ -415,36 +593,156 @@
             }
         }
 
+        // Each change lands where the source made it, by the rules AJut.UX's ToggleStripItemCollection.ApplySourceChange
+        // gives the other stacks' strips: an add at the reported index (the end when there is none), a remove at the
+        // reported index when the data there lines up and by data otherwise, a replace as a remove then an add, and a move
+        // moving the existing items so they keep their selection. A reset rebuilds the items from the source, keeping the
+        // selection by value, since a source that is not an ObservableCollection reports any bulk change as a reset.
         private void ItemsSource_CollectionChanged (object sender, NotifyCollectionChangedEventArgs e)
         {
-            if (e.Action == NotifyCollectionChangedAction.Reset)
+            List<object> previousSelection = this.Items.Where(_ => _.IsSelected).Select(_ => _.Data).ToList();
+            switch (e.Action)
             {
-                this.Items.Clear();
+                case NotifyCollectionChangedAction.Reset:
+                    this.RebuildItemsFromSource(previousSelection);
+                    break;
+
+                case NotifyCollectionChangedAction.Add:
+                    this.InsertItemsFromSource(e.NewStartingIndex, e.NewItems);
+                    break;
+
+                case NotifyCollectionChangedAction.Remove:
+                    this.RemoveItemsFromSource(e.OldStartingIndex, e.OldItems);
+                    break;
+
+                case NotifyCollectionChangedAction.Replace:
+                    this.RemoveItemsFromSource(e.OldStartingIndex, e.OldItems);
+                    this.InsertItemsFromSource(e.NewStartingIndex, e.NewItems);
+                    break;
+
+                case NotifyCollectionChangedAction.Move:
+                    this.MoveItemsFromSource(e.OldStartingIndex, e.NewStartingIndex, e.OldItems?.Count ?? 0);
+                    break;
+            }
+
+            this.ReportSelectionTakenAway(previousSelection);
+        }
+
+        private void RebuildItemsFromSource (List<object> previousSelection)
+        {
+            int index = 0;
+            this.Items.ReplaceAllWith(
+                this.ItemsSource?.OfType<object>().Select(data => new ToggleItem(this, data, index++, this.DisplayPropertyPath))
+                ?? Enumerable.Empty<ToggleItem>()
+            );
+
+            // The values that were selected stay selected where the source still has them, each on its first match
+            foreach (object data in previousSelection)
+            {
+                this.Items.FirstOrDefault(item => !item.IsSelected && Equals(item.Data, data))?.RestoreSelection();
+            }
+        }
+
+        private void InsertItemsFromSource (int index, IList newItems)
+        {
+            if (newItems == null)
+            {
                 return;
             }
 
-            IEnumerable<ToggleItem> addedItems;
-            if (e.NewItems != null)
+            int insertAt = ((index >= 0) && (index <= this.Items.Count)) ? index : this.Items.Count;
+            foreach (object data in newItems)
             {
-                addedItems = e.NewItems.OfType<object>()
-                    .Select(i => new ToggleItem(this, i, -1, this.DisplayPropertyPath));
+                this.Items.Insert(insertAt, new ToggleItem(this, data, insertAt, this.DisplayPropertyPath));
+                ++insertAt;
             }
-            else
+        }
+
+        private void RemoveItemsFromSource (int index, IList oldItems)
+        {
+            if (oldItems == null)
             {
-                addedItems = Enumerable.Empty<ToggleItem>();
+                return;
             }
 
-            IEnumerable<ToggleItem> removedItems;
-            if (e.OldItems != null)
+            // At the reported index when it lines up with the data there, which keeps duplicates straight; by data otherwise
+            if ((index >= 0) && (index + oldItems.Count <= this.Items.Count)
+                && Enumerable.Range(0, oldItems.Count).All(offset => Equals(this.Items[index + offset].Data, oldItems[offset])))
             {
-                removedItems = this.Items.Where(_ => e.OldItems.Contains(_));
-            }
-            else
-            {
-                removedItems = Enumerable.Empty<ToggleItem>();
+                for (int offset = 0; offset < oldItems.Count; ++offset)
+                {
+                    this.Items.RemoveAt(index);
+                }
+
+                return;
             }
 
-            this.Items.AddAndRemove(addedItems, removedItems);
+            foreach (object data in oldItems)
+            {
+                ToggleItem match = this.Items.FirstOrDefault(item => Equals(item.Data, data));
+                if (match != null)
+                {
+                    this.Items.Remove(match);
+                }
+            }
+        }
+
+        private void MoveItemsFromSource (int oldIndex, int newIndex, int count)
+        {
+            if ((oldIndex < 0) || (newIndex < 0) || (count == 0))
+            {
+                return;
+            }
+
+            for (int offset = 0; offset < count; ++offset)
+            {
+                // A multi-item move keeps the block's order: each next item goes after the one moved before it
+                int from = (newIndex > oldIndex) ? oldIndex : (oldIndex + offset);
+                int to = (newIndex > oldIndex) ? (newIndex + count - 1) : (newIndex + offset);
+                this.Items.Move(from, to);
+            }
+        }
+
+        // A source change that took away a selected item is a selection change. A strip that needs a selection selects its
+        // first item again when none is left; otherwise the selection becomes what is left.
+        private void ReportSelectionTakenAway (List<object> previousSelection)
+        {
+            List<object> currentSelection = this.Items.Where(_ => _.IsSelected).Select(_ => _.Data).ToList();
+            if (currentSelection.Count == previousSelection.Count)
+            {
+                return;
+            }
+
+            if ((currentSelection.Count == 0) && (this.Items.Count > 0) && !this.AllowNoSelection)
+            {
+                this.Items[0].IsSelected = true;
+                return;
+            }
+
+            if ((this.SelectedItem != null) && !currentSelection.Contains(this.SelectedItem))
+            {
+                this.PerformModificationWithBlocker(ref m_isChangingSelectedItem, () => this.SelectedItem = currentSelection.LastOrDefault());
+            }
+
+            this.PerformModificationWithBlocker(ref m_isChangingSelectedItemsList,
+                () =>
+                {
+                    if (this.SelectedItems is INotifyCollectionChanged)
+                    {
+                        this.SelectedItems.Clear();
+                        foreach (object data in currentSelection)
+                        {
+                            this.SelectedItems.Add(data);
+                        }
+                    }
+                    else
+                    {
+                        this.SelectedItems = currentSelection;
+                    }
+                }
+            );
+
+            this.RaiseSelectionChanged(previousSelection, currentSelection);
         }
 
         private void PerformModificationWithBlocker (ref bool blocker, Action action)
@@ -580,6 +878,7 @@
             private bool m_isFirstItem;
             private bool m_isLastItem;
             private bool m_isInOverflow;
+            private ToggleStripItemEdges m_edges;
 
             internal ToggleItem (ToggleStrip owner, object item, int index, string displayPropertyPath)
             {
@@ -658,6 +957,16 @@
                 internal set => this.SetAndRaiseIfChanged(ref m_isInOverflow, value);
             }
 
+            /// <summary>
+            /// Which of this item's button edges draw a separator and which corners take the strip's radius, by AJut.UX's
+            /// shared <see cref="ToggleStripItemEdges"/>. Set by the strip's items panel each time it lays the items out.
+            /// </summary>
+            public ToggleStripItemEdges Edges
+            {
+                get => m_edges;
+                internal set => this.SetAndRaiseIfChanged(ref m_edges, value);
+            }
+
             internal void EvaluateOrder ()
             {
                 m_itemIndex = -1;
@@ -678,6 +987,14 @@
                 }
 
                 this.ResetNameWithDefault();
+            }
+
+            // Marks the item selected again after its strip rebuilt from the source, without the select path: the strip
+            // reports the selection that is left once the rebuild is done
+            internal void RestoreSelection ()
+            {
+                m_isSelected = true;
+                this.RaisePropertyChanged(nameof(IsSelected));
             }
 
             internal void SetSelectionWithoutChecking (bool isSelected)
@@ -770,12 +1087,6 @@
                 this.Clear();
                 this.AddEach(enumerable);
             }
-
-            internal void AddAndRemove (IEnumerable<ToggleItem> addedItems, IEnumerable<ToggleItem> removedItems)
-            {
-                this.AddEach(addedItems);
-                this.RemoveEach(removedItems);
-            }
         }
 
         public class ToggleStripSelectionChangedEventArgs : EventArgs
@@ -792,72 +1103,97 @@
     }
 
     // ===========[ ToggleStripPanel ]===========================================
-    // The items panel for a ToggleStrip's main row. It owns all the width-aware layout: uniform
-    // sizing, stretch-fill (the old UniformGrid behavior), and overflow partitioning. Overflowed
-    // items stay as children (so their natural width stays measurable) but are arranged off to a
+    // The items panel for a ToggleStrip's main row (or column). It owns all the length-aware layout:
+    // uniform sizing, stretch-fill (the old UniformGrid behavior), and overflow partitioning. Overflowed
+    // items stay as children (so their natural length stays measurable) but are arranged off to a
     // zero rect; the strip's overflow popup mirrors them via ToggleItem.IsInOverflow.
+    //
+    // Lengths run along the strip: widths when it is horizontal, heights when it is vertical. The cross
+    // size is the largest child's, and every visible child is arranged at that full cross size.
     public class ToggleStripPanel : Panel
     {
         // ===========[ Const-like ]===============================================
-        // Kept in sync with the overflow button's Width in ToggleStrip.xaml.
-        private const double kReservedOverflowWidth = 28.0;
+        // Kept in sync with the overflow button's Width (its Height when vertical) in ToggleStrip.xaml.
+        private const double kReservedOverflowLength = 28.0;
 
         // ===========[ Instance fields ]==========================================
         private ToggleStrip m_owner;
         private bool[] m_overflow;
-        private double[] m_arrangeWidths;
+        private double[] m_arrangeLengths;
         private bool m_stretchFill;
+        private bool m_isVertical;
 
         // ===========[ Layout ]===================================================
         protected override Size MeasureOverride (Size availableSize)
         {
             ToggleStrip owner = this.ResolveOwner();
             int count = this.InternalChildren.Count;
+            bool isVertical = owner?.IsVertical == true;
+            m_isVertical = isVertical;
 
-            // 1. Measure every child at natural size.
-            var widths = new double[count];
-            double maxHeight = 0.0;
+            // 1. Measure every child at natural size. The overflow partition works from each item's length without its
+            //    own separators, the way WinUI3 measures its buttons before giving them edges: the partition decides the
+            //    edges, so lengths that include them would feed back into it, and a strip sized right at the boundary
+            //    could flip between two layouts.
+            var lengths = new double[count];
+            var partitionLengths = new double[count];
+            double separator = owner?.SeparatorThickness ?? 0.0;
+            double maxCross = 0.0;
             for (int i = 0; i < count; ++i)
             {
                 UIElement child = this.InternalChildren[i];
                 child.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-                widths[i] = child.DesiredSize.Width;
-                maxHeight = Math.Max(maxHeight, child.DesiredSize.Height);
+                lengths[i] = isVertical ? child.DesiredSize.Height : child.DesiredSize.Width;
+                partitionLengths[i] = lengths[i] - SeparatorLengthAlongStrip(this.GetItem(i), separator, isVertical);
+                maxCross = Math.Max(maxCross, isVertical ? child.DesiredSize.Width : child.DesiredSize.Height);
             }
 
             bool uniform = owner?.EnsureUniformSize == true;
             bool popup = owner?.OverflowBehavior == eToggleStripOverflow.OverflowPopup;
-            bool stretch = owner?.HorizontalContentAlignment == HorizontalAlignment.Stretch;
+            bool stretch = isVertical
+                ? owner?.VerticalContentAlignment == VerticalAlignment.Stretch
+                : owner?.HorizontalContentAlignment == HorizontalAlignment.Stretch;
 
-            bool constrained = !double.IsPositiveInfinity(availableSize.Width);
+            double availableLength = isVertical ? availableSize.Height : availableSize.Width;
+            bool constrained = !double.IsPositiveInfinity(availableLength);
 
-            // 2. Uniform sizing widens every item to the widest natural width.
+            // 2. Uniform sizing grows every item to the longest natural length.
             if (uniform)
             {
-                double uniformWidth = 0.0;
-                foreach (double w in widths)
+                double uniformLength = 0.0;
+                double uniformPartitionLength = 0.0;
+                for (int i = 0; i < count; ++i)
                 {
-                    uniformWidth = Math.Max(uniformWidth, w);
+                    uniformLength = Math.Max(uniformLength, lengths[i]);
+                    uniformPartitionLength = Math.Max(uniformPartitionLength, partitionLengths[i]);
                 }
 
                 for (int i = 0; i < count; ++i)
                 {
-                    widths[i] = uniformWidth;
+                    lengths[i] = uniformLength;
+                    partitionLengths[i] = uniformPartitionLength;
                 }
             }
 
-            // 3. Overflow partition - only when in popup mode with a real width to fit into.
+            // 3. Overflow partition - only when in popup mode with a real length to fit into.
             m_overflow = new bool[count];
             bool hasOverflow = false;
             if (popup && constrained && count > 0)
             {
+                // The item just picked (the strip's SelectedItem) claims the strip first, so a pick from the popup comes in
                 var selected = new bool[count];
+                int pickedIndex = -1;
                 for (int i = 0; i < count; ++i)
                 {
-                    selected[i] = this.GetItem(i)?.IsSelected == true;
+                    ToggleStrip.ToggleItem item = this.GetItem(i);
+                    selected[i] = item?.IsSelected == true;
+                    if (selected[i] && Equals(item.Data, owner.SelectedItem))
+                    {
+                        pickedIndex = i;
+                    }
                 }
 
-                ToggleStripOverflowResult result = ToggleStripOverflowCalculator.Compute(widths, selected, availableSize.Width, kReservedOverflowWidth);
+                ToggleStripOverflowResult result = ToggleStripOverflowCalculator.Compute(partitionLengths, selected, availableLength, kReservedOverflowLength, pickedIndex);
                 foreach (int idx in result.OverflowIndices)
                 {
                     m_overflow[idx] = true;
@@ -868,46 +1204,68 @@
 
             owner?.SetHasOverflow(hasOverflow);
 
-            // Mirror the partition onto the items so the overflow popup can show the hidden ones.
-            for (int i = 0; i < count; ++i)
+            // Mirror the partition onto the items so the overflow popup can show the hidden ones, and give each item its
+            // edges by the shared rules: an item in the strip by its place among the ones showing (the last one showing
+            // is separated from the overflow button when there is one), an item in the popup as one of a square list
+            // separated top to bottom.
+            int overflowCount = 0;
+            foreach (bool isInOverflow in m_overflow)
             {
-                ToggleStrip.ToggleItem item = this.GetItem(i);
-                if (item != null)
+                if (isInOverflow)
                 {
-                    item.IsInOverflow = m_overflow[i];
+                    ++overflowCount;
                 }
             }
 
+            int shownCount = count - overflowCount;
+            int shownIndex = 0;
+            int overflowIndex = 0;
+            for (int i = 0; i < count; ++i)
+            {
+                ToggleStrip.ToggleItem item = this.GetItem(i);
+                if (item == null)
+                {
+                    continue;
+                }
+
+                item.IsInOverflow = m_overflow[i];
+                item.Edges = m_overflow[i]
+                    ? new ToggleStripItemEdges(false, overflowIndex++ > 0, false, false, false, false, false, false)
+                    : ToggleStripItemEdges.For(shownIndex++, shownCount, isVertical, hasOverflow);
+            }
+
             // 4. Stretch fill (no overflow) splits the row evenly so the items are uniform and fill the
-            //    width (the old UniformGrid behavior). The split is done in ArrangeOverride against the
-            //    real final width - the panel is often measured at infinite width (e.g. inside a
-            //    horizontal stack), where dividing would be meaningless.
-            m_arrangeWidths = widths;
+            //    length (the old UniformGrid behavior). The split is done in ArrangeOverride against the
+            //    real final length - the panel is often measured at an infinite length (e.g. inside a
+            //    stack running the same way), where dividing would be meaningless.
+            m_arrangeLengths = lengths;
             m_stretchFill = stretch && !uniform && !popup && count > 0;
 
-            // 5. Desired size is the sum of the visible item widths.
+            // 5. Desired length is the sum of the visible item lengths.
             double total = 0.0;
             for (int i = 0; i < count; ++i)
             {
                 if (!m_overflow[i])
                 {
-                    total += m_arrangeWidths[i];
+                    total += m_arrangeLengths[i];
                 }
             }
 
-            // When overflowing, include the chevron reserve in the desired width. Otherwise a content
-            // sized strip (HorizontalContentAlignment=Left) shrinks the Border down to just the visible
-            // items, pulling the right-anchored overflow chevron on top of the last item.
-            double desiredWidth = hasOverflow ? total + kReservedOverflowWidth : total;
-            desiredWidth = constrained ? Math.Min(desiredWidth, availableSize.Width) : desiredWidth;
-            return new Size(desiredWidth, maxHeight);
+            // When overflowing, include the chevron reserve in the desired length. Otherwise a content
+            // sized strip (HorizontalContentAlignment=Left, or VerticalContentAlignment=Top when vertical)
+            // shrinks the Border down to just the visible items, pulling the trailing-edge overflow chevron
+            // on top of the last item.
+            double desiredLength = hasOverflow ? total + kReservedOverflowLength : total;
+            desiredLength = constrained ? Math.Min(desiredLength, availableLength) : desiredLength;
+            return isVertical ? new Size(maxCross, desiredLength) : new Size(desiredLength, maxCross);
         }
 
         protected override Size ArrangeOverride (Size finalSize)
         {
             int count = this.InternalChildren.Count;
+            double finalLength = m_isVertical ? finalSize.Height : finalSize.Width;
 
-            // Stretch fill: every visible item gets an equal share of the real final width (uniform + fills).
+            // Stretch fill: every visible item gets an equal share of the real final length (uniform + fills).
             double stretchEach = 0.0;
             if (m_stretchFill)
             {
@@ -922,11 +1280,11 @@
 
                 if (visible > 0)
                 {
-                    stretchEach = finalSize.Width / visible;
+                    stretchEach = finalLength / visible;
                 }
             }
 
-            double x = 0.0;
+            double position = 0.0;
             for (int i = 0; i < count; ++i)
             {
                 UIElement child = this.InternalChildren[i];
@@ -937,17 +1295,36 @@
                     continue;
                 }
 
-                double w = m_stretchFill
+                double naturalLength = m_isVertical ? child.DesiredSize.Height : child.DesiredSize.Width;
+                double length = m_stretchFill
                     ? stretchEach
-                    : ((m_arrangeWidths != null && i < m_arrangeWidths.Length) ? m_arrangeWidths[i] : child.DesiredSize.Width);
-                child.Arrange(new Rect(x, 0, w, finalSize.Height));
-                x += w;
+                    : ((m_arrangeLengths != null && i < m_arrangeLengths.Length) ? m_arrangeLengths[i] : naturalLength);
+                child.Arrange(m_isVertical
+                    ? new Rect(0, position, finalSize.Width, length)
+                    : new Rect(position, 0, length, finalSize.Height)
+                );
+                position += length;
             }
 
             return finalSize;
         }
 
         // ===========[ Helpers ]==================================================
+        // How much of an item's length along the strip is its own separators, as its edges stand
+        private static double SeparatorLengthAlongStrip (ToggleStrip.ToggleItem item, double separator, bool isVertical)
+        {
+            if (item == null)
+            {
+                return 0.0;
+            }
+
+            ToggleStripItemEdges edges = item.Edges;
+            int separators = isVertical
+                ? (edges.SeparatorTop ? 1 : 0) + (edges.SeparatorBottom ? 1 : 0)
+                : (edges.SeparatorLeft ? 1 : 0) + (edges.SeparatorRight ? 1 : 0);
+            return separators * separator;
+        }
+
         private ToggleStrip.ToggleItem GetItem (int index)
             => (this.InternalChildren[index] as FrameworkElement)?.DataContext as ToggleStrip.ToggleItem;
 
@@ -972,27 +1349,42 @@
         }
     }
 
-    public class ToggleStripCornerRadiusConverter : SimpleValueConverter<ToggleStrip.ToggleItem, CornerRadius>
+    // An item button's corners, from the item's Edges: each corner it rounds takes the strip's radius, reduced by
+    // ReductionPercent so the button sits inside the strip's own rounded border. An item rounding all four is the only
+    // one showing, and takes the strip's corners as they are.
+    //
+    // A binding to the item itself (no path) runs once, when the button is made, so the template binds this as a
+    // MultiBinding: the first value is the item, and the second (its Edges) is only there so the binding runs again
+    // when the item's edges change.
+    public class ToggleStripCornerRadiusConverter : SimpleValueConverter<ToggleStrip.ToggleItem, CornerRadius>, IMultiValueConverter
     {
         public double ReductionPercent { get; set; }
+
+        object IMultiValueConverter.Convert (object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            return (values.Length > 0) && (values[0] is ToggleStrip.ToggleItem item) ? this.Convert(item) : DependencyProperty.UnsetValue;
+        }
+
+        object[] IMultiValueConverter.ConvertBack (object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        {
+            throw new NotSupportedException();
+        }
+
         protected override CornerRadius Convert (ToggleStrip.ToggleItem value)
         {
             CornerRadius corners = BorderXTA.GetCornerRadius(value.Owner);
-            if (value.IsFirstItem)
+            ToggleStripItemEdges edges = value.Edges;
+            if (edges.RoundTopLeft && edges.RoundTopRight && edges.RoundBottomRight && edges.RoundBottomLeft)
             {
-                if (value.IsLastItem)
-                {
-                    return corners;
-                }
-
-                return new CornerRadius(_Reduce(corners.TopLeft), 0, 0, _Reduce(corners.BottomLeft));
-            }
-            else if (value.IsLastItem)
-            {
-                return new CornerRadius(0, _Reduce(corners.TopRight), _Reduce(corners.BottomRight), 0);
+                return corners;
             }
 
-            return new CornerRadius(0);
+            return new CornerRadius(
+                edges.RoundTopLeft ? _Reduce(corners.TopLeft) : 0,
+                edges.RoundTopRight ? _Reduce(corners.TopRight) : 0,
+                edges.RoundBottomRight ? _Reduce(corners.BottomRight) : 0,
+                edges.RoundBottomLeft ? _Reduce(corners.BottomLeft) : 0
+            );
 
             double _Reduce (double _v)
             {
@@ -1001,57 +1393,30 @@
         }
     }
 
-    public class ToggleStripBorderThicknessConverter : SimpleValueConverter<ToggleStrip.ToggleItem, Thickness>
+    // An item button's separators, from the item's Edges: the strip's SeparatorThickness on each edge that draws one,
+    // which leads every button but the first. The strip's own border is the outline, so the buttons draw nothing of
+    // it. Bound as a MultiBinding for the same reason as ToggleStripCornerRadiusConverter.
+    public class ToggleStripBorderThicknessConverter : SimpleValueConverter<ToggleStrip.ToggleItem, Thickness>, IMultiValueConverter
     {
-        public bool Inside { get; set; }
+        object IMultiValueConverter.Convert (object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            return (values.Length > 0) && (values[0] is ToggleStrip.ToggleItem item) ? this.Convert(item) : DependencyProperty.UnsetValue;
+        }
+
+        object[] IMultiValueConverter.ConvertBack (object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        {
+            throw new NotSupportedException();
+        }
+
         protected override Thickness Convert (ToggleStrip.ToggleItem value)
         {
-            if (value.IsFirstItem)
-            {
-                if (value.IsLastItem)
-                {
-                    // First AND last
-                    if (this.Inside)
-                    {
-                        return new Thickness(0);
-                    }
-                    else
-                    {
-                        return value.Owner.BorderThickness;
-                    }
-                }
-
-                // First
-                return new Thickness(
-                    this.Inside ? 0 : value.Owner.BorderThickness.Left,
-                    this.Inside ? 0 : value.Owner.BorderThickness.Top,
-                    this.Inside ? value.Owner.SeparatorThickness : 0,
-                    this.Inside ? 0 : value.Owner.BorderThickness.Bottom
-                );
-            }
-            else if (value.IsLastItem)
-            {
-                if (this.Inside)
-                {
-                    return new Thickness(0);
-                }
-                else
-                {
-                    return new Thickness(
-                        0,
-                        value.Owner.BorderThickness.Top,
-                        value.Owner.BorderThickness.Right,
-                        value.Owner.BorderThickness.Bottom
-                    );
-                }
-            }
-
-            // Center
+            ToggleStripItemEdges edges = value.Edges;
+            double separator = value.Owner.SeparatorThickness;
             return new Thickness(
-                0,
-                this.Inside ? 0 : value.Owner.BorderThickness.Top,
-                this.Inside ? value.Owner.SeparatorThickness : 0,
-                this.Inside ? 0 : value.Owner.BorderThickness.Bottom
+                edges.SeparatorLeft ? separator : 0,
+                edges.SeparatorTop ? separator : 0,
+                edges.SeparatorRight ? separator : 0,
+                edges.SeparatorBottom ? separator : 0
             );
         }
     }

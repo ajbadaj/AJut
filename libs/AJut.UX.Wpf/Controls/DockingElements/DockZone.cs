@@ -246,6 +246,23 @@ namespace AJut.UX.Controls
 
         // ===========[ Private Utilities ]===================================
 
+        protected override void OnPreviewMouseDown (MouseButtonEventArgs e)
+        {
+            base.OnPreviewMouseDown(e);
+
+            // A panel's header shows it is the one being typed into while keyboard focus is within its zone. A press only
+            //  moves focus when it lands on something that takes focus itself, like a button, so a press on a panel's text,
+            //  its empty space or its header would leave focus, and the header's highlight, in whatever panel had it before.
+            //  So a press inside a panel that does not hold focus gives the panel focus first. If the press lands on
+            //  something focusable, that takes focus from the zone right after, as it would have anyway. A split zone leaves
+            //  this to the panel zones inside it (the press tunnels down to them), and an empty zone has nothing to type into.
+            if (!this.IsKeyboardFocusWithin
+                && (this.ViewModel?.Orientation is eDockOrientation.Single or eDockOrientation.Tabbed))
+            {
+                this.Focus();
+            }
+        }
+
         private void OnCanCloseDockedContent (object sender, CanExecuteRoutedEventArgs e)
         {
             if (e.Parameter is DockingContentAdapterModel panelAdapter)

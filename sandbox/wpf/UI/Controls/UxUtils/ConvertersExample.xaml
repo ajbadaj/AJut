@@ -94,6 +94,20 @@
                     </StackPanel>
                 </GroupBox>
 
+                <GroupBox Header="IsTextNullOrEmptyToVisibilityConverter" Margin="0,0,0,10">
+                    <StackPanel>
+                        <TextBox x:Name="TextStatusSource" Text="Penguin" MaxWidth="300" HorizontalAlignment="Left"/>
+                        <TextBlock Margin="0,5,0,0"
+                                   Visibility="{Binding ElementName=TextStatusSource, Path=Text, Converter={ajut_conv:IsTextNullOrEmptyToVisibilityConverter}}">
+                            <Run Text="Hello,"/>
+                            <Run Text="{Binding ElementName=TextStatusSource, Path=Text, Mode=OneWay}" FontWeight="Bold"/>
+                        </TextBlock>
+                        <TextBlock Text="Type a name above." FontStyle="Italic" Margin="0,5,0,0"
+                                   Visibility="{Binding ElementName=TextStatusSource, Path=Text, Converter={ajut_conv:IsTextNullOrEmptyToVisibilityConverter WhenHasText=Collapsed, WhenNullOrEmpty=Visible}}"/>
+                        <ctrls:BasicCodeDisplay Margin="0,5,0,0" CodeText="{Binding ElementName=Self, Path=TextStatusCode, Mode=OneWay}"/>
+                    </StackPanel>
+                </GroupBox>
+
                 <GroupBox Header="FixedArithmeticConverter" Margin="0,0,0,10">
                     <StackPanel>
                         <DockPanel>

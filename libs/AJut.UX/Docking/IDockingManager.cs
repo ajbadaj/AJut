@@ -2,6 +2,7 @@ namespace AJut.UX.Docking
 {
     using AJut.Tree;
     using System;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// Minimal contract that <see cref="DockZoneViewModel"/> needs from a docking manager.
@@ -16,7 +17,7 @@ namespace AJut.UX.Docking
         /// </summary>
         /// <param name="elementType">The panel type</param>
         /// <returns>The factory created display element</returns>
-        IDockableDisplayElement BuildNewDisplayElement (Type elementType);
+        IDockableDisplayElement BuildNewDisplayElement ([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type elementType);
         IEnumerable<DockZoneViewModel> GetAllRoots();
 
         /// <summary>
@@ -25,10 +26,12 @@ namespace AJut.UX.Docking
         /// </summary>
         double MinPanelDimension { get; set; }
 
+        [RequiresUnreferencedCode("Builds each panel a layout file names from its saved type id, and trimming can remove a panel type, or its constructor, that nothing else uses. Register each panel type with RegisterDisplayFactory<T> to keep it.")]
         bool LoadDockLayoutFromFile(string filePath);
         bool SaveDockLayoutToFile(string filePath = null);
 
         bool SaveDockLayoutToPersistentStorage();
+        [RequiresUnreferencedCode("Builds each panel a layout file names from its saved type id, and trimming can remove a panel type, or its constructor, that nothing else uses. Register each panel type with RegisterDisplayFactory<T> to keep it.")]
         bool ReloadDockLayoutFromPersistentStorage();
 
         /// <summary>Observable state broker for panel add/remove/show/hide UI.</summary>
@@ -62,14 +65,14 @@ namespace AJut.UX.Docking
         /// Find the best available dock zone for the given group ID. Falls back to the first
         /// available leaf zone if no group match. Returns null if no zones exist.
         /// </summary>
-        DockZoneViewModel FindTargetZoneForGroup (string groupId);
+        DockZoneViewModel? FindTargetZoneForGroup (string? groupId);
 
         /// <summary>
         /// Called when a panel is being hidden. Returns platform-specific state (e.g. tearoff
         /// window reference, position, size) that can be used to restore the panel later.
         /// Returns null if no platform-specific state needs to be captured (e.g. panel is in main window).
         /// </summary>
-        HiddenPanelPlatformState CaptureHideState (DockingContentAdapterModel adapter);
+        HiddenPanelPlatformState? CaptureHideState (DockingContentAdapterModel adapter);
 
         /// <summary>
         /// Attempts to restore a hidden panel to its previous location using the platform-specific
@@ -130,7 +133,7 @@ namespace AJut.UX.Docking
         /// so toolbar and menu state stays correct. Use this instead of <see cref="IDockingManager.BuildNewDisplayElement"/>
         /// + <c>zone.AddDockedContent</c> to avoid bypassing instance tracking.
         /// </summary>
-        public static T DockNewPanel<T> (this IDockingManager dockingManager, DockZoneViewModel zone) where T : IDockableDisplayElement
+        public static T DockNewPanel<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T> (this IDockingManager dockingManager, DockZoneViewModel zone) where T : IDockableDisplayElement
             => (T)dockingManager.DockNewPanel(typeof(T), zone);
 
         /// <summary>
@@ -138,7 +141,7 @@ namespace AJut.UX.Docking
         /// so toolbar and menu state stays correct. Use this instead of <see cref="IDockingManager.BuildNewDisplayElement"/>
         /// + <c>zone.AddDockedContent</c> to avoid bypassing instance tracking.
         /// </summary>
-        public static IDockableDisplayElement DockNewPanel (this IDockingManager dockingManager, Type panelType, DockZoneViewModel zone)
+        public static IDockableDisplayElement DockNewPanel (this IDockingManager dockingManager, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type panelType, DockZoneViewModel zone)
         {
             IDockableDisplayElement display = dockingManager.BuildNewDisplayElement(panelType);
             if (display != null && zone != null)
