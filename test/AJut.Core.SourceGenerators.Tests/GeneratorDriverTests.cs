@@ -396,6 +396,48 @@ namespace TestNs
         }
 
         // ===========================[ Helpers ]===========================
+        [TestMethod]
+        public void Generator_SkipsWithAJSON008_ATypeItsGeneratedCodeCannotReach ()
+        {
+            // A generated serializer is an internal class of its own, so it can't name a private or protected nested type, or
+            //  anything nested inside one. Internal and protected internal nested types are reachable from it.
+            const string src = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    public class Host
+    {
+        [OptimizeAJson] private class PrivateNested { public int A { get; set; } }
+        [OptimizeAJson] protected class ProtectedNested { public int B { get; set; } }
+        [OptimizeAJson] private protected class PrivateProtectedNested { public int C { get; set; } }
+        private class PrivateHost
+        {
+            [OptimizeAJson] public class InsidePrivate { public int D { get; set; } }
+        }
+        [OptimizeAJson] internal class ReachableInternal { public int E { get; set; } }
+        [OptimizeAJson] protected internal class ReachableProtectedInternal { public int F { get; set; } }
+    }
+}";
+            CSharpCompilation compilation = TestCompilation.Build(src);
+            GeneratorDriverRunResult result = CSharpGeneratorDriver.Create(new AJsonSourceGenerator()).RunGenerators(compilation).GetRunResult();
+
+            Diagnostic[] compileErrors = compilation.AddSyntaxTrees(result.GeneratedTrees).GetDiagnostics().Where(d => d.Severity == DiagnosticSeverity.Error).ToArray();
+            Assert.AreEqual(0, compileErrors.Length, string.Join("\n", compileErrors.Select(d => d.ToString())));
+
+            Diagnostic[] ajson008 = result.Diagnostics.Where(d => d.Id == "AJSON008").ToArray();
+            Assert.AreEqual(4, ajson008.Length, string.Join("\n", result.Diagnostics.Select(d => d.ToString())));
+            Assert.IsTrue(ajson008.All(d => d.Severity == DiagnosticSeverity.Warning));
+            foreach (string unreachable in new[] { "PrivateNested", "ProtectedNested", "PrivateProtectedNested", "InsidePrivate" })
+            {
+                Assert.IsTrue(ajson008.Any(d => d.GetMessage().Contains($".{unreachable}'")), unreachable);
+            }
+
+            ImmutableArray<GeneratedSourceResult> generated = result.Results.Single().GeneratedSources;
+            Assert.AreEqual(2, generated.Length, string.Join(", ", generated.Select(g => g.HintName)));
+            Assert.IsTrue(generated.Any(g => g.HintName.Contains("ReachableInternal")));
+            Assert.IsTrue(generated.Any(g => g.HintName.Contains("ReachableProtectedInternal")));
+        }
+
         private static GeneratorDriverRunResult RunGenerator (string source)
         {
             CSharpCompilation compilation = TestCompilation.Build(source);

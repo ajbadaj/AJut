@@ -139,8 +139,11 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AJut.Core\AJut.Core.csproj" />
-    <ProjectReference Include="..\AJut.UX\AJut.UX.csproj" />
+    <!-- By default a dependency's analyzers don't reach this package's consumers, and AJut.Core ships the AJson source
+         generator as one. Holding back only build and content files lets it reach an app that gets AJut.Core through
+         this package, directly or through AJut.UX. -->
+    <ProjectReference Include="..\AJut.Core\AJut.Core.csproj" PrivateAssets="build;contentfiles" />
+    <ProjectReference Include="..\AJut.UX\AJut.UX.csproj" PrivateAssets="build;contentfiles" />
   </ItemGroup>
   <!-- The AJson source generator writes the serializers for this library's own [OptimizeAJson] types (WPF's docking layout -->
   <!-- file). An analyzer doesn't flow through a project reference, so without this they are read and written by reflection. -->
