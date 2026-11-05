@@ -5,6 +5,7 @@ namespace AJut.Text.AJson
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Reflection;
@@ -378,6 +379,15 @@ namespace AJut.Text.AJson
                 return settings.ConstructInstanceFor(type, sourceJsonValue, owner);
             }
 
+            // A slot typed exactly object (an object member, a Dictionary<string, object> value, a List<object> item) has
+            //  nothing saying what a single value in it was, and building object itself would lose the value, so the value's
+            //  json says what it is. A converter or a constructor registered for object is the more specific ask, which is why
+            //  this comes after both.
+            if ((type == typeof(object)) && sourceJsonValue.IsValue)
+            {
+                return InferObjectSlotValue(sourceJsonValue);
+            }
+
             // Class-level [JsonPropertyAsSelf] elevation - the json data we have is the inner
             //  property's content rather than a doc with a named entry. Build an instance of the
             //  outer type, build the inner value via the property type, set, return. Backward-compat
@@ -517,6 +527,44 @@ namespace AJut.Text.AJson
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// What a single json value read into a slot typed exactly object is: quoted text is a string, true and false are a
+        /// bool, a whole number that fits a long is a long, any other number is a double, and anything else is its text
+        /// </summary>
+        /// <remarks>
+        /// A single value is written with no type id, so what was put in an object slot is gone once it is text, and only the
+        /// json is left to say what it was. Anything written as text (a Guid, a DateTime, an enum) therefore comes back as that
+        /// text, since there is no telling a Guid from a string that looks like one, and a double holding a whole number (12.0
+        /// is written as 12) comes back as a long. A value that has to come back as its own type has to be written with a type
+        /// id saying what it is.
+        /// </remarks>
+        private static object InferObjectSlotValue (JsonValue value)
+        {
+            string text = value.StringValue;
+            if (value.IsQuoted)
+            {
+                return text;
+            }
+
+            if (bool.TryParse(text, out bool flag))
+            {
+                return flag;
+            }
+
+            // A long takes only whole numbers, so one past a long's range, or one with a fraction or an exponent, is a double
+            if (long.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out long whole))
+            {
+                return whole;
+            }
+
+            if (double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out double real))
+            {
+                return real;
+            }
+
+            return text;
         }
 
         public static void FillOutObjectWithJson (ref object targetItem, [DynamicallyAccessedMembers(kReflectionRequirements)] Type targetType, JsonValue sourceJsonValue, JsonInterpreterSettings settings = null)
