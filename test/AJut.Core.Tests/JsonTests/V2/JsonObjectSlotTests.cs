@@ -176,6 +176,26 @@ namespace AJut.Core.UnitTests.AJsonV2
             Assert.AreEqual("hello", read.Text);
         }
 
+        // A caller filling an object straight from a single value gets the same read an object slot does, whether what it hands
+        //  in is null or a bare object
+        [TestMethod]
+        public void FillOutObjectWithJson_IntoAnObject_ReadsStringBoolDoubleLong_AndAGuidAsItsString ()
+        {
+            Json json = JsonHelper.ParseText("[ \"20\", true, 12.5, 42, \"" + kIdText + "\" ]");
+            Assert.IsFalse(json.HasErrors, json.GetErrorReport());
+            JsonArray values = (JsonArray)json.Data;
+
+            AssertEachScalar(
+                FillObject(null, values[0]),
+                FillObject(null, values[1]),
+                FillObject(null, values[2]),
+                FillObject(null, values[3]),
+                FillObject(null, values[4]),
+                "filled from null"
+            );
+            Assert.AreEqual<object>((long)kWhole, FillObject(new object(), values[3]), "filled over a bare object");
+        }
+
         // A constructor registered for object is the more specific ask, so it decides what the value is
         [TestMethod]
         public void ObjectSlot_RegisteredConstructorForObject_StillDecides ()
@@ -214,6 +234,12 @@ namespace AJut.Core.UnitTests.AJsonV2
             T read = JsonHelper.BuildObjectForJson<T>(reparsed);
             Assert.IsFalse(reparsed.HasErrors, reparsed.GetErrorReport());
             return read;
+        }
+
+        private static object FillObject (object target, JsonValue value)
+        {
+            JsonHelper.FillOutObjectWithJson(ref target, typeof(object), value);
+            return target;
         }
 
         private static object ReadSingleValue (string unquotedText)
