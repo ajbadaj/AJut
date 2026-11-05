@@ -4,6 +4,7 @@ namespace AJut.UX.Tests
     using System.IO;
     using System.Text.RegularExpressions;
     using System.Windows;
+    using AJut.TypeManagement;
     using AJut.UX.Controls;
     using AJut.UX.Docking;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -58,6 +59,9 @@ namespace AJut.UX.Tests
                 string path = TempLayoutPath();
                 try
                 {
+                    // The saved layout names its panel by this id, and the load builds the panel from it
+                    TypeIdRegistrar.RegisterTypeId<FakeDockPanel>("ajut-tests-fake-dock-panel");
+
                     var savedZone = new DockZone();
                     var savedWindow = new Window { Content = savedZone };
                     DockingManager saver = MakeManagerWithOnePanel(savedWindow, savedZone);

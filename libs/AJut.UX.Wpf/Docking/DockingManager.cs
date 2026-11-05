@@ -808,7 +808,8 @@
                     this.ApplyZoneLayout(zone, rootLayout.Value);
                 }
 
-                foreach (DockingSerialization.WindowStorageData ancillaryWindowData in state.Ancillary)
+                // A file with no Ancillary entry has no tearoffs, as the shared layout file reads it
+                foreach (DockingSerialization.WindowStorageData ancillaryWindowData in state.Ancillary ?? Array.Empty<DockingSerialization.WindowStorageData>())
                 {
                     var zone = new DockZoneViewModel(this);
                     this.ApplyZoneLayout(zone, ancillaryWindowData.State);
