@@ -701,9 +701,15 @@
 
         protected override bool SaveLayoutToFile (string filePath)
         {
+            DockingSerialization.CoreStorageData core = this.BuildWpfCoreLayout();
+            if (!HasRootZoneToSave(core.ZoneInfoByRoot, filePath))
+            {
+                return false;
+            }
+
             var state = new DockingSerialization.SerializationInfo
             {
-                Core = this.BuildWpfCoreLayout(),
+                Core = core,
                 Ancillary = this.BuildWpfTearoffLayouts().ToArray(),
             };
 
@@ -780,45 +786,49 @@
                 return false;
             }
 
+            // Checked before anything is cleared, so a file with nothing to load leaves the layout showing as it is
+            List<KeyValuePair<string, DockZoneSerializationData>> rootLayouts = GetLoadableRootLayouts(state.Core?.ZoneInfoByRoot);
+            if (rootLayouts.Count == 0)
+            {
+                return false;
+            }
+
             try
             {
                 this.ClearForLoadingFromState();
-                if (state.Core != null)
+                foreach (KeyValuePair<string, DockZoneSerializationData> rootLayout in rootLayouts)
                 {
-                    foreach (string groupId in state.Core.ZoneInfoByRoot.Keys)
+                    DockZoneViewModel zone = this.GetRootZoneForGroup(rootLayout.Key);
+                    if (zone == null)
                     {
-                        DockZoneViewModel zone = this.GetRootZoneForGroup(groupId);
-                        if (zone == null)
-                        {
-                            Logger.LogError($"Dock Loading Error: No zone for group id '{groupId}' found, possibly one of that name used to be registered but now is not - falling back to default to avoid data loss.");
-                            zone = defaultLoadZone;
-                        }
-
-                        this.ApplyZoneLayout(zone, state.Core.ZoneInfoByRoot[groupId]);
+                        Logger.LogError($"Dock Loading Error: No zone for group id '{rootLayout.Key}' found, possibly one of that name used to be registered but now is not - falling back to default to avoid data loss.");
+                        zone = defaultLoadZone;
                     }
 
-                    foreach (DockingSerialization.WindowStorageData ancillaryWindowData in state.Ancillary)
+                    this.ApplyZoneLayout(zone, rootLayout.Value);
+                }
+
+                foreach (DockingSerialization.WindowStorageData ancillaryWindowData in state.Ancillary)
+                {
+                    var zone = new DockZoneViewModel(this);
+                    this.ApplyZoneLayout(zone, ancillaryWindowData.State);
+
+                    var bounds = new DockWindowBounds(ancillaryWindowData.WindowLocation.X, ancillaryWindowData.WindowLocation.Y, ancillaryWindowData.WindowSize.Width, ancillaryWindowData.WindowSize.Height);
+                    Result<Window> windowResult = this.CreateAndStockTearoffWindow(zone, bounds);
+                    if (windowResult.HasErrors)
                     {
-                        var zone = new DockZoneViewModel(this);
-                        this.ApplyZoneLayout(zone, ancillaryWindowData.State);
+                        Logger.LogError("Dock Loading Error: Failed to intepret ancillary window state for docking");
+                        Logger.LogError(windowResult.GetErrorReport());
+                        continue;
+                    }
 
-                        var bounds = new DockWindowBounds(ancillaryWindowData.WindowLocation.X, ancillaryWindowData.WindowLocation.Y, ancillaryWindowData.WindowSize.Width, ancillaryWindowData.WindowSize.Height);
-                        Result<Window> windowResult = this.CreateAndStockTearoffWindow(zone, bounds);
-                        if (windowResult.HasErrors)
-                        {
-                            Logger.LogError("Dock Loading Error: Failed to intepret ancillary window state for docking");
-                            Logger.LogError(windowResult.GetErrorReport());
-                            continue;
-                        }
-
-                        if (ancillaryWindowData.WindowIsFullscreened)
-                        {
-                            WindowXTA.SetIsFullscreen(windowResult.Value, true);
-                        }
-                        else
-                        {
-                            windowResult.Value.WindowState = ancillaryWindowData.WindowState;
-                        }
+                    if (ancillaryWindowData.WindowIsFullscreened)
+                    {
+                        WindowXTA.SetIsFullscreen(windowResult.Value, true);
+                    }
+                    else
+                    {
+                        windowResult.Value.WindowState = ancillaryWindowData.WindowState;
                     }
                 }
 

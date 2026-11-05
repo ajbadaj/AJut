@@ -329,7 +329,8 @@ namespace AJut.UX.Docking
 
         /// <summary>
         /// Loads the persistent layout, or failing that the fallback layout (which is then saved as the persistent
-        /// one), then makes sure every guaranteed-on-start panel exists. Returns false when neither loaded.
+        /// one), then makes sure every guaranteed-on-start panel exists. Returns false when neither loaded. A layout with no
+        /// root zone in it does not count as loading, so it falls back too.
         /// </summary>
         [RequiresUnreferencedCode(kLayoutPanelTypeMessage)]
         public bool SetupDefaultAndFallbackTo (string? fallbackLayoutFilePath)
@@ -691,6 +692,54 @@ namespace AJut.UX.Docking
         }
 
         /// <summary>
+        /// The root zone layouts in a layout file's zones by group id that a load can put somewhere, leaving out (and logging)
+        /// any group whose zone is null. Empty, and logged, when the file has none: no Core, no zones, or only null ones. A load
+        /// that gets none refuses the file before it clears anything, so the layout showing stays and the caller knows nothing
+        /// loaded.
+        /// </summary>
+        protected static List<KeyValuePair<string, DockZoneSerializationData>> GetLoadableRootLayouts (IReadOnlyDictionary<string, DockZoneSerializationData>? zoneInfoByRoot)
+        {
+            var loadable = new List<KeyValuePair<string, DockZoneSerializationData>>();
+            if (zoneInfoByRoot != null)
+            {
+                foreach (KeyValuePair<string, DockZoneSerializationData> rootLayout in zoneInfoByRoot)
+                {
+                    if (rootLayout.Value == null)
+                    {
+                        Logger.LogError($"Dock Loading Error: Root zone group '{rootLayout.Key}' has no layout - skipped");
+                        continue;
+                    }
+
+                    loadable.Add(rootLayout);
+                }
+            }
+
+            if (loadable.Count == 0)
+            {
+                Logger.LogError("Dock Loading Error: The layout has no root zone, so there is nothing to load - the layout showing is left as it is");
+            }
+
+            return loadable;
+        }
+
+        /// <summary>
+        /// Whether a layout built for saving has a root zone to write. False, and logged, when it has none, which means no root
+        /// zone is registered for the root window: the manager was disposed, say, or its zones were never registered, or went to
+        /// another manager. A layout saved with none would load nothing, so a save that gets false writes nothing and leaves the
+        /// file as it was.
+        /// </summary>
+        protected static bool HasRootZoneToSave (IReadOnlyDictionary<string, DockZoneSerializationData> zoneInfoByRoot, string? filePath)
+        {
+            if (zoneInfoByRoot.Count > 0)
+            {
+                return true;
+            }
+
+            Logger.LogError($"Docking Serialization: Layout not saved to '{filePath ?? "<null>"}' - the root window has no root zones registered, and a layout with none would load nothing");
+            return false;
+        }
+
+        /// <summary>
         /// Rebuilds <paramref name="zone"/> from a layout file's zone tree, building each panel the file names by its
         /// registered type id (or else its full type name) and handing it the state the file saved for it
         /// </summary>
@@ -979,7 +1028,8 @@ namespace AJut.UX.Docking
 
         /// <summary>
         /// Clears the layout and rebuilds it from a layout file: each root group's zones, then a tearoff window per saved
-        /// tearoff. <see cref="IsLoadingFromLayout"/> is true throughout. False (and logged) when the file can't be read.
+        /// tearoff. <see cref="IsLoadingFromLayout"/> is true throughout. False (and logged), with the layout showing left as
+        /// it is, when the file can't be read or has no root zone to load.
         /// </summary>
         [RequiresUnreferencedCode(kLayoutPanelTypeMessage)]
         protected virtual bool ResetLayoutFromFile (string filePath)
@@ -1003,12 +1053,21 @@ namespace AJut.UX.Docking
             }
         }
 
-        /// <summary>Writes the root window's zones by group, and every open tearoff, to a layout file</summary>
+        /// <summary>
+        /// Writes the root window's zones by group, and every open tearoff, to a layout file. False (and logged), with the
+        /// file left as it was, when there's no root zone to write.
+        /// </summary>
         protected virtual bool SaveLayoutToFile (string? filePath)
         {
+            DockLayoutFile.CoreLayout core = this.BuildCoreLayout();
+            if (!HasRootZoneToSave(core.ZoneInfoByRoot, filePath))
+            {
+                return false;
+            }
+
             var contents = new DockLayoutFile.Contents
             {
-                Core = this.BuildCoreLayout(),
+                Core = core,
                 Ancillary = this.BuildTearoffLayouts().ToArray(),
             };
 
@@ -1113,46 +1172,50 @@ namespace AJut.UX.Docking
                     return false;
                 }
 
+                // Checked before anything is cleared, so a file with nothing to load leaves the layout showing as it is
+                List<KeyValuePair<string, DockZoneSerializationData>> rootLayouts = GetLoadableRootLayouts(contents.Core?.ZoneInfoByRoot);
+                if (rootLayouts.Count == 0)
+                {
+                    return false;
+                }
+
                 this.ClearForLoadingFromState();
 
-                if (contents.Core != null)
+                foreach (KeyValuePair<string, DockZoneSerializationData> rootLayout in rootLayouts)
                 {
-                    foreach (string groupId in contents.Core.ZoneInfoByRoot.Keys)
+                    DockZoneViewModel? zone = this.GetRootZoneForGroup(rootLayout.Key);
+                    if (zone == null)
                     {
-                        DockZoneViewModel? zone = this.GetRootZoneForGroup(groupId);
-                        if (zone == null)
-                        {
-                            Logger.LogError($"Dock Loading Error: No zone for group id '{groupId}' - falling back to default zone");
-                            zone = defaultLoadZone;
-                        }
-
-                        this.ApplyZoneLayout(zone, contents.Core.ZoneInfoByRoot[groupId]);
+                        Logger.LogError($"Dock Loading Error: No zone for group id '{rootLayout.Key}' - falling back to default zone");
+                        zone = defaultLoadZone;
                     }
 
-                    foreach (DockLayoutFile.TearoffLayout tearoff in contents.Ancillary ?? Array.Empty<DockLayoutFile.TearoffLayout>())
+                    this.ApplyZoneLayout(zone, rootLayout.Value);
+                }
+
+                foreach (DockLayoutFile.TearoffLayout tearoff in contents.Ancillary ?? Array.Empty<DockLayoutFile.TearoffLayout>())
+                {
+                    if (tearoff.State == null)
                     {
-                        if (tearoff.State == null)
-                        {
-                            continue;
-                        }
+                        continue;
+                    }
 
-                        var zone = new DockZoneViewModel(this);
-                        this.ApplyZoneLayout(zone, tearoff.State);
+                    var zone = new DockZoneViewModel(this);
+                    this.ApplyZoneLayout(zone, tearoff.State);
 
-                        // The file keeps placement bounds; creation may take other units
-                        var bounds = new DockWindowBounds(tearoff.WindowX, tearoff.WindowY, tearoff.WindowWidth, tearoff.WindowHeight);
-                        Result<TWindow> windowResult = this.CreateAndStockTearoffWindow(zone, this.ToTearoffCreationBounds(bounds));
-                        if (windowResult.HasErrors)
-                        {
-                            Logger.LogError("Dock Loading Error: Failed to create ancillary window from state");
-                            Logger.LogError(windowResult.GetErrorReport());
-                            continue;
-                        }
+                    // The file keeps placement bounds; creation may take other units
+                    var bounds = new DockWindowBounds(tearoff.WindowX, tearoff.WindowY, tearoff.WindowWidth, tearoff.WindowHeight);
+                    Result<TWindow> windowResult = this.CreateAndStockTearoffWindow(zone, this.ToTearoffCreationBounds(bounds));
+                    if (windowResult.HasErrors)
+                    {
+                        Logger.LogError("Dock Loading Error: Failed to create ancillary window from state");
+                        Logger.LogError(windowResult.GetErrorReport());
+                        continue;
+                    }
 
-                        if (tearoff.IsFullscreen || tearoff.IsMaximized)
-                        {
-                            this.ApplyWindowLayoutState(windowResult.Value, new DockWindowLayoutState(bounds, tearoff.IsMaximized, tearoff.IsFullscreen));
-                        }
+                    if (tearoff.IsFullscreen || tearoff.IsMaximized)
+                    {
+                        this.ApplyWindowLayoutState(windowResult.Value, new DockWindowLayoutState(bounds, tearoff.IsMaximized, tearoff.IsFullscreen));
                     }
                 }
 

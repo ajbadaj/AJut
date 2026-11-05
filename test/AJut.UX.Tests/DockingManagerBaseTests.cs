@@ -894,6 +894,30 @@ namespace AJut.UX.Tests
             }
         }
 
+        // A root zone with every panel closed is still a layout, and loading it is how a layout with nothing open comes back
+        [TestMethod]
+        public void DMB_LayoutFile_RootZoneWithNoPanels_SavesAndLoads ()
+        {
+            string path = TempLayoutPath();
+            try
+            {
+                var saver = MakeLayoutManager();
+                saver.RegisterRoot("main");
+                Assert.IsTrue(saver.SaveDockLayoutToFile(path));
+
+                var loader = MakeLayoutManager();
+                DockZoneViewModel main = loader.RegisterRoot("main").ViewModel;
+                main.AddDockedContent(loader.BuildNewDisplayElement<FakeDockPanel>());
+
+                Assert.IsTrue(loader.LoadDockLayoutFromFile(path));
+                Assert.AreEqual(0, main.DockedContent.Count, "The saved root zone had no panels, so none are left after the load");
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
         // A layout saved with no root zone loads nothing, so it must never take the place of one that loads
         [TestMethod]
         [DataRow(false, DisplayName = "No root zone ever registered")]
