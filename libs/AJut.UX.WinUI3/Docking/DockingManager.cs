@@ -1191,11 +1191,32 @@ namespace AJut.UX.Docking
             [DllImport("user32.dll")]
             internal static extern short GetAsyncKeyState(int vKey);
 
+            // 32-bit user32 exports no GetWindowLongPtrW or SetWindowLongPtrW. In the 32-bit Windows
+            // headers both are macros over GetWindowLongW and SetWindowLongW, so only 64-bit user32 has
+            // them, and binding the Ptr names alone throws EntryPointNotFoundException on the first call
+            // in an x86 process (the first drag of a tearoff, which then never moves). Both pairs are bound
+            // and these two pick by the process's bitness, so no call site has to. A 32-bit window long is
+            // pointer sized there, so nothing is lost going through int.
+            // https://learn.microsoft.com/windows/win32/api/winuser/nf-winuser-getwindowlongptrw
+            /// <summary>GetWindowLongPtrW, through the entry point user32 has in this process's bitness (GetWindowLongW in x86)</summary>
+            internal static nint GetWindowLongPtr(nint hWnd, int nIndex)
+                => Environment.Is64BitProcess ? GetWindowLongPtr64(hWnd, nIndex) : GetWindowLong32(hWnd, nIndex);
+
+            /// <summary>SetWindowLongPtrW, through the entry point user32 has in this process's bitness (SetWindowLongW in x86)</summary>
+            internal static nint SetWindowLongPtr(nint hWnd, int nIndex, nint dwNewLong)
+                => Environment.Is64BitProcess ? SetWindowLongPtr64(hWnd, nIndex, dwNewLong) : SetWindowLong32(hWnd, nIndex, (int)dwNewLong);
+
             [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
-            internal static extern nint GetWindowLongPtr(nint hWnd, int nIndex);
+            private static extern nint GetWindowLongPtr64(nint hWnd, int nIndex);
 
             [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
-            internal static extern nint SetWindowLongPtr(nint hWnd, int nIndex, nint dwNewLong);
+            private static extern nint SetWindowLongPtr64(nint hWnd, int nIndex, nint dwNewLong);
+
+            [DllImport("user32.dll", EntryPoint = "GetWindowLongW")]
+            private static extern int GetWindowLong32(nint hWnd, int nIndex);
+
+            [DllImport("user32.dll", EntryPoint = "SetWindowLongW")]
+            private static extern int SetWindowLong32(nint hWnd, int nIndex, int dwNewLong);
 
             [DllImport("user32.dll")]
             internal static extern bool SetLayeredWindowAttributes(nint hwnd, uint crKey, byte bAlpha, uint dwFlags);
