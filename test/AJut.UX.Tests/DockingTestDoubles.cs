@@ -112,6 +112,9 @@ namespace AJut.UX.Tests
         public bool WasLoadingDuringLoad { get; private set; }
         public int DisposingCount { get; private set; }
 
+        /// <summary>Every window a save read its place and size from, in order</summary>
+        public List<FakeDockWindow> CapturedWindows { get; } = new List<FakeDockWindow>();
+
         public FakeDockZone RegisterRoot (string groupId = null, FakeDockWindow window = null)
         {
             var zone = new FakeDockZone(new DockZoneViewModel(this), groupId);
@@ -135,6 +138,17 @@ namespace AJut.UX.Tests
         public IReadOnlyList<FakeDockZone> AllRootZones => this.RootZones;
         public IReadOnlyCollection<FakeDockWindow> AllWindows => this.WindowsWithZones;
         public bool IsTracked (FakeDockWindow window) => m_tracked.Contains(window);
+
+        /// <summary>
+        /// Closes a window the way something other than the docking manager would (a window manager closing the root's
+        /// children with it, or code closing the window itself): it is closed and no longer tracked, and the docking manager
+        /// is told nothing
+        /// </summary>
+        public void CloseOutsideTheManager (FakeDockWindow window)
+        {
+            m_tracked.Remove(window);
+            window.IsClosed = true;
+        }
 
         public IReadOnlyList<FakeDockZone> ZonesFor (FakeDockWindow window)
         {
@@ -211,6 +225,7 @@ namespace AJut.UX.Tests
 
         protected override bool TryCaptureWindowLayoutState (FakeDockWindow window, out DockWindowLayoutState state)
         {
+            this.CapturedWindows.Add(window);
             state = new DockWindowLayoutState(window.Bounds, window.IsMaximized, window.IsFullscreen);
             return !window.IsClosed;
         }

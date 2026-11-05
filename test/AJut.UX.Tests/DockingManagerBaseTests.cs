@@ -833,6 +833,97 @@ namespace AJut.UX.Tests
             Assert.IsFalse(loader.LoadDockLayoutFromFile(TempLayoutPath()));
         }
 
+        // A file with no root zone in it has nothing to put in the root window. Loading it as a success would empty the root
+        //  and keep the caller from falling back to a layout that has something in it.
+        [TestMethod]
+        [DataRow("{ }", DisplayName = "An empty document")]
+        [DataRow("{ \"__ajson\": 2 }", DisplayName = "The AJson marker alone")]
+        [DataRow("{ \"Core\": null }", DisplayName = "A null Core")]
+        [DataRow("{ \"Core\": \"oops\" }", DisplayName = "A Core that is not a document")]
+        [DataRow("{ \"Core\": { \"ZoneInfoByRoot\": { } }, \"Ancillary\": [ ] }", DisplayName = "A Core with no zones")]
+        [DataRow("{ \"Core\": { \"ZoneInfoByRoot\": { \"main\": null } } }", DisplayName = "A Core whose only zone is null")]
+        public void DMB_LayoutFile_WithNoRootZone_IsRefusedAndTheLayoutStays (string fileText)
+        {
+            string path = TempLayoutPath();
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                File.WriteAllText(path, fileText);
+
+                var loader = MakeLayoutManager();
+                DockZoneViewModel main = loader.RegisterRoot("main").ViewModel;
+                main.AddDockedContent(loader.BuildNewDisplayElement<FakeDockPanel>());
+
+                Assert.IsFalse(loader.LoadDockLayoutFromFile(path), "A layout with no root zone loads nothing, so it must not report that it loaded");
+                Assert.AreEqual(1, main.DockedContent.Count, "A refused layout leaves the one showing as it was");
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
+        [TestMethod]
+        public void DMB_SetupDefault_PersistentLayoutWithNoRootZone_FallsBack ()
+        {
+            string persistentPath = TempLayoutPath();
+            string fallbackPath = TempLayoutPath();
+            try
+            {
+                // What a save writes when no root zone is registered
+                Directory.CreateDirectory(Path.GetDirectoryName(persistentPath));
+                File.WriteAllText(persistentPath, "{ \"Core\": { \"ZoneInfoByRoot\": { } }, \"Ancillary\": [ ] }");
+
+                var fallbackSaver = MakeLayoutManager();
+                fallbackSaver.RegisterRoot("main").ViewModel.AddDockedContent(fallbackSaver.BuildNewDisplayElement<FakeDockPanel>());
+                Assert.IsTrue(fallbackSaver.SaveDockLayoutToFile(fallbackPath));
+
+                var manager = MakeLayoutManager(persistentPath);
+                DockZoneViewModel main = manager.RegisterRoot("main").ViewModel;
+
+                Assert.IsTrue(manager.SetupDefaultAndFallbackTo(fallbackPath));
+
+                Assert.AreEqual(1, main.DockedContent.Count, "The fallback layout loads in place of a persistent one with no root zone");
+                CollectionAssert.AreEqual(new[] { persistentPath, fallbackPath }, manager.Loaded);
+                CollectionAssert.AreEqual(new[] { persistentPath }, manager.Saved, "The fallback is then saved as the persistent layout");
+            }
+            finally
+            {
+                File.Delete(persistentPath);
+                File.Delete(fallbackPath);
+            }
+        }
+
+        // A layout saved with no root zone loads nothing, so it must never take the place of one that loads
+        [TestMethod]
+        [DataRow(false, DisplayName = "No root zone ever registered")]
+        [DataRow(true, DisplayName = "After the manager is disposed")]
+        public void DMB_LayoutFile_SaveWithNoRootZone_LeavesTheFileAlone (bool registerThenDispose)
+        {
+            string path = TempLayoutPath();
+            try
+            {
+                var goodSaver = MakeLayoutManager();
+                goodSaver.RegisterRoot("main").ViewModel.AddDockedContent(goodSaver.BuildNewDisplayElement<FakeDockPanel>());
+                Assert.IsTrue(goodSaver.SaveDockLayoutToFile(path));
+                byte[] before = File.ReadAllBytes(path);
+
+                var saver = MakeLayoutManager();
+                if (registerThenDispose)
+                {
+                    saver.RegisterRoot("main").ViewModel.AddDockedContent(saver.BuildNewDisplayElement<FakeDockPanel>());
+                    saver.Dispose();
+                }
+
+                Assert.IsFalse(saver.SaveDockLayoutToFile(path), "A save with no root zone to write reports that it saved nothing");
+                CollectionAssert.AreEqual(before, File.ReadAllBytes(path), "The layout already in the file is left byte for byte");
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
         // ===========[ Dispose ]===============================================
         [TestMethod]
         public void DMB_Dispose_ClosesTearoffs_TearsDownRoots_AndEmptiesTheRegistry ()
@@ -854,10 +945,10 @@ namespace AJut.UX.Tests
         }
 
         // ===========[ Helpers ]===============================================
-        private static TestDockingManager MakeLayoutManager ()
+        private static TestDockingManager MakeLayoutManager (string persistentPath = "persistent.layout")
         {
             TypeIdRegistrar.RegisterTypeId<FakeDockPanel>("ajut-tests-fake-dock-panel");
-            var manager = new TestDockingManager { UseRealLayoutFiles = true };
+            var manager = new TestDockingManager(persistentPath) { UseRealLayoutFiles = true };
             manager.RegisterDisplayFactory<FakeDockPanel>();
             return manager;
         }

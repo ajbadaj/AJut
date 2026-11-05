@@ -26,6 +26,36 @@ namespace AJut.UX.Tests
             CollectionAssert.AreEqual(new[] { "persistent.layout" }, manager.Saved, "A first run with no layout yet must still save the layout the user goes on to build");
         }
 
+        [TestMethod]
+        public void DockDefect_AutoSaveWithNoRootZoneRegistered_LeavesThePersistentLayoutAlone ()
+        {
+            string path = TempLayoutPath();
+            try
+            {
+                TypeManagement.TypeIdRegistrar.RegisterTypeId<FakeDockPanel>("ajut-tests-fake-dock-panel");
+                var goodSaver = new TestDockingManager(path) { UseRealLayoutFiles = true };
+                goodSaver.RegisterDisplayFactory<FakeDockPanel>();
+                goodSaver.RegisterRoot("main").ViewModel.AddDockedContent(goodSaver.BuildNewDisplayElement<FakeDockPanel>());
+                Assert.IsTrue(goodSaver.SaveDockLayoutToPersistentStorage());
+                byte[] before = System.IO.File.ReadAllBytes(path);
+
+                var manager = new TestDockingManager(path) { UseRealLayoutFiles = true, AutoSaveMethod = eDockingAutoSaveMethod.AutoSaveOnAllChanges };
+                manager.RegisterDisplayFactory<FakeDockPanel>();
+                FakeDockZone root = manager.RegisterRoot("main");
+                Assert.IsTrue(manager.SetupDefaultAndFallbackTo(null));
+
+                // The root window's zone leaves the registry (to another manager, say), and then the layout changes
+                manager.DeRegisterRootDockZones(root);
+                manager.AutoSaveNow();
+
+                CollectionAssert.AreEqual(before, System.IO.File.ReadAllBytes(path), "An auto-save with no root zone to write must not replace the layout that was saved");
+            }
+            finally
+            {
+                System.IO.File.Delete(path);
+            }
+        }
+
         // ===========[ Group tearoff ]=========================================
         [TestMethod]
         public void DockDefect_RootZoneTornOffWhole_TearoffZoneKeepsTheManager ()
@@ -247,6 +277,73 @@ namespace AJut.UX.Tests
             Assert.AreEqual(1, manager.HookLog.Count(e => e == $"stop tracking {tearoff}"), "The window is let go of once");
         }
 
+        // Something other than the docking manager can close a tearoff before it does: a window manager that closes the
+        //  root's children along with the root, or code that closes the window itself. A window that has closed can't be
+        //  detached from or closed again.
+        [TestMethod]
+        public void DockDefect_RootWindowClosed_ATearoffThatAlreadyClosed_IsNotTouchedAgain ()
+        {
+            var manager = new TestDockingManager();
+            FakeDockZone root = manager.RegisterRoot();
+            var panel = manager.BuildNewDisplayElement<FakeDockPanel>();
+            manager.CreateTearoffForPanel(panel.DockingAdapter, 0, 0, 10, 10);
+            FakeDockWindow tearoff = manager.TearoffHosting(panel.DockingAdapter);
+            DockZoneViewModel tearoffRoot = panel.DockingAdapter.Location;
+            manager.CloseOutsideTheManager(tearoff);
+            manager.HookLog.Clear();
+
+            manager.RootWindowClosed();
+
+            Assert.AreEqual(String.Empty, String.Join(", ", manager.HookLog), "A tearoff that already closed is not let go of, detached from, or closed a second time");
+            CollectionAssert.AreEqual(new[] { root }, manager.AllRootZones.ToList(), "Its zones still leave the registry");
+            Assert.IsNull(tearoffRoot.Manager, "and are torn down");
+        }
+
+        [TestMethod]
+        public void DockDefect_ClosingATearoffThatAlreadyClosed_LetsGoOfItWithoutClosingItAgain ()
+        {
+            var manager = new TestDockingManager();
+            FakeDockZone root = manager.RegisterRoot();
+            var panel = manager.BuildNewDisplayElement<FakeDockPanel>();
+            manager.CreateTearoffForPanel(panel.DockingAdapter, 0, 0, 10, 10);
+            FakeDockWindow tearoff = manager.TearoffHosting(panel.DockingAdapter);
+            DockZoneViewModel tearoffRoot = panel.DockingAdapter.Location;
+            manager.CloseOutsideTheManager(tearoff);
+            manager.HookLog.Clear();
+
+            manager.CloseTearoffForRootZone(tearoffRoot);
+
+            CollectionAssert.AreEqual(new[] { manager.RootWindow }, manager.AllWindows.ToList(), "A closed tearoff must leave the registry, or every later close and save finds a window that is gone");
+            CollectionAssert.AreEqual(new[] { root }, manager.AllRootZones.ToList());
+            Assert.IsNull(tearoffRoot.Manager, "Its zones are torn down");
+            Assert.AreEqual(String.Empty, String.Join(", ", manager.HookLog), "It is not let go of, detached from, or closed a second time");
+        }
+
+        [TestMethod]
+        public void DockDefect_SavingWithATearoffThatAlreadyClosed_DoesNotReadIt ()
+        {
+            string path = TempLayoutPath();
+            try
+            {
+                TypeManagement.TypeIdRegistrar.RegisterTypeId<FakeDockPanel>("ajut-tests-fake-dock-panel");
+                var manager = new TestDockingManager { UseRealLayoutFiles = true };
+                manager.RegisterDisplayFactory<FakeDockPanel>();
+                manager.RegisterRoot("main").ViewModel.AddDockedContent(manager.BuildNewDisplayElement<FakeDockPanel>());
+                var torn = manager.BuildNewDisplayElement<FakeDockPanel>();
+                manager.CreateTearoffForPanel(torn.DockingAdapter, 10, 20, 300, 400);
+                FakeDockWindow tearoff = manager.TearoffHosting(torn.DockingAdapter);
+                manager.CloseOutsideTheManager(tearoff);
+
+                Assert.IsTrue(manager.SaveDockLayoutToFile(path));
+
+                CollectionAssert.DoesNotContain(manager.CapturedWindows, tearoff, "A save must not read the place and size of a window that has closed");
+            }
+            finally
+            {
+                System.IO.File.Delete(path);
+            }
+        }
+
         // ===========[ Empty orientation ]=====================================
         [TestMethod]
         public void DockDefect_EmptyZone_RefusesAChild ()
@@ -399,6 +496,8 @@ namespace AJut.UX.Tests
         }
 
         // ===========[ Helpers ]===============================================
+        private static string TempLayoutPath () => System.IO.Path.Combine(System.IO.Path.GetTempPath(), "ajut-dock-tests", Guid.NewGuid().ToString("N") + ".layout");
+
         private static DockZoneSerializationData LeafData ()
         {
             return new DockZoneSerializationData(eDockOrientation.Single)

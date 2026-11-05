@@ -1137,7 +1137,8 @@ namespace AJut.UX.Docking
 
         // All user32.dll P/Invokes and their associated constants live here so
         // they are self-contained and not scattered throughout DockingManager.
-        private static class User32WindowFuncs
+        // Internal so the tests can run them in an x86 process as well as an x64 one.
+        internal static class User32WindowFuncs
         {
             internal const int kGwlExStyle = -20;
             internal const int kWsExLayered = 0x80000;
