@@ -599,6 +599,14 @@ namespace AJut.Text.AJson
                     return;
                 }
 
+                // An object filled from here directly (null, or a bare object) gets the same read BuildObjectForJson gives a
+                //  single value in an object slot
+                if (effectiveType == typeof(object))
+                {
+                    targetItem = InferObjectSlotValue(sourceJsonValue);
+                    return;
+                }
+
                 // A nullable with a value boxes as the value itself, so the parsed value is already what a Nullable<T>
                 //  member takes; no Nullable<T> needs making from its Type
                 if (settings.StringParser.CanConvert(effectiveType))
