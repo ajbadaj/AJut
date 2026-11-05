@@ -2,6 +2,7 @@ namespace AJut.UX.Tests
 {
     using System;
     using System.IO;
+    using System.Text.RegularExpressions;
     using System.Windows;
     using AJut.UX.Controls;
     using AJut.UX.Docking;
@@ -39,6 +40,43 @@ namespace AJut.UX.Tests
 
                     Assert.IsFalse(manager.LoadDockLayoutFromFile(path), "A layout with no root zone loads nothing, so it must not report that it loaded");
                     Assert.AreEqual(1, zone.ViewModel.DockedContent.Count, "A refused layout leaves the one showing as it was");
+                    manager.Dispose();
+                }
+                finally
+                {
+                    File.Delete(path);
+                }
+            });
+        }
+
+        // A file with no Ancillary entry has no tearoffs, the way the shared layout file reads one
+        [TestMethod]
+        public void WpfDockLayout_WithNoTearoffEntry_LoadsItsRootZones ()
+        {
+            StaTestThread.Run(() =>
+            {
+                string path = TempLayoutPath();
+                try
+                {
+                    var savedZone = new DockZone();
+                    var savedWindow = new Window { Content = savedZone };
+                    DockingManager saver = MakeManagerWithOnePanel(savedWindow, savedZone);
+                    Assert.IsTrue(saver.SaveDockLayoutToFile(path));
+                    saver.Dispose();
+
+                    string savedText = File.ReadAllText(path);
+                    string textWithNoTearoffEntry = Regex.Replace(savedText, ",\\s*\"Ancillary\"\\s*:\\s*\\[\\s*\\]", String.Empty);
+                    Assert.AreNotEqual(savedText, textWithNoTearoffEntry, "The saved layout has an empty Ancillary entry to take out");
+                    File.WriteAllText(path, textWithNoTearoffEntry);
+
+                    var zone = new DockZone();
+                    var window = new Window { Content = zone };
+                    var manager = new DockingManager(window, "wpf-dock-layout-tests", TempLayoutPath());
+                    manager.RegisterDisplayFactory<FakeDockPanel>();
+                    manager.RegisterRootDockZones(zone);
+
+                    Assert.IsTrue(manager.LoadDockLayoutFromFile(path), "A layout with no tearoffs listed loads, as one with an empty list does");
+                    Assert.AreEqual(1, zone.ViewModel.DockedContent.Count, "Its root zone's panel comes back");
                     manager.Dispose();
                 }
                 finally
