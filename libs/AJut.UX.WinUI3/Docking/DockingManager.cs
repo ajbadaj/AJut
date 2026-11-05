@@ -11,6 +11,7 @@ namespace AJut.UX.Docking
     using AJut.Tree;
     using AJut.UX;
     using AJut.UX.Controls;
+    using Microsoft.UI.Dispatching;
     using Microsoft.UI.Windowing;
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
@@ -52,11 +53,15 @@ namespace AJut.UX.Docking
             // CollectionChanged fires when a window is removed (closed) so we can
             // clean up stale docking-map entries even if our own close handler
             // didn't run (belt-and-suspenders against null AppWindow crashes).
+            // It leaves closing the tearoffs with the root window to this manager,
+            // which closes them after the root's close is handled (OnRootWindowClosed).
+            // If both closed them, each tearoff would close twice, and that crashes the app.
+            m_windowManager.CloseChildrenWithRoot = false;
             m_windowManager.Setup(rootWindow);
             ((INotifyCollectionChanged)m_windowManager).CollectionChanged += this.OnWindowManagerCollectionChanged;
 
-            // When the root window closes, force-close all tearoff windows immediately
-            // (bypass CanClose veto so orphaned tearoffs don't outlive the app).
+            // When the root window closes, force-close all tearoff windows once its close
+            // is handled (bypass CanClose veto so orphaned tearoffs don't outlive the app).
             this.RootWindow.Closed += this.OnRootWindowClosed;
 
             // When the root window is re-activated (e.g. user clicks our taskbar entry),
@@ -790,6 +795,7 @@ namespace AJut.UX.Docking
                 appWindow.Move(new Windows.Graphics.PointInt32((int)bounds.X, (int)bounds.Y));
                 appWindow.Closing += this.TearoffWindowAppWindow_EXTERNAL_OnClosing;
                 window.Activated += this.OnTearoffWindowActivated;
+                window.Closed += this.OnTearoffWindowClosed;
 
                 this.RecordTearoffRootZone(window, rootZone);
                 this.ShowTearoffWindowHandler(window);
@@ -813,8 +819,8 @@ namespace AJut.UX.Docking
             }
         }
 
-        // Drops the four subs DockingManager owns on a tearoff (AppWindow.Closing, Window.Activated
-        // and the two panel-level events). Without this, the window's invocation lists keep a
+        // Drops the five subs DockingManager owns on a tearoff (AppWindow.Closing, Window.Activated,
+        // Window.Closed, and the two panel-level events). Without this, the window's invocation lists keep a
         // strong ref to DockingManager until the OS finalizes the window object - which is
         // never deterministic and pins everything for the duration. Always call this just
         // before the window.Close() (or before the panel/window is otherwise abandoned).
@@ -826,6 +832,7 @@ namespace AJut.UX.Docking
             }
 
             window.Activated -= this.OnTearoffWindowActivated;
+            window.Closed -= this.OnTearoffWindowClosed;
 
             // AppWindow can be null late in teardown; guard so this is safe to call from
             // any of the close paths.
@@ -954,13 +961,45 @@ namespace AJut.UX.Docking
             // Intentional no-op - see comment above.
         }
 
-        // Force-close all tearoff windows when the root window closes so no
-        // orphaned tool windows linger after the app exits. The base adds them to
-        // the close-silently list first, which makes the AppWindow.Closing handler
-        // exit early without cancelling.
+        // Force-close all tearoff windows when the root window closes so no orphaned tool
+        // windows linger after the app exits, but not until the root's close has been handled.
+        //
+        // Window.Closed handlers run in the order they were added. An app that saves its layout
+        // from its own Closed handler, added after this manager was made, would run after this
+        // one, find the tearoffs already gone, and save the layout without them. So the close waits
+        // for the dispatcher's next pass, at low priority, which comes after every handler of this
+        // close has run. Until then the tearoffs stay open and tracked, since the window manager
+        // leaves them to this manager (CloseChildrenWithRoot is off), and a save still captures
+        // their place and size.
+        //
+        // The dispatcher is this thread's, which the root window and its tearoffs all run on. With
+        // none to wait on, or one that won't take the work, the tearoffs close now. An app that
+        // exits from its own Closed handler never gets to the deferred close, and its tearoffs
+        // go with the process. One that disposes this manager first has its tearoffs closed by
+        // the Dispose, which leaves the deferred close nothing to do.
         private void OnRootWindowClosed(object sender, WindowEventArgs e)
         {
-            this.CloseTearoffsForRootWindowClosed();
+            DispatcherQueue dispatcher = DispatcherQueue.GetForCurrentThread();
+            if ((dispatcher == null)
+                || !dispatcher.TryEnqueue(DispatcherQueuePriority.Low, this.CloseTearoffsForRootWindowClosed))
+            {
+                this.CloseTearoffsForRootWindowClosed();
+            }
+        }
+
+        // A tearoff closed some way none of the close paths ran for, such as code calling Close on
+        // the window, which raises no AppWindow.Closing. Every close path this manager runs detaches
+        // first, so this only hears about those. Its subscriptions are dropped now, while the window
+        // can still be read, and once it is no longer tracked the base forgets it without closing it
+        // again, so nothing reads or closes a window that is gone.
+        private void OnTearoffWindowClosed(object sender, WindowEventArgs e)
+        {
+            if (sender is Window window)
+            {
+                this.StopTrackingWindow(window);
+                this.DetachTearoffSubscriptions(window);
+                this.SilentlyForceCloseTearoffWindow(window);
+            }
         }
 
         // When the root window is re-activated (user clicks our taskbar entry, switches

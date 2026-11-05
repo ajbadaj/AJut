@@ -970,31 +970,39 @@ namespace AJut.UX.Docking
             }
         }
 
-        /// <summary>Unconditionally closes and deregisters a tearoff window (after a successful drop, say)</summary>
+        /// <summary>
+        /// Unconditionally closes and deregisters a tearoff window (after a successful drop, say). One that has already closed
+        /// some other way (the toolkit no longer tracks it) is only deregistered.
+        /// </summary>
         protected void SilentlyForceCloseTearoffWindow (TWindow sourceWindow)
         {
             // A window already partway through closing (a user close hiding its last panel, say) is left to that close,
             // which still has its tree to finish with
-            if (!this.IsWindowTracked(sourceWindow)
-                || (sourceWindow == this.RootWindow)
+            if ((sourceWindow == this.RootWindow)
                 || m_windowsToCloseSilently.Contains(sourceWindow)
                 || m_currentlyClosingWindows.Contains(sourceWindow))
             {
                 return;
             }
 
+            // A window the toolkit no longer tracks has closed already, by something other than this manager. It still
+            //  leaves the registry, or every later close and save would find a window that is gone, but a window that's
+            //  gone can't be detached from or closed again.
+            if (!this.IsWindowTracked(sourceWindow))
+            {
+                if (m_zonesByWindow.ContainsKey(sourceWindow))
+                {
+                    this.ForgetTearoffWindow(sourceWindow);
+                    this.UISyncVM.RecountActiveInstances();
+                }
+
+                return;
+            }
+
             m_windowsToCloseSilently.Add(sourceWindow);
             try
             {
-                // Deregister the tearoff's zone(s) AND tear down their view model trees (see DoTearoffWindowClose). The
-                // trees are still intact here, this path closes no content first.
-                if (m_zonesByWindow.TryGetValue(sourceWindow, out List<TZone>? closingZones))
-                {
-                    this.DeRegisterAndTeardownRootZones(closingZones.ToArray());
-                }
-
-                m_tearoffRootZones.Remove(sourceWindow);
-                m_zonesByWindow.Remove(sourceWindow);
+                this.ForgetTearoffWindow(sourceWindow);
                 this.StopTrackingWindow(sourceWindow);
                 this.DetachTearoffSubscriptions(sourceWindow);
                 this.CloseWindow(sourceWindow);
@@ -1105,17 +1113,17 @@ namespace AJut.UX.Docking
             m_windowsToCloseSilently.AddRange(tearoffs);
             foreach (TWindow window in tearoffs)
             {
-                // The trees are still intact here, nothing closed them first
-                if (m_zonesByWindow.TryGetValue(window, out List<TZone>? closingZones))
+                // One the toolkit no longer tracks has closed already, by something other than this manager (a window
+                //  manager closing the root's children along with it, say). It only leaves the registry, since a window
+                //  that's gone can't be detached from or closed again.
+                bool isStillOpen = this.IsWindowTracked(window);
+                this.ForgetTearoffWindow(window);
+                if (isStillOpen)
                 {
-                    this.DeRegisterAndTeardownRootZones(closingZones.ToArray());
+                    this.StopTrackingWindow(window);
+                    this.DetachTearoffSubscriptions(window);
+                    this.CloseWindow(window);
                 }
-
-                m_tearoffRootZones.Remove(window);
-                m_zonesByWindow.Remove(window);
-                this.StopTrackingWindow(window);
-                this.DetachTearoffSubscriptions(window);
-                this.CloseWindow(window);
             }
 
             m_windowsToCloseSilently.Clear();
@@ -1123,6 +1131,20 @@ namespace AJut.UX.Docking
             {
                 this.UISyncVM.RecountActiveInstances();
             }
+        }
+
+        // Drops a tearoff window from the registry: its root zones are deregistered and their view model trees torn down
+        //  (see DoTearoffWindowClose), and the window itself is not touched. The trees are still intact on every path that
+        //  comes here, since none of them closes content first.
+        private void ForgetTearoffWindow (TWindow window)
+        {
+            if (m_zonesByWindow.TryGetValue(window, out List<TZone>? closingZones))
+            {
+                this.DeRegisterAndTeardownRootZones(closingZones.ToArray());
+            }
+
+            m_tearoffRootZones.Remove(window);
+            m_zonesByWindow.Remove(window);
         }
 
         // Deregister AND permanently tear down a set of closing tearoff root zones: drops them from the registry, then
@@ -1291,7 +1313,7 @@ namespace AJut.UX.Docking
         private IEnumerable<DockLayoutFile.TearoffLayout> BuildTearoffLayouts ()
         {
             // Snapshot the registered windows so the iteration is stable. Skip the root window, and any window already
-            // gone (closed, or in teardown)
+            // gone (closed, or in teardown). One the toolkit no longer tracks has closed, and nothing is read off it.
             foreach (KeyValuePair<TWindow, List<TZone>> windowZones in m_zonesByWindow.ToList())
             {
                 if (windowZones.Key == this.RootWindow)
@@ -1299,7 +1321,9 @@ namespace AJut.UX.Docking
                     continue;
                 }
 
-                if (windowZones.Value.Count == 0 || !this.TryCaptureWindowLayoutState(windowZones.Key, out DockWindowLayoutState state))
+                if ((windowZones.Value.Count == 0)
+                    || !this.IsWindowTracked(windowZones.Key)
+                    || !this.TryCaptureWindowLayoutState(windowZones.Key, out DockWindowLayoutState state))
                 {
                     continue;
                 }

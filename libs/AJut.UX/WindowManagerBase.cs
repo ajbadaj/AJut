@@ -91,6 +91,13 @@ namespace AJut.UX
             }
         }
 
+        /// <summary>
+        /// Whether the root window closing closes every tracked child with it, true by default. Turn it off when something else
+        /// owns the children and closes them itself (a docking manager closing its tearoffs, say), so no child closes twice:
+        /// the root's close then lets go of only the root, and each child stays open and tracked until it closes.
+        /// </summary>
+        public bool CloseChildrenWithRoot { get; set; } = true;
+
         // ===========[ Public Interface Methods ]==============================
         /// <summary>
         /// Begin tracking a new window as one of the root's children, and bring it to the front. Returns false for a null
@@ -232,12 +239,12 @@ namespace AJut.UX
             }
         }
 
-        /// <summary>A tracked window closed. When it is the root, every child closes with it.</summary>
+        /// <summary>A tracked window closed. When it is the root, every child closes with it, unless <see cref="CloseChildrenWithRoot"/> is off.</summary>
         protected void OnWindowClosed (TWindow window)
         {
             bool wasRoot = (window == this.Root);
             this.StopTracking(window);
-            if (wasRoot)
+            if (wasRoot && this.CloseChildrenWithRoot)
             {
                 foreach (TWindow child in this.Items.Where(this.IsChild).ToList())
                 {

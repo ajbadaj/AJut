@@ -152,6 +152,20 @@ namespace AJut.UX.Tests
         }
 
         [TestMethod]
+        public void OnWindowClosed_Root_ChildrenNotClosedWithIt_StayOpenAndTracked ()
+        {
+            (TestWindowManager manager, TestWindow root, TestWindow child) = MakeManagerWithOneChild();
+            manager.CloseChildrenWithRoot = false;
+
+            manager.ReportClosed(root);
+
+            CollectionAssert.AreEqual(new[] { child }, manager.ToList(), "Only the root is let go of");
+            Assert.IsFalse(child.IsClosed, "Whatever owns the child closes it, so it closes once");
+            Assert.IsTrue(child.IsSubscribed);
+            Assert.IsFalse(root.IsSubscribed);
+        }
+
+        [TestMethod]
         public void Dispose_UnsubscribesEveryWindowAndLetsGoOfTheRoot ()
         {
             (TestWindowManager manager, TestWindow root, TestWindow child) = MakeManagerWithOneChild();
