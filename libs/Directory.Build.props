@@ -42,13 +42,13 @@
   <!-- Each package's patch. A new library under libs\ needs a line here, and its build stops with an error until it
        has one. -->
   <PropertyGroup>
-    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.Core'">0</AJutVersionPatch>
-    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX'">0</AJutVersionPatch>
-    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX.Wpf'">0</AJutVersionPatch>
-    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX.WinUI3'">0</AJutVersionPatch>
-    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX.AppKit'">0</AJutVersionPatch>
-    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX.UIKit'">0</AJutVersionPatch>
-    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX.Android'">0</AJutVersionPatch>
+    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.Core'">1</AJutVersionPatch>
+    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX'">1</AJutVersionPatch>
+    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX.Wpf'">1</AJutVersionPatch>
+    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX.WinUI3'">1</AJutVersionPatch>
+    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX.AppKit'">1</AJutVersionPatch>
+    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX.UIKit'">1</AJutVersionPatch>
+    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX.Android'">1</AJutVersionPatch>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(AJutVersionPatch)' != ''">
