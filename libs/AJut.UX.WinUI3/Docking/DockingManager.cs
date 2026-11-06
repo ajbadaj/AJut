@@ -705,6 +705,18 @@ namespace AJut.UX.Docking
         }
         protected override bool IsWindowTracked (Window window) => m_windowManager.Contains(window);
 
+        // Waits for the dispatcher's next pass at low priority, after the work already queued, so a burst of changes saves
+        // once. With no dispatcher to wait on, or one that won't take the work, it saves now.
+        protected override void RunAfterLayoutChangesSettle (Action save)
+        {
+            DispatcherQueue dispatcher = DispatcherQueue.GetForCurrentThread();
+            if ((dispatcher == null)
+                || !dispatcher.TryEnqueue(DispatcherQueuePriority.Low, new DispatcherQueueHandler(save)))
+            {
+                save();
+            }
+        }
+
         protected override void StopTrackingWindow (Window window) => m_windowManager.StopTracking(window);
 
         protected override void CloseWindow (Window window) => window.Close();
@@ -875,6 +887,10 @@ namespace AJut.UX.Docking
         internal new Window GetWindowForZone(DockZone zone)
             => base.GetWindowForZone(zone);
 
+        // A zone's size is part of what a layout saves, so DockZone reports each new size it is
+        // arranged at, and an auto-saving manager saves once the change settles
+        internal void OnZoneSizeChanged() => this.TriggerLayoutAutoSave();
+
         // Returns the root DockZone registered for a given window, or null if
         // the window has none registered. Used by OnHeaderPointerPressed
         // so that dragging a panel header inside a tearoff moves the whole tearoff
@@ -979,6 +995,9 @@ namespace AJut.UX.Docking
         // the Dispose, which leaves the deferred close nothing to do.
         private void OnRootWindowClosed(object sender, WindowEventArgs e)
         {
+            // From here on the layout only comes apart, which auto-save must not write over the saved one
+            this.MarkRootWindowClosing();
+
             DispatcherQueue dispatcher = DispatcherQueue.GetForCurrentThread();
             if ((dispatcher == null)
                 || !dispatcher.TryEnqueue(DispatcherQueuePriority.Low, this.CloseTearoffsForRootWindowClosed))

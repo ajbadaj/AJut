@@ -88,6 +88,7 @@ namespace AJut.UX.Tests
     public class TestDockingManager : DockingManagerBase<FakeDockWindow, FakeDockZone>
     {
         private readonly HashSet<FakeDockWindow> m_tracked = new HashSet<FakeDockWindow>();
+        private readonly Queue<Action> m_settledLayoutWork = new Queue<Action>();
         private int m_tearoffCount;
 
         public TestDockingManager (string persistentPath = "persistent.layout")
@@ -114,6 +115,21 @@ namespace AJut.UX.Tests
 
         /// <summary>Every window a save read its place and size from, in order</summary>
         public List<FakeDockWindow> CapturedWindows { get; } = new List<FakeDockWindow>();
+
+        /// <summary>
+        /// When set, the save a layout change asks for waits for <see cref="RunSettledLayoutWork"/>, the way a UI thread runs
+        /// it after the work already queued. Otherwise it runs at once.
+        /// </summary>
+        public bool HoldSettledLayoutWork { get; set; }
+
+        /// <summary>Runs every save held by <see cref="HoldSettledLayoutWork"/>, in order</summary>
+        public void RunSettledLayoutWork ()
+        {
+            while (m_settledLayoutWork.Count > 0)
+            {
+                m_settledLayoutWork.Dequeue()();
+            }
+        }
 
         public FakeDockZone RegisterRoot (string groupId = null, FakeDockWindow window = null)
         {
@@ -238,6 +254,18 @@ namespace AJut.UX.Tests
 
         protected override DockWindowBounds ToTearoffCreationBounds (DockWindowBounds placementBounds)
             => new DockWindowBounds(placementBounds.X / this.PositionScale, placementBounds.Y / this.PositionScale, placementBounds.Width / this.PlacementScale, placementBounds.Height / this.PlacementScale);
+
+        protected override void RunAfterLayoutChangesSettle (Action save)
+        {
+            if (this.HoldSettledLayoutWork)
+            {
+                m_settledLayoutWork.Enqueue(save);
+            }
+            else
+            {
+                save();
+            }
+        }
 
         protected override void OnRootZoneDeregistered (FakeDockZone zone) => zone.WasDeregistered = true;
         protected override void OnDisposing () => ++this.DisposingCount;

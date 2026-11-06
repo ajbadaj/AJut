@@ -26,7 +26,7 @@ namespace AJut.UX.Docking
     // DockingManager derives from this and supplies window creation, placement, closing and
     // activation, and the zone control's view model, group id and tree through the abstract hooks.
     // Drag tracking, hit testing and menus stay in the toolkit's manager.
-    public abstract class DockingManagerBase<TWindow, TZone> : NotifyPropertyChanged, IDockingManager, IDisposable
+    public abstract class DockingManagerBase<TWindow, TZone> : NotifyPropertyChanged, IDockingManager, IDockLayoutChangeListener, IDisposable
         where TWindow : class
         where TZone : class
     {
@@ -40,6 +40,8 @@ namespace AJut.UX.Docking
         private readonly List<TWindow> m_currentlyClosingWindows = new List<TWindow>();
         private bool m_isZoneDragDropUnderway;
         private bool m_isReadyToTrackAutoSave;
+        private bool m_isAutoSavePending;
+        private bool m_isRootWindowClosing;
         private bool m_isDisposed;
 
         // ===========[ Setup/Construction/Teardown ]===========================
@@ -545,7 +547,17 @@ namespace AJut.UX.Docking
             }
         }
 
+        // ===========[ IDockLayoutChangeListener Implementations ]=============
+        void IDockLayoutChangeListener.OnDockLayoutChanged () => this.TriggerLayoutAutoSave();
+
         // ===========[ Toolkit Hooks ]=========================================
+        /// <summary>
+        /// Runs <paramref name="save"/> once the layout changes underway have finished, on the toolkit's UI thread after the
+        /// work already queued, so a burst of changes (a drop, a splitter drag, a window resize) saves once. At once by
+        /// default.
+        /// </summary>
+        protected virtual void RunAfterLayoutChangesSettle (Action save) => save();
+
         /// <summary>The view model a root zone control shows, or null before it has one</summary>
         protected abstract DockZoneViewModel? GetZoneViewModel (TZone zone);
 
@@ -1021,8 +1033,16 @@ namespace AJut.UX.Docking
         /// </summary>
         protected void CloseTearoffsForRootWindowClosed ()
         {
+            this.MarkRootWindowClosing();
             this.CloseEveryTearoffSilently();
         }
+
+        /// <summary>
+        /// The root window is closing: nothing auto-saves from here on, since what changes now is the layout coming apart.
+        /// <see cref="CloseTearoffsForRootWindowClosed"/> does this itself; a toolkit that closes the tearoffs later, or not
+        /// at all, calls it as the root window closes.
+        /// </summary>
+        protected void MarkRootWindowClosing () => m_isRootWindowClosing = true;
 
         /// <summary>Before a layout loads: closes every tearoff, then force closes and clears every root zone</summary>
         protected void ClearForLoadingFromState ()
@@ -1082,10 +1102,39 @@ namespace AJut.UX.Docking
             return DockLayoutFile.Write(filePath, contents);
         }
 
-        /// <summary>Saves the layout per <see cref="AutoSaveMethod"/>, unless a layout is loading or the startup load has not finished</summary>
+        /// <summary>
+        /// Saves the layout per <see cref="AutoSaveMethod"/> once the changes underway have settled
+        /// (<see cref="RunAfterLayoutChangesSettle"/>), so a burst of changes saves once. Every zone view model reports its
+        /// own changes here, and a toolkit reports a zone's size changing. Nothing auto-saves while a layout loads, before
+        /// the startup load has finished, once <see cref="Dispose"/> starts, or once the root window is closing
+        /// (<see cref="MarkRootWindowClosing"/>): what changes then is the layout coming apart, and saving it would replace
+        /// the layout that was saved with what's left of it.
+        /// </summary>
         protected void TriggerLayoutAutoSave ()
         {
-            if (this.IsLoadingFromLayout || !m_isReadyToTrackAutoSave)
+            if (m_isAutoSavePending || !this.CanAutoSaveNow())
+            {
+                return;
+            }
+
+            m_isAutoSavePending = true;
+            this.RunAfterLayoutChangesSettle(this.RunPendingAutoSave);
+        }
+
+        // ===========[ Helper Methods ]========================================
+        private bool CanAutoSaveNow ()
+            => (this.AutoSaveMethod != eDockingAutoSaveMethod.None)
+                && m_isReadyToTrackAutoSave
+                && !this.IsLoadingFromLayout
+                && !m_isDisposed
+                && !m_isRootWindowClosing;
+
+        // The save TriggerLayoutAutoSave asked for, once the changes settled. Checked again here, since a load may have
+        //  started, the manager been disposed, or the root window closed in between.
+        private void RunPendingAutoSave ()
+        {
+            m_isAutoSavePending = false;
+            if (!this.CanAutoSaveNow())
             {
                 return;
             }
@@ -1100,7 +1149,6 @@ namespace AJut.UX.Docking
             }
         }
 
-        // ===========[ Helper Methods ]========================================
         private List<TWindow> GetTearoffWindows ()
             => m_zonesByWindow.Keys.Where(w => w != this.RootWindow).ToList();
 

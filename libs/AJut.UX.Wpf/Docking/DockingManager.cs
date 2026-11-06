@@ -48,6 +48,7 @@
             this.CreateNewTearoffWindowHandler = () => new DefaultDockTearoffWindow(this);
             this.ShowTearoffWindowHandler = w => w.Show();
             this.Windows = new WindowManager(rootWindow);
+            this.RootWindow.Closed += this.OnRootWindowClosed;
         }
 
         protected override void OnDisposing ()
@@ -69,6 +70,7 @@
             // (StateChanged / Activated / Closed) keep RootWindow -> WindowManager ->
             // DockingManager pinned for the life of the application.
             this.Windows.Dispose();
+            this.RootWindow.Closed -= this.OnRootWindowClosed;
 
             this.CreateNewTearoffWindowHandler = null;
             this.ShowTearoffWindowHandler = null;
@@ -587,6 +589,13 @@
 
         protected override bool IsWindowTracked (Window window) => this.Windows.Contains(window);
 
+        // Waits for the dispatcher to get past the work already queued, so a burst of changes (a drop, a splitter drag, a
+        //  window resize) saves once
+        protected override void RunAfterLayoutChangesSettle (Action save)
+        {
+            this.RootWindow.Dispatcher.BeginInvoke(DispatcherPriority.Background, save);
+        }
+
         protected override void StopTrackingWindow (Window window) => this.Windows.StopTracking(window);
 
         protected override void CloseWindow (Window window) => window.Close();
@@ -758,6 +767,13 @@
         private void DockZone_OnSizeChanged (object sender, SizeChangedEventArgs e)
         {
             this.TriggerLayoutAutoSave();
+        }
+
+        // The tearoffs the root window owns close with it, and a save asked for by their closing waits for the dispatcher,
+        //  so it runs after this and finds auto-save stopped rather than writing the layout coming apart over the saved one
+        private void OnRootWindowClosed (object sender, EventArgs e)
+        {
+            this.MarkRootWindowClosing();
         }
 
         private IEnumerable<CommandBinding> EnumerateAllCommandBindings ()

@@ -3,6 +3,7 @@ namespace AJut.UX.Docking
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Collections.Specialized;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using AJut.Storage;
@@ -39,6 +40,10 @@ namespace AJut.UX.Docking
         {
             this.DockedContent = new ReadOnlyObservableCollection<DockingContentAdapterModel>(m_dockedContent);
             this.Children = new ReadOnlyObservableCollection<DockZoneViewModel>(m_children);
+
+            // Both collections are this zone's own; Teardown drops these
+            m_dockedContent.CollectionChanged += this.OnLayoutCollectionChanged;
+            m_children.CollectionChanged += this.OnLayoutCollectionChanged;
         }
 
         public DockZoneViewModel (IDockingManager manager) : this()
@@ -407,6 +412,8 @@ namespace AJut.UX.Docking
                 zone.m_dockedContent.Clear();
                 zone.m_children.Clear();
                 zone.Orientation = eDockOrientation.Empty;
+                zone.m_dockedContent.CollectionChanged -= zone.OnLayoutCollectionChanged;
+                zone.m_children.CollectionChanged -= zone.OnLayoutCollectionChanged;
                 zone.UI = null;
                 zone.Parent = null;
                 zone.Manager = null;
@@ -715,6 +722,21 @@ namespace AJut.UX.Docking
         }
 
         // ===========[ Private Helpers ]===================================
+
+        // The orientation and selected tab are part of what a layout saves; nothing else this raises a change for is
+        protected override void OnPropertyChanged (string propertyName)
+        {
+            if ((propertyName == nameof(Orientation))
+                || (propertyName == nameof(SelectedIndex)))
+            {
+                this.ReportLayoutChanged();
+            }
+        }
+
+        private void OnLayoutCollectionChanged (object sender, NotifyCollectionChangedEventArgs e) => this.ReportLayoutChanged();
+
+        // Tells this zone's manager that what a layout saves of it changed, so a manager that auto-saves saves it
+        private void ReportLayoutChanged () => (this.Manager as IDockLayoutChangeListener)?.OnDockLayoutChanged();
 
         private static void _StorePassAlongSizesForExistingSiblings (DockZoneViewModel parent, eDockOrientation orientation, DockZoneViewModel newSibling)
         {

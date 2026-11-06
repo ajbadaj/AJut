@@ -61,6 +61,7 @@ namespace AJut.UX.Controls
         private DockDropOverlayView m_dropOverlay;
         private List<double> m_pendingChildSizes;
         private bool m_needsPaneSizing;
+        private CGSize m_lastLaidOutSize;
         private double m_tabScrollOffset;
         private bool m_isPointerOver;
         private NSWindow m_watchedWindow;
@@ -195,6 +196,15 @@ namespace AJut.UX.Controls
         public override void Layout ()
         {
             base.Layout();
+
+            // A zone's size is part of what a layout saves, so a new size goes to the manager, which saves once the change
+            //  settles when it auto-saves
+            if (this.Bounds.Size != m_lastLaidOutSize)
+            {
+                m_lastLaidOutSize = this.Bounds.Size;
+                (m_zone.Manager as DockingManager)?.OnZoneSizeChanged();
+            }
+
             if ((m_split == null)
                 || (m_split.ArrangedSubviews.Length < 2)
                 || (!m_needsPaneSizing && (m_pendingChildSizes == null)))

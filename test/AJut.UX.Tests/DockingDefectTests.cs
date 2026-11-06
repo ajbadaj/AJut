@@ -58,6 +58,104 @@ namespace AJut.UX.Tests
         }
 
         [TestMethod]
+        public void DockDefect_AutoSave_ABurstOfChangesSavesOnceItSettles ()
+        {
+            var manager = new TestDockingManager { AutoSaveMethod = eDockingAutoSaveMethod.AutoSaveOnAllChanges, HoldSettledLayoutWork = true };
+            DockZoneViewModel root = manager.RegisterRoot().ViewModel;
+            manager.SetupDefaultAndFallbackTo(null);
+            manager.Saved.Clear();
+
+            root.AddDockedContent(manager.BuildNewDisplayElement<FakeDockPanel>());
+            root.AddDockedContent(manager.BuildNewDisplayElement<FakeDockPanel>());
+            root.SelectedIndex = 0;
+            Assert.AreEqual(0, manager.Saved.Count, "Nothing saves until the changes settle");
+
+            manager.RunSettledLayoutWork();
+
+            CollectionAssert.AreEqual(new[] { "persistent.layout" }, manager.Saved, "A burst of changes saves once");
+        }
+
+        [TestMethod]
+        public void DockDefect_AutoSaveToTemp_SavesToTheTempPath ()
+        {
+            var manager = new TestDockingManager { AutoSaveMethod = eDockingAutoSaveMethod.AutoSaveToTemp };
+            DockZoneViewModel root = manager.RegisterRoot().ViewModel;
+            manager.SetupDefaultAndFallbackTo(null);
+            manager.Saved.Clear();
+
+            root.AddDockedContent(manager.BuildNewDisplayElement<FakeDockPanel>());
+
+            CollectionAssert.Contains(manager.Saved, manager.GenerateDefaultStateStorageAutoSaveTempPath());
+            CollectionAssert.DoesNotContain(manager.Saved, "persistent.layout");
+        }
+
+        [TestMethod]
+        public void DockDefect_AutoSave_LoadingALayoutDoesNotSaveIt ()
+        {
+            var manager = new TestDockingManager { AutoSaveMethod = eDockingAutoSaveMethod.AutoSaveOnAllChanges };
+            DockZoneViewModel root = manager.RegisterRoot().ViewModel;
+            manager.SetupDefaultAndFallbackTo(null);
+            manager.OnLoad = _ =>
+            {
+                root.AddDockedContent(manager.BuildNewDisplayElement<FakeDockPanel>());
+                return true;
+            };
+            manager.Saved.Clear();
+
+            Assert.IsTrue(manager.LoadDockLayoutFromFile("loaded.layout"));
+
+            Assert.AreEqual(0, manager.Saved.Count, "A load builds the layout it read, which is no change to save");
+        }
+
+        // Taking a layout apart changes it zone by zone, and saving any of that would replace the saved layout with what's
+        //  left of it
+        [TestMethod]
+        public void DockDefect_AutoSave_DisposeDoesNotSaveTheLayoutComingApart ()
+        {
+            var manager = new TestDockingManager { AutoSaveMethod = eDockingAutoSaveMethod.AutoSaveOnAllChanges };
+            manager.RegisterRoot().ViewModel.AddDockedContent(manager.BuildNewDisplayElement<FakeDockPanel>());
+            var torn = manager.BuildNewDisplayElement<FakeDockPanel>();
+            manager.CreateTearoffForPanel(torn.DockingAdapter, 0, 0, 10, 10);
+            manager.SetupDefaultAndFallbackTo(null);
+            manager.Saved.Clear();
+
+            manager.Dispose();
+
+            Assert.AreEqual(0, manager.Saved.Count);
+        }
+
+        [TestMethod]
+        public void DockDefect_AutoSave_TheRootWindowClosingDoesNotSaveTheTearoffsClosing ()
+        {
+            var manager = new TestDockingManager { AutoSaveMethod = eDockingAutoSaveMethod.AutoSaveOnAllChanges };
+            DockZoneViewModel root = manager.RegisterRoot().ViewModel;
+            var torn = manager.BuildNewDisplayElement<FakeDockPanel>();
+            manager.CreateTearoffForPanel(torn.DockingAdapter, 0, 0, 10, 10);
+            manager.SetupDefaultAndFallbackTo(null);
+            manager.Saved.Clear();
+
+            manager.RootWindowClosed();
+            root.AddDockedContent(manager.BuildNewDisplayElement<FakeDockPanel>());
+
+            Assert.AreEqual(0, manager.Saved.Count, "Once the root window closes, nothing auto-saves");
+        }
+
+        [TestMethod]
+        public void DockDefect_AutoSave_ASaveStillWaitingWhenTheRootWindowCloses_IsDropped ()
+        {
+            var manager = new TestDockingManager { AutoSaveMethod = eDockingAutoSaveMethod.AutoSaveOnAllChanges, HoldSettledLayoutWork = true };
+            DockZoneViewModel root = manager.RegisterRoot().ViewModel;
+            manager.SetupDefaultAndFallbackTo(null);
+            manager.Saved.Clear();
+            root.AddDockedContent(manager.BuildNewDisplayElement<FakeDockPanel>());
+
+            manager.RootWindowClosed();
+            manager.RunSettledLayoutWork();
+
+            Assert.AreEqual(0, manager.Saved.Count, "A save that runs after the root window closed would write a layout coming apart");
+        }
+
+        [TestMethod]
         public void DockDefect_AutoSaveWithNoRootZoneRegistered_LeavesThePersistentLayoutAlone ()
         {
             string path = TempLayoutPath();
