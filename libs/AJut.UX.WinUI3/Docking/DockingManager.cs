@@ -11,6 +11,7 @@ namespace AJut.UX.Docking
     using AJut.Tree;
     using AJut.UX;
     using AJut.UX.Controls;
+    using Microsoft.UI.Dispatching;
     using Microsoft.UI.Windowing;
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
@@ -52,11 +53,15 @@ namespace AJut.UX.Docking
             // CollectionChanged fires when a window is removed (closed) so we can
             // clean up stale docking-map entries even if our own close handler
             // didn't run (belt-and-suspenders against null AppWindow crashes).
+            // It leaves closing the tearoffs with the root window to this manager,
+            // which closes them after the root's close is handled (OnRootWindowClosed).
+            // If both closed them, each tearoff would close twice, and that crashes the app.
+            m_windowManager.CloseChildrenWithRoot = false;
             m_windowManager.Setup(rootWindow);
             ((INotifyCollectionChanged)m_windowManager).CollectionChanged += this.OnWindowManagerCollectionChanged;
 
-            // When the root window closes, force-close all tearoff windows immediately
-            // (bypass CanClose veto so orphaned tearoffs don't outlive the app).
+            // When the root window closes, force-close all tearoff windows once its close
+            // is handled (bypass CanClose veto so orphaned tearoffs don't outlive the app).
             this.RootWindow.Closed += this.OnRootWindowClosed;
 
             // When the root window is re-activated (e.g. user clicks our taskbar entry),
@@ -700,6 +705,18 @@ namespace AJut.UX.Docking
         }
         protected override bool IsWindowTracked (Window window) => m_windowManager.Contains(window);
 
+        // Waits for the dispatcher's next pass at low priority, after the work already queued, so a burst of changes saves
+        // once. With no dispatcher to wait on, or one that won't take the work, it saves now.
+        protected override void RunAfterLayoutChangesSettle (Action save)
+        {
+            DispatcherQueue dispatcher = DispatcherQueue.GetForCurrentThread();
+            if ((dispatcher == null)
+                || !dispatcher.TryEnqueue(DispatcherQueuePriority.Low, new DispatcherQueueHandler(save)))
+            {
+                save();
+            }
+        }
+
         protected override void StopTrackingWindow (Window window) => m_windowManager.StopTracking(window);
 
         protected override void CloseWindow (Window window) => window.Close();
@@ -790,6 +807,7 @@ namespace AJut.UX.Docking
                 appWindow.Move(new Windows.Graphics.PointInt32((int)bounds.X, (int)bounds.Y));
                 appWindow.Closing += this.TearoffWindowAppWindow_EXTERNAL_OnClosing;
                 window.Activated += this.OnTearoffWindowActivated;
+                window.Closed += this.OnTearoffWindowClosed;
 
                 this.RecordTearoffRootZone(window, rootZone);
                 this.ShowTearoffWindowHandler(window);
@@ -813,8 +831,8 @@ namespace AJut.UX.Docking
             }
         }
 
-        // Drops the four subs DockingManager owns on a tearoff (AppWindow.Closing, Window.Activated
-        // and the two panel-level events). Without this, the window's invocation lists keep a
+        // Drops the five subs DockingManager owns on a tearoff (AppWindow.Closing, Window.Activated,
+        // Window.Closed, and the two panel-level events). Without this, the window's invocation lists keep a
         // strong ref to DockingManager until the OS finalizes the window object - which is
         // never deterministic and pins everything for the duration. Always call this just
         // before the window.Close() (or before the panel/window is otherwise abandoned).
@@ -826,6 +844,7 @@ namespace AJut.UX.Docking
             }
 
             window.Activated -= this.OnTearoffWindowActivated;
+            window.Closed -= this.OnTearoffWindowClosed;
 
             // AppWindow can be null late in teardown; guard so this is safe to call from
             // any of the close paths.
@@ -867,6 +886,10 @@ namespace AJut.UX.Docking
         // Searches every window's registered zones; falls back to RootWindow if not found.
         internal new Window GetWindowForZone(DockZone zone)
             => base.GetWindowForZone(zone);
+
+        // A zone's size is part of what a layout saves, so DockZone reports each new size it is
+        // arranged at, and an auto-saving manager saves once the change settles
+        internal void OnZoneSizeChanged() => this.TriggerLayoutAutoSave();
 
         // Returns the root DockZone registered for a given window, or null if
         // the window has none registered. Used by OnHeaderPointerPressed
@@ -954,13 +977,48 @@ namespace AJut.UX.Docking
             // Intentional no-op - see comment above.
         }
 
-        // Force-close all tearoff windows when the root window closes so no
-        // orphaned tool windows linger after the app exits. The base adds them to
-        // the close-silently list first, which makes the AppWindow.Closing handler
-        // exit early without cancelling.
+        // Force-close all tearoff windows when the root window closes so no orphaned tool
+        // windows linger after the app exits, but not until the root's close has been handled.
+        //
+        // Window.Closed handlers run in the order they were added. An app that saves its layout
+        // from its own Closed handler, added after this manager was made, would run after this
+        // one, find the tearoffs already gone, and save the layout without them. So the close waits
+        // for the dispatcher's next pass, at low priority, which comes after every handler of this
+        // close has run. Until then the tearoffs stay open and tracked, since the window manager
+        // leaves them to this manager (CloseChildrenWithRoot is off), and a save still captures
+        // their place and size.
+        //
+        // The dispatcher is this thread's, which the root window and its tearoffs all run on. With
+        // none to wait on, or one that won't take the work, the tearoffs close now. An app that
+        // exits from its own Closed handler never gets to the deferred close, and its tearoffs
+        // go with the process. One that disposes this manager first has its tearoffs closed by
+        // the Dispose, which leaves the deferred close nothing to do.
         private void OnRootWindowClosed(object sender, WindowEventArgs e)
         {
-            this.CloseTearoffsForRootWindowClosed();
+            // From here on the layout only comes apart, which auto-save must not write over the saved one
+            this.MarkRootWindowClosing();
+
+            DispatcherQueue dispatcher = DispatcherQueue.GetForCurrentThread();
+            if ((dispatcher == null)
+                || !dispatcher.TryEnqueue(DispatcherQueuePriority.Low, this.CloseTearoffsForRootWindowClosed))
+            {
+                this.CloseTearoffsForRootWindowClosed();
+            }
+        }
+
+        // A tearoff closed some way none of the close paths ran for, such as code calling Close on
+        // the window, which raises no AppWindow.Closing. Every close path this manager runs detaches
+        // first, so this only hears about those. Its subscriptions are dropped now, while the window
+        // can still be read, and once it is no longer tracked the base forgets it without closing it
+        // again, so nothing reads or closes a window that is gone.
+        private void OnTearoffWindowClosed(object sender, WindowEventArgs e)
+        {
+            if (sender is Window window)
+            {
+                this.StopTrackingWindow(window);
+                this.DetachTearoffSubscriptions(window);
+                this.SilentlyForceCloseTearoffWindow(window);
+            }
         }
 
         // When the root window is re-activated (user clicks our taskbar entry, switches
@@ -1137,7 +1195,8 @@ namespace AJut.UX.Docking
 
         // All user32.dll P/Invokes and their associated constants live here so
         // they are self-contained and not scattered throughout DockingManager.
-        private static class User32WindowFuncs
+        // Internal so the tests can run them in an x86 process as well as an x64 one.
+        internal static class User32WindowFuncs
         {
             internal const int kGwlExStyle = -20;
             internal const int kWsExLayered = 0x80000;
@@ -1151,11 +1210,32 @@ namespace AJut.UX.Docking
             [DllImport("user32.dll")]
             internal static extern short GetAsyncKeyState(int vKey);
 
+            // 32-bit user32 exports no GetWindowLongPtrW or SetWindowLongPtrW. In the 32-bit Windows
+            // headers both are macros over GetWindowLongW and SetWindowLongW, so only 64-bit user32 has
+            // them, and binding the Ptr names alone throws EntryPointNotFoundException on the first call
+            // in an x86 process (the first drag of a tearoff, which then never moves). Both pairs are bound
+            // and these two pick by the process's bitness, so no call site has to. A 32-bit window long is
+            // pointer sized there, so nothing is lost going through int.
+            // https://learn.microsoft.com/windows/win32/api/winuser/nf-winuser-getwindowlongptrw
+            /// <summary>GetWindowLongPtrW, through the entry point user32 has in this process's bitness (GetWindowLongW in x86)</summary>
+            internal static nint GetWindowLongPtr(nint hWnd, int nIndex)
+                => Environment.Is64BitProcess ? GetWindowLongPtr64(hWnd, nIndex) : GetWindowLong32(hWnd, nIndex);
+
+            /// <summary>SetWindowLongPtrW, through the entry point user32 has in this process's bitness (SetWindowLongW in x86)</summary>
+            internal static nint SetWindowLongPtr(nint hWnd, int nIndex, nint dwNewLong)
+                => Environment.Is64BitProcess ? SetWindowLongPtr64(hWnd, nIndex, dwNewLong) : SetWindowLong32(hWnd, nIndex, (int)dwNewLong);
+
             [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
-            internal static extern nint GetWindowLongPtr(nint hWnd, int nIndex);
+            private static extern nint GetWindowLongPtr64(nint hWnd, int nIndex);
 
             [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
-            internal static extern nint SetWindowLongPtr(nint hWnd, int nIndex, nint dwNewLong);
+            private static extern nint SetWindowLongPtr64(nint hWnd, int nIndex, nint dwNewLong);
+
+            [DllImport("user32.dll", EntryPoint = "GetWindowLongW")]
+            private static extern int GetWindowLong32(nint hWnd, int nIndex);
+
+            [DllImport("user32.dll", EntryPoint = "SetWindowLongW")]
+            private static extern int SetWindowLong32(nint hWnd, int nIndex, int dwNewLong);
 
             [DllImport("user32.dll")]
             internal static extern bool SetLayeredWindowAttributes(nint hwnd, uint crKey, byte bAlpha, uint dwFlags);

@@ -302,6 +302,13 @@ namespace AJut.UX.Docking
 
         protected override void StopTrackingWindow (NSWindow window) => m_tearoffWindows.Remove(window);
 
+        // Waits for the main thread to get past the work already queued, so a burst of changes saves once
+        protected override void RunAfterLayoutChangesSettle (Action save) => NSApplication.SharedApplication.BeginInvokeOnMainThread(save);
+
+        // A zone's size is part of what a layout saves, so DockZoneView reports each new size it is laid out at, and an
+        //  auto-saving manager saves once the change settles
+        internal void OnZoneSizeChanged () => this.TriggerLayoutAutoSave();
+
         // Close, unlike PerformClose, does not ask the window's delegate, so a close the base has
         // already run does not run again
         protected override void CloseWindow (NSWindow window) => window.Close();

@@ -48,6 +48,7 @@
             this.CreateNewTearoffWindowHandler = () => new DefaultDockTearoffWindow(this);
             this.ShowTearoffWindowHandler = w => w.Show();
             this.Windows = new WindowManager(rootWindow);
+            this.RootWindow.Closed += this.OnRootWindowClosed;
         }
 
         protected override void OnDisposing ()
@@ -69,6 +70,7 @@
             // (StateChanged / Activated / Closed) keep RootWindow -> WindowManager ->
             // DockingManager pinned for the life of the application.
             this.Windows.Dispose();
+            this.RootWindow.Closed -= this.OnRootWindowClosed;
 
             this.CreateNewTearoffWindowHandler = null;
             this.ShowTearoffWindowHandler = null;
@@ -587,6 +589,13 @@
 
         protected override bool IsWindowTracked (Window window) => this.Windows.Contains(window);
 
+        // Waits for the dispatcher to get past the work already queued, so a burst of changes (a drop, a splitter drag, a
+        //  window resize) saves once
+        protected override void RunAfterLayoutChangesSettle (Action save)
+        {
+            this.RootWindow.Dispatcher.BeginInvoke(DispatcherPriority.Background, save);
+        }
+
         protected override void StopTrackingWindow (Window window) => this.Windows.StopTracking(window);
 
         protected override void CloseWindow (Window window) => window.Close();
@@ -701,9 +710,15 @@
 
         protected override bool SaveLayoutToFile (string filePath)
         {
+            DockingSerialization.CoreStorageData core = this.BuildWpfCoreLayout();
+            if (!HasRootZoneToSave(core.ZoneInfoByRoot, filePath))
+            {
+                return false;
+            }
+
             var state = new DockingSerialization.SerializationInfo
             {
-                Core = this.BuildWpfCoreLayout(),
+                Core = core,
                 Ancillary = this.BuildWpfTearoffLayouts().ToArray(),
             };
 
@@ -754,6 +769,13 @@
             this.TriggerLayoutAutoSave();
         }
 
+        // The tearoffs the root window owns close with it, and a save asked for by their closing waits for the dispatcher,
+        //  so it runs after this and finds auto-save stopped rather than writing the layout coming apart over the saved one
+        private void OnRootWindowClosed (object sender, EventArgs e)
+        {
+            this.MarkRootWindowClosing();
+        }
+
         private IEnumerable<CommandBinding> EnumerateAllCommandBindings ()
         {
             foreach (UIElement source in m_commandSources)
@@ -780,45 +802,50 @@
                 return false;
             }
 
+            // Checked before anything is cleared, so a file with nothing to load leaves the layout showing as it is
+            List<KeyValuePair<string, DockZoneSerializationData>> rootLayouts = GetLoadableRootLayouts(state.Core?.ZoneInfoByRoot);
+            if (rootLayouts.Count == 0)
+            {
+                return false;
+            }
+
             try
             {
                 this.ClearForLoadingFromState();
-                if (state.Core != null)
+                foreach (KeyValuePair<string, DockZoneSerializationData> rootLayout in rootLayouts)
                 {
-                    foreach (string groupId in state.Core.ZoneInfoByRoot.Keys)
+                    DockZoneViewModel zone = this.GetRootZoneForGroup(rootLayout.Key);
+                    if (zone == null)
                     {
-                        DockZoneViewModel zone = this.GetRootZoneForGroup(groupId);
-                        if (zone == null)
-                        {
-                            Logger.LogError($"Dock Loading Error: No zone for group id '{groupId}' found, possibly one of that name used to be registered but now is not - falling back to default to avoid data loss.");
-                            zone = defaultLoadZone;
-                        }
-
-                        this.ApplyZoneLayout(zone, state.Core.ZoneInfoByRoot[groupId]);
+                        Logger.LogError($"Dock Loading Error: No zone for group id '{rootLayout.Key}' found, possibly one of that name used to be registered but now is not - falling back to default to avoid data loss.");
+                        zone = defaultLoadZone;
                     }
 
-                    foreach (DockingSerialization.WindowStorageData ancillaryWindowData in state.Ancillary)
+                    this.ApplyZoneLayout(zone, rootLayout.Value);
+                }
+
+                // A file with no Ancillary entry has no tearoffs, as the shared layout file reads it
+                foreach (DockingSerialization.WindowStorageData ancillaryWindowData in state.Ancillary ?? Array.Empty<DockingSerialization.WindowStorageData>())
+                {
+                    var zone = new DockZoneViewModel(this);
+                    this.ApplyZoneLayout(zone, ancillaryWindowData.State);
+
+                    var bounds = new DockWindowBounds(ancillaryWindowData.WindowLocation.X, ancillaryWindowData.WindowLocation.Y, ancillaryWindowData.WindowSize.Width, ancillaryWindowData.WindowSize.Height);
+                    Result<Window> windowResult = this.CreateAndStockTearoffWindow(zone, bounds);
+                    if (windowResult.HasErrors)
                     {
-                        var zone = new DockZoneViewModel(this);
-                        this.ApplyZoneLayout(zone, ancillaryWindowData.State);
+                        Logger.LogError("Dock Loading Error: Failed to intepret ancillary window state for docking");
+                        Logger.LogError(windowResult.GetErrorReport());
+                        continue;
+                    }
 
-                        var bounds = new DockWindowBounds(ancillaryWindowData.WindowLocation.X, ancillaryWindowData.WindowLocation.Y, ancillaryWindowData.WindowSize.Width, ancillaryWindowData.WindowSize.Height);
-                        Result<Window> windowResult = this.CreateAndStockTearoffWindow(zone, bounds);
-                        if (windowResult.HasErrors)
-                        {
-                            Logger.LogError("Dock Loading Error: Failed to intepret ancillary window state for docking");
-                            Logger.LogError(windowResult.GetErrorReport());
-                            continue;
-                        }
-
-                        if (ancillaryWindowData.WindowIsFullscreened)
-                        {
-                            WindowXTA.SetIsFullscreen(windowResult.Value, true);
-                        }
-                        else
-                        {
-                            windowResult.Value.WindowState = ancillaryWindowData.WindowState;
-                        }
+                    if (ancillaryWindowData.WindowIsFullscreened)
+                    {
+                        WindowXTA.SetIsFullscreen(windowResult.Value, true);
+                    }
+                    else
+                    {
+                        windowResult.Value.WindowState = ancillaryWindowData.WindowState;
                     }
                 }
 

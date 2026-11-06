@@ -26,7 +26,7 @@ namespace AJut.UX.Docking
     // DockingManager derives from this and supplies window creation, placement, closing and
     // activation, and the zone control's view model, group id and tree through the abstract hooks.
     // Drag tracking, hit testing and menus stay in the toolkit's manager.
-    public abstract class DockingManagerBase<TWindow, TZone> : NotifyPropertyChanged, IDockingManager, IDisposable
+    public abstract class DockingManagerBase<TWindow, TZone> : NotifyPropertyChanged, IDockingManager, IDockLayoutChangeListener, IDisposable
         where TWindow : class
         where TZone : class
     {
@@ -40,6 +40,8 @@ namespace AJut.UX.Docking
         private readonly List<TWindow> m_currentlyClosingWindows = new List<TWindow>();
         private bool m_isZoneDragDropUnderway;
         private bool m_isReadyToTrackAutoSave;
+        private bool m_isAutoSavePending;
+        private bool m_isRootWindowClosing;
         private bool m_isDisposed;
 
         // ===========[ Setup/Construction/Teardown ]===========================
@@ -329,7 +331,8 @@ namespace AJut.UX.Docking
 
         /// <summary>
         /// Loads the persistent layout, or failing that the fallback layout (which is then saved as the persistent
-        /// one), then makes sure every guaranteed-on-start panel exists. Returns false when neither loaded.
+        /// one), then makes sure every guaranteed-on-start panel exists. Returns false when neither loaded. A layout with no
+        /// root zone in it does not count as loading, so it falls back too.
         /// </summary>
         [RequiresUnreferencedCode(kLayoutPanelTypeMessage)]
         public bool SetupDefaultAndFallbackTo (string? fallbackLayoutFilePath)
@@ -544,7 +547,17 @@ namespace AJut.UX.Docking
             }
         }
 
+        // ===========[ IDockLayoutChangeListener Implementations ]=============
+        void IDockLayoutChangeListener.OnDockLayoutChanged () => this.TriggerLayoutAutoSave();
+
         // ===========[ Toolkit Hooks ]=========================================
+        /// <summary>
+        /// Runs <paramref name="save"/> once the layout changes underway have finished, on the toolkit's UI thread after the
+        /// work already queued, so a burst of changes (a drop, a splitter drag, a window resize) saves once. At once by
+        /// default.
+        /// </summary>
+        protected virtual void RunAfterLayoutChangesSettle (Action save) => save();
+
         /// <summary>The view model a root zone control shows, or null before it has one</summary>
         protected abstract DockZoneViewModel? GetZoneViewModel (TZone zone);
 
@@ -688,6 +701,54 @@ namespace AJut.UX.Docking
         {
             string wanted = groupId ?? string.Empty;
             return m_rootZones.FirstOrDefault(z => (this.GetZoneGroupId(z) ?? string.Empty) == wanted) is TZone zone ? this.GetZoneViewModel(zone) : null;
+        }
+
+        /// <summary>
+        /// The root zone layouts in a layout file's zones by group id that a load can put somewhere, leaving out (and logging)
+        /// any group whose zone is null. Empty, and logged, when the file has none: no Core, no zones, or only null ones. A load
+        /// that gets none refuses the file before it clears anything, so the layout showing stays and the caller knows nothing
+        /// loaded.
+        /// </summary>
+        protected static List<KeyValuePair<string, DockZoneSerializationData>> GetLoadableRootLayouts (IReadOnlyDictionary<string, DockZoneSerializationData>? zoneInfoByRoot)
+        {
+            var loadable = new List<KeyValuePair<string, DockZoneSerializationData>>();
+            if (zoneInfoByRoot != null)
+            {
+                foreach (KeyValuePair<string, DockZoneSerializationData> rootLayout in zoneInfoByRoot)
+                {
+                    if (rootLayout.Value == null)
+                    {
+                        Logger.LogError($"Dock Loading Error: Root zone group '{rootLayout.Key}' has no layout - skipped");
+                        continue;
+                    }
+
+                    loadable.Add(rootLayout);
+                }
+            }
+
+            if (loadable.Count == 0)
+            {
+                Logger.LogError("Dock Loading Error: The layout has no root zone, so there is nothing to load - the layout showing is left as it is");
+            }
+
+            return loadable;
+        }
+
+        /// <summary>
+        /// Whether a layout built for saving has a root zone to write. False, and logged, when it has none, which means no root
+        /// zone is registered for the root window: the manager was disposed, say, or its zones were never registered, or went to
+        /// another manager. A layout saved with none would load nothing, so a save that gets false writes nothing and leaves the
+        /// file as it was.
+        /// </summary>
+        protected static bool HasRootZoneToSave (IReadOnlyDictionary<string, DockZoneSerializationData> zoneInfoByRoot, string? filePath)
+        {
+            if (zoneInfoByRoot.Count > 0)
+            {
+                return true;
+            }
+
+            Logger.LogError($"Docking Serialization: Layout not saved to '{filePath ?? "<null>"}' - the root window has no root zones registered, and a layout with none would load nothing");
+            return false;
         }
 
         /// <summary>
@@ -921,31 +982,39 @@ namespace AJut.UX.Docking
             }
         }
 
-        /// <summary>Unconditionally closes and deregisters a tearoff window (after a successful drop, say)</summary>
+        /// <summary>
+        /// Unconditionally closes and deregisters a tearoff window (after a successful drop, say). One that has already closed
+        /// some other way (the toolkit no longer tracks it) is only deregistered.
+        /// </summary>
         protected void SilentlyForceCloseTearoffWindow (TWindow sourceWindow)
         {
             // A window already partway through closing (a user close hiding its last panel, say) is left to that close,
             // which still has its tree to finish with
-            if (!this.IsWindowTracked(sourceWindow)
-                || (sourceWindow == this.RootWindow)
+            if ((sourceWindow == this.RootWindow)
                 || m_windowsToCloseSilently.Contains(sourceWindow)
                 || m_currentlyClosingWindows.Contains(sourceWindow))
             {
                 return;
             }
 
+            // A window the toolkit no longer tracks has closed already, by something other than this manager. It still
+            //  leaves the registry, or every later close and save would find a window that is gone, but a window that's
+            //  gone can't be detached from or closed again.
+            if (!this.IsWindowTracked(sourceWindow))
+            {
+                if (m_zonesByWindow.ContainsKey(sourceWindow))
+                {
+                    this.ForgetTearoffWindow(sourceWindow);
+                    this.UISyncVM.RecountActiveInstances();
+                }
+
+                return;
+            }
+
             m_windowsToCloseSilently.Add(sourceWindow);
             try
             {
-                // Deregister the tearoff's zone(s) AND tear down their view model trees (see DoTearoffWindowClose). The
-                // trees are still intact here, this path closes no content first.
-                if (m_zonesByWindow.TryGetValue(sourceWindow, out List<TZone>? closingZones))
-                {
-                    this.DeRegisterAndTeardownRootZones(closingZones.ToArray());
-                }
-
-                m_tearoffRootZones.Remove(sourceWindow);
-                m_zonesByWindow.Remove(sourceWindow);
+                this.ForgetTearoffWindow(sourceWindow);
                 this.StopTrackingWindow(sourceWindow);
                 this.DetachTearoffSubscriptions(sourceWindow);
                 this.CloseWindow(sourceWindow);
@@ -964,8 +1033,16 @@ namespace AJut.UX.Docking
         /// </summary>
         protected void CloseTearoffsForRootWindowClosed ()
         {
+            this.MarkRootWindowClosing();
             this.CloseEveryTearoffSilently();
         }
+
+        /// <summary>
+        /// The root window is closing: nothing auto-saves from here on, since what changes now is the layout coming apart.
+        /// <see cref="CloseTearoffsForRootWindowClosed"/> does this itself; a toolkit that closes the tearoffs later, or not
+        /// at all, calls it as the root window closes.
+        /// </summary>
+        protected void MarkRootWindowClosing () => m_isRootWindowClosing = true;
 
         /// <summary>Before a layout loads: closes every tearoff, then force closes and clears every root zone</summary>
         protected void ClearForLoadingFromState ()
@@ -979,7 +1056,8 @@ namespace AJut.UX.Docking
 
         /// <summary>
         /// Clears the layout and rebuilds it from a layout file: each root group's zones, then a tearoff window per saved
-        /// tearoff. <see cref="IsLoadingFromLayout"/> is true throughout. False (and logged) when the file can't be read.
+        /// tearoff. <see cref="IsLoadingFromLayout"/> is true throughout. False (and logged), with the layout showing left as
+        /// it is, when the file can't be read or has no root zone to load.
         /// </summary>
         [RequiresUnreferencedCode(kLayoutPanelTypeMessage)]
         protected virtual bool ResetLayoutFromFile (string filePath)
@@ -1003,22 +1081,60 @@ namespace AJut.UX.Docking
             }
         }
 
-        /// <summary>Writes the root window's zones by group, and every open tearoff, to a layout file</summary>
+        /// <summary>
+        /// Writes the root window's zones by group, and every open tearoff, to a layout file. False (and logged), with the
+        /// file left as it was, when there's no root zone to write.
+        /// </summary>
         protected virtual bool SaveLayoutToFile (string? filePath)
         {
+            DockLayoutFile.CoreLayout core = this.BuildCoreLayout();
+            if (!HasRootZoneToSave(core.ZoneInfoByRoot, filePath))
+            {
+                return false;
+            }
+
             var contents = new DockLayoutFile.Contents
             {
-                Core = this.BuildCoreLayout(),
+                Core = core,
                 Ancillary = this.BuildTearoffLayouts().ToArray(),
             };
 
             return DockLayoutFile.Write(filePath, contents);
         }
 
-        /// <summary>Saves the layout per <see cref="AutoSaveMethod"/>, unless a layout is loading or the startup load has not finished</summary>
+        /// <summary>
+        /// Saves the layout per <see cref="AutoSaveMethod"/> once the changes underway have settled
+        /// (<see cref="RunAfterLayoutChangesSettle"/>), so a burst of changes saves once. Every zone view model reports its
+        /// own changes here, and a toolkit reports a zone's size changing. Nothing auto-saves while a layout loads, before
+        /// the startup load has finished, once <see cref="Dispose"/> starts, or once the root window is closing
+        /// (<see cref="MarkRootWindowClosing"/>): what changes then is the layout coming apart, and saving it would replace
+        /// the layout that was saved with what's left of it.
+        /// </summary>
         protected void TriggerLayoutAutoSave ()
         {
-            if (this.IsLoadingFromLayout || !m_isReadyToTrackAutoSave)
+            if (m_isAutoSavePending || !this.CanAutoSaveNow())
+            {
+                return;
+            }
+
+            m_isAutoSavePending = true;
+            this.RunAfterLayoutChangesSettle(this.RunPendingAutoSave);
+        }
+
+        // ===========[ Helper Methods ]========================================
+        private bool CanAutoSaveNow ()
+            => (this.AutoSaveMethod != eDockingAutoSaveMethod.None)
+                && m_isReadyToTrackAutoSave
+                && !this.IsLoadingFromLayout
+                && !m_isDisposed
+                && !m_isRootWindowClosing;
+
+        // The save TriggerLayoutAutoSave asked for, once the changes settled. Checked again here, since a load may have
+        //  started, the manager been disposed, or the root window closed in between.
+        private void RunPendingAutoSave ()
+        {
+            m_isAutoSavePending = false;
+            if (!this.CanAutoSaveNow())
             {
                 return;
             }
@@ -1033,7 +1149,6 @@ namespace AJut.UX.Docking
             }
         }
 
-        // ===========[ Helper Methods ]========================================
         private List<TWindow> GetTearoffWindows ()
             => m_zonesByWindow.Keys.Where(w => w != this.RootWindow).ToList();
 
@@ -1046,17 +1161,17 @@ namespace AJut.UX.Docking
             m_windowsToCloseSilently.AddRange(tearoffs);
             foreach (TWindow window in tearoffs)
             {
-                // The trees are still intact here, nothing closed them first
-                if (m_zonesByWindow.TryGetValue(window, out List<TZone>? closingZones))
+                // One the toolkit no longer tracks has closed already, by something other than this manager (a window
+                //  manager closing the root's children along with it, say). It only leaves the registry, since a window
+                //  that's gone can't be detached from or closed again.
+                bool isStillOpen = this.IsWindowTracked(window);
+                this.ForgetTearoffWindow(window);
+                if (isStillOpen)
                 {
-                    this.DeRegisterAndTeardownRootZones(closingZones.ToArray());
+                    this.StopTrackingWindow(window);
+                    this.DetachTearoffSubscriptions(window);
+                    this.CloseWindow(window);
                 }
-
-                m_tearoffRootZones.Remove(window);
-                m_zonesByWindow.Remove(window);
-                this.StopTrackingWindow(window);
-                this.DetachTearoffSubscriptions(window);
-                this.CloseWindow(window);
             }
 
             m_windowsToCloseSilently.Clear();
@@ -1064,6 +1179,20 @@ namespace AJut.UX.Docking
             {
                 this.UISyncVM.RecountActiveInstances();
             }
+        }
+
+        // Drops a tearoff window from the registry: its root zones are deregistered and their view model trees torn down
+        //  (see DoTearoffWindowClose), and the window itself is not touched. The trees are still intact on every path that
+        //  comes here, since none of them closes content first.
+        private void ForgetTearoffWindow (TWindow window)
+        {
+            if (m_zonesByWindow.TryGetValue(window, out List<TZone>? closingZones))
+            {
+                this.DeRegisterAndTeardownRootZones(closingZones.ToArray());
+            }
+
+            m_tearoffRootZones.Remove(window);
+            m_zonesByWindow.Remove(window);
         }
 
         // Deregister AND permanently tear down a set of closing tearoff root zones: drops them from the registry, then
@@ -1113,46 +1242,50 @@ namespace AJut.UX.Docking
                     return false;
                 }
 
+                // Checked before anything is cleared, so a file with nothing to load leaves the layout showing as it is
+                List<KeyValuePair<string, DockZoneSerializationData>> rootLayouts = GetLoadableRootLayouts(contents.Core?.ZoneInfoByRoot);
+                if (rootLayouts.Count == 0)
+                {
+                    return false;
+                }
+
                 this.ClearForLoadingFromState();
 
-                if (contents.Core != null)
+                foreach (KeyValuePair<string, DockZoneSerializationData> rootLayout in rootLayouts)
                 {
-                    foreach (string groupId in contents.Core.ZoneInfoByRoot.Keys)
+                    DockZoneViewModel? zone = this.GetRootZoneForGroup(rootLayout.Key);
+                    if (zone == null)
                     {
-                        DockZoneViewModel? zone = this.GetRootZoneForGroup(groupId);
-                        if (zone == null)
-                        {
-                            Logger.LogError($"Dock Loading Error: No zone for group id '{groupId}' - falling back to default zone");
-                            zone = defaultLoadZone;
-                        }
-
-                        this.ApplyZoneLayout(zone, contents.Core.ZoneInfoByRoot[groupId]);
+                        Logger.LogError($"Dock Loading Error: No zone for group id '{rootLayout.Key}' - falling back to default zone");
+                        zone = defaultLoadZone;
                     }
 
-                    foreach (DockLayoutFile.TearoffLayout tearoff in contents.Ancillary ?? Array.Empty<DockLayoutFile.TearoffLayout>())
+                    this.ApplyZoneLayout(zone, rootLayout.Value);
+                }
+
+                foreach (DockLayoutFile.TearoffLayout tearoff in contents.Ancillary ?? Array.Empty<DockLayoutFile.TearoffLayout>())
+                {
+                    if (tearoff.State == null)
                     {
-                        if (tearoff.State == null)
-                        {
-                            continue;
-                        }
+                        continue;
+                    }
 
-                        var zone = new DockZoneViewModel(this);
-                        this.ApplyZoneLayout(zone, tearoff.State);
+                    var zone = new DockZoneViewModel(this);
+                    this.ApplyZoneLayout(zone, tearoff.State);
 
-                        // The file keeps placement bounds; creation may take other units
-                        var bounds = new DockWindowBounds(tearoff.WindowX, tearoff.WindowY, tearoff.WindowWidth, tearoff.WindowHeight);
-                        Result<TWindow> windowResult = this.CreateAndStockTearoffWindow(zone, this.ToTearoffCreationBounds(bounds));
-                        if (windowResult.HasErrors)
-                        {
-                            Logger.LogError("Dock Loading Error: Failed to create ancillary window from state");
-                            Logger.LogError(windowResult.GetErrorReport());
-                            continue;
-                        }
+                    // The file keeps placement bounds; creation may take other units
+                    var bounds = new DockWindowBounds(tearoff.WindowX, tearoff.WindowY, tearoff.WindowWidth, tearoff.WindowHeight);
+                    Result<TWindow> windowResult = this.CreateAndStockTearoffWindow(zone, this.ToTearoffCreationBounds(bounds));
+                    if (windowResult.HasErrors)
+                    {
+                        Logger.LogError("Dock Loading Error: Failed to create ancillary window from state");
+                        Logger.LogError(windowResult.GetErrorReport());
+                        continue;
+                    }
 
-                        if (tearoff.IsFullscreen || tearoff.IsMaximized)
-                        {
-                            this.ApplyWindowLayoutState(windowResult.Value, new DockWindowLayoutState(bounds, tearoff.IsMaximized, tearoff.IsFullscreen));
-                        }
+                    if (tearoff.IsFullscreen || tearoff.IsMaximized)
+                    {
+                        this.ApplyWindowLayoutState(windowResult.Value, new DockWindowLayoutState(bounds, tearoff.IsMaximized, tearoff.IsFullscreen));
                     }
                 }
 
@@ -1228,7 +1361,7 @@ namespace AJut.UX.Docking
         private IEnumerable<DockLayoutFile.TearoffLayout> BuildTearoffLayouts ()
         {
             // Snapshot the registered windows so the iteration is stable. Skip the root window, and any window already
-            // gone (closed, or in teardown)
+            // gone (closed, or in teardown). One the toolkit no longer tracks has closed, and nothing is read off it.
             foreach (KeyValuePair<TWindow, List<TZone>> windowZones in m_zonesByWindow.ToList())
             {
                 if (windowZones.Key == this.RootWindow)
@@ -1236,7 +1369,9 @@ namespace AJut.UX.Docking
                     continue;
                 }
 
-                if (windowZones.Value.Count == 0 || !this.TryCaptureWindowLayoutState(windowZones.Key, out DockWindowLayoutState state))
+                if ((windowZones.Value.Count == 0)
+                    || !this.IsWindowTracked(windowZones.Key)
+                    || !this.TryCaptureWindowLayoutState(windowZones.Key, out DockWindowLayoutState state))
                 {
                     continue;
                 }

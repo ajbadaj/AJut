@@ -58,7 +58,10 @@ namespace AJut.UX.Docking
             return FileHelpers.GetStreamFromLocalFileUri(uri);
         }
 
-        /// <summary>Parses a layout file's contents, or gives null (and logs why)</summary>
+        /// <summary>
+        /// Parses a layout file's contents, or gives null (and logs why). Anything in it that parses but can't be built into
+        /// its part of the layout is logged too, and that part is left empty.
+        /// </summary>
         public static Contents? Read (Stream stream)
         {
             var json = JsonHelper.ParseFile(stream);
@@ -69,7 +72,14 @@ namespace AJut.UX.Docking
                 return null;
             }
 
-            var contents = JsonHelper.BuildObjectForJson<Contents>(json.Data);
+            // Built from the whole Json rather than its document, so what can't be built is reported on it instead of lost
+            var contents = JsonHelper.BuildObjectForJson<Contents>(json);
+            if (json.HasErrors)
+            {
+                Logger.LogError("Dock Loading Error: Part of the layout could not be read");
+                Logger.LogError(json.GetErrorReport());
+            }
+
             if (contents == null)
             {
                 Logger.LogError("Dock Loading Error: Failed to deserialize SerializationInfo");

@@ -26,11 +26,23 @@ namespace AJut.UX.Docking
         /// </summary>
         double MinPanelDimension { get; set; }
 
+        /// <summary>
+        /// Replaces the layout with the one in a layout file. False (and logged), with the layout showing left as it is, when
+        /// the file can't be read or has no root zone to load.
+        /// </summary>
         [RequiresUnreferencedCode("Builds each panel a layout file names from its saved type id, and trimming can remove a panel type, or its constructor, that nothing else uses. Register each panel type with RegisterDisplayFactory<T> to keep it.")]
         bool LoadDockLayoutFromFile(string filePath);
+
+        /// <summary>
+        /// Writes the layout to a layout file. False (and logged), with the file left as it was, when there's no root zone to
+        /// write (none is registered for the root window) or the file can't be written.
+        /// </summary>
         bool SaveDockLayoutToFile(string filePath = null);
 
+        /// <summary>Writes the layout to the persistent storage file, the way <see cref="SaveDockLayoutToFile"/> writes one</summary>
         bool SaveDockLayoutToPersistentStorage();
+
+        /// <summary>Loads the persistent storage file's layout, the way <see cref="LoadDockLayoutFromFile"/> loads one</summary>
         [RequiresUnreferencedCode("Builds each panel a layout file names from its saved type id, and trimming can remove a panel type, or its constructor, that nothing else uses. Register each panel type with RegisterDisplayFactory<T> to keep it.")]
         bool ReloadDockLayoutFromPersistentStorage();
 

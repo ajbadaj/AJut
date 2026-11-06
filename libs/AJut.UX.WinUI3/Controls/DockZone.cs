@@ -51,6 +51,7 @@ namespace AJut.UX.Controls
         private Grid m_dropOverlay;
         private DockDropInsertionDriverWidget m_overlayLeft, m_overlayTop, m_overlayRight, m_overlayBottom, m_overlayCenter;
         private readonly ObservableCollection<DockZone> m_childZones = new();
+        private Size m_lastArrangedSize;
 
         // Header-drag threshold state (reset at each RebuildLayout)
         private bool m_headerDragPending;
@@ -115,6 +116,21 @@ namespace AJut.UX.Controls
         }
 
         // ===========[ Template ]=============================================
+        // A zone's size is part of what a layout saves, so each new size this is arranged at goes to its manager, which
+        // saves once the change settles when it auto-saves. Arrange is where a new size lands, and overriding it needs no
+        // subscription to this zone's own events.
+        protected override Size ArrangeOverride(Size finalSize)
+        {
+            Size arrangedSize = base.ArrangeOverride(finalSize);
+            if (arrangedSize != m_lastArrangedSize)
+            {
+                m_lastArrangedSize = arrangedSize;
+                (m_manager as DockingManager)?.OnZoneSizeChanged();
+            }
+
+            return arrangedSize;
+        }
+
         protected override void OnApplyTemplate()
         {
             // Unsubscribe old empty placeholder events

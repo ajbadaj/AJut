@@ -63,7 +63,10 @@ namespace AJut.UX.Docking
             }
         }
 
-        /// <summary>Parses a layout file's contents, or gives null (and logs why)</summary>
+        /// <summary>
+        /// Parses a layout file's contents, or gives null (and logs why). Anything in it that parses but can't be built into
+        /// its part of the layout is logged too, and that part is left empty.
+        /// </summary>
         public static SerializationInfo Read (Stream stream)
         {
             if (stream == null)
@@ -80,7 +83,14 @@ namespace AJut.UX.Docking
                 return null;
             }
 
-            var state = JsonHelper.BuildObjectForJson<SerializationInfo>(json.Data);
+            // Built from the whole Json rather than its document, so what can't be built is reported on it instead of lost
+            var state = JsonHelper.BuildObjectForJson<SerializationInfo>(json);
+            if (json.HasErrors)
+            {
+                Logger.LogError("Dock Loading Error: Part of the layout could not be read");
+                Logger.LogError(json.GetErrorReport());
+            }
+
             if (state == null)
             {
                 Logger.LogError("Dock Loading Error: Failed to read docking manager state");
