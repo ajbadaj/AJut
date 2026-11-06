@@ -36,6 +36,22 @@
             </StackPanel>
             <ui:ShowroomCodeDisplay CodeText="{x:Bind BooleanCode}" Height="200"/>
 
+            <!-- ====[ Text status ]==== -->
+            <TextBlock Text="IsTextNullOrEmptyToVisibilityConverter" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                       Text="Shows or hides on whether a string has any text. WhenHasText defaults to Visible and WhenNullOrEmpty to Collapsed; set them the other way round for a hint that shows only while the text is empty. IsTextNullOrEmptyConverter gives the check itself as a bool, true when there is no text."/>
+            <TextBox x:Name="TextStatusSource" Header="Name" Text="Penguin" Width="300" HorizontalAlignment="Left"/>
+            <StackPanel Spacing="6">
+                <StackPanel Orientation="Horizontal" Spacing="4"
+                            Visibility="{Binding ElementName=TextStatusSource, Path=Text, Converter={ajut_conv:IsTextNullOrEmptyToVisibilityConverter}}">
+                    <TextBlock Text="Hello,"/>
+                    <TextBlock Text="{Binding ElementName=TextStatusSource, Path=Text}" FontWeight="Bold"/>
+                </StackPanel>
+                <TextBlock Text="Type a name above." FontStyle="Italic"
+                           Visibility="{Binding ElementName=TextStatusSource, Path=Text, Converter={ajut_conv:IsTextNullOrEmptyToVisibilityConverter WhenHasText=Collapsed, WhenNullOrEmpty=Visible}}"/>
+            </StackPanel>
+            <ui:ShowroomCodeDisplay CodeText="{x:Bind TextStatusCode}" Height="200"/>
+
             <!-- ====[ Numeric comparison ]==== -->
             <TextBlock Text="NumericComparisonToVisibilityConverter" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0"/>
             <TextBlock TextWrapping="Wrap" Opacity="0.8"

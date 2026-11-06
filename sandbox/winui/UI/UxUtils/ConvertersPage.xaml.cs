@@ -58,6 +58,19 @@ namespace AJutShowRoomWinUI.UI.UxUtils
 <!-- Either of two brushes; the same shape exists for Color, Double, Thickness and CornerRadius -->
 <Border Background=""{Binding ElementName=FlagSwitch, Path=IsOn, Converter={ajut_conv:BooleanToBrushConverter TrueValue=SeaGreen, FalseValue=Gray}}""/>";
 
+        public string TextStatusCode { get; } = @"<TextBox x:Name=""TextStatusSource"" Text=""Penguin""/>
+
+<!-- Visible with text, Collapsed with none, unless you say otherwise -->
+<StackPanel Orientation=""Horizontal"" Spacing=""4""
+            Visibility=""{Binding ElementName=TextStatusSource, Path=Text, Converter={ajut_conv:IsTextNullOrEmptyToVisibilityConverter}}"">
+    <TextBlock Text=""Hello,""/>
+    <TextBlock Text=""{Binding ElementName=TextStatusSource, Path=Text}"" FontWeight=""Bold""/>
+</StackPanel>
+
+<!-- The other way round: a hint that shows only while the text is empty -->
+<TextBlock Text=""Type a name above.""
+           Visibility=""{Binding ElementName=TextStatusSource, Path=Text, Converter={ajut_conv:IsTextNullOrEmptyToVisibilityConverter WhenHasText=Collapsed, WhenNullOrEmpty=Visible}}""/>";
+
         public string ComparisonCode { get; } = @"<Slider x:Name=""AmountSlider"" Minimum=""0"" Maximum=""100"" Value=""35""/>
 
 <TextBlock Text=""The amount is over 50.""
