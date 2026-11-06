@@ -26,6 +26,37 @@ namespace AJut.UX.Tests
             CollectionAssert.AreEqual(new[] { "persistent.layout" }, manager.Saved, "A first run with no layout yet must still save the layout the user goes on to build");
         }
 
+        // A layout change is what the layout model says changed (panels, splits, tabs, selection), on every stack, as well
+        //  as a zone's size changing, which only a stack's own controls can see
+        [TestMethod]
+        public void DockDefect_AutoSave_DockingAPanelSavesTheLayout ()
+        {
+            var manager = new TestDockingManager { AutoSaveMethod = eDockingAutoSaveMethod.AutoSaveOnAllChanges };
+            DockZoneViewModel root = manager.RegisterRoot().ViewModel;
+            manager.SetupDefaultAndFallbackTo(null);
+            manager.Saved.Clear();
+
+            root.AddDockedContent(manager.BuildNewDisplayElement<FakeDockPanel>());
+
+            CollectionAssert.Contains(manager.Saved, "persistent.layout", "Docking a panel changes the layout, so a manager that auto-saves saves it");
+        }
+
+        [TestMethod]
+        public void DockDefect_AutoSave_ChangingTheSelectedTabSavesTheLayout ()
+        {
+            var manager = new TestDockingManager();
+            DockZoneViewModel root = manager.RegisterRoot().ViewModel;
+            root.AddDockedContent(manager.BuildNewDisplayElement<FakeDockPanel>());
+            root.AddDockedContent(manager.BuildNewDisplayElement<FakeDockPanel>());
+            manager.AutoSaveMethod = eDockingAutoSaveMethod.AutoSaveOnAllChanges;
+            manager.SetupDefaultAndFallbackTo(null);
+            manager.Saved.Clear();
+
+            root.SelectedIndex = (root.SelectedIndex == 0) ? 1 : 0;
+
+            CollectionAssert.Contains(manager.Saved, "persistent.layout", "The selected tab is part of the layout, so a manager that auto-saves saves it");
+        }
+
         [TestMethod]
         public void DockDefect_AutoSaveWithNoRootZoneRegistered_LeavesThePersistentLayoutAlone ()
         {
