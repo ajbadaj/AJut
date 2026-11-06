@@ -27,8 +27,8 @@
     <!-- ===[ Label icon converters ]=== -->
     <conv:StringToImageSourceConverter x:Key="PG_StringToImageSource"/>
     <conv:IsTextNullOrEmptyToVisibilityConverter x:Key="PG_IconVisConverter"
-                                                  WhenHasText="Collapsed"
-                                                  WhenNullOrEmpty="Visible"/>
+                                                  WhenHasText="Visible"
+                                                  WhenNullOrEmpty="Collapsed"/>
     <conv:ThicknessFromNumberConverter x:Key="PG_IconMarginConverter" MultiplyMask="1,1,1,1"/>
 
     <!-- ===[ Default label DataTemplates ]=== -->
