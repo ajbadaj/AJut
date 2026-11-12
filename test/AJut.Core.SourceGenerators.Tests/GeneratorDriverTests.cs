@@ -225,6 +225,66 @@ namespace TestNs
         }
 
         [TestMethod]
+        public void Generator_ReportsAJSON009_ForAReadOnlyIncludeNameThatIsNotThere ()
+        {
+            // Each name is looked for on the type the part before it leads to, through a collection's items and a dictionary's
+            //  values; DerivedTypes says a name may be on a subtype; and a value written as one value has no members to add
+            const string src = @"
+using System.Collections.Generic;
+using AJut.Text.AJson;
+namespace TestNs
+{
+    public struct Box { public double X { get; set; } public double Right => X; }
+    public class Frame { public Box Inner { get; set; } }
+
+    [OptimizeAJson]
+    public class Holder
+    {
+        [JsonIncludeReadOnlyInWrite(""Right"", ""Rigth"")] public Box Bounds { get; set; }
+        [JsonIncludeReadOnlyInWrite(""Inner.Right"", ""Inner.Lft"")] public List<Frame> Frames { get; set; }
+        [JsonIncludeReadOnlyInWrite(""Right"")] public Dictionary<string, Box[]> ByName { get; set; }
+        [JsonIncludeReadOnlyInWrite(eAllowedProperties.DerivedTypes, ""Radius"")] public Frame Shape { get; set; }
+        [JsonIncludeReadOnlyInWrite(""Length"")] public string Text { get; set; }
+        [JsonIncludeReadOnlyInWrite] public double Computed => 2.0;
+    }
+}";
+            GeneratorDriverRunResult result = RunGenerator(src);
+            Diagnostic[] ajson009 = result.Diagnostics.Where(d => d.Id == "AJSON009").ToArray();
+            string report = string.Join("\n", ajson009.Select(d => d.GetMessage()));
+
+            Assert.AreEqual(3, ajson009.Length, report);
+            Assert.IsTrue(ajson009.All(d => d.Severity == DiagnosticSeverity.Warning));
+            Assert.IsTrue(ajson009.Any(d => d.GetMessage().Contains("'Rigth'")), report);
+            Assert.IsTrue(ajson009.Any(d => d.GetMessage().Contains("'Inner.Lft'") && d.GetMessage().Contains("'Lft'")), report);
+            Assert.IsTrue(ajson009.Any(d => d.GetMessage().Contains("'Length'") && d.GetMessage().Contains("one value")), report);
+            Assert.IsFalse(result.Diagnostics.Any(d => d.Severity == DiagnosticSeverity.Error), "a mismatched name never fails the build");
+        }
+
+        [TestMethod]
+        public void Generator_ReadsAReadOnlyIncludeFromAnOverriddenProperty ()
+        {
+            // The reflection path reads the attribute with inherit on, so a get-only override of a marked base property is written
+            const string src = @"
+using AJut.Text.AJson;
+namespace TestNs
+{
+    public abstract class ManifestBase
+    {
+        [JsonIncludeReadOnlyInWrite(""Missing"")] public abstract string ResourceType { get; }
+    }
+
+    [OptimizeAJson]
+    public class Sample : ManifestBase
+    {
+        public string Name { get; set; }
+        public override string ResourceType => ""sample"";
+    }
+}";
+            GeneratorDriverRunResult result = RunGenerator(src);
+            Assert.IsTrue(result.Diagnostics.Any(d => d.Id == "AJSON009" && d.GetMessage().Contains("'Missing'")), "the base's attribute is read for the override");
+        }
+
+        [TestMethod]
         public void Generator_ReportsAJSON007_WhenADeclaredDefaultDiffersFromTheOmitValue ()
         {
             // Values that agree once they are the parameter's type are not a mismatch: 5 and 5L for a long, 0.1 and 0.1f for a float.

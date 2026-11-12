@@ -73,5 +73,19 @@ namespace AJut.Text.AJson.SourceGenerators
             category: kCategory,
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
+
+        /// <summary>
+        /// A warning rather than an error: the names are looked up on the runtime type of each value when it is written, so a name
+        /// on a subtype still works, and a type from a newer version of a package that dropped a member shouldn't break a build.
+        /// eAllowedProperties.DerivedTypes says a name is only on a subtype, which quiets this for names missing from the declared
+        /// type.
+        /// </summary>
+        public static readonly DiagnosticDescriptor UnmatchedReadOnlyInclude = new DiagnosticDescriptor(
+            id: "AJSON009",
+            title: "JsonIncludeReadOnlyInWrite names a member that isn't there",
+            messageFormat: "[JsonIncludeReadOnlyInWrite] on '{0}.{1}' names '{2}', but {3}",
+            category: kCategory,
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true);
     }
 }

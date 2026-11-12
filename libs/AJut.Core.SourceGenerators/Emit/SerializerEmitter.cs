@@ -52,6 +52,7 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
             cb.AppendLine();
 
             List<ReadSlot> slots = CollectReadSlots(model);
+            EmitReadOnlyIncludeFields(cb, model);
             EmitWriteMethod(cb, model);
             cb.AppendLine();
             EmitReadMethod(cb, model, slots);
@@ -90,28 +91,32 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
 
             // A get-only member is written by default only when the reader can get it back, the same rule as the reflection
             //  path: a collection the reader fills, a value the constructor route takes, or anything on a type with nothing the
-            //  reader can set or fill. Anything else get-only is written only with UseReadonlyObjectProperties on.
+            //  reader can set or fill, and one marked [JsonIncludeReadOnlyInWrite] as well. Anything else get-only is written
+            //  only with UseReadonlyObjectProperties on.
             bool readerSetsAnything = model.Properties.Any(p => p.HasSetter || p.IsGetOnlyCollection);
-            foreach (PropertyModel prop in model.Properties)
+            for (int index = 0; index < model.Properties.Count; ++index)
             {
+                PropertyModel prop = model.Properties[index];
                 if (!prop.HasGetter)
                 {
                     continue;
                 }
 
+                string includesField = prop.ReadOnlyIncludeNames.Count > 0 ? ReadOnlyIncludesField(index) : null;
                 bool isWrittenByDefault = prop.HasSetter
                     || prop.IsGetOnlyCollection
+                    || prop.HasIncludeReadOnlyInWrite
                     || !readerSetsAnything
                     || model.ConstructorParameters.Any(p => p.PropertyName == prop.Name);
                 if (isWrittenByDefault)
                 {
-                    EmitPropertyWrite(cb, prop);
+                    EmitPropertyWrite(cb, prop, includesField);
                 }
                 else
                 {
                     cb.AppendLine("if (doc.BuilderSettings.UseReadonlyObjectProperties)");
                     cb.OpenBrace();
-                    EmitPropertyWrite(cb, prop);
+                    EmitPropertyWrite(cb, prop, includesField);
                     cb.CloseBrace();
                 }
             }
@@ -119,7 +124,38 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
             cb.CloseBrace();
         }
 
-        private static void EmitPropertyWrite (CodeBuilder cb, PropertyModel prop)
+        /// <summary>
+        /// Emits a static array of each member's [JsonIncludeReadOnlyInWrite] names, which the writer hands to
+        /// AJsonGenerationSupport.IncludeReadOnlyInWrite. Being one array for the life of the assembly, its names are parsed once.
+        /// </summary>
+        private static void EmitReadOnlyIncludeFields (CodeBuilder cb, SerializableTypeModel model)
+        {
+            bool anyEmitted = false;
+            for (int index = 0; index < model.Properties.Count; ++index)
+            {
+                PropertyModel prop = model.Properties[index];
+                if (prop.ReadOnlyIncludeNames.Count == 0)
+                {
+                    continue;
+                }
+
+                string names = string.Join(", ", prop.ReadOnlyIncludeNames.Select(n => $"\"{Escape(n)}\""));
+                cb.AppendLine($"private static readonly global::System.String[] {ReadOnlyIncludesField(index)} = new global::System.String[] {{ {names} }};");
+                anyEmitted = true;
+            }
+
+            if (anyEmitted)
+            {
+                cb.AppendLine();
+            }
+        }
+
+        private static string ReadOnlyIncludesField (int propertyIndex) => $"kReadOnlyIncludes{propertyIndex}";
+
+        /// <param name="includesField">
+        /// The static array of the member's [JsonIncludeReadOnlyInWrite] names, or null when it names none
+        /// </param>
+        private static void EmitPropertyWrite (CodeBuilder cb, PropertyModel prop, string includesField)
         {
             cb.AppendLine($"// {prop.Name} -> \"{prop.JsonKey}\"");
             string accessor = $"obj.{prop.Name}";
@@ -150,19 +186,20 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
             switch (prop.Kind)
             {
                 case ePropertyKind.RuntimeTypeEval:
-                    EmitWriteRuntimeTypeEval(cb, prop, accessor);
+                    EmitWriteRuntimeTypeEval(cb, prop, accessor, includesField);
                     break;
                 case ePropertyKind.SimpleValue:
                 case ePropertyKind.Enum:
+                    // Written as one value, so names have nothing to add to (AJSON009 says so)
                     EmitWriteSimple(cb, prop, accessor);
                     break;
                 case ePropertyKind.Parsable:
                 case ePropertyKind.ComplexReference:
                 case ePropertyKind.Collection:
-                    EmitWriteRecurse(cb, prop, accessor);
+                    EmitWriteRecurse(cb, prop, accessor, includesField);
                     break;
                 case ePropertyKind.Dictionary:
-                    EmitWriteDictionary(cb, prop, accessor);
+                    EmitWriteDictionary(cb, prop, accessor, includesField);
                     break;
                 case ePropertyKind.Unsupported:
                     cb.AppendLine("// AJSON002: unsupported property type for source generation - skipped at emit time");
@@ -187,26 +224,36 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
             cb.AppendLine($"doc.AddProperty(\"{Escape(prop.JsonKey)}\", (global::System.Object){valueExpr}, isUsuallyQuoted: {isQuotedLiteral});");
         }
 
-        private static void EmitWriteRecurse (CodeBuilder cb, PropertyModel prop, string accessor)
+        private static void EmitWriteRecurse (CodeBuilder cb, PropertyModel prop, string accessor, string includesField)
         {
-            cb.AppendLine($"global::AJut.Text.AJson.JsonBuilder propBuilder = doc.StartProperty(\"{Escape(prop.JsonKey)}\");");
+            cb.AppendLine($"global::AJut.Text.AJson.JsonBuilder propBuilder = {WithReadOnlyIncludes($"doc.StartProperty(\"{Escape(prop.JsonKey)}\")", includesField)};");
             cb.AppendLine($"global::AJut.Text.AJson.JsonHelper.FillOutJsonBuilderForObject({accessor}, propBuilder);");
         }
 
-        private static void EmitWriteDictionary (CodeBuilder cb, PropertyModel prop, string accessor)
+        private static void EmitWriteDictionary (CodeBuilder cb, PropertyModel prop, string accessor, string includesField)
         {
             // Written with its key and value types named here, so a pair's Key and Value are read in typed code rather than
             //  through the reflection path, which a platform without dynamic code doesn't run. The text is the same either way.
-            cb.AppendLine($"global::AJut.Text.AJson.AJsonGenerationSupport.WriteDictionary<{prop.DictionaryKeyTypeFullName}, {prop.DictionaryValueTypeFullName}>({accessor}, doc.StartProperty(\"{Escape(prop.JsonKey)}\"));");
+            cb.AppendLine($"global::AJut.Text.AJson.AJsonGenerationSupport.WriteDictionary<{prop.DictionaryKeyTypeFullName}, {prop.DictionaryValueTypeFullName}>({accessor}, {WithReadOnlyIncludes($"doc.StartProperty(\"{Escape(prop.JsonKey)}\")", includesField)});");
         }
 
-        private static void EmitWriteRuntimeTypeEval (CodeBuilder cb, PropertyModel prop, string accessor)
+        private static void EmitWriteRuntimeTypeEval (CodeBuilder cb, PropertyModel prop, string accessor, string includesField)
         {
             cb.AppendLine($"global::AJut.Text.AJson.JsonBuilder rteValueBuilder = global::AJut.Text.AJson.AJsonGenerationSupport.StartRuntimeTypeEvalProperty(doc, \"{Escape(prop.JsonKey)}\", {prop.RuntimeTypeEvalFlagLiteral}, {accessor}.GetType());");
             cb.AppendLine("if (rteValueBuilder != null)");
             cb.OpenBrace();
-            cb.AppendLine($"global::AJut.Text.AJson.JsonHelper.FillOutJsonBuilderForObject({accessor}, rteValueBuilder);");
+            cb.AppendLine($"global::AJut.Text.AJson.JsonHelper.FillOutJsonBuilderForObject({accessor}, {WithReadOnlyIncludes("rteValueBuilder", includesField)});");
             cb.CloseBrace();
+        }
+
+        /// <summary>
+        /// The builder expression, handed the member's [JsonIncludeReadOnlyInWrite] names first when it has any
+        /// </summary>
+        private static string WithReadOnlyIncludes (string builderExpression, string includesField)
+        {
+            return includesField == null
+                ? builderExpression
+                : $"global::AJut.Text.AJson.AJsonGenerationSupport.IncludeReadOnlyInWrite({builderExpression}, {includesField})";
         }
 
         // ===========================[ Read ]===========================
