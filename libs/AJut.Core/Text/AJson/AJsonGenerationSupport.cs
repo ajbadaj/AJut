@@ -4,6 +4,7 @@ namespace AJut.Text.AJson
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
+    using System.Runtime.CompilerServices;
 
     /// <summary>
     /// Public helper surface that the AJson source generator emits calls into. Lives here rather
@@ -25,6 +26,10 @@ namespace AJut.Text.AJson
             | DynamicallyAccessedMemberTypes.PublicFields
             | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;
 
+        // The parsed names for each generated member's [JsonIncludeReadOnlyInWrite], by the static array the generated serializer
+        //  passes, which lives as long as its assembly does
+        private static readonly ConditionalWeakTable<string[], ReadOnlyWriteIncludes> g_readOnlyIncludes = new ConditionalWeakTable<string[], ReadOnlyWriteIncludes>();
+
         /// <summary>
         /// Generated writers call this first. Promotes the builder to a document if needed and
         /// writes the type-id header per the active builder settings. Returns the document
@@ -45,6 +50,29 @@ namespace AJut.Text.AJson
             }
 
             return doc;
+        }
+
+        /// <summary>
+        /// Generated writers call this for a member whose [JsonIncludeReadOnlyInWrite] names members of its value, on the builder
+        /// the value is written into, before writing it. The named members are then written on top of the value's defaults, the
+        /// same as on the reflection path.
+        /// </summary>
+        /// <param name="target">The builder the member's value is written into</param>
+        /// <param name="memberNames">The attribute's names, as a static array of the generated serializer, so they're parsed once</param>
+        /// <returns><paramref name="target"/></returns>
+        public static JsonBuilder IncludeReadOnlyInWrite (JsonBuilder target, string[] memberNames)
+        {
+            if (target == null)
+            {
+                throw new ArgumentNullException(nameof(target));
+            }
+
+            if (memberNames != null)
+            {
+                target.ReadOnlyIncludes = g_readOnlyIncludes.GetValue(memberNames, static _names => ReadOnlyWriteIncludes.Parse(_names));
+            }
+
+            return target;
         }
 
         /// <summary>

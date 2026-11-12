@@ -98,6 +98,12 @@ namespace AJut.Text.AJson
 
         public bool IsValueUsualQuoteTarget { get; set; }
 
+        /// <summary>
+        /// Get-only members to write on top of the defaults of the value written into this builder, from a
+        /// <see cref="JsonIncludeReadOnlyInWriteAttribute"/> on the member that holds it. Null when there are none.
+        /// </summary>
+        internal ReadOnlyWriteIncludes ReadOnlyIncludes { get; set; }
+
         // ===============================[ Public Interface Methods ]===========================
         public JsonBuilder StartProperty (string propertyName)
         {

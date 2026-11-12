@@ -53,6 +53,9 @@ namespace AJut.Text.AJson
         // Types already logged as having no reflection path on a platform without dynamic code, so each is logged once
         private static readonly ConcurrentDictionary<Type, byte> g_typesLoggedAsNeedingGeneration = new ConcurrentDictionary<Type, byte>();
 
+        // [JsonIncludeReadOnlyInWrite] names already logged as writing nothing, by type and name, so each is logged once
+        private static readonly ConcurrentDictionary<string, byte> g_readOnlyIncludesLogged = new ConcurrentDictionary<string, byte>();
+
         // Per-type reflection caches. Bounded by Type identity (assembly-bounded), no leak risk.
         // ConcurrentDictionary chosen for thread-safety in case AJson is called concurrently.
         // The lists depend on TypeMetadataExtensionRegistrar state as well as on the Type, so the
@@ -1015,9 +1018,18 @@ namespace AJut.Text.AJson
                 return;
             }
 
+            // Get-only members to write on top of this value's defaults, from a [JsonIncludeReadOnlyInWrite] on the member that
+            //  holds it. A collection passes them on to each of its items, and a dictionary to each of its values.
+            ReadOnlyWriteIncludes includes = target.ReadOnlyIncludes;
+
             Type sourceType = source.GetType();
             if (TryWriteWithItsOwnWriter(source, sourceType, target))
             {
+                if (includes != null)
+                {
+                    WriteReadOnlyIncludesAfterItsOwnWriter(source, sourceType, target, includes);
+                }
+
                 return;
             }
 
@@ -1025,12 +1037,15 @@ namespace AJut.Text.AJson
             //  as a document of its entries instead.
             if (typeof(IEnumerable).IsAssignableFrom(sourceType))
             {
-                if (TryWriteDictionaryAsDocument(source, target))
+                if (TryWriteDictionaryAsDocument(source, target, includes: includes))
                 {
                     return;
                 }
 
                 JsonBuilder array = target.StartArray();
+
+                // A nested array is written into this one by the recursive call below, which takes the includes from here
+                array.ReadOnlyIncludes = includes;
                 IEnumerable enumerableValue = (IEnumerable)source;
                 foreach (object arrayItemObj in enumerableValue)
                 {
@@ -1056,6 +1071,7 @@ namespace AJut.Text.AJson
                     else
                     {
                         JsonBuilder arrayItem = array.StartDocument();
+                        arrayItem.ReadOnlyIncludes = includes;
                         FillOutJsonBuilderForObject(arrayItemObj, arrayItem);
                     }
                 }
@@ -1080,7 +1096,7 @@ namespace AJut.Text.AJson
 
                 object key = sourceType.GetProperty(nameof(KeyValuePair<object, object>.Key)).GetValue(source);
                 object value = sourceType.GetProperty(nameof(KeyValuePair<object, object>.Value)).GetValue(source);
-                if (!WriteKeyValuePair(target, key, sourceType.GenericTypeArguments[0], value, sourceType.GenericTypeArguments[1], sourceType))
+                if (!WriteKeyValuePair(target, key, sourceType.GenericTypeArguments[0], value, sourceType.GenericTypeArguments[1], sourceType, includes))
                 {
                     // Its key is reported already, and the pair is left out whole, the way a refused value is left out
                     if (entry.Parent != null)
@@ -1140,7 +1156,12 @@ namespace AJut.Text.AJson
 
             foreach (DataMember member in membersToWrite)
             {
-                ApplyDocumentMember(target, source, member);
+                ApplyDocumentMember(target, source, member, includes?.ChildFor(member.Info.Name));
+            }
+
+            if (includes != null)
+            {
+                WriteReadOnlyIncludes(target, source, sourceType, includes, membersToWrite);
             }
         }
 
@@ -1157,8 +1178,10 @@ namespace AJut.Text.AJson
                 return;
             }
 
+            // A [JsonIncludeReadOnlyInWrite] on the member holding the dictionary applies to each of its values
+            ReadOnlyWriteIncludes includes = target.ReadOnlyIncludes;
             if (TryWriteWithItsOwnWriter(source, source.GetType(), target)
-                || TryWriteDictionaryAsDocument(source, target, BoxEntries(source)))
+                || TryWriteDictionaryAsDocument(source, target, BoxEntries(source), includes))
             {
                 return;
             }
@@ -1167,6 +1190,7 @@ namespace AJut.Text.AJson
             //  from its typed Key and Value instead of the reflection path's walk of its members
             Type pairType = typeof(KeyValuePair<TKey, TValue>);
             JsonBuilder array = target.StartArray();
+            array.ReadOnlyIncludes = includes;
             foreach (KeyValuePair<TKey, TValue> pair in source)
             {
                 object boxedPair = pair;
@@ -1182,7 +1206,7 @@ namespace AJut.Text.AJson
                 {
                     JsonBuilder pairDocument = array.StartDocument();
                     if (!TryWriteWithItsOwnWriter(boxedPair, pairType, pairDocument)
-                        && !WriteKeyValuePair(pairDocument, pair.Key, typeof(TKey), pair.Value, typeof(TValue), pairType))
+                        && !WriteKeyValuePair(pairDocument, pair.Key, typeof(TKey), pair.Value, typeof(TValue), pairType, includes))
                     {
                         // Its key is reported already, and the entry is left out whole
                         array.Children.Remove(pairDocument);
@@ -1263,12 +1287,13 @@ namespace AJut.Text.AJson
         /// <param name="keyType">The pair's key type, which decides how the key is written, the way a member's declared type does</param>
         /// <param name="valueType">The pair's value type, which decides how the value is written</param>
         /// <param name="pairType">The KeyValuePair type, for its own type id</param>
+        /// <param name="valueIncludes">Get-only members to write on top of the value's defaults, from the dictionary's member</param>
         /// <returns>
         /// False when the key could not be written whole, which is reported to the build, and then the value isn't written. The
         /// caller leaves the whole pair out: a pair with no key, or part of one, reads back as an error of its own or as some
         /// other key, never as the entry it was.
         /// </returns>
-        private static bool WriteKeyValuePair (JsonBuilder pairDocument, object key, Type keyType, object value, Type valueType, Type pairType)
+        private static bool WriteKeyValuePair (JsonBuilder pairDocument, object key, Type keyType, object value, Type valueType, Type pairType, ReadOnlyWriteIncludes valueIncludes)
         {
             JsonBuilderSettings settings = pairDocument.BuilderSettings;
             if (settings.HasAnyKVPTypeIdWriteInstructions)
@@ -1291,7 +1316,7 @@ namespace AJut.Text.AJson
             // Whatever inside the key can't be written notes it on the build as it goes (a key type with no generated serializer
             //  where dynamic code isn't available, or a member of one), so a change in the count is a key that didn't go in whole
             int errorsBeforeTheKey = pairDocument.ErrorCount;
-            _WriteMember(pairDocument, nameof(KeyValuePair<object, object>.Key), key, keyType);
+            _WriteMember(pairDocument, nameof(KeyValuePair<object, object>.Key), key, keyType, null);
             if (pairDocument.ErrorCount != errorsBeforeTheKey)
             {
                 return false;
@@ -1305,13 +1330,13 @@ namespace AJut.Text.AJson
             }
             else
             {
-                _WriteMember(pairDocument, nameof(KeyValuePair<object, object>.Value), value, valueType);
+                _WriteMember(pairDocument, nameof(KeyValuePair<object, object>.Value), value, valueType, valueIncludes);
             }
 
             return true;
 
             // What ApplyDocumentMember does for a member with no AJson attributes, which Key and Value never have
-            static void _WriteMember (JsonBuilder document, string name, object member, Type memberType)
+            static void _WriteMember (JsonBuilder document, string name, object member, Type memberType, ReadOnlyWriteIncludes includes)
             {
                 if (member == null)
                 {
@@ -1321,10 +1346,16 @@ namespace AJut.Text.AJson
                 if (TryGetSimpleStringValue(document.BuilderSettings, memberType, member, out bool isUsuallyQuoted, out _))
                 {
                     document.AddProperty(name, member, isUsuallyQuoted);
+                    if (includes != null)
+                    {
+                        LogReadOnlyIncludesOnASingleValue(member.GetType(), includes);
+                    }
                 }
                 else
                 {
-                    FillOutJsonBuilderForObject(member, document.StartProperty(name));
+                    JsonBuilder valueBuilder = document.StartProperty(name);
+                    valueBuilder.ReadOnlyIncludes = includes;
+                    FillOutJsonBuilderForObject(member, valueBuilder);
                 }
             }
         }
@@ -1400,8 +1431,9 @@ namespace AJut.Text.AJson
         /// null literal, "key" : null, where a null member is left out: an entry is data, and a member is shape.
         /// </summary>
         /// <param name="entries">The dictionary's entries, when the caller has them typed; found from the dictionary when not given</param>
+        /// <param name="includes">Get-only members to write on top of each value's defaults, from the dictionary's member</param>
         /// <returns>True if it was written, false if it is written some other way</returns>
-        private static bool TryWriteDictionaryAsDocument (object source, JsonBuilder target, IEnumerable<KeyValuePair<object, object>> entries = null)
+        private static bool TryWriteDictionaryAsDocument (object source, JsonBuilder target, IEnumerable<KeyValuePair<object, object>> entries = null, ReadOnlyWriteIncludes includes = null)
         {
             if (!IsDictionaryWrittenAsDocument(source, target.BuilderSettings, out Type dictionaryInterface, out JsonStringMaker keyMaker, entries))
             {
@@ -1420,10 +1452,16 @@ namespace AJut.Text.AJson
                 else if (TryGetSimpleStringValue(document.BuilderSettings, entry.Value.GetType(), entry.Value, out bool isUsuallyQuoted, out _))
                 {
                     document.AddProperty(key, entry.Value, isUsuallyQuoted);
+                    if (includes != null)
+                    {
+                        LogReadOnlyIncludesOnASingleValue(entry.Value.GetType(), includes);
+                    }
                 }
                 else
                 {
-                    FillOutJsonBuilderForObject(entry.Value, document.StartProperty(key));
+                    JsonBuilder valueBuilder = document.StartProperty(key);
+                    valueBuilder.ReadOnlyIncludes = includes;
+                    FillOutJsonBuilderForObject(entry.Value, valueBuilder);
                 }
             }
 
@@ -1494,8 +1532,15 @@ namespace AJut.Text.AJson
             }
         }
 
+        /// <param name="target">The document the member is written into</param>
+        /// <param name="memberSource">The object that holds the member</param>
+        /// <param name="member">The member to write</param>
+        /// <param name="includesFromParent">
+        /// Get-only members to write on top of the member's value's defaults, given by a [JsonIncludeReadOnlyInWrite] further up
+        /// (the Right of "Bounds.Right"). They join the member's own.
+        /// </param>
         [UnconditionalSuppressMessage("Trimming", "IL2072", Justification = kNestedTypeJustification)]
-        private static void ApplyDocumentMember (JsonBuilder target, object memberSource, DataMember member)
+        private static void ApplyDocumentMember (JsonBuilder target, object memberSource, DataMember member, ReadOnlyWriteIncludes includesFromParent = null)
         {
             string key = member.JsonKey;
             object sourceValue = member.GetValue(memberSource);
@@ -1504,6 +1549,8 @@ namespace AJut.Text.AJson
             {
                 return;
             }
+
+            ReadOnlyWriteIncludes includes = ReadOnlyWriteIncludes.Merge(member.ReadOnlyIncludes, includesFromParent);
 
             // [JsonOmitIfDefault] - skip the member if the value matches a default. Three sources
             //  in priority order: per-attribute explicit, settings-registered equivalent, then the
@@ -1523,6 +1570,7 @@ namespace AJut.Text.AJson
                 JsonBuilder wrapperDoc = target.StartProperty(key).StartDocument();
                 wrapperDoc.AddProperty(JsonDocument.kTypeIndicator, runtimeTypeId);
                 JsonBuilder valueBuilder = wrapperDoc.StartProperty(JsonDocument.kRuntimeTypeEvalValue);
+                valueBuilder.ReadOnlyIncludes = includes;
                 FillOutJsonBuilderForObject(sourceValue, valueBuilder);
                 return;
             }
@@ -1530,11 +1578,125 @@ namespace AJut.Text.AJson
             if (TryGetSimpleStringValue(target.BuilderSettings, member.Type, sourceValue, out bool isUsuallyQuoted, out string simpleStringValue))
             {
                 target.AddProperty(key, sourceValue, isUsuallyQuoted);
+                if (includes != null)
+                {
+                    LogReadOnlyIncludesOnASingleValue(sourceValue.GetType(), includes);
+                }
             }
             else
             {
                 JsonBuilder propertyBuilder = target.StartProperty(key);
+                propertyBuilder.ReadOnlyIncludes = includes;
                 FillOutJsonBuilderForObject(sourceValue, propertyBuilder);
+            }
+        }
+
+        /// <summary>
+        /// Writes the members a [JsonIncludeReadOnlyInWrite] names on <paramref name="source"/>, its document already written
+        /// into <paramref name="document"/>. Each name is looked up on the runtime type, so a member declared as a base type
+        /// writes what its subtype has. One that matches no public property or field is logged once per type and name.
+        /// </summary>
+        /// <param name="document">The document <paramref name="source"/> was written into</param>
+        /// <param name="source">The value whose members are named</param>
+        /// <param name="sourceType">Its runtime type</param>
+        /// <param name="includes">The names, as a tree</param>
+        /// <param name="writtenWithIncludes">
+        /// The members the reflection path already wrote, each with the names below it, which are left alone. Null for a document
+        /// something else wrote (a generated serializer): there a named member already written is written again, in its place,
+        /// when it has names below it, so they reach its value.
+        /// </param>
+        private static void WriteReadOnlyIncludes (JsonBuilder document, object source, Type sourceType, ReadOnlyWriteIncludes includes, DataMember[] writtenWithIncludes)
+        {
+            DataMember[] members = GetDataMembers(sourceType);
+            foreach (string name in includes.Names)
+            {
+                if (writtenWithIncludes != null && FindMemberByName(writtenWithIncludes, name) != null)
+                {
+                    continue;
+                }
+
+                DataMember member = FindMemberByName(members, name);
+                if (member == null || !member.CanGet)
+                {
+                    LogUnmatchedReadOnlyInclude(sourceType, includes.PathTo(name), name);
+                    continue;
+                }
+
+                ReadOnlyWriteIncludes below = includes.ChildFor(name);
+                JsonBuilder alreadyWritten = document.Children.Find(child => child.Key == member.JsonKey);
+                if (alreadyWritten != null && below == null)
+                {
+                    continue;
+                }
+
+                int childCountBefore = document.Children.Count;
+                ApplyDocumentMember(document, source, member, below);
+                if (alreadyWritten != null && document.Children.Count > childCountBefore)
+                {
+                    // Written again with the names below it, so the new one takes the old one's place
+                    int lastIndex = document.Children.Count - 1;
+                    JsonBuilder rewritten = document.Children[lastIndex];
+                    document.Children.RemoveAt(lastIndex);
+                    document.Children[document.Children.IndexOf(alreadyWritten)] = rewritten;
+                }
+            }
+        }
+
+        /// <summary>
+        /// After something other than the reflection member walk wrote <paramref name="source"/>, adds the members a
+        /// [JsonIncludeReadOnlyInWrite] names to what it wrote. Only a generated serializer writes a document of the type's own
+        /// members to add to. A [JsonPropertyAsSelf] type hands the names on to the value it writes in its place, along with the
+        /// builder. Anything else wrote one value, or decided for itself what to write, and there is nothing to add to.
+        /// </summary>
+        private static void WriteReadOnlyIncludesAfterItsOwnWriter (object source, Type sourceType, JsonBuilder target, ReadOnlyWriteIncludes includes)
+        {
+            if (sourceType.GetCustomAttribute<JsonPropertyAsSelfAttribute>(inherit: true) != null)
+            {
+                return;
+            }
+
+            JsonBuilder document = target.IsDocument ? target : target.DocumentKVPValue;
+            bool wasGenerated = target.BuilderSettings.TryGetRegisteredStringMakerFor(sourceType) == null
+                && !TryGetConverterFor(sourceType, out _)
+                && AJsonGeneratedDispatch.TryGet(sourceType, out _);
+
+            if (wasGenerated && document != null && document.IsDocument)
+            {
+                WriteReadOnlyIncludes(document, source, sourceType, includes, writtenWithIncludes: null);
+            }
+            else
+            {
+                LogReadOnlyIncludesOnASingleValue(sourceType, includes);
+            }
+        }
+
+        private static DataMember FindMemberByName (DataMember[] members, string name)
+        {
+            for (int i = 0; i < members.Length; ++i)
+            {
+                if (members[i].Info.Name == name)
+                {
+                    return members[i];
+                }
+            }
+
+            return null;
+        }
+
+        private static void LogUnmatchedReadOnlyInclude (Type type, string path, string name)
+        {
+            if (g_readOnlyIncludesLogged.TryAdd($"{type.AssemblyQualifiedName}|{path}", 0))
+            {
+                Logger.LogError($"[AJson] [JsonIncludeReadOnlyInWrite] names '{path}', but '{type.FullName}' has no public property or field named '{name}' to write, so it is left out.");
+            }
+        }
+
+        private static void LogReadOnlyIncludesOnASingleValue (Type type, ReadOnlyWriteIncludes includes)
+        {
+            if (g_readOnlyIncludesLogged.TryAdd($"{type.AssemblyQualifiedName}|{includes.Path}|single", 0))
+            {
+                string names = String.Join(", ", includes.Names.Select(includes.PathTo));
+                Logger.LogError($"[AJson] [JsonIncludeReadOnlyInWrite] names members of '{type.FullName}' ({names}), but it is written as one value, or by a converter of its own, so there are no members to add.");
             }
         }
 
@@ -1909,6 +2071,7 @@ namespace AJut.Text.AJson
                 this.CanSet = property.GetSetMethod() != null;
                 this.IsGetOnlyCollection = this.CanGet && !this.CanSet && IsCollectionWithAdd(this.Type);
                 this.JsonKey = KeyFor(property);
+                this.ReadIncludeAttribute(property);
             }
 
             public DataMember (FieldInfo field)
@@ -1922,6 +2085,7 @@ namespace AJut.Text.AJson
                 this.CanSet = !field.IsInitOnly;
                 this.IsGetOnlyCollection = !this.CanSet && IsCollectionWithAdd(this.Type);
                 this.JsonKey = KeyFor(field);
+                this.ReadIncludeAttribute(field);
             }
 
             /// <summary>
@@ -1952,6 +2116,16 @@ namespace AJut.Text.AJson
             /// </summary>
             public bool IsGetOnlyCollection { get; }
 
+            /// <summary>
+            /// True when it carries [JsonIncludeReadOnlyInWrite], so it is written even when it is get-only
+            /// </summary>
+            public bool IsIncludedInWrite { get; private set; }
+
+            /// <summary>
+            /// The members of its value its [JsonIncludeReadOnlyInWrite] names, or null when it names none
+            /// </summary>
+            public ReadOnlyWriteIncludes ReadOnlyIncludes { get; private set; }
+
             public object GetValue (object source) => m_property != null ? m_property.GetValue(source) : m_field.GetValue(source);
 
             public void SetValue (object target, object value)
@@ -1964,6 +2138,13 @@ namespace AJut.Text.AJson
                 {
                     m_field.SetValue(target, value);
                 }
+            }
+
+            private void ReadIncludeAttribute (MemberInfo member)
+            {
+                JsonIncludeReadOnlyInWriteAttribute include = member.GetCustomAttribute<JsonIncludeReadOnlyInWriteAttribute>(inherit: true);
+                this.IsIncludedInWrite = include != null;
+                this.ReadOnlyIncludes = ReadOnlyWriteIncludes.Parse(include?.MemberNames);
             }
 
             private static string KeyFor (MemberInfo member)
@@ -1988,7 +2169,8 @@ namespace AJut.Text.AJson
                 //  reader can set or fill: only a constructor can rebuild one of those, and a constructor registered with
                 //  JsonInterpreterSettings can read any key it likes (AJson's own KeyValuePair constructor reads Key and Value,
                 //  which are get-only, and an anonymous type is all get-only). Anything else get-only is worked out from other
-                //  members, the way a Rect's Right is from X and Width, so writing it only adds text the reader ignores.
+                //  members, the way a Rect's Right is from X and Width, so writing it only adds text the reader ignores, unless
+                //  [JsonIncludeReadOnlyInWrite] asks for it, for something other than AJson's reader to see.
                 //
                 // What this cannot see: a constructor registered for a type that also has settable members, which reads a
                 //  get-only member's key itself. That type needs UseReadonlyObjectProperties on.
@@ -2001,6 +2183,7 @@ namespace AJut.Text.AJson
                     .Where(m => m.CanGet
                         && (m.CanSet
                             || m.IsGetOnlyCollection
+                            || m.IsIncludedInWrite
                             || !readerSetsAnything
                             || constructorKeys.Contains(m.JsonKey)))
                     .ToArray();
