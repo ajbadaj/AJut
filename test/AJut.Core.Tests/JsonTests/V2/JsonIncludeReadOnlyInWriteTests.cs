@@ -409,6 +409,26 @@ namespace AJut.Core.UnitTests.AJsonV2
         }
 
         [TestMethod]
+        public void DerivedTypes_NameMissingFromTheBaseValue_IsNotLogged_OnEitherPath ()
+        {
+            // The log is kept once per type and name for the whole process, so both paths share it: if either one still logs,
+            //  its line shows up here
+            List<string> logged = this.CaptureLogDuring(() =>
+            {
+                JsonDocument fromReflection = (JsonDocument)Write(new ShapeHolder { Shape = new Shape { Name = "plain" } }).ValueFor("Shape");
+                Assert.AreEqual("plain", fromReflection.ValueFor("Name")?.StringValue);
+                Assert.IsNull(fromReflection.ValueFor("Radius"));
+
+                Assert.IsTrue(AJsonGeneratedDispatch.TryGet(typeof(ShapeHolderGen), out _));
+                JsonDocument fromGenerated = (JsonDocument)Write(new ShapeHolderGen { Shape = new Shape { Name = "plain" } }).ValueFor("Shape");
+                Assert.AreEqual("plain", fromGenerated.ValueFor("Name")?.StringValue);
+                Assert.IsNull(fromGenerated.ValueFor("Radius"));
+            });
+
+            Assert.IsFalse(logged.Any(line => line.Contains("JsonIncludeReadOnlyInWrite")), string.Join("\n", logged));
+        }
+
+        [TestMethod]
         public void SingleValue_WithNames_IsLoggedOnce ()
         {
             List<string> logged = this.CaptureLogDuring(() =>

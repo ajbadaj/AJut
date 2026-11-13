@@ -1594,7 +1594,8 @@ namespace AJut.Text.AJson
         /// <summary>
         /// Writes the members a [JsonIncludeReadOnlyInWrite] names on <paramref name="source"/>, its document already written
         /// into <paramref name="document"/>. Each name is looked up on the runtime type, so a member declared as a base type
-        /// writes what its subtype has. One that matches no public property or field is logged once per type and name.
+        /// writes what its subtype has. One that matches no public property or field is logged once per type and name, unless its
+        /// attribute passed eAllowedProperties.DerivedTypes, which says a value without it is expected.
         /// </summary>
         /// <param name="document">The document <paramref name="source"/> was written into</param>
         /// <param name="source">The value whose members are named</param>
@@ -1618,7 +1619,12 @@ namespace AJut.Text.AJson
                 DataMember member = FindMemberByName(members, name);
                 if (member == null || !member.CanGet)
                 {
-                    LogUnmatchedReadOnlyInclude(sourceType, includes.PathTo(name), name);
+                    // With eAllowedProperties.DerivedTypes the name is only on some subtypes, so a value without it is expected
+                    if (!includes.IsAllowedMissing(name))
+                    {
+                        LogUnmatchedReadOnlyInclude(sourceType, includes.PathTo(name), name);
+                    }
+
                     continue;
                 }
 
@@ -2144,7 +2150,7 @@ namespace AJut.Text.AJson
             {
                 JsonIncludeReadOnlyInWriteAttribute include = member.GetCustomAttribute<JsonIncludeReadOnlyInWriteAttribute>(inherit: true);
                 this.IsIncludedInWrite = include != null;
-                this.ReadOnlyIncludes = ReadOnlyWriteIncludes.Parse(include?.MemberNames);
+                this.ReadOnlyIncludes = ReadOnlyWriteIncludes.Parse(include?.MemberNames, include?.AllowedProperties == eAllowedProperties.DerivedTypes);
             }
 
             private static string KeyFor (MemberInfo member)

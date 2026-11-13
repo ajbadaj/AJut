@@ -581,9 +581,9 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
             const int kAllowedPropertiesDerivedTypes = 1;
             AttributeData includeAttr = FindIncludeReadOnlyInWrite(memberSymbol);
             List<string> includeNames = new List<string>();
+            bool allowsDerivedTypes = false;
             if (includeAttr != null)
             {
-                bool allowsDerivedTypes = false;
                 foreach (TypedConstant arg in includeAttr.ConstructorArguments)
                 {
                     if (arg.Kind == TypedConstantKind.Array)
@@ -645,6 +645,7 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                 RuntimeTypeEvalFlagLiteral = runtimeFlagLiteral,
                 HasIncludeReadOnlyInWrite = includeAttr != null,
                 ReadOnlyIncludeNames = includeNames.ToArray(),
+                ReadOnlyIncludesAllowDerivedTypes = allowsDerivedTypes,
             };
         }
 

@@ -128,5 +128,11 @@ namespace AJut.Text.AJson.SourceGenerators.Model
         /// names none.
         /// </summary>
         public System.Collections.Generic.IReadOnlyList<string> ReadOnlyIncludeNames { get; init; } = System.Array.Empty<string>();
+
+        /// <summary>
+        /// True when the member's [JsonIncludeReadOnlyInWrite] passed eAllowedProperties.DerivedTypes, so a value without one of
+        /// its names is expected and the writer doesn't log it
+        /// </summary>
+        public bool ReadOnlyIncludesAllowDerivedTypes { get; init; }
     }
 }
