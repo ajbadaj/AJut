@@ -24,7 +24,7 @@
        .github/scripts/set-version-numbers.ps1 makes the bumps, and works out which packages a fix moves. It edits only
        the numbers below, so keep each patch on a line of its own in the shape the others are in. -->
   <PropertyGroup>
-    <AJutVersionMajorMinor>2.0</AJutVersionMajorMinor>
+    <AJutVersionMajorMinor>2.1</AJutVersionMajorMinor>
   </PropertyGroup>
 
   <!-- Each project is versioned as the folder it's in, libs\<Name>\, which is also its package's name. Not as
@@ -42,13 +42,13 @@
   <!-- Each package's patch. A new library under libs\ needs a line here, and its build stops with an error until it
        has one. -->
   <PropertyGroup>
-    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.Core'">1</AJutVersionPatch>
-    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX'">1</AJutVersionPatch>
-    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX.Wpf'">1</AJutVersionPatch>
-    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX.WinUI3'">1</AJutVersionPatch>
-    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX.AppKit'">1</AJutVersionPatch>
-    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX.UIKit'">1</AJutVersionPatch>
-    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX.Android'">1</AJutVersionPatch>
+    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.Core'">0</AJutVersionPatch>
+    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX'">0</AJutVersionPatch>
+    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX.Wpf'">0</AJutVersionPatch>
+    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX.WinUI3'">0</AJutVersionPatch>
+    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX.AppKit'">0</AJutVersionPatch>
+    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX.UIKit'">0</AJutVersionPatch>
+    <AJutVersionPatch Condition="'$(AJutVersionedAs)' == 'AJut.UX.Android'">0</AJutVersionPatch>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(AJutVersionPatch)' != ''">
