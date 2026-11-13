@@ -31,7 +31,23 @@ jobs:
       run: |
         $installer = Join-Path $env:RUNNER_TEMP "dotnet-install.ps1"
         $installDir = Join-Path $env:RUNNER_TEMP "dotnet-x86"
-        Invoke-WebRequest -Uri "https://dot.net/v1/dotnet-install.ps1" -OutFile $installer
+        # A dropped connection here fails the whole run before anything builds, and -MaximumRetryCount only retries an HTTP
+        #  error status, not a connection the host closed, so it's retried by hand
+        $kMaxAttempts = 4
+        for ($attempt = 1; $attempt -le $kMaxAttempts; ++$attempt) {
+          try {
+            Invoke-WebRequest -Uri "https://dot.net/v1/dotnet-install.ps1" -OutFile $installer
+            break
+          }
+          catch {
+            if ($attempt -eq $kMaxAttempts) {
+              throw
+            }
+
+            Write-Host "Downloading dotnet-install.ps1 failed (attempt $attempt of $kMaxAttempts): $($_.Exception.Message) Retrying in 10 seconds."
+            Start-Sleep -Seconds 10
+          }
+        }
         & $installer -Runtime dotnet -Channel 10.0 -Architecture x86 -InstallDir $installDir -NoPath
         & $installer -Runtime windowsdesktop -Channel 10.0 -Architecture x86 -InstallDir $installDir -NoPath
         "DOTNET_ROOT_X86=$installDir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
