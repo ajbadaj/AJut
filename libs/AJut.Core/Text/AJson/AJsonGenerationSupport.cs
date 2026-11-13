@@ -27,7 +27,8 @@ namespace AJut.Text.AJson
             | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;
 
         // The parsed names for each generated member's [JsonIncludeReadOnlyInWrite], by the static array the generated serializer
-        //  passes, which lives as long as its assembly does
+        //  passes, which lives as long as its assembly does. Each array always comes with the same eAllowedProperties, since both
+        //  are from the one attribute.
         private static readonly ConditionalWeakTable<string[], ReadOnlyWriteIncludes> g_readOnlyIncludes = new ConditionalWeakTable<string[], ReadOnlyWriteIncludes>();
 
         /// <summary>
@@ -59,8 +60,12 @@ namespace AJut.Text.AJson
         /// </summary>
         /// <param name="target">The builder the member's value is written into</param>
         /// <param name="memberNames">The attribute's names, as a static array of the generated serializer, so they're parsed once</param>
+        /// <param name="allowedProperties">
+        /// The attribute's <see cref="eAllowedProperties"/>: with <see cref="eAllowedProperties.DerivedTypes"/>, a value without one
+        /// of the names is expected, so it isn't logged
+        /// </param>
         /// <returns><paramref name="target"/></returns>
-        public static JsonBuilder IncludeReadOnlyInWrite (JsonBuilder target, string[] memberNames)
+        public static JsonBuilder IncludeReadOnlyInWrite (JsonBuilder target, string[] memberNames, eAllowedProperties allowedProperties)
         {
             if (target == null)
             {
@@ -69,7 +74,15 @@ namespace AJut.Text.AJson
 
             if (memberNames != null)
             {
-                target.ReadOnlyIncludes = g_readOnlyIncludes.GetValue(memberNames, static _names => ReadOnlyWriteIncludes.Parse(_names));
+                // Parsed outside GetValue, whose callback can't be handed the flag without a closure on every write. Two threads
+                //  racing here parse the same tree, and either one is kept.
+                if (!g_readOnlyIncludes.TryGetValue(memberNames, out ReadOnlyWriteIncludes includes))
+                {
+                    includes = ReadOnlyWriteIncludes.Parse(memberNames, allowedProperties == eAllowedProperties.DerivedTypes);
+                    g_readOnlyIncludes.TryAdd(memberNames, includes);
+                }
+
+                target.ReadOnlyIncludes = includes;
             }
 
             return target;

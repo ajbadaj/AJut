@@ -9,13 +9,14 @@ namespace AJut.Text.AJson
     {
         /// <summary>
         /// On the declared type of the member the attribute is on (or of its items, for a collection). The source generator
-        /// warns about a name it can't find there (AJSON009).
+        /// warns about a name it can't find there (AJSON009), and a value without one is logged when it is written.
         /// </summary>
         DeclaredType,
 
         /// <summary>
-        /// On a type derived from the declared type, such as the Radius of a Circle held in a member declared as Shape. The
-        /// source generator does not warn about a name it can't find on the declared type.
+        /// On a type derived from the declared type, such as the Radius of a Circle held in a member declared as Shape. A value
+        /// without the name is expected (a plain Shape has no Radius), so neither the source generator's warning nor the log
+        /// when it is written reports it.
         /// </summary>
         DerivedTypes,
     }
@@ -40,11 +41,11 @@ namespace AJut.Text.AJson
     /// dictionary's values included, and a dotted name that crosses a collection applies to each of its items. A name that
     /// matches a member written anyway adds nothing. The names are looked up on the runtime type of each value, so a member
     /// declared as Shape writes a Circle's Radius; pass <see cref="eAllowedProperties.DerivedTypes"/> to say a name is only on
-    /// a subtype, which quiets the source generator's warning for it.
+    /// a subtype, which quiets both the source generator's warning and the log below for it.
     /// </para>
     /// <para>
-    /// A name that matches no public member of the value it is looked up on is logged as an error once per type and name, and
-    /// the rest is still written. A value written as one value (a string, a number, anything a converter writes) has no members
+    /// A name that matches no public member of the value it is looked up on is logged as an error once per type and name,
+    /// unless it was given with <see cref="eAllowedProperties.DerivedTypes"/>, and the rest is still written. A value written as one value (a string, a number, anything a converter writes) has no members
     /// to add, and is logged the same way.
     /// </para>
     /// </remarks>

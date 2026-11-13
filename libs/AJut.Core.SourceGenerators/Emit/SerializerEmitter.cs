@@ -226,7 +226,7 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
 
         private static void EmitWriteRecurse (CodeBuilder cb, PropertyModel prop, string accessor, string includesField)
         {
-            cb.AppendLine($"global::AJut.Text.AJson.JsonBuilder propBuilder = {WithReadOnlyIncludes($"doc.StartProperty(\"{Escape(prop.JsonKey)}\")", includesField)};");
+            cb.AppendLine($"global::AJut.Text.AJson.JsonBuilder propBuilder = {WithReadOnlyIncludes($"doc.StartProperty(\"{Escape(prop.JsonKey)}\")", prop, includesField)};");
             cb.AppendLine($"global::AJut.Text.AJson.JsonHelper.FillOutJsonBuilderForObject({accessor}, propBuilder);");
         }
 
@@ -234,7 +234,7 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
         {
             // Written with its key and value types named here, so a pair's Key and Value are read in typed code rather than
             //  through the reflection path, which a platform without dynamic code doesn't run. The text is the same either way.
-            cb.AppendLine($"global::AJut.Text.AJson.AJsonGenerationSupport.WriteDictionary<{prop.DictionaryKeyTypeFullName}, {prop.DictionaryValueTypeFullName}>({accessor}, {WithReadOnlyIncludes($"doc.StartProperty(\"{Escape(prop.JsonKey)}\")", includesField)});");
+            cb.AppendLine($"global::AJut.Text.AJson.AJsonGenerationSupport.WriteDictionary<{prop.DictionaryKeyTypeFullName}, {prop.DictionaryValueTypeFullName}>({accessor}, {WithReadOnlyIncludes($"doc.StartProperty(\"{Escape(prop.JsonKey)}\")", prop, includesField)});");
         }
 
         private static void EmitWriteRuntimeTypeEval (CodeBuilder cb, PropertyModel prop, string accessor, string includesField)
@@ -242,18 +242,23 @@ namespace AJut.Text.AJson.SourceGenerators.Emit
             cb.AppendLine($"global::AJut.Text.AJson.JsonBuilder rteValueBuilder = global::AJut.Text.AJson.AJsonGenerationSupport.StartRuntimeTypeEvalProperty(doc, \"{Escape(prop.JsonKey)}\", {prop.RuntimeTypeEvalFlagLiteral}, {accessor}.GetType());");
             cb.AppendLine("if (rteValueBuilder != null)");
             cb.OpenBrace();
-            cb.AppendLine($"global::AJut.Text.AJson.JsonHelper.FillOutJsonBuilderForObject({accessor}, {WithReadOnlyIncludes("rteValueBuilder", includesField)});");
+            cb.AppendLine($"global::AJut.Text.AJson.JsonHelper.FillOutJsonBuilderForObject({accessor}, {WithReadOnlyIncludes("rteValueBuilder", prop, includesField)});");
             cb.CloseBrace();
         }
 
         /// <summary>
-        /// The builder expression, handed the member's [JsonIncludeReadOnlyInWrite] names first when it has any
+        /// The builder expression, handed the member's [JsonIncludeReadOnlyInWrite] names (and whether they may be on a subtype
+        /// only) first when it has any
         /// </summary>
-        private static string WithReadOnlyIncludes (string builderExpression, string includesField)
+        private static string WithReadOnlyIncludes (string builderExpression, PropertyModel prop, string includesField)
         {
-            return includesField == null
-                ? builderExpression
-                : $"global::AJut.Text.AJson.AJsonGenerationSupport.IncludeReadOnlyInWrite({builderExpression}, {includesField})";
+            if (includesField == null)
+            {
+                return builderExpression;
+            }
+
+            string allowed = prop.ReadOnlyIncludesAllowDerivedTypes ? "DerivedTypes" : "DeclaredType";
+            return $"global::AJut.Text.AJson.AJsonGenerationSupport.IncludeReadOnlyInWrite({builderExpression}, {includesField}, global::AJut.Text.AJson.eAllowedProperties.{allowed})";
         }
 
         // ===========================[ Read ]===========================

@@ -13,6 +13,7 @@ namespace AJut.Text.AJson
     {
         private readonly Dictionary<string, ReadOnlyWriteIncludes> m_children = new Dictionary<string, ReadOnlyWriteIncludes>(StringComparer.Ordinal);
         private readonly List<string> m_order = new List<string>();
+        private bool m_isAllowedMissing;
 
         // ===============================[ Setup/Construction/Teardown ]===========================
         private ReadOnlyWriteIncludes (string path)
@@ -23,7 +24,12 @@ namespace AJut.Text.AJson
         /// <summary>
         /// The tree for a set of member names, or null when there are none
         /// </summary>
-        public static ReadOnlyWriteIncludes Parse (IEnumerable<string> memberNames)
+        /// <param name="memberNames">The attribute's names, dotted to reach further down</param>
+        /// <param name="allowsDerivedTypes">
+        /// True for <see cref="eAllowedProperties.DerivedTypes"/>: any of these names may be on a subtype only, so a value without
+        /// one is expected, and <see cref="IsAllowedMissing"/> says so for every name in the tree
+        /// </param>
+        public static ReadOnlyWriteIncludes Parse (IEnumerable<string> memberNames, bool allowsDerivedTypes)
         {
             if (memberNames == null)
             {
@@ -48,6 +54,7 @@ namespace AJut.Text.AJson
                     }
 
                     node = node.GetOrAddChild(name);
+                    node.m_isAllowedMissing = allowsDerivedTypes;
                 }
             }
 
@@ -96,6 +103,16 @@ namespace AJut.Text.AJson
         }
 
         /// <summary>
+        /// True when the attribute that gave <paramref name="memberName"/> passed <see cref="eAllowedProperties.DerivedTypes"/>,
+        /// so a value that has no member of that name is expected (it isn't the subtype that does) and isn't worth a log. A name
+        /// that more than one attribute gave is allowed missing only when every one of them said so.
+        /// </summary>
+        public bool IsAllowedMissing (string memberName)
+        {
+            return m_children.TryGetValue(memberName, out ReadOnlyWriteIncludes child) && child.m_isAllowedMissing;
+        }
+
+        /// <summary>
         /// The dotted name of <paramref name="memberName"/> below this node, for the log
         /// </summary>
         public string PathTo (string memberName) => this.Path.Length == 0 ? memberName : $"{this.Path}.{memberName}";
@@ -117,7 +134,11 @@ namespace AJut.Text.AJson
         {
             foreach (string name in source.m_order)
             {
-                this.GetOrAddChild(name).MergeIn(source.m_children[name]);
+                ReadOnlyWriteIncludes from = source.m_children[name];
+                bool isNew = !m_children.ContainsKey(name);
+                ReadOnlyWriteIncludes child = this.GetOrAddChild(name);
+                child.m_isAllowedMissing = isNew ? from.m_isAllowedMissing : (child.m_isAllowedMissing && from.m_isAllowedMissing);
+                child.MergeIn(from);
             }
         }
     }
