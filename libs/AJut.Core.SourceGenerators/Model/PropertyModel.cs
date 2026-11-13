@@ -117,5 +117,16 @@ namespace AJut.Text.AJson.SourceGenerators.Model
         /// For [JsonRuntimeTypeEval] - the eTypeIdInfo flag literal to emit ("AJut.Text.AJson.eTypeIdInfo.Any" by default).
         /// </summary>
         public string RuntimeTypeEvalFlagLiteral { get; init; } = string.Empty;
+
+        /// <summary>
+        /// True when the member carries [JsonIncludeReadOnlyInWrite], so it is written even when it is get-only
+        /// </summary>
+        public bool HasIncludeReadOnlyInWrite { get; init; }
+
+        /// <summary>
+        /// The members of the member's value its [JsonIncludeReadOnlyInWrite] names, as written in the attribute. Empty when it
+        /// names none.
+        /// </summary>
+        public System.Collections.Generic.IReadOnlyList<string> ReadOnlyIncludeNames { get; init; } = System.Array.Empty<string>();
     }
 }

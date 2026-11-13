@@ -12,3 +12,4 @@ AJSON005 | AJson | Error | More than one constructor marked AJsonConstructor
 AJSON006 | AJson | Warning | Constructor parameter matches no property
 AJSON007 | AJson | Warning | Constructor parameter default differs from the property's JsonOmitIfDefault value
 AJSON008 | AJson | Warning | Type opted into AJson optimization can't be reached by generated code
+AJSON009 | AJson | Warning | JsonIncludeReadOnlyInWrite names a member that isn't there

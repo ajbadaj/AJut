@@ -576,6 +576,49 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                 }
             }
 
+            // [JsonIncludeReadOnlyInWrite] capture + AJSON009 (a name that isn't there). An attribute argument carries an enum as
+            //  its number, and the generator targets netstandard2.0 without a reference to AJut.Core, so it can't name the enum.
+            const int kAllowedPropertiesDerivedTypes = 1;
+            AttributeData includeAttr = FindIncludeReadOnlyInWrite(memberSymbol);
+            List<string> includeNames = new List<string>();
+            if (includeAttr != null)
+            {
+                bool allowsDerivedTypes = false;
+                foreach (TypedConstant arg in includeAttr.ConstructorArguments)
+                {
+                    if (arg.Kind == TypedConstantKind.Array)
+                    {
+                        foreach (TypedConstant item in arg.Values)
+                        {
+                            if (item.Value is string name && !string.IsNullOrWhiteSpace(name))
+                            {
+                                includeNames.Add(name);
+                            }
+                        }
+                    }
+                    else if (arg.Kind == TypedConstantKind.Enum && arg.Value is int allowed)
+                    {
+                        allowsDerivedTypes = allowed == kAllowedPropertiesDerivedTypes;
+                    }
+                }
+
+                foreach (string includeName in includeNames)
+                {
+                    string problem = FindReadOnlyIncludeProblem(declaredType, includeName, allowsDerivedTypes);
+                    if (problem != null)
+                    {
+                        diagnostics.Add(Diagnostic.Create(
+                            Diagnostics.UnmatchedReadOnlyInclude,
+                            includeAttr.ApplicationSyntaxReference?.GetSyntax().GetLocation()
+                                ?? memberSymbol.Locations.FirstOrDefault(),
+                            owningType.Name,
+                            memberSymbol.Name,
+                            includeName,
+                            problem));
+                    }
+                }
+            }
+
             return new PropertyModel
             {
                 Name = memberSymbol.Name,
@@ -600,7 +643,173 @@ namespace AJut.Text.AJson.SourceGenerators.Analysis
                 DictionaryValueTypeFullName = dictValueFqn,
                 DictionaryTypeToBuildFullName = dictToBuildFqn,
                 RuntimeTypeEvalFlagLiteral = runtimeFlagLiteral,
+                HasIncludeReadOnlyInWrite = includeAttr != null,
+                ReadOnlyIncludeNames = includeNames.ToArray(),
             };
+        }
+
+        // ===========================[ JsonIncludeReadOnlyInWrite ]===========================
+        /// <summary>
+        /// The member's [JsonIncludeReadOnlyInWrite], or the one on a property it overrides, since the reflection path reads it with
+        /// inherit on and an override is where a get-only constant usually lives
+        /// </summary>
+        private static AttributeData FindIncludeReadOnlyInWrite (ISymbol memberSymbol)
+        {
+            for (ISymbol current = memberSymbol; current != null; current = (current as IPropertySymbol)?.OverriddenProperty)
+            {
+                AttributeData found = current.GetAttributes().FirstOrDefault(a => SameAttribute(a, AttributeNames.kIncludeReadOnlyInWrite));
+                if (found != null)
+                {
+                    return found;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// What's wrong with a [JsonIncludeReadOnlyInWrite] name on a member of <paramref name="declaredType"/>, or null when it
+        /// names a member that's there. Each part is looked for on the type the part before it leads to, stepping into a
+        /// collection's items and a dictionary's values the way the writer does.
+        /// </summary>
+        /// <param name="allowsDerivedTypes">
+        /// True for eAllowedProperties.DerivedTypes: a name the declared type doesn't have may be on a subtype, which only the
+        /// runtime type shows, so it isn't reported
+        /// </param>
+        private static string FindReadOnlyIncludeProblem (ITypeSymbol declaredType, string path, bool allowsDerivedTypes)
+        {
+            ITypeSymbol current = declaredType;
+            foreach (string rawPart in path.Split('.'))
+            {
+                string part = rawPart.Trim();
+                if (part.Length == 0)
+                {
+                    break;
+                }
+
+                current = ItemTypeOf(UnwrapNullable(current));
+                if (IsWrittenAsOneValue(current))
+                {
+                    return $"'{current.ToDisplayString()}' is written as one value, so it has no members to add";
+                }
+
+                ITypeSymbol memberType = FindReadableMemberType(current, part);
+                if (memberType == null)
+                {
+                    return allowsDerivedTypes
+                        ? null
+                        : $"'{current.ToDisplayString()}' has no public property or field named '{part}' - pass eAllowedProperties.DerivedTypes if it is only on a subtype";
+                }
+
+                current = memberType;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// The type of a collection's items or a dictionary's values, through any depth of nesting, or the type itself when it is
+        /// neither. A string is not a collection here, since it is written as one value.
+        /// </summary>
+        private static ITypeSymbol ItemTypeOf (ITypeSymbol type)
+        {
+            while (true)
+            {
+                if (type is IArrayTypeSymbol array)
+                {
+                    type = UnwrapNullable(array.ElementType);
+                    continue;
+                }
+
+                if (!(type is INamedTypeSymbol named) || named.SpecialType == SpecialType.System_String)
+                {
+                    return type;
+                }
+
+                INamedTypeSymbol dictionary = FindSelfOrInterface(named, "IDictionary`2") ?? FindSelfOrInterface(named, "IReadOnlyDictionary`2");
+                if (dictionary != null)
+                {
+                    type = UnwrapNullable(dictionary.TypeArguments[1]);
+                    continue;
+                }
+
+                INamedTypeSymbol enumerable = FindSelfOrInterface(named, "IEnumerable`1");
+                if (enumerable != null)
+                {
+                    type = UnwrapNullable(enumerable.TypeArguments[0]);
+                    continue;
+                }
+
+                return type;
+            }
+        }
+
+        /// <summary>
+        /// <paramref name="type"/> itself or the interface it implements that is made from the System.Collections.Generic type of
+        /// that metadata name ("IDictionary`2")
+        /// </summary>
+        private static INamedTypeSymbol FindSelfOrInterface (INamedTypeSymbol type, string metadataName)
+        {
+            if (type.IsGenericType && IsGenericCollectionsType(type, metadataName))
+            {
+                return type;
+            }
+
+            return type.AllInterfaces.FirstOrDefault(i => IsGenericCollectionsType(i, metadataName));
+        }
+
+        private static ITypeSymbol UnwrapNullable (ITypeSymbol type)
+        {
+            return (type is INamedTypeSymbol named && named.IsGenericType && named.ConstructedFrom?.SpecialType == SpecialType.System_Nullable_T)
+                ? named.TypeArguments[0]
+                : type;
+        }
+
+        private static bool IsWrittenAsOneValue (ITypeSymbol type)
+        {
+            return (type.TypeKind == TypeKind.Enum) || IsSimpleSpecialType(type.SpecialType) || IsParsableOfItself(type);
+        }
+
+        /// <summary>
+        /// The type of the public instance property (with a getter, not an indexer) or field named <paramref name="name"/> on
+        /// <paramref name="type"/>, its base types, or for an interface the interfaces it extends; null when there is none
+        /// </summary>
+        private static ITypeSymbol FindReadableMemberType (ITypeSymbol type, string name)
+        {
+            IEnumerable<ITypeSymbol> tiers = type.TypeKind == TypeKind.Interface
+                ? new[] { type }.Concat(type.AllInterfaces)
+                : _BaseChain(type);
+
+            foreach (ITypeSymbol tier in tiers)
+            {
+                foreach (ISymbol member in tier.GetMembers(name))
+                {
+                    if (member.IsStatic || member.DeclaredAccessibility != Accessibility.Public)
+                    {
+                        continue;
+                    }
+
+                    if (member is IPropertySymbol property && !property.IsIndexer && property.GetMethod != null)
+                    {
+                        return property.Type;
+                    }
+
+                    if (member is IFieldSymbol field && !field.IsConst)
+                    {
+                        return field.Type;
+                    }
+                }
+            }
+
+            return null;
+
+            static IEnumerable<ITypeSymbol> _BaseChain (ITypeSymbol _type)
+            {
+                for (ITypeSymbol tier = _type; tier != null; tier = tier.BaseType)
+                {
+                    yield return tier;
+                }
+            }
         }
 
         // ===========================[ Type classification ]===========================

@@ -16,6 +16,7 @@ namespace AJut.Text.AJson.SourceGenerators
         public const string kOmitIfDefault = "AJut.Text.AJson.JsonOmitIfDefaultAttribute";
         public const string kRuntimeTypeEval = "AJut.Text.AJson.JsonRuntimeTypeEvalAttribute";
         public const string kIgnore = "AJut.Text.AJson.JsonIgnoreAttribute";
+        public const string kIncludeReadOnlyInWrite = "AJut.Text.AJson.JsonIncludeReadOnlyInWriteAttribute";
 
         public const string kETypeIdInfo = "AJut.Text.AJson.eTypeIdInfo";
     }
