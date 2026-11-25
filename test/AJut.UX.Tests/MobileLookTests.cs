@@ -25,7 +25,7 @@ namespace AJut.UX.Tests
         private static readonly string[] kGradientKeys =
         [
             MobileLook.NumericEditor.FrameSurface, MobileLook.ToggleStrip.StripSurface, MobileLook.ToggleStrip.ItemSelectedFill,
-            MobileLook.EnumComboBox.Surface,
+            MobileLook.EnumComboBox.Surface, MobileLook.DateTimeEditIngressControl.FrameSurface,
         ];
 
         [TestMethod]

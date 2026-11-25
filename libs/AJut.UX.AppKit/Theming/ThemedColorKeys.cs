@@ -513,6 +513,56 @@ namespace AJut.UX.Theming
         /// <summary>The dark edge along the top and left of the focused well. AppKit only, WinUI3's literal.</summary>
         public const string PathSelection_FocusRimDark = "AJut_PathSelectionControl_FocusRimDark";
 
+        // ===========[ DateTimeEditIngressControl ]============================
+        // Drawn as PathSelectionControl is, so its keys split the same way: the borders, the warning glyph, the picker
+        // button and the focused well are the shared keys WinUI3's template reads, and the fill, the text and the rim
+        // lights are AppKit only, aliased to what WinUI3 gives those parts.
+
+        /// <summary>The border at rest. Shared key.</summary>
+        public const string DateTimeEdit_NormalBorder = AJutThemeKeys.DateTimeEditIngressControl_NormalBorderBrush;
+
+        /// <summary>The border while focus is inside the control. Shared key.</summary>
+        public const string DateTimeEdit_FocusedBorder = AJutThemeKeys.DateTimeEditIngressControl_FocusedBorderBrush;
+
+        /// <summary>The border while the text can't be read. Shared key.</summary>
+        public const string DateTimeEdit_InvalidBorder = AJutThemeKeys.DateTimeEditIngressControl_InvalidBorderBrush;
+
+        /// <summary>The warning glyph beside text that can't be read. Shared key.</summary>
+        public const string DateTimeEdit_WarningIconForeground = AJutThemeKeys.DateTimeEditIngressControl_WarningIconForeground;
+
+        /// <summary>The picker button's glyph at rest. Shared key.</summary>
+        public const string DateTimeEdit_ButtonIconForeground = AJutThemeKeys.DateTimeEditIngressControl_ButtonIconForeground;
+
+        /// <summary>The picker button's fill with the pointer over it. Shared key.</summary>
+        public const string DateTimeEdit_ButtonPointerOverBackground = AJutThemeKeys.DateTimeEditIngressControl_ButtonPointerOverBackground;
+
+        /// <summary>The picker button's fill while pressed, and while its popover is open. Shared key.</summary>
+        public const string DateTimeEdit_ButtonPressedBackground = AJutThemeKeys.DateTimeEditIngressControl_ButtonPressedBackground;
+
+        /// <summary>The picker button's glyph over the pointer-over and pressed fills. Shared key.</summary>
+        public const string DateTimeEdit_ButtonHighlightForeground = AJutThemeKeys.DateTimeEditIngressControl_ButtonHighlightForeground;
+
+        /// <summary>The well behind the text while it has focus. Shared key.</summary>
+        public const string DateTimeEdit_FocusedWellBackground = AJutThemeKeys.DateTimeEditIngressControl_FocusedTextBoxBackgroundBrush;
+
+        /// <summary>The control's fill. AppKit only: WinUI3's theme style sets it.</summary>
+        public const string DateTimeEdit_Background = "AJut_DateTimeEditIngressControl_Background";
+
+        /// <summary>The text. AppKit only: WinUI3's text box takes the stock text box foreground.</summary>
+        public const string DateTimeEdit_Text = "AJut_DateTimeEditIngressControl_Text";
+
+        /// <summary>The text, and the picker glyph, while read only. AppKit only.</summary>
+        public const string DateTimeEdit_DisabledText = "AJut_DateTimeEditIngressControl_DisabledText";
+
+        /// <summary>The prompt shown while there is no value and nothing typed. AppKit only: WinUI3's text box takes the stock placeholder color.</summary>
+        public const string DateTimeEdit_PlaceholderText = "AJut_DateTimeEditIngressControl_PlaceholderText";
+
+        /// <summary>The light edge along the bottom and right of the focused well. AppKit only, WinUI3's literal.</summary>
+        public const string DateTimeEdit_FocusRimBright = "AJut_DateTimeEditIngressControl_FocusRimBright";
+
+        /// <summary>The dark edge along the top and left of the focused well. AppKit only, WinUI3's literal.</summary>
+        public const string DateTimeEdit_FocusRimDark = "AJut_DateTimeEditIngressControl_FocusRimDark";
+
         // ===========[ BumpStack ]=============================================
         // AppKit only, each aliased to what WinUI3's theme style gives the bump buttons (WinUI3 sets them through style
         // setters, not keys). Unthemed they are WinUI3's unthemed choices in macOS terms: the window's base fill, a
@@ -919,6 +969,25 @@ namespace AJut.UX.Theming
                     ThemedColors.SetUnthemedDefault(CheckBoxKey(CheckBox_ForegroundPart, check, interaction), isDisabled ? NSColor.DisabledControlText : NSColor.ControlText);
                 }
             }
+
+            // 27. DateTimeEditIngressControl, unthemed as PathSelectionControl is
+            ThemedColors.SetUnthemedDefault(DateTimeEdit_NormalBorder, NSColor.Separator);
+            ThemedColors.SetUnthemedDefault(DateTimeEdit_FocusedBorder, NSColor.KeyboardFocusIndicator);
+            ThemedColors.SetUnthemedDefault(DateTimeEdit_InvalidBorder, NSColor.SystemRed);
+            ThemedColors.SetUnthemedDefault(DateTimeEdit_WarningIconForeground, NSColor.SystemRed);
+            ThemedColors.SetUnthemedDefault(DateTimeEdit_ButtonIconForeground, NSColor.SecondaryLabel);
+            ThemedColors.SetUnthemedDefault(DateTimeEdit_ButtonPointerOverBackground, NSColor.ControlAccent);
+            ThemedColors.SetUnthemedDefault(DateTimeEdit_ButtonPressedBackground, NSColor.SelectedContentBackground);
+            ThemedColors.SetUnthemedDefault(DateTimeEdit_ButtonHighlightForeground, NSColor.AlternateSelectedControlText);
+            ThemedColors.SetUnthemedDefault(DateTimeEdit_FocusedWellBackground, NSColor.TextBackground);
+            RegisterAppKitOnly(DateTimeEdit_Background, NSColor.TextBackground, "AJut_Brush_PopOutControlBackground");
+            RegisterAppKitOnly(DateTimeEdit_Text, NSColor.Text, "TextControlForeground");
+            RegisterAppKitOnly(DateTimeEdit_DisabledText, NSColor.DisabledControlText, "TextControlForegroundDisabled");
+            RegisterAppKitOnly(DateTimeEdit_PlaceholderText, NSColor.PlaceholderText, "TextControlPlaceholderForeground");
+
+            //     The rim lights are WinUI3's literals, and stay so themed: with no alias, themed falls back to these
+            ThemedColors.SetUnthemedDefault(DateTimeEdit_FocusRimBright, Srgb(0x55FFFFFF));
+            ThemedColors.SetUnthemedDefault(DateTimeEdit_FocusRimDark, Srgb(0x88000000));
         }
 
         /// <summary>

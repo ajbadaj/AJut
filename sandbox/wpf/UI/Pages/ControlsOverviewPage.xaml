@@ -24,6 +24,9 @@
         <TabItem Header="Color controls">
             <ctrls:ColorControlsExample />
         </TabItem>
+        <TabItem Header="DateTimeEditIngress">
+            <ctrls:DateTimeEditIngressControlExample />
+        </TabItem>
         <TabItem Header="EditableTextBlock">
             <ctrls:EditableTextBlockControlExample />
         </TabItem>

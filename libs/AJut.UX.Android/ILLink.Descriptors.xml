@@ -12,6 +12,7 @@
     <type fullname="AJut.UX.Controls.BrushButton"><method name=".ctor" /></type>
     <type fullname="AJut.UX.Controls.BusyWait"><method name=".ctor" /></type>
     <type fullname="AJut.UX.Controls.ColorEditIngressControl"><method name=".ctor" /></type>
+    <type fullname="AJut.UX.Controls.DateTimeEditIngressControl"><method name=".ctor" /></type>
     <type fullname="AJut.UX.Controls.EditableTextBlock"><method name=".ctor" /></type>
     <type fullname="AJut.UX.Controls.EnumComboBox"><method name=".ctor" /></type>
     <type fullname="AJut.UX.Controls.EnumToggleStrip"><method name=".ctor" /></type>

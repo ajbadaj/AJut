@@ -383,6 +383,50 @@
         <Setter Property="ButtonPressedForeground" Value="{DynamicResource AJut_Brush_HighlightText}"/>
     </Style>
 
+    <!-- The same themed look as PathSelectionControl, which it is drawn like. The pickers in its popup take their
+         colors from it, so only the popup's surface and text are set for them here. -->
+    <Style TargetType="{x:Type ajut_ctrls:DateTimeEditIngressControl}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_PopOutControlBackground}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_TextBoxBorder}"/>
+        <Setter Property="TextBoxBorderBrush" Value="{DynamicResource AJut_Brush_Shadow}"/>
+        <Setter Property="FocusedBorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+        <Setter Property="InvalidTextBorderBrush" Value="{DynamicResource AJut_Brush_BadStuff}"/>
+        <Setter Property="InvalidTextGlowBrush" Value="{DynamicResource AJut_Brush_ErrorGlow}"/>
+        <Setter Property="InvalidForegroundSymbol" Value="{DynamicResource AJut_Brush_NormalText}"/>
+        <Setter Property="ButtonBackground" Value="{DynamicResource AJut_Brush_PopOutControlBackground}"/>
+        <Setter Property="ButtonForeground" Value="{DynamicResource AJut_Brush_SymbolForeground}"/>
+        <Setter Property="ButtonHoverBackground" Value="{DynamicResource AJut_Brush_PrimaryHighlightBright}"/>
+        <Setter Property="ButtonHoverForeground" Value="{DynamicResource AJut_Brush_HighlightText}"/>
+        <Setter Property="ButtonPressedBackground" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+        <Setter Property="ButtonPressedForeground" Value="{DynamicResource AJut_Brush_HighlightText}"/>
+        <Setter Property="PopupBackground" Value="{DynamicResource AJut_Brush_PanelBackground}"/>
+        <Setter Property="PopupForeground" Value="{DynamicResource AJut_Brush_NormalText}"/>
+    </Style>
+
+    <!-- The calendar and the time editor on their own, outside a DateTimeEditIngressControl -->
+    <Style TargetType="{x:Type ajut_ctrls:DateValueEditControl}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_PanelBackground}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="SelectedDayBackground" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+        <Setter Property="SelectedDayForeground" Value="{DynamicResource AJut_Brush_HighlightText}"/>
+        <Setter Property="TodayBorderBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+        <Setter Property="HoverBackground" Value="{DynamicResource AJut_Brush_PrimaryHighlightBright}"/>
+        <Setter Property="HoverForeground" Value="{DynamicResource AJut_Brush_HighlightText}"/>
+        <Setter Property="PopupBackground" Value="{DynamicResource AJut_Brush_PopupBackground}"/>
+    </Style>
+
+    <Style TargetType="{x:Type ajut_ctrls:TimeValueEditControl}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_PanelBackground}"/>
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="HoverBackground" Value="{DynamicResource AJut_Brush_PrimaryHighlightBright}"/>
+        <Setter Property="HoverForeground" Value="{DynamicResource AJut_Brush_HighlightText}"/>
+    </Style>
+
     <Style TargetType="{x:Type ajut_ctrls:DockZone}">
         <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="Background" Value="Transparent"/>
@@ -921,12 +965,15 @@
                 <ControlTemplate TargetType="{x:Type ListBox}">
                     <Border Background="{TemplateBinding Background}" CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}"
                             BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}">
+                        <!-- TemplateBindings, not ancestor bindings: an ancestor binding resolves after the first measure, so the
+                             first measure saw CanContentScroll false and made every row, virtualizing panel or not -->
                         <ScrollViewer Focusable="False" Template="{DynamicResource AJut_ControlTemplate_ScrollViewer}"
-                                      HorizontalScrollBarVisibility="{Binding RelativeSource={RelativeSource AncestorType={x:Type ListBox}}, Path=(ScrollViewer.HorizontalScrollBarVisibility)}"
-                                      VerticalScrollBarVisibility="{Binding RelativeSource={RelativeSource AncestorType={x:Type ListBox}}, Path=(ScrollViewer.VerticalScrollBarVisibility)}"
-                                      CanContentScroll="{Binding RelativeSource={RelativeSource AncestorType={x:Type ListBox}}, Path=(ScrollViewer.CanContentScroll)}"
+                                      HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}"
+                                      VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}"
+                                      CanContentScroll="{TemplateBinding ScrollViewer.CanContentScroll}"
                                       ajut_ap:BorderXTA.CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}">
-                            <StackPanel Margin="{TemplateBinding Padding}" IsItemsHost="True" />
+                            <!-- The ItemsPresenter hosts the ListBox's own ItemsPanel, a VirtualizingStackPanel by default, so a long list makes only the rows on screen -->
+                            <ItemsPresenter Margin="{TemplateBinding Padding}" />
                         </ScrollViewer>
                     </Border>
                     <ControlTemplate.Triggers>
