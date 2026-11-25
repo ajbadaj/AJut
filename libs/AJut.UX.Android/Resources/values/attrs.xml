@@ -30,6 +30,22 @@
     <attr name="ajutIsReadOnly" format="boolean" />
   </declare-styleable>
 
+  <declare-styleable name="AJutDateTimeEditIngressControl">
+    <attr name="ajutIncludeDate" format="boolean" />
+    <attr name="ajutIncludeTime" format="boolean" />
+    <!-- A .NET date and time format, such as yyyy-MM-dd -->
+    <attr name="ajutDisplayFormat" format="string" />
+    <!-- The values match AJut.UX's eTimeFormat -->
+    <attr name="ajutTimeFormat" format="enum">
+      <enum name="currentCulture" value="0" />
+      <enum name="twelveHour" value="1" />
+      <enum name="twentyFourHour" value="2" />
+    </attr>
+    <attr name="ajutUnsetTextPrompt" format="string" />
+    <attr name="ajutTreatEmptyAsInvalid" format="boolean" />
+    <attr name="ajutIsReadOnly" />
+  </declare-styleable>
+
   <declare-styleable name="AJutEditableTextBlock">
     <attr name="android:text" />
     <attr name="android:textSize" />

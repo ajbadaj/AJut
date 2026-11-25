@@ -127,6 +127,15 @@ namespace AJut.UX.CodeBinding
             return set.BindControl(editor, UIControlEvent.ValueChanged, ReadEditColor, WriteEditColor, source, propertyName, read, write);
         }
 
+        /// <summary>
+        /// A DateTimeEditIngressControl edits a date and time property: typed text once it is taken, and each pick while the
+        /// pickers are open. It shows the property when it changes elsewhere.
+        /// </summary>
+        public static BindingSet.TwoWayChannel BindEditDateTime (this BindingSet set, DateTimeEditIngressControl editor, INotifyPropertyChanged source, string propertyName, Func<DateTime?> read, Action<DateTime?> write)
+        {
+            return set.BindControl(editor, UIControlEvent.ValueChanged, ReadEditDateTime, WriteEditDateTime, source, propertyName, read, write);
+        }
+
         /// <summary>An EditableTextBlock edits a string property as the user types, and shows it when it changes elsewhere.</summary>
         public static BindingSet.TwoWayChannel BindText (this BindingSet set, EditableTextBlock textBlock, INotifyPropertyChanged source, string propertyName, Func<string> read, Action<string> write)
         {
@@ -210,6 +219,8 @@ namespace AJut.UX.CodeBinding
         private static void WriteEditorValue (NumericEditor editor, object value) => editor.Value = value;
         private static ColorArgb ReadEditColor (ColorEditIngressControl editor) => editor.EditColor;
         private static void WriteEditColor (ColorEditIngressControl editor, ColorArgb value) => editor.EditColor = value;
+        private static DateTime? ReadEditDateTime (DateTimeEditIngressControl editor) => editor.EditDateTime;
+        private static void WriteEditDateTime (DateTimeEditIngressControl editor, DateTime? value) => editor.EditDateTime = value;
         private static string ReadEditableText (EditableTextBlock textBlock) => textBlock.Text;
         private static void WriteEditableText (EditableTextBlock textBlock, string value) => textBlock.Text = value;
 
