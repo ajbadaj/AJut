@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AJutShowRoomWinUI.UI.UxUtils.DialogServicePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:ui="using:AJutShowRoomWinUI.UI"
+    mc:Ignorable="d">
+
+    <Grid>
+        <ScrollViewer Padding="16">
+            <StackPanel Spacing="12" MaxWidth="1000" HorizontalAlignment="Left">
+                <TextBlock Text="ContentDialogService" FontSize="20" FontWeight="SemiBold"/>
+                <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                           Text="WinUI3 allows one open ContentDialog per thread, and ShowAsync throws when another is open, even in another window. ContentDialogService shows them one at a time, and each request says what to do when another is showing: wait its turn, hide the open one to come back to it, replace it, or skip. Every dialog on this page goes through it."/>
+
+                <!-- ====[ Hide for nav back ]==== -->
+                <TextBlock Text="Hide for nav back: a picker over a form" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0"/>
+                <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                           Text="Open the form, type a name, then pick a color. The form hides while the picker shows, and comes back as you left it when the picker closes. The picker's Back button is bound to CanPopBack. In the picker, the swap button replaces it with a size picker, and the form still comes back after."/>
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <Button Content="Open the form" Click="OpenForm_OnClick"/>
+                    <CheckBox Content="The form refuses to be hidden (it also refuses Cancel and Escape while checked)" IsChecked="{x:Bind FormRefusesToHide, Mode=TwoWay}"/>
+                </StackPanel>
+
+                <!-- ====[ Queue and skip if busy ]==== -->
+                <TextBlock Text="Queue, and skip if busy" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0"/>
+                <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                           Text="Each button waits three seconds, so there is time to open the form first. The notice queues until no dialog is left, the whole form and picker flow included. The tip shows only if nothing is showing, and is skipped otherwise."/>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="Queue a notice in 3 seconds" Click="QueueNotice_OnClick"/>
+                    <Button Content="A tip in 3 seconds, skipped if busy" Click="DelayedTip_OnClick"/>
+                </StackPanel>
+
+                <!-- ====[ Another window ]==== -->
+                <TextBlock Text="Another window on the same thread" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0"/>
+                <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                           Text="Open a second window, open the form here, then ask for a dialog in the second window. It waits, or hides the form, rather than throwing. Close the second window while its dialog is open: its dialog ends as WindowClosed, and this window's carry on."/>
+                <Button Content="Open a second window" Click="OpenSecondWindow_OnClick"/>
+
+                <!-- ====[ Outcomes ]==== -->
+                <TextBlock Text="Outcomes, newest first" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0"/>
+                <TextBlock Text="{x:Bind OutcomeLog, Mode=OneWay}" FontFamily="Consolas" FontSize="12" TextWrapping="Wrap"/>
+                <ui:ShowroomCodeDisplay CodeText="{x:Bind ServiceCode}" Height="240"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ====[ The dialogs ]==== -->
+        <ContentDialog x:Name="FormDialog" Title="A form" PrimaryButtonText="Save" CloseButtonText="Cancel" DefaultButton="Primary" Closing="FormDialog_OnClosing">
+            <StackPanel Spacing="8">
+                <TextBox Header="Name" PlaceholderText="Type something, then pick a color" Text="{x:Bind FormName, Mode=TwoWay}"/>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="Pick a color" Click="PickColor_OnClick"/>
+                    <TextBlock Text="{x:Bind PickedChoice, Mode=OneWay}" VerticalAlignment="Center"/>
+                </StackPanel>
+            </StackPanel>
+        </ContentDialog>
+
+        <ContentDialog x:Name="ColorPickerDialog" Title="Pick a color" PrimaryButtonText="Use it" CloseButtonText="Cancel" DefaultButton="Primary">
+            <StackPanel Spacing="8">
+                <RadioButtons ItemsSource="{x:Bind ColorNames}" SelectedIndex="{x:Bind ColorIndex, Mode=TwoWay}"/>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="Back" IsEnabled="{x:Bind Dialogs.CanPopBack, Mode=OneWay}" Click="Back_OnClick"/>
+                    <Button Content="Swap for a size picker" Click="SwapForSizePicker_OnClick"/>
+                </StackPanel>
+            </StackPanel>
+        </ContentDialog>
+
+        <ContentDialog x:Name="SizePickerDialog" Title="Pick a size" PrimaryButtonText="Use it" CloseButtonText="Cancel" DefaultButton="Primary">
+            <StackPanel Spacing="8">
+                <RadioButtons ItemsSource="{x:Bind SizeNames}" SelectedIndex="{x:Bind SizeIndex, Mode=TwoWay}"/>
+                <Button Content="Back" IsEnabled="{x:Bind Dialogs.CanPopBack, Mode=OneWay}" Click="Back_OnClick"/>
+            </StackPanel>
+        </ContentDialog>
+
+        <ContentDialog x:Name="NoticeDialog" Title="A queued notice" Content="This waited until no other dialog was showing." CloseButtonText="OK"/>
+        <ContentDialog x:Name="TipDialog" Title="A tip" Content="Nothing else was showing, so this one was not skipped." CloseButtonText="OK"/>
+    </Grid>
+</Page>

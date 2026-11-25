@@ -328,6 +328,15 @@
         <Setter Property="CornerBannerForeground" Value="{DynamicResource AJut_Brush_SymbolForegroundHighlight}"/>
     </Style>
 
+    <!-- The eyedropper's magnifier, shown while a pick from screen runs -->
+    <Style TargetType="{x:Type ajut_ctrls:ScreenColorPickMagnifier}">
+        <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>
+        <Setter Property="Background" Value="{DynamicResource AJut_Brush_InnerPanelBackground}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AJut_Brush_BorderCommon}"/>
+        <Setter Property="TitleBarBackground" Value="{DynamicResource AJut_Brush_TitleBarBackground}"/>
+        <Setter Property="TitleBarForeground" Value="{DynamicResource AJut_Brush_TitleBarForeground}"/>
+    </Style>
+
     <Style TargetType="{x:Type ajut_ctrls:ColorValueEditControl}">
         <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="Foreground" Value="{DynamicResource AJut_Brush_NormalText}"/>

@@ -48,10 +48,12 @@ namespace AJut.UX.Tests
         ];
 
         // AJut controls a user never focuses: a window has no focus visual of its own, the sibling split spanner has no
-        // look at all (no default style, nothing uses it), and a PageStack's dots leave the keyboard to the PageStack
+        // look at all (no default style, nothing uses it), the eyedropper's magnifier only shows during a pick from screen,
+        // in a window that never takes focus, and a PageStack's dots leave the keyboard to the PageStack
         private static readonly Type[] kAJutControlsNeverFocused =
         [
-            typeof(DefaultDockTearoffWindow), typeof(DockDropSiblingSplitSpannerWidget), typeof(PageStackDot),
+            typeof(DefaultDockTearoffWindow), typeof(DockDropSiblingSplitSpannerWidget), typeof(ScreenColorPickMagnifier),
+            typeof(PageStackDot),
         ];
 
         // ===========[ PathSelectionControl ]===================================

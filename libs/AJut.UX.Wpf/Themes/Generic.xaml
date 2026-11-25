@@ -4,6 +4,7 @@
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/BusyWait.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/ColorEditIngressControl.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/ColorValueEditControl.xaml"/>
+        <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/ScreenColorPickMagnifier.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/DockingElements/DefaultDockTearoffWindow.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/DockingElements/DockDropInsertionDriverWidget.xaml"/>
         <ResourceDictionary Source="/AJut.UX.WPF;component/Controls/DockingElements/DockWholeWindowDragStartControl.xaml"/>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="AJutShowRoomWinUI.UI.UxUtils.DialogServiceSecondWindowPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid>
+        <StackPanel Margin="16" Spacing="8">
+            <TextBlock Text="A second window, on the main window's UI thread" FontWeight="SemiBold"/>
+            <TextBlock TextWrapping="Wrap" Opacity="0.8"
+                       Text="Open the form in the main window, then ask here. Both windows share one dialog service, since WinUI3 allows one open ContentDialog per thread. Outcomes go to the main window's log."/>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="Ask here, queued" Click="AskQueued_OnClick"/>
+                <Button Content="Ask here, hiding the open one" Click="AskHidingTheOpenOne_OnClick"/>
+            </StackPanel>
+        </StackPanel>
+
+        <ContentDialog x:Name="HereDialog" Title="A dialog in the second window" Content="Close this window with the dialog open to see it end as WindowClosed." PrimaryButtonText="OK" CloseButtonText="Cancel"/>
+    </Grid>
+</Page>
