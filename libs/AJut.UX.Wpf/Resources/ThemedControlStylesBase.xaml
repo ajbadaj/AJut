@@ -947,12 +947,15 @@
                 <ControlTemplate TargetType="{x:Type ListBox}">
                     <Border Background="{TemplateBinding Background}" CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}"
                             BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}">
+                        <!-- TemplateBindings, not ancestor bindings: an ancestor binding resolves after the first measure, so the
+                             first measure saw CanContentScroll false and made every row, virtualizing panel or not -->
                         <ScrollViewer Focusable="False" Template="{DynamicResource AJut_ControlTemplate_ScrollViewer}"
-                                      HorizontalScrollBarVisibility="{Binding RelativeSource={RelativeSource AncestorType={x:Type ListBox}}, Path=(ScrollViewer.HorizontalScrollBarVisibility)}"
-                                      VerticalScrollBarVisibility="{Binding RelativeSource={RelativeSource AncestorType={x:Type ListBox}}, Path=(ScrollViewer.VerticalScrollBarVisibility)}"
-                                      CanContentScroll="{Binding RelativeSource={RelativeSource AncestorType={x:Type ListBox}}, Path=(ScrollViewer.CanContentScroll)}"
+                                      HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}"
+                                      VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}"
+                                      CanContentScroll="{TemplateBinding ScrollViewer.CanContentScroll}"
                                       ajut_ap:BorderXTA.CornerRadius="{ajut:TemplateBinding Path=(ajut_ap:BorderXTA.CornerRadius)}">
-                            <StackPanel Margin="{TemplateBinding Padding}" IsItemsHost="True" />
+                            <!-- The ItemsPresenter hosts the ListBox's own ItemsPanel, a VirtualizingStackPanel by default, so a long list makes only the rows on screen -->
+                            <ItemsPresenter Margin="{TemplateBinding Padding}" />
                         </ScrollViewer>
                     </Border>
                     <ControlTemplate.Triggers>
