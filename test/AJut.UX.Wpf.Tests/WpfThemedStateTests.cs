@@ -47,9 +47,10 @@ namespace AJut.UX.Tests
             typeof(ListBoxItem), typeof(Slider), typeof(TabControl), typeof(TabItem), typeof(ToggleButton),
         ];
 
-        // AJut controls a user never focuses: a window has no focus visual of its own, and the sibling split spanner has no
-        // look at all (no default style, nothing uses it)
-        private static readonly Type[] kAJutControlsNeverFocused = [typeof(DefaultDockTearoffWindow), typeof(DockDropSiblingSplitSpannerWidget)];
+        // AJut controls a user never focuses: a window has no focus visual of its own, the sibling split spanner has no
+        // look at all (no default style, nothing uses it), and the eyedropper's magnifier only shows during a pick from
+        // screen, in a window that never takes focus
+        private static readonly Type[] kAJutControlsNeverFocused = [typeof(DefaultDockTearoffWindow), typeof(DockDropSiblingSplitSpannerWidget), typeof(ScreenColorPickMagnifier)];
 
         // ===========[ PathSelectionControl ]===================================
         [TestMethod]

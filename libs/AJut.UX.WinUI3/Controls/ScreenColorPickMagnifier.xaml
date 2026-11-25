@@ -1,0 +1,68 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="using:AJut.UX.Controls">
+
+    <!-- ===[ ScreenColorPickMagnifier ]=== -->
+    <!-- What a pick from screen would take: a title bar saying what to do next, a swatch, its hex, and the pixels
+         around the cursor, already blown up in the bitmap, with the target pixel outlined. It fills its own window,
+         whose corners the system rounds, and which the Host fades until the mouse button is pressed. -->
+    <Style TargetType="local:ScreenColorPickMagnifier">
+        <Setter Property="IsTabStop" Value="False"/>
+        <Setter Property="IsHitTestVisible" Value="False"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="10"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:ScreenColorPickMagnifier">
+                    <Border Background="{ThemeResource AJut_ScreenColorPickMagnifier_Background}"
+                            BorderBrush="{ThemeResource AJut_ScreenColorPickMagnifier_BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="PressStates">
+                                <VisualState x:Name="WaitingForPress"/>
+                                <VisualState x:Name="Pressing">
+                                    <VisualState.Setters>
+                                        <Setter Target="TitleText.Text" Value="Release mouse to pick"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <StackPanel>
+                            <Border Background="{ThemeResource AJut_ScreenColorPickMagnifier_TitleBarBackground}" Padding="12,6">
+                                <TextBlock x:Name="TitleText" Text="Press mouse button"
+                                           Foreground="{ThemeResource AJut_ScreenColorPickMagnifier_TitleBarForeground}"
+                                           FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                            </Border>
+                            <Grid Margin="{TemplateBinding Padding}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                                    <Border Width="56" Height="56" BorderThickness="1"
+                                            BorderBrush="{ThemeResource AJut_ScreenColorPickMagnifier_BorderBrush}"
+                                            Background="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=SampleBrush}"/>
+                                    <TextBlock Text="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Hex}"
+                                               Foreground="{ThemeResource AJut_ScreenColorPickMagnifier_Foreground}"
+                                               FontFamily="Consolas" Margin="0,6,0,0"/>
+                                </StackPanel>
+                                <Border Grid.Column="1" BorderThickness="1"
+                                        BorderBrush="{ThemeResource AJut_ScreenColorPickMagnifier_BorderBrush}">
+                                    <Grid Width="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=PreviewSize}"
+                                          Height="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=PreviewSize}">
+                                        <Image Source="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Pixels}" Stretch="Fill"/>
+                                        <Border Width="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=TargetOutlineSize}"
+                                                Height="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=TargetOutlineSize}"
+                                                HorizontalAlignment="Center" VerticalAlignment="Center" BorderThickness="2"
+                                                BorderBrush="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=TargetOutlineBrush}"/>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>
