@@ -36,7 +36,10 @@
     <!-- ====================[ PageStackDot ]==================== -->
     <!-- One dot in the strip. The transparent border around the dot is its hit area. The pointer fades the whole dot, and
          Kind picks its fill and size: the current page's dot takes CurrentDotBrush, and an edge dot (more pages past the
-         window) draws smaller and faded. -->
+         window) draws smaller and faded, growing to full size, still faded, under the pointer. The size and fade are the
+         KindStates, which PageStackDot picks, so the transition below eases them: a dot grows or shrinks as it slides into
+         or out of the window, or as the pointer comes over an edge dot. The fill is a trigger, since a brush can't ease,
+         and a binding can't live in a template's storyboard. -->
     <Style TargetType="{x:Type local:PageStackDot}">
         <Setter Property="Focusable" Value="False"/>
         <Setter Property="Padding" Value="3"/>
@@ -44,32 +47,54 @@
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:PageStackDot}">
                     <Border x:Name="Root" Background="Transparent" Padding="{TemplateBinding Padding}" Opacity="0.85">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="KindStates">
+                                <VisualStateGroup.Transitions>
+                                    <VisualTransition GeneratedDuration="0:0:0.15"/>
+                                </VisualStateGroup.Transitions>
+                                <VisualState x:Name="Page">
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="DotScale" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0"/>
+                                        <DoubleAnimation Storyboard.TargetName="DotScale" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0"/>
+                                        <DoubleAnimation Storyboard.TargetName="DotShape" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0"/>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Current">
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="DotScale" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0"/>
+                                        <DoubleAnimation Storyboard.TargetName="DotScale" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0"/>
+                                        <DoubleAnimation Storyboard.TargetName="DotShape" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0"/>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Edge">
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="DotScale" Storyboard.TargetProperty="ScaleX" To="0.6" Duration="0"/>
+                                        <DoubleAnimation Storyboard.TargetName="DotScale" Storyboard.TargetProperty="ScaleY" To="0.6" Duration="0"/>
+                                        <DoubleAnimation Storyboard.TargetName="DotShape" Storyboard.TargetProperty="Opacity" To="0.45" Duration="0"/>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="EdgePointerOver">
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="DotScale" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0"/>
+                                        <DoubleAnimation Storyboard.TargetName="DotScale" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0"/>
+                                        <DoubleAnimation Storyboard.TargetName="DotShape" Storyboard.TargetProperty="Opacity" To="0.45" Duration="0"/>
+                                    </Storyboard>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
                         <Ellipse x:Name="DotShape"
                                  Width="{TemplateBinding DotSize}"
                                  Height="{TemplateBinding DotSize}"
                                  Fill="{TemplateBinding DotBrush}"
                                  RenderTransformOrigin="0.5,0.5">
+                            <Ellipse.RenderTransform>
+                                <ScaleTransform x:Name="DotScale"/>
+                            </Ellipse.RenderTransform>
                         </Ellipse>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="Kind" Value="Current">
                             <Setter TargetName="DotShape" Property="Fill" Value="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=CurrentDotBrush}"/>
-                        </Trigger>
-                        <Trigger Property="Kind" Value="BackEdge">
-                            <Setter TargetName="DotShape" Property="Opacity" Value="0.45"/>
-                            <Setter TargetName="DotShape" Property="RenderTransform">
-                                <Setter.Value>
-                                    <ScaleTransform ScaleX="0.6" ScaleY="0.6"/>
-                                </Setter.Value>
-                            </Setter>
-                        </Trigger>
-                        <Trigger Property="Kind" Value="ForwardEdge">
-                            <Setter TargetName="DotShape" Property="Opacity" Value="0.45"/>
-                            <Setter TargetName="DotShape" Property="RenderTransform">
-                                <Setter.Value>
-                                    <ScaleTransform ScaleX="0.6" ScaleY="0.6"/>
-                                </Setter.Value>
-                            </Setter>
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Root" Property="Opacity" Value="1"/>
@@ -115,37 +140,77 @@
                             <!-- The neighbor pages are moved past this area by render transforms, so it clips them -->
                             <Grid x:Name="PART_PagesClip" ClipToBounds="True">
                                 <Grid x:Name="PART_PageViewport"/>
-
-                                <Button x:Name="PART_BackButton"
-                                        Style="{StaticResource AJut_Style_PageStackPageButton}"
-                                        AutomationProperties.Name="Previous page"
-                                        HorizontalAlignment="Left"
-                                        Content="&#xE973;"
-                                        Background="{TemplateBinding ButtonBackground}"
-                                        Foreground="{TemplateBinding ButtonForeground}"
-                                        BorderBrush="{TemplateBinding ButtonBorder}"
-                                        FontSize="{TemplateBinding ButtonFontSize}"
-                                        Padding="{TemplateBinding ButtonPadding}"
-                                        Visibility="Collapsed"/>
-                                <Button x:Name="PART_ForwardButton"
-                                        Style="{StaticResource AJut_Style_PageStackPageButton}"
-                                        AutomationProperties.Name="Next page"
-                                        HorizontalAlignment="Right"
-                                        Content="&#xE974;"
-                                        Background="{TemplateBinding ButtonBackground}"
-                                        Foreground="{TemplateBinding ButtonForeground}"
-                                        BorderBrush="{TemplateBinding ButtonBorder}"
-                                        FontSize="{TemplateBinding ButtonFontSize}"
-                                        Padding="{TemplateBinding ButtonPadding}"
-                                        Visibility="Collapsed"/>
                             </Grid>
 
-                            <StackPanel x:Name="PART_DotsPanel"
-                                        Grid.Row="1"
-                                        Orientation="Horizontal"
-                                        HorizontalAlignment="Center"
-                                        Margin="0,4,0,0"
-                                        Visibility="Collapsed"/>
+                            <!-- The dot strip: the dots, and the page count after them when ShowPageCount is on, below the
+                                 pages or beside them when vertical. The host takes DotStripPadding. The canvas is sized to
+                                 the strip's dots from code and clips to them, and the panel of dots slides along it under
+                                 a transform when the page changes, holding the dots sliding out of view and in. A canvas,
+                                 since it never clips or constrains the panel by layout. -->
+                            <Border x:Name="PART_DotsHost"
+                                    Grid.Row="1"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Top"
+                                    Visibility="Collapsed">
+                                <StackPanel x:Name="DotStripLayout" Orientation="Horizontal">
+                                    <Canvas x:Name="PART_DotsClip" ClipToBounds="True">
+                                        <StackPanel x:Name="PART_DotsPanel" Orientation="Horizontal">
+                                            <StackPanel.RenderTransform>
+                                                <TranslateTransform/>
+                                            </StackPanel.RenderTransform>
+                                        </StackPanel>
+                                    </Canvas>
+
+                                    <!-- The page count, understated beside the dots in their brush. It is up to two counts with
+                                         the format's own words around them, each in a slot of its own, so the words ("of")
+                                         draw smaller and fainter than the numbers. Code fills the slots from PageCountFormat
+                                         and collapses the empty ones; when vertical, each word takes a line. Horizontal, the
+                                         words sit a little off the bottom, so they center on the numbers. -->
+                                    <StackPanel x:Name="PART_PageCount"
+                                                Orientation="Horizontal"
+                                                Margin="8,0,0,0"
+                                                HorizontalAlignment="Left"
+                                                VerticalAlignment="Center"
+                                                Visibility="Collapsed">
+                                        <TextBlock x:Name="PART_PageCountLeadingWords" Foreground="{TemplateBinding DotBrush}" FontSize="10" Opacity="0.8" Margin="0,0,0,2" VerticalAlignment="Bottom" HorizontalAlignment="Center" TextAlignment="Center"/>
+                                        <TextBlock x:Name="PART_PageCountFirstCount" Foreground="{TemplateBinding DotBrush}" FontSize="13" VerticalAlignment="Bottom" HorizontalAlignment="Center" TextAlignment="Center"/>
+                                        <TextBlock x:Name="PART_PageCountMiddleWords" Foreground="{TemplateBinding DotBrush}" FontSize="10" Opacity="0.8" Margin="0,0,0,2" VerticalAlignment="Bottom" HorizontalAlignment="Center" TextAlignment="Center"/>
+                                        <TextBlock x:Name="PART_PageCountSecondCount" Foreground="{TemplateBinding DotBrush}" FontSize="13" VerticalAlignment="Bottom" HorizontalAlignment="Center" TextAlignment="Center"/>
+                                        <TextBlock x:Name="PART_PageCountTrailingWords" Foreground="{TemplateBinding DotBrush}" FontSize="10" Opacity="0.8" Margin="0,0,0,2" VerticalAlignment="Bottom" HorizontalAlignment="Center" TextAlignment="Center"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- The page buttons run the stack's full height (or width, when vertical), past the dot strip,
+                                 over the neighbor pages' peeks. They sit outside the page area's clip, which would cut them
+                                 off at the dot strip. An empty Auto row or column takes no room, so both spans hold in
+                                 either orientation. -->
+                            <Button x:Name="PART_BackButton"
+                                    Grid.RowSpan="2"
+                                    Grid.ColumnSpan="2"
+                                    Style="{StaticResource AJut_Style_PageStackPageButton}"
+                                    AutomationProperties.Name="Previous page"
+                                    HorizontalAlignment="Left"
+                                    Content="&#xE973;"
+                                    Background="{TemplateBinding ButtonBackground}"
+                                    Foreground="{TemplateBinding ButtonForeground}"
+                                    BorderBrush="{TemplateBinding ButtonBorder}"
+                                    FontSize="{TemplateBinding ButtonFontSize}"
+                                    Padding="{TemplateBinding ButtonPadding}"
+                                    Visibility="Collapsed"/>
+                            <Button x:Name="PART_ForwardButton"
+                                    Grid.RowSpan="2"
+                                    Grid.ColumnSpan="2"
+                                    Style="{StaticResource AJut_Style_PageStackPageButton}"
+                                    AutomationProperties.Name="Next page"
+                                    HorizontalAlignment="Right"
+                                    Content="&#xE974;"
+                                    Background="{TemplateBinding ButtonBackground}"
+                                    Foreground="{TemplateBinding ButtonForeground}"
+                                    BorderBrush="{TemplateBinding ButtonBorder}"
+                                    FontSize="{TemplateBinding ButtonFontSize}"
+                                    Padding="{TemplateBinding ButtonPadding}"
+                                    Visibility="Collapsed"/>
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
@@ -156,12 +221,19 @@
                             <Setter TargetName="PART_ForwardButton" Property="HorizontalAlignment" Value="Stretch"/>
                             <Setter TargetName="PART_ForwardButton" Property="VerticalAlignment" Value="Bottom"/>
                             <Setter TargetName="PART_ForwardButton" Property="Content" Value="&#xE70D;"/>
-                            <Setter TargetName="PART_DotsPanel" Property="Grid.Row" Value="0"/>
-                            <Setter TargetName="PART_DotsPanel" Property="Grid.Column" Value="1"/>
+                            <Setter TargetName="PART_DotsHost" Property="Grid.Row" Value="0"/>
+                            <Setter TargetName="PART_DotsHost" Property="Grid.Column" Value="1"/>
+                            <Setter TargetName="PART_DotsHost" Property="HorizontalAlignment" Value="Left"/>
+                            <Setter TargetName="PART_DotsHost" Property="VerticalAlignment" Value="Center"/>
+                            <Setter TargetName="DotStripLayout" Property="Orientation" Value="Vertical"/>
                             <Setter TargetName="PART_DotsPanel" Property="Orientation" Value="Vertical"/>
-                            <Setter TargetName="PART_DotsPanel" Property="HorizontalAlignment" Value="Left"/>
-                            <Setter TargetName="PART_DotsPanel" Property="VerticalAlignment" Value="Center"/>
-                            <Setter TargetName="PART_DotsPanel" Property="Margin" Value="4,0,0,0"/>
+                            <Setter TargetName="PART_PageCount" Property="Orientation" Value="Vertical"/>
+                            <Setter TargetName="PART_PageCount" Property="Margin" Value="0,8,0,0"/>
+                            <Setter TargetName="PART_PageCount" Property="HorizontalAlignment" Value="Center"/>
+                            <Setter TargetName="PART_PageCount" Property="VerticalAlignment" Value="Top"/>
+                            <Setter TargetName="PART_PageCountLeadingWords" Property="Margin" Value="0"/>
+                            <Setter TargetName="PART_PageCountMiddleWords" Property="Margin" Value="0"/>
+                            <Setter TargetName="PART_PageCountTrailingWords" Property="Margin" Value="0"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
