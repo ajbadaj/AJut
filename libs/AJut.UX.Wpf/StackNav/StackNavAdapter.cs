@@ -32,9 +32,11 @@
         private bool m_allowInteractionDuringBusyWait = false;
         private bool m_allowInteractionDuringPopover = false;
         private string m_busyWaitText = kDefaultBusyWaitText;
+        private readonly PopoverService m_popovers;
 
         internal StackNavAdapter (StackNavFlowController navigator, IStackNavDisplayControl display)
         {
+            m_popovers = new PopoverService(this);
             this.Navigator = navigator;
             this.Display = display;
             this.Display.Setup(this);
@@ -224,39 +226,43 @@
         // ========================================[ Methods ]========================================
 
         /// <summary>
-        /// Indicates that the passed in popover should be shown.
+        /// Shows the passed in popover. If another popover is already showing, this one waits until that one (and any asked
+        /// for before this one) has been answered.
         /// </summary>
         /// <returns>The user selected option <see cref="Result"/> of the Popover's run</returns>
         public async Task<Result> ShowPopover (IStackNavPopoverDisplay popover)
         {
-            this.PopoverDisplay = popover;
             var resultWaiter = new TaskCompletionSource<Result>();
+            var request = new PopoverRequest(popover);
             popover.ResultSet += _OnResultSet;
+            m_popovers.Show(request);
             return await resultWaiter.Task.ConfigureAwait(false);
 
             void _OnResultSet (object _sender, EventArgs<Result> _e)
             {
                 popover.ResultSet -= _OnResultSet;
-                this.PopoverDisplay = null;
+                this.OnPopoverAnswered(request);
                 resultWaiter.TrySetResult(_e.Value);
             }
         }
 
         /// <summary>
-        /// Indicates that the passed in popover should be shown.
+        /// Shows the passed in popover. If another popover is already showing, this one waits until that one (and any asked
+        /// for before this one) has been answered.
         /// </summary>
         /// <returns>The user selected option <see cref="Result{T}"/> of the Popover's run</returns>
         public async Task<Result<T>> ShowPopover<T> (IStackNavPopoverDisplay<T> popover)
         {
-            this.PopoverDisplay = popover;
             var resultWaiter = new TaskCompletionSource<Result<T>>();
+            var request = new PopoverRequest(popover);
             popover.ResultSet += _OnResultSet;
+            m_popovers.Show(request);
             return await resultWaiter.Task.ConfigureAwait(false);
 
             void _OnResultSet (object _sender, EventArgs<Result<T>> _e)
             {
-                this.PopoverDisplay = null;
                 popover.ResultSet -= _OnResultSet;
+                this.OnPopoverAnswered(request);
                 resultWaiter.TrySetResult(_e.Value);
             }
         }
@@ -342,7 +348,73 @@
             this.IsBusyWaitActive = m_busyWaitRefCount != 0;
         }
 
+        /// <summary>
+        /// A popover has set its result: it comes off the screen, and the next popover waiting is shown. Done before its
+        /// caller hears the answer, so a caller that shows another popover straight away finds the popovers settled.
+        /// </summary>
+        private void OnPopoverAnswered (PopoverRequest request)
+        {
+            if (this.PopoverDisplay == request.Popover)
+            {
+                this.PopoverDisplay = null;
+            }
+
+            request.Answered.TrySetResult(eDialogOutcome.Primary);
+        }
+
         // ========================================[ Sub Classes ]========================================
+
+        /// <summary>One call to ShowPopover: the popover, and whether it has set its result yet</summary>
+        private sealed class PopoverRequest
+        {
+            public PopoverRequest (IStackNavPopoverDisplayBase popover)
+            {
+                this.Popover = popover;
+            }
+
+            public IStackNavPopoverDisplayBase Popover { get; }
+
+            /// <summary>Ended when the popover sets its result, which is what closes it</summary>
+            public TaskCompletionSource<eDialogOutcome> Answered { get; } = new TaskCompletionSource<eDialogOutcome>();
+        }
+
+        // A page shows one popover at a time, so its popovers take turns the way dialogs do, through AJut.UX's dialog
+        //  service rules: a popover asked for while another is showing waits in line (eDialogOverlapResponse.Queue) until
+        //  every popover ahead of it has been answered. Each caller still waits on its own popover's result, not on the
+        //  service's outcome, so a popover cancelled from code while it waits answers its caller at once, and when its turn
+        //  comes it ends without ever being shown.
+        private sealed class PopoverService : DialogServiceBase<PopoverRequest>
+        {
+            private readonly StackNavAdapter m_owner;
+
+            public PopoverService (StackNavAdapter owner)
+            {
+                m_owner = owner;
+            }
+
+            /// <summary>Shows the popover, or puts it in line behind the one showing</summary>
+            public void Show (PopoverRequest request)
+            {
+                // The caller waits on the popover's own result, so the outcome here is not needed. It never faults: every
+                //  ending, a failed show included, is an outcome.
+                _ = this.ShowAsync(request, eDialogOverlapResponse.Queue);
+            }
+
+            protected override Task<eDialogOutcome> ShowDialogAsync (PopoverRequest request)
+            {
+                if (!request.Answered.Task.IsCompleted)
+                {
+                    m_owner.PopoverDisplay = request.Popover;
+                }
+
+                return request.Answered.Task;
+            }
+
+            protected override void HideDialog (PopoverRequest request)
+            {
+                // Every popover is queued, and a queued popover never displaces the one showing, so none is ever asked to hide
+            }
+        }
 
         /// <summary>
         /// A temporary busy wait display lifetime, to remove busy wait cover simply <see cref="IDisposable.Dispose"/> of this tracker.
