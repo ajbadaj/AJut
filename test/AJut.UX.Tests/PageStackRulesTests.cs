@@ -214,5 +214,69 @@ namespace AJut.UX.Tests
             Assert.AreEqual(5.0, PageStackRules.TransitionPosition(0.0, 5.0, TimeSpan.Zero, TimeSpan.Zero));
             Assert.IsTrue(PageStackRules.IsTransitionDone(TimeSpan.Zero, TimeSpan.FromMilliseconds(-10)));
         }
+
+        // ===========[ Swiping ]===============================================
+        [TestMethod]
+        public void IsSwipeAlongStack_OnlyWhenTheDragGoesFurtherAlongThanAcross ()
+        {
+            Assert.IsTrue(PageStackRules.IsSwipeAlongStack(alongDistance: -12.0, acrossDistance: 4.0));
+            Assert.IsFalse(PageStackRules.IsSwipeAlongStack(alongDistance: 4.0, acrossDistance: -12.0), "Mostly across is left to a scroller around the stack");
+            Assert.IsFalse(PageStackRules.IsSwipeAlongStack(alongDistance: 6.0, acrossDistance: 6.0), "A dead diagonal is not taken");
+        }
+
+        [TestMethod]
+        public void SwipePosition_FollowsTheFinger_APagePerPageLengthAndGap ()
+        {
+            // Pages 100 long with 10 between: a step of 110
+            Assert.AreEqual(3.5, PageStackRules.SwipePosition(startPosition: 3.0, dragDistance: -55.0, pageLength: 100.0, pageSpacing: 10.0, pageCount: 8), 1e-9, "Toward the start brings the later pages in");
+            Assert.AreEqual(2.0, PageStackRules.SwipePosition(3.0, 110.0, 100.0, 10.0, 8), 1e-9, "Toward the end brings the earlier pages in");
+            Assert.AreEqual(4.0, PageStackRules.SwipePosition(3.5, -55.0, 100.0, 10.0, 8), 1e-9, "Taken from mid transition, it carries on from there");
+        }
+
+        [TestMethod]
+        public void SwipePosition_PastEitherEnd_ResistsAndStopsHalfAPageOut ()
+        {
+            // A third as far as the finger past the end, and never more than half a page
+            Assert.AreEqual(-0.1, PageStackRules.SwipePosition(0.0, 33.0, 100.0, 10.0, 8), 1e-9);
+            Assert.AreEqual(7.1, PageStackRules.SwipePosition(7.0, -33.0, 100.0, 10.0, 8), 1e-9);
+            Assert.AreEqual(-0.5, PageStackRules.SwipePosition(0.0, 1000.0, 100.0, 10.0, 8), 1e-9);
+            Assert.AreEqual(0.4, PageStackRules.SwipePosition(1.0, 66.0, 100.0, 10.0, 8), 1e-9, "Inside the pages there is no resistance");
+        }
+
+        [TestMethod]
+        public void SwipePosition_WithNothingToPage_StaysWhereItStarted ()
+        {
+            Assert.AreEqual(0.0, PageStackRules.SwipePosition(0.0, -80.0, 100.0, 10.0, 0));
+            Assert.AreEqual(2.0, PageStackRules.SwipePosition(2.0, -80.0, 0.0, 0.0, 5), "A stack not yet laid out has no page length to follow");
+        }
+
+        [TestMethod]
+        public void SwipeTargetPage_SlowRelease_SettlesOnTheNearestPage ()
+        {
+            Assert.AreEqual(3, PageStackRules.SwipeTargetPage(position: 3.4, dragVelocity: -100.0, pageCount: 8), "Not far enough, so it springs back");
+            Assert.AreEqual(4, PageStackRules.SwipeTargetPage(3.6, -100.0, 8));
+            Assert.AreEqual(4, PageStackRules.SwipeTargetPage(3.5, 0.0, 8), "Half way goes on");
+            Assert.AreEqual(5, PageStackRules.SwipeTargetPage(5.3, 120.0, 8), "Dragged back past a page and let go slowly settles there too");
+        }
+
+        [TestMethod]
+        public void SwipeTargetPage_Flick_GoesOnToTheNextPageTheWayItMoved ()
+        {
+            // A finger moving toward the start (negative) pages forward, and toward the end pages back
+            Assert.AreEqual(4, PageStackRules.SwipeTargetPage(3.1, -PageStackRules.kSwipeFlickSpeed, 8), "A short quick swipe still turns the page");
+            Assert.AreEqual(2, PageStackRules.SwipeTargetPage(2.9, 900.0, 8));
+            Assert.AreEqual(5, PageStackRules.SwipeTargetPage(4.0, -900.0, 8), "From right on a page, a forward flick goes one on");
+            Assert.AreEqual(3, PageStackRules.SwipeTargetPage(4.0, 900.0, 8), "and a back flick one back");
+            Assert.AreEqual(3, PageStackRules.SwipeTargetPage(3.4, 900.0, 8), "Dragged forward then flicked back returns to the page it left");
+        }
+
+        [TestMethod]
+        public void SwipeTargetPage_IsKeptInsideThePages ()
+        {
+            Assert.AreEqual(7, PageStackRules.SwipeTargetPage(7.2, -900.0, 8), "A flick past the last page stays on it");
+            Assert.AreEqual(0, PageStackRules.SwipeTargetPage(-0.3, 900.0, 8));
+            Assert.AreEqual(0, PageStackRules.SwipeTargetPage(-0.4, 0.0, 8));
+            Assert.AreEqual(-1, PageStackRules.SwipeTargetPage(0.0, -900.0, 0), "No pages, nothing to land on");
+        }
     }
 }

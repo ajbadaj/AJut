@@ -5,9 +5,9 @@ namespace AJut.UX.Controls
     using System.Text.RegularExpressions;
 
     /// <summary>
-    /// How a PageStack picks, lays out and moves between its pages, toolkit free, so WinUI3's, WPF's and AppKit's stacks
-    /// behave the same. One page shows at a time, inset from both ends by the page buttons and a peek of each neighbor, and
-    /// every other page sits along the stack beyond it, faded. Lengths are measured along the stack: widths for a
+    /// How a PageStack picks, lays out and moves between its pages, and where a swipe takes them, toolkit free, so the
+    /// WinUI3, WPF, AppKit, UIKit and Android PageStacks behave the same. One page shows at a time, inset from both ends by
+    /// the page buttons and a peek of each neighbor, and every other page sits along the stack beyond it, faded. Lengths are measured along the stack: widths for a
     /// horizontal stack, heights for a vertical one. A position is a page index that can sit between two pages while a
     /// transition runs.
     /// </summary>
@@ -15,6 +15,22 @@ namespace AJut.UX.Controls
     {
         /// <summary>The page count's format when none is given: the shown page's number from one, and the page count</summary>
         public const string kDefaultPageCountFormat = "{0} of {1}";
+
+        /// <summary>
+        /// How fast a swipe has to be moving along the stack when it is let go to count as a flick, in device independent
+        /// units (points, dp) per second. A flick goes on to the next page the way it was moving; a slower release
+        /// settles on whichever page is nearest.
+        /// </summary>
+        public const double kSwipeFlickSpeed = 300.0;
+
+        /// <summary>
+        /// How far a swipe dragged past the first or last page moves the pages, for how far the finger goes: a third, so
+        /// the end reads as resisting
+        /// </summary>
+        public const double kSwipeEdgeResistance = 1.0 / 3.0;
+
+        /// <summary>The furthest a swipe can pull the pages past the first or last page, in pages</summary>
+        public const double kSwipeMaxOvershoot = 0.5;
 
         // A format placeholder ("{0}", "{1:N0}"), but not an escaped brace ("{{0}}")
         private static readonly Regex kPageCountPlaceholder = new Regex(@"(?<!\{)\{\d+[^{}]*\}(?!\})", RegexOptions.Compiled);
@@ -266,6 +282,76 @@ namespace AJut.UX.Controls
             int last = (int)Math.Ceiling(Math.Max(fromFirstDotPage, toFirstDotPage)) + toDotCount - 1;
             return new DotSpan(Math.Max(0, first), Math.Min(pageCount - 1, last));
         }
+
+        /// <summary>
+        /// Whether a drag is a swipe the stack should take: it has gone further along the stack than across it. One that
+        /// goes mostly across is left to whatever else wants it, a scroller around the stack say.
+        /// </summary>
+        /// <param name="alongDistance">How far the drag has gone along the stack, either way</param>
+        /// <param name="acrossDistance">How far it has gone across the stack, either way</param>
+        public static bool IsSwipeAlongStack (double alongDistance, double acrossDistance) => Math.Abs(alongDistance) > Math.Abs(acrossDistance);
+
+        /// <summary>
+        /// Where a swipe has the stack, the pages following the finger: <paramref name="startPosition"/> less a page for
+        /// every page length and gap the finger has gone, since a finger moving toward the end (right, or down) brings the
+        /// earlier pages into view. Past the first or last page the pages resist, moving <see cref="kSwipeEdgeResistance"/>
+        /// as far as the finger and no more than <see cref="kSwipeMaxOvershoot"/> of a page.
+        /// </summary>
+        /// <param name="startPosition">Where the stack was when the swipe took hold, between two pages if it was mid transition</param>
+        /// <param name="dragDistance">How far the finger has gone along the stack since then, positive toward the end</param>
+        /// <param name="pageLength">A page's length along the stack</param>
+        /// <param name="pageSpacing">The gap between one page and the next</param>
+        /// <param name="pageCount">How many pages the stack holds</param>
+        public static double SwipePosition (double startPosition, double dragDistance, double pageLength, double pageSpacing, int pageCount)
+        {
+            double pageStep = pageLength + Math.Max(0.0, pageSpacing);
+            if ((pageCount <= 0) || (pageStep <= 0.0))
+            {
+                return startPosition;
+            }
+
+            double position = startPosition - (dragDistance / pageStep);
+            double lastPage = pageCount - 1;
+            if (position < 0.0)
+            {
+                return -ResistedOvershoot(-position);
+            }
+
+            return position > lastPage ? lastPage + ResistedOvershoot(position - lastPage) : position;
+        }
+
+        /// <summary>
+        /// The page a swipe lands on when it is let go at <paramref name="position"/>. A flick (moving at
+        /// <see cref="kSwipeFlickSpeed"/> or faster) goes on to the next page past the position the way it was moving, so
+        /// a quick short swipe still turns the page; anything slower settles on the nearest page. Kept inside the pages,
+        /// or -1 with none.
+        /// </summary>
+        /// <param name="position">Where the swipe had the stack when it was let go (<see cref="SwipePosition"/>)</param>
+        /// <param name="dragVelocity">How fast the finger was moving along the stack, positive toward the end (right, or down)</param>
+        /// <param name="pageCount">How many pages the stack holds</param>
+        public static int SwipeTargetPage (double position, double dragVelocity, int pageCount)
+        {
+            if (pageCount <= 0)
+            {
+                return -1;
+            }
+
+            // A finger moving toward the end brings the earlier pages in, so it pages back
+            int target;
+            if (Math.Abs(dragVelocity) >= kSwipeFlickSpeed)
+            {
+                target = dragVelocity < 0.0 ? (int)Math.Floor(position) + 1 : (int)Math.Ceiling(position) - 1;
+            }
+            else
+            {
+                target = (int)Math.Round(position, MidpointRounding.AwayFromZero);
+            }
+
+            return Math.Max(0, Math.Min(pageCount - 1, target));
+        }
+
+        // How far past an end a swipe pulls the pages, for how far past it the finger would have taken them
+        private static double ResistedOvershoot (double overshoot) => Math.Min(kSwipeMaxOvershoot, overshoot * kSwipeEdgeResistance);
 
         // ===========[ Subclasses/structs ]====================================
         /// <summary>A run of pages with a dot each, from <paramref name="FirstPage"/> to <paramref name="LastPage"/></summary>
