@@ -12,6 +12,7 @@
         <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0"
                    Text="Pushed on top of page A. The header's back button pops this page, and so does the button below. This page sets no drawer, so the header shows no drawer button."/>
         <Button Content="Show a popover" Padding="10,4" Margin="0,15,0,0" HorizontalAlignment="Left" Click="ShowPopover_OnClick"/>
+        <Button Content="Show two popovers at once" Padding="10,4" Margin="0,5,0,0" HorizontalAlignment="Left" Click="ShowTwoPopovers_OnClick"/>
         <TextBlock Margin="0,5,0,0">
             <TextBlock.Inlines>
                 <Run Text="Last popover result:"/>
