@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="DateTimeEditIngressControl"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:alpha="0.7"
+        android:text="Shows a date, a time, or both, and takes typed text as well as picks from Android's calendar and time picker. Try: today, tomorrow, friday, next friday, in two weeks, +3d, -2w, 2026-12-24, friday 3pm, tomorrow at 15:30. Done takes what is typed." />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Date only" />
+
+    <ajut.ux.controls.DateTimeEditIngressControl
+        android:id="@+id/demo_date_only"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:ajutUnsetTextPrompt="No date" />
+
+    <TextView
+        android:id="@+id/demo_date_only_value"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:fontFamily="monospace" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Time only" />
+
+    <ajut.ux.controls.DateTimeEditIngressControl
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:ajutIncludeDate="false"
+        app:ajutIncludeTime="true"
+        app:ajutUnsetTextPrompt="No time" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Date and time on a twenty four hour clock, whatever the culture" />
+
+    <ajut.ux.controls.DateTimeEditIngressControl
+        android:id="@+id/demo_date_twenty_four_hour"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:ajutIncludeTime="true"
+        app:ajutTimeFormat="twentyFourHour" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Date and time on a twelve hour clock, whatever the culture" />
+
+    <ajut.ux.controls.DateTimeEditIngressControl
+        android:id="@+id/demo_date_twelve_hour"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:ajutIncludeTime="true"
+        app:ajutTimeFormat="twelveHour" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Date and time, shown in a format of its own" />
+
+    <ajut.ux.controls.DateTimeEditIngressControl
+        android:id="@+id/demo_date_and_time"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:ajutIncludeTime="true"
+        app:ajutDisplayFormat="ddd, MMM d yyyy 'at' h:mm tt" />
+
+    <TextView
+        android:id="@+id/demo_date_and_time_last_edit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:fontFamily="monospace"
+        android:text="No edit yet" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Empty is invalid" />
+
+    <ajut.ux.controls.DateTimeEditIngressControl
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:ajutTreatEmptyAsInvalid="true"
+        app:ajutUnsetTextPrompt="A date is needed" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Read only" />
+
+    <ajut.ux.controls.DateTimeEditIngressControl
+        android:id="@+id/demo_date_read_only"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:ajutIncludeTime="true"
+        app:ajutIsReadOnly="true" />
+</LinearLayout>

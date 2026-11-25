@@ -1,0 +1,64 @@
+<UserControl x:Class="TheAJutShowRoom.UI.Controls.DateTimeEditIngressControlExample"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:ajut="clr-namespace:AJut.UX.Controls;assembly=AJut.UX.Wpf"
+             mc:Ignorable="d"
+             d:DesignHeight="450" d:DesignWidth="800"
+             x:Name="Self">
+    <StackPanel Margin="20" MaxWidth="340" HorizontalAlignment="Left">
+        <TextBlock TextWrapping="Wrap" Margin="0,0,0,10"
+                   Text="Type a date or pick one. Try: today, tomorrow, friday, next friday, in two weeks, +3d, -2w, 2026-12-24, friday 3pm, tomorrow at 15:30. Enter takes what is typed, and Escape puts the value back."/>
+
+        <CheckBox x:Name="IncludeDate" Content="Include date" IsChecked="True" Margin="0,0,0,5"/>
+        <CheckBox x:Name="IncludeTime" Content="Include time" Margin="0,0,0,5"/>
+        <CheckBox x:Name="EmptyAsError" Content="Treat empty as error" Margin="0,0,0,5"/>
+        <CheckBox x:Name="ReadOnly" Content="Read-only" Margin="0,0,0,5"/>
+        <CheckBox x:Name="MinuteCarries" Content="Minute steps carry into the hour" IsChecked="True" Margin="0,0,0,5"/>
+        <DockPanel Margin="0,0,0,4">
+            <TextBlock Text="Display format" VerticalAlignment="Center" Margin="0,0,5,0"/>
+            <TextBox x:Name="DisplayFormat" VerticalAlignment="Center"
+                     ToolTip="A .NET date and time format, standard (d, D, g, f) or custom (yyyy-MM-dd). Empty shows the culture's own short form."/>
+        </DockPanel>
+        <!-- Formats to try: each sets the display format box -->
+        <WrapPanel Margin="0,0,0,10">
+            <Button Content="d" ToolTip="Short date" Click="DisplayFormatSuggestion_OnClick" Padding="6,1" Margin="0,0,4,4"/>
+            <Button Content="D" ToolTip="Long date" Click="DisplayFormatSuggestion_OnClick" Padding="6,1" Margin="0,0,4,4"/>
+            <Button Content="g" ToolTip="Short date and time" Click="DisplayFormatSuggestion_OnClick" Padding="6,1" Margin="0,0,4,4"/>
+            <Button Content="f" ToolTip="Long date, short time" Click="DisplayFormatSuggestion_OnClick" Padding="6,1" Margin="0,0,4,4"/>
+            <Button Content="yyyy-MM-dd" ToolTip="Year, month and day, as ISO 8601 writes them" Click="DisplayFormatSuggestion_OnClick" Padding="6,1" Margin="0,0,4,4"/>
+            <Button Content="ddd, MMM d" ToolTip="Weekday, month and day" Click="DisplayFormatSuggestion_OnClick" Padding="6,1" Margin="0,0,4,4"/>
+            <Button Content="MMMM yyyy" ToolTip="Month and year" Click="DisplayFormatSuggestion_OnClick" Padding="6,1" Margin="0,0,4,4"/>
+            <Button Content="h:mm tt" ToolTip="Time on a twelve hour clock" Click="DisplayFormatSuggestion_OnClick" Padding="6,1" Margin="0,0,4,4"/>
+        </WrapPanel>
+        <!-- The clock, for the field and the lone time editor below: the culture's own, or one chosen -->
+        <DockPanel Margin="0,0,0,10">
+            <TextBlock Text="Time format" VerticalAlignment="Center" Margin="0,0,5,0"/>
+            <ajut:EnumComboBox SelectedItem="{Binding ElementName=Main, Path=TimeFormat, Mode=TwoWay}" HorizontalAlignment="Left" MinWidth="140"
+                               ToolTip="The clock a time is shown and picked on, while there is no display format. CurrentCulture is the default."/>
+        </DockPanel>
+
+        <ajut:DateTimeEditIngressControl x:Name="Main"
+                                         IncludeDate="{Binding ElementName=IncludeDate, Path=IsChecked}"
+                                         IncludeTime="{Binding ElementName=IncludeTime, Path=IsChecked}"
+                                         TreatEmptyAsInvalid="{Binding ElementName=EmptyAsError, Path=IsChecked}"
+                                         IsReadOnly="{Binding ElementName=ReadOnly, Path=IsChecked}"
+                                         MinuteStepCarriesIntoHour="{Binding ElementName=MinuteCarries, Path=IsChecked}"
+                                         DisplayFormat="{Binding ElementName=DisplayFormat, Path=Text, UpdateSourceTrigger=PropertyChanged}"
+                                         UnsetTextPrompt="No date: type one, or pick"/>
+        <TextBlock Margin="0,4,0,14" Opacity="0.7" Text="{Binding ElementName=Main, Path=EditDateTime, StringFormat='Value: {0:F}', TargetNullValue='Value: none'}"/>
+
+        <TextBlock Text="A resolver of its own: q1 to q4 are quarters, and values show as one" TextWrapping="Wrap" Margin="0,0,0,4"/>
+        <ajut:DateTimeEditIngressControl x:Name="Quarters" UnsetTextPrompt="q1, q2, q3 or q4"/>
+
+        <TextBlock Text="The calendar and the time editor on their own" Margin="0,14,0,4"/>
+        <!-- A wrap rather than a row, so the time editor goes under the calendar where the two don't fit side by side -->
+        <WrapPanel Orientation="Horizontal">
+            <ajut:DateValueEditControl x:Name="LoneCalendar" BorderThickness="1" VerticalAlignment="Top" Margin="0,0,8,8"/>
+            <ajut:TimeValueEditControl BorderThickness="1" VerticalAlignment="Top" Margin="0,0,8,8" MinuteIncrement="5"
+                                      TimeFormat="{Binding ElementName=Main, Path=TimeFormat}"
+                                      MinuteStepCarriesIntoHour="{Binding ElementName=MinuteCarries, Path=IsChecked}"/>
+        </WrapPanel>
+    </StackPanel>
+</UserControl>

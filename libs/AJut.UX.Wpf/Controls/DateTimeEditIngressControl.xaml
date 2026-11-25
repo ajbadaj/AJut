@@ -1,0 +1,222 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:AJut.UX.Controls"
+                    xmlns:ajut="clr-namespace:AJut.UX"
+                    xmlns:ajconv="clr-namespace:AJut.UX.Converters"
+                    xmlns:ap="clr-namespace:AJut.UX.AttachedProperties">
+
+    <!-- Drawn as PathSelectionControl is: a text box and a button in one border, the border taking the focused and
+         invalid colors, and a glow and a warning mark while the text can't be read. The literal colors here are the
+         unthemed look; ThemedControlStylesBase.xaml lays the theme's brushes over them. -->
+    <Style TargetType="{x:Type local:DateTimeEditIngressControl}">
+        <Setter Property="ap:BorderXTA.CornerRadius" Value="0,3,3,0"/>
+        <Setter Property="BorderThickness" Value="1,1,1,2"/>
+        <Setter Property="Background" Value="#CCC"/>
+        <Setter Property="BorderBrush" Value="Black"/>
+        <Setter Property="Padding" Value="0,1,0,0"/>
+        <Setter Property="InvalidTextBorderBrush" Value="#C31"/>
+        <Setter Property="InvalidTextGlowBrush" Value="#C31"/>
+        <Setter Property="InvalidForegroundSymbol" Value="#FCD"/>
+        <Setter Property="FocusedBorderBrush" Value="#38C"/>
+        <Setter Property="IsReadOnly" Value="{Binding RelativeSource={RelativeSource Self}, Path=(ap:Edit.IsReadOnly), Mode=OneWay}"/>
+        <Setter Property="ButtonBackground">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1" >
+                    <GradientStop Offset="0.00" Color="#3399E4" />
+                    <GradientStop Offset="0.30" Color="#3388CC" />
+                    <GradientStop Offset="1.00" Color="#2B5C8A" />
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="ButtonForeground" Value="#E8F0F8"/>
+        <Setter Property="ButtonHoverBackground" Value="#3399E4"/>
+        <Setter Property="ButtonHoverForeground" Value="White"/>
+        <Setter Property="ButtonPressedBackground" Value="#3388CC"/>
+        <Setter Property="ButtonPressedForeground" Value="#DDD"/>
+        <Setter Property="TextBoxBorderBrush" Value="#8000"/>
+        <Setter Property="PopupBackground" Value="#EEE"/>
+        <Setter Property="PopupForeground" Value="#111"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:DateTimeEditIngressControl}">
+                    <Grid x:Name="Frame">
+                        <!-- The glow around invalid text, in InvalidTextGlowBrush: a border of its own behind the content,
+                             shown only while the text is invalid, as PathSelectionControl's is and for its reasons (an
+                             Effect on the content's own border would cost the text box its ClearType text) -->
+                        <Border x:Name="InvalidGlow" Visibility="Collapsed" IsHitTestVisible="False"
+                                Background="{Binding ElementName=RootBorder, Path=Background}"
+                                BorderBrush="{Binding ElementName=RootBorder, Path=BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}">
+                            <Border.Effect>
+                                <DropShadowEffect ShadowDepth="0" BlurRadius="5"
+                                                  Color="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateTimeEditIngressControl}}, Path=InvalidTextGlowBrush, Converter={ajconv:BrushColorExtractionConverter}}"/>
+                            </Border.Effect>
+                        </Border>
+                        <Border x:Name="RootBorder" Background="{TemplateBinding Background}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}"
+                                ToolTip="{TemplateBinding CurrentToolTip}">
+                            <Border.Style>
+                                <Style TargetType="{x:Type Border}">
+                                    <Setter Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateTimeEditIngressControl}}, Path=BorderBrush}"/>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                            <Setter Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateTimeEditIngressControl}}, Path=FocusedBorderBrush}"/>
+                                        </Trigger>
+                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateTimeEditIngressControl}}, Path=ShowEditDisplay}" Value="True">
+                                            <Setter Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateTimeEditIngressControl}}, Path=FocusedBorderBrush}"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateTimeEditIngressControl}}, Path=IsTextValid}" Value="False">
+                                            <Setter Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateTimeEditIngressControl}}, Path=InvalidTextBorderBrush}" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition />
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- ====[ The text box the value is shown and typed in ]==== -->
+                                <TextBox x:Name="PART_TextBox" Grid.Column="0"
+                                         IsReadOnly="{TemplateBinding IsReadOnly}"
+                                         ap:BorderXTA.CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius), Converter={ajconv:CornerRadiusSideExtractionConverter Side=Left}}"
+                                         BorderThickness="1,1,0,0" BorderBrush="{TemplateBinding TextBoxBorderBrush}" Margin="3" FontSize="12"
+                                         VerticalContentAlignment="Center" Padding="{ajut:TemplateBinding Path=Padding}"/>
+                                <TextBlock Margin="10,3" Padding="{Binding ElementName=PART_TextBox, Path=Padding}" Opacity="0.5" FontStyle="Italic"
+                                           FontSize="{Binding ElementName=PART_TextBox, Path=FontSize}" IsHitTestVisible="False"
+                                           Text="{TemplateBinding UnsetTextPrompt}" HorizontalAlignment="Stretch">
+                                    <TextBlock.Visibility>
+                                        <MultiBinding Converter="{ajconv:BooleanAndToVisibilityConverter}">
+                                            <MultiBinding.Bindings>
+                                                <Binding ElementName="PART_TextBox" Path="Text" Converter="{ajconv:IsTextNullOrEmptyConverter}"/>
+                                                <Binding ElementName="PART_TextBox" Path="IsKeyboardFocusWithin" Converter="{ajconv:BooleanInverseConverter}"/>
+                                            </MultiBinding.Bindings>
+                                        </MultiBinding>
+                                    </TextBlock.Visibility>
+                                </TextBlock>
+
+                                <!-- ====[ Warning mark, while the text can't be read ]==== -->
+                                <Border x:Name="WarningDisplay" Grid.Column="1" Visibility="Collapsed" IsHitTestVisible="False"
+                                        Background="{Binding ElementName=RootBorder, Path=BorderBrush}"
+                                        Margin="0,0,-1,0">
+                                    <TextBlock Foreground="{TemplateBinding InvalidForegroundSymbol}" FontSize="12"
+                                               Margin="2"
+                                               Text="&#xE7BA;" FontFamily="Segoe MDL2 Assets"
+                                               VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                </Border>
+
+                                <!-- ====[ Picker button ]==== -->
+                                <Border Grid.Column="2"
+                                        Background="{TemplateBinding ButtonBackground}"
+                                        HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                        CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius), Converter={ajconv:CornerRadiusSideExtractionConverter Side=Right, Reduction=2}}"/>
+                                <Button x:Name="PickerButton" Grid.Column="2" FontSize="14" Padding="6,3"
+                                        ap:BorderXTA.CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius), Converter={ajconv:CornerRadiusSideExtractionConverter Side=Right, Reduction=2.5}}"
+                                        BorderThickness="0"
+                                        Background="Transparent"
+                                        Foreground="{TemplateBinding ButtonForeground}"
+                                        Command="{x:Static local:DateTimeEditIngressControl.TogglePickersCommand}">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="{x:Type Button}">
+                                            <Border x:Name="Border" BorderThickness="{TemplateBinding BorderThickness}"
+                                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                                    Background="{TemplateBinding Background}"
+                                                    CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}">
+                                                <Grid Margin="{TemplateBinding Padding}" VerticalAlignment="Center">
+                                                    <!-- The calendar glyph, the clock glyph for a time alone, or PickerButtonContent
+                                                         in place of either -->
+                                                    <TextBlock x:Name="Icon" Text="&#xE787;" FontFamily="Segoe MDL2 Assets" Foreground="{TemplateBinding Foreground}"/>
+                                                    <ContentPresenter x:Name="CustomContent" Visibility="Collapsed"
+                                                                      TextElement.Foreground="{TemplateBinding Foreground}"
+                                                                      Content="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateTimeEditIngressControl}}, Path=PickerButtonContent}"/>
+                                                </Grid>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateTimeEditIngressControl}}, Path=ShowsDate}" Value="False">
+                                                    <Setter TargetName="Icon" Property="Text" Value="&#xE823;"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateTimeEditIngressControl}}, Path=PickerButtonContent, Converter={ajconv:NullnessChecker}}" Value="False">
+                                                    <Setter TargetName="Icon" Property="Visibility" Value="Collapsed"/>
+                                                    <Setter TargetName="CustomContent" Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Border" Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateTimeEditIngressControl}}, Path=ButtonHoverBackground}"/>
+                                                    <Setter TargetName="Icon" Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateTimeEditIngressControl}}, Path=ButtonHoverForeground}"/>
+                                                    <Setter TargetName="CustomContent" Property="TextElement.Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateTimeEditIngressControl}}, Path=ButtonHoverForeground}"/>
+                                                </Trigger>
+                                                <Trigger Property="IsPressed" Value="True">
+                                                    <Setter TargetName="Border" Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateTimeEditIngressControl}}, Path=ButtonPressedBackground}"/>
+                                                    <Setter TargetName="Icon" Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateTimeEditIngressControl}}, Path=ButtonPressedForeground}"/>
+                                                    <Setter TargetName="CustomContent" Property="TextElement.Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateTimeEditIngressControl}}, Path=ButtonPressedForeground}"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+
+                                <!-- ====[ The pickers ]==== -->
+                                <Popup PlacementTarget="{Binding ElementName=RootBorder}" Placement="Bottom"
+                                       IsOpen="{ajut:TemplateBinding Path=ShowEditDisplay, Mode=TwoWay}"
+                                       ap:PopupXTA.StaysOpenUnlessClickAway="True"
+                                       AllowsTransparency="True">
+                                    <Border Background="{TemplateBinding PopupBackground}"
+                                            BorderBrush="{TemplateBinding FocusedBorderBrush}"
+                                            BorderThickness="2" CornerRadius="3" Margin="0,2,0,0">
+                                        <StackPanel>
+                                            <!-- Read-only, the pickers open only to show the value -->
+                                            <TextBlock Text="Read-only" FontStyle="Italic" Opacity="0.7" HorizontalAlignment="Center" Margin="0,4,0,0"
+                                                       Foreground="{TemplateBinding PopupForeground}"
+                                                       Visibility="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=IsReadOnly, Converter={ajconv:BooleanToVisibilityConverter}}"/>
+                                            <local:DateValueEditControl x:Name="PART_DateEditor"
+                                                                        Background="Transparent"
+                                                                        Foreground="{TemplateBinding PopupForeground}"
+                                                                        SelectedDayBackground="{TemplateBinding ButtonPressedBackground}"
+                                                                        SelectedDayForeground="{TemplateBinding ButtonPressedForeground}"
+                                                                        TodayBorderBrush="{TemplateBinding FocusedBorderBrush}"
+                                                                        HoverBackground="{TemplateBinding ButtonHoverBackground}"
+                                                                        HoverForeground="{TemplateBinding ButtonHoverForeground}"
+                                                                        PopupBackground="{TemplateBinding PopupBackground}"
+                                                                        BorderBrush="{TemplateBinding FocusedBorderBrush}"
+                                                                        IsReadOnly="{TemplateBinding IsReadOnly}"
+                                                                        Visibility="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=ShowsDate, Converter={ajconv:BooleanToVisibilityConverter}}"/>
+                                            <local:TimeValueEditControl x:Name="PART_TimeEditor"
+                                                                        TimeFormat="{TemplateBinding TimeFormat}"
+                                                                        MinuteStepCarriesIntoHour="{TemplateBinding MinuteStepCarriesIntoHour}"
+                                                                        Background="Transparent"
+                                                                        Foreground="{TemplateBinding PopupForeground}"
+                                                                        HoverBackground="{TemplateBinding ButtonHoverBackground}"
+                                                                        HoverForeground="{TemplateBinding ButtonHoverForeground}"
+                                                                        IsReadOnly="{TemplateBinding IsReadOnly}"
+                                                                        Visibility="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=ShowsTime, Converter={ajconv:BooleanToVisibilityConverter}}"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsTextValid" Value="False">
+                            <Setter TargetName="InvalidGlow" Property="Visibility" Value="Visible"/>
+                            <Setter TargetName="WarningDisplay" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+
+                        <!-- Read-only looks as editable does but for its text, in italics and a touch faded. The button stays
+                             on: the pickers open to show the value, marked read-only. Disabled fades as a whole, as a
+                             disabled PathSelectionControl does, a fade rather than a brush so it serves both looks. -->
+                        <Trigger Property="IsReadOnly" Value="True">
+                            <Setter TargetName="PART_TextBox" Property="FontStyle" Value="Italic"/>
+                            <Setter TargetName="PART_TextBox" Property="Opacity" Value="0.85"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Frame" Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

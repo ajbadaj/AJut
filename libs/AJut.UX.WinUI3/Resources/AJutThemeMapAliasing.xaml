@@ -59,6 +59,17 @@
     <SolidColorBrush x:Key="AJut_PathSelectionControl_ButtonHighlightForeground"     Color="{ThemeResource AJut_Color_HighlightText}"/>
     <SolidColorBrush x:Key="AJut_PathSelectionControl_FocusedTextBoxBackgroundBrush" Color="{ThemeResource AJut_Color_TextBoxBackground}"/>
 
+    <!-- ===========[ DateTimeEditIngressControl ]========================== -->
+    <SolidColorBrush x:Key="AJut_DateTimeEditIngressControl_NormalBorderBrush"             Color="{ThemeResource AJut_Color_TextBoxBorder}"/>
+    <SolidColorBrush x:Key="AJut_DateTimeEditIngressControl_FocusedBorderBrush"            Color="{ThemeResource AJut_Color_PrimaryHighlight}"/>
+    <SolidColorBrush x:Key="AJut_DateTimeEditIngressControl_InvalidBorderBrush"            Color="{ThemeResource AJut_Color_BadStuff}"/>
+    <SolidColorBrush x:Key="AJut_DateTimeEditIngressControl_WarningIconForeground"         Color="{ThemeResource AJut_Color_NormalText}"/>
+    <SolidColorBrush x:Key="AJut_DateTimeEditIngressControl_ButtonIconForeground"          Color="{ThemeResource AJut_Color_SymbolForeground}"/>
+    <SolidColorBrush x:Key="AJut_DateTimeEditIngressControl_ButtonPointerOverBackground"   Color="{ThemeResource AJut_Color_PrimaryHighlightBright}"/>
+    <SolidColorBrush x:Key="AJut_DateTimeEditIngressControl_ButtonPressedBackground"       Color="{ThemeResource AJut_Color_PrimaryHighlight}"/>
+    <SolidColorBrush x:Key="AJut_DateTimeEditIngressControl_ButtonHighlightForeground"     Color="{ThemeResource AJut_Color_HighlightText}"/>
+    <SolidColorBrush x:Key="AJut_DateTimeEditIngressControl_FocusedTextBoxBackgroundBrush" Color="{ThemeResource AJut_Color_TextBoxBackground}"/>
+
     <!-- ===========[ FlatTreeItemRow ]===================================== -->
     <SolidColorBrush x:Key="AJut_FlatTreeItemRow_ExpanderPointerOverBackground" Color="{ThemeResource AJut_Color_MouseInteractionHighlight}"/>
     <SolidColorBrush x:Key="AJut_FlatTreeItemRow_ExpanderPressedBackground"     Color="{ThemeResource AJut_Color_PrimaryHighlightDark}"/>

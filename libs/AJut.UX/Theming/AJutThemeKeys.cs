@@ -49,6 +49,16 @@ namespace AJut.UX.Theming
         public const string PathSelectionControl_ButtonHighlightForeground = "AJut_PathSelectionControl_ButtonHighlightForeground";
         public const string PathSelectionControl_FocusedTextBoxBackgroundBrush = "AJut_PathSelectionControl_FocusedTextBoxBackgroundBrush";
 
+        public const string DateTimeEditIngressControl_NormalBorderBrush = "AJut_DateTimeEditIngressControl_NormalBorderBrush";
+        public const string DateTimeEditIngressControl_FocusedBorderBrush = "AJut_DateTimeEditIngressControl_FocusedBorderBrush";
+        public const string DateTimeEditIngressControl_InvalidBorderBrush = "AJut_DateTimeEditIngressControl_InvalidBorderBrush";
+        public const string DateTimeEditIngressControl_WarningIconForeground = "AJut_DateTimeEditIngressControl_WarningIconForeground";
+        public const string DateTimeEditIngressControl_ButtonIconForeground = "AJut_DateTimeEditIngressControl_ButtonIconForeground";
+        public const string DateTimeEditIngressControl_ButtonPointerOverBackground = "AJut_DateTimeEditIngressControl_ButtonPointerOverBackground";
+        public const string DateTimeEditIngressControl_ButtonPressedBackground = "AJut_DateTimeEditIngressControl_ButtonPressedBackground";
+        public const string DateTimeEditIngressControl_ButtonHighlightForeground = "AJut_DateTimeEditIngressControl_ButtonHighlightForeground";
+        public const string DateTimeEditIngressControl_FocusedTextBoxBackgroundBrush = "AJut_DateTimeEditIngressControl_FocusedTextBoxBackgroundBrush";
+
         public const string FlatTreeItemRow_ExpanderPointerOverBackground = "AJut_FlatTreeItemRow_ExpanderPointerOverBackground";
         public const string FlatTreeItemRow_ExpanderPressedBackground = "AJut_FlatTreeItemRow_ExpanderPressedBackground";
 
@@ -209,6 +219,15 @@ namespace AJut.UX.Theming
                 { "AJut_PathSelectionControl_ButtonPressedBackground", Alias("AJut_Color_PrimaryHighlight") },
                 { "AJut_PathSelectionControl_ButtonHighlightForeground", Alias("AJut_Color_HighlightText") },
                 { "AJut_PathSelectionControl_FocusedTextBoxBackgroundBrush", Alias("AJut_Color_TextBoxBackground") },
+                { "AJut_DateTimeEditIngressControl_NormalBorderBrush", Alias("AJut_Color_TextBoxBorder") },
+                { "AJut_DateTimeEditIngressControl_FocusedBorderBrush", Alias("AJut_Color_PrimaryHighlight") },
+                { "AJut_DateTimeEditIngressControl_InvalidBorderBrush", Alias("AJut_Color_BadStuff") },
+                { "AJut_DateTimeEditIngressControl_WarningIconForeground", Alias("AJut_Color_NormalText") },
+                { "AJut_DateTimeEditIngressControl_ButtonIconForeground", Alias("AJut_Color_SymbolForeground") },
+                { "AJut_DateTimeEditIngressControl_ButtonPointerOverBackground", Alias("AJut_Color_PrimaryHighlightBright") },
+                { "AJut_DateTimeEditIngressControl_ButtonPressedBackground", Alias("AJut_Color_PrimaryHighlight") },
+                { "AJut_DateTimeEditIngressControl_ButtonHighlightForeground", Alias("AJut_Color_HighlightText") },
+                { "AJut_DateTimeEditIngressControl_FocusedTextBoxBackgroundBrush", Alias("AJut_Color_TextBoxBackground") },
                 { "AJut_FlatTreeItemRow_ExpanderPointerOverBackground", Alias("AJut_Color_MouseInteractionHighlight") },
                 { "AJut_FlatTreeItemRow_ExpanderPressedBackground", Alias("AJut_Color_PrimaryHighlightDark") },
                 { "AJut_FlatTreeItemRow_ExpanderGlyphPointerOverForeground", Alias("AJut_Color_SymbolForegroundHighlight") },

@@ -104,8 +104,8 @@ namespace AJut.UX.Tests
             control.UserEditComplete -= _OnUserEdit;
 
             Assert.AreEqual(1, edits, "Many changes in one open edit are one user edit");
-            Assert.AreEqual(start, (ColorArgb)edit!.OldValue);
-            Assert.AreEqual(end, (ColorArgb)edit.NewValue);
+            Assert.AreEqual(start, (ColorArgb)edit!.OldValue!);
+            Assert.AreEqual(end, (ColorArgb)edit.NewValue!);
 
             void _OnUserEdit (object? sender, UserEditAppliedEventArgs e)
             {

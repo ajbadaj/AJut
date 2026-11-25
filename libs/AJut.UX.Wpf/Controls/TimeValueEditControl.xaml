@@ -1,0 +1,140 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ap="clr-namespace:AJut.UX.AttachedProperties"
+                    xmlns:ajconv="clr-namespace:AJut.UX.Converters"
+                    xmlns:local="clr-namespace:AJut.UX.Controls">
+
+    <!-- Every button here, the steppers and the half of the day: nothing behind them at rest, then the hover colors under
+         the pointer. Off (read-only) they fade. -->
+    <ControlTemplate x:Key="AJut_Template_TimeValueEditButton" TargetType="{x:Type ButtonBase}">
+        <Border x:Name="Border" Background="Transparent" CornerRadius="2" Padding="{TemplateBinding Padding}">
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Border>
+        <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="Border" Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:TimeValueEditControl}}, Path=HoverBackground}"/>
+                <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:TimeValueEditControl}}, Path=HoverForeground}"/>
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter TargetName="Border" Property="Opacity" Value="0.4"/>
+            </Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
+    <!-- A stepper: a chevron above or below the hour or the minute, which repeats while held -->
+    <Style x:Key="AJut_Style_TimeValueEditStepButton" TargetType="{x:Type RepeatButton}">
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Padding" Value="10,3"/>
+        <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+        <Setter Property="FontSize" Value="10"/>
+        <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:TimeValueEditControl}}, Path=Foreground}"/>
+        <Setter Property="Template" Value="{StaticResource AJut_Template_TimeValueEditButton}"/>
+    </Style>
+
+    <!-- The half of the day beside the minute. Its colors are style setters, as the steppers' are, so the template's
+         hover trigger can take them over. -->
+    <Style x:Key="AJut_Style_TimeValueEditHalfOfDayButton" TargetType="{x:Type Button}">
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Margin" Value="8,0,0,0"/>
+        <Setter Property="Padding" Value="6,2"/>
+        <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:TimeValueEditControl}}, Path=Foreground}"/>
+        <Setter Property="Template" Value="{StaticResource AJut_Template_TimeValueEditButton}"/>
+    </Style>
+
+    <!-- The hour or the minute, typed over: no box at rest, so it reads as the clock does, and an underline in the hover
+         color under the pointer and while typing -->
+    <Style x:Key="AJut_Style_TimeValueEditField" TargetType="{x:Type TextBox}">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:TimeValueEditControl}}, Path=Foreground}"/>
+        <Setter Property="CaretBrush" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:TimeValueEditControl}}, Path=Foreground}"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="MinWidth" Value="28"/>
+        <Setter Property="TextAlignment" Value="Center"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="IsReadOnly" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:TimeValueEditControl}}, Path=IsReadOnly}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type TextBox}">
+                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                        <ScrollViewer x:Name="PART_ContentHost" Focusable="False" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:TimeValueEditControl}}, Path=HoverBackground}"/>
+            </Trigger>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+                <Setter Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:TimeValueEditControl}}, Path=HoverBackground}"/>
+            </Trigger>
+            <Trigger Property="IsReadOnly" Value="True">
+                <Setter Property="BorderBrush" Value="Transparent"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style TargetType="{x:Type local:TimeValueEditControl}">
+        <Setter Property="IsReadOnly" Value="{Binding RelativeSource={RelativeSource Self}, Path=(ap:Edit.IsReadOnly), Mode=OneWay}"/>
+        <Setter Property="Background" Value="#EEE"/>
+        <Setter Property="Foreground" Value="#111"/>
+        <Setter Property="BorderBrush" Value="Black"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="6"/>
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="HoverBackground" Value="#3399E4"/>
+        <Setter Property="HoverForeground" Value="White"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:TimeValueEditControl}">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="{TemplateBinding Padding}"
+                            TextElement.Foreground="{TemplateBinding Foreground}">
+                        <!-- Hour, a colon, minute, and the half of the day, with a stepper above and below the two numbers -->
+                        <Grid HorizontalAlignment="Center">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <RepeatButton Grid.Column="0" Grid.Row="0" Style="{StaticResource AJut_Style_TimeValueEditStepButton}"
+                                          Command="{x:Static local:TimeValueEditControl.IncreaseHourCommand}" Content="&#xE70E;" ToolTip="Later hour"/>
+                            <!-- OneWay bindings rather than TemplateBindings: the control pushes them again to put back text
+                                 that wasn't an hour or a minute -->
+                            <TextBox x:Name="PART_HourTextBox" Grid.Column="0" Grid.Row="1" Style="{StaticResource AJut_Style_TimeValueEditField}"
+                                     Text="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=HourText, Mode=OneWay}" ToolTip="Hour"/>
+                            <RepeatButton Grid.Column="0" Grid.Row="2" Style="{StaticResource AJut_Style_TimeValueEditStepButton}"
+                                          Command="{x:Static local:TimeValueEditControl.DecreaseHourCommand}" Content="&#xE70D;" ToolTip="Earlier hour"/>
+
+                            <TextBlock Grid.Column="1" Grid.Row="1" Text=":" Margin="2,0" FontWeight="SemiBold"/>
+
+                            <RepeatButton Grid.Column="2" Grid.Row="0" Style="{StaticResource AJut_Style_TimeValueEditStepButton}"
+                                          Command="{x:Static local:TimeValueEditControl.IncreaseMinuteCommand}" Content="&#xE70E;" ToolTip="Later minute"/>
+                            <TextBox x:Name="PART_MinuteTextBox" Grid.Column="2" Grid.Row="1" Style="{StaticResource AJut_Style_TimeValueEditField}"
+                                     Text="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=MinuteText, Mode=OneWay}" ToolTip="Minute"/>
+                            <RepeatButton Grid.Column="2" Grid.Row="2" Style="{StaticResource AJut_Style_TimeValueEditStepButton}"
+                                          Command="{x:Static local:TimeValueEditControl.DecreaseMinuteCommand}" Content="&#xE70D;" ToolTip="Earlier minute"/>
+
+                            <!-- The half of the day, on a twelve hour clock only: pressing it moves to the other half -->
+                            <Button Grid.Column="3" Grid.Row="1" Style="{StaticResource AJut_Style_TimeValueEditHalfOfDayButton}"
+                                    Command="{x:Static local:TimeValueEditControl.ToggleHalfOfDayCommand}"
+                                    Content="{TemplateBinding HalfOfDayText}"
+                                    Visibility="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=UsesTwelveHourClock, Converter={ajconv:BooleanToVisibilityConverter}}"/>
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

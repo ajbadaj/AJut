@@ -24,6 +24,7 @@ namespace AJutShowRoomUIKit.UI
                 new ShowroomEntry("BrushButton & AutoBrushButton", static () => new BrushButtonPage()),
                 new ShowroomEntry("BusyWait", static () => new BusyWaitPage()),
                 new ShowroomEntry("ColorEditIngressControl", static () => new ColorEditIngressControlPage()),
+                new ShowroomEntry("DateTimeEditIngressControl", static () => new DateTimeEditIngressControlPage()),
                 new ShowroomEntry("EditableTextBlock", static () => new EditableTextBlockPage()),
                 new ShowroomEntry("FlatTreeListView", static () => new FlatTreeListViewPage()),
                 new ShowroomEntry("GeometryButton", static () => new GeometryButtonPage()),

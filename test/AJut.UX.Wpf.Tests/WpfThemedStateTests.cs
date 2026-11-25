@@ -28,14 +28,14 @@ namespace AJut.UX.Tests
         private static readonly Type[] kFocusableAJutControls =
         [
             typeof(AutoBrushButton), typeof(BrushButton), typeof(BumpStack), typeof(BusyWait), typeof(ColorEditIngressControl),
-            typeof(ColorValueEditControl), typeof(DockDropInsertionDriverWidget), typeof(DockPanelAddButton),
+            typeof(ColorValueEditControl), typeof(DateTimeEditIngressControl), typeof(DateValueEditControl), typeof(DockDropInsertionDriverWidget), typeof(DockPanelAddButton),
             typeof(DockPanelAddRemoveToolbar), typeof(DockPanelShowHideToggleButton), typeof(DockWholeWindowDragStartControl),
             typeof(DockZone), typeof(DockZoneSelectedHeaderControl), typeof(DockZoneTabHeadersControl), typeof(EditableTextBlock),
             typeof(EnumComboBox), typeof(EnumToggleStrip), typeof(FlatTreeListControl), typeof(MessageBoxPopover),
             typeof(NullableEditor), typeof(NumericEditor), typeof(PageStack), typeof(PathSelectionControl), typeof(PopupMenuButton),
             typeof(PropertyGrid), typeof(PropertyGridListEditor), typeof(StackNavActiveContentPresenter),
             typeof(StackNavActiveDrawerPresenter), typeof(StackNavActiveHeaderPresenter), typeof(StackNavBusyWaitOverlay),
-            typeof(StackNavDisplay), typeof(StackNavPopoverOverlay), typeof(Svg), typeof(ToggleStrip), typeof(ToggleSwitchButton),
+            typeof(StackNavDisplay), typeof(StackNavPopoverOverlay), typeof(Svg), typeof(TimeValueEditControl), typeof(ToggleStrip), typeof(ToggleSwitchButton),
             typeof(UIElementRepeater), typeof(WindowChromeButtonStrip),
         ];
 
@@ -186,6 +186,22 @@ namespace AJut.UX.Tests
 
                 Assert.IsTrue(PresentedContents(written).Contains("Item One"), $"A ListBoxItem written in the list shows {DescribeContents(written)}, not its own Content");
                 Assert.IsTrue(PresentedContents(bound).Contains("Bound One"), $"A bound list's item shows {DescribeContents(bound)}, not its data");
+            });
+        }
+
+        [TestMethod]
+        public void WpfThemed_ListBoxOfManyItems_MakesOnlyTheRowsOnScreen ()
+        {
+            StaTestThread.Run(() =>
+            {
+                // A short list over a thousand items, as the calendar's year picker is over nearly ten thousand
+                const int kItemCount = 1000;
+                const double kListHeight = 100.0;
+                var list = new ListBox { Height = kListHeight, ItemsSource = Enumerable.Range(0, kItemCount).ToArray() };
+                MakeThemedHost(list);
+
+                int made = Enumerable.Range(0, kItemCount).Count(index => list.ItemContainerGenerator.ContainerFromIndex(index) != null);
+                Assert.IsTrue(made < kItemCount / 10, $"The themed ListBox made {made} of its {kItemCount} rows: it isn't virtualizing");
             });
         }
 

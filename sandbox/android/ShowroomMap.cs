@@ -22,6 +22,7 @@ namespace AJutShowRoomAndroid
             new AreaEntry("BrushButton", () => new DemoPage("BrushButton", Resource.Layout.demo_brush_button, Resource.Raw.demo_brush_button_source)),
             new AreaEntry("BusyWait", () => new BusyWaitPage()),
             new AreaEntry("ColorEditIngressControl", () => new ColorEditIngressControlPage()),
+            new AreaEntry("DateTimeEditIngressControl", () => new DateTimeEditIngressControlPage()),
             new AreaEntry("EditableTextBlock", () => new EditableTextBlockPage()),
             new AreaEntry("EnumComboBox", () => new EnumComboBoxPage()),
             new AreaEntry("EnumToggleStrip", () => new EnumToggleStripPage()),

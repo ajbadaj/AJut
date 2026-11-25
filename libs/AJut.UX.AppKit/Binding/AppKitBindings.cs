@@ -194,6 +194,19 @@ namespace AJut.UX.CodeBinding
             return channel;
         }
 
+        /// <summary>Binds a DateTimeEditIngressControl's value both ways; the source sees typed text once it is taken, and every pick while the popover is open</summary>
+        public static BindingSet.TwoWayChannel BindEditDateTime (this BindingSet set, DateTimeEditIngressControl dateControl, INotifyPropertyChanged source, string propertyName, Func<DateTime?> readSource, Action<DateTime?> writeSource)
+        {
+            BindingSet.TwoWayChannel channel = set.TwoWay(
+                source, propertyName,
+                readSource, writeSource,
+                dateControl.ReadEditDateTime, dateControl.WriteEditDateTime
+            );
+
+            set.Add(new EditDateTimeLink(dateControl, channel.OnTargetEdited));
+            return channel;
+        }
+
         /// <summary>Binds a ToggleStrip's selected item both ways</summary>
         public static BindingSet.TwoWayChannel BindSelectedItem (this BindingSet set, ToggleStrip strip, INotifyPropertyChanged source, string propertyName, Func<object> readSource, Action<object> writeSource)
         {
@@ -298,6 +311,8 @@ namespace AJut.UX.CodeBinding
         private static void WriteEnabled (this NSMenuItem item, bool isEnabled) => item.Enabled = isEnabled;
         private static ColorArgb ReadEditColor (this ColorEditIngressControl swatch) => swatch.EditColor;
         private static void WriteEditColor (this ColorEditIngressControl swatch, ColorArgb value) => swatch.EditColor = value;
+        private static DateTime? ReadEditDateTime (this DateTimeEditIngressControl dateControl) => dateControl.EditDateTime;
+        private static void WriteEditDateTime (this DateTimeEditIngressControl dateControl, DateTime? value) => dateControl.EditDateTime = value;
         private static string ReadSelectedPath (this PathSelectionControl pathControl) => pathControl.SelectedPath;
         private static void WriteSelectedPath (this PathSelectionControl pathControl, string path) => pathControl.SelectedPath = path;
         private static object ReadValue (this NumericEditor editor) => editor.Value;
@@ -360,6 +375,23 @@ namespace AJut.UX.CodeBinding
             public void Dispose () => m_swatch.EditColorChanged -= this.OnEditColorChanged;
 
             private void OnEditColorChanged (object sender, EventArgs e) => m_onChanged();
+        }
+
+        private sealed class EditDateTimeLink : IDisposable
+        {
+            private readonly DateTimeEditIngressControl m_dateControl;
+            private readonly Action m_onChanged;
+
+            public EditDateTimeLink (DateTimeEditIngressControl dateControl, Action onChanged)
+            {
+                m_dateControl = dateControl;
+                m_onChanged = onChanged;
+                m_dateControl.EditDateTimeChanged += this.OnEditDateTimeChanged;
+            }
+
+            public void Dispose () => m_dateControl.EditDateTimeChanged -= this.OnEditDateTimeChanged;
+
+            private void OnEditDateTimeChanged (object sender, EventArgs e) => m_onChanged();
         }
 
         private sealed class SelectedPathLink : IDisposable

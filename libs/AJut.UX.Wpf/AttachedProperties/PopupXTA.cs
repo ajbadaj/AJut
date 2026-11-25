@@ -4,6 +4,8 @@
     using System.Windows;
     using System.Windows.Controls.Primitives;
     using System.Windows.Input;
+    using System.Windows.Media;
+    using System.Windows.Media.Media3D;
 
     public static class PopupXTA
     {
@@ -34,6 +36,43 @@
         private static ClickAwayWatcher GetAttachedClickAwayInspector (DependencyObject obj) => (ClickAwayWatcher)obj.GetValue(AttachedClickAwayInspectorProperty);
         private static void SetAttachedClickAwayInspector (DependencyObject obj, ClickAwayWatcher value) => obj.SetValue(AttachedClickAwayInspectorPropertyKey, value);
 
+
+        /// <summary>
+        /// Whether a click on <paramref name="clicked"/>, at <paramref name="positionInChild"/> in the coordinates of
+        /// <paramref name="target"/>'s child, is away from the popup, and so closes it. A click in a popup opened from
+        /// inside the target (a menu, a picker) is not, wherever that popup sits on screen.
+        /// </summary>
+        internal static bool IsClickAway (Popup target, DependencyObject clicked, Point positionInChild)
+        {
+            if (IsWithin(clicked, target))
+            {
+                return false;
+            }
+
+            return !target.Child.IsLocalPointInBounds(positionInChild);
+        }
+
+        // A popup's content is its own visual tree, in its own window, so a click in a popup opened from inside the target
+        //  lands outside the target's bounds, and its visual parents end at that popup's root without reaching the
+        //  target. The logical tree does connect them: a popup's child has the popup as its logical parent. So the walk
+        //  takes the logical parent first, which steps from a popup's content to its Popup, and the visual parent where
+        //  there is none, which climbs out of a control's template, where only the template's root lacks a logical parent.
+        private static bool IsWithin (DependencyObject clicked, Popup target)
+        {
+            DependencyObject current = clicked;
+            while (current != null)
+            {
+                if ((current == target) || (current == target.Child))
+                {
+                    return true;
+                }
+
+                current = LogicalTreeHelper.GetParent(current)
+                    ?? (((current is Visual) || (current is Visual3D)) ? VisualTreeHelper.GetParent(current) : null);
+            }
+
+            return false;
+        }
 
         private class ClickAwayWatcher : IDisposable
         {
@@ -82,7 +121,7 @@
 
             private void OnTargetMouseUp (object sender, MouseButtonEventArgs e)
             {
-                if (m_mouseUpWatcher != null && e.IsTargetPrimary() && !m_target.Child.IsLocalPointInBounds(e.GetPosition(m_target.Child)))
+                if (m_mouseUpWatcher != null && e.IsTargetPrimary() && IsClickAway(m_target, e.OriginalSource as DependencyObject, e.GetPosition(m_target.Child)))
                 {
                     m_target.SetCurrentValue(Popup.IsOpenProperty, false);
 

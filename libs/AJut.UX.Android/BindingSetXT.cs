@@ -196,6 +196,24 @@ namespace AJut.UX.CodeBinding
             set.Watch(source, propertyName, () => view.Enabled = read());
         }
 
+        /// <summary>
+        /// A <see cref="DateTimeEditIngressControl"/> edits a date and time property: typed text once it is taken, and each
+        /// pick while the pickers are open. It shows the property when it changes elsewhere.
+        /// </summary>
+        public static BindingSet.TwoWayChannel BindEditDateTime (this BindingSet set, DateTimeEditIngressControl control, INotifyPropertyChanged source, string propertyName, Func<DateTime?> read, Action<DateTime?> write)
+        {
+            var link = new EditDateTimeLink(control);
+            set.Add(link);
+            BindingSet.TwoWayChannel channel = set.TwoWay<DateTime?>(
+                source, propertyName,
+                read, write,
+                () => control.EditDateTime, value => control.EditDateTime = value
+            );
+
+            link.Channel = channel;
+            return channel;
+        }
+
         /// <summary>A <see cref="ColorEditIngressControl"/> edits a color property, live as the picker moves, and shows it when it changes elsewhere.</summary>
         public static BindingSet.TwoWayChannel BindEditColor (this BindingSet set, ColorEditIngressControl control, INotifyPropertyChanged source, string propertyName, Func<ColorArgb> read, Action<ColorArgb> write)
         {
@@ -526,6 +544,23 @@ namespace AJut.UX.CodeBinding
             public void Dispose () => m_editor.ValueChanged -= this.OnValueChanged;
 
             private void OnValueChanged (object? sender, EventArgs<object> e) => this.Channel?.OnTargetEdited();
+        }
+
+        private sealed class EditDateTimeLink : IDisposable
+        {
+            private readonly DateTimeEditIngressControl m_control;
+
+            public EditDateTimeLink (DateTimeEditIngressControl control)
+            {
+                m_control = control;
+                m_control.EditDateTimeChanged += this.OnEditDateTimeChanged;
+            }
+
+            public BindingSet.TwoWayChannel? Channel { get; set; }
+
+            public void Dispose () => m_control.EditDateTimeChanged -= this.OnEditDateTimeChanged;
+
+            private void OnEditDateTimeChanged (object? sender, EventArgs<DateTime?> e) => this.Channel?.OnTargetEdited();
         }
 
         private sealed class EditColorLink : IDisposable

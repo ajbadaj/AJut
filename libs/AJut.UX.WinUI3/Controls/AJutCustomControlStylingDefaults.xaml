@@ -105,6 +105,21 @@
     <!-- Focused background (of the textbox) -->
     <SolidColorBrush x:Key="AJut_PathSelectionControl_FocusedTextBoxBackgroundBrush" Color="#888"/>
 
+    <!-- ===========[ DateTimeEditIngressControl ]=========================== -->
+    <!-- The same unthemed look as PathSelectionControl, which it is drawn like -->
+    <SolidColorBrush x:Key="AJut_DateTimeEditIngressControl_NormalBorderBrush"   Color="#888888"/>
+    <SolidColorBrush x:Key="AJut_DateTimeEditIngressControl_FocusedBorderBrush"  Color="#0078D4"/>
+    <!-- Border while the text can't be read as a date or time -->
+    <SolidColorBrush x:Key="AJut_DateTimeEditIngressControl_InvalidBorderBrush"  Color="#C00000"/>
+    <SolidColorBrush x:Key="AJut_DateTimeEditIngressControl_WarningIconForeground" Color="#C00000"/>
+    <!-- Picker button glyph, then the button under the pointer and pressed -->
+    <SolidColorBrush x:Key="AJut_DateTimeEditIngressControl_ButtonIconForeground" Color="#DDDDDD"/>
+    <SolidColorBrush x:Key="AJut_DateTimeEditIngressControl_ButtonPointerOverBackground" Color="#3399E4"/>
+    <SolidColorBrush x:Key="AJut_DateTimeEditIngressControl_ButtonPressedBackground"     Color="#3388CC"/>
+    <SolidColorBrush x:Key="AJut_DateTimeEditIngressControl_ButtonHighlightForeground"   Color="#FFFFFF"/>
+    <!-- Focused background (of the textbox) -->
+    <SolidColorBrush x:Key="AJut_DateTimeEditIngressControl_FocusedTextBoxBackgroundBrush" Color="#888"/>
+
     <!-- ===========[ FlatTreeItemRow ]====================================== -->
     <!-- Expander ToggleButton interaction brushes -->
     <SolidColorBrush x:Key="AJut_FlatTreeItemRow_ExpanderPointerOverBackground" Color="#20FFFFFF"/>

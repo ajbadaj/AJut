@@ -54,6 +54,7 @@ namespace AJutShowRoomAppKit.UI
                 new ShowroomPageEntry("BumpStack", CreateBumpStackPage),
                 new ShowroomPageEntry("BusyWait", CreateBusyWaitPage),
                 new ShowroomPageEntry("ColorEditIngressControl", CreateColorEditIngressControlPage),
+                new ShowroomPageEntry("DateTimeEditIngressControl", CreateDateTimeEditIngressControlPage),
                 new ShowroomPageEntry("EditableTextBlock", CreateEditableTextBlockPage),
                 new ShowroomPageEntry("EnumComboBox", CreateEnumComboBoxPage),
                 new ShowroomPageEntry("EnumToggleStrip", CreateEnumToggleStripPage),
@@ -118,6 +119,7 @@ namespace AJutShowRoomAppKit.UI
         private static NSView CreateSvgPage () => new Controls.SvgPage();
         private static NSView CreateBumpStackPage () => new Controls.BumpStackPage();
         private static NSView CreatePathSelectionControlPage () => new Controls.PathSelectionControlPage();
+        private static NSView CreateDateTimeEditIngressControlPage () => new Controls.DateTimeEditIngressControlPage();
         private static NSView CreateWindowManagerPage () => new Utilities.WindowManagerPage();
         private static NSView CreateLeakProbePage () => new Diagnostics.LeakProbePage();
         private static NSView CreateThemeTesterPage () => new Diagnostics.ThemeTesterPage();

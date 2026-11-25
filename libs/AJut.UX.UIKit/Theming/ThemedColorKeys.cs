@@ -139,7 +139,20 @@ namespace AJut.UX.Theming
             ThemedColors.SetUnthemedDefault(MobileLook.ToggleStrip.ItemDisabledText, UIColor.TertiaryLabel);
             ThemedColors.SetUnthemedDefault(MobileLook.GeometryButton.PressedTrace, UIColor.SystemBlue);
 
-            // 7. GeometryButton's trace, unthemed the same as the stock button borders above
+            // 7. DateTimeEditIngressControl's own keys, unthemed in system colors as NumericEditor's are: the focused border
+            //  and the pressed picker button take the tint (a null default), and the read only border falls back in code
+            ThemedColors.SetUnthemedDefault(MobileLook.DateTimeEditIngressControl.FrameBorder, UIColor.Separator);
+            ThemedColors.SetUnthemedDefault(MobileLook.DateTimeEditIngressControl.FrameBorderFocused, null);
+            ThemedColors.SetUnthemedDefault(MobileLook.DateTimeEditIngressControl.FrameBorderInvalid, UIColor.SystemRed);
+            ThemedColors.SetUnthemedDefault(MobileLook.DateTimeEditIngressControl.WellSurface, UIColor.SystemBackground);
+            ThemedColors.SetUnthemedDefault(MobileLook.DateTimeEditIngressControl.PlaceholderText, UIColor.PlaceholderText);
+            ThemedColors.SetUnthemedDefault(MobileLook.DateTimeEditIngressControl.WarningGlyph, UIColor.SystemRed);
+            ThemedColors.SetUnthemedDefault(MobileLook.DateTimeEditIngressControl.ButtonGlyph, UIColor.SecondaryLabel);
+            ThemedColors.SetUnthemedDefault(MobileLook.DateTimeEditIngressControl.ButtonPointerOverFill, UIColor.SystemFill);
+            ThemedColors.SetUnthemedDefault(MobileLook.DateTimeEditIngressControl.ButtonPressedFill, null);
+            ThemedColors.SetUnthemedDefault(MobileLook.DateTimeEditIngressControl.ButtonHighlightGlyph, UIColor.White);
+
+            // 8. GeometryButton's trace, unthemed the same as the stock button borders above
             ThemedColors.SetUnthemedDefault(GeometryButton_Trace, UIColor.Separator);
             ThemedColors.SetUnthemedDefault(GeometryButton_TracePointerOver, UIColor.Separator);
             ThemedColors.SetUnthemedDefault(GeometryButton_TracePressed, UIColor.Separator);
