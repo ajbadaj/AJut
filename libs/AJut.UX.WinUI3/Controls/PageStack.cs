@@ -358,7 +358,7 @@ namespace AJut.UX.Controls
             this.RefreshButtonsAndDots(slideDots: m_isTransitioning);
         }
 
-        public static readonly DependencyProperty ShowDotsProperty = DPUtils.Register(_ => _.ShowDots, false, (d, e) => d.RefreshButtonsAndDots());
+        public static readonly DependencyProperty ShowDotsProperty = DPUtils.Register(_ => _.ShowDots, false, (d, e) => d.OnDotStripContentChanged());
         /// <summary>Whether a strip of dots shows under the pages (beside them when vertical), one per page in the dot window</summary>
         public bool ShowDots
         {
@@ -470,8 +470,8 @@ namespace AJut.UX.Controls
 
         public static readonly DependencyProperty DotStripPaddingProperty = DPUtils.Register(_ => _.DotStripPadding, new Thickness(double.NaN), (d, e) => d.RefreshButtonsAndDots());
         /// <summary>
-        /// The space around the dot strip. Left unset, it is 4 on the side facing the pages and nothing elsewhere: the top
-        /// when horizontal, the left when vertical.
+        /// The space around the dot strip. Left unset, it is 4 on the side facing the pages: the top when horizontal, the
+        /// left when vertical. When vertical with no dots, the right gets 4 as well, so the page count stays off the edge.
         /// </summary>
         public Thickness DotStripPadding
         {
@@ -479,12 +479,19 @@ namespace AJut.UX.Controls
             set => this.SetValue(DotStripPaddingProperty, value);
         }
 
-        public static readonly DependencyProperty ShowPageCountProperty = DPUtils.Register(_ => _.ShowPageCount, false, (d, e) => d.RefreshButtonsAndDots());
+        public static readonly DependencyProperty ShowPageCountProperty = DPUtils.Register(_ => _.ShowPageCount, false, (d, e) => d.OnDotStripContentChanged());
         /// <summary>Whether the page count ("3 of 7") shows after the dots, or on its own where the dots would be when they are off</summary>
         public bool ShowPageCount
         {
             get => (bool)this.GetValue(ShowPageCountProperty);
             set => this.SetValue(ShowPageCountProperty, value);
+        }
+
+        // Whether the strip shows decides the pages' default padding on its side too
+        private void OnDotStripContentChanged ()
+        {
+            this.RefreshButtonsAndDots();
+            this.RefreshPageGeometry();
         }
 
         public static readonly DependencyProperty PageCountFormatProperty = DPUtils.Register(_ => _.PageCountFormat, PageStackRules.kDefaultPageCountFormat, (d, e) => d.RefreshButtonsAndDots());
@@ -502,7 +509,8 @@ namespace AJut.UX.Controls
         public static readonly DependencyProperty PagePaddingProperty = DPUtils.Register(_ => _.PagePadding, new Thickness(double.NaN), (d, e) => d.RefreshPageGeometry());
         /// <summary>
         /// The space around the pages, inside the page buttons. Left unset, it is 5 on the side the pages would otherwise
-        /// crowd and nothing elsewhere: the top when horizontal, the left when vertical.
+        /// crowd: the top when horizontal, the left when vertical. When neither the dots nor the page count shows, the
+        /// bottom (or right) gets 5 as well, since no strip sits there.
         /// </summary>
         public Thickness PagePadding
         {
@@ -651,7 +659,13 @@ namespace AJut.UX.Controls
             }
 
             double clearance = PageStackRules.PageClearance(areButtonsShown, this.MeasureButtonLength(), this.PagePeek, this.PageSpacing);
-            Thickness padding = EffectivePadding(this.PagePadding, m_isHorizontal, kDefaultPageGap);
+            bool isDotStripShown = PageStackRules.IsDotStripShown(this.ShowDots, this.ShowPageCount, this.Children.Count);
+            Thickness padding = EffectivePadding(
+                this.PagePadding,
+                m_isHorizontal,
+                kDefaultPageGap,
+                isGapOnBothSides: !isDotStripShown
+            );
             Thickness margin = m_isHorizontal
                 ? new Thickness(clearance + padding.Left, padding.Top, clearance + padding.Right, padding.Bottom)
                 : new Thickness(padding.Left, clearance + padding.Top, padding.Right, clearance + padding.Bottom);
@@ -715,7 +729,14 @@ namespace AJut.UX.Controls
             bool areDotsShown = PageStackRules.AreDotsShown(this.ShowDots, pageCount);
             bool isPageCountShown = PageStackRules.IsPageCountShown(this.ShowPageCount, pageCount);
             this.PART_DotsHost.Visibility = (areDotsShown || isPageCountShown) ? Visibility.Visible : Visibility.Collapsed;
-            this.PART_DotsHost.Padding = EffectivePadding(this.DotStripPadding, m_isHorizontal, kDefaultDotStripGap);
+            // A vertical count with no dots beside it would run to the stack's right edge, since text has no side bearing
+            //  to keep it off; an unset padding gives it the gap there too
+            this.PART_DotsHost.Padding = EffectivePadding(
+                this.DotStripPadding,
+                m_isHorizontal,
+                kDefaultDotStripGap,
+                isGapOnBothSides: !m_isHorizontal && !areDotsShown
+            );
             this.PART_DotsClip.Visibility = areDotsShown ? Visibility.Visible : Visibility.Collapsed;
             if (this.PART_PageCount != null)
             {
@@ -888,12 +909,14 @@ namespace AJut.UX.Controls
             }
         }
 
-        // A padding property left unset (its NaN default) is the gap given on the top when horizontal, the left when vertical
-        private static Thickness EffectivePadding (Thickness padding, bool isHorizontal, double defaultGap)
+        // A padding property left unset (its NaN default) is the gap given on the top when horizontal, the left when vertical,
+        //  and with isGapOnBothSides on the bottom or right as well
+        private static Thickness EffectivePadding (Thickness padding, bool isHorizontal, double defaultGap, bool isGapOnBothSides = false)
         {
             if (double.IsNaN(padding.Left) || double.IsNaN(padding.Top) || double.IsNaN(padding.Right) || double.IsNaN(padding.Bottom))
             {
-                return isHorizontal ? new Thickness(0, defaultGap, 0, 0) : new Thickness(defaultGap, 0, 0, 0);
+                double farGap = isGapOnBothSides ? defaultGap : 0.0;
+                return isHorizontal ? new Thickness(0, defaultGap, 0, farGap) : new Thickness(defaultGap, 0, farGap, 0);
             }
 
             return padding;

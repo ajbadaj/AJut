@@ -49,6 +49,15 @@ namespace AJut.UX.Controls
         public static bool IsPageCountShown (bool showPageCount, int pageCount) => showPageCount && (pageCount > 1);
 
         /// <summary>
+        /// Whether anything shows past the pages, the dots or the page count. With nothing there, an unset page padding pads
+        /// the far side of the pages too, since no strip sits there to space them.
+        /// </summary>
+        public static bool IsDotStripShown (bool showDots, bool showPageCount, int pageCount)
+        {
+            return AreDotsShown(showDots, pageCount) || IsPageCountShown(showPageCount, pageCount);
+        }
+
+        /// <summary>
         /// The page count's text in one line, as a screen reader reads it: <paramref name="format"/> filled with the shown
         /// page's number from one ({0}) and the page count ({1}), so "{0} of {1}" reads "3 of 7"
         /// </summary>

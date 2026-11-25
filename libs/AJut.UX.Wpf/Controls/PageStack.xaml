@@ -154,11 +154,7 @@
                                     Visibility="Collapsed">
                                 <StackPanel x:Name="DotStripLayout" Orientation="Horizontal">
                                     <Canvas x:Name="PART_DotsClip" ClipToBounds="True">
-                                        <StackPanel x:Name="PART_DotsPanel" Orientation="Horizontal">
-                                            <StackPanel.RenderTransform>
-                                                <TranslateTransform/>
-                                            </StackPanel.RenderTransform>
-                                        </StackPanel>
+                                        <StackPanel x:Name="PART_DotsPanel" Orientation="Horizontal"/>
                                     </Canvas>
 
                                     <!-- The page count, understated beside the dots in their brush. It is up to two counts with

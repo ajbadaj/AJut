@@ -58,7 +58,7 @@ namespace AJut.UX.Controls
         private const ushort kHomeKeyCode = 115;
         private const ushort kEndKeyCode = 119;
 
-        /// <summary>An inset left unset: <see cref="PagePadding"/> and <see cref="DotStripPadding"/> start here, and then pad only the side facing the other</summary>
+        /// <summary>An inset left unset: <see cref="PagePadding"/> and <see cref="DotStripPadding"/> start here, and then pad the side facing the other (the pages pad both sides while no strip shows)</summary>
         private static readonly NSEdgeInsets kUnsetInsets = new NSEdgeInsets(nfloat.NaN, nfloat.NaN, nfloat.NaN, nfloat.NaN);
 
         private readonly NSView m_pagesClip;
@@ -332,6 +332,7 @@ namespace AJut.UX.Controls
                 m_showDots = value;
                 this.RefreshDots();
                 this.InvalidateIntrinsicContentSize();
+                this.NeedsLayout = true;
             }
         }
 
@@ -357,6 +358,8 @@ namespace AJut.UX.Controls
             {
                 m_showPageCount = value;
                 this.RefreshPageCount();
+                this.InvalidateIntrinsicContentSize();
+                this.NeedsLayout = true;
             }
         }
 
@@ -402,7 +405,8 @@ namespace AJut.UX.Controls
 
         /// <summary>
         /// The space around the pages, inside the page buttons. Left unset, it is 5 on the side the pages would otherwise
-        /// crowd and nothing elsewhere: the top when horizontal, the left when vertical.
+        /// crowd: the top when horizontal, the left when vertical. When neither the dots nor the page count shows, the
+        /// bottom (or right) gets 5 as well, since no strip sits there.
         /// </summary>
         public NSEdgeInsets PagePadding
         {
@@ -416,8 +420,8 @@ namespace AJut.UX.Controls
         }
 
         /// <summary>
-        /// The space around the dot strip. Left unset, it is 4 on the side facing the pages and nothing elsewhere: the top
-        /// when horizontal, the left when vertical.
+        /// The space around the dot strip. Left unset, it is 4 on the side facing the pages: the top when horizontal, the
+        /// left when vertical. When vertical with no dots, the right gets 4 as well, so the page count stays off the edge.
         /// </summary>
         public NSEdgeInsets DotStripPadding
         {
@@ -547,7 +551,7 @@ namespace AJut.UX.Controls
                     return base.IntrinsicContentSize;
                 }
 
-                NSEdgeInsets padding = EffectiveInsets(m_pagePadding, this.IsHorizontal, kDefaultPageGap);
+                NSEdgeInsets padding = this.EffectivePagePadding();
                 double paddingAcross = this.IsHorizontal ? (double)(padding.Top + padding.Bottom) : (double)(padding.Left + padding.Right);
                 double thickness = m_pageThickness + paddingAcross + this.DotStripThickness();
                 return this.IsHorizontal
@@ -746,7 +750,7 @@ namespace AJut.UX.Controls
             CGSize countSize = m_pageCount.ContentSize;
             double dotsThickness = areDotsShown ? this.DotCellLength() : 0.0;
             double countThickness = isPageCountShown ? (double)(this.IsHorizontal ? countSize.Height : countSize.Width) : 0.0;
-            NSEdgeInsets padding = EffectiveInsets(m_dotStripPadding, this.IsHorizontal, kDefaultDotStripGap);
+            NSEdgeInsets padding = this.EffectiveDotStripPadding();
             double paddingAcross = this.IsHorizontal ? (double)(padding.Top + padding.Bottom) : (double)(padding.Left + padding.Right);
             return Math.Max(dotsThickness, countThickness) + paddingAcross;
         }
@@ -785,7 +789,7 @@ namespace AJut.UX.Controls
             bool areButtonsShown = PageStackRules.ArePageButtonsShown(pageCount);
             double buttonLength = this.ButtonLength();
             double clearance = PageStackRules.PageClearance(areButtonsShown, buttonLength, m_pagePeek, m_pageSpacing);
-            NSEdgeInsets padding = EffectiveInsets(m_pagePadding, this.IsHorizontal, kDefaultPageGap);
+            NSEdgeInsets padding = this.EffectivePagePadding();
             double width = (double)pagesArea.Width;
             double height = (double)pagesArea.Height;
             double pageLength = this.IsHorizontal
@@ -836,7 +840,7 @@ namespace AJut.UX.Controls
 
             // 1. The strip, inside its padding
             CGRect bounds = this.Bounds;
-            NSEdgeInsets padding = EffectiveInsets(m_dotStripPadding, this.IsHorizontal, kDefaultDotStripGap);
+            NSEdgeInsets padding = this.EffectiveDotStripPadding();
             CGRect strip = this.IsHorizontal
                 ? new CGRect(0, (nfloat)((double)bounds.Height - dotStrip), bounds.Width, (nfloat)dotStrip)
                 : new CGRect((nfloat)((double)bounds.Width - dotStrip), 0, (nfloat)dotStrip, bounds.Height);
@@ -1043,14 +1047,41 @@ namespace AJut.UX.Controls
             }
         }
 
-        // An inset left unset (kUnsetInsets) is the gap given on the top when horizontal, the left when vertical
-        private static NSEdgeInsets EffectiveInsets (NSEdgeInsets insets, bool isHorizontal, double defaultGap)
+        // The pages' padding; left unset, it pads their far side too while no strip sits there
+        private NSEdgeInsets EffectivePagePadding ()
+        {
+            bool isDotStripShown = PageStackRules.IsDotStripShown(m_showDots, m_showPageCount, this.Children.Count);
+            return EffectiveInsets(
+                m_pagePadding,
+                this.IsHorizontal,
+                kDefaultPageGap,
+                isGapOnBothSides: !isDotStripShown
+            );
+        }
+
+        // The dot strip's padding. A vertical count with no dots beside it would run to the stack's right edge, since text
+        //  has no side bearing to keep it off, so left unset it gets the gap there too.
+        private NSEdgeInsets EffectiveDotStripPadding ()
+        {
+            bool areDotsShown = PageStackRules.AreDotsShown(m_showDots, this.Children.Count);
+            return EffectiveInsets(
+                m_dotStripPadding,
+                this.IsHorizontal,
+                kDefaultDotStripGap,
+                isGapOnBothSides: !this.IsHorizontal && !areDotsShown
+            );
+        }
+
+        // An inset left unset (kUnsetInsets) is the gap given on the top when horizontal, the left when vertical, and with
+        //  isGapOnBothSides on the bottom or right as well
+        private static NSEdgeInsets EffectiveInsets (NSEdgeInsets insets, bool isHorizontal, double defaultGap, bool isGapOnBothSides = false)
         {
             if (nfloat.IsNaN(insets.Top) || nfloat.IsNaN(insets.Left) || nfloat.IsNaN(insets.Bottom) || nfloat.IsNaN(insets.Right))
             {
+                nfloat farGap = isGapOnBothSides ? (nfloat)defaultGap : 0;
                 return isHorizontal
-                    ? new NSEdgeInsets((nfloat)defaultGap, 0, 0, 0)
-                    : new NSEdgeInsets(0, (nfloat)defaultGap, 0, 0);
+                    ? new NSEdgeInsets((nfloat)defaultGap, 0, farGap, 0)
+                    : new NSEdgeInsets(0, (nfloat)defaultGap, 0, farGap);
             }
 
             return insets;

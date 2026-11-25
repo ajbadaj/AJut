@@ -47,6 +47,15 @@ namespace AJut.UX.Tests
         }
 
         [TestMethod]
+        public void DotStrip_ShowsForDotsOrCount_AndNeverForOnePage ()
+        {
+            Assert.IsTrue(PageStackRules.IsDotStripShown(showDots: true, showPageCount: false, pageCount: 5));
+            Assert.IsTrue(PageStackRules.IsDotStripShown(showDots: false, showPageCount: true, pageCount: 5));
+            Assert.IsFalse(PageStackRules.IsDotStripShown(showDots: false, showPageCount: false, pageCount: 5), "Nothing asked for, so the pages' far side gets its own padding");
+            Assert.IsFalse(PageStackRules.IsDotStripShown(showDots: true, showPageCount: true, pageCount: 1), "One page shows no strip, whatever is asked for");
+        }
+
+        [TestMethod]
         public void PageCountText_CountsFromOne ()
         {
             Assert.AreEqual("3 of 7", PageStackRules.PageCountText(PageStackRules.kDefaultPageCountFormat, effectiveSelectedIndex: 2, pageCount: 7));
