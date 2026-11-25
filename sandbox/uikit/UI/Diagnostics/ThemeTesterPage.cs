@@ -25,6 +25,9 @@ namespace AJutShowRoomUIKit.UI.Diagnostics
         private const string kDisabledChecked = "Disabled, checked";
         private const string kShape = "M 10,0 H 90 L 100,10 V 40 L 90,50 H 10 L 0,40 V 10 Z";
 
+        // The date and time every DateTimeEditIngressControl sample shows
+        private static readonly DateTime kSampleDateTime = new DateTime(2026, 11, 25, 14, 30, 0);
+
         private readonly List<UIControl> m_pressedSamples = new List<UIControl>();
         private readonly ToggleStrip m_uncheckedStrip = new ToggleStrip { AllowMultiSelect = true, AllowNoSelection = true };
         private readonly ToggleStrip m_checkedStrip = new ToggleStrip { AllowMultiSelect = true, AllowNoSelection = true };
@@ -136,6 +139,13 @@ namespace AJutShowRoomUIKit.UI.Diagnostics
                 _Captioned(this.Pressed(_Swatch()), kPressed),
                 _Captioned(_Swatch(), "Tap: picker open")
             );
+
+            this.AddHeading("DateTimeEditIngressControl");
+            this.AddText("The frame is AJut_Brush_PopOutControlBackground, outlined with DateTimeEditIngressControl_NormalBorderBrush, FocusedBorderBrush while typing, and InvalidBorderBrush with the warning glyph in WarningIconForeground when the text isn't a date. The text sits in a well of FocusedTextBoxBackgroundBrush, in TextControlForeground. The picker button's glyph is ButtonIconForeground, filled ButtonPressedBackground while held. Top to bottom: a date, a date and time, empty and so invalid, and read-only.");
+            this.AddWide(new DateTimeEditIngressControl { EditDateTime = kSampleDateTime });
+            this.AddWide(new DateTimeEditIngressControl { IncludeTime = true, EditDateTime = kSampleDateTime });
+            this.AddWide(new DateTimeEditIngressControl { TreatEmptyAsInvalid = true, EditDateTime = null });
+            this.AddWide(new DateTimeEditIngressControl { IsReadOnly = true, EditDateTime = kSampleDateTime });
 
             // 4. What the AJut controls sit beside
             this.AddHeading("UIKit's own controls");

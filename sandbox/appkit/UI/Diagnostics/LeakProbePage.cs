@@ -14,13 +14,13 @@ namespace AJutShowRoomAppKit.UI.Diagnostics
 
     // Whether a control is collected once it leaves its window and is dropped without Dispose: a PropertyGrid, a
     // FlatTreeListView, a PopupMenuButton, an EditableTextBlock mid edit, a spinning BusyWait overlay, an Svg, a
-    // SimpleWrapPanel, a PathSelectionControl, a BumpStack, a PageStack with its dots, an AutoGrid, or a
-    // UIElementRepeater (and its container) whose collection outlives it. Each probe shows a fresh control in this
-    // page's window with its rows on screen, takes it out, drops it, and then collects with pauses between passes, so
-    // AppKit has let go of the views and any deferred work has run before the last pass looks. An AppKit view that
-    // something it retains holds back is never collected, which is what this catches. The WindowManager probe sets one
-    // up on this window with a tool window tracked, closes the tool window, and disposes the manager, which then has to
-    // be collected.
+    // SimpleWrapPanel, a PathSelectionControl, a BumpStack, a PageStack with its dots, a DateTimeEditIngressControl,
+    // an AutoGrid, or a UIElementRepeater (and its container) whose collection outlives it. Each probe shows a fresh
+    // control in this page's window with its rows on screen, takes it out, drops it, and then collects with pauses
+    // between passes, so AppKit has let go of the views and any deferred work has run before the last pass looks. An
+    // AppKit view that something it retains holds back is never collected, which is what this catches. The
+    // WindowManager probe sets one up on this window with a tool window tracked, closes the tool window, and disposes
+    // the manager, which then has to be collected.
     public sealed class LeakProbePage : ShowroomPage
     {
         private const double kProbeWidth = 320.0;
@@ -37,6 +37,7 @@ namespace AJutShowRoomAppKit.UI.Diagnostics
         private readonly BrushButton m_probePathSelection;
         private readonly BrushButton m_probeBumpStack;
         private readonly BrushButton m_probePageStack;
+        private readonly BrushButton m_probeDateTime;
         private readonly BrushButton m_probeWindowManager;
         private readonly BrushButton m_probeAutoGrid;
         private readonly BrushButton m_probeRepeater;
@@ -96,6 +97,10 @@ namespace AJutShowRoomAppKit.UI.Diagnostics
             m_probePageStack.Activated += this.OnProbePageStackActivated;
             this.AddDemo(m_probePageStack, eFillStackCrossAlignment.Start);
 
+            m_probeDateTime = new BrushButton { Title = "Probe a DateTimeEditIngressControl, date and time" };
+            m_probeDateTime.Activated += this.OnProbeDateTimeActivated;
+            this.AddDemo(m_probeDateTime, eFillStackCrossAlignment.Start);
+
             m_probeWindowManager = new BrushButton { Title = "Probe a WindowManager" };
             m_probeWindowManager.Activated += this.OnProbeWindowManagerActivated;
             this.AddDemo(m_probeWindowManager, eFillStackCrossAlignment.Start);
@@ -130,6 +135,7 @@ namespace AJutShowRoomAppKit.UI.Diagnostics
             m_probePathSelection.Activated -= this.OnProbePathSelectionActivated;
             m_probeBumpStack.Activated -= this.OnProbeBumpStackActivated;
             m_probePageStack.Activated -= this.OnProbePageStackActivated;
+            m_probeDateTime.Activated -= this.OnProbeDateTimeActivated;
             m_probeWindowManager.Activated -= this.OnProbeWindowManagerActivated;
             m_probeAutoGrid.Activated -= this.OnProbeAutoGridActivated;
             m_probeRepeater.Activated -= this.OnProbeRepeaterActivated;
@@ -184,6 +190,11 @@ namespace AJutShowRoomAppKit.UI.Diagnostics
         private void OnProbePageStackActivated (object sender, EventArgs e)
         {
             _ = this.ProbeAsync("PageStack", MakePageStack);
+        }
+
+        private void OnProbeDateTimeActivated (object sender, EventArgs e)
+        {
+            _ = this.ProbeAsync("DateTimeEditIngressControl", MakeDateTime);
         }
 
         private void OnProbeWindowManagerActivated (object sender, EventArgs e)
@@ -310,6 +321,11 @@ namespace AJutShowRoomAppKit.UI.Diagnostics
 
         // Editing as it goes into the window, so the field has the focus and the window's field editor while it is shown,
         //  and leaving the window ends the edit
+        private static NSView MakeDateTime ()
+        {
+            return new DateTimeEditIngressControl { IncludeTime = true, EditDateTime = DateTime.Now };
+        }
+
         private static NSView MakeEditableTextBlock ()
         {
             return new EditableTextBlock { Text = "Probe", IsEditing = true };

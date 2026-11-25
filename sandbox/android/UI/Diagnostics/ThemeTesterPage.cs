@@ -18,6 +18,9 @@ namespace AJutShowRoomAndroid
         private const int kRestValue = 5;
         private const string kOutOfBoundsText = "50";
 
+        // The date and time every DateTimeEditIngressControl sample shows but the empty one
+        private static readonly DateTime kSampleDateTime = new DateTime(2026, 11, 25, 14, 30, 0);
+
         private View? m_root;
 
         // ===========[ Properties ]===================================
@@ -60,8 +63,8 @@ namespace AJutShowRoomAndroid
             m_root.ScrollTo(0, 0);
         }
 
-        // The states that are the controls' own data: read-only, a disabled EnumComboBox (its own Enabled, which it passes
-        // to its Spinner)
+        // The states that are the controls' own data: read-only, a DateTimeEditIngressControl's date, a disabled
+        // EnumComboBox (its own Enabled, which it passes to its Spinner)
         private static void _SetUpValues (View view)
         {
             switch (view)
@@ -69,6 +72,10 @@ namespace AJutShowRoomAndroid
                 case NumericEditor editor:
                     editor.Value = kRestValue;
                     editor.IsReadOnly = _TagOf(editor) == "read-only";
+                    return;
+
+                case DateTimeEditIngressControl dateTimeEditor:
+                    dateTimeEditor.EditDateTime = _TagOf(dateTimeEditor) == "empty" ? null : kSampleDateTime;
                     return;
 
                 case EnumComboBox comboBox:

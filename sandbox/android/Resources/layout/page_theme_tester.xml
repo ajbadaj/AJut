@@ -2,7 +2,8 @@
 <!-- Every control the AJut theme paints on Android, once per state, side by side. A sample's android:tag names a state
      the page pins it to that a layout cannot set: hovered, pressed, focused, error, read-only, step-pressed (a
      NumericEditor's plus button held), disabled (an EnumComboBox's Spinner), pin-items (a strip's items, each pinned
-     to the state it is named for), or scroll-middle (a Scroll strip scrolled halfway). -->
+     to the state it is named for), scroll-middle (a Scroll strip scrolled halfway), or empty (a DateTimeEditIngressControl
+     left with no date, where the others are given one). -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -220,6 +221,31 @@
             android:tag="step-pressed"
             app:ajutLabel="Plus held"
             app:ajutMaximum="10" />
+
+        <!-- ====[ DateTimeEditIngressControl ]==== -->
+        <TextView
+            style="@style/ThemeTesterSection"
+            android:text="DateTimeEditIngressControl" />
+
+        <TextView
+            style="@style/ThemeTesterNote"
+            android:text="The frame is AJut_Brush_PopOutControlBackground, outlined with DateTimeEditIngressControl_NormalBorderBrush, FocusedBorderBrush while typing, and InvalidBorderBrush with the warning glyph in WarningIconForeground when the text isn't a date. The text sits in a well of FocusedTextBoxBackgroundBrush, in TextControlForeground. The picker button's glyph is ButtonIconForeground, filled ButtonPressedBackground while held. Top to bottom: a date, a date and time, empty and so invalid, and read-only." />
+
+        <ajut.ux.controls.DateTimeEditIngressControl
+            style="@style/ThemeTesterLine" />
+
+        <ajut.ux.controls.DateTimeEditIngressControl
+            style="@style/ThemeTesterLine"
+            app:ajutIncludeTime="true" />
+
+        <ajut.ux.controls.DateTimeEditIngressControl
+            style="@style/ThemeTesterLine"
+            android:tag="empty"
+            app:ajutTreatEmptyAsInvalid="true" />
+
+        <ajut.ux.controls.DateTimeEditIngressControl
+            style="@style/ThemeTesterLine"
+            app:ajutIsReadOnly="true" />
 
         <!-- ====[ ColorEditIngressControl ]==== -->
         <TextView

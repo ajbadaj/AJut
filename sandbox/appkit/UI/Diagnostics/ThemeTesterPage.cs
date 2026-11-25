@@ -23,6 +23,9 @@ namespace AJutShowRoomAppKit.UI.Diagnostics
         private static readonly string[] kStripItems = new[] { "One", "Two", "Three" };
         private static readonly string[] kManyItems = new[] { "January", "February", "March", "April", "May", "June", "July" };
 
+        // The date and time every DateTimeEditIngressControl sample shows
+        private static readonly DateTime kSampleDateTime = new DateTime(2026, 11, 25, 14, 30, 0);
+
         private readonly NumericEditor m_focusedEditor;
 
         // ===========[ Setup/Construction/Teardown ]===========================
@@ -97,7 +100,17 @@ namespace AJutShowRoomAppKit.UI.Diagnostics
             );
             this.AddText("While its Colors panel is open, the swatch's border takes the highlight.");
 
-            // 5. The stock macOS controls, drawn the AJut way by AJut's themed versions
+            // 5. DateTimeEditIngressControl
+            this.AddHeading("DateTimeEditIngressControl");
+            this.AddStates(
+                new StateSample("Date", new DateTimeEditIngressControl { EditDateTime = kSampleDateTime }),
+                new StateSample("Date and time", new DateTimeEditIngressControl { IncludeTime = true, EditDateTime = kSampleDateTime }),
+                new StateSample("Empty, so invalid", new DateTimeEditIngressControl { TreatEmptyAsInvalid = true, EditDateTime = null }),
+                new StateSample("Read-only", new DateTimeEditIngressControl { EditDateTime = kSampleDateTime, IsReadOnly = true })
+            );
+            this.AddText("Click into a field to see the focused border, and type something that isn't a date to see the invalid border and the warning glyph.");
+
+            // 6. The stock macOS controls, drawn the AJut way by AJut's themed versions
             this.AddHeading("ThemedCheckBox, ThemedTextField and EnumComboBox (a ThemedPopUpButton)");
             this.AddStates(
                 new StateSample("Check box, on", MakeCheckBox(isOn: true, isEnabled: true)),

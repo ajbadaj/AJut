@@ -67,6 +67,7 @@ namespace AJutShowRoomUIKit.UI.Diagnostics
 
             // The probes: a name and what makes the control, with its pages on screen
             this.AddProbe("PageStack", "Probe a PageStack, with dots", MakePageStack);
+            this.AddProbe("DateTimeEditIngressControl", "Probe a DateTimeEditIngressControl, date and time", MakeDateTimeEditIngressControl);
 
             this.AddDemo(m_result);
             m_probeArea.WidthAnchor.ConstraintEqualTo(kProbeWidth).Active = true;
@@ -123,6 +124,19 @@ namespace AJutShowRoomUIKit.UI.Diagnostics
         }
 
         // A stack mid way through its pages, so both edge dots show and the dot range is full
+        private static UIView MakeDateTimeEditIngressControl ()
+        {
+            var editor = new DateTimeEditIngressControl
+            {
+                Frame = new CGRect(0, 0, kProbeWidth, kProbeHeight),
+                IncludeTime = true,
+                EditDateTime = DateTime.Now,
+            };
+
+            editor.LayoutIfNeeded();
+            return editor;
+        }
+
         private static UIView MakePageStack ()
         {
             const int kPageCount = 12;

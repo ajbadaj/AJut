@@ -26,6 +26,7 @@ namespace AJutShowRoomAndroid
         private static readonly Probe[] kProbes =
         {
             new Probe("Probe a PageStack, with dots", "PageStack", MakePageStack, StartPageStackTransition),
+            new Probe("Probe a DateTimeEditIngressControl, date and time", "DateTimeEditIngressControl", MakeDateTime),
         };
 
         private FrameLayout? m_probeArea;
@@ -125,6 +126,11 @@ namespace AJutShowRoomAndroid
 
             stack.SelectedIndex = kShownPage;
             return stack;
+        }
+
+        private static View MakeDateTime (Context context)
+        {
+            return new DateTimeEditIngressControl(context) { IncludeTime = true, EditDateTime = DateTime.Now };
         }
 
         // Taken out mid transition, so the frame callback it was stepping on has to be let go of too
