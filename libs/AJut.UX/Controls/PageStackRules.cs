@@ -245,7 +245,7 @@ namespace AJut.UX.Controls
         /// and sliding a run of unrelated dots past would only blur.
         /// </summary>
         /// <param name="fromFirstDotPage">The page the strip's first dot stands for now, between two pages mid slide</param>
-        /// <param name="toFirstDotPage">The page the new strip's first dot stands for (<see cref="PageStackDotWindow.FirstDotPage"/>)</param>
+        /// <param name="toFirstDotPage">The page the new strip's first dot stands for (<see cref="PageStackDotRange.FirstDotPage"/>)</param>
         /// <param name="toDotCount">How many dots the new strip shows</param>
         public static bool ShouldSlideDots (double fromFirstDotPage, int toFirstDotPage, int toDotCount)
         {

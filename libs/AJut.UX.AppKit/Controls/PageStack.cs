@@ -17,7 +17,7 @@ namespace AJut.UX.Controls
     // transition to that page; the buttons activate once per click, they never repeat. The neighbor pages sit just past
     // the shown one, faded and mostly clipped away, so a sliver of each shows past its page button as a hint that there is
     // more. Which page shows, where each page sits, how faded it is, how a transition eases, and which dots the strip shows
-    // are AJut.UX's PageStackRules and PageStackDotWindow, which WinUI3's and WPF's PageStacks follow too.
+    // are AJut.UX's PageStackRules and PageStackDotRange, which WinUI3's and WPF's PageStacks follow too.
     //
     // Each child goes in a page host the stack owns, pinned to its edges, so the stack can move and fade a page without
     // writing to the consumer's own view. The hosts, page buttons, dots and page count are placed by frame in Layout, the
@@ -28,7 +28,7 @@ namespace AJut.UX.Controls
     //
     // The dot strip slides with the pages: a pick turns its dot current at once, and the strip then shifts by however many
     // dots the pick was away, on the same clock and easing as the page transition, so the current dot settles back where
-    // the window puts it. While it slides the strip holds the dots of both windows, so the ones leaving slide out of view
+    // the range puts it. While it slides the strip holds the dots of both ranges, so the ones leaving slide out of view
     // rather than vanish. Each dot stays with its page through a slide, so only a dot whose kind changes eases its size.
     // A jump too far for the two strips to share a dot takes its new place at once. An edge dot grows to full size under
     // the pointer, staying faded, so it reads as something to click.
@@ -96,7 +96,7 @@ namespace AJut.UX.Controls
         private NSTimer m_transitionTimer;
         private NSTimer m_dotEaseTimer;
         private int m_dotSpanFirstPage;
-        private int m_windowDotCount;
+        private int m_rangeDotCount;
         private double m_dotScroll;
         private double m_dotScrollFrom;
         private int m_dotScrollTo;
@@ -323,7 +323,7 @@ namespace AJut.UX.Controls
             }
         }
 
-        /// <summary>Whether a strip of dots shows under the pages (beside them when vertical), one per page in the dot window</summary>
+        /// <summary>Whether a strip of dots shows under the pages (beside them when vertical), one per page in the dot range</summary>
         public bool ShowDots
         {
             get => m_showDots;
@@ -338,7 +338,7 @@ namespace AJut.UX.Controls
 
         /// <summary>
         /// How many dots show behind and ahead of the current page's dot: 5 shows 11 dots, plus a smaller, faded dot at
-        /// each end while there are more pages past them. Clicking one of those goes to the page just past the window.
+        /// each end while there are more pages past them. Clicking one of those goes to the page just past the range.
         /// </summary>
         public int DotReach
         {
@@ -854,7 +854,7 @@ namespace AJut.UX.Controls
             bool areDotsShown = PageStackRules.AreDotsShown(m_showDots, pageCount);
             bool isPageCountShown = PageStackRules.IsPageCountShown(m_showPageCount, pageCount);
             double cell = this.DotCellLength();
-            double dotsLength = areDotsShown ? m_windowDotCount * cell : 0.0;
+            double dotsLength = areDotsShown ? m_rangeDotCount * cell : 0.0;
             CGSize countSize = m_pageCount.ContentSize;
             double countLength = isPageCountShown ? (double)(this.IsHorizontal ? countSize.Width : countSize.Height) : 0.0;
             double gap = (areDotsShown && isPageCountShown) ? kPageCountGap : 0.0;
@@ -904,15 +904,15 @@ namespace AJut.UX.Controls
             if (!areDotsShown)
             {
                 m_isDotSliding = false;
-                m_windowDotCount = 0;
+                m_rangeDotCount = 0;
                 this.SyncDotSpan(new PageStackRules.DotSpan(0, -1));
                 return;
             }
 
             // 1. Where the strip is going, and whether it slides there or takes its place at once
-            PageStackDotWindow window = PageStackDotWindow.For(pageCount, this.EffectiveSelectedIndex, m_dotReach);
-            int toFirstDotPage = window.FirstDotPage;
-            m_isDotSliding = slideDots && PageStackRules.ShouldSlideDots(m_dotScroll, toFirstDotPage, window.DotCount);
+            PageStackDotRange range = PageStackDotRange.For(pageCount, this.EffectiveSelectedIndex, m_dotReach);
+            int toFirstDotPage = range.FirstDotPage;
+            m_isDotSliding = slideDots && PageStackRules.ShouldSlideDots(m_dotScroll, toFirstDotPage, range.DotCount);
             if (!m_isDotSliding)
             {
                 m_dotScroll = toFirstDotPage;
@@ -920,22 +920,22 @@ namespace AJut.UX.Controls
 
             m_dotScrollFrom = m_dotScroll;
             m_dotScrollTo = toFirstDotPage;
-            m_windowDotCount = window.DotCount;
+            m_rangeDotCount = range.DotCount;
 
-            // 2. The dots it holds: the new window's, and while sliding the old one's too
+            // 2. The dots it holds: the new range's, and while sliding the old one's too
             this.SyncDotSpan(
                 m_isDotSliding
-                    ? PageStackRules.DotSlideSpan(m_dotScroll, toFirstDotPage, window.DotCount, pageCount)
-                    : new PageStackRules.DotSpan(window.FirstDotPage, window.LastDotPage)
+                    ? PageStackRules.DotSlideSpan(m_dotScroll, toFirstDotPage, range.DotCount, pageCount)
+                    : new PageStackRules.DotSpan(range.FirstDotPage, range.LastDotPage)
             );
 
-            // 3. Fill each for its page, against the new window, so a dot sliding out of view already looks like an edge dot
+            // 3. Fill each for its page, against the new range, so a dot sliding out of view already looks like an edge dot
             for (int i = 0; i < m_dots.Count; ++i)
             {
                 int page = m_dotSpanFirstPage + i;
                 PageDot dot = m_dots[i];
                 dot.PageIndex = page;
-                dot.SetKind(window.KindOf(page));
+                dot.SetKind(range.KindOf(page));
                 dot.AccessibilityLabel = $"Page {page + 1} of {pageCount}";
             }
         }
@@ -1106,7 +1106,7 @@ namespace AJut.UX.Controls
             public override NSView HitTest (CGPoint aPoint) => this.IsShownPage ? base.HitTest(aPoint) : null;
         }
 
-        // Clips the dots to the strip's window while they slide along it, top down like the stack
+        // Clips the dots to the strip's range while they slide along it, top down like the stack
         private sealed class DotsClip : NSView
         {
             public DotsClip ()
@@ -1198,7 +1198,7 @@ namespace AJut.UX.Controls
         }
 
         // One dot in the strip: filled in the dot color, or the current dot color for the current page, and an edge dot
-        //  (more pages past the window) smaller and faded, growing to full size, still faded, under the pointer. The whole
+        //  (more pages past the range) smaller and faded, growing to full size, still faded, under the pointer. The whole
         //  dot fades with its state the way WinUI3's do. A change of kind or of the pointer eases its size and fade over a
         //  short, even step, as WinUI3's visual state transition does, stepped by the stack's dot ease timer; a new dot takes
         //  its first look at once. It holds the stack weakly, since the stack retains it.

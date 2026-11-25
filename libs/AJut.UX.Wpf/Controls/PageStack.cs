@@ -20,7 +20,7 @@ namespace AJut.UX.Controls
     // single click buttons, not repeat buttons. The neighbor pages sit just past the shown one, faded and mostly clipped
     // away, so a sliver of each shows past its page button as a hint that there is more. Which page shows, where each page
     // sits, how faded it is, how a transition eases, and which dots the strip shows are AJut.UX's PageStackRules and
-    // PageStackDotWindow, which WinUI3's and AppKit's PageStacks follow too.
+    // PageStackDotRange, which WinUI3's and AppKit's PageStacks follow too.
     //
     // Each child goes in a page host the stack owns (a ContentControl), so the stack can move, fade and disable a page
     // without writing to the consumer's own element. The hosts are stacked in one grid cell, so the stack sizes across
@@ -34,7 +34,7 @@ namespace AJut.UX.Controls
     //
     // The dot strip slides with the pages: a pick turns its dot current at once, and the strip then shifts by however many
     // dots the pick was away, on the same clock and easing as the page transition, so the current dot settles back where
-    // the window puts it. While it slides the strip holds the dots of both windows, so the ones leaving slide out of view
+    // the range puts it. While it slides the strip holds the dots of both ranges, so the ones leaving slide out of view
     // rather than vanish. Each dot stays with its page through a slide, so only a dot whose kind changes animates its
     // size. A jump too far for the two strips to share a dot takes its new place at once.
     //
@@ -344,7 +344,7 @@ namespace AJut.UX.Controls
         }
 
         public static readonly DependencyProperty ShowDotsProperty = DPUtils.Register(_ => _.ShowDots, false, (d, e) => d.OnDotStripContentChanged());
-        /// <summary>Whether a strip of dots shows under the pages (beside them when vertical), one per page in the dot window</summary>
+        /// <summary>Whether a strip of dots shows under the pages (beside them when vertical), one per page in the dot range</summary>
         public bool ShowDots
         {
             get => (bool)this.GetValue(ShowDotsProperty);
@@ -354,7 +354,7 @@ namespace AJut.UX.Controls
         public static readonly DependencyProperty DotReachProperty = DPUtils.Register(_ => _.DotReach, 5, (d, e) => d.RefreshButtonsAndDots());
         /// <summary>
         /// How many dots show behind and ahead of the current page's dot: 5 shows 11 dots, plus a smaller, faded dot at
-        /// each end while there are more pages past them. Clicking one of those goes to the page just past the window.
+        /// each end while there are more pages past them. Clicking one of those goes to the page just past the range.
         /// </summary>
         public int DotReach
         {
@@ -734,9 +734,9 @@ namespace AJut.UX.Controls
             }
 
             // 1. Where the strip is going, and whether it slides there or takes its place at once
-            PageStackDotWindow window = PageStackDotWindow.For(pageCount, shownPage, this.DotReach);
-            int toFirstDotPage = window.FirstDotPage;
-            m_isDotSliding = slideDots && PageStackRules.ShouldSlideDots(m_dotScroll, toFirstDotPage, window.DotCount);
+            PageStackDotRange range = PageStackDotRange.For(pageCount, shownPage, this.DotReach);
+            int toFirstDotPage = range.FirstDotPage;
+            m_isDotSliding = slideDots && PageStackRules.ShouldSlideDots(m_dotScroll, toFirstDotPage, range.DotCount);
             if (!m_isDotSliding)
             {
                 m_dotScroll = toFirstDotPage;
@@ -745,29 +745,29 @@ namespace AJut.UX.Controls
             m_dotScrollFrom = m_dotScroll;
             m_dotScrollTo = toFirstDotPage;
 
-            // 2. The dots it holds: the new window's, and while sliding the old one's too
+            // 2. The dots it holds: the new range's, and while sliding the old one's too
             this.SyncDotSpan(
                 m_isDotSliding
-                    ? PageStackRules.DotSlideSpan(m_dotScroll, toFirstDotPage, window.DotCount, pageCount)
-                    : new PageStackRules.DotSpan(window.FirstDotPage, window.LastDotPage)
+                    ? PageStackRules.DotSlideSpan(m_dotScroll, toFirstDotPage, range.DotCount, pageCount)
+                    : new PageStackRules.DotSpan(range.FirstDotPage, range.LastDotPage)
             );
 
-            // 3. Fill each for its page, against the new window, so a dot sliding out of view already looks like an edge dot
+            // 3. Fill each for its page, against the new range, so a dot sliding out of view already looks like an edge dot
             for (int i = 0; i < m_dots.Count; ++i)
             {
                 int page = m_dotSpanFirstPage + i;
                 PageStackDot dot = m_dots[i];
                 dot.PageIndex = page;
-                dot.Kind = window.KindOf(page);
+                dot.Kind = range.KindOf(page);
                 dot.DotBrush = this.DotBrush;
                 dot.CurrentDotBrush = this.CurrentDotBrush;
                 dot.DotSize = this.DotSize;
                 AutomationProperties.SetName(dot, $"Page {page + 1} of {pageCount}");
             }
 
-            // 4. Size the canvas to the new window's dots (it clips to its bounds), and place the strip along it
+            // 4. Size the canvas to the new range's dots (it clips to its bounds), and place the strip along it
             m_dotCellLength = this.MeasureDotCellLength();
-            double stripLength = window.DotCount * m_dotCellLength;
+            double stripLength = range.DotCount * m_dotCellLength;
             this.PART_DotsClip.Width = m_isHorizontal ? stripLength : m_dotCellLength;
             this.PART_DotsClip.Height = m_isHorizontal ? m_dotCellLength : stripLength;
             this.ApplyDotScroll();
