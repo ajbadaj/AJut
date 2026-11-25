@@ -1,0 +1,283 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ajut="clr-namespace:AJut.UX"
+                    xmlns:ap="clr-namespace:AJut.UX.AttachedProperties"
+                    xmlns:local="clr-namespace:AJut.UX.Controls"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <!-- The buttons over the days: previous month, today's month, next month. Nothing behind them at rest, then the
+         hover colors under the pointer. -->
+    <Style x:Key="AJut_Style_DateValueEditHeaderButton" TargetType="{x:Type Button}">
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Padding" Value="6,3"/>
+        <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateValueEditControl}}, Path=Foreground}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="Border" Background="Transparent" CornerRadius="2" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Border" Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateValueEditControl}}, Path=HoverBackground}"/>
+                            <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateValueEditControl}}, Path=HoverForeground}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- The month and the year over the days, each of which opens a picker: the header button's look, which it keeps
+         while its picker is open -->
+    <Style x:Key="AJut_Style_DateValueEditHeaderToggle" TargetType="{x:Type ToggleButton}">
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Padding" Value="6,3"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateValueEditControl}}, Path=Foreground}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type ToggleButton}">
+                    <Border x:Name="Border" Background="Transparent" CornerRadius="2" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Border" Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateValueEditControl}}, Path=HoverBackground}"/>
+                            <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateValueEditControl}}, Path=HoverForeground}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Border" Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateValueEditControl}}, Path=HoverBackground}"/>
+                            <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateValueEditControl}}, Path=HoverForeground}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- One day. Its DataContext is a DateValueEditControl.Day: a day outside the month shown is fainter, today has a
+         ring, and the picked day is filled. The picked day keeps its fill under the pointer. -->
+    <Style x:Key="AJut_Style_DateValueEditDayButton" TargetType="{x:Type Button}">
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateValueEditControl}}, Path=Foreground}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="Border" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" CornerRadius="2" Margin="1" MinWidth="26" MinHeight="24">
+                        <TextBlock x:Name="Number" Text="{Binding Path=DayOfMonth}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <DataTrigger Binding="{Binding Path=IsInDisplayMonth}" Value="False">
+                            <Setter TargetName="Number" Property="Opacity" Value="0.45"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Path=IsToday}" Value="True">
+                            <Setter TargetName="Border" Property="BorderBrush" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateValueEditControl}}, Path=TodayBorderBrush}"/>
+                        </DataTrigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Border" Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateValueEditControl}}, Path=HoverBackground}"/>
+                            <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateValueEditControl}}, Path=HoverForeground}"/>
+                        </Trigger>
+                        <DataTrigger Binding="{Binding Path=IsPicked}" Value="True">
+                            <Setter TargetName="Border" Property="Background" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateValueEditControl}}, Path=SelectedDayBackground}"/>
+                            <Setter Property="Foreground" Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type local:DateValueEditControl}}, Path=SelectedDayForeground}"/>
+                            <Setter TargetName="Number" Property="Opacity" Value="1"/>
+                        </DataTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="{x:Type local:DateValueEditControl}">
+        <Setter Property="IsReadOnly" Value="{Binding RelativeSource={RelativeSource Self}, Path=(ap:Edit.IsReadOnly), Mode=OneWay}"/>
+        <Setter Property="Background" Value="#EEE"/>
+        <Setter Property="Foreground" Value="#111"/>
+        <Setter Property="BorderBrush" Value="Black"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="6"/>
+        <Setter Property="SelectedDayBackground" Value="#3388CC"/>
+        <Setter Property="SelectedDayForeground" Value="White"/>
+        <Setter Property="TodayBorderBrush" Value="#3388CC"/>
+        <Setter Property="HoverBackground" Value="#3399E4"/>
+        <Setter Property="HoverForeground" Value="White"/>
+        <Setter Property="PopupBackground" Value="#EEE"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:DateValueEditControl}">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="{TemplateBinding Padding}"
+                            TextElement.Foreground="{TemplateBinding Foreground}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- ====[ Month and year, each opening a picker, and the buttons around them ]==== -->
+                            <Grid Grid.Row="0" Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Button Grid.Column="0" Style="{StaticResource AJut_Style_DateValueEditHeaderButton}"
+                                        Command="{x:Static local:DateValueEditControl.ShowPreviousMonthCommand}"
+                                        FontFamily="Segoe MDL2 Assets" Content="&#xE76B;" ToolTip="Previous month"/>
+
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <!-- The month menu: every month, which shows that month in the year shown -->
+                                    <local:PopupMenuButton ButtonContent="{TemplateBinding DisplayMonthName}"
+                                                           ButtonStyle="{StaticResource AJut_Style_DateValueEditHeaderToggle}"
+                                                           Background="{TemplateBinding PopupBackground}"
+                                                           BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"
+                                                           ToolTip="Pick a month">
+                                        <MenuItem Header="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=MonthNames[0]}"
+                                                  Command="{x:Static local:DateValueEditControl.ShowMonthCommand}"
+                                                  CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}">
+                                            <MenuItem.CommandParameter><sys:Int32>1</sys:Int32></MenuItem.CommandParameter>
+                                        </MenuItem>
+                                        <MenuItem Header="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=MonthNames[1]}"
+                                                  Command="{x:Static local:DateValueEditControl.ShowMonthCommand}"
+                                                  CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}">
+                                            <MenuItem.CommandParameter><sys:Int32>2</sys:Int32></MenuItem.CommandParameter>
+                                        </MenuItem>
+                                        <MenuItem Header="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=MonthNames[2]}"
+                                                  Command="{x:Static local:DateValueEditControl.ShowMonthCommand}"
+                                                  CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}">
+                                            <MenuItem.CommandParameter><sys:Int32>3</sys:Int32></MenuItem.CommandParameter>
+                                        </MenuItem>
+                                        <MenuItem Header="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=MonthNames[3]}"
+                                                  Command="{x:Static local:DateValueEditControl.ShowMonthCommand}"
+                                                  CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}">
+                                            <MenuItem.CommandParameter><sys:Int32>4</sys:Int32></MenuItem.CommandParameter>
+                                        </MenuItem>
+                                        <MenuItem Header="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=MonthNames[4]}"
+                                                  Command="{x:Static local:DateValueEditControl.ShowMonthCommand}"
+                                                  CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}">
+                                            <MenuItem.CommandParameter><sys:Int32>5</sys:Int32></MenuItem.CommandParameter>
+                                        </MenuItem>
+                                        <MenuItem Header="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=MonthNames[5]}"
+                                                  Command="{x:Static local:DateValueEditControl.ShowMonthCommand}"
+                                                  CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}">
+                                            <MenuItem.CommandParameter><sys:Int32>6</sys:Int32></MenuItem.CommandParameter>
+                                        </MenuItem>
+                                        <MenuItem Header="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=MonthNames[6]}"
+                                                  Command="{x:Static local:DateValueEditControl.ShowMonthCommand}"
+                                                  CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}">
+                                            <MenuItem.CommandParameter><sys:Int32>7</sys:Int32></MenuItem.CommandParameter>
+                                        </MenuItem>
+                                        <MenuItem Header="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=MonthNames[7]}"
+                                                  Command="{x:Static local:DateValueEditControl.ShowMonthCommand}"
+                                                  CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}">
+                                            <MenuItem.CommandParameter><sys:Int32>8</sys:Int32></MenuItem.CommandParameter>
+                                        </MenuItem>
+                                        <MenuItem Header="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=MonthNames[8]}"
+                                                  Command="{x:Static local:DateValueEditControl.ShowMonthCommand}"
+                                                  CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}">
+                                            <MenuItem.CommandParameter><sys:Int32>9</sys:Int32></MenuItem.CommandParameter>
+                                        </MenuItem>
+                                        <MenuItem Header="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=MonthNames[9]}"
+                                                  Command="{x:Static local:DateValueEditControl.ShowMonthCommand}"
+                                                  CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}">
+                                            <MenuItem.CommandParameter><sys:Int32>10</sys:Int32></MenuItem.CommandParameter>
+                                        </MenuItem>
+                                        <MenuItem Header="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=MonthNames[10]}"
+                                                  Command="{x:Static local:DateValueEditControl.ShowMonthCommand}"
+                                                  CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}">
+                                            <MenuItem.CommandParameter><sys:Int32>11</sys:Int32></MenuItem.CommandParameter>
+                                        </MenuItem>
+                                        <MenuItem Header="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=MonthNames[11]}"
+                                                  Command="{x:Static local:DateValueEditControl.ShowMonthCommand}"
+                                                  CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}">
+                                            <MenuItem.CommandParameter><sys:Int32>12</sys:Int32></MenuItem.CommandParameter>
+                                        </MenuItem>
+                                    </local:PopupMenuButton>
+
+                                    <!-- The year, which opens the year picker below -->
+                                    <ToggleButton x:Name="YearButton" Style="{StaticResource AJut_Style_DateValueEditHeaderToggle}"
+                                                  Content="{TemplateBinding DisplayYear}" ToolTip="Pick a year"
+                                                  IsChecked="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=IsYearPickerOpen, Mode=TwoWay}"/>
+                                </StackPanel>
+
+                                <Button Grid.Column="2" Style="{StaticResource AJut_Style_DateValueEditHeaderButton}"
+                                        Command="{x:Static local:DateValueEditControl.ShowTodayCommand}"
+                                        FontFamily="Segoe MDL2 Assets" Content="&#xE8D1;" ToolTip="Show today's month"/>
+                                <Button Grid.Column="3" Style="{StaticResource AJut_Style_DateValueEditHeaderButton}"
+                                        Command="{x:Static local:DateValueEditControl.ShowNextMonthCommand}"
+                                        FontFamily="Segoe MDL2 Assets" Content="&#xE76C;" ToolTip="Next month"/>
+
+                                <!-- ====[ The year picker: type a year or pick one from the list, then the check shows it ]==== -->
+                                <Popup x:Name="PART_YearPopup" PlacementTarget="{Binding ElementName=YearButton}" Placement="Bottom"
+                                       IsOpen="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=IsYearPickerOpen, Mode=TwoWay}"
+                                       ap:PopupXTA.StaysOpenUnlessClickAway="True" AllowsTransparency="True">
+                                    <Border Background="{TemplateBinding PopupBackground}" BorderBrush="{TemplateBinding BorderBrush}"
+                                            BorderThickness="1" CornerRadius="3" Padding="4" Margin="0,2,0,0"
+                                            TextElement.Foreground="{TemplateBinding Foreground}">
+                                        <StackPanel>
+                                            <local:NumericEditor Value="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=YearPickerYear, Mode=TwoWay}"
+                                                                 Minimum="1" Maximum="9999" Nudge="1" SmallNudge="1" BigNudge="10" MinWidth="110"/>
+
+                                            <!-- Every year, virtualized, so only the rows on screen are made -->
+                                            <ListBox x:Name="PART_YearList" Height="200" Margin="0,4,0,0"
+                                                     ItemsSource="{x:Static local:DateValueEditControl.kPickableYears}"
+                                                     SelectedItem="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=YearPickerYear, Mode=TwoWay}"
+                                                     VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
+
+                                            <!-- ====[ Show the year chosen, or leave the year as it was ]==== -->
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,4,0,0">
+                                                <Button Style="{StaticResource AJut_Style_DateValueEditHeaderButton}"
+                                                        Command="{x:Static local:DateValueEditControl.ApplyYearPickCommand}"
+                                                        CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
+                                                        Foreground="{TemplateBinding Foreground}" FontFamily="Segoe MDL2 Assets" Content="&#xE73E;" ToolTip="Show this year"/>
+                                                <Button Style="{StaticResource AJut_Style_DateValueEditHeaderButton}"
+                                                        Command="{x:Static local:DateValueEditControl.CancelYearPickCommand}"
+                                                        CommandTarget="{Binding RelativeSource={RelativeSource TemplatedParent}}"
+                                                        Foreground="{TemplateBinding Foreground}" FontFamily="Segoe MDL2 Assets" Content="&#xE711;" ToolTip="Leave the year as it was"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+
+                            <!-- ====[ Day names ]==== -->
+                            <ItemsControl Grid.Row="1" ItemsSource="{TemplateBinding DayNames}" Focusable="False" Opacity="0.7">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <UniformGrid Columns="7"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" HorizontalAlignment="Center" Margin="0,0,0,2" FontSize="11"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <!-- ====[ Days ]==== -->
+                            <ItemsControl Grid.Row="2" ItemsSource="{TemplateBinding Days}" Focusable="False">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <UniformGrid Columns="7"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Style="{StaticResource AJut_Style_DateValueEditDayButton}"
+                                                Command="{x:Static local:DateValueEditControl.PickDayCommand}"
+                                                CommandParameter="{Binding}"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

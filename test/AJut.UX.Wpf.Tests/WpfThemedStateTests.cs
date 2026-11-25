@@ -28,14 +28,14 @@ namespace AJut.UX.Tests
         private static readonly Type[] kFocusableAJutControls =
         [
             typeof(AutoBrushButton), typeof(BrushButton), typeof(BumpStack), typeof(BusyWait), typeof(ColorEditIngressControl),
-            typeof(ColorValueEditControl), typeof(DockDropInsertionDriverWidget), typeof(DockPanelAddButton),
+            typeof(ColorValueEditControl), typeof(DateTimeEditIngressControl), typeof(DateValueEditControl), typeof(DockDropInsertionDriverWidget), typeof(DockPanelAddButton),
             typeof(DockPanelAddRemoveToolbar), typeof(DockPanelShowHideToggleButton), typeof(DockWholeWindowDragStartControl),
             typeof(DockZone), typeof(DockZoneSelectedHeaderControl), typeof(DockZoneTabHeadersControl), typeof(EditableTextBlock),
             typeof(EnumComboBox), typeof(EnumToggleStrip), typeof(FlatTreeListControl), typeof(MessageBoxPopover),
             typeof(NullableEditor), typeof(NumericEditor), typeof(PathSelectionControl), typeof(PopupMenuButton),
             typeof(PropertyGrid), typeof(PropertyGridListEditor), typeof(StackNavActiveContentPresenter),
             typeof(StackNavActiveDrawerPresenter), typeof(StackNavActiveHeaderPresenter), typeof(StackNavBusyWaitOverlay),
-            typeof(StackNavDisplay), typeof(StackNavPopoverOverlay), typeof(Svg), typeof(ToggleStrip), typeof(ToggleSwitchButton),
+            typeof(StackNavDisplay), typeof(StackNavPopoverOverlay), typeof(Svg), typeof(TimeValueEditControl), typeof(ToggleStrip), typeof(ToggleSwitchButton),
             typeof(UIElementRepeater), typeof(WindowChromeButtonStrip),
         ];
 
