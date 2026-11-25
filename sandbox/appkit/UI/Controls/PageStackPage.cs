@@ -6,20 +6,30 @@ namespace AJutShowRoomAppKit.UI.Controls
     using AppKit;
     using CoreGraphics;
 
-    // The PageStack demos, the WinUI3 page's three: horizontal with dots, vertical, and a few pages with no dots. The pages
-    // are stocked from code because they are demo data, not layout, in translucent tints of their own like the WinUI3
-    // page's.
+    // The PageStack demos, the WinUI3 page's three: horizontal, vertical, and a few pages, with one checkbox for the dots
+    // and one for the page count switching all three. The pages are stocked from code because they are demo data, not
+    // layout, in translucent tints of their own like the WinUI3 page's.
     public sealed class PageStackPage : ShowroomPage
     {
+        private readonly ThemedCheckBox m_showDotsCheck;
+        private readonly ThemedCheckBox m_showPageCountCheck;
         private readonly PageStack m_horizontal;
+        private readonly PageStack m_vertical;
+        private readonly PageStack m_few;
         private readonly NSTextField m_selectedIndexLabel;
 
         public PageStackPage ()
             : base("PageStack", "BumpStack's sibling for paging: one page shows at a time, and the neighbor pages peek in, faded, past the page buttons. A click on a page button or a dot runs an animated transition. With the stack focused, the arrow keys, Home and End page too. The dot strip shows DotReach dots each side of the current page, plus a smaller, faded edge dot while there are more pages past them; clicking an edge dot goes just past the window.")
         {
-            // 1. Horizontal, 20 pages, with dots
+            m_showDotsCheck = new ThemedCheckBox { Title = "ShowDots (every stack below)", State = NSCellStateValue.On };
+            m_showDotsCheck.Activated += this.OnShowDotsActivated;
+            this.AddDemo(m_showDotsCheck, eFillStackCrossAlignment.Start);
+            m_showPageCountCheck = new ThemedCheckBox { Title = "ShowPageCount (every stack below)", State = NSCellStateValue.On };
+            m_showPageCountCheck.Activated += this.OnShowPageCountActivated;
+            this.AddDemo(m_showPageCountCheck, eFillStackCrossAlignment.Start);
+
+            // 1. Horizontal, 20 pages
             m_horizontal = MakeStack(NSUserInterfaceLayoutOrientation.Horizontal, 420.0, 180.0);
-            m_horizontal.ShowDots = true;
             m_horizontal.DotReach = 3;
             for (int index = 0; index < 20; ++index)
             {
@@ -27,35 +37,36 @@ namespace AJutShowRoomAppKit.UI.Controls
             }
 
             m_horizontal.SelectedIndexChanged += this.OnHorizontalSelectedIndexChanged;
-            this.AddLabeledDemo("Horizontal, 20 pages, ShowDots with DotReach = 3", m_horizontal);
+            this.AddLabeledDemo("Horizontal, 20 pages, DotReach = 3", m_horizontal);
             m_selectedIndexLabel = ShowroomStyle.Body(String.Empty);
             this.UpdateSelectedIndexLabel();
             this.AddLabeledDemo("SelectedIndexChanged", m_selectedIndexLabel);
 
             // 2. Vertical, with a slower transition
-            PageStack vertical = MakeStack(NSUserInterfaceLayoutOrientation.Vertical, 260.0, 240.0);
-            vertical.ShowDots = true;
-            vertical.TransitionDuration = TimeSpan.FromMilliseconds(600);
+            m_vertical = MakeStack(NSUserInterfaceLayoutOrientation.Vertical, 260.0, 240.0);
+            m_vertical.TransitionDuration = TimeSpan.FromMilliseconds(600);
             for (int index = 0; index < 6; ++index)
             {
-                vertical.Children.Add(MakePage($"Card {index + 1}", index));
+                m_vertical.Children.Add(MakePage($"Card {index + 1}", index));
             }
 
-            this.AddLabeledDemo("Vertical, 6 pages, ShowDots, a slower TransitionDuration", vertical);
+            this.AddLabeledDemo("Vertical, 6 pages, a slower TransitionDuration", m_vertical);
 
-            // 3. A few pages, no dots, starting on the last: the index is set before the pages are added
-            PageStack few = MakeStack(NSUserInterfaceLayoutOrientation.Horizontal, 420.0, 120.0);
-            few.SelectedIndex = 2;
+            // 3. A few pages, starting on the last: the index is set before the pages are added
+            m_few = MakeStack(NSUserInterfaceLayoutOrientation.Horizontal, 420.0, 120.0);
+            m_few.SelectedIndex = 2;
             string[] words = { "First", "Second", "Third" };
             for (int index = 0; index < words.Length; ++index)
             {
-                few.Children.Add(MakePage(words[index], index));
+                m_few.Children.Add(MakePage(words[index], index));
             }
 
-            this.AddLabeledDemo("Three pages, no dots, starting on the last", few);
+            this.AddLabeledDemo("Three pages, starting on the last", m_few);
+            this.OnShowDotsActivated(this, EventArgs.Empty);
+            this.OnShowPageCountActivated(this, EventArgs.Empty);
 
             this.AddCode(
-@"var stack = new PageStack { ShowDots = true, DotReach = 3 };
+@"var stack = new PageStack { ShowDots = true, DotReach = 3, ShowPageCount = true };
 stack.Children.Add(page); // each page is pinned to the page area
 stack.SelectedIndex = 4;  // runs a transition to it
 stack.SelectedIndexChanged += this.OnPageChanged;"
@@ -64,10 +75,28 @@ stack.SelectedIndexChanged += this.OnPageChanged;"
 
         protected override void OnTeardown ()
         {
+            m_showDotsCheck.Activated -= this.OnShowDotsActivated;
+            m_showPageCountCheck.Activated -= this.OnShowPageCountActivated;
             m_horizontal.SelectedIndexChanged -= this.OnHorizontalSelectedIndexChanged;
         }
 
         private void OnHorizontalSelectedIndexChanged (object sender, EventArgs e) => this.UpdateSelectedIndexLabel();
+
+        private void OnShowDotsActivated (object sender, EventArgs e)
+        {
+            bool showDots = m_showDotsCheck.State == NSCellStateValue.On;
+            m_horizontal.ShowDots = showDots;
+            m_vertical.ShowDots = showDots;
+            m_few.ShowDots = showDots;
+        }
+
+        private void OnShowPageCountActivated (object sender, EventArgs e)
+        {
+            bool showPageCount = m_showPageCountCheck.State == NSCellStateValue.On;
+            m_horizontal.ShowPageCount = showPageCount;
+            m_vertical.ShowPageCount = showPageCount;
+            m_few.ShowPageCount = showPageCount;
+        }
 
         private void UpdateSelectedIndexLabel ()
         {
