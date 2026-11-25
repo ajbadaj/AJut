@@ -35,6 +35,15 @@
         private static void SetAttachedClickAwayInspector (DependencyObject obj, ClickAwayWatcher value) => obj.SetValue(AttachedClickAwayInspectorPropertyKey, value);
 
 
+        /// <summary>
+        /// Whether a click on <paramref name="clicked"/>, at <paramref name="positionInChild"/> in the coordinates of
+        /// <paramref name="target"/>'s child, is away from the popup, and so closes it
+        /// </summary>
+        internal static bool IsClickAway (Popup target, DependencyObject clicked, Point positionInChild)
+        {
+            return !target.Child.IsLocalPointInBounds(positionInChild);
+        }
+
         private class ClickAwayWatcher : IDisposable
         {
             private Popup m_target;
@@ -82,7 +91,7 @@
 
             private void OnTargetMouseUp (object sender, MouseButtonEventArgs e)
             {
-                if (m_mouseUpWatcher != null && e.IsTargetPrimary() && !m_target.Child.IsLocalPointInBounds(e.GetPosition(m_target.Child)))
+                if (m_mouseUpWatcher != null && e.IsTargetPrimary() && IsClickAway(m_target, e.OriginalSource as DependencyObject, e.GetPosition(m_target.Child)))
                 {
                     m_target.SetCurrentValue(Popup.IsOpenProperty, false);
 

@@ -184,6 +184,22 @@ namespace AJut.UX.Tests
             });
         }
 
+        [TestMethod]
+        public void WpfThemed_ListBoxOfManyItems_MakesOnlyTheRowsOnScreen ()
+        {
+            StaTestThread.Run(() =>
+            {
+                // A short list over a thousand items, as the calendar's year picker is over nearly ten thousand
+                const int kItemCount = 1000;
+                const double kListHeight = 100.0;
+                var list = new ListBox { Height = kListHeight, ItemsSource = Enumerable.Range(0, kItemCount).ToArray() };
+                MakeThemedHost(list);
+
+                int made = Enumerable.Range(0, kItemCount).Count(index => list.ItemContainerGenerator.ContainerFromIndex(index) != null);
+                Assert.IsTrue(made < kItemCount / 10, $"The themed ListBox made {made} of its {kItemCount} rows: it isn't virtualizing");
+            });
+        }
+
         // ===========[ TabItem ]===================================
         [TestMethod]
         public void WpfThemed_TabItem_LaidOutBeforeItIsInATabControl_WaitsQuietly ()
