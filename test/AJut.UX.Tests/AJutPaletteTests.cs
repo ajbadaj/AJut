@@ -50,7 +50,8 @@ namespace AJut.UX.Tests
         [
             // Button: WinUI3's GeometryButton and brush button templates, and the stock Button in NullableEditor,
             // PathSelectionControl, the PropertyGrid row, list editor and [PGButton] rows, and ToggleStrip's overflow
-            // chevron; the brush and geometry buttons on AppKit, UIKit and Android, and AppKit's NumericEditor spinner
+            // chevron; the outline WinUI3's PageStack page buttons start from; the brush and geometry buttons on AppKit,
+            // UIKit and Android, and AppKit's NumericEditor spinner
             "ButtonBackground", "ButtonBackgroundPointerOver", "ButtonBackgroundPressed", "ButtonBackgroundDisabled",
             "ButtonForeground", "ButtonForegroundPointerOver", "ButtonForegroundPressed", "ButtonForegroundDisabled",
             "ButtonBorderBrush", "ButtonBorderBrushPointerOver", "ButtonBorderBrushPressed", "ButtonBorderBrushDisabled",
@@ -59,7 +60,7 @@ namespace AJut.UX.Tests
             "SystemAccentColor",
 
             // WinUI3's ToggleStripButton border, Android's ToggleStrip and NumericEditor buttons, and the defaults
-            // WinUI3's ToggleStrip, EnumToggleStrip, PopupMenuButton, BumpStack and FlatTreeListControl start from
+            // WinUI3's ToggleStrip, EnumToggleStrip, PopupMenuButton, BumpStack, PageStack and FlatTreeListControl start from
             "ControlFillColorDefaultBrush", "ControlStrokeColorDefaultBrush", "TextFillColorPrimaryBrush", "TextFillColorSecondaryBrush",
 
             // ToggleButton: PopupMenuButton's stock ToggleButton, ColorPicker's More button, and UIKit's ToggleStrip
@@ -327,6 +328,7 @@ namespace AJut.UX.Tests
         [
             new UnthemedOnlyKey("ApplicationPageBackgroundThemeBrush", "AllControlThemeOverrides.xaml", "DockTearoffContainerPanel", "Background"),
             new UnthemedOnlyKey("SolidBackgroundFillColorBaseBrush", "AllControlThemeOverrides.xaml", "BumpStack", "ButtonBackground"),
+            new UnthemedOnlyKey("SolidBackgroundFillColorBaseBrush", "AllControlThemeOverrides.xaml", "PageStack", "ButtonBackground"),
             new UnthemedOnlyKey("LayerOnMicaBaseAltFillColorTransparentBrush", "AJut.UX_Overrides.xaml", "ThemedWindowRootControl", "ActiveTitleBarBackground"),
             new UnthemedOnlyKey("LayerOnMicaBaseAltFillColorTransparentBrush", "AJut.UX_Overrides.xaml", "ThemedWindowRootControl", "InactiveTitlebarBackground"),
             new UnthemedOnlyKey("ControlFillColorDisabledBrush", "AllControlThemeOverrides.xaml", "ToggleStrip", "DisabledBackground"),

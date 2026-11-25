@@ -215,4 +215,19 @@
         <Setter Property="ButtonBorder" Value="{ThemeResource AJut_Brush_ButtonBorder}"/>
     </Style>
 
+    <!--
+    ===[ PageStack - AJut-themed override ]===
+    Default style (PageStack.xaml) uses WinUI system brushes so it looks right unthemed. This gives the
+    page buttons BumpStack's themed surfaces, and the dots the symbol color with the current page's dot
+    in the primary highlight. The page buttons sit over the neighbor pages' peeks, so ButtonBackground
+    must stay opaque.
+    -->
+    <Style TargetType="local:PageStack">
+        <Setter Property="ButtonBackground" Value="{ThemeResource AJut_Brush_ControlBackground}"/>
+        <Setter Property="ButtonForeground" Value="{ThemeResource AJut_Brush_SymbolForeground}"/>
+        <Setter Property="ButtonBorder" Value="{ThemeResource AJut_Brush_ButtonBorder}"/>
+        <Setter Property="DotBrush" Value="{ThemeResource AJut_Brush_SymbolForeground}"/>
+        <Setter Property="CurrentDotBrush" Value="{ThemeResource AJut_Brush_PrimaryHighlight}"/>
+    </Style>
+
 </ResourceDictionary>
