@@ -2,6 +2,7 @@ namespace AJut.UX.Controls
 {
     using System;
     using System.Globalization;
+    using System.Text.RegularExpressions;
 
     /// <summary>
     /// How a PageStack picks, lays out and moves between its pages, toolkit free, so WinUI3's, WPF's and AppKit's stacks
@@ -14,6 +15,9 @@ namespace AJut.UX.Controls
     {
         /// <summary>The page count's format when none is given: the shown page's number from one, and the page count</summary>
         public const string kDefaultPageCountFormat = "{0} of {1}";
+
+        // A format placeholder ("{0}", "{1:N0}"), but not an escaped brace ("{{0}}")
+        private static readonly Regex kPageCountPlaceholder = new Regex(@"(?<!\{)\{\d+[^{}]*\}(?!\})", RegexOptions.Compiled);
 
         // ===========[ Public Interface Methods ]==============================
         /// <summary>
@@ -45,19 +49,74 @@ namespace AJut.UX.Controls
         public static bool IsPageCountShown (bool showPageCount, int pageCount) => showPageCount && (pageCount > 1);
 
         /// <summary>
-        /// The page count's text: <paramref name="format"/> filled with the shown page's number from one ({0}) and the page
-        /// count ({1}), so "{0} of {1}" reads "3 of 7". A vertical stack's count sits in a strip one dot wide, so each word
-        /// goes on a line of its own there, "3", "of", "7".
+        /// The page count's text in one line, as a screen reader reads it: <paramref name="format"/> filled with the shown
+        /// page's number from one ({0}) and the page count ({1}), so "{0} of {1}" reads "3 of 7"
         /// </summary>
-        public static string PageCountText (string? format, int effectiveSelectedIndex, int pageCount, bool isVertical)
+        public static string PageCountText (string? format, int effectiveSelectedIndex, int pageCount)
         {
-            string text = String.Format(CultureInfo.CurrentCulture, format ?? kDefaultPageCountFormat, effectiveSelectedIndex + 1, pageCount);
-            if (!isVertical)
+            return String.Format(CultureInfo.CurrentCulture, format ?? kDefaultPageCountFormat, effectiveSelectedIndex + 1, pageCount);
+        }
+
+        /// <summary>
+        /// The page count cut into the counts and the format's own words around them ("of" in "{0} of {1}"), so a stack can
+        /// draw the words smaller and fainter than the numbers. The first two placeholders in the format are the counts; any
+        /// past those stay in the trailing words. A vertical stack's count sits in a strip one dot wide, so there each word
+        /// takes a line of its own. A horizontal one keeps the format's spacing, carried at the front of the part after it
+        /// (" of", " 7"), since a text's leading spaces always take room and its trailing ones may not.
+        /// </summary>
+        public static PageCountParts SplitPageCount (string? format, int effectiveSelectedIndex, int pageCount, bool isVertical)
+        {
+            string pattern = format ?? kDefaultPageCountFormat;
+
+            // 1. Cut the format at its first two placeholders
+            string[] pieces = { pattern, String.Empty, String.Empty, String.Empty, String.Empty };
+            MatchCollection placeholders = kPageCountPlaceholder.Matches(pattern);
+            if (placeholders.Count > 0)
             {
-                return text;
+                Match first = placeholders[0];
+                int afterFirst = first.Index + first.Length;
+                pieces[0] = pattern.Substring(0, first.Index);
+                pieces[1] = first.Value;
+                if (placeholders.Count == 1)
+                {
+                    pieces[4] = pattern.Substring(afterFirst);
+                }
+                else
+                {
+                    Match second = placeholders[1];
+                    pieces[2] = pattern.Substring(afterFirst, second.Index - afterFirst);
+                    pieces[3] = second.Value;
+                    pieces[4] = pattern.Substring(second.Index + second.Length);
+                }
             }
 
-            return String.Join("\n", text.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+            // 2. Fill each piece, then lay its words out for the orientation
+            for (int i = 0; i < pieces.Length; ++i)
+            {
+                pieces[i] = String.Format(CultureInfo.CurrentCulture, pieces[i], effectiveSelectedIndex + 1, pageCount);
+            }
+
+            if (isVertical)
+            {
+                for (int i = 0; i < pieces.Length; ++i)
+                {
+                    pieces[i] = String.Join("\n", pieces[i].Split(' ', StringSplitOptions.RemoveEmptyEntries));
+                }
+            }
+            else
+            {
+                // Move each piece's trailing spaces to the front of the next piece that has text
+                string carried = String.Empty;
+                for (int i = 0; i < pieces.Length; ++i)
+                {
+                    string withCarried = carried + pieces[i];
+                    string trimmed = withCarried.TrimEnd(' ');
+                    carried = withCarried.Substring(trimmed.Length);
+                    pieces[i] = trimmed;
+                }
+            }
+
+            return new PageCountParts(pieces[0], pieces[1], pieces[2], pieces[3], pieces[4]);
         }
 
         /// <summary>
@@ -206,5 +265,11 @@ namespace AJut.UX.Controls
             /// <summary>How many pages, and so dots, the run holds</summary>
             public int Count => Math.Max(0, this.LastPage - this.FirstPage + 1);
         }
+
+        /// <summary>
+        /// The page count cut into its counts and the format's own words around them (<see cref="SplitPageCount"/>). Any part
+        /// can be empty: "{0} of {1}" has no leading or trailing words.
+        /// </summary>
+        public readonly record struct PageCountParts (string LeadingWords, string FirstCount, string MiddleWords, string SecondCount, string TrailingWords);
     }
 }

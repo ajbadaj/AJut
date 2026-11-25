@@ -18,7 +18,7 @@ namespace AJutShowRoomWinUI.UI.Controls
         }
 
         public string DemoCode { get; } = @"<ajut:PageStack x:Name=""PageStackHorizontal"" Width=""420"" Height=""180""
-                ShowDots=""True"" DotReach=""3""/>
+                ShowDots=""True"" DotReach=""3"" ShowPageCount=""True""/>
 <ajut:PageStack Orientation=""Vertical"" ShowDots=""True"" TransitionDuration=""0:0:0.6""/>
 
 // Pages are added like any panel's children, and SelectedIndex picks one (two way bindable)

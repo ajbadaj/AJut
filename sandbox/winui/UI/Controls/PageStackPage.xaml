@@ -15,11 +15,18 @@
             <TextBlock TextWrapping="Wrap" Opacity="0.8"
                        Text="BumpStack's sibling for paging: one page shows at a time, and the neighbor pages peek in, faded, past the page buttons. A click on a page button or a dot runs an animated transition. With the stack focused, the arrow keys, Home and End page too. The dot strip shows DotReach dots each side of the current page, plus a smaller, faded edge dot while there are more pages past them; clicking an edge dot goes just past the window."/>
 
+            <StackPanel Orientation="Horizontal" Spacing="16">
+                <CheckBox x:Name="ShowDotsCheck" Content="ShowDots (every stack below)" IsChecked="True"/>
+                <CheckBox x:Name="ShowPageCountCheck" Content="ShowPageCount (every stack below)" IsChecked="True"/>
+            </StackPanel>
+
             <StackPanel Spacing="12">
                 <StackPanel Spacing="4">
-                    <TextBlock Text="Horizontal, 20 pages, ShowDots with DotReach=3, ShowPageCount" FontSize="11" Opacity="0.7"/>
+                    <TextBlock Text="Horizontal, 20 pages, DotReach=3" FontSize="11" Opacity="0.7"/>
                     <ajut:PageStack x:Name="PageStackHorizontal" Width="420" Height="180" HorizontalAlignment="Left"
-                                    ShowDots="True" DotReach="3" ShowPageCount="True"
+                                    DotReach="3"
+                                    ShowDots="{Binding ElementName=ShowDotsCheck, Path=IsChecked}"
+                                    ShowPageCount="{Binding ElementName=ShowPageCountCheck, Path=IsChecked}"
                                     BorderBrush="#80808080" BorderThickness="1"/>
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <TextBlock Text="SelectedIndex:" FontSize="11" Opacity="0.7"/>
@@ -27,14 +34,18 @@
                     </StackPanel>
                 </StackPanel>
                 <StackPanel Spacing="4">
-                    <TextBlock Text="Vertical, 6 pages, ShowDots, ShowPageCount, a slower TransitionDuration" FontSize="11" Opacity="0.7"/>
+                    <TextBlock Text="Vertical, 6 pages, a slower TransitionDuration" FontSize="11" Opacity="0.7"/>
                     <ajut:PageStack x:Name="PageStackVertical" Orientation="Vertical" Width="260" Height="240" HorizontalAlignment="Left"
-                                    ShowDots="True" ShowPageCount="True" TransitionDuration="0:0:0.6"
+                                    TransitionDuration="0:0:0.6"
+                                    ShowDots="{Binding ElementName=ShowDotsCheck, Path=IsChecked}"
+                                    ShowPageCount="{Binding ElementName=ShowPageCountCheck, Path=IsChecked}"
                                     BorderBrush="#80808080" BorderThickness="1"/>
                 </StackPanel>
                 <StackPanel Spacing="4">
-                    <TextBlock Text="Three pages, no dots, starting on the last (SelectedIndex=2 set before the pages are added)" FontSize="11" Opacity="0.7"/>
+                    <TextBlock Text="Three pages, starting on the last (SelectedIndex=2 set before the pages are added)" FontSize="11" Opacity="0.7"/>
                     <ajut:PageStack x:Name="PageStackFew" Width="420" Height="120" HorizontalAlignment="Left" SelectedIndex="2"
+                                    ShowDots="{Binding ElementName=ShowDotsCheck, Path=IsChecked}"
+                                    ShowPageCount="{Binding ElementName=ShowPageCountCheck, Path=IsChecked}"
                                     BorderBrush="#80808080" BorderThickness="1"/>
                 </StackPanel>
             </StackPanel>

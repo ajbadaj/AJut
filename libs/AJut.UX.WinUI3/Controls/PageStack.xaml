@@ -187,9 +187,13 @@
                                         <Setter Target="PART_DotsHost.VerticalAlignment" Value="Top"/>
                                         <Setter Target="PART_DotsPanel.Orientation" Value="Horizontal"/>
                                         <Setter Target="DotStripLayout.Orientation" Value="Horizontal"/>
-                                        <Setter Target="PART_PageCountText.Margin" Value="8,0,0,0"/>
-                                        <Setter Target="PART_PageCountText.HorizontalAlignment" Value="Left"/>
-                                        <Setter Target="PART_PageCountText.VerticalAlignment" Value="Center"/>
+                                        <Setter Target="PART_PageCount.Orientation" Value="Horizontal"/>
+                                        <Setter Target="PART_PageCount.Margin" Value="8,0,0,0"/>
+                                        <Setter Target="PART_PageCount.HorizontalAlignment" Value="Left"/>
+                                        <Setter Target="PART_PageCount.VerticalAlignment" Value="Center"/>
+                                        <Setter Target="PART_PageCountLeadingWords.Margin" Value="0,0,0,2"/>
+                                        <Setter Target="PART_PageCountMiddleWords.Margin" Value="0,0,0,2"/>
+                                        <Setter Target="PART_PageCountTrailingWords.Margin" Value="0,0,0,2"/>
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="Vertical">
@@ -206,9 +210,13 @@
                                         <Setter Target="PART_DotsHost.VerticalAlignment" Value="Center"/>
                                         <Setter Target="PART_DotsPanel.Orientation" Value="Vertical"/>
                                         <Setter Target="DotStripLayout.Orientation" Value="Vertical"/>
-                                        <Setter Target="PART_PageCountText.Margin" Value="0,8,0,0"/>
-                                        <Setter Target="PART_PageCountText.HorizontalAlignment" Value="Center"/>
-                                        <Setter Target="PART_PageCountText.VerticalAlignment" Value="Top"/>
+                                        <Setter Target="PART_PageCount.Orientation" Value="Vertical"/>
+                                        <Setter Target="PART_PageCount.Margin" Value="0,8,0,0"/>
+                                        <Setter Target="PART_PageCount.HorizontalAlignment" Value="Center"/>
+                                        <Setter Target="PART_PageCount.VerticalAlignment" Value="Top"/>
+                                        <Setter Target="PART_PageCountLeadingWords.Margin" Value="0"/>
+                                        <Setter Target="PART_PageCountMiddleWords.Margin" Value="0"/>
+                                        <Setter Target="PART_PageCountTrailingWords.Margin" Value="0"/>
                                     </VisualState.Setters>
                                 </VisualState>
                             </VisualStateGroup>
@@ -225,33 +233,6 @@
 
                             <Grid x:Name="PART_PagesClip">
                                 <Grid x:Name="PART_PageViewport"/>
-
-                                <Button x:Name="PART_BackButton"
-                                        Style="{StaticResource AJut_Style_PageStackPageButton}"
-                                        AutomationProperties.Name="Previous page"
-                                        HorizontalAlignment="Left"
-                                        VerticalAlignment="Stretch"
-                                        Background="{TemplateBinding ButtonBackground}"
-                                        Foreground="{TemplateBinding ButtonForeground}"
-                                        BorderBrush="{TemplateBinding ButtonBorder}"
-                                        Padding="{TemplateBinding ButtonPadding}"
-                                        BorderThickness="1"
-                                        Visibility="Collapsed">
-                                    <FontIcon x:Name="BackGlyph" FontFamily="Segoe MDL2 Assets" Glyph="&#xE76B;" FontSize="{TemplateBinding ButtonFontSize}"/>
-                                </Button>
-                                <Button x:Name="PART_ForwardButton"
-                                        Style="{StaticResource AJut_Style_PageStackPageButton}"
-                                        AutomationProperties.Name="Next page"
-                                        HorizontalAlignment="Right"
-                                        VerticalAlignment="Stretch"
-                                        Background="{TemplateBinding ButtonBackground}"
-                                        Foreground="{TemplateBinding ButtonForeground}"
-                                        BorderBrush="{TemplateBinding ButtonBorder}"
-                                        Padding="{TemplateBinding ButtonPadding}"
-                                        BorderThickness="1"
-                                        Visibility="Collapsed">
-                                    <FontIcon x:Name="ForwardGlyph" FontFamily="Segoe MDL2 Assets" Glyph="&#xE76C;" FontSize="{TemplateBinding ButtonFontSize}"/>
-                                </Button>
                             </Grid>
 
                             <!-- The dot strip: the dots, and the page count after them when ShowPageCount is on, below the
@@ -272,13 +253,61 @@
                                             </StackPanel.RenderTransform>
                                         </StackPanel>
                                     </Canvas>
-                                    <TextBlock x:Name="PART_PageCountText"
-                                               Margin="8,0,0,0"
-                                               VerticalAlignment="Center"
-                                               TextAlignment="Center"
-                                               Visibility="Collapsed"/>
+
+                                    <!-- The page count, understated beside the dots in their brush and a point under the body
+                                         size. It is up to two counts with the format's own words around them, each in a slot
+                                         of its own, so the words ("of") draw smaller and fainter than the numbers. Code fills
+                                         the slots from PageCountFormat and collapses the empty ones; when vertical, each word
+                                         takes a line. Horizontal, the words sit a little off the bottom, so they center on
+                                         the numbers. -->
+                                    <StackPanel x:Name="PART_PageCount"
+                                                Orientation="Horizontal"
+                                                Margin="8,0,0,0"
+                                                VerticalAlignment="Center"
+                                                Visibility="Collapsed">
+                                        <TextBlock x:Name="PART_PageCountLeadingWords" Foreground="{TemplateBinding DotBrush}" FontSize="10" Opacity="0.8" VerticalAlignment="Bottom" HorizontalAlignment="Center" TextAlignment="Center"/>
+                                        <TextBlock x:Name="PART_PageCountFirstCount" Foreground="{TemplateBinding DotBrush}" FontSize="13" VerticalAlignment="Bottom" HorizontalAlignment="Center" TextAlignment="Center"/>
+                                        <TextBlock x:Name="PART_PageCountMiddleWords" Foreground="{TemplateBinding DotBrush}" FontSize="10" Opacity="0.8" VerticalAlignment="Bottom" HorizontalAlignment="Center" TextAlignment="Center"/>
+                                        <TextBlock x:Name="PART_PageCountSecondCount" Foreground="{TemplateBinding DotBrush}" FontSize="13" VerticalAlignment="Bottom" HorizontalAlignment="Center" TextAlignment="Center"/>
+                                        <TextBlock x:Name="PART_PageCountTrailingWords" Foreground="{TemplateBinding DotBrush}" FontSize="10" Opacity="0.8" VerticalAlignment="Bottom" HorizontalAlignment="Center" TextAlignment="Center"/>
+                                    </StackPanel>
                                 </StackPanel>
                             </Border>
+
+                            <!-- The page buttons run the stack's full height (or width, when vertical), past the dot strip,
+                                 over the neighbor pages' peeks. They sit outside the page area's clip, which would cut them
+                                 off at the dot strip. An empty Auto row or column takes no room, so both spans hold in
+                                 either orientation. -->
+                            <Button x:Name="PART_BackButton"
+                                    Grid.RowSpan="2"
+                                    Grid.ColumnSpan="2"
+                                    Style="{StaticResource AJut_Style_PageStackPageButton}"
+                                    AutomationProperties.Name="Previous page"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Stretch"
+                                    Background="{TemplateBinding ButtonBackground}"
+                                    Foreground="{TemplateBinding ButtonForeground}"
+                                    BorderBrush="{TemplateBinding ButtonBorder}"
+                                    Padding="{TemplateBinding ButtonPadding}"
+                                    BorderThickness="1"
+                                    Visibility="Collapsed">
+                                <FontIcon x:Name="BackGlyph" FontFamily="Segoe MDL2 Assets" Glyph="&#xE76B;" FontSize="{TemplateBinding ButtonFontSize}"/>
+                            </Button>
+                            <Button x:Name="PART_ForwardButton"
+                                    Grid.RowSpan="2"
+                                    Grid.ColumnSpan="2"
+                                    Style="{StaticResource AJut_Style_PageStackPageButton}"
+                                    AutomationProperties.Name="Next page"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Stretch"
+                                    Background="{TemplateBinding ButtonBackground}"
+                                    Foreground="{TemplateBinding ButtonForeground}"
+                                    BorderBrush="{TemplateBinding ButtonBorder}"
+                                    Padding="{TemplateBinding ButtonPadding}"
+                                    BorderThickness="1"
+                                    Visibility="Collapsed">
+                                <FontIcon x:Name="ForwardGlyph" FontFamily="Segoe MDL2 Assets" Glyph="&#xE76C;" FontSize="{TemplateBinding ButtonFontSize}"/>
+                            </Button>
                         </Grid>
                     </Border>
                 </ControlTemplate>

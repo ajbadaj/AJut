@@ -47,12 +47,38 @@ namespace AJut.UX.Tests
         }
 
         [TestMethod]
-        public void PageCountText_CountsFromOne_AndStacksItsWordsWhenVertical ()
+        public void PageCountText_CountsFromOne ()
         {
-            Assert.AreEqual("3 of 7", PageStackRules.PageCountText(PageStackRules.kDefaultPageCountFormat, effectiveSelectedIndex: 2, pageCount: 7, isVertical: false));
-            Assert.AreEqual("3\nof\n7", PageStackRules.PageCountText("{0} of {1}", 2, 7, isVertical: true));
-            Assert.AreEqual("3/7", PageStackRules.PageCountText("{0}/{1}", 2, 7, isVertical: true), "A format with no spaces stays on one line");
-            Assert.AreEqual("1 of 4", PageStackRules.PageCountText(null, 0, 4, false), "No format is the default one");
+            Assert.AreEqual("3 of 7", PageStackRules.PageCountText(PageStackRules.kDefaultPageCountFormat, effectiveSelectedIndex: 2, pageCount: 7));
+            Assert.AreEqual("3/7", PageStackRules.PageCountText("{0}/{1}", 2, 7));
+            Assert.AreEqual("1 of 4", PageStackRules.PageCountText(null, 0, 4), "No format is the default one");
+        }
+
+        [TestMethod]
+        public void SplitPageCount_CutsTheCountsFromTheFormatsOwnWords ()
+        {
+            Assert.AreEqual(
+                new PageStackRules.PageCountParts("", "3", " of", " 7", ""),
+                PageStackRules.SplitPageCount("{0} of {1}", effectiveSelectedIndex: 2, pageCount: 7, isVertical: false),
+                "Each space rides at the front of the part after it"
+            );
+            Assert.AreEqual(new PageStackRules.PageCountParts("", "3", "/", "7", ""), PageStackRules.SplitPageCount("{0}/{1}", 2, 7, false));
+            Assert.AreEqual(new PageStackRules.PageCountParts("", "3", "", " 7", ""), PageStackRules.SplitPageCount("{0} {1}", 2, 7, false), "A space alone still lands between the counts");
+            Assert.AreEqual(new PageStackRules.PageCountParts("", "1", "", "", ""), PageStackRules.SplitPageCount("{0}", 0, 4, false), "A format with one count has no second");
+        }
+
+        [TestMethod]
+        public void SplitPageCount_StacksEachWordOnALineWhenVertical ()
+        {
+            Assert.AreEqual(new PageStackRules.PageCountParts("", "3", "of", "7", ""), PageStackRules.SplitPageCount(null, 2, 7, isVertical: true), "No format is the default one");
+            Assert.AreEqual(new PageStackRules.PageCountParts("Page", "3", "out\nof", "7", ""), PageStackRules.SplitPageCount("Page {0} out of {1}", 2, 7, true));
+        }
+
+        [TestMethod]
+        public void SplitPageCount_KeepsWordsAfterOneCount_AndAnyCountsPastTwo_AsTrailingWords ()
+        {
+            Assert.AreEqual(new PageStackRules.PageCountParts("Page", " 1", "", "", " now"), PageStackRules.SplitPageCount("Page {0} now", 0, 4, false));
+            Assert.AreEqual(new PageStackRules.PageCountParts("", "1", "/", "4", " (1)"), PageStackRules.SplitPageCount("{0}/{1} ({0})", 0, 4, false));
         }
 
         [TestMethod]

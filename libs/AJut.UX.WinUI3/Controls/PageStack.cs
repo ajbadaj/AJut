@@ -46,7 +46,9 @@ namespace AJut.UX.Controls
     //   PART_DotsHost      - the dot strip, padded by DotStripPadding
     //   PART_DotsClip      - a canvas sized and clipped to the strip's dots
     //   PART_DotsPanel     - holds the dots, and slides along the canvas
-    //   PART_PageCountText - the page count ("3 of 7"), after the dots
+    //   PART_PageCount     - the page count ("3 of 7"), after the dots, in five slots: PART_PageCountLeadingWords,
+    //                        PART_PageCountFirstCount, PART_PageCountMiddleWords, PART_PageCountSecondCount and
+    //                        PART_PageCountTrailingWords (TextBlocks), so the format's words can draw apart from the counts
     /// <summary>
     /// Shows one of its children at a time as a page, with a page button at each end and an optional dot strip, and runs an
     /// animated transition to whichever page is picked. The neighbor pages peek in, faded, past the page buttons.
@@ -59,7 +61,12 @@ namespace AJut.UX.Controls
     [TemplatePart(Name = nameof(PART_DotsHost), Type = typeof(Border))]
     [TemplatePart(Name = nameof(PART_DotsClip), Type = typeof(Canvas))]
     [TemplatePart(Name = nameof(PART_DotsPanel), Type = typeof(StackPanel))]
-    [TemplatePart(Name = nameof(PART_PageCountText), Type = typeof(TextBlock))]
+    [TemplatePart(Name = nameof(PART_PageCount), Type = typeof(StackPanel))]
+    [TemplatePart(Name = nameof(PART_PageCountLeadingWords), Type = typeof(TextBlock))]
+    [TemplatePart(Name = nameof(PART_PageCountFirstCount), Type = typeof(TextBlock))]
+    [TemplatePart(Name = nameof(PART_PageCountMiddleWords), Type = typeof(TextBlock))]
+    [TemplatePart(Name = nameof(PART_PageCountSecondCount), Type = typeof(TextBlock))]
+    [TemplatePart(Name = nameof(PART_PageCountTrailingWords), Type = typeof(TextBlock))]
     [TemplateVisualState(GroupName = "OrientationStates", Name = kOrientationStateHorizontal)]
     [TemplateVisualState(GroupName = "OrientationStates", Name = kOrientationStateVertical)]
     public class PageStack : Control
@@ -132,7 +139,12 @@ namespace AJut.UX.Controls
             this.PART_DotsHost = this.GetTemplateChild(nameof(PART_DotsHost)) as Border;
             this.PART_DotsClip = this.GetTemplateChild(nameof(PART_DotsClip)) as Canvas;
             this.PART_DotsPanel = this.GetTemplateChild(nameof(PART_DotsPanel)) as StackPanel;
-            this.PART_PageCountText = this.GetTemplateChild(nameof(PART_PageCountText)) as TextBlock;
+            this.PART_PageCount = this.GetTemplateChild(nameof(PART_PageCount)) as StackPanel;
+            this.PART_PageCountLeadingWords = this.GetTemplateChild(nameof(PART_PageCountLeadingWords)) as TextBlock;
+            this.PART_PageCountFirstCount = this.GetTemplateChild(nameof(PART_PageCountFirstCount)) as TextBlock;
+            this.PART_PageCountMiddleWords = this.GetTemplateChild(nameof(PART_PageCountMiddleWords)) as TextBlock;
+            this.PART_PageCountSecondCount = this.GetTemplateChild(nameof(PART_PageCountSecondCount)) as TextBlock;
+            this.PART_PageCountTrailingWords = this.GetTemplateChild(nameof(PART_PageCountTrailingWords)) as TextBlock;
 
             // 3. Wire them, and put the page hosts and dots back in
             if (this.PART_PagesClip != null)
@@ -433,7 +445,7 @@ namespace AJut.UX.Controls
         }
 
         public static readonly DependencyProperty DotBrushProperty = DPUtils.Register(_ => _.DotBrush, (d, e) => d.RefreshButtonsAndDots());
-        /// <summary>The fill of every dot but the current page's</summary>
+        /// <summary>The fill of every dot but the current page's, and the page count's text</summary>
         public Brush DotBrush
         {
             get => (Brush)this.GetValue(DotBrushProperty);
@@ -478,7 +490,8 @@ namespace AJut.UX.Controls
         public static readonly DependencyProperty PageCountFormatProperty = DPUtils.Register(_ => _.PageCountFormat, PageStackRules.kDefaultPageCountFormat, (d, e) => d.RefreshButtonsAndDots());
         /// <summary>
         /// The page count's text, with {0} for the shown page's number from one and {1} for the page count: "{0} of {1}"
-        /// by default. When vertical, each word goes on a line of its own.
+        /// by default. The format's own words draw smaller and fainter than the counts, and when vertical, each word goes
+        /// on a line of its own.
         /// </summary>
         public string PageCountFormat
         {
@@ -508,7 +521,12 @@ namespace AJut.UX.Controls
         private Border PART_DotsHost { get; set; }
         private Canvas PART_DotsClip { get; set; }
         private StackPanel PART_DotsPanel { get; set; }
-        private TextBlock PART_PageCountText { get; set; }
+        private StackPanel PART_PageCount { get; set; }
+        private TextBlock PART_PageCountLeadingWords { get; set; }
+        private TextBlock PART_PageCountFirstCount { get; set; }
+        private TextBlock PART_PageCountMiddleWords { get; set; }
+        private TextBlock PART_PageCountSecondCount { get; set; }
+        private TextBlock PART_PageCountTrailingWords { get; set; }
 
         private int EffectiveSelectedIndex => PageStackRules.EffectiveSelectedIndex(this.SelectedIndex, this.Children.Count);
 
@@ -699,12 +717,10 @@ namespace AJut.UX.Controls
             this.PART_DotsHost.Visibility = (areDotsShown || isPageCountShown) ? Visibility.Visible : Visibility.Collapsed;
             this.PART_DotsHost.Padding = EffectivePadding(this.DotStripPadding, m_isHorizontal, kDefaultDotStripGap);
             this.PART_DotsClip.Visibility = areDotsShown ? Visibility.Visible : Visibility.Collapsed;
-            if (this.PART_PageCountText != null)
+            if (this.PART_PageCount != null)
             {
-                this.PART_PageCountText.Visibility = isPageCountShown ? Visibility.Visible : Visibility.Collapsed;
-                this.PART_PageCountText.Text = isPageCountShown
-                    ? PageStackRules.PageCountText(this.PageCountFormat, shownPage, pageCount, isVertical: !m_isHorizontal)
-                    : String.Empty;
+                this.PART_PageCount.Visibility = isPageCountShown ? Visibility.Visible : Visibility.Collapsed;
+                this.FillPageCount(isPageCountShown, shownPage, pageCount);
             }
 
             if (!areDotsShown)
@@ -839,6 +855,36 @@ namespace AJut.UX.Controls
                 m_isDotSliding = false;
                 m_dotScroll = m_dotScrollTo;
                 this.RefreshButtonsAndDots();
+            }
+        }
+
+        // Fills the page count's slots from PageCountFormat, collapsing the empty ones so a vertical count has no blank
+        //  lines, and names the whole count for automation, since screen readers would otherwise read it a slot at a time
+        private void FillPageCount (bool isPageCountShown, int shownPage, int pageCount)
+        {
+            PageStackRules.PageCountParts parts = isPageCountShown
+                ? PageStackRules.SplitPageCount(this.PageCountFormat, shownPage, pageCount, isVertical: !m_isHorizontal)
+                : default;
+
+            _FillSlot(this.PART_PageCountLeadingWords, parts.LeadingWords);
+            _FillSlot(this.PART_PageCountFirstCount, parts.FirstCount);
+            _FillSlot(this.PART_PageCountMiddleWords, parts.MiddleWords);
+            _FillSlot(this.PART_PageCountSecondCount, parts.SecondCount);
+            _FillSlot(this.PART_PageCountTrailingWords, parts.TrailingWords);
+            AutomationProperties.SetName(
+                this.PART_PageCount,
+                isPageCountShown ? PageStackRules.PageCountText(this.PageCountFormat, shownPage, pageCount) : String.Empty
+            );
+
+            static void _FillSlot (TextBlock slot, string text)
+            {
+                if (slot == null)
+                {
+                    return;
+                }
+
+                slot.Text = text ?? String.Empty;
+                slot.Visibility = String.IsNullOrEmpty(text) ? Visibility.Collapsed : Visibility.Visible;
             }
         }
 
