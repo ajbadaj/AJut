@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="PageStack"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:alpha="0.7"
+        android:text="BumpStack's sibling for paging: one page shows at a time, and the neighbor pages peek in, faded, past the page buttons. A tap on a page button or a dot runs an animated transition, and a swipe along the stack drags the pages with the finger, landing on the nearest page, or the next one on a quick flick. The dot strip shows ajutDotReach dots each side of the current page, plus a smaller, faded edge dot while there are more pages past them; tapping an edge dot goes just past the range." />
+
+    <CheckBox
+        android:id="@+id/demo_page_stack_show_dots"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:checked="true"
+        android:text="ShowDots (every stack below)" />
+
+    <CheckBox
+        android:id="@+id/demo_page_stack_show_page_count"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        android:text="ShowPageCount (every stack below)" />
+
+    <CheckBox
+        android:id="@+id/demo_page_stack_swipe"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        android:text="IsSwipeEnabled (every stack below)" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Horizontal, 20 pages, ajutDotReach = 3" />
+
+    <ajut.ux.controls.PageStack
+        android:id="@+id/demo_page_stack_horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="180dp"
+        android:layout_marginTop="4dp"
+        app:ajutDotReach="3" />
+
+    <TextView
+        android:id="@+id/demo_page_stack_selected_index"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:alpha="0.7" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Vertical, 6 pages, a slower ajutTransitionDuration" />
+
+    <ajut.ux.controls.PageStack
+        android:id="@+id/demo_page_stack_vertical"
+        android:layout_width="260dp"
+        android:layout_height="240dp"
+        android:layout_marginTop="4dp"
+        app:ajutOrientation="vertical"
+        app:ajutTransitionDuration="600" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Three pages, declared in the layout, starting on the last" />
+
+    <ajut.ux.controls.PageStack
+        android:id="@+id/demo_page_stack_few"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:layout_marginTop="4dp"
+        app:ajutSelectedIndex="2">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#884690C8"
+            android:gravity="center"
+            android:text="First" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#886B90C8"
+            android:gravity="center"
+            android:text="Second" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#88B090C8"
+            android:gravity="center"
+            android:text="Third" />
+    </ajut.ux.controls.PageStack>
+</LinearLayout>

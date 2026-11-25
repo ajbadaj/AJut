@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <ajut.ux.controls.PageStack
+        android:id="@+id/page_stack"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        app:ajutSelectedIndex="2"
+        app:ajutShowDots="true"
+        app:ajutIsSwipeEnabled="false">
+
+        <View
+            android:id="@+id/page_stack_first"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <View
+            android:id="@+id/page_stack_last"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </ajut.ux.controls.PageStack>
+</FrameLayout>

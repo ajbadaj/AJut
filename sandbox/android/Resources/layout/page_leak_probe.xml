@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Leak Probe"
+            android:textAppearance="?android:attr/textAppearanceLarge" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Shows a control on this page, takes it out, drops it without Dispose, and says whether it was collected. Collected is the pass; still alive means something it holds leads back to it." />
+
+        <!-- A button per probe, from LeakProbePage's list -->
+        <LinearLayout
+            android:id="@+id/leak_probe_buttons"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="vertical" />
+
+        <TextView
+            android:id="@+id/leak_probe_result"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Nothing probed yet" />
+
+        <!-- Where a probed control is shown while it is on the page -->
+        <FrameLayout
+            android:id="@+id/leak_probe_area"
+            android:layout_width="320dp"
+            android:layout_height="200dp"
+            android:layout_marginTop="12dp" />
+    </LinearLayout>
+</ScrollView>

@@ -213,4 +213,22 @@
     <attr name="ajutDisabledForeground" format="color" />
     <attr name="ajutDisabledBorder" format="color" />
   </declare-styleable>
+
+  <!-- Views declared inside the tag become the pages, in order -->
+  <declare-styleable name="AJutPageStack">
+    <attr name="ajutOrientation" />
+    <attr name="android:enabled" />
+    <attr name="ajutSelectedIndex" format="integer" />
+    <attr name="ajutShowDots" format="boolean" />
+    <attr name="ajutDotReach" format="integer" />
+    <attr name="ajutShowPageCount" format="boolean" />
+    <attr name="ajutPageCountFormat" format="string" />
+    <!-- In milliseconds; 0 jumps straight to a page -->
+    <attr name="ajutTransitionDuration" format="integer" />
+    <attr name="ajutIsSwipeEnabled" format="boolean" />
+    <attr name="ajutPageSpacing" format="dimension" />
+    <attr name="ajutPagePeek" format="dimension" />
+    <attr name="ajutInactivePageOpacity" format="float" />
+    <attr name="ajutDotSize" format="dimension" />
+  </declare-styleable>
 </resources>

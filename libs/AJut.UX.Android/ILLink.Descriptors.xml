@@ -19,6 +19,7 @@
     <type fullname="AJut.UX.Controls.GeometryButton"><method name=".ctor" /></type>
     <type fullname="AJut.UX.Controls.HsvColorPicker"><method name=".ctor" /></type>
     <type fullname="AJut.UX.Controls.NumericEditor"><method name=".ctor" /></type>
+    <type fullname="AJut.UX.Controls.PageStack"><method name=".ctor" /></type>
     <type fullname="AJut.UX.Controls.PopupMenuButton"><method name=".ctor" /></type>
     <type fullname="AJut.UX.Controls.PropertyGrid"><method name=".ctor" /></type>
     <type fullname="AJut.UX.Controls.SimpleWrapPanel"><method name=".ctor" /></type>

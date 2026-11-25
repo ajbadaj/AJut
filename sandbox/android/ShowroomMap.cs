@@ -28,6 +28,7 @@ namespace AJutShowRoomAndroid
             new AreaEntry("FlatTreeListView", () => new FlatTreeListViewPage()),
             new AreaEntry("GeometryButton", () => new DemoPage("GeometryButton", Resource.Layout.demo_geometry_button, Resource.Raw.demo_geometry_button_source)),
             new AreaEntry("NumericEditor", () => new NumericEditorPage()),
+            new AreaEntry("PageStack", () => new PageStackPage()),
             new AreaEntry("PopupMenuButton", () => new PopupMenuButtonPage()),
             new AreaEntry("PropertyGrid", () => new PropertyGridPage()),
             new AreaEntry("SimpleWrapPanel", () => new SimpleWrapPanelPage()),
@@ -39,6 +40,7 @@ namespace AJutShowRoomAndroid
         public static AreaPage CreateDebugArea () => new AreaPage(
             "Debug",
             new AreaEntry("AppThemeManager", () => new AppThemeManagerPage()),
+            new AreaEntry("Leak Probe", () => new LeakProbePage()),
             new AreaEntry("Theme Tester", () => new ThemeTesterPage())
         );
 
