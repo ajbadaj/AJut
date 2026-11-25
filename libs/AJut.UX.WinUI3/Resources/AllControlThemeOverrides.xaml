@@ -130,6 +130,17 @@
     </Style>
 
     <!--
+    ===[ DateTimeEditIngressControl - AJut-themed override ]===
+    The same themed look as PathSelectionControl. Its control-specific keys are redefined in AJutThemeMapAliasing.xaml.
+    -->
+    <Style TargetType="local:DateTimeEditIngressControl">
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="Background" Value="{ThemeResource AJut_Brush_PopOutControlBackground}"/>
+        <Setter Property="BorderBrush" Value="{ThemeResource AJut_Brush_TextBoxBorder}"/>
+        <Setter Property="BorderThickness" Value="1,1,1,2"/>
+    </Style>
+
+    <!--
     ===[ ColorEditIngressControl - AJut-themed override ]===
     Redefines EditingStates border brush keys. No template duplication needed.
     AJut_ColorEditIngressControl_HighlightBorderBrush -> AJut_Brush_PrimaryHighlight

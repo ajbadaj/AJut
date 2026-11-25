@@ -24,6 +24,7 @@
             <NavigationViewItem Content="BrushButton" Tag="AJutShowRoomWinUI.UI.Controls.BrushButtonPage"/>
             <NavigationViewItem Content="BumpStack" Tag="AJutShowRoomWinUI.UI.Controls.BumpStackPage"/>
             <NavigationViewItem Content="ColorEditIngressControl" Tag="AJutShowRoomWinUI.UI.Controls.ColorEditIngressControlPage"/>
+            <NavigationViewItem Content="DateTimeEditIngressControl" Tag="AJutShowRoomWinUI.UI.Controls.DateTimeEditIngressControlPage"/>
             <NavigationViewItem Content="EnumComboBox" Tag="AJutShowRoomWinUI.UI.Controls.EnumComboBoxPage"/>
             <NavigationViewItem Content="EnumToggleStrip" Tag="AJutShowRoomWinUI.UI.Controls.EnumToggleStripPage"/>
             <NavigationViewItem Content="FlatTreeListControl" Tag="AJutShowRoomWinUI.UI.Controls.FlatTreeListControlPage"/>

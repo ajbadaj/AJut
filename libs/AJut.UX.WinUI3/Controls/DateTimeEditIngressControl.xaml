@@ -1,0 +1,245 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="using:AJut.UX.Controls">
+
+    <!-- ===[ DateTimeEditIngressControl ]=== -->
+    <!-- Default style: WinUI3 system resources and the AJut_DateTimeEditIngressControl_ keys, whose unthemed defaults are
+         in AJutCustomControlStylingDefaults.xaml and whose themed values are in AJutThemeMapAliasing.xaml. It is drawn as
+         PathSelectionControl is: a text box and a button in one border.
+         Template parts: PART_Root, PART_TextBox, PART_PickerButton. The flyout the button opens is built in code-behind.
+         VSM groups: BorderStates (Normal/Focused/TextInvalid),
+                     TextBoxFocusStates (TextBoxUnfocused/TextBoxFocused),
+                     WarningDisplayStates (WarningHidden/WarningShown),
+                     PickerGlyphStates (CalendarGlyph/ClockGlyph/CustomPickerContent),
+                     ReadOnlyStates (Editable/ReadOnly). -->
+    <!-- The picker button: no border and nothing behind it at rest, so it reads as part of the control, then the
+         highlight fills under the pointer and while pressed. ButtonBase drives CommonStates; every state sets both
+         properties, since WinUI3 setters do not revert on their own. -->
+    <Style x:Key="AJut_Style_DateTimeEditIngressControlButton" TargetType="Button">
+        <Setter Property="Padding" Value="10,6"/>
+        <Setter Property="VerticalAlignment" Value="Stretch"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="ButtonRoot" Background="Transparent" CornerRadius="{TemplateBinding CornerRadius}" Padding="{TemplateBinding Padding}">
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal">
+                                    <VisualState.Setters>
+                                        <Setter Target="ButtonRoot.Background" Value="Transparent"/>
+                                        <Setter Target="ButtonContent.Foreground" Value="{ThemeResource AJut_DateTimeEditIngressControl_ButtonIconForeground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="ButtonRoot.Background" Value="{ThemeResource AJut_DateTimeEditIngressControl_ButtonPointerOverBackground}"/>
+                                        <Setter Target="ButtonContent.Foreground" Value="{ThemeResource AJut_DateTimeEditIngressControl_ButtonHighlightForeground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="ButtonRoot.Background" Value="{ThemeResource AJut_DateTimeEditIngressControl_ButtonPressedBackground}"/>
+                                        <Setter Target="ButtonContent.Foreground" Value="{ThemeResource AJut_DateTimeEditIngressControl_ButtonHighlightForeground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Disabled">
+                                    <VisualState.Setters>
+                                        <Setter Target="ButtonRoot.Background" Value="Transparent"/>
+                                        <Setter Target="ButtonContent.Foreground" Value="{ThemeResource AJut_DateTimeEditIngressControl_ButtonIconForeground}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                        <ContentPresenter x:Name="ButtonContent" Content="{TemplateBinding Content}"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          Foreground="{ThemeResource AJut_DateTimeEditIngressControl_ButtonIconForeground}"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="local:DateTimeEditIngressControl">
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="Background" Value="{ThemeResource TextControlBackground}"/>
+        <Setter Property="BorderBrush" Value="{ThemeResource TextControlBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1,1,1,2"/>
+        <Setter Property="Padding" Value="2"/>
+        <Setter Property="MinHeight" Value="22"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="local:DateTimeEditIngressControl">
+                    <Border x:Name="PART_Root"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="0,3,3,0"
+                            ToolTipService.ToolTip="{TemplateBinding CurrentToolTip}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- The text box the value is shown and typed in -->
+                            <Border x:Name="RimLighting_Bright" Grid.Column="0" BorderBrush="Transparent" BorderThickness="0,0,1,1" Margin="3">
+                                <Border x:Name="RimLighting_Dark" BorderBrush="Transparent" BorderThickness="1.4,1.4,0,0">
+                                    <TextBox x:Name="PART_TextBox"
+                                             MinHeight="{TemplateBinding MinHeight}"
+                                             PlaceholderText="{TemplateBinding UnsetTextPrompt}"
+                                             FontFamily="{TemplateBinding FontFamily}"
+                                             TextWrapping="NoWrap"
+                                             BorderThickness="0"
+                                             Background="Transparent"
+                                             CornerRadius="0"
+                                             Padding="2"
+                                             Margin="{TemplateBinding Padding}"
+                                             VerticalAlignment="Stretch"
+                                             VerticalContentAlignment="Center">
+                                        <TextBox.Style>
+                                            <!-- A text box with none of its own chrome, as PathSelectionControl's: the control's
+                                                 border and rim lighting stand in for it -->
+                                            <Style TargetType="TextBox">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="TextBox">
+                                                            <Grid>
+                                                                <ScrollViewer x:Name="ContentElement" HorizontalScrollMode="{TemplateBinding ScrollViewer.HorizontalScrollMode}" HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}" VerticalScrollMode="{TemplateBinding ScrollViewer.VerticalScrollMode}" VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}" IsHorizontalRailEnabled="{TemplateBinding ScrollViewer.IsHorizontalRailEnabled}" IsVerticalRailEnabled="{TemplateBinding ScrollViewer.IsVerticalRailEnabled}" IsDeferredScrollingEnabled="{TemplateBinding ScrollViewer.IsDeferredScrollingEnabled}" Margin="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" Foreground="{TemplateBinding Foreground}" IsTabStop="False" AutomationProperties.AccessibilityView="Raw" ZoomMode="Disabled" />
+                                                                <TextBlock x:Name="PlaceholderTextContentPresenter" Foreground="{Binding PlaceholderForeground, RelativeSource={RelativeSource TemplatedParent}, TargetNullValue={ThemeResource TextControlPlaceholderForeground}}" Margin="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}" Text="{TemplateBinding PlaceholderText}" TextAlignment="{TemplateBinding TextAlignment}" TextWrapping="{TemplateBinding TextWrapping}" IsHitTestVisible="False" />
+                                                            </Grid>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </TextBox.Style>
+                                    </TextBox>
+                                </Border>
+                            </Border>
+
+                            <!-- Warning icon: visible while the text can't be read as a date or time -->
+                            <Border x:Name="PART_WarningDisplay"
+                                    Grid.Column="1"
+                                    Visibility="Collapsed"
+                                    IsHitTestVisible="False"
+                                    Padding="4,2"
+                                    ToolTipService.ToolTip="{TemplateBinding InvalidTextReason}">
+                                <FontIcon Glyph="&#xE7BA;"
+                                          FontFamily="Segoe Fluent Icons"
+                                          FontSize="14"
+                                          Foreground="{ThemeResource AJut_DateTimeEditIngressControl_WarningIconForeground}"/>
+                            </Border>
+
+                            <!-- Picker button: rounds the control's right end. It shows the calendar glyph, the clock glyph
+                                 for a time alone, or PickerButtonContent when there is any (PickerGlyphStates). The glyphs
+                                 take their color from the button's states. -->
+                            <Button x:Name="PART_PickerButton"
+                                    Grid.Column="2"
+                                    CornerRadius="0,2,2,0"
+                                    Style="{StaticResource AJut_Style_DateTimeEditIngressControlButton}">
+                                <Grid>
+                                    <FontIcon x:Name="PART_CalendarGlyph" Glyph="&#xE787;" FontFamily="Segoe Fluent Icons" FontSize="14"/>
+                                    <FontIcon x:Name="PART_ClockGlyph" Glyph="&#xE823;" FontFamily="Segoe Fluent Icons" FontSize="14" Visibility="Collapsed"/>
+                                    <ContentPresenter x:Name="PART_CustomPickerContent" Content="{TemplateBinding PickerButtonContent}" Visibility="Collapsed"/>
+                                </Grid>
+                            </Button>
+                        </Grid>
+
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="BorderStates">
+                                <!-- Normal: explicit revert - WinUI3 Setters do not auto-revert on state exit -->
+                                <VisualState x:Name="Normal">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_Root.BorderBrush" Value="{ThemeResource AJut_DateTimeEditIngressControl_NormalBorderBrush}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Focused">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_Root.BorderBrush" Value="{ThemeResource AJut_DateTimeEditIngressControl_FocusedBorderBrush}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="TextInvalid">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_Root.BorderBrush" Value="{ThemeResource AJut_DateTimeEditIngressControl_InvalidBorderBrush}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                            <!-- The text box's focused look follows focus alone, in its own group, so invalid text shows its
+                                 border on top of it rather than taking it away while the user is still typing -->
+                            <VisualStateGroup x:Name="TextBoxFocusStates">
+                                <VisualState x:Name="TextBoxUnfocused">
+                                    <VisualState.Setters>
+                                        <Setter Target="RimLighting_Bright.BorderBrush" Value="Transparent"/>
+                                        <Setter Target="RimLighting_Dark.BorderBrush" Value="Transparent"/>
+                                        <Setter Target="RimLighting_Dark.Background" Value="Transparent"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="TextBoxFocused">
+                                    <VisualState.Setters>
+                                        <Setter Target="RimLighting_Bright.BorderBrush" Value="#5FFF"/>
+                                        <Setter Target="RimLighting_Dark.BorderBrush" Value="#8000"/>
+                                        <Setter Target="RimLighting_Dark.Background" Value="{ThemeResource AJut_DateTimeEditIngressControl_FocusedTextBoxBackgroundBrush}"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                            <VisualStateGroup x:Name="WarningDisplayStates">
+                                <VisualState x:Name="WarningHidden">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_WarningDisplay.Visibility" Value="Collapsed"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="WarningShown">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_WarningDisplay.Visibility" Value="Visible"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                            <!-- Each state sets all three, since WinUI3 Setters do not revert on state exit -->
+                            <VisualStateGroup x:Name="PickerGlyphStates">
+                                <VisualState x:Name="CalendarGlyph">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_CalendarGlyph.Visibility" Value="Visible"/>
+                                        <Setter Target="PART_ClockGlyph.Visibility" Value="Collapsed"/>
+                                        <Setter Target="PART_CustomPickerContent.Visibility" Value="Collapsed"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="ClockGlyph">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_CalendarGlyph.Visibility" Value="Collapsed"/>
+                                        <Setter Target="PART_ClockGlyph.Visibility" Value="Visible"/>
+                                        <Setter Target="PART_CustomPickerContent.Visibility" Value="Collapsed"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="CustomPickerContent">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_CalendarGlyph.Visibility" Value="Collapsed"/>
+                                        <Setter Target="PART_ClockGlyph.Visibility" Value="Collapsed"/>
+                                        <Setter Target="PART_CustomPickerContent.Visibility" Value="Visible"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                            <!-- Read-only takes no typing and opens no picker. Editable reverts explicitly. -->
+                            <VisualStateGroup x:Name="ReadOnlyStates">
+                                <VisualState x:Name="Editable">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_TextBox.IsReadOnly" Value="False"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <!-- Read-only looks as editable does but for its text, in italics and a touch faded. The button
+                                     stays on: the pickers open to show the value, marked read-only, and take no picks. -->
+                                <VisualState x:Name="ReadOnly">
+                                    <VisualState.Setters>
+                                        <Setter Target="PART_TextBox.IsReadOnly" Value="True"/>
+                                        <Setter Target="PART_TextBox.FontStyle" Value="Italic"/>
+                                        <Setter Target="PART_TextBox.Opacity" Value="0.85"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>
