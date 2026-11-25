@@ -39,6 +39,9 @@
         <TabItem Header="NumericEditor">
             <ctrls:NumericEditorControlExample/>
         </TabItem>
+        <TabItem Header="PageStack">
+            <ctrls:PageStackControlExample />
+        </TabItem>
         <TabItem Header="PathSelector">
             <ctrls:PathSelectionControlExample />
         </TabItem>

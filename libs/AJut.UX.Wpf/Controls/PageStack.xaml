@@ -1,0 +1,172 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:AJut.UX.Controls">
+
+    <!-- ====================[ PageStack page button ]==================== -->
+    <!-- A page button keeps the fill, glyph and outline its PageStack gives it in every state and shows its state by
+         opacity alone, as BumpStack's bump buttons do: brighter under the pointer, dimmed when there is no page that way.
+         The glyph is the button's Content, a Segoe MDL2 Assets code point. -->
+    <Style x:Key="AJut_Style_PageStackPageButton" TargetType="{x:Type Button}">
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Opacity" Value="0.8"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="{TemplateBinding Padding}">
+                        <TextBlock FontFamily="Segoe MDL2 Assets" Text="{TemplateBinding Content}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Opacity" Value="1"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.4"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ====================[ PageStackDot ]==================== -->
+    <!-- One dot in the strip. The transparent border around the dot is its hit area. The pointer fades the whole dot, and
+         Kind picks its fill and size: the current page's dot takes CurrentDotBrush, and an edge dot (more pages past the
+         window) draws smaller and faded. -->
+    <Style TargetType="{x:Type local:PageStackDot}">
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Padding" Value="3"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:PageStackDot}">
+                    <Border x:Name="Root" Background="Transparent" Padding="{TemplateBinding Padding}" Opacity="0.85">
+                        <Ellipse x:Name="DotShape"
+                                 Width="{TemplateBinding DotSize}"
+                                 Height="{TemplateBinding DotSize}"
+                                 Fill="{TemplateBinding DotBrush}"
+                                 RenderTransformOrigin="0.5,0.5">
+                        </Ellipse>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="Kind" Value="Current">
+                            <Setter TargetName="DotShape" Property="Fill" Value="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=CurrentDotBrush}"/>
+                        </Trigger>
+                        <Trigger Property="Kind" Value="BackEdge">
+                            <Setter TargetName="DotShape" Property="Opacity" Value="0.45"/>
+                            <Setter TargetName="DotShape" Property="RenderTransform">
+                                <Setter.Value>
+                                    <ScaleTransform ScaleX="0.6" ScaleY="0.6"/>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                        <Trigger Property="Kind" Value="ForwardEdge">
+                            <Setter TargetName="DotShape" Property="Opacity" Value="0.45"/>
+                            <Setter TargetName="DotShape" Property="RenderTransform">
+                                <Setter.Value>
+                                    <ScaleTransform ScaleX="0.6" ScaleY="0.6"/>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Root" Property="Opacity" Value="1"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Root" Property="Opacity" Value="0.4"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ====================[ PageStack ]==================== -->
+    <!-- One page at a time, with a page button at each end and an optional dot strip. The page hosts, their placement and
+         fading, the page buttons' visibility and enabling, and the dots are driven from code-behind; the template lays out
+         the page area, the two overlaid page buttons and the dot strip, and the Orientation triggers turn them. Unthemed,
+         the page buttons take BumpStack's light button fill and dark glyphs. The page buttons sit over the neighbor pages'
+         peeks, so they are outlined to stand apart from what is behind them. -->
+    <Style TargetType="{x:Type local:PageStack}">
+        <Setter Property="ButtonBackground" Value="#DDD"/>
+        <Setter Property="ButtonBorder" Value="#707070"/>
+        <Setter Property="ButtonForeground" Value="#333"/>
+        <Setter Property="DotBrush" Value="#8A8A8A"/>
+        <Setter Property="CurrentDotBrush" Value="#333"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:PageStack}">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="{TemplateBinding Padding}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- The neighbor pages are moved past this area by render transforms, so it clips them -->
+                            <Grid x:Name="PART_PagesClip" ClipToBounds="True">
+                                <Grid x:Name="PART_PageViewport"/>
+
+                                <Button x:Name="PART_BackButton"
+                                        Style="{StaticResource AJut_Style_PageStackPageButton}"
+                                        AutomationProperties.Name="Previous page"
+                                        HorizontalAlignment="Left"
+                                        Content="&#xE973;"
+                                        Background="{TemplateBinding ButtonBackground}"
+                                        Foreground="{TemplateBinding ButtonForeground}"
+                                        BorderBrush="{TemplateBinding ButtonBorder}"
+                                        FontSize="{TemplateBinding ButtonFontSize}"
+                                        Padding="{TemplateBinding ButtonPadding}"
+                                        Visibility="Collapsed"/>
+                                <Button x:Name="PART_ForwardButton"
+                                        Style="{StaticResource AJut_Style_PageStackPageButton}"
+                                        AutomationProperties.Name="Next page"
+                                        HorizontalAlignment="Right"
+                                        Content="&#xE974;"
+                                        Background="{TemplateBinding ButtonBackground}"
+                                        Foreground="{TemplateBinding ButtonForeground}"
+                                        BorderBrush="{TemplateBinding ButtonBorder}"
+                                        FontSize="{TemplateBinding ButtonFontSize}"
+                                        Padding="{TemplateBinding ButtonPadding}"
+                                        Visibility="Collapsed"/>
+                            </Grid>
+
+                            <StackPanel x:Name="PART_DotsPanel"
+                                        Grid.Row="1"
+                                        Orientation="Horizontal"
+                                        HorizontalAlignment="Center"
+                                        Margin="0,4,0,0"
+                                        Visibility="Collapsed"/>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="Orientation" Value="Vertical">
+                            <Setter TargetName="PART_BackButton" Property="HorizontalAlignment" Value="Stretch"/>
+                            <Setter TargetName="PART_BackButton" Property="VerticalAlignment" Value="Top"/>
+                            <Setter TargetName="PART_BackButton" Property="Content" Value="&#xE70E;"/>
+                            <Setter TargetName="PART_ForwardButton" Property="HorizontalAlignment" Value="Stretch"/>
+                            <Setter TargetName="PART_ForwardButton" Property="VerticalAlignment" Value="Bottom"/>
+                            <Setter TargetName="PART_ForwardButton" Property="Content" Value="&#xE70D;"/>
+                            <Setter TargetName="PART_DotsPanel" Property="Grid.Row" Value="0"/>
+                            <Setter TargetName="PART_DotsPanel" Property="Grid.Column" Value="1"/>
+                            <Setter TargetName="PART_DotsPanel" Property="Orientation" Value="Vertical"/>
+                            <Setter TargetName="PART_DotsPanel" Property="HorizontalAlignment" Value="Left"/>
+                            <Setter TargetName="PART_DotsPanel" Property="VerticalAlignment" Value="Center"/>
+                            <Setter TargetName="PART_DotsPanel" Property="Margin" Value="4,0,0,0"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

@@ -524,6 +524,15 @@
         <Setter Property="ButtonBorder" Value="{DynamicResource AJut_Brush_ButtonBorder}"/>
     </Style>
 
+    <Style TargetType="{x:Type ajut_ctrls:PageStack}">
+        <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
+        <Setter Property="ButtonBackground" Value="{DynamicResource AJut_Brush_ControlBackground}"/>
+        <Setter Property="ButtonForeground" Value="{DynamicResource AJut_Brush_NormalText}"/>
+        <Setter Property="ButtonBorder" Value="{DynamicResource AJut_Brush_ButtonBorder}"/>
+        <Setter Property="DotBrush" Value="{DynamicResource AJut_Brush_SymbolForeground}"/>
+        <Setter Property="CurrentDotBrush" Value="{DynamicResource AJut_Brush_PrimaryHighlight}"/>
+    </Style>
+
     <Style TargetType="{x:Type ajut_ctrls:MessageBoxPopover}">
         <Setter Property="FocusVisualStyle" Value="{DynamicResource AJut_Style_FocusVisual}"/>
         <Setter Property="OptionButtonStyle" Value="{DynamicResource AJut_Style_MessageBoxButton}"/>
