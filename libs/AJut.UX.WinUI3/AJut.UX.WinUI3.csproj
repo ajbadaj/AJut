@@ -98,6 +98,9 @@
     <Compile Update="Controls\BumpStack.cs">
       <DependentUpon>BumpStack.xaml</DependentUpon>
     </Compile>
+    <Compile Update="Controls\PageStack.cs">
+      <DependentUpon>PageStack.xaml</DependentUpon>
+    </Compile>
     <Compile Update="Controls\ToggleStrip.cs">
       <DependentUpon>ToggleStrip.xaml</DependentUpon>
     </Compile>

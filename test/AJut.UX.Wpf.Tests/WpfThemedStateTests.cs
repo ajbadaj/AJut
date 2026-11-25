@@ -32,7 +32,7 @@ namespace AJut.UX.Tests
             typeof(DockPanelAddRemoveToolbar), typeof(DockPanelShowHideToggleButton), typeof(DockWholeWindowDragStartControl),
             typeof(DockZone), typeof(DockZoneSelectedHeaderControl), typeof(DockZoneTabHeadersControl), typeof(EditableTextBlock),
             typeof(EnumComboBox), typeof(EnumToggleStrip), typeof(FlatTreeListControl), typeof(MessageBoxPopover),
-            typeof(NullableEditor), typeof(NumericEditor), typeof(PathSelectionControl), typeof(PopupMenuButton),
+            typeof(NullableEditor), typeof(NumericEditor), typeof(PageStack), typeof(PathSelectionControl), typeof(PopupMenuButton),
             typeof(PropertyGrid), typeof(PropertyGridListEditor), typeof(StackNavActiveContentPresenter),
             typeof(StackNavActiveDrawerPresenter), typeof(StackNavActiveHeaderPresenter), typeof(StackNavBusyWaitOverlay),
             typeof(StackNavDisplay), typeof(StackNavPopoverOverlay), typeof(Svg), typeof(ToggleStrip), typeof(ToggleSwitchButton),
@@ -48,9 +48,13 @@ namespace AJut.UX.Tests
         ];
 
         // AJut controls a user never focuses: a window has no focus visual of its own, the sibling split spanner has no
-        // look at all (no default style, nothing uses it), and the eyedropper's magnifier only shows during a pick from
-        // screen, in a window that never takes focus
-        private static readonly Type[] kAJutControlsNeverFocused = [typeof(DefaultDockTearoffWindow), typeof(DockDropSiblingSplitSpannerWidget), typeof(ScreenColorPickMagnifier)];
+        // look at all (no default style, nothing uses it), the eyedropper's magnifier only shows during a pick from screen,
+        // in a window that never takes focus, and a PageStack's dots leave the keyboard to the PageStack
+        private static readonly Type[] kAJutControlsNeverFocused =
+        [
+            typeof(DefaultDockTearoffWindow), typeof(DockDropSiblingSplitSpannerWidget), typeof(ScreenColorPickMagnifier),
+            typeof(PageStackDot),
+        ];
 
         // ===========[ PathSelectionControl ]===================================
         [TestMethod]

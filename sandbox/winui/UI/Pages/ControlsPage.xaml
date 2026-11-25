@@ -30,6 +30,7 @@
             <NavigationViewItem Content="GeometryButton (WinUI3 only)" Tag="AJutShowRoomWinUI.UI.Controls.GeometryButtonPage"/>
             <NavigationViewItem Content="GridSplitter (WinUI3 only)" Tag="AJutShowRoomWinUI.UI.Controls.GridSplitterPage"/>
             <NavigationViewItem Content="NumericEditor" Tag="AJutShowRoomWinUI.UI.Controls.NumericEditorPage"/>
+            <NavigationViewItem Content="PageStack" Tag="AJutShowRoomWinUI.UI.Controls.PageStackPage"/>
             <NavigationViewItem Content="PathSelectionControl" Tag="AJutShowRoomWinUI.UI.Controls.PathSelectionControlPage"/>
             <NavigationViewItem Content="PopupMenuButton" Tag="AJutShowRoomWinUI.UI.Controls.PopupMenuButtonPage"/>
             <NavigationViewItem Content="PropertyGrid" Tag="AJutShowRoomWinUI.UI.Controls.PropertyGridPage"/>

@@ -527,6 +527,26 @@ namespace AJut.UX.Theming
         /// <summary>A bump button's outline, which sets it apart from what scrolls under it</summary>
         public const string BumpStack_ButtonBorder = "AJut_BumpStack_ButtonBorder";
 
+        // ===========[ PageStack ]=============================================
+        // AppKit only, each aliased to what WinUI3's theme style gives the PageStack (WinUI3 sets them through style
+        // setters, not keys). The page buttons take BumpStack's choices; unthemed the dots are a secondary label with
+        // the current one a full label, themed the symbol color with the current one in the primary highlight.
+
+        /// <summary>A page button's fill, opaque, since the neighbor pages peek in under it</summary>
+        public const string PageStack_ButtonBackground = "AJut_PageStack_ButtonBackground";
+
+        /// <summary>A page button's chevron</summary>
+        public const string PageStack_ButtonForeground = "AJut_PageStack_ButtonForeground";
+
+        /// <summary>A page button's outline, which sets it apart from the page peeking in under it</summary>
+        public const string PageStack_ButtonBorder = "AJut_PageStack_ButtonBorder";
+
+        /// <summary>Every dot in the strip but the current page's</summary>
+        public const string PageStack_Dot = "AJut_PageStack_Dot";
+
+        /// <summary>The current page's dot</summary>
+        public const string PageStack_CurrentDot = "AJut_PageStack_CurrentDot";
+
         // ===========[ ThemedTextField ]=======================================
         // Shared keys, the stock keys WinUI3's TextBox reads
 
@@ -834,10 +854,17 @@ namespace AJut.UX.Theming
             ThemedColors.SetUnthemedDefault(PathSelection_FocusRimBright, Srgb(0x55FFFFFF));
             ThemedColors.SetUnthemedDefault(PathSelection_FocusRimDark, Srgb(0x88000000));
 
-            // 23. BumpStack, AppKit only
+            // 23. BumpStack and PageStack, AppKit only
             RegisterAppKitOnly(BumpStack_ButtonBackground, NSColor.WindowBackground, "AJut_Brush_ControlBackground");
             RegisterAppKitOnly(BumpStack_ButtonForeground, NSColor.SecondaryLabel, "AJut_Brush_SymbolForeground");
             RegisterAppKitOnly(BumpStack_ButtonBorder, NSColor.Separator, "AJut_Brush_ButtonBorder");
+
+            //     PageStack, AppKit only
+            RegisterAppKitOnly(PageStack_ButtonBackground, NSColor.WindowBackground, "AJut_Brush_ControlBackground");
+            RegisterAppKitOnly(PageStack_ButtonForeground, NSColor.SecondaryLabel, "AJut_Brush_SymbolForeground");
+            RegisterAppKitOnly(PageStack_ButtonBorder, NSColor.Separator, "AJut_Brush_ButtonBorder");
+            RegisterAppKitOnly(PageStack_Dot, NSColor.SecondaryLabel, "AJut_Brush_SymbolForeground");
+            RegisterAppKitOnly(PageStack_CurrentDot, NSColor.Label, "AJut_Brush_PrimaryHighlight");
 
             // 24. ThemedTextField, shared keys. Unthemed it is a Mac text field's colors: the text background, a separator
             //     outline that darkens under the pointer, and the keyboard focus color while editing.

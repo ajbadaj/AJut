@@ -60,6 +60,7 @@ namespace AJutShowRoomAppKit.UI
                 new ShowroomPageEntry("FlatTreeListControl", CreateFlatTreeListControlPage),
                 new ShowroomPageEntry("GeometryButton", CreateGeometryButtonPage),
                 new ShowroomPageEntry("NumericEditor", CreateNumericEditorPage),
+                new ShowroomPageEntry("PageStack", CreatePageStackPage),
                 new ShowroomPageEntry("PathSelectionControl", CreatePathSelectionControlPage),
                 new ShowroomPageEntry("PopupMenuButton", CreatePopupMenuButtonPage),
                 new ShowroomPageEntry("PropertyGrid", CreatePropertyGridPage),
@@ -106,6 +107,7 @@ namespace AJutShowRoomAppKit.UI
         private static NSView CreateToggleStripPage () => new Controls.ToggleStripPage();
         private static NSView CreateUIElementRepeaterPage () => new Controls.UIElementRepeaterPage();
         private static NSView CreateNumericEditorPage () => new Controls.NumericEditorPage();
+        private static NSView CreatePageStackPage () => new Controls.PageStackPage();
         private static NSView CreatePropertyGridPage () => new Controls.PropertyGridPage();
         private static NSView CreateColorEditIngressControlPage () => new Controls.ColorEditIngressControlPage();
         private static NSView CreateFlatTreeListControlPage () => new Controls.FlatTreeListControlPage();

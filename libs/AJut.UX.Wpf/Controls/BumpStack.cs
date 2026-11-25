@@ -13,7 +13,9 @@
     using DPUtils = AJut.UX.DPUtils<BumpStack>;
 
     // ===========[ BumpStack ]======================================================
-    // WinUI3 port: pending.
+    // A scroll container with a bump (repeat) button at each end instead of a scroll bar. WinUI3 and AppKit have their own
+    //  ports, which follow AJut.UX's BumpStackRules; this one predates those rules and keeps its own. PageStack is its
+    //  sibling for paging one child at a time.
     [ContentProperty(nameof(Children))]
     [DefaultProperty(nameof(Children))]
     [TemplatePart(Name = nameof(PART_ScrollItemsContainer), Type = typeof(ScrollViewer))]
