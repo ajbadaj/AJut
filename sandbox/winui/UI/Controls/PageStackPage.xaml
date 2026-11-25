@@ -17,9 +17,9 @@
 
             <StackPanel Spacing="12">
                 <StackPanel Spacing="4">
-                    <TextBlock Text="Horizontal, 20 pages, ShowDots with DotReach=3" FontSize="11" Opacity="0.7"/>
+                    <TextBlock Text="Horizontal, 20 pages, ShowDots with DotReach=3, ShowPageCount" FontSize="11" Opacity="0.7"/>
                     <ajut:PageStack x:Name="PageStackHorizontal" Width="420" Height="180" HorizontalAlignment="Left"
-                                    ShowDots="True" DotReach="3"
+                                    ShowDots="True" DotReach="3" ShowPageCount="True"
                                     BorderBrush="#80808080" BorderThickness="1"/>
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <TextBlock Text="SelectedIndex:" FontSize="11" Opacity="0.7"/>
@@ -27,9 +27,9 @@
                     </StackPanel>
                 </StackPanel>
                 <StackPanel Spacing="4">
-                    <TextBlock Text="Vertical, 6 pages, ShowDots, a slower TransitionDuration" FontSize="11" Opacity="0.7"/>
+                    <TextBlock Text="Vertical, 6 pages, ShowDots, ShowPageCount, a slower TransitionDuration" FontSize="11" Opacity="0.7"/>
                     <ajut:PageStack x:Name="PageStackVertical" Orientation="Vertical" Width="260" Height="240" HorizontalAlignment="Left"
-                                    ShowDots="True" TransitionDuration="0:0:0.6"
+                                    ShowDots="True" ShowPageCount="True" TransitionDuration="0:0:0.6"
                                     BorderBrush="#80808080" BorderThickness="1"/>
                 </StackPanel>
                 <StackPanel Spacing="4">

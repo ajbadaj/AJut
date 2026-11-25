@@ -54,8 +54,9 @@
     <!-- ===[ PageStackDot ]=== -->
     <!-- One dot in the strip. The transparent border around the dot is its hit area. The pointer states fade the whole dot,
          and the kind states pick its fill and size: the current page's dot takes CurrentDotBrush, and an edge dot (more
-         pages past the window) draws smaller and faded. The fill is set by the kind states alone, never a TemplateBinding,
-         since a TemplateBinding on a property a state sets overwrites the state. -->
+         pages past the window) draws smaller and faded, growing to full size, still faded, under the pointer. The fill is
+         set by the kind states alone, never a TemplateBinding, since a TemplateBinding on a property a state sets
+         overwrites the state. -->
     <Style TargetType="local:PageStackDot">
         <Setter Property="IsTabStop" Value="False"/>
         <Setter Property="Padding" Value="3"/>
@@ -86,30 +87,52 @@
                                     </VisualState.Setters>
                                 </VisualState>
                             </VisualStateGroup>
+                            <!-- The size and fade are storyboards rather than setters so the transition below eases them: a
+                                 dot grows or shrinks as it slides into or out of the window, or as the pointer comes over
+                                 an edge dot. The fill is a setter, since a brush can't ease. -->
                             <VisualStateGroup x:Name="KindStates">
+                                <VisualStateGroup.Transitions>
+                                    <VisualTransition GeneratedDuration="0:0:0.15"/>
+                                </VisualStateGroup.Transitions>
                                 <VisualState x:Name="Page">
                                     <VisualState.Setters>
                                         <Setter Target="DotShape.Fill" Value="{Binding Path=DotBrush, RelativeSource={RelativeSource TemplatedParent}}"/>
-                                        <Setter Target="DotShape.Opacity" Value="1.0"/>
-                                        <Setter Target="DotScale.ScaleX" Value="1.0"/>
-                                        <Setter Target="DotScale.ScaleY" Value="1.0"/>
                                     </VisualState.Setters>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="DotScale" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0"/>
+                                        <DoubleAnimation Storyboard.TargetName="DotScale" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0"/>
+                                        <DoubleAnimation Storyboard.TargetName="DotShape" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0"/>
+                                    </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="Current">
                                     <VisualState.Setters>
                                         <Setter Target="DotShape.Fill" Value="{Binding Path=CurrentDotBrush, RelativeSource={RelativeSource TemplatedParent}}"/>
-                                        <Setter Target="DotShape.Opacity" Value="1.0"/>
-                                        <Setter Target="DotScale.ScaleX" Value="1.0"/>
-                                        <Setter Target="DotScale.ScaleY" Value="1.0"/>
                                     </VisualState.Setters>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="DotScale" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0"/>
+                                        <DoubleAnimation Storyboard.TargetName="DotScale" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0"/>
+                                        <DoubleAnimation Storyboard.TargetName="DotShape" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0"/>
+                                    </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="Edge">
                                     <VisualState.Setters>
                                         <Setter Target="DotShape.Fill" Value="{Binding Path=DotBrush, RelativeSource={RelativeSource TemplatedParent}}"/>
-                                        <Setter Target="DotShape.Opacity" Value="0.45"/>
-                                        <Setter Target="DotScale.ScaleX" Value="0.6"/>
-                                        <Setter Target="DotScale.ScaleY" Value="0.6"/>
                                     </VisualState.Setters>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="DotScale" Storyboard.TargetProperty="ScaleX" To="0.6" Duration="0"/>
+                                        <DoubleAnimation Storyboard.TargetName="DotScale" Storyboard.TargetProperty="ScaleY" To="0.6" Duration="0"/>
+                                        <DoubleAnimation Storyboard.TargetName="DotShape" Storyboard.TargetProperty="Opacity" To="0.45" Duration="0"/>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="EdgePointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="DotShape.Fill" Value="{Binding Path=DotBrush, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                    </VisualState.Setters>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="DotScale" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0"/>
+                                        <DoubleAnimation Storyboard.TargetName="DotScale" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0"/>
+                                        <DoubleAnimation Storyboard.TargetName="DotShape" Storyboard.TargetProperty="Opacity" To="0.45" Duration="0"/>
+                                    </Storyboard>
                                 </VisualState>
                             </VisualStateGroup>
                         </VisualStateManager.VisualStateGroups>
@@ -158,12 +181,15 @@
                                         <Setter Target="PART_ForwardButton.VerticalAlignment" Value="Stretch"/>
                                         <Setter Target="BackGlyph.Glyph" Value="&#xE76B;"/>
                                         <Setter Target="ForwardGlyph.Glyph" Value="&#xE76C;"/>
-                                        <Setter Target="PART_DotsPanel.(Grid.Row)" Value="1"/>
-                                        <Setter Target="PART_DotsPanel.(Grid.Column)" Value="0"/>
+                                        <Setter Target="PART_DotsHost.(Grid.Row)" Value="1"/>
+                                        <Setter Target="PART_DotsHost.(Grid.Column)" Value="0"/>
+                                        <Setter Target="PART_DotsHost.HorizontalAlignment" Value="Center"/>
+                                        <Setter Target="PART_DotsHost.VerticalAlignment" Value="Top"/>
                                         <Setter Target="PART_DotsPanel.Orientation" Value="Horizontal"/>
-                                        <Setter Target="PART_DotsPanel.HorizontalAlignment" Value="Center"/>
-                                        <Setter Target="PART_DotsPanel.VerticalAlignment" Value="Top"/>
-                                        <Setter Target="PART_DotsPanel.Margin" Value="0,4,0,0"/>
+                                        <Setter Target="DotStripLayout.Orientation" Value="Horizontal"/>
+                                        <Setter Target="PART_PageCountText.Margin" Value="8,0,0,0"/>
+                                        <Setter Target="PART_PageCountText.HorizontalAlignment" Value="Left"/>
+                                        <Setter Target="PART_PageCountText.VerticalAlignment" Value="Center"/>
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="Vertical">
@@ -174,12 +200,15 @@
                                         <Setter Target="PART_ForwardButton.VerticalAlignment" Value="Bottom"/>
                                         <Setter Target="BackGlyph.Glyph" Value="&#xE70E;"/>
                                         <Setter Target="ForwardGlyph.Glyph" Value="&#xE70D;"/>
-                                        <Setter Target="PART_DotsPanel.(Grid.Row)" Value="0"/>
-                                        <Setter Target="PART_DotsPanel.(Grid.Column)" Value="1"/>
+                                        <Setter Target="PART_DotsHost.(Grid.Row)" Value="0"/>
+                                        <Setter Target="PART_DotsHost.(Grid.Column)" Value="1"/>
+                                        <Setter Target="PART_DotsHost.HorizontalAlignment" Value="Left"/>
+                                        <Setter Target="PART_DotsHost.VerticalAlignment" Value="Center"/>
                                         <Setter Target="PART_DotsPanel.Orientation" Value="Vertical"/>
-                                        <Setter Target="PART_DotsPanel.HorizontalAlignment" Value="Left"/>
-                                        <Setter Target="PART_DotsPanel.VerticalAlignment" Value="Center"/>
-                                        <Setter Target="PART_DotsPanel.Margin" Value="4,0,0,0"/>
+                                        <Setter Target="DotStripLayout.Orientation" Value="Vertical"/>
+                                        <Setter Target="PART_PageCountText.Margin" Value="0,8,0,0"/>
+                                        <Setter Target="PART_PageCountText.HorizontalAlignment" Value="Center"/>
+                                        <Setter Target="PART_PageCountText.VerticalAlignment" Value="Top"/>
                                     </VisualState.Setters>
                                 </VisualState>
                             </VisualStateGroup>
@@ -225,12 +254,31 @@
                                 </Button>
                             </Grid>
 
-                            <StackPanel x:Name="PART_DotsPanel"
-                                        Grid.Row="1"
-                                        Orientation="Horizontal"
-                                        HorizontalAlignment="Center"
-                                        Margin="0,4,0,0"
-                                        Visibility="Collapsed"/>
+                            <!-- The dot strip: the dots, and the page count after them when ShowPageCount is on, below the
+                                 pages or beside them when vertical. The host takes DotStripPadding. The canvas is sized to
+                                 the strip's dots and clipped to them from code, and the panel of dots slides along it under
+                                 a transform when the page changes, holding the dots sliding out of view and in. A canvas,
+                                 since it never clips or constrains the panel by layout. -->
+                            <Border x:Name="PART_DotsHost"
+                                    Grid.Row="1"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Top"
+                                    Visibility="Collapsed">
+                                <StackPanel x:Name="DotStripLayout" Orientation="Horizontal">
+                                    <Canvas x:Name="PART_DotsClip">
+                                        <StackPanel x:Name="PART_DotsPanel" Orientation="Horizontal">
+                                            <StackPanel.RenderTransform>
+                                                <TranslateTransform/>
+                                            </StackPanel.RenderTransform>
+                                        </StackPanel>
+                                    </Canvas>
+                                    <TextBlock x:Name="PART_PageCountText"
+                                               Margin="8,0,0,0"
+                                               VerticalAlignment="Center"
+                                               TextAlignment="Center"
+                                               Visibility="Collapsed"/>
+                                </StackPanel>
+                            </Border>
                         </Grid>
                     </Border>
                 </ControlTemplate>

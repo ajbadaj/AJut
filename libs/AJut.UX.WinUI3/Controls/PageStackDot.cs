@@ -2,6 +2,7 @@ namespace AJut.UX.Controls
 {
     using Microsoft.UI.Xaml;
     using Microsoft.UI.Xaml.Controls;
+    using Microsoft.UI.Xaml.Input;
     using Microsoft.UI.Xaml.Media;
     using DPUtils = AJut.UX.DPUtils<PageStackDot>;
 
@@ -9,7 +10,9 @@ namespace AJut.UX.Controls
     // One dot in a PageStack's dot strip. The PageStack makes, reuses and fills these: which page a dot goes to, what kind
     // it is (a page, the current page, or a faded edge dot standing for more pages past the window), and the brushes and
     // size it draws with, which the PageStack passes on from its own properties. How each kind looks is the KindStates
-    // group in PageStack.xaml.
+    // group in PageStack.xaml. An edge dot grows to full size under the pointer, staying faded, so it reads as something
+    // to click; the kind states take the pointer into account for that, since the stock pointer states can't tell an
+    // edge dot from any other.
     /// <summary>
     /// One dot in a <see cref="PageStack"/>'s dot strip. Clicking it takes the stack to <see cref="PageIndex"/>. Made and
     /// filled by the PageStack; not meant to be used on its own.
@@ -19,6 +22,9 @@ namespace AJut.UX.Controls
         private const string kKindStatePage = "Page";
         private const string kKindStateCurrent = "Current";
         private const string kKindStateEdge = "Edge";
+        private const string kKindStateEdgePointerOver = "EdgePointerOver";
+
+        private bool m_isPointerOver;
 
         // ===========[ Setup/Construction/Teardown ]===========================
         public PageStackDot ()
@@ -30,6 +36,31 @@ namespace AJut.UX.Controls
         {
             base.OnApplyTemplate();
             this.ApplyKindState(useTransitions: false);
+        }
+
+        // ===========[ Events ]================================================
+        protected override void OnPointerEntered (PointerRoutedEventArgs e)
+        {
+            base.OnPointerEntered(e);
+            this.SetPointerOver(true);
+        }
+
+        protected override void OnPointerExited (PointerRoutedEventArgs e)
+        {
+            base.OnPointerExited(e);
+            this.SetPointerOver(false);
+        }
+
+        protected override void OnPointerCanceled (PointerRoutedEventArgs e)
+        {
+            base.OnPointerCanceled(e);
+            this.SetPointerOver(false);
+        }
+
+        protected override void OnPointerCaptureLost (PointerRoutedEventArgs e)
+        {
+            base.OnPointerCaptureLost(e);
+            this.SetPointerOver(false);
         }
 
         // ===========[ Dependency Properties ]=================================
@@ -85,7 +116,7 @@ namespace AJut.UX.Controls
 
                 case ePageStackDotKind.BackEdge:
                 case ePageStackDotKind.ForwardEdge:
-                    state = kKindStateEdge;
+                    state = m_isPointerOver ? kKindStateEdgePointerOver : kKindStateEdge;
                     break;
 
                 default:
@@ -94,6 +125,15 @@ namespace AJut.UX.Controls
             }
 
             VisualStateManager.GoToState(this, state, useTransitions);
+        }
+
+        private void SetPointerOver (bool isPointerOver)
+        {
+            if (m_isPointerOver != isPointerOver)
+            {
+                m_isPointerOver = isPointerOver;
+                this.ApplyKindState(useTransitions: true);
+            }
         }
     }
 }

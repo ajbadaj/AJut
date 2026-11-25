@@ -109,6 +109,30 @@ namespace AJut.UX.Tests
             CollectionAssert.AreEqual(new[] { 11, 17, 23 }, visited);
         }
 
+        [TestMethod]
+        public void FirstAndLastDotPage_IncludeTheEdgeDots ()
+        {
+            PageStackDotWindow middle = PageStackDotWindow.For(40, 20, 5);
+            Assert.AreEqual(14, middle.FirstDotPage);
+            Assert.AreEqual(26, middle.LastDotPage);
+
+            PageStackDotWindow start = PageStackDotWindow.For(40, 2, 5);
+            Assert.AreEqual(0, start.FirstDotPage, "No back edge dot at the start");
+            Assert.AreEqual(11, start.LastDotPage);
+        }
+
+        [TestMethod]
+        public void KindOf_PagesOutsideTheWindow_LookLikeTheEdgeOnTheirSide ()
+        {
+            // A strip sliding to a new window draws the dots it slides out of view this way
+            PageStackDotWindow window = PageStackDotWindow.For(40, 20, 5);
+            Assert.AreEqual(ePageStackDotKind.Current, window.KindOf(20));
+            Assert.AreEqual(ePageStackDotKind.Page, window.KindOf(15));
+            Assert.AreEqual(ePageStackDotKind.BackEdge, window.KindOf(14));
+            Assert.AreEqual(ePageStackDotKind.BackEdge, window.KindOf(9));
+            Assert.AreEqual(ePageStackDotKind.ForwardEdge, window.KindOf(31));
+        }
+
         private static string[] Describe (PageStackDotWindow window)
         {
             return Enumerable.Range(0, window.DotCount)

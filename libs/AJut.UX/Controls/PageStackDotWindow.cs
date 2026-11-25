@@ -40,6 +40,16 @@ namespace AJut.UX.Controls
         /// <summary>How many dots the strip shows: the window's, and its edge dots</summary>
         public int DotCount => (this.LastPage - this.FirstPage + 1) + (this.HasBackEdgeDot ? 1 : 0) + (this.HasForwardEdgeDot ? 1 : 0);
 
+        /// <summary>
+        /// The page the strip's first dot stands for: the back edge dot's when there is one. The dots stand for a run of
+        /// pages with no gaps, the edge dots being the pages just past the window, so this and <see cref="LastDotPage"/>
+        /// say every page the strip shows.
+        /// </summary>
+        public int FirstDotPage => this.HasBackEdgeDot ? this.FirstPage - 1 : this.FirstPage;
+
+        /// <summary>The page the strip's last dot stands for: the forward edge dot's when there is one</summary>
+        public int LastDotPage => this.HasForwardEdgeDot ? this.LastPage + 1 : this.LastPage;
+
         /// <summary>The dot at <paramref name="dotIndex"/>, counting from the back edge dot when there is one</summary>
         public Dot DotAt (int dotIndex)
         {
@@ -48,23 +58,28 @@ namespace AJut.UX.Controls
                 throw new ArgumentOutOfRangeException(nameof(dotIndex), dotIndex, $"The strip has {this.DotCount} dots");
             }
 
-            if (this.HasBackEdgeDot)
-            {
-                if (dotIndex == 0)
-                {
-                    return new Dot(this.FirstPage - 1, ePageStackDotKind.BackEdge);
-                }
+            int page = this.FirstDotPage + dotIndex;
+            return new Dot(page, this.KindOf(page));
+        }
 
-                --dotIndex;
+        /// <summary>
+        /// How the dot for <paramref name="pageIndex"/> looks against this window, whether or not the strip shows it: any
+        /// page before the window looks like the back edge dot, and any after it like the forward edge dot. A strip
+        /// sliding from one window to the next draws the dots it is sliding out of view this way.
+        /// </summary>
+        public ePageStackDotKind KindOf (int pageIndex)
+        {
+            if (pageIndex == this.CurrentPage)
+            {
+                return ePageStackDotKind.Current;
             }
 
-            int page = this.FirstPage + dotIndex;
-            if (page > this.LastPage)
+            if (pageIndex < this.FirstPage)
             {
-                return new Dot(this.LastPage + 1, ePageStackDotKind.ForwardEdge);
+                return ePageStackDotKind.BackEdge;
             }
 
-            return new Dot(page, page == this.CurrentPage ? ePageStackDotKind.Current : ePageStackDotKind.Page);
+            return pageIndex > this.LastPage ? ePageStackDotKind.ForwardEdge : ePageStackDotKind.Page;
         }
 
         // ===========[ Subclasses/structs ]====================================

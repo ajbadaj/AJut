@@ -39,6 +39,23 @@ namespace AJut.UX.Tests
         }
 
         [TestMethod]
+        public void PageCount_ShowsOnlyWithMoreThanOnePage ()
+        {
+            Assert.IsTrue(PageStackRules.IsPageCountShown(showPageCount: true, pageCount: 2));
+            Assert.IsFalse(PageStackRules.IsPageCountShown(true, 1));
+            Assert.IsFalse(PageStackRules.IsPageCountShown(false, 7));
+        }
+
+        [TestMethod]
+        public void PageCountText_CountsFromOne_AndStacksItsWordsWhenVertical ()
+        {
+            Assert.AreEqual("3 of 7", PageStackRules.PageCountText(PageStackRules.kDefaultPageCountFormat, effectiveSelectedIndex: 2, pageCount: 7, isVertical: false));
+            Assert.AreEqual("3\nof\n7", PageStackRules.PageCountText("{0} of {1}", 2, 7, isVertical: true));
+            Assert.AreEqual("3/7", PageStackRules.PageCountText("{0}/{1}", 2, 7, isVertical: true), "A format with no spaces stays on one line");
+            Assert.AreEqual("1 of 4", PageStackRules.PageCountText(null, 0, 4, false), "No format is the default one");
+        }
+
+        [TestMethod]
         public void SelectedIndexAfterInsert_KeepsShowingTheSamePage ()
         {
             Assert.AreEqual(4, PageStackRules.SelectedIndexAfterInsert(selectedIndex: 2, oldPageCount: 5, insertedAt: 0, insertedCount: 2));
@@ -127,6 +144,33 @@ namespace AJut.UX.Tests
             Assert.AreEqual(3.0, PageStackRules.TransitionPosition(1.0, 3.0, TimeSpan.FromMilliseconds(250), duration));
             Assert.IsTrue(PageStackRules.IsTransitionDone(TimeSpan.FromMilliseconds(200), duration));
             Assert.IsFalse(PageStackRules.IsTransitionDone(TimeSpan.FromMilliseconds(199), duration));
+        }
+
+        [TestMethod]
+        public void ShouldSlideDots_OnlyWhileTheTwoStripsShareADot ()
+        {
+            Assert.IsTrue(PageStackRules.ShouldSlideDots(fromFirstDotPage: 14.0, toFirstDotPage: 17, toDotCount: 13), "A dot three away slides three");
+            Assert.IsTrue(PageStackRules.ShouldSlideDots(14.0, 2, 13));
+            Assert.IsFalse(PageStackRules.ShouldSlideDots(14.0, 27, 13), "A strip's length away shares nothing");
+            Assert.IsFalse(PageStackRules.ShouldSlideDots(0.0, 28, 12), "End from the start jumps");
+        }
+
+        [TestMethod]
+        public void DotSlideSpan_HoldsBothStripsDots ()
+        {
+            // Clicking the dot three right of center: the dots leaving on the left and arriving on the right are both held
+            Assert.AreEqual(new PageStackRules.DotSpan(14, 29), PageStackRules.DotSlideSpan(fromFirstDotPage: 14.0, toFirstDotPage: 17, toDotCount: 13, pageCount: 40));
+            Assert.AreEqual(16, PageStackRules.DotSlideSpan(14.0, 17, 13, 40).Count);
+
+            // Mid slide, between two pages, both neighbors are held
+            Assert.AreEqual(new PageStackRules.DotSpan(15, 30), PageStackRules.DotSlideSpan(15.4, 18, 13, 40));
+        }
+
+        [TestMethod]
+        public void DotSlideSpan_IsKeptInsideThePages ()
+        {
+            Assert.AreEqual(new PageStackRules.DotSpan(0, 11), PageStackRules.DotSlideSpan(0.0, 0, 12, 40));
+            Assert.AreEqual(new PageStackRules.DotSpan(26, 39), PageStackRules.DotSlideSpan(26.0, 28, 12, 40));
         }
 
         [TestMethod]

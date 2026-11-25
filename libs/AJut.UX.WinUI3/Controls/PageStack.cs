@@ -32,12 +32,21 @@ namespace AJut.UX.Controls
     // same shared position math. The stack subscribes only while a transition runs, and unsubscribes when it lands or the
     // stack unloads: Rendering is static, so a subscription left behind would pin the stack.
     //
+    // The dot strip slides with the pages: a pick turns its dot current at once, and the strip then shifts by however many
+    // dots the pick was away, on the same clock and easing as the page transition, so the current dot settles back where
+    // the window puts it. While it slides the strip holds the dots of both windows, so the ones leaving slide out of view
+    // rather than vanish. Each dot stays with its page through a slide, so only a dot whose kind changes animates its
+    // size. A jump too far for the two strips to share a dot takes its new place at once.
+    //
     // Template parts:
     //   PART_PagesClip     - the area the pages and page buttons share, clipped to its bounds
     //   PART_PageViewport  - the shown page's area, inset from both ends; holds the page hosts
     //   PART_BackButton    - left/top page button
     //   PART_ForwardButton - right/bottom page button
-    //   PART_DotsPanel     - holds the dots
+    //   PART_DotsHost      - the dot strip, padded by DotStripPadding
+    //   PART_DotsClip      - a canvas sized and clipped to the strip's dots
+    //   PART_DotsPanel     - holds the dots, and slides along the canvas
+    //   PART_PageCountText - the page count ("3 of 7"), after the dots
     /// <summary>
     /// Shows one of its children at a time as a page, with a page button at each end and an optional dot strip, and runs an
     /// animated transition to whichever page is picked. The neighbor pages peek in, faded, past the page buttons.
@@ -47,7 +56,10 @@ namespace AJut.UX.Controls
     [TemplatePart(Name = nameof(PART_PageViewport), Type = typeof(Grid))]
     [TemplatePart(Name = nameof(PART_BackButton), Type = typeof(Button))]
     [TemplatePart(Name = nameof(PART_ForwardButton), Type = typeof(Button))]
+    [TemplatePart(Name = nameof(PART_DotsHost), Type = typeof(Border))]
+    [TemplatePart(Name = nameof(PART_DotsClip), Type = typeof(Canvas))]
     [TemplatePart(Name = nameof(PART_DotsPanel), Type = typeof(StackPanel))]
+    [TemplatePart(Name = nameof(PART_PageCountText), Type = typeof(TextBlock))]
     [TemplateVisualState(GroupName = "OrientationStates", Name = kOrientationStateHorizontal)]
     [TemplateVisualState(GroupName = "OrientationStates", Name = kOrientationStateVertical)]
     public class PageStack : Control
@@ -55,6 +67,9 @@ namespace AJut.UX.Controls
         private const string kOrientationStateHorizontal = "Horizontal";
         private const string kOrientationStateVertical = "Vertical";
         private const double kFallbackButtonLength = 24.0;
+        private const double kDefaultDotStripGap = 4.0;
+        private const double kDefaultPageGap = 5.0;
+        private const double kFallbackDotPadding = 3.0;
 
         private readonly List<ContentControl> m_pageHosts = new List<ContentControl>();
         private readonly List<PageStackDot> m_dots = new List<PageStackDot>();
@@ -65,6 +80,12 @@ namespace AJut.UX.Controls
         private double m_transitionTo;
         private long m_transitionStartTimestamp;
         private bool m_isTransitioning;
+        private int m_dotSpanFirstPage;
+        private double m_dotCellLength;
+        private double m_dotScroll;
+        private double m_dotScrollFrom;
+        private int m_dotScrollTo;
+        private bool m_isDotSliding;
 
         // ===========[ Setup/Construction/Teardown ]===========================
         public PageStack ()
@@ -108,7 +129,10 @@ namespace AJut.UX.Controls
             this.PART_PageViewport = this.GetTemplateChild(nameof(PART_PageViewport)) as Grid;
             this.PART_BackButton = this.GetTemplateChild(nameof(PART_BackButton)) as Button;
             this.PART_ForwardButton = this.GetTemplateChild(nameof(PART_ForwardButton)) as Button;
+            this.PART_DotsHost = this.GetTemplateChild(nameof(PART_DotsHost)) as Border;
+            this.PART_DotsClip = this.GetTemplateChild(nameof(PART_DotsClip)) as Canvas;
             this.PART_DotsPanel = this.GetTemplateChild(nameof(PART_DotsPanel)) as StackPanel;
+            this.PART_PageCountText = this.GetTemplateChild(nameof(PART_PageCountText)) as TextBlock;
 
             // 3. Wire them, and put the page hosts and dots back in
             if (this.PART_PagesClip != null)
@@ -238,9 +262,16 @@ namespace AJut.UX.Controls
         {
             TimeSpan elapsed = Stopwatch.GetElapsedTime(m_transitionStartTimestamp);
             m_position = PageStackRules.TransitionPosition(m_transitionFrom, m_transitionTo, elapsed, this.TransitionDuration);
+            if (m_isDotSliding)
+            {
+                m_dotScroll = PageStackRules.TransitionPosition(m_dotScrollFrom, m_dotScrollTo, elapsed, this.TransitionDuration);
+                this.ApplyDotScroll();
+            }
+
             if (PageStackRules.IsTransitionDone(elapsed, this.TransitionDuration))
             {
                 this.StopTransition();
+                this.LandDotSlide();
             }
 
             this.RefreshPageLayout();
@@ -312,7 +343,7 @@ namespace AJut.UX.Controls
             }
 
             this.BeginTransitionTo(this.EffectiveSelectedIndex);
-            this.RefreshButtonsAndDots();
+            this.RefreshButtonsAndDots(slideDots: m_isTransitioning);
         }
 
         public static readonly DependencyProperty ShowDotsProperty = DPUtils.Register(_ => _.ShowDots, false, (d, e) => d.RefreshButtonsAndDots());
@@ -425,6 +456,47 @@ namespace AJut.UX.Controls
             set => this.SetValue(DotSizeProperty, value);
         }
 
+        public static readonly DependencyProperty DotStripPaddingProperty = DPUtils.Register(_ => _.DotStripPadding, new Thickness(double.NaN), (d, e) => d.RefreshButtonsAndDots());
+        /// <summary>
+        /// The space around the dot strip. Left unset, it is 4 on the side facing the pages and nothing elsewhere: the top
+        /// when horizontal, the left when vertical.
+        /// </summary>
+        public Thickness DotStripPadding
+        {
+            get => (Thickness)this.GetValue(DotStripPaddingProperty);
+            set => this.SetValue(DotStripPaddingProperty, value);
+        }
+
+        public static readonly DependencyProperty ShowPageCountProperty = DPUtils.Register(_ => _.ShowPageCount, false, (d, e) => d.RefreshButtonsAndDots());
+        /// <summary>Whether the page count ("3 of 7") shows after the dots, or on its own where the dots would be when they are off</summary>
+        public bool ShowPageCount
+        {
+            get => (bool)this.GetValue(ShowPageCountProperty);
+            set => this.SetValue(ShowPageCountProperty, value);
+        }
+
+        public static readonly DependencyProperty PageCountFormatProperty = DPUtils.Register(_ => _.PageCountFormat, PageStackRules.kDefaultPageCountFormat, (d, e) => d.RefreshButtonsAndDots());
+        /// <summary>
+        /// The page count's text, with {0} for the shown page's number from one and {1} for the page count: "{0} of {1}"
+        /// by default. When vertical, each word goes on a line of its own.
+        /// </summary>
+        public string PageCountFormat
+        {
+            get => (string)this.GetValue(PageCountFormatProperty);
+            set => this.SetValue(PageCountFormatProperty, value);
+        }
+
+        public static readonly DependencyProperty PagePaddingProperty = DPUtils.Register(_ => _.PagePadding, new Thickness(double.NaN), (d, e) => d.RefreshPageGeometry());
+        /// <summary>
+        /// The space around the pages, inside the page buttons. Left unset, it is 5 on the side the pages would otherwise
+        /// crowd and nothing elsewhere: the top when horizontal, the left when vertical.
+        /// </summary>
+        public Thickness PagePadding
+        {
+            get => (Thickness)this.GetValue(PagePaddingProperty);
+            set => this.SetValue(PagePaddingProperty, value);
+        }
+
         // ===========[ Properties ]============================================
         /// <summary>The pages, in order. In XAML, nest them directly inside the PageStack.</summary>
         public ObservableCollection<UIElement> Children { get; }
@@ -433,7 +505,10 @@ namespace AJut.UX.Controls
         private Grid PART_PageViewport { get; set; }
         private Button PART_BackButton { get; set; }
         private Button PART_ForwardButton { get; set; }
+        private Border PART_DotsHost { get; set; }
+        private Canvas PART_DotsClip { get; set; }
         private StackPanel PART_DotsPanel { get; set; }
+        private TextBlock PART_PageCountText { get; set; }
 
         private int EffectiveSelectedIndex => PageStackRules.EffectiveSelectedIndex(this.SelectedIndex, this.Children.Count);
 
@@ -455,6 +530,7 @@ namespace AJut.UX.Controls
         {
             this.ApplyOrientation(useTransitions: false);
             this.RefreshPageGeometry();
+            this.RefreshButtonsAndDots();
         }
 
         private void ApplyOrientation (bool useTransitions)
@@ -525,6 +601,7 @@ namespace AJut.UX.Controls
         private void JumpTo (int pageIndex)
         {
             this.StopTransition();
+            this.LandDotSlide();
             m_position = Math.Max(0, pageIndex);
             this.RefreshPageLayout();
         }
@@ -556,7 +633,10 @@ namespace AJut.UX.Controls
             }
 
             double clearance = PageStackRules.PageClearance(areButtonsShown, this.MeasureButtonLength(), this.PagePeek, this.PageSpacing);
-            Thickness margin = m_isHorizontal ? new Thickness(clearance, 0, clearance, 0) : new Thickness(0, clearance, 0, clearance);
+            Thickness padding = EffectivePadding(this.PagePadding, m_isHorizontal, kDefaultPageGap);
+            Thickness margin = m_isHorizontal
+                ? new Thickness(clearance + padding.Left, padding.Top, clearance + padding.Right, padding.Bottom)
+                : new Thickness(padding.Left, clearance + padding.Top, padding.Right, clearance + padding.Bottom);
             if (!this.PART_PageViewport.Margin.Equals(margin))
             {
                 this.PART_PageViewport.Margin = margin;
@@ -593,7 +673,9 @@ namespace AJut.UX.Controls
             }
         }
 
-        private void RefreshButtonsAndDots ()
+        // Enables the page buttons for the shown page, and matches the dot strip to it. With slideDots, the strip slides to
+        //  its new place on the running transition's clock rather than taking it at once.
+        private void RefreshButtonsAndDots (bool slideDots = false)
         {
             int pageCount = this.Children.Count;
             int shownPage = this.EffectiveSelectedIndex;
@@ -607,45 +689,184 @@ namespace AJut.UX.Controls
                 this.PART_ForwardButton.IsEnabled = PageStackRules.CanGoForward(shownPage, pageCount);
             }
 
-            if (this.PART_DotsPanel == null)
+            if ((this.PART_DotsHost == null) || (this.PART_DotsClip == null) || (this.PART_DotsPanel == null))
             {
                 return;
             }
 
             bool areDotsShown = PageStackRules.AreDotsShown(this.ShowDots, pageCount);
-            this.PART_DotsPanel.Visibility = areDotsShown ? Visibility.Visible : Visibility.Collapsed;
-            PageStackDotWindow window = areDotsShown ? PageStackDotWindow.For(pageCount, shownPage, this.DotReach) : default;
-            int dotCount = areDotsShown ? window.DotCount : 0;
-
-            // 1. Match the dot count, reusing the dots there are
-            while (m_dots.Count > dotCount)
+            bool isPageCountShown = PageStackRules.IsPageCountShown(this.ShowPageCount, pageCount);
+            this.PART_DotsHost.Visibility = (areDotsShown || isPageCountShown) ? Visibility.Visible : Visibility.Collapsed;
+            this.PART_DotsHost.Padding = EffectivePadding(this.DotStripPadding, m_isHorizontal, kDefaultDotStripGap);
+            this.PART_DotsClip.Visibility = areDotsShown ? Visibility.Visible : Visibility.Collapsed;
+            if (this.PART_PageCountText != null)
             {
-                PageStackDot extra = m_dots[m_dots.Count - 1];
-                extra.Click -= this.OnDotClick;
-                m_dots.RemoveAt(m_dots.Count - 1);
-                this.PART_DotsPanel.Children.Remove(extra);
+                this.PART_PageCountText.Visibility = isPageCountShown ? Visibility.Visible : Visibility.Collapsed;
+                this.PART_PageCountText.Text = isPageCountShown
+                    ? PageStackRules.PageCountText(this.PageCountFormat, shownPage, pageCount, isVertical: !m_isHorizontal)
+                    : String.Empty;
             }
 
-            while (m_dots.Count < dotCount)
+            if (!areDotsShown)
             {
-                var dot = new PageStackDot();
-                dot.Click += this.OnDotClick;
-                m_dots.Add(dot);
-                this.PART_DotsPanel.Children.Add(dot);
+                m_isDotSliding = false;
+                this.SyncDotSpan(new PageStackRules.DotSpan(0, -1));
+                return;
             }
 
-            // 2. Fill each for the page it stands for
-            for (int i = 0; i < dotCount; ++i)
+            // 1. Where the strip is going, and whether it slides there or takes its place at once
+            PageStackDotWindow window = PageStackDotWindow.For(pageCount, shownPage, this.DotReach);
+            int toFirstDotPage = window.FirstDotPage;
+            m_isDotSliding = slideDots && PageStackRules.ShouldSlideDots(m_dotScroll, toFirstDotPage, window.DotCount);
+            if (!m_isDotSliding)
             {
-                PageStackDotWindow.Dot info = window.DotAt(i);
+                m_dotScroll = toFirstDotPage;
+            }
+
+            m_dotScrollFrom = m_dotScroll;
+            m_dotScrollTo = toFirstDotPage;
+
+            // 2. The dots it holds: the new window's, and while sliding the old one's too
+            this.SyncDotSpan(
+                m_isDotSliding
+                    ? PageStackRules.DotSlideSpan(m_dotScroll, toFirstDotPage, window.DotCount, pageCount)
+                    : new PageStackRules.DotSpan(window.FirstDotPage, window.LastDotPage)
+            );
+
+            // 3. Fill each for its page, against the new window, so a dot sliding out of view already looks like an edge dot
+            for (int i = 0; i < m_dots.Count; ++i)
+            {
+                int page = m_dotSpanFirstPage + i;
                 PageStackDot dot = m_dots[i];
-                dot.PageIndex = info.PageIndex;
-                dot.Kind = info.Kind;
+                dot.PageIndex = page;
+                dot.Kind = window.KindOf(page);
                 dot.DotBrush = this.DotBrush;
                 dot.CurrentDotBrush = this.CurrentDotBrush;
                 dot.DotSize = this.DotSize;
-                AutomationProperties.SetName(dot, $"Page {info.PageIndex + 1} of {pageCount}");
+                AutomationProperties.SetName(dot, $"Page {page + 1} of {pageCount}");
             }
+
+            // 4. Size and clip the canvas to the new window's dots, and place the strip along it
+            m_dotCellLength = this.MeasureDotCellLength();
+            double stripLength = window.DotCount * m_dotCellLength;
+            double width = m_isHorizontal ? stripLength : m_dotCellLength;
+            double height = m_isHorizontal ? m_dotCellLength : stripLength;
+            if ((this.PART_DotsClip.Width != width) || (this.PART_DotsClip.Height != height))
+            {
+                this.PART_DotsClip.Width = width;
+                this.PART_DotsClip.Height = height;
+                this.PART_DotsClip.Clip = new RectangleGeometry { Rect = new Rect(0.0, 0.0, width, height) };
+            }
+
+            this.ApplyDotScroll();
+        }
+
+        // Keeps a dot for each page of the span, in order. The span only ever grows or shrinks at its ends, so each dot
+        //  stays with its page and only the dots at the ends come and go.
+        private void SyncDotSpan (PageStackRules.DotSpan span)
+        {
+            int currentLastPage = m_dotSpanFirstPage + m_dots.Count - 1;
+            if ((span.Count == 0) || (span.LastPage < m_dotSpanFirstPage) || (span.FirstPage > currentLastPage))
+            {
+                while (m_dots.Count > 0)
+                {
+                    this.RemoveDotAt(m_dots.Count - 1);
+                }
+            }
+
+            if (m_dots.Count == 0)
+            {
+                m_dotSpanFirstPage = span.FirstPage;
+            }
+
+            // 1. Drop the dots past either end of the span
+            while ((m_dots.Count > 0) && (m_dotSpanFirstPage < span.FirstPage))
+            {
+                this.RemoveDotAt(0);
+                ++m_dotSpanFirstPage;
+            }
+
+            while ((m_dots.Count > 0) && ((m_dotSpanFirstPage + m_dots.Count - 1) > span.LastPage))
+            {
+                this.RemoveDotAt(m_dots.Count - 1);
+            }
+
+            // 2. Add the dots the span reaches past what there is
+            while ((span.Count > 0) && (m_dotSpanFirstPage > span.FirstPage))
+            {
+                this.InsertDotAt(0);
+                --m_dotSpanFirstPage;
+            }
+
+            while ((m_dotSpanFirstPage + m_dots.Count - 1) < span.LastPage)
+            {
+                this.InsertDotAt(m_dots.Count);
+            }
+        }
+
+        private void InsertDotAt (int index)
+        {
+            var dot = new PageStackDot();
+            dot.Click += this.OnDotClick;
+            m_dots.Insert(index, dot);
+            this.PART_DotsPanel.Children.Insert(index, dot);
+        }
+
+        private void RemoveDotAt (int index)
+        {
+            PageStackDot dot = m_dots[index];
+            dot.Click -= this.OnDotClick;
+            m_dots.RemoveAt(index);
+            this.PART_DotsPanel?.Children.Remove(dot);
+        }
+
+        // Moves the strip's dots along the canvas so the dot for the page at m_dotScroll sits at its start
+        private void ApplyDotScroll ()
+        {
+            if (this.PART_DotsPanel?.RenderTransform is TranslateTransform transform)
+            {
+                double offset = (m_dotSpanFirstPage - m_dotScroll) * m_dotCellLength;
+                transform.X = m_isHorizontal ? offset : 0.0;
+                transform.Y = m_isHorizontal ? 0.0 : offset;
+            }
+        }
+
+        // Ends a dot slide where it was going, and lets go of the dots that slid out of view
+        private void LandDotSlide ()
+        {
+            if (m_isDotSliding)
+            {
+                m_isDotSliding = false;
+                m_dotScroll = m_dotScrollTo;
+                this.RefreshButtonsAndDots();
+            }
+        }
+
+        // A padding property left unset (its NaN default) is the gap given on the top when horizontal, the left when vertical
+        private static Thickness EffectivePadding (Thickness padding, bool isHorizontal, double defaultGap)
+        {
+            if (double.IsNaN(padding.Left) || double.IsNaN(padding.Top) || double.IsNaN(padding.Right) || double.IsNaN(padding.Bottom))
+            {
+                return isHorizontal ? new Thickness(0, defaultGap, 0, 0) : new Thickness(defaultGap, 0, 0, 0);
+            }
+
+            return padding;
+        }
+
+        // A dot's length along the strip, padding included. Every dot takes the same room whatever its kind, since an edge
+        //  dot shrinks by a render transform, so one dot's measure is every dot's.
+        private double MeasureDotCellLength ()
+        {
+            double fallback = this.DotSize + (2.0 * kFallbackDotPadding);
+            if (m_dots.Count == 0)
+            {
+                return fallback;
+            }
+
+            PageStackDot dot = m_dots[0];
+            dot.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            double length = m_isHorizontal ? dot.DesiredSize.Width : dot.DesiredSize.Height;
+            return length > 0.0 ? length : fallback;
         }
 
         private double MeasureButtonLength ()

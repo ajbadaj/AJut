@@ -1,6 +1,7 @@
 namespace AJut.UX.Controls
 {
     using System;
+    using System.Globalization;
 
     /// <summary>
     /// How a PageStack picks, lays out and moves between its pages, toolkit free, so WinUI3's, WPF's and AppKit's stacks
@@ -11,6 +12,9 @@ namespace AJut.UX.Controls
     /// </summary>
     public static class PageStackRules
     {
+        /// <summary>The page count's format when none is given: the shown page's number from one, and the page count</summary>
+        public const string kDefaultPageCountFormat = "{0} of {1}";
+
         // ===========[ Public Interface Methods ]==============================
         /// <summary>
         /// The page a stack shows for the selected index it was given: that index kept inside the pages, or -1 with none.
@@ -36,6 +40,25 @@ namespace AJut.UX.Controls
 
         /// <summary>Whether the dot strip shows: it is asked for, and there is more than one page to tell apart</summary>
         public static bool AreDotsShown (bool showDots, int pageCount) => showDots && (pageCount > 1);
+
+        /// <summary>Whether the page count ("3 of 7") shows: it is asked for, and there is more than one page to count</summary>
+        public static bool IsPageCountShown (bool showPageCount, int pageCount) => showPageCount && (pageCount > 1);
+
+        /// <summary>
+        /// The page count's text: <paramref name="format"/> filled with the shown page's number from one ({0}) and the page
+        /// count ({1}), so "{0} of {1}" reads "3 of 7". A vertical stack's count sits in a strip one dot wide, so each word
+        /// goes on a line of its own there, "3", "of", "7".
+        /// </summary>
+        public static string PageCountText (string? format, int effectiveSelectedIndex, int pageCount, bool isVertical)
+        {
+            string text = String.Format(CultureInfo.CurrentCulture, format ?? kDefaultPageCountFormat, effectiveSelectedIndex + 1, pageCount);
+            if (!isVertical)
+            {
+                return text;
+            }
+
+            return String.Join("\n", text.Split(' ', StringSplitOptions.RemoveEmptyEntries));
+        }
 
         /// <summary>
         /// The selected index after pages are inserted, so the stack keeps showing the page it showed. An index that named
@@ -145,6 +168,43 @@ namespace AJut.UX.Controls
 
             double timeProgress = elapsed.TotalMilliseconds / duration.TotalMilliseconds;
             return fromPosition + ((toPosition - fromPosition) * EaseOut(timeProgress));
+        }
+
+        /// <summary>
+        /// Whether a dot strip slides to its new place when the page changes, or takes it at once. The strip slides while
+        /// the strip it was and the strip it becomes share a dot, so the move reads as the dots shifting by however many
+        /// dots the pick was away. A jump further than that (Home, End, or a far SelectedIndex) shares nothing to follow,
+        /// and sliding a run of unrelated dots past would only blur.
+        /// </summary>
+        /// <param name="fromFirstDotPage">The page the strip's first dot stands for now, between two pages mid slide</param>
+        /// <param name="toFirstDotPage">The page the new strip's first dot stands for (<see cref="PageStackDotWindow.FirstDotPage"/>)</param>
+        /// <param name="toDotCount">How many dots the new strip shows</param>
+        public static bool ShouldSlideDots (double fromFirstDotPage, int toFirstDotPage, int toDotCount)
+        {
+            return Math.Abs(toFirstDotPage - fromFirstDotPage) < toDotCount;
+        }
+
+        /// <summary>
+        /// The pages a sliding dot strip holds dots for: the pages of the strip it was and of the strip it becomes, so the
+        /// dots leaving slide out of view rather than vanish, and the ones arriving slide in. Kept inside the pages.
+        /// </summary>
+        /// <param name="fromFirstDotPage">The page the strip's first dot stands for now, between two pages mid slide</param>
+        /// <param name="toFirstDotPage">The page the new strip's first dot stands for</param>
+        /// <param name="toDotCount">How many dots the new strip shows</param>
+        /// <param name="pageCount">How many pages the stack holds</param>
+        public static DotSpan DotSlideSpan (double fromFirstDotPage, int toFirstDotPage, int toDotCount, int pageCount)
+        {
+            int first = (int)Math.Floor(Math.Min(fromFirstDotPage, toFirstDotPage));
+            int last = (int)Math.Ceiling(Math.Max(fromFirstDotPage, toFirstDotPage)) + toDotCount - 1;
+            return new DotSpan(Math.Max(0, first), Math.Min(pageCount - 1, last));
+        }
+
+        // ===========[ Subclasses/structs ]====================================
+        /// <summary>A run of pages with a dot each, from <paramref name="FirstPage"/> to <paramref name="LastPage"/></summary>
+        public readonly record struct DotSpan (int FirstPage, int LastPage)
+        {
+            /// <summary>How many pages, and so dots, the run holds</summary>
+            public int Count => Math.Max(0, this.LastPage - this.FirstPage + 1);
         }
     }
 }
