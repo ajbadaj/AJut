@@ -28,6 +28,7 @@ namespace AJutShowRoomUIKit.UI
                 new ShowroomEntry("FlatTreeListView", static () => new FlatTreeListViewPage()),
                 new ShowroomEntry("GeometryButton", static () => new GeometryButtonPage()),
                 new ShowroomEntry("NumericEditor", static () => new NumericEditorPage()),
+                new ShowroomEntry("PageStack", static () => new PageStackPage()),
                 new ShowroomEntry("PopupMenuButton", static () => new PopupMenuButtonPage()),
                 new ShowroomEntry("PropertyGrid", static () => new PropertyGridPage()),
                 new ShowroomEntry("SimpleWrapPanel", static () => new SimpleWrapPanelPage()),
@@ -41,6 +42,7 @@ namespace AJutShowRoomUIKit.UI
             ),
             Area("Debug",
                 new ShowroomEntry("AppThemeManager", static () => new AppThemeManagerPage()),
+                new ShowroomEntry("Leak Probe", static () => new LeakProbePage()),
                 new ShowroomEntry("Theme Tester", static () => new ThemeTesterPage())
             ),
         };

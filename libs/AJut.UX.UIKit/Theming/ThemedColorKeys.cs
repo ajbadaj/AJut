@@ -79,6 +79,27 @@ namespace AJut.UX.Theming
         public const string GeometryButton_TracePressed = "AJut_GeometryButton_TracePressed";
         public const string GeometryButton_TraceDisabled = "AJut_GeometryButton_TraceDisabled";
 
+        // ===========[ PageStack keys ]======================================================
+        // UIKit only, as on AppKit, each aliased to its MobileLook.PageStack palette key while the theme is loaded. They
+        // are keys of their own rather than the palette keys themselves because those are shared: the primary highlight
+        // the current dot takes is also what EditableTextBlock's field tints with, and that has no unthemed default (it
+        // follows the view's tint), which the current dot's would replace.
+
+        /// <summary>A page button's fill, opaque, since the neighbor pages peek in under it</summary>
+        public const string PageStack_ButtonBackground = "AJut_PageStack_ButtonBackground";
+
+        /// <summary>A page button's chevron</summary>
+        public const string PageStack_ButtonForeground = "AJut_PageStack_ButtonForeground";
+
+        /// <summary>A page button's outline, which sets it apart from the page peeking in under it</summary>
+        public const string PageStack_ButtonBorder = "AJut_PageStack_ButtonBorder";
+
+        /// <summary>Every dot in the strip but the current page's, and the page count's text</summary>
+        public const string PageStack_Dot = "AJut_PageStack_Dot";
+
+        /// <summary>The current page's dot</summary>
+        public const string PageStack_CurrentDot = "AJut_PageStack_CurrentDot";
+
         // ===========[ Public Interface Methods ]===================================
         /// <summary>
         /// Registers every key above with its unthemed default. Runs once, from ThemedColors' static constructor;
@@ -144,6 +165,21 @@ namespace AJut.UX.Theming
             ThemedColors.SetUnthemedDefault(GeometryButton_TracePointerOver, UIColor.Separator);
             ThemedColors.SetUnthemedDefault(GeometryButton_TracePressed, UIColor.Separator);
             ThemedColors.SetUnthemedDefault(GeometryButton_TraceDisabled, UIColor.QuaternarySystemFill);
+
+            // 8. PageStack: unthemed, AppKit's choices, the page buttons on the page's own background with a secondary
+            //  chevron, the dots a secondary label with the current one a full label
+            RegisterAliased(PageStack_ButtonBackground, UIColor.SystemBackground, MobileLook.PageStack.ButtonBackground);
+            RegisterAliased(PageStack_ButtonForeground, UIColor.SecondaryLabel, MobileLook.PageStack.ButtonForeground);
+            RegisterAliased(PageStack_ButtonBorder, UIColor.Separator, MobileLook.PageStack.ButtonBorder);
+            RegisterAliased(PageStack_Dot, UIColor.SecondaryLabel, MobileLook.PageStack.Dot);
+            RegisterAliased(PageStack_CurrentDot, UIColor.Label, MobileLook.PageStack.CurrentDot);
+        }
+
+        // A UIKit only key: its unthemed default, and the palette key it takes while the theme is loaded
+        private static void RegisterAliased (string key, UIColor unthemedDefault, string paletteKey)
+        {
+            ThemedColors.SetUnthemedDefault(key, unthemedDefault);
+            ThemedColors.SetThemedAlias(key, paletteKey);
         }
     }
 }
