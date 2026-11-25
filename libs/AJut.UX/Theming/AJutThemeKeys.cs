@@ -75,6 +75,12 @@ namespace AJut.UX.Theming
         public const string ColorEditIngressControl_HighlightBorderBrush = "AJut_ColorEditIngressControl_HighlightBorderBrush";
         public const string ColorEditIngressControl_NormalBorderBrush = "AJut_ColorEditIngressControl_NormalBorderBrush";
 
+        public const string ScreenColorPickMagnifier_Background = "AJut_ScreenColorPickMagnifier_Background";
+        public const string ScreenColorPickMagnifier_BorderBrush = "AJut_ScreenColorPickMagnifier_BorderBrush";
+        public const string ScreenColorPickMagnifier_Foreground = "AJut_ScreenColorPickMagnifier_Foreground";
+        public const string ScreenColorPickMagnifier_TitleBarBackground = "AJut_ScreenColorPickMagnifier_TitleBarBackground";
+        public const string ScreenColorPickMagnifier_TitleBarForeground = "AJut_ScreenColorPickMagnifier_TitleBarForeground";
+
         public const string DockCloseButton_HoverBackground = "AJut_DockCloseButton_HoverBackground";
         public const string DockCloseButton_PressedBackground = "AJut_DockCloseButton_PressedBackground";
 
@@ -220,6 +226,11 @@ namespace AJut.UX.Theming
                 { "AJut_FlatTree_HoverBorderBrush", Alias("AJut_Color_BorderCommon") },
                 { "AJut_ColorEditIngressControl_HighlightBorderBrush", Alias("AJut_Color_PrimaryHighlight") },
                 { "AJut_ColorEditIngressControl_NormalBorderBrush", Alias("AJut_Color_BorderCommon") },
+                { "AJut_ScreenColorPickMagnifier_Background", Alias("AJut_Color_InnerPanelBackground") },
+                { "AJut_ScreenColorPickMagnifier_BorderBrush", Alias("AJut_Color_BorderCommon") },
+                { "AJut_ScreenColorPickMagnifier_Foreground", Alias("AJut_Color_NormalText") },
+                { "AJut_ScreenColorPickMagnifier_TitleBarBackground", Alias("AJut_Color_TitleBarBackground") },
+                { "AJut_ScreenColorPickMagnifier_TitleBarForeground", Alias("AJut_Color_TitleBarForeground") },
                 { "AJut_DockCloseButton_HoverBackground", Alias("AJut_Color_MouseInteractionHighlight") },
                 { "AJut_DockCloseButton_PressedBackground", Alias("AJut_Color_PrimaryHighlightDark") },
                 { "AJut_DockTabScrollButton_HoverBackground", Alias("AJut_Color_MouseInteractionHighlight") },

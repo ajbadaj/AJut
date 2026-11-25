@@ -1,0 +1,69 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ajut="clr-namespace:AJut.UX"
+                    xmlns:conv="clr-namespace:AJut.UX.Converters"
+                    xmlns:local="clr-namespace:AJut.UX.Controls">
+    <!-- What a pick from screen would take: a title bar saying what to do next, a swatch, its hex, and the pixels
+         around the cursor blown up without smoothing, the target pixel outlined. It shows faded until the mouse
+         button is pressed. Literal light defaults; the themed brushes are in ThemedControlStylesBase.xaml. -->
+    <Style TargetType="{x:Type local:ScreenColorPickMagnifier}">
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="IsHitTestVisible" Value="False"/>
+        <Setter Property="Background" Value="#F4F4F4"/>
+        <Setter Property="BorderBrush" Value="#888888"/>
+        <Setter Property="Foreground" Value="#111111"/>
+        <Setter Property="TitleBarBackground" Value="#DADADA"/>
+        <Setter Property="TitleBarForeground" Value="#111111"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="10"/>
+        <Setter Property="Opacity" Value="0.65"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:ScreenColorPickMagnifier}">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="2">
+                        <StackPanel>
+                            <Border Background="{TemplateBinding TitleBarBackground}" CornerRadius="1,1,0,0" Padding="12,6">
+                                <TextBlock Text="{ajut:TemplateBinding Path=IsPressing, Converter={conv:BooleanToValueConverter TrueValue='Release mouse to pick', FalseValue='Press mouse button'}}"
+                                           Foreground="{TemplateBinding TitleBarForeground}"
+                                           FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                            </Border>
+                            <Grid Margin="{TemplateBinding Padding}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                                    <Border Width="56" Height="56" BorderThickness="1"
+                                            BorderBrush="{TemplateBinding BorderBrush}">
+                                        <Border.Background>
+                                            <SolidColorBrush Color="{ajut:TemplateBinding Path=SampleColor, Mode=OneWay}"/>
+                                        </Border.Background>
+                                    </Border>
+                                    <TextBlock Text="{TemplateBinding Hex}" Foreground="{TemplateBinding Foreground}"
+                                               FontFamily="Consolas" Margin="0,6,0,0"/>
+                                </StackPanel>
+                                <Border Grid.Column="1" BorderThickness="1" BorderBrush="{TemplateBinding BorderBrush}">
+                                    <Grid Width="{TemplateBinding PreviewSize}" Height="{TemplateBinding PreviewSize}" ClipToBounds="True">
+                                        <Image Source="{TemplateBinding Pixels}" Stretch="Fill"
+                                               RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                                        <Border Width="{TemplateBinding TargetOutlineSize}" Height="{TemplateBinding TargetOutlineSize}"
+                                                HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                BorderThickness="2" BorderBrush="{TemplateBinding TargetOutlineBrush}"/>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsPressing" Value="True">
+                <Setter Property="Opacity" Value="1"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+</ResourceDictionary>

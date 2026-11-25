@@ -6,6 +6,7 @@
     using System.Windows.Input;
     using System.Windows.Media;
     using AJut.UX.AttachedProperties;
+    using AJut.UX.Helpers;
     using DPUtils = DPUtils<ColorEditIngressControl>;
 
     public class ColorEditIngressControl : Control, IUserEditNotifier
@@ -133,6 +134,38 @@
             set => this.SetValue(CornerBannerForegroundProperty, value);
         }
 
+
+        public static readonly DependencyProperty AllowPickFromScreenProperty = DPUtils.Register(_ => _.AllowPickFromScreen, true);
+        /// <summary>Whether the editor offers its eyedropper, which picks the color from anywhere on screen</summary>
+        public bool AllowPickFromScreen
+        {
+            get => (bool)this.GetValue(AllowPickFromScreenProperty);
+            set => this.SetValue(AllowPickFromScreenProperty, value);
+        }
+
+        public static readonly DependencyProperty HideWhilePickingFromScreenProperty = DPUtils.Register(_ => _.HideWhilePickingFromScreen);
+        /// <summary>Whether the editor hides while its eyedropper's pick is up, see <see cref="ColorValueEditControl.HideWhilePickingFromScreen"/></summary>
+        public bool HideWhilePickingFromScreen
+        {
+            get => (bool)this.GetValue(HideWhilePickingFromScreenProperty);
+            set => this.SetValue(HideWhilePickingFromScreenProperty, value);
+        }
+
+        public static readonly DependencyProperty ShowPickFromScreenMagnifierProperty = DPUtils.Register(_ => _.ShowPickFromScreenMagnifier, true);
+        /// <summary>Whether a magnifier follows the cursor during an eyedropper pick, showing what it would take</summary>
+        public bool ShowPickFromScreenMagnifier
+        {
+            get => (bool)this.GetValue(ShowPickFromScreenMagnifierProperty);
+            set => this.SetValue(ShowPickFromScreenMagnifierProperty, value);
+        }
+
+        public static readonly DependencyProperty PickFromScreenMagnifierPixelCountProperty = DPUtils.Register(_ => _.PickFromScreenMagnifierPixelCount, ScreenColorPickOptions.kDefaultMagnifierPixelCount);
+        /// <summary>How many pixels across the eyedropper's magnifier shows, rounded up to odd</summary>
+        public int PickFromScreenMagnifierPixelCount
+        {
+            get => (int)this.GetValue(PickFromScreenMagnifierPixelCountProperty);
+            set => this.SetValue(PickFromScreenMagnifierPixelCountProperty, value);
+        }
 
         private void OnShowEditDisplayChanged (DependencyPropertyChangedEventArgs<bool> e)
         {

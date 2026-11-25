@@ -26,6 +26,9 @@
     <Compile Update="Controls\ColorEditIngressControl.cs">
       <DependentUpon>ColorEditIngressControl.xaml</DependentUpon>
     </Compile>
+    <Compile Update="Controls\ScreenColorPickMagnifier.cs">
+      <DependentUpon>ScreenColorPickMagnifier.xaml</DependentUpon>
+    </Compile>
     <Compile Update="Controls\ColorValueEditControl.cs">
       <DependentUpon>ColorValueEditControl.xaml</DependentUpon>
     </Compile>

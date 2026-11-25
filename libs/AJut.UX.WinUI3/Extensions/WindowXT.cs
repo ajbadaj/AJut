@@ -233,10 +233,48 @@
             window.SetWindowLong(NativeMethods.GWL_STYLE, window.GetWindowLong(NativeMethods.GWL_STYLE) & ~NativeMethods.WS_CAPTION);
         }
 
+        /// <summary>
+        /// Sets how see-through the whole window is, from 0 (invisible) to 1 (opaque), clamped. The counterpart to WPF's
+        /// Window.Opacity, which WinUI3 does not have: lowering the content's Opacity only dims it against the window's
+        /// own opaque background.
+        /// </summary>
+        public static void SetOpacity (this Window window, double opacity)
+        {
+            // A whole window fades through the layered window style: once WS_EX_LAYERED is on, the system composes the
+            // window with the alpha given to SetLayeredWindowAttributes, whatever drew its content. The style is added
+            // once and left on, and going back to 1 is an alpha of 255, which spares the window a restyle each time.
+            // https://learn.microsoft.com/windows/win32/winmsg/window-features#layered-windows
+            const double kMaxAlpha = 255.0;
+
+            if (window == null)
+            {
+                return;
+            }
+
+            int exStyle = window.GetWindowLong(NativeMethods.GWL_EXSTYLE);
+            if ((exStyle & NativeMethods.WS_EX_LAYERED) == 0)
+            {
+                window.SetWindowLong(NativeMethods.GWL_EXSTYLE, exStyle | NativeMethods.WS_EX_LAYERED);
+            }
+
+            byte alpha = (byte)Math.Round(Math.Clamp(opacity, 0.0, 1.0) * kMaxAlpha);
+            if (!NativeMethods.SetLayeredWindowAttributes(window.GetHWND(), 0, alpha, NativeMethods.LWA_ALPHA))
+            {
+                Logger.LogInfo($"[WINDOW] Could not set a window's opacity (error {Marshal.GetLastPInvokeError()})");
+            }
+        }
+
         internal class NativeMethods
         {
             public const int GWL_STYLE = -16;
+            public const int GWL_EXSTYLE = -20;
             public const int WS_CAPTION = 0x00C00000;
+            public const int WS_EX_LAYERED = 0x00080000;
+            public const uint LWA_ALPHA = 0x00000002;
+
+            [DllImport("user32.dll", SetLastError = true)]
+            [return: MarshalAs(UnmanagedType.Bool)]
+            public static extern bool SetLayeredWindowAttributes (IntPtr hWnd, uint crKey, byte bAlpha, uint dwFlags);
 
             [DllImport("user32.dll")]
             public static extern int GetWindowLong (IntPtr hWnd, int nIndex);

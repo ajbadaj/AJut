@@ -23,6 +23,26 @@
                             BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="{TemplateBinding CornerRadius}"
                             Background="White">
+                        <Border.Resources>
+                            <!-- The eyedropper button under the ColorPicker in the flyout, which is built in code and
+                                 takes this style. The eyedropper, leaning 45 degrees in a 24 x 24 box, the same
+                                 geometry as the WPF editor's: a solid bulb and collar, and the clear tube as an outline
+                                 with a rounded tip, its inside cut out by the even odd fill (F0). -->
+                            <Style x:Key="PickFromScreenButtonStyle" TargetType="Button">
+                                <Setter Property="Margin" Value="0,8,0,0"/>
+                                <Setter Property="Padding" Value="6"/>
+                                <Setter Property="HorizontalAlignment" Value="Left"/>
+                                <Setter Property="ContentTemplate">
+                                    <Setter.Value>
+                                        <DataTemplate>
+                                            <Path Width="16" Height="16" Stretch="Uniform"
+                                                  Fill="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Foreground}"
+                                                  Data="F0 M 12.41,7.34 L 14.54,5.22 A 3,3 0 0 1 18.78,9.46 L 16.66,11.59 Z M 11,5.93 L 18.07,13 L 16.3,14.77 L 9.23,7.7 Z M 11.35,9.82 L 14.18,12.65 L 9.23,17.6 L 5.63,19.51 A 0.85,0.85 0 0 1 4.49,18.37 L 6.4,14.77 Z M 12.24,10.7 L 13.3,11.76 L 8.28,16.78 L 5.91,18.09 L 7.22,15.72 Z"/>
+                                        </DataTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Border.Resources>
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal">
@@ -79,7 +99,7 @@
                                     <SolidColorBrush Color="#60000000"/>
                                 </Grid.Background>
                                 <!-- Dog-ear triangle + pencil icon in a Viewbox so it scales
-                                     proportionally with the control, capped at 20×20.
+                                     proportionally with the control, capped at 20x20.
                                      Margin="2" keeps it 2px from the bottom-right corner. -->
                                 <Viewbox HorizontalAlignment="Right"
                                          VerticalAlignment="Bottom"

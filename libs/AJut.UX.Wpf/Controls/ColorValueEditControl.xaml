@@ -28,7 +28,8 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:ColorValueEditControl}">
-                    <Border BorderBrush="{TemplateBinding BorderBrush}"
+                    <Border x:Name="EditorRoot"
+                            BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             Background="{TemplateBinding Background}"
                             CornerRadius="{ajut:TemplateBinding Path=(ap:BorderXTA.CornerRadius)}"
@@ -52,6 +53,19 @@
                                     </Border>
                                     <CheckBox Margin="0,3,0,0" DockPanel.Dock="Bottom" HorizontalAlignment="Right" Content="Use Shortest Hex" FontSize="10" FontStyle="Italic"
                                               IsChecked="{Binding Path=PreferShortStringHex, RelativeSource={RelativeSource AncestorType={x:Type local:ColorValueEditControl}}, Mode=TwoWay}"/>
+                                    <!-- Eyedropper: picks EditColor from anywhere on screen -->
+                                    <Button x:Name="PART_PickFromScreenButton" DockPanel.Dock="Right"
+                                            Margin="3,3,0,0" Padding="3"
+                                            ToolTip="Pick a color from the screen"
+                                            Visibility="{ajut:TemplateBinding Path=AllowPickFromScreen, Converter={conv:BooleanToVisibilityConverter}}"
+                                            IsEnabled="{ajut:TemplateBinding Path=IsReadOnly, Converter={conv:BooleanInverseConverter}}">
+                                        <!-- The eyedropper, leaning 45 degrees in a 24 x 24 box: a solid bulb and collar, and
+                                             the clear tube as an outline with a rounded tip. The tube is a ring, its inside
+                                             cut out by the even odd fill (F0), so one Path draws it all in the foreground. -->
+                                        <Path Width="16" Height="16" Stretch="Uniform"
+                                              Fill="{Binding RelativeSource={RelativeSource AncestorType={x:Type Button}}, Path=Foreground}"
+                                              Data="F0 M 12.41,7.34 L 14.54,5.22 A 3,3 0 0 1 18.78,9.46 L 16.66,11.59 Z M 11,5.93 L 18.07,13 L 16.3,14.77 L 9.23,7.7 Z M 11.35,9.82 L 14.18,12.65 L 9.23,17.6 L 5.63,19.51 A 0.85,0.85 0 0 1 4.49,18.37 L 6.4,14.77 Z M 12.24,10.7 L 13.3,11.76 L 8.28,16.78 L 5.91,18.09 L 7.22,15.72 Z"/>
+                                    </Button>
                                     <TextBox Text="{Binding Path=Hex, RelativeSource={RelativeSource AncestorType={x:Type local:ColorValueEditControl}}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                              Margin="2,3,0,0"
                                              IsReadOnly="{TemplateBinding IsReadOnly}" IsReadOnlyCaretVisible="True"/>
@@ -128,6 +142,16 @@
                                        Visibility="{ajut:TemplateBinding Path=IsReadOnly, Converter={conv:BooleanToVisibilityConverter}}"/>
                         </StackPanel>
                     </Border>
+                    <ControlTemplate.Triggers>
+                        <!-- Out of the pick's capture when asked, kept in layout so its host does not resize -->
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsPickingFromScreen" Value="True"/>
+                                <Condition Property="HideWhilePickingFromScreen" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="EditorRoot" Property="Visibility" Value="Hidden"/>
+                        </MultiTrigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

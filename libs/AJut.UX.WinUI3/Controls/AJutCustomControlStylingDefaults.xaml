@@ -154,6 +154,14 @@
     <!-- Normal resting border -->
     <SolidColorBrush x:Key="AJut_ColorEditIngressControl_NormalBorderBrush"    Color="#888888"/>
 
+    <!-- ===========[ ScreenColorPickMagnifier ]============================= -->
+    <!-- The eyedropper's magnifier, shown while a pick from screen runs -->
+    <SolidColorBrush x:Key="AJut_ScreenColorPickMagnifier_Background"         Color="#F4F4F4"/>
+    <SolidColorBrush x:Key="AJut_ScreenColorPickMagnifier_BorderBrush"        Color="#888888"/>
+    <SolidColorBrush x:Key="AJut_ScreenColorPickMagnifier_Foreground"         Color="#111111"/>
+    <SolidColorBrush x:Key="AJut_ScreenColorPickMagnifier_TitleBarBackground" Color="#DADADA"/>
+    <SolidColorBrush x:Key="AJut_ScreenColorPickMagnifier_TitleBarForeground" Color="#111111"/>
+
     <!-- ===========[ DockCloseButton ]====================================== -->
     <!-- Warm reddish hover/press - conventionally recognisable as "close" -->
     <SolidColorBrush x:Key="AJut_DockCloseButton_HoverBackground"   Color="#40FF5050"/>
