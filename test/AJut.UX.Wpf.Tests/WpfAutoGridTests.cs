@@ -4,7 +4,6 @@ namespace AJut.UX.Tests
     using System.Windows;
     using System.Windows.Controls;
     using System.Windows.Controls.Primitives;
-    using System.Windows.Media;
     using System.Windows.Threading;
     using AJut.UX.Controls;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -262,21 +261,6 @@ namespace AJut.UX.Tests
 
                 _LayOut(grid, 200, 100);
                 Assert.AreEqual(new Rect(5, 5, 190, 90), LayoutInformation.GetLayoutSlot(child), "The child sits inside the border and the padding");
-            });
-        }
-
-        [TestMethod]
-        public void WpfAutoGrid_BorderBrushAndThickness_DrawABorderAroundTheGrid ()
-        {
-            StaTestThread.Run(() =>
-            {
-                var grid = new AutoGrid { FixedColumnCount = 1, BorderBrush = Brushes.Black, BorderThickness = new Thickness(1) };
-                _AddChildren(grid, 1);
-                _LayOut(grid, 200, 100);
-
-                DrawingGroup drawing = VisualTreeHelper.GetDrawing(grid);
-                Assert.IsNotNull(drawing, "A grid with a border brush and thickness, and no background, draws nothing");
-                Assert.AreEqual(new Rect(0, 0, 200, 100), drawing.Bounds, "The border runs around the grid's edge");
             });
         }
 

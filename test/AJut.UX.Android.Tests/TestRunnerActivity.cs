@@ -72,7 +72,7 @@ namespace AJut.UX.Tests
 
             // OnCreate runs before the activity's window is attached, and some tests need their views in a window, so
             // wait for it (the looper keeps running meanwhile) before the first test.
-            const int kWindowWaitSeconds = 10;
+            const int kWindowWaitSeconds = 30;
             const int kWindowPollMilliseconds = 20;
             DateTime deadline = DateTime.UtcNow + TimeSpan.FromSeconds(kWindowWaitSeconds);
             while (!(TestHost.TestArea?.IsAttachedToWindow ?? false) && (DateTime.UtcNow < deadline))
@@ -80,47 +80,55 @@ namespace AJut.UX.Tests
                 await Task.Delay(kWindowPollMilliseconds);
             }
 
-            try
+            if (!(TestHost.TestArea?.IsAttachedToWindow ?? false))
             {
-                foreach (Type testClass in _FindTestClasses())
+                ++failed;
+                this.Report(report, $"FAIL runner: the test area was not in a window after {kWindowWaitSeconds} s, so no test ran");
+            }
+            else
+            {
+                try
                 {
-                    MethodInfo[] methods = testClass.GetMethods(BindingFlags.Public | BindingFlags.Instance);
-                    MethodInfo? initialize = methods.FirstOrDefault(m => m.IsDefined(typeof(TestInitializeAttribute)));
-                    MethodInfo? cleanup = methods.FirstOrDefault(m => m.IsDefined(typeof(TestCleanupAttribute)));
-
-                    foreach (MethodInfo test in methods.Where(m => m.IsDefined(typeof(TestMethodAttribute))))
+                    foreach (Type testClass in _FindTestClasses())
                     {
-                        string name = $"{testClass.Name}.{test.Name}";
-                        if ((filter != null) && !name.Contains(filter, StringComparison.OrdinalIgnoreCase))
-                        {
-                            continue;
-                        }
+                        MethodInfo[] methods = testClass.GetMethods(BindingFlags.Public | BindingFlags.Instance);
+                        MethodInfo? initialize = methods.FirstOrDefault(m => m.IsDefined(typeof(TestInitializeAttribute)));
+                        MethodInfo? cleanup = methods.FirstOrDefault(m => m.IsDefined(typeof(TestCleanupAttribute)));
 
-                        if (test.IsDefined(typeof(IgnoreAttribute)))
+                        foreach (MethodInfo test in methods.Where(m => m.IsDefined(typeof(TestMethodAttribute))))
                         {
-                            ++ignored;
-                            this.Report(report, $"SKIP {name}");
-                            continue;
-                        }
+                            string name = $"{testClass.Name}.{test.Name}";
+                            if ((filter != null) && !name.Contains(filter, StringComparison.OrdinalIgnoreCase))
+                            {
+                                continue;
+                            }
 
-                        string? failure = await _RunOneAsync(testClass, initialize, test, cleanup);
-                        if (failure == null)
-                        {
-                            ++passed;
-                            this.Report(report, $"PASS {name}");
-                        }
-                        else
-                        {
-                            ++failed;
-                            this.Report(report, $"FAIL {name}: {failure}");
+                            if (test.IsDefined(typeof(IgnoreAttribute)))
+                            {
+                                ++ignored;
+                                this.Report(report, $"SKIP {name}");
+                                continue;
+                            }
+
+                            string? failure = await _RunOneAsync(testClass, initialize, test, cleanup);
+                            if (failure == null)
+                            {
+                                ++passed;
+                                this.Report(report, $"PASS {name}");
+                            }
+                            else
+                            {
+                                ++failed;
+                                this.Report(report, $"FAIL {name}: {failure}");
+                            }
                         }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                ++failed;
-                this.Report(report, $"FAIL runner: {ex}");
+                catch (Exception ex)
+                {
+                    ++failed;
+                    this.Report(report, $"FAIL runner: {ex}");
+                }
             }
 
             // The run script waits for this exact line, so keep its shape.

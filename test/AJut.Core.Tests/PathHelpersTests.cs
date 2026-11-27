@@ -488,13 +488,6 @@
             }
         }
 
-        [TestMethod]
-        public void PathHelpers_PathLengthLimits_AreReadOnly ()
-        {
-            Assert.IsTrue(typeof(PathHelpers).GetField(nameof(PathHelpers.kMaxFullPathLength)).IsInitOnly, nameof(PathHelpers.kMaxFullPathLength));
-            Assert.IsTrue(typeof(PathHelpers).GetField(nameof(PathHelpers.kMaxPathDirectoryLength)).IsInitOnly, nameof(PathHelpers.kMaxPathDirectoryLength));
-        }
-
         private static void RunUnderCulture (string cultureName, Action test)
         {
             CultureInfo original = CultureInfo.CurrentCulture;

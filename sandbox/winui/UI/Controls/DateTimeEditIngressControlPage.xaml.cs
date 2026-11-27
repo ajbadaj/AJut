@@ -23,23 +23,6 @@ namespace AJutShowRoomWinUI.UI.Controls
             this.Quarters.TextResolver = new QuarterResolver();
         }
 
-        /// <summary>
-        /// The time format picked for the field. A two-way x:Bind straight between two dependency properties has nothing
-        /// to stop a change bouncing back and forth (the picker's object SelectedItem takes a new boxed value each time),
-        /// which overflows the stack, so the picker binds here and this sets the field.
-        /// </summary>
-        public eTimeFormat MainTimeFormat
-        {
-            get => this.Main.TimeFormat;
-            set
-            {
-                if (this.Main.TimeFormat != value)
-                {
-                    this.Main.TimeFormat = value;
-                }
-            }
-        }
-
         // Each suggestion button shows the format it sets
         private void DisplayFormatSuggestion_OnClick (object sender, RoutedEventArgs e)
         {

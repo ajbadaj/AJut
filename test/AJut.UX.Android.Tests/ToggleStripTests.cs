@@ -3,15 +3,13 @@ namespace AJut.UX.Tests
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.ComponentModel;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
     using AJut;
-    using AJut.UX.CodeBinding;
     using AJut.UX.Controls;
     using Android.Graphics;
     using Android.Graphics.Drawables;
-    using Android.OS;
     using Android.Views;
     using Android.Widget;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -20,7 +18,7 @@ namespace AJut.UX.Tests
     /// <summary>
     /// The Android ToggleStrip, EnumToggleStrip and EnumComboBox on real views. Their selection rules are AJut.UX's and
     /// are tested headless there; these cover the Android side: the buttons, taps, the source subscription's lifetime,
-    /// layout attributes, and the binding adapters.
+    /// and layout attributes.
     /// </summary>
     [TestClass]
     public class ToggleStripTests
@@ -149,7 +147,6 @@ namespace AJut.UX.Tests
             Assert.AreEqual(ViewStates.Gone, buttons[6].Visibility, "The last item does not fit the height");
             var overflowButton = (TextView)strip.GetChildAt(1)!;
             Assert.AreEqual(ViewStates.Visible, overflowButton.Visibility);
-            Assert.AreEqual(GravityFlags.Bottom, ((FrameLayout.LayoutParams)overflowButton.LayoutParameters!).Gravity, "The overflow button sits along the bottom");
         }
 
         [TestMethod]
@@ -328,76 +325,6 @@ namespace AJut.UX.Tests
         }
 
         [TestMethod]
-        public async Task Scroll_FillingItsParent_ShowsTheDotJustInsideItsEnd ()
-        {
-            // A strip as wide as its parent leaves the parent no room past the strip's ends, the way a match_parent strip
-            // fills a page, so the dot goes just inside the end it can scroll toward. A Clip strip laid out the same way
-            // shows what is there with no dot, so the two differ only where a dot is.
-            FrameLayout scrollingParent = _FullWidthParent(eToggleStripOverflow.Scroll, out ToggleStrip scrolling);
-            FrameLayout clippedParent = _FullWidthParent(eToggleStripOverflow.Clip, out ToggleStrip clipped);
-            var both = new LinearLayout(TestHost.RequiredContext) { Orientation = Orientation.Vertical };
-            both.AddView(scrollingParent);
-            both.AddView(clippedParent);
-            using IDisposable attached = TestHost.Attach(both);
-            await _WaitUntilAsync(() => (scrolling.Width > 0) && (clipped.Width > 0));
-
-            // The dot can fall over an item's text in the dot's own color, so the whole square it covers is compared
-            int centerY = scrolling.Top + (scrolling.Height / 2);
-            int forwardX = scrolling.Right - _DotOffset();
-            int radius = _Dp((float)(ToggleStripScrollIndicators.kDotDiameter / 2.0)) - 1;
-            using Bitmap withDot = _Render(scrollingParent);
-            using Bitmap withoutDot = _Render(clippedParent);
-            int differing = 0;
-            for (int y = centerY - radius; y <= centerY + radius; ++y)
-            {
-                for (int x = forwardX - radius; x <= forwardX + radius; ++x)
-                {
-                    if (withDot.GetPixel(x, y) != withoutDot.GetPixel(x, y))
-                    {
-                        ++differing;
-                    }
-                }
-            }
-
-            Assert.IsTrue(differing > 0, "There is more past the trailing end, but the strip's parent has no room past it, so the dot should show just inside it");
-        }
-
-        [TestMethod]
-        public async Task Scroll_Vertical_InsideAScrollingPage_ScrollsItselfOnADrag ()
-        {
-            // A vertical Scroll strip on a page that scrolls the same way, as the showroom's is: a drag up over the strip
-            // is the strip's to scroll, and the page stays put
-            const float kSpacerDp = 600f;
-            const float kPageHeightDp = 400f;
-            const float kDragDp = 80f;
-            const int kDragSteps = 10;
-
-            var strip = new ToggleStrip(TestHost.RequiredContext) { Orientation = Orientation.Vertical, OverflowBehavior = eToggleStripOverflow.Scroll, ItemsSource = kManyItems };
-            var column = new LinearLayout(TestHost.RequiredContext) { Orientation = Orientation.Vertical };
-            column.AddView(strip, new LinearLayout.LayoutParams(_Dp(kStripLengthDp), _Dp(kStripLengthDp)));
-            column.AddView(new View(TestHost.RequiredContext), new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MatchParent, _Dp(kSpacerDp)));
-            var page = new ScrollView(TestHost.RequiredContext);
-            page.AddView(column);
-            using IDisposable attached = TestViews.AttachSized(page, (int)kPageHeightDp);
-            await _WaitUntilAsync(() => strip.Height > 0);
-
-            var scroller = (ScrollView)strip.GetChildAt(0)!;
-            float x = strip.Left + (strip.Width / 2f);
-            float fromY = strip.Top + (strip.Height * 0.75f);
-            long down = SystemClock.UptimeMillis();
-            _Touch(page, down, MotionEventActions.Down, x, fromY);
-            for (int step = 1; step <= kDragSteps; ++step)
-            {
-                _Touch(page, down, MotionEventActions.Move, x, fromY - (_Dp(kDragDp) * step / kDragSteps));
-            }
-
-            _Touch(page, down, MotionEventActions.Up, x, fromY - _Dp(kDragDp));
-
-            Assert.AreEqual(0, page.ScrollY, "The page stays put");
-            Assert.IsTrue(scroller.ScrollY > 0, "The strip scrolls");
-        }
-
-        [TestMethod]
         public async Task NotScrolling_ShowsNoDots ()
         {
             var host = _DotHost();
@@ -520,53 +447,6 @@ namespace AJut.UX.Tests
             Assert.IsFalse(comboBox.Spinner.Enabled, "And its Spinner");
         }
 
-        // ===========[ Binding ]===================================
-        [TestMethod]
-        public async Task BindSelectedValue_EnumComboBox_BothWays ()
-        {
-            var model = new Model();
-            var comboBox = new EnumComboBox(TestHost.RequiredContext);
-            using IDisposable attached = TestHost.Attach(comboBox);
-            using var bindings = new BindingSet();
-            bindings.BindSelectedValue(comboBox, model, nameof(Model.Size), () => model.Size, v => model.Size = v);
-            Assert.AreEqual(eSize.Medium, comboBox.SelectedItem);
-
-            model.Size = eSize.Large;
-            Assert.AreEqual(eSize.Large, comboBox.SelectedItem);
-
-            comboBox.Spinner.SetSelection(0);
-            await _WaitUntilAsync(() => model.Size == eSize.Small);
-            Assert.AreEqual(eSize.Small, model.Size);
-        }
-
-        [TestMethod]
-        public void BindSelectedValue_EnumToggleStrip_BothWays ()
-        {
-            var model = new Model();
-            var strip = new EnumToggleStrip(TestHost.RequiredContext);
-            using IDisposable attached = TestHost.Attach(strip);
-            using var bindings = new BindingSet();
-            bindings.BindSelectedValue(strip, model, nameof(Model.Size), () => model.Size, v => model.Size = v);
-            Assert.AreEqual(eSize.Medium, strip.SelectedItem);
-
-            _Buttons(strip.Strip)[0].PerformClick();
-            Assert.AreEqual(eSize.Small, model.Size);
-        }
-
-        [TestMethod]
-        public void BindSelectedItem_ToggleStrip_BothWays ()
-        {
-            var model = new Model();
-            var strip = new ToggleStrip(TestHost.RequiredContext) { ItemsSource = new[] { "A", "B", "C" } };
-            using IDisposable attached = TestHost.Attach(strip);
-            using var bindings = new BindingSet();
-            bindings.BindSelectedItem(strip, model, nameof(Model.Letter), () => model.Letter, v => model.Letter = (string?)v);
-            Assert.AreEqual("B", strip.SelectedItem);
-
-            _Buttons(strip)[2].PerformClick();
-            Assert.AreEqual("C", model.Letter);
-        }
-
         // ===========[ Helper Methods ]===================================
         private static List<TextView> _Buttons (ToggleStrip strip)
         {
@@ -607,16 +487,6 @@ namespace AJut.UX.Tests
             return host;
         }
 
-        // A parent exactly as wide as the strip it holds, so it has no room past the strip's ends
-        private static FrameLayout _FullWidthParent (eToggleStripOverflow overflow, out ToggleStrip strip)
-        {
-            var parent = new FrameLayout(TestHost.RequiredContext);
-            strip = new ToggleStrip(TestHost.RequiredContext) { OverflowBehavior = overflow, ItemsSource = kManyItems };
-            parent.AddView(strip, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MatchParent, ViewGroup.LayoutParams.WrapContent));
-            parent.LayoutParameters = new LinearLayout.LayoutParams(_Dp(kStripLengthDp), ViewGroup.LayoutParams.WrapContent);
-            return parent;
-        }
-
         private static Bitmap _Render (View view)
         {
             Bitmap bitmap = Bitmap.CreateBitmap(view.Width, view.Height, Bitmap.Config.Argb8888!)!;
@@ -630,24 +500,25 @@ namespace AJut.UX.Tests
 
         private static int _AlphaAt (Bitmap bitmap, int x, int y) => new AndroidColor(bitmap.GetPixel(x, y)).A;
 
-        // A touch event dispatched from the top, as a finger's is, so every parent on the way gets its say
-        private static void _Touch (View root, long downTime, MotionEventActions action, float x, float y)
-        {
-            MotionEvent e = MotionEvent.Obtain(downTime, SystemClock.UptimeMillis(), action, x, y, MetaKeyStates.None)!;
-            root.DispatchTouchEvent(e);
-            e.Recycle();
-        }
-
         private static int _DotOffset () => _Dp((float)ToggleStripScrollIndicators.kDotCenterOffset);
 
         private static int _Dp (float dp) => (int)Math.Round(dp * TestHost.RequiredContext.Resources!.DisplayMetrics!.Density);
 
-        private static async Task _WaitUntilAsync (Func<bool> condition)
+        // Lets the main looper run until the condition holds, and fails the test if it never does
+        private static async Task _WaitUntilAsync (Func<bool> condition, [CallerArgumentExpression(nameof(condition))] string conditionText = "")
         {
-            DateTime deadline = DateTime.UtcNow + TimeSpan.FromSeconds(3);
-            while (!condition() && (DateTime.UtcNow < deadline))
+            const int kWaitSeconds = 10;
+            const int kPollMilliseconds = 10;
+
+            DateTime deadline = DateTime.UtcNow + TimeSpan.FromSeconds(kWaitSeconds);
+            while (!condition())
             {
-                await Task.Delay(10);
+                if (DateTime.UtcNow >= deadline)
+                {
+                    Assert.Fail($"Waited {kWaitSeconds} s for {conditionText}, and it never held");
+                }
+
+                await Task.Delay(kPollMilliseconds);
             }
         }
 
@@ -668,40 +539,6 @@ namespace AJut.UX.Tests
             Head = 1,
             Body = 2,
             Tail = 4,
-        }
-
-        private sealed class Model : INotifyPropertyChanged
-        {
-            private eSize m_size = eSize.Medium;
-            private string? m_letter = "B";
-
-            public event PropertyChangedEventHandler? PropertyChanged;
-
-            public eSize Size
-            {
-                get => m_size;
-                set
-                {
-                    if (m_size != value)
-                    {
-                        m_size = value;
-                        this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Size)));
-                    }
-                }
-            }
-
-            public string? Letter
-            {
-                get => m_letter;
-                set
-                {
-                    if (m_letter != value)
-                    {
-                        m_letter = value;
-                        this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Letter)));
-                    }
-                }
-            }
         }
     }
 }

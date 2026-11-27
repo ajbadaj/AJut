@@ -17,6 +17,8 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v7
 
+    # The libraries target .NET 10, but with no global.json the newest SDK on the runner image does the building, which
+    #  can be a later major version than the one installed here
     - name: Setup .NET
       uses: actions/setup-dotnet@v6
       with:
@@ -61,8 +63,9 @@ jobs:
     - name: Build AJut Libraries
       run: ./.github/scripts/build-targets.ps1
 
-    # The WinUI3 tests run unpackaged against the Windows App Runtime, which this runner doesn't have. Windows
-    #  PowerShell, since Add-AppxPackage doesn't reliably load in PowerShell 7.
+    # The WinUI3 tests run unpackaged against the Windows App Runtime, which this runner has only in part, if at all. They
+    #  load the newest framework installed, which can be newer than the one installed here. Windows PowerShell, since
+    #  Add-AppxPackage doesn't reliably load in PowerShell 7.
     - name: Install Windows App Runtime
       shell: powershell
       timeout-minutes: 10

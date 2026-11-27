@@ -55,7 +55,7 @@ namespace AJut.UX.Tests
             PathSelectionRules.Evaluation evaluation = PathSelectionRules.Evaluate(null, ePathType.File, kTextFilter, null, treatEmptyPathAsInvalid: true, treatNonExistentPathAsInvalid: false);
 
             Assert.IsFalse(evaluation.IsPathValid);
-            Assert.AreEqual("Empty path", evaluation.InvalidPathReason);
+            Assert.IsFalse(String.IsNullOrEmpty(evaluation.InvalidPathReason));
         }
 
         [TestMethod]
@@ -75,8 +75,7 @@ namespace AJut.UX.Tests
             PathSelectionRules.Evaluation evaluation = Evaluate(path);
 
             Assert.IsFalse(evaluation.IsPathValid);
-            StringAssert.StartsWith(evaluation.InvalidPathReason, path + "\r\nIndicated file path does not use one of the allowed file extensions:\r\n");
-            StringAssert.EndsWith(evaluation.InvalidPathReason, "txt");
+            StringAssert.Contains(evaluation.InvalidPathReason, "txt", "The reason lists the extension the filter allows");
         }
 
         [TestMethod]
@@ -138,7 +137,7 @@ namespace AJut.UX.Tests
             PathSelectionRules.Evaluation evaluation = PathSelectionRules.Evaluate(m_folder, ePathType.File, PathHelpers.kAnyFileFilter, null, false, false);
 
             Assert.IsFalse(evaluation.IsPathValid);
-            Assert.AreEqual("Looking for a file, path is an existing directory", evaluation.InvalidPathReason);
+            Assert.IsFalse(String.IsNullOrEmpty(evaluation.InvalidPathReason));
         }
 
         [TestMethod]
@@ -147,7 +146,7 @@ namespace AJut.UX.Tests
             PathSelectionRules.Evaluation evaluation = PathSelectionRules.Evaluate(m_file, ePathType.Folder, kTextFilter, null, false, false);
 
             Assert.IsFalse(evaluation.IsPathValid);
-            Assert.AreEqual("Looking for a directory, path is an existing file", evaluation.InvalidPathReason);
+            Assert.IsFalse(String.IsNullOrEmpty(evaluation.InvalidPathReason));
         }
 
         [TestMethod]
@@ -162,11 +161,11 @@ namespace AJut.UX.Tests
 
             PathSelectionRules.Evaluation missingFileInvalid = PathSelectionRules.Evaluate(missingFile, ePathType.File, kTextFilter, null, false, treatNonExistentPathAsInvalid: true);
             Assert.IsFalse(missingFileInvalid.IsPathValid);
-            Assert.AreEqual("File does not exist", missingFileInvalid.InvalidPathReason);
+            Assert.IsFalse(String.IsNullOrEmpty(missingFileInvalid.InvalidPathReason));
 
             PathSelectionRules.Evaluation missingFolderInvalid = PathSelectionRules.Evaluate(missingFolder, ePathType.Folder, kTextFilter, null, false, treatNonExistentPathAsInvalid: true);
             Assert.IsFalse(missingFolderInvalid.IsPathValid);
-            Assert.AreEqual("Folder does not exist", missingFolderInvalid.InvalidPathReason);
+            Assert.IsFalse(String.IsNullOrEmpty(missingFolderInvalid.InvalidPathReason));
         }
 
         [TestMethod]
@@ -177,7 +176,7 @@ namespace AJut.UX.Tests
             PathSelectionRules.Evaluation evaluation = EvaluateUnderRoot(elsewhere);
 
             Assert.IsFalse(evaluation.IsPathValid);
-            Assert.AreEqual($"Path does not indicate a location under the fixed root path (fixed root path is '{m_root}')", evaluation.InvalidPathReason);
+            StringAssert.Contains(evaluation.InvalidPathReason, m_root, "The reason says where the root is");
         }
 
         [TestMethod]

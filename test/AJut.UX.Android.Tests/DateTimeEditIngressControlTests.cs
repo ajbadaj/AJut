@@ -16,7 +16,7 @@ namespace AJut.UX.Tests
     [TestClass]
     public class DateTimeEditIngressControlTests
     {
-        private static readonly TimeSpan kDismissTimeout = TimeSpan.FromSeconds(3);
+        private static readonly TimeSpan kDismissTimeout = TimeSpan.FromSeconds(10);
 
         [TestMethod]
         public void DateTimeEditIngressControl_TypedDateCommitted_BecomesTheValueAndSaysSo ()
@@ -152,7 +152,7 @@ namespace AJut.UX.Tests
                 await Task.Delay(kPollMilliseconds);
             }
 
-            Assert.IsFalse(control.ShowEditDisplay, "The pickers did not close");
+            Assert.IsFalse(control.ShowEditDisplay, $"The pickers did not close within {kDismissTimeout.TotalSeconds} s");
         }
     }
 }

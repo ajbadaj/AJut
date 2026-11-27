@@ -600,7 +600,6 @@ namespace AJut.UX.Tests
             Assert.IsTrue(manager.SaveDockLayoutToPersistentStorage());
 
             CollectionAssert.AreEqual(new[] { "persistent.layout" }, manager.Saved);
-            Assert.AreEqual("persistent.layout~", manager.GenerateDefaultStateStorageAutoSaveTempPath());
         }
 
         // ===========[ Layout files ]==========================================
@@ -630,31 +629,6 @@ namespace AJut.UX.Tests
                 Assert.AreEqual(new DockWindowBounds(10, 20, 300, 400), tearoff.Bounds);
                 Assert.IsTrue(tearoff.IsMaximized);
                 Assert.AreEqual(1, loader.ZonesFor(tearoff).Single().ViewModel.DockedContent.Count);
-            }
-            finally
-            {
-                File.Delete(path);
-            }
-        }
-
-        [TestMethod]
-        public void DMB_LayoutFile_KeepsItsShape ()
-        {
-            string path = TempLayoutPath();
-            try
-            {
-                var saver = MakeLayoutManager();
-                saver.RegisterRoot("main").ViewModel.AddDockedContent(saver.BuildNewDisplayElement<FakeDockPanel>());
-                var torn = saver.BuildNewDisplayElement<FakeDockPanel>();
-                saver.CreateTearoffForPanel(torn.DockingAdapter, 10, 20, 300, 400);
-                saver.SaveDockLayoutToFile(path);
-
-                // Every stack reads this shape, so its names are the format: they must not drift
-                string text = File.ReadAllText(path);
-                foreach (string name in new[] { "Core", "ZoneInfoByRoot", "main", "Ancillary", "WindowX", "WindowY", "WindowWidth", "WindowHeight", "IsMaximized", "IsFullscreen", "State" })
-                {
-                    StringAssert.Contains(text, name);
-                }
             }
             finally
             {

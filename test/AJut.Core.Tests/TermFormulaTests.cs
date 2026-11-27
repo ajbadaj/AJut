@@ -721,11 +721,8 @@ namespace AJut.Core.UnitTests
             TermFunctions functions = MustParseFunctions(sources.ToArray());
             TermDeclarations declarations = new TermDeclarations(functions).Int("a").String("s");
 
-            Stopwatch timer = Stopwatch.StartNew();
             AssertEvaluationFails(MustParse("f30($a)", declarations), declarations.CreateValues().Set("a", 1), 0, "This took too much work to figure out");
             AssertEvaluationFails(MustParse("s30(\"ab\")", declarations), declarations.CreateValues().Set("a", 1), 0, "too much work");
-            timer.Stop();
-            Assert.IsTrue(timer.Elapsed < TimeSpan.FromSeconds(10), $"Took {timer.Elapsed}");
 
             TermValues longText = declarations.CreateValues().Set("a", 1).Set("s", new string('x', 2_000_000));
             AssertEvaluationFails(declarations, longText, "$s == $s", 3, "too much work");

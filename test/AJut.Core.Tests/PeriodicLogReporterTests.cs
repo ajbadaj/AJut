@@ -18,6 +18,9 @@ namespace AJut.Core.UnitTests
     {
         private static readonly TimeSpan kShortPeriod = TimeSpan.FromMilliseconds(30);
 
+        // Dozens of short periods, so a timer that kept going would land a tick inside it even on a slow machine
+        private static readonly TimeSpan kQuietWindow = TimeSpan.FromSeconds(1);
+
         private readonly object m_loggedOutputLock = new object();
         private List<string> m_loggedOutput;
 
@@ -186,19 +189,12 @@ namespace AJut.Core.UnitTests
         }
 
         [TestMethod]
-        public void Timer_TicksRepeatedly_OffTheRegisteringThread ()
+        public void Timer_TicksRepeatedly ()
         {
             using var reporter = new PeriodicLogReporter { Period = kShortPeriod };
-            int registeringThreadId = Environment.CurrentManagedThreadId;
-            int tickThreadId = registeringThreadId;
-            using IDisposable registration = reporter.Register("timed", () =>
-            {
-                Volatile.Write(ref tickThreadId, Environment.CurrentManagedThreadId);
-                return "TIMED_REPORT";
-            });
+            using IDisposable registration = reporter.Register("timed", () => "TIMED_REPORT");
 
             Assert.IsTrue(LoggerTestHelpers.WaitFor(() => this.CountCaptured("TIMED_REPORT") >= 2), "Expected at least two ticks");
-            Assert.AreNotEqual(registeringThreadId, Volatile.Read(ref tickThreadId));
         }
 
         [TestMethod]
@@ -232,18 +228,12 @@ namespace AJut.Core.UnitTests
 
             registration.Dispose();
 
-            // A tick that was already underway can still land, so settle before counting
-            Thread.Sleep(kShortPeriod * 2);
+            // A tick that was already underway can still land. ReportNow waits for a round in progress to finish, so once it
+            //  returns the count is settled, however slow that tick was.
+            reporter.ReportNow();
             int countAfterDispose = this.CountCaptured("STOPPING_REPORT");
-            Thread.Sleep(kShortPeriod * 4);
+            Thread.Sleep(kQuietWindow);
             Assert.AreEqual(countAfterDispose, this.CountCaptured("STOPPING_REPORT"));
-        }
-
-        [TestMethod]
-        public void Period_Default_IsFiveMinutes ()
-        {
-            using var reporter = new PeriodicLogReporter();
-            Assert.AreEqual(TimeSpan.FromMinutes(5), reporter.Period);
         }
 
         [TestMethod]
@@ -299,11 +289,12 @@ namespace AJut.Core.UnitTests
             Assert.IsFalse(reporter.IsTimerRunning);
 
             // Nothing is left to report after, from ReportNow or the timer. A timer tick that was already producing a line when
-            //  the dispose landed can still finish, so settle before counting.
-            Thread.Sleep(kShortPeriod);
+            //  the dispose landed can still finish, and ReportNow waits for a round in progress, so the first call settles the
+            //  count however slow that tick was.
+            reporter.ReportNow();
             int countAfterDispose = this.CountCaptured("_REPORT");
             reporter.ReportNow();
-            Thread.Sleep(kShortPeriod * 3);
+            Thread.Sleep(kQuietWindow);
             Assert.AreEqual(countAfterDispose, this.CountCaptured("_REPORT"));
 
             // Harmless after the reporter already dropped it

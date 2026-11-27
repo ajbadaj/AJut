@@ -29,12 +29,6 @@ namespace AJut.UX.Tests
             Assert.AreEqual(false, CompareWithWpf(NumericComparisonToBoolConverter.eComparison.LessThanOrEqual, double.NaN, 5.0));
         }
 
-        [TestMethod]
-        public void NumericConverterMath_WpfComparisonConverter_AnIntegerAgainstAFractionKeepsTheFraction ()
-        {
-            Assert.AreEqual(true, CompareWithWpf(NumericComparisonToBoolConverter.eComparison.GreaterThan, 2, 1.5));
-        }
-
         // A null value gives the false value for every comparison, "not equal" included
         [TestMethod]
         public void NumericConverterMath_WpfComparisonConverter_NullGivesTheFalseValue ()

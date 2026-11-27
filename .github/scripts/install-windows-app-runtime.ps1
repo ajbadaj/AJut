@@ -4,14 +4,18 @@ param (
     [string]$architecture = "x64"
 )
 
-# Installs the Windows App Runtime the WinUI3 tests run against. The test project is unpackaged and not
-#  self-contained, so the runtime has to be installed on the machine. A machine with the Windows App SDK tooling
-#  usually has it; a CI runner doesn't.
+# Installs the Windows App Runtime the WinUI3 tests need. The test project is unpackaged and not self-contained, so the
+#  runtime has to be installed on the machine. A machine with the Windows App SDK tooling usually has it; a CI runner
+#  may have none of it, or only some of it.
 #
 # It installs from the Microsoft.WindowsAppSDK.Runtime NuGet package the test project restores, which carries the
 #  runtime's MSIX packages (the framework, DDLM, Main and Singleton, the same four the WindowsAppRuntimeInstall
 #  installer adds). So what gets installed is always the version the tests build against, and there is no download
 #  link to keep in step with the package version. A package already installed at that version or newer is left alone.
+#
+# What gets installed is not always what the tests load. An unpackaged app binds to the newest framework installed in
+#  its family, so when the runner image already has a newer one, the tests run on that. GitHub's images often do: the
+#  newest Microsoft.WindowsAppRuntime.2 in the table this prints at the end is the framework the tests will get.
 #
 # This is meant for CI: it installs packages on the machine, which a test run on a dev machine shouldn't do as a side
 #  effect. -WhatIf shows what it would install without installing anything. It runs in Windows PowerShell, since

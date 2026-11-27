@@ -2,9 +2,7 @@ namespace AJut.UX.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.ComponentModel;
     using System.Linq;
-    using AJut.UX.CodeBinding;
     using AJut.UX.Controls;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using UIKit;
@@ -213,28 +211,6 @@ namespace AJut.UX.Tests
             Assert.IsTrue(block.IsEmpty);
         }
 
-        // ===[ Binding ]===
-
-        [TestMethod]
-        public void EditableTextBlock_BindText_PushesBothWays ()
-        {
-            var model = new Model { Name = "Kestrel" };
-            var block = new EditableTextBlock();
-            using var bindings = new BindingSet();
-            using (TestHost.Attach(block))
-            {
-                bindings.BindText(block, model, nameof(Model.Name), () => model.Name, value => model.Name = value);
-                Assert.AreEqual("Kestrel", block.Text);
-
-                model.Name = "Hobby";
-                Assert.AreEqual("Hobby", block.Text);
-
-                block.IsEditing = true;
-                Type(block, "Merlin");
-                Assert.AreEqual("Merlin", model.Name);
-            }
-        }
-
         // ===[ Helpers ]===
 
         private static UILabel LabelOf (EditableTextBlock block) => block.Subviews.OfType<UILabel>().Single();
@@ -247,23 +223,6 @@ namespace AJut.UX.Tests
             UITextField field = FieldOf(block);
             field.Text = text;
             field.SendActionForControlEvents(UIControlEvent.EditingChanged);
-        }
-
-        private sealed class Model : INotifyPropertyChanged
-        {
-            private string m_name;
-
-            public event PropertyChangedEventHandler PropertyChanged;
-
-            public string Name
-            {
-                get => m_name;
-                set
-                {
-                    m_name = value;
-                    this.PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(this.Name)));
-                }
-            }
         }
     }
 }

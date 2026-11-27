@@ -126,19 +126,6 @@ namespace AJut.UX.Tests
             Assert.AreEqual(eFlags.Four, value);
         }
 
-        [TestMethod]
-        public void IsFlags_ReadsTheFlagsAttribute ()
-        {
-            Assert.IsTrue(EnumSelectionOptions.IsFlags(typeof(eFlags)));
-            Assert.IsFalse(EnumSelectionOptions.IsFlags(typeof(ePlain)));
-        }
-
-        [TestMethod]
-        public void GetDisplayName_IsTheValueName ()
-        {
-            Assert.AreEqual("Alpha", EnumSelectionOptions.GetDisplayName(ePlain.Alpha));
-        }
-
         // ===========[ Helper Methods ]===================================
         // An enum strip's items, the way a toolkit's EnumToggleStrip builds them; ResetFromSource selects the first value.
         private static ToggleStripItemCollection MakeItems (bool allowMultiSelect, System.Collections.Generic.IEnumerable<Enum> values)

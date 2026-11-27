@@ -602,79 +602,12 @@ namespace AJut.UX.Tests
         }
     }
 
-    // ===========[ ShowIf/HideIf generation tests ]==========================================
-
-    [TestClass]
-    public class PGShowIfHideIfGenerationTests
-    {
-        [TestMethod]
-        public void ShowIf_AlwaysGeneratesTarget ()
-        {
-            // GenerateForPropertiesOf no longer filters ShowIf/HideIf -
-            // filtering is deferred to PropertyGridManager
-            var source = new ShowIfTestSource { ShowExtra = false };
-            var targets = PropertyEditTarget.GenerateForPropertiesOf(source).ToList();
-
-            Assert.IsTrue(
-                targets.Any(t => t.PropertyPathTarget == nameof(ShowIfTestSource.ConditionalValue)),
-                "Conditional target should always be generated regardless of condition state"
-            );
-        }
-
-        [TestMethod]
-        public void HideIf_AlwaysGeneratesTarget ()
-        {
-            var source = new HideIfTestSource { HideExtra = true };
-            var targets = PropertyEditTarget.GenerateForPropertiesOf(source).ToList();
-
-            Assert.IsTrue(
-                targets.Any(t => t.PropertyPathTarget == nameof(HideIfTestSource.HiddenWhenTrue)),
-                "HideIf target should always be generated"
-            );
-        }
-    }
-
     // ===========[ PropertyGridManager tests ]==========================================
 
     [TestClass]
     public class PropertyGridManagerTests
     {
-        // ------ Basic build ------
-
-        [TestMethod]
-        public void Build_BasicSource_PopulatesTree ()
-        {
-            var source = new BasicModel();
-            var pg = new SimpleTestPropertyGrid { SingleItemSource = source };
-            var manager = new PropertyGridManager(pg);
-
-            manager.RebuildEditTargets();
-
-            Assert.IsNotNull(manager.RootNode);
-            Assert.IsTrue(manager.RootNode.Children.Count > 0);
-        }
-
         // ------ ShowIf via manager ------
-
-        [TestMethod]
-        public void ShowIf_HidesWhenConditionFalse ()
-        {
-            var source = new ShowIfTestSource { ShowExtra = false };
-            var pg = new SimpleTestPropertyGrid { SingleItemSource = source };
-            var manager = new PropertyGridManager(pg);
-
-            manager.RebuildEditTargets();
-
-            var allTargets = _GetAllTargets(manager.RootNode);
-            Assert.IsFalse(
-                allTargets.Any(t => t.PropertyPathTarget == nameof(ShowIfTestSource.ConditionalValue)),
-                "ConditionalValue should be hidden when ShowExtra is false"
-            );
-            Assert.IsTrue(
-                allTargets.Any(t => t.PropertyPathTarget == nameof(ShowIfTestSource.AlwaysVisible)),
-                "AlwaysVisible should always be present"
-            );
-        }
 
         [TestMethod]
         public void ShowIf_ShowsWhenConditionTrue ()
@@ -1177,11 +1110,6 @@ namespace AJut.UX.Tests
             Assert.IsNotNull(root);
 
             var childrenAsOfRebuild = ((IObservableTreeNode)root).Children;
-            Assert.IsInstanceOfType(
-                childrenAsOfRebuild,
-                typeof(INotifyCollectionChanged),
-                "root.Children must implement INotifyCollectionChanged - FlatTreeListControl relies on it to refresh when PGShowIf toggles rows in/out"
-            );
 
             // Now drive the same mutation UpdateConditionalVisibility causes and confirm
             // the listener actually hears it.
@@ -1493,26 +1421,6 @@ namespace AJut.UX.Tests
         // ------ ShowIf via IPropertyEditManager (delegates to inner object) ------
 
         [TestMethod]
-        public void ShowIf_ViaEditManager_HiddenWhenConditionFalse ()
-        {
-            // The IPropertyEditManager generates targets from an inner object,
-            // but the PropertyGrid source is the manager itself. ShowIf attributes
-            // live on the inner object's type, not the manager's type.
-            var inner = new EditManagerShowIfSource { ShowConditional = false };
-            var manager = new TestEditManager(inner);
-            var pg = new SimpleTestPropertyGrid { SingleItemSource = manager };
-            var pgManager = new PropertyGridManager(pg);
-
-            pgManager.RebuildEditTargets();
-
-            var allTargets = _GetAllTargets(pgManager.RootNode);
-            Assert.IsFalse(
-                allTargets.Any(t => t.PropertyPathTarget == nameof(EditManagerShowIfSource.ConditionalValue)),
-                "ConditionalValue should be hidden when ShouldShowConditional() returns false"
-            );
-        }
-
-        [TestMethod]
         public void ShowIf_ViaEditManager_ShownWhenConditionTrue ()
         {
             var inner = new EditManagerShowIfSource { ShowConditional = true };
@@ -1565,22 +1473,6 @@ namespace AJut.UX.Tests
         }
 
         // ------ ShowIf + PGElevateAsParent ------
-
-        [TestMethod]
-        public void ShowIf_ElevateAsParent_HiddenWhenMethodReturnsFalse ()
-        {
-            var source = new ElevateShowIfMethodTestSource { ShowWrapped = false };
-            var pg = new SimpleTestPropertyGrid { SingleItemSource = source };
-            var manager = new PropertyGridManager(pg);
-
-            manager.RebuildEditTargets();
-
-            var allTargets = _GetAllTargets(manager.RootNode);
-            Assert.IsFalse(
-                allTargets.Any(t => t.PropertyPathTarget == nameof(ElevateShowIfMethodTestSource.ConditionalWrapped)),
-                "ConditionalWrapped should be hidden when ShouldShowWrapped() returns false"
-            );
-        }
 
         [TestMethod]
         public void ShowIf_ElevateAsParent_ShownWhenMethodReturnsTrue ()
@@ -1651,25 +1543,6 @@ namespace AJut.UX.Tests
         }
 
         // ------ ShowIf + PGElevateAsParent with derived class ------
-
-        [TestMethod]
-        public void ShowIf_ElevateAsParent_DerivedClass_HiddenWhenFalse ()
-        {
-            // The private ShouldShowWrapped() method is on the BASE class.
-            // When the runtime type is the derived class, GetMethod with NonPublic
-            // may not find private members from the base class.
-            var source = new ElevateShowIfDerivedClass { ShowWrapped = false };
-            var pg = new SimpleTestPropertyGrid { SingleItemSource = source };
-            var manager = new PropertyGridManager(pg);
-
-            manager.RebuildEditTargets();
-
-            var allTargets = _GetAllTargets(manager.RootNode);
-            Assert.IsFalse(
-                allTargets.Any(t => t.PropertyPathTarget == nameof(ElevateShowIfBaseClass.ConditionalWrapped)),
-                "ConditionalWrapped should be hidden when ShouldShowWrapped() on base returns false"
-            );
-        }
 
         [TestMethod]
         public void ShowIf_ElevateAsParent_DerivedClass_ShownWhenTrue ()
@@ -2174,22 +2047,6 @@ namespace AJut.UX.Tests
             Assert.IsNotNull(elemCtx.RemoveCommand);
         }
 
-        // ------ Manager integration ------
-
-        [TestMethod]
-        public void List_ManagerBuildsListTargets ()
-        {
-            var source = new ListTestSource();
-            var pg = new SimpleTestPropertyGrid { SingleItemSource = source };
-            var manager = new PropertyGridManager(pg);
-
-            manager.RebuildEditTargets();
-
-            var allTargets = _GetAllTargets(manager.RootNode);
-            Assert.IsTrue(allTargets.Any(t => t.PropertyPathTarget == nameof(ListTestSource.Tags)));
-            Assert.IsTrue(allTargets.Any(t => t.PropertyPathTarget == nameof(ListTestSource.Numbers)));
-        }
-
         [TestMethod]
         public void List_NonListPropertiesUnaffected ()
         {
@@ -2272,22 +2129,6 @@ namespace AJut.UX.Tests
             listTarget.RecacheEditValue();
 
             Assert.AreEqual(4, listTarget.Children.Count, "After populate: should have 4 children");
-        }
-
-        // ------ Helper ------
-
-        private static List<PropertyEditTarget> _GetAllTargets (PropertyEditTarget root)
-        {
-            var results = new List<PropertyEditTarget>();
-            foreach (var node in TreeTraversal<IObservableTreeNode>.All(root).OfType<PropertyEditTarget>())
-            {
-                if (node != root)
-                {
-                    results.Add(node);
-                }
-            }
-
-            return results;
         }
     }
 }

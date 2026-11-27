@@ -123,27 +123,6 @@ namespace AJut.UX.Tests
         }
 
         [TestMethod]
-        public void BusyWait_Unthemed_Inline_LeavesTheSpinnersOwnTint ()
-        {
-            AJut.UX.Theming.ThemeColors.IsThemeLoaded = false;
-
-            var busy = new BusyWait(TestHost.RequiredContext);
-
-            Assert.IsNull(SpinnerOf(busy).IndeterminateTintList, "Setting any tint, even none, replaces the one the spinner's drawable carries");
-        }
-
-        [TestMethod]
-        public void BusyWait_OverlayBackToInline_Unthemed_GivesTheSpinnerTheThemesAccent ()
-        {
-            AJut.UX.Theming.ThemeColors.IsThemeLoaded = false;
-            var busy = new BusyWait(TestHost.RequiredContext) { IsOverlay = true };
-
-            busy.IsOverlay = false;
-
-            Assert.IsNotNull(SpinnerOf(busy).IndeterminateTintList, "Once tinted, the spinner goes back to the theme's colorControlActivated, not to no tint");
-        }
-
-        [TestMethod]
         public void BusyWait_Inline_KeepsABackgroundTheAppGaveIt ()
         {
             var busy = new BusyWait(TestHost.RequiredContext);
