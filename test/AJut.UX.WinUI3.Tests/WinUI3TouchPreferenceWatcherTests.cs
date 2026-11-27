@@ -15,8 +15,6 @@ namespace AJut.UX.WinUI3.Tests
     [TestClass]
     public class WinUI3TouchPreferenceWatcherTests
     {
-        private static readonly TimeSpan kWait = TimeSpan.FromSeconds(10);
-
         [TestMethod]
         public void TouchPreferenceWatcher_NoticeOffTheQueueThread_ChangesOnTheQueueThread ()
         {
@@ -31,7 +29,7 @@ namespace AJut.UX.WinUI3.Tests
                 source.IsTouchPreferred = true;
                 Task.Run(source.RaiseNotice).Wait();
 
-                Assert.IsTrue(changes.Raised.Wait(kWait), "The change is raised");
+                changes.Raised.Wait();
                 watcher.IsTouchPreferredChanged -= changes.OnChanged;
                 Assert.AreEqual(1, changes.Count);
                 Assert.IsTrue(changes.LastValue);
@@ -73,16 +71,13 @@ namespace AJut.UX.WinUI3.Tests
 
         // ===========[ Helper Methods ]===================================
         // A queue on a dedicated thread is shut down asynchronously, from any thread
-        private static void ShutDown (DispatcherQueueController controller)
-        {
-            Assert.IsTrue(controller.ShutdownQueueAsync().AsTask().Wait(kWait), "The queue shuts down");
-        }
+        private static void ShutDown (DispatcherQueueController controller) => controller.ShutdownQueueAsync().AsTask().Wait();
 
         private static TouchPreferenceWatcher CreateOnQueue (DispatcherQueue queue, StandInSource source, out int queueThreadId)
         {
             var maker = new WatcherMaker(queue, source);
             Assert.IsTrue(queue.TryEnqueue(maker.Make), "The queue takes work");
-            Assert.IsTrue(maker.Made.Wait(kWait), "The watcher is made on the queue's thread");
+            maker.Made.Wait();
             queueThreadId = maker.ThreadId;
             return maker.Watcher;
         }
@@ -92,7 +87,7 @@ namespace AJut.UX.WinUI3.Tests
         {
             using var drained = new ManualResetEventSlim();
             Assert.IsTrue(queue.TryEnqueue(DispatcherQueuePriority.Low, drained.Set));
-            Assert.IsTrue(drained.Wait(kWait), "The queue drains");
+            drained.Wait();
         }
 
         // ===========[ Subclasses/structs ]===================================

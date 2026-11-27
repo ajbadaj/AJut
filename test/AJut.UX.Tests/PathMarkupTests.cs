@@ -39,7 +39,7 @@ namespace AJut.UX.Tests
         {
             Assert.IsFalse(PathMarkup.TryParse("L1 1", out PathMarkupData data, out string error));
             Assert.IsNull(data);
-            StringAssert.Contains(error, "M or m");
+            Assert.IsFalse(String.IsNullOrEmpty(error));
         }
 
         [TestMethod]

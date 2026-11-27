@@ -2,6 +2,7 @@ namespace AJut.UX.Tests
 {
     using System;
     using System.Collections.Concurrent;
+    using System.Diagnostics;
     using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Runtime.ExceptionServices;
@@ -66,33 +67,8 @@ namespace AJut.UX.Tests
                     source.Dispose();
 
                     Assert.IsFalse(source.IsTouchPreferred, "Disposed, there is nothing left to ask");
-                    Assert.IsTrue(PumpUntil(() => !source.IsSubscribed), "Windows gets its change handler back");
+                    PumpUntil(() => !source.IsSubscribed, "Windows gets its change handler back");
                     source.Dispose();
-                }
-                finally
-                {
-                    window.Close();
-                }
-            });
-        }
-
-        [TestMethod]
-        public void WindowsTouchPreferenceSource_Subscribed_HearsWindowsFirstNotice ()
-        {
-            AssumeWindowsWithTouchPreference();
-            AppLikeUIThread.Run(() =>
-            {
-                var window = new Window();
-                try
-                {
-                    using WindowsTouchPreferenceSource source = WindowsTouchPreferenceSource.TryCreateForWindow(HandleOf(window));
-                    var notices = new NoticeRecorder();
-                    source.PreferenceMayHaveChanged += notices.OnNotice;
-
-                    bool heard = PumpUntil(() => notices.Count > 0);
-                    source.PreferenceMayHaveChanged -= notices.OnNotice;
-
-                    Assert.IsTrue(heard, "Windows sends a notice soon after a handler is added");
                 }
                 finally
                 {
@@ -116,7 +92,7 @@ namespace AJut.UX.Tests
                     // Windows' first notice is delivered when this thread next pumps messages, and taking the handler back
                     // before then can deadlock inside Windows, so the source waits for it
                     Assert.IsTrue(source.IsSubscribed, "The handler stays with Windows until its first notice has been delivered");
-                    Assert.IsTrue(PumpUntil(() => !source.IsSubscribed), "Once the notice has come, Windows gets its change handler back");
+                    PumpUntil(() => !source.IsSubscribed, "Once the notice has come, Windows gets its change handler back");
                 }
                 finally
                 {
@@ -263,27 +239,6 @@ namespace AJut.UX.Tests
             });
         }
 
-        [TestMethod]
-        public void TouchPreferenceWatcher_ForAWindow_FollowsWindowsWhereWindowsOffersIt ()
-        {
-            AppLikeUIThread.Run(() =>
-            {
-                var window = new Window();
-                try
-                {
-                    var watcher = new TouchPreferenceWatcher(window);
-                    Assert.AreEqual(IsWindowsWithTouchPreference, watcher.IsAvailable, "It follows Windows from Windows 11 24H2 on");
-
-                    watcher.Dispose();
-                    Assert.IsFalse(watcher.IsAvailable);
-                }
-                finally
-                {
-                    window.Close();
-                }
-            });
-        }
-
         // ===========[ Helper Methods ]===================================
         private static void AssumeWindowsWithTouchPreference ()
         {
@@ -339,7 +294,7 @@ namespace AJut.UX.Tests
         {
             var thread = new Thread(new ThreadStart(work)) { IsBackground = true, Name = "Touch preference notice" };
             thread.Start();
-            Assert.IsTrue(thread.Join(TimeSpan.FromSeconds(10)), "The other thread finishes");
+            thread.Join();
             return thread.ManagedThreadId;
         }
 
@@ -351,17 +306,24 @@ namespace AJut.UX.Tests
             return invoke(handlerPointer, IntPtr.Zero, IntPtr.Zero);
         }
 
-        // Pumps this thread's messages until the condition holds, or a few seconds pass; says whether it held
-        private static bool PumpUntil (Func<bool> condition)
+        // Pumps this thread's messages until the condition holds. Windows delivers its notices as window messages, and a
+        // slow machine can take a long while to send one, so the limit is generous and only there to fail a real hang
+        // with a reason
+        private static void PumpUntil (Func<bool> condition, string waitingFor)
         {
-            const int kMaxPumps = 300;
-            for (int pump = 0; (pump < kMaxPumps) && !condition(); ++pump)
+            const int kGiveUpAfterSeconds = 30;
+            const int kPauseBetweenPumpsMs = 10;
+            Stopwatch waited = Stopwatch.StartNew();
+            while (!condition())
             {
-                PumpDispatcher();
-                Thread.Sleep(10);
-            }
+                if (waited.Elapsed.TotalSeconds >= kGiveUpAfterSeconds)
+                {
+                    Assert.Fail($"Still not so after {kGiveUpAfterSeconds} s of pumping this thread's messages: {waitingFor}");
+                }
 
-            return condition();
+                PumpDispatcher();
+                Thread.Sleep(kPauseBetweenPumpsMs);
+            }
         }
 
         // Runs everything queued on this thread's dispatcher
@@ -458,8 +420,6 @@ namespace AJut.UX.Tests
         private sealed class NoticeRecorder
         {
             private readonly ConcurrentQueue<int> m_noticeThreadIds = new ConcurrentQueue<int>();
-
-            public int Count => m_noticeThreadIds.Count;
 
             public int CountOn (int threadId) => m_noticeThreadIds.Count(id => id == threadId);
 

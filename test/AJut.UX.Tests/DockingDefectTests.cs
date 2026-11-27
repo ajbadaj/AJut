@@ -292,37 +292,25 @@ namespace AJut.UX.Tests
         [TestMethod]
         public void DockDefect_RemovingATabBeforeTheSelectedOne_KeepsTheSameTabSelected ()
         {
-            var manager = new TestDockingManager();
-            DockZoneViewModel zone = manager.RegisterRoot().ViewModel;
-            var first = manager.BuildNewDisplayElement<FakeDockPanel>();
-            var second = manager.BuildNewDisplayElement<FakeDockPanel>();
-            var third = manager.BuildNewDisplayElement<FakeDockPanel>();
-            zone.AddDockedContent(first);
-            zone.AddDockedContent(second);
-            zone.AddDockedContent(third);
-            zone.SelectedIndex = 2;
+            // The second tab selected, then the third
+            foreach (int selectedIndex in new[] { 1, 2 })
+            {
+                var manager = new TestDockingManager();
+                DockZoneViewModel zone = manager.RegisterRoot().ViewModel;
+                var first = manager.BuildNewDisplayElement<FakeDockPanel>();
+                var second = manager.BuildNewDisplayElement<FakeDockPanel>();
+                var third = manager.BuildNewDisplayElement<FakeDockPanel>();
+                zone.AddDockedContent(first);
+                zone.AddDockedContent(second);
+                zone.AddDockedContent(third);
+                zone.SelectedIndex = selectedIndex;
+                DockingContentAdapterModel selected = zone.DockedContent[selectedIndex];
 
-            zone.RemoveDockedContent(first.DockingAdapter);
+                zone.RemoveDockedContent(first.DockingAdapter);
 
-            Assert.AreEqual(1, zone.SelectedIndex, "The third tab moved to index 1 and is still the selected one");
-        }
-
-        [TestMethod]
-        public void DockDefect_RemovingATabBeforeTheSelectedOne_DoesNotShiftTheSelection ()
-        {
-            var manager = new TestDockingManager();
-            DockZoneViewModel zone = manager.RegisterRoot().ViewModel;
-            var first = manager.BuildNewDisplayElement<FakeDockPanel>();
-            var second = manager.BuildNewDisplayElement<FakeDockPanel>();
-            var third = manager.BuildNewDisplayElement<FakeDockPanel>();
-            zone.AddDockedContent(first);
-            zone.AddDockedContent(second);
-            zone.AddDockedContent(third);
-            zone.SelectedIndex = 1;
-
-            zone.RemoveDockedContent(first.DockingAdapter);
-
-            Assert.AreSame(second.DockingAdapter, zone.DockedContent[zone.SelectedIndex], "The selected tab must stay selected when an earlier one goes");
+                Assert.AreEqual(selectedIndex - 1, zone.SelectedIndex, $"Tab {selectedIndex} moved down one place");
+                Assert.AreSame(selected, zone.DockedContent[zone.SelectedIndex], $"Tab {selectedIndex} must stay selected when an earlier one goes");
+            }
         }
 
         // ===========[ Failed tearoffs ]=======================================

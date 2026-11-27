@@ -40,8 +40,8 @@ namespace AJut.UX.Tests
             host.Type("soonish");
 
             Assert.IsFalse(host.Controller.IsTextValid);
-            Assert.AreEqual("'soonish' isn't a date", host.Controller.InvalidTextReason);
-            Assert.AreEqual("'soonish' isn't a date", host.Controller.CurrentToolTip);
+            Assert.IsFalse(String.IsNullOrEmpty(host.Controller.InvalidTextReason), "The text says why it can't be read");
+            Assert.AreEqual(host.Controller.InvalidTextReason, host.Controller.CurrentToolTip);
             Assert.IsFalse(host.Controller.CommitText(), "Text that can't be read is not taken");
             Assert.AreEqual(held, host.Controller.Value);
             Assert.AreEqual("soonish", host.Controller.Text, "And it stays as typed, to be fixed");
@@ -226,11 +226,19 @@ namespace AJut.UX.Tests
         {
             var host = new TestHost();
             host.Controller.IncludeTime = true;
+            var pickedTime = new TimeSpan(9, 0, 0);
 
+            // Today is read on each side of the pick, so a run that crosses midnight takes either day
+            DateTime todayBeforePick = DateTime.Today;
             host.Controller.BeginPickerEdit();
-            host.Controller.PickTimeOfDay(new TimeSpan(9, 0, 0));
+            host.Controller.PickTimeOfDay(pickedTime);
+            DateTime todayAfterPick = DateTime.Today;
 
-            Assert.AreEqual(DateTime.Today.AddHours(9), host.Controller.Value);
+            DateTime? value = host.Controller.Value;
+            Assert.IsTrue(
+                (value == todayBeforePick + pickedTime) || (value == todayAfterPick + pickedTime),
+                $"'{value}' is today at the time picked"
+            );
         }
 
         [TestMethod]

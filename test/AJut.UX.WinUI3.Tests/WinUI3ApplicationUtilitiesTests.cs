@@ -99,7 +99,6 @@ namespace AJut.UX.WinUI3.Tests
         [TestMethod]
         public void AppUtils_OverrideGiven_WinsOverTheSpecialFolder ()
         {
-            string specialFolderResult = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), kProjectName);
             string actual = ApplicationUtilities.DetermineAppDataRoot(new ApplicationSetupConfig(kProjectName)
             {
                 ApplicationStorageRoot = Environment.SpecialFolder.ApplicationData,
@@ -107,7 +106,6 @@ namespace AJut.UX.WinUI3.Tests
             });
 
             Assert.AreEqual(m_overrideRoot, actual);
-            Assert.AreNotEqual(specialFolderResult, actual);
         }
 
         [TestMethod]

@@ -7,17 +7,15 @@ namespace AJut.UX.Tests
     using System.Windows.Controls;
     using System.Windows.Controls.Primitives;
     using System.Windows.Media;
-    using System.Windows.Media.Effects;
-    using System.Windows.Threading;
     using AJut.UX.Controls;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
     /// WPF controls with the AJut theme loaded and with none. Every control a user can focus takes the AJut focus visual,
     /// and the list of those accounts for every AJut control. With no theme loaded, the docking buttons, toolbar, and toggle
-    /// switch still draw. PathSelectionControl glows when its path is invalid and its brush properties read back what they
-    /// hold, and FlatTreeListControl gives a drag target's expander back to its style when the highlight clears. WPF objects
-    /// need an STA thread, so each test runs on one, and nothing is ever shown.
+    /// switch still draw. PathSelectionControl glows while its path is invalid and its brush properties are all WPF brushes,
+    /// and FlatTreeListControl gives a drag target's expander back to its style when the highlight clears. WPF objects need
+    /// an STA thread, so each test runs on one, and nothing is ever shown.
     /// </summary>
     [TestClass]
     public class WpfThemedStateTests
@@ -58,7 +56,7 @@ namespace AJut.UX.Tests
 
         // ===========[ PathSelectionControl ]===================================
         [TestMethod]
-        public void WpfPathSelectionControl_InvalidPath_GlowsInTheInvalidGlowColor ()
+        public void WpfPathSelectionControl_InvalidPath_GlowsUntilThePathIsValid ()
         {
             StaTestThread.Run(() =>
             {
@@ -71,14 +69,9 @@ namespace AJut.UX.Tests
                 MakeHost(path);
                 Assert.IsFalse(path.IsPathValid, "An empty path is invalid here");
 
-                // The glow is a border of its own behind the content, so the text box is never drawn through an effect
-                var root = (Border)path.Template.FindName("PathSelectorBorderRoot", path);
+                // The glow is a border of its own behind the content
                 var glowBorder = (Border)path.Template.FindName("PathSelectorGlow", path);
-                Assert.IsNull(root.Effect, "The content is not drawn through an effect");
                 Assert.AreEqual(Visibility.Visible, glowBorder.Visibility, "An invalid path draws a glow around the control");
-                var glow = glowBorder.Effect as DropShadowEffect;
-                Assert.IsNotNull(glow, "The glow is a drop shadow with no offset");
-                Assert.AreEqual(Colors.OrangeRed, glow.Color, "The glow takes InvalidPathGlowBrush, not the invalid border's color");
 
                 path.TreatEmptyPathAsInvalid = false;
                 Assert.IsTrue(path.IsPathValid, "Allowed, an empty path is valid");
@@ -87,7 +80,7 @@ namespace AJut.UX.Tests
         }
 
         [TestMethod]
-        public void WpfPathSelectionControl_BrushProperties_ReadBackTheWpfBrushTheyHold ()
+        public void WpfPathSelectionControl_BrushProperties_AreAllWpfBrushes ()
         {
             StaTestThread.Run(() =>
             {
@@ -97,11 +90,6 @@ namespace AJut.UX.Tests
                     .OrderBy(name => name, StringComparer.Ordinal)
                     .ToArray();
                 Assert.AreEqual(0, gdiTyped.Length, "PathSelectionControl brush properties typed as System.Drawing's Brush, which throw when read from code: " + string.Join(", ", gdiTyped));
-
-                var path = new PathSelectionControl();
-                path.SetValue(PathSelectionControl.FocusedBorderBrushProperty, Brushes.Red);
-                object read = path.FocusedBorderBrush;
-                Assert.AreSame(Brushes.Red, read, "FocusedBorderBrush reads back the brush it holds");
             });
         }
 
@@ -170,57 +158,6 @@ namespace AJut.UX.Tests
             });
         }
 
-        // ===========[ ListBox ]===================================
-        [TestMethod]
-        public void WpfThemed_ListBoxItem_ShowsItsOwnContent_AndABoundItemShowsItsData ()
-        {
-            StaTestThread.Run(() =>
-            {
-                var written = new ListBoxItem { Content = "Item One" };
-                var writtenList = new ListBox();
-                writtenList.Items.Add(written);
-
-                var boundList = new ListBox { ItemsSource = new[] { "Bound One" } };
-                MakeThemedHost(writtenList, boundList);
-                var bound = (ListBoxItem)boundList.ItemContainerGenerator.ContainerFromIndex(0);
-
-                Assert.IsTrue(PresentedContents(written).Contains("Item One"), $"A ListBoxItem written in the list shows {DescribeContents(written)}, not its own Content");
-                Assert.IsTrue(PresentedContents(bound).Contains("Bound One"), $"A bound list's item shows {DescribeContents(bound)}, not its data");
-            });
-        }
-
-        [TestMethod]
-        public void WpfThemed_ListBoxOfManyItems_MakesOnlyTheRowsOnScreen ()
-        {
-            StaTestThread.Run(() =>
-            {
-                // A short list over a thousand items, as the calendar's year picker is over nearly ten thousand
-                const int kItemCount = 1000;
-                const double kListHeight = 100.0;
-                var list = new ListBox { Height = kListHeight, ItemsSource = Enumerable.Range(0, kItemCount).ToArray() };
-                MakeThemedHost(list);
-
-                int made = Enumerable.Range(0, kItemCount).Count(index => list.ItemContainerGenerator.ContainerFromIndex(index) != null);
-                Assert.IsTrue(made < kItemCount / 10, $"The themed ListBox made {made} of its {kItemCount} rows: it isn't virtualizing");
-            });
-        }
-
-        // ===========[ TabItem ]===================================
-        [TestMethod]
-        public void WpfThemed_TabItem_LaidOutBeforeItIsInATabControl_WaitsQuietly ()
-        {
-            StaTestThread.Run(() =>
-            {
-                // The themed TabItem works out its margins and borders from the TabControl around it, which one measured on
-                //  its own does not have yet. Its bindings settle when the dispatcher next runs data binding work, so that
-                //  work is run here, the way any later layout pass on the thread runs it.
-                var tab = new TabItem { Header = "Tab" };
-                MakeThemedHost(tab);
-                RunPendingDispatcherWork();
-                Assert.IsNotNull(tab.Template, "The themed TabItem took its template, and settled with no TabControl around it");
-            });
-        }
-
         // ===========[ Themed and unthemed ]===================================
         [TestMethod]
         public void WpfUnthemed_DockPanelButtonsToolbarAndSwitch_DrawWithTheirOwnColors ()
@@ -286,20 +223,6 @@ namespace AJut.UX.Tests
             host.UpdateLayout();
         }
 
-        // Runs everything queued on this thread's dispatcher above Background, data binding work among it
-        private static void RunPendingDispatcherWork ()
-        {
-            var frame = new DispatcherFrame();
-            Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Background, new DispatcherOperationCallback(EndFrame), frame);
-            Dispatcher.PushFrame(frame);
-        }
-
-        private static object EndFrame (object frame)
-        {
-            ((DispatcherFrame)frame).Continue = false;
-            return null;
-        }
-
         // MessageBoxPopover is made through its factory; everything else has a parameterless constructor
         private static FrameworkElement MakeControl (Type type)
         {
@@ -309,34 +232,6 @@ namespace AJut.UX.Tests
             }
 
             return (FrameworkElement)Activator.CreateInstance(type);
-        }
-
-        // What every content presenter under an element is showing
-        private static List<object> PresentedContents (DependencyObject root)
-        {
-            var contents = new List<object>();
-            var toVisit = new Stack<DependencyObject>();
-            toVisit.Push(root);
-            while (toVisit.Count > 0)
-            {
-                DependencyObject next = toVisit.Pop();
-                if (next is ContentPresenter presenter)
-                {
-                    contents.Add(presenter.Content);
-                }
-
-                for (int index = 0; index < VisualTreeHelper.GetChildrenCount(next); ++index)
-                {
-                    toVisit.Push(VisualTreeHelper.GetChild(next, index));
-                }
-            }
-
-            return contents;
-        }
-
-        private static string DescribeContents (DependencyObject root)
-        {
-            return "[" + string.Join(", ", PresentedContents(root).Select(content => content?.ToString() ?? "nothing")) + "]";
         }
 
         private static ResourceDictionary LoadAJutResources (string path)

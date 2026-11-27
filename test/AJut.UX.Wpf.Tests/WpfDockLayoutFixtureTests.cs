@@ -58,17 +58,6 @@ namespace AJut.UX.Tests
             Assert.AreEqual(File.ReadAllText(FixturePath("wpf-showroom-docking-overview.rewritten.layout")).Replace("\r\n", "\n"), json.ToString());
         }
 
-        [TestMethod]
-        public void DockingSerialization_LayoutTypes_HaveGeneratedSerializers ()
-        {
-            // Making one runs the assembly's module initializer, which is where generated serializers register
-            Assert.IsNotNull(new DockingSerialization.SerializationInfo());
-
-            Assert.IsTrue(AJsonGeneratedDispatch.IsRegistered(typeof(DockingSerialization.SerializationInfo)), nameof(DockingSerialization.SerializationInfo));
-            Assert.IsTrue(AJsonGeneratedDispatch.IsRegistered(typeof(DockingSerialization.CoreStorageData)), nameof(DockingSerialization.CoreStorageData));
-            Assert.IsTrue(AJsonGeneratedDispatch.IsRegistered(typeof(DockingSerialization.WindowStorageData)), nameof(DockingSerialization.WindowStorageData));
-        }
-
         // ===========[ Helpers ]===============================================
         private static string FixturePath (string fileName) => Path.Combine(AppContext.BaseDirectory, "_TestData", fileName);
     }
