@@ -1,5 +1,6 @@
 namespace TheAJutShowRoom.UI.Controls.StackNavDemo
 {
+    using System.Threading.Tasks;
     using System.Windows;
     using System.Windows.Controls;
     using AJut.Storage;
@@ -41,7 +42,22 @@ namespace TheAJutShowRoom.UI.Controls.StackNavDemo
 
             // A popover covers only this display, and the await gives back whichever option was picked
             Result<string> result = await m_adapter.ShowPopover(MessageBoxPopover.Generate("Popovers sit over the current display and hand back a result.", "Nice", "Ok"));
-            this.LastPopoverResult = result ? result.Value : "(canceled)";
+            this.LastPopoverResult = DescribeResult(result);
+        }
+
+        private async void ShowTwoPopovers_OnClick (object sender, RoutedEventArgs e)
+        {
+            if (m_adapter == null)
+            {
+                return;
+            }
+
+            // The second is asked for while the first is showing, so it waits its turn and shows once the first is answered
+            Task<Result<string>> first = m_adapter.ShowPopover(MessageBoxPopover.Generate("The first of two popovers. The second one shows once this one is answered.", "Nice", "Ok"));
+            Task<Result<string>> second = m_adapter.ShowPopover(MessageBoxPopover.Generate("The second popover, which waited for the first.", "Nice", "Ok"));
+            Result<string> firstResult = await first;
+            Result<string> secondResult = await second;
+            this.LastPopoverResult = $"{DescribeResult(firstResult)}, then {DescribeResult(secondResult)}";
         }
 
         private async void PopBack_OnClick (object sender, RoutedEventArgs e)
@@ -53,5 +69,7 @@ namespace TheAJutShowRoom.UI.Controls.StackNavDemo
 
             await m_adapter.Navigator.PopDisplay();
         }
+
+        private static string DescribeResult (Result<string> result) => result ? result.Value : "(canceled)";
     }
 }
