@@ -30,7 +30,6 @@
             lock (m_lock)
             {
                 m_data.Add(data);
-                this.OnItemsAdded();
             }
 
             this.OnItemsAdded();
@@ -41,7 +40,6 @@
             lock (m_lock)
             {
                 m_data.AddRange(data);
-                this.OnItemsAdded();
             }
 
             this.OnItemsAdded();
@@ -83,9 +81,8 @@
                     if (match(item))
                     {
                         result.Add(item);
+                        m_data.Remove(item);
                     }
-
-                    m_data.Remove(item);
                 }
             }
 
