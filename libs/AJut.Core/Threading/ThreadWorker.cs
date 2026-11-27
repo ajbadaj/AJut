@@ -112,7 +112,7 @@
         /// Waits until the input queue is empty, meaning the frame actor has taken every queued item. The frame that took the
         /// last item may still be running when this finishes; a graceful shutdown requested then lets that frame finish, so
         /// awaiting this before <see cref="ShutdownGracefullyAndWaitForCompletion()"/> is how to have the queue processed
-        /// before the loop stops.
+        /// before the loop stops. If the loop stops first, this finishes then too: stopping clears whatever is still queued.
         /// </summary>
         public async Task WhenAllInputProcessingCompleted ()
         {
@@ -224,6 +224,9 @@
             m_activeThreadData?.ExecutionState.DisposeAndClearDisposables();
             m_activeThreadData?.InputToProcess.DisposeAndClearDisposables();
             m_activeThreadData?.OutputResults.DisposeAndClearDisposables();
+
+            // The input queue was just cleared without a DataProcessed, so anyone waiting for it to empty is told here
+            this.CompleteInputProcessingWaitIfQueueIsEmpty();
 
             // Released with the run it belongs to, so the token neither stops a later run nor keeps this worker alive
             m_cancellationRegistration.Dispose();
