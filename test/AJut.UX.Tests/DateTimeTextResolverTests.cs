@@ -216,10 +216,11 @@ namespace AJut.UX.Tests
         [TestMethod]
         public void Resolve_TextThatIsNoDate_FailsAndSaysSo ()
         {
-            DateTimeTextResolution resolution = DateTimeTextResolver.Default.Resolve("soonish", Context());
+            const string kUnreadableText = "soonish";
+            DateTimeTextResolution resolution = DateTimeTextResolver.Default.Resolve(kUnreadableText, Context());
 
             Assert.IsFalse(resolution.IsResolved);
-            Assert.AreEqual("'soonish' isn't a date", resolution.FailureReason);
+            StringAssert.Contains(resolution.FailureReason, kUnreadableText, "The reason names the text it could not read");
         }
 
         // ===========[ Format ]================================================

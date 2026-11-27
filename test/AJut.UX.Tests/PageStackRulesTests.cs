@@ -58,9 +58,12 @@ namespace AJut.UX.Tests
         [TestMethod]
         public void PageCountText_CountsFromOne ()
         {
-            Assert.AreEqual("3 of 7", PageStackRules.PageCountText(PageStackRules.kDefaultPageCountFormat, effectiveSelectedIndex: 2, pageCount: 7));
+            Assert.AreEqual(
+                String.Format(PageStackRules.kDefaultPageCountFormat, 3, 7),
+                PageStackRules.PageCountText(PageStackRules.kDefaultPageCountFormat, effectiveSelectedIndex: 2, pageCount: 7)
+            );
             Assert.AreEqual("3/7", PageStackRules.PageCountText("{0}/{1}", 2, 7));
-            Assert.AreEqual("1 of 4", PageStackRules.PageCountText(null, 0, 4), "No format is the default one");
+            Assert.AreEqual(String.Format(PageStackRules.kDefaultPageCountFormat, 1, 4), PageStackRules.PageCountText(null, 0, 4), "No format is the default one");
         }
 
         [TestMethod]

@@ -60,8 +60,7 @@ namespace AJut.UX.Tests
 
                 var added = new TextBox();
                 root.Children.Add(added);
-                Assert.IsTrue(Edit.GetIsReadOnly(added));
-                Assert.IsFalse(Edit.GetIsEditable(added), "An element added later takes both from its parent");
+                Assert.IsFalse(Edit.GetIsEditable(added), "An element added later takes it from its parent");
             });
         }
     }

@@ -38,7 +38,7 @@
 
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <TextBlock Text="Time format" VerticalAlignment="Center"/>
-                    <ajut:EnumComboBox SelectedItem="{x:Bind MainTimeFormat, Mode=TwoWay}" Width="160"
+                    <ajut:EnumComboBox SelectedItem="{x:Bind Main.TimeFormat, Mode=TwoWay}" Width="160"
                                        ToolTipService.ToolTip="The clock a time is shown and picked on, while there is no display format. CurrentCulture is the default."/>
                 </StackPanel>
 

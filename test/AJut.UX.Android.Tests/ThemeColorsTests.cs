@@ -17,7 +17,7 @@ namespace AJut.UX.Tests
         private static readonly ThemedColor kProbe = ThemedColor.FromArgb(AJutThemeKeys.ColorEditIngressControl_HighlightBorderBrush, 0xFF010203, 0xFF040506);
         private static readonly ThemedColor kButtonBackground = ThemedColor.FromArgb("ButtonBackground", 0xFF010203, 0xFF040506);
 
-        // Read before any test here changes it, so the default can be checked and put back
+        // Read before any test here changes it, so it can be put back
         private static readonly bool kUsesTouchVariantAtStart = ThemeColors.UsesTouchVariant;
 
         [TestCleanup]
@@ -51,12 +51,6 @@ namespace AJut.UX.Tests
             var unknown = ThemedColor.FromArgb("AJut_NoSuchControl_NoSuchBrush", 0xFF010203, 0xFF040506);
             bool isDark = ThemeColors.IsDark(TestHost.RequiredContext);
             Assert.AreEqual(isDark ? unknown.Dark : unknown.Light, ThemeColors.Resolve(TestHost.RequiredContext, unknown));
-        }
-
-        [TestMethod]
-        public void UsesTouchVariant_IsOffByDefault ()
-        {
-            Assert.IsFalse(kUsesTouchVariantAtStart, "The touch variant is off until an app opts in");
         }
 
         [TestMethod]

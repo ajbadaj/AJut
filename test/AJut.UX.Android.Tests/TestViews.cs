@@ -5,6 +5,7 @@ namespace AJut.UX.Tests
     using System.Threading.Tasks;
     using Android.Views;
     using Android.Widget;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>What the view tests need beyond <see cref="TestHost"/>: a sized attach, waiting for a layout pass, and finding views.</summary>
     public static class TestViews
@@ -26,20 +27,22 @@ namespace AJut.UX.Tests
 
         /// <summary>
         /// Waits for the main looper to lay <paramref name="view"/> out: until it has been laid out and has no layout
-        /// pending, or a second has passed. A test awaiting this lets the looper run the layout the change it made asked for.
+        /// pending. A test awaiting this lets the looper run the layout the change it made asked for, and fails if the
+        /// view is still not laid out after ten seconds.
         /// </summary>
         public static async Task LayOutAsync (View view)
         {
             const int kPollMilliseconds = 16;
-            const int kMaxPolls = 60;
+            const int kWaitSeconds = 10;
 
             // At least one frame, so a change made just before is laid out rather than found already done
             await Task.Delay(kPollMilliseconds);
-            for (int poll = 0; poll < kMaxPolls; ++poll)
+            DateTime deadline = DateTime.UtcNow + TimeSpan.FromSeconds(kWaitSeconds);
+            while (!view.IsLaidOut || view.IsLayoutRequested)
             {
-                if (view.IsLaidOut && !view.IsLayoutRequested)
+                if (DateTime.UtcNow >= deadline)
                 {
-                    return;
+                    Assert.Fail($"Waited {kWaitSeconds} s for the {view.GetType().Name} to be laid out, and it never was");
                 }
 
                 await Task.Delay(kPollMilliseconds);

@@ -1,6 +1,7 @@
 namespace AJut.Core.UnitTests
 {
     using System;
+    using System.Diagnostics;
     using System.Globalization;
     using System.Linq;
     using System.Threading;
@@ -295,9 +296,18 @@ namespace AJut.Core.UnitTests
             var stats = new SampleStatsAccumulator();
             Thread.Sleep(30);
 
+            // Started before the reset and read after the next snapshot, on the clock the accumulator times with, so the next
+            //  duration only fits inside it if the reset started that duration over
+            var sinceJustBeforeTheReset = Stopwatch.StartNew();
             SampleStatsAccumulator.Snapshot snapshot = stats.TakeSnapshotAndReset();
             Assert.IsTrue(snapshot.Duration >= TimeSpan.FromMilliseconds(25), $"Duration was {snapshot.Duration}");
-            Assert.IsTrue(stats.TakeSnapshot().Duration < snapshot.Duration, "The reset starts the next duration from zero");
+
+            TimeSpan nextDuration = stats.TakeSnapshot().Duration;
+            TimeSpan outerDuration = sinceJustBeforeTheReset.Elapsed;
+            Assert.IsTrue(
+                nextDuration <= outerDuration,
+                $"The reset starts the next duration from zero, but it was {nextDuration}, longer than the {outerDuration} since just before the reset"
+            );
         }
 
         // ---- Describe ----

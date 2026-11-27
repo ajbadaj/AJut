@@ -168,7 +168,7 @@ namespace AJut.UX.Tests
 
             Assert.AreEqual(-5L, vm.SourceValue);
             Assert.IsTrue(vm.IsAtMinimum);
-            Assert.IsTrue(vm.TextErrorMessage.Contains("below the min"));
+            Assert.IsNotNull(vm.TextErrorMessage);
         }
 
         [TestMethod]

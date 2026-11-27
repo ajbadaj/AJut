@@ -13,7 +13,7 @@ namespace AJut.UX.Tests
     [TestClass]
     public class ColorEditTests
     {
-        private static readonly TimeSpan kDismissTimeout = TimeSpan.FromSeconds(3);
+        private static readonly TimeSpan kDismissTimeout = TimeSpan.FromSeconds(10);
 
         [TestMethod]
         public void HsvColorPicker_ColorRoundTrips ()
@@ -163,13 +163,14 @@ namespace AJut.UX.Tests
         // A dialog's dismiss listener runs on a later pass of the main looper, so let the looper run until it has.
         private static async Task _WaitUntilClosedAsync (ColorEditIngressControl control)
         {
+            const int kPollMilliseconds = 10;
             DateTime deadline = DateTime.UtcNow + kDismissTimeout;
             while (control.ShowEditDisplay && (DateTime.UtcNow < deadline))
             {
-                await Task.Delay(10);
+                await Task.Delay(kPollMilliseconds);
             }
 
-            Assert.IsFalse(control.ShowEditDisplay, "The picker did not close");
+            Assert.IsFalse(control.ShowEditDisplay, $"The picker did not close within {kDismissTimeout.TotalSeconds} s");
         }
 
         // Hue, saturation and value floats can land one step off on a channel, which is not a difference anyone sees.

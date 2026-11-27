@@ -55,7 +55,24 @@
         public object SelectedItem
         {
             get => this.GetValue(SelectedItemProperty);
-            set => this.SetValue(SelectedItemProperty, value);
+            set
+            {
+                // WinUI3 takes a new box of the same enum value as a change to a custom dependency property, whether the
+                // property is typed object, as this one is, or typed as the enum, and raises it. That matters for a
+                // two-way x:Bind straight to another dependency property (SelectedItem="{x:Bind Other.Value,
+                // Mode=TwoWay}"): the generated code copies each change across through the other side's CLR setter and
+                // compares nothing, and every copy is a new box. If neither side skips an equal value, the two trade it
+                // back and forth until the stack overflows.
+                //
+                // The guard lives here in the CLR setter, not the change handler, because x:Bind sets SelectedItem
+                // through it, and by the time the change handler runs, the change has already been raised. It ends the
+                // round trip on this side whatever the other property does. Code that calls SetValue on the property
+                // directly goes around the guard.
+                if (!Equals(this.SelectedItem, value))
+                {
+                    this.SetValue(SelectedItemProperty, value);
+                }
+            }
         }
 
         /// <summary>

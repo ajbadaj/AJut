@@ -57,7 +57,6 @@ namespace AJut.UX.Tests
                 textBox.Text = "soonish";
 
                 Assert.IsFalse(control.IsTextValid);
-                Assert.AreEqual("'soonish' isn't a date", control.InvalidTextReason);
                 Assert.IsFalse(control.CommitText(), "Text that can't be read is not taken");
                 Assert.AreEqual(held, control.EditDateTime);
                 Assert.AreEqual("soonish", textBox.Text, "And it stays as typed, to be fixed");

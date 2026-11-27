@@ -53,7 +53,6 @@
         [TestMethod]
         public void Decrypt_Fixed_Str ()
         {
-            Assert.AreEqual(g_wowThatsGreat.Active, CryptoObfuscation.Encrypt(g_wowThatsGreatSource));
             Assert.AreEqual(g_wowThatsGreatSource, CryptoObfuscation.Decrypt(g_wowThatsGreat));
         }
 

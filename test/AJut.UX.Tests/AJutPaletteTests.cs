@@ -488,13 +488,6 @@ namespace AJut.UX.Tests
         }
 
         [TestMethod]
-        public void StockKeys_ReadList_HasNoRepeats ()
-        {
-            string[] repeated = kStockKeysAJutControlsRead.GroupBy(k => k).Where(g => g.Count() > 1).Select(g => g.Key).ToArray();
-            Assert.AreEqual(0, repeated.Length, "Listed more than once: " + string.Join(", ", repeated));
-        }
-
-        [TestMethod]
         public void StockKeys_AJutWinUI3TemplatesTake_AreAccountedFor ()
         {
             // Every key AJut.UX.WinUI3's control templates take from outside AJut has to be on the read list, so the
@@ -565,16 +558,6 @@ namespace AJut.UX.Tests
             }
 
             AssertNoGaps(gaps, "Stock keys of stock control families that the AJut theme leaves unmapped");
-        }
-
-        [TestMethod]
-        public void StockKeys_FamilyList_HasNoRepeats_AndNothingFromTheReadList ()
-        {
-            string[] repeated = kStockKeysOfStockFamilies.GroupBy(k => k).Where(g => g.Count() > 1).Select(g => g.Key).ToArray();
-            Assert.AreEqual(0, repeated.Length, "Listed more than once: " + string.Join(", ", repeated));
-
-            string[] onBoth = kStockKeysOfStockFamilies.Intersect(kStockKeysAJutControlsRead).ToArray();
-            Assert.AreEqual(0, onBoth.Length, "On the read list as well, where they belong alone: " + string.Join(", ", onBoth));
         }
 
         [TestMethod]

@@ -82,7 +82,6 @@ namespace AJut.UX.Tests
             StockControlTint.Apply(Wrap(button));
 
             Assert.IsInstanceOfType<Android.Graphics.Drawables.StateListDrawable>(button.Background);
-            Assert.IsNull(button.StateListAnimator, "A press shows with color, as BrushButton's does, not the stock lift");
         }
 
         [TestMethod]

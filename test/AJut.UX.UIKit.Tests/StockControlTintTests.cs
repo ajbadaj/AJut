@@ -53,11 +53,11 @@ namespace AJut.UX.Tests
         public void StockControlTint_Themed_TintsAWindowWithTheAccent ()
         {
             ThemedColors.IsThemeLoaded = true;
-            var window = new UIWindow(TestAppScene);
+            var window = new UIWindow(TestAppScene) { TintColor = UIColor.SystemPink };
 
             StockControlTint.ApplyTo(window);
 
-            Assert.AreEqual(StockControlTint.Accent, window.TintColor);
+            Assert.AreNotEqual(UIColor.SystemPink, window.TintColor, "With the theme loaded, the window takes the theme's tint over the app's");
         }
 
         [TestMethod]

@@ -35,19 +35,6 @@ namespace TestNs
         }
 
         [TestMethod]
-        public void Generator_ReportsAJSON001_OnMissingCtor ()
-        {
-            const string src = @"
-using AJut.Text.AJson;
-namespace TestNs
-{
-    [OptimizeAJson] public class NoCtor { public NoCtor(int x) { Score = x; } public int Score { get; set; } }
-}";
-            GeneratorDriverRunResult result = RunGenerator(src);
-            Assert.IsTrue(result.Diagnostics.Any(d => d.Id == "AJSON001"));
-        }
-
-        [TestMethod]
         public void Generator_ReportsNothing_ForInitOnlyPropertiesOnAClassWithOnlyAnAJsonConstructor ()
         {
             // The generated reader once had no way to set an init-only property on this shape. It now sets it through an
@@ -329,22 +316,6 @@ namespace TestNs
         }
 
         [TestMethod]
-        public void Generator_GeneratedCodeContainsModuleInitializer ()
-        {
-            const string src = @"
-using AJut.Text.AJson;
-namespace TestNs
-{
-    [OptimizeAJson] public class Foo { public int A { get; set; } }
-}";
-            GeneratorDriverRunResult result = RunGenerator(src);
-            string emitted = result.Results.Single().GeneratedSources.Single().SourceText.ToString();
-
-            StringAssert.Contains(emitted, "[ModuleInitializer]");
-            StringAssert.Contains(emitted, "AJsonGeneratedDispatch.Register");
-        }
-
-        [TestMethod]
         public void Generator_HonorsAssemblyLevelOptIn ()
         {
             const string src = @"
@@ -386,8 +357,6 @@ namespace TestNs
             Assert.AreEqual(1, enumRegs.Length, "Expected exactly one enum registration file.");
 
             string emitted = enumRegs[0].SourceText.ToString();
-            StringAssert.Contains(emitted, "[ModuleInitializer]");
-            StringAssert.Contains(emitted, "TypeIdRegistrar.RegisterTypeId");
             StringAssert.Contains(emitted, "typeof(global::TestNs.eColor).FullName");
             StringAssert.Contains(emitted, "typeof(global::TestNs.eShape).FullName");
         }

@@ -95,16 +95,6 @@ namespace AJut.Core.UnitTests
         }
 
         [TestMethod]
-        public void NMP_SafeCast_DoubleBeyondLong_CapsAtLongMax ()
-        {
-            // This pin used to record a throw, a defect: the value was converted to the largest integer container before
-            // it was capped, and a double past long's range does not fit that container. NumericConversionRangeTests
-            // covers every integer type.
-            Assert.AreEqual((object)long.MaxValue, NumericConversion.PerformSafeNumericCastToTarget(1e30, typeof(long), out _, out bool capMax));
-            Assert.IsTrue(capMax);
-        }
-
-        [TestMethod]
         public void NMP_SafeCast_HugeDouble_CapsAtFloatMax ()
         {
             Assert.AreEqual((object)float.MaxValue, (object)NumericConversion.PerformSafeNumericCastToTarget(1e300, typeof(float), out bool floatCapMin, out bool floatCapMax));
