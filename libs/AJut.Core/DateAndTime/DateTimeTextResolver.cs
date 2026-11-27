@@ -1,4 +1,7 @@
-namespace AJut.UX.Controls
+// AJut.Core leaves nullable reference types off, and this code is written with them on
+#nullable enable
+
+namespace AJut.DateAndTime
 {
     using System;
     using System.Collections.Generic;

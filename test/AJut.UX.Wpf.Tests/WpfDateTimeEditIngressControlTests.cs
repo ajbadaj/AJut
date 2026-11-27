@@ -6,6 +6,7 @@ namespace AJut.UX.Tests
     using System.Linq;
     using System.Windows;
     using System.Windows.Controls;
+    using AJut.DateAndTime;
     using AJut.UX.Controls;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 

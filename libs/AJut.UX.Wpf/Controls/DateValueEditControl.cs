@@ -8,6 +8,7 @@ namespace AJut.UX.Controls
     using System.Windows.Controls.Primitives;
     using System.Windows.Input;
     using System.Windows.Media;
+    using AJut.DateAndTime;
     using DPUtils = DPUtils<DateValueEditControl>;
 
     // ===========[ DateValueEditControl ]=======================================

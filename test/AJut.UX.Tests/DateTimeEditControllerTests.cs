@@ -2,6 +2,7 @@ namespace AJut.UX.Tests
 {
     using System;
     using System.Collections.Generic;
+    using AJut.DateAndTime;
     using AJut.UX.Controls;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 

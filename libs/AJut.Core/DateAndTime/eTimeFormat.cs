@@ -1,4 +1,4 @@
-namespace AJut.UX.Controls
+namespace AJut.DateAndTime
 {
     /// <summary>
     /// Which clock a time of day is shown and picked on: the culture's own, or one chosen whatever the culture. It sets

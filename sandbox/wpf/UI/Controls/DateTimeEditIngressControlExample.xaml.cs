@@ -3,6 +3,7 @@ namespace TheAJutShowRoom.UI.Controls
     using System;
     using System.Windows;
     using System.Windows.Controls;
+    using AJut.DateAndTime;
     using AJut.UX.Controls;
 
     /// <summary>

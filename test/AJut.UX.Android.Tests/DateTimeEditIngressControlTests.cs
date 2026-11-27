@@ -3,6 +3,7 @@ namespace AJut.UX.Tests
     using System;
     using System.Threading.Tasks;
     using AJut;
+    using AJut.DateAndTime;
     using AJut.UX;
     using AJut.UX.Controls;
     using Android.Views;

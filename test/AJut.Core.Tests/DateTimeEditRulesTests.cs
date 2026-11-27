@@ -1,8 +1,8 @@
-namespace AJut.UX.Tests
+namespace AJut.Core.UnitTests
 {
     using System;
     using System.Globalization;
-    using AJut.UX.Controls;
+    using AJut.DateAndTime;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
